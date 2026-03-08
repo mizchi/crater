@@ -48,13 +48,20 @@
   - [x] `script.evaluate` の `registerServiceWorker()` no-op を MoonBit 化
   - [x] `script.evaluate` の document dimensions 補正を MoonBit 化
   - [x] `input.set_files` 用の context-scoped `window.allEvents.events` 補助を MoonBit 化
+  - [x] `input.set_files` の validation / DOM 操作 / synthetic event 記録を MoonBit 化
   - [x] `script.callFunction` の focus / scroll fallback を MoonBit 化
+  - [x] `browsingContext.getRequestedNavigationUrl` で requested URL state を MoonBit query 化
+  - [x] `browsingContext.navigate / reload / close` の wrapper glue を MoonBit command に移行
+  - [x] `script.evaluate / callFunction / locateNodes` の `serializationOptions` snake_case 正規化を MoonBit 化
+  - [x] `script.callFunction` の arguments local normalize を削除して protocol validation に委譲
 - [ ] P3: adapter を pytest plugin / fixture glue のみに縮小する
   - [x] `network.continueRequest / continueResponse / continueWithAuth / provideResponse / failRequest` を MoonBit 実装へ置換
   - [x] `network.failRequest` の blocked state consume / `fetchError` payload を MoonBit command 化
   - [ ] `browsingContext` / `script` / `session` の protocol command 実装を Python から除去
   - [ ] synthetic state を最小化
     - [x] `_synthetic_scrolled_contexts` を削除して MoonBit state に統合
+    - [x] `_last_navigated_url` を削除して requested URL query に置換
+    - [x] `_known_user_contexts` を削除して `browser.hasUserContext` query に置換
 - [ ] P4: tooling の `.ts` を整理する
   - [ ] runner を残すか MoonBit/just に寄せるか判断
   - [ ] CI 集計やレポート生成の責務を分離
@@ -93,8 +100,19 @@
 - [x] `script.callFunction` の focus / scroll fallback を MoonBit に移行
 - [x] `input/file_dialog_opened --quick` / `browsing_context/capture_screenshot --quick` / `network/{before_request_sent,response_started,response_completed} --quick` / `integration --quick` で回帰確認
 - [x] `input/set_files --quick` / `input/file_dialog_opened --quick` / `strict` で input synthetic event 移行の回帰確認
+- [x] `input.setFiles` internal command を追加して `input.set_files` の adapter 実装を薄くする
+- [x] `input/set_files --quick` / `input/file_dialog_opened --quick` / `network --quick` / `strict` で `input.set_files` 移行の回帰確認
 - [x] `script/add_preload_script --quick` / `script/get_realms --quick` / `script/realm_created --quick` / `integration --quick` / `strict` で preload/realm fixture 移行の回帰確認
 - [x] `browsing_context/capture_screenshot --quick` / `browsing_context/print --quick` / `integration --quick` / `strict` で回帰確認
+- [x] `browsingContext.getRequestedNavigationUrl` / `browser.hasUserContext` / `storage.getContextCookieInfo` を追加して adapter の local mirror を削減
+- [x] `storage --quick` / `integration --quick` / `strict` で requested URL / cookie scope query 化の回帰確認
+- [x] `network.removeIntercept / setCacheBehavior / getData / disownData / continueWithAuth(credentials)` の adapter local validation を削減し、MoonBit validator に委譲
+- [x] network adapter に残っていた dead helper（header/cookie/auth/data-url 補助）を削除
+- [x] `network/remove_intercept --quick` / `network/get_data --quick` / `network/disown_data --quick` / `network/set_cache_behavior/invalid --quick` / `network/continue_with_auth --quick` / `network --quick` / `strict` で回帰確認
+- [x] `browsingContext.prepareNavigate / finalizeNavigate / finalizeReload / getCloseMetadata` を追加して `navigate/reload/close` wrapper glue を MoonBit 化
+- [x] `serializationOptions` の snake_case alias (`max_dom_depth` / `max_object_depth` / `include_shadow_tree`) を MoonBit validator / runtime に追加
+- [x] adapter 側の `_convert_serialization_options` / `_normalize_call_function_arguments` を削除
+- [x] `script/evaluate --quick` / `script/call_function --quick` / `browsing_context/{locate_nodes,close,reload,navigate} --quick` / `integration --quick` / `strict` で回帰確認
 
 ### 次の具体タスク
 
@@ -104,8 +122,12 @@
 - [ ] `browsingContext` / `script` / `session` に残る local validation と fixture glue を MoonBit command に置き換える
   - `captureScreenshot` / `print` / `script.callFunction` の主要な synthetic path は移行済み
   - `navigate/reload` 後の synthetic request sequence と request id 発番は MoonBit 側へ移行済み
+  - `navigate/reload/close` の wrapper glue と `serializationOptions` 正規化は MoonBit 側へ移行済み
+  - requested navigation URL / context cookie scope / userContext existence は query command 化済み
+  - `network` の dead helper と一部 local validation は削除済み
 - [ ] adapter を `pytest` fixture と最小限の WPT glue のみに縮小する
   - `network` の local mirror (`_network_intercepts`, `_network_collectors`, `_network_collected_data`, synthetic subscription fallback) は削除済み
+  - `browsingContext` の `_last_navigated_url` と session の `_known_user_contexts` は削除済み
 
 ## WPT サポート状況（2026-03-03）
 

@@ -317,6 +317,42 @@ fn BidiProtocol::dispatch_storage(
       self.send_success(request.id, Some(make_object({})))
       Ok(())
     }
+    "getContextCookieInfo" => {
+      let context_id = match get_param_raw(request.params, "context") {
+        Some(String(context_id)) => context_id
+        Some(_) | None => {
+          self.send_error(
+            request.id,
+            "invalid argument",
+            "context must be a string",
+          )
+          return Ok(())
+        }
+      }
+      if not(self.manager.has_session(context_id)) {
+        self.send_error(
+          request.id,
+          "no such frame",
+          "Unknown context: " + context_id,
+        )
+        return Ok(())
+      }
+      let base_url = self.get_context_cookie_base_url(context_id)
+      let result : Map[String, Json] = {
+        "baseUrl": Json::string(base_url),
+        "domain": Json::string(storage_cookie_domain_from_base_url(base_url)),
+        "defaultPath": Json::string(storage_cookie_default_path(base_url)),
+        "userContext": Json::string(
+          self.resolve_storage_user_context(context_id),
+        ),
+      }
+      match storage_cookie_origin_from_base_url(base_url) {
+        Some(origin) => result["origin"] = Json::string(origin)
+        None => result["origin"] = Json::null()
+      }
+      self.send_success(request.id, Some(make_object(result)))
+      Ok(())
+    }
     _ => {
       self.send_error(
         request.id,

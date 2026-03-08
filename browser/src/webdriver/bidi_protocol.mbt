@@ -100,6 +100,7 @@ priv struct BidiProtocol {
   pending_prompt_realm : Map[String, String] // context -> deferred script.evaluate realm id
   pending_beforeunload_request : Map[String, Int] // context -> deferred navigate request id
   pending_beforeunload_url : Map[String, String] // context -> deferred navigate destination
+  pending_beforeunload_requested_url : Map[String, String] // context -> deferred original requested URL
   pending_beforeunload_wait : Map[String, String] // context -> deferred navigate wait mode
   pending_beforeunload_navigation : Map[String, String] // context -> deferred navigation id
   pending_navigation_request : Map[String, Int] // context -> deferred navigate/reload request id
@@ -111,6 +112,7 @@ priv struct BidiProtocol {
   storage_cookies_by_scope : Map[String, Map[String, StoredCookie]] // scope -> stored cookies
   synthetic_location_href_by_context : Map[String, String] // context -> synthetic window.location.href override
   context_last_started_navigation : Map[String, String] // context -> last emitted navigationStarted id
+  context_requested_navigation_url : Map[String, String] // context -> last requested navigation URL
   context_original_opener : Map[String, String]
   context_realm : Map[String, String]
   context_sandbox_realm : Map[String, String] // "<context>::<sandbox>" -> realm
@@ -202,6 +204,7 @@ fn BidiProtocol::new() -> BidiProtocol {
     pending_prompt_realm: {},
     pending_beforeunload_request: {},
     pending_beforeunload_url: {},
+    pending_beforeunload_requested_url: {},
     pending_beforeunload_wait: {},
     pending_beforeunload_navigation: {},
     pending_navigation_request: {},
@@ -213,6 +216,7 @@ fn BidiProtocol::new() -> BidiProtocol {
     storage_cookies_by_scope: {},
     synthetic_location_href_by_context: {},
     context_last_started_navigation: {},
+    context_requested_navigation_url: {},
     context_original_opener: {},
     context_realm: {},
     context_sandbox_realm: {},
@@ -432,6 +436,7 @@ fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
     self.pending_prompt_realm.remove(key)
     self.pending_beforeunload_request.remove(key)
     self.pending_beforeunload_url.remove(key)
+    self.pending_beforeunload_requested_url.remove(key)
     self.pending_beforeunload_wait.remove(key)
     self.pending_beforeunload_navigation.remove(key)
     self.pending_prompt_result_var.remove(key)
@@ -475,6 +480,13 @@ fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
   }
   for key in last_navigation_keys {
     self.context_last_started_navigation.remove(key)
+  }
+  let requested_navigation_keys : Array[String] = []
+  for key, _ in self.context_requested_navigation_url {
+    requested_navigation_keys.push(key)
+  }
+  for key in requested_navigation_keys {
+    self.context_requested_navigation_url.remove(key)
   }
 
   let context_original_opener_keys : Array[String] = []
@@ -988,6 +1000,10 @@ fn BidiProtocol::dispatch_browser(
       self.send_success(request.id, Some(result))
       Ok(())
     }
+    "hasUserContext" => {
+      self.handle_browser_has_user_context(request.id, request.params)
+      Ok(())
+    }
     "getClientWindows" => {
       let top_level_contexts : Array[String] = []
       for ctx_id in self.manager.list_sessions() {
@@ -1180,6 +1196,32 @@ fn BidiProtocol::dispatch_browsing_context(
     }
     "getContextScopeInfo" => {
       self.handle_browsing_context_get_context_scope_info(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
+    "getRequestedNavigationUrl" => {
+      self.handle_browsing_context_get_requested_navigation_url(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
+    "prepareNavigate" => {
+      self.handle_browsing_context_prepare_navigate(request.id, request.params)
+      Ok(())
+    }
+    "finalizeNavigate" => {
+      self.handle_browsing_context_finalize_navigate(request.id, request.params)
+      Ok(())
+    }
+    "finalizeReload" => {
+      self.handle_browsing_context_finalize_reload(request.id, request.params)
+      Ok(())
+    }
+    "getCloseMetadata" => {
+      self.handle_browsing_context_get_close_metadata(
         request.id,
         request.params,
       )
@@ -1513,6 +1555,7 @@ fn BidiProtocol::dispatch_browsing_context(
             self.pending_prompt_type[ctx_id] = "beforeunload"
             self.pending_beforeunload_request[ctx_id] = request.id
             self.pending_beforeunload_url[ctx_id] = resolved_url
+            self.pending_beforeunload_requested_url[ctx_id] = url
             self.pending_beforeunload_wait[ctx_id] = wait_mode
             self.pending_beforeunload_navigation[ctx_id] = nav_id
             self.emit_navigation_started_event(ctx_id, resolved_url, nav_id)
@@ -1528,6 +1571,7 @@ fn BidiProtocol::dispatch_browsing_context(
             let previous_url = session.get_url()
             match session.navigate_to(resolved_url) {
               Ok(_) => {
+                self.remember_requested_navigation_url(ctx_id, url)
                 if is_fragment_navigation(previous_url, resolved_url) {
                   self.complete_fragment_navigation_request(
                     request.id,
@@ -1650,6 +1694,9 @@ fn BidiProtocol::dispatch_browsing_context(
             self.pending_prompt_type[ctx_id] = "beforeunload"
             self.pending_beforeunload_request[ctx_id] = request.id
             self.pending_beforeunload_url[ctx_id] = url
+            self.pending_beforeunload_requested_url[ctx_id] = self.requested_navigation_url(
+              ctx_id,
+            )
             self.pending_beforeunload_wait[ctx_id] = wait_mode
             self.pending_beforeunload_navigation[ctx_id] = nav_id
             self.emit_navigation_started_event(ctx_id, url, nav_id)
@@ -1834,6 +1881,9 @@ fn BidiProtocol::dispatch_browsing_context(
               let pending_beforeunload_url = self.pending_beforeunload_url.get(
                 prompt_ctx_id,
               )
+              let pending_beforeunload_requested_url = self.pending_beforeunload_requested_url.get(
+                prompt_ctx_id,
+              )
               let pending_beforeunload_wait = self.pending_beforeunload_wait
                 .get(prompt_ctx_id)
                 .unwrap_or("none")
@@ -1868,11 +1918,18 @@ fn BidiProtocol::dispatch_browsing_context(
                         match self.manager.get_session(prompt_ctx_id) {
                           Some(session) =>
                             match session.navigate_to(nav_url) {
-                              Ok(_) =>
+                              Ok(_) => {
+                                self.remember_requested_navigation_url(
+                                  prompt_ctx_id,
+                                  pending_beforeunload_requested_url.unwrap_or(
+                                    nav_url,
+                                  ),
+                                )
                                 self.complete_navigation_request_with_wait_and_navigation(
                                   nav_request_id, prompt_ctx_id, nav_url, pending_beforeunload_wait,
                                   pending_navigation_id,
                                 )
+                              }
                               Err(e) => {
                                 match pending_navigation_id {
                                   Some(nav_id) =>
@@ -2144,6 +2201,300 @@ fn BidiProtocol::handle_browsing_context_get_context_scope_info(
   self.send_success(
     request_id,
     Some(self.build_context_scope_info_json(context_id)),
+  )
+}
+
+///|
+fn BidiProtocol::handle_browsing_context_get_requested_navigation_url(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let context_id = match map.get("context") {
+    Some(String(context_id)) => context_id
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return
+    }
+  }
+  if not(self.manager.has_session(context_id)) {
+    self.send_error(
+      request_id,
+      "no such frame",
+      "Unknown context: " + context_id,
+    )
+    return
+  }
+  self.send_success(
+    request_id,
+    Some(
+      make_object({
+        "url": Json::string(self.requested_navigation_url(context_id)),
+      }),
+    ),
+  )
+}
+
+///|
+fn BidiProtocol::handle_browsing_context_prepare_navigate(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let context_id = match map.get("context") {
+    Some(String(context_id)) => context_id
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return
+    }
+  }
+  if not(self.manager.has_session(context_id)) {
+    self.send_error(
+      request_id,
+      "no such frame",
+      "Unknown context: " + context_id,
+    )
+    return
+  }
+  let url = match map.get("url") {
+    Some(String(url)) => url
+    _ => {
+      self.send_error(request_id, "invalid argument", "url must be a string")
+      return
+    }
+  }
+  self.clear_synthetic_location_href(context_id)
+  match self.prepare_navigation_request_internal(request_id, context_id, url) {
+    Some(result) => self.send_success(request_id, Some(result))
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::handle_browsing_context_finalize_navigate(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let context_id = match map.get("context") {
+    Some(String(context_id)) => context_id
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return
+    }
+  }
+  if not(self.manager.has_session(context_id)) {
+    self.send_error(
+      request_id,
+      "no such frame",
+      "Unknown context: " + context_id,
+    )
+    return
+  }
+  let url = match map.get("url") {
+    Some(String(url)) => url
+    _ => {
+      self.send_error(request_id, "invalid argument", "url must be a string")
+      return
+    }
+  }
+  let navigation_id : String? = match map.get("navigation") {
+    Some(String(navigation_id)) => Some(navigation_id)
+    Some(Null) | None => None
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "navigation must be a string",
+      )
+      return
+    }
+  }
+  let emitted = self.emit_synthetic_navigation_request_sequence(
+    context_id, url, navigation_id,
+  )
+  self.send_success(
+    request_id,
+    Some(
+      make_object({
+        "emitted": Json::number(emitted.to_double()),
+        "blocked": Json::boolean(
+          self.has_network_blocked_navigation_request(context_id, navigation_id),
+        ),
+      }),
+    ),
+  )
+}
+
+///|
+fn BidiProtocol::handle_browsing_context_finalize_reload(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let context_id = match map.get("context") {
+    Some(String(context_id)) => context_id
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return
+    }
+  }
+  if not(self.manager.has_session(context_id)) {
+    self.send_error(
+      request_id,
+      "no such frame",
+      "Unknown context: " + context_id,
+    )
+    return
+  }
+  let navigation_id : String? = match map.get("navigation") {
+    Some(String(navigation_id)) => Some(navigation_id)
+    Some(Null) | None => None
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "navigation must be a string",
+      )
+      return
+    }
+  }
+  let url = self.requested_navigation_url(context_id)
+  let emitted = self.emit_synthetic_navigation_request_sequence(
+    context_id, url, navigation_id,
+  )
+  self.send_success(
+    request_id,
+    Some(
+      make_object({
+        "url": Json::string(url),
+        "emitted": Json::number(emitted.to_double()),
+        "blocked": Json::boolean(
+          self.has_network_blocked_navigation_request(context_id, navigation_id),
+        ),
+      }),
+    ),
+  )
+}
+
+///|
+fn BidiProtocol::handle_browsing_context_get_close_metadata(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let context_id = match map.get("context") {
+    Some(String(context_id)) => context_id
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return
+    }
+  }
+  if not(self.manager.has_session(context_id)) {
+    self.send_error(
+      request_id,
+      "no such frame",
+      "Unknown context: " + context_id,
+    )
+    return
+  }
+  if self.context_parent.contains(context_id) {
+    self.send_error(request_id, "invalid argument", "context must be top-level")
+    return
+  }
+  let wait_for_destroyed = self.context_children
+    .get(context_id)
+    .unwrap_or([])
+    .length() >
+    0
+  self.send_success(
+    request_id,
+    Some(make_object({ "waitForDestroyed": Json::boolean(wait_for_destroyed) })),
+  )
+}
+
+///|
+fn BidiProtocol::handle_browser_has_user_context(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let user_context = match map.get("userContext") {
+    Some(String(user_context)) => user_context
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "userContext must be a string",
+      )
+      return
+    }
+  }
+  self.send_success(
+    request_id,
+    Some(
+      make_object({
+        "known": Json::boolean(self.user_contexts.contains(user_context)),
+      }),
+    ),
   )
 }
 
@@ -5421,6 +5772,10 @@ fn BidiProtocol::dispatch_input(
       self.handle_input_record_synthetic_events(request.id, request.params)
       Ok(())
     }
+    "setFiles" => {
+      self.handle_input_set_files(request.id, request.params)
+      Ok(())
+    }
     _ => {
       self.send_error(
         request.id,
@@ -6478,6 +6833,243 @@ fn BidiProtocol::handle_input_record_synthetic_events(
 }
 
 ///|
+fn BidiProtocol::handle_input_set_files(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let ctx_id = match self.validate_input_context(request_id, params) {
+    Some(ctx_id) => ctx_id
+    None => return
+  }
+  let element = match map.get("element") {
+    Some(Object(element)) => element
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "element must be an object",
+      )
+      return
+    }
+  }
+  let source_paths = match
+    self.input_set_files_string_array(
+      request_id,
+      map.get("sourcePaths"),
+      "sourcePaths",
+    ) {
+    Some(values) => values
+    None => return
+  }
+  let display_names = match
+    self.input_set_files_string_array(
+      request_id,
+      map.get("displayNames"),
+      "displayNames",
+    ) {
+    Some(values) => values
+    None => return
+  }
+  if source_paths.length() != display_names.length() {
+    self.send_error(
+      request_id, "invalid argument", "sourcePaths and displayNames must have the same length",
+    )
+    return
+  }
+  let (element_id, allow_fallback) = match
+    self.resolve_input_set_files_locator(request_id, element) {
+    Some(locator) => locator
+    None => return
+  }
+  let summary = match
+    self.apply_input_set_files_summary(
+      ctx_id, element_id, allow_fallback, source_paths, display_names,
+    ) {
+    Some(summary) => summary
+    None => {
+      self.send_error(request_id, "no such element", "No such element")
+      return
+    }
+  }
+  let found = input_set_files_summary_bool(summary, "found")
+  let is_element = input_set_files_summary_bool(summary, "isElement")
+  let disabled = input_set_files_summary_bool(summary, "disabled")
+  let multiple = input_set_files_summary_bool(summary, "multiple")
+  let tag_name = input_set_files_summary_string(summary, "tagName").unwrap_or(
+    "",
+  )
+  let input_type = input_set_files_summary_string(summary, "inputType").unwrap_or(
+    "",
+  )
+
+  if not(found) || not(is_element) {
+    self.send_error(request_id, "no such element", "No such element")
+    return
+  }
+  if tag_name != "input" ||
+    input_type != "file" ||
+    disabled ||
+    (source_paths.length() > 1 && not(multiple)) {
+    self.send_error(
+      request_id, "unable to set file input", "Unable to set file input",
+    )
+    return
+  }
+
+  let event_files = match
+    input_set_files_summary_string_list(summary, "eventFiles") {
+    Some(values) => values
+    None => display_names
+  }
+  match input_set_files_summary_string_list(summary, "eventTypes") {
+    Some(event_types) =>
+      if event_types.length() > 0 {
+        self.append_input_synthetic_events(ctx_id, event_types, event_files)
+      }
+    None => ()
+  }
+  self.send_success(request_id, Some(make_object({})))
+}
+
+///|
+fn BidiProtocol::append_input_synthetic_events(
+  self : BidiProtocol,
+  ctx_id : String,
+  event_types : Array[String],
+  event_files : Array[String],
+) -> Unit {
+  let existing = self.input_synthetic_events_by_context
+    .get(ctx_id)
+    .unwrap_or([])
+  let files_json : Array[Json] = []
+  for file_name in event_files {
+    files_json.push(Json::string(file_name))
+  }
+  for event_type in event_types {
+    existing.push(
+      make_object({
+        "type": Json::string(event_type),
+        "files": Json::array(files_json),
+      }),
+    )
+  }
+  self.input_synthetic_events_by_context[ctx_id] = existing
+}
+
+///|
+fn BidiProtocol::resolve_input_set_files_locator(
+  self : BidiProtocol,
+  request_id : Int,
+  element : Map[String, Json],
+) -> (String, Bool)? {
+  match element.get("type") {
+    Some(String(type_name)) if type_name == "null" => return Some(("", true))
+    _ => ()
+  }
+  let value_map = match element.get("value") {
+    Some(Object(value_map)) => Some(value_map)
+    _ => None
+  }
+  let shared_id = match element.get("sharedId") {
+    Some(String(shared_id)) => Some(shared_id)
+    _ =>
+      match value_map {
+        Some(value_map) =>
+          match value_map.get("sharedId") {
+            Some(String(shared_id)) => Some(shared_id)
+            _ => None
+          }
+        None => None
+      }
+  }
+  let shared_id = match shared_id {
+    Some(shared_id) => shared_id
+    None => {
+      self.send_error(
+        request_id, "invalid argument", "element.sharedId must be a string",
+      )
+      return None
+    }
+  }
+  match value_map {
+    Some(value_map) =>
+      match value_map.get("nodeType") {
+        Some(Number(node_type, ..)) if node_type != 1.0 => {
+          self.send_error(request_id, "no such element", "No such element")
+          return None
+        }
+        _ => ()
+      }
+    None => ()
+  }
+  if not(has_runtime_shared_node(shared_id)) {
+    self.send_error(
+      request_id,
+      "no such node",
+      "Unknown sharedId: " + shared_id,
+    )
+    return None
+  }
+  if not(runtime_shared_node_is_element(shared_id)) {
+    self.send_error(request_id, "no such element", "No such element")
+    return None
+  }
+  let element_id = match value_map {
+    Some(value_map) =>
+      match value_map.get("attributes") {
+        Some(Object(attributes)) =>
+          match attributes.get("id") {
+            Some(String(element_id)) => element_id
+            _ => ""
+          }
+        _ => ""
+      }
+    None => ""
+  }
+  Some((element_id, false))
+}
+
+///|
+fn BidiProtocol::apply_input_set_files_summary(
+  self : BidiProtocol,
+  ctx_id : String,
+  element_id : String,
+  allow_fallback : Bool,
+  source_paths : Array[String],
+  display_names : Array[String],
+) -> Map[String, Json]? {
+  set_runtime_context(ctx_id)
+  self.apply_effective_viewport_to_runtime_context(ctx_id, ctx_id)
+  let source_paths_json : Array[Json] = []
+  for path in source_paths {
+    source_paths_json.push(Json::string(path))
+  }
+  let display_names_json : Array[Json] = []
+  for name in display_names {
+    display_names_json.push(Json::string(name))
+  }
+  let payload = js_input_apply_file_selection(
+    element_id,
+    allow_fallback,
+    Json::array(source_paths_json).stringify(),
+    Json::array(display_names_json).stringify(),
+  )
+  let summary = @json.parse(payload) catch { _ => return None }
+  match summary {
+    Object(summary) => Some(summary)
+    _ => None
+  }
+}
+
+///|
 /// Validate input context parameter and return context ID.
 fn BidiProtocol::validate_input_context(
   self : BidiProtocol,
@@ -6502,6 +7094,83 @@ fn BidiProtocol::validate_input_context(
     return None
   }
   Some(ctx_id)
+}
+
+///|
+fn BidiProtocol::input_set_files_string_array(
+  self : BidiProtocol,
+  request_id : Int,
+  raw_value : Json?,
+  field_name : String,
+) -> Array[String]? {
+  let items = match raw_value {
+    Some(Array(items)) => items
+    _ => {
+      self.send_error(
+        request_id,
+        "invalid argument",
+        field_name + " must be an array",
+      )
+      return None
+    }
+  }
+  let values : Array[String] = []
+  for item in items {
+    match item {
+      String(value) => values.push(value)
+      _ => {
+        self.send_error(
+          request_id,
+          "invalid argument",
+          field_name + " entries must be strings",
+        )
+        return None
+      }
+    }
+  }
+  Some(values)
+}
+
+///|
+fn input_set_files_summary_bool(
+  summary : Map[String, Json],
+  key : String,
+) -> Bool {
+  match summary.get(key) {
+    Some(True) => true
+    Some(False) => false
+    _ => false
+  }
+}
+
+///|
+fn input_set_files_summary_string(
+  summary : Map[String, Json],
+  key : String,
+) -> String? {
+  match summary.get(key) {
+    Some(String(value)) => Some(value)
+    _ => None
+  }
+}
+
+///|
+fn input_set_files_summary_string_list(
+  summary : Map[String, Json],
+  key : String,
+) -> Array[String]? {
+  let items = match summary.get(key) {
+    Some(Array(items)) => items
+    _ => return None
+  }
+  let values : Array[String] = []
+  for item in items {
+    match item {
+      String(value) => values.push(value)
+      _ => ()
+    }
+  }
+  Some(values)
 }
 
 ///|
@@ -8964,6 +9633,123 @@ fn evaluate_current_file_input_multiple() -> Bool {
 }
 
 ///|
+extern "js" fn js_input_apply_file_selection(
+  element_id : String,
+  allow_fallback : Bool,
+  source_paths_json : String,
+  display_names_json : String,
+) -> String =
+  #| (elementId, allowFallback, sourcePathsJson, displayNamesJson) => {
+  #|   const sourcePaths = (() => {
+  #|     try {
+  #|       const value = JSON.parse(String(sourcePathsJson ?? "[]"));
+  #|       return Array.isArray(value) ? value.map(path => String(path)) : [];
+  #|     } catch (_) {
+  #|       return [];
+  #|     }
+  #|   })();
+  #|   const displayNames = (() => {
+  #|     try {
+  #|       const value = JSON.parse(String(displayNamesJson ?? "[]"));
+  #|       return Array.isArray(value) ? value.map(name => String(name)) : [];
+  #|     } catch (_) {
+  #|       return [];
+  #|     }
+  #|   })();
+  #|   let input = null;
+  #|   if (typeof document !== "undefined" && typeof elementId === "string" && elementId !== "") {
+  #|     input = document.getElementById(elementId);
+  #|   }
+  #|   if (!input && allowFallback && typeof document !== "undefined") {
+  #|     input = document.querySelector("input[type=file], #input");
+  #|   }
+  #|   if (!input && allowFallback && typeof document !== "undefined" && document.body && typeof document.createElement === "function") {
+  #|     input = document.createElement("input");
+  #|     input.type = "file";
+  #|     input.id = "input";
+  #|     document.body.appendChild(input);
+  #|   }
+  #|   if (!input) {
+  #|     return JSON.stringify({
+  #|       found: false,
+  #|       isElement: false,
+  #|       tagName: "",
+  #|       inputType: "",
+  #|       disabled: false,
+  #|       multiple: false,
+  #|       eventTypes: [],
+  #|       eventFiles: [],
+  #|     });
+  #|   }
+  #|   const isElement = Number(input?.nodeType || 0) === 1;
+  #|   const tagName = isElement ? String(input.localName || input.tagName || "").toLowerCase() : "";
+  #|   const getAttr = (name) => typeof input?.getAttribute === "function" ? input.getAttribute(name) : null;
+  #|   const inputType = isElement && tagName === "input" ? String(input.type || getAttr("type") || "").toLowerCase() : "";
+  #|   const disabled = isElement && tagName === "input" ? (Boolean(input.disabled) || getAttr("disabled") !== null) : false;
+  #|   const multiple = isElement && tagName === "input" ? (Boolean(input.multiple) || getAttr("multiple") !== null) : false;
+  #|   const summary = {
+  #|     found: true,
+  #|     isElement,
+  #|     tagName,
+  #|     inputType,
+  #|     disabled,
+  #|     multiple,
+  #|     eventTypes: [],
+  #|     eventFiles: [],
+  #|   };
+  #|   if (!isElement || tagName !== "input" || inputType !== "file" || disabled || (!multiple && sourcePaths.length > 1)) {
+  #|     return JSON.stringify(summary);
+  #|   }
+  #|   summary.eventFiles = displayNames.slice();
+  #|   const previousSourcePaths = Array.isArray(input.__craterSyntheticSourcePaths) ? input.__craterSyntheticSourcePaths.slice() : [];
+  #|   const isSameSelection = previousSourcePaths.length === sourcePaths.length && previousSourcePaths.every((path, index) => path === sourcePaths[index]);
+  #|   const syntheticFiles = displayNames.map(name => ({ name }));
+  #|   try {
+  #|     Object.defineProperty(input, "files", {
+  #|       configurable: true,
+  #|       get: () => syntheticFiles,
+  #|     });
+  #|   } catch (_) {
+  #|     input.files = syntheticFiles;
+  #|   }
+  #|   input.__craterSyntheticSourcePaths = sourcePaths.slice();
+  #|   const eventBuffer = (() => {
+  #|     if (typeof window === "undefined") return null;
+  #|     if (!window.allEvents || !Array.isArray(window.allEvents.events)) {
+  #|       window.allEvents = { events: [] };
+  #|     }
+  #|     return window.allEvents.events;
+  #|   })();
+  #|   const recordEvent = (type) => {
+  #|     if (!Array.isArray(eventBuffer)) return;
+  #|     eventBuffer.push({ type, files: displayNames.slice() });
+  #|   };
+  #|   const emit = (type) => {
+  #|     if (typeof Event === "function") {
+  #|       input.dispatchEvent(new Event(type, { bubbles: true }));
+  #|       return;
+  #|     }
+  #|     if (typeof document !== "undefined" && typeof document.createEvent === "function") {
+  #|       const event = document.createEvent("Event");
+  #|       event.initEvent(type, true, false);
+  #|       input.dispatchEvent(event);
+  #|     }
+  #|   };
+  #|   if (isSameSelection) {
+  #|     emit("cancel");
+  #|     recordEvent("cancel");
+  #|     summary.eventTypes = ["cancel"];
+  #|     return JSON.stringify(summary);
+  #|   }
+  #|   emit("input");
+  #|   emit("change");
+  #|   recordEvent("input");
+  #|   recordEvent("change");
+  #|   summary.eventTypes = ["input", "change"];
+  #|   return JSON.stringify(summary);
+  #| }
+
+///|
 fn BidiProtocol::emit_input_file_dialog_opened(
   self : BidiProtocol,
   ctx_id : String,
@@ -10605,6 +11391,7 @@ fn BidiProtocol::clear_pending_prompt_state(
   self.pending_prompt_realm.remove(ctx_id)
   self.pending_beforeunload_request.remove(ctx_id)
   self.pending_beforeunload_url.remove(ctx_id)
+  self.pending_beforeunload_requested_url.remove(ctx_id)
   self.pending_beforeunload_wait.remove(ctx_id)
   self.pending_beforeunload_navigation.remove(ctx_id)
   self.pending_prompt_result_var.remove(ctx_id)
@@ -10742,6 +11529,7 @@ fn BidiProtocol::create_context(
   self.context_local_storage.remove(id)
   self.remove_storage_cookie_scope(id)
   self.context_last_started_navigation.remove(id)
+  self.context_requested_navigation_url.remove(id)
   if not(self.user_contexts.contains(user_context_id)) {
     self.user_contexts[user_context_id] = true
   }
@@ -10776,6 +11564,7 @@ fn BidiProtocol::create_child_context(
   self.context_local_storage.remove(id)
   self.remove_storage_cookie_scope(id)
   self.context_last_started_navigation.remove(id)
+  self.context_requested_navigation_url.remove(id)
   if not(self.user_contexts.contains(user_context_id)) {
     self.user_contexts[user_context_id] = true
   }
@@ -10868,6 +11657,7 @@ fn BidiProtocol::drop_child_contexts(
         self.context_local_storage.remove(child_ctx_id)
         self.remove_storage_cookie_scope(child_ctx_id)
         self.context_last_started_navigation.remove(child_ctx_id)
+        self.context_requested_navigation_url.remove(child_ctx_id)
         self.clear_synthetic_location_href(child_ctx_id)
         self.context_original_opener.remove(child_ctx_id)
         self.remove_all_realms_for_context(child_ctx_id)
@@ -10915,6 +11705,7 @@ fn BidiProtocol::close_context_and_cleanup(
   self.context_local_storage.remove(ctx_id)
   self.remove_storage_cookie_scope(ctx_id)
   self.context_last_started_navigation.remove(ctx_id)
+  self.context_requested_navigation_url.remove(ctx_id)
   self.clear_synthetic_location_href(ctx_id)
   self.context_original_opener.remove(ctx_id)
   self.remove_all_realms_for_context(ctx_id)
@@ -12682,23 +13473,13 @@ fn BidiProtocol::complete_navigation_request_with_wait(
 }
 
 ///|
-/// Complete navigation update using an optional preallocated navigation id.
-fn BidiProtocol::complete_navigation_request_with_wait_and_navigation(
+/// Apply committed navigation state and emit navigation lifecycle events.
+fn BidiProtocol::apply_navigation_commit_state(
   self : BidiProtocol,
-  request_id : Int,
   ctx_id : String,
   url : String,
-  wait_mode : String,
-  navigation_id : String?,
+  navigation_id : String,
 ) -> Unit {
-  let nav_id = match navigation_id {
-    Some(id) => id
-    None => {
-      let generated_id = self.next_navigation_id.to_string()
-      self.next_navigation_id += 1
-      generated_id
-    }
-  }
   let previous_children = self.context_children.get(ctx_id).unwrap_or([])
   reset_runtime_event_buffers(ctx_id)
   self.load_data_url_content(ctx_id, url)
@@ -12728,14 +13509,35 @@ fn BidiProtocol::complete_navigation_request_with_wait_and_navigation(
   self.emit_navigation_events_internal(
     ctx_id,
     url,
-    nav_id,
+    navigation_id,
     not(defer_parent_lifecycle),
   )
   self.refresh_child_contexts_from_iframes(ctx_id)
   if defer_parent_lifecycle {
-    self.emit_navigation_lifecycle_events(ctx_id, url, nav_id)
+    self.emit_navigation_lifecycle_events(ctx_id, url, navigation_id)
   }
   self.register_navigation_prompt_from_url(ctx_id, url)
+}
+
+///|
+/// Complete navigation update using an optional preallocated navigation id.
+fn BidiProtocol::complete_navigation_request_with_wait_and_navigation(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  url : String,
+  wait_mode : String,
+  navigation_id : String?,
+) -> Unit {
+  let nav_id = match navigation_id {
+    Some(id) => id
+    None => {
+      let generated_id = self.next_navigation_id.to_string()
+      self.next_navigation_id += 1
+      generated_id
+    }
+  }
+  self.apply_navigation_commit_state(ctx_id, url, nav_id)
   let has_inline_redirect = match resolve_inline_script_redirect_url(url) {
     Some(_) => true
     None => false
@@ -14582,10 +15384,42 @@ fn get_map_field_with_alias(
 }
 
 ///|
+fn canonicalize_serialization_options_map(
+  raw_opts : Map[String, Json],
+) -> Map[String, Json] {
+  let normalized : Map[String, Json] = {}
+  for key, value in raw_opts {
+    if key != "max_dom_depth" &&
+      key != "max_object_depth" &&
+      key != "include_shadow_tree" {
+      normalized[key] = value
+    }
+  }
+  match get_map_field_with_alias(raw_opts, "maxDomDepth", "max_dom_depth") {
+    Some(value) => normalized["maxDomDepth"] = value
+    None => ()
+  }
+  match
+    get_map_field_with_alias(raw_opts, "maxObjectDepth", "max_object_depth") {
+    Some(value) => normalized["maxObjectDepth"] = value
+    None => ()
+  }
+  match
+    get_map_field_with_alias(
+      raw_opts, "includeShadowTree", "include_shadow_tree",
+    ) {
+    Some(value) => normalized["includeShadowTree"] = value
+    None => ()
+  }
+  normalized
+}
+
+///|
 /// Get serializationOptions as JSON string.
 fn get_serialization_options_json(params : Json?) -> String {
   match get_param_raw(params, "serializationOptions") {
-    Some(Object(opts)) => make_object(opts).stringify()
+    Some(Object(opts)) =>
+      make_object(canonicalize_serialization_options_map(opts)).stringify()
     _ => "{}"
   }
 }
@@ -14595,15 +15429,16 @@ fn get_serialization_options_json(params : Json?) -> String {
 fn get_locate_nodes_serialization_options_json(params : Json?) -> String {
   match get_param_raw(params, "serializationOptions") {
     Some(Object(opts)) => {
+      let normalized_opts = canonicalize_serialization_options_map(opts)
       let adjusted : Map[String, Json] = {}
-      for key, value in opts {
+      for key, value in normalized_opts {
         adjusted[key] = value
       }
-      match opts.get("maxDomDepth") {
+      match normalized_opts.get("maxDomDepth") {
         Some(Number(n, ..)) => adjusted["maxDomDepth"] = Json::number(n + 2.0)
         _ => adjusted["maxDomDepth"] = Json::number(4.0)
       }
-      match opts.get("includeShadowTree") {
+      match normalized_opts.get("includeShadowTree") {
         Some(String(mode)) => adjusted["includeShadowTree"] = Json::string(mode)
         _ => adjusted["includeShadowTree"] = Json::string("all")
       }
@@ -14790,62 +15625,11 @@ fn BidiProtocol::validate_serialization_options(
   params : Json?,
 ) -> Unit? {
   match get_param_raw(params, "serializationOptions") {
-    Some(Object(opts)) => {
-      // Validate maxDomDepth
-      match opts.get("maxDomDepth") {
-        Some(Number(n, ..)) =>
-          if n < 0.0 || n != n.to_int64().to_double() {
-            self.send_error(
-              request_id, "invalid argument", "maxDomDepth must be a non-negative integer",
-            )
-            return Some(())
-          }
-        Some(Null) => ()
-        Some(_) => {
-          self.send_error(
-            request_id, "invalid argument", "maxDomDepth must be a non-negative integer",
-          )
-          return Some(())
-        }
-        None => ()
-      }
-      // Validate maxObjectDepth
-      match opts.get("maxObjectDepth") {
-        Some(Number(n, ..)) =>
-          if n < 0.0 || n != n.to_int64().to_double() {
-            self.send_error(
-              request_id, "invalid argument", "maxObjectDepth must be a non-negative integer",
-            )
-            return Some(())
-          }
-        Some(Null) => ()
-        Some(_) => {
-          self.send_error(
-            request_id, "invalid argument", "maxObjectDepth must be a non-negative integer",
-          )
-          return Some(())
-        }
-        None => ()
-      }
-      // Validate includeShadowTree
-      match opts.get("includeShadowTree") {
-        Some(String(s)) =>
-          if s != "none" && s != "open" && s != "all" {
-            self.send_error(
-              request_id, "invalid argument", "includeShadowTree must be 'none', 'open', or 'all'",
-            )
-            return Some(())
-          }
-        Some(Null) => ()
-        Some(_) => {
-          self.send_error(
-            request_id, "invalid argument", "includeShadowTree must be a string",
-          )
-          return Some(())
-        }
-        None => ()
-      }
-    }
+    Some(Object(opts)) =>
+      return self.validate_serialization_options_map(
+        request_id,
+        canonicalize_serialization_options_map(opts),
+      )
     None => () // Optional
     Some(_) => {
       self.send_error(
@@ -14853,6 +15637,66 @@ fn BidiProtocol::validate_serialization_options(
       )
       return Some(())
     }
+  }
+  None
+}
+
+///|
+fn BidiProtocol::validate_serialization_options_map(
+  self : BidiProtocol,
+  request_id : Int,
+  opts : Map[String, Json],
+) -> Unit? {
+  match opts.get("maxDomDepth") {
+    Some(Number(n, ..)) =>
+      if n < 0.0 || n != n.to_int64().to_double() {
+        self.send_error(
+          request_id, "invalid argument", "maxDomDepth must be a non-negative integer",
+        )
+        return Some(())
+      }
+    Some(Null) => ()
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "maxDomDepth must be a non-negative integer",
+      )
+      return Some(())
+    }
+    None => ()
+  }
+  match opts.get("maxObjectDepth") {
+    Some(Number(n, ..)) =>
+      if n < 0.0 || n != n.to_int64().to_double() {
+        self.send_error(
+          request_id, "invalid argument", "maxObjectDepth must be a non-negative integer",
+        )
+        return Some(())
+      }
+    Some(Null) => ()
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "maxObjectDepth must be a non-negative integer",
+      )
+      return Some(())
+    }
+    None => ()
+  }
+  match opts.get("includeShadowTree") {
+    Some(String(s)) =>
+      if s != "none" && s != "open" && s != "all" {
+        self.send_error(
+          request_id, "invalid argument", "includeShadowTree must be 'none', 'open', or 'all'",
+        )
+        return Some(())
+      }
+    Some(Null) => ()
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "includeShadowTree must be a string",
+      )
+      return Some(())
+    }
+    None => ()
   }
   None
 }
@@ -15276,62 +16120,15 @@ fn BidiProtocol::validate_arguments_param(
                     }
                     // Validate channel.serializationOptions
                     match channel_val.get("serializationOptions") {
-                      Some(Object(ser_opts)) => {
-                        // Validate maxDomDepth
-                        match ser_opts.get("maxDomDepth") {
-                          Some(Number(n, ..)) =>
-                            if n < 0.0 {
-                              self.send_error(
-                                request_id, "invalid argument", "maxDomDepth must be a non-negative integer",
-                              )
-                              return Some(())
-                            }
-                          Some(Null) => ()
-                          Some(_) => {
-                            self.send_error(
-                              request_id, "invalid argument", "maxDomDepth must be a non-negative integer",
-                            )
-                            return Some(())
-                          }
+                      Some(Object(ser_opts)) =>
+                        match
+                          self.validate_serialization_options_map(
+                            request_id,
+                            canonicalize_serialization_options_map(ser_opts),
+                          ) {
+                          Some(_) => return Some(())
                           None => ()
                         }
-                        // Validate maxObjectDepth
-                        match ser_opts.get("maxObjectDepth") {
-                          Some(Number(n, ..)) =>
-                            if n < 0.0 {
-                              self.send_error(
-                                request_id, "invalid argument", "maxObjectDepth must be a non-negative integer",
-                              )
-                              return Some(())
-                            }
-                          Some(Null) => ()
-                          Some(_) => {
-                            self.send_error(
-                              request_id, "invalid argument", "maxObjectDepth must be a non-negative integer",
-                            )
-                            return Some(())
-                          }
-                          None => ()
-                        }
-                        // Validate includeShadowTree
-                        match ser_opts.get("includeShadowTree") {
-                          Some(String(s)) =>
-                            if s != "none" && s != "open" && s != "all" {
-                              self.send_error(
-                                request_id, "invalid argument", "includeShadowTree must be 'none', 'open', or 'all'",
-                              )
-                              return Some(())
-                            }
-                          Some(Null) => ()
-                          Some(_) => {
-                            self.send_error(
-                              request_id, "invalid argument", "includeShadowTree must be a string",
-                            )
-                            return Some(())
-                          }
-                          None => ()
-                        }
-                      }
                       Some(_) => {
                         self.send_error(
                           request_id, "invalid argument", "serializationOptions must be an object",
@@ -15694,11 +16491,15 @@ fn bidi_value_to_js_literal(value : Json) -> String {
                       }
                       let max_object_depth = match
                         channel_map.get("serializationOptions") {
-                        Some(Object(ser_opts)) =>
-                          match ser_opts.get("maxObjectDepth") {
+                        Some(Object(ser_opts)) => {
+                          let normalized_ser_opts = canonicalize_serialization_options_map(
+                            ser_opts,
+                          )
+                          match normalized_ser_opts.get("maxObjectDepth") {
                             Some(Number(n, ..)) => n.to_string()
                             _ => "-1"
                           }
+                        }
                         _ => "-1"
                       }
                       "((...__args) => {" +

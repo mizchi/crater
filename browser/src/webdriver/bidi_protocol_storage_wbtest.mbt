@@ -96,6 +96,59 @@ test "bidi synthetic location href is used for document.cookie base url" {
 }
 
 ///|
+test "bidi storage getContextCookieInfo reports default context scope" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"storage.getContextCookieInfo\",\"params\":{\"context\":\"session-1\"}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(
+    json.contains(
+      "\"baseUrl\":\"http://localhost:8000/webdriver/tests/support/empty.html\"",
+    ),
+  )
+  assert_true(json.contains("\"origin\":\"http://localhost:8000\""))
+  assert_true(json.contains("\"domain\":\"localhost\""))
+  assert_true(json.contains("\"defaultPath\":\"/webdriver/tests/support\""))
+  assert_true(json.contains("\"userContext\":\"default\""))
+}
+
+///|
+test "bidi storage getContextCookieInfo uses synthetic location href" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.rememberSyntheticLocationHref\",\"params\":{\"context\":\"session-1\",\"href\":\"http://alt.localhost:8000/webdriver/tests/support/dir/page.html\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"storage.getContextCookieInfo\",\"params\":{\"context\":\"session-1\"}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(
+    json.contains(
+      "\"baseUrl\":\"http://alt.localhost:8000/webdriver/tests/support/dir/page.html\"",
+    ),
+  )
+  assert_true(json.contains("\"origin\":\"http://alt.localhost:8000\""))
+  assert_true(json.contains("\"domain\":\"alt.localhost\""))
+  assert_true(json.contains("\"defaultPath\":\"/webdriver/tests/support/dir\""))
+  assert_true(json.contains("\"userContext\":\"default\""))
+}
+
+///|
 test "bidi storage deleteCookies removes cookies created via document.cookie" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(

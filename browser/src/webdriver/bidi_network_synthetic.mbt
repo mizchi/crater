@@ -234,23 +234,28 @@ fn BidiProtocol::handle_network_prepare_navigation_request(
       return
     }
   }
+  match self.prepare_navigation_request_internal(request_id, context_id, url) {
+    Some(result) => self.send_success(request_id, Some(result))
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::prepare_navigation_request_internal(
+  self : BidiProtocol,
+  request_id : Int,
+  context_id : String,
+  url : String,
+) -> Json? {
   let event_name = "network.beforeRequestSent"
   if not(self.is_subscribed_for_context(event_name, context_id)) {
-    self.send_success(
-      request_id,
-      Some(make_object({ "blocked": Json::boolean(false) })),
-    )
-    return
+    return Some(make_object({ "blocked": Json::boolean(false) }))
   }
   let intercepts = self.resolve_matching_network_intercepts_internal(
     context_id, "beforeRequestSent", url,
   )
   if intercepts.length() == 0 {
-    self.send_success(
-      request_id,
-      Some(make_object({ "blocked": Json::boolean(false) })),
-    )
-    return
+    return Some(make_object({ "blocked": Json::boolean(false) }))
   }
 
   let navigation_id = self.next_navigation_id.to_string()
@@ -273,7 +278,7 @@ fn BidiProtocol::handle_network_prepare_navigation_request(
   let event = match
     self.build_synthetic_before_request_sent_event_json(request_id, input) {
     Some(event) => event
-    None => return
+    None => return None
   }
   self.outbox.push(Event({ event_method: event_name, params: event }))
   let blocked_request : Map[String, Json] = {}
@@ -288,15 +293,12 @@ fn BidiProtocol::handle_network_prepare_navigation_request(
   blocked_request["initiator_type"] = Json::null()
   blocked_request["is_navigation"] = Json::boolean(true)
   self.remember_network_blocked_request(input.request_token, blocked_request)
-  self.send_success(
-    request_id,
-    Some(
-      make_object({
-        "blocked": Json::boolean(true),
-        "navigation": Json::string(navigation_id),
-        "url": Json::string(url),
-      }),
-    ),
+  Some(
+    make_object({
+      "blocked": Json::boolean(true),
+      "navigation": Json::string(navigation_id),
+      "url": Json::string(url),
+    }),
   )
 }
 
@@ -509,6 +511,11 @@ fn BidiProtocol::handle_network_continue_blocked_request(
   }
   let mut input = base_input
   let mut synthetic_location_href : String? = None
+  let is_navigation = match blocked_request.get("is_navigation") {
+    Some(True) => true
+    Some(False) => false
+    _ => false
+  }
 
   match map.get("body") {
     Some(raw_body) =>
@@ -607,6 +614,104 @@ fn BidiProtocol::handle_network_continue_blocked_request(
     input.request_headers,
     false,
   )
+  if is_navigation {
+    let navigation_id = match input.navigation {
+      Some(navigation_id) => {
+        input = { ..input, navigation: Some(navigation_id) }
+        navigation_id
+      }
+      None => {
+        let generated_id = self.next_navigation_id.to_string()
+        self.next_navigation_id += 1
+        input = { ..input, navigation: Some(generated_id) }
+        generated_id
+      }
+    }
+    let original_url = match blocked_request.get("url") {
+      Some(String(url)) => url
+      _ => input.url
+    }
+    let resolved_url = self.resolve_effective_navigation_target_url(
+      input.context_id,
+      input.url,
+    )
+    self.input_synthetic_events_by_context.remove(input.context_id)
+    self.context_synthetic_scrolled.remove(input.context_id)
+    self.clear_synthetic_location_href(input.context_id)
+    let _ = self.fail_in_flight_navigation(
+      input.context_id,
+      "aborted",
+      "Navigation interrupted by another navigation",
+    )
+    if not(is_valid_navigation_target_url(resolved_url)) {
+      self.send_error(request_id, "invalid argument", "url is invalid")
+      return
+    }
+    if should_fail_navigation_with_unknown_error(resolved_url) {
+      self.emit_navigation_started_event(
+        input.context_id,
+        resolved_url,
+        navigation_id,
+      )
+      self.send_error(
+        request_id, "unknown error", "Navigation failed: navigation target is unreachable",
+      )
+      return
+    }
+    if self.is_iframe_navigation_blocked(input.context_id, resolved_url) {
+      self.emit_navigation_started_event(
+        input.context_id,
+        resolved_url,
+        navigation_id,
+      )
+      self.emit_navigation_failed_event(
+        input.context_id,
+        resolved_url,
+        navigation_id,
+      )
+      self.send_error(
+        request_id, "unknown error", "Navigation failed: blocked by embedding policy",
+      )
+      return
+    }
+    match self.manager.get_session(input.context_id) {
+      Some(session) =>
+        match session.navigate_to(resolved_url) {
+          Ok(_) => {
+            self.remember_requested_navigation_url(input.context_id, input.url)
+            self.apply_navigation_commit_state(
+              input.context_id,
+              resolved_url,
+              navigation_id,
+            )
+            if synthetic_location_href == None && original_url != input.url {
+              synthetic_location_href = Some(original_url)
+            }
+          }
+          Err(e) => {
+            self.emit_navigation_started_event(
+              input.context_id,
+              resolved_url,
+              navigation_id,
+            )
+            self.send_error(
+              request_id,
+              "unknown error",
+              "Navigation failed: " + e.message,
+            )
+            return
+          }
+        }
+      None => {
+        self.send_error(
+          request_id,
+          "no such frame",
+          "Unknown context: " + input.context_id,
+        )
+        return
+      }
+    }
+  }
   let response_overrides : SyntheticNetworkResponseOverrides = {
     from_cache: resolved_overrides.from_cache,
     headers: resolved_overrides.headers,

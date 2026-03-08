@@ -365,6 +365,30 @@ fn BidiProtocol::current_context_url(
 }
 
 ///|
+fn BidiProtocol::remember_requested_navigation_url(
+  self : BidiProtocol,
+  ctx_id : String,
+  url : String,
+) -> Unit {
+  if url == "" {
+    self.context_requested_navigation_url.remove(ctx_id)
+  } else {
+    self.context_requested_navigation_url[ctx_id] = url
+  }
+}
+
+///|
+fn BidiProtocol::requested_navigation_url(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> String {
+  match self.context_requested_navigation_url.get(ctx_id) {
+    Some(url) if url != "" => url
+    _ => self.current_context_url(ctx_id)
+  }
+}
+
+///|
 fn BidiProtocol::is_child_context_id(
   self : BidiProtocol,
   ctx_id : String,

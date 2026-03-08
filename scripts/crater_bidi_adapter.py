@@ -394,7 +394,6 @@ class CraterBidiSession:
         self._receive_task = None
         self.event_loop = None
         self._trace_enabled = os.environ.get("CRATER_BIDI_TRACE", "0") == "1"
-        self._known_user_contexts: set[str] = {"default"}
 
         # Module proxies (lazily initialized)
         self._browsing_context = None
@@ -622,6 +621,100 @@ class CraterBidiSession:
         scope_info = await self.get_context_scope_info(context_id)
         return bool(scope_info.get("known"))
 
+    async def get_requested_navigation_url(self, context_id: str) -> str | None:
+        if not isinstance(context_id, str) or context_id == "":
+            return None
+        future = await self.send_command(
+            "browsingContext.getRequestedNavigationUrl",
+            {"context": context_id},
+        )
+        result = await future
+        url = result.get("url") if isinstance(result, Mapping) else None
+        return url if isinstance(url, str) else None
+
+    async def prepare_browsing_context_navigate(
+        self,
+        *,
+        context_id: str,
+        url: str,
+    ) -> dict[str, Any]:
+        future = await self.send_command(
+            "browsingContext.prepareNavigate",
+            {"context": context_id, "url": url},
+        )
+        result = await future
+        return dict(result) if isinstance(result, Mapping) else {}
+
+    async def finalize_browsing_context_navigate(
+        self,
+        *,
+        context_id: str,
+        url: str,
+        navigation: str | None = None,
+    ) -> dict[str, Any]:
+        params: dict[str, Any] = {"context": context_id, "url": url}
+        if isinstance(navigation, str):
+            params["navigation"] = navigation
+        future = await self.send_command("browsingContext.finalizeNavigate", params)
+        result = await future
+        return dict(result) if isinstance(result, Mapping) else {}
+
+    async def finalize_browsing_context_reload(
+        self,
+        *,
+        context_id: str,
+        navigation: str | None = None,
+    ) -> dict[str, Any]:
+        params: dict[str, Any] = {"context": context_id}
+        if isinstance(navigation, str):
+            params["navigation"] = navigation
+        future = await self.send_command("browsingContext.finalizeReload", params)
+        result = await future
+        return dict(result) if isinstance(result, Mapping) else {}
+
+    async def get_browsing_context_close_metadata(
+        self,
+        context_id: str,
+    ) -> dict[str, Any]:
+        future = await self.send_command(
+            "browsingContext.getCloseMetadata",
+            {"context": context_id},
+        )
+        result = await future
+        return dict(result) if isinstance(result, Mapping) else {}
+
+    async def get_context_cookie_info(self, context_id: str) -> dict[str, Any]:
+        if not isinstance(context_id, str) or context_id == "":
+            return {
+                "baseUrl": "http://localhost:8000/webdriver/tests/support/empty.html",
+                "origin": "http://localhost:8000",
+                "domain": "localhost",
+                "defaultPath": "/webdriver/tests/support",
+                "userContext": "default",
+            }
+        future = await self.send_command(
+            "storage.getContextCookieInfo",
+            {"context": context_id},
+        )
+        result = await future
+        return dict(result) if isinstance(result, Mapping) else {
+            "baseUrl": "http://localhost:8000/webdriver/tests/support/empty.html",
+            "origin": "http://localhost:8000",
+            "domain": "localhost",
+            "defaultPath": "/webdriver/tests/support",
+            "userContext": "default",
+        }
+
+    async def has_user_context(self, user_context: str) -> bool:
+        if not isinstance(user_context, str) or user_context == "":
+            return False
+        future = await self.send_command(
+            "browser.hasUserContext",
+            {"userContext": user_context},
+        )
+        result = await future
+        return bool(result.get("known")) if isinstance(result, Mapping) else False
+
     async def resolve_synthetic_response_overrides(
         self,
         *,
@@ -643,89 +736,6 @@ class CraterBidiSession:
         response = result.get("responseOverrides", {})
         return dict(response) if isinstance(response, Mapping) else {}
 
-    def remember_known_user_context(self, user_context: str) -> None:
-        if isinstance(user_context, str) and user_context != "":
-            self._known_user_contexts.add(user_context)
-
-    def forget_known_user_context(self, user_context: str) -> None:
-        if isinstance(user_context, str) and user_context != "default":
-            self._known_user_contexts.discard(user_context)
-
-    def is_known_user_context(self, user_context: str) -> bool:
-        return isinstance(user_context, str) and user_context in self._known_user_contexts
-
-    def _inline_cookie_host(self, url: str) -> str:
-        fragment = ""
-        if "#" in url:
-            fragment = url.split("#", maxsplit=1)[1]
-        params = parse_qs(fragment, keep_blank_values=True)
-        subdomain_values = params.get("subdomain", [])
-        domain_values = params.get("domain", [])
-        if len(domain_values) == 0:
-            base_host = "localhost"
-        else:
-            candidate = domain_values[0].strip().lower()
-            if candidate == "" or candidate == "default":
-                base_host = "localhost"
-            elif candidate == "alt":
-                base_host = "alt.localhost"
-            elif "." in candidate or ":" in candidate:
-                base_host = candidate
-            else:
-                base_host = candidate + ".localhost"
-        if len(subdomain_values) == 0:
-            return base_host
-        subdomain = subdomain_values[0].strip().lower()
-        if subdomain == "":
-            return base_host
-        return subdomain + "." + base_host
-
-    def _context_cookie_base_url(self, context_id: str) -> str:
-        candidate = self._browsing_context._last_navigated_url.get(context_id) if self._browsing_context else None
-        if isinstance(candidate, str) and candidate != "":
-            return candidate
-        return "http://localhost:8000/webdriver/tests/support/empty.html"
-
-    def _cookie_origin_from_base_url(self, base_url: str) -> str | None:
-        parsed = _parse_http_url(base_url)
-        if parsed is not None:
-            scheme = parsed.scheme or "http"
-            netloc = parsed.netloc or ""
-            if netloc != "":
-                return f"{scheme}://{netloc}"
-        if isinstance(base_url, str) and base_url.startswith("data:"):
-            fragment = ""
-            if "#" in base_url:
-                fragment = base_url.split("#", maxsplit=1)[1]
-            params = parse_qs(fragment, keep_blank_values=True)
-            protocol_values = params.get("protocol", [])
-            protocol = protocol_values[0] if len(protocol_values) > 0 else "http"
-            if protocol not in {"http", "https"}:
-                protocol = "http"
-            return f"{protocol}://{self._inline_cookie_host(base_url)}:8000"
-        return None
-
-    def _cookie_domain_from_base_url(self, base_url: str) -> str:
-        parsed = _parse_http_url(base_url)
-        if parsed is not None and isinstance(parsed.hostname, str) and parsed.hostname != "":
-            return parsed.hostname.lower()
-        if isinstance(base_url, str) and base_url.startswith("data:"):
-            return self._inline_cookie_host(base_url)
-        return "localhost"
-
-    def _cookie_default_path(self, base_url: str) -> str:
-        parsed = _parse_http_url(base_url)
-        if parsed is None:
-            return "/webdriver/tests/support"
-        path = parsed.path or "/"
-        if path == "/" or not path.startswith("/"):
-            return "/"
-        if path.endswith("/"):
-            trimmed = path[:-1]
-            return trimmed if trimmed != "" else "/"
-        parent = path.rsplit("/", maxsplit=1)[0]
-        return parent if parent != "" else "/"
-
     def _parse_cookie_expiry_timestamp(self, raw_value: str) -> int | None:
         try:
             parsed_expiry = email.utils.parsedate_to_datetime(raw_value)
@@ -734,19 +744,6 @@ class CraterBidiSession:
         if parsed_expiry.tzinfo is None:
             parsed_expiry = parsed_expiry.replace(tzinfo=datetime.timezone.utc)
         return int(parsed_expiry.timestamp())
-
-    def _origins_equivalent(self, lhs: Any, rhs: Any) -> bool:
-        if not isinstance(lhs, str) or not isinstance(rhs, str):
-            return lhs == rhs
-        if lhs == rhs:
-            return True
-        lhs_parsed = _parse_http_url(lhs)
-        rhs_parsed = _parse_http_url(rhs)
-        if lhs_parsed is None or rhs_parsed is None:
-            return False
-        lhs_host = (lhs_parsed.hostname or "").lower()
-        rhs_host = (rhs_parsed.hostname or "").lower()
-        return lhs_host != "" and lhs_host == rhs_host
 
     async def remember_document_cookie(self, context_id: str, cookie_assignment: str) -> None:
         if not isinstance(context_id, str) or not isinstance(cookie_assignment, str):
@@ -882,47 +879,6 @@ class CraterBidiSession:
             return
         future = await self.send_command("network.forgetBlockedRequest", {"request": request_id})
         await future
-
-    async def has_blocked_navigation_request(
-        self,
-        context_id: str,
-        navigation_id: str | None = None,
-    ) -> bool:
-        if not isinstance(context_id, str):
-            return False
-        future = await self.send_command("network.hasBlockedNavigationRequest", {
-            "context": context_id,
-            "navigation": navigation_id,
-        })
-        result = await future
-        return bool(result.get("blocked"))
-
-    async def prepare_navigation_request(
-        self,
-        *,
-        context_id: str,
-        url: str,
-    ) -> dict[str, Any]:
-        future = await self.send_command("network.prepareNavigationRequest", {
-            "context": context_id,
-            "url": url,
-        })
-        result = await future
-        return dict(result) if isinstance(result, Mapping) else {}
-
-    async def emit_navigation_request_sequence(
-        self,
-        *,
-        context_id: str,
-        url: str,
-        navigation: str | None = None,
-    ) -> dict[str, Any]:
-        params: dict[str, Any] = {"context": context_id, "url": url}
-        if isinstance(navigation, str):
-            params["navigation"] = navigation
-        future = await self.send_command("network.emitNavigationRequestSequence", params)
-        result = await future
-        return dict(result) if isinstance(result, Mapping) else {}
 
     async def next_synthetic_request_id(self) -> str:
         future = await self.send_command("network.allocateRequestId", {})
@@ -1191,7 +1147,6 @@ class CraterBidiSession:
 class BrowsingContextModule:
     def __init__(self, session: CraterBidiSession):
         self._session = session
-        self._last_navigated_url: dict[str, str] = {}
 
     async def create(self, type_hint: str = "tab", **kwargs):
         params = {"type": type_hint}
@@ -1205,12 +1160,6 @@ class BrowsingContextModule:
     def _to_camel_case(self, snake_str):
         components = snake_str.split('_')
         return components[0] + ''.join(x.title() for x in components[1:])
-
-    def _convert_serialization_options(self, opts):
-        result = {}
-        for key, value in opts.items():
-            result[self._to_camel_case(key)] = value
-        return result
 
     def _normalize_bidi_value(self, value):
         if hasattr(value, "to_json"):
@@ -1228,12 +1177,7 @@ class BrowsingContextModule:
         return value
 
     async def navigate(self, context: str, url: str, wait: str = "none"):
-        future = await self._session.send_command(
-            "script.clearSyntheticLocationHref",
-            {"context": context},
-        )
-        await future
-        prepare_result = await self._session.prepare_navigation_request(
+        prepare_result = await self._session.prepare_browsing_context_navigate(
             context_id=context,
             url=url,
         )
@@ -1249,18 +1193,17 @@ class BrowsingContextModule:
             "browsingContext.navigate", {"context": context, "url": url, "wait": wait}
         )
         result = await future
-        self._last_navigated_url[context] = url
         navigation_id = None
         if isinstance(result, Mapping):
             candidate_navigation_id = result.get("navigation")
             if isinstance(candidate_navigation_id, str):
                 navigation_id = candidate_navigation_id
-        await self._session.emit_navigation_request_sequence(
+        finalize_result = await self._session.finalize_browsing_context_navigate(
             context_id=context,
             url=url,
             navigation=navigation_id,
         )
-        if await self._session.has_blocked_navigation_request(context, navigation_id):
+        if finalize_result.get("blocked"):
             await asyncio.Future()
         return result
 
@@ -1283,14 +1226,12 @@ class BrowsingContextModule:
         wait_for_destroyed = False
         if self._session.has_event_listener("browsingContext.contextDestroyed"):
             try:
-                tree = await self.get_tree(root=context, max_depth=1)
+                close_metadata = await self._session.get_browsing_context_close_metadata(
+                    context,
+                )
             except Exception:
-                tree = []
-            if isinstance(tree, list) and len(tree) > 0:
-                root_entry = tree[0]
-                if isinstance(root_entry, Mapping):
-                    children = root_entry.get("children")
-                    wait_for_destroyed = isinstance(children, list) and len(children) > 0
+                close_metadata = {}
+            wait_for_destroyed = bool(close_metadata.get("waitForDestroyed"))
         future = await self._session.send_command("browsingContext.close", params)
         result = await future
         if wait_for_destroyed:
@@ -1325,18 +1266,17 @@ class BrowsingContextModule:
             "browsingContext.reload", {"context": context, **kwargs}
         )
         result = await future
-        last_url = self._last_navigated_url.get(context)
         navigation_id = None
         if isinstance(result, Mapping):
             candidate_navigation_id = result.get("navigation")
             if isinstance(candidate_navigation_id, str):
                 navigation_id = candidate_navigation_id
-        if isinstance(last_url, str):
-            await self._session.emit_navigation_request_sequence(
-                context_id=context,
-                url=last_url,
-                navigation=navigation_id,
-            )
+        finalize_result = await self._session.finalize_browsing_context_reload(
+            context_id=context,
+            navigation=navigation_id,
+        )
+        if finalize_result.get("blocked"):
+            await asyncio.Future()
         return result
 
     async def print(self, context: str, **kwargs):
@@ -1390,10 +1330,7 @@ class BrowsingContextModule:
                     for key, value in serialization_options.__dict__.items()
                     if not key.startswith("_")
                 }
-            if isinstance(normalized, dict):
-                params["serializationOptions"] = self._convert_serialization_options(normalized)
-            else:
-                params["serializationOptions"] = normalized
+            params["serializationOptions"] = normalized
         if start_nodes is not _UNSET:
             params["startNodes"] = start_nodes
         future = await self._session.send_command("browsingContext.locateNodes", params)
@@ -1479,11 +1416,7 @@ class ScriptModule:
             if value is None:
                 continue
             camel_key = self._to_camel_case(key)
-            # Handle serializationOptions specially
-            if camel_key == "serializationOptions" and isinstance(value, dict):
-                params[camel_key] = self._convert_serialization_options(value)
-            else:
-                params[camel_key] = value
+            params[camel_key] = value
         future = await self._session.send_command("script.evaluate", params)
         result = await future
         if raw_result:
@@ -1497,14 +1430,6 @@ class ScriptModule:
         components = snake_str.split('_')
         return components[0] + ''.join(x.title() for x in components[1:])
 
-    def _convert_serialization_options(self, opts):
-        """Convert serializationOptions dict keys to camelCase"""
-        result = {}
-        for key, value in opts.items():
-            camel_key = self._to_camel_case(key)
-            result[camel_key] = value
-        return result
-
     async def call_function(self, function_declaration, target, arguments=None, await_promise=False, **kwargs):
         raw_result = kwargs.pop("raw_result", False)
         params = {
@@ -1513,23 +1438,13 @@ class ScriptModule:
             "awaitPromise": await_promise,
         }
         if arguments is not None:
-            # Keep non-list values untouched so server-side invalid-argument
-            # validation can run (WPT expects protocol errors, not adapter errors).
-            if isinstance(arguments, (list, tuple)):
-                params["arguments"] = await self._normalize_call_function_arguments(
-                    arguments, target
-                )
-            else:
-                params["arguments"] = arguments
+            params["arguments"] = arguments
         # Convert snake_case kwargs to camelCase
         for key, value in kwargs.items():
             if value is None:
                 continue
             camel_key = self._to_camel_case(key)
-            if camel_key == "serializationOptions" and isinstance(value, dict):
-                params[camel_key] = self._convert_serialization_options(value)
-            else:
-                params[camel_key] = value
+            params[camel_key] = value
         future = await self._session.send_command("script.callFunction", params)
         result = await future
         if raw_result:
@@ -1537,25 +1452,6 @@ class ScriptModule:
         if isinstance(result, dict) and "exceptionDetails" in result:
             raise ScriptEvaluateResultException(result)
         return result.get("result", result)
-
-    async def _normalize_call_function_arguments(self, arguments, target):
-        normalized = []
-        fallback_node = None
-        for arg in arguments:
-            if arg is not None:
-                normalized.append(arg)
-                continue
-            if fallback_node is None:
-                try:
-                    fallback_node = await self.evaluate(
-                        expression="document",
-                        target=target,
-                        await_promise=False,
-                    )
-                except Exception:
-                    fallback_node = {"type": "undefined"}
-            normalized.append(fallback_node)
-        return normalized
 
     async def disown(self, handles, target):
         future = await self._session.send_command(
@@ -1622,436 +1518,6 @@ class NetworkModule:
         if request == "":
             raise bidi_error.NoSuchRequestException("Unknown request")
         return request
-
-    def _validate_http_token(self, value: Any, field_name: str) -> str:
-        if not isinstance(value, str):
-            raise bidi_error.InvalidArgumentException(f"{field_name} must be a string")
-        if not _HTTP_TOKEN_RE.match(value):
-            raise bidi_error.InvalidArgumentException(f"{field_name} is invalid")
-        return value
-
-    def _validate_header_value_text(self, value: Any) -> str:
-        if not isinstance(value, str):
-            raise bidi_error.InvalidArgumentException("Header value must be a string")
-        if value != value.strip(" \t"):
-            raise bidi_error.InvalidArgumentException("Header value is invalid")
-        if "\n" in value or "\r" in value or "\x00" in value:
-            raise bidi_error.InvalidArgumentException("Header value is invalid")
-        return value
-
-    def _validate_bytes_value(self, raw_value: Any, field_name: str):
-        value = self._normalize_network_value(raw_value)
-        if not isinstance(value, Mapping):
-            raise bidi_error.InvalidArgumentException(f"{field_name} must be an object")
-        value_type = value.get("type")
-        if not isinstance(value_type, str):
-            raise bidi_error.InvalidArgumentException(f"{field_name}.type must be a string")
-        if value_type not in {"string", "base64"}:
-            raise bidi_error.InvalidArgumentException(f"{field_name}.type is invalid")
-        payload = value.get("value")
-        if not isinstance(payload, str):
-            raise bidi_error.InvalidArgumentException(f"{field_name}.value must be a string")
-        return {"type": value_type, "value": payload}
-
-    def _normalize_header_entries(self, headers: Any):
-        normalized = self._normalize_network_value(headers)
-        if not isinstance(normalized, list):
-            raise bidi_error.InvalidArgumentException("headers must be a list")
-        entries: list[dict[str, Any]] = []
-        merged: dict[str, str] = {}
-        for raw_header in normalized:
-            if not isinstance(raw_header, Mapping):
-                raise bidi_error.InvalidArgumentException("header entry must be an object")
-            name = self._validate_http_token(raw_header.get("name"), "header name")
-            raw_value = self._validate_bytes_value(raw_header.get("value"), "header value")
-            if raw_value["type"] != "string":
-                raise bidi_error.InvalidArgumentException("header value.type is invalid")
-            text_value = self._validate_header_value_text(raw_value["value"])
-            entry = {"name": name, "value": {"type": "string", "value": text_value}}
-            entries.append(entry)
-            lowered = name.lower()
-            if lowered in merged:
-                merged[lowered] = f"{merged[lowered]}, {text_value}"
-            else:
-                merged[lowered] = text_value
-        return entries, merged
-
-    def _normalize_cookie_entries(self, cookies: Any):
-        normalized = self._normalize_network_value(cookies)
-        if not isinstance(normalized, list):
-            raise bidi_error.InvalidArgumentException("cookies must be a list")
-        entries: list[dict[str, Any]] = []
-        for raw_cookie in normalized:
-            if not isinstance(raw_cookie, Mapping):
-                raise bidi_error.InvalidArgumentException("cookie entry must be an object")
-            name = self._validate_http_token(raw_cookie.get("name"), "cookie name")
-            raw_value = self._validate_bytes_value(raw_cookie.get("value"), "cookie value")
-            if raw_value["type"] != "string":
-                raise bidi_error.InvalidArgumentException("cookie value.type is invalid")
-            entries.append({
-                "name": name,
-                "value": {
-                    "type": "string",
-                    "value": raw_value["value"],
-                },
-            })
-        return entries
-
-    def _normalize_continue_response_credentials(self, credentials: Any):
-        normalized = self._normalize_network_value(credentials)
-        if not isinstance(normalized, Mapping):
-            raise bidi_error.InvalidArgumentException("credentials must be an object")
-        credential_type = normalized.get("type")
-        if not isinstance(credential_type, str):
-            raise bidi_error.InvalidArgumentException("credentials.type must be a string")
-        if credential_type != "password":
-            raise bidi_error.InvalidArgumentException("credentials.type is invalid")
-        username = normalized.get("username")
-        password = normalized.get("password")
-        if not isinstance(username, str):
-            raise bidi_error.InvalidArgumentException("credentials.username must be a string")
-        if not isinstance(password, str):
-            raise bidi_error.InvalidArgumentException("credentials.password must be a string")
-        return {
-            "type": credential_type,
-            "username": username,
-            "password": password,
-        }
-
-    def _parse_expected_auth_credentials(self, blocked: Mapping[str, Any]):
-        raw_url = blocked.get("url")
-        if not isinstance(raw_url, str):
-            return None
-        parsed = _parse_http_url(raw_url)
-        if parsed is None:
-            return None
-        params = parse_qs(parsed.query, keep_blank_values=True)
-        usernames = params.get("username", [])
-        passwords = params.get("password", [])
-        if len(usernames) == 0 or len(passwords) == 0:
-            return None
-        username = usernames[0]
-        password = passwords[0]
-        if not isinstance(username, str) or not isinstance(password, str):
-            return None
-        return username, password
-
-    def _parse_expected_auth_realm(self, blocked: Mapping[str, Any]):
-        raw_url = blocked.get("url")
-        if not isinstance(raw_url, str):
-            return None
-        parsed = _parse_http_url(raw_url)
-        if parsed is None:
-            return None
-        params = parse_qs(parsed.query, keep_blank_values=True)
-        realms = params.get("realm", [])
-        if len(realms) == 0:
-            return None
-        realm = realms[0]
-        if not isinstance(realm, str) or realm == "":
-            return None
-        return realm
-
-    def _context_cookie_domain(self, base_url: str):
-        parsed = _parse_http_url(base_url)
-        if parsed is None:
-            return None
-        host = parsed.hostname
-        if isinstance(host, str) and host != "":
-            return host.lower()
-        return None
-
-    def _normalize_cookie_domain(self, raw_domain: str) -> str:
-        domain = raw_domain.strip().lower()
-        if domain.startswith("."):
-            domain = domain[1:]
-        return domain
-
-    def _build_cookie_record(
-        self,
-        *,
-        name: str,
-        value: str,
-        domain: str | None,
-        domain_explicit: bool,
-        path: str,
-        http_only: bool,
-        secure: bool,
-        same_site: str,
-        expiry: int | None,
-    ) -> dict[str, Any]:
-        record: dict[str, Any] = {
-            "name": name,
-            "value": {"type": "string", "value": value},
-            "path": path,
-            "httpOnly": http_only,
-            "secure": secure,
-            "sameSite": same_site,
-            "size": len(name) + len(value),
-        }
-        if isinstance(domain, str) and domain != "":
-            record["domain"] = domain
-            record["domainExplicit"] = domain_explicit
-        if isinstance(expiry, int):
-            record["expiry"] = expiry
-        return record
-
-    def _format_set_cookie_from_entry(self, entry: Mapping[str, Any]) -> str:
-        name = str(entry.get("name", ""))
-        value = str(entry.get("value", ""))
-        parts = [f"{name}={value}"]
-
-        if "path" in entry and isinstance(entry.get("path"), str):
-            parts.append(f"Path={entry['path']}")
-        if "domain" in entry and isinstance(entry.get("domain"), str):
-            parts.append(f"Domain={entry['domain']}")
-        if "expiry" in entry and isinstance(entry.get("expiry"), str):
-            parts.append(f"Expires={entry['expiry']}")
-        if "maxAge" in entry and isinstance(entry.get("maxAge"), int):
-            parts.append(f"Max-Age={entry['maxAge']}")
-        if entry.get("httpOnly") is True:
-            parts.append("HttpOnly")
-        if entry.get("secure") is True:
-            parts.append("Secure")
-        if "sameSite" in entry and isinstance(entry.get("sameSite"), str):
-            same_site = entry["sameSite"].lower()
-            mapped_same_site = {
-                "none": "None",
-                "lax": "Lax",
-                "strict": "Strict",
-            }.get(same_site, entry["sameSite"])
-            parts.append(f"SameSite={mapped_same_site}")
-        return ";".join(parts)
-
-    def _parse_cookie_expiry_timestamp(self, raw_value: str) -> int | None:
-        try:
-            parsed_expiry = email.utils.parsedate_to_datetime(raw_value)
-        except Exception:
-            return None
-        if parsed_expiry.tzinfo is None:
-            parsed_expiry = parsed_expiry.replace(tzinfo=datetime.timezone.utc)
-        return int(parsed_expiry.timestamp())
-
-    def _parse_set_cookie_header_value(self, header_value: str, *, base_url: str):
-        if not isinstance(header_value, str):
-            return None
-        parts = [part.strip() for part in header_value.split(";")]
-        if len(parts) == 0:
-            return None
-        first = parts[0]
-        if "=" not in first:
-            return None
-        name, raw_value = first.split("=", maxsplit=1)
-        name = name.strip()
-        value = raw_value.strip()
-        if name == "":
-            return None
-        if not _HTTP_TOKEN_RE.match(name):
-            return None
-
-        cookie_domain = self._context_cookie_domain(base_url)
-        domain_explicit = False
-        path = "/"
-        http_only = False
-        secure = False
-        same_site = "none"
-        expiry: int | None = None
-
-        for attr in parts[1:]:
-            if attr == "":
-                continue
-            if "=" in attr:
-                raw_attr_name, raw_attr_value = attr.split("=", maxsplit=1)
-                attr_name = raw_attr_name.strip().lower()
-                attr_value = raw_attr_value.strip()
-            else:
-                attr_name = attr.strip().lower()
-                attr_value = ""
-
-            if attr_name == "domain":
-                normalized_domain = self._normalize_cookie_domain(attr_value)
-                if normalized_domain != "":
-                    cookie_domain = normalized_domain
-                    domain_explicit = True
-            elif attr_name == "path":
-                if attr_value != "":
-                    path = attr_value
-            elif attr_name == "samesite":
-                lowered = attr_value.lower()
-                if lowered in {"none", "lax", "strict"}:
-                    same_site = lowered
-            elif attr_name == "max-age":
-                try:
-                    max_age = int(attr_value)
-                except Exception:
-                    continue
-                expiry = int(time.time()) + max_age
-            elif attr_name == "expires":
-                parsed_expiry = self._parse_cookie_expiry_timestamp(attr_value)
-                if isinstance(parsed_expiry, int):
-                    expiry = parsed_expiry
-            elif attr_name == "httponly":
-                http_only = True
-            elif attr_name == "secure":
-                secure = True
-            elif attr_name == "" and attr_value == "":
-                continue
-            elif attr_name == "httponly" and attr_value == "":
-                http_only = True
-            elif attr_name == "secure" and attr_value == "":
-                secure = True
-
-            if attr_name == "httponly" and "=" not in attr:
-                http_only = True
-            if attr_name == "secure" and "=" not in attr:
-                secure = True
-
-        return self._build_cookie_record(
-            name=name,
-            value=value,
-            domain=cookie_domain,
-            domain_explicit=domain_explicit,
-            path=path,
-            http_only=http_only,
-            secure=secure,
-            same_site=same_site,
-            expiry=expiry,
-        )
-
-    def _extract_set_cookie_records_from_headers(
-        self,
-        headers: list[dict[str, Any]],
-        *,
-        base_url: str,
-    ) -> list[dict[str, Any]]:
-        records: list[dict[str, Any]] = []
-        for entry in headers:
-            if not isinstance(entry, Mapping):
-                continue
-            name = entry.get("name")
-            if not isinstance(name, str) or name.lower() != "set-cookie":
-                continue
-            value = entry.get("value")
-            if not isinstance(value, Mapping):
-                continue
-            if value.get("type") != "string":
-                continue
-            text_value = value.get("value")
-            if not isinstance(text_value, str):
-                continue
-            parsed = self._parse_set_cookie_header_value(text_value, base_url=base_url)
-            if parsed is not None:
-                records.append(parsed)
-        return records
-
-    def _normalize_continue_response_cookie_entries(
-        self,
-        cookies: Any,
-        *,
-        base_url: str,
-    ):
-        normalized = self._normalize_network_value(cookies)
-        if not isinstance(normalized, list):
-            raise bidi_error.InvalidArgumentException("cookies must be a list")
-
-        header_entries: list[dict[str, Any]] = []
-        cookie_records: list[dict[str, Any]] = []
-
-        for raw_cookie in normalized:
-            if not isinstance(raw_cookie, Mapping):
-                raise bidi_error.InvalidArgumentException("cookie entry must be an object")
-
-            name = self._validate_http_token(raw_cookie.get("name"), "cookie name")
-            raw_value = self._validate_bytes_value(raw_cookie.get("value"), "cookie value")
-            if raw_value["type"] != "string":
-                raise bidi_error.InvalidArgumentException("cookie value.type is invalid")
-            cookie_value = raw_value["value"]
-
-            cookie_domain = self._context_cookie_domain(base_url)
-            domain_explicit = False
-            path = "/"
-            http_only = False
-            secure = False
-            same_site = "none"
-            expiry: int | None = None
-
-            entry_for_header: dict[str, Any] = {"name": name, "value": cookie_value}
-
-            if "domain" in raw_cookie:
-                domain_value = raw_cookie.get("domain")
-                if not isinstance(domain_value, str):
-                    raise bidi_error.InvalidArgumentException("cookie domain must be a string")
-                normalized_domain = self._normalize_cookie_domain(domain_value)
-                cookie_domain = normalized_domain
-                domain_explicit = normalized_domain != ""
-                entry_for_header["domain"] = domain_value
-
-            if "expiry" in raw_cookie:
-                expiry_value = raw_cookie.get("expiry")
-                if not isinstance(expiry_value, str):
-                    raise bidi_error.InvalidArgumentException("cookie expiry must be a string")
-                entry_for_header["expiry"] = expiry_value
-                expiry = self._parse_cookie_expiry_timestamp(expiry_value)
-
-            if "path" in raw_cookie:
-                path_value = raw_cookie.get("path")
-                if not isinstance(path_value, str):
-                    raise bidi_error.InvalidArgumentException("cookie path must be a string")
-                path = path_value
-                entry_for_header["path"] = path_value
-
-            if "sameSite" in raw_cookie:
-                same_site_value = raw_cookie.get("sameSite")
-                if not isinstance(same_site_value, str):
-                    raise bidi_error.InvalidArgumentException("cookie sameSite must be a string")
-                lowered_same_site = same_site_value.lower()
-                if lowered_same_site not in {"none", "lax", "strict"}:
-                    raise bidi_error.InvalidArgumentException("cookie sameSite is invalid")
-                same_site = lowered_same_site
-                entry_for_header["sameSite"] = lowered_same_site
-
-            if "httpOnly" in raw_cookie:
-                http_only_value = raw_cookie.get("httpOnly")
-                if not isinstance(http_only_value, bool):
-                    raise bidi_error.InvalidArgumentException("cookie httpOnly must be a boolean")
-                http_only = http_only_value
-                entry_for_header["httpOnly"] = http_only_value
-
-            if "secure" in raw_cookie:
-                secure_value = raw_cookie.get("secure")
-                if not isinstance(secure_value, bool):
-                    raise bidi_error.InvalidArgumentException("cookie secure must be a boolean")
-                secure = secure_value
-                entry_for_header["secure"] = secure_value
-
-            if "maxAge" in raw_cookie:
-                max_age_value = raw_cookie.get("maxAge")
-                if not isinstance(max_age_value, int) or isinstance(max_age_value, bool):
-                    raise bidi_error.InvalidArgumentException("cookie maxAge must be an integer")
-                entry_for_header["maxAge"] = max_age_value
-                expiry = int(time.time()) + max_age_value
-
-            cookie_record = self._build_cookie_record(
-                name=name,
-                value=cookie_value,
-                domain=cookie_domain,
-                domain_explicit=domain_explicit,
-                path=path,
-                http_only=http_only,
-                secure=secure,
-                same_site=same_site,
-                expiry=expiry,
-            )
-            cookie_records.append(cookie_record)
-            header_entries.append({
-                "name": "Set-Cookie",
-                "value": {
-                    "type": "string",
-                    "value": self._format_set_cookie_from_entry(entry_for_header),
-                },
-            })
-
-        return header_entries, cookie_records
 
     def _bytes_value_to_text(self, value: Mapping[str, Any]) -> str:
         payload = value.get("value")
@@ -2191,66 +1657,6 @@ class NetworkModule:
             is_navigation=bool(blocked.get("is_navigation")),
         )
 
-    async def _emit_synthetic_auth_required_event(
-        self,
-        *,
-        request_id: str,
-        blocked: Mapping[str, Any],
-    ) -> None:
-        context_id = blocked.get("context_id")
-        if not isinstance(context_id, str):
-            return
-        event_name = "network.authRequired"
-        if not await self._session.is_event_subscribed_for_context(event_name, context_id):
-            return
-        request_headers = blocked.get("request_headers")
-        if not isinstance(request_headers, Mapping):
-            request_headers = {}
-        url = blocked.get("url")
-        if not isinstance(url, str):
-            url = ""
-        method = blocked.get("method")
-        if not isinstance(method, str):
-            method = "GET"
-        redirect_count = blocked.get("redirect_count")
-        if not isinstance(redirect_count, int):
-            redirect_count = 0
-        navigation = blocked.get("navigation")
-        if not isinstance(navigation, str):
-            navigation = None
-        destination = blocked.get("destination")
-        if not isinstance(destination, str):
-            destination = ""
-        initiator_type = blocked.get("initiator_type")
-        if not isinstance(initiator_type, str):
-            initiator_type = "fetch"
-        realm = self._parse_expected_auth_realm(blocked) or "testrealm"
-
-        auth_required_event = await self._session.build_response_event(
-            context_id=context_id,
-            url=url,
-            method=method,
-            request_headers=request_headers,
-            request_value=blocked.get("request_value")
-            if isinstance(blocked.get("request_value"), Mapping)
-            else None,
-            request_id=request_id,
-            intercepts=[],
-            redirect_count=redirect_count,
-            navigation=navigation,
-            destination=destination,
-            initiator_type=initiator_type,
-            response_overrides={
-                "status": 401,
-                "statusText": "Unauthorized",
-                "authChallenges": [{
-                    "scheme": "Basic",
-                    "realm": realm,
-                }],
-            },
-        )
-        await self._session.emit_synthetic_event(event_name, auth_required_event)
-
     async def _emit_synthetic_load_event(
         self,
         *,
@@ -2310,49 +1716,6 @@ class NetworkModule:
         if isinstance(load_event, Mapping):
             await self._session.emit_synthetic_event("browsingContext.load", load_event)
 
-    def _validate_continue_url(self, value: Any) -> str:
-        if not isinstance(value, str):
-            raise bidi_error.InvalidArgumentException("url must be a string")
-        if value.startswith("data:"):
-            return value
-        if _parse_http_url(value) is None:
-            raise bidi_error.InvalidArgumentException("url is invalid")
-        return value
-
-    async def _replace_document_with_data_url(self, context_id: str, data_url: str) -> None:
-        if not data_url.startswith("data:"):
-            return
-        payload = data_url[len("data:"):]
-        parts = payload.split(",", maxsplit=1)
-        if len(parts) != 2:
-            return
-        meta, encoded = parts
-        mime = meta.split(";", maxsplit=1)[0].strip().lower()
-        if mime not in {"text/html", ""}:
-            return
-        if "#" in encoded:
-            encoded = encoded.split("#", maxsplit=1)[0]
-        is_base64 = ";base64" in meta.lower()
-        try:
-            if is_base64:
-                html = base64.b64decode(encoded.encode("ascii"), validate=False).decode(
-                    "utf-8",
-                    errors="ignore",
-                )
-            else:
-                html = unquote(encoded)
-        except Exception:
-            return
-        await self._session.script.evaluate(
-            expression=f"""(() => {{
-                if (document.body) {{
-                    document.body.innerHTML = {json.dumps(html)};
-                }}
-            }})()""",
-            target=ContextTarget(context_id),
-            await_promise=False,
-        )
-
     async def add_intercept(self, phases=_UNSET, url_patterns=_UNSET, **kwargs):
         params = {}
         if phases is not _UNSET:
@@ -2372,8 +1735,6 @@ class NetworkModule:
         return result
 
     async def remove_intercept(self, intercept: str):
-        if not isinstance(intercept, str):
-            raise bidi_error.InvalidArgumentException("intercept must be a string")
         future = await self._session.send_command(
             "network.removeIntercept",
             {"intercept": intercept},
@@ -2393,32 +1754,7 @@ class NetworkModule:
         if not isinstance(navigation_id, str):
             navigation_id = None
 
-        if bool(blocked.get("is_navigation")):
-            context_id = blocked.get("context_id")
-            if not isinstance(context_id, str):
-                raise bidi_error.NoSuchRequestException("Unknown request")
-            original_url = blocked.get("url")
-            target_url = params.get("url")
-            if not isinstance(target_url, str) or target_url == "":
-                target_url = original_url
-            navigate_url = target_url if isinstance(target_url, str) and target_url != "" else original_url
-            if isinstance(navigate_url, str) and navigate_url != "":
-                future = await self._session.send_command(
-                    "browsingContext.navigate",
-                    {"context": context_id, "url": navigate_url, "wait": "complete"},
-                )
-                navigate_result = await future
-                if isinstance(navigate_result, Mapping):
-                    candidate = navigate_result.get("navigation")
-                    if isinstance(candidate, str):
-                        navigation_id = candidate
-            if (
-                isinstance(original_url, str)
-                and isinstance(target_url, str)
-                and target_url != original_url
-            ):
-                params["syntheticLocationHref"] = original_url
-        if isinstance(navigation_id, str):
+        if isinstance(navigation_id, str) and "navigation" not in params:
             params["navigation"] = navigation_id
         future = await self._session.send_command("network.continueBlockedRequest", params)
         result = await future
@@ -2454,8 +1790,10 @@ class NetworkModule:
     async def continue_with_auth(self, request: str, action: str, credentials=None):
         request_id = self._validate_request_id(request)
         if action == "provideCredentials":
-            normalized = self._normalize_continue_response_credentials(credentials)
-            return await self.continue_response(request=request, credentials=normalized)
+            return await self.continue_response(
+                request=request,
+                credentials=self._normalize_network_value(credentials),
+            )
         result = await self._session.continue_auth_request(request_id, action=action)
         response_completed_event = result.get("event")
         if isinstance(response_completed_event, Mapping):
@@ -2563,27 +1901,11 @@ class NetworkModule:
         return await future
 
     async def set_cache_behavior(self, cache_behavior, contexts=_UNSET):
-        if not isinstance(cache_behavior, str):
-            raise bidi_error.InvalidArgumentException("cache_behavior must be a string")
-        if cache_behavior not in {"default", "bypass"}:
-            raise bidi_error.InvalidArgumentException("cache_behavior is invalid")
-
-        normalized_contexts: list[str] | None = None
-        params: dict[str, Any] = {"cacheBehavior": cache_behavior}
+        params: dict[str, Any] = {
+            "cacheBehavior": self._normalize_network_value(cache_behavior),
+        }
         if contexts is not _UNSET:
-            normalized = self._normalize_network_value(contexts)
-            if not isinstance(normalized, list):
-                raise bidi_error.InvalidArgumentException("contexts must be a list")
-            if len(normalized) == 0:
-                raise bidi_error.InvalidArgumentException("contexts must not be empty")
-            normalized_contexts = []
-            for context_id in normalized:
-                if not isinstance(context_id, str):
-                    raise bidi_error.InvalidArgumentException("context id must be a string")
-                if not await self._session.is_known_context(context_id):
-                    raise bidi_error.NoSuchFrameException("No such frame")
-                normalized_contexts.append(context_id)
-            params["contexts"] = normalized_contexts
+            params["contexts"] = self._normalize_network_value(contexts)
 
         result: Any = {}
         try:
@@ -2599,20 +1921,6 @@ class NetworkModule:
         return await future
 
     async def get_data(self, request, data_type, collector=None, disown=False):
-        if not isinstance(request, str):
-            raise bidi_error.InvalidArgumentException("request must be a string")
-        if not isinstance(data_type, str):
-            raise bidi_error.InvalidArgumentException("dataType must be a string")
-        if data_type not in {"request", "response"}:
-            raise bidi_error.InvalidArgumentException("dataType is invalid")
-        if collector is not None and not isinstance(collector, str):
-            raise bidi_error.InvalidArgumentException("collector must be a string")
-        if not isinstance(disown, bool):
-            raise bidi_error.InvalidArgumentException("disown must be a boolean")
-        if disown and collector is None:
-            raise bidi_error.InvalidArgumentException(
-                "disown=true requires collector"
-            )
         params = {"request": request, "dataType": data_type, "disown": disown}
         if collector is not None:
             params["collector"] = collector
@@ -2620,14 +1928,6 @@ class NetworkModule:
         return await future
 
     async def disown_data(self, request, data_type, collector):
-        if not isinstance(request, str):
-            raise bidi_error.InvalidArgumentException("request must be a string")
-        if not isinstance(data_type, str):
-            raise bidi_error.InvalidArgumentException("dataType must be a string")
-        if data_type not in {"request", "response"}:
-            raise bidi_error.InvalidArgumentException("dataType is invalid")
-        if not isinstance(collector, str):
-            raise bidi_error.InvalidArgumentException("collector must be a string")
         future = await self._session.send_command("network.disownData", {
             "request": request,
             "dataType": data_type,
@@ -2794,10 +2094,12 @@ class StorageModule:
                 raise bidi_error.InvalidArgumentException("partition.context must be a string")
             if not await self._session.is_known_context(context_id):
                 raise bidi_error.NoSuchFrameException("No such frame")
-            partition_key = {"userContext": await self._session.resolve_user_context(context_id)}
-            source_origin = self._session._cookie_origin_from_base_url(
-                self._session._context_cookie_base_url(context_id)
-            )
+            cookie_info = await self._session.get_context_cookie_info(context_id)
+            user_context = cookie_info.get("userContext")
+            source_origin = cookie_info.get("origin")
+            partition_key = {
+                "userContext": user_context if isinstance(user_context, str) else "default"
+            }
             if isinstance(source_origin, str) and source_origin != "":
                 partition_key["sourceOrigin"] = source_origin
             return {
@@ -2818,7 +2120,7 @@ class StorageModule:
             if user_context is not None:
                 if not isinstance(user_context, str):
                     raise bidi_error.InvalidArgumentException("partition.userContext must be a string")
-                if not self._session.is_known_user_context(user_context):
+                if not await self._session.has_user_context(user_context):
                     raise bidi_error.NoSuchUserContextException("No such user context")
                 partition_key["userContext"] = user_context
             return {
@@ -2829,44 +2131,6 @@ class StorageModule:
                 "partitionKey": partition_key,
             }
         raise bidi_error.InvalidArgumentException("partition.type is invalid")
-
-    def _matches_partition(self, cookie: Mapping[str, Any], partition_info: Mapping[str, Any]) -> bool:
-        kind = partition_info.get("kind")
-        if kind == "default":
-            return True
-        if kind == "context":
-            return cookie.get("_contextId") == partition_info.get("context")
-        expected_user_context = partition_info.get("userContext")
-        if expected_user_context is not None and cookie.get("_userContext") != expected_user_context:
-            return False
-        expected_source_origin = partition_info.get("sourceOrigin")
-        if expected_source_origin is not None:
-            candidate_source_origin = cookie.get("_sourceOrigin")
-            context_id = cookie.get("_contextId")
-            if isinstance(context_id, str):
-                current_context_origin = self._session._cookie_origin_from_base_url(
-                    self._session._context_cookie_base_url(context_id)
-                )
-                if isinstance(current_context_origin, str):
-                    candidate_source_origin = current_context_origin
-            if not self._session._origins_equivalent(candidate_source_origin, expected_source_origin):
-                return False
-        return True
-
-    def _matches_filter(self, cookie: Mapping[str, Any], filter_value: Mapping[str, Any]) -> bool:
-        for key, expected in filter_value.items():
-            if key == "value":
-                actual_value = cookie.get("value")
-                if not isinstance(actual_value, Mapping):
-                    return False
-                actual_text = self._cookie_value_text(actual_value, "cookie.value")
-                expected_text = self._cookie_value_text(expected, "filter.value")
-                if actual_text != expected_text:
-                    return False
-                continue
-            if cookie.get(key) != expected:
-                return False
-        return True
 
     async def get_cookies(self, filter=None, partition=None):
         params: dict[str, Any] = {}
@@ -2910,104 +2174,19 @@ class InputModule:
         return await future
 
     async def set_files(self, context: str, element, files):
-        if not isinstance(context, str):
-            raise bidi_error.InvalidArgumentException("context must be a string")
-        if not await self._session.is_known_context(context):
-            raise bidi_error.NoSuchFrameException("No such frame")
-
-        locator = self._extract_element_locator(element)
         normalized_files = self._normalize_files(files)
         display_names = [self._display_file_name(path) for path in normalized_files]
-        target = ContextTarget(context)
-
-        shared_id = locator.get("sharedId")
-        if isinstance(shared_id, str):
-            await self._assert_known_node_reference(target=target, shared_id=shared_id)
-
-        metadata = await self._apply_file_selection(
-            target=target,
-            element_id=locator.get("elementId"),
-            allow_fallback=bool(locator.get("allowFallback", False)),
-            source_paths=normalized_files,
-            display_names=display_names,
+        future = await self._session.send_command(
+            "input.setFiles",
+            {
+                "context": context,
+                "element": element,
+                "sourcePaths": normalized_files,
+                "displayNames": display_names,
+            },
         )
-
-        if not metadata.get("found", False):
-            raise bidi_error.NoSuchElementException("No such element")
-        if not metadata.get("isElement", False):
-            raise bidi_error.NoSuchElementException("No such element")
-        if metadata.get("tagName") != "input":
-            raise bidi_error.UnableToSetFileInputException("Unable to set file input")
-        if metadata.get("inputType") != "file":
-            raise bidi_error.UnableToSetFileInputException("Unable to set file input")
-        if metadata.get("disabled", False):
-            raise bidi_error.UnableToSetFileInputException("Unable to set file input")
-        if len(normalized_files) > 1 and not metadata.get("multiple", False):
-            raise bidi_error.UnableToSetFileInputException("Unable to set file input")
-
-        event_files = metadata.get("eventFiles")
-        if not isinstance(event_files, list):
-            event_files = display_names
-        normalized_event_files = [str(file_name) for file_name in event_files]
-        event_types = metadata.get("eventTypes")
-        if isinstance(event_types, list):
-            events = []
-            for event_type in event_types:
-                if not isinstance(event_type, str):
-                    continue
-                events.append(
-                    {
-                        "type": event_type,
-                        "files": normalized_event_files.copy(),
-                    }
-                )
-            if len(events) > 0:
-                future = await self._session.send_command(
-                    "input.recordSyntheticEvents",
-                    {
-                        "context": context,
-                        "events": events,
-                    },
-                )
-                await future
+        await future
         return {}
-
-    def _extract_element_locator(self, element) -> dict[str, Any]:
-        if not isinstance(element, Mapping):
-            raise bidi_error.InvalidArgumentException("element must be an object")
-        element_type = element.get("type")
-        if element_type == "null":
-            return {
-                "sharedId": None,
-                "elementId": None,
-                "allowFallback": True,
-            }
-
-        shared_id = element.get("sharedId")
-        value = element.get("value")
-        if isinstance(value, Mapping) and not isinstance(shared_id, str):
-            shared_id = value.get("sharedId")
-        if not isinstance(shared_id, str):
-            raise bidi_error.InvalidArgumentException("element.sharedId must be a string")
-
-        if isinstance(value, Mapping):
-            node_type = value.get("nodeType")
-            if isinstance(node_type, (int, float)) and int(node_type) != 1:
-                raise bidi_error.NoSuchElementException("No such element")
-
-        element_id = None
-        if isinstance(value, Mapping):
-            attributes = value.get("attributes")
-            if isinstance(attributes, Mapping):
-                attr_id = attributes.get("id")
-                if isinstance(attr_id, str) and attr_id != "":
-                    element_id = attr_id
-
-        return {
-            "sharedId": shared_id,
-            "elementId": element_id,
-            "allowFallback": False,
-        }
 
     def _normalize_files(self, files) -> list[str]:
         if not isinstance(files, list):
@@ -3026,185 +2205,6 @@ class InputModule:
         base = normalized.rsplit("/", maxsplit=1)[-1]
         return base if base != "" else normalized
 
-    async def _assert_known_node_reference(self, *, target: ContextTarget, shared_id: str) -> None:
-        await self._session.script.call_function(
-            function_declaration="node => node === undefined ? null : null",
-            arguments=[{"sharedId": shared_id}],
-            target=target,
-            await_promise=False,
-        )
-
-    async def _apply_file_selection(
-        self,
-        *,
-        target: ContextTarget,
-        element_id: str | None,
-        allow_fallback: bool,
-        source_paths: list[str],
-        display_names: list[str],
-    ) -> dict[str, Any]:
-        to_remote_array = lambda values: {
-            "type": "array",
-            "value": [{"type": "string", "value": value} for value in values],
-        }
-        result = await self._session.script.call_function(
-            function_declaration="""(elementId, allowFallback, sourcePaths, displayNames) => {
-                let input = null;
-                if (typeof elementId === "string" && elementId !== "") {
-                    input = document.getElementById(elementId);
-                }
-                if (!input && allowFallback) {
-                    input = document.querySelector("input[type=file], #input");
-                }
-                if (!input && allowFallback && document && document.body && typeof document.createElement === "function") {
-                    input = document.createElement("input");
-                    input.type = "file";
-                    input.id = "input";
-                    document.body.appendChild(input);
-                }
-                if (!input) {
-                    return JSON.stringify({
-                        found: false,
-                        isElement: false,
-                        tagName: "",
-                        inputType: "",
-                        disabled: false,
-                        multiple: false,
-                        eventTypes: [],
-                        eventFiles: [],
-                    });
-                }
-
-                const isElement = Number(input?.nodeType || 0) === 1;
-                const tagName = isElement
-                    ? String(input.localName || input.tagName || "").toLowerCase()
-                    : "";
-                const getAttr = (name) =>
-                    typeof input?.getAttribute === "function" ? input.getAttribute(name) : null;
-                const inputType = (isElement && tagName === "input")
-                    ? String(input.type || getAttr("type") || "").toLowerCase()
-                    : "";
-                const disabled = (isElement && tagName === "input")
-                    ? (Boolean(input.disabled) || getAttr("disabled") !== null)
-                    : false;
-                const multiple = (isElement && tagName === "input")
-                    ? (Boolean(input.multiple) || getAttr("multiple") !== null)
-                    : false;
-                const summary = {
-                    found: true,
-                    isElement,
-                    tagName,
-                    inputType,
-                    disabled,
-                    multiple,
-                    eventTypes: [],
-                    eventFiles: [],
-                };
-                if (
-                    !isElement ||
-                    tagName !== "input" ||
-                    inputType !== "file" ||
-                    disabled ||
-                    (!multiple && Array.isArray(sourcePaths) && sourcePaths.length > 1)
-                ) {
-                    return JSON.stringify(summary);
-                }
-
-                const nextSourcePaths = Array.isArray(sourcePaths)
-                    ? sourcePaths.map(path => String(path))
-                    : [];
-                const nextDisplayNames = Array.isArray(displayNames)
-                    ? displayNames.map(name => String(name))
-                    : [];
-                summary.eventFiles = nextDisplayNames.slice();
-                const previousSourcePaths = Array.isArray(input.__craterSyntheticSourcePaths)
-                    ? input.__craterSyntheticSourcePaths.slice()
-                    : [];
-                const isSameSelection =
-                    previousSourcePaths.length === nextSourcePaths.length &&
-                    previousSourcePaths.every((path, index) => path === nextSourcePaths[index]);
-
-                const syntheticFiles = nextDisplayNames.map(name => ({ name }));
-                try {
-                    Object.defineProperty(input, "files", {
-                        configurable: true,
-                        get: () => syntheticFiles,
-                    });
-                } catch (_err) {
-                    input.files = syntheticFiles;
-                }
-
-                input.__craterSyntheticSourcePaths = nextSourcePaths.slice();
-
-                const eventBuffer = (() => {
-                    if (typeof window === "undefined") return null;
-                    if (!window.allEvents || !Array.isArray(window.allEvents.events)) {
-                        window.allEvents = { events: [] };
-                    }
-                    return window.allEvents.events;
-                })();
-                const recordEvent = (type) => {
-                    if (!Array.isArray(eventBuffer)) return;
-                    eventBuffer.push({
-                        type,
-                        files: nextDisplayNames.slice(),
-                    });
-                };
-
-                const emit = (type) => {
-                    if (typeof Event === "function") {
-                        input.dispatchEvent(new Event(type, { bubbles: true }));
-                        return;
-                    }
-                    if (document && typeof document.createEvent === "function") {
-                        const event = document.createEvent("Event");
-                        event.initEvent(type, true, false);
-                        input.dispatchEvent(event);
-                    }
-                };
-
-                if (isSameSelection) {
-                    emit("cancel");
-                    recordEvent("cancel");
-                    summary.eventTypes = ["cancel"];
-                    return JSON.stringify(summary);
-                }
-
-                emit("input");
-                emit("change");
-                recordEvent("input");
-                recordEvent("change");
-                summary.eventTypes = ["input", "change"];
-                return JSON.stringify(summary);
-            }""",
-            arguments=[
-                (
-                    {"type": "string", "value": element_id}
-                    if isinstance(element_id, str)
-                    else {"type": "null"}
-                ),
-                {"type": "boolean", "value": allow_fallback},
-                to_remote_array(source_paths),
-                to_remote_array(display_names),
-            ],
-            target=target,
-            await_promise=False,
-        )
-        payload: str | None = None
-        if isinstance(result, Mapping) and result.get("type") == "string":
-            raw = result.get("value")
-            if isinstance(raw, str):
-                payload = raw
-        elif isinstance(result, str):
-            payload = result
-        if not isinstance(payload, str):
-            return {}
-        try:
-            decoded = json.loads(payload)
-        except Exception:
-            return {}
-        return decoded if isinstance(decoded, dict) else {}
-
 
 class BrowserModule:
     def __init__(self, session: CraterBidiSession):
@@ -3219,7 +2219,6 @@ class BrowserModule:
         if isinstance(result, dict):
             user_context = result.get("userContext")
             if isinstance(user_context, str):
-                self._session.remember_known_user_context(user_context)
                 return user_context
         return result
 
@@ -3235,9 +2234,7 @@ class BrowserModule:
 
     async def remove_user_context(self, user_context: str):
         future = await self._session.send_command("browser.removeUserContext", {"userContext": user_context})
-        result = await future
-        self._session.forget_known_user_context(user_context)
-        return result
+        return await future
 
     async def set_download_behavior(self, download_behavior=_UNSET, user_contexts=_UNSET):
         params = {}
@@ -3336,8 +2333,6 @@ async def _trim_contexts_for_test(session: CraterBidiSession):
     except Exception:
         pass
     session._event_backlog.clear()
-    if session._browsing_context is not None:
-        session._browsing_context._last_navigated_url.clear()
     if isinstance(baseline_ctx_id, str):
         try:
             future = await session.send_command(
@@ -3743,7 +2738,7 @@ def fetch(bidi_session, configuration):
                     )
 
         if isinstance(url, str) and url.startswith("/"):
-            base_url = bidi_session.browsing_context._last_navigated_url.get(context_id)
+            base_url = await bidi_session.get_requested_navigation_url(context_id)
             if isinstance(base_url, str):
                 parsed_base = _parse_http_url(base_url)
                 if parsed_base is not None:
@@ -3754,7 +2749,7 @@ def fetch(bidi_session, configuration):
         request_headers = headers if isinstance(headers, Mapping) else None
         if parsed_network_url is not None or is_data_url:
             request_bytes_value = _synthesize_request_bytes_value(post_data)
-            source_url = bidi_session.browsing_context._last_navigated_url.get(context_id)
+            source_url = await bidi_session.get_requested_navigation_url(context_id)
             should_emit_preflight = (
                 isinstance(url, str)
                 and _requires_synthetic_cors_preflight(

@@ -640,6 +640,59 @@ test "bidi network continueBlockedRequest clears storage cookies when headers ov
 }
 
 ///|
+test "bidi network continueBlockedRequest handles navigation in protocol" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"browsingContext.load\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let initial_url = "data:text/html,<div id='from-initial'>initial</div>"
+  let redirect_url = "data:text/html,<div id='from-redirect'>redirect</div>"
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.rememberBlockedRequest\",\"params\":{\"request\":\"request-19\",\"blockedRequest\":{\"phase\":\"beforeRequestSent\",\"context_id\":\"session-1\",\"url\":\"" +
+    initial_url +
+    "\",\"method\":\"GET\",\"request_headers\":{},\"navigation\":\"navigation-19\",\"destination\":\"document\",\"is_navigation\":true}}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"network.continueBlockedRequest\",\"params\":{\"request\":\"request-19\",\"url\":\"" +
+    redirect_url +
+    "\"}}",
+  )
+  let continue_msgs = proto.take_messages()
+  assert_eq(continue_msgs.length(), 2)
+  assert_true(
+    continue_msgs[0].to_json().contains("\"method\":\"browsingContext.load\""),
+  )
+  assert_true(continue_msgs[1].to_json().contains("\"type\":\"success\""))
+
+  let current_url = match proto.manager.get_session("session-1") {
+    Some(session) => session.get_url()
+    None => ""
+  }
+  assert_eq(current_url, redirect_url)
+
+  let _ = proto.process_message(
+    "{\"id\":5,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"window.location.href\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let href_json = proto.take_messages()[0].to_json()
+  assert_true(href_json.contains("\"value\":\"" + initial_url + "\""))
+
+  let _ = proto.process_message(
+    "{\"id\":6,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"document.body.textContent.trim()\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let body_json = proto.take_messages()[0].to_json()
+  assert_true(body_json.contains("\"value\":\"redirect\""))
+}
+
+///|
 test "bidi network resolveMatchingIntercepts matches data url string patterns" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
