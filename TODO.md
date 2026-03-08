@@ -1,5 +1,98 @@
 # TODO
 
+## WebDriver BiDi の MoonBit 全面移行（2026-03-08）
+
+- 目的:
+  - `.py` / `.ts` に残っている WebDriver BiDi の実行責務を MoonBit に寄せる
+  - adapter は最終的に `pytest` fixture / WPT glue のみに縮小する
+  - runner 系 `.ts` は「実装本体」ではなく tooling として扱い、残置可否を段階的に判断する
+
+### 現状整理
+
+- MoonBit 化済みの中核:
+  - `browser/src/bidi_main/main.mbt`
+  - `browser/src/webdriver/bidi_protocol.mbt`
+  - `browser/src/webdriver/bidi_server.mbt`
+  - `browser/src/webdriver/bidi_storage.mbt`
+- まだ Python に大きく残っている本実装:
+  - `scripts/crater_bidi_adapter.py`
+  - `browsingContext` / `session` / `script` / `network` / `storage` / `input` / `browser`
+- まだ TypeScript に残っているもの:
+  - `scripts/wpt-webdriver-runner.ts`
+  - `scripts/wpt-runner.ts`
+  - `scripts/wpt-dom-runner.ts`
+  - これらは現時点では test tooling 扱い
+
+### フェーズ
+
+- [x] P0: cookie / storage の実行責務を Python adapter から MoonBit に移す
+  - [x] `storage.getCookies / setCookie / deleteCookies`
+  - [x] request cookies 解決を MoonBit 化
+  - [x] `document.cookie` snapshot 取り込みを MoonBit 化
+  - [x] adapter 内の synthetic cookie jar を削除
+- [x] P1: synthetic network event の request/response 組み立てを MoonBit に寄せる
+  - [x] `beforeRequestSent / responseStarted / responseCompleted / fetchError`
+  - [x] blocked request state (`remember/get/forget/hasBlockedNavigation`) を MoonBit 化
+  - [x] synthetic response override / cache 判定を MoonBit 化
+  - [x] `authRequired` の override 合成を MoonBit 化
+- [ ] P2: `browsingContext` / `script` / `session` の adapter 固有ロジックを MoonBit へ移す
+  - [x] synthetic `window.location.href` override
+  - [x] WPT 向け URL 正規化
+  - [x] context tree / userContext の仲介 state 削減
+  - [x] preload / realm fixture cleanup (`session.resetForTest`, `script.removeAllPreloadScripts`)
+  - [x] preload / realm / evaluate 補助の移行
+  - [x] `script.evaluate` の file dialog synthetic glue を MoonBit 化
+  - [x] `script.evaluate` の `registerServiceWorker()` no-op を MoonBit 化
+  - [x] `script.evaluate` の document dimensions 補正を MoonBit 化
+  - [x] `input.set_files` 用の context-scoped `window.allEvents.events` 補助を MoonBit 化
+- [ ] P3: adapter を pytest plugin / fixture glue のみに縮小する
+  - [x] `network.continueRequest / continueResponse / continueWithAuth / provideResponse / failRequest` を MoonBit 実装へ置換
+  - [x] `network.failRequest` の blocked state consume / `fetchError` payload を MoonBit command 化
+  - [ ] `browsingContext` / `script` / `session` の protocol command 実装を Python から除去
+  - [ ] synthetic state を最小化
+- [ ] P4: tooling の `.ts` を整理する
+  - [ ] runner を残すか MoonBit/just に寄せるか判断
+  - [ ] CI 集計やレポート生成の責務を分離
+
+### 今回の着手
+
+- [x] `storage.resolveRequestCookies` を MoonBit に追加
+- [x] `storage.rememberDocumentCookie` を MoonBit に追加
+- [x] adapter の cookie read/write を上記 command 経由に切り替える
+- [x] `storage --quick` / `integration --quick` / `strict` で回帰確認
+- [x] synthetic `network.*` payload 生成を MoonBit command 経由に移行
+- [x] `storage --quick` / `integration --quick` / `strict` で network 移行の回帰確認
+- [x] adapter 内に残っていた synthetic cookie jar を削除
+- [x] `network.failRequest` の validation / payload 生成 / state forget を MoonBit command に移行
+- [x] `network.continueRequest` の validation / payload 生成 / state forget を MoonBit command に移行
+- [x] `network.continueResponse / provideResponse / continueWithAuth` の blocked-response state machine を MoonBit command に移行
+- [x] synthetic `window.location.href` override と cookie base URL 解決を MoonBit state に移行
+- [x] `network --quick` / `integration --quick` / `strict` で synthetic location 移行の回帰確認
+- [x] `network.setExtraHeaders` の state / headers echo payload / request header merge を MoonBit に移行
+- [x] synthetic iframe fallback を MoonBit の child context 作成に置き換える
+- [x] `network/set_extra_headers --quick` / `network --quick` / `integration --quick` / `strict` で extra headers 移行の回帰確認
+- [x] `script.evaluate` の file dialog synthetic glue を MoonBit に移行
+- [x] `script.evaluate` の `registerServiceWorker()` no-op を MoonBit に移行
+- [x] `script.evaluate` の document dimensions 補正を MoonBit に移行
+- [x] `input.recordSyntheticEvents` と `JSON.stringify(window.allEvents.events)` の context-scoped 補助を MoonBit に移行
+- [x] `session.resetForTest` で test fixture の context/realm/preload cleanup を MoonBit に移行
+- [x] `script.removeAllPreloadScripts` で preload fixture cleanup の id 追跡を削除
+- [x] `script.evaluate` の `allEvents` normalize / dedupe を MoonBit に移行
+- [x] `network.resolveMatchingIntercepts` を MoonBit に追加して adapter の intercept mirror を削除
+- [x] `network.rememberCollectedData / getData / disownData` を MoonBit に追加して adapter の collector mirror を削除
+- [x] `input/file_dialog_opened --quick` / `browsing_context/capture_screenshot --quick` / `network/{before_request_sent,response_started,response_completed} --quick` / `integration --quick` で回帰確認
+- [x] `input/set_files --quick` / `input/file_dialog_opened --quick` / `strict` で input synthetic event 移行の回帰確認
+- [x] `script/add_preload_script --quick` / `script/get_realms --quick` / `script/realm_created --quick` / `integration --quick` / `strict` で preload/realm fixture 移行の回帰確認
+
+### 次の具体タスク
+
+- [ ] `browsingContext` / `session` / `script` に残る adapter state を棚卸しして MoonBit 側へ寄せる
+- [x] WPT 向け URL 正規化を MoonBit 側へ移して adapter 依存を減らす
+- [x] `context_user_context / context_parent` の Python mirror を `browsingContext.getContextScopeInfo` / `session.isSubscribedForContext` ベースに削減する
+- [ ] `browsingContext` / `script` / `session` に残る local validation と fixture glue を MoonBit command に置き換える
+- [ ] adapter を `pytest` fixture と最小限の WPT glue のみに縮小する
+  - `network` の local mirror (`_network_intercepts`, `_network_collectors`, `_network_collected_data`, synthetic subscription fallback) は削除済み
+
 ## WPT サポート状況（2026-03-03）
 
 - 実測コマンド: `npx tsx scripts/wpt-runner.ts <module> --workers 4`

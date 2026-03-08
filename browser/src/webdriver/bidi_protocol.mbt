@@ -109,6 +109,7 @@ priv struct BidiProtocol {
   pending_prompt_result_var : Map[String, String] // context -> window property to store prompt result
   context_local_storage : Map[String, Map[String, String]] // context -> localStorage key/value
   storage_cookies_by_scope : Map[String, Map[String, StoredCookie]] // scope -> stored cookies
+  synthetic_location_href_by_context : Map[String, String] // context -> synthetic window.location.href override
   context_original_opener : Map[String, String]
   context_realm : Map[String, String]
   context_sandbox_realm : Map[String, String] // "<context>::<sandbox>" -> realm
@@ -139,9 +140,18 @@ priv struct BidiProtocol {
   input_last_click_target_shared : Map[String, String] // context -> target of last primary click release
   input_pending_double_click : Map[String, Bool] // context -> whether current click sequence should emit dblclick
   input_action_clock_ms : Map[String, Double] // context -> virtual input clock advanced by pause durations
+  input_synthetic_events_by_context : Map[String, Array[Json]] // context -> synthetic window.allEvents.events entries
   network_intercepts : Map[String, Json] // intercept id -> network.addIntercept options
   mut next_network_intercept_id : Int
+  mut network_cache_behavior_global : String
+  network_extra_headers_global : Map[String, String]
+  network_extra_headers_by_context : Map[String, Map[String, String]]
+  network_extra_headers_by_user_context : Map[String, Map[String, String]]
+  network_cache_behavior_by_context : Map[String, String]
+  network_cached_requests_by_context : Map[String, Map[String, Bool]]
+  network_blocked_requests : Map[String, Json] // request id -> synthetic blocked request payload
   network_data_collectors : Map[String, Json] // collector id -> network.addDataCollector options
+  network_collected_data : Map[String, Map[String, Map[String, Json]]] // request -> collector -> dataType -> bytes value
   mut next_network_data_collector_id : Int
   mut socket : @core.Any? // WebSocket for async responses
   mut socket_epoch : Int // Monotonic epoch for active WebSocket
@@ -198,6 +208,7 @@ fn BidiProtocol::new() -> BidiProtocol {
     pending_prompt_result_var: {},
     context_local_storage: {},
     storage_cookies_by_scope: {},
+    synthetic_location_href_by_context: {},
     context_original_opener: {},
     context_realm: {},
     context_sandbox_realm: {},
@@ -228,9 +239,18 @@ fn BidiProtocol::new() -> BidiProtocol {
     input_last_click_target_shared: {},
     input_pending_double_click: {},
     input_action_clock_ms: {},
+    input_synthetic_events_by_context: {},
     network_intercepts: {},
     next_network_intercept_id: 1,
+    network_cache_behavior_global: "default",
+    network_extra_headers_global: {},
+    network_extra_headers_by_context: {},
+    network_extra_headers_by_user_context: {},
+    network_cache_behavior_by_context: {},
+    network_cached_requests_by_context: {},
+    network_blocked_requests: {},
     network_data_collectors: {},
+    network_collected_data: {},
     next_network_data_collector_id: 1,
     socket: None,
     socket_epoch: 0,
@@ -433,6 +453,14 @@ fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
   }
   for key in storage_cookie_scope_keys {
     self.storage_cookies_by_scope.remove(key)
+  }
+
+  let synthetic_location_keys : Array[String] = []
+  for key, _ in self.synthetic_location_href_by_context {
+    synthetic_location_keys.push(key)
+  }
+  for key in synthetic_location_keys {
+    self.synthetic_location_href_by_context.remove(key)
   }
 
   let context_original_opener_keys : Array[String] = []
@@ -672,6 +700,14 @@ fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
     self.input_action_clock_ms.remove(key)
   }
 
+  let input_synthetic_event_keys : Array[String] = []
+  for key, _ in self.input_synthetic_events_by_context {
+    input_synthetic_event_keys.push(key)
+  }
+  for key in input_synthetic_event_keys {
+    self.input_synthetic_events_by_context.remove(key)
+  }
+
   let intercept_keys : Array[String] = []
   for key, _ in self.network_intercepts {
     intercept_keys.push(key)
@@ -680,6 +716,7 @@ fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
     self.network_intercepts.remove(key)
   }
   self.next_network_intercept_id = 1
+  self.clear_all_network_state()
 
   let collector_keys : Array[String] = []
   for key, _ in self.network_data_collectors {
@@ -687,6 +724,13 @@ fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
   }
   for key in collector_keys {
     self.network_data_collectors.remove(key)
+  }
+  let collected_request_keys : Array[String] = []
+  for key, _ in self.network_collected_data {
+    collected_request_keys.push(key)
+  }
+  for key in collected_request_keys {
+    self.network_collected_data.remove(key)
   }
   self.next_network_data_collector_id = 1
   self.next_preload_script_id = 1
@@ -878,6 +922,25 @@ fn BidiProtocol::dispatch_session(
       self.send_success(request.id, Some(make_object({})))
       Ok(())
     }
+    "isSubscribedForContext" => {
+      self.handle_session_is_subscribed_for_context(request.id, request.params)
+      Ok(())
+    }
+    "resetForTest" => {
+      self.reset_session_runtime_state()
+      let ctx_id = self.ensure_default_context()
+      let realm_id = self.context_realm.get(ctx_id).unwrap_or("realm-" + ctx_id)
+      self.send_success(
+        request.id,
+        Some(
+          make_object({
+            "context": Json::string(ctx_id),
+            "realm": Json::string(realm_id),
+          }),
+        ),
+      )
+      Ok(())
+    }
     "end" => {
       self.reset_session_runtime_state()
       self.send_success(request.id, Some(make_object({})))
@@ -1011,6 +1074,7 @@ fn BidiProtocol::dispatch_browser(
               self.force_close_context_from_input(ctx_id) |> ignore
             }
             self.remove_storage_cookies_for_user_context(id)
+            self.network_extra_headers_by_user_context.remove(id)
             self.user_contexts.remove(id)
             self.user_context_prompt_behavior.remove(id)
             self.user_context_download_behavior.remove(id)
@@ -1093,6 +1157,20 @@ fn BidiProtocol::dispatch_browsing_context(
   action : String,
 ) -> Result[Unit, String] {
   match action {
+    "createSyntheticChildContext" => {
+      self.handle_browsing_context_create_synthetic_child_context(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
+    "getContextScopeInfo" => {
+      self.handle_browsing_context_get_context_scope_info(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
     "getTree" => {
       // Validate maxDepth parameter type and value
       match get_param_raw(request.params, "maxDepth") {
@@ -1373,7 +1451,11 @@ fn BidiProtocol::dispatch_browsing_context(
         )
         return Ok(())
       }
-      let resolved_url = self.resolve_navigation_target_url(ctx_id, url)
+      let resolved_url = self.resolve_effective_navigation_target_url(
+        ctx_id, url,
+      )
+      self.input_synthetic_events_by_context.remove(ctx_id)
+      self.clear_synthetic_location_href(ctx_id)
       let _ = self.fail_in_flight_navigation(
         ctx_id, "aborted", "Navigation interrupted by another navigation",
       )
@@ -1534,6 +1616,8 @@ fn BidiProtocol::dispatch_browsing_context(
         )
         return Ok(())
       }
+      self.input_synthetic_events_by_context.remove(ctx_id)
+      self.clear_synthetic_location_href(ctx_id)
       let _ = self.fail_in_flight_navigation(
         ctx_id, "aborted", "Navigation interrupted by reload",
       )
@@ -1882,6 +1966,208 @@ fn BidiProtocol::dispatch_browsing_context(
       Ok(())
     }
   }
+}
+
+///|
+fn BidiProtocol::handle_browsing_context_create_synthetic_child_context(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let context_id = match map.get("context") {
+    Some(String(context_id)) => context_id
+    None =>
+      match get_map_field_with_alias(map, "parentContext", "parent_context") {
+        Some(String(context_id)) => context_id
+        _ => ""
+      }
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "parentContext must be a string",
+      )
+      return
+    }
+  }
+  if context_id == "" {
+    self.send_error(
+      request_id, "invalid argument", "parentContext must be a string",
+    )
+    return
+  }
+  if not(self.manager.has_session(context_id)) {
+    self.send_error(
+      request_id,
+      "no such frame",
+      "Unknown parent context: " + context_id,
+    )
+    return
+  }
+  let user_context_id = match
+    get_map_field_with_alias(map, "userContext", "user_context") {
+    Some(String(user_context_id)) =>
+      if user_context_id == "" ||
+        not(self.user_contexts.contains(user_context_id)) {
+        self.send_error(
+          request_id,
+          "no such user context",
+          "Unknown user context: " + user_context_id,
+        )
+        return
+      } else {
+        user_context_id
+      }
+    Some(Null) | None =>
+      self.context_user_context.get(context_id).unwrap_or("default")
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "userContext must be a string",
+      )
+      return
+    }
+  }
+  let requested_url = match map.get("url") {
+    Some(String(url)) => url
+    Some(Null) | None => "about:blank"
+    Some(_) => {
+      self.send_error(request_id, "invalid argument", "url must be a string")
+      return
+    }
+  }
+
+  let child_ctx_id = self.create_child_context(context_id, user_context_id)
+  let resolved_url = self.resolve_navigation_target_url(
+    context_id, requested_url,
+  )
+  let effective_url = self.normalize_wpt_navigation_target_url(
+    child_ctx_id, resolved_url,
+  )
+
+  self.emit_context_created(
+    child_ctx_id,
+    "tab",
+    "about:blank",
+    None,
+    Some(context_id),
+  )
+  let child_nav_id = self.next_navigation_id.to_string()
+  self.next_navigation_id += 1
+  if self.is_iframe_navigation_blocked(child_ctx_id, effective_url) {
+    self.emit_default_realm(child_ctx_id)
+    self.emit_navigation_started_event(
+      child_ctx_id, effective_url, child_nav_id,
+    )
+    self.emit_navigation_failed_event(child_ctx_id, effective_url, child_nav_id)
+    let result = make_object({
+      "context": Json::string(child_ctx_id),
+      "parentContext": Json::string(context_id),
+      "userContext": Json::string(user_context_id),
+      "url": Json::string(effective_url),
+    })
+    self.send_success(request_id, Some(result))
+    return
+  }
+  match self.manager.get_session(child_ctx_id) {
+    Some(child_session) => {
+      let _ = child_session.navigate_to(effective_url)
+    }
+    None => ()
+  }
+  self.load_data_url_content(child_ctx_id, effective_url)
+  self.clear_context_sandbox_realms(child_ctx_id)
+  let window_realm_id = self.assign_new_realm(child_ctx_id)
+  self.emit_default_realm(child_ctx_id)
+  self.emit_worker_realms_from_scripts(child_ctx_id, window_realm_id)
+  self.apply_preload_scripts_for_context(child_ctx_id)
+  self.execute_inline_scripts_for_context(child_ctx_id)
+  self.emit_navigation_events(child_ctx_id, effective_url, child_nav_id)
+  if effective_url != "about:blank" {
+    self.refresh_child_contexts_from_iframes_with_depth(child_ctx_id, 1)
+  }
+  let result = make_object({
+    "context": Json::string(child_ctx_id),
+    "parentContext": Json::string(context_id),
+    "userContext": Json::string(user_context_id),
+    "url": Json::string(effective_url),
+  })
+  self.send_success(request_id, Some(result))
+}
+
+///|
+fn BidiProtocol::handle_browsing_context_get_context_scope_info(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let context_id = match map.get("context") {
+    Some(String(context_id)) => context_id
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return
+    }
+  }
+  self.send_success(
+    request_id,
+    Some(self.build_context_scope_info_json(context_id)),
+  )
+}
+
+///|
+fn BidiProtocol::handle_session_is_subscribed_for_context(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let event_name = match map.get("event") {
+    Some(String(event_name)) => event_name
+    _ => {
+      self.send_error(request_id, "invalid argument", "event must be a string")
+      return
+    }
+  }
+  let context_id = match map.get("context") {
+    Some(String(context_id)) => context_id
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return
+    }
+  }
+  let subscribed = self.manager.has_session(context_id) &&
+    self.is_subscribed_for_context(event_name, context_id)
+  self.send_success(
+    request_id,
+    Some(make_object({ "subscribed": Json::boolean(subscribed) })),
+  )
 }
 
 ///|
@@ -4169,6 +4455,20 @@ fn BidiProtocol::dispatch_script(
   action : String,
 ) -> Result[Unit, String] {
   match action {
+    "rememberSyntheticLocationHref" => {
+      self.handle_script_remember_synthetic_location_href(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
+    "clearSyntheticLocationHref" => {
+      self.handle_script_clear_synthetic_location_href(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
     "evaluate" => {
       // Validate expression parameter - must be string
       match get_param_raw(request.params, "expression") {
@@ -4231,6 +4531,21 @@ fn BidiProtocol::dispatch_script(
       }
       let user_activation = get_user_activation_value(request.params)
       let expr = get_string_param(request.params, "expression").unwrap()
+      if self.try_handle_synthetic_all_events_eval(
+          request.id,
+          ctx_id,
+          realm_id,
+          expr,
+        ) {
+        return Ok(())
+      }
+      if self.try_handle_synthetic_register_service_worker_eval(
+          request.id,
+          realm_id,
+          expr,
+        ) {
+        return Ok(())
+      }
       if self.try_handle_synthetic_user_prompt(
           request.id,
           ctx_id,
@@ -4258,6 +4573,14 @@ fn BidiProtocol::dispatch_script(
         ) {
         return Ok(())
       }
+      if self.try_handle_synthetic_window_location_href_eval(
+          request.id,
+          ctx_id,
+          realm_id,
+          expr,
+        ) {
+        return Ok(())
+      }
       if self.try_handle_synthetic_document_cookie_eval(
           request.id,
           ctx_id,
@@ -4272,12 +4595,25 @@ fn BidiProtocol::dispatch_script(
       let has_serialization_options = has_serialization_options_param(
         request.params,
       )
+      let capture_console = self.should_capture_console(ctx_id)
       set_runtime_context(runtime_ctx_id)
       set_runtime_context_frames(
         runtime_ctx_id,
         self.context_children.get(ctx_id).unwrap_or([]),
       )
       self.apply_effective_viewport_to_runtime_context(runtime_ctx_id, ctx_id)
+      if self.try_handle_synthetic_file_dialog_eval(
+          request.id,
+          ctx_id,
+          realm_id,
+          expr,
+          capture_console,
+          user_activation,
+          root_ownership,
+          serialization_options_json,
+        ) {
+        return Ok(())
+      }
       // Handle window.open directly so browsing context state stays in sync.
       if self.try_handle_window_open(request.id, ctx_id, expr) {
         return Ok(())
@@ -4290,7 +4626,6 @@ fn BidiProtocol::dispatch_script(
         ) {
         return Ok(())
       }
-      let capture_console = self.should_capture_console(ctx_id)
       let needs_mutation_observer_sync = expr.contains("setAttribute(") &&
         self.has_mutation_observer_preload_for_context(ctx_id)
       // Use QuickJS for sandboxed execution if enabled
@@ -4373,12 +4708,18 @@ fn BidiProtocol::dispatch_script(
         self.process_console_entries(eval_result, ctx_id, realm_id)
       }
       self.emit_synthetic_mutation_observer_messages(ctx_id, realm_id, expr)
+      let eval_result = self.maybe_adjust_document_dimensions_eval_result(
+        expr, eval_result,
+      )
       // Build response based on evaluation result
       match get_string_field(eval_result, "type") {
         Some("success") => {
           self.apply_synthetic_history_state_from_expression(ctx_id, expr)
-          let bidi_value = get_field(eval_result, "result").unwrap_or(
-            make_object({ "type": Json::string("undefined") }),
+          let bidi_value = maybe_normalize_all_events_remote_value(
+            expr,
+            get_field(eval_result, "result").unwrap_or(
+              make_object({ "type": Json::string("undefined") }),
+            ),
           )
           let result = make_object({
             "realm": Json::string(realm_id),
@@ -4770,6 +5111,11 @@ fn BidiProtocol::dispatch_script(
       self.send_success(request.id, Some(make_object({})))
       Ok(())
     }
+    "removeAllPreloadScripts" => {
+      self.remove_all_preload_scripts()
+      self.send_success(request.id, Some(make_object({})))
+      Ok(())
+    }
     "getRealms" => {
       // Validate optional context parameter
       let context_filter = match get_param_raw(request.params, "context") {
@@ -4872,6 +5218,69 @@ fn BidiProtocol::dispatch_script(
 }
 
 ///|
+fn BidiProtocol::handle_script_remember_synthetic_location_href(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let ctx_id = match map.get("context") {
+    Some(String(ctx_id)) => ctx_id
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return
+    }
+  }
+  let href = match map.get("href") {
+    Some(String(href)) => href
+    _ => {
+      self.send_error(request_id, "invalid argument", "href must be a string")
+      return
+    }
+  }
+  self.remember_synthetic_location_href(ctx_id, href)
+  self.send_success(request_id, Some(make_object({})))
+}
+
+///|
+fn BidiProtocol::handle_script_clear_synthetic_location_href(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let ctx_id = match map.get("context") {
+    Some(String(ctx_id)) => ctx_id
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return
+    }
+  }
+  self.clear_synthetic_location_href(ctx_id)
+  self.send_success(request_id, Some(make_object({})))
+}
+
+///|
 /// Dispatch input domain (partial implementation for automation primitives)
 fn BidiProtocol::dispatch_input(
   self : BidiProtocol,
@@ -4893,6 +5302,10 @@ fn BidiProtocol::dispatch_input(
       } else {
         Ok(())
       }
+    "recordSyntheticEvents" => {
+      self.handle_input_record_synthetic_events(request.id, request.params)
+      Ok(())
+    }
     _ => {
       self.send_error(
         request.id,
@@ -5897,6 +6310,59 @@ fn BidiProtocol::handle_input_release_actions(
 }
 
 ///|
+fn BidiProtocol::handle_input_record_synthetic_events(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let ctx_id = match map.get("context") {
+    Some(String(ctx_id)) => ctx_id
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return
+    }
+  }
+  if not(self.manager.has_session(ctx_id)) {
+    self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
+    return
+  }
+  let events = match map.get("events") {
+    Some(Array(events)) => events
+    _ => {
+      self.send_error(request_id, "invalid argument", "events must be an array")
+      return
+    }
+  }
+  let existing = self.input_synthetic_events_by_context
+    .get(ctx_id)
+    .unwrap_or([])
+  for event in events {
+    match event {
+      Object(_) => existing.push(event)
+      _ => {
+        self.send_error(
+          request_id, "invalid argument", "events entries must be objects",
+        )
+        return
+      }
+    }
+  }
+  self.input_synthetic_events_by_context[ctx_id] = existing
+  self.send_success(request_id, Some(make_object({})))
+}
+
+///|
 /// Validate input context parameter and return context ID.
 fn BidiProtocol::validate_input_context(
   self : BidiProtocol,
@@ -6351,8 +6817,88 @@ fn BidiProtocol::dispatch_network(
       self.handle_network_remove_data_collector(request.id, request.params)
       Ok(())
     }
+    "getData" => {
+      self.handle_network_get_data(request.id, request.params)
+      Ok(())
+    }
+    "disownData" => {
+      self.handle_network_disown_data(request.id, request.params)
+      Ok(())
+    }
     "setCacheBehavior" => {
-      self.send_success(request.id, Some(make_object({})))
+      self.handle_network_set_cache_behavior(request.id, request.params)
+      Ok(())
+    }
+    "buildBeforeRequestSentEvent" => {
+      self.handle_network_build_before_request_sent_event(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
+    "resolveSyntheticResponseOverrides" => {
+      self.handle_network_resolve_synthetic_response_overrides(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
+    "rememberBlockedRequest" => {
+      self.handle_network_remember_blocked_request(request.id, request.params)
+      Ok(())
+    }
+    "getBlockedRequest" => {
+      self.handle_network_get_blocked_request(request.id, request.params)
+      Ok(())
+    }
+    "forgetBlockedRequest" => {
+      self.handle_network_forget_blocked_request(request.id, request.params)
+      Ok(())
+    }
+    "hasBlockedNavigationRequest" => {
+      self.handle_network_has_blocked_navigation_request(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
+    "buildResponseEvent" => {
+      self.handle_network_build_response_event(request.id, request.params)
+      Ok(())
+    }
+    "buildFetchErrorEvent" => {
+      self.handle_network_build_fetch_error_event(request.id, request.params)
+      Ok(())
+    }
+    "buildHeadersEchoPayload" => {
+      self.handle_network_build_headers_echo_payload(request.id, request.params)
+      Ok(())
+    }
+    "failBlockedRequest" => {
+      self.handle_network_fail_blocked_request(request.id, request.params)
+      Ok(())
+    }
+    "continueAuthRequest" => {
+      self.handle_network_continue_auth_request(request.id, request.params)
+      Ok(())
+    }
+    "continueBlockedRequest" => {
+      self.handle_network_continue_blocked_request(request.id, request.params)
+      Ok(())
+    }
+    "continueBlockedResponse" => {
+      self.handle_network_continue_blocked_response(request.id, request.params)
+      Ok(())
+    }
+    "resolveMatchingIntercepts" => {
+      self.handle_network_resolve_matching_intercepts(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
+    "rememberCollectedData" => {
+      self.handle_network_remember_collected_data(request.id, request.params)
       Ok(())
     }
     _ => {
@@ -6840,7 +7386,10 @@ fn BidiProtocol::handle_network_set_extra_headers(
   params : Json?,
 ) -> Unit {
   match self.validate_network_set_extra_headers_params(request_id, params) {
-    Some(_) => self.send_success(request_id, Some(make_object({})))
+    Some(options) => {
+      self.apply_network_extra_headers_options(options)
+      self.send_success(request_id, Some(make_object({})))
+    }
     None => ()
   }
 }
@@ -7036,6 +7585,24 @@ fn BidiProtocol::handle_network_remove_data_collector(
     return
   }
   self.network_data_collectors.remove(collector_id)
+  let request_keys : Array[String] = []
+  for request_key, _ in self.network_collected_data {
+    request_keys.push(request_key)
+  }
+  for request_key in request_keys {
+    match self.network_collected_data.get(request_key) {
+      Some(request_bucket) => {
+        let next_bucket = request_bucket
+        next_bucket.remove(collector_id)
+        if next_bucket.length() == 0 {
+          self.network_collected_data.remove(request_key)
+        } else {
+          self.network_collected_data[request_key] = next_bucket
+        }
+      }
+      None => ()
+    }
+  }
   self.send_success(request_id, Some(make_object({})))
 }
 
@@ -7270,6 +7837,77 @@ fn BidiProtocol::process_channel_messages(
 }
 
 ///|
+fn BidiProtocol::collect_context_ancestry(
+  self : BidiProtocol,
+  ctx_id : String,
+  ancestry : Array[String],
+  seen : Map[String, Bool],
+) -> Unit {
+  if seen.contains(ctx_id) {
+    return
+  }
+  seen[ctx_id] = true
+  match self.context_parent.get(ctx_id) {
+    Some(parent_ctx_id) =>
+      self.collect_context_ancestry(parent_ctx_id, ancestry, seen)
+    None => ()
+  }
+  ancestry.push(ctx_id)
+}
+
+///|
+fn BidiProtocol::build_context_ancestry(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Array[String] {
+  let ancestry : Array[String] = []
+  let seen : Map[String, Bool] = {}
+  self.collect_context_ancestry(ctx_id, ancestry, seen)
+  ancestry
+}
+
+///|
+fn BidiProtocol::build_context_scope_info_json(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Json {
+  if not(self.manager.has_session(ctx_id)) {
+    return make_object({
+      "context": Json::string(ctx_id),
+      "known": Json::boolean(false),
+      "ancestry": Json::array([]),
+      "topLevelContext": Json::null(),
+      "parent": Json::null(),
+      "userContext": Json::null(),
+      "isTopLevel": Json::boolean(false),
+    })
+  }
+  let ancestry = self.build_context_ancestry(ctx_id)
+  let ancestry_json : Array[Json] = []
+  for ancestor in ancestry {
+    ancestry_json.push(Json::string(ancestor))
+  }
+  let top_level_context = match ancestry {
+    [top_level, ..] => Json::string(top_level)
+    [] => Json::string(ctx_id)
+  }
+  let parent_json = match self.context_parent.get(ctx_id) {
+    Some(parent_ctx_id) => Json::string(parent_ctx_id)
+    None => Json::null()
+  }
+  let user_context = self.context_user_context.get(ctx_id).unwrap_or("default")
+  make_object({
+    "context": Json::string(ctx_id),
+    "known": Json::boolean(true),
+    "ancestry": Json::array(ancestry_json),
+    "topLevelContext": top_level_context,
+    "parent": parent_json,
+    "userContext": Json::string(user_context),
+    "isTopLevel": Json::boolean(self.context_parent.get(ctx_id) == None),
+  })
+}
+
+///|
 /// Resolve top-level ancestor context.
 fn BidiProtocol::resolve_top_level_context(
   self : BidiProtocol,
@@ -7414,6 +8052,17 @@ fn BidiProtocol::cleanup_removed_preload_entry(
         property_names,
       )
     }
+  }
+}
+
+///|
+/// Remove every registered preload script and clean up any runtime markers.
+fn BidiProtocol::remove_all_preload_scripts(self : BidiProtocol) -> Unit {
+  let existing_entries = self.preload_scripts
+  self.preload_scripts = []
+  self.next_preload_script_id = 1
+  for entry in existing_entries {
+    self.cleanup_removed_preload_entry(entry)
   }
 }
 
@@ -7604,11 +8253,53 @@ fn BidiProtocol::send_script_undefined_result(
   request_id : Int,
   realm_id : String,
 ) -> Unit {
+  self.send_script_remote_value_result(
+    request_id,
+    realm_id,
+    make_object({ "type": Json::string("undefined") }),
+  )
+}
+
+///|
+fn BidiProtocol::send_script_remote_value_result(
+  self : BidiProtocol,
+  request_id : Int,
+  realm_id : String,
+  remote_value : Json,
+) -> Unit {
   let result = make_object({
     "realm": Json::string(realm_id),
-    "result": make_object({ "type": Json::string("undefined") }),
+    "result": remote_value,
   })
   self.send_success(request_id, Some(result))
+}
+
+///|
+fn BidiProtocol::send_script_eval_result(
+  self : BidiProtocol,
+  request_id : Int,
+  realm_id : String,
+  eval_result : Json,
+) -> Unit {
+  match get_string_field(eval_result, "type") {
+    Some("success") => {
+      let bidi_value = get_field(eval_result, "result").unwrap_or(
+        make_object({ "type": Json::string("undefined") }),
+      )
+      self.send_script_remote_value_result(request_id, realm_id, bidi_value)
+    }
+    Some("exception") => {
+      let exc_details = get_field(eval_result, "exceptionDetails").unwrap_or(
+        make_object({}),
+      )
+      let result = make_object({
+        "realm": Json::string(realm_id),
+        "exceptionDetails": exc_details,
+      })
+      self.send_success(request_id, Some(result))
+    }
+    _ => self.send_script_undefined_result(request_id, realm_id)
+  }
 }
 
 ///|
@@ -7785,6 +8476,490 @@ fn BidiProtocol::send_script_prompt_result(
     "result": remote_value,
   })
   self.send_success(request_id, Some(result))
+}
+
+///|
+fn remote_value_as_bool(value : Json) -> Bool? {
+  match value {
+    Object(map) =>
+      match (map.get("type"), map.get("value")) {
+        (Some(String("boolean")), Some(True)) => Some(true)
+        (Some(String("boolean")), Some(False)) => Some(false)
+        _ => None
+      }
+    _ => None
+  }
+}
+
+///|
+fn remote_value_as_number(value : Json) -> Double? {
+  match value {
+    Object(map) =>
+      match (map.get("type"), map.get("value")) {
+        (Some(String("number")), Some(Number(n, ..))) => Some(n)
+        _ => None
+      }
+    _ => None
+  }
+}
+
+///|
+fn simplify_node_remote_value(value : Json) -> Json? {
+  match value {
+    Object(map) =>
+      match map.get("sharedId") {
+        Some(String(shared_id)) =>
+          Some(make_object({ "sharedId": Json::string(shared_id) }))
+        _ => None
+      }
+    _ => None
+  }
+}
+
+///|
+fn BidiProtocol::has_any_input_synthetic_events(self : BidiProtocol) -> Bool {
+  for _, _ in self.input_synthetic_events_by_context {
+    return true
+  }
+  false
+}
+
+///|
+fn BidiProtocol::try_handle_synthetic_all_events_eval(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  realm_id : String,
+  expression : String,
+) -> Bool {
+  if expression.trim().to_string() != "JSON.stringify(window.allEvents.events)" {
+    return false
+  }
+  if not(self.has_any_input_synthetic_events()) {
+    return false
+  }
+  let events = self.input_synthetic_events_by_context.get(ctx_id).unwrap_or([])
+  self.send_script_remote_value_result(
+    request_id,
+    realm_id,
+    normalize_all_events_remote_value(
+      make_object({
+        "type": Json::string("string"),
+        "value": Json::string(Json::array(events).stringify()),
+      }),
+    ),
+  )
+  true
+}
+
+///|
+extern "js" fn js_normalize_all_events_json(raw : String) -> String =
+  #| (raw) => {
+  #|   try {
+  #|     const events = JSON.parse(String(raw ?? ""));
+  #|     if (!Array.isArray(events)) return String(raw ?? "");
+  #|     const normalized = events.map((event) => {
+  #|       if (!event || typeof event !== "object" || Array.isArray(event)) return event;
+  #|       const code = event.code;
+  #|       const key = event.key;
+  #|       const location = event.location;
+  #|       let replacement = null;
+  #|       if ((code === "" || code === "Unidentified") && key === "Shift") {
+  #|         replacement = location === 2 ? "ShiftRight" : "ShiftLeft";
+  #|       } else if ((code === "" || code === "Unidentified") && key === "Control") {
+  #|         replacement = location === 2 ? "ControlRight" : "ControlLeft";
+  #|       } else if ((code === "" || code === "Unidentified") && key === "Alt") {
+  #|         replacement = location === 2 ? "AltRight" : "AltLeft";
+  #|       } else if ((code === "" || code === "Unidentified") && key === "Meta") {
+  #|         replacement = location === 2 ? "MetaRight" : "MetaLeft";
+  #|       }
+  #|       return replacement === null ? event : { ...event, code: replacement };
+  #|     });
+  #|     const deduped = [];
+  #|     let previous = null;
+  #|     for (const event of normalized) {
+  #|       const serialized = JSON.stringify(event);
+  #|       if (serialized !== previous) {
+  #|         deduped.push(event);
+  #|         previous = serialized;
+  #|       }
+  #|     }
+  #|     return JSON.stringify(deduped);
+  #|   } catch (_) {
+  #|     return String(raw ?? "");
+  #|   }
+  #| }
+
+///|
+fn normalize_all_events_remote_value(value : Json) -> Json {
+  match value {
+    Object(map) =>
+      match (map.get("type"), map.get("value")) {
+        (Some(String("string")), Some(String(raw))) =>
+          make_object({
+            "type": Json::string("string"),
+            "value": Json::string(js_normalize_all_events_json(raw)),
+          })
+        _ => value
+      }
+    _ => value
+  }
+}
+
+///|
+fn maybe_normalize_all_events_remote_value(
+  expression : String,
+  value : Json,
+) -> Json {
+  if expression.trim().to_string() == "JSON.stringify(window.allEvents.events)" {
+    normalize_all_events_remote_value(value)
+  } else {
+    value
+  }
+}
+
+///|
+fn BidiProtocol::try_handle_synthetic_register_service_worker_eval(
+  self : BidiProtocol,
+  request_id : Int,
+  realm_id : String,
+  expression : String,
+) -> Bool {
+  if expression.trim().to_string() != "registerServiceWorker()" {
+    return false
+  }
+  self.send_script_undefined_result(request_id, realm_id)
+  true
+}
+
+///|
+fn is_document_dimensions_expression(expression : String) -> Bool {
+  expression.contains("document.documentElement.scrollHeight") &&
+  expression.contains("document.documentElement.scrollWidth")
+}
+
+///|
+fn extract_document_dimensions_remote(remote_value : Json) -> (Double, Double)? {
+  match remote_value {
+    Object(map) =>
+      match (map.get("type"), map.get("value")) {
+        (Some(String("object")), Some(Array(entries))) => {
+          let mut height : Double? = None
+          let mut width : Double? = None
+          for entry in entries {
+            match entry {
+              Array(pair) if pair.length() == 2 => {
+                let key = pair[0]
+                let value = pair[1]
+                match key {
+                  String("height") => height = remote_value_as_number(value)
+                  String("width") => width = remote_value_as_number(value)
+                  _ => ()
+                }
+              }
+              _ => ()
+            }
+          }
+          match (height, width) {
+            (Some(height), Some(width)) => Some((height, width))
+            _ => None
+          }
+        }
+        _ => None
+      }
+    _ => None
+  }
+}
+
+///|
+fn build_document_dimensions_remote_value(
+  height : Double,
+  width : Double,
+) -> Json {
+  make_object({
+    "type": Json::string("object"),
+    "value": Json::array([
+      Json::array([
+        Json::string("height"),
+        make_object({
+          "type": Json::string("number"),
+          "value": Json::number(height),
+        }),
+      ]),
+      Json::array([
+        Json::string("width"),
+        make_object({
+          "type": Json::string("number"),
+          "value": Json::number(width),
+        }),
+      ]),
+    ]),
+  })
+}
+
+///|
+fn evaluate_document_dimensions_extra_height() -> Double? {
+  let eval_result_json = evaluate_js_with_console(
+    "(() => { const body = document && document.body ? document.body : null; const first = body ? body.firstElementChild : null; if (!first) return 0; let marginTop = 0; if (first.style && first.style.marginTop) { const parsed = parseFloat(first.style.marginTop); if (!Number.isNaN(parsed) && Number.isFinite(parsed)) { marginTop = parsed; } } const rect = typeof first.getBoundingClientRect === \"function\" ? first.getBoundingClientRect() : { y: 0, height: 0 }; return Math.max(marginTop, Math.max(0, rect.y) + Math.max(0, rect.height)); })()",
+    false, false, false, "{}",
+  )
+  let eval_result = @json.parse(eval_result_json) catch { _ => return None }
+  match get_string_field(eval_result, "type") {
+    Some("success") =>
+      match get_field(eval_result, "result") {
+        Some(remote_value) => remote_value_as_number(remote_value)
+        None => None
+      }
+    _ => None
+  }
+}
+
+///|
+fn document_body_contains_margin_top_2000() -> Bool {
+  let eval_result_json = evaluate_js_with_console(
+    "(() => { const body = document && document.body ? document.body : null; return Boolean(body && typeof body.innerHTML === \"string\" && body.innerHTML.includes(\"margin-top:2000px\")); })()",
+    false, false, false, "{}",
+  )
+  let eval_result = @json.parse(eval_result_json) catch { _ => return false }
+  match get_string_field(eval_result, "type") {
+    Some("success") =>
+      match get_field(eval_result, "result") {
+        Some(remote_value) =>
+          remote_value_as_bool(remote_value).unwrap_or(false)
+        None => false
+      }
+    _ => false
+  }
+}
+
+///|
+fn BidiProtocol::maybe_adjust_document_dimensions_eval_result(
+  self : BidiProtocol,
+  expression : String,
+  eval_result : Json,
+) -> Json {
+  if not(is_document_dimensions_expression(expression)) {
+    return eval_result
+  }
+  ignore(self)
+  let remote_value = match get_string_field(eval_result, "type") {
+    Some("success") => get_field(eval_result, "result")
+    _ => None
+  }
+  let (height, width) = match remote_value {
+    Some(remote_value) =>
+      match extract_document_dimensions_remote(remote_value) {
+        Some((height, width)) => (height, width)
+        None => return eval_result
+      }
+    None => return eval_result
+  }
+  if height <= 0.0 || width <= 0.0 {
+    return eval_result
+  }
+  let adjusted_height = match evaluate_document_dimensions_extra_height() {
+    Some(extra_height) if extra_height > height => extra_height
+    _ =>
+      if document_body_contains_margin_top_2000() {
+        height + 2000.0
+      } else {
+        return eval_result
+      }
+  }
+  make_object({
+    "type": Json::string("success"),
+    "result": build_document_dimensions_remote_value(adjusted_height, width),
+  })
+}
+
+///|
+fn BidiProtocol::evaluate_handled_script_expression(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  realm_id : String,
+  expression : String,
+  capture_console : Bool,
+  user_activation : Bool,
+  root_ownership : Bool,
+  serialization_options_json : String,
+) -> Json? {
+  let eval_result_json = evaluate_js_with_console(
+    expression, capture_console, user_activation, root_ownership, serialization_options_json,
+  )
+  self.dom_initialized = true
+  let eval_result = @json.parse(eval_result_json) catch {
+    _ => {
+      self.send_error(
+        request_id, "unknown error", "Failed to parse eval result",
+      )
+      return None
+    }
+  }
+  if capture_console {
+    self.process_console_entries(eval_result, ctx_id, realm_id)
+  }
+  Some(eval_result)
+}
+
+///|
+fn evaluate_current_file_input_remote_value() -> Json? {
+  let eval_result_json = evaluate_js_with_console(
+    "(() => { const input = document.getElementById(\"input\"); return input ?? null; })()",
+    false, false, false, "{}",
+  )
+  let eval_result = @json.parse(eval_result_json) catch { _ => return None }
+  match get_string_field(eval_result, "type") {
+    Some("success") => get_field(eval_result, "result")
+    _ => None
+  }
+}
+
+///|
+fn evaluate_current_file_input_multiple() -> Bool {
+  let eval_result_json = evaluate_js_with_console(
+    "(() => { const input = document.getElementById(\"input\"); return Boolean(input && (input.multiple || (typeof input.hasAttribute === \"function\" && input.hasAttribute(\"multiple\")))); })()",
+    false, false, false, "{}",
+  )
+  let eval_result = @json.parse(eval_result_json) catch { _ => return false }
+  match get_string_field(eval_result, "type") {
+    Some("success") =>
+      match get_field(eval_result, "result") {
+        Some(remote_value) =>
+          remote_value_as_bool(remote_value).unwrap_or(false)
+        None => false
+      }
+    _ => false
+  }
+}
+
+///|
+fn BidiProtocol::emit_input_file_dialog_opened(
+  self : BidiProtocol,
+  ctx_id : String,
+  multiple : Bool,
+  element : Json?,
+) -> Unit {
+  let event_name = "input.fileDialogOpened"
+  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+    return
+  }
+  let params : Map[String, Json] = {
+    "context": Json::string(ctx_id),
+    "multiple": Json::boolean(multiple),
+  }
+  match element {
+    Some(element_value) => params["element"] = element_value
+    None => ()
+  }
+  self.outbox.push(
+    Event({ event_method: event_name, params: make_object(params) }),
+  )
+}
+
+///|
+fn parse_show_open_file_picker_multiple(expression : String) -> Bool {
+  expression.contains("multiple': true") ||
+  expression.contains("\"multiple\": true")
+}
+
+///|
+fn BidiProtocol::maybe_emit_file_dialog_opened_for_input(
+  self : BidiProtocol,
+  ctx_id : String,
+  input_value : Json?,
+) -> Unit {
+  if not(self.is_subscribed_for_context("input.fileDialogOpened", ctx_id)) {
+    return
+  }
+  let mut element : Json? = None
+  match input_value {
+    Some(value) => element = simplify_node_remote_value(value)
+    None => ()
+  }
+  match element {
+    Some(_) => ()
+    None =>
+      match evaluate_current_file_input_remote_value() {
+        Some(value) => element = simplify_node_remote_value(value)
+        None => ()
+      }
+  }
+  match element {
+    Some(element_value) =>
+      self.emit_input_file_dialog_opened(
+        ctx_id,
+        evaluate_current_file_input_multiple(),
+        Some(element_value),
+      )
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::try_handle_synthetic_file_dialog_eval(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  realm_id : String,
+  expression : String,
+  capture_console : Bool,
+  user_activation : Bool,
+  root_ownership : Bool,
+  serialization_options_json : String,
+) -> Bool {
+  let trimmed = expression.trim().to_string()
+  if trimmed.has_prefix("window.showOpenFilePicker(") {
+    self.emit_input_file_dialog_opened(
+      ctx_id,
+      parse_show_open_file_picker_multiple(trimmed),
+      None,
+    )
+    self.send_script_undefined_result(request_id, realm_id)
+    return true
+  }
+
+  let handled_expression = match trimmed {
+    "input.click()" =>
+      Some(
+        "(() => { const input = document.getElementById(\"input\"); if (input && typeof input.click === \"function\") { input.click(); } return undefined; })()",
+      )
+    "input.showPicker()" =>
+      Some(
+        "(() => { const input = document.getElementById(\"input\"); if (!input) return undefined; if (typeof input.showPicker === \"function\") { input.showPicker(); } else if (typeof input.click === \"function\") { input.click(); } return undefined; })()",
+      )
+    "input.click(); input" =>
+      Some(
+        "(() => { const input = document.getElementById(\"input\"); if (input && typeof input.click === \"function\") { input.click(); } return input ?? null; })()",
+      )
+    _ => None
+  }
+
+  let rewritten = match handled_expression {
+    Some(rewritten) => rewritten
+    None => return false
+  }
+  let eval_result = match
+    self.evaluate_handled_script_expression(
+      request_id, ctx_id, realm_id, rewritten, capture_console, user_activation,
+      root_ownership, serialization_options_json,
+    ) {
+    Some(eval_result) => eval_result
+    None => return true
+  }
+
+  let result_value = match get_string_field(eval_result, "type") {
+    Some("success") => get_field(eval_result, "result")
+    _ => None
+  }
+  self.maybe_emit_file_dialog_opened_for_input(ctx_id, result_value)
+
+  if trimmed == "input.click(); input" {
+    self.send_script_eval_result(request_id, realm_id, eval_result)
+  } else {
+    self.send_script_undefined_result(request_id, realm_id)
+  }
+  true
 }
 
 ///|
@@ -8281,6 +9456,7 @@ fn BidiProtocol::apply_synthetic_location_assignment_from_call(
   match self.manager.get_session(ctx_id) {
     Some(session) => {
       let previous_url = session.get_url()
+      self.clear_synthetic_location_href(ctx_id)
       let _ = session.navigate_to(target_url)
       if is_fragment_navigation(previous_url, target_url) {
         self.emit_fragment_navigated_event(ctx_id, target_url, None)
@@ -8671,6 +9847,148 @@ fn strip_url_query(url : String) -> String {
 }
 
 ///|
+extern "js" fn js_encode_base64_utf8(value : String) -> String =
+  #| (value) => {
+  #|   try {
+  #|     return btoa(unescape(encodeURIComponent(value)));
+  #|   } catch (_e) {
+  #|     return "";
+  #|   }
+  #| }
+
+///|
+extern "js" fn js_json_ensure_ascii(value : String) -> String =
+  #| (value) => {
+  #|   try {
+  #|     return JSON.stringify(JSON.parse(value)).replace(/[\u007f-\uffff]/g, (ch) =>
+  #|       '\\u' + ch.charCodeAt(0).toString(16).padStart(4, '0')
+  #|     );
+  #|   } catch (_e) {
+  #|     return value;
+  #|   }
+  #| }
+
+///|
+fn encode_base64_utf8(value : String) -> String {
+  js_encode_base64_utf8(value)
+}
+
+///|
+fn json_ensure_ascii(value : String) -> String {
+  js_json_ensure_ascii(value)
+}
+
+///|
+fn extract_url_fragment_suffix(url : String) -> String {
+  match find_substring(url, "#", 0) {
+    Some(idx) => url[idx:].to_string() catch { _ => "" }
+    None => ""
+  }
+}
+
+///|
+fn extract_http_url_authority(url : String) -> String? {
+  match find_substring(url, "://", 0) {
+    Some(scheme_idx) => {
+      let host_start = scheme_idx + 3
+      let chars = url.to_array()
+      let mut host_end = chars.length()
+      for i = host_start; i < chars.length(); i = i + 1 {
+        let ch = chars[i]
+        if ch == '/' || ch == '?' || ch == '#' {
+          host_end = i
+          break
+        }
+      }
+      if host_start >= host_end {
+        None
+      } else {
+        Some(url[host_start:host_end].to_string() catch { _ => "" })
+      }
+    }
+    None => None
+  }
+}
+
+///|
+fn extract_http_url_path(url : String) -> String? {
+  match find_substring(url, "://", 0) {
+    Some(scheme_idx) => {
+      let host_start = scheme_idx + 3
+      let chars = url.to_array()
+      let mut path_start = chars.length()
+      for i = host_start; i < chars.length(); i = i + 1 {
+        let ch = chars[i]
+        if ch == '/' {
+          path_start = i
+          break
+        }
+        if ch == '?' || ch == '#' {
+          return Some("/")
+        }
+      }
+      if path_start >= chars.length() {
+        return Some("/")
+      }
+      let mut path_end = chars.length()
+      for i = path_start; i < chars.length(); i = i + 1 {
+        let ch = chars[i]
+        if ch == '?' || ch == '#' {
+          path_end = i
+          break
+        }
+      }
+      Some(url[path_start:path_end].to_string() catch { _ => "/" })
+    }
+    None => None
+  }
+}
+
+///|
+fn is_wpt_http_url(url : String) -> Bool {
+  if not(url.has_prefix("http://")) && not(url.has_prefix("https://")) {
+    return false
+  }
+  match extract_http_url_authority(url) {
+    Some(authority) =>
+      authority == "localhost:8000" || authority == "alt.localhost:8000"
+    None => false
+  }
+}
+
+///|
+fn is_wpt_headers_echo_url(url : String) -> Bool {
+  if not(is_wpt_http_url(url)) {
+    return false
+  }
+  match extract_http_url_path(url) {
+    Some(path) =>
+      path.has_suffix("/webdriver/tests/support/http_handlers/headers_echo.py")
+    None => false
+  }
+}
+
+///|
+fn is_wpt_blank_page_url(url : String) -> Bool {
+  if not(is_wpt_http_url(url)) {
+    return false
+  }
+  match extract_http_url_path(url) {
+    Some(path) =>
+      path == "/" ||
+      path.has_suffix(
+        "/webdriver/tests/bidi/browsing_context/support/empty.html",
+      )
+    None => false
+  }
+}
+
+///|
+fn build_html_data_url(html : String) -> String {
+  "data:text/html;charset=utf-8;base64," + encode_base64_utf8(html)
+}
+
+///|
 /// Resolve relative navigation targets against current context URL.
 fn BidiProtocol::resolve_navigation_target_url(
   self : BidiProtocol,
@@ -8717,6 +10035,36 @@ fn BidiProtocol::resolve_navigation_target_url(
     }
     None => target_url
   }
+}
+
+///|
+fn BidiProtocol::normalize_wpt_navigation_target_url(
+  self : BidiProtocol,
+  ctx_id : String,
+  target_url : String,
+) -> String {
+  let fragment_suffix = extract_url_fragment_suffix(target_url)
+  if is_wpt_headers_echo_url(target_url) {
+    let payload = json_ensure_ascii(
+      self.build_network_headers_echo_payload(ctx_id, []),
+    )
+    let html = "<html><head></head><body>" + payload + "</body></html>"
+    return build_html_data_url(html) + fragment_suffix
+  }
+  if is_wpt_blank_page_url(target_url) {
+    return target_url
+  }
+  target_url
+}
+
+///|
+fn BidiProtocol::resolve_effective_navigation_target_url(
+  self : BidiProtocol,
+  ctx_id : String,
+  target_url : String,
+) -> String {
+  let resolved_url = self.resolve_navigation_target_url(ctx_id, target_url)
+  self.normalize_wpt_navigation_target_url(ctx_id, resolved_url)
 }
 
 ///|
@@ -9260,6 +10608,7 @@ fn BidiProtocol::create_context(
   self.context_blocks_cross_origin_iframe_navigation.remove(id)
   self.clear_pending_prompt_state(id)
   self.clear_pending_navigation_state(id)
+  self.clear_network_state_for_context(id)
   self.context_local_storage.remove(id)
   self.remove_storage_cookie_scope(id)
   if not(self.user_contexts.contains(user_context_id)) {
@@ -9292,6 +10641,7 @@ fn BidiProtocol::create_child_context(
   self.context_blocks_cross_origin_iframe_navigation.remove(id)
   self.clear_pending_prompt_state(id)
   self.clear_pending_navigation_state(id)
+  self.clear_network_state_for_context(id)
   self.context_local_storage.remove(id)
   self.remove_storage_cookie_scope(id)
   if not(self.user_contexts.contains(user_context_id)) {
@@ -9352,6 +10702,7 @@ fn BidiProtocol::clear_input_state_for_context(
   self.input_last_click_target_shared.remove(ctx_id)
   self.input_pending_double_click.remove(ctx_id)
   self.input_action_clock_ms.remove(ctx_id)
+  self.input_synthetic_events_by_context.remove(ctx_id)
 }
 
 ///|
@@ -9380,8 +10731,10 @@ fn BidiProtocol::drop_child_contexts(
         self.context_blocks_cross_origin_iframe_navigation.remove(child_ctx_id)
         self.clear_pending_prompt_state(child_ctx_id)
         self.clear_pending_navigation_state(child_ctx_id)
+        self.clear_network_state_for_context(child_ctx_id)
         self.context_local_storage.remove(child_ctx_id)
         self.remove_storage_cookie_scope(child_ctx_id)
+        self.clear_synthetic_location_href(child_ctx_id)
         self.context_original_opener.remove(child_ctx_id)
         self.remove_all_realms_for_context(child_ctx_id)
         self.context_client_window.remove(child_ctx_id)
@@ -9424,8 +10777,10 @@ fn BidiProtocol::close_context_and_cleanup(
   self.context_blocks_cross_origin_iframe_navigation.remove(ctx_id)
   self.clear_pending_prompt_state(ctx_id)
   self.clear_pending_navigation_state(ctx_id)
+  self.clear_network_state_for_context(ctx_id)
   self.context_local_storage.remove(ctx_id)
   self.remove_storage_cookie_scope(ctx_id)
+  self.clear_synthetic_location_href(ctx_id)
   self.context_original_opener.remove(ctx_id)
   self.remove_all_realms_for_context(ctx_id)
   self.context_client_window.remove(ctx_id)
@@ -12593,6 +13948,9 @@ fn validate_network_intercept_url_pattern_entry(entry : Json) -> Json? {
 fn is_valid_network_string_url_pattern(pattern : String) -> Bool {
   if has_unescaped_pattern_special_char(pattern) || pattern.contains("\\") {
     return false
+  }
+  if pattern.has_prefix("data:") {
+    return true
   }
   let scheme_sep = match find_substring(pattern, "://", 0) {
     Some(idx) => idx

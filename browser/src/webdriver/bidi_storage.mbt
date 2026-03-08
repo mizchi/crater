@@ -3,6 +3,7 @@ priv struct StoredCookie {
   name : String
   value_text : String
   domain : String
+  domain_explicit : Bool
   path : String
   http_only : Bool
   secure : Bool
@@ -38,7 +39,10 @@ priv struct StoragePartitionInfo {
 ///|
 extern "js" fn js_parse_cookie_expiry_seconds(value : String) -> Int =
   #| (value) => {
-  #|   const parsed = Date.parse(String(value ?? ""));
+  #|   const text = String(value ?? "").trim();
+  #|   if (text.length === 0) return -1;
+  #|   const hasZone = /(?:GMT|UTC|[+-]\d{2}:?\d{2})$/i.test(text);
+  #|   const parsed = Date.parse(hasZone ? text : `${text} GMT`);
   #|   if (!Number.isFinite(parsed)) return -1;
   #|   return Math.floor(parsed / 1000);
   #| }
@@ -93,7 +97,13 @@ fn storage_cookie_to_json(cookie : StoredCookie) -> Json {
   let obj : Map[String, Json] = {}
   obj["name"] = Json::string(cookie.name)
   obj["value"] = storage_cookie_value_json(cookie.value_text)
-  obj["domain"] = Json::string(cookie.domain)
+  obj["domain"] = Json::string(
+    if cookie.domain_explicit && cookie.domain.length() > 0 {
+      "." + cookie.domain
+    } else {
+      cookie.domain
+    },
+  )
   obj["path"] = Json::string(cookie.path)
   obj["httpOnly"] = Json::boolean(cookie.http_only)
   obj["secure"] = Json::boolean(cookie.secure)
@@ -104,6 +114,14 @@ fn storage_cookie_to_json(cookie : StoredCookie) -> Json {
     None => ()
   }
   make_object(obj)
+}
+
+///|
+fn storage_cookie_to_request_json(cookie : StoredCookie) -> Json {
+  make_object({
+    "name": Json::string(cookie.name),
+    "value": storage_cookie_value_json(cookie.value_text),
+  })
 }
 
 ///|
@@ -222,6 +240,83 @@ fn BidiProtocol::dispatch_storage(
       self.send_success(request.id, Some(result))
       Ok(())
     }
+    "resolveRequestCookies" => {
+      let context_id = match get_param_raw(request.params, "context") {
+        Some(String(context_id)) => context_id
+        Some(_) | None => {
+          self.send_error(
+            request.id,
+            "invalid argument",
+            "context must be a string",
+          )
+          return Ok(())
+        }
+      }
+      if not(self.manager.has_session(context_id)) {
+        self.send_error(
+          request.id,
+          "no such frame",
+          "Unknown context: " + context_id,
+        )
+        return Ok(())
+      }
+      let request_url : String? = match
+        get_param_raw(request.params, "requestUrl") {
+        None | Some(Null) => None
+        Some(String(url)) => Some(url)
+        Some(_) => {
+          self.send_error(
+            request.id,
+            "invalid argument",
+            "requestUrl must be a string",
+          )
+          return Ok(())
+        }
+      }
+      let cookies = self.resolve_storage_request_cookies(
+        context_id, request_url,
+      )
+      self.send_success(
+        request.id,
+        Some(make_object({ "cookies": Json::array(cookies) })),
+      )
+      Ok(())
+    }
+    "rememberDocumentCookie" => {
+      let context_id = match get_param_raw(request.params, "context") {
+        Some(String(context_id)) => context_id
+        Some(_) | None => {
+          self.send_error(
+            request.id,
+            "invalid argument",
+            "context must be a string",
+          )
+          return Ok(())
+        }
+      }
+      if not(self.manager.has_session(context_id)) {
+        self.send_error(
+          request.id,
+          "no such frame",
+          "Unknown context: " + context_id,
+        )
+        return Ok(())
+      }
+      let cookie_assignment = match get_param_raw(request.params, "cookie") {
+        Some(String(cookie_assignment)) => cookie_assignment
+        Some(_) | None => {
+          self.send_error(
+            request.id,
+            "invalid argument",
+            "cookie must be a string",
+          )
+          return Ok(())
+        }
+      }
+      self.remember_document_cookie(context_id, cookie_assignment)
+      self.send_success(request.id, Some(make_object({})))
+      Ok(())
+    }
     _ => {
       self.send_error(
         request.id,
@@ -264,7 +359,10 @@ fn BidiProtocol::normalize_storage_cookie_filter(
       let mut value_text : String? = None
 
       match map.get("domain") {
-        Some(String(value)) => domain = Some(value)
+        Some(String(value)) =>
+          domain = Some(
+            storage_strip_leading_dot(value.trim().to_string().to_lower()),
+          )
         Some(Null) | None => ()
         Some(_) => {
           self.send_error(
@@ -416,6 +514,16 @@ fn BidiProtocol::normalize_storage_cookie_input(
       return None
     }
   }
+  let domain_explicit = match map.get("domainExplicit") {
+    Some(True) => true
+    Some(False) | Some(Null) | None => false
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "cookie.domainExplicit must be a boolean",
+      )
+      return None
+    }
+  }
 
   let name = match map.get("name") {
     Some(String(value)) => value
@@ -514,6 +622,7 @@ fn BidiProtocol::normalize_storage_cookie_input(
     name,
     value_text,
     domain,
+    domain_explicit,
     path,
     http_only,
     secure,
@@ -789,10 +898,43 @@ fn BidiProtocol::storage_context_ancestry(
 }
 
 ///|
+fn BidiProtocol::remember_synthetic_location_href(
+  self : BidiProtocol,
+  ctx_id : String,
+  href : String,
+) -> Unit {
+  if href == "" {
+    self.synthetic_location_href_by_context.remove(ctx_id)
+  } else {
+    self.synthetic_location_href_by_context[ctx_id] = href
+  }
+}
+
+///|
+fn BidiProtocol::resolve_synthetic_location_href(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> String? {
+  self.synthetic_location_href_by_context.get(ctx_id)
+}
+
+///|
+fn BidiProtocol::clear_synthetic_location_href(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Unit {
+  self.synthetic_location_href_by_context.remove(ctx_id)
+}
+
+///|
 fn BidiProtocol::get_context_cookie_base_url(
   self : BidiProtocol,
   ctx_id : String,
 ) -> String {
+  match self.resolve_synthetic_location_href(ctx_id) {
+    Some(href) if href != "" => return href
+    _ => ()
+  }
   match self.manager.get_session(ctx_id) {
     Some(session) => {
       let url = session.get_url()
@@ -1015,6 +1157,17 @@ fn storage_cookie_default_path(base_url : String) -> String {
 }
 
 ///|
+fn storage_request_path(request_url : String) -> String {
+  if request_url.has_prefix("http://") {
+    storage_http_path(request_url, 7)
+  } else if request_url.has_prefix("https://") {
+    storage_http_path(request_url, 8)
+  } else {
+    storage_cookie_default_path(request_url)
+  }
+}
+
+///|
 fn find_last_slash(value : String) -> Int? {
   let chars = value.to_array()
   let mut idx = chars.length()
@@ -1075,6 +1228,50 @@ fn storage_make_cookie_identity(cookie : StoredCookie) -> String {
   cookie.user_context.unwrap_or("") +
   "|" +
   cookie.source_origin.unwrap_or("")
+}
+
+///|
+fn storage_cookie_matches_request_url(
+  cookie : StoredCookie,
+  request_url : String?,
+) -> Bool {
+  match request_url {
+    None => true
+    Some(url) =>
+      if url.length() == 0 {
+        true
+      } else {
+        let request_host = storage_cookie_domain_from_base_url(url).to_lower()
+        let request_path = storage_request_path(url)
+        let normalized_domain = storage_strip_leading_dot(
+          cookie.domain.to_lower(),
+        )
+        if normalized_domain.length() > 0 &&
+          request_host != normalized_domain &&
+          not(request_host.has_suffix("." + normalized_domain)) {
+          return false
+        }
+        let cookie_path = cookie.path
+        if cookie_path.length() == 0 || cookie_path == "/" {
+          return true
+        }
+        if request_path == cookie_path {
+          return true
+        }
+        if not(request_path.has_prefix(cookie_path)) {
+          return false
+        }
+        if cookie_path.has_suffix("/") {
+          return true
+        }
+        if request_path.length() == cookie_path.length() {
+          return true
+        }
+        let request_chars = request_path.to_array()
+        cookie_path.length() < request_chars.length() &&
+        request_chars[cookie_path.length()] == '/'
+      }
+  }
 }
 
 ///|
@@ -1156,6 +1353,32 @@ fn BidiProtocol::delete_matching_storage_cookie_identity(
       None => ()
     }
   }
+}
+
+///|
+fn BidiProtocol::resolve_storage_request_cookies(
+  self : BidiProtocol,
+  ctx_id : String,
+  request_url : String?,
+) -> Array[Json] {
+  self.prune_expired_storage_cookies()
+  let merged : Map[String, StoredCookie] = {}
+  for scope_id in self.storage_context_ancestry(ctx_id) {
+    match self.storage_cookies_by_scope.get(scope_id) {
+      Some(jar) =>
+        for cookie_id, cookie in jar {
+          merged[cookie_id] = cookie
+        }
+      None => ()
+    }
+  }
+  let cookies : Array[Json] = []
+  for _, cookie in merged {
+    if storage_cookie_matches_request_url(cookie, request_url) {
+      cookies.push(storage_cookie_to_request_json(cookie))
+    }
+  }
+  cookies
 }
 
 ///|
@@ -1421,6 +1644,7 @@ fn BidiProtocol::remember_document_cookie(
       let value = storage_slice_from(first_segment, value_start)
       let base_url = self.get_context_cookie_base_url(ctx_id)
       let mut domain = storage_cookie_domain_from_base_url(base_url)
+      let mut domain_explicit = false
       let mut path = storage_cookie_default_path(base_url)
       let mut secure = false
       let mut same_site = "default"
@@ -1447,6 +1671,7 @@ fn BidiProtocol::remember_document_cookie(
               )
               if normalized_domain.length() > 0 {
                 domain = normalized_domain
+                domain_explicit = true
               }
             } else if attr_name == "path" {
               if attr_value.length() > 0 {
@@ -1486,6 +1711,7 @@ fn BidiProtocol::remember_document_cookie(
         name: name.trim().to_string(),
         value_text: value.trim().to_string(),
         domain,
+        domain_explicit,
         path,
         http_only,
         secure,
@@ -1550,6 +1776,34 @@ fn extract_document_cookie_assignment(expression : String) -> String? {
     return Some("")
   }
   Some(trimmed[start:end].to_string() catch { _ => "" })
+}
+
+///|
+fn BidiProtocol::try_handle_synthetic_window_location_href_eval(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  realm_id : String,
+  expression : String,
+) -> Bool {
+  let expr = expression.trim().to_string()
+  if expr != "window.location.href" {
+    return false
+  }
+  match self.resolve_synthetic_location_href(ctx_id) {
+    Some(href) => {
+      let result = make_object({
+        "realm": Json::string(realm_id),
+        "result": make_object({
+          "type": Json::string("string"),
+          "value": Json::string(href),
+        }),
+      })
+      self.send_success(request_id, Some(result))
+      true
+    }
+    None => false
+  }
 }
 
 ///|
