@@ -8,6 +8,22 @@ priv struct CanonicalNetworkHttpUrl {
 }
 
 ///|
+fn BidiProtocol::handle_network_allocate_request_id(
+  self : BidiProtocol,
+  request_id : Int,
+  _params : Json?,
+) -> Unit {
+  self.send_success(
+    request_id,
+    Some(
+      make_object({
+        "request": Json::string(self.next_synthetic_network_request_id()),
+      }),
+    ),
+  )
+}
+
+///|
 fn BidiProtocol::handle_network_resolve_matching_intercepts(
   self : BidiProtocol,
   request_id : Int,
@@ -52,17 +68,11 @@ fn BidiProtocol::handle_network_resolve_matching_intercepts(
     }
   }
   let intercepts : Array[Json] = []
-  let ancestry = self.build_context_scope_ancestry_for_matching(context_id)
-  for intercept_id in self.list_active_network_intercept_ids() {
-    match self.network_intercepts.get(intercept_id) {
-      Some(Object(options)) =>
-        if network_intercept_matches_phase(options, phase) &&
-          network_option_contexts_match(options, ancestry) &&
-          network_url_patterns_match(options, url) {
-          intercepts.push(Json::string(intercept_id))
-        }
-      _ => ()
-    }
+  for
+    intercept_id in self.resolve_matching_network_intercepts_internal(
+      context_id, phase, url,
+    ) {
+    intercepts.push(Json::string(intercept_id))
   }
   self.send_success(
     request_id,
@@ -128,46 +138,9 @@ fn BidiProtocol::handle_network_remember_collected_data(
     None => None
   }
 
-  let request_bucket = self.network_collected_data
-    .get(request_token)
-    .unwrap_or({})
-  let ancestry = self.build_context_scope_ancestry_for_matching(context_id)
-  let user_context = self.context_user_context
-    .get(context_id)
-    .unwrap_or("default")
-  let next_bucket = request_bucket
-  for collector_id in self.list_active_network_collector_ids() {
-    match self.network_data_collectors.get(collector_id) {
-      Some(Object(options)) =>
-        if network_collector_matches_scope(options, ancestry, user_context) {
-          let collector_bucket = next_bucket.get(collector_id).unwrap_or({})
-          let data_types = network_collector_data_types(options)
-          let max_size = network_collector_max_encoded_size(options)
-          let next_collector_bucket = collector_bucket
-          match request_value {
-            Some(request_data) =>
-              if array_contains_string(data_types, "request") &&
-                network_bytes_value_encoded_size(request_data) <= max_size {
-                next_collector_bucket["request"] = request_data
-              }
-            None => ()
-          }
-          match response_value {
-            Some(response_data) =>
-              if array_contains_string(data_types, "response") &&
-                network_bytes_value_encoded_size(response_data) <= max_size {
-                next_collector_bucket["response"] = response_data
-              }
-            None => ()
-          }
-          if next_collector_bucket.length() > 0 {
-            next_bucket[collector_id] = next_collector_bucket
-          }
-        }
-      _ => ()
-    }
-  }
-  self.network_collected_data[request_token] = next_bucket
+  self.remember_network_collected_data_internal(
+    context_id, request_token, request_value, response_value,
+  )
   self.send_success(request_id, Some(make_object({})))
 }
 
@@ -464,6 +437,65 @@ fn BidiProtocol::list_active_network_intercept_ids(
 }
 
 ///|
+fn BidiProtocol::next_synthetic_network_request_id(
+  self : BidiProtocol,
+) -> String {
+  let request_id = "request-" + self.next_network_request_id.to_string()
+  self.next_network_request_id += 1
+  request_id
+}
+
+///|
+fn BidiProtocol::remember_network_collected_data_internal(
+  self : BidiProtocol,
+  context_id : String,
+  request_token : String,
+  request_value : Json?,
+  response_value : Json?,
+) -> Unit {
+  let request_bucket = self.network_collected_data
+    .get(request_token)
+    .unwrap_or({})
+  let ancestry = self.build_context_scope_ancestry_for_matching(context_id)
+  let user_context = self.context_user_context
+    .get(context_id)
+    .unwrap_or("default")
+  let next_bucket = request_bucket
+  for collector_id in self.list_active_network_collector_ids() {
+    match self.network_data_collectors.get(collector_id) {
+      Some(Object(options)) =>
+        if network_collector_matches_scope(options, ancestry, user_context) {
+          let collector_bucket = next_bucket.get(collector_id).unwrap_or({})
+          let data_types = network_collector_data_types(options)
+          let max_size = network_collector_max_encoded_size(options)
+          let next_collector_bucket = collector_bucket
+          match request_value {
+            Some(request_data) =>
+              if array_contains_string(data_types, "request") &&
+                network_bytes_value_encoded_size(request_data) <= max_size {
+                next_collector_bucket["request"] = request_data
+              }
+            None => ()
+          }
+          match response_value {
+            Some(response_data) =>
+              if array_contains_string(data_types, "response") &&
+                network_bytes_value_encoded_size(response_data) <= max_size {
+                next_collector_bucket["response"] = response_data
+              }
+            None => ()
+          }
+          if next_collector_bucket.length() > 0 {
+            next_bucket[collector_id] = next_collector_bucket
+          }
+        }
+      _ => ()
+    }
+  }
+  self.network_collected_data[request_token] = next_bucket
+}
+
+///|
 fn BidiProtocol::list_active_network_collector_ids(
   self : BidiProtocol,
 ) -> Array[String] {
@@ -491,6 +523,29 @@ fn BidiProtocol::build_context_scope_ancestry_for_matching(
     ancestry.push(ctx_id)
   }
   ancestry
+}
+
+///|
+fn BidiProtocol::resolve_matching_network_intercepts_internal(
+  self : BidiProtocol,
+  context_id : String,
+  phase : String,
+  url : String,
+) -> Array[String] {
+  let intercepts : Array[String] = []
+  let ancestry = self.build_context_scope_ancestry_for_matching(context_id)
+  for intercept_id in self.list_active_network_intercept_ids() {
+    match self.network_intercepts.get(intercept_id) {
+      Some(Object(options)) =>
+        if network_intercept_matches_phase(options, phase) &&
+          network_option_contexts_match(options, ancestry) &&
+          network_url_patterns_match(options, url) {
+          intercepts.push(intercept_id)
+        }
+      _ => ()
+    }
+  }
+  intercepts
 }
 
 ///|

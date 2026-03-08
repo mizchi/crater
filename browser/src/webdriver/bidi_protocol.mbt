@@ -110,6 +110,7 @@ priv struct BidiProtocol {
   context_local_storage : Map[String, Map[String, String]] // context -> localStorage key/value
   storage_cookies_by_scope : Map[String, Map[String, StoredCookie]] // scope -> stored cookies
   synthetic_location_href_by_context : Map[String, String] // context -> synthetic window.location.href override
+  context_last_started_navigation : Map[String, String] // context -> last emitted navigationStarted id
   context_original_opener : Map[String, String]
   context_realm : Map[String, String]
   context_sandbox_realm : Map[String, String] // "<context>::<sandbox>" -> realm
@@ -144,6 +145,7 @@ priv struct BidiProtocol {
   context_synthetic_scrolled : Map[String, Bool] // context -> synthetic scroll fallback applied
   network_intercepts : Map[String, Json] // intercept id -> network.addIntercept options
   mut next_network_intercept_id : Int
+  mut next_network_request_id : Int
   mut network_cache_behavior_global : String
   network_extra_headers_global : Map[String, String]
   network_extra_headers_by_context : Map[String, Map[String, String]]
@@ -210,6 +212,7 @@ fn BidiProtocol::new() -> BidiProtocol {
     context_local_storage: {},
     storage_cookies_by_scope: {},
     synthetic_location_href_by_context: {},
+    context_last_started_navigation: {},
     context_original_opener: {},
     context_realm: {},
     context_sandbox_realm: {},
@@ -244,6 +247,7 @@ fn BidiProtocol::new() -> BidiProtocol {
     context_synthetic_scrolled: {},
     network_intercepts: {},
     next_network_intercept_id: 1,
+    next_network_request_id: 1,
     network_cache_behavior_global: "default",
     network_extra_headers_global: {},
     network_extra_headers_by_context: {},
@@ -456,6 +460,7 @@ fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
   for key in storage_cookie_scope_keys {
     self.storage_cookies_by_scope.remove(key)
   }
+  self.next_network_request_id = 1
 
   let synthetic_location_keys : Array[String] = []
   for key, _ in self.synthetic_location_href_by_context {
@@ -463,6 +468,13 @@ fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
   }
   for key in synthetic_location_keys {
     self.synthetic_location_href_by_context.remove(key)
+  }
+  let last_navigation_keys : Array[String] = []
+  for key, _ in self.context_last_started_navigation {
+    last_navigation_keys.push(key)
+  }
+  for key in last_navigation_keys {
+    self.context_last_started_navigation.remove(key)
   }
 
   let context_original_opener_keys : Array[String] = []
@@ -6993,6 +7005,21 @@ fn BidiProtocol::dispatch_network(
       self.handle_network_continue_blocked_response(request.id, request.params)
       Ok(())
     }
+    "prepareNavigationRequest" => {
+      self.handle_network_prepare_navigation_request(request.id, request.params)
+      Ok(())
+    }
+    "emitNavigationRequestSequence" => {
+      self.handle_network_emit_navigation_request_sequence(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
+    "allocateRequestId" => {
+      self.handle_network_allocate_request_id(request.id, request.params)
+      Ok(())
+    }
     "resolveMatchingIntercepts" => {
       self.handle_network_resolve_matching_intercepts(
         request.id,
@@ -10714,6 +10741,7 @@ fn BidiProtocol::create_context(
   self.clear_network_state_for_context(id)
   self.context_local_storage.remove(id)
   self.remove_storage_cookie_scope(id)
+  self.context_last_started_navigation.remove(id)
   if not(self.user_contexts.contains(user_context_id)) {
     self.user_contexts[user_context_id] = true
   }
@@ -10747,6 +10775,7 @@ fn BidiProtocol::create_child_context(
   self.clear_network_state_for_context(id)
   self.context_local_storage.remove(id)
   self.remove_storage_cookie_scope(id)
+  self.context_last_started_navigation.remove(id)
   if not(self.user_contexts.contains(user_context_id)) {
     self.user_contexts[user_context_id] = true
   }
@@ -10838,6 +10867,7 @@ fn BidiProtocol::drop_child_contexts(
         self.clear_network_state_for_context(child_ctx_id)
         self.context_local_storage.remove(child_ctx_id)
         self.remove_storage_cookie_scope(child_ctx_id)
+        self.context_last_started_navigation.remove(child_ctx_id)
         self.clear_synthetic_location_href(child_ctx_id)
         self.context_original_opener.remove(child_ctx_id)
         self.remove_all_realms_for_context(child_ctx_id)
@@ -10884,6 +10914,7 @@ fn BidiProtocol::close_context_and_cleanup(
   self.clear_network_state_for_context(ctx_id)
   self.context_local_storage.remove(ctx_id)
   self.remove_storage_cookie_scope(ctx_id)
+  self.context_last_started_navigation.remove(ctx_id)
   self.clear_synthetic_location_href(ctx_id)
   self.context_original_opener.remove(ctx_id)
   self.remove_all_realms_for_context(ctx_id)
@@ -12763,6 +12794,7 @@ fn BidiProtocol::emit_navigation_started_event(
   if not(self.is_subscribed_for_context(event_name, ctx_id)) {
     return
   }
+  self.context_last_started_navigation[ctx_id] = navigation_id
   let params = make_object({
     "context": Json::string(ctx_id),
     "navigation": Json::string(navigation_id),

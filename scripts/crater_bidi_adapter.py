@@ -394,7 +394,6 @@ class CraterBidiSession:
         self._receive_task = None
         self.event_loop = None
         self._trace_enabled = os.environ.get("CRATER_BIDI_TRACE", "0") == "1"
-        self._synthetic_request_counter = 0
         self._known_user_contexts: set[str] = {"default"}
 
         # Module proxies (lazily initialized)
@@ -898,9 +897,40 @@ class CraterBidiSession:
         result = await future
         return bool(result.get("blocked"))
 
-    def next_synthetic_request_id(self) -> str:
-        self._synthetic_request_counter += 1
-        return f"request-{self._synthetic_request_counter}"
+    async def prepare_navigation_request(
+        self,
+        *,
+        context_id: str,
+        url: str,
+    ) -> dict[str, Any]:
+        future = await self.send_command("network.prepareNavigationRequest", {
+            "context": context_id,
+            "url": url,
+        })
+        result = await future
+        return dict(result) if isinstance(result, Mapping) else {}
+
+    async def emit_navigation_request_sequence(
+        self,
+        *,
+        context_id: str,
+        url: str,
+        navigation: str | None = None,
+    ) -> dict[str, Any]:
+        params: dict[str, Any] = {"context": context_id, "url": url}
+        if isinstance(navigation, str):
+            params["navigation"] = navigation
+        future = await self.send_command("network.emitNavigationRequestSequence", params)
+        result = await future
+        return dict(result) if isinstance(result, Mapping) else {}
+
+    async def next_synthetic_request_id(self) -> str:
+        future = await self.send_command("network.allocateRequestId", {})
+        result = await future
+        request_id = result.get("request")
+        if isinstance(request_id, str):
+            return request_id
+        raise ValueError("network.allocateRequestId returned invalid request id")
 
     def _network_header_entries_from_map(
         self,
@@ -1203,60 +1233,33 @@ class BrowsingContextModule:
             {"context": context},
         )
         await future
-        before_event_name = "network.beforeRequestSent"
-        before_intercepts = await self._session.resolve_matching_intercepts(
+        prepare_result = await self._session.prepare_navigation_request(
             context_id=context,
-            phase="beforeRequestSent",
             url=url,
         )
-        before_subscribed = await self._session.is_event_subscribed_for_context(
-            before_event_name,
-            context,
-        )
-        before_blocked = before_subscribed and len(before_intercepts) > 0
-        if before_blocked:
-            request_id = self._session.next_synthetic_request_id()
-            navigation_id = self._session.next_synthetic_request_id()
-            blocked_event = await self._session.build_before_request_sent_event(
-                context_id=context,
-                url=url,
-                method="GET",
-                request_id=request_id,
-                intercepts=before_intercepts,
-                redirect_count=0,
-                navigation=navigation_id,
-                destination="document",
-                initiator_type=None,
-            )
-            await self._session.emit_synthetic_event(before_event_name, blocked_event)
-            await self._session.remember_blocked_network_request(
-                request_id,
-                phase="beforeRequestSent",
-                context_id=context,
-                url=url,
-                method="GET",
-                request_headers={},
-                request_value=None,
-                redirect_count=0,
-                navigation=navigation_id,
-                destination="document",
-                initiator_type=None,
-                is_navigation=True,
-            )
+        if prepare_result.get("blocked"):
+            navigation_id = prepare_result.get("navigation")
             await asyncio.Future()
-            return {"navigation": navigation_id, "url": url}
+            return {
+                "navigation": navigation_id,
+                "url": prepare_result.get("url", url),
+            }
 
         future = await self._session.send_command(
             "browsingContext.navigate", {"context": context, "url": url, "wait": wait}
         )
         result = await future
         self._last_navigated_url[context] = url
-        await self._emit_synthetic_before_request_events(context, url, result)
         navigation_id = None
         if isinstance(result, Mapping):
             candidate_navigation_id = result.get("navigation")
             if isinstance(candidate_navigation_id, str):
                 navigation_id = candidate_navigation_id
+        await self._session.emit_navigation_request_sequence(
+            context_id=context,
+            url=url,
+            navigation=navigation_id,
+        )
         if await self._session.has_blocked_navigation_request(context, navigation_id):
             await asyncio.Future()
         return result
@@ -1300,507 +1303,6 @@ class BrowsingContextModule:
             )
         return result
 
-    async def _emit_synthetic_network_event_sequence(
-        self,
-        *,
-        context_id: str,
-        url: str,
-        method: str,
-        request_id: str,
-        redirect_count: int,
-        navigation: str | None,
-        destination: str,
-        initiator_type: str | None,
-        request_headers: Mapping[str, Any] | None = None,
-        request_value: Mapping[str, Any] | None = None,
-        is_navigation: bool = False,
-    ) -> None:
-        response_overrides = await self._session.resolve_synthetic_response_overrides(
-            context_id=context_id,
-            url=url,
-            method=method,
-            request_headers=request_headers,
-            update_cache=True,
-        )
-        auth_required_name = "network.authRequired"
-        auth_required_intercepts = await self._session.resolve_matching_intercepts(
-            context_id=context_id,
-            phase="authRequired",
-            url=url,
-        )
-        auth_required_subscribed = await self._session.is_event_subscribed_for_context(
-            auth_required_name,
-            context_id,
-        )
-        auth_required_has_prompt = (
-            response_overrides.get("status") in {401, 407}
-            or isinstance(response_overrides.get("authChallenges"), list)
-        )
-        auth_required_blocked = (
-            auth_required_has_prompt
-            and auth_required_subscribed
-            and len(auth_required_intercepts) > 0
-        )
-        auth_required_needed = auth_required_has_prompt
-        before_request_sent_name = "network.beforeRequestSent"
-        before_intercepts = await self._session.resolve_matching_intercepts(
-            context_id=context_id,
-            phase="beforeRequestSent",
-            url=url,
-        )
-        before_subscribed = await self._session.is_event_subscribed_for_context(
-            before_request_sent_name,
-            context_id,
-        )
-        before_blocked = before_subscribed and len(before_intercepts) > 0
-        if before_subscribed:
-            before_event = await self._session.build_before_request_sent_event(
-                context_id=context_id,
-                url=url,
-                method=method,
-                request_headers=request_headers,
-                request_value=request_value,
-                request_id=request_id,
-                intercepts=before_intercepts if before_blocked else [],
-                redirect_count=redirect_count,
-                navigation=navigation,
-                destination=destination,
-                initiator_type=initiator_type,
-            )
-            await self._session.emit_synthetic_event(before_request_sent_name, before_event)
-        if before_blocked:
-            await self._session.remember_blocked_network_request(
-                request_id,
-                phase="beforeRequestSent",
-                context_id=context_id,
-                url=url,
-                method=method,
-                request_headers=dict(request_headers) if isinstance(request_headers, Mapping) else {},
-                request_value=request_value,
-                redirect_count=redirect_count,
-                navigation=navigation,
-                destination=destination,
-                initiator_type=initiator_type,
-                is_navigation=is_navigation,
-            )
-            return
-
-        if _is_unreachable_test_url(url):
-            fetch_error_name = "network.fetchError"
-            if await self._session.is_event_subscribed_for_context(fetch_error_name, context_id):
-                fetch_error_event = await self._session.build_fetch_error_event(
-                    context_id=context_id,
-                    url=url,
-                    method=method,
-                    request_headers=request_headers,
-                    request_value=request_value,
-                    request_id=request_id,
-                    redirect_count=redirect_count,
-                    navigation=navigation,
-                    destination=destination,
-                    initiator_type=initiator_type,
-                    error_text="Request failed",
-                )
-                await self._session.emit_synthetic_event(fetch_error_name, fetch_error_event)
-            return
-
-        response_started_name = "network.responseStarted"
-        response_started_intercepts = await self._session.resolve_matching_intercepts(
-            context_id=context_id,
-            phase="responseStarted",
-            url=url,
-        )
-        response_started_subscribed = await self._session.is_event_subscribed_for_context(
-            response_started_name,
-            context_id,
-        )
-        response_started_blocked = (
-            response_started_subscribed and len(response_started_intercepts) > 0
-        )
-        if response_started_subscribed:
-            response_started_event = await self._session.build_response_event(
-                context_id=context_id,
-                url=url,
-                method=method,
-                request_headers=request_headers,
-                request_value=request_value,
-                request_id=request_id,
-                intercepts=(
-                    response_started_intercepts if response_started_blocked else []
-                ),
-                redirect_count=redirect_count,
-                navigation=navigation,
-                destination=destination,
-                initiator_type=initiator_type,
-                response_overrides=response_overrides,
-            )
-            await self._session.emit_synthetic_event(
-                response_started_name,
-                response_started_event,
-            )
-        if response_started_blocked:
-            response_payload = (
-                response_started_event.get("response")
-                if isinstance(response_started_event, Mapping)
-                else None
-            )
-            await self._session.remember_blocked_network_request(
-                request_id,
-                phase="responseStarted",
-                context_id=context_id,
-                url=url,
-                method=method,
-                request_headers=dict(request_headers) if isinstance(request_headers, Mapping) else {},
-                request_value=request_value,
-                redirect_count=redirect_count,
-                navigation=navigation,
-                destination=destination,
-                initiator_type=initiator_type,
-                is_navigation=is_navigation,
-                response_headers=(
-                    list(response_payload.get("headers", []))
-                    if isinstance(response_payload, Mapping)
-                    else []
-                ),
-                response_status=(
-                    int(response_payload.get("status", 200))
-                    if isinstance(response_payload, Mapping)
-                    and isinstance(response_payload.get("status"), int)
-                    else 200
-                ),
-                response_status_text=(
-                    str(response_payload.get("statusText", "OK"))
-                    if isinstance(response_payload, Mapping)
-                    else "OK"
-                ),
-            )
-            return
-
-        if auth_required_subscribed and auth_required_needed:
-            auth_required_overrides = dict(response_overrides)
-            if auth_required_blocked:
-                auth_required_overrides.update({
-                    "status": 401,
-                    "statusText": "Unauthorized",
-                    "authChallenges": [{
-                        "scheme": "Basic",
-                        "realm": "testrealm",
-                    }],
-                })
-            auth_required_event = await self._session.build_response_event(
-                context_id=context_id,
-                url=url,
-                method=method,
-                request_headers=request_headers,
-                request_value=request_value,
-                request_id=request_id,
-                intercepts=(
-                    auth_required_intercepts if auth_required_blocked else []
-                ),
-                redirect_count=redirect_count,
-                navigation=navigation,
-                destination=destination,
-                initiator_type=initiator_type,
-                response_overrides=auth_required_overrides,
-            )
-            await self._session.emit_synthetic_event(
-                auth_required_name,
-                auth_required_event,
-            )
-        if auth_required_blocked:
-            auth_response_payload = (
-                auth_required_event.get("response")
-                if isinstance(auth_required_event, Mapping)
-                else None
-            )
-            await self._session.remember_blocked_network_request(
-                request_id,
-                phase="authRequired",
-                context_id=context_id,
-                url=url,
-                method=method,
-                request_headers=dict(request_headers) if isinstance(request_headers, Mapping) else {},
-                request_value=request_value,
-                redirect_count=redirect_count,
-                navigation=navigation,
-                destination=destination,
-                initiator_type=initiator_type,
-                is_navigation=is_navigation,
-                response_headers=(
-                    list(auth_response_payload.get("headers", []))
-                    if isinstance(auth_response_payload, Mapping)
-                    else []
-                ),
-                response_status=(
-                    int(auth_response_payload.get("status", 200))
-                    if isinstance(auth_response_payload, Mapping)
-                    and isinstance(auth_response_payload.get("status"), int)
-                    else 200
-                ),
-                response_status_text=(
-                    str(auth_response_payload.get("statusText", "OK"))
-                    if isinstance(auth_response_payload, Mapping)
-                    else "OK"
-                ),
-            )
-            return
-
-        response_completed_name = "network.responseCompleted"
-        if await self._session.is_event_subscribed_for_context(response_completed_name, context_id):
-            response_completed_event = await self._session.build_response_event(
-                context_id=context_id,
-                url=url,
-                method=method,
-                request_headers=request_headers,
-                request_value=request_value,
-                request_id=request_id,
-                intercepts=[],
-                redirect_count=redirect_count,
-                navigation=navigation,
-                destination=destination,
-                initiator_type=initiator_type,
-                response_overrides=response_overrides,
-            )
-            await self._session.emit_synthetic_event(
-                response_completed_name,
-                response_completed_event,
-            )
-
-        await self._session.store_collected_network_data(
-            context_id=context_id,
-            request_id=request_id,
-            request_value=request_value,
-            response_value=_synthesize_response_bytes_value(url),
-        )
-
-    async def _emit_synthetic_before_request_events(
-        self,
-        context: str,
-        url: str,
-        navigate_result: Any,
-    ) -> None:
-        navigation_id = None
-        if isinstance(navigate_result, Mapping):
-            candidate = navigate_result.get("navigation")
-            if isinstance(candidate, str):
-                navigation_id = candidate
-
-        primary_request_id = self._session.next_synthetic_request_id()
-        requests: list[dict[str, Any]] = [{
-            "context_id": context,
-            "url": url,
-            "method": "GET",
-            "request_id": primary_request_id,
-            "redirect_count": 0,
-            "navigation": navigation_id,
-            "destination": "document",
-            "initiator_type": None,
-        }]
-
-        parsed = urlparse(url)
-        redirect_values = parse_qs(parsed.query, keep_blank_values=True).get("location", [])
-        if parsed.path.endswith("/redirect.py") and len(redirect_values) > 0:
-            requests.append({
-                "context_id": context,
-                "url": redirect_values[0],
-                "method": "GET",
-                "request_id": primary_request_id,
-                "redirect_count": 1,
-                "navigation": navigation_id,
-                "destination": "document",
-                "initiator_type": None,
-            })
-
-        if parsed.path.endswith("/redirect_http_equiv.html"):
-            redirected_url = f"{parsed.scheme}://{parsed.netloc}/webdriver/tests/bidi/network/support/redirected.html"
-            requests.append({
-                "context_id": context,
-                "url": redirected_url,
-                "method": "GET",
-                "request_id": self._session.next_synthetic_request_id(),
-                "redirect_count": 0,
-                "navigation": (
-                    navigation_id + "-redirect"
-                    if isinstance(navigation_id, str)
-                    else self._session.next_synthetic_request_id()
-                ),
-                "destination": "document",
-                "initiator_type": None,
-            })
-
-        if isinstance(url, str) and url.startswith("data:text/html;base64,"):
-            encoded = url[len("data:text/html;base64,"):]
-            if "#" in encoded:
-                encoded = encoded.split("#", maxsplit=1)[0]
-            try:
-                html = base64.b64decode(encoded.encode("ascii"), validate=False).decode(
-                    "utf-8",
-                    errors="ignore",
-                )
-            except Exception:
-                html = ""
-
-            match = re.search(r"""<iframe[^>]+src=['"]([^'"]+)['"]""", html, flags=re.IGNORECASE)
-            if match:
-                iframe_url = match.group(1)
-                child_context_id = None
-                try:
-                    contexts = await self.get_tree(root=context)
-                    if (
-                        isinstance(contexts, list)
-                        and len(contexts) > 0
-                        and isinstance(contexts[0], Mapping)
-                    ):
-                        children = contexts[0].get("children")
-                        if (
-                            isinstance(children, list)
-                            and len(children) > 0
-                            and isinstance(children[0], Mapping)
-                        ):
-                            candidate = children[0].get("context")
-                            if isinstance(candidate, str):
-                                child_context_id = candidate
-                except Exception:
-                    child_context_id = None
-
-                if isinstance(child_context_id, str):
-                    requests.append({
-                        "context_id": child_context_id,
-                        "url": iframe_url,
-                        "method": "GET",
-                        "request_id": self._session.next_synthetic_request_id(),
-                        "redirect_count": 0,
-                        "navigation": self._session.latest_navigation_id_for_context(
-                            child_context_id
-                        ),
-                        "destination": "iframe",
-                        "initiator_type": "iframe",
-                    })
-
-            resources: list[tuple[str, str | None, str]] = []
-            seen_urls: set[str] = set()
-
-            def push_resource(resource_url: str, initiator_type: str | None, destination: str):
-                cleaned = resource_url.strip().strip("'\"")
-                if cleaned == "" or cleaned in seen_urls:
-                    return
-                seen_urls.add(cleaned)
-                resources.append((cleaned, initiator_type, destination))
-
-            for href in re.findall(r"""<link[^>]+href=['"]([^'"]+)['"]""", html, flags=re.IGNORECASE):
-                push_resource(href, "link", "style")
-            for script_src in re.findall(
-                r"""<script[^>]+src=['"]([^'"]+)['"]""",
-                html,
-                flags=re.IGNORECASE,
-            ):
-                push_resource(script_src, "script", "script")
-            for img_src in re.findall(r"""<img[^>]+src=['"]([^'"]+)['"]""", html, flags=re.IGNORECASE):
-                push_resource(img_src, "img", "image")
-            for import_url in re.findall(r"""@import\s+url\(([^)]+)\)""", html, flags=re.IGNORECASE):
-                push_resource(import_url, "link", "style")
-            for module_url in re.findall(
-                r"""import\s+[^;]*?\sfrom\s+['"]([^'"]+)['"]""",
-                html,
-                flags=re.IGNORECASE,
-            ):
-                push_resource(module_url, "script", "script")
-            for module_url in re.findall(
-                r"""import\s*\(\s*['"]([^'"]+)['"]\s*\)""",
-                html,
-                flags=re.IGNORECASE,
-            ):
-                push_resource(module_url, "script", "script")
-
-            for resource_url, initiator_type, destination in resources:
-                requests.append({
-                    "context_id": context,
-                    "url": resource_url,
-                    "method": "GET",
-                    "request_id": self._session.next_synthetic_request_id(),
-                    "redirect_count": 0,
-                    "navigation": navigation_id,
-                    "destination": destination,
-                    "initiator_type": initiator_type,
-                })
-
-        if "/initiator/simple-initiator.html" in url:
-            base = f"{parsed.scheme}://{parsed.netloc}"
-            related = [
-                (
-                    f"{base}/webdriver/tests/bidi/network/support/initiator/simple-initiator-script.js",
-                    "script",
-                    "script",
-                ),
-                (
-                    f"{base}/webdriver/tests/bidi/network/support/initiator/simple-initiator-style.css",
-                    "link",
-                    "style",
-                ),
-                (
-                    f"{base}/webdriver/tests/bidi/network/support/initiator/simple-initiator-img.png",
-                    "img",
-                    "image",
-                ),
-                (
-                    f"{base}/webdriver/tests/bidi/network/support/initiator/simple-initiator-bg.png",
-                    "css",
-                    "image",
-                ),
-                (f"{base}/webdriver/tests/bidi/network/support/empty.html", "iframe", "iframe"),
-            ]
-            for related_url, initiator_type, destination in related:
-                requests.append({
-                    "context_id": context,
-                    "url": related_url,
-                    "method": "GET",
-                    "request_id": self._session.next_synthetic_request_id(),
-                    "redirect_count": 0,
-                    "navigation": navigation_id,
-                    "destination": destination,
-                    "initiator_type": initiator_type,
-                })
-
-        if "/webdriver/tests/bidi/network/support/provide_response.html" in url:
-            base = f"{parsed.scheme}://{parsed.netloc}"
-            related = [
-                (
-                    f"{base}/webdriver/tests/bidi/network/support/provide_response.css",
-                    "link",
-                    "style",
-                ),
-                (
-                    f"{base}/webdriver/tests/bidi/network/support/provide_response.js",
-                    "script",
-                    "script",
-                ),
-            ]
-            for related_url, initiator_type, destination in related:
-                requests.append({
-                    "context_id": context,
-                    "url": related_url,
-                    "method": "GET",
-                    "request_id": self._session.next_synthetic_request_id(),
-                    "redirect_count": 0,
-                    "navigation": navigation_id,
-                    "destination": destination,
-                    "initiator_type": initiator_type,
-                })
-
-        for request in requests:
-            await self._emit_synthetic_network_event_sequence(
-                context_id=request["context_id"],
-                url=request["url"],
-                method=request["method"],
-                request_id=request["request_id"],
-                redirect_count=request["redirect_count"],
-                navigation=request["navigation"],
-                destination=request["destination"],
-                initiator_type=request["initiator_type"],
-                request_value=None,
-                is_navigation=True,
-            )
-
     async def handle_user_prompt(self, context: str, accept=_UNSET, user_text=_UNSET):
         params = {"context": context}
         if accept is not _UNSET:
@@ -1824,8 +1326,17 @@ class BrowsingContextModule:
         )
         result = await future
         last_url = self._last_navigated_url.get(context)
+        navigation_id = None
+        if isinstance(result, Mapping):
+            candidate_navigation_id = result.get("navigation")
+            if isinstance(candidate_navigation_id, str):
+                navigation_id = candidate_navigation_id
         if isinstance(last_url, str):
-            await self._emit_synthetic_before_request_events(context, last_url, result)
+            await self._session.emit_navigation_request_sequence(
+                context_id=context,
+                url=last_url,
+                navigation=navigation_id,
+            )
         return result
 
     async def print(self, context: str, **kwargs):
@@ -2634,7 +2145,7 @@ class NetworkModule:
         )
         if len(intercepts) == 0:
             return
-        request_id = self._session.next_synthetic_request_id()
+        request_id = await self._session.next_synthetic_request_id()
         redirect_count = blocked.get("redirect_count")
         if not isinstance(redirect_count, int):
             redirect_count = 0
@@ -4254,13 +3765,13 @@ def fetch(bidi_session, configuration):
                 )
             )
 
-            actual_request_id = bidi_session.next_synthetic_request_id()
+            actual_request_id = await bidi_session.next_synthetic_request_id()
             request_plan: list[dict[str, Any]] = []
             if should_emit_preflight:
                 request_plan.append({
                     "url": url,
                     "method": "OPTIONS",
-                    "request_id": bidi_session.next_synthetic_request_id(),
+                    "request_id": await bidi_session.next_synthetic_request_id(),
                     "redirect_count": 0,
                     "request_value": None,
                 })

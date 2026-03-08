@@ -41,6 +41,7 @@
   - [x] context tree / userContext の仲介 state 削減
   - [x] preload / realm fixture cleanup (`session.resetForTest`, `script.removeAllPreloadScripts`)
   - [x] preload / realm / evaluate 補助の移行
+  - [x] `browsingContext.navigate` の beforeRequest blocking を MoonBit 化
   - [x] `browsingContext.captureScreenshot` の synthetic output を MoonBit 化
   - [x] `browsingContext.print` の synthetic output を MoonBit 化
   - [x] `script.evaluate` の file dialog synthetic glue を MoonBit 化
@@ -84,6 +85,9 @@
 - [x] `script.evaluate` の `allEvents` normalize / dedupe を MoonBit に移行
 - [x] `network.resolveMatchingIntercepts` を MoonBit に追加して adapter の intercept mirror を削除
 - [x] `network.rememberCollectedData / getData / disownData` を MoonBit に追加して adapter の collector mirror を削除
+- [x] `network.prepareNavigationRequest` を追加して `browsingContext.navigate` の beforeRequest blocking を MoonBit に移行
+- [x] `network.emitNavigationRequestSequence` を追加して `navigate/reload` 後の synthetic request sequence 生成を MoonBit に移行
+- [x] `network.allocateRequestId` を追加して synthetic request id 発番を MoonBit に統一
 - [x] `browsingContext.captureScreenshot` の synthetic output を MoonBit に移行
 - [x] `browsingContext.print` の synthetic output を MoonBit に移行
 - [x] `script.callFunction` の focus / scroll fallback を MoonBit に移行
@@ -99,6 +103,7 @@
 - [x] `context_user_context / context_parent` の Python mirror を `browsingContext.getContextScopeInfo` / `session.isSubscribedForContext` ベースに削減する
 - [ ] `browsingContext` / `script` / `session` に残る local validation と fixture glue を MoonBit command に置き換える
   - `captureScreenshot` / `print` / `script.callFunction` の主要な synthetic path は移行済み
+  - `navigate/reload` 後の synthetic request sequence と request id 発番は MoonBit 側へ移行済み
 - [ ] adapter を `pytest` fixture と最小限の WPT glue のみに縮小する
   - `network` の local mirror (`_network_intercepts`, `_network_collectors`, `_network_collected_data`, synthetic subscription fallback) は削除済み
 

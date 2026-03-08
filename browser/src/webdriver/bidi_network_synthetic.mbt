@@ -196,6 +196,111 @@ fn BidiProtocol::handle_network_build_headers_echo_payload(
 }
 
 ///|
+fn BidiProtocol::handle_network_prepare_navigation_request(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let context_id = match map.get("context") {
+    Some(String(context_id)) => context_id
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return
+    }
+  }
+  if not(self.manager.has_session(context_id)) {
+    self.send_error(
+      request_id,
+      "no such frame",
+      "Unknown context: " + context_id,
+    )
+    return
+  }
+  let url = match map.get("url") {
+    Some(String(url)) => url
+    _ => {
+      self.send_error(request_id, "invalid argument", "url must be a string")
+      return
+    }
+  }
+  let event_name = "network.beforeRequestSent"
+  if not(self.is_subscribed_for_context(event_name, context_id)) {
+    self.send_success(
+      request_id,
+      Some(make_object({ "blocked": Json::boolean(false) })),
+    )
+    return
+  }
+  let intercepts = self.resolve_matching_network_intercepts_internal(
+    context_id, "beforeRequestSent", url,
+  )
+  if intercepts.length() == 0 {
+    self.send_success(
+      request_id,
+      Some(make_object({ "blocked": Json::boolean(false) })),
+    )
+    return
+  }
+
+  let navigation_id = self.next_navigation_id.to_string()
+  self.next_navigation_id += 1
+  let input : SyntheticNetworkEventInput = {
+    context_id,
+    url,
+    http_method: "GET",
+    request_token: self.next_synthetic_network_request_id(),
+    request_headers: [],
+    request_value: None,
+    request_cookies: [],
+    request_cookies_override: false,
+    intercepts,
+    redirect_count: 0,
+    navigation: Some(navigation_id),
+    destination: "document",
+    initiator_type: None,
+  }
+  let event = match
+    self.build_synthetic_before_request_sent_event_json(request_id, input) {
+    Some(event) => event
+    None => return
+  }
+  self.outbox.push(Event({ event_method: event_name, params: event }))
+  let blocked_request : Map[String, Json] = {}
+  blocked_request["phase"] = Json::string("beforeRequestSent")
+  blocked_request["context_id"] = Json::string(context_id)
+  blocked_request["url"] = Json::string(url)
+  blocked_request["method"] = Json::string("GET")
+  blocked_request["request_headers"] = make_object({})
+  blocked_request["redirect_count"] = Json::number(0.0)
+  blocked_request["navigation"] = Json::string(navigation_id)
+  blocked_request["destination"] = Json::string("document")
+  blocked_request["initiator_type"] = Json::null()
+  blocked_request["is_navigation"] = Json::boolean(true)
+  self.remember_network_blocked_request(input.request_token, blocked_request)
+  self.send_success(
+    request_id,
+    Some(
+      make_object({
+        "blocked": Json::boolean(true),
+        "navigation": Json::string(navigation_id),
+        "url": Json::string(url),
+      }),
+    ),
+  )
+}
+
+///|
 fn BidiProtocol::handle_network_fail_blocked_request(
   self : BidiProtocol,
   request_id : Int,

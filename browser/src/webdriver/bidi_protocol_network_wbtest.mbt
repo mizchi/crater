@@ -225,6 +225,156 @@ test "bidi network blocked request state lives in protocol" {
 }
 
 ///|
+test "bidi network prepareNavigationRequest emits blocked beforeRequestSent event" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"network.beforeRequestSent\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.addIntercept\",\"params\":{\"phases\":[\"beforeRequestSent\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"network.prepareNavigationRequest\",\"params\":{\"context\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/empty.html\"}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 2)
+  let event_json = msgs[0].to_json()
+  let response_json = msgs[1].to_json()
+  assert_true(event_json.contains("\"type\":\"event\""))
+  assert_true(event_json.contains("\"method\":\"network.beforeRequestSent\""))
+  assert_true(event_json.contains("\"isBlocked\":true"))
+  assert_true(event_json.contains("\"request\":\"request-1\""))
+  assert_true(event_json.contains("\"navigation\":\"1\""))
+  assert_true(response_json.contains("\"type\":\"success\""))
+  assert_true(response_json.contains("\"blocked\":true"))
+  assert_true(response_json.contains("\"navigation\":\"1\""))
+
+  let _ = proto.process_message(
+    "{\"id\":5,\"method\":\"network.hasBlockedNavigationRequest\",\"params\":{\"context\":\"session-1\",\"navigation\":\"1\"}}",
+  )
+  let blocked_json = proto.take_messages()[0].to_json()
+  assert_true(blocked_json.contains("\"blocked\":true"))
+}
+
+///|
+test "bidi network emitNavigationRequestSequence emits redirect follow-up events" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"network.beforeRequestSent\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.emitNavigationRequestSequence\",\"params\":{\"context\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/bidi/network/support/redirect_http_equiv.html\",\"navigation\":\"navigation-1\"}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 3)
+  let first_event_json = msgs[0].to_json()
+  let second_event_json = msgs[1].to_json()
+  let response_json = msgs[2].to_json()
+  assert_true(
+    first_event_json.contains("\"method\":\"network.beforeRequestSent\""),
+  )
+  assert_true(first_event_json.contains("\"request\":\"request-1\""))
+  assert_true(
+    first_event_json.contains(
+      "\"url\":\"http://localhost:8000/webdriver/tests/bidi/network/support/redirect_http_equiv.html\"",
+    ),
+  )
+  assert_true(
+    second_event_json.contains("\"method\":\"network.beforeRequestSent\""),
+  )
+  assert_true(second_event_json.contains("\"request\":\"request-2\""))
+  assert_true(
+    second_event_json.contains(
+      "\"url\":\"http://localhost:8000/webdriver/tests/bidi/network/support/redirected.html\"",
+    ),
+  )
+  assert_true(
+    second_event_json.contains("\"navigation\":\"navigation-1-redirect\""),
+  )
+  assert_true(response_json.contains("\"type\":\"success\""))
+  assert_true(response_json.contains("\"emitted\":2"))
+}
+
+///|
+test "bidi network emitNavigationRequestSequence blocks provide_response resource requests" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"network.beforeRequestSent\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.addIntercept\",\"params\":{\"phases\":[\"beforeRequestSent\"],\"urlPatterns\":[{\"type\":\"string\",\"pattern\":\"http://localhost:8000/webdriver/tests/bidi/network/support/provide_response.js\"}]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"network.emitNavigationRequestSequence\",\"params\":{\"context\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/bidi/network/support/provide_response.html\",\"navigation\":\"navigation-1\"}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 4)
+  let blocked_event_json = msgs[2].to_json()
+  let response_json = msgs[3].to_json()
+  assert_true(blocked_event_json.contains("\"isBlocked\":true"))
+  assert_true(
+    blocked_event_json.contains(
+      "\"url\":\"http://localhost:8000/webdriver/tests/bidi/network/support/provide_response.js\"",
+    ),
+  )
+  assert_true(response_json.contains("\"type\":\"success\""))
+  assert_true(response_json.contains("\"emitted\":3"))
+}
+
+///|
+test "bidi network allocateRequestId shares protocol request sequence" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"network.allocateRequestId\",\"params\":{}}",
+  )
+  let first_json = proto.take_messages()[0].to_json()
+  assert_true(first_json.contains("\"request\":\"request-1\""))
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.emitNavigationRequestSequence\",\"params\":{\"context\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/empty.html\",\"navigation\":\"navigation-1\"}}",
+  )
+  let sequence_msgs = proto.take_messages()
+  let sequence_json = sequence_msgs[0].to_json()
+  assert_true(sequence_json.contains("\"request\":\"request-2\""))
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"network.allocateRequestId\",\"params\":{}}",
+  )
+  let second_json = proto.take_messages()[0].to_json()
+  assert_true(second_json.contains("\"request\":\"request-3\""))
+}
+
+///|
 test "bidi network failBlockedRequest consumes blocked request and returns fetchError event" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
