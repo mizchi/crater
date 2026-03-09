@@ -242,7 +242,7 @@
   - `provideResponse` の body override は MoonBit 側へ移行済み
   - `get_element` / `fetch` / `setup_network_test` は MoonBit command ベースに整理済み
   - `get_element` の Python 側 `sharedId` normalize は削除済み
-  - 現在の `scripts/crater_bidi_adapter.py` は `2300` 行
+  - 現在の `scripts/crater_bidi_adapter.py` は `2306` 行
   - 残りは `browsingContext` / `session` / `script` 周辺の fixture glue と module proxy の整理
 
 ### 2026-03-09 の詳細計画
@@ -252,14 +252,19 @@
   - [x] wbtest を追加して raw remote value 契約を固定する
   - [x] `browsing_context/create --quick` を `34/46 -> 46/46` に戻す
   - [x] `--profile strict` を直列で再実行して回帰がないことを確認する
-- [ ] Step 2: `browsingContext.create` の残差分を再分類する
-  - [ ] `visibilityState / hasFocus`
-  - [ ] `background` 時の active context 切替
-  - [ ] `reference_context / user_context / opener` の整合
+- [x] Step 2: `browsingContext.create` の残差分を再分類する
+  - [x] `visibilityState / hasFocus`
+  - [x] `background` 時の active context 切替
+  - [x] `reference_context / user_context / opener` の整合
+  - [x] `browsing_context/create --quick` は `46/46` で、quick クラスター内の残差分は解消済み
+  - [x] 以後は `create` 個別差分ではなく、周辺 fixture/helper の raw command 化を優先する
 - [ ] Step 3: `BrowsingContextModule / SessionModule / ScriptModule` の残り wrapper を削る
   - [ ] result unwrap が残っている helper を MoonBit command 化する
   - [ ] fixture ごとの page-side JS を MoonBit command に集約する
-  - [ ] `scripts/crater_bidi_adapter.py` を `2300` 行からさらに縮める
+  - [x] `browsingContext.createContextId` で `add_and_remove_iframe` の `context` unwrap を削除
+  - [x] `script.prepareBeforeunloadPageUrlForTest` で `setup_beforeunload_page` の `url` unwrap を削除
+  - [x] `browsingContext.isKnownContext` / `browser.hasUserContextValue` で transport helper の `known` unwrap を raw bool 化
+  - [ ] `scripts/crater_bidi_adapter.py` を `2306` 行からさらに縮める
 - [ ] Step 4: Python に残す層を固定する
   - [ ] `CraterBidiSession` と event backlog は transport / pytest plugin core として残す
   - [ ] transport 層以外で `.py` に残っている実装責務を TODO から洗い出して消していく

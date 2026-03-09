@@ -483,8 +483,14 @@ class CraterBidiSession:
         return user_context if isinstance(user_context, str) else "default"
 
     async def is_known_context(self, context_id: str) -> bool:
-        scope_info = await self.get_context_scope_info(context_id)
-        return bool(scope_info.get("known"))
+        if not isinstance(context_id, str) or context_id == "":
+            return False
+        return bool(
+            await self.command(
+                "browsingContext.isKnownContext",
+                {"context": context_id},
+            )
+        )
 
     async def get_context_cookie_info(self, context_id: str) -> dict[str, Any]:
         if not isinstance(context_id, str) or context_id == "":
@@ -511,12 +517,12 @@ class CraterBidiSession:
     async def has_user_context(self, user_context: str) -> bool:
         if not isinstance(user_context, str) or user_context == "":
             return False
-        future = await self.send_command(
-            "browser.hasUserContext",
-            {"userContext": user_context},
+        return bool(
+            await self.command(
+                "browser.hasUserContextValue",
+                {"userContext": user_context},
+            )
         )
-        result = await future
-        return bool(result.get("known")) if isinstance(result, Mapping) else False
 
     async def remember_document_cookie(self, context_id: str, cookie_assignment: str) -> None:
         if not isinstance(context_id, str) or not isinstance(cookie_assignment, str):

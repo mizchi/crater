@@ -1042,6 +1042,10 @@ fn BidiProtocol::dispatch_browser(
       self.handle_browser_has_user_context(request.id, request.params)
       Ok(())
     }
+    "hasUserContextValue" => {
+      self.handle_browser_has_user_context_value(request.id, request.params)
+      Ok(())
+    }
     "getClientWindows" => {
       let windows = self.resolve_browser_client_windows_list()
       let result = make_object({ "clientWindows": Json::array(windows) })
@@ -1217,6 +1221,10 @@ fn BidiProtocol::dispatch_browsing_context(
         request.id,
         request.params,
       )
+      Ok(())
+    }
+    "isKnownContext" => {
+      self.handle_browsing_context_is_known_context(request.id, request.params)
       Ok(())
     }
     "getRequestedNavigationUrl" => {
@@ -2070,6 +2078,36 @@ fn BidiProtocol::handle_browsing_context_get_context_scope_info(
   self.send_success(
     request_id,
     Some(self.build_context_scope_info_json(context_id)),
+  )
+}
+
+///|
+fn BidiProtocol::handle_browsing_context_is_known_context(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let context_id = match map.get("context") {
+    Some(String(context_id)) => context_id
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return
+    }
+  }
+  self.send_success(
+    request_id,
+    Some(Json::boolean(self.manager.has_session(context_id))),
   )
 }
 
@@ -3141,13 +3179,41 @@ fn BidiProtocol::handle_browser_has_user_context(
   request_id : Int,
   params : Json?,
 ) -> Unit {
+  match self.resolve_browser_has_user_context_known(request_id, params) {
+    Some(known) =>
+      self.send_success(
+        request_id,
+        Some(make_object({ "known": Json::boolean(known) })),
+      )
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::handle_browser_has_user_context_value(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match self.resolve_browser_has_user_context_known(request_id, params) {
+    Some(known) => self.send_success(request_id, Some(Json::boolean(known)))
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::resolve_browser_has_user_context_known(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Bool? {
   let map = match params {
     Some(Object(map)) => map
     _ => {
       self.send_error(
         request_id, "invalid argument", "params must be an object",
       )
-      return
+      return None
     }
   }
   let user_context = match map.get("userContext") {
@@ -3156,17 +3222,10 @@ fn BidiProtocol::handle_browser_has_user_context(
       self.send_error(
         request_id, "invalid argument", "userContext must be a string",
       )
-      return
+      return None
     }
   }
-  self.send_success(
-    request_id,
-    Some(
-      make_object({
-        "known": Json::boolean(self.user_contexts.contains(user_context)),
-      }),
-    ),
-  )
+  Some(self.user_contexts.contains(user_context))
 }
 
 ///|

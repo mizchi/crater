@@ -449,6 +449,27 @@ test "bidi browsingContext getContextScopeInfo reports unknown context" {
 }
 
 ///|
+test "bidi browsingContext isKnownContext returns raw bool" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.isKnownContext\",\"params\":{\"context\":\"session-1\"}}",
+  )
+  let known_json = proto.take_messages()[0].to_json()
+  assert_true(known_json.contains("\"type\":\"success\""))
+  assert_true(known_json.contains("\"result\":true"))
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browsingContext.isKnownContext\",\"params\":{\"context\":\"missing\"}}",
+  )
+  let missing_json = proto.take_messages()[0].to_json()
+  assert_true(missing_json.contains("\"type\":\"success\""))
+  assert_true(missing_json.contains("\"result\":false"))
+}
+
+///|
 test "bidi browsingContext getRequestedNavigationUrl keeps original requested url" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -1077,6 +1098,29 @@ test "bidi browser hasUserContext reflects current user contexts" {
   let removed_json = proto.take_messages()[0].to_json()
   assert_true(removed_json.contains("\"type\":\"success\""))
   assert_true(removed_json.contains("\"known\":false"))
+}
+
+///|
+test "bidi browser hasUserContextValue returns raw bool" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browser.hasUserContextValue\",\"params\":{\"userContext\":\"default\"}}",
+  )
+  let default_json = proto.take_messages()[0].to_json()
+  assert_true(default_json.contains("\"type\":\"success\""))
+  assert_true(default_json.contains("\"result\":true"))
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browser.hasUserContextValue\",\"params\":{\"userContext\":\"missing\"}}",
+  )
+  let missing_json = proto.take_messages()[0].to_json()
+  assert_true(missing_json.contains("\"type\":\"success\""))
+  assert_true(missing_json.contains("\"result\":false"))
 }
 
 ///|
