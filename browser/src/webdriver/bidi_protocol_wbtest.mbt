@@ -1387,6 +1387,18 @@ test "bidi session subscribe returns subscription id" {
 }
 
 ///|
+test "bidi session subscribeId returns raw subscription id" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.subscribeId\",\"params\":{\"events\":[\"log.entryAdded\"]}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 1)
+  let json = msgs[0].to_json()
+  assert_true(json.contains("\"result\":\"00000000000000000000000000000001\""))
+}
+
+///|
 test "bidi session subscribe and unsubscribe accept user_contexts alias" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(

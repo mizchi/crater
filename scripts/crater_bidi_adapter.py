@@ -644,10 +644,11 @@ class BrowsingContextModule:
         future = await self._session.send_command("browsingContext.getTreeContexts", params)
         return await future
 
-    async def get_current_url(self, context: str) -> str | None:
+    async def get_current_url(self, context) -> str | None:
+        context_id = context.get("context") if isinstance(context, Mapping) else context
         future = await self._session.send_command(
             "browsingContext.getCurrentUrlValue",
-            {"context": context},
+            {"context": context_id},
         )
         return await future
 
@@ -780,6 +781,14 @@ class SessionModule:
         future = await self._session.send_command("session.subscribe", params)
         return await future
 
+    async def subscribe_id(self, events: list, contexts: list = None, user_contexts: list = None):
+        params = {"events": events}
+        if contexts is not None:
+            params["contexts"] = contexts
+        if user_contexts is not None:
+            params["user_contexts"] = user_contexts
+        return await self._session.command("session.subscribeId", params)
+
     async def unsubscribe(self, subscriptions: list = None, **kwargs):
         params = {}
         if subscriptions is not None:
@@ -886,14 +895,15 @@ class ScriptModule:
         )
         return await future
 
-    async def create_iframe_context_id_for_test(self, context: str, url: str):
+    async def create_iframe_context_id_for_test(self, context, url: str):
+        context_id = self._context_id(context)
         return await self._session.command(
             "script.createIframeContextIdForTest",
-            {"context": context, "url": url},
+            {"context": context_id, "url": url},
         )
 
-    async def prepare_beforeunload_page_url_for_test(self, context: str, url: str | None = None):
-        params: dict[str, Any] = {"context": context}
+    async def prepare_beforeunload_page_url_for_test(self, context, url: str | None = None):
+        params: dict[str, Any] = {"context": self._context_id(context)}
         if isinstance(url, str):
             params["url"] = url
         return await self._session.command(
@@ -1406,13 +1416,10 @@ def create_iframe(bidi_session):
     """
 
     async def _create_iframe(context, url):
-        parent_context = context.get("context") if isinstance(context, Mapping) else context
-        if isinstance(parent_context, str):
-            return await bidi_session.script.create_iframe_context_id_for_test(
-                parent_context,
-                url,
-            )
-        return None
+        return await bidi_session.script.create_iframe_context_id_for_test(
+            context,
+            url,
+        )
 
     return _create_iframe
 
@@ -1565,21 +1572,15 @@ def fetch(bidi_session, configuration):
 async def subscribe_events(bidi_session):
     """Subscribe to events and clean up after test."""
     subscriptions = []
-    cleanup_requests = []
 
     async def _subscribe(events, contexts=None, user_contexts=None):
-        result = await bidi_session.session.subscribe(
-            events=events, contexts=contexts, user_contexts=user_contexts
+        subscription_id = await bidi_session.session.subscribe_id(
+            events=events,
+            contexts=contexts,
+            user_contexts=user_contexts,
         )
-        cleanup_params = {"events": events}
-        if contexts:
-            cleanup_params["contexts"] = contexts
-        if user_contexts:
-            cleanup_params["user_contexts"] = user_contexts
-        cleanup_requests.append(cleanup_params)
-        if "subscription" in result:
-            subscriptions.append(result["subscription"])
-        return result
+        subscriptions.append(subscription_id)
+        return {"subscription": subscription_id}
 
     yield _subscribe
 
@@ -1589,13 +1590,6 @@ async def subscribe_events(bidi_session):
                 await bidi_session.session.unsubscribe(subscriptions=[sub])
             except Exception:
                 pass
-        return
-
-    for params in reversed(cleanup_requests):
-        try:
-            await bidi_session.session.unsubscribe(**params)
-        except Exception:
-            pass
 
 
 @pytest_asyncio.fixture
@@ -1681,8 +1675,7 @@ def current_url(bidi_session):
     """Return current URL for a browsing context."""
 
     async def _current_url(context):
-        context_id = context.get("context") if isinstance(context, dict) else context
-        return await bidi_session.browsing_context.get_current_url(context_id)
+        return await bidi_session.browsing_context.get_current_url(context)
 
     return _current_url
 
@@ -1789,12 +1782,9 @@ async def setup_beforeunload_page(bidi_session):
     """Navigate to beforeunload test page and mark it as user-interacted."""
 
     async def _setup_beforeunload_page(context):
-        page_url = await bidi_session.script.prepare_beforeunload_page_url_for_test(
-            context["context"],
+        return await bidi_session.script.prepare_beforeunload_page_url_for_test(
+            context,
         )
-        if isinstance(page_url, str):
-            return page_url
-        return "http://localhost:8000/webdriver/tests/support/html/beforeunload.html"
 
     return _setup_beforeunload_page
 

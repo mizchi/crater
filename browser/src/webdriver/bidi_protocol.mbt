@@ -953,6 +953,15 @@ fn BidiProtocol::dispatch_session(
       )
       Ok(())
     }
+    "subscribeId" => {
+      match self.validate_session_subscribe_params(request.id, request.params) {
+        Some(_) => return Ok(())
+        None => ()
+      }
+      let subscription_id = self.handle_subscribe(request.params)
+      self.send_success(request.id, Some(Json::string(subscription_id)))
+      Ok(())
+    }
     "unsubscribe" => {
       match
         self.validate_session_unsubscribe_params(request.id, request.params) {
