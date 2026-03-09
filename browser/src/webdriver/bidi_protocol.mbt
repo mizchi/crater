@@ -979,6 +979,13 @@ fn BidiProtocol::dispatch_session(
       )
       Ok(())
     }
+    "getBaselineContextInfoValueForTest" => {
+      self.handle_session_get_baseline_context_info_value_for_test(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
     "resetForTest" => {
       self.reset_session_runtime_state()
       let ctx_id = self.ensure_default_context()
@@ -1187,6 +1194,13 @@ fn BidiProtocol::dispatch_browsing_context(
     }
     "createAndGetInfo" => {
       self.handle_browsing_context_create_and_get_info(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
+    "createAndGetInfoValue" => {
+      self.handle_browsing_context_create_and_get_info_value(
         request.id,
         request.params,
       )
@@ -2240,6 +2254,27 @@ fn BidiProtocol::handle_browsing_context_create_and_get_info(
 }
 
 ///|
+fn BidiProtocol::handle_browsing_context_create_and_get_info_value(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match self.create_top_level_context_from_params(request_id, params) {
+    Some(ctx_id) =>
+      match self.build_context_entry(ctx_id, true, 0, Some(0)) {
+        Some(entry) => self.send_success(request_id, Some(entry))
+        None =>
+          self.send_error(
+            request_id,
+            "no such frame",
+            "Unknown context: " + ctx_id,
+          )
+      }
+    None => ()
+  }
+}
+
+///|
 fn BidiProtocol::create_top_level_context_from_params(
   self : BidiProtocol,
   request_id : Int,
@@ -3261,6 +3296,26 @@ fn BidiProtocol::handle_session_get_baseline_context_info_for_test(
       }),
     ),
   )
+}
+
+///|
+fn BidiProtocol::handle_session_get_baseline_context_info_value_for_test(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match params {
+    Some(Object(_)) | None => ()
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let ctx_id = self.ensure_default_context()
+  let context_info = self.build_context_info_for_test(ctx_id)
+  self.send_success(request_id, Some(context_info))
 }
 
 ///|
@@ -5760,6 +5815,170 @@ fn BidiProtocol::handle_script_setup_beforeunload_page_for_test(
 }
 
 ///|
+fn BidiProtocol::handle_script_prepare_beforeunload_page_for_test(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match
+    self.resolve_script_prepare_beforeunload_page_for_test(request_id, params) {
+    Some((ctx_id, requested_url)) => {
+      let resolved_url = self.resolve_effective_navigation_target_url(
+        ctx_id, requested_url,
+      )
+      self.input_synthetic_events_by_context.remove(ctx_id)
+      self.context_synthetic_scrolled.remove(ctx_id)
+      self.clear_synthetic_location_href(ctx_id)
+      let _ = self.fail_in_flight_navigation(
+        ctx_id, "aborted", "Navigation interrupted by another navigation",
+      )
+      if not(is_valid_navigation_target_url(resolved_url)) {
+        self.send_error(request_id, "invalid argument", "url is invalid")
+        return
+      }
+      if should_fail_navigation_with_unknown_error(resolved_url) {
+        let nav_id = self.next_navigation_id.to_string()
+        self.next_navigation_id += 1
+        self.emit_navigation_started_event(ctx_id, resolved_url, nav_id)
+        self.send_error(
+          request_id, "unknown error", "Navigation failed: navigation target is unreachable",
+        )
+        return
+      }
+      if self.is_iframe_navigation_blocked(ctx_id, resolved_url) {
+        let nav_id = self.next_navigation_id.to_string()
+        self.next_navigation_id += 1
+        self.emit_navigation_started_event(ctx_id, resolved_url, nav_id)
+        self.emit_navigation_failed_event(ctx_id, resolved_url, nav_id)
+        self.send_error(
+          request_id, "unknown error", "Navigation failed: blocked by embedding policy",
+        )
+        return
+      }
+      match self.manager.get_session(ctx_id) {
+        Some(session) => {
+          let previous_url = session.get_url()
+          match session.navigate_to(resolved_url) {
+            Ok(_) => {
+              self.remember_requested_navigation_url(ctx_id, requested_url)
+              if is_fragment_navigation(previous_url, resolved_url) {
+                self.clear_pending_navigation_state(ctx_id)
+                let nav_id = self.next_navigation_id.to_string()
+                self.next_navigation_id += 1
+                self.emit_fragment_navigated_event(
+                  ctx_id,
+                  resolved_url,
+                  Some(nav_id),
+                )
+                self.emit_history_updated_event(ctx_id, resolved_url)
+                self.run_test_setup_function(
+                  ctx_id,
+                  js_beforeunload_page_setup_source(),
+                )
+                let result = make_object({
+                  "navigation": Json::string(nav_id),
+                  "url": Json::string(resolved_url),
+                })
+                self.send_navigation_state_result(
+                  request_id, ctx_id, requested_url, resolved_url, nav_id, result,
+                )
+                return
+              }
+              let completion = self.build_navigation_completion(
+                request_id,
+                ctx_id,
+                resolved_url,
+                "complete",
+                None,
+              )
+              self.run_test_setup_function(
+                ctx_id,
+                js_beforeunload_page_setup_source(),
+              )
+              if completion.deferred_response {
+                return
+              }
+              self.send_navigation_state_result(
+                request_id,
+                ctx_id,
+                requested_url,
+                resolved_url,
+                completion.navigation_id,
+                completion.result,
+              )
+            }
+            Err(e) => {
+              let nav_id = self.next_navigation_id.to_string()
+              self.next_navigation_id += 1
+              self.emit_navigation_started_event(ctx_id, resolved_url, nav_id)
+              self.send_error(
+                request_id,
+                "unknown error",
+                "Navigation failed: " + e.message,
+              )
+            }
+          }
+        }
+        None => {
+          self.send_error(
+            request_id,
+            "no such frame",
+            "Unknown context: " + ctx_id,
+          )
+          return
+        }
+      }
+    }
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::resolve_script_prepare_beforeunload_page_for_test(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> (String, String)? {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return None
+    }
+  }
+  let ctx_id = match map.get("context") {
+    Some(String(ctx_id)) =>
+      if ctx_id == "" || self.manager.get_session(ctx_id) is None {
+        self.send_error(
+          request_id,
+          "no such frame",
+          "Unknown context: " + ctx_id,
+        )
+        return None
+      } else {
+        ctx_id
+      }
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return None
+    }
+  }
+  let url = match map.get("url") {
+    Some(String(url)) => url
+    Some(Null) | None => default_beforeunload_test_page_url()
+    _ => {
+      self.send_error(request_id, "invalid argument", "url must be a string")
+      return None
+    }
+  }
+  Some((ctx_id, url))
+}
+
+///|
 fn BidiProtocol::handle_script_sync_document_cookies_for_test(
   self : BidiProtocol,
   request_id : Int,
@@ -7244,6 +7463,13 @@ fn BidiProtocol::dispatch_script(
     }
     "setupBeforeunloadPageForTest" => {
       self.handle_script_setup_beforeunload_page_for_test(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
+    "prepareBeforeunloadPageForTest" => {
+      self.handle_script_prepare_beforeunload_page_for_test(
         request.id,
         request.params,
       )
@@ -11652,6 +11878,11 @@ fn remote_value_as_number(value : Json) -> Double? {
       }
     _ => None
   }
+}
+
+///|
+fn default_beforeunload_test_page_url() -> String {
+  "http://localhost:8000/webdriver/tests/support/html/beforeunload.html"
 }
 
 ///|

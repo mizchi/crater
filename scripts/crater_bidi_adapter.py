@@ -731,6 +731,12 @@ class BrowsingContextModule:
         )
         return await future
 
+    async def create_and_get_info_value(self, **params):
+        future = await self._session.send_command(
+            "browsingContext.createAndGetInfoValue", params
+        )
+        return await future
+
     async def navigate(self, context: str, url: str, wait: str = "none"):
         future = await self._session.send_command(
             "browsingContext.navigateWithState", {"context": context, "url": url, "wait": wait}
@@ -871,6 +877,12 @@ class SessionModule:
         future = await self._session.send_command("session.getBaselineContextInfoForTest", {})
         return await future
 
+    async def get_baseline_context_info_value_for_test(self):
+        future = await self._session.send_command(
+            "session.getBaselineContextInfoValueForTest", {}
+        )
+        return await future
+
     async def subscribe(self, events: list, contexts: list = None, user_contexts: list = None):
         params = {"events": events}
         if contexts is not None:
@@ -997,6 +1009,16 @@ class ScriptModule:
         future = await self._session.send_command(
             "script.setupBeforeunloadPageForTest",
             {"context": context},
+        )
+        return await future
+
+    async def prepare_beforeunload_page_for_test(self, context: str, url: str | None = None):
+        params: dict[str, Any] = {"context": context}
+        if isinstance(url, str):
+            params["url"] = url
+        future = await self._session.send_command(
+            "script.prepareBeforeunloadPageForTest",
+            params,
         )
         return await future
 
@@ -1303,13 +1325,8 @@ class BrowserModule:
 
     async def create_user_context(self, **kwargs):
         params = dict(kwargs)
-        future = await self._session.send_command("browser.createUserContext", params)
-        result = await future
-        if isinstance(result, dict):
-            user_context = result.get("userContext")
-            if isinstance(user_context, str):
-                return user_context
-        return result
+        future = await self._session.send_command("browser.createUserContextId", params)
+        return await future
 
     async def get_user_contexts(self):
         future = await self._session.send_command("browser.getUserContextsList", {})
@@ -1407,20 +1424,16 @@ async def _trim_contexts_for_test(session: CraterBidiSession):
 @pytest_asyncio.fixture
 async def top_context(bidi_session):
     """Get the top-level browsing context."""
-    result = await bidi_session.session.get_baseline_context_info_for_test()
-    context_info = result.get("contextInfo") if isinstance(result, Mapping) else None
-    return dict(context_info) if isinstance(context_info, Mapping) else {
-        "context": None,
-        "url": "about:blank",
-    }
+    result = await bidi_session.session.get_baseline_context_info_value_for_test()
+    return dict(result) if isinstance(result, Mapping) else {"context": None, "url": "about:blank"}
 
 
 @pytest_asyncio.fixture
 async def new_tab(bidi_session):
     """Open and focus a new tab."""
-    context_info = await bidi_session.browsing_context.create_and_get_info(type="tab")
+    context_info = await bidi_session.browsing_context.create_and_get_info_value(type="tab")
     context_id = context_info.get("context") if isinstance(context_info, Mapping) else None
-    yield context_info or {"context": context_id, "url": "about:blank"}
+    yield dict(context_info) if isinstance(context_info, Mapping) else {"context": context_id, "url": "about:blank"}
     try:
         if isinstance(context_id, str):
             await bidi_session.browsing_context.close(context=context_id)
@@ -1781,23 +1794,12 @@ def get_element(bidi_session, top_context):
     """Return a remote reference for the first element matching selector."""
     debug_get_element = os.environ.get("CRATER_DEBUG_GET_ELEMENT", "0") == "1"
 
-    def _normalize_element_reference(element):
-        if isinstance(element, dict) and "sharedId" not in element:
-            value = element.get("value")
-            if isinstance(value, dict):
-                shared_id = value.get("sharedId")
-                if isinstance(shared_id, str):
-                    element = {**element, "sharedId": shared_id}
-        return element
-
     async def _get_element(css_selector, context=top_context):
         context_id = context["context"]
-        element = _normalize_element_reference(
-            await bidi_session.script.get_element_for_test(
-                css_selector,
-                context,
-                allow_frame_fallback=context.get("context") != top_context.get("context"),
-            ),
+        element = await bidi_session.script.get_element_for_test(
+            css_selector,
+            context,
+            allow_frame_fallback=context.get("context") != top_context.get("context"),
         )
         if debug_get_element:
             print(f"[get_element] initial selector={css_selector!r} context={context_id!r} element={element!r}", flush=True)
@@ -1908,39 +1910,26 @@ def modifier_key():
 
 @pytest_asyncio.fixture
 async def create_user_context(bidi_session):
-    """Create user contexts and clean them up after test."""
-    user_contexts = []
+    """Create user contexts. Cleanup is handled by session baseline reset."""
 
     async def _create(**kwargs):
-        user_context = await bidi_session.browser.create_user_context(**kwargs)
-        if isinstance(user_context, str):
-            user_contexts.append(user_context)
-        return user_context
+        return await bidi_session.browser.create_user_context(**kwargs)
 
     yield _create
 
-    for user_context in user_contexts:
-        try:
-            await bidi_session.browser.remove_user_context(user_context=user_context)
-        except Exception:
-            pass
-
 
 @pytest_asyncio.fixture
-async def setup_beforeunload_page(bidi_session, url):
+async def setup_beforeunload_page(bidi_session):
     """Navigate to beforeunload test page and mark it as user-interacted."""
 
     async def _setup_beforeunload_page(context):
-        page_url = url("/webdriver/tests/support/html/beforeunload.html")
-        await bidi_session.browsing_context.navigate(
-            context=context["context"],
-            url=page_url,
-            wait="complete",
-        )
-        await bidi_session.script.setup_beforeunload_page_for_test(
+        result = await bidi_session.script.prepare_beforeunload_page_for_test(
             context["context"],
         )
-        return page_url
+        page_url = result.get("url") if isinstance(result, Mapping) else None
+        if isinstance(page_url, str):
+            return page_url
+        return "http://localhost:8000/webdriver/tests/support/html/beforeunload.html"
 
     return _setup_beforeunload_page
 

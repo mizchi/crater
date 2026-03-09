@@ -233,6 +233,25 @@ test "bidi browsingContext createAndGetInfo returns created context entry" {
 }
 
 ///|
+test "bidi browsingContext createAndGetInfoValue returns raw created context entry" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.createAndGetInfoValue\",\"params\":{\"type\":\"tab\"}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":{\"context\":\"session-2\""))
+  assert_true(json.contains("\"url\":\"about:blank\""))
+  assert_true(json.contains("\"children\":[]"))
+  assert_true(json.contains("\"userContext\":\"default\""))
+}
+
+///|
 test "bidi browsingContext createAndGetInfo accepts snake_case aliases" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -553,6 +572,33 @@ test "bidi session prepareBaselineContextForTest clears some variable and return
 }
 
 ///|
+test "bidi session prepareBaselineContextForTest clears custom user contexts" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browser.createUserContext\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"session.prepareBaselineContextForTest\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"browser.getUserContextsList\",\"params\":{}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"userContext\":\"default\""))
+  assert_false(json.contains("\"userContext\":\"user-1\""))
+}
+
+///|
 test "bidi session getBaselineContextInfoForTest returns current baseline context info" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -575,6 +621,31 @@ test "bidi session getBaselineContextInfoForTest returns current baseline contex
   assert_true(json.contains("\"type\":\"success\""))
   assert_true(json.contains("\"context\":\"session-1\""))
   assert_true(json.contains("\"contextInfo\""))
+  assert_true(json.contains("\"url\":\"" + url + "\""))
+}
+
+///|
+test "bidi session getBaselineContextInfoValueForTest returns raw baseline context info" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let url = "data:text/html,baseline-info-raw"
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"" +
+    url +
+    "\",\"wait\":\"complete\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"session.getBaselineContextInfoValueForTest\",\"params\":{}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":{\"context\":\"session-1\""))
   assert_true(json.contains("\"url\":\"" + url + "\""))
 }
 
@@ -680,8 +751,9 @@ test "bidi script getElementForTest returns first matching node" {
   )
   let json = proto.take_messages()[0].to_json()
   assert_true(json.contains("\"type\":\"success\""))
-  assert_true(json.contains("\"result\":{\"type\":\"node\""))
-  assert_true(json.contains("\"sharedId\":\"node-"))
+  assert_true(
+    json.contains("\"result\":{\"type\":\"node\",\"sharedId\":\"node-"),
+  )
 }
 
 ///|
@@ -696,8 +768,9 @@ test "bidi script getElementForTest creates textarea fallback when requested" {
   )
   let json = proto.take_messages()[0].to_json()
   assert_true(json.contains("\"type\":\"success\""))
-  assert_true(json.contains("\"result\":{\"type\":\"node\""))
-  assert_true(json.contains("\"sharedId\":\"node-"))
+  assert_true(
+    json.contains("\"result\":{\"type\":\"node\",\"sharedId\":\"node-"),
+  )
 }
 
 ///|
@@ -804,6 +877,36 @@ test "bidi script setupBeforeunloadPageForTest marks input as interacted" {
   assert_true(
     json.contains(
       "\"value\":\"{\\\"value\\\":\\\"foo\\\",\\\"focused\\\":true}\"",
+    ),
+  )
+}
+
+///|
+test "bidi script prepareBeforeunloadPageForTest navigates and sets up page" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.prepareBeforeunloadPageForTest\",\"params\":{\"context\":\"session-1\"}}",
+  )
+  let prepare_json = proto.take_messages()[0].to_json()
+  assert_true(prepare_json.contains("\"type\":\"success\""))
+  assert_true(
+    prepare_json.contains(
+      "\"url\":\"http://localhost:8000/webdriver/tests/support/html/beforeunload.html\"",
+    ),
+  )
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"JSON.stringify((() => { const input = document.querySelector('input'); return { value: input && typeof input.value === 'string' ? input.value : '', focused: globalThis.__bidiFocusedElement === input, url: window.location.href }; })())\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(
+    json.contains(
+      "\"value\":\"{\\\"value\\\":\\\"foo\\\",\\\"focused\\\":true,\\\"url\\\":\\\"http://localhost:8000/webdriver/tests/support/html/beforeunload.html\\\"}\"",
     ),
   )
 }

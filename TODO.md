@@ -223,7 +223,7 @@
   - `load_static_test_page` の `test_actions*` page-specific setup は `script.prepareLoadedStaticTestPage(phase=\"pageSpecific\")` に移行済み
   - `load_static_test_page` の inline `<script>` eval loop は `script.prepareLoadedStaticTestPage(phase=\"inlineScripts\")` に移行済み
   - `load_static_test_page` の HTML regex / multi-phase loop は `script.prepareLoadedStaticTestPage(html=...)` に集約済み
-  - `setup_beforeunload_page` は `script.setupBeforeunloadPageForTest` に移行済み
+  - `setup_beforeunload_page` の navigate + setup は `script.prepareBeforeunloadPageForTest` に移行済み
   - `fetch` fixture の cookie snapshot / page-side fetch 実行は `script.fetchForTest` に集約済み
   - `setup_network_test` の baseline context navigation は `network.prepareContextForTest` に移行済み
 - [ ] adapter を `pytest` fixture と最小限の WPT glue のみに縮小する
@@ -231,11 +231,14 @@
   - `browsingContext` の `_last_navigated_url` と session の `_known_user_contexts` は削除済み
   - `_baseline_context_id` と `get_tree(root,maxDepth=0)` ベースの baseline fixture fallback は削除済み
   - `new_tab` / `top_context` / `fetch` / `current_url` は module/query command ベースへ整理済み
+  - `top_context` / `new_tab` の result unwrap は `session.getBaselineContextInfoValueForTest` / `browsingContext.createAndGetInfoValue` に移行済み
+  - `create_user_context` fixture の cleanup は `session.prepareBaselineContextForTest` 側へ集約済み
   - `NetworkModule` の `continue/provide/fail/auth` event emit と preflight follow-up は MoonBit 側へ移行済み
   - `fetch` fixture の synthetic request sequence / redirect / preflight / blocked state / collected data は MoonBit 側へ移行済み
   - `provideResponse` の body override は MoonBit 側へ移行済み
   - `get_element` / `fetch` / `setup_network_test` は MoonBit command ベースに整理済み
-  - 現在の `scripts/crater_bidi_adapter.py` は `2295` 行
+  - `get_element` の Python 側 `sharedId` normalize は削除済み
+  - 現在の `scripts/crater_bidi_adapter.py` は `2284` 行
   - 残りは `browsingContext` / `session` / `script` 周辺の fixture glue と module proxy の整理
 
 ## WPT サポート状況（2026-03-03）
