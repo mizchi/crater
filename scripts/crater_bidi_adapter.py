@@ -966,6 +966,13 @@ class ScriptModule:
         future = await self._session.send_command("script.addPreloadScriptId", params)
         return await future
 
+    async def prepare_loaded_static_test_page(self, context: str, page: str, phase: str = "all"):
+        future = await self._session.send_command(
+            "script.prepareLoadedStaticTestPage",
+            {"context": context, "page": page, "phase": phase},
+        )
+        return await future
+
     async def remove_preload_script(self, script: str):
         future = await self._session.send_command("script.removePreloadScript", {"script": script})
         return await future
@@ -1975,21 +1982,10 @@ async def load_static_test_page(bidi_session, top_context, inline):
                 target=ContextTarget(context["context"]),
                 await_promise=False,
             )
-        await bidi_session.script.call_function(
-            function_declaration="""() => {
-                const event =
-                    typeof globalThis.__bidiCreateEvent === "function"
-                        ? globalThis.__bidiCreateEvent("DOMContentLoaded", { bubbles: true, cancelable: true })
-                        : { type: "DOMContentLoaded" };
-                if (document && typeof document.dispatchEvent === "function") {
-                    try {
-                        document.dispatchEvent(event);
-                    } catch (_e) {}
-                }
-                return null;
-            }""",
-            target=ContextTarget(context["context"]),
-            await_promise=False,
+        await bidi_session.script.prepare_loaded_static_test_page(
+            context["context"],
+            page,
+            phase="beforePageSpecific",
         )
         if page == "test_actions.html":
             await bidi_session.script.call_function(
@@ -2130,294 +2126,10 @@ async def load_static_test_page(bidi_session, top_context, inline):
                 target=ContextTarget(context["context"]),
                 await_promise=False,
             )
-        await bidi_session.script.call_function(
-            function_declaration="""() => {
-                if (window && typeof window === "object") {
-                    window.__craterAllEventsFallbackInit = false;
-                    window.__bidiFocusedElement = null;
-                }
-                globalThis.__bidiFocusedElement = null;
-                globalThis.__bidiRecordedTestActionsMousemove = false;
-                if (typeof allEvents !== "undefined") {
-                    window.allEvents = allEvents;
-                }
-                if (typeof window.allEvents === "undefined") {
-                    window.allEvents = { events: [] };
-                }
-                if (window.allEvents && Array.isArray(window.allEvents.events)) {
-                    window.allEvents.events.length = 0;
-                }
-                return null;
-            }""",
-            target=ContextTarget(context["context"]),
-            await_promise=False,
-        )
-        await bidi_session.script.call_function(
-            function_declaration="""() => {
-                if (typeof window.allEvents === "undefined") {
-                    window.allEvents = { events: [] };
-                }
-
-                let keyboardRecorder =
-                    typeof globalThis.recordKeyboardEvent === "function"
-                        ? globalThis.recordKeyboardEvent
-                        : (window && typeof window.recordKeyboardEvent === "function"
-                            ? window.recordKeyboardEvent
-                            : null);
-                let pointerRecorder =
-                    typeof globalThis.recordPointerEvent === "function"
-                        ? globalThis.recordPointerEvent
-                        : (window && typeof window.recordPointerEvent === "function"
-                            ? window.recordPointerEvent
-                            : null);
-                let wheelRecorder =
-                    typeof globalThis.recordWheelEvent === "function"
-                        ? globalThis.recordWheelEvent
-                        : (window && typeof window.recordWheelEvent === "function"
-                            ? window.recordWheelEvent
-                            : null);
-
-                if (!keyboardRecorder) {
-                    keyboardRecorder = (event) => {
-                        if (!window.allEvents || !Array.isArray(window.allEvents.events)) {
-                            window.allEvents = { events: [] };
-                        }
-                        window.allEvents.events.push({
-                            code: event.code,
-                            key: event.key,
-                            which: event.which,
-                            location: event.location,
-                            ctrl: event.ctrlKey,
-                            meta: event.metaKey,
-                            shift: event.shiftKey,
-                            repeat: event.repeat,
-                            type: event.type,
-                        });
-                    };
-                }
-                if (!pointerRecorder) {
-                    pointerRecorder = (event) => {
-                        if (!window.allEvents || !Array.isArray(window.allEvents.events)) {
-                            window.allEvents = { events: [] };
-                        }
-                        if (event.type === "contextmenu" && typeof event.preventDefault === "function") {
-                            event.preventDefault();
-                        }
-                        window.allEvents.events.push({
-                            type: event.type,
-                            button: event.button,
-                            buttons: event.buttons,
-                            pageX: event.pageX,
-                            pageY: event.pageY,
-                            ctrlKey: event.ctrlKey,
-                            metaKey: event.metaKey,
-                            altKey: event.altKey,
-                            shiftKey: event.shiftKey,
-                            clientX: event.clientX,
-                            clientY: event.clientY,
-                            isTrusted: event.isTrusted,
-                            detail: event.detail,
-                            target: event.target && event.target.id ? event.target.id : "",
-                            pointerType: event.pointerType || "",
-                            width: event.width,
-                            height: event.height,
-                            pressure: event.pressure,
-                            tangentialPressure: event.tangentialPressure,
-                            tiltX: event.tiltX,
-                            tiltY: event.tiltY,
-                            twist: event.twist,
-                            altitudeAngle: event.altitudeAngle,
-                            azimuthAngle: event.azimuthAngle,
-                        });
-                    };
-                }
-                if (typeof globalThis.resetEvents !== "function") {
-                    globalThis.resetEvents = () => {
-                        if (!window.allEvents || !Array.isArray(window.allEvents.events)) {
-                            window.allEvents = { events: [] };
-                        }
-                        window.allEvents.events.length = 0;
-                    };
-                }
-
-                if (keyboardRecorder && typeof globalThis.recordKeyboardEvent !== "function") {
-                    globalThis.recordKeyboardEvent = keyboardRecorder;
-                }
-                if (pointerRecorder && typeof globalThis.recordPointerEvent !== "function") {
-                    globalThis.recordPointerEvent = pointerRecorder;
-                }
-                if (wheelRecorder && typeof globalThis.recordWheelEvent !== "function") {
-                    globalThis.recordWheelEvent = wheelRecorder;
-                }
-                try {
-                    if (typeof globalThis.recordKeyboardEvent === "function") {
-                        (0, eval)("var recordKeyboardEvent = globalThis.recordKeyboardEvent");
-                    }
-                    if (typeof globalThis.recordPointerEvent === "function") {
-                        (0, eval)("var recordPointerEvent = globalThis.recordPointerEvent");
-                    }
-                    if (typeof globalThis.recordWheelEvent === "function") {
-                        (0, eval)("var recordWheelEvent = globalThis.recordWheelEvent");
-                    }
-                } catch (_e) {}
-
-                if (keyboardRecorder) {
-                    const keyReporter = document.getElementById("keys");
-                    const hasKeyListeners = !!(
-                        keyReporter &&
-                        keyReporter._listeners &&
-                        (
-                            (Array.isArray(keyReporter._listeners.keydown) && keyReporter._listeners.keydown.length > 0) ||
-                            (Array.isArray(keyReporter._listeners.keyup) && keyReporter._listeners.keyup.length > 0) ||
-                            (Array.isArray(keyReporter._listeners.keypress) && keyReporter._listeners.keypress.length > 0)
-                        )
-                    );
-                    if (keyReporter && !hasKeyListeners && !keyReporter.__craterKeyboardListeners) {
-                        keyReporter.addEventListener("keyup", keyboardRecorder);
-                        keyReporter.addEventListener("keypress", keyboardRecorder);
-                        keyReporter.addEventListener("keydown", keyboardRecorder);
-                        keyReporter.__craterKeyboardListeners = true;
-                    }
-                }
-
-                if (pointerRecorder) {
-                    const outer = document.getElementById("outer");
-                    const hasPointerListeners = !!(
-                        outer &&
-                        outer._listeners &&
-                        (
-                            (Array.isArray(outer._listeners.click) && outer._listeners.click.length > 0) ||
-                            (Array.isArray(outer._listeners.dblclick) && outer._listeners.dblclick.length > 0) ||
-                            (Array.isArray(outer._listeners.mousedown) && outer._listeners.mousedown.length > 0) ||
-                            (Array.isArray(outer._listeners.mouseup) && outer._listeners.mouseup.length > 0) ||
-                            (Array.isArray(outer._listeners.contextmenu) && outer._listeners.contextmenu.length > 0)
-                        )
-                    );
-                    if (outer && !hasPointerListeners && !outer.__craterPointerListeners) {
-                        outer.addEventListener("click", pointerRecorder);
-                        outer.addEventListener("dblclick", pointerRecorder);
-                        outer.addEventListener("mousedown", pointerRecorder);
-                        outer.addEventListener("mouseup", pointerRecorder);
-                        outer.addEventListener("contextmenu", pointerRecorder);
-                        outer.__craterPointerListeners = true;
-                    }
-                    const hasWindowMouseMove = !!(
-                        window &&
-                        window._listeners &&
-                        Array.isArray(window._listeners.mousemove) &&
-                        window._listeners.mousemove.length > 0
-                    );
-                    if (window && typeof window.addEventListener === "function" && !hasWindowMouseMove && !window.__craterFirstPointerMoveListener) {
-                        const recordFirstPointerMove = (event) => {
-                            pointerRecorder(event);
-                            try {
-                                window.removeEventListener("mousemove", recordFirstPointerMove);
-                            } catch (_e) {}
-                        };
-                        window.addEventListener("mousemove", recordFirstPointerMove);
-                        window.__craterFirstPointerMoveListener = true;
-                    }
-                }
-
-                if (wheelRecorder) {
-                    eventReporter = document.getElementById("event-reporter");
-                    const notScrollable = document.getElementById("not-scrollable");
-                    const hasNotScrollableWheel = !!(
-                        notScrollable &&
-                        notScrollable._listeners &&
-                        Array.isArray(notScrollable._listeners.wheel) &&
-                        notScrollable._listeners.wheel.length > 0
-                    );
-                    if (notScrollable && !hasNotScrollableWheel && !notScrollable.__craterWheelListener) {
-                        notScrollable.addEventListener("wheel", wheelRecorder);
-                        notScrollable.__craterWheelListener = true;
-                    }
-                    const scrollable = document.getElementById("scrollable");
-                    const hasScrollableWheel = !!(
-                        scrollable &&
-                        scrollable._listeners &&
-                        Array.isArray(scrollable._listeners.wheel) &&
-                        scrollable._listeners.wheel.length > 0
-                    );
-                    if (scrollable && !hasScrollableWheel && !scrollable.__craterWheelListener) {
-                        scrollable.addEventListener("wheel", wheelRecorder);
-                        scrollable.__craterWheelListener = true;
-                    }
-                }
-
-                if (!window.__craterAllEventsFallbackInit) {
-                    const pushEvent = (event) => {
-                        window.allEvents.events.push({
-                            type: event.type,
-                            code: event.code,
-                            key: event.key,
-                            which: event.which,
-                            location: event.location,
-                            ctrl: event.ctrlKey,
-                            meta: event.metaKey,
-                            shift: event.shiftKey,
-                            repeat: event.repeat,
-                            button: event.button,
-                            buttons: event.buttons,
-                            pageX: event.pageX,
-                            pageY: event.pageY,
-                            deltaX: event.deltaX,
-                            deltaY: event.deltaY,
-                            deltaZ: event.deltaZ,
-                            deltaMode: event.deltaMode,
-                            clientX: event.clientX,
-                            clientY: event.clientY,
-                            isTrusted: event.isTrusted,
-                            detail: event.detail,
-                            target: event.target && event.target.id ? event.target.id : "",
-                            pointerType: event.pointerType || "",
-                            width: event.width,
-                            height: event.height,
-                            pressure: event.pressure,
-                            tangentialPressure: event.tangentialPressure,
-                            tiltX: event.tiltX,
-                            tiltY: event.tiltY,
-                            twist: event.twist,
-                            altitudeAngle: event.altitudeAngle,
-                            azimuthAngle: event.azimuthAngle,
-                            altKey: event.altKey,
-                            ctrlKey: event.ctrlKey,
-                            metaKey: event.metaKey,
-                            shiftKey: event.shiftKey,
-                        });
-                    };
-                    const hasKeyboardRecorder = !!keyboardRecorder;
-                    const hasPointerRecorder = !!pointerRecorder;
-                    const hasWheelRecorder = !!wheelRecorder;
-
-                    const keyReporter = document.getElementById("keys");
-                    if (keyReporter && !hasKeyboardRecorder) {
-                        keyReporter.addEventListener("keydown", pushEvent);
-                        keyReporter.addEventListener("keypress", pushEvent);
-                        keyReporter.addEventListener("keyup", pushEvent);
-                    }
-
-                    if (!hasPointerRecorder) {
-                        const pointerTarget = document;
-                        for (const eventName of ["mousemove", "mousedown", "mouseup", "click", "dblclick", "contextmenu", "auxclick"]) {
-                            pointerTarget.addEventListener(eventName, pushEvent);
-                        }
-                    }
-
-                    const notScrollable = document.getElementById("not-scrollable");
-                    if (notScrollable && !hasWheelRecorder) {
-                        notScrollable.addEventListener("wheel", pushEvent);
-                    }
-                    const scrollable = document.getElementById("scrollable");
-                    if (scrollable && !hasWheelRecorder) {
-                        scrollable.addEventListener("wheel", pushEvent);
-                    }
-                    window.__craterAllEventsFallbackInit = true;
-                }
-                return null;
-            }""",
-            target=ContextTarget(context["context"]),
-            await_promise=False,
+        await bidi_session.script.prepare_loaded_static_test_page(
+            context["context"],
+            page,
+            phase="afterPageSpecific",
         )
 
     return _load_static_test_page

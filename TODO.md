@@ -160,6 +160,8 @@
 - [x] `input/set_files --quick` で `getElementForTest` 移行の回帰確認
 - [x] synthetic `localStorage` の `script.callFunctionResult` unwrap を MoonBit 側で扱うようにして `browser/create_user_context::test_storage_isolation` を修正
 - [x] `browser/create_user_context --quick` で localStorage unwrap 修正の回帰確認
+- [x] `script.prepareLoadedStaticTestPage` を追加して `load_static_test_page` fixture の DOMContentLoaded / allEvents reset / recorder fallback を MoonBit 側へ移行
+- [x] `input/{set_files,perform_actions/wheel} --quick` / `integration --quick` / `strict` で static page setup 移行の回帰確認
 
 ### 次の具体タスク
 

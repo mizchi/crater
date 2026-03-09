@@ -675,6 +675,35 @@ test "bidi script getElementForTest creates textarea fallback when requested" {
 }
 
 ///|
+test "bidi script prepareLoadedStaticTestPage dispatches DOMContentLoaded and resets allEvents" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<script>var allEvents={events:[{type:'stale'}]};document.addEventListener('DOMContentLoaded',function(){window.__domcontentloaded_ran=true;});</script><input id='keys'><div id='outer'></div>\",\"wait\":\"complete\"}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.prepareLoadedStaticTestPage\",\"params\":{\"context\":\"session-1\",\"page\":\"test_actions.html\"}}",
+  )
+  let prepare_json = proto.take_messages()[0].to_json()
+  assert_true(prepare_json.contains("\"type\":\"success\""))
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"JSON.stringify({count: window.allEvents.events.length, dom: !!window.__domcontentloaded_ran, focused: globalThis.__bidiFocusedElement === null})\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(
+    json.contains(
+      "\"value\":\"{\\\"count\\\":0,\\\"dom\\\":true,\\\"focused\\\":true}\"",
+    ),
+  )
+}
+
+///|
 test "bidi browser hasUserContext reflects current user contexts" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(

@@ -5256,6 +5256,34 @@ fn BidiProtocol::handle_script_get_element_for_test(
 }
 
 ///|
+fn BidiProtocol::handle_script_prepare_loaded_static_test_page(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match
+    self.resolve_script_prepare_loaded_static_test_page(request_id, params) {
+    Some((ctx_id, _page, phase)) => {
+      if phase != "afterPageSpecific" {
+        self.run_test_setup_function(
+          ctx_id,
+          js_test_page_dom_content_loaded_source(),
+        )
+      }
+      if phase != "beforePageSpecific" {
+        self.run_test_setup_function(ctx_id, js_test_page_reset_state_source())
+        self.run_test_setup_function(
+          ctx_id,
+          js_test_page_all_events_fallback_source(),
+        )
+      }
+      self.send_success(request_id, Some(make_object({})))
+    }
+    None => ()
+  }
+}
+
+///|
 fn BidiProtocol::resolve_script_get_element_for_test(
   self : BidiProtocol,
   request_id : Int,
@@ -5308,6 +5336,62 @@ fn BidiProtocol::resolve_script_get_element_for_test(
       ctx_id, selector, allow_frame_fallback,
     ),
   )
+}
+
+///|
+fn BidiProtocol::resolve_script_prepare_loaded_static_test_page(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> (String, String, String)? {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return None
+    }
+  }
+  let ctx_id = match map.get("context") {
+    Some(String(ctx_id)) =>
+      if ctx_id == "" || self.manager.get_session(ctx_id) is None {
+        self.send_error(
+          request_id,
+          "no such frame",
+          "Unknown context: " + ctx_id,
+        )
+        return None
+      } else {
+        ctx_id
+      }
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return None
+    }
+  }
+  let page = match map.get("page") {
+    Some(String(page)) => page
+    _ => {
+      self.send_error(request_id, "invalid argument", "page must be a string")
+      return None
+    }
+  }
+  let phase = match map.get("phase") {
+    Some(String("beforePageSpecific")) => "beforePageSpecific"
+    Some(String("afterPageSpecific")) => "afterPageSpecific"
+    Some(String("all")) => "all"
+    Some(String(_)) => {
+      self.send_error(
+        request_id, "invalid argument", "phase must be a known string",
+      )
+      return None
+    }
+    _ => "all"
+  }
+  Some((ctx_id, page, phase))
 }
 
 ///|
@@ -5388,6 +5472,320 @@ fn BidiProtocol::evaluate_test_element_remote_expression(
     _ => make_object({ "type": Json::string("null") })
   }
 }
+
+///|
+fn BidiProtocol::run_test_setup_function(
+  self : BidiProtocol,
+  ctx_id : String,
+  function_declaration : String,
+) -> Unit {
+  ignore(
+    self.evaluate_test_element_remote_expression(ctx_id, function_declaration, []),
+  )
+}
+
+///|
+extern "js" fn js_test_page_dom_content_loaded_source() -> String =
+  #| () => String.raw`(() => {
+  #|   const event =
+  #|     typeof globalThis.__bidiCreateEvent === "function"
+  #|       ? globalThis.__bidiCreateEvent("DOMContentLoaded", { bubbles: true, cancelable: true })
+  #|       : { type: "DOMContentLoaded" };
+  #|   if (document && typeof document.dispatchEvent === "function") {
+  #|     try { document.dispatchEvent(event); } catch (_e) {}
+  #|   }
+  #|   return null;
+  #| })`
+
+///|
+extern "js" fn js_test_page_reset_state_source() -> String =
+  #| () => String.raw`(() => {
+  #|   if (window && typeof window === "object") {
+  #|     window.__craterAllEventsFallbackInit = false;
+  #|     window.__bidiFocusedElement = null;
+  #|   }
+  #|   globalThis.__bidiFocusedElement = null;
+  #|   globalThis.__bidiRecordedTestActionsMousemove = false;
+  #|   if (typeof allEvents !== "undefined") {
+  #|     window.allEvents = allEvents;
+  #|   }
+  #|   if (typeof window.allEvents === "undefined") {
+  #|     window.allEvents = { events: [] };
+  #|   }
+  #|   if (window.allEvents && Array.isArray(window.allEvents.events)) {
+  #|     window.allEvents.events.length = 0;
+  #|   }
+  #|   return null;
+  #| })`
+
+///|
+extern "js" fn js_test_page_all_events_fallback_source() -> String =
+  #| () => String.raw`(() => {
+  #|   if (typeof window.allEvents === "undefined") {
+  #|     window.allEvents = { events: [] };
+  #|   }
+  #| 
+  #|   let keyboardRecorder =
+  #|     typeof globalThis.recordKeyboardEvent === "function"
+  #|       ? globalThis.recordKeyboardEvent
+  #|       : (window && typeof window.recordKeyboardEvent === "function"
+  #|           ? window.recordKeyboardEvent
+  #|           : null);
+  #|   let pointerRecorder =
+  #|     typeof globalThis.recordPointerEvent === "function"
+  #|       ? globalThis.recordPointerEvent
+  #|       : (window && typeof window.recordPointerEvent === "function"
+  #|           ? window.recordPointerEvent
+  #|           : null);
+  #|   let wheelRecorder =
+  #|     typeof globalThis.recordWheelEvent === "function"
+  #|       ? globalThis.recordWheelEvent
+  #|       : (window && typeof window.recordWheelEvent === "function"
+  #|           ? window.recordWheelEvent
+  #|           : null);
+  #| 
+  #|   if (!keyboardRecorder) {
+  #|     keyboardRecorder = (event) => {
+  #|       if (!window.allEvents || !Array.isArray(window.allEvents.events)) {
+  #|         window.allEvents = { events: [] };
+  #|       }
+  #|       window.allEvents.events.push({
+  #|         code: event.code,
+  #|         key: event.key,
+  #|         which: event.which,
+  #|         location: event.location,
+  #|         ctrl: event.ctrlKey,
+  #|         meta: event.metaKey,
+  #|         shift: event.shiftKey,
+  #|         repeat: event.repeat,
+  #|         type: event.type,
+  #|       });
+  #|     };
+  #|   }
+  #|   if (!pointerRecorder) {
+  #|     pointerRecorder = (event) => {
+  #|       if (!window.allEvents || !Array.isArray(window.allEvents.events)) {
+  #|         window.allEvents = { events: [] };
+  #|       }
+  #|       if (event.type === "contextmenu" && typeof event.preventDefault === "function") {
+  #|         event.preventDefault();
+  #|       }
+  #|       window.allEvents.events.push({
+  #|         type: event.type,
+  #|         button: event.button,
+  #|         buttons: event.buttons,
+  #|         pageX: event.pageX,
+  #|         pageY: event.pageY,
+  #|         ctrlKey: event.ctrlKey,
+  #|         metaKey: event.metaKey,
+  #|         altKey: event.altKey,
+  #|         shiftKey: event.shiftKey,
+  #|         clientX: event.clientX,
+  #|         clientY: event.clientY,
+  #|         isTrusted: event.isTrusted,
+  #|         detail: event.detail,
+  #|         target: event.target && event.target.id ? event.target.id : "",
+  #|         pointerType: event.pointerType || "",
+  #|         width: event.width,
+  #|         height: event.height,
+  #|         pressure: event.pressure,
+  #|         tangentialPressure: event.tangentialPressure,
+  #|         tiltX: event.tiltX,
+  #|         tiltY: event.tiltY,
+  #|         twist: event.twist,
+  #|         altitudeAngle: event.altitudeAngle,
+  #|         azimuthAngle: event.azimuthAngle,
+  #|       });
+  #|     };
+  #|   }
+  #|   if (typeof globalThis.resetEvents !== "function") {
+  #|     globalThis.resetEvents = () => {
+  #|       if (!window.allEvents || !Array.isArray(window.allEvents.events)) {
+  #|         window.allEvents = { events: [] };
+  #|       }
+  #|       window.allEvents.events.length = 0;
+  #|     };
+  #|   }
+  #| 
+  #|   if (keyboardRecorder && typeof globalThis.recordKeyboardEvent !== "function") {
+  #|     globalThis.recordKeyboardEvent = keyboardRecorder;
+  #|   }
+  #|   if (pointerRecorder && typeof globalThis.recordPointerEvent !== "function") {
+  #|     globalThis.recordPointerEvent = pointerRecorder;
+  #|   }
+  #|   if (wheelRecorder && typeof globalThis.recordWheelEvent !== "function") {
+  #|     globalThis.recordWheelEvent = wheelRecorder;
+  #|   }
+  #|   try {
+  #|     if (typeof globalThis.recordKeyboardEvent === "function") {
+  #|       (0, eval)("var recordKeyboardEvent = globalThis.recordKeyboardEvent");
+  #|     }
+  #|     if (typeof globalThis.recordPointerEvent === "function") {
+  #|       (0, eval)("var recordPointerEvent = globalThis.recordPointerEvent");
+  #|     }
+  #|     if (typeof globalThis.recordWheelEvent === "function") {
+  #|       (0, eval)("var recordWheelEvent = globalThis.recordWheelEvent");
+  #|     }
+  #|     if (typeof globalThis.resetEvents === "function") {
+  #|       (0, eval)("var resetEvents = globalThis.resetEvents");
+  #|     }
+  #|   } catch (_e) {}
+  #| 
+  #|   if (keyboardRecorder) {
+  #|     const keyReporter = document.getElementById("keys");
+  #|     const hasKeyListeners = !!(
+  #|       keyReporter &&
+  #|       keyReporter._listeners &&
+  #|       (
+  #|         (Array.isArray(keyReporter._listeners.keydown) && keyReporter._listeners.keydown.length > 0) ||
+  #|         (Array.isArray(keyReporter._listeners.keyup) && keyReporter._listeners.keyup.length > 0) ||
+  #|         (Array.isArray(keyReporter._listeners.keypress) && keyReporter._listeners.keypress.length > 0)
+  #|       )
+  #|     );
+  #|     if (keyReporter && !hasKeyListeners && !keyReporter.__craterKeyboardListeners) {
+  #|       keyReporter.addEventListener("keyup", keyboardRecorder);
+  #|       keyReporter.addEventListener("keypress", keyboardRecorder);
+  #|       keyReporter.addEventListener("keydown", keyboardRecorder);
+  #|       keyReporter.__craterKeyboardListeners = true;
+  #|     }
+  #|   }
+  #| 
+  #|   if (pointerRecorder) {
+  #|     const outer = document.getElementById("outer");
+  #|     const hasPointerListeners = !!(
+  #|       outer &&
+  #|       outer._listeners &&
+  #|       (
+  #|         (Array.isArray(outer._listeners.click) && outer._listeners.click.length > 0) ||
+  #|         (Array.isArray(outer._listeners.dblclick) && outer._listeners.dblclick.length > 0) ||
+  #|         (Array.isArray(outer._listeners.mousedown) && outer._listeners.mousedown.length > 0) ||
+  #|         (Array.isArray(outer._listeners.mouseup) && outer._listeners.mouseup.length > 0) ||
+  #|         (Array.isArray(outer._listeners.contextmenu) && outer._listeners.contextmenu.length > 0)
+  #|       )
+  #|     );
+  #|     if (outer && !hasPointerListeners && !outer.__craterPointerListeners) {
+  #|       outer.addEventListener("click", pointerRecorder);
+  #|       outer.addEventListener("dblclick", pointerRecorder);
+  #|       outer.addEventListener("mousedown", pointerRecorder);
+  #|       outer.addEventListener("mouseup", pointerRecorder);
+  #|       outer.addEventListener("contextmenu", pointerRecorder);
+  #|       outer.__craterPointerListeners = true;
+  #|     }
+  #|     const hasWindowMouseMove = !!(
+  #|       window &&
+  #|       window._listeners &&
+  #|       Array.isArray(window._listeners.mousemove) &&
+  #|       window._listeners.mousemove.length > 0
+  #|     );
+  #|     if (window && typeof window.addEventListener === "function" && !hasWindowMouseMove && !window.__craterFirstPointerMoveListener) {
+  #|       const recordFirstPointerMove = (event) => {
+  #|         pointerRecorder(event);
+  #|         try {
+  #|           window.removeEventListener("mousemove", recordFirstPointerMove);
+  #|         } catch (_e) {}
+  #|       };
+  #|       window.addEventListener("mousemove", recordFirstPointerMove);
+  #|       window.__craterFirstPointerMoveListener = true;
+  #|     }
+  #|   }
+  #| 
+  #|   if (wheelRecorder) {
+  #|     eventReporter = document.getElementById("event-reporter");
+  #|     const notScrollable = document.getElementById("not-scrollable");
+  #|     const hasNotScrollableWheel = !!(
+  #|       notScrollable &&
+  #|       notScrollable._listeners &&
+  #|       Array.isArray(notScrollable._listeners.wheel) &&
+  #|       notScrollable._listeners.wheel.length > 0
+  #|     );
+  #|     if (notScrollable && !hasNotScrollableWheel && !notScrollable.__craterWheelListener) {
+  #|       notScrollable.addEventListener("wheel", wheelRecorder);
+  #|       notScrollable.__craterWheelListener = true;
+  #|     }
+  #|     const scrollable = document.getElementById("scrollable");
+  #|     const hasScrollableWheel = !!(
+  #|       scrollable &&
+  #|       scrollable._listeners &&
+  #|       Array.isArray(scrollable._listeners.wheel) &&
+  #|       scrollable._listeners.wheel.length > 0
+  #|     );
+  #|     if (scrollable && !hasScrollableWheel && !scrollable.__craterWheelListener) {
+  #|       scrollable.addEventListener("wheel", wheelRecorder);
+  #|       scrollable.__craterWheelListener = true;
+  #|     }
+  #|   }
+  #| 
+  #|   if (!window.__craterAllEventsFallbackInit) {
+  #|     const pushEvent = (event) => {
+  #|       window.allEvents.events.push({
+  #|         type: event.type,
+  #|         code: event.code,
+  #|         key: event.key,
+  #|         which: event.which,
+  #|         location: event.location,
+  #|         ctrl: event.ctrlKey,
+  #|         meta: event.metaKey,
+  #|         shift: event.shiftKey,
+  #|         repeat: event.repeat,
+  #|         button: event.button,
+  #|         buttons: event.buttons,
+  #|         pageX: event.pageX,
+  #|         pageY: event.pageY,
+  #|         deltaX: event.deltaX,
+  #|         deltaY: event.deltaY,
+  #|         deltaZ: event.deltaZ,
+  #|         deltaMode: event.deltaMode,
+  #|         clientX: event.clientX,
+  #|         clientY: event.clientY,
+  #|         isTrusted: event.isTrusted,
+  #|         detail: event.detail,
+  #|         target: event.target && event.target.id ? event.target.id : "",
+  #|         pointerType: event.pointerType || "",
+  #|         width: event.width,
+  #|         height: event.height,
+  #|         pressure: event.pressure,
+  #|         tangentialPressure: event.tangentialPressure,
+  #|         tiltX: event.tiltX,
+  #|         tiltY: event.tiltY,
+  #|         twist: event.twist,
+  #|         altitudeAngle: event.altitudeAngle,
+  #|         azimuthAngle: event.azimuthAngle,
+  #|         altKey: event.altKey,
+  #|         ctrlKey: event.ctrlKey,
+  #|         metaKey: event.metaKey,
+  #|         shiftKey: event.shiftKey,
+  #|       });
+  #|     };
+  #|     const hasKeyboardRecorder = !!keyboardRecorder;
+  #|     const hasPointerRecorder = !!pointerRecorder;
+  #|     const hasWheelRecorder = !!wheelRecorder;
+  #| 
+  #|     const keyReporter = document.getElementById("keys");
+  #|     if (keyReporter && !hasKeyboardRecorder) {
+  #|       keyReporter.addEventListener("keydown", pushEvent);
+  #|       keyReporter.addEventListener("keypress", pushEvent);
+  #|       keyReporter.addEventListener("keyup", pushEvent);
+  #|     }
+  #| 
+  #|     if (!hasPointerRecorder) {
+  #|       const pointerTarget = document;
+  #|       for (const eventName of ["mousemove", "mousedown", "mouseup", "click", "dblclick", "contextmenu", "auxclick"]) {
+  #|         pointerTarget.addEventListener(eventName, pushEvent);
+  #|       }
+  #|     }
+  #| 
+  #|     const notScrollable = document.getElementById("not-scrollable");
+  #|     if (notScrollable && !hasWheelRecorder) {
+  #|       notScrollable.addEventListener("wheel", pushEvent);
+  #|     }
+  #|     const scrollable = document.getElementById("scrollable");
+  #|     if (scrollable && !hasWheelRecorder) {
+  #|       scrollable.addEventListener("wheel", pushEvent);
+  #|     }
+  #|     window.__craterAllEventsFallbackInit = true;
+  #|   }
+  #|   return null;
+  #| })`
 
 ///|
 /// Locate nodes with XPath selector.
@@ -5868,6 +6266,13 @@ fn BidiProtocol::dispatch_script(
     }
     "getElementForTest" => {
       self.handle_script_get_element_for_test(request.id, request.params)
+      Ok(())
+    }
+    "prepareLoadedStaticTestPage" => {
+      self.handle_script_prepare_loaded_static_test_page(
+        request.id,
+        request.params,
+      )
       Ok(())
     }
     "disown" => {
