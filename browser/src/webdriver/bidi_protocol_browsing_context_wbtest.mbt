@@ -167,6 +167,64 @@ test "bidi print embeds synthetic pdf metadata" {
 }
 
 ///|
+test "bidi printData returns raw pdf payload" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+
+  ignore(
+    proto.process_message(
+      "{\"id\":2,\"method\":\"browsingContext.printData\",\"params\":{\"context\":\"session-1\",\"background\":true}}",
+    ),
+  )
+  let json = proto.take_messages()[0].to_json()
+  let parsed = @json.parse(json) catch { _ => make_object({}) }
+  let pdf_data = match parsed {
+    Object(map) =>
+      match map.get("result") {
+        Some(String(value)) => value
+        _ => ""
+      }
+    _ => ""
+  }
+  let meta = pdf_meta_from_base64(pdf_data)
+  match meta.get("background") {
+    Some(True) => ()
+    _ => assert_true(false)
+  }
+}
+
+///|
+test "bidi captureScreenshotData returns raw png payload" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+
+  ignore(
+    proto.process_message(
+      "{\"id\":2,\"method\":\"browsingContext.captureScreenshotData\",\"params\":{\"context\":\"session-1\",\"origin\":\"viewport\"}}",
+    ),
+  )
+  let json = proto.take_messages()[0].to_json()
+  let parsed = @json.parse(json) catch { _ => make_object({}) }
+  let png_data = match parsed {
+    Object(map) =>
+      match map.get("result") {
+        Some(String(value)) => value
+        _ => ""
+      }
+    _ => ""
+  }
+  let (width, height) = png_dimensions_from_base64(png_data)
+  assert_eq(width, 1024)
+  assert_eq(height, 768)
+}
+
+///|
 test "bidi print validates shrink_to_fit alias" {
   let proto = BidiProtocol::new()
   ignore(

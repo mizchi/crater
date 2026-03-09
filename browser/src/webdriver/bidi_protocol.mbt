@@ -104,6 +104,7 @@ priv struct BidiProtocol {
   pending_prompt_type : Map[String, String] // context -> prompt type
   pending_close_request : Map[String, Int] // context -> browsingContext.close request id
   pending_close_wait_for_destroyed : Map[String, Bool] // context -> closeWithState wait flag
+  pending_close_response_mode : Map[String, String] // context -> close response kind
   pending_prompt_request : Map[String, Int] // context -> deferred script.evaluate request id
   pending_prompt_realm : Map[String, String] // context -> deferred script.evaluate realm id
   pending_beforeunload_request : Map[String, Int] // context -> deferred navigate request id
@@ -210,6 +211,7 @@ fn BidiProtocol::new() -> BidiProtocol {
     pending_prompt_type: {},
     pending_close_request: {},
     pending_close_wait_for_destroyed: {},
+    pending_close_response_mode: {},
     pending_prompt_request: {},
     pending_prompt_realm: {},
     pending_beforeunload_request: {},
@@ -1262,8 +1264,19 @@ fn BidiProtocol::dispatch_browsing_context(
       self.handle_browsing_context_get_current_url(request.id, request.params)
       Ok(())
     }
+    "getCurrentUrlValue" => {
+      self.handle_browsing_context_get_current_url_value(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
     "closeWithState" => {
       self.handle_browsing_context_close_with_state(request.id, request.params)
+      Ok(())
+    }
+    "closeResult" => {
+      self.handle_browsing_context_close_result(request.id, request.params)
       Ok(())
     }
     "prepareNavigate" => {
@@ -1772,16 +1785,26 @@ fn BidiProtocol::dispatch_browsing_context(
               )
               match pending_close {
                 Some(close_request_id) => {
-                  let close_result = match
-                    self.pending_close_wait_for_destroyed.get(prompt_ctx_id) {
-                    Some(wait_for_destroyed) =>
-                      make_object({
-                        "waitForDestroyed": Json::boolean(wait_for_destroyed),
-                      })
-                    None => make_object({})
+                  let close_response_mode = self.pending_close_response_mode
+                    .get(prompt_ctx_id)
+                    .unwrap_or("wait")
+                  if close_response_mode == "empty" {
+                    self.close_context_and_cleanup(prompt_ctx_id, true)
+                    |> ignore
+                    self.send_success(close_request_id, Some(make_object({})))
+                  } else {
+                    let close_result = match
+                      self.pending_close_wait_for_destroyed.get(prompt_ctx_id) {
+                      Some(wait_for_destroyed) =>
+                        make_object({
+                          "waitForDestroyed": Json::boolean(wait_for_destroyed),
+                        })
+                      None => make_object({})
+                    }
+                    self.send_success(close_request_id, Some(close_result))
+                    self.close_context_and_cleanup(prompt_ctx_id, true)
+                    |> ignore
                   }
-                  self.send_success(close_request_id, Some(close_result))
-                  self.close_context_and_cleanup(prompt_ctx_id, true) |> ignore
                 }
                 None => {
                   match pending_result_var {
@@ -1929,8 +1952,16 @@ fn BidiProtocol::dispatch_browsing_context(
       self.handle_capture_screenshot(request)
       Ok(())
     }
+    "captureScreenshotData" => {
+      self.handle_capture_screenshot_data(request.id, request.params)
+      Ok(())
+    }
     "print" => {
       self.handle_print(request)
+      Ok(())
+    }
+    "printData" => {
+      self.handle_print_data(request.id, request.params)
       Ok(())
     }
     "locateNodes" => {
@@ -2222,13 +2253,46 @@ fn BidiProtocol::handle_browsing_context_get_current_url(
   request_id : Int,
   params : Json?,
 ) -> Unit {
+  match self.resolve_current_context_url(request_id, params) {
+    Some((context_id, url)) =>
+      self.send_success(
+        request_id,
+        Some(
+          make_object({
+            "context": Json::string(context_id),
+            "url": Json::string(url),
+          }),
+        ),
+      )
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::handle_browsing_context_get_current_url_value(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match self.resolve_current_context_url(request_id, params) {
+    Some((_, url)) => self.send_success(request_id, Some(Json::string(url)))
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::resolve_current_context_url(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> (String, String)? {
   let map = match params {
     Some(Object(map)) => map
     _ => {
       self.send_error(
         request_id, "invalid argument", "params must be an object",
       )
-      return
+      return None
     }
   }
   let context_id = match map.get("context") {
@@ -2237,7 +2301,7 @@ fn BidiProtocol::handle_browsing_context_get_current_url(
       self.send_error(
         request_id, "invalid argument", "context must be a string",
       )
-      return
+      return None
     }
   }
   if not(self.manager.has_session(context_id)) {
@@ -2246,17 +2310,9 @@ fn BidiProtocol::handle_browsing_context_get_current_url(
       "no such frame",
       "Unknown context: " + context_id,
     )
-    return
+    return None
   }
-  self.send_success(
-    request_id,
-    Some(
-      make_object({
-        "context": Json::string(context_id),
-        "url": Json::string(self.current_context_url(context_id)),
-      }),
-    ),
-  )
+  Some((context_id, self.current_context_url(context_id)))
 }
 
 ///|
@@ -2985,6 +3041,25 @@ fn BidiProtocol::handle_browsing_context_close_with_state(
   request_id : Int,
   params : Json?,
 ) -> Unit {
+  self.handle_browsing_context_close_mode(request_id, params, true)
+}
+
+///|
+fn BidiProtocol::handle_browsing_context_close_result(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  self.handle_browsing_context_close_mode(request_id, params, false)
+}
+
+///|
+fn BidiProtocol::handle_browsing_context_close_mode(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+  include_wait_for_destroyed : Bool,
+) -> Unit {
   let map = match params {
     Some(Object(map)) => map
     _ => {
@@ -3034,6 +3109,11 @@ fn BidiProtocol::handle_browsing_context_close_with_state(
     self.pending_prompt_type[context_id] = "beforeunload"
     self.pending_close_request[context_id] = request_id
     self.pending_close_wait_for_destroyed[context_id] = wait_for_destroyed
+    self.pending_close_response_mode[context_id] = if include_wait_for_destroyed {
+      "wait"
+    } else {
+      "empty"
+    }
     self.emit_user_prompt_opened(
       context_id,
       "beforeunload",
@@ -3044,11 +3124,18 @@ fn BidiProtocol::handle_browsing_context_close_with_state(
     return
   }
 
-  self.send_success(
-    request_id,
-    Some(make_object({ "waitForDestroyed": Json::boolean(wait_for_destroyed) })),
-  )
-  self.close_context_and_cleanup(context_id, true) |> ignore
+  if include_wait_for_destroyed {
+    self.send_success(
+      request_id,
+      Some(
+        make_object({ "waitForDestroyed": Json::boolean(wait_for_destroyed) }),
+      ),
+    )
+    self.close_context_and_cleanup(context_id, true) |> ignore
+  } else {
+    self.close_context_and_cleanup(context_id, true) |> ignore
+    self.send_success(request_id, Some(make_object({})))
+  }
 }
 
 ///|
@@ -3595,15 +3682,41 @@ fn BidiProtocol::handle_capture_screenshot(
   self : BidiProtocol,
   request : BidiRequest,
 ) -> Unit {
-  let params = match request.params {
+  match self.resolve_capture_screenshot_data(request.id, request.params) {
+    Some(data) => {
+      let result = make_object({ "data": Json::string(data) })
+      self.send_success(request.id, Some(result))
+    }
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::handle_capture_screenshot_data(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match self.resolve_capture_screenshot_data(request_id, params) {
+    Some(data) => self.send_success(request_id, Some(Json::string(data)))
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::resolve_capture_screenshot_data(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> String? {
+  let raw_params = params
+  let params = match raw_params {
     Some(Object(map)) => map
     _ => {
       self.send_error(
-        request.id,
-        "invalid argument",
-        "params must be an object",
+        request_id, "invalid argument", "params must be an object",
       )
-      return
+      return None
     }
   }
 
@@ -3611,39 +3724,33 @@ fn BidiProtocol::handle_capture_screenshot(
     Some(String(id)) => id
     Some(_) => {
       self.send_error(
-        request.id,
-        "invalid argument",
-        "context must be a string",
+        request_id, "invalid argument", "context must be a string",
       )
-      return
+      return None
     }
     None => {
-      self.send_error(request.id, "invalid argument", "Missing context")
-      return
+      self.send_error(request_id, "invalid argument", "Missing context")
+      return None
     }
   }
   if not(self.manager.has_session(ctx_id)) {
-    self.send_error(request.id, "no such frame", "Unknown context: " + ctx_id)
-    return
+    self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
+    return None
   }
 
   match params.get("origin") {
     Some(String("viewport")) | Some(String("document")) | None => ()
     Some(String(_)) => {
       self.send_error(
-        request.id,
-        "invalid argument",
-        "origin must be 'viewport' or 'document'",
+        request_id, "invalid argument", "origin must be 'viewport' or 'document'",
       )
-      return
+      return None
     }
     Some(_) => {
       self.send_error(
-        request.id,
-        "invalid argument",
-        "origin must be 'viewport' or 'document'",
+        request_id, "invalid argument", "origin must be 'viewport' or 'document'",
       )
-      return
+      return None
     }
   }
 
@@ -3657,11 +3764,9 @@ fn BidiProtocol::handle_capture_screenshot(
         Some(String(kind)) => kind
         _ => {
           self.send_error(
-            request.id,
-            "invalid argument",
-            "clip.type must be a string",
+            request_id, "invalid argument", "clip.type must be a string",
           )
-          return
+          return None
         }
       }
 
@@ -3673,28 +3778,24 @@ fn BidiProtocol::handle_capture_screenshot(
                 if not(has_runtime_shared_node(shared_id)) ||
                   not(runtime_shared_node_is_element(shared_id)) {
                   self.send_error(
-                    request.id,
+                    request_id,
                     "no such node",
                     "Unknown sharedId: " + shared_id,
                   )
-                  return
+                  return None
                 }
               _ => {
                 self.send_error(
-                  request.id,
-                  "invalid argument",
-                  "clip.element.sharedId must be a string",
+                  request_id, "invalid argument", "clip.element.sharedId must be a string",
                 )
-                return
+                return None
               }
             }
           _ => {
             self.send_error(
-              request.id,
-              "invalid argument",
-              "clip.element must be a node reference",
+              request_id, "invalid argument", "clip.element must be a node reference",
             )
-            return
+            return None
           }
         }
       } else if clip_type == "box" {
@@ -3708,20 +3809,16 @@ fn BidiProtocol::handle_capture_screenshot(
               Some(parsed) => parsed
               None => {
                 self.send_error(
-                  request.id,
-                  "invalid argument",
-                  "clip.box x/y/width/height must be numbers",
+                  request_id, "invalid argument", "clip.box x/y/width/height must be numbers",
                 )
-                return
+                return None
               }
             }
           None => {
             self.send_error(
-              request.id,
-              "invalid argument",
-              "clip.box x/y/width/height must be numbers",
+              request_id, "invalid argument", "clip.box x/y/width/height must be numbers",
             )
-            return
+            return None
           }
         }
         let _clip_box_y = match clip_map.get("y") {
@@ -3733,20 +3830,16 @@ fn BidiProtocol::handle_capture_screenshot(
               Some(parsed) => parsed
               None => {
                 self.send_error(
-                  request.id,
-                  "invalid argument",
-                  "clip.box x/y/width/height must be numbers",
+                  request_id, "invalid argument", "clip.box x/y/width/height must be numbers",
                 )
-                return
+                return None
               }
             }
           None => {
             self.send_error(
-              request.id,
-              "invalid argument",
-              "clip.box x/y/width/height must be numbers",
+              request_id, "invalid argument", "clip.box x/y/width/height must be numbers",
             )
-            return
+            return None
           }
         }
         clip_box_width = match clip_map.get("width") {
@@ -3755,20 +3848,16 @@ fn BidiProtocol::handle_capture_screenshot(
               Some(parsed) => parsed
               None => {
                 self.send_error(
-                  request.id,
-                  "invalid argument",
-                  "clip.box x/y/width/height must be numbers",
+                  request_id, "invalid argument", "clip.box x/y/width/height must be numbers",
                 )
-                return
+                return None
               }
             }
           None => {
             self.send_error(
-              request.id,
-              "invalid argument",
-              "clip.box x/y/width/height must be numbers",
+              request_id, "invalid argument", "clip.box x/y/width/height must be numbers",
             )
-            return
+            return None
           }
         }
         clip_box_height = match clip_map.get("height") {
@@ -3777,40 +3866,34 @@ fn BidiProtocol::handle_capture_screenshot(
               Some(parsed) => parsed
               None => {
                 self.send_error(
-                  request.id,
-                  "invalid argument",
-                  "clip.box x/y/width/height must be numbers",
+                  request_id, "invalid argument", "clip.box x/y/width/height must be numbers",
                 )
-                return
+                return None
               }
             }
           None => {
             self.send_error(
-              request.id,
-              "invalid argument",
-              "clip.box x/y/width/height must be numbers",
+              request_id, "invalid argument", "clip.box x/y/width/height must be numbers",
             )
-            return
+            return None
           }
         }
       } else {
-        self.send_error(request.id, "invalid argument", "clip.type is invalid")
-        return
+        self.send_error(request_id, "invalid argument", "clip.type is invalid")
+        return None
       }
     }
     Some(_) => {
-      self.send_error(request.id, "invalid argument", "clip must be an object")
-      return
+      self.send_error(request_id, "invalid argument", "clip must be an object")
+      return None
     }
   }
 
   if has_box_clip && (clip_box_width <= 0.0 || clip_box_height <= 0.0) {
     self.send_error(
-      request.id,
-      "unable to capture screen",
-      "Clip dimensions must be positive",
+      request_id, "unable to capture screen", "Clip dimensions must be positive",
     )
-    return
+    return None
   }
 
   match params.get("format") {
@@ -3820,19 +3903,15 @@ fn BidiProtocol::handle_capture_screenshot(
         Some(String("image/png")) | Some(String("image/jpeg")) => ()
         Some(String(_)) => {
           self.send_error(
-            request.id,
-            "invalid argument",
-            "format.type must be 'image/png' or 'image/jpeg'",
+            request_id, "invalid argument", "format.type must be 'image/png' or 'image/jpeg'",
           )
-          return
+          return None
         }
         _ => {
           self.send_error(
-            request.id,
-            "invalid argument",
-            "format.type must be 'image/png' or 'image/jpeg'",
+            request_id, "invalid argument", "format.type must be 'image/png' or 'image/jpeg'",
           )
-          return
+          return None
         }
       }
 
@@ -3842,11 +3921,9 @@ fn BidiProtocol::handle_capture_screenshot(
             Some(_) => ()
             None => {
               self.send_error(
-                request.id,
-                "invalid argument",
-                "format.quality must be a number in [0,1]",
+                request_id, "invalid argument", "format.quality must be a number in [0,1]",
               )
-              return
+              return None
             }
           }
         None => ()
@@ -3854,15 +3931,13 @@ fn BidiProtocol::handle_capture_screenshot(
     }
     Some(_) => {
       self.send_error(
-        request.id,
-        "invalid argument",
-        "format must be an object",
+        request_id, "invalid argument", "format must be an object",
       )
-      return
+      return None
     }
   }
 
-  match self.build_synthetic_capture_screenshot_result(ctx_id, request.params) {
+  match self.build_synthetic_capture_screenshot_result(ctx_id, raw_params) {
     Some(Object(result_map)) =>
       match result_map.get("error") {
         Some(String(error_name)) => {
@@ -3870,28 +3945,26 @@ fn BidiProtocol::handle_capture_screenshot(
             Some(String(message)) => message
             _ => "Unable to capture screenshot"
           }
-          self.send_error(request.id, error_name, message)
+          self.send_error(request_id, error_name, message)
+          None
         }
         _ =>
           match result_map.get("data") {
-            Some(String(data)) => {
-              let result = make_object({ "data": Json::string(data) })
-              self.send_success(request.id, Some(result))
-            }
-            _ =>
+            Some(String(data)) => Some(data)
+            _ => {
               self.send_error(
-                request.id,
-                "unknown error",
-                "Failed to build synthetic screenshot",
+                request_id, "unknown error", "Failed to build synthetic screenshot",
               )
+              None
+            }
           }
       }
-    _ =>
+    _ => {
       self.send_error(
-        request.id,
-        "unknown error",
-        "Failed to build synthetic screenshot",
+        request_id, "unknown error", "Failed to build synthetic screenshot",
       )
+      None
+    }
   }
 }
 
@@ -3901,15 +3974,40 @@ fn BidiProtocol::handle_print(
   self : BidiProtocol,
   request : BidiRequest,
 ) -> Unit {
-  let params = match request.params {
+  match self.resolve_print_data(request.id, request.params) {
+    Some(data) => {
+      let result = make_object({ "data": Json::string(data) })
+      self.send_success(request.id, Some(result))
+    }
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::handle_print_data(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match self.resolve_print_data(request_id, params) {
+    Some(data) => self.send_success(request_id, Some(Json::string(data)))
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::resolve_print_data(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> String? {
+  let params = match params {
     Some(Object(map)) => map
     _ => {
       self.send_error(
-        request.id,
-        "invalid argument",
-        "params must be an object",
+        request_id, "invalid argument", "params must be an object",
       )
-      return
+      return None
     }
   }
 
@@ -3917,31 +4015,27 @@ fn BidiProtocol::handle_print(
     Some(String(id)) => id
     Some(_) => {
       self.send_error(
-        request.id,
-        "invalid argument",
-        "context must be a string",
+        request_id, "invalid argument", "context must be a string",
       )
-      return
+      return None
     }
     None => {
-      self.send_error(request.id, "invalid argument", "Missing context")
-      return
+      self.send_error(request_id, "invalid argument", "Missing context")
+      return None
     }
   }
   if not(self.manager.has_session(ctx_id)) {
-    self.send_error(request.id, "no such frame", "Unknown context: " + ctx_id)
-    return
+    self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
+    return None
   }
 
   match params.get("background") {
     Some(True) | Some(False) | None => ()
     Some(_) => {
       self.send_error(
-        request.id,
-        "invalid argument",
-        "background must be a boolean",
+        request_id, "invalid argument", "background must be a boolean",
       )
-      return
+      return None
     }
   }
 
@@ -3955,11 +4049,9 @@ fn BidiProtocol::handle_print(
               Some(_) => ()
               None => {
                 self.send_error(
-                  request.id,
-                  "invalid argument",
-                  "margin values must be non-negative numbers",
+                  request_id, "invalid argument", "margin values must be non-negative numbers",
                 )
-                return
+                return None
               }
             }
           None => ()
@@ -3967,11 +4059,9 @@ fn BidiProtocol::handle_print(
       }
     Some(_) => {
       self.send_error(
-        request.id,
-        "invalid argument",
-        "margin must be an object",
+        request_id, "invalid argument", "margin must be an object",
       )
-      return
+      return None
     }
   }
 
@@ -3979,19 +4069,15 @@ fn BidiProtocol::handle_print(
     Some(String("portrait")) | Some(String("landscape")) | None => ()
     Some(String(_)) => {
       self.send_error(
-        request.id,
-        "invalid argument",
-        "orientation must be 'portrait' or 'landscape'",
+        request_id, "invalid argument", "orientation must be 'portrait' or 'landscape'",
       )
-      return
+      return None
     }
     Some(_) => {
       self.send_error(
-        request.id,
-        "invalid argument",
-        "orientation must be 'portrait' or 'landscape'",
+        request_id, "invalid argument", "orientation must be 'portrait' or 'landscape'",
       )
-      return
+      return None
     }
   }
 
@@ -4002,11 +4088,9 @@ fn BidiProtocol::handle_print(
         Some(value) =>
           if json_as_safe_number(value, 0.035, 9007199254740991.0) is None {
             self.send_error(
-              request.id,
-              "invalid argument",
-              "page.width must be a number >= 0.035",
+              request_id, "invalid argument", "page.width must be a number >= 0.035",
             )
-            return
+            return None
           }
         None => ()
       }
@@ -4014,18 +4098,16 @@ fn BidiProtocol::handle_print(
         Some(value) =>
           if json_as_safe_number(value, 0.035, 9007199254740991.0) is None {
             self.send_error(
-              request.id,
-              "invalid argument",
-              "page.height must be a number >= 0.035",
+              request_id, "invalid argument", "page.height must be a number >= 0.035",
             )
-            return
+            return None
           }
         None => ()
       }
     }
     Some(_) => {
-      self.send_error(request.id, "invalid argument", "page must be an object")
-      return
+      self.send_error(request_id, "invalid argument", "page must be an object")
+      return None
     }
   }
 
@@ -4037,38 +4119,30 @@ fn BidiProtocol::handle_print(
           Number(n, ..) =>
             if n < 1.0 || n != n.to_int64().to_double() {
               self.send_error(
-                request.id,
-                "invalid argument",
-                "pageRanges entries are invalid",
+                request_id, "invalid argument", "pageRanges entries are invalid",
               )
-              return
+              return None
             }
           String(v) =>
             if not(is_valid_print_page_range(v)) {
               self.send_error(
-                request.id,
-                "invalid argument",
-                "pageRanges entries are invalid",
+                request_id, "invalid argument", "pageRanges entries are invalid",
               )
-              return
+              return None
             }
           _ => {
             self.send_error(
-              request.id,
-              "invalid argument",
-              "pageRanges must be an array of strings/integers",
+              request_id, "invalid argument", "pageRanges must be an array of strings/integers",
             )
-            return
+            return None
           }
         }
       }
     Some(_) => {
       self.send_error(
-        request.id,
-        "invalid argument",
-        "pageRanges must be an array of strings/integers",
+        request_id, "invalid argument", "pageRanges must be an array of strings/integers",
       )
-      return
+      return None
     }
   }
 
@@ -4077,11 +4151,9 @@ fn BidiProtocol::handle_print(
     Some(value) =>
       if json_as_safe_number(value, 0.1, 2.0) is None {
         self.send_error(
-          request.id,
-          "invalid argument",
-          "scale must be a number in [0.1, 2.0]",
+          request_id, "invalid argument", "scale must be a number in [0.1, 2.0]",
         )
-        return
+        return None
       }
   }
 
@@ -4089,11 +4161,9 @@ fn BidiProtocol::handle_print(
     Some(True) | Some(False) | None => ()
     Some(_) => {
       self.send_error(
-        request.id,
-        "invalid argument",
-        "shrinkToFit must be a boolean",
+        request_id, "invalid argument", "shrinkToFit must be a boolean",
       )
-      return
+      return None
     }
   }
 
@@ -4151,11 +4221,9 @@ fn BidiProtocol::handle_print(
     margin_left >= page_width_cm ||
     margin_right >= page_width_cm {
     self.send_error(
-      request.id,
-      "unsupported operation",
-      "Margin consumes entire printable area",
+      request_id, "unsupported operation", "Margin consumes entire printable area",
     )
-    return
+    return None
   }
   let background = match params.get("background") {
     Some(True) => true
@@ -4169,10 +4237,7 @@ fn BidiProtocol::handle_print(
     "background": Json::boolean(background),
     "signature": Json::string(self.current_context_url(ctx_id)),
   })
-  let result = make_object({
-    "data": Json::string(synthetic_print_pdf_from_meta(meta)),
-  })
-  self.send_success(request.id, Some(result))
+  Some(synthetic_print_pdf_from_meta(meta))
 }
 
 ///|
@@ -5597,575 +5662,19 @@ fn BidiProtocol::dispatch_script(
       Ok(())
     }
     "evaluate" => {
-      // Validate expression parameter - must be string
-      match get_param_raw(request.params, "expression") {
-        Some(String(_)) => ()
-        Some(_) => {
-          self.send_error(
-            request.id,
-            "invalid argument",
-            "expression must be a string",
-          )
-          return Ok(())
-        }
-        None => {
-          self.send_error(request.id, "invalid argument", "Missing expression")
-          return Ok(())
-        }
-      }
-      // Validate target parameter
-      match self.validate_script_target(request.id, request.params) {
-        Some(_) => return Ok(())
-        None => ()
-      }
-      // Validate awaitPromise - must be boolean
-      match self.validate_await_promise(request.id, request.params) {
-        Some(_) => return Ok(())
-        None => ()
-      }
-      // Validate resultOwnership - must be "root" or "none"
-      match self.validate_result_ownership(request.id, request.params) {
-        Some(_) => return Ok(())
-        None => ()
-      }
-      // Validate serializationOptions
-      match self.validate_serialization_options(request.id, request.params) {
-        Some(_) => return Ok(())
-        None => ()
-      }
-      // Validate userActivation - must be boolean
-      match self.validate_user_activation(request.id, request.params) {
-        Some(_) => return Ok(())
-        None => ()
-      }
-      // Resolve target context/realm for evaluation.
-      let (ctx_id, realm_id) = self.resolve_target_context_realm(request.params)
-      let runtime_ctx_id = resolve_runtime_context_id(
-        request.params,
-        ctx_id,
-        realm_id,
-        self.realm_sandbox.get(realm_id) != None,
-      )
-      // Check if awaitPromise is true
-      let await_promise = match
-        get_param_raw_with_alias(
-          request.params,
-          "awaitPromise",
-          "await_promise",
-        ) {
-        Some(True) => true
-        _ => false
-      }
-      let root_ownership = match
-        get_param_raw_with_alias(
-          request.params,
-          "resultOwnership",
-          "result_ownership",
-        ) {
-        Some(String("root")) => true
-        _ => false
-      }
-      let user_activation = get_user_activation_value(request.params)
-      let expr = get_string_param(request.params, "expression").unwrap()
-      if self.try_handle_synthetic_all_events_eval(
-          request.id,
-          ctx_id,
-          realm_id,
-          expr,
-        ) {
-        return Ok(())
-      }
-      if self.try_handle_synthetic_register_service_worker_eval(
-          request.id,
-          realm_id,
-          expr,
-        ) {
-        return Ok(())
-      }
-      if self.try_handle_synthetic_user_prompt(
-          request.id,
-          ctx_id,
-          realm_id,
-          expr,
-        ) {
-        return Ok(())
-      }
-      if self.try_handle_synthetic_download(request.id, ctx_id, realm_id, expr) {
-        return Ok(())
-      }
-      if self.try_handle_synthetic_iframe_remove(
-          request.id,
-          ctx_id,
-          realm_id,
-          expr,
-        ) {
-        return Ok(())
-      }
-      if self.try_handle_synthetic_document_write_eval(
-          request.id,
-          ctx_id,
-          realm_id,
-          expr,
-        ) {
-        return Ok(())
-      }
-      if self.try_handle_synthetic_window_location_href_eval(
-          request.id,
-          ctx_id,
-          realm_id,
-          expr,
-        ) {
-        return Ok(())
-      }
-      if self.try_handle_synthetic_document_cookie_eval(
-          request.id,
-          ctx_id,
-          realm_id,
-          expr,
-        ) {
-        return Ok(())
-      }
-      let serialization_options_json = get_serialization_options_json(
-        request.params,
-      )
-      let has_serialization_options = has_serialization_options_param(
-        request.params,
-      )
-      let capture_console = self.should_capture_console(ctx_id)
-      set_runtime_context(runtime_ctx_id)
-      set_runtime_context_frames(
-        runtime_ctx_id,
-        self.context_children.get(ctx_id).unwrap_or([]),
-      )
-      self.apply_effective_viewport_to_runtime_context(runtime_ctx_id, ctx_id)
-      if self.try_handle_synthetic_file_dialog_eval(
-          request.id,
-          ctx_id,
-          realm_id,
-          expr,
-          capture_console,
-          user_activation,
-          root_ownership,
-          serialization_options_json,
-        ) {
-        return Ok(())
-      }
-      // Handle window.open directly so browsing context state stays in sync.
-      if self.try_handle_window_open(request.id, ctx_id, expr) {
-        return Ok(())
-      }
-      if self.try_handle_synthetic_iframe_creation(
-          request.id,
-          ctx_id,
-          realm_id,
-          expr,
-        ) {
-        return Ok(())
-      }
-      let needs_mutation_observer_sync = expr.contains("setAttribute(") &&
-        self.has_mutation_observer_preload_for_context(ctx_id)
-      // Use QuickJS for sandboxed execution if enabled
-      if self.use_quickjs && is_quickjs_initialized() {
-        match self.socket {
-          Some(socket) => {
-            // QuickJS always needs async (due to ASYNCIFY)
-            quickjs_eval_ws(socket, request.id, expr, ctx_id)
-            return Ok(())
-          }
-          None => {
-            // No socket - can't do sync evaluation with QuickJS ASYNCIFY
-            self.send_error(
-              request.id,
-              "unknown error",
-              "QuickJS requires WebSocket for async evaluation",
-            )
-            return Ok(())
-          }
-        }
-      }
-      // Fast path: no console capture, no awaitPromise, no QuickJS
-      if self.dom_initialized &&
-        not(capture_console) &&
-        not(await_promise) &&
-        not(root_ownership) &&
-        not(has_serialization_options) {
-        let raw = js_evaluate_expression_fast(
-          request.id,
-          expr,
-          user_activation,
-          realm_id,
-        )
-        self.send_raw(raw)
-        return Ok(())
-      }
-      // If awaitPromise is true and we have a socket, use async evaluation
-      if await_promise && not(needs_mutation_observer_sync) {
-        if not(self.dom_initialized) {
-          let _ = evaluate_js_with_console(
-            "undefined", false, false, false, "{}",
-          )
-          self.dom_initialized = true
-        }
-        match self.socket {
-          Some(socket) => {
-            // Async evaluation - response sent directly via WebSocket
-            eval_and_send_async_with_console(
-              socket,
-              request.id,
-              expr,
-              runtime_ctx_id,
-              realm_id,
-              capture_console,
-              user_activation,
-              root_ownership,
-            )
-            return Ok(()) // No sync response needed
-          }
-          None => () // Fall through to sync evaluation
-        }
-      }
-      // Synchronous evaluation (Deno eval)
-      let eval_result_json = evaluate_js_with_console(
-        expr, capture_console, user_activation, root_ownership, serialization_options_json,
-      )
-      self.dom_initialized = true
-      let eval_result = @json.parse(eval_result_json) catch {
-        _ => {
-          self.send_error(
-            request.id,
-            "unknown error",
-            "Failed to parse eval result",
-          )
-          return Ok(())
-        }
-      }
-      // Process console entries and emit log events BEFORE response
-      if capture_console {
-        self.process_console_entries(eval_result, ctx_id, realm_id)
-      }
-      self.emit_synthetic_mutation_observer_messages(ctx_id, realm_id, expr)
-      let eval_result = self.maybe_adjust_document_dimensions_eval_result(
-        expr, eval_result,
-      )
-      // Build response based on evaluation result
-      match get_string_field(eval_result, "type") {
-        Some("success") => {
-          self.apply_synthetic_history_state_from_expression(ctx_id, expr)
-          let bidi_value = maybe_normalize_all_events_remote_value(
-            expr,
-            get_field(eval_result, "result").unwrap_or(
-              make_object({ "type": Json::string("undefined") }),
-            ),
-          )
-          let result = make_object({
-            "realm": Json::string(realm_id),
-            "result": bidi_value,
-          })
-          self.send_success(request.id, Some(result))
-        }
-        Some("exception") => {
-          let exc_details = get_field(eval_result, "exceptionDetails").unwrap_or(
-            make_object({}),
-          )
-          let result = make_object({
-            "realm": Json::string(realm_id),
-            "exceptionDetails": exc_details,
-          })
-          self.send_success(request.id, Some(result))
-        }
-        _ => {
-          let result = make_object({
-            "realm": Json::string(realm_id),
-            "result": make_object({ "type": Json::string("undefined") }),
-          })
-          self.send_success(request.id, Some(result))
-        }
-      }
+      self.handle_script_evaluate(request, false)
+      Ok(())
+    }
+    "evaluateResult" => {
+      self.handle_script_evaluate(request, true)
       Ok(())
     }
     "callFunction" => {
-      // Validate functionDeclaration - must be string
-      match
-        get_param_raw_with_alias(
-          request.params,
-          "functionDeclaration",
-          "function_declaration",
-        ) {
-        Some(String(_)) => ()
-        Some(_) => {
-          self.send_error(
-            request.id,
-            "invalid argument",
-            "functionDeclaration must be a string",
-          )
-          return Ok(())
-        }
-        None => {
-          self.send_error(
-            request.id,
-            "invalid argument",
-            "Missing functionDeclaration",
-          )
-          return Ok(())
-        }
-      }
-      // Validate target parameter
-      match self.validate_script_target(request.id, request.params) {
-        Some(_) => return Ok(())
-        None => ()
-      }
-      // Validate awaitPromise - must be boolean
-      match self.validate_await_promise(request.id, request.params) {
-        Some(_) => return Ok(())
-        None => ()
-      }
-      // Validate resultOwnership
-      match self.validate_result_ownership(request.id, request.params) {
-        Some(_) => return Ok(())
-        None => ()
-      }
-      // Validate serializationOptions
-      match self.validate_serialization_options(request.id, request.params) {
-        Some(_) => return Ok(())
-        None => ()
-      }
-      // Validate userActivation
-      match self.validate_user_activation(request.id, request.params) {
-        Some(_) => return Ok(())
-        None => ()
-      }
-      // Resolve target context/realm for function call.
-      let (ctx_id_call, realm_id_call) = self.resolve_target_context_realm(
-        request.params,
-      )
-      let runtime_ctx_id_call = resolve_runtime_context_id(
-        request.params,
-        ctx_id_call,
-        realm_id_call,
-        self.realm_sandbox.get(realm_id_call) != None,
-      )
-      let capture_console_call = self.should_capture_console(ctx_id_call)
-      // Check if awaitPromise is true
-      let await_promise_call = match
-        get_param_raw_with_alias(
-          request.params,
-          "awaitPromise",
-          "await_promise",
-        ) {
-        Some(True) => true
-        _ => false
-      }
-      let root_ownership_call = match
-        get_param_raw_with_alias(
-          request.params,
-          "resultOwnership",
-          "result_ownership",
-        ) {
-        Some(String("root")) => true
-        _ => false
-      }
-      let user_activation_call = get_user_activation_value(request.params)
-      let serialization_options_json_call = get_serialization_options_json(
-        request.params,
-      )
-      let has_serialization_options_call = has_serialization_options_param(
-        request.params,
-      )
-      set_runtime_context(runtime_ctx_id_call)
-      set_runtime_context_frames(
-        runtime_ctx_id_call,
-        self.context_children.get(ctx_id_call).unwrap_or([]),
-      )
-      self.apply_effective_viewport_to_runtime_context(
-        runtime_ctx_id_call, ctx_id_call,
-      )
-      // Validate this/arguments after runtime context is resolved so handle ownership
-      // checks use the correct context/sandbox.
-      match self.validate_this_param(request.id, request.params) {
-        Some(_) => return Ok(())
-        None => ()
-      }
-      match self.validate_arguments_param(request.id, request.params) {
-        Some(_) => return Ok(())
-        None => ()
-      }
-      // Get arguments if provided
-      let args_json = match get_param_raw(request.params, "arguments") {
-        Some(Array(args)) => {
-          // Convert BiDi values to JS literal representation
-          let parts : Array[String] = []
-          for arg in args {
-            parts.push(bidi_value_to_js_literal(arg))
-          }
-          parts.join(", ")
-        }
-        _ => ""
-      }
-      let this_json = match get_param_raw(request.params, "this") {
-        Some(value) => bidi_value_to_js_literal(value)
-        None => "undefined"
-      }
-      // Wrap function declaration and call it
-      let func = match
-        get_param_raw_with_alias(
-          request.params,
-          "functionDeclaration",
-          "function_declaration",
-        ) {
-        Some(String(func)) => func
-        _ => ""
-      }
-      if self.try_handle_synthetic_document_status_call(
-          request.id,
-          ctx_id_call,
-          realm_id_call,
-          func,
-        ) {
-        return Ok(())
-      }
-      if self.try_handle_synthetic_local_storage_call(
-          request.id,
-          ctx_id_call,
-          realm_id_call,
-          func,
-          request.params,
-        ) {
-        return Ok(())
-      }
-      if self.try_handle_synthetic_history_document_open_call(
-          request.id,
-          ctx_id_call,
-          realm_id_call,
-          func,
-        ) {
-        return Ok(())
-      }
-      let function_is_async = func.trim().has_prefix("async")
-      let call_expr = if args_json == "" {
-        "(" + func + ").call(" + this_json + ")"
-      } else {
-        "(" + func + ").call(" + this_json + ", " + args_json + ")"
-      }
-      // Use QuickJS for sandboxed execution if enabled
-      if self.use_quickjs && is_quickjs_initialized() {
-        match self.socket {
-          Some(socket) => {
-            // QuickJS always needs async (due to ASYNCIFY)
-            quickjs_eval_ws(socket, request.id, call_expr, ctx_id_call)
-            return Ok(())
-          }
-          None => {
-            self.send_error(
-              request.id,
-              "unknown error",
-              "QuickJS requires WebSocket for async evaluation",
-            )
-            return Ok(())
-          }
-        }
-      }
-      // If awaitPromise is true and we have a socket, use async evaluation
-      if await_promise_call &&
-        (not(has_serialization_options_call) || function_is_async) {
-        if not(self.dom_initialized) {
-          let _ = evaluate_js_with_console(
-            "undefined", false, false, false, "{}",
-          )
-          self.dom_initialized = true
-        }
-        match self.socket {
-          Some(socket) => {
-            // Async evaluation - response sent directly via WebSocket
-            eval_and_send_async_with_console(
-              socket,
-              request.id,
-              call_expr,
-              runtime_ctx_id_call,
-              realm_id_call,
-              capture_console_call,
-              user_activation_call,
-              root_ownership_call,
-            )
-            return Ok(()) // No sync response needed
-          }
-          None => () // Fall through to sync evaluation
-        }
-      }
-      let eval_result_json = evaluate_js_with_console(
-        call_expr, capture_console_call, user_activation_call, root_ownership_call,
-        serialization_options_json_call,
-      )
-      let eval_result = @json.parse(eval_result_json) catch {
-        _ => {
-          self.send_error(
-            request.id,
-            "unknown error",
-            "Failed to parse eval result",
-          )
-          return Ok(())
-        }
-      }
-      // Process console entries and emit log events BEFORE response
-      if capture_console_call {
-        self.process_console_entries(eval_result, ctx_id_call, realm_id_call)
-      }
-      // Process channel callback entries and emit script.message BEFORE response
-      self.process_channel_messages(ctx_id_call, realm_id_call)
-      // Build response based on evaluation result
-      match get_string_field(eval_result, "type") {
-        Some("success") => {
-          self.apply_synthetic_history_state_from_call(
-            ctx_id_call,
-            func,
-            request.params,
-          )
-          self.apply_synthetic_location_assignment_from_call(
-            ctx_id_call,
-            func,
-            request.params,
-          )
-          let bidi_value = get_field(eval_result, "result").unwrap_or(
-            make_object({ "type": Json::string("undefined") }),
-          )
-          let result = make_object({
-            "realm": Json::string(realm_id_call),
-            "result": bidi_value,
-          })
-          if should_capture_focus_target(func, bidi_value) {
-            self.remember_focused_element_remote(bidi_value)
-          }
-          self.send_success(request.id, Some(result))
-        }
-        Some("exception") => {
-          if self.try_send_synthetic_scroll_call_fallback(
-              request.id,
-              ctx_id_call,
-              realm_id_call,
-              func,
-              capture_console_call,
-              user_activation_call,
-              root_ownership_call,
-              serialization_options_json_call,
-            ) {
-            return Ok(())
-          }
-          let exc_details = get_field(eval_result, "exceptionDetails").unwrap_or(
-            make_object({}),
-          )
-          let result = make_object({
-            "realm": Json::string(realm_id_call),
-            "exceptionDetails": exc_details,
-          })
-          self.send_success(request.id, Some(result))
-        }
-        _ => {
-          let result = make_object({
-            "realm": Json::string(realm_id_call),
-            "result": make_object({ "type": Json::string("undefined") }),
-          })
-          self.send_success(request.id, Some(result))
-        }
-      }
+      self.handle_script_call_function(request, false)
+      Ok(())
+    }
+    "callFunctionResult" => {
+      self.handle_script_call_function(request, true)
       Ok(())
     }
     "disown" => {
@@ -6313,6 +5822,532 @@ fn BidiProtocol::dispatch_script(
       )
       Ok(())
     }
+  }
+}
+
+///|
+fn BidiProtocol::handle_script_evaluate(
+  self : BidiProtocol,
+  request : BidiRequest,
+  unwrap_result : Bool,
+) -> Unit {
+  match get_param_raw(request.params, "expression") {
+    Some(String(_)) => ()
+    Some(_) => {
+      self.send_error(
+        request.id,
+        "invalid argument",
+        "expression must be a string",
+      )
+      return
+    }
+    None => {
+      self.send_error(request.id, "invalid argument", "Missing expression")
+      return
+    }
+  }
+  match self.validate_script_target(request.id, request.params) {
+    Some(_) => return
+    None => ()
+  }
+  match self.validate_await_promise(request.id, request.params) {
+    Some(_) => return
+    None => ()
+  }
+  match self.validate_result_ownership(request.id, request.params) {
+    Some(_) => return
+    None => ()
+  }
+  match self.validate_serialization_options(request.id, request.params) {
+    Some(_) => return
+    None => ()
+  }
+  match self.validate_user_activation(request.id, request.params) {
+    Some(_) => return
+    None => ()
+  }
+
+  let (ctx_id, realm_id) = self.resolve_target_context_realm(request.params)
+  let runtime_ctx_id = resolve_runtime_context_id(
+    request.params,
+    ctx_id,
+    realm_id,
+    self.realm_sandbox.get(realm_id) != None,
+  )
+  let await_promise = match
+    get_param_raw_with_alias(request.params, "awaitPromise", "await_promise") {
+    Some(True) => true
+    _ => false
+  }
+  let root_ownership = match
+    get_param_raw_with_alias(
+      request.params,
+      "resultOwnership",
+      "result_ownership",
+    ) {
+    Some(String("root")) => true
+    _ => false
+  }
+  let user_activation = get_user_activation_value(request.params)
+  let expr = get_string_param(request.params, "expression").unwrap()
+  if self.try_handle_synthetic_all_events_eval(
+      request.id,
+      ctx_id,
+      realm_id,
+      expr,
+    ) {
+    return
+  }
+  if self.try_handle_synthetic_register_service_worker_eval(
+      request.id,
+      realm_id,
+      expr,
+    ) {
+    return
+  }
+  if self.try_handle_synthetic_user_prompt(request.id, ctx_id, realm_id, expr) {
+    return
+  }
+  if self.try_handle_synthetic_download(request.id, ctx_id, realm_id, expr) {
+    return
+  }
+  if self.try_handle_synthetic_iframe_remove(request.id, ctx_id, realm_id, expr) {
+    return
+  }
+  if self.try_handle_synthetic_document_write_eval(
+      request.id,
+      ctx_id,
+      realm_id,
+      expr,
+    ) {
+    return
+  }
+  if self.try_handle_synthetic_window_location_href_eval(
+      request.id,
+      ctx_id,
+      realm_id,
+      expr,
+    ) {
+    return
+  }
+  if self.try_handle_synthetic_document_cookie_eval(
+      request.id,
+      ctx_id,
+      realm_id,
+      expr,
+    ) {
+    return
+  }
+  let serialization_options_json = get_serialization_options_json(
+    request.params,
+  )
+  let has_serialization_options = has_serialization_options_param(
+    request.params,
+  )
+  let capture_console = self.should_capture_console(ctx_id)
+  set_runtime_context(runtime_ctx_id)
+  set_runtime_context_frames(
+    runtime_ctx_id,
+    self.context_children.get(ctx_id).unwrap_or([]),
+  )
+  self.apply_effective_viewport_to_runtime_context(runtime_ctx_id, ctx_id)
+  if self.try_handle_synthetic_file_dialog_eval(
+      request.id,
+      ctx_id,
+      realm_id,
+      expr,
+      capture_console,
+      user_activation,
+      root_ownership,
+      serialization_options_json,
+    ) {
+    return
+  }
+  if self.try_handle_window_open(request.id, ctx_id, expr) {
+    return
+  }
+  if self.try_handle_synthetic_iframe_creation(
+      request.id,
+      ctx_id,
+      realm_id,
+      expr,
+    ) {
+    return
+  }
+  let needs_mutation_observer_sync = expr.contains("setAttribute(") &&
+    self.has_mutation_observer_preload_for_context(ctx_id)
+
+  if self.use_quickjs && is_quickjs_initialized() && not(unwrap_result) {
+    match self.socket {
+      Some(socket) => {
+        quickjs_eval_ws(socket, request.id, expr, ctx_id)
+        return
+      }
+      None => {
+        self.send_error(
+          request.id,
+          "unknown error",
+          "QuickJS requires WebSocket for async evaluation",
+        )
+        return
+      }
+    }
+  }
+
+  if self.dom_initialized &&
+    not(capture_console) &&
+    not(await_promise) &&
+    not(root_ownership) &&
+    not(has_serialization_options) &&
+    not(unwrap_result) {
+    let raw = js_evaluate_expression_fast(
+      request.id,
+      expr,
+      user_activation,
+      realm_id,
+    )
+    self.send_raw(raw)
+    return
+  }
+
+  if await_promise && not(needs_mutation_observer_sync) {
+    if not(self.dom_initialized) {
+      let _ = evaluate_js_with_console("undefined", false, false, false, "{}")
+      self.dom_initialized = true
+    }
+    match self.socket {
+      Some(socket) => {
+        eval_and_send_async_with_console(
+          socket,
+          request.id,
+          expr,
+          runtime_ctx_id,
+          realm_id,
+          capture_console,
+          user_activation,
+          root_ownership,
+          unwrap_result,
+        )
+        return
+      }
+      None => ()
+    }
+  }
+
+  let eval_result_json = evaluate_js_with_console(
+    expr, capture_console, user_activation, root_ownership, serialization_options_json,
+  )
+  self.dom_initialized = true
+  let eval_result = @json.parse(eval_result_json) catch {
+    _ => {
+      self.send_error(
+        request.id,
+        "unknown error",
+        "Failed to parse eval result",
+      )
+      return
+    }
+  }
+  if capture_console {
+    self.process_console_entries(eval_result, ctx_id, realm_id)
+  }
+  self.emit_synthetic_mutation_observer_messages(ctx_id, realm_id, expr)
+  let eval_result = self.maybe_adjust_document_dimensions_eval_result(
+    expr, eval_result,
+  )
+  match get_string_field(eval_result, "type") {
+    Some("success") => {
+      self.apply_synthetic_history_state_from_expression(ctx_id, expr)
+      let bidi_value = maybe_normalize_all_events_remote_value(
+        expr,
+        get_field(eval_result, "result").unwrap_or(
+          make_object({ "type": Json::string("undefined") }),
+        ),
+      )
+      self.send_script_remote_value_response(
+        request.id,
+        realm_id,
+        bidi_value,
+        unwrap_result,
+      )
+    }
+    _ =>
+      self.send_script_eval_result_mode(
+        request.id,
+        realm_id,
+        eval_result,
+        unwrap_result,
+      )
+  }
+}
+
+///|
+fn BidiProtocol::handle_script_call_function(
+  self : BidiProtocol,
+  request : BidiRequest,
+  unwrap_result : Bool,
+) -> Unit {
+  match
+    get_param_raw_with_alias(
+      request.params,
+      "functionDeclaration",
+      "function_declaration",
+    ) {
+    Some(String(_)) => ()
+    Some(_) => {
+      self.send_error(
+        request.id,
+        "invalid argument",
+        "functionDeclaration must be a string",
+      )
+      return
+    }
+    None => {
+      self.send_error(
+        request.id,
+        "invalid argument",
+        "Missing functionDeclaration",
+      )
+      return
+    }
+  }
+  match self.validate_script_target(request.id, request.params) {
+    Some(_) => return
+    None => ()
+  }
+  match self.validate_await_promise(request.id, request.params) {
+    Some(_) => return
+    None => ()
+  }
+  match self.validate_result_ownership(request.id, request.params) {
+    Some(_) => return
+    None => ()
+  }
+  match self.validate_serialization_options(request.id, request.params) {
+    Some(_) => return
+    None => ()
+  }
+  match self.validate_user_activation(request.id, request.params) {
+    Some(_) => return
+    None => ()
+  }
+
+  let (ctx_id_call, realm_id_call) = self.resolve_target_context_realm(
+    request.params,
+  )
+  let runtime_ctx_id_call = resolve_runtime_context_id(
+    request.params,
+    ctx_id_call,
+    realm_id_call,
+    self.realm_sandbox.get(realm_id_call) != None,
+  )
+  let capture_console_call = self.should_capture_console(ctx_id_call)
+  let await_promise_call = match
+    get_param_raw_with_alias(request.params, "awaitPromise", "await_promise") {
+    Some(True) => true
+    _ => false
+  }
+  let root_ownership_call = match
+    get_param_raw_with_alias(
+      request.params,
+      "resultOwnership",
+      "result_ownership",
+    ) {
+    Some(String("root")) => true
+    _ => false
+  }
+  let user_activation_call = get_user_activation_value(request.params)
+  let serialization_options_json_call = get_serialization_options_json(
+    request.params,
+  )
+  let has_serialization_options_call = has_serialization_options_param(
+    request.params,
+  )
+  set_runtime_context(runtime_ctx_id_call)
+  set_runtime_context_frames(
+    runtime_ctx_id_call,
+    self.context_children.get(ctx_id_call).unwrap_or([]),
+  )
+  self.apply_effective_viewport_to_runtime_context(
+    runtime_ctx_id_call, ctx_id_call,
+  )
+
+  match self.validate_this_param(request.id, request.params) {
+    Some(_) => return
+    None => ()
+  }
+  match self.validate_arguments_param(request.id, request.params) {
+    Some(_) => return
+    None => ()
+  }
+
+  let args_json = match get_param_raw(request.params, "arguments") {
+    Some(Array(args)) => {
+      let parts : Array[String] = []
+      for arg in args {
+        parts.push(bidi_value_to_js_literal(arg))
+      }
+      parts.join(", ")
+    }
+    _ => ""
+  }
+  let this_json = match get_param_raw(request.params, "this") {
+    Some(value) => bidi_value_to_js_literal(value)
+    None => "undefined"
+  }
+  let func = match
+    get_param_raw_with_alias(
+      request.params,
+      "functionDeclaration",
+      "function_declaration",
+    ) {
+    Some(String(func)) => func
+    _ => ""
+  }
+  if self.try_handle_synthetic_document_status_call(
+      request.id,
+      ctx_id_call,
+      realm_id_call,
+      func,
+    ) {
+    return
+  }
+  if self.try_handle_synthetic_local_storage_call(
+      request.id,
+      ctx_id_call,
+      realm_id_call,
+      func,
+      request.params,
+    ) {
+    return
+  }
+  if self.try_handle_synthetic_history_document_open_call(
+      request.id,
+      ctx_id_call,
+      realm_id_call,
+      func,
+    ) {
+    return
+  }
+  let function_is_async = func.trim().has_prefix("async")
+  let call_expr = if args_json == "" {
+    "(" + func + ").call(" + this_json + ")"
+  } else {
+    "(" + func + ").call(" + this_json + ", " + args_json + ")"
+  }
+
+  if self.use_quickjs && is_quickjs_initialized() && not(unwrap_result) {
+    match self.socket {
+      Some(socket) => {
+        quickjs_eval_ws(socket, request.id, call_expr, ctx_id_call)
+        return
+      }
+      None => {
+        self.send_error(
+          request.id,
+          "unknown error",
+          "QuickJS requires WebSocket for async evaluation",
+        )
+        return
+      }
+    }
+  }
+
+  if await_promise_call &&
+    (not(has_serialization_options_call) || function_is_async) {
+    if not(self.dom_initialized) {
+      let _ = evaluate_js_with_console("undefined", false, false, false, "{}")
+      self.dom_initialized = true
+    }
+    match self.socket {
+      Some(socket) => {
+        eval_and_send_async_with_console(
+          socket,
+          request.id,
+          call_expr,
+          runtime_ctx_id_call,
+          realm_id_call,
+          capture_console_call,
+          user_activation_call,
+          root_ownership_call,
+          unwrap_result,
+        )
+        return
+      }
+      None => ()
+    }
+  }
+
+  let eval_result_json = evaluate_js_with_console(
+    call_expr, capture_console_call, user_activation_call, root_ownership_call, serialization_options_json_call,
+  )
+  let eval_result = @json.parse(eval_result_json) catch {
+    _ => {
+      self.send_error(
+        request.id,
+        "unknown error",
+        "Failed to parse eval result",
+      )
+      return
+    }
+  }
+  if capture_console_call {
+    self.process_console_entries(eval_result, ctx_id_call, realm_id_call)
+  }
+  self.process_channel_messages(ctx_id_call, realm_id_call)
+  match get_string_field(eval_result, "type") {
+    Some("success") => {
+      self.apply_synthetic_history_state_from_call(
+        ctx_id_call,
+        func,
+        request.params,
+      )
+      self.apply_synthetic_location_assignment_from_call(
+        ctx_id_call,
+        func,
+        request.params,
+      )
+      let bidi_value = get_field(eval_result, "result").unwrap_or(
+        make_object({ "type": Json::string("undefined") }),
+      )
+      if should_capture_focus_target(func, bidi_value) {
+        self.remember_focused_element_remote(bidi_value)
+      }
+      self.send_script_remote_value_response(
+        request.id,
+        realm_id_call,
+        bidi_value,
+        unwrap_result,
+      )
+    }
+    Some("exception") => {
+      if self.try_send_synthetic_scroll_call_fallback(
+          request.id,
+          ctx_id_call,
+          realm_id_call,
+          func,
+          capture_console_call,
+          user_activation_call,
+          root_ownership_call,
+          serialization_options_json_call,
+          unwrap_result,
+        ) {
+        return
+      }
+      self.send_script_eval_result_mode(
+        request.id,
+        realm_id_call,
+        eval_result,
+        unwrap_result,
+      )
+    }
+    _ =>
+      self.send_script_eval_result_mode(
+        request.id,
+        realm_id_call,
+        eval_result,
+        unwrap_result,
+      )
   }
 }
 
@@ -9711,30 +9746,85 @@ fn BidiProtocol::send_script_remote_value_result(
 }
 
 ///|
+fn BidiProtocol::send_script_remote_value_response(
+  self : BidiProtocol,
+  request_id : Int,
+  realm_id : String,
+  remote_value : Json,
+  unwrap_result : Bool,
+) -> Unit {
+  if unwrap_result {
+    self.send_success(request_id, Some(remote_value))
+  } else {
+    self.send_script_remote_value_result(request_id, realm_id, remote_value)
+  }
+}
+
+///|
+fn BidiProtocol::send_script_exception_result(
+  self : BidiProtocol,
+  request_id : Int,
+  realm_id : String,
+  eval_result : Json,
+) -> Unit {
+  let exc_details = get_field(eval_result, "exceptionDetails").unwrap_or(
+    make_object({}),
+  )
+  let result = make_object({
+    "realm": Json::string(realm_id),
+    "exceptionDetails": exc_details,
+  })
+  self.send_success(request_id, Some(result))
+}
+
+///|
+fn BidiProtocol::send_script_undefined_response(
+  self : BidiProtocol,
+  request_id : Int,
+  realm_id : String,
+  unwrap_result : Bool,
+) -> Unit {
+  if unwrap_result {
+    self.send_success(
+      request_id,
+      Some(make_object({ "type": Json::string("undefined") })),
+    )
+  } else {
+    self.send_script_undefined_result(request_id, realm_id)
+  }
+}
+
+///|
 fn BidiProtocol::send_script_eval_result(
   self : BidiProtocol,
   request_id : Int,
   realm_id : String,
   eval_result : Json,
 ) -> Unit {
+  self.send_script_eval_result_mode(request_id, realm_id, eval_result, false)
+}
+
+///|
+fn BidiProtocol::send_script_eval_result_mode(
+  self : BidiProtocol,
+  request_id : Int,
+  realm_id : String,
+  eval_result : Json,
+  unwrap_result : Bool,
+) -> Unit {
   match get_string_field(eval_result, "type") {
     Some("success") => {
       let bidi_value = get_field(eval_result, "result").unwrap_or(
         make_object({ "type": Json::string("undefined") }),
       )
-      self.send_script_remote_value_result(request_id, realm_id, bidi_value)
-    }
-    Some("exception") => {
-      let exc_details = get_field(eval_result, "exceptionDetails").unwrap_or(
-        make_object({}),
+      self.send_script_remote_value_response(
+        request_id, realm_id, bidi_value, unwrap_result,
       )
-      let result = make_object({
-        "realm": Json::string(realm_id),
-        "exceptionDetails": exc_details,
-      })
-      self.send_success(request_id, Some(result))
     }
-    _ => self.send_script_undefined_result(request_id, realm_id)
+    Some("exception") =>
+      self.send_script_exception_result(request_id, realm_id, eval_result)
+    _ =>
+      self.send_script_undefined_response(request_id, realm_id, unwrap_result)
   }
 }
 
@@ -12025,6 +12115,7 @@ fn BidiProtocol::clear_pending_prompt_state(
   self.pending_prompt_type.remove(ctx_id)
   self.pending_close_request.remove(ctx_id)
   self.pending_close_wait_for_destroyed.remove(ctx_id)
+  self.pending_close_response_mode.remove(ctx_id)
   self.pending_prompt_request.remove(ctx_id)
   self.pending_prompt_realm.remove(ctx_id)
   self.pending_beforeunload_request.remove(ctx_id)

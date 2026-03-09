@@ -521,6 +521,7 @@ fn BidiProtocol::try_send_synthetic_scroll_call_fallback(
   user_activation : Bool,
   root_ownership : Bool,
   serialization_options_json : String,
+  unwrap_result : Bool,
 ) -> Bool {
   if not(should_apply_synthetic_scroll_call_fallback(function_declaration)) {
     return false
@@ -540,11 +541,9 @@ fn BidiProtocol::try_send_synthetic_scroll_call_fallback(
         make_object({ "type": Json::string("undefined") }),
       )
       self.mark_context_synthetically_scrolled(ctx_id)
-      let result = make_object({
-        "realm": Json::string(realm_id),
-        "result": bidi_value,
-      })
-      self.send_success(request_id, Some(result))
+      self.send_script_remote_value_response(
+        request_id, realm_id, bidi_value, unwrap_result,
+      )
       true
     }
     _ => false

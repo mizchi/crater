@@ -3953,8 +3953,9 @@ extern "js" fn js_eval_and_send_async(
   capture_console : Bool,
   user_activation : Bool,
   root_ownership : Bool,
+  unwrap_result : Bool,
 ) -> Unit =
-  #| async (socket, requestId, expression, ctxId, realmId, captureConsole, userActivation, rootOwnership) => {
+  #| async (socket, requestId, expression, ctxId, realmId, captureConsole, userActivation, rootOwnership, unwrapResult) => {
   #|   const consoleEntries = [];
   #|   let originalConsole = null;
   #|   if (captureConsole) {
@@ -4390,25 +4391,28 @@ extern "js" fn js_eval_and_send_async(
   #|     response = {
   #|       id: requestId,
   #|       type: "success",
-  #|       result: {
-  #|         realm: realmId,
-  #|         result: toBidiValueFn(result, !!rootOwnership)
-  #|       }
+  #|       result: unwrapResult
+  #|         ? toBidiValueFn(result, !!rootOwnership)
+  #|         : {
+  #|             realm: realmId,
+  #|             result: toBidiValueFn(result, !!rootOwnership)
+  #|           }
   #|     };
   #|   } catch (e) {
+  #|     const exceptionResult = {
+  #|       realm: realmId,
+  #|       exceptionDetails: {
+  #|         columnNumber: 0,
+  #|         lineNumber: 0,
+  #|         text: String(e),
+  #|         exception: toBidiValueFn(e, !!rootOwnership),
+  #|         stackTrace: { callFrames: [] }
+  #|       }
+  #|     };
   #|     response = {
   #|       id: requestId,
   #|       type: "success",
-  #|       result: {
-  #|         realm: realmId,
-  #|         exceptionDetails: {
-  #|           columnNumber: 0,
-  #|           lineNumber: 0,
-  #|           text: String(e),
-  #|           exception: toBidiValueFn(e, !!rootOwnership),
-  #|           stackTrace: { callFrames: [] }
-  #|         }
-  #|       }
+  #|       result: exceptionResult
   #|     };
   #|   } finally {
   #|     if (captureConsole && originalConsole) {
@@ -4458,10 +4462,11 @@ fn eval_and_send_async_with_console(
   capture_console : Bool,
   user_activation : Bool,
   root_ownership : Bool,
+  unwrap_result : Bool,
 ) -> Unit {
   js_eval_and_send_async(
     socket, request_id, expression, ctx_id, realm_id, capture_console, user_activation,
-    root_ownership,
+    root_ownership, unwrap_result,
   )
 }
 
@@ -4475,6 +4480,7 @@ pub fn eval_and_send_async(
 ) -> Unit {
   eval_and_send_async_with_console(
     socket, request_id, expression, ctx_id, "default-realm", true, false, false,
+    false,
   )
 }
 

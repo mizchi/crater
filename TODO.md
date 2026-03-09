@@ -146,6 +146,12 @@
 - [x] `browsing_context/reload --quick` / `network --quick` / `integration --quick` / `strict` で `reloadWithState` 移行の回帰確認
 - [x] `browsingContext.navigateWithState` を追加して `navigate` の prepare/finalize orchestration と beforeunload 再開を MoonBit 側へ移行
 - [x] `browsing_context/navigate --quick` / `network/before_request_sent --quick` / `integration --quick` / `strict` で `navigateWithState` 移行の回帰確認
+- [x] `browsingContext.getCurrentUrlValue` / `printData` を追加して `BrowsingContextModule.get_current_url` / `print` の result unwrap を MoonBit 側へ移行
+- [x] `browsing_context/print --quick` / `integration --quick` / `strict` で `getCurrentUrlValue` / `printData` 移行の回帰確認
+- [x] `browsingContext.captureScreenshotData` / `script.evaluateResult` / `script.callFunctionResult` を追加して `BrowsingContextModule.capture_screenshot` / `ScriptModule.evaluate` / `call_function` の result unwrap を MoonBit 側へ移行
+- [x] `browsing_context/capture_screenshot --quick` / `script/{evaluate,call_function} --quick` / `integration --quick` / `strict` で result unwrap 移行の回帰確認
+- [x] `browsingContext.closeResult` を追加して `BrowsingContextModule.close` の contextDestroyed 待機を MoonBit 側へ移行
+- [x] `browsing_context/{close,context_destroyed} --quick` / `integration --quick` / `strict` で `closeResult` 移行の回帰確認
 
 ### 次の具体タスク
 
@@ -158,6 +164,9 @@
   - `close` の waitForDestroyed 判定と deferred close 応答は `closeWithState` に移行済み
   - `reload` の finalize orchestration は `reloadWithState` に移行済み
   - `navigate` の prepare/finalize orchestration は `navigateWithState` に移行済み
+  - `get_current_url` / `print` の result unwrap は MoonBit 側へ移行済み
+  - `capture_screenshot` / `script.evaluate` / `script.call_function` の result unwrap は MoonBit 側へ移行済み
+  - `close` の contextDestroyed 待機は `closeResult` に移行済み
   - `serializationOptions` 正規化は MoonBit 側へ移行済み
   - baseline context 準備と baseline/current-url query は MoonBit 側へ移行済み
   - requested navigation URL / context cookie scope / userContext existence は query command 化済み

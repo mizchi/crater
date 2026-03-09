@@ -510,6 +510,30 @@ test "bidi browsingContext getCurrentUrl returns current url" {
 }
 
 ///|
+test "bidi browsingContext getCurrentUrlValue returns raw url string" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let url = "data:text/html,current-url-value"
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"" +
+    url +
+    "\",\"wait\":\"complete\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browsingContext.getCurrentUrlValue\",\"params\":{\"context\":\"session-1\"}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":\"" + url + "\""))
+}
+
+///|
 test "bidi browser hasUserContext reflects current user contexts" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -679,6 +703,98 @@ test "bidi browsingContext closeWithState promptUnload keeps waitForDestroyed pa
   }
   assert_true(has_close_success)
   assert_true(has_wait_flag)
+  assert_true(has_handle_success)
+  assert_true(has_destroyed)
+}
+
+///|
+test "bidi browsingContext closeResult returns empty payload after destroying contexts" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"browsingContext.contextDestroyed\"]}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browsingContext.createSyntheticChildContext\",\"params\":{\"parentContext\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/empty.html\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"browsingContext.closeResult\",\"params\":{\"context\":\"session-1\"}}",
+  )
+  let msgs = proto.take_messages()
+  let mut has_close_success = false
+  let mut has_destroyed = false
+  for msg in msgs {
+    let json = msg.to_json()
+    if json.contains("\"id\":4") && json.contains("\"type\":\"success\"") {
+      has_close_success = true
+      assert_false(json.contains("\"waitForDestroyed\""))
+      assert_true(json.contains("\"result\":{}"))
+    }
+    if json.contains("browsingContext.contextDestroyed") {
+      has_destroyed = true
+    }
+  }
+  assert_true(has_close_success)
+  assert_true(has_destroyed)
+}
+
+///|
+test "bidi browsingContext closeResult promptUnload returns empty payload" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"browsingContext.userPromptOpened\",\"browsingContext.contextDestroyed\"]}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browsingContext.createSyntheticChildContext\",\"params\":{\"parentContext\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/empty.html\"}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/html/beforeunload.html\",\"wait\":\"complete\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":5,\"method\":\"browsingContext.closeResult\",\"params\":{\"context\":\"session-1\",\"promptUnload\":true}}",
+  )
+  let close_msgs = proto.take_messages()
+  assert_eq(close_msgs.length(), 1)
+  let close_json = close_msgs[0].to_json()
+  assert_true(close_json.contains("browsingContext.userPromptOpened"))
+  assert_false(close_json.contains("\"id\":5"))
+
+  let _ = proto.process_message(
+    "{\"id\":6,\"method\":\"browsingContext.handleUserPrompt\",\"params\":{\"context\":\"session-1\"}}",
+  )
+  let msgs = proto.take_messages()
+  let mut has_close_success = false
+  let mut has_handle_success = false
+  let mut has_destroyed = false
+  for msg in msgs {
+    let json = msg.to_json()
+    if json.contains("\"id\":5") && json.contains("\"type\":\"success\"") {
+      has_close_success = true
+      assert_false(json.contains("\"waitForDestroyed\""))
+      assert_true(json.contains("\"result\":{}"))
+    }
+    if json.contains("\"id\":6") && json.contains("\"type\":\"success\"") {
+      has_handle_success = true
+    }
+    if json.contains("browsingContext.contextDestroyed") {
+      has_destroyed = true
+    }
+  }
+  assert_true(has_close_success)
   assert_true(has_handle_success)
   assert_true(has_destroyed)
 }
@@ -1773,4 +1889,77 @@ test "bidi script callFunction accepts snake_case aliases" {
   let json = proto.take_messages()[0].to_json()
   assert_true(json.contains("\"type\":\"success\""))
   assert_true(json.contains("\"handle\":"))
+}
+
+///|
+test "bidi script evaluateResult unwraps async remote value" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"Promise.resolve(42)\",\"target\":{\"context\":\"session-1\"},\"await_promise\":true}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":{\"type\":\"number\",\"value\":42}"))
+  assert_false(json.contains("\"realm\""))
+}
+
+///|
+test "bidi script evaluateResult keeps exceptionDetails payload" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"(() => { throw new Error('boom'); })()\",\"target\":{\"context\":\"session-1\"}}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"exceptionDetails\""))
+  assert_true(json.contains("\"text\":\"Error: boom\""))
+}
+
+///|
+test "bidi script callFunctionResult unwraps async remote value" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.callFunctionResult\",\"params\":{\"function_declaration\":\"async () => ({answer: 42})\",\"target\":{\"context\":\"session-1\"},\"await_promise\":true}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":{\"type\":\"object\""))
+  assert_false(json.contains("\"realm\""))
+}
+
+///|
+test "bidi script callFunctionResult unwraps synthetic scroll fallback result" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<div style='margin-top:768px'>foo</div>\",\"wait\":\"complete\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.callFunctionResult\",\"params\":{\"function_declaration\":\"() => { const element = document.querySelector('div'); const rect = element.getBoundingClientRect(); window.scrollTo(0, rect.y); return element; }\",\"target\":{\"context\":\"session-1\"},\"await_promise\":false}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":{\"type\":\"node\""))
+  assert_false(json.contains("\"realm\""))
 }

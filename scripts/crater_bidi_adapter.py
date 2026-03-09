@@ -766,12 +766,11 @@ class BrowsingContextModule:
         if not isinstance(context, str) or context == "":
             return None
         future = await self._session.send_command(
-            "browsingContext.getCurrentUrl",
+            "browsingContext.getCurrentUrlValue",
             {"context": context},
         )
         result = await future
-        url = result.get("url") if isinstance(result, Mapping) else None
-        return url if isinstance(url, str) else None
+        return result if isinstance(result, str) else None
 
     async def close(self, context: str, prompt_unload=_UNSET):
         params = {"context": context}
@@ -779,23 +778,8 @@ class BrowsingContextModule:
         if prompt_unload is not _UNSET and prompt_unload is not None:
             params["promptUnload"] = prompt_unload
         self._session.fail_pending_print_requests_for_context(context)
-        future = await self._session.send_command("browsingContext.closeWithState", params)
-        result = await future
-        wait_for_destroyed = (
-            self._session.has_event_listener("browsingContext.contextDestroyed")
-            and bool(result.get("waitForDestroyed"))
-            if isinstance(result, Mapping)
-            else False
-        )
-        if wait_for_destroyed:
-            await self._session.wait_for_backlog_event(
-                "browsingContext.contextDestroyed",
-                predicate=lambda payload: (
-                    isinstance(payload, Mapping) and payload.get("context") == context
-                ),
-                timeout=0.5,
-            )
-        return result
+        future = await self._session.send_command("browsingContext.closeResult", params)
+        return await future
 
     async def handle_user_prompt(self, context: str, accept=_UNSET, user_text=_UNSET):
         params = {"context": context}
@@ -828,10 +812,9 @@ class BrowsingContextModule:
             params[key] = value
 
         future = await self._session.send_command(
-            "browsingContext.print", params
+            "browsingContext.printData", params
         )
-        result = await future
-        return result.get("data", result)
+        return await future
 
     async def capture_screenshot(self, context: str, **kwargs):
         params = {"context": context}
@@ -840,10 +823,9 @@ class BrowsingContextModule:
                 continue
             params[key] = value
         future = await self._session.send_command(
-            "browsingContext.captureScreenshot", params
+            "browsingContext.captureScreenshotData", params
         )
-        result = await future
-        return result.get("data", result)
+        return await future
 
     async def locate_nodes(
         self,
@@ -947,13 +929,14 @@ class ScriptModule:
             if value is None:
                 continue
             params[key] = value
-        future = await self._session.send_command("script.evaluate", params)
+        command = "script.evaluate" if raw_result else "script.evaluateResult"
+        future = await self._session.send_command(command, params)
         result = await future
         if raw_result:
             return result
         if isinstance(result, dict) and "exceptionDetails" in result:
             raise ScriptEvaluateResultException(result)
-        return result.get("result", result)
+        return result
 
     async def call_function(self, function_declaration, target, arguments=None, await_promise=False, **kwargs):
         raw_result = kwargs.pop("raw_result", False)
@@ -968,13 +951,14 @@ class ScriptModule:
             if value is None:
                 continue
             params[key] = value
-        future = await self._session.send_command("script.callFunction", params)
+        command = "script.callFunction" if raw_result else "script.callFunctionResult"
+        future = await self._session.send_command(command, params)
         result = await future
         if raw_result:
             return result
         if isinstance(result, dict) and "exceptionDetails" in result:
             raise ScriptEvaluateResultException(result)
-        return result.get("result", result)
+        return result
 
     async def disown(self, handles, target):
         future = await self._session.send_command(
