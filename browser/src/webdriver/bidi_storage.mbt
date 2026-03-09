@@ -1821,6 +1821,7 @@ fn BidiProtocol::try_handle_synthetic_window_location_href_eval(
   ctx_id : String,
   realm_id : String,
   expression : String,
+  unwrap_result : Bool,
 ) -> Bool {
   let expr = expression.trim().to_string()
   if expr != "window.location.href" {
@@ -1828,14 +1829,15 @@ fn BidiProtocol::try_handle_synthetic_window_location_href_eval(
   }
   match self.resolve_synthetic_location_href(ctx_id) {
     Some(href) => {
-      let result = make_object({
-        "realm": Json::string(realm_id),
-        "result": make_object({
+      self.send_script_remote_value_response(
+        request_id,
+        realm_id,
+        make_object({
           "type": Json::string("string"),
           "value": Json::string(href),
         }),
-      })
-      self.send_success(request_id, Some(result))
+        unwrap_result,
+      )
       true
     }
     None => false
@@ -1849,18 +1851,20 @@ fn BidiProtocol::try_handle_synthetic_document_cookie_eval(
   ctx_id : String,
   realm_id : String,
   expression : String,
+  unwrap_result : Bool,
 ) -> Bool {
   let expr = expression.trim().to_string()
   if expr == "document.cookie" {
     let value = self.resolve_document_cookie(ctx_id).unwrap_or("")
-    let result = make_object({
-      "realm": Json::string(realm_id),
-      "result": make_object({
+    self.send_script_remote_value_response(
+      request_id,
+      realm_id,
+      make_object({
         "type": Json::string("string"),
         "value": Json::string(value),
       }),
-    })
-    self.send_success(request_id, Some(result))
+      unwrap_result,
+    )
     return true
   }
   match extract_document_cookie_assignment(expr) {

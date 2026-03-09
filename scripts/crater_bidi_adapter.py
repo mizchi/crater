@@ -740,27 +740,22 @@ class BrowsingContextModule:
         future = await self._session.send_command(
             "browsingContext.createAndGetInfo", params
         )
-        result = await future
-        return dict(result) if isinstance(result, Mapping) else {}
+        return await future
 
     async def navigate(self, context: str, url: str, wait: str = "none"):
         future = await self._session.send_command(
             "browsingContext.navigateWithState", {"context": context, "url": url, "wait": wait}
         )
-        result = await future
-        if isinstance(result, Mapping) and bool(result.get("blocked")):
-            await asyncio.Future()
-        return result
+        return await future
 
     async def get_tree(self, root=None, max_depth=None):
         params = {}
         if root is not None:
             params["root"] = root
         if max_depth is not None:
-            params["maxDepth"] = max_depth
+            params["max_depth"] = max_depth
         future = await self._session.send_command("browsingContext.getTreeContexts", params)
-        result = await future
-        return result if isinstance(result, list) else []
+        return await future
 
     async def get_current_url(self, context: str) -> str | None:
         if not isinstance(context, str) or context == "":
@@ -776,7 +771,7 @@ class BrowsingContextModule:
         params = {"context": context}
         # prompt_unload=None should behave like omitted in WPT.
         if prompt_unload is not _UNSET and prompt_unload is not None:
-            params["promptUnload"] = prompt_unload
+            params["prompt_unload"] = prompt_unload
         self._session.fail_pending_print_requests_for_context(context)
         future = await self._session.send_command("browsingContext.closeResult", params)
         return await future
@@ -786,7 +781,7 @@ class BrowsingContextModule:
         if accept is not _UNSET:
             params["accept"] = accept
         if user_text is not _UNSET:
-            params["userText"] = user_text
+            params["user_text"] = user_text
         future = await self._session.send_command(
             "browsingContext.handleUserPrompt", params
         )
@@ -861,7 +856,7 @@ class BrowsingContextModule:
         if viewport is not _UNSET:
             params["viewport"] = viewport
         if device_pixel_ratio is not _UNSET:
-            params["devicePixelRatio"] = device_pixel_ratio
+            params["device_pixel_ratio"] = device_pixel_ratio
         if user_contexts is not None:
             params["user_contexts"] = user_contexts
         future = await self._session.send_command("browsingContext.setViewport", params)
@@ -884,13 +879,11 @@ class SessionModule:
 
     async def prepare_baseline_context_for_test(self):
         future = await self._session.send_command("session.prepareBaselineContextForTest", {})
-        result = await future
-        return dict(result) if isinstance(result, Mapping) else {}
+        return await future
 
     async def get_baseline_context_info_for_test(self):
         future = await self._session.send_command("session.getBaselineContextInfoForTest", {})
-        result = await future
-        return dict(result) if isinstance(result, Mapping) else {}
+        return await future
 
     async def subscribe(self, events: list, contexts: list = None, user_contexts: list = None):
         params = {"events": events}
@@ -974,12 +967,9 @@ class ScriptModule:
                 continue
             params[key] = value
         future = await self._session.send_command("script.addPreloadScriptId", params)
-        result = await future
-        return result if isinstance(result, str) else None
+        return await future
 
     async def remove_preload_script(self, script: str):
-        if isinstance(script, Mapping):
-            script = script.get("script")
         future = await self._session.send_command("script.removePreloadScript", {"script": script})
         return await future
 
@@ -990,8 +980,7 @@ class ScriptModule:
     async def get_realms(self, **kwargs):
         params = dict(kwargs)
         future = await self._session.send_command("script.getRealmsList", params)
-        result = await future
-        return result if isinstance(result, list) else []
+        return await future
 
 
 class NetworkModule:

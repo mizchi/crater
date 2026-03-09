@@ -66,6 +66,32 @@ test "bidi script rememberSyntheticLocationHref overrides window.location.href" 
 }
 
 ///|
+test "bidi script evaluateResult unwraps synthetic window.location.href" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.rememberSyntheticLocationHref\",\"params\":{\"context\":\"session-1\",\"href\":\"http://localhost:8000/webdriver/tests/support/initial.html\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"window.location.href\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let eval_json = proto.take_messages()[0].to_json()
+  assert_true(eval_json.contains("\"type\":\"success\""))
+  assert_true(eval_json.contains("\"result\"") == false)
+  assert_true(
+    eval_json.contains(
+      "\"value\":\"http://localhost:8000/webdriver/tests/support/initial.html\"",
+    ),
+  )
+}
+
+///|
 test "bidi synthetic location href is used for document.cookie base url" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(

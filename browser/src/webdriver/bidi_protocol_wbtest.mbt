@@ -285,6 +285,22 @@ test "bidi browsingContext setViewport accepts user_contexts alias" {
 }
 
 ///|
+test "bidi browsingContext setViewport accepts device_pixel_ratio alias" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.setViewport\",\"params\":{\"context\":\"session-1\",\"viewport\":{\"width\":640,\"height\":480},\"device_pixel_ratio\":2}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_eq(proto.context_device_pixel_ratio.get("session-1"), Some(2.0))
+}
+
+///|
 test "bidi browser createUserContext accepts snake_case aliases" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -422,6 +438,29 @@ test "bidi browsingContext getTreeContexts returns raw contexts array" {
   assert_true(json.contains("\"result\":[{"))
   assert_true(json.contains("\"context\":\"session-1\""))
   assert_true(json.contains("\"context\":\"session-2\""))
+}
+
+///|
+test "bidi browsingContext getTreeContexts accepts max_depth alias" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.createSyntheticChildContext\",\"params\":{\"parentContext\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/empty.html\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browsingContext.getTreeContexts\",\"params\":{\"max_depth\":0}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":[{"))
+  assert_true(json.contains("\"context\":\"session-1\""))
+  assert_false(json.contains("\"context\":\"session-2\""))
 }
 
 ///|
@@ -797,6 +836,30 @@ test "bidi browsingContext closeResult promptUnload returns empty payload" {
   assert_true(has_close_success)
   assert_true(has_handle_success)
   assert_true(has_destroyed)
+}
+
+///|
+test "bidi browsingContext closeResult accepts prompt_unload alias" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"browsingContext.userPromptOpened\"]}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/html/beforeunload.html\",\"wait\":\"complete\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"browsingContext.closeResult\",\"params\":{\"context\":\"session-1\",\"prompt_unload\":true}}",
+  )
+  let close_json = proto.take_messages()[0].to_json()
+  assert_true(close_json.contains("browsingContext.userPromptOpened"))
+  assert_false(close_json.contains("\"id\":4"))
 }
 
 ///|
@@ -1448,6 +1511,28 @@ test "bidi script addPreloadScriptId returns raw script id" {
 }
 
 ///|
+test "bidi script removePreloadScript accepts nested script object" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.addPreloadScript\",\"params\":{\"functionDeclaration\":\"() => { window.foo = 'bar'; }\"}}",
+  )
+  let add_json = proto.take_messages()[0].to_json()
+  assert_true(add_json.contains("\"script\":\"preload-1\""))
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.removePreloadScript\",\"params\":{\"script\":{\"script\":\"preload-1\"}}}",
+  )
+  let remove_json = proto.take_messages()[0].to_json()
+  assert_true(remove_json.contains("\"type\":\"success\""))
+  assert_eq(proto.preload_scripts.length(), 0)
+}
+
+///|
 test "bidi script getRealmsList returns raw realms array" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -1700,7 +1785,7 @@ test "bidi browsingContext reloadWithState prompt defers until handleUserPrompt"
 }
 
 ///|
-test "bidi browsingContext navigateWithState reports blocked synthetic request" {
+test "bidi browsingContext navigateWithState defers blocked synthetic request" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
     "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
@@ -1721,19 +1806,46 @@ test "bidi browsingContext navigateWithState reports blocked synthetic request" 
     "{\"id\":4,\"method\":\"browsingContext.navigateWithState\",\"params\":{\"context\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/empty.html\",\"wait\":\"complete\"}}",
   )
   let msgs = proto.take_messages()
-  assert_eq(msgs.length(), 2)
+  assert_eq(msgs.length(), 1)
   let event_json = msgs[0].to_json()
-  let response_json = msgs[1].to_json()
   assert_true(event_json.contains("\"method\":\"network.beforeRequestSent\""))
   assert_true(event_json.contains("\"isBlocked\":true"))
-  assert_true(response_json.contains("\"id\":4"))
-  assert_true(response_json.contains("\"type\":\"success\""))
-  assert_true(response_json.contains("\"blocked\":true"))
-  assert_true(
-    response_json.contains(
-      "\"url\":\"http://localhost:8000/webdriver/tests/support/empty.html\"",
-    ),
+  assert_eq(proto.pending_navigation_request.get("session-1"), Some(4))
+  assert_true(proto.in_flight_navigation_id.contains("session-1"))
+}
+
+///|
+test "bidi browsingContext navigateWithState defers responseStarted blocked request" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
   )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"network.beforeRequestSent\",\"network.responseStarted\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.addIntercept\",\"params\":{\"phases\":[\"responseStarted\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"browsingContext.navigateWithState\",\"params\":{\"context\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/empty.txt\",\"wait\":\"complete\"}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 2)
+  assert_true(
+    msgs[0].to_json().contains("\"method\":\"network.beforeRequestSent\""),
+  )
+  assert_true(
+    msgs[1].to_json().contains("\"method\":\"network.responseStarted\""),
+  )
+  assert_true(msgs[1].to_json().contains("\"isBlocked\":true"))
+  assert_eq(proto.pending_navigation_request.get("session-1"), Some(4))
+  assert_true(proto.in_flight_navigation_id.contains("session-1"))
 }
 
 ///|

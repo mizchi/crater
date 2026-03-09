@@ -152,6 +152,8 @@
 - [x] `browsing_context/capture_screenshot --quick` / `script/{evaluate,call_function} --quick` / `integration --quick` / `strict` で result unwrap 移行の回帰確認
 - [x] `browsingContext.closeResult` を追加して `BrowsingContextModule.close` の contextDestroyed 待機を MoonBit 側へ移行
 - [x] `browsing_context/{close,context_destroyed} --quick` / `integration --quick` / `strict` で `closeResult` 移行の回帰確認
+- [x] `max_depth` / `prompt_unload` / `device_pixel_ratio` を protocol alias として受理して `BrowsingContextModule` の camelCase 変換を削減
+- [x] `script.removePreloadScript` が nested `{script:{script:id}}` を受理するようにして `ScriptModule.remove_preload_script` の Python 正規化を削除
 
 ### 次の具体タスク
 

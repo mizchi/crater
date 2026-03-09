@@ -693,6 +693,136 @@ test "bidi network continueBlockedRequest handles navigation in protocol" {
 }
 
 ///|
+test "bidi network continueBlockedRequest completes deferred navigate response" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"network.beforeRequestSent\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.addIntercept\",\"params\":{\"phases\":[\"beforeRequestSent\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let url = "http://localhost:8000/webdriver/tests/support/empty.html"
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"browsingContext.navigateWithState\",\"params\":{\"context\":\"session-1\",\"url\":\"" +
+    url +
+    "\",\"wait\":\"complete\"}}",
+  )
+  let blocked_msgs = proto.take_messages()
+  assert_eq(blocked_msgs.length(), 1)
+  assert_true(
+    blocked_msgs[0]
+    .to_json()
+    .contains("\"method\":\"network.beforeRequestSent\""),
+  )
+
+  let _ = proto.process_message(
+    "{\"id\":5,\"method\":\"network.continueBlockedRequest\",\"params\":{\"request\":\"request-1\"}}",
+  )
+  let continue_msgs = proto.take_messages()
+  assert_eq(continue_msgs.length(), 3)
+  let combined = continue_msgs[0].to_json() +
+    continue_msgs[1].to_json() +
+    continue_msgs[2].to_json()
+  assert_true(combined.contains("\"id\":5"))
+  assert_true(combined.contains("\"id\":4"))
+  assert_true(combined.contains("\"method\":\"browsingContext.load\""))
+  assert_true(combined.contains("\"url\":\"" + url + "\""))
+}
+
+///|
+test "bidi network failBlockedRequest fails deferred navigate response" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"network.beforeRequestSent\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.addIntercept\",\"params\":{\"phases\":[\"beforeRequestSent\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let url = "http://localhost:8000/webdriver/tests/support/empty.html"
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"browsingContext.navigateWithState\",\"params\":{\"context\":\"session-1\",\"url\":\"" +
+    url +
+    "\",\"wait\":\"complete\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":5,\"method\":\"network.failBlockedRequest\",\"params\":{\"request\":\"request-1\"}}",
+  )
+  let fail_msgs = proto.take_messages()
+  assert_eq(fail_msgs.length(), 2)
+  let combined = fail_msgs[0].to_json() + fail_msgs[1].to_json()
+  assert_true(combined.contains("\"id\":5"))
+  assert_true(combined.contains("\"id\":4"))
+  assert_true(combined.contains("\"type\":\"error\""))
+  assert_true(combined.contains("Navigation failed: Request failed"))
+}
+
+///|
+test "bidi network continueBlockedResponse completes responseStarted deferred navigate response" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"network.beforeRequestSent\",\"network.responseStarted\",\"network.responseCompleted\",\"browsingContext.load\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.addIntercept\",\"params\":{\"phases\":[\"responseStarted\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let url = "http://localhost:8000/webdriver/tests/support/empty.txt"
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"browsingContext.navigateWithState\",\"params\":{\"context\":\"session-1\",\"url\":\"" +
+    url +
+    "\",\"wait\":\"complete\"}}",
+  )
+  let blocked_msgs = proto.take_messages()
+  assert_eq(blocked_msgs.length(), 2)
+  assert_true(
+    blocked_msgs[1].to_json().contains("\"method\":\"network.responseStarted\""),
+  )
+  assert_eq(proto.pending_navigation_request.get("session-1"), Some(4))
+
+  let _ = proto.process_message(
+    "{\"id\":5,\"method\":\"network.continueBlockedResponse\",\"params\":{\"request\":\"request-1\",\"mode\":\"continueResponse\"}}",
+  )
+  let continue_msgs = proto.take_messages()
+  assert_eq(continue_msgs.length(), 4)
+  let combined = continue_msgs[0].to_json() +
+    continue_msgs[1].to_json() +
+    continue_msgs[2].to_json() +
+    continue_msgs[3].to_json()
+  assert_true(combined.contains("\"id\":5"))
+  assert_true(combined.contains("\"id\":4"))
+  assert_true(combined.contains("\"method\":\"network.responseCompleted\""))
+  assert_true(combined.contains("\"method\":\"browsingContext.load\""))
+}
+
+///|
 test "bidi network resolveMatchingIntercepts matches data url string patterns" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(

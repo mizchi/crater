@@ -260,6 +260,13 @@ fn BidiProtocol::prepare_navigation_request_internal(
 
   let navigation_id = self.next_navigation_id.to_string()
   self.next_navigation_id += 1
+  self.remember_requested_navigation_url(context_id, url)
+  self.register_in_flight_navigation(
+    context_id,
+    url,
+    navigation_id,
+    Some(request_id),
+  )
   let input : SyntheticNetworkEventInput = {
     context_id,
     url,
@@ -352,12 +359,24 @@ fn BidiProtocol::handle_network_fail_blocked_request(
     Some(event) => event
     None => return
   }
+  let is_navigation = match
+    get_map_field_with_alias(blocked_request, "isNavigation", "is_navigation") {
+    Some(True) => true
+    _ => false
+  }
   self.forget_network_blocked_request(blocked_request_id)
   self.send_success(request_id, Some(make_object({ "event": event })))
   self.emit_synthetic_network_event_if_subscribed(
     "network.fetchError",
     Some(event),
   )
+  if is_navigation {
+    self.fail_pending_navigation_response(
+      input.context_id,
+      input.navigation,
+      "Navigation failed: " + error_text,
+    )
+  }
 }
 
 ///|
@@ -519,6 +538,7 @@ fn BidiProtocol::handle_network_continue_blocked_request(
   }
   let mut input = base_input
   let mut synthetic_location_href : String? = None
+  let mut completed_navigation_url : String? = None
   let is_navigation = match blocked_request.get("is_navigation") {
     Some(True) => true
     Some(False) => false
@@ -646,9 +666,9 @@ fn BidiProtocol::handle_network_continue_blocked_request(
     self.input_synthetic_events_by_context.remove(input.context_id)
     self.context_synthetic_scrolled.remove(input.context_id)
     self.clear_synthetic_location_href(input.context_id)
-    let _ = self.fail_in_flight_navigation(
+    self.abort_in_flight_navigation_unless_matching(
       input.context_id,
-      "aborted",
+      Some(navigation_id),
       "Navigation interrupted by another navigation",
     )
     if not(is_valid_navigation_target_url(resolved_url)) {
@@ -692,6 +712,13 @@ fn BidiProtocol::handle_network_continue_blocked_request(
               resolved_url,
               navigation_id,
             )
+            self.register_in_flight_navigation(
+              input.context_id,
+              resolved_url,
+              navigation_id,
+              self.pending_navigation_request.get(input.context_id),
+            )
+            completed_navigation_url = Some(resolved_url)
             if synthetic_location_href == None && original_url != input.url {
               synthetic_location_href = Some(original_url)
             }
@@ -765,6 +792,15 @@ fn BidiProtocol::handle_network_continue_blocked_request(
     None,
     None,
   )
+  match completed_navigation_url {
+    Some(url) =>
+      self.complete_pending_navigation_response(
+        input.context_id,
+        Some(url),
+        input.navigation,
+      )
+    None => ()
+  }
 }
 
 ///|
@@ -1166,6 +1202,13 @@ fn BidiProtocol::handle_network_continue_blocked_response(
     None,
     load_event,
   )
+  if is_navigation {
+    self.complete_pending_navigation_response(
+      context_id,
+      Some(input.url),
+      input.navigation,
+    )
+  }
   if mode == "provideResponse" {
     self.maybe_emit_followup_preflight_blocked_request(blocked_request)
   }

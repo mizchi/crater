@@ -1734,7 +1734,8 @@ fn BidiProtocol::dispatch_browsing_context(
             }
             None => true
           }
-          let user_text = match get_param_raw(request.params, "userText") {
+          let user_text = match
+            get_param_raw_with_alias(request.params, "userText", "user_text") {
             Some(String(v)) => Some(v)
             Some(_) => {
               self.send_error(
@@ -2588,15 +2589,11 @@ fn BidiProtocol::send_navigation_state_result(
     Some(navigation_id),
   )
   if self.has_network_blocked_navigation_request(ctx_id, Some(navigation_id)) {
-    self.send_success(
-      request_id,
-      Some(
-        make_object({
-          "blocked": Json::boolean(true),
-          "navigation": Json::string(navigation_id),
-          "url": Json::string(result_url),
-        }),
-      ),
+    self.register_in_flight_navigation(
+      ctx_id,
+      result_url,
+      navigation_id,
+      Some(request_id),
     )
   } else {
     self.send_success(request_id, Some(result))
@@ -2707,10 +2704,7 @@ fn BidiProtocol::handle_browsing_context_navigate_with_state(
   match self.prepare_navigation_request_internal(request_id, ctx_id, url) {
     Some(prepared) =>
       match get_field(prepared, "blocked") {
-        Some(True) => {
-          self.send_success(request_id, Some(prepared))
-          return
-        }
+        Some(True) => return
         _ => ()
       }
     None => return
@@ -2970,7 +2964,12 @@ fn BidiProtocol::handle_browsing_context_reload_with_state(
         Some(completion.navigation_id),
       )
       if blocked {
-        self.clear_pending_navigation_state(ctx_id)
+        self.register_in_flight_navigation(
+          ctx_id,
+          url,
+          completion.navigation_id,
+          Some(request_id),
+        )
         return
       }
       if not(completion.deferred_response) {
@@ -3078,7 +3077,8 @@ fn BidiProtocol::handle_browsing_context_close_mode(
       return
     }
   }
-  let prompt_unload = match map.get("promptUnload") {
+  let prompt_unload = match
+    get_map_field_with_alias(map, "promptUnload", "prompt_unload") {
     Some(True) => true
     Some(False) | Some(Null) | None => false
     Some(_) => {
@@ -3452,7 +3452,8 @@ fn BidiProtocol::handle_set_viewport(
 
   let mut dpr_mode = 0 // 0: keep, 1: reset(null), 2: set(number)
   let mut dpr_value = 1.0
-  match params.get("devicePixelRatio") {
+  match
+    get_map_field_with_alias(params, "devicePixelRatio", "device_pixel_ratio") {
     Some(Null) => dpr_mode = 1
     Some(value) =>
       match json_as_safe_number(value, 0.000000001, 9007199254740991.0) {
@@ -5752,6 +5753,18 @@ fn BidiProtocol::dispatch_script(
     "removePreloadScript" => {
       let script_id = match get_param_raw(request.params, "script") {
         Some(String(script_id)) => script_id
+        Some(Object(map)) =>
+          match map.get("script") {
+            Some(String(script_id)) => script_id
+            _ => {
+              self.send_error(
+                request.id,
+                "invalid argument",
+                "script must be a string",
+              )
+              return Ok(())
+            }
+          }
         Some(_) => {
           self.send_error(
             request.id,
@@ -5927,6 +5940,7 @@ fn BidiProtocol::handle_script_evaluate(
       ctx_id,
       realm_id,
       expr,
+      unwrap_result,
     ) {
     return
   }
@@ -5935,6 +5949,7 @@ fn BidiProtocol::handle_script_evaluate(
       ctx_id,
       realm_id,
       expr,
+      unwrap_result,
     ) {
     return
   }
@@ -12174,11 +12189,13 @@ fn BidiProtocol::flush_expired_pending_navigation_requests(
     if now - started_at < 1500 {
       continue
     }
+    let navigation_id = self.in_flight_navigation_id.get(ctx_id)
+    if self.has_network_blocked_navigation_request(ctx_id, navigation_id) {
+      continue
+    }
     match self.pending_navigation_request.get(ctx_id) {
       Some(request_id) => {
-        let nav_id = self.in_flight_navigation_id
-          .get(ctx_id)
-          .unwrap_or("navigation")
+        let nav_id = navigation_id.unwrap_or("navigation")
         let url = self.in_flight_navigation_url
           .get(ctx_id)
           .unwrap_or("about:blank")
@@ -13323,7 +13340,7 @@ fn BidiProtocol::resolve_get_tree_contexts(
   request_id : Int,
   params : Json?,
 ) -> Array[Json]? {
-  match get_param_raw(params, "maxDepth") {
+  match get_param_raw_with_alias(params, "maxDepth", "max_depth") {
     Some(Number(n, ..)) => {
       if n < 0.0 {
         self.send_error(
@@ -13370,7 +13387,8 @@ fn BidiProtocol::resolve_get_tree_contexts(
     None => ()
   }
 
-  let max_depth = match get_param_raw(params, "maxDepth") {
+  let max_depth = match
+    get_param_raw_with_alias(params, "maxDepth", "max_depth") {
     Some(Number(n, ..)) => Some(n.to_int64().to_int())
     _ => None
   }
@@ -13846,6 +13864,98 @@ fn has_log_subscription(events : Array[String]) -> Bool {
     }
   }
   false
+}
+
+///|
+fn BidiProtocol::abort_in_flight_navigation_unless_matching(
+  self : BidiProtocol,
+  ctx_id : String,
+  navigation_id : String?,
+  message : String,
+) -> Unit {
+  let should_abort = match self.in_flight_navigation_id.get(ctx_id) {
+    Some(existing_navigation_id) =>
+      match navigation_id {
+        Some(target_navigation_id) =>
+          existing_navigation_id != target_navigation_id
+        None => true
+      }
+    None => false
+  }
+  if should_abort {
+    let _ = self.fail_in_flight_navigation(ctx_id, "aborted", message)
+  }
+}
+
+///|
+fn BidiProtocol::complete_pending_navigation_response(
+  self : BidiProtocol,
+  ctx_id : String,
+  url : String?,
+  navigation_id : String?,
+) -> Unit {
+  let resolved_navigation_id = match navigation_id {
+    Some(navigation_id) => navigation_id
+    None =>
+      match self.in_flight_navigation_id.get(ctx_id) {
+        Some(navigation_id) => navigation_id
+        None => return
+      }
+  }
+  match self.in_flight_navigation_id.get(ctx_id) {
+    Some(current_navigation_id) =>
+      if current_navigation_id != resolved_navigation_id {
+        return
+      }
+    None => ()
+  }
+  let resolved_url = match url {
+    Some(url) => url
+    None => self.in_flight_navigation_url.get(ctx_id).unwrap_or("about:blank")
+  }
+  match self.pending_navigation_request.get(ctx_id) {
+    Some(request_id) =>
+      self.send_success(
+        request_id,
+        Some(
+          make_object({
+            "navigation": Json::string(resolved_navigation_id),
+            "url": Json::string(resolved_url),
+          }),
+        ),
+      )
+    None => ()
+  }
+  self.clear_pending_navigation_state(ctx_id)
+}
+
+///|
+fn BidiProtocol::fail_pending_navigation_response(
+  self : BidiProtocol,
+  ctx_id : String,
+  navigation_id : String?,
+  message : String,
+) -> Unit {
+  let resolved_navigation_id = match navigation_id {
+    Some(navigation_id) => navigation_id
+    None =>
+      match self.in_flight_navigation_id.get(ctx_id) {
+        Some(navigation_id) => navigation_id
+        None => return
+      }
+  }
+  match self.in_flight_navigation_id.get(ctx_id) {
+    Some(current_navigation_id) =>
+      if current_navigation_id != resolved_navigation_id {
+        return
+      }
+    None => ()
+  }
+  match self.pending_navigation_request.get(ctx_id) {
+    Some(request_id) => self.send_error(request_id, "unknown error", message)
+    None => ()
+  }
+  self.clear_pending_navigation_state(ctx_id)
 }
 
 ///|
