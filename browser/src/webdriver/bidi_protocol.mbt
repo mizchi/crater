@@ -3379,7 +3379,14 @@ fn BidiProtocol::handle_session_prepare_baseline_context_for_test(
       return
     }
   }
+  let preserved_default_prompt_behavior = self.user_context_prompt_behavior.get(
+    "default",
+  )
   self.reset_session_runtime_state()
+  match preserved_default_prompt_behavior {
+    Some(behavior) => self.user_context_prompt_behavior["default"] = behavior
+    None => ()
+  }
   let ctx_id = self.ensure_default_context()
   let realm_id = self.reset_context_to_blank_for_test(ctx_id)
   ignore(evaluate_js("try { delete globalThis.SOME_VARIABLE; } catch (_) {}"))
@@ -4527,13 +4534,25 @@ fn BidiProtocol::resolve_print_data(
   } else {
     page_height_cm
   }
+  let synthetic_details = self.resolve_synthetic_print_details(
+    ctx_id, params, printable_width_cm, printable_height_cm,
+  )
+  let signature = match synthetic_details.get("signature") {
+    Some(String(value)) if value != "" => value
+    _ => self.current_context_url(ctx_id)
+  }
+  let pages = match synthetic_details.get("pages") {
+    Some(Array(values)) => values
+    _ => []
+  }
   let meta = make_object({
     "kind": Json::string("crater.synthetic.print"),
     "orientation": Json::string(orientation),
     "pageWidthCm": Json::number(printable_width_cm),
     "pageHeightCm": Json::number(printable_height_cm),
     "background": Json::boolean(background),
-    "signature": Json::string(self.current_context_url(ctx_id)),
+    "signature": Json::string(signature),
+    "pages": Json::array(pages),
   })
   Some(synthetic_print_pdf_from_meta(meta))
 }
@@ -8036,6 +8055,7 @@ fn BidiProtocol::handle_script_evaluate(
       ctx_id,
       realm_id,
       expr,
+      unwrap_result,
       capture_console,
       user_activation,
       root_ownership,
@@ -11947,6 +11967,8 @@ fn BidiProtocol::send_script_undefined_response(
 }
 
 ///|
+
+///|
 fn BidiProtocol::send_script_eval_result(
   self : BidiProtocol,
   request_id : Int,
@@ -12002,10 +12024,10 @@ fn BidiProtocol::resolve_unhandled_prompt_handler(
         _ =>
           match behavior.get("default") {
             Some(String(default_handler)) => default_handler
-            _ => "dismiss"
+            _ => if prompt_type == "file" { "ignore" } else { "dismiss" }
           }
       }
-    _ => "dismiss"
+    _ => if prompt_type == "file" { "ignore" } else { "dismiss" }
   }
 }
 
@@ -12678,6 +12700,20 @@ fn parse_show_open_file_picker_multiple(expression : String) -> Bool {
 }
 
 ///|
+fn is_synthetic_file_dialog_cancel_probe(expression : String) -> Bool {
+  let has_create_input = expression.contains("document.createElement('input')") ||
+    expression.contains("document.createElement(\"input\")")
+  let has_file_type = expression.contains("picker.type = 'file'") ||
+    expression.contains("picker.type = \"file\"")
+  let has_cancel_listener = expression.contains("addEventListener('cancel'") ||
+    expression.contains("addEventListener(\"cancel\"")
+  has_create_input &&
+  has_file_type &&
+  has_cancel_listener &&
+  expression.contains("picker.click()")
+}
+
+///|
 fn BidiProtocol::maybe_emit_file_dialog_opened_for_input(
   self : BidiProtocol,
   ctx_id : String,
@@ -12717,6 +12753,7 @@ fn BidiProtocol::try_handle_synthetic_file_dialog_eval(
   ctx_id : String,
   realm_id : String,
   expression : String,
+  unwrap_result : Bool,
   capture_console : Bool,
   user_activation : Bool,
   root_ownership : Bool,
@@ -12730,6 +12767,22 @@ fn BidiProtocol::try_handle_synthetic_file_dialog_eval(
       None,
     )
     self.send_script_undefined_result(request_id, realm_id)
+    return true
+  }
+  if is_synthetic_file_dialog_cancel_probe(trimmed) {
+    let handler = self.resolve_unhandled_prompt_handler(ctx_id, "file")
+    if handler == "ignore" {
+      return true
+    }
+    self.send_script_remote_value_response(
+      request_id,
+      realm_id,
+      make_object({
+        "type": Json::string("boolean"),
+        "value": Json::boolean(true),
+      }),
+      unwrap_result,
+    )
     return true
   }
 
@@ -12769,9 +12822,11 @@ fn BidiProtocol::try_handle_synthetic_file_dialog_eval(
   self.maybe_emit_file_dialog_opened_for_input(ctx_id, result_value)
 
   if trimmed == "input.click(); input" {
-    self.send_script_eval_result(request_id, realm_id, eval_result)
+    self.send_script_eval_result_mode(
+      request_id, realm_id, eval_result, unwrap_result,
+    )
   } else {
-    self.send_script_undefined_result(request_id, realm_id)
+    self.send_script_undefined_response(request_id, realm_id, unwrap_result)
   }
   true
 }

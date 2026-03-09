@@ -1807,6 +1807,33 @@ test "bidi script evaluate input.click return preserves node result" {
 }
 
 ///|
+test "bidi script evaluateResult input.click return unwraps node result" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"input.fileDialogOpened\"]}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<input id=input type=file multiple />\",\"wait\":\"complete\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"input.click(); input\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false,\"userActivation\":true}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 2)
+  let result_json = msgs[1].to_json()
+  assert_true(result_json.contains("\"type\":\"success\""))
+  assert_true(result_json.contains("\"sharedId\":\"node-"))
+  assert_false(result_json.contains("\"realm\":"))
+}
+
+///|
 test "bidi script evaluate showOpenFilePicker emits event without element" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -1831,6 +1858,70 @@ test "bidi script evaluate showOpenFilePicker emits event without element" {
   assert_false(event_json.contains("\"element\""))
   assert_true(result_json.contains("\"type\":\"success\""))
   assert_true(result_json.contains("\"result\":{\"type\":\"undefined\"}"))
+}
+
+///|
+test "bidi script evaluateResult file cancel probe resolves for dismiss handler" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{\"capabilities\":{\"alwaysMatch\":{\"unhandledPromptBehavior\":{\"file\":\"dismiss\"}}}}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"new Promise(resolve => { const picker = document.createElement('input'); picker.type = 'file'; picker.addEventListener('cancel', (event) => { resolve(event.isTrusted); }); picker.click(); })\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":true,\"userActivation\":true}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 1)
+  let result_json = msgs[0].to_json()
+  assert_true(result_json.contains("\"type\":\"success\""))
+  assert_true(result_json.contains("\"type\":\"boolean\""))
+  assert_true(result_json.contains("\"value\":true"))
+}
+
+///|
+test "bidi script evaluateResult file cancel probe stays pending for ignore handler" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{\"capabilities\":{\"alwaysMatch\":{\"unhandledPromptBehavior\":{\"file\":\"ignore\"}}}}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"new Promise(resolve => { const picker = document.createElement('input'); picker.type = 'file'; picker.addEventListener('cancel', (event) => { resolve(event.isTrusted); }); picker.click(); })\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":true,\"userActivation\":true}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 0)
+}
+
+///|
+test "bidi script evaluateResult file cancel probe defaults to ignore" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"new Promise(resolve => { const picker = document.createElement('input'); picker.type = 'file'; picker.addEventListener('cancel', (event) => { resolve(event.isTrusted); }); picker.click(); })\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":true,\"userActivation\":true}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 0)
+}
+
+///|
+test "bidi prepareBaselineContextForTest preserves default file prompt behavior" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{\"capabilities\":{\"alwaysMatch\":{\"unhandledPromptBehavior\":\"ignore\"}}}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.prepareBaselineContextForTest\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"new Promise(resolve => { const picker = document.createElement('input'); picker.type = 'file'; picker.addEventListener('cancel', (event) => { resolve(event.isTrusted); }); picker.click(); })\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":true,\"userActivation\":true}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 0)
 }
 
 ///|

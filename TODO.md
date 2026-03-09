@@ -245,8 +245,13 @@
   - 同期 fixture の `get_test_page` は protocol command ではなく、MoonBit helper package `browser/src/webdriver_fixture_builder` を subprocess + cache で呼ぶ形に移行済み
   - `url` / `inline` / `iframe` / `get_actions_origin_page` も同 helper package 経由に移行済み
   - `compare_png_bidi` / `render_pdf_to_png_bidi` / `assert_pdf_dimensions` も同 helper package 経由に移行済み
-  - `assert_pdf_content` / `assert_pdf_image` は synthetic print payload に十分な意味情報がないため、まだ placeholder のまま
-  - 現在の `scripts/crater_bidi_adapter.py` は `1981` 行
+  - synthetic print payload に `pages` / `signature` を追加し、`assert_pdf_content` / `assert_pdf_image` も helper package 経由で実動化済み
+  - `assert_file_dialog_canceled` / `assert_file_dialog_not_canceled` は placeholder ではなく、`unhandledPromptBehavior[file]` を検証する実実装に差し替え済み
+  - `session/capabilities/unhandled_prompt_behavior/file --quick` は `12/12`、`browser/create_user_context/unhandled_prompt_behavior.py --quick` は `24/24`、`input/file_dialog_opened --quick` は `8/8`
+  - `prepareBaselineContextForTest` は session capability 由来の default `unhandledPromptBehavior` を保持するよう修正済み
+  - `file` prompt の spec default は `ignore` として扱う
+  - 未使用の `create_dialog` / `wait_for_class_change` placeholder fixture は削除済み
+  - 現在の `scripts/crater_bidi_adapter.py` は `2071` 行
   - 残りは `browsingContext` / `session` / `script` 周辺の fixture glue と module proxy の整理、および transport 層の棚卸し
 
 ### 2026-03-09 の詳細計画
@@ -283,10 +288,24 @@
   - [x] 同期 fixture 制約に合わせて `browser/src/webdriver_fixture_builder` を追加し、`get_test_page` の page builder 自体を MoonBit helper に移した
   - [x] `url` / `inline` / `iframe` / `get_actions_origin_page` も `browser/src/webdriver_fixture_builder` 経由へ移した
   - [x] `compare_png_bidi` / `render_pdf_to_png_bidi` / `assert_pdf_dimensions` も `browser/src/webdriver_fixture_builder` 経由へ移した
-  - [x] `assert_pdf_content` / `assert_pdf_image` は synthetic print payload の制約上、まだ placeholder として残す判断を TODO に明記した
-  - [x] `scripts/crater_bidi_adapter.py` を `2212` 行から `1981` 行へ縮めた
+  - [x] synthetic print payload に `pages` / `signature` を追加し、`assert_pdf_content` / `assert_pdf_image` を helper package 経由の実動 assertion に置き換えた
+  - [x] `print --quick` (`137/137`) と `--profile strict` (`277/277`) で回帰がないことを確認した
+  - [x] `scripts/crater_bidi_adapter.py` を `2212` 行から `2002` 行へ縮めた
 - [ ] Step 4: Python に残す層を固定する
-  - [ ] `CraterBidiSession` と event backlog は transport / pytest plugin core として残す
+  - [x] `CraterBidiSession` と event backlog は transport / pytest plugin core として残す方針を固定する
+  - [x] `setup_network_test` の listener / buffer 管理を `CraterBidiSession.capture_named_events()` に移して、fixture 側から direct listener 操作を外す
+  - [x] `subscribe_events` の subscription cleanup を `CraterBidiSession.track_subscriptions()` に移して、fixture 側の local state を削る
+  - [x] `--profile strict` (`277/277`) と `network/add_data_collector/max_encoded_data_size.py --quick` (`2/2`) で transport helper 化の回帰がないことを確認する
+  - [x] `network/add_data_collector/user_contexts.py --quick` (`2/2`) / `session/subscribe/user_contexts.py --quick` (`8/8`) / `session/unsubscribe/subscriptions.py --quick` (`17/17`) で subscription tracker 化の回帰がないことを確認する
+  - [x] `create_iframe` / `current_url` / `create_user_context` / `setup_beforeunload_page` / `send_blocking_command` / `wait_for_events` の direct binding 化で fixture の local wrapper を削る
+  - [x] `browsing_context/user_prompt_opened/beforeunload.py --quick` (`1/1`) / `network/set_extra_headers/contexts.py --quick` (`7/7`) / `browser/create_user_context --quick` (`182/182`) / `session/unsubscribe/subscriptions.py --quick` (`17/17`) / `--profile strict` (`277/277`) で direct binding 化の回帰がないことを確認する
+  - [x] helper package 経由の同期 fixture (`url` / `inline` / `iframe` / `get_test_page` / `get_actions_origin_page` / `compare_png_bidi` / `render_pdf_to_png_bidi` / `assert_pdf_content` / `assert_pdf_dimensions`) を top-level helper に共通化した
+  - [x] `browsing_context/{print,capture_screenshot,locate_nodes} --quick` / `network/set_extra_headers/contexts.py --quick` / `--profile strict` (`277/277`) で helper package 層の共通化に回帰がないことを確認する
+  - [x] `server_config` を helper package の `buildServerConfig` 経由に移し、Python 側の static dict を削除した
+  - [x] `assert_pdf_image` / `fetch` / `configuration` は top-level helper + `functools.partial` に寄せて fixture ごとの local closure を削った
+  - [x] `browsing_context/print --quick` (`137/137`) / `network/add_intercept/url_patterns.py --quick` (`69/69`) / `browsing_context/navigation_committed/navigation_committed.py --quick` (`20/20`) / `network/add_data_collector/user_contexts.py --quick` (`2/2`) / `--profile strict` (`277/277`) で回帰がないことを確認した
+  - [x] `browser/src/webdriver_fixture_builder` の test は `14/14 pass`
+  - [x] 現在の `scripts/crater_bidi_adapter.py` は `2086` 行
   - [ ] transport 層以外で `.py` に残っている実装責務を TODO から洗い出して消していく
 
 ## WPT サポート状況（2026-03-03）

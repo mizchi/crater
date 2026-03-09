@@ -175,10 +175,14 @@ extern "js" fn js_render_pdf_to_png_base64(
   #|   const width = Math.max(1, Math.round(widthCm * 96.0 / 2.54));
   #|   const height = Math.max(1, Math.round(heightCm * 96.0 / 2.54));
   #|   const background = !!meta.background;
+  #|   const signature =
+  #|     typeof meta.signature === "string" && meta.signature
+  #|       ? meta.signature
+  #|       : JSON.stringify(meta.pages || []);
   #|   if (width === 1 && height === 1) {
   #|     return background ? String(blackDot || "") : String(whiteDot || "");
   #|   }
-  #|   return fakePngBase64(width, height, `pdf:${background ? "dark" : "light"}:${width}x${height}`);
+  #|   return fakePngBase64(width, height, `pdf:${background ? "dark" : "light"}:${width}x${height}:${signature}`);
   #| }
 
 ///|
@@ -522,6 +526,11 @@ fn build_synthetic_print_pdf_from_meta(
     ", \"pageWidthCm\": " +
     page_width_cm.to_string() +
     "}"
+  build_synthetic_print_pdf_payload(payload)
+}
+
+///|
+fn build_synthetic_print_pdf_payload(payload : String) -> String {
   let pdf = "%PDF-1.4\n" +
     "%CRATER_META " +
     payload +
@@ -545,6 +554,57 @@ fn build_synthetic_print_pdf_from_meta(
     "<< /Root 1 0 R >>\n" +
     "%%EOF\n"
   js_encode_base64_utf8(pdf)
+}
+
+///|
+fn build_pdf_content_json(encoded_pdf_data : String) -> String {
+  let parsed = @json.parse(js_pdf_meta_json(encoded_pdf_data)) catch {
+    _ => Json::object({})
+  }
+  let pages = match parsed {
+    Object(map) =>
+      match map.get("pages") {
+        Some(Array(values)) => values
+        _ => []
+      }
+    _ => []
+  }
+  Json::object({
+    "type": Json::string("array"),
+    "value": Json::array(
+      pages.map(fn(page) {
+        let value = match page {
+          String(value) => value
+          _ => ""
+        }
+        Json::object({
+          "type": Json::string("string"),
+          "value": Json::string(value),
+        })
+      }),
+    ),
+  }).stringify()
+}
+
+///|
+fn build_server_config_json() -> String {
+  Json::object({
+    "browser_host": Json::string("localhost"),
+    "ports": Json::object({
+      "http": Json::array([Json::number(8000.0)]),
+      "https": Json::array([Json::number(8000.0)]),
+    }),
+    "domains": Json::object({
+      "": Json::object({
+        "": Json::string("localhost"),
+        "www": Json::string("www.localhost"),
+      }),
+      "alt": Json::object({
+        "": Json::string("alt.localhost"),
+        "www": Json::string("www.alt.localhost"),
+      }),
+    }),
+  }).stringify()
 }
 
 ///|
@@ -704,6 +764,12 @@ fn build_fixture_from_json(input : String) -> Result[String, String] {
         Some(encoded_pdf_data) => Ok(js_pdf_meta_json(encoded_pdf_data))
         None => Err("encodedPdfData must be a string")
       }
+    "extractPdfContent" =>
+      match json_optional_string(map, "encodedPdfData") {
+        Some(encoded_pdf_data) => Ok(build_pdf_content_json(encoded_pdf_data))
+        None => Err("encodedPdfData must be a string")
+      }
+    "buildServerConfig" => Ok(build_server_config_json())
     _ => Err("unknown op")
   }
 }
@@ -876,6 +942,17 @@ test "build_fixture_from_json renders larger print pdf with expected png dimensi
 }
 
 ///|
+test "build_fixture_from_json builds server config payload" {
+  let built = match build_fixture_from_json("{\"op\":\"buildServerConfig\"}") {
+    Ok(value) => value
+    Err(_) => ""
+  }
+  assert_true(built.contains("\"browser_host\":\"localhost\""))
+  assert_true(built.contains("\"alt\":{\"\":\"alt.localhost\""))
+  assert_true(built.contains("\"ports\":{\"http\":[8000],\"https\":[8000]}"))
+}
+
+///|
 test "build_fixture_from_json extracts synthetic print pdf metadata" {
   let encoded_pdf = build_synthetic_print_pdf_from_meta(21.59, 27.94, false)
   let built = match
@@ -888,4 +965,49 @@ test "build_fixture_from_json extracts synthetic print pdf metadata" {
   assert_true(built.contains("\"pageWidthCm\": 21.59"))
   assert_true(built.contains("\"pageHeightCm\": 27.94"))
   assert_true(built.contains("\"background\": false"))
+}
+
+///|
+test "build_fixture_from_json extracts synthetic print pdf content" {
+  let encoded_pdf = build_synthetic_print_pdf_payload(
+    "{\"pages\":[\"Page 1\",\"Page 2\"],\"signature\":\"sig\"}",
+  )
+  let built = match
+    build_fixture_from_json(
+      "{\"op\":\"extractPdfContent\",\"encodedPdfData\":\"" +
+      encoded_pdf +
+      "\"}",
+    ) {
+    Ok(value) => value
+    Err(_) => ""
+  }
+  inspect(
+    built,
+    content="{\"type\":\"array\",\"value\":[{\"type\":\"string\",\"value\":\"Page 1\"},{\"type\":\"string\",\"value\":\"Page 2\"}]}",
+  )
+}
+
+///|
+test "build_fixture_from_json renderPdfToPng uses synthetic signature" {
+  let encoded_pdf_a = build_synthetic_print_pdf_payload(
+    "{\"background\":true,\"pageHeightCm\":10,\"pageWidthCm\":10,\"signature\":\"a\"}",
+  )
+  let encoded_pdf_b = build_synthetic_print_pdf_payload(
+    "{\"background\":true,\"pageHeightCm\":10,\"pageWidthCm\":10,\"signature\":\"b\"}",
+  )
+  let built_a = match
+    build_fixture_from_json(
+      "{\"op\":\"renderPdfToPng\",\"encodedPdfData\":\"" + encoded_pdf_a + "\"}",
+    ) {
+    Ok(value) => value
+    Err(_) => ""
+  }
+  let built_b = match
+    build_fixture_from_json(
+      "{\"op\":\"renderPdfToPng\",\"encodedPdfData\":\"" + encoded_pdf_b + "\"}",
+    ) {
+    Ok(value) => value
+    Err(_) => ""
+  }
+  assert_not_eq(built_a, built_b)
 }

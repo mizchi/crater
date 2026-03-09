@@ -13,12 +13,9 @@ Usage:
 import asyncio
 import base64
 import functools
-import hashlib
-import http
 import json
 import math
 import os
-import re
 import subprocess
 import sys
 import time
@@ -33,8 +30,6 @@ from webdriver.bidi.modules.script import ContextTarget, ScriptEvaluateResultExc
 
 CRATER_BIDI_URL = os.environ.get("CRATER_BIDI_URL", "ws://127.0.0.1:9222")
 _UNSET = object()
-_COOKIE_ASSIGNMENT_RE = re.compile(r"""document\.cookie\s*=\s*['"]([^'"]+)['"]""")
-_HTTP_TOKEN_RE = re.compile(r"^[!#$%&'*+.^_`|~0-9A-Za-z-]+$")
 
 
 def _bytes_value_from_text(value: str):
@@ -286,6 +281,14 @@ class CraterBidiSession:
     def collect_events(self, event_names, *, timeout_multiplier: float = 1.0):
         return _BiDiEventCollector(self, event_names, timeout_multiplier)
 
+    def capture_named_events(self, event_names):
+        buffer = _BiDiNamedEventBuffer(self, event_names)
+        buffer.start()
+        return buffer
+
+    def track_subscriptions(self):
+        return _BiDiSubscriptionTracker(self)
+
     def fail_pending_print_requests_for_context(self, context_id: str) -> None:
         if not isinstance(context_id, str) or context_id == "":
             return
@@ -500,6 +503,48 @@ class _BiDiEventCollector:
         if self._remove_all is not None:
             self._remove_all()
             self._remove_all = None
+
+
+class _BiDiNamedEventBuffer:
+    def __init__(self, session: CraterBidiSession, event_names):
+        self._session = session
+        self._event_names = list(event_names)
+        self._remove_all = None
+        self.events = {event_name: [] for event_name in self._event_names}
+
+    def start(self):
+        async def on_event(method, data):
+            if method not in self.events:
+                self.events[method] = []
+            self.events[method].append(data)
+
+        self._remove_all = self._session.listen_many(self._event_names, on_event)
+        return self.events
+
+    def close(self):
+        if self._remove_all is not None:
+            self._remove_all()
+            self._remove_all = None
+
+
+class _BiDiSubscriptionTracker:
+    def __init__(self, session: CraterBidiSession):
+        self._session = session
+        self._subscriptions = []
+
+    def add(self, subscription_id):
+        if isinstance(subscription_id, str) and subscription_id != "":
+            self._subscriptions.append(subscription_id)
+
+    async def close(self):
+        if not self._subscriptions:
+            return
+        for subscription_id in reversed(self._subscriptions):
+            try:
+                await self._session.session.unsubscribe(subscriptions=[subscription_id])
+            except Exception:
+                pass
+        self._subscriptions.clear()
 
 
 class BrowsingContextModule:
@@ -1154,13 +1199,16 @@ class CraterClassicSession:
         }
 
 
-class _ImmediateAwaitable:
-    """Awaitable no-op that can also be called without await."""
+class _TrackedTask:
+    """Track whether a scheduled task was explicitly awaited by the test."""
+
+    def __init__(self, task: asyncio.Task):
+        self.task = task
+        self.awaited = False
 
     def __await__(self):
-        if False:
-            yield None
-        return None
+        self.awaited = True
+        return self.task.__await__()
 
 
 # Pytest fixtures
@@ -1239,111 +1287,25 @@ async def new_tab(bidi_session):
 @pytest.fixture
 def server_config():
     """Minimal WPT-like server config used by fixtures requiring server metadata."""
-    return {
-        "browser_host": "localhost",
-        "ports": {
-            "http": [8000],
-            "https": [8000],
-        },
-        "domains": {
-            "": {
-                "": "localhost",
-                "www": "www.localhost",
-            },
-            "alt": {
-                "": "alt.localhost",
-                "www": "www.alt.localhost",
-            },
-        },
-    }
+    return _fixture_server_config()
 
 
 @pytest.fixture
 def url():
     """Generate test URLs."""
-
-    def _url(
-        path: str,
-        domain: str = "",
-        protocol: str = "http",
-        subdomain: str = "",
-        query: str = "",
-        fragment: str = "",
-    ) -> str:
-        return _build_webdriver_fixture(
-            {
-                "op": "buildUrl",
-                "path": str(path),
-                "domain": str(domain),
-                "protocol": str(protocol),
-                "subdomain": str(subdomain),
-                "query": str(query),
-                "fragment": str(fragment),
-            }
-        )
-
-    return _url
+    return _fixture_url
 
 
 @pytest.fixture
 def inline():
     """Generate inline HTML data URLs."""
-
-    def _inline(
-        content: str,
-        content_type: str = "text/html",
-        domain: str = "",
-        parameters=None,
-        protocol: str = "http",
-        subdomain: str = "",
-        **_ignored,
-    ) -> str:
-        payload: dict[str, Any] = {
-            "op": "buildInlineUrl",
-            "content": str(content),
-            "contentType": str(content_type),
-            "domain": str(domain),
-            "protocol": str(protocol),
-            "subdomain": str(subdomain),
-        }
-        if isinstance(parameters, dict):
-            pipe = parameters.get("pipe")
-            if pipe is not None:
-                payload["pipe"] = str(pipe)
-        return _build_webdriver_fixture(payload)
-
-    return _inline
+    return _fixture_inline
 
 
 @pytest.fixture
 def iframe():
     """Inline document extract as the source document of an <iframe>."""
-
-    def _iframe(src: str, **kwargs) -> str:
-        payload: dict[str, Any] = {
-            "op": "buildIframeMarkup",
-            "src": str(src),
-        }
-        content_type = kwargs.get("content_type")
-        if content_type is not None:
-            payload["contentType"] = str(content_type)
-        domain = kwargs.get("domain")
-        if domain is not None:
-            payload["domain"] = str(domain)
-        protocol = kwargs.get("protocol")
-        if protocol is not None:
-            payload["protocol"] = str(protocol)
-        subdomain = kwargs.get("subdomain")
-        if subdomain is not None:
-            payload["subdomain"] = str(subdomain)
-        parameters = kwargs.get("parameters")
-        if isinstance(parameters, dict):
-            pipe = parameters.get("pipe")
-            if pipe is not None:
-                payload["pipe"] = str(pipe)
-        return _build_webdriver_fixture(payload)
-
-    return _iframe
+    return _fixture_iframe
 
 
 @pytest.fixture
@@ -1356,13 +1318,7 @@ def create_iframe(bidi_session):
     browsing context linked to the parent context for header scope tests.
     """
 
-    async def _create_iframe(context, url):
-        return await bidi_session.script.create_iframe_context_id_for_test(
-            context,
-            url,
-        )
-
-    return _create_iframe
+    return bidi_session.script.create_iframe_context_id_for_test
 
 
 @pytest_asyncio.fixture
@@ -1384,152 +1340,64 @@ async def add_and_remove_iframe(bidi_session):
 @pytest.fixture
 def compare_png_bidi():
     """Minimal pixel comparator used by screenshot and print assertions."""
-    from tests.support.image import ImageDifference
-
-    async def _compare_png_bidi(img1, img2):
-        result = json.loads(
-            _build_webdriver_fixture(
-                {
-                    "op": "comparePng",
-                    "left": _base64_text_from_any(img1),
-                    "right": _base64_text_from_any(img2),
-                }
-            )
-        )
-        return ImageDifference(
-            int(result.get("totalPixels", 1)),
-            int(result.get("maxDifference", 255)),
-        )
-
-    return _compare_png_bidi
+    return _compare_png_bidi_impl
 
 
 @pytest.fixture
 def render_pdf_to_png_bidi():
     """Render synthetic print output into deterministic PNG bytes."""
-
-    async def _render_pdf_to_png_bidi(encoded_pdf_data, page=1):
-        # Current synthetic print path only emits single-page payloads.
-        _ = page
-        encoded_png = _build_webdriver_fixture(
-            {
-                "op": "renderPdfToPng",
-                "encodedPdfData": _base64_text_from_any(encoded_pdf_data),
-            }
-        )
-        return base64.b64decode(encoded_png.encode(), validate=False)
-
-    return _render_pdf_to_png_bidi
+    return _render_pdf_to_png_bidi_impl
 
 
 @pytest.fixture
 def assert_pdf_content():
-    """Validate printable payload shape; content extraction is mocked."""
-    from tests.support.asserts import assert_pdf
-
-    async def _assert_pdf_content(pdf, expected_content):
-        _ = expected_content
-        assert_pdf(pdf)
-
-    return _assert_pdf_content
+    """Validate printable payload shape and synthetic content metadata."""
+    return _assert_pdf_content_impl
 
 
 @pytest.fixture
 def assert_pdf_dimensions():
     """Validate printable payload shape and synthetic PDF dimensions."""
-    from tests.support.asserts import assert_pdf
-
-    async def _assert_pdf_dimensions(pdf, expected_dimensions):
-        assert_pdf(pdf)
-        meta = _extract_pdf_meta_for_test(pdf)
-        assert "pageWidthCm" in meta
-        assert "pageHeightCm" in meta
-        assert math.isclose(
-            float(meta["pageWidthCm"]),
-            float(expected_dimensions["width"]),
-            rel_tol=0.0,
-            abs_tol=0.05,
-        )
-        assert math.isclose(
-            float(meta["pageHeightCm"]),
-            float(expected_dimensions["height"]),
-            rel_tol=0.0,
-            abs_tol=0.05,
-        )
-
-    return _assert_pdf_dimensions
+    return _assert_pdf_dimensions_impl
 
 
 @pytest.fixture
-def assert_pdf_image():
-    """Validate printable payload shape; image comparison is delegated elsewhere."""
-    from tests.support.asserts import assert_pdf
-
-    async def _assert_pdf_image(pdf, reference_html, expected):
-        _ = reference_html
-        _ = expected
-        assert_pdf(pdf)
-
-    return _assert_pdf_image
+def assert_pdf_image(get_reference_png, render_pdf_to_png_bidi, compare_png_bidi):
+    """Validate printable payload shape and compare synthetic rendered image."""
+    return functools.partial(
+        _assert_pdf_image_impl,
+        get_reference_png,
+        render_pdf_to_png_bidi,
+        compare_png_bidi,
+    )
 
 
 @pytest.fixture
 def get_actions_origin_page():
     """Create a test page for action origin tests."""
-
-    def _get_actions_origin_page(inner_style: str, outer_style: str = "") -> str:
-        return _build_webdriver_fixture(
-            {
-                "op": "buildActionsOriginPage",
-                "innerStyle": str(inner_style),
-                "outerStyle": str(outer_style),
-            }
-        )
-
-    return _get_actions_origin_page
+    return _fixture_get_actions_origin_page
 
 
 @pytest.fixture
 def configuration():
     """Test configuration."""
-    return {
-        "timeout_multiplier": float(os.environ.get("WPT_TIMEOUT_MULTIPLIER", "1.0")),
-    }
+    return _fixture_configuration()
 
 
 @pytest.fixture
 def fetch(bidi_session, configuration):
     """Perform a fetch from the page of the provided context."""
-
-    async def _fetch(
-        url,
-        method=None,
-        headers=None,
-        post_data=None,
-        context=None,
-        timeout_in_seconds=3,
-        sandbox_name=None,
-    ):
-        should_abort = timeout_in_seconds <= 0
-        timeout_ms = int(timeout_in_seconds * configuration["timeout_multiplier"] * 1000)
-        return await bidi_session.script.fetch_for_test(
-            url,
-            context=context,
-            method=method,
-            headers=headers if isinstance(headers, Mapping) else None,
-            post_data=post_data,
-            timeout_ms=timeout_ms,
-            should_abort=should_abort,
-            sandbox=sandbox_name,
-        )
-
-    return _fetch
+    return functools.partial(
+        _fetch_impl,
+        bidi_session,
+        configuration["timeout_multiplier"],
+    )
 
 
 @pytest_asyncio.fixture
 async def subscribe_events(bidi_session):
     """Subscribe to events and clean up after test."""
-    subscriptions = []
+    tracker = bidi_session.track_subscriptions()
 
     async def _subscribe(events, contexts=None, user_contexts=None):
         subscription_id = await bidi_session.session.subscribe_id(
@@ -1537,17 +1405,12 @@ async def subscribe_events(bidi_session):
             contexts=contexts,
             user_contexts=user_contexts,
         )
-        subscriptions.append(subscription_id)
+        tracker.add(subscription_id)
         return {"subscription": subscription_id}
 
     yield _subscribe
 
-    if subscriptions:
-        for sub in reversed(subscriptions):
-            try:
-                await bidi_session.session.unsubscribe(subscriptions=[sub])
-            except Exception:
-                pass
+    await tracker.close()
 
 
 @pytest_asyncio.fixture
@@ -1589,22 +1452,16 @@ def wait_for_event(bidi_session):
 @pytest.fixture
 def wait_for_events(bidi_session, configuration):
     """Wait for BiDi events until a predicate becomes true."""
-    def _wait_for_events(event_names):
-        return bidi_session.collect_events(
-            event_names,
-            timeout_multiplier=configuration["timeout_multiplier"],
-        )
-
-    yield _wait_for_events
+    yield functools.partial(
+        bidi_session.collect_events,
+        timeout_multiplier=configuration["timeout_multiplier"],
+    )
 
 
 @pytest.fixture
 def send_blocking_command(bidi_session):
     """Send a blocking command."""
-    async def _send(command: str, params: dict):
-        future = await bidi_session.send_command(command, params)
-        return await future
-    return _send
+    return bidi_session.command
 
 
 @pytest.fixture
@@ -1631,11 +1488,7 @@ def get_element(bidi_session, top_context):
 @pytest.fixture
 def current_url(bidi_session):
     """Return current URL for a browsing context."""
-
-    async def _current_url(context):
-        return await bidi_session.browsing_context.get_current_url(context)
-
-    return _current_url
+    return bidi_session.browsing_context.get_current_url
 
 
 @pytest_asyncio.fixture
@@ -1728,23 +1581,13 @@ def modifier_key():
 @pytest_asyncio.fixture
 async def create_user_context(bidi_session):
     """Create user contexts. Cleanup is handled by session baseline reset."""
-
-    async def _create(**kwargs):
-        return await bidi_session.browser.create_user_context(**kwargs)
-
-    yield _create
+    yield bidi_session.browser.create_user_context
 
 
 @pytest_asyncio.fixture
 async def setup_beforeunload_page(bidi_session):
     """Navigate to beforeunload test page and mark it as user-interacted."""
-
-    async def _setup_beforeunload_page(context):
-        return await bidi_session.script.prepare_beforeunload_page_url_for_test(
-            context,
-        )
-
-    return _setup_beforeunload_page
+    return bidi_session.script.prepare_beforeunload_page_url_for_test
 
 
 @pytest.fixture
@@ -1825,49 +1668,264 @@ def _build_webdriver_fixture(payload: Mapping[str, Any]) -> str:
     )
 
 
-def _extract_pdf_meta_for_test(encoded_pdf_data: str | bytes | bytearray) -> dict[str, Any]:
+def _parse_webdriver_fixture_json(
+    payload: Mapping[str, Any],
+    *,
+    default: Any,
+):
     try:
-        parsed = json.loads(
-            _build_webdriver_fixture(
-                {
-                    "op": "extractPdfMeta",
-                    "encodedPdfData": _base64_text_from_any(encoded_pdf_data),
-                }
-            )
-        )
+        parsed = json.loads(_build_webdriver_fixture(payload))
     except Exception:
-        return {}
+        return default
+    return parsed
+
+
+def _fixture_server_config() -> dict[str, Any]:
+    parsed = _parse_webdriver_fixture_json(
+        {"op": "buildServerConfig"},
+        default={},
+    )
     return parsed if isinstance(parsed, dict) else {}
+
+
+def _fixture_configuration() -> dict[str, float]:
+    return {
+        "timeout_multiplier": float(os.environ.get("WPT_TIMEOUT_MULTIPLIER", "1.0")),
+    }
+
+
+def _fixture_url(
+    path: str,
+    domain: str = "",
+    protocol: str = "http",
+    subdomain: str = "",
+    query: str = "",
+    fragment: str = "",
+) -> str:
+    return _build_webdriver_fixture(
+        {
+            "op": "buildUrl",
+            "path": str(path),
+            "domain": str(domain),
+            "protocol": str(protocol),
+            "subdomain": str(subdomain),
+            "query": str(query),
+            "fragment": str(fragment),
+        }
+    )
+
+
+def _fixture_inline(
+    content: str,
+    content_type: str = "text/html",
+    domain: str = "",
+    parameters=None,
+    protocol: str = "http",
+    subdomain: str = "",
+    **_ignored,
+) -> str:
+    payload: dict[str, Any] = {
+        "op": "buildInlineUrl",
+        "content": str(content),
+        "contentType": str(content_type),
+        "domain": str(domain),
+        "protocol": str(protocol),
+        "subdomain": str(subdomain),
+    }
+    if isinstance(parameters, dict):
+        pipe = parameters.get("pipe")
+        if pipe is not None:
+            payload["pipe"] = str(pipe)
+    return _build_webdriver_fixture(payload)
+
+
+def _fixture_iframe(src: str, **kwargs) -> str:
+    payload: dict[str, Any] = {
+        "op": "buildIframeMarkup",
+        "src": str(src),
+    }
+    content_type = kwargs.get("content_type")
+    if content_type is not None:
+        payload["contentType"] = str(content_type)
+    domain = kwargs.get("domain")
+    if domain is not None:
+        payload["domain"] = str(domain)
+    protocol = kwargs.get("protocol")
+    if protocol is not None:
+        payload["protocol"] = str(protocol)
+    subdomain = kwargs.get("subdomain")
+    if subdomain is not None:
+        payload["subdomain"] = str(subdomain)
+    parameters = kwargs.get("parameters")
+    if isinstance(parameters, dict):
+        pipe = parameters.get("pipe")
+        if pipe is not None:
+            payload["pipe"] = str(pipe)
+    return _build_webdriver_fixture(payload)
+
+
+def _extract_pdf_meta_for_test(encoded_pdf_data: str | bytes | bytearray) -> dict[str, Any]:
+    parsed = _parse_webdriver_fixture_json(
+        {
+            "op": "extractPdfMeta",
+            "encodedPdfData": _base64_text_from_any(encoded_pdf_data),
+        },
+        default={},
+    )
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _extract_pdf_content_for_test(encoded_pdf_data: str | bytes | bytearray) -> dict[str, Any]:
+    parsed = _parse_webdriver_fixture_json(
+        {
+            "op": "extractPdfContent",
+            "encodedPdfData": _base64_text_from_any(encoded_pdf_data),
+        },
+        default={},
+    )
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _fixture_get_test_page(
+    as_frame: bool = False,
+    frame_doc: str = None,
+    shadow_doc: str = None,
+    nested_shadow_dom: bool = False,
+    shadow_root_mode: str = "open",
+    **kwargs,
+):
+    payload: dict[str, Any] = {
+        "asFrame": as_frame,
+        "nestedShadowDom": nested_shadow_dom,
+        "shadowRootMode": shadow_root_mode,
+    }
+    if isinstance(frame_doc, str):
+        payload["frameDoc"] = frame_doc
+    if isinstance(shadow_doc, str):
+        payload["shadowDoc"] = shadow_doc
+    protocol = kwargs.get("protocol")
+    if isinstance(protocol, str):
+        payload["protocol"] = protocol
+    payload["op"] = "buildNodeTestPageUrl"
+    return _build_webdriver_fixture(payload)
+
+
+def _fixture_get_actions_origin_page(inner_style: str, outer_style: str = "") -> str:
+    return _build_webdriver_fixture(
+        {
+            "op": "buildActionsOriginPage",
+            "innerStyle": str(inner_style),
+            "outerStyle": str(outer_style),
+        }
+    )
+
+
+async def _compare_png_bidi_impl(img1, img2):
+    from tests.support.image import ImageDifference
+
+    result = _parse_webdriver_fixture_json(
+        {
+            "op": "comparePng",
+            "left": _base64_text_from_any(img1),
+            "right": _base64_text_from_any(img2),
+        },
+        default={},
+    )
+    return ImageDifference(
+        int(result.get("totalPixels", 1)),
+        int(result.get("maxDifference", 255)),
+    )
+
+
+async def _render_pdf_to_png_bidi_impl(encoded_pdf_data, page=1):
+    _ = page
+    encoded_png = _build_webdriver_fixture(
+        {
+            "op": "renderPdfToPng",
+            "encodedPdfData": _base64_text_from_any(encoded_pdf_data),
+        }
+    )
+    return base64.b64decode(encoded_png.encode(), validate=False)
+
+
+async def _assert_pdf_content_impl(pdf, expected_content):
+    from tests.support.asserts import assert_pdf
+
+    assert_pdf(pdf)
+    pdf_content = _extract_pdf_content_for_test(pdf)
+    assert pdf_content == {
+        "type": "array",
+        "value": expected_content,
+    }
+
+
+async def _assert_pdf_dimensions_impl(pdf, expected_dimensions):
+    from tests.support.asserts import assert_pdf
+
+    assert_pdf(pdf)
+    meta = _extract_pdf_meta_for_test(pdf)
+    assert "pageWidthCm" in meta
+    assert "pageHeightCm" in meta
+    assert math.isclose(
+        float(meta["pageWidthCm"]),
+        float(expected_dimensions["width"]),
+        rel_tol=0.0,
+        abs_tol=0.05,
+    )
+    assert math.isclose(
+        float(meta["pageHeightCm"]),
+        float(expected_dimensions["height"]),
+        rel_tol=0.0,
+        abs_tol=0.05,
+    )
+
+
+async def _assert_pdf_image_impl(
+    get_reference_png,
+    render_pdf_to_png_bidi,
+    compare_png_bidi,
+    pdf,
+    reference_html,
+    expected,
+):
+    from tests.support.asserts import assert_pdf
+
+    assert_pdf(pdf)
+    reference_png = await get_reference_png(reference_html)
+    page_png = await render_pdf_to_png_bidi(pdf)
+    comparison = await compare_png_bidi(reference_png, page_png)
+    assert comparison.equal() == expected
+
+
+async def _fetch_impl(
+    bidi_session,
+    timeout_multiplier: float,
+    url,
+    method=None,
+    headers=None,
+    post_data=None,
+    context=None,
+    timeout_in_seconds=3,
+    sandbox_name=None,
+):
+    should_abort = timeout_in_seconds <= 0
+    timeout_ms = int(timeout_in_seconds * timeout_multiplier * 1000)
+    return await bidi_session.script.fetch_for_test(
+        url,
+        context=context,
+        method=method,
+        headers=headers if isinstance(headers, Mapping) else None,
+        post_data=post_data,
+        timeout_ms=timeout_ms,
+        should_abort=should_abort,
+        sandbox=sandbox_name,
+    )
 
 
 @pytest.fixture
 def get_test_page():
     """Generate a node-rich page compatible with BiDi script node tests."""
-
-    def _get_test_page(
-        as_frame: bool = False,
-        frame_doc: str = None,
-        shadow_doc: str = None,
-        nested_shadow_dom: bool = False,
-        shadow_root_mode: str = "open",
-        **kwargs,
-    ):
-        payload: dict[str, Any] = {
-            "asFrame": as_frame,
-            "nestedShadowDom": nested_shadow_dom,
-            "shadowRootMode": shadow_root_mode,
-        }
-        if isinstance(frame_doc, str):
-            payload["frameDoc"] = frame_doc
-        if isinstance(shadow_doc, str):
-            payload["shadowDoc"] = shadow_doc
-        protocol = kwargs.get("protocol")
-        if isinstance(protocol, str):
-            payload["protocol"] = protocol
-        payload["op"] = "buildNodeTestPageUrl"
-        return _build_webdriver_fixture(payload)
-
-    return _get_test_page
+    return _fixture_get_test_page
 
 
 @pytest.fixture
@@ -1912,37 +1970,91 @@ def test_page_same_origin_frame(inline, test_page):
     return inline(f"<iframe src='{test_page}'></iframe>")
 
 
-@pytest.fixture
-def assert_file_dialog_canceled():
-    """File dialog assertion placeholder."""
-    def _assert(*args, **kwargs):
-        return _ImmediateAwaitable()
-    return _assert
+@pytest_asyncio.fixture
+async def assert_file_dialog_canceled(bidi_session, top_context):
+    """Assert that a synthetic file picker is canceled by prompt behavior."""
+    pending_tasks: list[_TrackedTask] = []
+
+    async def _run(context=None):
+        resolved_context = context or top_context
+        cancel_event = await bidi_session.script.evaluate(
+            expression="""
+                new Promise(resolve => {
+                    const picker = document.createElement('input');
+                    picker.type = 'file';
+                    picker.addEventListener('cancel', (event) => {
+                        resolve(event.isTrusted);
+                    });
+                    picker.click();
+                })
+            """,
+            target=ContextTarget(resolved_context["context"]),
+            await_promise=True,
+            user_activation=True,
+        )
+        assert cancel_event == {
+            "type": "boolean",
+            "value": True,
+        }
+
+    def _assert(context=None):
+        tracked = _TrackedTask(asyncio.create_task(_run(context)))
+        pending_tasks.append(tracked)
+        return tracked
+
+    yield _assert
+
+    for tracked in pending_tasks:
+        if tracked.awaited:
+            continue
+        await tracked.task
 
 
-@pytest.fixture
-def assert_file_dialog_not_canceled():
-    """File dialog assertion placeholder."""
-    def _assert(*args, **kwargs):
-        return _ImmediateAwaitable()
-    return _assert
+@pytest_asyncio.fixture
+async def assert_file_dialog_not_canceled(bidi_session, top_context, wait_for_future_safe):
+    """Assert that a synthetic file picker remains pending."""
+    pending_tasks: list[_TrackedTask] = []
 
+    async def _run(context=None):
+        resolved_context = context or top_context
+        cancel_event_future = asyncio.create_task(
+            bidi_session.script.evaluate(
+                expression="""
+                    new Promise(resolve => {
+                        const picker = document.createElement('input');
+                        picker.type = 'file';
+                        picker.addEventListener('cancel', (event) => {
+                            resolve(event.isTrusted);
+                        });
+                        picker.click();
+                    })
+                """,
+                target=ContextTarget(resolved_context["context"]),
+                await_promise=True,
+                user_activation=True,
+            )
+        )
+        try:
+            with pytest.raises(TimeoutError):
+                await wait_for_future_safe(cancel_event_future, timeout=0.5)
+        finally:
+            cancel_event_future.cancel()
+            try:
+                await cancel_event_future
+            except asyncio.CancelledError:
+                pass
 
-@pytest.fixture
-def create_dialog():
-    """Dialog creation placeholder."""
-    async def _create(*args, **kwargs):
-        return None
-    return _create
+    def _assert(context=None):
+        tracked = _TrackedTask(asyncio.create_task(_run(context)))
+        pending_tasks.append(tracked)
+        return tracked
 
+    yield _assert
 
-@pytest.fixture
-def wait_for_class_change(bidi_session, event_loop):
-    """Wait for a class to change on an element."""
-    async def _wait(context: str, selector: str, expected_class: str, timeout: float = 5.0):
-        # For now, just return immediately as Crater doesn't support full DOM monitoring
-        return True
-    return _wait
+    for tracked in pending_tasks:
+        if tracked.awaited:
+            continue
+        await tracked.task
 
 
 @pytest_asyncio.fixture
@@ -1953,7 +2065,7 @@ async def setup_network_test(
     url,
 ):
     """Best-effort network setup for adapter-backed synthetic network events."""
-    listeners = []
+    collectors = []
 
     async def _setup_network_test(
         events,
@@ -1964,18 +2076,11 @@ async def setup_network_test(
         await bidi_session.network.prepare_test_context(url=test_url, context=context)
 
         await subscribe_events(events=events, contexts=contexts)
-
-        network_events = {}
-        for event in events:
-            network_events[event] = []
-
-            async def on_event(method, data, event=event):
-                network_events[event].append(data)
-
-            listeners.append(bidi_session.add_event_listener(event, on_event))
-        return network_events
+        collector = bidi_session.capture_named_events(events)
+        collectors.append(collector)
+        return collector.events
 
     yield _setup_network_test
 
-    for remove_listener in listeners:
-        remove_listener()
+    for collector in collectors:
+        collector.close()
