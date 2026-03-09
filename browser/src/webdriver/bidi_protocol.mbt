@@ -4454,22 +4454,38 @@ fn BidiProtocol::resolve_print_data(
   let mut margin_bottom = 0.0
   let mut margin_left = 0.0
   let mut margin_right = 0.0
+  let mut has_margin_top = false
+  let mut has_margin_bottom = false
+  let mut has_margin_left = false
+  let mut has_margin_right = false
   match params.get("margin") {
     Some(Object(margin)) => {
       match margin.get("top") {
-        Some(Number(value, ..)) => margin_top = value
+        Some(Number(value, ..)) => {
+          margin_top = value
+          has_margin_top = true
+        }
         _ => ()
       }
       match margin.get("bottom") {
-        Some(Number(value, ..)) => margin_bottom = value
+        Some(Number(value, ..)) => {
+          margin_bottom = value
+          has_margin_bottom = true
+        }
         _ => ()
       }
       match margin.get("left") {
-        Some(Number(value, ..)) => margin_left = value
+        Some(Number(value, ..)) => {
+          margin_left = value
+          has_margin_left = true
+        }
         _ => ()
       }
       match margin.get("right") {
-        Some(Number(value, ..)) => margin_right = value
+        Some(Number(value, ..)) => {
+          margin_right = value
+          has_margin_right = true
+        }
         _ => ()
       }
     }
@@ -4488,11 +4504,34 @@ fn BidiProtocol::resolve_print_data(
     Some(True) => true
     _ => false
   }
+  let minimum_printable_cm = 2.54 / 72.0
+  let printable_width_cm = if has_margin_left &&
+    not(has_margin_right) &&
+    margin_left > page_width_cm - minimum_printable_cm {
+    page_width_cm - minimum_printable_cm
+  } else if has_margin_right &&
+    not(has_margin_left) &&
+    margin_right > page_width_cm - minimum_printable_cm {
+    page_width_cm - minimum_printable_cm
+  } else {
+    page_width_cm
+  }
+  let printable_height_cm = if has_margin_top &&
+    not(has_margin_bottom) &&
+    margin_top > page_height_cm - minimum_printable_cm {
+    page_height_cm - minimum_printable_cm
+  } else if has_margin_bottom &&
+    not(has_margin_top) &&
+    margin_bottom > page_height_cm - minimum_printable_cm {
+    page_height_cm - minimum_printable_cm
+  } else {
+    page_height_cm
+  }
   let meta = make_object({
     "kind": Json::string("crater.synthetic.print"),
     "orientation": Json::string(orientation),
-    "pageWidthCm": Json::number(page_width_cm),
-    "pageHeightCm": Json::number(page_height_cm),
+    "pageWidthCm": Json::number(printable_width_cm),
+    "pageHeightCm": Json::number(printable_height_cm),
     "background": Json::boolean(background),
     "signature": Json::string(self.current_context_url(ctx_id)),
   })

@@ -197,6 +197,35 @@ test "bidi printData returns raw pdf payload" {
 }
 
 ///|
+test "bidi print metadata clamps one-sided margin to minimum printable height" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+
+  ignore(
+    proto.process_message(
+      "{\"id\":2,\"method\":\"browsingContext.print\",\"params\":{\"context\":\"session-1\",\"margin\":{\"top\":26.94}}}",
+    ),
+  )
+  let result = extract_success_result(proto.take_messages())
+  let pdf_data = match result.get("data") {
+    Some(String(value)) => value
+    _ => ""
+  }
+  let meta = pdf_meta_from_base64(pdf_data)
+  match meta.get("pageWidthCm") {
+    Some(Number(value, ..)) => assert_eq(value, 21.59)
+    _ => assert_true(false)
+  }
+  match meta.get("pageHeightCm") {
+    Some(Number(value, ..)) => assert_true(value < 27.94 && value > 27.9)
+    _ => assert_true(false)
+  }
+}
+
+///|
 test "bidi captureScreenshotData returns raw png payload" {
   let proto = BidiProtocol::new()
   ignore(

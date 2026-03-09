@@ -1,0 +1,9 @@
+import {
+  "mizchi/js/deno",
+  "mizchi/crater-browser/webdriver",
+  "moonbitlang/core/json",
+}
+
+options(
+  "is-main": true,
+)

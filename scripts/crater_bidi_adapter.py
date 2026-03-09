@@ -12,16 +12,16 @@ Usage:
 
 import asyncio
 import base64
+import functools
 import hashlib
 import http
 import json
 import math
 import os
 import re
-import struct
+import subprocess
 import sys
 import time
-import zlib
 from pathlib import Path
 from typing import Any, Mapping
 import pytest
@@ -33,12 +33,6 @@ from webdriver.bidi.modules.script import ContextTarget, ScriptEvaluateResultExc
 
 CRATER_BIDI_URL = os.environ.get("CRATER_BIDI_URL", "ws://127.0.0.1:9222")
 _UNSET = object()
-_BLACK_DOT_PNG_BASE64 = (
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIW2NgYGD4DwABBAEAwS2OUAAAAABJRU5ErkJggg=="
-)
-_WHITE_DOT_PNG_BASE64 = (
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQIW2P4DwQACfsD/Z8fLAAAAAAASUVORK5CYII="
-)
 _COOKIE_ASSIGNMENT_RE = re.compile(r"""document\.cookie\s*=\s*['"]([^'"]+)['"]""")
 _HTTP_TOKEN_RE = re.compile(r"^[!#$%&'*+.^_`|~0-9A-Za-z-]+$")
 
@@ -100,106 +94,10 @@ def _synthesize_request_bytes_value(post_data: Any):
     return _bytes_value_from_text("")
 
 
-def _png_chunk(chunk_type: bytes, payload: bytes) -> bytes:
-    return (
-        struct.pack(">I", len(payload))
-        + chunk_type
-        + payload
-        + struct.pack(">I", zlib.crc32(chunk_type + payload) & 0xFFFFFFFF)
-    )
-
-
-def _solid_png_bytes(width: int, height: int, rgba: tuple[int, int, int, int]) -> bytes:
-    # Keep synthetic output bounded; WPT screenshot expectations stay under this.
-    width = max(1, min(int(width), 4096))
-    height = max(1, min(int(height), 4096))
-    r, g, b, a = rgba
-    pixel = bytes([r & 0xFF, g & 0xFF, b & 0xFF, a & 0xFF])
-    row = b"\x00" + (pixel * width)
-    raw = row * height
-    header = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
-    return (
-        b"\x89PNG\r\n\x1a\n"
-        + _png_chunk(b"IHDR", header)
-        + _png_chunk(b"IDAT", zlib.compress(raw))
-        + _png_chunk(b"IEND", b"")
-    )
-
-
-def _solid_png_base64(width: int, height: int, rgba: tuple[int, int, int, int]) -> str:
-    return base64.b64encode(_solid_png_bytes(width, height, rgba)).decode()
-
-
-def _pdf_from_meta(meta: dict[str, Any]) -> str:
-    payload = json.dumps(meta, sort_keys=True)
-    pdf = (
-        "%PDF-1.4\n"
-        f"%CRATER_META {payload}\n"
-        "1 0 obj\n"
-        "<< /Type /Catalog /Pages 2 0 R >>\n"
-        "endobj\n"
-        "2 0 obj\n"
-        "<< /Type /Pages /Count 1 /Kids [3 0 R] >>\n"
-        "endobj\n"
-        "3 0 obj\n"
-        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>\n"
-        "endobj\n"
-        "4 0 obj\n"
-        "<< /Length 0 >>\n"
-        "stream\n"
-        "\n"
-        "endstream\n"
-        "endobj\n"
-        "trailer\n"
-        "<< /Root 1 0 R >>\n"
-        "%%EOF\n"
-    ).encode("utf-8")
-    return base64.b64encode(pdf).decode()
-
-
-def _extract_pdf_meta(encoded_pdf_data: str | bytes | bytearray) -> dict[str, Any]:
-    if isinstance(encoded_pdf_data, (bytes, bytearray)):
-        raw = bytes(encoded_pdf_data)
-    else:
-        try:
-            raw = base64.b64decode(encoded_pdf_data.encode(), validate=False)
-        except Exception:
-            return {}
-    marker = b"%CRATER_META "
-    start = raw.find(marker)
-    if start < 0:
-        return {}
-    start += len(marker)
-    end = raw.find(b"\n", start)
-    if end < 0:
-        end = len(raw)
-    try:
-        return json.loads(raw[start:end].decode("utf-8"))
-    except Exception:
-        return {}
-
-
-def _png_bytes_from_any(value: str | bytes | bytearray) -> bytes:
+def _base64_text_from_any(value: str | bytes | bytearray) -> str:
     if isinstance(value, (bytes, bytearray)):
-        return bytes(value)
-    return base64.b64decode(value.encode(), validate=False)
-
-
-def _cm_to_px(cm_value: float) -> int:
-    return int(round(cm_value * 96.0 / 2.54))
-
-
-def _render_pdf_meta_png(meta: dict[str, Any]) -> bytes:
-    width_cm = float(meta.get("pageWidthCm", 21.59))
-    height_cm = float(meta.get("pageHeightCm", 27.94))
-    width = max(1, _cm_to_px(width_cm))
-    height = max(1, _cm_to_px(height_cm))
-    background = bool(meta.get("background", False))
-    if width == 1 and height == 1:
-        encoded = _BLACK_DOT_PNG_BASE64 if background else _WHITE_DOT_PNG_BASE64
-        return base64.b64decode(encoded.encode(), validate=False)
-    rgba = (0, 0, 0, 255) if background else (255, 255, 255, 255)
-    return _solid_png_bytes(width, height, rgba)
+        return base64.b64encode(bytes(value)).decode("ascii")
+    return str(value)
 
 
 class CraterBidiSession:
@@ -1363,29 +1261,33 @@ def server_config():
 @pytest.fixture
 def url():
     """Generate test URLs."""
+
     def _url(
         path: str,
         domain: str = "",
         protocol: str = "http",
         subdomain: str = "",
+        query: str = "",
+        fragment: str = "",
     ) -> str:
-        if protocol not in {"http", "https"}:
-            protocol = "http"
-        host = "alt.localhost" if domain == "alt" else "localhost"
-        if subdomain == "www":
-            host = f"www.{host}"
-        base = f"{protocol}://{host}:8000"
-        if path.startswith("/"):
-            return f"{base}{path}"
-        return f"{base}/{path}"
+        return _build_webdriver_fixture(
+            {
+                "op": "buildUrl",
+                "path": str(path),
+                "domain": str(domain),
+                "protocol": str(protocol),
+                "subdomain": str(subdomain),
+                "query": str(query),
+                "fragment": str(fragment),
+            }
+        )
+
     return _url
 
 
 @pytest.fixture
 def inline():
     """Generate inline HTML data URLs."""
-    import base64
-    from urllib.parse import quote
 
     def _inline(
         content: str,
@@ -1396,28 +1298,50 @@ def inline():
         subdomain: str = "",
         **_ignored,
     ) -> str:
-        encoded = base64.b64encode(content.encode()).decode()
-        fragments = []
-        if domain:
-            fragments.append(f"domain={quote(str(domain), safe='')}")
-        if subdomain:
-            fragments.append(f"subdomain={quote(str(subdomain), safe='')}")
-        if protocol in {"http", "https"} and protocol != "http":
-            fragments.append(f"protocol={quote(str(protocol), safe='')}")
+        payload: dict[str, Any] = {
+            "op": "buildInlineUrl",
+            "content": str(content),
+            "contentType": str(content_type),
+            "domain": str(domain),
+            "protocol": str(protocol),
+            "subdomain": str(subdomain),
+        }
         if isinstance(parameters, dict):
             pipe = parameters.get("pipe")
             if pipe is not None:
-                fragments.append(f"pipe={quote(str(pipe), safe='')}")
-        suffix = f"#{'&'.join(fragments)}" if fragments else ""
-        return f"data:{content_type};base64,{encoded}{suffix}"
+                payload["pipe"] = str(pipe)
+        return _build_webdriver_fixture(payload)
+
     return _inline
 
 
 @pytest.fixture
-def iframe(inline):
+def iframe():
     """Inline document extract as the source document of an <iframe>."""
+
     def _iframe(src: str, **kwargs) -> str:
-        return f"<iframe src='{inline(src, **kwargs)}'></iframe>"
+        payload: dict[str, Any] = {
+            "op": "buildIframeMarkup",
+            "src": str(src),
+        }
+        content_type = kwargs.get("content_type")
+        if content_type is not None:
+            payload["contentType"] = str(content_type)
+        domain = kwargs.get("domain")
+        if domain is not None:
+            payload["domain"] = str(domain)
+        protocol = kwargs.get("protocol")
+        if protocol is not None:
+            payload["protocol"] = str(protocol)
+        subdomain = kwargs.get("subdomain")
+        if subdomain is not None:
+            payload["subdomain"] = str(subdomain)
+        parameters = kwargs.get("parameters")
+        if isinstance(parameters, dict):
+            pipe = parameters.get("pipe")
+            if pipe is not None:
+                payload["pipe"] = str(pipe)
+        return _build_webdriver_fixture(payload)
 
     return _iframe
 
@@ -1460,22 +1384,22 @@ async def add_and_remove_iframe(bidi_session):
 @pytest.fixture
 def compare_png_bidi():
     """Minimal pixel comparator used by screenshot and print assertions."""
-    from tests.support.image import ImageDifference, png_dimensions
+    from tests.support.image import ImageDifference
 
     async def _compare_png_bidi(img1, img2):
-        raw1 = _png_bytes_from_any(img1)
-        raw2 = _png_bytes_from_any(img2)
-        if raw1 == raw2:
-            return ImageDifference(0, 0)
-
-        try:
-            w1, h1 = png_dimensions(raw1)
-            w2, h2 = png_dimensions(raw2)
-            if (w1, h1) != (w2, h2):
-                return ImageDifference(max(w1 * h1, w2 * h2, 1), 255)
-            return ImageDifference(max(w1 * h1, 1), 255)
-        except Exception:
-            return ImageDifference(1, 255)
+        result = json.loads(
+            _build_webdriver_fixture(
+                {
+                    "op": "comparePng",
+                    "left": _base64_text_from_any(img1),
+                    "right": _base64_text_from_any(img2),
+                }
+            )
+        )
+        return ImageDifference(
+            int(result.get("totalPixels", 1)),
+            int(result.get("maxDifference", 255)),
+        )
 
     return _compare_png_bidi
 
@@ -1487,8 +1411,13 @@ def render_pdf_to_png_bidi():
     async def _render_pdf_to_png_bidi(encoded_pdf_data, page=1):
         # Current synthetic print path only emits single-page payloads.
         _ = page
-        meta = _extract_pdf_meta(encoded_pdf_data)
-        return _render_pdf_meta_png(meta)
+        encoded_png = _build_webdriver_fixture(
+            {
+                "op": "renderPdfToPng",
+                "encodedPdfData": _base64_text_from_any(encoded_pdf_data),
+            }
+        )
+        return base64.b64decode(encoded_png.encode(), validate=False)
 
     return _render_pdf_to_png_bidi
 
@@ -1507,12 +1436,26 @@ def assert_pdf_content():
 
 @pytest.fixture
 def assert_pdf_dimensions():
-    """Validate printable payload shape; dimensions are handled by synthetic PNG."""
+    """Validate printable payload shape and synthetic PDF dimensions."""
     from tests.support.asserts import assert_pdf
 
     async def _assert_pdf_dimensions(pdf, expected_dimensions):
-        _ = expected_dimensions
         assert_pdf(pdf)
+        meta = _extract_pdf_meta_for_test(pdf)
+        assert "pageWidthCm" in meta
+        assert "pageHeightCm" in meta
+        assert math.isclose(
+            float(meta["pageWidthCm"]),
+            float(expected_dimensions["width"]),
+            rel_tol=0.0,
+            abs_tol=0.05,
+        )
+        assert math.isclose(
+            float(meta["pageHeightCm"]),
+            float(expected_dimensions["height"]),
+            rel_tol=0.0,
+            abs_tol=0.05,
+        )
 
     return _assert_pdf_dimensions
 
@@ -1531,18 +1474,16 @@ def assert_pdf_image():
 
 
 @pytest.fixture
-def get_actions_origin_page(inline):
+def get_actions_origin_page():
     """Create a test page for action origin tests."""
 
     def _get_actions_origin_page(inner_style: str, outer_style: str = "") -> str:
-        return inline(
-            f"""
-          <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1">
-          <div id="outer" style="{outer_style}"
-               onmousemove="window.coords = {{x: event.clientX, y: event.clientY}}">
-            <div id="inner" style="{inner_style}"></div>
-          </div>
-        """
+        return _build_webdriver_fixture(
+            {
+                "op": "buildActionsOriginPage",
+                "innerStyle": str(inner_style),
+                "outerStyle": str(outer_style),
+            }
         )
 
     return _get_actions_origin_page
@@ -1847,211 +1788,60 @@ def test_page(inline):
     return inline("<div>foo</div>")
 
 
-def _resolve_node_test_page_url(url, kwargs) -> str | None:
-    protocol = kwargs.get("protocol")
-    if not isinstance(protocol, str) or protocol not in {"http", "https"}:
-        return None
-    domain = kwargs.get("domain", "")
-    subdomain = kwargs.get("subdomain", "")
-    return url(
-        "/webdriver/tests/support/empty.html",
-        domain=domain if isinstance(domain, str) else "",
-        protocol=protocol,
-        subdomain=subdomain if isinstance(subdomain, str) else "",
+def _webdriver_fixture_builder_path() -> Path:
+    root = Path(__file__).resolve().parent.parent
+    candidates = [
+        root / "browser" / "target" / "js" / "release" / "build" / "webdriver_fixture_builder" / "webdriver_fixture_builder.js",
+        root / "browser" / "_build" / "js" / "release" / "build" / "webdriver_fixture_builder" / "webdriver_fixture_builder.js",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(
+        "MoonBit webdriver fixture builder is not built. Run: just build-bidi"
     )
 
 
-def _prepare_node_test_page_docs(
-    frame_doc,
-    shadow_doc,
-    nested_shadow_dom: bool,
-    shadow_root_mode: str,
-    *,
-    frame_doc_provided: bool,
-    shadow_doc_provided: bool,
-):
-    if frame_doc is None:
-        # Defaulting to an iframe breaks many tests on the current mock DOM
-        # parser/runtime where iframe document loading is not fully isolated.
-        # Keep top-level node-rich markup as the default surface.
-        frame_doc = ""
+@functools.lru_cache(maxsize=None)
+def _build_webdriver_fixture_from_json(payload_json: str) -> str:
+    builder_path = _webdriver_fixture_builder_path()
+    proc = subprocess.run(
+        ["deno", "run", "-A", str(builder_path), payload_json],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout).strip()
+        raise RuntimeError(
+            f"webdriver_fixture_builder failed with code {proc.returncode}: {detail}"
+        )
+    return proc.stdout.strip()
 
-    if shadow_doc is None:
-        shadow_doc = """<div id="in-shadow-dom"><input type="checkbox"/></div>"""
 
-    definition_inner_shadow_dom = ""
-    inner_shadow_doc = shadow_doc
-    if nested_shadow_dom:
-        definition_inner_shadow_dom = f"""
-                if (!customElements.get("inner-custom-element")) {{
-                    customElements.define("inner-custom-element",
-                        class extends HTMLElement {{
-                            constructor() {{
-                                super();
-                                this.attachShadow({{mode: "{shadow_root_mode}"}}).innerHTML = `
-                                    {inner_shadow_doc}
-                                `;
-                            }}
-                        }}
-                    );
-                }}
-            """
-        shadow_doc = """
-                <style>
-                    inner-custom-element {
-                        display:block; width:20px; height:20px;
-                    }
-                </style>
-                <div id="in-nested-shadow-dom">
-                    <inner-custom-element></inner-custom-element>
-                </div>
-            """
-
-    # Shadow-focused tests don't need the default iframe subtree and it can
-    # interfere with runtime context swapping in the mock environment.
-    if shadow_doc_provided and not frame_doc_provided:
-        frame_doc = ""
-
-    return (
-        frame_doc,
-        shadow_doc,
-        inner_shadow_doc,
-        definition_inner_shadow_dom,
+def _build_webdriver_fixture(payload: Mapping[str, Any]) -> str:
+    return _build_webdriver_fixture_from_json(
+        json.dumps(dict(payload), sort_keys=True, separators=(",", ":"))
     )
 
 
-def _build_node_test_page_markup(
-    *,
-    frame_markup: str,
-    shadow_doc: str,
-    inner_shadow_doc: str,
-    definition_inner_shadow_dom: str,
-    nested_shadow_dom: bool,
-    shadow_root_mode: str,
-) -> str:
-    return f"""
-            <style>
-                custom-element {{
-                    display:block; width:20px; height:20px;
-                }}
-            </style>
-            <div id="with-children"><p><span></span></p><br/></div>
-            <div id="with-text-node">Lorem</div>
-            <div id="with-comment"><!-- Comment --></div>
-
-            <input id="button" type="button"/>
-            <input id="checkbox" type="checkbox"/>
-            <input id="file" type="file"/>
-            <input id="hidden" type="hidden"/>
-            <input id="text" type="text"/>
-
-            {frame_markup}
-
-            <img />
-            <svg></svg>
-
-            <custom-element id="custom-element"></custom-element>
-            <script>
-                var svg = document.querySelector("svg");
-                if (svg && svg.setAttributeNS) {{
-                    svg.setAttributeNS("http://www.w3.org/2000/svg", "svg:foo", "bar");
-                }}
-
-                if (window.customElements && customElements.define) {{
-                    {definition_inner_shadow_dom}
-                    if (!customElements.get("custom-element")) {{
-                        customElements.define("custom-element",
-                            class extends HTMLElement {{
-                                constructor() {{
-                                    super();
-                                    const shadowRoot = this.attachShadow({{mode: "{shadow_root_mode}"}});
-                                    shadowRoot.innerHTML = `{shadow_doc}`;
-                                    window._shadowRoot = shadowRoot;
-                                }}
-                            }}
-                        );
-                    }}
-
-                    const host = document.querySelector("#custom-element");
-                    if (host && host.attachShadow && !window._shadowRoot) {{
-                        try {{
-                            const shadowRoot = host.attachShadow({{ mode: "{shadow_root_mode}" }});
-                            shadowRoot.innerHTML = `{shadow_doc}`;
-                            window._shadowRoot = shadowRoot;
-                        }} catch (_e) {{}}
-                    }}
-                    if (!window._shadowRoot && host && host.shadowRoot) {{
-                        window._shadowRoot = host.shadowRoot;
-                    }}
-
-                    if ({str(nested_shadow_dom).lower()}) {{
-                        const outerRoot = (host && host.shadowRoot) || window._shadowRoot || null;
-                        if (outerRoot && outerRoot.querySelectorAll) {{
-                            const innerHosts = outerRoot.querySelectorAll("inner-custom-element");
-                            for (const innerHost of innerHosts) {{
-                                if (!innerHost) {{
-                                    continue;
-                                }}
-                                if (innerHost.attachShadow && !innerHost.shadowRoot) {{
-                                    try {{
-                                        const innerRoot = innerHost.attachShadow({{ mode: "{shadow_root_mode}" }});
-                                        innerRoot.innerHTML = `{inner_shadow_doc}`;
-                                    }} catch (_e) {{}}
-                                }}
-                                if (!window._innerShadowRoot && innerHost.shadowRoot) {{
-                                    window._innerShadowRoot = innerHost.shadowRoot;
-                                }}
-                            }}
-                        }}
-                    }}
-                }} else {{
-                    const host = document.querySelector('#custom-element');
-                    if (host && host.attachShadow && !host.shadowRoot) {{
-                        const shadowRoot = host.attachShadow({{ mode: "{shadow_root_mode}" }});
-                        shadowRoot.innerHTML = `{shadow_doc}`;
-                        window._shadowRoot = shadowRoot;
-                    }}
-                    if ({str(nested_shadow_dom).lower()} && host && host.shadowRoot) {{
-                        const innerHosts = host.shadowRoot.querySelectorAll("inner-custom-element");
-                        for (const innerHost of innerHosts) {{
-                            if (!innerHost) {{
-                                continue;
-                            }}
-                            if (innerHost.attachShadow && !innerHost.shadowRoot) {{
-                                const innerRoot = innerHost.attachShadow({{ mode: "{shadow_root_mode}" }});
-                                innerRoot.innerHTML = `{inner_shadow_doc}`;
-                            }}
-                            if (!window._innerShadowRoot && innerHost.shadowRoot) {{
-                                window._innerShadowRoot = innerHost.shadowRoot;
-                            }}
-                        }}
-                    }}
-                }}
-                const finalHost = document.querySelector("#custom-element");
-                if (finalHost && !finalHost.shadowRoot && finalHost.attachShadow) {{
-                    try {{
-                        const fallbackRoot = finalHost.attachShadow({{ mode: "{shadow_root_mode}" }});
-                        fallbackRoot.innerHTML = `{shadow_doc}`;
-                        window._shadowRoot = fallbackRoot;
-                    }} catch (_e) {{}}
-                }}
-                if (finalHost && finalHost.shadowRoot) {{
-                    const shadowChildren = finalHost.shadowRoot.childNodes || [];
-                    if (shadowChildren.length === 0) {{
-                        try {{
-                            finalHost.shadowRoot.innerHTML = `{shadow_doc}`;
-                        }} catch (_e) {{}}
-                    }}
-                    if (!window._shadowRoot) {{
-                        window._shadowRoot = finalHost.shadowRoot;
-                    }}
-                }}
-            </script>
-        """
+def _extract_pdf_meta_for_test(encoded_pdf_data: str | bytes | bytearray) -> dict[str, Any]:
+    try:
+        parsed = json.loads(
+            _build_webdriver_fixture(
+                {
+                    "op": "extractPdfMeta",
+                    "encodedPdfData": _base64_text_from_any(encoded_pdf_data),
+                }
+            )
+        )
+    except Exception:
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
 
 
 @pytest.fixture
-def get_test_page(iframe, inline, url):
+def get_test_page():
     """Generate a node-rich page compatible with BiDi script node tests."""
 
     def _get_test_page(
@@ -2062,41 +1852,20 @@ def get_test_page(iframe, inline, url):
         shadow_root_mode: str = "open",
         **kwargs,
     ):
-        frame_doc_provided = frame_doc is not None
-        shadow_doc_provided = shadow_doc is not None
-        test_url = _resolve_node_test_page_url(url, kwargs)
-        if isinstance(test_url, str):
-            return test_url
-
-        (
-            frame_doc,
-            shadow_doc,
-            inner_shadow_doc,
-            definition_inner_shadow_dom,
-        ) = _prepare_node_test_page_docs(
-            frame_doc,
-            shadow_doc,
-            nested_shadow_dom,
-            shadow_root_mode,
-            frame_doc_provided=frame_doc_provided,
-            shadow_doc_provided=shadow_doc_provided,
-        )
-
-        frame_markup = iframe(frame_doc, **kwargs) if frame_doc else ""
-        page_data = _build_node_test_page_markup(
-            frame_markup=frame_markup,
-            shadow_doc=shadow_doc,
-            inner_shadow_doc=inner_shadow_doc,
-            definition_inner_shadow_dom=definition_inner_shadow_dom,
-            nested_shadow_dom=nested_shadow_dom,
-            shadow_root_mode=shadow_root_mode,
-        )
-
-        if as_frame:
-            iframe_data = iframe(page_data, **kwargs)
-            return inline(iframe_data, **kwargs)
-
-        return inline(page_data, **kwargs)
+        payload: dict[str, Any] = {
+            "asFrame": as_frame,
+            "nestedShadowDom": nested_shadow_dom,
+            "shadowRootMode": shadow_root_mode,
+        }
+        if isinstance(frame_doc, str):
+            payload["frameDoc"] = frame_doc
+        if isinstance(shadow_doc, str):
+            payload["shadowDoc"] = shadow_doc
+        protocol = kwargs.get("protocol")
+        if isinstance(protocol, str):
+            payload["protocol"] = protocol
+        payload["op"] = "buildNodeTestPageUrl"
+        return _build_webdriver_fixture(payload)
 
     return _get_test_page
 

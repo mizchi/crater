@@ -199,7 +199,7 @@
     - この層は command/query を追加すればまだかなり削れる
   - `C. WPT tooling として残置判断が必要な fixture glue`
     - `server_config` / `url` / `inline` / `iframe`
-    - PDF/PNG assertion helper や test page builder (`compare_png_bidi`, `render_pdf_to_png_bidi`, `get_actions_origin_page` など)
+    - PDF/PNG assertion helper や test page builder (`assert_pdf_content`, `assert_pdf_image`, `get_actions_origin_page` など)
     - これは WebDriver 実装ではなく WPT harness 側の補助なので、MoonBit 化の優先度は低い
   - 見積もり
     - `B` を中心に adapter を `1200-1600` 行まで縮める: あと `3-5日`
@@ -242,8 +242,12 @@
   - `provideResponse` の body override は MoonBit 側へ移行済み
   - `get_element` / `fetch` / `setup_network_test` は MoonBit command ベースに整理済み
   - `get_element` の Python 側 `sharedId` normalize は削除済み
-  - 現在の `scripts/crater_bidi_adapter.py` は `2212` 行
-  - 残りは `browsingContext` / `session` / `script` 周辺の fixture glue と module proxy の整理
+  - 同期 fixture の `get_test_page` は protocol command ではなく、MoonBit helper package `browser/src/webdriver_fixture_builder` を subprocess + cache で呼ぶ形に移行済み
+  - `url` / `inline` / `iframe` / `get_actions_origin_page` も同 helper package 経由に移行済み
+  - `compare_png_bidi` / `render_pdf_to_png_bidi` / `assert_pdf_dimensions` も同 helper package 経由に移行済み
+  - `assert_pdf_content` / `assert_pdf_image` は synthetic print payload に十分な意味情報がないため、まだ placeholder のまま
+  - 現在の `scripts/crater_bidi_adapter.py` は `1981` 行
+  - 残りは `browsingContext` / `session` / `script` 周辺の fixture glue と module proxy の整理、および transport 層の棚卸し
 
 ### 2026-03-09 の詳細計画
 
@@ -276,8 +280,11 @@
   - [x] `top_context` / `new_tab` fixture の dict copy unwrap を削除
   - [x] `top_context` / `new_tab` の fallback object を fail-fast helper に置き換えた
   - [x] `get_test_page` の page builder を pure helper に切り出して MoonBit 移植対象を分離した
-  - [ ] `get_test_page` の page builder 自体を MoonBit command に移す
-  - [ ] `scripts/crater_bidi_adapter.py` を `2212` 行からさらに縮める
+  - [x] 同期 fixture 制約に合わせて `browser/src/webdriver_fixture_builder` を追加し、`get_test_page` の page builder 自体を MoonBit helper に移した
+  - [x] `url` / `inline` / `iframe` / `get_actions_origin_page` も `browser/src/webdriver_fixture_builder` 経由へ移した
+  - [x] `compare_png_bidi` / `render_pdf_to_png_bidi` / `assert_pdf_dimensions` も `browser/src/webdriver_fixture_builder` 経由へ移した
+  - [x] `assert_pdf_content` / `assert_pdf_image` は synthetic print payload の制約上、まだ placeholder として残す判断を TODO に明記した
+  - [x] `scripts/crater_bidi_adapter.py` を `2212` 行から `1981` 行へ縮めた
 - [ ] Step 4: Python に残す層を固定する
   - [ ] `CraterBidiSession` と event backlog は transport / pytest plugin core として残す
   - [ ] transport 層以外で `.py` に残っている実装責務を TODO から洗い出して消していく
