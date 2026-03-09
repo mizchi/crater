@@ -932,6 +932,22 @@ test "bidi network getData and disownData use protocol collector store" {
 }
 
 ///|
+test "bidi network addDataCollectorId returns raw collector id" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"network.addDataCollectorId\",\"params\":{\"dataTypes\":[\"request\"],\"maxEncodedDataSize\":1000}}",
+  )
+  let add_json = proto.take_messages()[0].to_json()
+  assert_true(add_json.contains("\"type\":\"success\""))
+  assert_true(add_json.contains("\"result\":\"collector-1\""))
+}
+
+///|
 test "bidi network continueBlockedResponse emits subscribed events after success" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(

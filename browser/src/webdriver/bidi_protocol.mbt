@@ -10301,6 +10301,10 @@ fn BidiProtocol::dispatch_network(
       self.handle_network_add_data_collector(request.id, request.params)
       Ok(())
     }
+    "addDataCollectorId" => {
+      self.handle_network_add_data_collector_id(request.id, request.params)
+      Ok(())
+    }
     "setExtraHeaders" => {
       self.handle_network_set_extra_headers(request.id, request.params)
       Ok(())
@@ -10672,6 +10676,24 @@ fn BidiProtocol::handle_network_add_data_collector(
     request_id,
     Some(make_object({ "collector": Json::string(collector_id) })),
   )
+}
+
+///|
+fn BidiProtocol::handle_network_add_data_collector_id(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let options = match
+    self.validate_network_add_data_collector_params(request_id, params) {
+    Some(options) => options
+    None => return
+  }
+  let collector_id = "collector-" +
+    self.next_network_data_collector_id.to_string()
+  self.next_network_data_collector_id += 1
+  self.network_data_collectors[collector_id] = make_object(options)
+  self.send_success(request_id, Some(Json::string(collector_id)))
 }
 
 ///|

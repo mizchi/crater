@@ -1070,13 +1070,7 @@ class NetworkModule:
             if value is None:
                 continue
             params[key] = value
-        future = await self._session.send_command("network.addDataCollector", params)
-        result = await future
-        if isinstance(result, dict):
-            collector = result.get("collector")
-            if isinstance(collector, str):
-                return collector
-        return result
+        return await self._session.command("network.addDataCollectorId", params)
 
     async def set_extra_headers(self, headers, contexts=_UNSET, user_contexts=_UNSET):
         params = {"headers": headers}
@@ -1307,15 +1301,22 @@ async def _trim_contexts_for_test(session: CraterBidiSession):
 async def top_context(bidi_session):
     """Get the top-level browsing context."""
     result = await bidi_session.session.get_baseline_context_info_value_for_test()
-    return dict(result) if isinstance(result, Mapping) else {"context": None, "url": "about:blank"}
+    if isinstance(result, Mapping):
+        return result
+    return {"context": None, "url": "about:blank"}
 
 
 @pytest_asyncio.fixture
 async def new_tab(bidi_session):
     """Open and focus a new tab."""
     context_info = await bidi_session.browsing_context.create_and_get_info_value(type="tab")
-    context_id = context_info.get("context") if isinstance(context_info, Mapping) else None
-    yield dict(context_info) if isinstance(context_info, Mapping) else {"context": context_id, "url": "about:blank"}
+    if isinstance(context_info, Mapping):
+        context_id = context_info.get("context")
+        yielded = context_info
+    else:
+        context_id = None
+        yielded = {"context": None, "url": "about:blank"}
+    yield yielded
     try:
         if isinstance(context_id, str):
             await bidi_session.browsing_context.close(context=context_id)
