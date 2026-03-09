@@ -154,6 +154,8 @@
 - [x] `browsing_context/{close,context_destroyed} --quick` / `integration --quick` / `strict` で `closeResult` 移行の回帰確認
 - [x] `max_depth` / `prompt_unload` / `device_pixel_ratio` を protocol alias として受理して `BrowsingContextModule` の camelCase 変換を削減
 - [x] `script.removePreloadScript` が nested `{script:{script:id}}` を受理するようにして `ScriptModule.remove_preload_script` の Python 正規化を削除
+- [x] `browser.getUserContextsList` / `getClientWindowsList` を追加して `BrowserModule` の list unwrap を MoonBit 側へ移行
+- [x] `BrowsingContextModule.get_current_url` の Python 側 type unwrap を削除
 
 ### 次の具体タスク
 

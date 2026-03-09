@@ -1019,12 +1019,14 @@ fn BidiProtocol::dispatch_browser(
 ) -> Result[Unit, String] {
   match action {
     "getUserContexts" => {
-      let contexts : Array[Json] = []
-      for id, _ in self.user_contexts {
-        contexts.push(make_object({ "userContext": Json::string(id) }))
-      }
+      let contexts = self.resolve_browser_user_contexts_list()
       let result = make_object({ "userContexts": Json::array(contexts) })
       self.send_success(request.id, Some(result))
+      Ok(())
+    }
+    "getUserContextsList" => {
+      let contexts = self.resolve_browser_user_contexts_list()
+      self.send_success(request.id, Some(Json::array(contexts)))
       Ok(())
     }
     "hasUserContext" => {
@@ -1032,80 +1034,32 @@ fn BidiProtocol::dispatch_browser(
       Ok(())
     }
     "getClientWindows" => {
-      let top_level_contexts : Array[String] = []
-      for ctx_id in self.manager.list_sessions() {
-        if not(self.context_parent.contains(ctx_id)) {
-          top_level_contexts.push(ctx_id)
-        }
-      }
-
-      let mut active_client_window : String? = None
-      match self.active_context_id {
-        Some(active_ctx) =>
-          if not(self.context_parent.contains(active_ctx)) {
-            active_client_window = self.context_client_window.get(active_ctx)
-          }
-        None => ()
-      }
-      match active_client_window {
-        Some(_) => ()
-        None =>
-          match self.default_context_id {
-            Some(default_ctx) =>
-              if not(self.context_parent.contains(default_ctx)) {
-                active_client_window = self.context_client_window.get(
-                  default_ctx,
-                )
-              }
-            None => ()
-          }
-      }
-
-      let windows : Array[Json] = []
-      let seen_windows : Map[String, Bool] = {}
-      for ctx_id in top_level_contexts {
-        let client_window = self.context_client_window
-          .get(ctx_id)
-          .unwrap_or("client-window-" + ctx_id)
-        if not(seen_windows.contains(client_window)) {
-          seen_windows[client_window] = true
-          let is_active = match active_client_window {
-            Some(active_window) => active_window == client_window
-            None => windows.length() == 0
-          }
-          windows.push(
-            make_object({
-              "clientWindow": Json::string(client_window),
-              "active": Json::boolean(is_active),
-            }),
-          )
-        }
-      }
-
+      let windows = self.resolve_browser_client_windows_list()
       let result = make_object({ "clientWindows": Json::array(windows) })
       self.send_success(request.id, Some(result))
       Ok(())
     }
-    "createUserContext" => {
+    "getClientWindowsList" => {
+      let windows = self.resolve_browser_client_windows_list()
+      self.send_success(request.id, Some(Json::array(windows)))
+      Ok(())
+    }
+    "createUserContext" =>
       match
-        self.validate_browser_create_user_context(request.id, request.params) {
-        Some(_) => return Ok(())
+        self.resolve_browser_create_user_context(request.id, request.params) {
+        Some(id) => {
+          let result = make_object({ "userContext": Json::string(id) })
+          self.send_success(request.id, Some(result))
+          Ok(())
+        }
+        None => Ok(())
+      }
+    "createUserContextId" => {
+      match
+        self.resolve_browser_create_user_context(request.id, request.params) {
+        Some(id) => self.send_success(request.id, Some(Json::string(id)))
         None => ()
       }
-      let id = "user-" + self.user_contexts.length().to_string()
-      self.user_contexts[id] = true
-      match
-        get_param_raw_with_alias(
-          request.params,
-          "unhandledPromptBehavior",
-          "unhandled_prompt_behavior",
-        ) {
-        Some(Object(behavior)) =>
-          self.user_context_prompt_behavior[id] = make_object(behavior)
-        _ => ()
-      }
-      let result = make_object({ "userContext": Json::string(id) })
-      self.send_success(request.id, Some(result))
       Ok(())
     }
     "removeUserContext" =>
@@ -3170,6 +3124,94 @@ fn BidiProtocol::handle_browser_has_user_context(
       }),
     ),
   )
+}
+
+///|
+fn BidiProtocol::resolve_browser_user_contexts_list(
+  self : BidiProtocol,
+) -> Array[Json] {
+  let contexts : Array[Json] = []
+  for id, _ in self.user_contexts {
+    contexts.push(make_object({ "userContext": Json::string(id) }))
+  }
+  contexts
+}
+
+///|
+fn BidiProtocol::resolve_browser_client_windows_list(
+  self : BidiProtocol,
+) -> Array[Json] {
+  let top_level_contexts : Array[String] = []
+  for ctx_id in self.manager.list_sessions() {
+    if not(self.context_parent.contains(ctx_id)) {
+      top_level_contexts.push(ctx_id)
+    }
+  }
+
+  let mut active_client_window : String? = None
+  match self.active_context_id {
+    Some(active_ctx) =>
+      if not(self.context_parent.contains(active_ctx)) {
+        active_client_window = self.context_client_window.get(active_ctx)
+      }
+    None => ()
+  }
+  match active_client_window {
+    Some(_) => ()
+    None =>
+      match self.default_context_id {
+        Some(default_ctx) =>
+          if not(self.context_parent.contains(default_ctx)) {
+            active_client_window = self.context_client_window.get(default_ctx)
+          }
+        None => ()
+      }
+  }
+
+  let windows : Array[Json] = []
+  let seen_windows : Map[String, Bool] = {}
+  for ctx_id in top_level_contexts {
+    let client_window = self.context_client_window
+      .get(ctx_id)
+      .unwrap_or("client-window-" + ctx_id)
+    if not(seen_windows.contains(client_window)) {
+      seen_windows[client_window] = true
+      let is_active = match active_client_window {
+        Some(active_window) => active_window == client_window
+        None => windows.length() == 0
+      }
+      windows.push(
+        make_object({
+          "clientWindow": Json::string(client_window),
+          "active": Json::boolean(is_active),
+        }),
+      )
+    }
+  }
+  windows
+}
+
+///|
+fn BidiProtocol::resolve_browser_create_user_context(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> String? {
+  match self.validate_browser_create_user_context(request_id, params) {
+    Some(_) => return None
+    None => ()
+  }
+  let id = "user-" + self.user_contexts.length().to_string()
+  self.user_contexts[id] = true
+  match
+    get_param_raw_with_alias(
+      params, "unhandledPromptBehavior", "unhandled_prompt_behavior",
+    ) {
+    Some(Object(behavior)) =>
+      self.user_context_prompt_behavior[id] = make_object(behavior)
+    _ => ()
+  }
+  Some(id)
 }
 
 ///|

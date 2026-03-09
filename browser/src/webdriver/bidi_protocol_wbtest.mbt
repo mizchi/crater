@@ -319,6 +319,61 @@ test "bidi browser createUserContext accepts snake_case aliases" {
 }
 
 ///|
+test "bidi browser createUserContextId returns raw id string" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browser.createUserContextId\",\"params\":{}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":\"user-1\""))
+}
+
+///|
+test "bidi browser getUserContextsList returns raw entries" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browser.createUserContext\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browser.getUserContextsList\",\"params\":{}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":["))
+  assert_true(json.contains("\"userContext\":\"default\""))
+  assert_true(json.contains("\"userContext\":\"user-1\""))
+}
+
+///|
+test "bidi browser getClientWindowsList returns raw entries" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browser.getClientWindowsList\",\"params\":{}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":["))
+  assert_true(json.contains("\"clientWindow\":\"client-window-session-1\""))
+}
+
+///|
 test "bidi browsingContext getContextScopeInfo returns ancestry and user context" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -570,6 +625,17 @@ test "bidi browsingContext getCurrentUrlValue returns raw url string" {
   let json = proto.take_messages()[0].to_json()
   assert_true(json.contains("\"type\":\"success\""))
   assert_true(json.contains("\"result\":\"" + url + "\""))
+}
+
+///|
+test "bidi browsingContext getCurrentUrlValue rejects invalid context type" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"browsingContext.getCurrentUrlValue\",\"params\":{\"context\":42}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"error\""))
+  assert_true(json.contains("\"error\":\"invalid argument\""))
 }
 
 ///|

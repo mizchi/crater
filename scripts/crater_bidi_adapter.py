@@ -758,14 +758,11 @@ class BrowsingContextModule:
         return await future
 
     async def get_current_url(self, context: str) -> str | None:
-        if not isinstance(context, str) or context == "":
-            return None
         future = await self._session.send_command(
             "browsingContext.getCurrentUrlValue",
             {"context": context},
         )
-        result = await future
-        return result if isinstance(result, str) else None
+        return await future
 
     async def close(self, context: str, prompt_unload=_UNSET):
         params = {"context": context}
@@ -1237,14 +1234,12 @@ class BrowserModule:
         return result
 
     async def get_user_contexts(self):
-        future = await self._session.send_command("browser.getUserContexts", {})
-        result = await future
-        return result.get("userContexts", [])
+        future = await self._session.send_command("browser.getUserContextsList", {})
+        return await future
 
     async def get_client_windows(self):
-        future = await self._session.send_command("browser.getClientWindows", {})
-        result = await future
-        return result.get("clientWindows", [])
+        future = await self._session.send_command("browser.getClientWindowsList", {})
+        return await future
 
     async def remove_user_context(self, user_context: str):
         future = await self._session.send_command("browser.removeUserContext", {"userContext": user_context})
