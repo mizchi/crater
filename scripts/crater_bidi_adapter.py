@@ -343,35 +343,60 @@ class CraterBidiSession:
         await self._ws.send(message)
         return future
 
-    def has_event_listener(self, event_name: str) -> bool:
-        listeners = self._event_listeners.get(event_name)
-        return isinstance(listeners, list) and len(listeners) > 0
+    def clear_event_backlog(self, event_name: str) -> None:
+        self._event_backlog[event_name] = []
 
-    async def wait_for_backlog_event(
-        self,
-        event_name: str,
-        *,
-        predicate: Any = None,
-        timeout: float = 0.25,
-    ) -> Any:
-        def _find_match():
-            for entry in self._event_backlog.get(event_name, []):
-                if predicate is None or predicate(entry):
-                    return entry
+    def clear_all_event_backlog(self) -> None:
+        self._event_backlog.clear()
+
+    def consume_latest_event_backlog(self, event_name: str):
+        backlog = self._event_backlog.get(event_name, [])
+        if not backlog:
             return None
+        latest = backlog[-1]
+        self._event_backlog[event_name] = []
+        return latest
 
-        matched = _find_match()
-        if matched is not None or timeout <= 0:
-            return matched
+    def listen_once(self, event_name: str, *, accept_latest_backlog: bool = False):
+        loop = asyncio.get_running_loop()
+        future = loop.create_future()
 
-        loop = self.event_loop or asyncio.get_event_loop()
-        deadline = loop.time() + timeout
-        while loop.time() < deadline:
-            await asyncio.sleep(0.01)
-            matched = _find_match()
-            if matched is not None:
-                return matched
-        return None
+        if accept_latest_backlog:
+            latest = self.consume_latest_event_backlog(event_name)
+            if latest is not None:
+                future.set_result(latest)
+                return future, (lambda: None)
+
+        # Match WPT expectation: observe events after listener registration.
+        self.clear_event_backlog(event_name)
+
+        remove_ref = None
+
+        async def on_event(_, data):
+            if future.done():
+                return
+            if remove_ref is not None:
+                remove_ref()
+            future.set_result(data)
+
+        remove_ref = self.add_event_listener(event_name, on_event)
+        return future, remove_ref
+
+    def listen_many(self, event_names, handler):
+        remove_listeners = []
+        for event_name in event_names:
+            remove_listener = self.add_event_listener(event_name, handler)
+            remove_listeners.append(remove_listener)
+
+        def remove_all():
+            for remove_listener in remove_listeners:
+                remove_listener()
+            remove_listeners.clear()
+
+        return remove_all
+
+    def collect_events(self, event_names, *, timeout_multiplier: float = 1.0):
+        return _BiDiEventCollector(self, event_names, timeout_multiplier)
 
     def fail_pending_print_requests_for_context(self, context_id: str) -> None:
         if not isinstance(context_id, str) or context_id == "":
@@ -657,12 +682,6 @@ class CraterBidiSession:
 
         return remove
 
-    def pop_event_backlog(self, event_name: str):
-        queue = self._event_backlog.get(event_name, [])
-        if not queue:
-            return None
-        return queue.pop(0)
-
     def latest_navigation_id_for_context(self, context_id: str) -> str | None:
         if not isinstance(context_id, str):
             return None
@@ -679,7 +698,6 @@ class CraterBidiSession:
                 return candidate
         return None
 
-    # Module properties
     @property
     def browsing_context(self):
         if self._browsing_context is None:
@@ -721,6 +739,37 @@ class CraterBidiSession:
         if self._browser is None:
             self._browser = BrowserModule(self)
         return self._browser
+
+
+class _BiDiEventCollector:
+    def __init__(self, session: CraterBidiSession, event_names, timeout_multiplier: float):
+        self._session = session
+        self._event_names = list(event_names)
+        self._timeout_multiplier = timeout_multiplier
+        self._remove_all = None
+        self.events = []
+
+    async def get_events(self, predicate, timeout: float = 2.0):
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + timeout * self._timeout_multiplier
+        while True:
+            if predicate(self.events):
+                return self.events
+            if loop.time() >= deadline:
+                raise AssertionError("Didn't receive expected events")
+            await asyncio.sleep(0.01)
+
+    def __enter__(self):
+        async def on_event(method, data):
+            self.events.append((method, data))
+
+        self._remove_all = self._session.listen_many(self._event_names, on_event)
+        return self
+
+    def __exit__(self, *args):
+        if self._remove_all is not None:
+            self._remove_all()
+            self._remove_all = None
 
 
 class BrowsingContextModule:
@@ -1407,7 +1456,7 @@ async def _trim_contexts_for_test(session: CraterBidiSession):
         await session.session.prepare_baseline_context_for_test()
     except Exception:
         pass
-    session._event_backlog.clear()
+    session.clear_all_event_backlog()
 
 
 @pytest_asyncio.fixture
@@ -1804,28 +1853,10 @@ def wait_for_event(bidi_session):
     remove_listeners = []
 
     def _wait_for_event(event_name: str):
-        loop = asyncio.get_running_loop()
-        future = loop.create_future()
-        if event_name == "browsingContext.userPromptOpened":
-            backlog = bidi_session._event_backlog.get(event_name, [])
-            if backlog:
-                latest = backlog[-1]
-                bidi_session._event_backlog[event_name] = []
-                future.set_result(latest)
-                return future
-        # Drop stale backlog entries. This fixture should observe events
-        # that happen after listener registration, matching WPT behavior.
-        bidi_session._event_backlog[event_name] = []
-
-        async def on_event(_, data):
-            if future.done():
-                return
-            remove_listener()
-            if remove_listener in remove_listeners:
-                remove_listeners.remove(remove_listener)
-            future.set_result(data)
-
-        remove_listener = bidi_session.add_event_listener(event_name, on_event)
+        future, remove_listener = bidi_session.listen_once(
+            event_name,
+            accept_latest_backlog=event_name == "browsingContext.userPromptOpened",
+        )
         remove_listeners.append(remove_listener)
         return future
 
@@ -1838,39 +1869,11 @@ def wait_for_event(bidi_session):
 @pytest.fixture
 def wait_for_events(bidi_session, configuration):
     """Wait for BiDi events until a predicate becomes true."""
-
-    class Waiter:
-        def __init__(self, event_names):
-            self.event_names = event_names
-            self.remove_listeners = []
-            self.events = []
-
-        async def get_events(self, predicate, timeout: float = 2.0):
-            loop = asyncio.get_running_loop()
-            deadline = loop.time() + timeout * configuration["timeout_multiplier"]
-            while True:
-                if predicate(self.events):
-                    return self.events
-                if loop.time() >= deadline:
-                    raise AssertionError("Didn't receive expected events")
-                await asyncio.sleep(0.01)
-
-        def __enter__(self):
-            async def on_event(method, data):
-                self.events.append((method, data))
-
-            for event_name in self.event_names:
-                remove_listener = bidi_session.add_event_listener(event_name, on_event)
-                self.remove_listeners.append(remove_listener)
-
-            return self
-
-        def __exit__(self, *args):
-            for remove_listener in self.remove_listeners:
-                remove_listener()
-
     def _wait_for_events(event_names):
-        return Waiter(event_names)
+        return bidi_session.collect_events(
+            event_names,
+            timeout_multiplier=configuration["timeout_multiplier"],
+        )
 
     yield _wait_for_events
 
@@ -2019,24 +2022,17 @@ def modifier_key():
 @pytest_asyncio.fixture
 async def create_user_context(bidi_session):
     """Create user contexts and clean them up after test."""
-    created = []
+    user_contexts = []
 
     async def _create(**kwargs):
-        result = await bidi_session.browser.create_user_context(**kwargs)
-        if isinstance(result, str):
-            user_context = result
-        elif isinstance(result, Mapping):
-            raw = result.get("userContext")
-            user_context = raw if isinstance(raw, str) else None
-        else:
-            user_context = None
-        if isinstance(user_context, str) and user_context != "default":
-            created.append(user_context)
+        user_context = await bidi_session.browser.create_user_context(**kwargs)
+        if isinstance(user_context, str):
+            user_contexts.append(user_context)
         return user_context
 
     yield _create
 
-    for user_context in reversed(created):
+    for user_context in user_contexts:
         try:
             await bidi_session.browser.remove_user_context(user_context=user_context)
         except Exception:

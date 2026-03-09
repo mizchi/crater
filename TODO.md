@@ -176,6 +176,12 @@
 - [x] `network/set_extra_headers/contexts.py --quick` / `integration --quick` / `strict` で `create_iframe` fixture 移行の回帰確認
 - [x] `input.releaseActions` と synthetic `mousemove` の dispatch を修正して `queue.py::test_parallel_pointer` / `sequence_tentative.py::test_release_mouse_sequence_resets_dblclick_state` を解消
 - [x] `input/release_actions --quick` / `input/perform_actions/wheel --quick` / `input/set_files --quick` / `integration --quick` / `strict` で input 回帰確認
+- [x] `create_user_context` fixture は `BrowserModule.create_user_context()` の raw string 返却に揃え、local unwrap を削除
+- [x] adapter の未使用 backlog helper (`has_event_listener` / `wait_for_backlog_event` / `pop_event_backlog`) を削除
+- [ ] `_event_backlog` 自体は WebSocket transport 層のため Python に残す
+- [x] `wait_for_event` fixture の backlog special case と listener 登録を `CraterBidiSession.listen_once()` に集約
+- [x] `_trim_contexts_for_test` の backlog clear を session helper 経由に整理
+- [x] `wait_for_events` fixture の multi-listener collector を `_BiDiEventCollector` / `listen_many()` に移し、fixture 自体は factory のみに縮小
 
 ### 次の具体タスク
 
