@@ -114,6 +114,7 @@ priv struct BidiProtocol {
   pending_beforeunload_navigation : Map[String, String] // context -> deferred navigation id
   pending_beforeunload_finalize_mode : Map[String, String] // context -> deferred internal navigate/reload mode
   pending_navigation_request : Map[String, Int] // context -> deferred navigate/reload request id
+  pending_navigation_response_mode : Map[String, String] // context -> deferred navigation response kind
   in_flight_navigation_url : Map[String, String] // context -> interruptible navigation URL
   in_flight_navigation_id : Map[String, String] // context -> interruptible navigation id
   in_flight_navigation_started_at : Map[String, Double] // context -> interruptible navigation start timestamp
@@ -221,6 +222,7 @@ fn BidiProtocol::new() -> BidiProtocol {
     pending_beforeunload_navigation: {},
     pending_beforeunload_finalize_mode: {},
     pending_navigation_request: {},
+    pending_navigation_response_mode: {},
     in_flight_navigation_url: {},
     in_flight_navigation_id: {},
     in_flight_navigation_started_at: {},
@@ -1204,6 +1206,10 @@ fn BidiProtocol::dispatch_browsing_context(
         request.id,
         request.params,
       )
+      Ok(())
+    }
+    "createContextId" => {
+      self.handle_browsing_context_create_context_id(request.id, request.params)
       Ok(())
     }
     "getContextScopeInfo" => {
@@ -2275,6 +2281,18 @@ fn BidiProtocol::handle_browsing_context_create_and_get_info_value(
 }
 
 ///|
+fn BidiProtocol::handle_browsing_context_create_context_id(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match self.create_top_level_context_from_params(request_id, params) {
+    Some(ctx_id) => self.send_success(request_id, Some(Json::string(ctx_id)))
+    None => ()
+  }
+}
+
+///|
 fn BidiProtocol::create_top_level_context_from_params(
   self : BidiProtocol,
   request_id : Int,
@@ -2520,12 +2538,53 @@ fn BidiProtocol::send_navigation_state_result(
   navigation_id : String,
   result : Json,
 ) -> Unit {
+  self.send_navigation_result_with_mode(
+    request_id, ctx_id, requested_url, result_url, navigation_id, result, "state",
+  )
+}
+
+///|
+fn BidiProtocol::send_navigation_url_result(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  requested_url : String,
+  result_url : String,
+  navigation_id : String,
+) -> Unit {
+  self.send_navigation_result_with_mode(
+    request_id,
+    ctx_id,
+    requested_url,
+    result_url,
+    navigation_id,
+    Json::string(result_url),
+    "url",
+  )
+}
+
+///|
+fn BidiProtocol::send_navigation_result_with_mode(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  requested_url : String,
+  result_url : String,
+  navigation_id : String,
+  result : Json,
+  response_mode : String,
+) -> Unit {
   let _ = self.emit_synthetic_navigation_request_sequence(
     ctx_id,
     requested_url,
     Some(navigation_id),
   )
   if self.has_network_blocked_navigation_request(ctx_id, Some(navigation_id)) {
+    if response_mode == "url" {
+      self.pending_navigation_response_mode[ctx_id] = "url"
+    } else {
+      self.pending_navigation_response_mode.remove(ctx_id)
+    }
     self.register_in_flight_navigation(
       ctx_id,
       result_url,
@@ -2533,6 +2592,7 @@ fn BidiProtocol::send_navigation_state_result(
       Some(request_id),
     )
   } else {
+    self.pending_navigation_response_mode.remove(ctx_id)
     self.send_success(request_id, Some(result))
   }
 }
@@ -5591,6 +5651,38 @@ fn BidiProtocol::handle_script_create_iframe_context_for_test(
   request_id : Int,
   params : Json?,
 ) -> Unit {
+  match self.resolve_script_create_iframe_context_result(request_id, params) {
+    Some(result) => self.send_success(request_id, Some(result))
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::handle_script_create_iframe_context_id_for_test(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match self.resolve_script_create_iframe_context_result(request_id, params) {
+    Some(result) =>
+      match get_string_field(result, "context") {
+        Some(ctx_id) =>
+          self.send_success(request_id, Some(Json::string(ctx_id)))
+        None =>
+          self.send_error(
+            request_id, "unknown error", "Failed to create iframe context",
+          )
+      }
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::resolve_script_create_iframe_context_result(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Json? {
   match self.resolve_script_create_iframe_context_for_test(request_id, params) {
     Some((parent_context, url)) => {
       let user_context_id = self.context_user_context
@@ -5621,9 +5713,9 @@ fn BidiProtocol::handle_script_create_iframe_context_for_test(
             parent_context, url, user_context_id,
           )
       }
-      self.send_success(request_id, Some(result))
+      Some(result)
     }
-    None => ()
+    None => None
   }
 }
 
@@ -5820,6 +5912,29 @@ fn BidiProtocol::handle_script_prepare_beforeunload_page_for_test(
   request_id : Int,
   params : Json?,
 ) -> Unit {
+  self.handle_script_prepare_beforeunload_page_for_test_internal(
+    request_id, params, false,
+  )
+}
+
+///|
+fn BidiProtocol::handle_script_prepare_beforeunload_page_url_for_test(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  self.handle_script_prepare_beforeunload_page_for_test_internal(
+    request_id, params, true,
+  )
+}
+
+///|
+fn BidiProtocol::handle_script_prepare_beforeunload_page_for_test_internal(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+  return_url_only : Bool,
+) -> Unit {
   match
     self.resolve_script_prepare_beforeunload_page_for_test(request_id, params) {
     Some((ctx_id, requested_url)) => {
@@ -5875,14 +5990,25 @@ fn BidiProtocol::handle_script_prepare_beforeunload_page_for_test(
                   ctx_id,
                   js_beforeunload_page_setup_source(),
                 )
-                let result = make_object({
-                  "navigation": Json::string(nav_id),
-                  "url": Json::string(resolved_url),
-                })
-                self.send_navigation_state_result(
-                  request_id, ctx_id, requested_url, resolved_url, nav_id, result,
-                )
+                if return_url_only {
+                  self.send_navigation_url_result(
+                    request_id, ctx_id, requested_url, resolved_url, nav_id,
+                  )
+                } else {
+                  let result = make_object({
+                    "navigation": Json::string(nav_id),
+                    "url": Json::string(resolved_url),
+                  })
+                  self.send_navigation_state_result(
+                    request_id, ctx_id, requested_url, resolved_url, nav_id, result,
+                  )
+                }
                 return
+              }
+              if return_url_only {
+                self.pending_navigation_response_mode[ctx_id] = "url"
+              } else {
+                self.pending_navigation_response_mode.remove(ctx_id)
               }
               let completion = self.build_navigation_completion(
                 request_id,
@@ -5898,14 +6024,19 @@ fn BidiProtocol::handle_script_prepare_beforeunload_page_for_test(
               if completion.deferred_response {
                 return
               }
-              self.send_navigation_state_result(
-                request_id,
-                ctx_id,
-                requested_url,
-                resolved_url,
-                completion.navigation_id,
-                completion.result,
-              )
+              self.pending_navigation_response_mode.remove(ctx_id)
+              if return_url_only {
+                self.send_success(request_id, Some(Json::string(resolved_url)))
+              } else {
+                self.send_navigation_state_result(
+                  request_id,
+                  ctx_id,
+                  requested_url,
+                  resolved_url,
+                  completion.navigation_id,
+                  completion.result,
+                )
+              }
             }
             Err(e) => {
               let nav_id = self.next_navigation_id.to_string()
@@ -7454,6 +7585,13 @@ fn BidiProtocol::dispatch_script(
       )
       Ok(())
     }
+    "createIframeContextIdForTest" => {
+      self.handle_script_create_iframe_context_id_for_test(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
     "prepareLoadedStaticTestPage" => {
       self.handle_script_prepare_loaded_static_test_page(
         request.id,
@@ -7470,6 +7608,13 @@ fn BidiProtocol::dispatch_script(
     }
     "prepareBeforeunloadPageForTest" => {
       self.handle_script_prepare_beforeunload_page_for_test(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
+    "prepareBeforeunloadPageUrlForTest" => {
+      self.handle_script_prepare_beforeunload_page_url_for_test(
         request.id,
         request.params,
       )
@@ -8037,6 +8182,7 @@ fn BidiProtocol::handle_script_call_function(
       ctx_id_call,
       realm_id_call,
       func,
+      unwrap_result,
     ) {
     return
   }
@@ -13884,33 +14030,32 @@ fn BidiProtocol::try_handle_synthetic_document_status_call(
   ctx_id : String,
   realm_id : String,
   function_declaration : String,
+  unwrap_result : Bool,
 ) -> Bool {
   if function_declaration.contains("document.visibilityState") {
-    let state = if self.is_context_visible(ctx_id) {
-      "visible"
-    } else {
-      "hidden"
-    }
-    let result = make_object({
-      "realm": Json::string(realm_id),
-      "result": make_object({
-        "type": Json::string("string"),
-        "value": Json::string(state),
-      }),
+    let remote_value = make_object({
+      "type": Json::string("string"),
+      "value": Json::string(
+        if self.is_context_visible(ctx_id) {
+          "visible"
+        } else {
+          "hidden"
+        },
+      ),
     })
-    self.send_success(request_id, Some(result))
+    self.send_script_remote_value_response(
+      request_id, realm_id, remote_value, unwrap_result,
+    )
     return true
   }
   if function_declaration.contains("document.hasFocus()") {
-    let focused = self.is_context_active(ctx_id)
-    let result = make_object({
-      "realm": Json::string(realm_id),
-      "result": make_object({
-        "type": Json::string("boolean"),
-        "value": Json::boolean(focused),
-      }),
+    let remote_value = make_object({
+      "type": Json::string("boolean"),
+      "value": Json::boolean(self.is_context_active(ctx_id)),
     })
-    self.send_success(request_id, Some(result))
+    self.send_script_remote_value_response(
+      request_id, realm_id, remote_value, unwrap_result,
+    )
     return true
   }
   false
@@ -14049,6 +14194,7 @@ fn BidiProtocol::clear_pending_navigation_state(
   ctx_id : String,
 ) -> Unit {
   self.pending_navigation_request.remove(ctx_id)
+  self.pending_navigation_response_mode.remove(ctx_id)
   self.in_flight_navigation_url.remove(ctx_id)
   self.in_flight_navigation_id.remove(ctx_id)
   self.in_flight_navigation_started_at.remove(ctx_id)
@@ -14099,15 +14245,20 @@ fn BidiProtocol::flush_expired_pending_navigation_requests(
         let url = self.in_flight_navigation_url
           .get(ctx_id)
           .unwrap_or("about:blank")
-        self.send_success(
-          request_id,
-          Some(
-            make_object({
-              "navigation": Json::string(nav_id),
-              "url": Json::string(url),
-            }),
-          ),
-        )
+        if self.pending_navigation_response_mode.get(ctx_id).unwrap_or("state") ==
+          "url" {
+          self.send_success(request_id, Some(Json::string(url)))
+        } else {
+          self.send_success(
+            request_id,
+            Some(
+              make_object({
+                "navigation": Json::string(nav_id),
+                "url": Json::string(url),
+              }),
+            ),
+          )
+        }
       }
       None => ()
     }
@@ -15815,15 +15966,20 @@ fn BidiProtocol::complete_pending_navigation_response(
   }
   match self.pending_navigation_request.get(ctx_id) {
     Some(request_id) =>
-      self.send_success(
-        request_id,
-        Some(
-          make_object({
-            "navigation": Json::string(resolved_navigation_id),
-            "url": Json::string(resolved_url),
-          }),
-        ),
-      )
+      if self.pending_navigation_response_mode.get(ctx_id).unwrap_or("state") ==
+        "url" {
+        self.send_success(request_id, Some(Json::string(resolved_url)))
+      } else {
+        self.send_success(
+          request_id,
+          Some(
+            make_object({
+              "navigation": Json::string(resolved_navigation_id),
+              "url": Json::string(resolved_url),
+            }),
+          ),
+        )
+      }
     None => ()
   }
   self.clear_pending_navigation_state(ctx_id)

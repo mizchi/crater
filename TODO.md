@@ -125,6 +125,7 @@
 - [x] `browsing_context/{get_tree,context_created} --quick` / `script/get_realms --quick` / `integration --quick` / `strict` で fixture glue 移行の回帰確認
 - [x] `browsingContext.create` の snake_case alias を protocol 側で受理して adapter の camelCase 変換を削除
 - [x] `script.addPreloadScript / getRealms` を raw forwarding に寄せ、`browsing_context/create --quick` / `script/{add_preload_script,get_realms} --quick` / `integration --quick` / `strict` で回帰確認
+- [x] `browsingContext.createContextId` を追加して `add_and_remove_iframe` fixture の `context` unwrap を MoonBit 側へ移行
 - [x] `session.subscribe / unsubscribe` と `script.evaluate / callFunction` の snake_case alias を protocol 側で受理して adapter の camelCase 変換を削除
 - [x] `session/{subscribe,unsubscribe} --quick` / `script/{evaluate,call_function} --quick` / `integration --quick` / `strict` で alias 移行の回帰確認
 - [x] `browsing_context/set_viewport --quick` / `network/set_extra_headers --quick` / `browser/set_download_behavior --quick` / `integration --quick` / `strict` で `user_contexts` alias 移行の回帰確認
@@ -170,6 +171,7 @@
 - [x] `input/{perform_actions/wheel,release_actions,set_files} --quick` / `integration --quick` / `strict` で `load_static_test_page` 1-command 化の回帰確認
 - [x] `script.setupBeforeunloadPageForTest` を追加して `setup_beforeunload_page` fixture の input focus/value/input event 設定を MoonBit 側へ移行
 - [x] `browsing_context/{close/prompt_unload.py,navigate/navigate_beforeunload.py} --quick` / `integration --quick` / `strict` で `beforeunload` setup 移行の回帰確認
+- [x] `script.prepareBeforeunloadPageUrlForTest` を追加して `setup_beforeunload_page` fixture の `url` unwrap を MoonBit 側へ移行
 - [x] `script.syncDocumentCookiesForTest` / `script.fetchFromContextForTest` を追加して `fetch` fixture の `document.cookie` snapshot と page-side `fetch()` 実行を MoonBit command に移行
 - [x] `network/{fetch_error/fetch_error.py,provide_response/cookies.py} --quick` / `integration --quick` / `strict` で `fetch` fixture 移行の回帰確認
 - [x] `script.createIframeContextForTest` を追加して `create_iframe` fixture の JS/fallback glue を MoonBit 側へ移行
@@ -220,10 +222,12 @@
   - requested navigation URL / context cookie scope / userContext existence は query command 化済み
   - `network` の dead helper と一部 local validation は削除済み
   - `create_iframe` fixture の JS/fallback glue は `script.createIframeContextForTest` に移行済み
+  - `create_iframe` fixture の `context` unwrap は `script.createIframeContextIdForTest` に移行済み
   - `load_static_test_page` の `test_actions*` page-specific setup は `script.prepareLoadedStaticTestPage(phase=\"pageSpecific\")` に移行済み
   - `load_static_test_page` の inline `<script>` eval loop は `script.prepareLoadedStaticTestPage(phase=\"inlineScripts\")` に移行済み
   - `load_static_test_page` の HTML regex / multi-phase loop は `script.prepareLoadedStaticTestPage(html=...)` に集約済み
   - `setup_beforeunload_page` の navigate + setup は `script.prepareBeforeunloadPageForTest` に移行済み
+  - `setup_beforeunload_page` の `url` unwrap は `script.prepareBeforeunloadPageUrlForTest` に移行済み
   - `fetch` fixture の cookie snapshot / page-side fetch 実行は `script.fetchForTest` に集約済み
   - `setup_network_test` の baseline context navigation は `network.prepareContextForTest` に移行済み
 - [ ] adapter を `pytest` fixture と最小限の WPT glue のみに縮小する
@@ -238,8 +242,27 @@
   - `provideResponse` の body override は MoonBit 側へ移行済み
   - `get_element` / `fetch` / `setup_network_test` は MoonBit command ベースに整理済み
   - `get_element` の Python 側 `sharedId` normalize は削除済み
-  - 現在の `scripts/crater_bidi_adapter.py` は `2284` 行
+  - 現在の `scripts/crater_bidi_adapter.py` は `2300` 行
   - 残りは `browsingContext` / `session` / `script` 周辺の fixture glue と module proxy の整理
+
+### 2026-03-09 の詳細計画
+
+- [x] Step 1: `browsing_context/create` クラスターを先に潰す
+  - [x] `document.visibilityState` / `document.hasFocus()` の synthetic `script.callFunctionResult` unwrap を MoonBit 側で修正する
+  - [x] wbtest を追加して raw remote value 契約を固定する
+  - [x] `browsing_context/create --quick` を `34/46 -> 46/46` に戻す
+  - [x] `--profile strict` を直列で再実行して回帰がないことを確認する
+- [ ] Step 2: `browsingContext.create` の残差分を再分類する
+  - [ ] `visibilityState / hasFocus`
+  - [ ] `background` 時の active context 切替
+  - [ ] `reference_context / user_context / opener` の整合
+- [ ] Step 3: `BrowsingContextModule / SessionModule / ScriptModule` の残り wrapper を削る
+  - [ ] result unwrap が残っている helper を MoonBit command 化する
+  - [ ] fixture ごとの page-side JS を MoonBit command に集約する
+  - [ ] `scripts/crater_bidi_adapter.py` を `2300` 行からさらに縮める
+- [ ] Step 4: Python に残す層を固定する
+  - [ ] `CraterBidiSession` と event backlog は transport / pytest plugin core として残す
+  - [ ] transport 層以外で `.py` に残っている実装責務を TODO から洗い出して消していく
 
 ## WPT サポート状況（2026-03-03）
 

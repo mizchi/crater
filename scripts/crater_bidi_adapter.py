@@ -725,6 +725,12 @@ class BrowsingContextModule:
         )
         return await future
 
+    async def create_context_id(self, type_hint=_UNSET, **kwargs):
+        params = dict(kwargs)
+        if type_hint is not _UNSET and "type" not in params and "type_hint" not in params:
+            params["type_hint"] = type_hint
+        return await self._session.command("browsingContext.createContextId", params)
+
     async def create_and_get_info(self, **params):
         future = await self._session.send_command(
             "browsingContext.createAndGetInfo", params
@@ -1005,6 +1011,12 @@ class ScriptModule:
         )
         return await future
 
+    async def create_iframe_context_id_for_test(self, context: str, url: str):
+        return await self._session.command(
+            "script.createIframeContextIdForTest",
+            {"context": context, "url": url},
+        )
+
     async def setup_beforeunload_page_for_test(self, context: str):
         future = await self._session.send_command(
             "script.setupBeforeunloadPageForTest",
@@ -1021,6 +1033,15 @@ class ScriptModule:
             params,
         )
         return await future
+
+    async def prepare_beforeunload_page_url_for_test(self, context: str, url: str | None = None):
+        params: dict[str, Any] = {"context": context}
+        if isinstance(url, str):
+            params["url"] = url
+        return await self._session.command(
+            "script.prepareBeforeunloadPageUrlForTest",
+            params,
+        )
 
     async def fetch_for_test(
         self,
@@ -1538,14 +1559,11 @@ def create_iframe(bidi_session):
     async def _create_iframe(context, url):
         parent_context = context.get("context") if isinstance(context, Mapping) else context
         if isinstance(parent_context, str):
-            created = await bidi_session.script.create_iframe_context_for_test(
+            return await bidi_session.script.create_iframe_context_id_for_test(
                 parent_context,
                 url,
             )
-        else:
-            created = {}
-        iframe_context = created.get("context") if isinstance(created, Mapping) else None
-        return iframe_context
+        return None
 
     return _create_iframe
 
@@ -1555,8 +1573,7 @@ async def add_and_remove_iframe(bidi_session):
     """Return an id that behaves like a removed frame context for negative tests."""
 
     async def _add_and_remove_iframe(_top_context):
-        created = await bidi_session.browsing_context.create(type_hint="tab")
-        frame_id = created.get("context")
+        frame_id = await bidi_session.browsing_context.create_context_id(type_hint="tab")
         if isinstance(frame_id, str):
             try:
                 await bidi_session.browsing_context.close(context=frame_id)
@@ -1923,10 +1940,9 @@ async def setup_beforeunload_page(bidi_session):
     """Navigate to beforeunload test page and mark it as user-interacted."""
 
     async def _setup_beforeunload_page(context):
-        result = await bidi_session.script.prepare_beforeunload_page_for_test(
+        page_url = await bidi_session.script.prepare_beforeunload_page_url_for_test(
             context["context"],
         )
-        page_url = result.get("url") if isinstance(result, Mapping) else None
         if isinstance(page_url, str):
             return page_url
         return "http://localhost:8000/webdriver/tests/support/html/beforeunload.html"

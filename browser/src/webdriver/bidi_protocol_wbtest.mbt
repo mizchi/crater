@@ -252,6 +252,23 @@ test "bidi browsingContext createAndGetInfoValue returns raw created context ent
 }
 
 ///|
+test "bidi browsingContext createContextId returns raw created context id" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.createContextId\",\"params\":{\"type\":\"tab\"}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":\"session-2\""))
+  assert_false(json.contains("\"url\":\"about:blank\""))
+}
+
+///|
 test "bidi browsingContext createAndGetInfo accepts snake_case aliases" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -912,6 +929,26 @@ test "bidi script prepareBeforeunloadPageForTest navigates and sets up page" {
 }
 
 ///|
+test "bidi script prepareBeforeunloadPageUrlForTest returns raw url string" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.prepareBeforeunloadPageUrlForTest\",\"params\":{\"context\":\"session-1\"}}",
+  )
+  let prepare_json = proto.take_messages()[0].to_json()
+  assert_true(prepare_json.contains("\"type\":\"success\""))
+  assert_true(
+    prepare_json.contains(
+      "\"result\":\"http://localhost:8000/webdriver/tests/support/html/beforeunload.html\"",
+    ),
+  )
+  assert_false(prepare_json.contains("\"navigation\""))
+}
+
+///|
 test "bidi script prepareLoadedStaticTestPage pageSpecific styles actions fixture" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -983,6 +1020,22 @@ test "bidi script createIframeContextForTest returns child context" {
   assert_true(json.contains("\"type\":\"success\""))
   assert_true(json.contains("\"context\":\"session-"))
   assert_true(json.contains("\"parentContext\":\"session-1\""))
+}
+
+///|
+test "bidi script createIframeContextIdForTest returns raw child context id" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.createIframeContextIdForTest\",\"params\":{\"context\":\"session-1\",\"url\":\"about:blank\"}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":\"session-"))
+  assert_false(json.contains("\"parentContext\""))
 }
 
 ///|
@@ -2506,5 +2559,41 @@ test "bidi script callFunctionResult unwraps synthetic scroll fallback result" {
   let json = proto.take_messages()[0].to_json()
   assert_true(json.contains("\"type\":\"success\""))
   assert_true(json.contains("\"result\":{\"type\":\"node\""))
+  assert_false(json.contains("\"realm\""))
+}
+
+///|
+test "bidi script callFunctionResult unwraps synthetic document visibilityState" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.callFunctionResult\",\"params\":{\"function_declaration\":\"() => document.visibilityState\",\"target\":{\"context\":\"session-1\"},\"await_promise\":false}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(
+    json.contains("\"result\":{\"type\":\"string\",\"value\":\"visible\"}"),
+  )
+  assert_false(json.contains("\"realm\""))
+}
+
+///|
+test "bidi script callFunctionResult unwraps synthetic document focus state" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.callFunctionResult\",\"params\":{\"function_declaration\":\"() => document.hasFocus()\",\"target\":{\"context\":\"session-1\"},\"await_promise\":false}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":{\"type\":\"boolean\",\"value\":true}"))
   assert_false(json.contains("\"realm\""))
 }
