@@ -5348,6 +5348,15 @@ fn BidiProtocol::resolve_script_prepare_loaded_static_test_page(
     _ => "all"
   }
   let scripts : Array[String] = []
+  let mut html : String? = None
+  match map.get("html") {
+    Some(String(value)) => html = Some(value)
+    Some(_) => {
+      self.send_error(request_id, "invalid argument", "html must be a string")
+      return None
+    }
+    None => ()
+  }
   match map.get("scripts") {
     Some(Array(raw_scripts)) =>
       for raw_script in raw_scripts {
@@ -5368,6 +5377,15 @@ fn BidiProtocol::resolve_script_prepare_loaded_static_test_page(
       return None
     }
     None => ()
+  }
+  if scripts.length() == 0 && (phase == "all" || phase == "inlineScripts") {
+    match html {
+      Some(content) =>
+        for script in extract_inline_script_blocks(content) {
+          scripts.push(script)
+        }
+      None => ()
+    }
   }
   Some((ctx_id, page, phase, scripts))
 }
@@ -12804,6 +12822,28 @@ extern "js" fn js_json_ensure_ascii(value : String) -> String =
   #| }
 
 ///|
+extern "js" fn js_extract_inline_script_blocks(html : String) -> Array[String] =
+  #| (html) => {
+  #|   if (typeof html !== "string" || html === "") {
+  #|     return [];
+  #|   }
+  #|   const result = [];
+  #|   const pattern = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+  #|   let match;
+  #|   while ((match = pattern.exec(html)) !== null) {
+  #|     const attrs = match[1] || "";
+  #|     if (/\bsrc\s*=/.test(attrs)) {
+  #|       continue;
+  #|     }
+  #|     const script = (match[2] || "").trim();
+  #|     if (script !== "") {
+  #|       result.push(script);
+  #|     }
+  #|   }
+  #|   return result;
+  #| }
+
+///|
 fn encode_base64_utf8(value : String) -> String {
   js_encode_base64_utf8(value)
 }
@@ -12811,6 +12851,11 @@ fn encode_base64_utf8(value : String) -> String {
 ///|
 fn json_ensure_ascii(value : String) -> String {
   js_json_ensure_ascii(value)
+}
+
+///|
+fn extract_inline_script_blocks(html : String) -> Array[String] {
+  js_extract_inline_script_blocks(html)
 }
 
 ///|

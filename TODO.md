@@ -166,6 +166,8 @@
 - [x] `input/{perform_actions/wheel,release_actions,set_files} --quick` / `network/set_extra_headers/contexts.py --quick` / `integration --quick` / `strict` で `test_actions*` page-specific 移行の回帰確認
 - [x] `script.prepareLoadedStaticTestPage` の `inlineScripts` phase を追加して `load_static_test_page` fixture の inline `<script>` eval loop を MoonBit 側へ移行
 - [x] `input/{perform_actions/wheel,release_actions,set_files} --quick` / `integration --quick` / `strict` で `inlineScripts` 移行の回帰確認
+- [x] `script.prepareLoadedStaticTestPage(html=...)` で `load_static_test_page` fixture の HTML regex / multi-phase loop を 1 command に集約
+- [x] `input/{perform_actions/wheel,release_actions,set_files} --quick` / `integration --quick` / `strict` で `load_static_test_page` 1-command 化の回帰確認
 - [x] `script.setupBeforeunloadPageForTest` を追加して `setup_beforeunload_page` fixture の input focus/value/input event 設定を MoonBit 側へ移行
 - [x] `browsing_context/{close/prompt_unload.py,navigate/navigate_beforeunload.py} --quick` / `integration --quick` / `strict` で `beforeunload` setup 移行の回帰確認
 - [x] `script.syncDocumentCookiesForTest` / `script.fetchFromContextForTest` を追加して `fetch` fixture の `document.cookie` snapshot と page-side `fetch()` 実行を MoonBit command に移行
@@ -196,6 +198,7 @@
   - `create_iframe` fixture の JS/fallback glue は `script.createIframeContextForTest` に移行済み
   - `load_static_test_page` の `test_actions*` page-specific setup は `script.prepareLoadedStaticTestPage(phase=\"pageSpecific\")` に移行済み
   - `load_static_test_page` の inline `<script>` eval loop は `script.prepareLoadedStaticTestPage(phase=\"inlineScripts\")` に移行済み
+  - `load_static_test_page` の HTML regex / multi-phase loop は `script.prepareLoadedStaticTestPage(html=...)` に集約済み
   - `setup_beforeunload_page` は `script.setupBeforeunloadPageForTest` に移行済み
   - `fetch` fixture の cookie snapshot / page-side fetch 実行は `script.syncDocumentCookiesForTest` / `script.fetchFromContextForTest` に移行済み
 - [ ] adapter を `pytest` fixture と最小限の WPT glue のみに縮小する

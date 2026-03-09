@@ -972,10 +972,13 @@ class ScriptModule:
         page: str,
         phase: str = "all",
         scripts: list[str] | None = None,
+        html: str | None = None,
     ):
         params = {"context": context, "page": page, "phase": phase}
         if scripts is not None:
             params["scripts"] = scripts
+        if isinstance(html, str):
+            params["html"] = html
         future = await self._session.send_command(
             "script.prepareLoadedStaticTestPage",
             params,
@@ -1950,36 +1953,10 @@ async def load_static_test_page(bidi_session, top_context, inline):
         if "allEvents" not in content:
             return
 
-        script_blocks = []
-        for match in re.finditer(r"<script\\b([^>]*)>(.*?)</script>", content, re.IGNORECASE | re.DOTALL):
-            attrs = match.group(1) or ""
-            if re.search(r"\\bsrc\\s*=", attrs, re.IGNORECASE):
-                continue
-            script = (match.group(2) or "").strip()
-            if script:
-                script_blocks.append(script)
-
-        if script_blocks:
-            await bidi_session.script.prepare_loaded_static_test_page(
-                context["context"],
-                page,
-                phase="inlineScripts",
-                scripts=script_blocks,
-            )
         await bidi_session.script.prepare_loaded_static_test_page(
             context["context"],
             page,
-            phase="beforePageSpecific",
-        )
-        await bidi_session.script.prepare_loaded_static_test_page(
-            context["context"],
-            page,
-            phase="pageSpecific",
-        )
-        await bidi_session.script.prepare_loaded_static_test_page(
-            context["context"],
-            page,
-            phase="afterPageSpecific",
+            html=content,
         )
 
     return _load_static_test_page
