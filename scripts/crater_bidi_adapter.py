@@ -608,6 +608,11 @@ class BrowsingContextModule:
     def __init__(self, session: CraterBidiSession):
         self._session = session
 
+    def _require_context_info(self, value: Any, source: str):
+        if isinstance(value, Mapping) and isinstance(value.get("context"), str):
+            return value
+        raise bidi_error.UnknownErrorException(f"{source} returned invalid context info")
+
     async def create(self, type_hint=_UNSET, **kwargs):
         params = dict(kwargs)
         if type_hint is not _UNSET and "type" not in params and "type_hint" not in params:
@@ -628,6 +633,13 @@ class BrowsingContextModule:
             "browsingContext.createAndGetInfoValue", params
         )
         return await future
+
+    async def create_and_get_info_required(self, **params):
+        result = await self.create_and_get_info_value(**params)
+        return self._require_context_info(
+            result,
+            "browsingContext.createAndGetInfoValue",
+        )
 
     async def navigate(self, context: str, url: str, wait: str = "none"):
         future = await self._session.send_command(
@@ -758,6 +770,11 @@ class SessionModule:
     def __init__(self, session: CraterBidiSession):
         self._session = session
 
+    def _require_context_info(self, value: Any, source: str):
+        if isinstance(value, Mapping) and isinstance(value.get("context"), str):
+            return value
+        raise bidi_error.UnknownErrorException(f"{source} returned invalid context info")
+
     async def status(self):
         future = await self._session.send_command("session.status", {})
         return await future
@@ -771,6 +788,13 @@ class SessionModule:
             "session.getBaselineContextInfoValueForTest", {}
         )
         return await future
+
+    async def require_baseline_context_info_value_for_test(self):
+        result = await self.get_baseline_context_info_value_for_test()
+        return self._require_context_info(
+            result,
+            "session.getBaselineContextInfoValueForTest",
+        )
 
     async def subscribe(self, events: list, contexts: list = None, user_contexts: list = None):
         params = {"events": events}
@@ -1297,26 +1321,19 @@ async def _trim_contexts_for_test(session: CraterBidiSession):
 @pytest_asyncio.fixture
 async def top_context(bidi_session):
     """Get the top-level browsing context."""
-    result = await bidi_session.session.get_baseline_context_info_value_for_test()
-    if isinstance(result, Mapping):
-        return result
-    return {"context": None, "url": "about:blank"}
+    return await bidi_session.session.require_baseline_context_info_value_for_test()
 
 
 @pytest_asyncio.fixture
 async def new_tab(bidi_session):
     """Open and focus a new tab."""
-    context_info = await bidi_session.browsing_context.create_and_get_info_value(type="tab")
-    if isinstance(context_info, Mapping):
-        context_id = context_info.get("context")
-        yielded = context_info
-    else:
-        context_id = None
-        yielded = {"context": None, "url": "about:blank"}
-    yield yielded
+    context_info = await bidi_session.browsing_context.create_and_get_info_required(
+        type="tab"
+    )
+    context_id = context_info["context"]
+    yield context_info
     try:
-        if isinstance(context_id, str):
-            await bidi_session.browsing_context.close(context=context_id)
+        await bidi_session.browsing_context.close(context=context_id)
     except Exception:
         pass
 
@@ -1830,44 +1847,42 @@ def test_page(inline):
     return inline("<div>foo</div>")
 
 
-@pytest.fixture
-def get_test_page(iframe, inline, url):
-    """Generate a node-rich page compatible with BiDi script node tests."""
+def _resolve_node_test_page_url(url, kwargs) -> str | None:
+    protocol = kwargs.get("protocol")
+    if not isinstance(protocol, str) or protocol not in {"http", "https"}:
+        return None
+    domain = kwargs.get("domain", "")
+    subdomain = kwargs.get("subdomain", "")
+    return url(
+        "/webdriver/tests/support/empty.html",
+        domain=domain if isinstance(domain, str) else "",
+        protocol=protocol,
+        subdomain=subdomain if isinstance(subdomain, str) else "",
+    )
 
-    def _get_test_page(
-        as_frame: bool = False,
-        frame_doc: str = None,
-        shadow_doc: str = None,
-        nested_shadow_dom: bool = False,
-        shadow_root_mode: str = "open",
-        **kwargs,
-    ):
-        frame_doc_provided = frame_doc is not None
-        shadow_doc_provided = shadow_doc is not None
-        if frame_doc is None:
-            # Defaulting to an iframe breaks many tests on the current mock DOM
-            # parser/runtime where iframe document loading is not fully isolated.
-            # Keep top-level node-rich markup as the default surface.
-            frame_doc = ""
 
-        if shadow_doc is None:
-            shadow_doc = """<div id="in-shadow-dom"><input type="checkbox"/></div>"""
+def _prepare_node_test_page_docs(
+    frame_doc,
+    shadow_doc,
+    nested_shadow_dom: bool,
+    shadow_root_mode: str,
+    *,
+    frame_doc_provided: bool,
+    shadow_doc_provided: bool,
+):
+    if frame_doc is None:
+        # Defaulting to an iframe breaks many tests on the current mock DOM
+        # parser/runtime where iframe document loading is not fully isolated.
+        # Keep top-level node-rich markup as the default surface.
+        frame_doc = ""
 
-        protocol = kwargs.get("protocol")
-        if isinstance(protocol, str) and protocol in {"http", "https"}:
-            domain = kwargs.get("domain", "")
-            subdomain = kwargs.get("subdomain", "")
-            return url(
-                "/webdriver/tests/support/empty.html",
-                domain=domain if isinstance(domain, str) else "",
-                protocol=protocol,
-                subdomain=subdomain if isinstance(subdomain, str) else "",
-            )
+    if shadow_doc is None:
+        shadow_doc = """<div id="in-shadow-dom"><input type="checkbox"/></div>"""
 
-        definition_inner_shadow_dom = ""
-        inner_shadow_doc = shadow_doc
-        if nested_shadow_dom:
-            definition_inner_shadow_dom = f"""
+    definition_inner_shadow_dom = ""
+    inner_shadow_doc = shadow_doc
+    if nested_shadow_dom:
+        definition_inner_shadow_dom = f"""
                 if (!customElements.get("inner-custom-element")) {{
                     customElements.define("inner-custom-element",
                         class extends HTMLElement {{
@@ -1881,7 +1896,7 @@ def get_test_page(iframe, inline, url):
                     );
                 }}
             """
-            shadow_doc = """
+        shadow_doc = """
                 <style>
                     inner-custom-element {
                         display:block; width:20px; height:20px;
@@ -1892,14 +1907,29 @@ def get_test_page(iframe, inline, url):
                 </div>
             """
 
-        # Shadow-focused tests don't need the default iframe subtree and it can
-        # interfere with runtime context swapping in the mock environment.
-        if shadow_doc_provided and not frame_doc_provided:
-            frame_doc = ""
+    # Shadow-focused tests don't need the default iframe subtree and it can
+    # interfere with runtime context swapping in the mock environment.
+    if shadow_doc_provided and not frame_doc_provided:
+        frame_doc = ""
 
-        frame_markup = iframe(frame_doc, **kwargs) if frame_doc else ""
+    return (
+        frame_doc,
+        shadow_doc,
+        inner_shadow_doc,
+        definition_inner_shadow_dom,
+    )
 
-        page_data = f"""
+
+def _build_node_test_page_markup(
+    *,
+    frame_markup: str,
+    shadow_doc: str,
+    inner_shadow_doc: str,
+    definition_inner_shadow_dom: str,
+    nested_shadow_dom: bool,
+    shadow_root_mode: str,
+) -> str:
+    return f"""
             <style>
                 custom-element {{
                     display:block; width:20px; height:20px;
@@ -2018,6 +2048,49 @@ def get_test_page(iframe, inline, url):
                 }}
             </script>
         """
+
+
+@pytest.fixture
+def get_test_page(iframe, inline, url):
+    """Generate a node-rich page compatible with BiDi script node tests."""
+
+    def _get_test_page(
+        as_frame: bool = False,
+        frame_doc: str = None,
+        shadow_doc: str = None,
+        nested_shadow_dom: bool = False,
+        shadow_root_mode: str = "open",
+        **kwargs,
+    ):
+        frame_doc_provided = frame_doc is not None
+        shadow_doc_provided = shadow_doc is not None
+        test_url = _resolve_node_test_page_url(url, kwargs)
+        if isinstance(test_url, str):
+            return test_url
+
+        (
+            frame_doc,
+            shadow_doc,
+            inner_shadow_doc,
+            definition_inner_shadow_dom,
+        ) = _prepare_node_test_page_docs(
+            frame_doc,
+            shadow_doc,
+            nested_shadow_dom,
+            shadow_root_mode,
+            frame_doc_provided=frame_doc_provided,
+            shadow_doc_provided=shadow_doc_provided,
+        )
+
+        frame_markup = iframe(frame_doc, **kwargs) if frame_doc else ""
+        page_data = _build_node_test_page_markup(
+            frame_markup=frame_markup,
+            shadow_doc=shadow_doc,
+            inner_shadow_doc=inner_shadow_doc,
+            definition_inner_shadow_dom=definition_inner_shadow_dom,
+            nested_shadow_dom=nested_shadow_dom,
+            shadow_root_mode=shadow_root_mode,
+        )
 
         if as_frame:
             iframe_data = iframe(page_data, **kwargs)

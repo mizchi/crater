@@ -242,7 +242,7 @@
   - `provideResponse` の body override は MoonBit 側へ移行済み
   - `get_element` / `fetch` / `setup_network_test` は MoonBit command ベースに整理済み
   - `get_element` の Python 側 `sharedId` normalize は削除済み
-  - 現在の `scripts/crater_bidi_adapter.py` は `2139` 行
+  - 現在の `scripts/crater_bidi_adapter.py` は `2212` 行
   - 残りは `browsingContext` / `session` / `script` 周辺の fixture glue と module proxy の整理
 
 ### 2026-03-09 の詳細計画
@@ -274,7 +274,10 @@
   - [x] `session.subscribeId` で `subscribe_events` fixture の cleanup を raw subscription id ベースに簡略化
   - [x] `create_iframe` / `current_url` / `setup_beforeunload_page` の `context` unwrap を module helper に寄せた
   - [x] `top_context` / `new_tab` fixture の dict copy unwrap を削除
-  - [ ] `scripts/crater_bidi_adapter.py` を `2139` 行からさらに縮める
+  - [x] `top_context` / `new_tab` の fallback object を fail-fast helper に置き換えた
+  - [x] `get_test_page` の page builder を pure helper に切り出して MoonBit 移植対象を分離した
+  - [ ] `get_test_page` の page builder 自体を MoonBit command に移す
+  - [ ] `scripts/crater_bidi_adapter.py` を `2212` 行からさらに縮める
 - [ ] Step 4: Python に残す層を固定する
   - [ ] `CraterBidiSession` と event backlog は transport / pytest plugin core として残す
   - [ ] transport 層以外で `.py` に残っている実装責務を TODO から洗い出して消していく
