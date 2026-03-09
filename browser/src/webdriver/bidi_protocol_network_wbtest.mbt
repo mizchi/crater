@@ -948,6 +948,24 @@ test "bidi network addDataCollectorId returns raw collector id" {
 }
 
 ///|
+test "bidi network addInterceptId returns raw intercept id" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"network.addInterceptId\",\"params\":{\"phases\":[\"beforeRequestSent\"],\"urlPatterns\":[{\"type\":\"string\",\"pattern\":\"data:text/plain,hello\"}]}}",
+  )
+  let add_json = proto.take_messages()[0].to_json()
+  assert_true(add_json.contains("\"type\":\"success\""))
+  assert_true(
+    add_json.contains("\"result\":\"00000000000000000000000000000001\""),
+  )
+}
+
+///|
 test "bidi network continueBlockedResponse emits subscribed events after success" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(

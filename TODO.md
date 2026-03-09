@@ -242,7 +242,7 @@
   - `provideResponse` の body override は MoonBit 側へ移行済み
   - `get_element` / `fetch` / `setup_network_test` は MoonBit command ベースに整理済み
   - `get_element` の Python 側 `sharedId` normalize は削除済み
-  - 現在の `scripts/crater_bidi_adapter.py` は `2162` 行
+  - 現在の `scripts/crater_bidi_adapter.py` は `2149` 行
   - 残りは `browsingContext` / `session` / `script` 周辺の fixture glue と module proxy の整理
 
 ### 2026-03-09 の詳細計画
@@ -269,8 +269,10 @@
   - [x] `network.getBlockedRequestPhaseValue` / `network.getBlockedRequestNavigationValue` で blocked request の object unwrap を raw query 化
   - [x] 未使用になった `get_blocked_network_request` / `forget_blocked_network_request` / `fail_blocked_request` / `continue_auth_request` helper を削除
   - [x] `network.addDataCollectorId` で `add_data_collector` の `collector` unwrap を raw id 化
+  - [x] `network.addInterceptId` で `add_intercept` の `intercept` unwrap を raw id 化
+  - [x] `provide_response` / `set_cache_behavior` の戻り値 inspection を削除して thin wrapper 化
   - [x] `top_context` / `new_tab` fixture の dict copy unwrap を削除
-  - [ ] `scripts/crater_bidi_adapter.py` を `2162` 行からさらに縮める
+  - [ ] `scripts/crater_bidi_adapter.py` を `2149` 行からさらに縮める
 - [ ] Step 4: Python に残す層を固定する
   - [ ] `CraterBidiSession` と event backlog は transport / pytest plugin core として残す
   - [ ] transport 層以外で `.py` に残っている実装責務を TODO から洗い出して消していく

@@ -974,13 +974,7 @@ class NetworkModule:
             if value is None:
                 continue
             params[key] = value
-        future = await self._session.send_command("network.addIntercept", params)
-        result = await future
-        if isinstance(result, dict):
-            intercept = result.get("intercept")
-            if isinstance(intercept, str):
-                return intercept
-        return result
+        return await self._session.command("network.addInterceptId", params)
 
     async def remove_intercept(self, intercept: str):
         future = await self._session.send_command(
@@ -1057,11 +1051,7 @@ class NetworkModule:
         for key, value in kwargs.items():
             params[key] = value
 
-        future = await self._session.send_command("network.continueBlockedResponse", params)
-        result = await future
-
-        if not isinstance(result, Mapping) or not bool(result.get("consumed")):
-            return {}
+        await self._session.command("network.continueBlockedResponse", params)
         return {}
 
     async def add_data_collector(self, **kwargs):
@@ -1088,14 +1078,11 @@ class NetworkModule:
         if contexts is not _UNSET:
             params["contexts"] = contexts
 
-        result: Any = {}
         try:
-            future = await self._session.send_command("network.setCacheBehavior", params)
-            result = await future
+            await self._session.command("network.setCacheBehavior", params)
         except (bidi_error.UnknownCommandException, bidi_error.UnknownErrorException):
-            result = {}
-
-        return result
+            return {}
+        return {}
 
     async def remove_data_collector(self, collector: str):
         future = await self._session.send_command("network.removeDataCollector", {"collector": collector})

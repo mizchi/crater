@@ -10293,6 +10293,10 @@ fn BidiProtocol::dispatch_network(
       self.handle_network_add_intercept(request.id, request.params)
       Ok(())
     }
+    "addInterceptId" => {
+      self.handle_network_add_intercept_id(request.id, request.params)
+      Ok(())
+    }
     "removeIntercept" => {
       self.handle_network_remove_intercept(request.id, request.params)
       Ok(())
@@ -10467,6 +10471,26 @@ fn BidiProtocol::handle_network_add_intercept(
     request_id,
     Some(make_object({ "intercept": Json::string(intercept_id) })),
   )
+}
+
+///|
+fn BidiProtocol::handle_network_add_intercept_id(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let options = match
+    self.validate_network_add_intercept_params(request_id, params) {
+    Some(options) => options
+    None => return
+  }
+  let intercept_id = left_pad_with_zero(
+    self.next_network_intercept_id.to_string(),
+    32,
+  )
+  self.next_network_intercept_id += 1
+  self.network_intercepts[intercept_id] = make_object(options)
+  self.send_success(request_id, Some(Json::string(intercept_id)))
 }
 
 ///|
