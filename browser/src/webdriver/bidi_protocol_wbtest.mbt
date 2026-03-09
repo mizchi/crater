@@ -704,6 +704,134 @@ test "bidi script prepareLoadedStaticTestPage dispatches DOMContentLoaded and re
 }
 
 ///|
+test "bidi script prepareLoadedStaticTestPage inlineScripts runs scripts in order" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<div id='root'></div>\",\"wait\":\"complete\"}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.prepareLoadedStaticTestPage\",\"params\":{\"context\":\"session-1\",\"page\":\"test_actions.html\",\"phase\":\"inlineScripts\",\"scripts\":[\"window.__inlineOrder = [1];\",\"window.__inlineOrder.push(2);\"]}}",
+  )
+  let prepare_json = proto.take_messages()[0].to_json()
+  assert_true(prepare_json.contains("\"type\":\"success\""))
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"JSON.stringify(window.__inlineOrder)\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"value\":\"[1,2]\""))
+}
+
+///|
+test "bidi script setupBeforeunloadPageForTest marks input as interacted" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<input id='target'>\",\"wait\":\"complete\"}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.setupBeforeunloadPageForTest\",\"params\":{\"context\":\"session-1\"}}",
+  )
+  let setup_json = proto.take_messages()[0].to_json()
+  assert_true(setup_json.contains("\"type\":\"success\""))
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"JSON.stringify((() => { const input = document.getElementById('target'); return { value: input && typeof input.value === 'string' ? input.value : '', focused: globalThis.__bidiFocusedElement === input }; })())\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(
+    json.contains(
+      "\"value\":\"{\\\"value\\\":\\\"foo\\\",\\\"focused\\\":true}\"",
+    ),
+  )
+}
+
+///|
+test "bidi script prepareLoadedStaticTestPage pageSpecific styles actions fixture" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<div class='area' id='area'></div><div class='block' id='block'></div><div id='trackPointer'></div><div id='resultContainer'></div><div id='dragArea'></div><div id='dragTarget'></div>\",\"wait\":\"complete\"}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.prepareLoadedStaticTestPage\",\"params\":{\"context\":\"session-1\",\"page\":\"test_actions.html\",\"phase\":\"pageSpecific\"}}",
+  )
+  let prepare_json = proto.take_messages()[0].to_json()
+  assert_true(prepare_json.contains("\"type\":\"success\""))
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"JSON.stringify((() => { const area = document.getElementById('area'); const dragTarget = document.getElementById('dragTarget'); return {areaWidth: area && area.style ? area.style.width : '', dragTop: dragTarget && dragTarget.style ? dragTarget.style.top : '', dragLeft: dragTarget && dragTarget.style ? dragTarget.style.left : ''}; })())\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(
+    json.contains(
+      "\"value\":\"{\\\"areaWidth\\\":\\\"100px\\\",\\\"dragTop\\\":\\\"22px\\\",\\\"dragLeft\\\":\\\"47px\\\"}\"",
+    ),
+  )
+}
+
+///|
+test "bidi script prepareLoadedStaticTestPage pageSpecific sets wheel fixture" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<div id='root'></div>\",\"wait\":\"complete\"}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.prepareLoadedStaticTestPage\",\"params\":{\"context\":\"session-1\",\"page\":\"test_actions_scroll.html\",\"phase\":\"pageSpecific\"}}",
+  )
+  let prepare_json = proto.take_messages()[0].to_json()
+  assert_true(prepare_json.contains("\"type\":\"success\""))
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"JSON.stringify((() => { const scrollable = document.getElementById('scrollable'); const iframe = document.getElementById('iframe'); return {overflow: scrollable && scrollable.style ? scrollable.style.overflow : '', hasRecorder: typeof window.recordWheelEvent === 'function', iframeSetup: !!(iframe && iframe.__craterWheelIframeSetup)}; })())\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(
+    json.contains(
+      "\"value\":\"{\\\"overflow\\\":\\\"scroll\\\",\\\"hasRecorder\\\":true,\\\"iframeSetup\\\":true}\"",
+    ),
+  )
+}
+
+///|
+test "bidi script createIframeContextForTest returns child context" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.createIframeContextForTest\",\"params\":{\"context\":\"session-1\",\"url\":\"about:blank\"}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"context\":\"session-"))
+  assert_true(json.contains("\"parentContext\":\"session-1\""))
+}
+
+///|
 test "bidi browser hasUserContext reflects current user contexts" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(

@@ -966,12 +966,86 @@ class ScriptModule:
         future = await self._session.send_command("script.addPreloadScriptId", params)
         return await future
 
-    async def prepare_loaded_static_test_page(self, context: str, page: str, phase: str = "all"):
+    async def prepare_loaded_static_test_page(
+        self,
+        context: str,
+        page: str,
+        phase: str = "all",
+        scripts: list[str] | None = None,
+    ):
+        params = {"context": context, "page": page, "phase": phase}
+        if scripts is not None:
+            params["scripts"] = scripts
         future = await self._session.send_command(
             "script.prepareLoadedStaticTestPage",
-            {"context": context, "page": page, "phase": phase},
+            params,
         )
         return await future
+
+    async def create_iframe_context_for_test(self, context: str, url: str):
+        future = await self._session.send_command(
+            "script.createIframeContextForTest",
+            {"context": context, "url": url},
+        )
+        return await future
+
+    async def setup_beforeunload_page_for_test(self, context: str):
+        future = await self._session.send_command(
+            "script.setupBeforeunloadPageForTest",
+            {"context": context},
+        )
+        return await future
+
+    async def sync_document_cookies_for_test(
+        self,
+        context: str,
+        *,
+        sandbox: str | None = None,
+    ):
+        params: dict[str, Any] = {"context": context}
+        if isinstance(sandbox, str):
+            params["sandbox"] = sandbox
+        future = await self._session.send_command(
+            "script.syncDocumentCookiesForTest",
+            params,
+        )
+        return await future
+
+    async def fetch_from_context_for_test(
+        self,
+        context: str,
+        url: str,
+        *,
+        method: str,
+        headers: Mapping[str, Any] | None = None,
+        post_data: Any = None,
+        timeout_ms: int = 0,
+        sandbox: str | None = None,
+    ):
+        params: dict[str, Any] = {
+            "context": context,
+            "url": url,
+            "method": method,
+            "timeoutMs": int(timeout_ms),
+        }
+        if isinstance(headers, Mapping):
+            params["headersJson"] = json.dumps(dict(headers))
+        if isinstance(post_data, dict):
+            params["postDataMode"] = "formData"
+            params["postDataJson"] = json.dumps(post_data)
+        elif post_data is not None:
+            params["postDataMode"] = "value"
+            params["postDataJson"] = json.dumps(post_data)
+        if isinstance(sandbox, str):
+            params["sandbox"] = sandbox
+        future = await self._session.send_command(
+            "script.fetchFromContextForTest",
+            params,
+        )
+        result = await future
+        if isinstance(result, dict) and "exceptionDetails" in result:
+            raise ScriptEvaluateResultException(result)
+        return result
 
     async def remove_preload_script(self, script: str):
         future = await self._session.send_command("script.removePreloadScript", {"script": script})
@@ -1454,33 +1528,12 @@ def create_iframe(bidi_session):
     async def _create_iframe(context, url):
         parent_context = context.get("context") if isinstance(context, Mapping) else context
         if isinstance(parent_context, str):
-            try:
-                resp = await bidi_session.script.call_function(
-                    function_declaration="""(url) => {
-                        const iframe = document.createElement("iframe");
-                        iframe.src = url;
-                        document.documentElement.lastElementChild.append(iframe);
-                        return new Promise(resolve => iframe.onload = () => resolve(iframe.contentWindow));
-                    }""",
-                    arguments=[{"type": "string", "value": url}],
-                    target=ContextTarget(parent_context),
-                    await_promise=True,
-                )
-                if isinstance(resp, Mapping) and resp.get("type") == "window":
-                    iframe_context = resp.get("value")
-                    if isinstance(iframe_context, str):
-                        return iframe_context
-            except Exception:
-                pass
-
-        created = {}
-        if isinstance(parent_context, str):
-            user_context = await bidi_session.resolve_user_context(parent_context)
-            created = await bidi_session.create_synthetic_child_context(
-                parent_context=parent_context,
-                url=url,
-                user_context=user_context,
+            created = await bidi_session.script.create_iframe_context_for_test(
+                parent_context,
+                url,
             )
+        else:
+            created = {}
         iframe_context = created.get("context") if isinstance(created, Mapping) else None
         return iframe_context
 
@@ -1637,43 +1690,10 @@ def fetch(bidi_session, configuration):
             raise TypeError(f"Unsupported context object: {context}")
 
         if len(await bidi_session.resolve_request_cookies(context_id)) == 0:
-            try:
-                cookie_snapshot = await bidi_session.script.evaluate(
-                    expression="document.cookie",
-                    target=ContextTarget(context_id, sandbox=sandbox_name),
-                    await_promise=False,
-                )
-            except Exception:
-                cookie_snapshot = None
-            cookie_text = None
-            if isinstance(cookie_snapshot, Mapping):
-                if (
-                    cookie_snapshot.get("type") == "string"
-                    and isinstance(cookie_snapshot.get("value"), str)
-                ):
-                    cookie_text = cookie_snapshot.get("value")
-                else:
-                    nested = cookie_snapshot.get("value")
-                    if (
-                        isinstance(nested, Mapping)
-                        and nested.get("type") == "string"
-                        and isinstance(nested.get("value"), str)
-                    ):
-                        cookie_text = nested.get("value")
-            elif isinstance(cookie_snapshot, str):
-                cookie_text = cookie_snapshot
-            if isinstance(cookie_text, str) and cookie_text.strip() != "":
-                for raw_entry in cookie_text.split(";"):
-                    if "=" not in raw_entry:
-                        continue
-                    name, value = raw_entry.split("=", maxsplit=1)
-                    name = name.strip()
-                    if name == "":
-                        continue
-                    await bidi_session.remember_document_cookie(
-                        context_id,
-                        f"{name}={value.strip()}",
-                    )
+            await bidi_session.script.sync_document_cookies_for_test(
+                context_id,
+                sandbox=sandbox_name,
+            )
 
         if isinstance(url, str) and url.startswith("/"):
             base_url = await bidi_session.get_requested_navigation_url(context_id)
@@ -1706,52 +1726,16 @@ def fetch(bidi_session, configuration):
                 return dict(value)
             return _bytes_value_from_text("")
 
-        method_arg = f"method: '{method}',"
+        timeout_ms = int(timeout_in_seconds * configuration["timeout_multiplier"] * 1000)
 
-        headers_arg = ""
-        if headers is not None:
-            headers_arg = f"headers: {json.dumps(headers)},"
-
-        if post_data is None:
-            body_arg = ""
-        elif isinstance(post_data, dict):
-            body_arg = f"""body: (() => {{
-               const formData  = new FormData();
-               const data = {json.dumps(post_data)};
-               for(const name in data) {{
-                 if (typeof data[name] == "object") {{
-                   const binary = atob(data[name].value);
-                   const bytes = new Uint8Array(binary.length);
-                   for (let i = 0; i < binary.length; i++) {{
-                     bytes[i] = binary.charCodeAt(i);
-                   }}
-                   const blob = new Blob([bytes], {{ type: data[name].type }});
-                   formData.append(name, blob, data[name].filename);
-                 }} else {{
-                   formData.append(name, data[name]);
-                 }}
-               }}
-               return formData;
-            }})(),"""
-        else:
-            body_arg = f"body: {json.dumps(post_data)},"
-
-        timeout_in_seconds = timeout_in_seconds * configuration["timeout_multiplier"]
-
-        return await bidi_session.script.evaluate(
-            expression=f"""
-                 {{
-                   const controller = new AbortController();
-                   setTimeout(() => controller.abort(), {timeout_in_seconds * 1000});
-                   fetch("{url}", {{
-                     {method_arg}
-                     {headers_arg}
-                     {body_arg}
-                     signal: controller.signal,
-                   }}).then(response => response.text());
-                 }}""",
-            target=ContextTarget(context_id, sandbox=sandbox_name),
-            await_promise=True,
+        return await bidi_session.script.fetch_from_context_for_test(
+            context_id,
+            url,
+            method=method,
+            headers=headers if isinstance(headers, Mapping) else None,
+            post_data=post_data,
+            timeout_ms=timeout_ms,
+            sandbox=sandbox_name,
         )
 
     return _fetch
@@ -1975,157 +1959,23 @@ async def load_static_test_page(bidi_session, top_context, inline):
             if script:
                 script_blocks.append(script)
 
-        for script in script_blocks:
-            await bidi_session.script.call_function(
-                function_declaration="source => { (0, eval)(source); return null; }",
-                arguments=[{"type": "string", "value": script}],
-                target=ContextTarget(context["context"]),
-                await_promise=False,
+        if script_blocks:
+            await bidi_session.script.prepare_loaded_static_test_page(
+                context["context"],
+                page,
+                phase="inlineScripts",
+                scripts=script_blocks,
             )
         await bidi_session.script.prepare_loaded_static_test_page(
             context["context"],
             page,
             phase="beforePageSpecific",
         )
-        if page == "test_actions.html":
-            await bidi_session.script.call_function(
-                function_declaration="""() => {
-                    const setStyle = (el, styles) => {
-                        if (!el || !el.style) return;
-                        for (const [key, value] of Object.entries(styles)) {
-                            try {
-                                el.style[key] = value;
-                            } catch (_e) {}
-                        }
-                    };
-
-                    for (const el of Array.from(document.querySelectorAll(".area"))) {
-                        setStyle(el, {
-                            width: "100px",
-                            height: "50px",
-                            backgroundColor: "#ccc",
-                        });
-                    }
-                    for (const el of Array.from(document.querySelectorAll(".block"))) {
-                        setStyle(el, {
-                            width: "5px",
-                            height: "5px",
-                            borderWidth: "1px",
-                            borderStyle: "solid",
-                            borderColor: "red",
-                        });
-                    }
-                    setStyle(document.getElementById("trackPointer"), { position: "fixed" });
-                    setStyle(document.getElementById("resultContainer"), { width: "600px", height: "60px" });
-                    setStyle(document.getElementById("dragArea"), { position: "relative" });
-                    setStyle(document.getElementById("dragTarget"), {
-                        position: "absolute",
-                        top: "22px",
-                        left: "47px",
-                    });
-                    return null;
-                }""",
-                target=ContextTarget(context["context"]),
-                await_promise=False,
-            )
-        if page == "test_actions_scroll.html":
-            await bidi_session.script.call_function(
-                function_declaration="""() => {
-                    const ensure = (id, tagName = "div", parent = document.body) => {
-                        let element = document.getElementById(id);
-                        if (!element && document && typeof document.createElement === "function") {
-                            element = document.createElement(tagName);
-                            element.id = id;
-                            parent.appendChild(element);
-                        }
-                        return element;
-                    };
-                    const setStyle = (el, styles) => {
-                        if (!el || !el.style) return;
-                        for (const [key, value] of Object.entries(styles)) {
-                            try {
-                                el.style[key] = value;
-                            } catch (_e) {}
-                        }
-                    };
-                    if (!window.allEvents || !Array.isArray(window.allEvents.events)) {
-                        window.allEvents = { events: [] };
-                    }
-                    window.recordWheelEvent = (event) => {
-                        if (!window.allEvents || !Array.isArray(window.allEvents.events)) {
-                            window.allEvents = { events: [] };
-                        }
-                        const target = event && event.target ? event.target : null;
-                        window.allEvents.events.push({
-                            type: event?.type || "wheel",
-                            button: event?.button ?? 0,
-                            buttons: event?.buttons ?? 0,
-                            pageX: event?.pageX ?? 0,
-                            pageY: event?.pageY ?? 0,
-                            deltaX: event?.deltaX ?? 0,
-                            deltaY: event?.deltaY ?? 0,
-                            deltaZ: event?.deltaZ ?? 0,
-                            deltaMode: event?.deltaMode ?? 0,
-                            target: target && target.id ? target.id : "",
-                            altKey: !!event?.altKey,
-                            ctrlKey: !!event?.ctrlKey,
-                            metaKey: !!event?.metaKey,
-                            shiftKey: !!event?.shiftKey,
-                        });
-                    };
-
-                    const notScrollable = ensure("not-scrollable");
-                    const notScrollableContent = ensure("not-scrollable-content", "div", notScrollable || document.body);
-                    setStyle(notScrollable, { width: "100px", height: "50px", marginBottom: "100px" });
-                    setStyle(notScrollableContent, { width: "200px", height: "100px", backgroundColor: "#ccc" });
-
-                    const scrollable = ensure("scrollable");
-                    const scrollableContent = ensure("scrollable-content", "div", scrollable || document.body);
-                    setStyle(scrollable, { width: "100px", height: "100px", overflow: "scroll" });
-                    setStyle(scrollableContent, { width: "600px", height: "1000px", backgroundColor: "blue" });
-
-                    if (notScrollable && !notScrollable.__craterWheelListener) {
-                        notScrollable.addEventListener("wheel", window.recordWheelEvent);
-                        notScrollable.__craterWheelListener = true;
-                    }
-                    if (scrollable && !scrollable.__craterWheelListener) {
-                        scrollable.addEventListener("wheel", window.recordWheelEvent);
-                        scrollable.__craterWheelListener = true;
-                    }
-
-                    const iframe = ensure("iframe", "iframe");
-                    setStyle(iframe, { width: "100px", height: "100px" });
-                    if (iframe && !iframe.__craterWheelIframeSetup) {
-                        iframe.srcdoc = `
-                          <script>
-                            document.scrollingElement.addEventListener("wheel", event => {
-                              window.parent.recordWheelEvent({
-                                type: event.type,
-                                button: event.button,
-                                buttons: event.buttons,
-                                pageX: event.pageX,
-                                pageY: event.pageY,
-                                deltaX: event.deltaX,
-                                deltaY: event.deltaY,
-                                deltaZ: event.deltaZ,
-                                deltaMode: event.deltaMode,
-                                target: { id: "iframeContent" },
-                                altKey: event.altKey,
-                                ctrlKey: event.ctrlKey,
-                                metaKey: event.metaKey,
-                                shiftKey: event.shiftKey,
-                              });
-                            });
-                          </script>
-                          <div id="iframeContent" style="width:7500px;height:7500px;background-color:blue"></div>
-                        `;
-                        iframe.__craterWheelIframeSetup = true;
-                    }
-                    return null;
-                }""",
-                target=ContextTarget(context["context"]),
-                await_promise=False,
-            )
+        await bidi_session.script.prepare_loaded_static_test_page(
+            context["context"],
+            page,
+            phase="pageSpecific",
+        )
         await bidi_session.script.prepare_loaded_static_test_page(
             context["context"],
             page,
@@ -2227,17 +2077,8 @@ async def setup_beforeunload_page(bidi_session, url):
             url=page_url,
             wait="complete",
         )
-        await bidi_session.script.evaluate(
-            expression="""
-                const input = document.querySelector("input");
-                if (input) {
-                    input.focus();
-                    input.value = "foo";
-                    input.dispatchEvent(new Event("input", { bubbles: true }));
-                }
-            """,
-            target=ContextTarget(context["context"]),
-            await_promise=False,
+        await bidi_session.script.setup_beforeunload_page_for_test(
+            context["context"],
         )
         return page_url
 

@@ -311,6 +311,33 @@ test "bidi storage rememberDocumentCookie populates request cookies" {
 }
 
 ///|
+test "bidi script syncDocumentCookiesForTest returns current cookie text" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.rememberSyntheticLocationHref\",\"params\":{\"context\":\"session-1\",\"href\":\"http://localhost:8000/webdriver/tests/support/empty.html\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"storage.rememberDocumentCookie\",\"params\":{\"context\":\"session-1\",\"cookie\":\"token=xyz;path=/;SameSite=None;Secure\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.syncDocumentCookiesForTest\",\"params\":{\"context\":\"session-1\"}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"cookieText\":\"token=xyz\""))
+  assert_true(json.contains("\"cookieCount\":1"))
+}
+
+///|
 test "bidi storage resolveRequestCookies includes ancestor context cookies and filters by path" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(

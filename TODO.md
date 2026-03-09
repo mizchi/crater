@@ -162,6 +162,18 @@
 - [x] `browser/create_user_context --quick` で localStorage unwrap 修正の回帰確認
 - [x] `script.prepareLoadedStaticTestPage` を追加して `load_static_test_page` fixture の DOMContentLoaded / allEvents reset / recorder fallback を MoonBit 側へ移行
 - [x] `input/{set_files,perform_actions/wheel} --quick` / `integration --quick` / `strict` で static page setup 移行の回帰確認
+- [x] `script.prepareLoadedStaticTestPage` の `pageSpecific` phase を追加して `test_actions*` の page-specific setup を MoonBit 側へ移行
+- [x] `input/{perform_actions/wheel,release_actions,set_files} --quick` / `network/set_extra_headers/contexts.py --quick` / `integration --quick` / `strict` で `test_actions*` page-specific 移行の回帰確認
+- [x] `script.prepareLoadedStaticTestPage` の `inlineScripts` phase を追加して `load_static_test_page` fixture の inline `<script>` eval loop を MoonBit 側へ移行
+- [x] `input/{perform_actions/wheel,release_actions,set_files} --quick` / `integration --quick` / `strict` で `inlineScripts` 移行の回帰確認
+- [x] `script.setupBeforeunloadPageForTest` を追加して `setup_beforeunload_page` fixture の input focus/value/input event 設定を MoonBit 側へ移行
+- [x] `browsing_context/{close/prompt_unload.py,navigate/navigate_beforeunload.py} --quick` / `integration --quick` / `strict` で `beforeunload` setup 移行の回帰確認
+- [x] `script.syncDocumentCookiesForTest` / `script.fetchFromContextForTest` を追加して `fetch` fixture の `document.cookie` snapshot と page-side `fetch()` 実行を MoonBit command に移行
+- [x] `network/{fetch_error/fetch_error.py,provide_response/cookies.py} --quick` / `integration --quick` / `strict` で `fetch` fixture 移行の回帰確認
+- [x] `script.createIframeContextForTest` を追加して `create_iframe` fixture の JS/fallback glue を MoonBit 側へ移行
+- [x] `network/set_extra_headers/contexts.py --quick` / `integration --quick` / `strict` で `create_iframe` fixture 移行の回帰確認
+- [x] `input.releaseActions` と synthetic `mousemove` の dispatch を修正して `queue.py::test_parallel_pointer` / `sequence_tentative.py::test_release_mouse_sequence_resets_dblclick_state` を解消
+- [x] `input/release_actions --quick` / `input/perform_actions/wheel --quick` / `input/set_files --quick` / `integration --quick` / `strict` で input 回帰確認
 
 ### 次の具体タスク
 
@@ -181,6 +193,11 @@
   - baseline context 準備と baseline/current-url query は MoonBit 側へ移行済み
   - requested navigation URL / context cookie scope / userContext existence は query command 化済み
   - `network` の dead helper と一部 local validation は削除済み
+  - `create_iframe` fixture の JS/fallback glue は `script.createIframeContextForTest` に移行済み
+  - `load_static_test_page` の `test_actions*` page-specific setup は `script.prepareLoadedStaticTestPage(phase=\"pageSpecific\")` に移行済み
+  - `load_static_test_page` の inline `<script>` eval loop は `script.prepareLoadedStaticTestPage(phase=\"inlineScripts\")` に移行済み
+  - `setup_beforeunload_page` は `script.setupBeforeunloadPageForTest` に移行済み
+  - `fetch` fixture の cookie snapshot / page-side fetch 実行は `script.syncDocumentCookiesForTest` / `script.fetchFromContextForTest` に移行済み
 - [ ] adapter を `pytest` fixture と最小限の WPT glue のみに縮小する
   - `network` の local mirror (`_network_intercepts`, `_network_collectors`, `_network_collected_data`, synthetic subscription fallback) は削除済み
   - `browsingContext` の `_last_navigated_url` と session の `_known_user_contexts` は削除済み

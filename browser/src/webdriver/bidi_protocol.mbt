@@ -2017,61 +2017,9 @@ fn BidiProtocol::handle_browsing_context_create_synthetic_child_context(
     }
   }
 
-  let child_ctx_id = self.create_child_context(context_id, user_context_id)
-  let resolved_url = self.resolve_navigation_target_url(
-    context_id, requested_url,
+  let result = self.create_synthetic_child_context_result(
+    context_id, requested_url, user_context_id,
   )
-  let effective_url = self.normalize_wpt_navigation_target_url(
-    child_ctx_id, resolved_url,
-  )
-
-  self.emit_context_created(
-    child_ctx_id,
-    "tab",
-    "about:blank",
-    None,
-    Some(context_id),
-  )
-  let child_nav_id = self.next_navigation_id.to_string()
-  self.next_navigation_id += 1
-  if self.is_iframe_navigation_blocked(child_ctx_id, effective_url) {
-    self.emit_default_realm(child_ctx_id)
-    self.emit_navigation_started_event(
-      child_ctx_id, effective_url, child_nav_id,
-    )
-    self.emit_navigation_failed_event(child_ctx_id, effective_url, child_nav_id)
-    let result = make_object({
-      "context": Json::string(child_ctx_id),
-      "parentContext": Json::string(context_id),
-      "userContext": Json::string(user_context_id),
-      "url": Json::string(effective_url),
-    })
-    self.send_success(request_id, Some(result))
-    return
-  }
-  match self.manager.get_session(child_ctx_id) {
-    Some(child_session) => {
-      let _ = child_session.navigate_to(effective_url)
-    }
-    None => ()
-  }
-  self.load_data_url_content(child_ctx_id, effective_url)
-  self.clear_context_sandbox_realms(child_ctx_id)
-  let window_realm_id = self.assign_new_realm(child_ctx_id)
-  self.emit_default_realm(child_ctx_id)
-  self.emit_worker_realms_from_scripts(child_ctx_id, window_realm_id)
-  self.apply_preload_scripts_for_context(child_ctx_id)
-  self.execute_inline_scripts_for_context(child_ctx_id)
-  self.emit_navigation_events(child_ctx_id, effective_url, child_nav_id)
-  if effective_url != "about:blank" {
-    self.refresh_child_contexts_from_iframes_with_depth(child_ctx_id, 1)
-  }
-  let result = make_object({
-    "context": Json::string(child_ctx_id),
-    "parentContext": Json::string(context_id),
-    "userContext": Json::string(user_context_id),
-    "url": Json::string(effective_url),
-  })
   self.send_success(request_id, Some(result))
 }
 
@@ -5263,14 +5211,20 @@ fn BidiProtocol::handle_script_prepare_loaded_static_test_page(
 ) -> Unit {
   match
     self.resolve_script_prepare_loaded_static_test_page(request_id, params) {
-    Some((ctx_id, _page, phase)) => {
-      if phase != "afterPageSpecific" {
+    Some((ctx_id, page, phase, scripts)) => {
+      if phase == "all" || phase == "inlineScripts" {
+        self.run_inline_test_scripts(ctx_id, scripts)
+      }
+      if phase == "all" || phase == "beforePageSpecific" {
         self.run_test_setup_function(
           ctx_id,
           js_test_page_dom_content_loaded_source(),
         )
       }
-      if phase != "beforePageSpecific" {
+      if phase == "all" || phase == "pageSpecific" {
+        self.run_page_specific_test_setup(ctx_id, page)
+      }
+      if phase == "all" || phase == "afterPageSpecific" {
         self.run_test_setup_function(ctx_id, js_test_page_reset_state_source())
         self.run_test_setup_function(
           ctx_id,
@@ -5343,7 +5297,7 @@ fn BidiProtocol::resolve_script_prepare_loaded_static_test_page(
   self : BidiProtocol,
   request_id : Int,
   params : Json?,
-) -> (String, String, String)? {
+) -> (String, String, String, Array[String])? {
   let map = match params {
     Some(Object(map)) => map
     _ => {
@@ -5380,7 +5334,9 @@ fn BidiProtocol::resolve_script_prepare_loaded_static_test_page(
     }
   }
   let phase = match map.get("phase") {
+    Some(String("inlineScripts")) => "inlineScripts"
     Some(String("beforePageSpecific")) => "beforePageSpecific"
+    Some(String("pageSpecific")) => "pageSpecific"
     Some(String("afterPageSpecific")) => "afterPageSpecific"
     Some(String("all")) => "all"
     Some(String(_)) => {
@@ -5391,7 +5347,170 @@ fn BidiProtocol::resolve_script_prepare_loaded_static_test_page(
     }
     _ => "all"
   }
-  Some((ctx_id, page, phase))
+  let scripts : Array[String] = []
+  match map.get("scripts") {
+    Some(Array(raw_scripts)) =>
+      for raw_script in raw_scripts {
+        match raw_script {
+          String(script) => scripts.push(script)
+          _ => {
+            self.send_error(
+              request_id, "invalid argument", "scripts must be an array of strings",
+            )
+            return None
+          }
+        }
+      }
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "scripts must be an array of strings",
+      )
+      return None
+    }
+    None => ()
+  }
+  Some((ctx_id, page, phase, scripts))
+}
+
+///|
+fn BidiProtocol::resolve_test_script_context_runtime(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> (String, String, String)? {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return None
+    }
+  }
+  let ctx_id = match map.get("context") {
+    Some(String(ctx_id)) =>
+      if ctx_id == "" || self.manager.get_session(ctx_id) is None {
+        self.send_error(
+          request_id,
+          "no such frame",
+          "Unknown context: " + ctx_id,
+        )
+        return None
+      } else {
+        ctx_id
+      }
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return None
+    }
+  }
+  let sandbox_name = match map.get("sandbox") {
+    Some(String(name)) if name != "" => Some(name)
+    Some(String(_)) | None | Some(Null) => None
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "sandbox must be a string",
+      )
+      return None
+    }
+  }
+  let realm_id = match sandbox_name {
+    Some(name) => self.get_or_create_sandbox_realm(ctx_id, name)
+    None => self.context_realm.get(ctx_id).unwrap_or("realm-" + ctx_id)
+  }
+  let runtime_ctx_id = match sandbox_name {
+    Some(_) => realm_id
+    None => ctx_id
+  }
+  Some((ctx_id, realm_id, runtime_ctx_id))
+}
+
+///|
+fn BidiProtocol::handle_script_create_iframe_context_for_test(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match self.resolve_script_create_iframe_context_for_test(request_id, params) {
+    Some((parent_context, url)) => {
+      let user_context_id = self.context_user_context
+        .get(parent_context)
+        .unwrap_or("default")
+      let remote_value = self.evaluate_test_element_remote_expression(
+        parent_context,
+        js_test_page_create_iframe_source(),
+        [url],
+      )
+      let result = match get_string_field(remote_value, "type") {
+        Some("window") =>
+          match get_string_field(remote_value, "value") {
+            Some(ctx_id) if ctx_id != "" =>
+              make_object({
+                "context": Json::string(ctx_id),
+                "parentContext": Json::string(parent_context),
+                "userContext": Json::string(user_context_id),
+                "url": Json::string(self.current_context_url(ctx_id)),
+              })
+            _ =>
+              self.create_synthetic_child_context_result(
+                parent_context, url, user_context_id,
+              )
+          }
+        _ =>
+          self.create_synthetic_child_context_result(
+            parent_context, url, user_context_id,
+          )
+      }
+      self.send_success(request_id, Some(result))
+    }
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::resolve_script_create_iframe_context_for_test(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> (String, String)? {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return None
+    }
+  }
+  let ctx_id = match map.get("context") {
+    Some(String(ctx_id)) =>
+      if ctx_id == "" || self.manager.get_session(ctx_id) is None {
+        self.send_error(
+          request_id,
+          "no such frame",
+          "Unknown context: " + ctx_id,
+        )
+        return None
+      } else {
+        ctx_id
+      }
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return None
+    }
+  }
+  let url = match map.get("url") {
+    Some(String(url)) => url
+    _ => {
+      self.send_error(request_id, "invalid argument", "url must be a string")
+      return None
+    }
+  }
+  Some((ctx_id, url))
 }
 
 ///|
@@ -5482,6 +5601,234 @@ fn BidiProtocol::run_test_setup_function(
   ignore(
     self.evaluate_test_element_remote_expression(ctx_id, function_declaration, []),
   )
+}
+
+///|
+fn BidiProtocol::run_inline_test_scripts(
+  self : BidiProtocol,
+  ctx_id : String,
+  scripts : Array[String],
+) -> Unit {
+  for script in scripts {
+    ignore(
+      self.evaluate_test_element_remote_expression(
+        ctx_id,
+        "source => { (0, eval)(source); return null; }",
+        [script],
+      ),
+    )
+  }
+}
+
+///|
+fn BidiProtocol::run_page_specific_test_setup(
+  self : BidiProtocol,
+  ctx_id : String,
+  page : String,
+) -> Unit {
+  match page {
+    "test_actions.html" =>
+      self.run_test_setup_function(
+        ctx_id,
+        js_test_actions_page_specific_source(),
+      )
+    "test_actions_scroll.html" =>
+      self.run_test_setup_function(
+        ctx_id,
+        js_test_actions_scroll_page_specific_source(),
+      )
+    _ => ()
+  }
+}
+
+///|
+fn BidiProtocol::handle_script_setup_beforeunload_page_for_test(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match self.resolve_test_script_context_runtime(request_id, params) {
+    Some((ctx_id, _, _)) => {
+      self.run_test_setup_function(ctx_id, js_beforeunload_page_setup_source())
+      self.send_success(request_id, Some(make_object({})))
+    }
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::handle_script_sync_document_cookies_for_test(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match self.resolve_test_script_context_runtime(request_id, params) {
+    Some((ctx_id, _, runtime_ctx_id)) => {
+      set_runtime_context(runtime_ctx_id)
+      set_runtime_context_frames(
+        runtime_ctx_id,
+        self.context_children.get(ctx_id).unwrap_or([]),
+      )
+      self.apply_effective_viewport_to_runtime_context(runtime_ctx_id, ctx_id)
+      if not(self.dom_initialized) {
+        let _ = evaluate_js_with_console("undefined", false, false, false, "{}")
+        self.dom_initialized = true
+      }
+      let eval_result_json = evaluate_js_with_console(
+        "document.cookie", false, false, false, "{}",
+      )
+      self.dom_initialized = true
+      let eval_result = @json.parse(eval_result_json) catch {
+        _ => make_object({})
+      }
+      let cookie_text = match get_string_field(eval_result, "type") {
+        Some("success") =>
+          match get_field(eval_result, "result") {
+            Some(remote_value) =>
+              remote_value_as_string(remote_value).unwrap_or(
+                self.resolve_document_cookie(ctx_id).unwrap_or(""),
+              )
+            None => self.resolve_document_cookie(ctx_id).unwrap_or("")
+          }
+        _ => self.resolve_document_cookie(ctx_id).unwrap_or("")
+      }
+      let mut cookie_count = 0
+      if cookie_text.trim() != "" {
+        for raw_entry in cookie_text.split(";") {
+          if raw_entry.contains("=") {
+            self.remember_document_cookie(ctx_id, raw_entry.trim().to_string())
+            cookie_count += 1
+          }
+        }
+      }
+      self.send_success(
+        request_id,
+        Some(
+          make_object({
+            "cookieText": Json::string(cookie_text),
+            "cookieCount": Json::number(cookie_count.to_double()),
+          }),
+        ),
+      )
+    }
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::handle_script_fetch_from_context_for_test(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let (ctx_id, realm_id, runtime_ctx_id) = match
+    self.resolve_test_script_context_runtime(request_id, params) {
+    Some(value) => value
+    None => return
+  }
+  let url = match map.get("url") {
+    Some(String(url)) => url
+    _ => {
+      self.send_error(request_id, "invalid argument", "url must be a string")
+      return
+    }
+  }
+  let request_method = match map.get("method") {
+    Some(String(request_method)) => request_method
+    _ => {
+      self.send_error(request_id, "invalid argument", "method must be a string")
+      return
+    }
+  }
+  let headers_json = match map.get("headersJson") {
+    Some(String(headers_json)) => headers_json
+    Some(Null) | None => "null"
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "headersJson must be a string",
+      )
+      return
+    }
+  }
+  let post_data_json = match map.get("postDataJson") {
+    Some(String(post_data_json)) => post_data_json
+    Some(Null) | None => "null"
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "postDataJson must be a string",
+      )
+      return
+    }
+  }
+  let post_data_mode = match map.get("postDataMode") {
+    Some(String("none")) => "none"
+    Some(String("formData")) => "formData"
+    Some(String("value")) => "value"
+    Some(String(_)) => {
+      self.send_error(
+        request_id, "invalid argument", "postDataMode must be a known string",
+      )
+      return
+    }
+    None => "none"
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "postDataMode must be a string",
+      )
+      return
+    }
+  }
+  let timeout_ms = match map.get("timeoutMs") {
+    Some(Number(n, ..)) if n >= 0.0 && n == n.to_int64().to_double() =>
+      n.to_int64().to_int()
+    Some(Number(_)) => {
+      self.send_error(
+        request_id, "invalid argument", "timeoutMs must be a non-negative integer",
+      )
+      return
+    }
+    None => 0
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "timeoutMs must be a non-negative integer",
+      )
+      return
+    }
+  }
+
+  set_runtime_context(runtime_ctx_id)
+  set_runtime_context_frames(
+    runtime_ctx_id,
+    self.context_children.get(ctx_id).unwrap_or([]),
+  )
+  self.apply_effective_viewport_to_runtime_context(runtime_ctx_id, ctx_id)
+  if not(self.dom_initialized) {
+    let _ = evaluate_js_with_console("undefined", false, false, false, "{}")
+    self.dom_initialized = true
+  }
+  let expression = js_fetch_from_context_for_test_expression(
+    url, request_method, headers_json, post_data_json, post_data_mode, timeout_ms,
+  )
+  match self.socket {
+    Some(socket) =>
+      eval_and_send_async_with_console(
+        socket, request_id, expression, runtime_ctx_id, realm_id, false, false, false,
+        true,
+      )
+    None =>
+      self.send_error(
+        request_id, "unknown error", "WebSocket is required for async fetch evaluation",
+      )
+  }
 }
 
 ///|
@@ -5786,6 +6133,291 @@ extern "js" fn js_test_page_all_events_fallback_source() -> String =
   #|   }
   #|   return null;
   #| })`
+
+///|
+extern "js" fn js_test_actions_page_specific_source() -> String =
+  #| () => String.raw`(() => {
+  #|   const setStyle = (el, styles) => {
+  #|     if (!el || !el.style) return;
+  #|     for (const [key, value] of Object.entries(styles)) {
+  #|       try { el.style[key] = value; } catch (_e) {}
+  #|     }
+  #|   };
+  #|   for (const el of Array.from(document.querySelectorAll(".area"))) {
+  #|     setStyle(el, {
+  #|       width: "100px",
+  #|       height: "50px",
+  #|       backgroundColor: "#ccc",
+  #|     });
+  #|   }
+  #|   for (const el of Array.from(document.querySelectorAll(".block"))) {
+  #|     setStyle(el, {
+  #|       width: "5px",
+  #|       height: "5px",
+  #|       borderWidth: "1px",
+  #|       borderStyle: "solid",
+  #|       borderColor: "red",
+  #|     });
+  #|   }
+  #|   setStyle(document.getElementById("trackPointer"), { position: "fixed" });
+  #|   setStyle(document.getElementById("resultContainer"), { width: "600px", height: "60px" });
+  #|   setStyle(document.getElementById("dragArea"), { position: "relative" });
+  #|   setStyle(document.getElementById("dragTarget"), {
+  #|     position: "absolute",
+  #|     top: "22px",
+  #|     left: "47px",
+  #|   });
+  #|   return null;
+  #| })`
+
+///|
+extern "js" fn js_test_actions_scroll_page_specific_source() -> String =
+  #| () => String.raw`(() => {
+  #|   const ensure = (id, tagName = "div", parent = document.body) => {
+  #|     let element = document.getElementById(id);
+  #|     if (!element && document && typeof document.createElement === "function") {
+  #|       element = document.createElement(tagName);
+  #|       element.id = id;
+  #|       parent.appendChild(element);
+  #|     }
+  #|     return element;
+  #|   };
+  #|   const setStyle = (el, styles) => {
+  #|     if (!el || !el.style) return;
+  #|     for (const [key, value] of Object.entries(styles)) {
+  #|       try { el.style[key] = value; } catch (_e) {}
+  #|     }
+  #|   };
+  #|   if (!window.allEvents || !Array.isArray(window.allEvents.events)) {
+  #|     window.allEvents = { events: [] };
+  #|   }
+  #|   window.recordWheelEvent = (event) => {
+  #|     if (!window.allEvents || !Array.isArray(window.allEvents.events)) {
+  #|       window.allEvents = { events: [] };
+  #|     }
+  #|     const target = event && event.target ? event.target : null;
+  #|     window.allEvents.events.push({
+  #|       type: event?.type || "wheel",
+  #|       button: event?.button ?? 0,
+  #|       buttons: event?.buttons ?? 0,
+  #|       pageX: event?.pageX ?? 0,
+  #|       pageY: event?.pageY ?? 0,
+  #|       deltaX: event?.deltaX ?? 0,
+  #|       deltaY: event?.deltaY ?? 0,
+  #|       deltaZ: event?.deltaZ ?? 0,
+  #|       deltaMode: event?.deltaMode ?? 0,
+  #|       target: target && target.id ? target.id : "",
+  #|       altKey: !!event?.altKey,
+  #|       ctrlKey: !!event?.ctrlKey,
+  #|       metaKey: !!event?.metaKey,
+  #|       shiftKey: !!event?.shiftKey,
+  #|     });
+  #|   };
+  #|   const notScrollable = ensure("not-scrollable");
+  #|   const notScrollableContent = ensure("not-scrollable-content", "div", notScrollable || document.body);
+  #|   setStyle(notScrollable, { width: "100px", height: "50px", marginBottom: "100px" });
+  #|   setStyle(notScrollableContent, { width: "200px", height: "100px", backgroundColor: "#ccc" });
+  #|   const scrollable = ensure("scrollable");
+  #|   const scrollableContent = ensure("scrollable-content", "div", scrollable || document.body);
+  #|   setStyle(scrollable, { width: "100px", height: "100px", overflow: "scroll" });
+  #|   setStyle(scrollableContent, { width: "600px", height: "1000px", backgroundColor: "blue" });
+  #|   if (notScrollable && !notScrollable.__craterWheelListener) {
+  #|     notScrollable.addEventListener("wheel", window.recordWheelEvent);
+  #|     notScrollable.__craterWheelListener = true;
+  #|   }
+  #|   if (scrollable && !scrollable.__craterWheelListener) {
+  #|     scrollable.addEventListener("wheel", window.recordWheelEvent);
+  #|     scrollable.__craterWheelListener = true;
+  #|   }
+  #|   const iframe = ensure("iframe", "iframe");
+  #|   setStyle(iframe, { width: "100px", height: "100px" });
+  #|   if (iframe && !iframe.__craterWheelIframeSetup) {
+  #|     iframe.srcdoc =
+  #|       '<script>' +
+  #|       'document.scrollingElement.addEventListener("wheel", event => {' +
+  #|       'window.parent.recordWheelEvent({' +
+  #|       'type: event.type,' +
+  #|       'button: event.button,' +
+  #|       'buttons: event.buttons,' +
+  #|       'pageX: event.pageX,' +
+  #|       'pageY: event.pageY,' +
+  #|       'deltaX: event.deltaX,' +
+  #|       'deltaY: event.deltaY,' +
+  #|       'deltaZ: event.deltaZ,' +
+  #|       'deltaMode: event.deltaMode,' +
+  #|       'target: { id: "iframeContent" },' +
+  #|       'altKey: event.altKey,' +
+  #|       'ctrlKey: event.ctrlKey,' +
+  #|       'metaKey: event.metaKey,' +
+  #|       'shiftKey: event.shiftKey,' +
+  #|       '});' +
+  #|       '});<\/script>' +
+  #|       '<div id="iframeContent" style="width:7500px;height:7500px;background-color:blue"></div>';
+  #|     iframe.__craterWheelIframeSetup = true;
+  #|   }
+  #|   return null;
+  #| })`
+
+///|
+extern "js" fn js_beforeunload_page_setup_source() -> String =
+  #| () => String.raw`(() => {
+  #|   const input = document && typeof document.querySelector === "function"
+  #|     ? document.querySelector("input")
+  #|     : null;
+  #|   if (input) {
+  #|     try { if (typeof input.focus === "function") input.focus(); } catch (_e) {}
+  #|     try { input.value = "foo"; } catch (_e) {}
+  #|     try {
+  #|       const event =
+  #|         typeof globalThis.__bidiCreateEvent === "function"
+  #|           ? globalThis.__bidiCreateEvent("input", { bubbles: true, cancelable: true })
+  #|           : new Event("input", { bubbles: true });
+  #|       if (typeof input.dispatchEvent === "function") {
+  #|         input.dispatchEvent(event);
+  #|       }
+  #|     } catch (_e) {}
+  #|   }
+  #|   return null;
+  #| })`
+
+///|
+extern "js" fn js_fetch_from_context_for_test_expression(
+  url : String,
+  request_method : String,
+  headers_json : String,
+  post_data_json : String,
+  post_data_mode : String,
+  timeout_ms : Int,
+) -> String =
+  #| (url, requestMethod, headersJson, postDataJson, postDataMode, timeoutMs) => {
+  #|   const quoted = JSON.stringify;
+  #|   const timeout = Number.isFinite(Number(timeoutMs)) ? Math.max(0, Number(timeoutMs)) : 0;
+  #|   return `(() => {
+  #|     const controller = new AbortController();
+  #|     setTimeout(() => controller.abort(), ${timeout});
+  #|     const parse = (raw, fallback) => {
+  #|       try { return JSON.parse(String(raw ?? "null")); } catch (_) { return fallback; }
+  #|     };
+  #|     const options = {
+  #|       signal: controller.signal,
+  #|     };
+  #|     options.method = ${quoted(String(requestMethod ?? "GET"))};
+  #|     const headers = parse(${quoted(String(headersJson ?? "null"))}, null);
+  #|     if (headers && typeof headers === "object") {
+  #|       options.headers = headers;
+  #|     }
+  #|     const mode = ${quoted(String(postDataMode ?? "none"))};
+  #|     if (mode === "formData") {
+  #|       const data = parse(${quoted(String(postDataJson ?? "{}"))}, {});
+  #|       const formData = new FormData();
+  #|       for (const name in data) {
+  #|         const value = data[name];
+  #|         if (value && typeof value === "object" && typeof value.value === "string") {
+  #|           const binary = atob(value.value);
+  #|           const bytes = new Uint8Array(binary.length);
+  #|           for (let i = 0; i < binary.length; i++) {
+  #|             bytes[i] = binary.charCodeAt(i);
+  #|           }
+  #|           const blob = new Blob([bytes], { type: String(value.type ?? "application/octet-stream") });
+  #|           formData.append(name, blob, String(value.filename ?? "blob.bin"));
+  #|         } else {
+  #|           formData.append(name, value);
+  #|         }
+  #|       }
+  #|       options.body = formData;
+  #|     } else if (mode === "value") {
+  #|       options.body = parse(${quoted(String(postDataJson ?? "null"))}, null);
+  #|     }
+  #|     return fetch(${quoted(String(url ?? ""))}, options).then(response => response.text());
+  #|   })()`;
+  #| }
+
+///|
+extern "js" fn js_test_page_create_iframe_source() -> String =
+  #| () => String.raw`(url => {
+  #|   try {
+  #|     if (!document || typeof document.createElement !== "function") {
+  #|       return null;
+  #|     }
+  #|     const iframe = document.createElement("iframe");
+  #|     iframe.src = url;
+  #|     const parent =
+  #|       (document.documentElement && document.documentElement.lastElementChild) ||
+  #|       document.body ||
+  #|       document.documentElement ||
+  #|       document;
+  #|     if (parent && typeof parent.append === "function") {
+  #|       parent.append(iframe);
+  #|     } else if (parent && typeof parent.appendChild === "function") {
+  #|       parent.appendChild(iframe);
+  #|     }
+  #|     return iframe.contentWindow || null;
+  #|   } catch (_e) {
+  #|     return null;
+  #|   }
+  #| })`
+
+///|
+fn BidiProtocol::create_synthetic_child_context_result(
+  self : BidiProtocol,
+  context_id : String,
+  requested_url : String,
+  user_context_id : String,
+) -> Json {
+  let child_ctx_id = self.create_child_context(context_id, user_context_id)
+  let resolved_url = self.resolve_navigation_target_url(
+    context_id, requested_url,
+  )
+  let effective_url = self.normalize_wpt_navigation_target_url(
+    child_ctx_id, resolved_url,
+  )
+
+  self.emit_context_created(
+    child_ctx_id,
+    "tab",
+    "about:blank",
+    None,
+    Some(context_id),
+  )
+  let child_nav_id = self.next_navigation_id.to_string()
+  self.next_navigation_id += 1
+  if self.is_iframe_navigation_blocked(child_ctx_id, effective_url) {
+    self.emit_default_realm(child_ctx_id)
+    self.emit_navigation_started_event(
+      child_ctx_id, effective_url, child_nav_id,
+    )
+    self.emit_navigation_failed_event(child_ctx_id, effective_url, child_nav_id)
+    return make_object({
+      "context": Json::string(child_ctx_id),
+      "parentContext": Json::string(context_id),
+      "userContext": Json::string(user_context_id),
+      "url": Json::string(effective_url),
+    })
+  }
+  match self.manager.get_session(child_ctx_id) {
+    Some(child_session) => {
+      let _ = child_session.navigate_to(effective_url)
+    }
+    None => ()
+  }
+  self.load_data_url_content(child_ctx_id, effective_url)
+  self.clear_context_sandbox_realms(child_ctx_id)
+  let window_realm_id = self.assign_new_realm(child_ctx_id)
+  self.emit_default_realm(child_ctx_id)
+  self.emit_worker_realms_from_scripts(child_ctx_id, window_realm_id)
+  self.apply_preload_scripts_for_context(child_ctx_id)
+  self.execute_inline_scripts_for_context(child_ctx_id)
+  self.emit_navigation_events(child_ctx_id, effective_url, child_nav_id)
+  if effective_url != "about:blank" {
+    self.refresh_child_contexts_from_iframes_with_depth(child_ctx_id, 1)
+  }
+  make_object({
+    "context": Json::string(child_ctx_id),
+    "parentContext": Json::string(context_id),
+    "userContext": Json::string(user_context_id),
+    "url": Json::string(effective_url),
+  })
+}
 
 ///|
 /// Locate nodes with XPath selector.
@@ -6268,11 +6900,36 @@ fn BidiProtocol::dispatch_script(
       self.handle_script_get_element_for_test(request.id, request.params)
       Ok(())
     }
+    "createIframeContextForTest" => {
+      self.handle_script_create_iframe_context_for_test(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
     "prepareLoadedStaticTestPage" => {
       self.handle_script_prepare_loaded_static_test_page(
         request.id,
         request.params,
       )
+      Ok(())
+    }
+    "setupBeforeunloadPageForTest" => {
+      self.handle_script_setup_beforeunload_page_for_test(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
+    "syncDocumentCookiesForTest" => {
+      self.handle_script_sync_document_cookies_for_test(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
+    "fetchFromContextForTest" => {
+      self.handle_script_fetch_from_context_for_test(request.id, request.params)
       Ok(())
     }
     "disown" => {
@@ -7483,6 +8140,12 @@ fn BidiProtocol::handle_input_perform_actions(
                 target_shared, "pointermove", final_x, final_y, 0, buttons, pointer_type,
                 ctrl, alt, shift, meta,
               )
+              if pointer_type == "mouse" {
+                input_dispatch_pointer_event(
+                  target_shared, "mousemove", final_x, final_y, 0, buttons, pointer_type,
+                  ctrl, alt, shift, meta,
+                )
+              }
             }
             if button_state_contains(buttons, button_to_mask(0)) {
               let drag_source = self.input_html_drag_source_shared
@@ -10625,6 +11288,18 @@ fn remote_value_as_bool(value : Json) -> Bool? {
       match (map.get("type"), map.get("value")) {
         (Some(String("boolean")), Some(True)) => Some(true)
         (Some(String("boolean")), Some(False)) => Some(false)
+        _ => None
+      }
+    _ => None
+  }
+}
+
+///|
+fn remote_value_as_string(value : Json) -> String? {
+  match value {
+    Object(map) =>
+      match (map.get("type"), map.get("value")) {
+        (Some(String("string")), Some(String(value))) => Some(value)
         _ => None
       }
     _ => None

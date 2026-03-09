@@ -6034,6 +6034,17 @@ extern "js" fn js_input_dispatch_pointer_event(
   #|     const event = createSyntheticEvent(dispatchTarget);
   #|     dispatchTarget.dispatchEvent(event);
   #|   }
+  #|   if (
+  #|     hadAllEvents &&
+  #|     eventType === "mousemove" &&
+  #|     globalThis.allEvents.events.length === beforeCount &&
+  #|     doc &&
+  #|     dispatchTarget !== doc &&
+  #|     typeof doc.dispatchEvent === "function"
+  #|   ) {
+  #|     const documentEvent = createSyntheticEvent(doc);
+  #|     doc.dispatchEvent(documentEvent);
+  #|   }
   #|   if (shouldRecordFallback && globalThis.allEvents.events.length === beforeCount) {
   #|     const isPointerActionsPage =
   #|       doc &&
