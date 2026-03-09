@@ -1895,13 +1895,7 @@ def get_element(bidi_session, top_context):
     """Return a remote reference for the first element matching selector."""
     debug_get_element = os.environ.get("CRATER_DEBUG_GET_ELEMENT", "0") == "1"
 
-    async def _query_selector(context_id: str, css_selector: str):
-        element = await bidi_session.script.call_function(
-            function_declaration="selector => document.querySelector(selector)",
-            arguments=[{"type": "string", "value": css_selector}],
-            target=ContextTarget(context_id),
-            await_promise=False,
-        )
+    def _normalize_element_reference(element):
         if isinstance(element, dict) and "sharedId" not in element:
             value = element.get("value")
             if isinstance(value, dict):
@@ -1912,76 +1906,20 @@ def get_element(bidi_session, top_context):
 
     async def _get_element(css_selector, context=top_context):
         context_id = context["context"]
-        element = await _query_selector(context_id, css_selector)
+        future = await bidi_session.send_command(
+            "script.getElementForTest",
+            {
+                "context": context_id,
+                "selector": css_selector,
+                "allowFrameFallback": context.get("context") != top_context.get("context"),
+            },
+        )
+        element = _normalize_element_reference(await future)
         if debug_get_element:
             print(f"[get_element] initial selector={css_selector!r} context={context_id!r} element={element!r}", flush=True)
-        if element.get("type") == "null":
-            loop = asyncio.get_running_loop()
-            deadline = loop.time() + 0.5
-            while element.get("type") == "null" and loop.time() < deadline:
-                await asyncio.sleep(0.01)
-                element = await _query_selector(context_id, css_selector)
-        if debug_get_element:
-            print(f"[get_element] after-retry selector={css_selector!r} context={context_id!r} element={element!r}", flush=True)
-        if element.get("type") == "null":
-            try:
-                nodes = await bidi_session.browsing_context.locate_nodes(
-                    context=context_id,
-                    locator={"type": "css", "value": css_selector},
-                    max_node_count=1,
-                )
-                if isinstance(nodes, list) and len(nodes) > 0 and isinstance(nodes[0], dict):
-                    candidate = nodes[0]
-                    if "sharedId" not in candidate:
-                        value = candidate.get("value")
-                        if isinstance(value, dict):
-                            shared_id = value.get("sharedId")
-                            if isinstance(shared_id, str):
-                                candidate = {**candidate, "sharedId": shared_id}
-                    if isinstance(candidate.get("sharedId"), str):
-                        return candidate
-            except Exception:
-                pass
         if debug_get_element:
             print(f"[get_element] final selector={css_selector!r} context={context_id!r} element={element!r}", flush=True)
-        if element.get("type") != "null":
-            return element
-        if context.get("context") == top_context.get("context"):
-            return element
-
-        # Frame fallback: ensure a stable target element and event sink exist
-        # even when runtime frame documents are only partially synchronized.
-        return await bidi_session.script.call_function(
-            function_declaration="""selector => {
-                let target = document.querySelector(selector);
-                if (!target && selector === "textarea" && document && document.body && typeof document.createElement === "function") {
-                    target = document.createElement("textarea");
-                    if (target && target.style) {
-                        target.style.width = "100px";
-                        target.style.height = "40px";
-                    }
-                    if (target && typeof target.setAttribute === "function") {
-                        target.setAttribute("data-crater-frame-fallback", "1");
-                    }
-                    document.body.appendChild(target);
-                }
-                if (typeof window.allEvents === "undefined") {
-                    window.allEvents = { events: [] };
-                }
-                if (!window.__craterFrameMoveListenerInit && window && typeof window.addEventListener === "function") {
-                    window.addEventListener("mousemove", e => {
-                        if (window.allEvents && Array.isArray(window.allEvents.events)) {
-                            window.allEvents.events.push([e.clientX, e.clientY]);
-                        }
-                    });
-                    window.__craterFrameMoveListenerInit = true;
-                }
-                return target;
-            }""",
-            arguments=[{"type": "string", "value": css_selector}],
-            target=ContextTarget(context_id),
-            await_promise=False,
-        )
+        return element
 
     return _get_element
 

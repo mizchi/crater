@@ -92,6 +92,58 @@ test "bidi script evaluateResult unwraps synthetic window.location.href" {
 }
 
 ///|
+test "bidi script callFunctionResult unwraps synthetic localStorage results" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.callFunctionResult\",\"params\":{\"function_declaration\":\"(key, value) => localStorage.setItem(key, value)\",\"arguments\":[{\"type\":\"string\",\"value\":\"test\"},{\"type\":\"string\",\"value\":\"value\"}],\"target\":{\"context\":\"session-1\"},\"await_promise\":false}}",
+  )
+  let set_json = proto.take_messages()[0].to_json()
+  assert_true(set_json.contains("\"type\":\"success\""))
+  assert_true(set_json.contains("\"result\"") == false)
+  assert_true(set_json.contains("\"type\":\"undefined\""))
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.callFunctionResult\",\"params\":{\"function_declaration\":\"(key) => localStorage.getItem(key)\",\"arguments\":[{\"type\":\"string\",\"value\":\"test\"}],\"target\":{\"context\":\"session-1\"},\"await_promise\":false}}",
+  )
+  let get_json = proto.take_messages()[0].to_json()
+  assert_true(get_json.contains("\"type\":\"success\""))
+  assert_true(get_json.contains("\"result\"") == false)
+  assert_true(get_json.contains("\"value\":\"value\""))
+}
+
+///|
+test "bidi synthetic localStorage remains isolated per browsing context" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.create\",\"params\":{\"type\":\"tab\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.callFunctionResult\",\"params\":{\"function_declaration\":\"(key, value) => localStorage.setItem(key, value)\",\"arguments\":[{\"type\":\"string\",\"value\":\"test\"},{\"type\":\"string\",\"value\":\"value\"}],\"target\":{\"context\":\"session-1\"},\"await_promise\":false}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.callFunctionResult\",\"params\":{\"function_declaration\":\"(key) => localStorage.getItem(key)\",\"arguments\":[{\"type\":\"string\",\"value\":\"test\"}],\"target\":{\"context\":\"session-2\"},\"await_promise\":false}}",
+  )
+  let get_json = proto.take_messages()[0].to_json()
+  assert_true(get_json.contains("\"type\":\"success\""))
+  assert_true(get_json.contains("\"result\"") == false)
+  assert_true(get_json.contains("\"type\":\"null\""))
+}
+
+///|
 test "bidi synthetic location href is used for document.cookie base url" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(

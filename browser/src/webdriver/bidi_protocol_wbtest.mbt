@@ -639,6 +639,42 @@ test "bidi browsingContext getCurrentUrlValue rejects invalid context type" {
 }
 
 ///|
+test "bidi script getElementForTest returns first matching node" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<div id='target'></div>\",\"wait\":\"complete\"}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.getElementForTest\",\"params\":{\"context\":\"session-1\",\"selector\":\"#target\"}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":{\"type\":\"node\""))
+  assert_true(json.contains("\"sharedId\":\"node-"))
+}
+
+///|
+test "bidi script getElementForTest creates textarea fallback when requested" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.getElementForTest\",\"params\":{\"context\":\"session-1\",\"selector\":\"textarea\",\"allowFrameFallback\":true}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":{\"type\":\"node\""))
+  assert_true(json.contains("\"sharedId\":\"node-"))
+}
+
+///|
 test "bidi browser hasUserContext reflects current user contexts" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -1425,6 +1461,26 @@ test "bidi script evaluate allEvents isolates contexts for synthetic setFiles ev
   assert_true(
     json.contains("\"result\":{\"type\":\"string\",\"value\":\"[]\"}"),
   )
+}
+
+///|
+test "bidi script evaluateResult allEvents unwraps to string remote value" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"input.recordSyntheticEvents\",\"params\":{\"context\":\"session-1\",\"events\":[{\"type\":\"input\",\"files\":[\"noop.txt\"]}]}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"JSON.stringify(window.allEvents.events)\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":{\"type\":\"string\""))
+  assert_true(json.contains("\\\"type\\\":\\\"input\\\""))
 }
 
 ///|

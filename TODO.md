@@ -156,6 +156,10 @@
 - [x] `script.removePreloadScript` が nested `{script:{script:id}}` を受理するようにして `ScriptModule.remove_preload_script` の Python 正規化を削除
 - [x] `browser.getUserContextsList` / `getClientWindowsList` を追加して `BrowserModule` の list unwrap を MoonBit 側へ移行
 - [x] `BrowsingContextModule.get_current_url` の Python 側 type unwrap を削除
+- [x] `script.getElementForTest` を追加して `get_element` fixture の querySelector / locateNodes / iframe fallback を MoonBit 側へ移行
+- [x] `input/set_files --quick` で `getElementForTest` 移行の回帰確認
+- [x] synthetic `localStorage` の `script.callFunctionResult` unwrap を MoonBit 側で扱うようにして `browser/create_user_context::test_storage_isolation` を修正
+- [x] `browser/create_user_context --quick` で localStorage unwrap 修正の回帰確認
 
 ### 次の具体タスク
 

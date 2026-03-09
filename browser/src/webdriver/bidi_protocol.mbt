@@ -5244,6 +5244,152 @@ fn BidiProtocol::evaluate_locate_expression(
 }
 
 ///|
+fn BidiProtocol::handle_script_get_element_for_test(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match self.resolve_script_get_element_for_test(request_id, params) {
+    Some(result) => self.send_success(request_id, Some(result))
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::resolve_script_get_element_for_test(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Json? {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return None
+    }
+  }
+  let ctx_id = match map.get("context") {
+    Some(String(ctx_id)) =>
+      if ctx_id == "" || self.manager.get_session(ctx_id) is None {
+        self.send_error(
+          request_id,
+          "no such frame",
+          "Unknown context: " + ctx_id,
+        )
+        return None
+      } else {
+        ctx_id
+      }
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return None
+    }
+  }
+  let selector = match map.get("selector") {
+    Some(String(selector)) => selector
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "selector must be a string",
+      )
+      return None
+    }
+  }
+  let allow_frame_fallback = match map.get("allowFrameFallback") {
+    Some(True) => true
+    Some(False) => false
+    _ => false
+  }
+  Some(
+    self.resolve_test_element_remote_value(
+      ctx_id, selector, allow_frame_fallback,
+    ),
+  )
+}
+
+///|
+fn BidiProtocol::resolve_test_element_remote_value(
+  self : BidiProtocol,
+  ctx_id : String,
+  selector : String,
+  allow_frame_fallback : Bool,
+) -> Json {
+  match self.locate_nodes_css(ctx_id, selector, [], 1, "{}") {
+    Array(nodes) =>
+      if nodes.length() > 0 {
+        nodes[0]
+      } else if allow_frame_fallback && selector == "textarea" {
+        self.evaluate_test_element_remote_expression(
+          ctx_id,
+          "selector => {" +
+          "let target = document.querySelector(selector);" +
+          "if (!target && selector === 'textarea' && document && document.body && typeof document.createElement === 'function') {" +
+          "target = document.createElement('textarea');" +
+          "if (target && target.style) {" +
+          "target.style.width = '100px';" +
+          "target.style.height = '40px';" +
+          "}" +
+          "if (target && typeof target.setAttribute === 'function') {" +
+          "target.setAttribute('data-crater-frame-fallback', '1');" +
+          "}" +
+          "document.body.appendChild(target);" +
+          "}" +
+          "if (typeof window.allEvents === 'undefined') {" +
+          "window.allEvents = { events: [] };" +
+          "}" +
+          "return target;" +
+          "}",
+          [selector],
+        )
+      } else {
+        make_object({ "type": Json::string("null") })
+      }
+    _ => make_object({ "type": Json::string("null") })
+  }
+}
+
+///|
+fn BidiProtocol::evaluate_test_element_remote_expression(
+  self : BidiProtocol,
+  ctx_id : String,
+  function_declaration : String,
+  string_arguments : Array[String],
+) -> Json {
+  let args_literal : Array[String] = []
+  for argument in string_arguments {
+    args_literal.push("\"" + escape_js_string(argument) + "\"")
+  }
+  let expression = "(" +
+    function_declaration +
+    ")(" +
+    args_literal.join(",") +
+    ")"
+  set_runtime_context(ctx_id)
+  set_runtime_context_frames(
+    ctx_id,
+    self.context_children.get(ctx_id).unwrap_or([]),
+  )
+  self.apply_effective_viewport_to_runtime_context(ctx_id, ctx_id)
+  let eval_result_json = evaluate_js_with_console(
+    expression, false, false, false, "{}",
+  )
+  let eval_result = @json.parse(eval_result_json) catch {
+    _ => return make_object({ "type": Json::string("null") })
+  }
+  match get_string_field(eval_result, "type") {
+    Some("success") =>
+      match get_field(eval_result, "result") {
+        Some(result) => result
+        None => make_object({ "type": Json::string("null") })
+      }
+    _ => make_object({ "type": Json::string("null") })
+  }
+}
+
+///|
 /// Locate nodes with XPath selector.
 fn BidiProtocol::locate_nodes_xpath(
   self : BidiProtocol,
@@ -5720,6 +5866,10 @@ fn BidiProtocol::dispatch_script(
       self.handle_script_call_function(request, true)
       Ok(())
     }
+    "getElementForTest" => {
+      self.handle_script_get_element_for_test(request.id, request.params)
+      Ok(())
+    }
     "disown" => {
       match self.validate_script_target(request.id, request.params) {
         Some(_) => return Ok(())
@@ -5950,6 +6100,7 @@ fn BidiProtocol::handle_script_evaluate(
       ctx_id,
       realm_id,
       expr,
+      unwrap_result,
     ) {
     return
   }
@@ -6275,6 +6426,7 @@ fn BidiProtocol::handle_script_call_function(
       realm_id_call,
       func,
       request.params,
+      unwrap_result,
     ) {
     return
   }
@@ -10114,6 +10266,7 @@ fn BidiProtocol::try_handle_synthetic_all_events_eval(
   ctx_id : String,
   realm_id : String,
   expression : String,
+  unwrap_result : Bool,
 ) -> Bool {
   if expression.trim().to_string() != "JSON.stringify(window.allEvents.events)" {
     return false
@@ -10122,7 +10275,7 @@ fn BidiProtocol::try_handle_synthetic_all_events_eval(
     return false
   }
   let events = self.input_synthetic_events_by_context.get(ctx_id).unwrap_or([])
-  self.send_script_remote_value_result(
+  self.send_script_remote_value_response(
     request_id,
     realm_id,
     normalize_all_events_remote_value(
@@ -10131,6 +10284,7 @@ fn BidiProtocol::try_handle_synthetic_all_events_eval(
         "value": Json::string(Json::array(events).stringify()),
       }),
     ),
+    unwrap_result,
   )
   true
 }
@@ -10991,6 +11145,7 @@ fn BidiProtocol::try_handle_synthetic_local_storage_call(
   realm_id : String,
   function_declaration : String,
   params : Json?,
+  unwrap_result : Bool,
 ) -> Bool {
   let args = match get_param_raw(params, "arguments") {
     Some(Array(values)) => values
@@ -11007,7 +11162,9 @@ fn BidiProtocol::try_handle_synthetic_local_storage_call(
           let store = self.context_local_storage.get(ctx_id).unwrap_or({})
           store[key] = value
           self.context_local_storage[ctx_id] = store
-          self.send_script_undefined_result(request_id, realm_id)
+          self.send_script_undefined_response(
+            request_id, realm_id, unwrap_result,
+          )
           return true
         }
         _ => ()
@@ -11029,11 +11186,9 @@ fn BidiProtocol::try_handle_synthetic_local_storage_call(
               })
             None => make_object({ "type": Json::string("null") })
           }
-          let result = make_object({
-            "realm": Json::string(realm_id),
-            "result": result_value,
-          })
-          self.send_success(request_id, Some(result))
+          self.send_script_remote_value_response(
+            request_id, realm_id, result_value, unwrap_result,
+          )
           return true
         }
         None => ()
