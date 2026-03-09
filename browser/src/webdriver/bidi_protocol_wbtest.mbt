@@ -579,6 +579,32 @@ test "bidi session getBaselineContextInfoForTest returns current baseline contex
 }
 
 ///|
+test "bidi network prepareContextForTest navigates default context" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let url = "data:text/html,prepared-context"
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"network.prepareContextForTest\",\"params\":{\"url\":\"" +
+    url +
+    "\"}}",
+  )
+  let prepare_json = proto.take_messages()[0].to_json()
+  assert_true(prepare_json.contains("\"type\":\"success\""))
+  assert_true(prepare_json.contains("\"url\":\"" + url + "\""))
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browsingContext.getCurrentUrlValue\",\"params\":{\"context\":\"session-1\"}}",
+  )
+  let current_url_json = proto.take_messages()[0].to_json()
+  assert_true(current_url_json.contains("\"type\":\"success\""))
+  assert_true(current_url_json.contains("\"result\":\"" + url + "\""))
+}
+
+///|
 test "bidi browsingContext getCurrentUrl returns current url" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(

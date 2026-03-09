@@ -3290,6 +3290,91 @@ fn BidiProtocol::build_context_info_for_test(
 }
 
 ///|
+fn BidiProtocol::handle_network_prepare_context_for_test(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let ctx_id = match map.get("context") {
+    Some(String(ctx_id)) =>
+      if ctx_id == "" || self.manager.get_session(ctx_id) is None {
+        self.send_error(
+          request_id,
+          "no such frame",
+          "Unknown context: " + ctx_id,
+        )
+        return
+      } else {
+        ctx_id
+      }
+    Some(Null) | None => self.ensure_default_context()
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return
+    }
+  }
+  let target_url = match map.get("url") {
+    Some(String(url)) => url
+    _ => {
+      self.send_error(request_id, "invalid argument", "url must be a string")
+      return
+    }
+  }
+  let resolved_url = self.resolve_effective_navigation_target_url(
+    ctx_id, target_url,
+  )
+  self.input_synthetic_events_by_context.remove(ctx_id)
+  self.context_synthetic_scrolled.remove(ctx_id)
+  self.clear_synthetic_location_href(ctx_id)
+  let _ = self.fail_in_flight_navigation(
+    ctx_id, "aborted", "Navigation interrupted by another navigation",
+  )
+  match self.manager.get_session(ctx_id) {
+    Some(session) => {
+      let previous_url = session.get_url()
+      match session.navigate_to(resolved_url) {
+        Ok(_) =>
+          self.complete_navigate_with_state(
+            request_id,
+            ctx_id,
+            target_url,
+            resolved_url,
+            previous_url,
+            "complete",
+            None,
+          )
+        Err(_) =>
+          self.send_success(
+            request_id,
+            Some(
+              make_object({
+                "context": Json::string(ctx_id),
+                "url": Json::string(self.current_context_url(ctx_id)),
+                "navigated": Json::boolean(false),
+              }),
+            ),
+          )
+      }
+    }
+    None => {
+      self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
+      return
+    }
+  }
+}
+
+///|
 /// Handle browsingContext.setViewport.
 fn BidiProtocol::handle_set_viewport(
   self : BidiProtocol,
@@ -5682,43 +5767,9 @@ fn BidiProtocol::handle_script_sync_document_cookies_for_test(
 ) -> Unit {
   match self.resolve_test_script_context_runtime(request_id, params) {
     Some((ctx_id, _, runtime_ctx_id)) => {
-      set_runtime_context(runtime_ctx_id)
-      set_runtime_context_frames(
-        runtime_ctx_id,
-        self.context_children.get(ctx_id).unwrap_or([]),
+      let (cookie_text, cookie_count) = self.sync_document_cookies_for_test_context(
+        ctx_id, runtime_ctx_id,
       )
-      self.apply_effective_viewport_to_runtime_context(runtime_ctx_id, ctx_id)
-      if not(self.dom_initialized) {
-        let _ = evaluate_js_with_console("undefined", false, false, false, "{}")
-        self.dom_initialized = true
-      }
-      let eval_result_json = evaluate_js_with_console(
-        "document.cookie", false, false, false, "{}",
-      )
-      self.dom_initialized = true
-      let eval_result = @json.parse(eval_result_json) catch {
-        _ => make_object({})
-      }
-      let cookie_text = match get_string_field(eval_result, "type") {
-        Some("success") =>
-          match get_field(eval_result, "result") {
-            Some(remote_value) =>
-              remote_value_as_string(remote_value).unwrap_or(
-                self.resolve_document_cookie(ctx_id).unwrap_or(""),
-              )
-            None => self.resolve_document_cookie(ctx_id).unwrap_or("")
-          }
-        _ => self.resolve_document_cookie(ctx_id).unwrap_or("")
-      }
-      let mut cookie_count = 0
-      if cookie_text.trim() != "" {
-        for raw_entry in cookie_text.split(";") {
-          if raw_entry.contains("=") {
-            self.remember_document_cookie(ctx_id, raw_entry.trim().to_string())
-            cookie_count += 1
-          }
-        }
-      }
       self.send_success(
         request_id,
         Some(
@@ -5731,6 +5782,245 @@ fn BidiProtocol::handle_script_sync_document_cookies_for_test(
     }
     None => ()
   }
+}
+
+///|
+fn BidiProtocol::sync_document_cookies_for_test_context(
+  self : BidiProtocol,
+  ctx_id : String,
+  runtime_ctx_id : String,
+) -> (String, Int) {
+  set_runtime_context(runtime_ctx_id)
+  set_runtime_context_frames(
+    runtime_ctx_id,
+    self.context_children.get(ctx_id).unwrap_or([]),
+  )
+  self.apply_effective_viewport_to_runtime_context(runtime_ctx_id, ctx_id)
+  if not(self.dom_initialized) {
+    let _ = evaluate_js_with_console("undefined", false, false, false, "{}")
+    self.dom_initialized = true
+  }
+  let eval_result_json = evaluate_js_with_console(
+    "document.cookie", false, false, false, "{}",
+  )
+  self.dom_initialized = true
+  let eval_result = @json.parse(eval_result_json) catch { _ => make_object({}) }
+  let cookie_text = match get_string_field(eval_result, "type") {
+    Some("success") =>
+      match get_field(eval_result, "result") {
+        Some(remote_value) =>
+          remote_value_as_string(remote_value).unwrap_or(
+            self.resolve_document_cookie(ctx_id).unwrap_or(""),
+          )
+        None => self.resolve_document_cookie(ctx_id).unwrap_or("")
+      }
+    _ => self.resolve_document_cookie(ctx_id).unwrap_or("")
+  }
+  let mut cookie_count = 0
+  if cookie_text.trim() != "" {
+    for raw_entry in cookie_text.split(";") {
+      if raw_entry.contains("=") {
+        self.remember_document_cookie(ctx_id, raw_entry.trim().to_string())
+        cookie_count += 1
+      }
+    }
+  }
+  (cookie_text, cookie_count)
+}
+
+///|
+fn BidiProtocol::handle_script_fetch_for_test(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+
+  let ctx_id = match map.get("context") {
+    Some(String(ctx_id)) =>
+      if ctx_id == "" || self.manager.get_session(ctx_id) is None {
+        self.send_error(
+          request_id,
+          "no such frame",
+          "Unknown context: " + ctx_id,
+        )
+        return
+      } else {
+        ctx_id
+      }
+    Some(Null) | None => self.ensure_default_context()
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return
+    }
+  }
+  let sandbox_name = match map.get("sandbox") {
+    Some(String(name)) if name != "" => Some(name)
+    Some(String(_)) | Some(Null) | None => None
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "sandbox must be a string",
+      )
+      return
+    }
+  }
+  let realm_id = match sandbox_name {
+    Some(name) => self.get_or_create_sandbox_realm(ctx_id, name)
+    None => self.context_realm.get(ctx_id).unwrap_or("realm-" + ctx_id)
+  }
+  let runtime_ctx_id = match sandbox_name {
+    Some(_) => realm_id
+    None => ctx_id
+  }
+  let target_url = match map.get("url") {
+    Some(String(url)) => url
+    _ => {
+      self.send_error(request_id, "invalid argument", "url must be a string")
+      return
+    }
+  }
+  let headers_json = match map.get("headersJson") {
+    Some(String(headers_json)) => headers_json
+    Some(Null) | None => "null"
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "headersJson must be a string",
+      )
+      return
+    }
+  }
+  let request_headers = match
+    self.normalize_synthetic_network_header_entries(
+      request_id,
+      get_map_field_with_alias(map, "requestHeaders", "request_headers"),
+    ) {
+    Some(request_headers) => request_headers
+    None => return
+  }
+  let request_value = match
+    get_map_field_with_alias(map, "requestData", "request_data") {
+    Some(raw_value) =>
+      match
+        self.normalize_synthetic_network_bytes_value(
+          request_id, raw_value, "requestData",
+        ) {
+        Some(value) => Some(value)
+        None => return
+      }
+    None => None
+  }
+  let post_data_json = match map.get("postDataJson") {
+    Some(String(post_data_json)) => post_data_json
+    Some(Null) | None => "null"
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "postDataJson must be a string",
+      )
+      return
+    }
+  }
+  let post_data_mode = match map.get("postDataMode") {
+    Some(String("none")) => "none"
+    Some(String("formData")) => "formData"
+    Some(String("value")) => "value"
+    Some(String(_)) => {
+      self.send_error(
+        request_id, "invalid argument", "postDataMode must be a known string",
+      )
+      return
+    }
+    Some(Null) | None => if request_value != None { "value" } else { "none" }
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "postDataMode must be a string",
+      )
+      return
+    }
+  }
+  let request_method = match map.get("method") {
+    Some(String(request_method)) => request_method
+    Some(Null) | None =>
+      if request_value != None || post_data_mode != "none" {
+        "POST"
+      } else {
+        "GET"
+      }
+    _ => {
+      self.send_error(request_id, "invalid argument", "method must be a string")
+      return
+    }
+  }
+  let timeout_ms = match map.get("timeoutMs") {
+    Some(Number(n, ..)) if n >= 0.0 && n == n.to_int64().to_double() =>
+      n.to_int64().to_int()
+    Some(Number(_)) => {
+      self.send_error(
+        request_id, "invalid argument", "timeoutMs must be a non-negative integer",
+      )
+      return
+    }
+    Some(Null) | None => 0
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "timeoutMs must be a non-negative integer",
+      )
+      return
+    }
+  }
+  let should_abort = match
+    get_map_field_with_alias(map, "shouldAbort", "should_abort") {
+    None | Some(Null) => false
+    Some(True) => true
+    Some(False) => false
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "shouldAbort must be a boolean",
+      )
+      return
+    }
+  }
+
+  let resolved_url = self.resolve_fetch_target_url(ctx_id, target_url)
+  if self.resolve_storage_request_cookies(ctx_id, Some(resolved_url)).length() ==
+    0 {
+    ignore(self.sync_document_cookies_for_test_context(ctx_id, runtime_ctx_id))
+  }
+
+  if canonicalize_network_http_url(resolved_url) is Some(_) ||
+    resolved_url.has_prefix("data:") {
+    let result = self.perform_synthetic_fetch_internal(
+      request_id, ctx_id, resolved_url, request_method, request_headers, request_value,
+      should_abort,
+    )
+    match result.blocked_text {
+      Some(text) =>
+        self.send_success(
+          request_id,
+          Some(
+            make_object({
+              "exceptionDetails": make_object({ "text": Json::string(text) }),
+            }),
+          ),
+        )
+      None => self.send_success(request_id, Some(result.response_value))
+    }
+    return
+  }
+
+  self.send_script_fetch_from_context_for_test(
+    request_id, ctx_id, realm_id, runtime_ctx_id, resolved_url, request_method, headers_json,
+    post_data_json, post_data_mode, timeout_ms,
+  )
 }
 
 ///|
@@ -5823,6 +6113,26 @@ fn BidiProtocol::handle_script_fetch_from_context_for_test(
     }
   }
 
+  self.send_script_fetch_from_context_for_test(
+    request_id, ctx_id, realm_id, runtime_ctx_id, url, request_method, headers_json,
+    post_data_json, post_data_mode, timeout_ms,
+  )
+}
+
+///|
+fn BidiProtocol::send_script_fetch_from_context_for_test(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  realm_id : String,
+  runtime_ctx_id : String,
+  url : String,
+  request_method : String,
+  headers_json : String,
+  post_data_json : String,
+  post_data_mode : String,
+  timeout_ms : Int,
+) -> Unit {
   set_runtime_context(runtime_ctx_id)
   set_runtime_context_frames(
     runtime_ctx_id,
@@ -6944,6 +7254,10 @@ fn BidiProtocol::dispatch_script(
         request.id,
         request.params,
       )
+      Ok(())
+    }
+    "fetchForTest" => {
+      self.handle_script_fetch_for_test(request.id, request.params)
       Ok(())
     }
     "fetchFromContextForTest" => {
@@ -9643,6 +9957,10 @@ fn BidiProtocol::dispatch_network(
     }
     "performSyntheticFetch" => {
       self.handle_network_perform_synthetic_fetch(request.id, request.params)
+      Ok(())
+    }
+    "prepareContextForTest" => {
+      self.handle_network_prepare_context_for_test(request.id, request.params)
       Ok(())
     }
     "emitNavigationRequestSequence" => {
@@ -12987,6 +13305,35 @@ fn BidiProtocol::resolve_navigation_target_url(
     Some(session) => session.get_url()
     None => "about:blank"
   }
+  resolve_relative_url_against_base(base_url, target_url)
+}
+
+///|
+fn BidiProtocol::resolve_fetch_target_url(
+  self : BidiProtocol,
+  ctx_id : String,
+  target_url : String,
+) -> String {
+  if target_url.contains("://") ||
+    target_url.has_prefix("about:") ||
+    target_url.has_prefix("data:") ||
+    target_url.has_prefix("blob:") ||
+    target_url.has_prefix("file:") ||
+    target_url.has_prefix("javascript:") {
+    return target_url
+  }
+  let base_url = self.requested_navigation_url(ctx_id)
+  if base_url != "" {
+    return resolve_relative_url_against_base(base_url, target_url)
+  }
+  self.resolve_navigation_target_url(ctx_id, target_url)
+}
+
+///|
+fn resolve_relative_url_against_base(
+  base_url : String,
+  target_url : String,
+) -> String {
   match find_substring(base_url, "://", 0) {
     Some(scheme_idx) => {
       let host_start = scheme_idx + 3

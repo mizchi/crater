@@ -24,8 +24,6 @@ import time
 import zlib
 from pathlib import Path
 from typing import Any, Mapping
-from urllib.parse import urlparse
-
 import pytest
 import pytest_asyncio
 import websockets
@@ -43,18 +41,6 @@ _WHITE_DOT_PNG_BASE64 = (
 )
 _COOKIE_ASSIGNMENT_RE = re.compile(r"""document\.cookie\s*=\s*['"]([^'"]+)['"]""")
 _HTTP_TOKEN_RE = re.compile(r"^[!#$%&'*+.^_`|~0-9A-Za-z-]+$")
-
-
-def _parse_http_url(url: str):
-    try:
-        parsed = urlparse(url)
-    except Exception:
-        return None
-    if parsed.scheme not in {"http", "https"}:
-        return None
-    if not parsed.hostname:
-        return None
-    return parsed
 
 
 def _bytes_value_from_text(value: str):
@@ -343,6 +329,10 @@ class CraterBidiSession:
         await self._ws.send(message)
         return future
 
+    async def command(self, method: str, params: Mapping[str, Any] | None = None):
+        future = await self.send_command(method, {} if params is None else params)
+        return await future
+
     def clear_event_backlog(self, event_name: str) -> None:
         self._event_backlog[event_name] = []
 
@@ -496,17 +486,6 @@ class CraterBidiSession:
         scope_info = await self.get_context_scope_info(context_id)
         return bool(scope_info.get("known"))
 
-    async def get_requested_navigation_url(self, context_id: str) -> str | None:
-        if not isinstance(context_id, str) or context_id == "":
-            return None
-        future = await self.send_command(
-            "browsingContext.getRequestedNavigationUrl",
-            {"context": context_id},
-        )
-        result = await future
-        url = result.get("url") if isinstance(result, Mapping) else None
-        return url if isinstance(url, str) else None
-
     async def get_context_cookie_info(self, context_id: str) -> dict[str, Any]:
         if not isinstance(context_id, str) or context_id == "":
             return {
@@ -547,22 +526,6 @@ class CraterBidiSession:
             "cookie": cookie_assignment,
         })
         await future
-
-    async def resolve_request_cookies(
-        self,
-        context_id: str,
-        *,
-        request_url: str | None = None,
-    ):
-        if not isinstance(context_id, str):
-            return []
-        params: dict[str, Any] = {"context": context_id}
-        if isinstance(request_url, str):
-            params["requestUrl"] = request_url
-        future = await self.send_command("storage.resolveRequestCookies", params)
-        result = await future
-        cookies = result.get("cookies", [])
-        return list(cookies) if isinstance(cookies, list) else []
 
     async def resolve_user_context(self, context_id: str) -> str:
         scope_info = await self.get_context_scope_info(context_id)
@@ -615,29 +578,6 @@ class CraterBidiSession:
             for name, value in headers.items()
             if isinstance(name, str)
         ]
-
-    async def perform_synthetic_fetch(
-        self,
-        *,
-        context_id: str,
-        url: str,
-        method: str,
-        request_headers: Mapping[str, Any] | None = None,
-        request_value: Mapping[str, Any] | None = None,
-        should_abort: bool = False,
-    ) -> dict[str, Any]:
-        params: dict[str, Any] = {
-            "context": context_id,
-            "url": url,
-            "method": method,
-            "requestHeaders": self._network_header_entries_from_map(request_headers),
-            "shouldAbort": should_abort,
-        }
-        if isinstance(request_value, Mapping):
-            params["requestData"] = dict(request_value)
-        future = await self.send_command("network.performSyntheticFetch", params)
-        result = await future
-        return dict(result) if isinstance(result, Mapping) else {}
 
     async def fail_blocked_request(
         self,
@@ -957,6 +897,15 @@ class ScriptModule:
     def __init__(self, session: CraterBidiSession):
         self._session = session
 
+    async def _result_command(self, method: str, params: Mapping[str, Any]):
+        result = await self._session.command(method, params)
+        if isinstance(result, dict) and "exceptionDetails" in result:
+            raise ScriptEvaluateResultException(result)
+        return result
+
+    def _context_id(self, context):
+        return context.get("context") if isinstance(context, Mapping) else context
+
     async def evaluate(self, expression, target, await_promise=False, **kwargs):
         raw_result = kwargs.pop("raw_result", False)
         params = {
@@ -969,13 +918,9 @@ class ScriptModule:
                 continue
             params[key] = value
         command = "script.evaluate" if raw_result else "script.evaluateResult"
-        future = await self._session.send_command(command, params)
-        result = await future
         if raw_result:
-            return result
-        if isinstance(result, dict) and "exceptionDetails" in result:
-            raise ScriptEvaluateResultException(result)
-        return result
+            return await self._session.command(command, params)
+        return await self._result_command(command, params)
 
     async def call_function(self, function_declaration, target, arguments=None, await_promise=False, **kwargs):
         raw_result = kwargs.pop("raw_result", False)
@@ -991,13 +936,9 @@ class ScriptModule:
                 continue
             params[key] = value
         command = "script.callFunction" if raw_result else "script.callFunctionResult"
-        future = await self._session.send_command(command, params)
-        result = await future
         if raw_result:
-            return result
-        if isinstance(result, dict) and "exceptionDetails" in result:
-            raise ScriptEvaluateResultException(result)
-        return result
+            return await self._session.command(command, params)
+        return await self._result_command(command, params)
 
     async def disown(self, handles, target):
         future = await self._session.send_command(
@@ -1005,6 +946,17 @@ class ScriptModule:
             {"handles": handles, "target": target},
         )
         return await future
+
+    async def get_element_for_test(self, selector, context, *, allow_frame_fallback=False):
+        context_id = self._context_id(context)
+        return await self._session.command(
+            "script.getElementForTest",
+            {
+                "context": context_id,
+                "selector": selector,
+                "allowFrameFallback": allow_frame_fallback,
+            },
+        )
 
     async def add_preload_script(self, function_declaration: str, **kwargs):
         params = {"function_declaration": function_declaration}
@@ -1048,40 +1000,33 @@ class ScriptModule:
         )
         return await future
 
-    async def sync_document_cookies_for_test(
+    async def fetch_for_test(
         self,
-        context: str,
-        *,
-        sandbox: str | None = None,
-    ):
-        params: dict[str, Any] = {"context": context}
-        if isinstance(sandbox, str):
-            params["sandbox"] = sandbox
-        future = await self._session.send_command(
-            "script.syncDocumentCookiesForTest",
-            params,
-        )
-        return await future
-
-    async def fetch_from_context_for_test(
-        self,
-        context: str,
         url: str,
         *,
-        method: str,
+        context=None,
+        method: str | None = None,
         headers: Mapping[str, Any] | None = None,
         post_data: Any = None,
         timeout_ms: int = 0,
+        should_abort: bool = False,
         sandbox: str | None = None,
     ):
         params: dict[str, Any] = {
-            "context": context,
             "url": url,
-            "method": method,
             "timeoutMs": int(timeout_ms),
+            "shouldAbort": should_abort,
+            "requestHeaders": self._session._network_header_entries_from_map(headers),
+            "headersJson": json.dumps(dict(headers)) if isinstance(headers, Mapping) else "null",
         }
-        if isinstance(headers, Mapping):
-            params["headersJson"] = json.dumps(dict(headers))
+        context_id = self._context_id(context)
+        if isinstance(context_id, str):
+            params["context"] = context_id
+        if isinstance(method, str):
+            params["method"] = method
+        request_value = _synthesize_request_bytes_value(post_data)
+        if isinstance(request_value, Mapping):
+            params["requestData"] = dict(request_value)
         if isinstance(post_data, dict):
             params["postDataMode"] = "formData"
             params["postDataJson"] = json.dumps(post_data)
@@ -1090,14 +1035,7 @@ class ScriptModule:
             params["postDataJson"] = json.dumps(post_data)
         if isinstance(sandbox, str):
             params["sandbox"] = sandbox
-        future = await self._session.send_command(
-            "script.fetchFromContextForTest",
-            params,
-        )
-        result = await future
-        if isinstance(result, dict) and "exceptionDetails" in result:
-            raise ScriptEvaluateResultException(result)
-        return result
+        return await self._result_command("script.fetchForTest", params)
 
     async def remove_preload_script(self, script: str):
         future = await self._session.send_command("script.removePreloadScript", {"script": script})
@@ -1149,6 +1087,13 @@ class NetworkModule:
             {"intercept": intercept},
         )
         return await future
+
+    async def prepare_test_context(self, *, url: str, context=None):
+        context_id = context.get("context") if isinstance(context, Mapping) else context
+        params = {"url": url}
+        if isinstance(context_id, str):
+            params["context"] = context_id
+        return await self._session.command("network.prepareContextForTest", params)
 
     async def continue_request(self, request: str, **kwargs):
         request_id = self._validate_request_id(request)
@@ -1721,72 +1666,16 @@ def fetch(bidi_session, configuration):
         timeout_in_seconds=3,
         sandbox_name=None,
     ):
-        if context is None:
-            baseline_info = await bidi_session.session.get_baseline_context_info_for_test()
-            context_info = (
-                baseline_info.get("contextInfo")
-                if isinstance(baseline_info, Mapping)
-                else None
-            )
-            context = (
-                context_info.get("context")
-                if isinstance(context_info, Mapping)
-                else None
-            )
-        context_id = context.get("context") if isinstance(context, Mapping) else context
         should_abort = timeout_in_seconds <= 0
-        if method is None:
-            method = "GET" if post_data is None else "POST"
-
-        if not isinstance(context_id, str):
-            raise TypeError(f"Unsupported context object: {context}")
-
-        if len(await bidi_session.resolve_request_cookies(context_id)) == 0:
-            await bidi_session.script.sync_document_cookies_for_test(
-                context_id,
-                sandbox=sandbox_name,
-            )
-
-        if isinstance(url, str) and url.startswith("/"):
-            base_url = await bidi_session.get_requested_navigation_url(context_id)
-            if isinstance(base_url, str):
-                parsed_base = _parse_http_url(base_url)
-                if parsed_base is not None:
-                    url = f"{parsed_base.scheme}://{parsed_base.netloc}{url}"
-
-        parsed_network_url = _parse_http_url(url)
-        is_data_url = isinstance(url, str) and url.startswith("data:")
-        request_headers = headers if isinstance(headers, Mapping) else None
-        if parsed_network_url is not None or is_data_url:
-            request_bytes_value = _synthesize_request_bytes_value(post_data)
-            result = await bidi_session.perform_synthetic_fetch(
-                context_id=context_id,
-                url=url,
-                method=method,
-                request_headers=request_headers,
-                request_value=request_bytes_value,
-                should_abort=should_abort,
-            )
-            if bool(result.get("blocked")):
-                raise ScriptEvaluateResultException({
-                    "exceptionDetails": {
-                        "text": str(result.get("message", "Request blocked by network intercept")),
-                    }
-                })
-            value = result.get("value")
-            if isinstance(value, Mapping):
-                return dict(value)
-            return _bytes_value_from_text("")
-
         timeout_ms = int(timeout_in_seconds * configuration["timeout_multiplier"] * 1000)
-
-        return await bidi_session.script.fetch_from_context_for_test(
-            context_id,
+        return await bidi_session.script.fetch_for_test(
             url,
+            context=context,
             method=method,
             headers=headers if isinstance(headers, Mapping) else None,
             post_data=post_data,
             timeout_ms=timeout_ms,
+            should_abort=should_abort,
             sandbox=sandbox_name,
         )
 
@@ -1903,15 +1792,13 @@ def get_element(bidi_session, top_context):
 
     async def _get_element(css_selector, context=top_context):
         context_id = context["context"]
-        future = await bidi_session.send_command(
-            "script.getElementForTest",
-            {
-                "context": context_id,
-                "selector": css_selector,
-                "allowFrameFallback": context.get("context") != top_context.get("context"),
-            },
+        element = _normalize_element_reference(
+            await bidi_session.script.get_element_for_test(
+                css_selector,
+                context,
+                allow_frame_fallback=context.get("context") != top_context.get("context"),
+            ),
         )
-        element = _normalize_element_reference(await future)
         if debug_get_element:
             print(f"[get_element] initial selector={css_selector!r} context={context_id!r} element={element!r}", flush=True)
         if debug_get_element:
@@ -2388,14 +2275,7 @@ async def setup_network_test(
         context=top_context["context"],
         contexts=None,
     ):
-        try:
-            await bidi_session.browsing_context.navigate(
-                context=context,
-                url=test_url,
-                wait="complete",
-            )
-        except Exception:
-            pass
+        await bidi_session.network.prepare_test_context(url=test_url, context=context)
 
         await subscribe_events(events=events, contexts=contexts)
 

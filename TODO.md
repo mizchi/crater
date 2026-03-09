@@ -185,6 +185,24 @@
 
 ### 次の具体タスク
 
+- [x] `scripts/crater_bidi_adapter.py` の現状を 3 分類で棚卸しする
+  - 現在は `2415` 行。基準にしている `dd98dd8` 時点の `5379` 行から `-2964` 行、約 `55%` 減
+  - `A. Python に残す transport / plugin core`
+    - `CraterBidiSession` の WebSocket 接続、receive loop、command future 解決、event backlog/listener 管理
+    - `_BiDiEventCollector`、`event_loop` / `bidi_session` / `current_session` / `session` など pytest plugin の基盤
+    - ここは MoonBit へ移す対象ではなく、`pytest` plugin を残す限り Python に残る
+  - `B. さらに MoonBit へ寄せられる thin wrapper / fixture glue`
+    - `BrowsingContextModule` / `SessionModule` / `ScriptModule`
+    - `top_context` / `new_tab` / `get_element` / `fetch` / `load_static_test_page` / `create_user_context` / `setup_network_test`
+    - この層は command/query を追加すればまだかなり削れる
+  - `C. WPT tooling として残置判断が必要な fixture glue`
+    - `server_config` / `url` / `inline` / `iframe`
+    - PDF/PNG assertion helper や test page builder (`compare_png_bidi`, `render_pdf_to_png_bidi`, `get_actions_origin_page` など)
+    - これは WebDriver 実装ではなく WPT harness 側の補助なので、MoonBit 化の優先度は低い
+  - 見積もり
+    - `B` を中心に adapter を `1200-1600` 行まで縮める: あと `3-5日`
+    - Python を WebDriver 実装から完全に外す: あと `1-2週間`
+    - 後者は transport / pytest plugin / runner の置き換えを含み、単なる移植ではなく実行基盤の再設計になる
 - [ ] `browsingContext` / `session` / `script` に残る adapter state を棚卸しして MoonBit 側へ寄せる
 - [x] WPT 向け URL 正規化を MoonBit 側へ移して adapter 依存を減らす
 - [x] `context_user_context / context_parent` の Python mirror を `browsingContext.getContextScopeInfo` / `session.isSubscribedForContext` ベースに削減する
@@ -206,7 +224,8 @@
   - `load_static_test_page` の inline `<script>` eval loop は `script.prepareLoadedStaticTestPage(phase=\"inlineScripts\")` に移行済み
   - `load_static_test_page` の HTML regex / multi-phase loop は `script.prepareLoadedStaticTestPage(html=...)` に集約済み
   - `setup_beforeunload_page` は `script.setupBeforeunloadPageForTest` に移行済み
-  - `fetch` fixture の cookie snapshot / page-side fetch 実行は `script.syncDocumentCookiesForTest` / `script.fetchFromContextForTest` に移行済み
+  - `fetch` fixture の cookie snapshot / page-side fetch 実行は `script.fetchForTest` に集約済み
+  - `setup_network_test` の baseline context navigation は `network.prepareContextForTest` に移行済み
 - [ ] adapter を `pytest` fixture と最小限の WPT glue のみに縮小する
   - `network` の local mirror (`_network_intercepts`, `_network_collectors`, `_network_collected_data`, synthetic subscription fallback) は削除済み
   - `browsingContext` の `_last_navigated_url` と session の `_known_user_contexts` は削除済み
@@ -215,6 +234,8 @@
   - `NetworkModule` の `continue/provide/fail/auth` event emit と preflight follow-up は MoonBit 側へ移行済み
   - `fetch` fixture の synthetic request sequence / redirect / preflight / blocked state / collected data は MoonBit 側へ移行済み
   - `provideResponse` の body override は MoonBit 側へ移行済み
+  - `get_element` / `fetch` / `setup_network_test` は MoonBit command ベースに整理済み
+  - 現在の `scripts/crater_bidi_adapter.py` は `2295` 行
   - 残りは `browsingContext` / `session` / `script` 周辺の fixture glue と module proxy の整理
 
 ## WPT サポート状況（2026-03-03）

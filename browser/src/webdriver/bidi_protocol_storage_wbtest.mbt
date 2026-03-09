@@ -338,6 +338,28 @@ test "bidi script syncDocumentCookiesForTest returns current cookie text" {
 }
 
 ///|
+test "bidi script fetchForTest resolves relative URLs against requested navigation URL" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.rememberSyntheticLocationHref\",\"params\":{\"context\":\"session-1\",\"href\":\"http://localhost:8000/webdriver/tests/support/dir/page.html\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.fetchForTest\",\"params\":{\"context\":\"session-1\",\"url\":\"../http_handlers/headers_echo.py\",\"method\":\"GET\",\"headersJson\":\"{\\\"x-test\\\":\\\"ok\\\"}\",\"requestHeaders\":[{\"name\":\"x-test\",\"value\":{\"type\":\"string\",\"value\":\"ok\"}}]}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"type\":\"string\""))
+  assert_true(json.contains("\\\"x-test\\\":\\\"ok\\\""))
+}
+
+///|
 test "bidi storage resolveRequestCookies includes ancestor context cookies and filters by path" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
