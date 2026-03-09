@@ -225,6 +225,46 @@ test "bidi network blocked request state lives in protocol" {
 }
 
 ///|
+test "bidi network blocked request raw field queries return phase and navigation" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"network.rememberBlockedRequest\",\"params\":{\"request\":\"request-raw\",\"blockedRequest\":{\"phase\":\"beforeRequestSent\",\"context_id\":\"session-1\",\"navigation\":\"navigation-raw\"}}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.getBlockedRequestPhaseValue\",\"params\":{\"request\":\"request-raw\"}}",
+  )
+  let phase_json = proto.take_messages()[0].to_json()
+  assert_true(phase_json.contains("\"type\":\"success\""))
+  assert_true(phase_json.contains("\"result\":\"beforeRequestSent\""))
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"network.getBlockedRequestNavigationValue\",\"params\":{\"request\":\"request-raw\"}}",
+  )
+  let navigation_json = proto.take_messages()[0].to_json()
+  assert_true(navigation_json.contains("\"type\":\"success\""))
+  assert_true(navigation_json.contains("\"result\":\"navigation-raw\""))
+
+  let _ = proto.process_message(
+    "{\"id\":5,\"method\":\"network.forgetBlockedRequest\",\"params\":{\"request\":\"request-raw\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":6,\"method\":\"network.getBlockedRequestPhaseValue\",\"params\":{\"request\":\"request-raw\"}}",
+  )
+  let missing_json = proto.take_messages()[0].to_json()
+  assert_true(missing_json.contains("\"type\":\"success\""))
+  assert_true(missing_json.contains("\"result\":null"))
+}
+
+///|
 test "bidi network prepareNavigationRequest emits blocked beforeRequestSent event" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(

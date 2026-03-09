@@ -242,7 +242,7 @@
   - `provideResponse` の body override は MoonBit 側へ移行済み
   - `get_element` / `fetch` / `setup_network_test` は MoonBit command ベースに整理済み
   - `get_element` の Python 側 `sharedId` normalize は削除済み
-  - 現在の `scripts/crater_bidi_adapter.py` は `2306` 行
+  - 現在の `scripts/crater_bidi_adapter.py` は `2161` 行
   - 残りは `browsingContext` / `session` / `script` 周辺の fixture glue と module proxy の整理
 
 ### 2026-03-09 の詳細計画
@@ -264,7 +264,11 @@
   - [x] `browsingContext.createContextId` で `add_and_remove_iframe` の `context` unwrap を削除
   - [x] `script.prepareBeforeunloadPageUrlForTest` で `setup_beforeunload_page` の `url` unwrap を削除
   - [x] `browsingContext.isKnownContext` / `browser.hasUserContextValue` で transport helper の `known` unwrap を raw bool 化
-  - [ ] `scripts/crater_bidi_adapter.py` を `2306` 行からさらに縮める
+  - [x] 未使用になった `get_context_scope_info` / `get_context_cookie_info` / `resolve_user_context` wrapper を削除
+  - [x] 未使用になった `create_and_get_info` / `get_baseline_context_info_for_test` / `create_iframe_context_for_test` / `setup_beforeunload_page_for_test` / `prepare_beforeunload_page_for_test` proxy を削除
+  - [x] `network.getBlockedRequestPhaseValue` / `network.getBlockedRequestNavigationValue` で blocked request の object unwrap を raw query 化
+  - [x] 未使用になった `get_blocked_network_request` / `forget_blocked_network_request` / `fail_blocked_request` / `continue_auth_request` helper を削除
+  - [ ] `scripts/crater_bidi_adapter.py` を `2161` 行からさらに縮める
 - [ ] Step 4: Python に残す層を固定する
   - [ ] `CraterBidiSession` と event backlog は transport / pytest plugin core として残す
   - [ ] transport 層以外で `.py` に残っている実装責務を TODO から洗い出して消していく

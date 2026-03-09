@@ -10343,6 +10343,20 @@ fn BidiProtocol::dispatch_network(
       self.handle_network_get_blocked_request(request.id, request.params)
       Ok(())
     }
+    "getBlockedRequestPhaseValue" => {
+      self.handle_network_get_blocked_request_phase_value(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
+    "getBlockedRequestNavigationValue" => {
+      self.handle_network_get_blocked_request_navigation_value(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
     "forgetBlockedRequest" => {
       self.handle_network_forget_blocked_request(request.id, request.params)
       Ok(())

@@ -443,45 +443,6 @@ class CraterBidiSession:
         cls = value.__class__
         return cls.__name__ == "Undefined" and cls.__module__.endswith("webdriver.bidi.undefined")
 
-    async def get_context_scope_info(self, context_id: str) -> dict[str, Any]:
-        if not isinstance(context_id, str) or context_id == "":
-            return {
-                "context": context_id if isinstance(context_id, str) else None,
-                "known": False,
-                "ancestry": [],
-                "topLevelContext": None,
-                "parent": None,
-                "userContext": None,
-                "isTopLevel": False,
-            }
-        future = await self.send_command(
-            "browsingContext.getContextScopeInfo",
-            {"context": context_id},
-        )
-        result = await future
-        return dict(result) if isinstance(result, Mapping) else {
-            "context": context_id,
-            "known": False,
-            "ancestry": [],
-            "topLevelContext": None,
-            "parent": None,
-            "userContext": None,
-            "isTopLevel": False,
-        }
-
-    def _scope_ancestry(self, scope_info: Mapping[str, Any], context_id: str) -> list[str]:
-        ancestry = []
-        raw_ancestry = scope_info.get("ancestry")
-        if isinstance(raw_ancestry, list):
-            ancestry = [entry for entry in raw_ancestry if isinstance(entry, str)]
-        if isinstance(context_id, str) and context_id and context_id not in ancestry:
-            ancestry.append(context_id)
-        return ancestry
-
-    def _scope_user_context(self, scope_info: Mapping[str, Any]) -> str:
-        user_context = scope_info.get("userContext")
-        return user_context if isinstance(user_context, str) else "default"
-
     async def is_known_context(self, context_id: str) -> bool:
         if not isinstance(context_id, str) or context_id == "":
             return False
@@ -491,28 +452,6 @@ class CraterBidiSession:
                 {"context": context_id},
             )
         )
-
-    async def get_context_cookie_info(self, context_id: str) -> dict[str, Any]:
-        if not isinstance(context_id, str) or context_id == "":
-            return {
-                "baseUrl": "http://localhost:8000/webdriver/tests/support/empty.html",
-                "origin": "http://localhost:8000",
-                "domain": "localhost",
-                "defaultPath": "/webdriver/tests/support",
-                "userContext": "default",
-            }
-        future = await self.send_command(
-            "storage.getContextCookieInfo",
-            {"context": context_id},
-        )
-        result = await future
-        return dict(result) if isinstance(result, Mapping) else {
-            "baseUrl": "http://localhost:8000/webdriver/tests/support/empty.html",
-            "origin": "http://localhost:8000",
-            "domain": "localhost",
-            "defaultPath": "/webdriver/tests/support",
-            "userContext": "default",
-        }
 
     async def has_user_context(self, user_context: str) -> bool:
         if not isinstance(user_context, str) or user_context == "":
@@ -533,45 +472,23 @@ class CraterBidiSession:
         })
         await future
 
-    async def resolve_user_context(self, context_id: str) -> str:
-        scope_info = await self.get_context_scope_info(context_id)
-        return self._scope_user_context(scope_info)
-
-    async def create_synthetic_child_context(
-        self,
-        *,
-        parent_context: str,
-        url: str,
-        user_context: str | None = None,
-    ) -> dict[str, Any]:
-        params: dict[str, Any] = {
-            "parentContext": parent_context,
-            "url": url,
-        }
-        if isinstance(user_context, str):
-            params["userContext"] = user_context
-        future = await self.send_command(
-            "browsingContext.createSyntheticChildContext",
-            params,
-        )
-        result = await future
-        return dict(result) if isinstance(result, Mapping) else {}
-
-    async def get_blocked_network_request(self, request_id: str):
-        if not isinstance(request_id, str):
+    async def blocked_request_phase(self, request_id: str) -> str | None:
+        if not isinstance(request_id, str) or request_id == "":
             return None
-        future = await self.send_command("network.getBlockedRequest", {"request": request_id})
-        result = await future
-        blocked = result.get("blockedRequest")
-        if isinstance(blocked, Mapping):
-            return dict(blocked)
-        return None
+        result = await self.command(
+            "network.getBlockedRequestPhaseValue",
+            {"request": request_id},
+        )
+        return result if isinstance(result, str) else None
 
-    async def forget_blocked_network_request(self, request_id: str) -> None:
-        if not isinstance(request_id, str):
-            return
-        future = await self.send_command("network.forgetBlockedRequest", {"request": request_id})
-        await future
+    async def blocked_request_navigation(self, request_id: str) -> str | None:
+        if not isinstance(request_id, str) or request_id == "":
+            return None
+        result = await self.command(
+            "network.getBlockedRequestNavigationValue",
+            {"request": request_id},
+        )
+        return result if isinstance(result, str) else None
 
     def _network_header_entries_from_map(
         self,
@@ -584,37 +501,6 @@ class CraterBidiSession:
             for name, value in headers.items()
             if isinstance(name, str)
         ]
-
-    async def fail_blocked_request(
-        self,
-        request_id: str,
-        *,
-        error_text: str = "Request failed",
-    ) -> dict[str, Any]:
-        future = await self.send_command("network.failBlockedRequest", {
-            "request": request_id,
-            "errorText": error_text,
-        })
-        result = await future
-        event = result.get("event", {})
-        return dict(event) if isinstance(event, Mapping) else {}
-
-    async def continue_auth_request(
-        self,
-        request_id: str,
-        *,
-        action: str,
-    ) -> dict[str, Any]:
-        future = await self.send_command("network.continueAuthRequest", {
-            "request": request_id,
-            "action": action,
-        })
-        result = await future
-        event = result.get("event")
-        return {
-            "event": dict(event) if isinstance(event, Mapping) else None,
-            "consumed": bool(result.get("consumed")),
-        }
 
     def add_event_listener(self, event_name: str, handler):
         """Add an event listener."""
@@ -736,12 +622,6 @@ class BrowsingContextModule:
         if type_hint is not _UNSET and "type" not in params and "type_hint" not in params:
             params["type_hint"] = type_hint
         return await self._session.command("browsingContext.createContextId", params)
-
-    async def create_and_get_info(self, **params):
-        future = await self._session.send_command(
-            "browsingContext.createAndGetInfo", params
-        )
-        return await future
 
     async def create_and_get_info_value(self, **params):
         future = await self._session.send_command(
@@ -885,10 +765,6 @@ class SessionModule:
         future = await self._session.send_command("session.prepareBaselineContextForTest", {})
         return await future
 
-    async def get_baseline_context_info_for_test(self):
-        future = await self._session.send_command("session.getBaselineContextInfoForTest", {})
-        return await future
-
     async def get_baseline_context_info_value_for_test(self):
         future = await self._session.send_command(
             "session.getBaselineContextInfoValueForTest", {}
@@ -1010,35 +886,11 @@ class ScriptModule:
         )
         return await future
 
-    async def create_iframe_context_for_test(self, context: str, url: str):
-        future = await self._session.send_command(
-            "script.createIframeContextForTest",
-            {"context": context, "url": url},
-        )
-        return await future
-
     async def create_iframe_context_id_for_test(self, context: str, url: str):
         return await self._session.command(
             "script.createIframeContextIdForTest",
             {"context": context, "url": url},
         )
-
-    async def setup_beforeunload_page_for_test(self, context: str):
-        future = await self._session.send_command(
-            "script.setupBeforeunloadPageForTest",
-            {"context": context},
-        )
-        return await future
-
-    async def prepare_beforeunload_page_for_test(self, context: str, url: str | None = None):
-        params: dict[str, Any] = {"context": context}
-        if isinstance(url, str):
-            params["url"] = url
-        future = await self._session.send_command(
-            "script.prepareBeforeunloadPageForTest",
-            params,
-        )
-        return await future
 
     async def prepare_beforeunload_page_url_for_test(self, context: str, url: str | None = None):
         params: dict[str, Any] = {"context": context}
@@ -1146,17 +998,14 @@ class NetworkModule:
 
     async def continue_request(self, request: str, **kwargs):
         request_id = self._validate_request_id(request)
-        blocked = await self._session.get_blocked_network_request(request_id)
-        if blocked is None:
+        blocked_phase = await self._session.blocked_request_phase(request_id)
+        if not isinstance(blocked_phase, str):
             raise bidi_error.NoSuchRequestException("Unknown request")
         params: dict[str, Any] = {"request": request_id}
         for key, value in kwargs.items():
             params[key] = value
 
-        navigation_id = blocked.get("navigation")
-        if not isinstance(navigation_id, str):
-            navigation_id = None
-
+        navigation_id = await self._session.blocked_request_navigation(request_id)
         if isinstance(navigation_id, str) and "navigation" not in params:
             params["navigation"] = navigation_id
         future = await self._session.send_command("network.continueBlockedRequest", params)
@@ -1177,7 +1026,10 @@ class NetworkModule:
 
     async def fail_request(self, request: str):
         request_id = self._validate_request_id(request)
-        await self._session.fail_blocked_request(request_id)
+        await self._session.command(
+            "network.failBlockedRequest",
+            {"request": request_id, "errorText": "Request failed"},
+        )
         return {}
 
     async def continue_with_auth(self, request: str, action: str, credentials=None):
@@ -1187,13 +1039,16 @@ class NetworkModule:
                 request=request,
                 credentials=credentials,
             )
-        await self._session.continue_auth_request(request_id, action=action)
+        await self._session.command(
+            "network.continueAuthRequest",
+            {"request": request_id, "action": action},
+        )
         return {}
 
     async def provide_response(self, request: str, **kwargs):
         request_id = self._validate_request_id(request)
-        blocked = await self._session.get_blocked_network_request(request_id)
-        if blocked is None:
+        blocked_phase = await self._session.blocked_request_phase(request_id)
+        if not isinstance(blocked_phase, str):
             raise bidi_error.NoSuchRequestException("Unknown request")
         params: dict[str, Any] = {
             "request": request_id,

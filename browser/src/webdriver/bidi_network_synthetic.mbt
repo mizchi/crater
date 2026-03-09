@@ -3435,6 +3435,55 @@ fn BidiProtocol::handle_network_get_blocked_request(
 }
 
 ///|
+fn BidiProtocol::handle_network_get_blocked_request_phase_value(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match
+    self.resolve_network_blocked_request_field(request_id, params, "phase") {
+    Some(value) => self.send_success(request_id, Some(value))
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::handle_network_get_blocked_request_navigation_value(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match
+    self.resolve_network_blocked_request_field(request_id, params, "navigation") {
+    Some(value) => self.send_success(request_id, Some(value))
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::resolve_network_blocked_request_field(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+  field_name : String,
+) -> Json? {
+  let blocked_request_id = match
+    self.synthetic_network_request_lookup_id(request_id, params) {
+    Some(blocked_request_id) => blocked_request_id
+    None => return None
+  }
+  let blocked_request = match
+    self.get_network_blocked_request(blocked_request_id) {
+    Some(blocked_request) => blocked_request
+    None => return Some(Json::null())
+  }
+  match blocked_request.get(field_name) {
+    Some(value) => Some(value)
+    None => Some(Json::null())
+  }
+}
+
+///|
 fn BidiProtocol::handle_network_forget_blocked_request(
   self : BidiProtocol,
   request_id : Int,
