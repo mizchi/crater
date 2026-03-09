@@ -57,6 +57,13 @@ priv struct AddPreloadScriptParams {
 }
 
 ///|
+priv struct NavigationCompletion {
+  result : Json
+  navigation_id : String
+  deferred_response : Bool
+}
+
+///|
 /// Outgoing BiDi message
 priv enum BidiOutMessage {
   Response(BidiResponse)
@@ -96,6 +103,7 @@ priv struct BidiProtocol {
   context_blocks_cross_origin_iframe_navigation : Map[String, Bool] // context -> active CSP/COEP frame policy
   pending_prompt_type : Map[String, String] // context -> prompt type
   pending_close_request : Map[String, Int] // context -> browsingContext.close request id
+  pending_close_wait_for_destroyed : Map[String, Bool] // context -> closeWithState wait flag
   pending_prompt_request : Map[String, Int] // context -> deferred script.evaluate request id
   pending_prompt_realm : Map[String, String] // context -> deferred script.evaluate realm id
   pending_beforeunload_request : Map[String, Int] // context -> deferred navigate request id
@@ -103,6 +111,7 @@ priv struct BidiProtocol {
   pending_beforeunload_requested_url : Map[String, String] // context -> deferred original requested URL
   pending_beforeunload_wait : Map[String, String] // context -> deferred navigate wait mode
   pending_beforeunload_navigation : Map[String, String] // context -> deferred navigation id
+  pending_beforeunload_finalize_mode : Map[String, String] // context -> deferred internal navigate/reload mode
   pending_navigation_request : Map[String, Int] // context -> deferred navigate/reload request id
   in_flight_navigation_url : Map[String, String] // context -> interruptible navigation URL
   in_flight_navigation_id : Map[String, String] // context -> interruptible navigation id
@@ -200,6 +209,7 @@ fn BidiProtocol::new() -> BidiProtocol {
     context_blocks_cross_origin_iframe_navigation: {},
     pending_prompt_type: {},
     pending_close_request: {},
+    pending_close_wait_for_destroyed: {},
     pending_prompt_request: {},
     pending_prompt_realm: {},
     pending_beforeunload_request: {},
@@ -207,6 +217,7 @@ fn BidiProtocol::new() -> BidiProtocol {
     pending_beforeunload_requested_url: {},
     pending_beforeunload_wait: {},
     pending_beforeunload_navigation: {},
+    pending_beforeunload_finalize_mode: {},
     pending_navigation_request: {},
     in_flight_navigation_url: {},
     in_flight_navigation_id: {},
@@ -959,6 +970,13 @@ fn BidiProtocol::dispatch_session(
       )
       Ok(())
     }
+    "getBaselineContextInfoForTest" => {
+      self.handle_session_get_baseline_context_info_for_test(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
     "resetForTest" => {
       self.reset_session_runtime_state()
       let ctx_id = self.ensure_default_context()
@@ -1236,8 +1254,27 @@ fn BidiProtocol::dispatch_browsing_context(
       self.handle_browsing_context_get_context_info(request.id, request.params)
       Ok(())
     }
+    "getTreeContexts" => {
+      self.handle_browsing_context_get_tree_contexts(request.id, request.params)
+      Ok(())
+    }
+    "getCurrentUrl" => {
+      self.handle_browsing_context_get_current_url(request.id, request.params)
+      Ok(())
+    }
+    "closeWithState" => {
+      self.handle_browsing_context_close_with_state(request.id, request.params)
+      Ok(())
+    }
     "prepareNavigate" => {
       self.handle_browsing_context_prepare_navigate(request.id, request.params)
+      Ok(())
+    }
+    "navigateWithState" => {
+      self.handle_browsing_context_navigate_with_state(
+        request.id,
+        request.params,
+      )
       Ok(())
     }
     "finalizeNavigate" => {
@@ -1248,6 +1285,10 @@ fn BidiProtocol::dispatch_browsing_context(
       self.handle_browsing_context_finalize_reload(request.id, request.params)
       Ok(())
     }
+    "reloadWithState" => {
+      self.handle_browsing_context_reload_with_state(request.id, request.params)
+      Ok(())
+    }
     "getCloseMetadata" => {
       self.handle_browsing_context_get_close_metadata(
         request.id,
@@ -1255,97 +1296,15 @@ fn BidiProtocol::dispatch_browsing_context(
       )
       Ok(())
     }
-    "getTree" => {
-      // Validate maxDepth parameter type and value
-      match get_param_raw(request.params, "maxDepth") {
-        Some(Number(n, ..)) => {
-          // Check for valid non-negative integer
-          // JSON numbers > 2^53 or floats or negative are invalid
-          if n < 0.0 {
-            self.send_error(
-              request.id,
-              "invalid argument",
-              "maxDepth must be a non-negative integer",
-            )
-            return Ok(())
-          }
-          // Check if it's a float (has fractional part)
-          let int_val = n.to_int64()
-          if n != int_val.to_double() {
-            self.send_error(
-              request.id,
-              "invalid argument",
-              "maxDepth must be a non-negative integer",
-            )
-            return Ok(())
-          }
-          // Check for safe integer range (2^53)
-          if n > 9007199254740991.0 {
-            self.send_error(
-              request.id,
-              "invalid argument",
-              "maxDepth must be a non-negative integer",
-            )
-            return Ok(())
-          }
+    "getTree" =>
+      match self.resolve_get_tree_contexts(request.id, request.params) {
+        Some(contexts) => {
+          let result = make_object({ "contexts": Json::array(contexts) })
+          self.send_success(request.id, Some(result))
+          Ok(())
         }
-        None => () // Valid: absent
-        Some(_) => {
-          self.send_error(
-            request.id,
-            "invalid argument",
-            "maxDepth must be a non-negative integer",
-          )
-          return Ok(())
-        }
+        None => Ok(())
       }
-      // Validate root parameter - must be a string or absent
-      match get_param_raw(request.params, "root") {
-        Some(String(root_id)) =>
-          // Root must be a known context
-          if not(self.manager.has_session(root_id)) {
-            self.send_error(
-              request.id,
-              "no such frame",
-              "Unknown context: " + root_id,
-            )
-            return Ok(())
-          }
-        Some(True)
-        | Some(False)
-        | Some(Number(_))
-        | Some(Array(_))
-        | Some(Object(_))
-        | Some(Null) => {
-          self.send_error(
-            request.id,
-            "invalid argument",
-            "root must be a string",
-          )
-          return Ok(())
-        }
-        None => () // No root specified, return all contexts
-      }
-      let max_depth = match get_param_raw(request.params, "maxDepth") {
-        Some(Number(n, ..)) => Some(n.to_int64().to_int())
-        _ => None
-      }
-      let contexts = match get_string_param(request.params, "root") {
-        Some(root_id) =>
-          match self.build_context_entry(root_id, true, 0, max_depth) {
-            Some(entry) => {
-              let single : Array[Json] = []
-              single.push(entry)
-              single
-            }
-            None => []
-          }
-        None => self.build_context_tree(max_depth)
-      }
-      let result = make_object({ "contexts": Json::array(contexts) })
-      self.send_success(request.id, Some(result))
-      Ok(())
-    }
     "create" => {
       match
         self.create_top_level_context_from_params(request.id, request.params) {
@@ -1802,6 +1761,9 @@ fn BidiProtocol::dispatch_browsing_context(
               let pending_beforeunload_navigation = self.pending_beforeunload_navigation.get(
                 prompt_ctx_id,
               )
+              let pending_beforeunload_finalize_mode = self.pending_beforeunload_finalize_mode.get(
+                prompt_ctx_id,
+              )
               let pending_result_var = self.pending_prompt_result_var.get(
                 prompt_ctx_id,
               )
@@ -1810,7 +1772,15 @@ fn BidiProtocol::dispatch_browsing_context(
               )
               match pending_close {
                 Some(close_request_id) => {
-                  self.send_success(close_request_id, Some(make_object({})))
+                  let close_result = match
+                    self.pending_close_wait_for_destroyed.get(prompt_ctx_id) {
+                    Some(wait_for_destroyed) =>
+                      make_object({
+                        "waitForDestroyed": Json::boolean(wait_for_destroyed),
+                      })
+                    None => make_object({})
+                  }
+                  self.send_success(close_request_id, Some(close_result))
                   self.close_context_and_cleanup(prompt_ctx_id, true) |> ignore
                 }
                 None => {
@@ -1831,16 +1801,49 @@ fn BidiProtocol::dispatch_browsing_context(
                           Some(session) =>
                             match session.navigate_to(nav_url) {
                               Ok(_) => {
+                                let requested_url = pending_beforeunload_requested_url.unwrap_or(
+                                  nav_url,
+                                )
                                 self.remember_requested_navigation_url(
-                                  prompt_ctx_id,
-                                  pending_beforeunload_requested_url.unwrap_or(
-                                    nav_url,
-                                  ),
+                                  prompt_ctx_id, requested_url,
                                 )
-                                self.complete_navigation_request_with_wait_and_navigation(
-                                  nav_request_id, prompt_ctx_id, nav_url, pending_beforeunload_wait,
-                                  pending_navigation_id,
-                                )
+                                match pending_beforeunload_finalize_mode {
+                                  Some("reloadWithState") => {
+                                    let completion = self.build_navigation_completion(
+                                      nav_request_id, prompt_ctx_id, nav_url, pending_beforeunload_wait,
+                                      pending_navigation_id,
+                                    )
+                                    let _ = self.emit_synthetic_navigation_request_sequence(
+                                      prompt_ctx_id,
+                                      requested_url,
+                                      Some(completion.navigation_id),
+                                    )
+                                    let blocked = self.has_network_blocked_navigation_request(
+                                      prompt_ctx_id,
+                                      Some(completion.navigation_id),
+                                    )
+                                    if blocked {
+                                      self.clear_pending_navigation_state(
+                                        prompt_ctx_id,
+                                      )
+                                    } else if not(completion.deferred_response) {
+                                      self.send_success(
+                                        nav_request_id,
+                                        Some(completion.result),
+                                      )
+                                    }
+                                  }
+                                  Some("navigateWithState") =>
+                                    self.complete_navigate_with_state(
+                                      nav_request_id, prompt_ctx_id, requested_url,
+                                      nav_url, "", pending_beforeunload_wait, pending_navigation_id,
+                                    )
+                                  _ =>
+                                    self.complete_navigation_request_with_wait_and_navigation(
+                                      nav_request_id, prompt_ctx_id, nav_url, pending_beforeunload_wait,
+                                      pending_navigation_id,
+                                    )
+                                }
                               }
                               Err(e) => {
                                 match pending_navigation_id {
@@ -2202,6 +2205,61 @@ fn BidiProtocol::handle_browsing_context_get_context_info(
 }
 
 ///|
+fn BidiProtocol::handle_browsing_context_get_tree_contexts(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match self.resolve_get_tree_contexts(request_id, params) {
+    Some(contexts) => self.send_success(request_id, Some(Json::array(contexts)))
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::handle_browsing_context_get_current_url(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let context_id = match map.get("context") {
+    Some(String(context_id)) => context_id
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return
+    }
+  }
+  if not(self.manager.has_session(context_id)) {
+    self.send_error(
+      request_id,
+      "no such frame",
+      "Unknown context: " + context_id,
+    )
+    return
+  }
+  self.send_success(
+    request_id,
+    Some(
+      make_object({
+        "context": Json::string(context_id),
+        "url": Json::string(self.current_context_url(context_id)),
+      }),
+    ),
+  )
+}
+
+///|
 fn BidiProtocol::handle_browsing_context_create_and_get_info(
   self : BidiProtocol,
   request_id : Int,
@@ -2459,6 +2517,237 @@ fn BidiProtocol::handle_browsing_context_finalize_navigate(
 }
 
 ///|
+fn BidiProtocol::send_navigation_state_result(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  requested_url : String,
+  result_url : String,
+  navigation_id : String,
+  result : Json,
+) -> Unit {
+  let _ = self.emit_synthetic_navigation_request_sequence(
+    ctx_id,
+    requested_url,
+    Some(navigation_id),
+  )
+  if self.has_network_blocked_navigation_request(ctx_id, Some(navigation_id)) {
+    self.send_success(
+      request_id,
+      Some(
+        make_object({
+          "blocked": Json::boolean(true),
+          "navigation": Json::string(navigation_id),
+          "url": Json::string(result_url),
+        }),
+      ),
+    )
+  } else {
+    self.send_success(request_id, Some(result))
+  }
+}
+
+///|
+fn BidiProtocol::complete_navigate_with_state(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  requested_url : String,
+  resolved_url : String,
+  previous_url : String,
+  wait_mode : String,
+  navigation_id : String?,
+) -> Unit {
+  self.remember_requested_navigation_url(ctx_id, requested_url)
+  if is_fragment_navigation(previous_url, resolved_url) {
+    self.clear_pending_navigation_state(ctx_id)
+    let nav_id = match navigation_id {
+      Some(id) => id
+      None => {
+        let generated_id = self.next_navigation_id.to_string()
+        self.next_navigation_id += 1
+        generated_id
+      }
+    }
+    self.emit_fragment_navigated_event(ctx_id, resolved_url, Some(nav_id))
+    self.emit_history_updated_event(ctx_id, resolved_url)
+    let result = make_object({
+      "navigation": Json::string(nav_id),
+      "url": Json::string(resolved_url),
+    })
+    self.send_navigation_state_result(
+      request_id, ctx_id, requested_url, resolved_url, nav_id, result,
+    )
+    return
+  }
+
+  let completion = self.build_navigation_completion(
+    request_id, ctx_id, resolved_url, wait_mode, navigation_id,
+  )
+  if completion.deferred_response {
+    return
+  }
+  self.send_navigation_state_result(
+    request_id,
+    ctx_id,
+    requested_url,
+    resolved_url,
+    completion.navigation_id,
+    completion.result,
+  )
+}
+
+///|
+fn BidiProtocol::handle_browsing_context_navigate_with_state(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let ctx_id = match get_param_raw(params, "context") {
+    Some(String(value)) => value
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return
+    }
+    None => {
+      self.send_error(request_id, "invalid argument", "Missing context")
+      return
+    }
+  }
+  let url = match get_param_raw(params, "url") {
+    Some(String(value)) => value
+    Some(_) => {
+      self.send_error(request_id, "invalid argument", "url must be a string")
+      return
+    }
+    None => {
+      self.send_error(request_id, "invalid argument", "Missing url")
+      return
+    }
+  }
+  let wait_mode = match get_param_raw(params, "wait") {
+    Some(String(value)) =>
+      if value == "none" || value == "interactive" || value == "complete" {
+        value
+      } else {
+        self.send_error(
+          request_id, "invalid argument", "wait must be one of none, interactive, or complete",
+        )
+        return
+      }
+    Some(_) => {
+      self.send_error(request_id, "invalid argument", "wait must be a string")
+      return
+    }
+    None => "none"
+  }
+  if not(self.manager.has_session(ctx_id)) {
+    self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
+    return
+  }
+
+  match self.prepare_navigation_request_internal(request_id, ctx_id, url) {
+    Some(prepared) =>
+      match get_field(prepared, "blocked") {
+        Some(True) => {
+          self.send_success(request_id, Some(prepared))
+          return
+        }
+        _ => ()
+      }
+    None => return
+  }
+
+  let resolved_url = self.resolve_effective_navigation_target_url(ctx_id, url)
+  self.input_synthetic_events_by_context.remove(ctx_id)
+  self.context_synthetic_scrolled.remove(ctx_id)
+  self.clear_synthetic_location_href(ctx_id)
+  let _ = self.fail_in_flight_navigation(
+    ctx_id, "aborted", "Navigation interrupted by another navigation",
+  )
+  if not(is_valid_navigation_target_url(resolved_url)) {
+    self.send_error(request_id, "invalid argument", "url is invalid")
+    return
+  }
+  if should_fail_navigation_with_unknown_error(resolved_url) {
+    let nav_id = self.next_navigation_id.to_string()
+    self.next_navigation_id += 1
+    self.emit_navigation_started_event(ctx_id, resolved_url, nav_id)
+    self.send_error(
+      request_id, "unknown error", "Navigation failed: navigation target is unreachable",
+    )
+    return
+  }
+  if self.is_iframe_navigation_blocked(ctx_id, resolved_url) {
+    let nav_id = self.next_navigation_id.to_string()
+    self.next_navigation_id += 1
+    self.emit_navigation_started_event(ctx_id, resolved_url, nav_id)
+    self.emit_navigation_failed_event(ctx_id, resolved_url, nav_id)
+    self.send_error(
+      request_id, "unknown error", "Navigation failed: blocked by embedding policy",
+    )
+    return
+  }
+  match self.manager.get_session(ctx_id) {
+    Some(session) =>
+      if self.has_beforeunload_prompt_in_scope(ctx_id) {
+        let handler = self.resolve_unhandled_prompt_handler(
+          ctx_id, "beforeunload",
+        )
+        let nav_id = self.next_navigation_id.to_string()
+        self.next_navigation_id += 1
+        self.clear_pending_prompt_state(ctx_id)
+        self.pending_prompt_type[ctx_id] = "beforeunload"
+        self.pending_beforeunload_request[ctx_id] = request_id
+        self.pending_beforeunload_url[ctx_id] = resolved_url
+        self.pending_beforeunload_requested_url[ctx_id] = url
+        self.pending_beforeunload_wait[ctx_id] = wait_mode
+        self.pending_beforeunload_navigation[ctx_id] = nav_id
+        self.pending_beforeunload_finalize_mode[ctx_id] = "navigateWithState"
+        self.emit_navigation_started_event(ctx_id, resolved_url, nav_id)
+        self.emit_user_prompt_opened(
+          ctx_id,
+          "beforeunload",
+          handler,
+          "beforeunload",
+          None,
+        )
+        return
+      } else {
+        let previous_url = session.get_url()
+        match session.navigate_to(resolved_url) {
+          Ok(_) =>
+            self.complete_navigate_with_state(
+              request_id,
+              ctx_id,
+              url,
+              resolved_url,
+              previous_url,
+              wait_mode,
+              None,
+            )
+          Err(e) => {
+            let nav_id = self.next_navigation_id.to_string()
+            self.next_navigation_id += 1
+            self.emit_navigation_started_event(ctx_id, resolved_url, nav_id)
+            self.send_error(
+              request_id,
+              "unknown error",
+              "Navigation failed: " + e.message,
+            )
+          }
+        }
+      }
+    None => {
+      self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
+      return
+    }
+  }
+}
+
+///|
 fn BidiProtocol::handle_browsing_context_finalize_reload(
   self : BidiProtocol,
   request_id : Int,
@@ -2519,6 +2808,135 @@ fn BidiProtocol::handle_browsing_context_finalize_reload(
 }
 
 ///|
+fn BidiProtocol::handle_browsing_context_reload_with_state(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let ctx_id = match get_param_raw(params, "context") {
+    Some(String(value)) => value
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return
+    }
+    None => {
+      self.send_error(request_id, "invalid argument", "Missing context")
+      return
+    }
+  }
+  let ignore_cache_raw = match get_param_raw(params, "ignoreCache") {
+    Some(value) => Some(value)
+    None => get_param_raw(params, "ignore_cache")
+  }
+  let _ignore_cache = match ignore_cache_raw {
+    Some(True) => true
+    Some(False) => false
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "ignoreCache must be a boolean",
+      )
+      return
+    }
+    None => false
+  }
+  let wait_mode = match get_param_raw(params, "wait") {
+    Some(String(value)) =>
+      if value == "none" || value == "interactive" || value == "complete" {
+        value
+      } else {
+        self.send_error(
+          request_id, "invalid argument", "wait must be one of none, interactive, or complete",
+        )
+        return
+      }
+    Some(_) => {
+      self.send_error(request_id, "invalid argument", "wait must be a string")
+      return
+    }
+    None => "none"
+  }
+  if not(self.manager.has_session(ctx_id)) {
+    self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
+    return
+  }
+  self.input_synthetic_events_by_context.remove(ctx_id)
+  self.context_synthetic_scrolled.remove(ctx_id)
+  self.clear_synthetic_location_href(ctx_id)
+  let _ = self.fail_in_flight_navigation(
+    ctx_id, "aborted", "Navigation interrupted by reload",
+  )
+  match self.manager.get_session(ctx_id) {
+    Some(session) => {
+      let url = session.get_url()
+      if self.has_beforeunload_prompt_in_scope(ctx_id) {
+        let handler = self.resolve_unhandled_prompt_handler(
+          ctx_id, "beforeunload",
+        )
+        let nav_id = self.next_navigation_id.to_string()
+        self.next_navigation_id += 1
+        self.clear_pending_prompt_state(ctx_id)
+        self.pending_prompt_type[ctx_id] = "beforeunload"
+        self.pending_beforeunload_request[ctx_id] = request_id
+        self.pending_beforeunload_url[ctx_id] = url
+        self.pending_beforeunload_requested_url[ctx_id] = self.requested_navigation_url(
+          ctx_id,
+        )
+        self.pending_beforeunload_wait[ctx_id] = wait_mode
+        self.pending_beforeunload_navigation[ctx_id] = nav_id
+        self.pending_beforeunload_finalize_mode[ctx_id] = "reloadWithState"
+        self.emit_navigation_started_event(ctx_id, url, nav_id)
+        self.emit_user_prompt_opened(
+          ctx_id,
+          "beforeunload",
+          handler,
+          "beforeunload",
+          None,
+        )
+        return
+      }
+      let completion = self.build_navigation_completion(
+        request_id,
+        ctx_id,
+        url,
+        wait_mode,
+        None,
+      )
+      let requested_url = self.requested_navigation_url(ctx_id)
+      let _ = self.emit_synthetic_navigation_request_sequence(
+        ctx_id,
+        requested_url,
+        Some(completion.navigation_id),
+      )
+      let blocked = self.has_network_blocked_navigation_request(
+        ctx_id,
+        Some(completion.navigation_id),
+      )
+      if blocked {
+        self.clear_pending_navigation_state(ctx_id)
+        return
+      }
+      if not(completion.deferred_response) {
+        self.send_success(request_id, Some(completion.result))
+      }
+    }
+    None => {
+      self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
+      return
+    }
+  }
+}
+
+///|
+fn BidiProtocol::close_wait_for_destroyed(
+  self : BidiProtocol,
+  context_id : String,
+) -> Bool {
+  self.context_children.get(context_id).unwrap_or([]).length() > 0
+}
+
+///|
 fn BidiProtocol::handle_browsing_context_get_close_metadata(
   self : BidiProtocol,
   request_id : Int,
@@ -2554,15 +2972,83 @@ fn BidiProtocol::handle_browsing_context_get_close_metadata(
     self.send_error(request_id, "invalid argument", "context must be top-level")
     return
   }
-  let wait_for_destroyed = self.context_children
-    .get(context_id)
-    .unwrap_or([])
-    .length() >
-    0
+  let wait_for_destroyed = self.close_wait_for_destroyed(context_id)
   self.send_success(
     request_id,
     Some(make_object({ "waitForDestroyed": Json::boolean(wait_for_destroyed) })),
   )
+}
+
+///|
+fn BidiProtocol::handle_browsing_context_close_with_state(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let context_id = match map.get("context") {
+    Some(String(context_id)) => context_id
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return
+    }
+  }
+  let prompt_unload = match map.get("promptUnload") {
+    Some(True) => true
+    Some(False) | Some(Null) | None => false
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "promptUnload must be a boolean",
+      )
+      return
+    }
+  }
+  if not(self.manager.has_session(context_id)) {
+    self.send_error(
+      request_id,
+      "no such frame",
+      "Unknown context: " + context_id,
+    )
+    return
+  }
+  if self.context_parent.contains(context_id) {
+    self.send_error(request_id, "invalid argument", "context must be top-level")
+    return
+  }
+  let wait_for_destroyed = self.close_wait_for_destroyed(context_id)
+  if prompt_unload && self.has_beforeunload_prompt_in_scope(context_id) {
+    let handler = self.resolve_unhandled_prompt_handler(
+      context_id, "beforeunload",
+    )
+    self.clear_pending_prompt_state(context_id)
+    self.pending_prompt_type[context_id] = "beforeunload"
+    self.pending_close_request[context_id] = request_id
+    self.pending_close_wait_for_destroyed[context_id] = wait_for_destroyed
+    self.emit_user_prompt_opened(
+      context_id,
+      "beforeunload",
+      handler,
+      "beforeunload",
+      None,
+    )
+    return
+  }
+
+  self.send_success(
+    request_id,
+    Some(make_object({ "waitForDestroyed": Json::boolean(wait_for_destroyed) })),
+  )
+  self.close_context_and_cleanup(context_id, true) |> ignore
 }
 
 ///|
@@ -2655,28 +3141,9 @@ fn BidiProtocol::handle_session_prepare_baseline_context_for_test(
   }
   self.reset_session_runtime_state()
   let ctx_id = self.ensure_default_context()
-  let realm_id = self.context_realm.get(ctx_id).unwrap_or("realm-" + ctx_id)
-  self.prepare_runtime_context_for_browsing_command(ctx_id)
+  let realm_id = self.reset_context_to_blank_for_test(ctx_id)
   ignore(evaluate_js("try { delete globalThis.SOME_VARIABLE; } catch (_) {}"))
-  let context_info = self
-    .build_context_entry(ctx_id, true, 0, Some(0))
-    .unwrap_or(
-      make_object({
-        "context": Json::string(ctx_id),
-        "url": Json::string(self.current_context_url(ctx_id)),
-        "children": Json::array([]),
-        "parent": Json::null(),
-        "clientWindow": Json::string(
-          self.context_client_window
-          .get(ctx_id)
-          .unwrap_or("client-window-" + ctx_id),
-        ),
-        "userContext": Json::string(
-          self.context_user_context.get(ctx_id).unwrap_or("default"),
-        ),
-        "originalOpener": Json::null(),
-      }),
-    )
+  let context_info = self.build_context_info_for_test(ctx_id)
   self.send_success(
     request_id,
     Some(
@@ -2686,6 +3153,62 @@ fn BidiProtocol::handle_session_prepare_baseline_context_for_test(
         "contextInfo": context_info,
       }),
     ),
+  )
+}
+
+///|
+fn BidiProtocol::handle_session_get_baseline_context_info_for_test(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match params {
+    Some(Object(_)) | None => ()
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let ctx_id = self.ensure_default_context()
+  let realm_id = self.context_realm.get(ctx_id).unwrap_or("realm-" + ctx_id)
+  let context_info = self.build_context_info_for_test(ctx_id)
+  self.send_success(
+    request_id,
+    Some(
+      make_object({
+        "context": Json::string(ctx_id),
+        "realm": Json::string(realm_id),
+        "contextInfo": context_info,
+      }),
+    ),
+  )
+}
+
+///|
+fn BidiProtocol::build_context_info_for_test(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Json {
+  self
+  .build_context_entry(ctx_id, true, 0, Some(0))
+  .unwrap_or(
+    make_object({
+      "context": Json::string(ctx_id),
+      "url": Json::string(self.current_context_url(ctx_id)),
+      "children": Json::array([]),
+      "parent": Json::null(),
+      "clientWindow": Json::string(
+        self.context_client_window
+        .get(ctx_id)
+        .unwrap_or("client-window-" + ctx_id),
+      ),
+      "userContext": Json::string(
+        self.context_user_context.get(ctx_id).unwrap_or("default"),
+      ),
+      "originalOpener": Json::null(),
+    }),
   )
 }
 
@@ -5701,18 +6224,18 @@ fn BidiProtocol::dispatch_script(
     "addPreloadScript" =>
       match self.parse_add_preload_script_params(request.id, request.params) {
         Some(parsed) => {
-          let script_id = "preload-" + self.next_preload_script_id.to_string()
-          self.next_preload_script_id += 1
-          self.preload_scripts.push({
-            script_id,
-            function_declaration: parsed.function_declaration,
-            arguments: parsed.arguments,
-            sandbox: parsed.sandbox,
-            contexts: parsed.contexts,
-            user_contexts: parsed.user_contexts,
-          })
+          let script_id = self.register_preload_script(parsed)
           let result = make_object({ "script": Json::string(script_id) })
           self.send_success(request.id, Some(result))
+          Ok(())
+        }
+        None => Ok(())
+      }
+    "addPreloadScriptId" =>
+      match self.parse_add_preload_script_params(request.id, request.params) {
+        Some(parsed) => {
+          let script_id = self.register_preload_script(parsed)
+          self.send_success(request.id, Some(Json::string(script_id)))
           Ok(())
         }
         None => Ok(())
@@ -5765,96 +6288,23 @@ fn BidiProtocol::dispatch_script(
       self.send_success(request.id, Some(make_object({})))
       Ok(())
     }
-    "getRealms" => {
-      // Validate optional context parameter
-      let context_filter = match get_param_raw(request.params, "context") {
-        Some(String(ctx_id)) => {
-          if not(self.manager.has_session(ctx_id)) {
-            self.send_error(
-              request.id,
-              "no such frame",
-              "Unknown context: " + ctx_id,
-            )
-            return Ok(())
-          }
-          Some(ctx_id)
+    "getRealms" =>
+      match self.resolve_realms_list(request.id, request.params) {
+        Some(realms) => {
+          let result = make_object({ "realms": Json::array(realms) })
+          self.send_success(request.id, Some(result))
+          Ok(())
         }
-        None => None
-        Some(_) => {
-          self.send_error(
-            request.id,
-            "invalid argument",
-            "context must be a string",
-          )
-          return Ok(())
-        }
+        None => Ok(())
       }
-      // Validate optional type parameter
-      match get_param_raw(request.params, "type") {
-        Some(String(t)) =>
-          if t != "window" {
-            self.send_error(
-              request.id,
-              "invalid argument",
-              "type must be 'window'",
-            )
-            return Ok(())
-          }
-        None => ()
-        Some(_) => {
-          self.send_error(
-            request.id,
-            "invalid argument",
-            "type must be a string",
-          )
-          return Ok(())
+    "getRealmsList" =>
+      match self.resolve_realms_list(request.id, request.params) {
+        Some(realms) => {
+          self.send_success(request.id, Some(Json::array(realms)))
+          Ok(())
         }
+        None => Ok(())
       }
-
-      // Return one realm per known top-level context.
-      let realms : Array[Json] = []
-      for ctx_id in self.manager.list_sessions() {
-        let should_include = match context_filter {
-          Some(filter_ctx) => filter_ctx == ctx_id
-          None => true
-        }
-        if should_include {
-          let realm_id = self.context_realm
-            .get(ctx_id)
-            .unwrap_or("realm-" + ctx_id)
-          let origin = self.get_context_origin(ctx_id)
-          realms.push(
-            make_object({
-              "realm": Json::string(realm_id),
-              "context": Json::string(ctx_id),
-              "type": Json::string("window"),
-              "origin": Json::string(origin),
-              "sandbox": Json::null(),
-            }),
-          )
-          let prefix = ctx_id + "::"
-          for key, sandbox_realm in self.context_sandbox_realm {
-            if key.has_prefix(prefix) {
-              let sandbox_name = key[prefix.length():].to_string() catch {
-                _ => ""
-              }
-              realms.push(
-                make_object({
-                  "realm": Json::string(sandbox_realm),
-                  "context": Json::string(ctx_id),
-                  "type": Json::string("window"),
-                  "origin": Json::string(origin),
-                  "sandbox": Json::string(sandbox_name),
-                }),
-              )
-            }
-          }
-        }
-      }
-      let result = make_object({ "realms": Json::array(realms) })
-      self.send_success(request.id, Some(result))
-      Ok(())
-    }
     _ => {
       self.send_error(
         request.id,
@@ -11574,6 +12024,7 @@ fn BidiProtocol::clear_pending_prompt_state(
 ) -> Unit {
   self.pending_prompt_type.remove(ctx_id)
   self.pending_close_request.remove(ctx_id)
+  self.pending_close_wait_for_destroyed.remove(ctx_id)
   self.pending_prompt_request.remove(ctx_id)
   self.pending_prompt_realm.remove(ctx_id)
   self.pending_beforeunload_request.remove(ctx_id)
@@ -11581,6 +12032,7 @@ fn BidiProtocol::clear_pending_prompt_state(
   self.pending_beforeunload_requested_url.remove(ctx_id)
   self.pending_beforeunload_wait.remove(ctx_id)
   self.pending_beforeunload_navigation.remove(ctx_id)
+  self.pending_beforeunload_finalize_mode.remove(ctx_id)
   self.pending_prompt_result_var.remove(ctx_id)
 }
 
@@ -12059,6 +12511,35 @@ fn BidiProtocol::load_data_url_content(
       }
     None => ()
   }
+}
+
+///|
+fn BidiProtocol::reset_context_to_blank_for_test(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> String {
+  match self.manager.get_session(ctx_id) {
+    Some(session) =>
+      match session.navigate_to("about:blank") {
+        Ok(_) => ()
+        Err(_) => ()
+      }
+    None => ()
+  }
+  self.input_synthetic_events_by_context.remove(ctx_id)
+  self.context_synthetic_scrolled.remove(ctx_id)
+  self.clear_synthetic_location_href(ctx_id)
+  self.context_has_beforeunload.remove(ctx_id)
+  self.context_blocks_cross_origin_iframe_navigation.remove(ctx_id)
+  self.clear_pending_prompt_state(ctx_id)
+  self.clear_pending_navigation_state(ctx_id)
+  self.context_last_started_navigation.remove(ctx_id)
+  self.context_requested_navigation_url.remove(ctx_id)
+  self.drop_child_contexts(ctx_id, false)
+  reset_runtime_event_buffers(ctx_id)
+  self.load_data_url_content(ctx_id, "about:blank")
+  self.remove_all_realms_for_context(ctx_id)
+  self.assign_new_realm(ctx_id)
 }
 
 ///|
@@ -12743,6 +13224,78 @@ fn BidiProtocol::build_context_tree(
     }
   }
   contexts
+}
+
+///|
+fn BidiProtocol::resolve_get_tree_contexts(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Array[Json]? {
+  match get_param_raw(params, "maxDepth") {
+    Some(Number(n, ..)) => {
+      if n < 0.0 {
+        self.send_error(
+          request_id, "invalid argument", "maxDepth must be a non-negative integer",
+        )
+        return None
+      }
+      let int_val = n.to_int64()
+      if n != int_val.to_double() || n > 9007199254740991.0 {
+        self.send_error(
+          request_id, "invalid argument", "maxDepth must be a non-negative integer",
+        )
+        return None
+      }
+    }
+    None => ()
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "maxDepth must be a non-negative integer",
+      )
+      return None
+    }
+  }
+
+  match get_param_raw(params, "root") {
+    Some(String(root_id)) =>
+      if not(self.manager.has_session(root_id)) {
+        self.send_error(
+          request_id,
+          "no such frame",
+          "Unknown context: " + root_id,
+        )
+        return None
+      }
+    Some(True)
+    | Some(False)
+    | Some(Number(_))
+    | Some(Array(_))
+    | Some(Object(_))
+    | Some(Null) => {
+      self.send_error(request_id, "invalid argument", "root must be a string")
+      return None
+    }
+    None => ()
+  }
+
+  let max_depth = match get_param_raw(params, "maxDepth") {
+    Some(Number(n, ..)) => Some(n.to_int64().to_int())
+    _ => None
+  }
+  let contexts = match get_string_param(params, "root") {
+    Some(root_id) =>
+      match self.build_context_entry(root_id, true, 0, max_depth) {
+        Some(entry) => {
+          let single : Array[Json] = []
+          single.push(entry)
+          single
+        }
+        None => []
+      }
+    None => self.build_context_tree(max_depth)
+  }
+  Some(contexts)
 }
 
 ///|
@@ -13716,6 +14269,23 @@ fn BidiProtocol::complete_navigation_request_with_wait_and_navigation(
   wait_mode : String,
   navigation_id : String?,
 ) -> Unit {
+  let completion = self.build_navigation_completion(
+    request_id, ctx_id, url, wait_mode, navigation_id,
+  )
+  if not(completion.deferred_response) {
+    self.send_success(request_id, Some(completion.result))
+  }
+}
+
+///|
+fn BidiProtocol::build_navigation_completion(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  url : String,
+  wait_mode : String,
+  navigation_id : String?,
+) -> NavigationCompletion {
   let nav_id = match navigation_id {
     Some(id) => id
     None => {
@@ -13732,12 +14302,13 @@ fn BidiProtocol::complete_navigation_request_with_wait_and_navigation(
   let block_response = should_block_navigation_response(wait_mode, url)
   let mark_in_flight = is_interruptible_navigation_candidate(url) &&
     not(has_inline_redirect)
+  let deferred_response = block_response && mark_in_flight
   if mark_in_flight {
     if block_response {
       self.register_in_flight_navigation(ctx_id, url, nav_id, Some(request_id))
-      return
+    } else {
+      self.register_in_flight_navigation(ctx_id, url, nav_id, None)
     }
-    self.register_in_flight_navigation(ctx_id, url, nav_id, None)
   } else {
     self.clear_pending_navigation_state(ctx_id)
     if block_response {
@@ -13748,7 +14319,7 @@ fn BidiProtocol::complete_navigation_request_with_wait_and_navigation(
     "navigation": Json::string(nav_id),
     "url": Json::string(url),
   })
-  self.send_success(request_id, Some(result))
+  { result, navigation_id: nav_id, deferred_response }
 }
 
 ///|
@@ -16644,6 +17215,102 @@ fn BidiProtocol::parse_add_preload_script_params(
   }
 
   Some({ function_declaration, arguments, sandbox, contexts, user_contexts })
+}
+
+///|
+fn BidiProtocol::register_preload_script(
+  self : BidiProtocol,
+  parsed : AddPreloadScriptParams,
+) -> String {
+  let script_id = "preload-" + self.next_preload_script_id.to_string()
+  self.next_preload_script_id += 1
+  self.preload_scripts.push({
+    script_id,
+    function_declaration: parsed.function_declaration,
+    arguments: parsed.arguments,
+    sandbox: parsed.sandbox,
+    contexts: parsed.contexts,
+    user_contexts: parsed.user_contexts,
+  })
+  script_id
+}
+
+///|
+fn BidiProtocol::resolve_realms_list(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Array[Json]? {
+  let context_filter = match get_param_raw(params, "context") {
+    Some(String(ctx_id)) => {
+      if not(self.manager.has_session(ctx_id)) {
+        self.send_error(
+          request_id,
+          "no such frame",
+          "Unknown context: " + ctx_id,
+        )
+        return None
+      }
+      Some(ctx_id)
+    }
+    None => None
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return None
+    }
+  }
+
+  match get_param_raw(params, "type") {
+    Some(String(t)) =>
+      if t != "window" {
+        self.send_error(request_id, "invalid argument", "type must be 'window'")
+        return None
+      }
+    None => ()
+    Some(_) => {
+      self.send_error(request_id, "invalid argument", "type must be a string")
+      return None
+    }
+  }
+
+  let realms : Array[Json] = []
+  for ctx_id in self.manager.list_sessions() {
+    let should_include = match context_filter {
+      Some(filter_ctx) => filter_ctx == ctx_id
+      None => true
+    }
+    if should_include {
+      let realm_id = self.context_realm.get(ctx_id).unwrap_or("realm-" + ctx_id)
+      let origin = self.get_context_origin(ctx_id)
+      realms.push(
+        make_object({
+          "realm": Json::string(realm_id),
+          "context": Json::string(ctx_id),
+          "type": Json::string("window"),
+          "origin": Json::string(origin),
+          "sandbox": Json::null(),
+        }),
+      )
+      let prefix = ctx_id + "::"
+      for key, sandbox_realm in self.context_sandbox_realm {
+        if key.has_prefix(prefix) {
+          let sandbox_name = key[prefix.length():].to_string() catch { _ => "" }
+          realms.push(
+            make_object({
+              "realm": Json::string(sandbox_realm),
+              "context": Json::string(ctx_id),
+              "type": Json::string("window"),
+              "origin": Json::string(origin),
+              "sandbox": Json::string(sandbox_name),
+            }),
+          )
+        }
+      }
+    }
+  }
+  Some(realms)
 }
 
 ///|

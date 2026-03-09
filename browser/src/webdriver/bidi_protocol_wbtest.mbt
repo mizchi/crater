@@ -402,6 +402,29 @@ test "bidi browsingContext getContextInfo returns a single context entry" {
 }
 
 ///|
+test "bidi browsingContext getTreeContexts returns raw contexts array" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.createSyntheticChildContext\",\"params\":{\"parentContext\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/empty.html\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browsingContext.getTreeContexts\",\"params\":{\"root\":\"session-1\"}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":[{"))
+  assert_true(json.contains("\"context\":\"session-1\""))
+  assert_true(json.contains("\"context\":\"session-2\""))
+}
+
+///|
 test "bidi session prepareBaselineContextForTest clears some variable and returns context info" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -410,23 +433,80 @@ test "bidi session prepareBaselineContextForTest clears some variable and return
   ignore(proto.take_messages())
 
   let _ = proto.process_message(
-    "{\"id\":2,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"globalThis.SOME_VARIABLE = 42; globalThis.SOME_VARIABLE\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,baseline\",\"wait\":\"complete\"}}",
   )
   ignore(proto.take_messages())
 
   let _ = proto.process_message(
-    "{\"id\":3,\"method\":\"session.prepareBaselineContextForTest\",\"params\":{}}",
+    "{\"id\":3,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"globalThis.SOME_VARIABLE = 42; globalThis.SOME_VARIABLE\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"session.prepareBaselineContextForTest\",\"params\":{}}",
   )
   let prepare_json = proto.take_messages()[0].to_json()
   assert_true(prepare_json.contains("\"type\":\"success\""))
   assert_true(prepare_json.contains("\"context\":\"session-1\""))
   assert_true(prepare_json.contains("\"contextInfo\""))
+  assert_true(prepare_json.contains("\"url\":\"about:blank\""))
 
   let _ = proto.process_message(
-    "{\"id\":4,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"typeof globalThis.SOME_VARIABLE\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+    "{\"id\":5,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"typeof globalThis.SOME_VARIABLE\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
   )
   let eval_json = proto.take_messages()[0].to_json()
   assert_true(eval_json.contains("\"value\":\"undefined\""))
+}
+
+///|
+test "bidi session getBaselineContextInfoForTest returns current baseline context info" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let url = "data:text/html,baseline-info"
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"" +
+    url +
+    "\",\"wait\":\"complete\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"session.getBaselineContextInfoForTest\",\"params\":{}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"context\":\"session-1\""))
+  assert_true(json.contains("\"contextInfo\""))
+  assert_true(json.contains("\"url\":\"" + url + "\""))
+}
+
+///|
+test "bidi browsingContext getCurrentUrl returns current url" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let url = "data:text/html,current-url"
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"" +
+    url +
+    "\",\"wait\":\"complete\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browsingContext.getCurrentUrl\",\"params\":{\"context\":\"session-1\"}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"context\":\"session-1\""))
+  assert_true(json.contains("\"url\":\"" + url + "\""))
 }
 
 ///|
@@ -541,6 +621,64 @@ test "bidi browsingContext close promptUnload waits for handleUserPrompt" {
     }
   }
   assert_true(has_close_success)
+  assert_true(has_handle_success)
+  assert_true(has_destroyed)
+}
+
+///|
+test "bidi browsingContext closeWithState promptUnload keeps waitForDestroyed payload" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"browsingContext.userPromptOpened\",\"browsingContext.contextDestroyed\"]}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browsingContext.createSyntheticChildContext\",\"params\":{\"parentContext\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/empty.html\"}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/html/beforeunload.html\",\"wait\":\"complete\"}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":5,\"method\":\"browsingContext.closeWithState\",\"params\":{\"context\":\"session-1\",\"promptUnload\":true}}",
+  )
+  let close_msgs = proto.take_messages()
+  assert_eq(close_msgs.length(), 1)
+  let close_json = close_msgs[0].to_json()
+  assert_true(close_json.contains("browsingContext.userPromptOpened"))
+  assert_false(close_json.contains("\"id\":5"))
+
+  let _ = proto.process_message(
+    "{\"id\":6,\"method\":\"browsingContext.handleUserPrompt\",\"params\":{\"context\":\"session-1\"}}",
+  )
+  let msgs = proto.take_messages()
+  let mut has_close_success = false
+  let mut has_wait_flag = false
+  let mut has_handle_success = false
+  let mut has_destroyed = false
+  for msg in msgs {
+    let json = msg.to_json()
+    if json.contains("\"id\":5") && json.contains("\"type\":\"success\"") {
+      has_close_success = true
+      if json.contains("\"waitForDestroyed\":true") {
+        has_wait_flag = true
+      }
+    }
+    if json.contains("\"id\":6") && json.contains("\"type\":\"success\"") {
+      has_handle_success = true
+    }
+    if json.contains("browsingContext.contextDestroyed") {
+      has_destroyed = true
+    }
+  }
+  assert_true(has_close_success)
+  assert_true(has_wait_flag)
   assert_true(has_handle_success)
   assert_true(has_destroyed)
 }
@@ -1178,6 +1316,40 @@ test "bidi script addPreloadScript accepts snake_case aliases" {
 }
 
 ///|
+test "bidi script addPreloadScriptId returns raw script id" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.addPreloadScriptId\",\"params\":{\"functionDeclaration\":\"() => { window.foo = 'bar'; }\"}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":\"preload-1\""))
+}
+
+///|
+test "bidi script getRealmsList returns raw realms array" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.getRealmsList\",\"params\":{}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":[{"))
+  assert_true(json.contains("\"context\":\"session-1\""))
+  assert_true(json.contains("\"realm\":\"realm-session-1\""))
+}
+
+///|
 test "bidi session resetForTest clears stale realms and preloads" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -1327,6 +1499,174 @@ test "bidi browsingContext finalizeReload uses remembered requested url" {
 }
 
 ///|
+test "bidi browsingContext reloadWithState uses remembered requested url" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/http_handlers/headers_echo.py#frag\",\"wait\":\"complete\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"network.beforeRequestSent\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"browsingContext.reloadWithState\",\"params\":{\"context\":\"session-1\"}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 2)
+  let event_json = msgs[0].to_json()
+  let response_json = msgs[1].to_json()
+  assert_true(event_json.contains("\"method\":\"network.beforeRequestSent\""))
+  assert_true(
+    event_json.contains(
+      "\"url\":\"http://localhost:8000/webdriver/tests/support/http_handlers/headers_echo.py#frag\"",
+    ),
+  )
+  assert_true(response_json.contains("\"type\":\"success\""))
+  assert_true(
+    response_json.contains(
+      "\"url\":\"http://localhost:8000/webdriver/tests/support/http_handlers/headers_echo.py#frag\"",
+    ),
+  )
+}
+
+///|
+test "bidi browsingContext reloadWithState prompt defers until handleUserPrompt" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"browsingContext.userPromptOpened\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/html/beforeunload.html\",\"wait\":\"complete\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"browsingContext.reloadWithState\",\"params\":{\"context\":\"session-1\"}}",
+  )
+  let opened_msgs = proto.take_messages()
+  assert_eq(opened_msgs.length(), 1)
+  assert_true(
+    opened_msgs[0]
+    .to_json()
+    .contains("\"method\":\"browsingContext.userPromptOpened\""),
+  )
+
+  let _ = proto.process_message(
+    "{\"id\":5,\"method\":\"browsingContext.handleUserPrompt\",\"params\":{\"context\":\"session-1\",\"accept\":true}}",
+  )
+  let handled_msgs = proto.take_messages()
+  assert_eq(handled_msgs.length(), 2)
+  let reload_json = handled_msgs[0].to_json()
+  let prompt_json = handled_msgs[1].to_json()
+  assert_true(reload_json.contains("\"id\":4"))
+  assert_true(reload_json.contains("\"type\":\"success\""))
+  assert_true(
+    reload_json.contains(
+      "\"url\":\"http://localhost:8000/webdriver/tests/support/html/beforeunload.html\"",
+    ),
+  )
+  assert_true(prompt_json.contains("\"id\":5"))
+}
+
+///|
+test "bidi browsingContext navigateWithState reports blocked synthetic request" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"network.beforeRequestSent\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.addIntercept\",\"params\":{\"phases\":[\"beforeRequestSent\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"browsingContext.navigateWithState\",\"params\":{\"context\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/empty.html\",\"wait\":\"complete\"}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 2)
+  let event_json = msgs[0].to_json()
+  let response_json = msgs[1].to_json()
+  assert_true(event_json.contains("\"method\":\"network.beforeRequestSent\""))
+  assert_true(event_json.contains("\"isBlocked\":true"))
+  assert_true(response_json.contains("\"id\":4"))
+  assert_true(response_json.contains("\"type\":\"success\""))
+  assert_true(response_json.contains("\"blocked\":true"))
+  assert_true(
+    response_json.contains(
+      "\"url\":\"http://localhost:8000/webdriver/tests/support/empty.html\"",
+    ),
+  )
+}
+
+///|
+test "bidi browsingContext navigateWithState prompt defers until handleUserPrompt" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"browsingContext.userPromptOpened\"],\"contexts\":[\"session-1\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/html/beforeunload.html\",\"wait\":\"complete\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"browsingContext.navigateWithState\",\"params\":{\"context\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/empty.html\",\"wait\":\"complete\"}}",
+  )
+  let opened_msgs = proto.take_messages()
+  assert_eq(opened_msgs.length(), 1)
+  assert_true(
+    opened_msgs[0]
+    .to_json()
+    .contains("\"method\":\"browsingContext.userPromptOpened\""),
+  )
+
+  let _ = proto.process_message(
+    "{\"id\":5,\"method\":\"browsingContext.handleUserPrompt\",\"params\":{\"context\":\"session-1\",\"accept\":true}}",
+  )
+  let handled_msgs = proto.take_messages()
+  assert_eq(handled_msgs.length(), 2)
+  let navigate_json = handled_msgs[0].to_json()
+  let prompt_json = handled_msgs[1].to_json()
+  assert_true(navigate_json.contains("\"id\":4"))
+  assert_true(navigate_json.contains("\"type\":\"success\""))
+  assert_true(
+    navigate_json.contains(
+      "\"url\":\"http://localhost:8000/webdriver/tests/support/empty.html\"",
+    ),
+  )
+  assert_true(prompt_json.contains("\"id\":5"))
+}
+
+///|
 test "bidi browsingContext getCloseMetadata reports child contexts" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -1345,6 +1685,28 @@ test "bidi browsingContext getCloseMetadata reports child contexts" {
   let json = proto.take_messages()[0].to_json()
   assert_true(json.contains("\"type\":\"success\""))
   assert_true(json.contains("\"waitForDestroyed\":true"))
+}
+
+///|
+test "bidi browsingContext closeWithState reports waitForDestroyed before closing" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.createSyntheticChildContext\",\"params\":{\"parentContext\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/empty.html\"}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browsingContext.closeWithState\",\"params\":{\"context\":\"session-1\"}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"waitForDestroyed\":true"))
+  assert_false(proto.manager.has_session("session-1"))
 }
 
 ///|

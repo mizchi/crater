@@ -135,6 +135,17 @@
 - [x] `network.continueBlockedResponse` に `provideResponse` body override を実装して document/script/style の runtime 反映を MoonBit に移行
 - [x] adapter から `provideResponse` body override の post-processing を削除
 - [x] `network/provide_response/body --quick` / `network/provide_response --quick` / `network --quick` / `integration --quick` / `strict` で回帰確認
+- [x] `session.getBaselineContextInfoForTest` / `browsingContext.getCurrentUrl` を追加して `top_context / fetch / current_url` fixture の `_baseline_context_id` / single-context info 依存を削減
+- [x] `browsing_context/{get_tree,context_created} --quick` / `integration --quick` / `strict` で baseline fixture query 化の回帰確認
+- [x] `browsingContext.getTreeContexts` / `script.addPreloadScriptId` / `script.getRealmsList` を追加して module proxy の result unwrap を MoonBit 側へ移行
+- [x] `new_tab` / baseline fixture を `BrowsingContextModule` / `SessionModule` ベースへ整理
+- [x] `browsing_context/{get_tree,context_destroyed} --quick` / `script/{add_preload_script,get_realms} --quick` / `integration --quick` / `strict` で proxy 簡略化の回帰確認
+- [x] `browsingContext.closeWithState` を追加して `close` の waitForDestroyed 判定と deferred close 応答を MoonBit 側へ移行
+- [x] `browsing_context/{close,context_destroyed} --quick` / `integration --quick` / `strict` で `closeWithState` 移行の回帰確認
+- [x] `browsingContext.reloadWithState` を追加して `reload` の finalize orchestration と beforeunload 再開を MoonBit 側へ移行
+- [x] `browsing_context/reload --quick` / `network --quick` / `integration --quick` / `strict` で `reloadWithState` 移行の回帰確認
+- [x] `browsingContext.navigateWithState` を追加して `navigate` の prepare/finalize orchestration と beforeunload 再開を MoonBit 側へ移行
+- [x] `browsing_context/navigate --quick` / `network/before_request_sent --quick` / `integration --quick` / `strict` で `navigateWithState` 移行の回帰確認
 
 ### 次の具体タスク
 
@@ -144,13 +155,18 @@
 - [ ] `browsingContext` / `script` / `session` に残る local validation と fixture glue を MoonBit command に置き換える
   - `captureScreenshot` / `print` / `script.callFunction` の主要な synthetic path は移行済み
   - `navigate/reload` 後の synthetic request sequence と request id 発番は MoonBit 側へ移行済み
-  - `navigate/reload/close` の wrapper glue と `serializationOptions` 正規化は MoonBit 側へ移行済み
-  - baseline context 準備と single-context query は MoonBit 側へ移行済み
+  - `close` の waitForDestroyed 判定と deferred close 応答は `closeWithState` に移行済み
+  - `reload` の finalize orchestration は `reloadWithState` に移行済み
+  - `navigate` の prepare/finalize orchestration は `navigateWithState` に移行済み
+  - `serializationOptions` 正規化は MoonBit 側へ移行済み
+  - baseline context 準備と baseline/current-url query は MoonBit 側へ移行済み
   - requested navigation URL / context cookie scope / userContext existence は query command 化済み
   - `network` の dead helper と一部 local validation は削除済み
 - [ ] adapter を `pytest` fixture と最小限の WPT glue のみに縮小する
   - `network` の local mirror (`_network_intercepts`, `_network_collectors`, `_network_collected_data`, synthetic subscription fallback) は削除済み
   - `browsingContext` の `_last_navigated_url` と session の `_known_user_contexts` は削除済み
+  - `_baseline_context_id` と `get_tree(root,maxDepth=0)` ベースの baseline fixture fallback は削除済み
+  - `new_tab` / `top_context` / `fetch` / `current_url` は module/query command ベースへ整理済み
   - `NetworkModule` の `continue/provide/fail/auth` event emit と preflight follow-up は MoonBit 側へ移行済み
   - `fetch` fixture の synthetic request sequence / redirect / preflight / blocked state / collected data は MoonBit 側へ移行済み
   - `provideResponse` の body override は MoonBit 側へ移行済み

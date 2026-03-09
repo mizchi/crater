@@ -482,77 +482,6 @@ class CraterBidiSession:
         url = result.get("url") if isinstance(result, Mapping) else None
         return url if isinstance(url, str) else None
 
-    async def get_browsing_context_info(self, context_id: str) -> dict[str, Any]:
-        if not isinstance(context_id, str) or context_id == "":
-            return {}
-        future = await self.send_command(
-            "browsingContext.getContextInfo",
-            {"context": context_id},
-        )
-        result = await future
-        return dict(result) if isinstance(result, Mapping) else {}
-
-    async def create_browsing_context_and_get_info(self, **params: Any) -> dict[str, Any]:
-        future = await self.send_command("browsingContext.createAndGetInfo", params)
-        result = await future
-        return dict(result) if isinstance(result, Mapping) else {}
-
-    async def prepare_baseline_context_for_test(self) -> dict[str, Any]:
-        future = await self.send_command("session.prepareBaselineContextForTest", {})
-        result = await future
-        return dict(result) if isinstance(result, Mapping) else {}
-
-    async def prepare_browsing_context_navigate(
-        self,
-        *,
-        context_id: str,
-        url: str,
-    ) -> dict[str, Any]:
-        future = await self.send_command(
-            "browsingContext.prepareNavigate",
-            {"context": context_id, "url": url},
-        )
-        result = await future
-        return dict(result) if isinstance(result, Mapping) else {}
-
-    async def finalize_browsing_context_navigate(
-        self,
-        *,
-        context_id: str,
-        url: str,
-        navigation: str | None = None,
-    ) -> dict[str, Any]:
-        params: dict[str, Any] = {"context": context_id, "url": url}
-        if isinstance(navigation, str):
-            params["navigation"] = navigation
-        future = await self.send_command("browsingContext.finalizeNavigate", params)
-        result = await future
-        return dict(result) if isinstance(result, Mapping) else {}
-
-    async def finalize_browsing_context_reload(
-        self,
-        *,
-        context_id: str,
-        navigation: str | None = None,
-    ) -> dict[str, Any]:
-        params: dict[str, Any] = {"context": context_id}
-        if isinstance(navigation, str):
-            params["navigation"] = navigation
-        future = await self.send_command("browsingContext.finalizeReload", params)
-        result = await future
-        return dict(result) if isinstance(result, Mapping) else {}
-
-    async def get_browsing_context_close_metadata(
-        self,
-        context_id: str,
-    ) -> dict[str, Any]:
-        future = await self.send_command(
-            "browsingContext.getCloseMetadata",
-            {"context": context_id},
-        )
-        result = await future
-        return dict(result) if isinstance(result, Mapping) else {}
-
     async def get_context_cookie_info(self, context_id: str) -> dict[str, Any]:
         if not isinstance(context_id, str) or context_id == "":
             return {
@@ -807,34 +736,19 @@ class BrowsingContextModule:
         )
         return await future
 
-    async def navigate(self, context: str, url: str, wait: str = "none"):
-        prepare_result = await self._session.prepare_browsing_context_navigate(
-            context_id=context,
-            url=url,
-        )
-        if prepare_result.get("blocked"):
-            navigation_id = prepare_result.get("navigation")
-            await asyncio.Future()
-            return {
-                "navigation": navigation_id,
-                "url": prepare_result.get("url", url),
-            }
-
+    async def create_and_get_info(self, **params):
         future = await self._session.send_command(
-            "browsingContext.navigate", {"context": context, "url": url, "wait": wait}
+            "browsingContext.createAndGetInfo", params
         )
         result = await future
-        navigation_id = None
-        if isinstance(result, Mapping):
-            candidate_navigation_id = result.get("navigation")
-            if isinstance(candidate_navigation_id, str):
-                navigation_id = candidate_navigation_id
-        finalize_result = await self._session.finalize_browsing_context_navigate(
-            context_id=context,
-            url=url,
-            navigation=navigation_id,
+        return dict(result) if isinstance(result, Mapping) else {}
+
+    async def navigate(self, context: str, url: str, wait: str = "none"):
+        future = await self._session.send_command(
+            "browsingContext.navigateWithState", {"context": context, "url": url, "wait": wait}
         )
-        if finalize_result.get("blocked"):
+        result = await future
+        if isinstance(result, Mapping) and bool(result.get("blocked")):
             await asyncio.Future()
         return result
 
@@ -844,9 +758,20 @@ class BrowsingContextModule:
             params["root"] = root
         if max_depth is not None:
             params["maxDepth"] = max_depth
-        future = await self._session.send_command("browsingContext.getTree", params)
+        future = await self._session.send_command("browsingContext.getTreeContexts", params)
         result = await future
-        return result.get("contexts", [])
+        return result if isinstance(result, list) else []
+
+    async def get_current_url(self, context: str) -> str | None:
+        if not isinstance(context, str) or context == "":
+            return None
+        future = await self._session.send_command(
+            "browsingContext.getCurrentUrl",
+            {"context": context},
+        )
+        result = await future
+        url = result.get("url") if isinstance(result, Mapping) else None
+        return url if isinstance(url, str) else None
 
     async def close(self, context: str, prompt_unload=_UNSET):
         params = {"context": context}
@@ -854,17 +779,14 @@ class BrowsingContextModule:
         if prompt_unload is not _UNSET and prompt_unload is not None:
             params["promptUnload"] = prompt_unload
         self._session.fail_pending_print_requests_for_context(context)
-        wait_for_destroyed = False
-        if self._session.has_event_listener("browsingContext.contextDestroyed"):
-            try:
-                close_metadata = await self._session.get_browsing_context_close_metadata(
-                    context,
-                )
-            except Exception:
-                close_metadata = {}
-            wait_for_destroyed = bool(close_metadata.get("waitForDestroyed"))
-        future = await self._session.send_command("browsingContext.close", params)
+        future = await self._session.send_command("browsingContext.closeWithState", params)
         result = await future
+        wait_for_destroyed = (
+            self._session.has_event_listener("browsingContext.contextDestroyed")
+            and bool(result.get("waitForDestroyed"))
+            if isinstance(result, Mapping)
+            else False
+        )
         if wait_for_destroyed:
             await self._session.wait_for_backlog_event(
                 "browsingContext.contextDestroyed",
@@ -894,21 +816,9 @@ class BrowsingContextModule:
 
     async def reload(self, context: str, **kwargs):
         future = await self._session.send_command(
-            "browsingContext.reload", {"context": context, **kwargs}
+            "browsingContext.reloadWithState", {"context": context, **kwargs}
         )
-        result = await future
-        navigation_id = None
-        if isinstance(result, Mapping):
-            candidate_navigation_id = result.get("navigation")
-            if isinstance(candidate_navigation_id, str):
-                navigation_id = candidate_navigation_id
-        finalize_result = await self._session.finalize_browsing_context_reload(
-            context_id=context,
-            navigation=navigation_id,
-        )
-        if finalize_result.get("blocked"):
-            await asyncio.Future()
-        return result
+        return await future
 
     async def print(self, context: str, **kwargs):
         params = {"context": context}
@@ -990,6 +900,16 @@ class SessionModule:
         future = await self._session.send_command("session.status", {})
         return await future
 
+    async def prepare_baseline_context_for_test(self):
+        future = await self._session.send_command("session.prepareBaselineContextForTest", {})
+        result = await future
+        return dict(result) if isinstance(result, Mapping) else {}
+
+    async def get_baseline_context_info_for_test(self):
+        future = await self._session.send_command("session.getBaselineContextInfoForTest", {})
+        result = await future
+        return dict(result) if isinstance(result, Mapping) else {}
+
     async def subscribe(self, events: list, contexts: list = None, user_contexts: list = None):
         params = {"events": events}
         if contexts is not None:
@@ -1069,13 +989,9 @@ class ScriptModule:
             if value is None or self._session._is_undefined(value):
                 continue
             params[key] = value
-        future = await self._session.send_command("script.addPreloadScript", params)
+        future = await self._session.send_command("script.addPreloadScriptId", params)
         result = await future
-        if isinstance(result, Mapping):
-            script_id = result.get("script")
-            if isinstance(script_id, str):
-                return script_id
-        return result
+        return result if isinstance(result, str) else None
 
     async def remove_preload_script(self, script: str):
         if isinstance(script, Mapping):
@@ -1089,9 +1005,9 @@ class ScriptModule:
 
     async def get_realms(self, **kwargs):
         params = dict(kwargs)
-        future = await self._session.send_command("script.getRealms", params)
+        future = await self._session.send_command("script.getRealmsList", params)
         result = await future
-        return result.get("realms", []) if isinstance(result, Mapping) else []
+        return result if isinstance(result, list) else []
 
 
 class NetworkModule:
@@ -1434,78 +1350,29 @@ async def _reset_context_state_per_test(bidi_session):
     await _trim_contexts_for_test(bidi_session)
 
 
-def _context_sort_key(context_info: dict):
-    ctx_id = context_info.get("context", "")
-    if ctx_id.startswith("session-"):
-        try:
-            return int(ctx_id.split("-", maxsplit=1)[1])
-        except ValueError:
-            return 10**9
-    return 10**9
-
-
 async def _trim_contexts_for_test(session: CraterBidiSession):
-    baseline_ctx_id = None
     try:
-        result = await session.prepare_baseline_context_for_test()
-        ctx = result.get("context") if isinstance(result, Mapping) else None
-        if isinstance(ctx, str):
-            baseline_ctx_id = ctx
+        await session.session.prepare_baseline_context_for_test()
     except Exception:
         pass
     session._event_backlog.clear()
-
-    session._baseline_context_id = baseline_ctx_id
 
 
 @pytest_asyncio.fixture
 async def top_context(bidi_session):
     """Get the top-level browsing context."""
-    baseline_ctx_id = getattr(bidi_session, "_baseline_context_id", None)
-    if isinstance(baseline_ctx_id, str):
-        context_info = await bidi_session.get_browsing_context_info(baseline_ctx_id)
-        if context_info:
-            try:
-                await bidi_session.browsing_context.navigate(
-                    context=baseline_ctx_id,
-                    url="about:blank",
-                    wait="complete",
-                )
-            except Exception:
-                pass
-            refreshed = await bidi_session.get_browsing_context_info(baseline_ctx_id)
-            return refreshed or context_info
-
-    contexts = await bidi_session.browsing_context.get_tree()
-    if contexts:
-        sorted_contexts = sorted(contexts, key=_context_sort_key)
-        baseline_context = sorted_contexts[-1]
-        baseline_ctx_id = baseline_context.get("context")
-        bidi_session._baseline_context_id = baseline_ctx_id
-        if isinstance(baseline_ctx_id, str):
-            try:
-                await bidi_session.browsing_context.navigate(
-                    context=baseline_ctx_id,
-                    url="about:blank",
-                    wait="complete",
-                )
-            except Exception:
-                pass
-            refreshed = await bidi_session.get_browsing_context_info(baseline_ctx_id)
-            if refreshed:
-                return refreshed
-        return baseline_context
-    # Create a context if none exists
-    context_info = await bidi_session.create_browsing_context_and_get_info(type="tab")
-    if isinstance(context_info, dict):
-        bidi_session._baseline_context_id = context_info.get("context")
-    return context_info or {"context": None, "url": "about:blank"}
+    result = await bidi_session.session.get_baseline_context_info_for_test()
+    context_info = result.get("contextInfo") if isinstance(result, Mapping) else None
+    return dict(context_info) if isinstance(context_info, Mapping) else {
+        "context": None,
+        "url": "about:blank",
+    }
 
 
 @pytest_asyncio.fixture
 async def new_tab(bidi_session):
     """Open and focus a new tab."""
-    context_info = await bidi_session.create_browsing_context_and_get_info(type="tab")
+    context_info = await bidi_session.browsing_context.create_and_get_info(type="tab")
     context_id = context_info.get("context") if isinstance(context_info, Mapping) else None
     yield context_info or {"context": context_id, "url": "about:blank"}
     try:
@@ -1775,13 +1642,17 @@ def fetch(bidi_session, configuration):
         sandbox_name=None,
     ):
         if context is None:
-            candidate_context = getattr(bidi_session, "_baseline_context_id", None)
-            if not isinstance(candidate_context, str) or candidate_context == "":
-                contexts = await bidi_session.browsing_context.get_tree()
-                if isinstance(contexts, list) and len(contexts) > 0:
-                    sorted_contexts = sorted(contexts, key=_context_sort_key)
-                    candidate_context = sorted_contexts[-1].get("context")
-            context = candidate_context
+            baseline_info = await bidi_session.session.get_baseline_context_info_for_test()
+            context_info = (
+                baseline_info.get("contextInfo")
+                if isinstance(baseline_info, Mapping)
+                else None
+            )
+            context = (
+                context_info.get("context")
+                if isinstance(context_info, Mapping)
+                else None
+            )
         context_id = context.get("context") if isinstance(context, Mapping) else context
         should_abort = timeout_in_seconds <= 0
         if method is None:
@@ -2153,8 +2024,7 @@ def current_url(bidi_session):
 
     async def _current_url(context):
         context_id = context.get("context") if isinstance(context, dict) else context
-        context_info = await bidi_session.get_browsing_context_info(context_id)
-        return context_info.get("url") if context_info else None
+        return await bidi_session.browsing_context.get_current_url(context_id)
 
     return _current_url
 
