@@ -689,3 +689,70 @@ minimal selector fast path を入れた後も、no-stylesheet tree では child 
   - `block_card_like_nested_body_stacks_simple_block_children` は pass
   - `css-flexbox` は `289 / 289`
   - `css-grid` は `30 / 33` で既知の 3 failure のまま
+
+---
+
+## Skip Redundant Child Counter Style Compute (2026-03-10)
+
+### Problem
+`render_to_node_with_document()` の no-stylesheet tree では、child loop 内で counter 用の `child_style_for_counter` を毎回計算していた。ただし stylesheet が空のとき counter/pseudo 解決は無効なので、この style は使われず、その直後の recursion で同じ child style をもう一度計算していた。
+
+### Solution
+- `/Users/mz/ghq/github.com/mizchi/crater/src/renderer/renderer.mbt`
+  - stylesheet が空のときは child loop 内の `compute_element_style_indexed()` を完全に skip
+  - `compute_element_own_counters()` と `prev_sibling_counters` 更新も stylesheet 有効時だけ実行
+  - 挙動は変えず、no-stylesheet tree の child style 二重計算だけを除去
+
+### Results Comparison
+
+| Benchmark | Before | After | Improvement |
+|-----------|--------|-------|-------------|
+| `node_build_large_2k5` | 1.28 ms | 1.01 ms | **-21.1%** |
+| `node_only_large_2k5` | 2.08 ms | 1.69 ms | **-18.8%** |
+| `render_large_2k5` | 5.53 ms | 4.27 ms | **-22.8%** |
+
+### Notes
+
+- large tree では no-stylesheet path が大半なので、そのまま `render_large_2k5` にも効いている。
+- stylesheet ありの経路は条件分岐の外へ出していないので、counter/pseudo 挙動は維持される。
+- 回帰確認:
+  - `repeated inline styles do not reuse default cache across inherited font sizes` は pass
+  - `render_to_node applies margin-trim from stylesheet` は pass
+  - `css-flexbox` は `289 / 289`
+  - `css-grid` は `30 / 33` で既知の 3 failure のまま
+
+---
+
+## Inline-Only Style Cache Without CSS Copy Key (2026-03-10)
+
+### Problem
+inline-only style cache は lookup ごとに `tag|root|viewport|inline_css` の 1 本キーを生成していた。大きい tree では `style=""` の長い文字列を毎回 `StringBuilder` で連結していて、cache hit 自体はしていても key 生成のコピーが残っていた。
+
+### Solution
+- `/Users/mz/ghq/github.com/mizchi/crater/src/renderer/renderer.mbt`
+  - inline-only style cache を `Map[inline_css, Map[variant_key, Style]]` に変更
+  - outer key は元の `inline_css` をそのまま使い、inner key は `tag|root|viewport` だけの短い variant key に変更
+  - cache の保守的な適用条件
+    - stylesheet なし
+    - css var なし
+    - inherited inline context が default
+    はそのまま維持
+
+### Results Comparison
+
+| Benchmark | Before | After | Improvement |
+|-----------|--------|-------|-------------|
+| `node_build_large_2k5` | 1.01 ms | 997.07 µs | **-1.3%** |
+| `node_only_large_2k5` | 1.69 ms | 1.73 ms | variance |
+| `render_large_2k5` | 4.27 ms | 4.04 ms | **-5.4%** |
+
+### Notes
+
+- `node_build_large_2k5` は `969.24 µs .. 1.05 ms` で比較的安定して改善した。
+- `node_only_large_2k5` は parse/warm-up を含むので差分は小さく、主指標にはしない。
+- 途中で `collect_inline_content()` の no-stylesheet fast path も試したが、pre-scan コストで悪化したので採用していない。
+- 回帰確認:
+  - `repeated inline styles do not reuse default cache across inherited font sizes` は pass
+  - `render_to_node applies margin-trim from stylesheet` は pass
+  - `css-flexbox` は `289 / 289`
+  - `css-grid` は `30 / 33` で既知の 3 failure のまま

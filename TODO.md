@@ -336,15 +336,15 @@
   - [x] 現在の `scripts/crater_bidi_adapter.py` は `2002` 行
   - [ ] transport 層以外で `.py` に残っている実装責務を TODO から洗い出して消していく
 
-## WPT サポート状況（2026-03-10）
+## WPT サポート状況（2026-03-11）
 
 - 実測コマンド: `npx tsx scripts/wpt-runner.ts <module> --workers 4`
-- 全体: `1389 / 1446 passed`（`96.1%`、`57 failed`）
+- 全体: `1386 / 1446 passed`（`95.9%`、`60 failed`）
 
 | Module | Passed | Failed | Total | Rate |
 |--------|--------|--------|-------|------|
 | css-flexbox | 289 | 0 | 289 | 100.0% |
-| css-grid | 33 | 0 | 33 | 100.0% |
+| css-grid | 30 | 3 | 33 | 90.9% |
 | css-tables | 26 | 6 | 32 | 81.2% |
 | css-display | 71 | 8 | 79 | 89.9% |
 | css-box | 30 | 0 | 30 | 100.0% |
@@ -361,6 +361,10 @@
 
 - `css-flexbox`: `285 / 289` -> `289 / 289`
 - `css-position`: `74 / 84` -> `84 / 84`
+- `css-grid`: `33 / 33` までは到達済みだったが、現在は既知の 3 件が未解決
+  - `grid-in-table-cell-with-img.html`
+  - `grid-item-percentage-quirk-001.html`
+  - `grid-item-percentage-quirk-002.html`
 
 ### 直近の優先候補
 
@@ -375,6 +379,24 @@
   - text: `set_text_metrics_provider`（`wpt-runner` は `CRATER_TEXT_MODULE` または `mizchi/text` を自動探索）
   - image: `set_image_intrinsic_size_provider`（`CRATER_IMAGE_MODULE` または `mizchi/image`）
   - 画像ローカル寸法解決フォールバックは `CRATER_IMAGE_FILE_RESOLVE=1` のときのみ有効
+
+## パフォーマンス改善メモ（2026-03-11）
+
+- 現在の目安:
+  - `node_build_large_2k5`: `997.07 µs`
+  - `node_only_large_2k5`: `1.73 ms`
+  - `render_large_2k5`: `4.04 ms`
+  - `layout_only_large`: `2.15 ms`
+  - `layout_only_large_card_body`: `1.56 ms`
+  - `layout_only_large_simple_cards`: `228.10 µs`
+- 優先タスク:
+  - [ ] `node_build_large_2k5` を `style compute` と `node assembly` に分解する benchmark を追加
+  - [ ] inline-only style cache を inherited default 以外にも安全に効かせる key 設計を詰める
+  - [ ] `layout_only_large_card_body` をさらに `wrapper/text/footer` 単位で分解して、支配コストを固定観測する
+  - [ ] `card_body` の block wrapper / empty leaf path をもう一段削る
+  - [ ] benchmark の variance が大きい `render_large_2k5` は isolated repeat 測定手順を追加する
+- 失敗した案のメモ:
+  - [ ] `collect_inline_content()` の no-stylesheet pre-scan fast path は悪化したので、再設計するまで再投入しない
 
 ## css-flexbox WPT 進捗（2026-03-10）
 
@@ -425,7 +447,7 @@
   - `src/renderer/renderer_test.mbt`: `later body font style overrides earlier reset style`
   - `src/renderer/renderer_test.mbt`: `later font shorthand overrides earlier reset longhands in computed style`
 - 参考:
-  - `css-grid`: `33 / 33 passed`
+  - `css-grid`: `30 / 33 passed`（既知の 3 failure）
 
 ## 今回対応済み（2026-03-10）
 

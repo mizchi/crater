@@ -710,7 +710,9 @@ let inline_declaration_cache : Ref[Map[String, Array[(String, String)]]] = {
 }
 
 ///|
-let inline_only_style_cache : Ref[Map[String, @style.Style]] = { val: {} }
+let inline_only_style_cache : Ref[Map[String, Map[String, @style.Style]]] = {
+  val: {},
+}
 
 ///|
 fn string_map_is_empty(map : Map[String, String]) -> Bool {
@@ -735,9 +737,8 @@ fn has_default_inherited_inline_context(parent_style : @style.Style?) -> Bool {
 }
 
 ///|
-fn make_inline_only_style_cache_key(
+fn make_inline_only_style_cache_variant_key(
   tag : String,
-  inline_css : String,
   is_root : Bool,
   viewport_width : Double,
   viewport_height : Double,
@@ -750,8 +751,6 @@ fn make_inline_only_style_cache_key(
   buf.write_string((viewport_width * 10.0).to_int().to_string())
   buf.write_string("|")
   buf.write_string((viewport_height * 10.0).to_int().to_string())
-  buf.write_string("|")
-  buf.write_string(inline_css)
   buf.to_string()
 }
 
@@ -4713,24 +4712,20 @@ fn element_to_node_with_styles(
         } else {
           html_to_selector_element_minimal(child_elem, Some(selector_elem))
         }
-        let child_style_for_counter = compute_element_style_indexed(
-          child_selector,
-          child_elem.style,
-          indexed_stylesheets,
-          false,
-          ctx,
-          Some(style),
-          css_vars,
-        )
-        let child_own_counters = if stylesheets.length() == 0 {
-          child_incoming_counters
-        } else {
-          compute_element_own_counters(
+        if stylesheets.length() > 0 {
+          let child_style_for_counter = compute_element_style_indexed(
+            child_selector,
+            child_elem.style,
+            indexed_stylesheets,
+            false,
+            ctx,
+            Some(style),
+            css_vars,
+          )
+          let child_own_counters = compute_element_own_counters(
             child_incoming_counters, child_selector, child_style_for_counter, stylesheets,
             ctx, child_owner_id,
           )
-        }
-        if stylesheets.length() > 0 {
           prev_sibling_counters = Some(child_own_counters)
         }
         if include_selector_match_data {
@@ -5060,24 +5055,20 @@ fn element_to_node_with_styles_internal(
         } else {
           html_to_selector_element_minimal(child_elem, Some(selector_elem))
         }
-        let child_style_for_counter = compute_element_style_indexed(
-          child_selector,
-          child_elem.style,
-          indexed_stylesheets,
-          false,
-          ctx,
-          Some(style),
-          css_vars,
-        )
-        let child_own_counters = if stylesheets.length() == 0 {
-          child_incoming_counters
-        } else {
-          compute_element_own_counters(
+        if stylesheets.length() > 0 {
+          let child_style_for_counter = compute_element_style_indexed(
+            child_selector,
+            child_elem.style,
+            indexed_stylesheets,
+            false,
+            ctx,
+            Some(style),
+            css_vars,
+          )
+          let child_own_counters = compute_element_own_counters(
             child_incoming_counters, child_selector, child_style_for_counter, stylesheets,
             ctx, child_owner_id,
           )
-        }
-        if stylesheets.length() > 0 {
           prev_sibling_counters = Some(child_own_counters)
         }
         if include_selector_match_data {
@@ -6376,31 +6367,35 @@ fn compute_element_style_indexed(
   }
   // Keep this cache conservative: only reuse when stylesheet cascade and
   // inherited context cannot change the inline-only result.
-  let inline_only_cache_key = match (cascaded, inline_css) {
+  let mut inline_only_cache_css : String? = None
+  let mut inline_only_cache_variant_key : String? = None
+  match (cascaded, inline_css) {
     (None, Some(css)) =>
       if string_map_is_empty(css_vars) &&
         has_default_inherited_inline_context(parent_style) {
-        Some(
-          make_inline_only_style_cache_key(
+        inline_only_cache_css = Some(css)
+        inline_only_cache_variant_key = Some(
+          make_inline_only_style_cache_variant_key(
             selector_elem.tag_name,
-            css,
             is_root,
             ctx.viewport_width,
             ctx.viewport_height,
           ),
         )
-      } else {
-        None
       }
-    _ => None
+    _ => ()
   }
-  match inline_only_cache_key {
-    Some(key) =>
-      match inline_only_style_cache.val.get(key) {
-        Some(cached) => return cached
+  match (inline_only_cache_css, inline_only_cache_variant_key) {
+    (Some(css), Some(variant_key)) =>
+      match inline_only_style_cache.val.get(css) {
+        Some(variants) =>
+          match variants.get(variant_key) {
+            Some(cached) => return cached
+            None => ()
+          }
         None => ()
       }
-    None => ()
+    _ => ()
   }
 
   // Start with default style
@@ -6670,9 +6665,17 @@ fn compute_element_style_indexed(
     }
   }
   let adjusted = adjust_for_box_sizing(style)
-  match inline_only_cache_key {
-    Some(key) => inline_only_style_cache.val[key] = adjusted
-    None => ()
+  match (inline_only_cache_css, inline_only_cache_variant_key) {
+    (Some(css), Some(variant_key)) => {
+      let cache = inline_only_style_cache.val
+      let variants = match cache.get(css) {
+        Some(existing) => existing
+        None => {}
+      }
+      variants[variant_key] = adjusted
+      cache[css] = variants
+    }
+    _ => ()
   }
   adjusted
 }
