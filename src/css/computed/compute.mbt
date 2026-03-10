@@ -724,19 +724,13 @@ pub fn compute(
 
   // First pass: collect custom properties (--*)
   // Custom properties are stored in the context for var() resolution
-  let props = cascaded.properties()
-  for prop in props {
+  cascaded.each(fn(prop, decl) {
     if prop.has_prefix("--") {
-      match cascaded.get(prop) {
-        Some(decl) => {
-          let value = resolve_keyword(prop, decl.value, ctx)
-          // Store custom property in context
-          ctx.custom_properties[prop] = value
-        }
-        None => ()
-      }
+      let value = resolve_keyword(prop, decl.value, ctx)
+      // Store custom property in context
+      ctx.custom_properties[prop] = value
     }
-  }
+  })
 
   // Seed writing-mode before applying logical properties.
   // Logical sizing must follow the element's effective writing mode.
@@ -745,17 +739,12 @@ pub fn compute(
   let font_ctx = seed_font_metrics(builder, cascaded, ctx)
 
   // Second pass: apply regular properties with var() resolution
-  for prop in props {
+  cascaded.each(fn(prop, decl) {
     if not(prop.has_prefix("--")) && not(is_preseeded_font_property(prop)) {
-      match cascaded.get(prop) {
-        Some(decl) => {
-          let value = resolve_keyword(prop, decl.value, font_ctx)
-          apply_property(builder, prop, value, font_ctx)
-        }
-        None => ()
-      }
+      let value = resolve_keyword(prop, decl.value, font_ctx)
+      apply_property(builder, prop, value, font_ctx)
     }
-  }
+  })
 
   // Handle inheritance for inherited properties
   apply_inheritance(builder, cascaded, ctx)
@@ -772,35 +761,24 @@ pub fn compute_with_vars(
   let builder = StyleBuilder::new()
 
   // First pass: collect custom properties (--*)
-  let props = cascaded.properties()
-  for prop in props {
+  cascaded.each(fn(prop, decl) {
     if prop.has_prefix("--") {
-      match cascaded.get(prop) {
-        Some(decl) => {
-          let value = resolve_keyword(prop, decl.value, ctx)
-          ctx.custom_properties[prop] = value
-        }
-        None => ()
-      }
+      let value = resolve_keyword(prop, decl.value, ctx)
+      ctx.custom_properties[prop] = value
     }
-  }
+  })
 
   // Seed writing-mode before applying logical properties.
   seed_writing_mode(builder, cascaded, ctx)
   let font_ctx = seed_font_metrics(builder, cascaded, ctx)
 
   // Second pass: apply regular properties
-  for prop in props {
+  cascaded.each(fn(prop, decl) {
     if not(prop.has_prefix("--")) && not(is_preseeded_font_property(prop)) {
-      match cascaded.get(prop) {
-        Some(decl) => {
-          let value = resolve_keyword(prop, decl.value, font_ctx)
-          apply_property(builder, prop, value, font_ctx)
-        }
-        None => ()
-      }
+      let value = resolve_keyword(prop, decl.value, font_ctx)
+      apply_property(builder, prop, value, font_ctx)
     }
-  }
+  })
 
   // Handle inheritance
   apply_inheritance(builder, cascaded, ctx)

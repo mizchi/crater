@@ -238,6 +238,39 @@ test "bench_cascade_declarations_200" (b : @bench.T) {
   })
 }
 
+///|
+fn create_compute_cascaded_values() -> @cascade.CascadedValues {
+  let declarations : Array[@cascade.Declaration] = [
+    @cascade.Declaration::new("--main-color", "#333"),
+    @cascade.Declaration::new("--gap-size", "12px"),
+    @cascade.Declaration::new("--card-padding", "16px"),
+    @cascade.Declaration::new("display", "flex"),
+    @cascade.Declaration::new("font", "16px/20px sans-serif"),
+    @cascade.Declaration::new("width", "100%"),
+    @cascade.Declaration::new("min-width", "0"),
+    @cascade.Declaration::new("height", "auto"),
+    @cascade.Declaration::new("padding", "var(--card-padding)"),
+    @cascade.Declaration::new("margin", "8px"),
+    @cascade.Declaration::new("column-gap", "var(--gap-size)"),
+    @cascade.Declaration::new("row-gap", "var(--gap-size)"),
+    @cascade.Declaration::new("justify-content", "space-between"),
+    @cascade.Declaration::new("align-items", "center"),
+    @cascade.Declaration::new("background-color", "#fff"),
+    @cascade.Declaration::new("color", "var(--main-color)"),
+    @cascade.Declaration::new("writing-mode", "horizontal-tb"),
+  ]
+  @cascade.cascade(declarations)
+}
+
+///|
+test "bench_compute_with_vars_mixed_props" (b : @bench.T) {
+  let cascaded = create_compute_cascaded_values()
+  let ctx = @computed.ComputeContext::new()
+  b.bench(name="compute_with_vars_mixed", fn() {
+    b.keep(@computed.compute_with_vars(cascaded, ctx))
+  })
+}
+
 // =============================================================================
 // Full Pipeline Comparison
 // =============================================================================

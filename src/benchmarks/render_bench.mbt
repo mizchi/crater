@@ -344,3 +344,23 @@ test "bench_layout_only_large_2k5" (b : @bench.T) {
     b.keep(@dispatch.compute_layout(node, layout_ctx))
   })
 }
+
+///|
+test "bench_layout_only_scrollable_500" (b : @bench.T) {
+  let html = scrollable_list(500, 64)
+  let ctx = default_ctx()
+  let node = @renderer.render_to_node(html, ctx)
+  let layout_ctx : @types.LayoutContext = {
+    available_width: ctx.viewport_width,
+    available_height: Some(ctx.viewport_height),
+    sizing_mode: @types.Definite,
+    viewport_width: ctx.viewport_width,
+    viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  @dispatch.setup()
+  b.bench(name="layout_only_scroll_500", fn() {
+    b.keep(@dispatch.compute_layout(node, layout_ctx))
+  })
+}

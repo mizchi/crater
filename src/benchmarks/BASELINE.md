@@ -147,6 +147,79 @@ Notes:
 - `css-flexbox` WPT 全件はこの変更後も `289 / 289 passed`
 - `pipeline_current` は run-to-run variance が大きく、この変更単体の影響判定には使っていない
 
+## CascadedValues Direct Iteration (2026-03-10)
+
+Command:
+```bash
+moon bench -p benchmarks -f optimization_bench.mbt --target js --release
+```
+
+Context:
+- `compute()` / `compute_with_vars()` / renderer の残り property 適用で、`properties()` によるキー配列生成と `get()` / `get_value()` の二度引きが入っていた
+- `CascadedValues::each()` を追加して declaration を直接流す形に変更した
+- custom properties の収集と通常 property 適用の両方でこの経路を使う
+
+| Benchmark | before | after | delta |
+|-----------|--------|-------|-------|
+| compute_with_vars_mixed | 16.28 µs | 11.47 µs | -29.5% |
+| pipeline_current | 608.44 µs | 521.48 µs | -14.3% |
+
+Notes:
+- `css-flexbox` WPT 全件はこの変更後も `289 / 289 passed`
+- `cascade_decl_200` は run-to-run variance が大きかったため、この改善の主指標には使っていない
+
+## Direct Cascade Path (2026-03-10)
+
+Commands:
+```bash
+moon bench -p benchmarks -f cascade_index_bench.mbt --target js --release
+moon bench -p benchmarks -f optimization_bench.mbt --target js --release
+```
+
+Context:
+- `cascade_element_with_media()` / `cascade_element_indexed()` が
+  `match -> RuleMatch -> adjusted decl arrays -> cascade`
+  の多段 alloc になっていた
+- match した declaration をその場で winner 更新する経路に変えて、中間 `RuleMatch` / declaration 配列を外した
+
+| Benchmark | before | after | delta |
+|-----------|--------|-------|-------|
+| cascade_non_idx | 1.09 ms | 766.59 µs | -29.7% |
+| cascade_indexed | 1.50 ms | 1.23 ms | -18.0% |
+| compute_with_vars_mixed | 13.24 µs | 11.34 µs | -14.4% |
+
+Notes:
+- `css-flexbox` WPT 全件はこの変更後も `289 / 289 passed`
+- selector matching 単体よりも、cascade の中間配列削減に効いた
+
+## Single-Key Selector Index (2026-03-10)
+
+Commands:
+```bash
+moon bench -p benchmarks -f cascade_index_bench.mbt --target js --release
+moon bench -p benchmarks -f optimization_bench.mbt --target js --release
+```
+
+Context:
+- 直前の `SelectorIndex` は 1 rule を複数 bucket に入れていて、
+  `get_candidates()` 側で `seen` map による dedupe が必要だった
+- これを `ID > class > tag > universal` の single-key index に変更して、
+  candidate 収集時の hash-based dedupe を削除した
+- compound selector は最初の class 1 つを key にして recall を維持する
+
+| Benchmark | before | after | delta |
+|-----------|--------|-------|-------|
+| match_indexed_100 | 6.82 µs | 3.77 µs | -44.7% |
+| match_indexed_500 | 34.39 µs | 22.63 µs | -34.2% |
+| match_indexed_1000 | 74.36 µs | 49.98 µs | -32.8% |
+| cascade_indexed | 1.23 ms | 762.63 µs | -38.0% |
+| match_idx_real | 0.64 µs | 0.38 µs | -40.6% |
+| match_idx_100 | 0.69 µs | 0.35 µs | -49.3% |
+
+Notes:
+- `css-flexbox` WPT 全件はこの変更後も `289 / 289 passed`
+- synthetic bench では indexed path が non-indexed にかなり近づき、1000-rule ではほぼ同等まで縮んだ
+
 ---
 
 # Optimization Results (2025-01-12)
@@ -275,3 +348,28 @@ Note: Most benchmarks use inline styles only (no stylesheet), so selector indexi
 ```bash
 node --experimental-strip-types tools/bench-github.ts
 ```
+
+---
+
+## Flex Layout Hot Path (2026-03-10)
+
+### Problem
+`scrollable_list()` の各行は `nowrap` な row flex だが、simple leaf の intrinsic 計算と baseline 計算が常に full path を通っていた。`align-items: center` の行でも baseline を前計算し、空 leaf box でも毎回詳細な intrinsic 分岐を踏んでいた。
+
+### Solution
+- `layout/flex/flex.mbt`
+  - simple leaf box の max-content 計算を fast path 化
+  - `make_flex_intrinsic_probe()` で style が変わらない場合は元の node を再利用
+  - baseline は `align-items` / `align-self` が `baseline` の item にだけ計算
+- `benchmarks/render_bench.mbt`
+  - `layout_only_scroll_500` を追加
+
+### Results Comparison
+
+| Benchmark | Before | After | Improvement |
+|-----------|--------|-------|-------------|
+| `layout_only_scroll_500` | 10.51 ms | 8.32 ms | **-20.8%** |
+| `layout_only_large` | 52.19 ms | 40.63 ms | **-22.1%** |
+| `render_scroll_500` | 141.79 ms | 103.24 ms | **-27.2%** |
+
+Note: `render_scroll_500` は run-to-run variance が大きいので、評価の主指標は `layout_only_scroll_500` を使う。

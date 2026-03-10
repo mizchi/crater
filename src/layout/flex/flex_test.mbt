@@ -4923,3 +4923,108 @@ test "inline_flex_contain_size_uses_definite_zero_main_size_for_shrink" {
   inspect(layout.height, content="4")
   inspect(layout.children[0].width, content="40")
 }
+
+///|
+test "row_flex_scroll_list_item_keeps_expected_track_sizes" {
+  let default_style = @style.Style::default()
+  let avatar = @node.Node::leaf("avatar", {
+    ..default_style,
+    width: @types.Length(40.0),
+    height: @types.Length(40.0),
+    margin: {
+      left: @types.Length(0.0),
+      right: @types.Length(12.0),
+      top: @types.Length(0.0),
+      bottom: @types.Length(0.0),
+    },
+  })
+  let title = @node.Node::leaf("title", {
+    ..default_style,
+    width: @types.Percent(0.6),
+    height: @types.Length(14.0),
+    margin: {
+      left: @types.Length(0.0),
+      right: @types.Length(0.0),
+      top: @types.Length(0.0),
+      bottom: @types.Length(4.0),
+    },
+  })
+  let subtitle = @node.Node::leaf("subtitle", {
+    ..default_style,
+    width: @types.Percent(0.8),
+    height: @types.Length(12.0),
+  })
+  let content = @node.Node::new(
+    "content",
+    {
+      ..default_style,
+      flex_grow: 1.0,
+      flex_shrink: 1.0,
+      min_width: @types.Length(0.0),
+    },
+    [title, subtitle],
+  )
+  let action1 = @node.Node::leaf("action1", {
+    ..default_style,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+  })
+  let action2 = @node.Node::leaf("action2", {
+    ..default_style,
+    width: @types.Length(24.0),
+    height: @types.Length(24.0),
+  })
+  let actions = @node.Node::new(
+    "actions",
+    {
+      ..default_style,
+      display: @types.Flex,
+      flex_direction: @types.Row,
+      column_gap: @types.Length(8.0),
+    },
+    [action1, action2],
+  )
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      display: @types.Flex,
+      flex_direction: @types.Row,
+      align_items: @types.Center,
+      width: @types.Length(400.0),
+      height: @types.Length(64.0),
+      padding: {
+        left: @types.Length(16.0),
+        right: @types.Length(16.0),
+        top: @types.Length(0.0),
+        bottom: @types.Length(0.0),
+      },
+    },
+    [avatar, content, actions],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 400.0,
+    available_height: Some(200.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 400.0,
+    viewport_height: 200.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.width, content="400")
+  inspect(layout.height, content="64")
+  inspect(layout.children[0].x, content="16")
+  inspect(layout.children[0].y, content="12")
+  inspect(layout.children[0].width, content="40")
+  inspect(layout.children[1].x, content="68")
+  inspect(layout.children[1].y, content="17")
+  inspect(layout.children[1].width, content="260")
+  inspect(layout.children[1].height, content="30")
+  inspect(layout.children[1].children[0].width, content="156")
+  inspect(layout.children[1].children[1].width, content="208")
+  inspect(layout.children[2].x, content="328")
+  inspect(layout.children[2].y, content="20")
+  inspect(layout.children[2].width, content="56")
+  inspect(layout.children[2].height, content="24")
+}

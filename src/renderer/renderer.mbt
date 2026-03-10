@@ -6353,24 +6353,25 @@ fn compute_element_style_indexed(
       }
 
       // Apply remaining cascaded values
-      for prop in cascaded_values.properties() {
+      cascaded_values.each(fn(prop, decl) {
         if prop == "font" || prop == "font-size" || prop == "line-height" {
-          continue
+          ()
+        } else {
+          match decl.value {
+            @cascade.PropertyValue::Value(value) =>
+              style = apply_css_property_with_viewport(
+                style,
+                prop,
+                value,
+                ctx.viewport_width,
+                ctx.viewport_height,
+                css_vars,
+                parent_style,
+              )
+            _ => ()
+          }
         }
-        match cascaded_values.get_value(prop) {
-          Some(value) =>
-            style = apply_css_property_with_viewport(
-              style,
-              prop,
-              value,
-              ctx.viewport_width,
-              ctx.viewport_height,
-              css_vars,
-              parent_style,
-            )
-          None => ()
-        }
-      }
+      })
     }
     None => ()
   }

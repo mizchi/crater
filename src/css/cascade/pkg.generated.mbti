@@ -29,6 +29,7 @@ pub struct CSSRule {
 pub struct CascadedValues {
   values : Map[String, Declaration]
 }
+pub fn CascadedValues::each(Self, (String, Declaration) -> Unit) -> Unit
 pub fn CascadedValues::get(Self, String) -> Declaration?
 pub fn CascadedValues::get_value(Self, String) -> String?
 pub fn CascadedValues::has(Self, String) -> Bool

@@ -209,6 +209,30 @@ test "declaration from inline" {
 }
 
 ///|
+fn collect_declarations_for_test(
+  matches : Array[RuleMatch],
+  inline_style : Array[Declaration],
+) -> Array[Declaration] {
+  let result : Array[Declaration] = []
+  for rule_match in matches {
+    for decl in rule_match.declarations {
+      result.push(decl)
+    }
+  }
+  for decl in inline_style {
+    result.push({
+      property: decl.property,
+      value: decl.value,
+      origin: Author,
+      importance: decl.importance,
+      specificity: { a: 1000, b: 0, c: 0 },
+      source_order: decl.source_order,
+    })
+  }
+  result
+}
+
+///|
 test "collect declarations - inline beats rules" {
   let rule_match : RuleMatch = {
     specificity: { a: 1, b: 0, c: 0 }, // ID selector
@@ -216,7 +240,7 @@ test "collect declarations - inline beats rules" {
     source_order: 1,
   }
   let inline = [Declaration::from_inline("width", "200px", Normal)]
-  let collected = collect_declarations([rule_match], inline)
+  let collected = collect_declarations_for_test([rule_match], inline)
   let result = cascade(collected)
 
   // Inline should win
@@ -478,4 +502,25 @@ test "pseudo-class :where() has zero specificity" {
 
   // div (0,0,1) should beat :where(.container) (0,0,0)
   inspect(result.get_value("color"), content="Some(\"blue\")")
+}
+
+///|
+test "indexed stylesheet matches compound class selector" {
+  let stylesheet = Stylesheet::new(Author)
+  let sel = @selector.parse_selector_text("div.foo.bar")
+  match sel {
+    Some(selector) =>
+      stylesheet.add_rule("div.foo.bar", selector, [
+        Declaration::new("width", "100px"),
+      ])
+    None => fail("failed to parse selector")
+  }
+  let element = @selector.Element::new("div").add_class("foo").add_class("bar")
+  let result = cascade_element_indexed(
+    element,
+    [IndexedStylesheet::new(stylesheet)],
+    [],
+    None,
+  )
+  inspect(result.get_value("width"), content="Some(\"100px\")")
 }

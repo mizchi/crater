@@ -1022,6 +1022,35 @@ fn make_flex_intrinsic_probe(
     Some(ratio) => ratio > 0.0 && cross_is_auto
     None => false
   }
+  let changes_main_size = if force_auto_main {
+    if is_row {
+      style.width != @types.Auto
+    } else {
+      style.height != @types.Auto
+    }
+  } else {
+    false
+  }
+  let resets_main_constraints = if is_row {
+    style.min_width != @types.Auto || style.max_width != @types.Auto
+  } else {
+    style.min_height != @types.Auto || style.max_height != @types.Auto
+  }
+  let resets_cross_constraints = if ignore_auto_cross_constraints &&
+    has_auto_cross_aspect_ratio {
+    if is_row {
+      style.min_height != @types.Auto || style.max_height != @types.Auto
+    } else {
+      style.min_width != @types.Auto || style.max_width != @types.Auto
+    }
+  } else {
+    false
+  }
+  if not(changes_main_size) &&
+    not(resets_main_constraints) &&
+    not(resets_cross_constraints) {
+    return node
+  }
   let probe_style : @style.Style = if is_row {
     {
       ..style,
@@ -1075,6 +1104,32 @@ fn make_flex_intrinsic_probe(
     node.measure,
     node.text,
   )
+}
+
+///|
+fn compute_trivial_leaf_intrinsic_main_box(
+  node : @node.Node,
+  is_row : Bool,
+  available_cross : Double?,
+) -> Double? {
+  if node.children.length() > 0 {
+    return None
+  }
+  if node.measure is Some(_) || node.text is Some(_) {
+    return None
+  }
+  match node.style.aspect_ratio {
+    Some(ratio) if ratio > 0.0 => return None
+    _ => ()
+  }
+  let box_reference = if is_row { 0.0 } else { available_cross.unwrap_or(0.0) }
+  let padding = @types.resolve_rect(node.style.padding, box_reference)
+  let border = @types.resolve_rect(node.style.border, box_reference)
+  if is_row {
+    Some(padding.horizontal_sum() + border.horizontal_sum())
+  } else {
+    Some(padding.vertical_sum() + border.vertical_sum())
+  }
 }
 
 ///|
@@ -1295,173 +1350,12 @@ fn compute_intrinsic_main_size(
 
   // Leaf nodes: use MeasureFunc if available, otherwise 0
   let result = if children.length() == 0 {
-    match estimate_flex_text_intrinsic_main_size(node, is_row) {
-      Some(text_main) => {
-        let box_reference = if is_row {
-          0.0
-        } else {
-          available_cross.unwrap_or(0.0)
-        }
-        let padding = @types.resolve_rect(style.padding, box_reference)
-        let border = @types.resolve_rect(style.border, box_reference)
-        let main_box = if is_row {
-          padding.horizontal_sum() + border.horizontal_sum()
-        } else {
-          padding.vertical_sum() + border.vertical_sum()
-        }
-        text_main + main_box
-      }
+    match
+      compute_trivial_leaf_intrinsic_main_box(node, is_row, available_cross) {
+      Some(main_box) => main_box
       None =>
-        match node.measure {
-          Some(mf) => {
-            // Call MeasureFunc to get intrinsic size
-            let intrinsic = (mf.func)(0.0, 0.0)
-            let has_aspect_ratio = match style.aspect_ratio {
-              Some(ratio) => ratio > 0.0
-              None => false
-            }
-            let padding = @types.resolve_rect(style.padding, 0.0)
-            let border = @types.resolve_rect(style.border, 0.0)
-
-            // Replaced-like leaf compatibility:
-            // when width/height is auto on the main axis and the cross axis is a
-            // definite percent/length, derive main size from aspect-ratio.
-            fn width_from_height_with_aspect(
-              ratio : Double,
-              box_height : Double,
-            ) -> Double {
-              if style.box_sizing == @types.BorderBox {
-                box_height * ratio
-              } else {
-                let content_height = box_height -
-                  padding.vertical_sum() -
-                  border.vertical_sum()
-                if content_height > 0.0 {
-                  content_height * ratio +
-                  padding.horizontal_sum() +
-                  border.horizontal_sum()
-                } else {
-                  intrinsic.max_width
-                }
-              }
-            }
-
-            fn height_from_width_with_aspect(
-              ratio : Double,
-              box_width : Double,
-            ) -> Double {
-              if style.box_sizing == @types.BorderBox {
-                box_width / ratio
-              } else {
-                let content_width = box_width -
-                  padding.horizontal_sum() -
-                  border.horizontal_sum()
-                if content_width > 0.0 {
-                  content_width / ratio +
-                  padding.vertical_sum() +
-                  border.vertical_sum()
-                } else {
-                  intrinsic.max_height
-                }
-              }
-            }
-
-            let aspect_main : Double? = if is_row {
-              match
-                (style.width, style.height, style.aspect_ratio, available_cross) {
-                (@types.Auto, @types.Length(h), Some(ratio), _) if ratio > 0.0 =>
-                  Some(width_from_height_with_aspect(ratio, h))
-                (@types.Auto, @types.Percent(p), Some(ratio), Some(cross)) =>
-                  if ratio > 0.0 {
-                    Some(width_from_height_with_aspect(ratio, cross * p))
-                  } else {
-                    None
-                  }
-                (@types.Auto, @types.Auto, Some(ratio), Some(cross)) =>
-                  if ratio > 0.0 {
-                    Some(width_from_height_with_aspect(ratio, cross))
-                  } else {
-                    None
-                  }
-                (@types.Percent(_), @types.Length(h), Some(ratio), _) if ratio >
-                  0.0 => Some(width_from_height_with_aspect(ratio, h))
-                (@types.Percent(_), @types.Percent(p), Some(ratio), Some(cross)) =>
-                  if ratio > 0.0 {
-                    Some(width_from_height_with_aspect(ratio, cross * p))
-                  } else {
-                    None
-                  }
-                (@types.Percent(_), @types.Auto, Some(ratio), Some(cross)) =>
-                  if ratio > 0.0 {
-                    Some(width_from_height_with_aspect(ratio, cross))
-                  } else {
-                    None
-                  }
-                _ => None
-              }
-            } else {
-              match
-                (style.height, style.width, style.aspect_ratio, available_cross) {
-                (@types.Auto, @types.Length(w), Some(ratio), _) if ratio > 0.0 =>
-                  Some(height_from_width_with_aspect(ratio, w))
-                (@types.Auto, @types.Percent(p), Some(ratio), Some(cross)) =>
-                  if ratio > 0.0 {
-                    Some(height_from_width_with_aspect(ratio, cross * p))
-                  } else {
-                    None
-                  }
-                (@types.Auto, @types.Auto, Some(ratio), Some(cross)) =>
-                  if ratio > 0.0 {
-                    Some(height_from_width_with_aspect(ratio, cross))
-                  } else {
-                    None
-                  }
-                _ => None
-              }
-            }
-
-            match aspect_main {
-              Some(main) => main
-              None => {
-                let main_box = if is_row {
-                  padding.horizontal_sum() + border.horizontal_sum()
-                } else {
-                  padding.vertical_sum() + border.vertical_sum()
-                }
-                let content_main = if is_row {
-                  // Computing width - check if height is constrained
-                  match available_cross {
-                    Some(h) if h < intrinsic.max_height &&
-                      intrinsic.max_height > 0.0 =>
-                      // Width scales proportionally when height is constrained
-                      compute_measured_cross_size(
-                        intrinsic,
-                        h,
-                        false,
-                        scale_fixed_intrinsic=has_aspect_ratio,
-                      )
-                    _ => intrinsic.max_width
-                  }
-                } else {
-                  // Computing height - check if width is constrained
-                  match available_cross {
-                    Some(w) if w < intrinsic.max_width &&
-                      intrinsic.max_width > 0.0 =>
-                      // Height scales proportionally when width is constrained
-                      compute_measured_cross_size(
-                        intrinsic,
-                        w,
-                        true,
-                        scale_fixed_intrinsic=has_aspect_ratio,
-                      )
-                    _ => intrinsic.max_height
-                  }
-                }
-                content_main + main_box
-              }
-            }
-          }
-          None => {
+        match estimate_flex_text_intrinsic_main_size(node, is_row) {
+          Some(text_main) => {
             let box_reference = if is_row {
               0.0
             } else {
@@ -1474,160 +1368,359 @@ fn compute_intrinsic_main_size(
             } else {
               padding.vertical_sum() + border.vertical_sum()
             }
+            text_main + main_box
+          }
+          None =>
+            match node.measure {
+              Some(mf) => {
+                // Call MeasureFunc to get intrinsic size
+                let intrinsic = (mf.func)(0.0, 0.0)
+                let has_aspect_ratio = match style.aspect_ratio {
+                  Some(ratio) => ratio > 0.0
+                  None => false
+                }
+                let padding = @types.resolve_rect(style.padding, 0.0)
+                let border = @types.resolve_rect(style.border, 0.0)
 
-            fn leaf_width_from_height(
-              ratio : Double,
-              box_height : Double,
-            ) -> Double {
-              if style.box_sizing == @types.BorderBox {
-                box_height * ratio
-              } else {
-                let content_height = box_height -
-                  padding.vertical_sum() -
-                  border.vertical_sum()
-                if content_height > 0.0 {
-                  content_height * ratio +
-                  padding.horizontal_sum() +
-                  border.horizontal_sum()
+                // Replaced-like leaf compatibility:
+                // when width/height is auto on the main axis and the cross axis is a
+                // definite percent/length, derive main size from aspect-ratio.
+                fn width_from_height_with_aspect(
+                  ratio : Double,
+                  box_height : Double,
+                ) -> Double {
+                  if style.box_sizing == @types.BorderBox {
+                    box_height * ratio
+                  } else {
+                    let content_height = box_height -
+                      padding.vertical_sum() -
+                      border.vertical_sum()
+                    if content_height > 0.0 {
+                      content_height * ratio +
+                      padding.horizontal_sum() +
+                      border.horizontal_sum()
+                    } else {
+                      intrinsic.max_width
+                    }
+                  }
+                }
+
+                fn height_from_width_with_aspect(
+                  ratio : Double,
+                  box_width : Double,
+                ) -> Double {
+                  if style.box_sizing == @types.BorderBox {
+                    box_width / ratio
+                  } else {
+                    let content_width = box_width -
+                      padding.horizontal_sum() -
+                      border.horizontal_sum()
+                    if content_width > 0.0 {
+                      content_width / ratio +
+                      padding.vertical_sum() +
+                      border.vertical_sum()
+                    } else {
+                      intrinsic.max_height
+                    }
+                  }
+                }
+
+                let aspect_main : Double? = if is_row {
+                  match
+                    (
+                      style.width,
+                      style.height,
+                      style.aspect_ratio,
+                      available_cross,
+                    ) {
+                    (@types.Auto, @types.Length(h), Some(ratio), _) if ratio >
+                      0.0 => Some(width_from_height_with_aspect(ratio, h))
+                    (@types.Auto, @types.Percent(p), Some(ratio), Some(cross)) =>
+                      if ratio > 0.0 {
+                        Some(width_from_height_with_aspect(ratio, cross * p))
+                      } else {
+                        None
+                      }
+                    (@types.Auto, @types.Auto, Some(ratio), Some(cross)) =>
+                      if ratio > 0.0 {
+                        Some(width_from_height_with_aspect(ratio, cross))
+                      } else {
+                        None
+                      }
+                    (@types.Percent(_), @types.Length(h), Some(ratio), _) if ratio >
+                      0.0 => Some(width_from_height_with_aspect(ratio, h))
+                    (
+                      @types.Percent(_),
+                      @types.Percent(p),
+                      Some(ratio),
+                      Some(cross),
+                    ) =>
+                      if ratio > 0.0 {
+                        Some(width_from_height_with_aspect(ratio, cross * p))
+                      } else {
+                        None
+                      }
+                    (@types.Percent(_), @types.Auto, Some(ratio), Some(cross)) =>
+                      if ratio > 0.0 {
+                        Some(width_from_height_with_aspect(ratio, cross))
+                      } else {
+                        None
+                      }
+                    _ => None
+                  }
                 } else {
-                  0.0
+                  match
+                    (
+                      style.height,
+                      style.width,
+                      style.aspect_ratio,
+                      available_cross,
+                    ) {
+                    (@types.Auto, @types.Length(w), Some(ratio), _) if ratio >
+                      0.0 => Some(height_from_width_with_aspect(ratio, w))
+                    (@types.Auto, @types.Percent(p), Some(ratio), Some(cross)) =>
+                      if ratio > 0.0 {
+                        Some(height_from_width_with_aspect(ratio, cross * p))
+                      } else {
+                        None
+                      }
+                    (@types.Auto, @types.Auto, Some(ratio), Some(cross)) =>
+                      if ratio > 0.0 {
+                        Some(height_from_width_with_aspect(ratio, cross))
+                      } else {
+                        None
+                      }
+                    _ => None
+                  }
+                }
+
+                match aspect_main {
+                  Some(main) => main
+                  None => {
+                    let main_box = if is_row {
+                      padding.horizontal_sum() + border.horizontal_sum()
+                    } else {
+                      padding.vertical_sum() + border.vertical_sum()
+                    }
+                    let content_main = if is_row {
+                      // Computing width - check if height is constrained
+                      match available_cross {
+                        Some(h) if h < intrinsic.max_height &&
+                          intrinsic.max_height > 0.0 =>
+                          // Width scales proportionally when height is constrained
+                          compute_measured_cross_size(
+                            intrinsic,
+                            h,
+                            false,
+                            scale_fixed_intrinsic=has_aspect_ratio,
+                          )
+                        _ => intrinsic.max_width
+                      }
+                    } else {
+                      // Computing height - check if width is constrained
+                      match available_cross {
+                        Some(w) if w < intrinsic.max_width &&
+                          intrinsic.max_width > 0.0 =>
+                          // Height scales proportionally when width is constrained
+                          compute_measured_cross_size(
+                            intrinsic,
+                            w,
+                            true,
+                            scale_fixed_intrinsic=has_aspect_ratio,
+                          )
+                        _ => intrinsic.max_height
+                      }
+                    }
+                    content_main + main_box
+                  }
                 }
               }
-            }
-
-            fn leaf_height_from_width(
-              ratio : Double,
-              box_width : Double,
-            ) -> Double {
-              if style.box_sizing == @types.BorderBox {
-                box_width / ratio
-              } else {
-                let content_width = box_width -
-                  padding.horizontal_sum() -
-                  border.horizontal_sum()
-                if content_width > 0.0 {
-                  content_width / ratio +
-                  padding.vertical_sum() +
-                  border.vertical_sum()
-                } else {
+              None => {
+                let box_reference = if is_row {
                   0.0
+                } else {
+                  available_cross.unwrap_or(0.0)
                 }
-              }
-            }
+                let padding = @types.resolve_rect(style.padding, box_reference)
+                let border = @types.resolve_rect(style.border, box_reference)
+                let main_box = if is_row {
+                  padding.horizontal_sum() + border.horizontal_sum()
+                } else {
+                  padding.vertical_sum() + border.vertical_sum()
+                }
 
-            let auto_height_from_constraints : Double? = match style.height {
-              @types.Auto => {
-                let min_h = match style.min_height {
-                  @types.Length(v) => Some(v)
-                  @types.Percent(p) =>
-                    match available_cross {
-                      Some(cross) => Some(cross * p)
-                      None => None
+                fn leaf_width_from_height(
+                  ratio : Double,
+                  box_height : Double,
+                ) -> Double {
+                  if style.box_sizing == @types.BorderBox {
+                    box_height * ratio
+                  } else {
+                    let content_height = box_height -
+                      padding.vertical_sum() -
+                      border.vertical_sum()
+                    if content_height > 0.0 {
+                      content_height * ratio +
+                      padding.horizontal_sum() +
+                      border.horizontal_sum()
+                    } else {
+                      0.0
                     }
-                  _ => None
+                  }
                 }
-                let max_h = match style.max_height {
-                  @types.Length(v) => Some(v)
-                  @types.Percent(p) =>
-                    match available_cross {
-                      Some(cross) => Some(cross * p)
-                      None => None
+
+                fn leaf_height_from_width(
+                  ratio : Double,
+                  box_width : Double,
+                ) -> Double {
+                  if style.box_sizing == @types.BorderBox {
+                    box_width / ratio
+                  } else {
+                    let content_width = box_width -
+                      padding.horizontal_sum() -
+                      border.horizontal_sum()
+                    if content_width > 0.0 {
+                      content_width / ratio +
+                      padding.vertical_sum() +
+                      border.vertical_sum()
+                    } else {
+                      0.0
                     }
-                  _ => None
+                  }
                 }
-                match min_h {
-                  Some(v) if v > 0.0 => Some(v)
-                  _ =>
-                    match max_h {
-                      Some(v) if v < 1.0e10 => Some(v)
+
+                let auto_height_from_constraints : Double? = match
+                  style.height {
+                  @types.Auto => {
+                    let min_h = match style.min_height {
+                      @types.Length(v) => Some(v)
+                      @types.Percent(p) =>
+                        match available_cross {
+                          Some(cross) => Some(cross * p)
+                          None => None
+                        }
                       _ => None
                     }
+                    let max_h = match style.max_height {
+                      @types.Length(v) => Some(v)
+                      @types.Percent(p) =>
+                        match available_cross {
+                          Some(cross) => Some(cross * p)
+                          None => None
+                        }
+                      _ => None
+                    }
+                    match min_h {
+                      Some(v) if v > 0.0 => Some(v)
+                      _ =>
+                        match max_h {
+                          Some(v) if v < 1.0e10 => Some(v)
+                          _ => None
+                        }
+                    }
+                  }
+                  _ => None
                 }
-              }
-              _ => None
-            }
 
-            let main_size = if is_row {
-              match
-                (style.width, style.height, style.aspect_ratio, available_cross) {
-                (@types.Auto, @types.Length(h), Some(ratio), _) =>
-                  if ratio > 0.0 {
-                    leaf_width_from_height(ratio, h)
-                  } else {
-                    0.0
-                  }
-                (@types.Auto, @types.Percent(p), Some(ratio), Some(cross)) =>
-                  if ratio > 0.0 {
-                    leaf_width_from_height(ratio, cross * p)
-                  } else {
-                    0.0
-                  }
-                (@types.Auto, @types.Auto, Some(ratio), _) =>
-                  if ratio > 0.0 {
-                    match auto_height_from_constraints {
-                      Some(h) => leaf_width_from_height(ratio, h)
-                      None =>
-                        match available_cross {
-                          Some(cross) => leaf_width_from_height(ratio, cross)
-                          None => 0.0
+                let main_size = if is_row {
+                  match
+                    (
+                      style.width,
+                      style.height,
+                      style.aspect_ratio,
+                      available_cross,
+                    ) {
+                    (@types.Auto, @types.Length(h), Some(ratio), _) =>
+                      if ratio > 0.0 {
+                        leaf_width_from_height(ratio, h)
+                      } else {
+                        0.0
+                      }
+                    (@types.Auto, @types.Percent(p), Some(ratio), Some(cross)) =>
+                      if ratio > 0.0 {
+                        leaf_width_from_height(ratio, cross * p)
+                      } else {
+                        0.0
+                      }
+                    (@types.Auto, @types.Auto, Some(ratio), _) =>
+                      if ratio > 0.0 {
+                        match auto_height_from_constraints {
+                          Some(h) => leaf_width_from_height(ratio, h)
+                          None =>
+                            match available_cross {
+                              Some(cross) =>
+                                leaf_width_from_height(ratio, cross)
+                              None => 0.0
+                            }
                         }
-                    }
-                  } else {
-                    0.0
-                  }
-                (@types.Percent(_), @types.Length(h), Some(ratio), _) =>
-                  if ratio > 0.0 {
-                    leaf_width_from_height(ratio, h)
-                  } else {
-                    0.0
-                  }
-                (@types.Percent(_), @types.Percent(p), Some(ratio), Some(cross)) =>
-                  if ratio > 0.0 {
-                    leaf_width_from_height(ratio, cross * p)
-                  } else {
-                    0.0
-                  }
-                (@types.Percent(_), @types.Auto, Some(ratio), _) =>
-                  if ratio > 0.0 {
-                    match auto_height_from_constraints {
-                      Some(h) => leaf_width_from_height(ratio, h)
-                      None =>
-                        match available_cross {
-                          Some(cross) => leaf_width_from_height(ratio, cross)
-                          None => 0.0
+                      } else {
+                        0.0
+                      }
+                    (@types.Percent(_), @types.Length(h), Some(ratio), _) =>
+                      if ratio > 0.0 {
+                        leaf_width_from_height(ratio, h)
+                      } else {
+                        0.0
+                      }
+                    (
+                      @types.Percent(_),
+                      @types.Percent(p),
+                      Some(ratio),
+                      Some(cross),
+                    ) =>
+                      if ratio > 0.0 {
+                        leaf_width_from_height(ratio, cross * p)
+                      } else {
+                        0.0
+                      }
+                    (@types.Percent(_), @types.Auto, Some(ratio), _) =>
+                      if ratio > 0.0 {
+                        match auto_height_from_constraints {
+                          Some(h) => leaf_width_from_height(ratio, h)
+                          None =>
+                            match available_cross {
+                              Some(cross) =>
+                                leaf_width_from_height(ratio, cross)
+                              None => 0.0
+                            }
                         }
-                    }
-                  } else {
-                    0.0
+                      } else {
+                        0.0
+                      }
+                    _ => 0.0
                   }
-                _ => 0.0
-              }
-            } else {
-              match
-                (style.height, style.width, style.aspect_ratio, available_cross) {
-                (@types.Auto, @types.Length(w), Some(ratio), _) =>
-                  if ratio > 0.0 {
-                    leaf_height_from_width(ratio, w)
-                  } else {
-                    0.0
+                } else {
+                  match
+                    (
+                      style.height,
+                      style.width,
+                      style.aspect_ratio,
+                      available_cross,
+                    ) {
+                    (@types.Auto, @types.Length(w), Some(ratio), _) =>
+                      if ratio > 0.0 {
+                        leaf_height_from_width(ratio, w)
+                      } else {
+                        0.0
+                      }
+                    (@types.Auto, @types.Percent(p), Some(ratio), Some(cross)) =>
+                      if ratio > 0.0 {
+                        leaf_height_from_width(ratio, cross * p)
+                      } else {
+                        0.0
+                      }
+                    (@types.Auto, @types.Auto, Some(ratio), Some(cross)) =>
+                      if ratio > 0.0 {
+                        leaf_height_from_width(ratio, cross)
+                      } else {
+                        0.0
+                      }
+                    _ => 0.0
                   }
-                (@types.Auto, @types.Percent(p), Some(ratio), Some(cross)) =>
-                  if ratio > 0.0 {
-                    leaf_height_from_width(ratio, cross * p)
-                  } else {
-                    0.0
-                  }
-                (@types.Auto, @types.Auto, Some(ratio), Some(cross)) =>
-                  if ratio > 0.0 {
-                    leaf_height_from_width(ratio, cross)
-                  } else {
-                    0.0
-                  }
-                _ => 0.0
+                }
+                max(main_size, main_box)
               }
             }
-            max(main_size, main_box)
-          }
         }
     }
   } else {
@@ -1756,7 +1849,7 @@ fn compute_min_content_main_size(
             if is_row {
               intrinsic.min_width + main_box
             } else {
-              // For height, prefer constrained width if available
+              // Fallback: height at min_width
               match available_cross {
                 Some(w) if w < intrinsic.max_width && intrinsic.max_width > 0.0 =>
                   compute_measured_cross_size(
@@ -1767,7 +1860,6 @@ fn compute_min_content_main_size(
                   ) +
                   main_box
                 _ => {
-                  // Fallback: height at min_width
                   let constrained = (mf.func)(intrinsic.min_width, 0.0)
                   constrained.max_height + main_box
                 }
@@ -4888,10 +4980,14 @@ fn compute_internal(
       (margin_left_auto, margin_right_auto)
     }
 
+    let needs_baseline = style.align_items == @types.Baseline ||
+      child_style.align_self == @types.AlignSelf::Baseline
     // Compute baseline for this item (for Row flex, cross is height)
     // For Row: baseline is relative to the item's height
     // For Column: baseline is relative to the item's width (not commonly used)
-    let baseline = if is_row {
+    let baseline = if not(needs_baseline) {
+      0.0
+    } else if is_row {
       @baseline.compute_node_baseline(child, base_cross)
     } else {
       compute_column_cross_baseline(child, base_cross, cache, dispatch)
