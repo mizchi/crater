@@ -282,12 +282,29 @@ pub fn cascade_element_with_media(
   media_env : @media.MediaEnvironment?,
 ) -> CascadedValues {
   let all_matches : Array[RuleMatch] = []
+  let mut source_order_offset = 0
 
   // Collect matches from all stylesheets
   for stylesheet in stylesheets {
     let matches = stylesheet.match_element_with_media(element, media_env)
+    let mut max_source_order_in_sheet = -1
     for m in matches {
-      all_matches.push(m)
+      let adjusted_decls : Array[Declaration] = []
+      for decl in m.declarations {
+        let adjusted_source_order = decl.source_order + source_order_offset
+        if adjusted_source_order > max_source_order_in_sheet {
+          max_source_order_in_sheet = adjusted_source_order
+        }
+        adjusted_decls.push({ ..decl, source_order: adjusted_source_order })
+      }
+      all_matches.push({
+        ..m,
+        declarations: adjusted_decls,
+        source_order: m.source_order + source_order_offset,
+      })
+    }
+    if max_source_order_in_sheet >= source_order_offset {
+      source_order_offset = max_source_order_in_sheet + 1
     }
   }
 

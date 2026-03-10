@@ -4101,6 +4101,61 @@ test "flex_text_wrapping_in_fixed_width_container" {
   }
 }
 
+///|
+test "row_flex_direct_text_leaf_keeps_single_line_cross_size_at_intrinsic_width" {
+  let default_style = { ..@style.Style::default(), display: @types.Inline }
+  let text_measure : @types.MeasureFunc = {
+    func: fn(
+      available_width : Double,
+      _available_height : Double,
+    ) -> @types.IntrinsicSize {
+      let max_width = 160.0
+      let line_height = 19.2
+      let lines = if available_width > 0.0 && available_width < max_width {
+        2.0
+      } else {
+        1.0
+      }
+      {
+        min_width: 160.0,
+        max_width,
+        min_height: line_height,
+        max_height: line_height * lines,
+      }
+    },
+  }
+  let text_node = @node.Node::text(
+    "#text", default_style, text_measure, "AAAAAAAAAAAAAAAAAAAA",
+  )
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      display: @types.Flex,
+      flex_direction: @types.Row,
+      width: @types.Length(100.0),
+      overflow_x: @types.Hidden,
+    },
+    [text_node],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 400.0,
+    available_height: None,
+    sizing_mode: @types.Definite,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.height, content="19.2")
+  if layout.children.length() > 0 {
+    let text = layout.children[0]
+    inspect(text.width, content="160")
+    inspect(text.height, content="19.2")
+  }
+}
+
 // Test Row > Column > Div - with cache reset
 
 ///|

@@ -298,6 +298,190 @@ test "font-size inheritance in full render" {
 }
 
 ///|
+test "font shorthand inherits line-height to descendant text nodes" {
+  let html =
+    #|<!doctype html>
+    #|<html><head>
+    #|<style>body { font: 10px/1 monospace; }</style>
+    #|</head>
+    #|<body>
+    #|<div id="outer"><span id="inner">X X</span></div>
+    #|</body></html>
+  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  let outer = node.children[0]
+  inspect(outer.id, content="div#outer")
+  inspect(outer.style.font_size, content="10")
+  inspect(outer.style.line_height, content="10")
+  let inner = outer.children[0]
+  inspect(inner.id, content="span#inner")
+  inspect(inner.style.font_size, content="10")
+  inspect(inner.style.line_height, content="10")
+  let text = inner.children[0]
+  inspect(text.id, content="#text")
+  inspect(text.style.font_size, content="10")
+  inspect(text.style.line_height, content="10")
+  let intrinsic = match text.measure {
+    Some(measure) => (measure.func)(9999.0, 9999.0)
+    None => @types.IntrinsicSize::default()
+  }
+  inspect(intrinsic.max_width, content="15")
+  inspect(intrinsic.max_height, content="10")
+}
+
+///|
+test "implicit body font shorthand reaches descendant text measure" {
+  let html =
+    #|<!doctype html>
+    #|<style>body { font: 10px/1 monospace; }</style>
+    #|<div id="outer">X X</div>
+  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  let outer = node.children[0]
+  inspect(outer.id, content="div#outer")
+  inspect(outer.style.font_size, content="10")
+  inspect(outer.style.line_height, content="10")
+  let text = outer.children[0]
+  inspect(text.id, content="#text")
+  inspect(text.style.font_size, content="10")
+  inspect(text.style.line_height, content="10")
+  let intrinsic = match text.measure {
+    Some(measure) => (measure.func)(9999.0, 9999.0)
+    None => @types.IntrinsicSize::default()
+  }
+  inspect(intrinsic.max_width, content="15")
+  inspect(intrinsic.max_height, content="10")
+}
+
+///|
+test "body font shorthand survives preceding grid declarations" {
+  let html =
+    #|<!doctype html>
+    #|<style>
+    #|body {
+    #|  display: grid;
+    #|  grid-template-columns: repeat(auto-fill, 50px 50px 50px);
+    #|  grid-auto-rows: 50px;
+    #|  font: 10px/1 monospace;
+    #|}
+    #|</style>
+    #|<div id="outer">X X</div>
+  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  inspect(node.id, content="body")
+  inspect(node.style.font_size, content="10")
+  inspect(node.style.line_height, content="10")
+  let outer = node.children[0]
+  inspect(outer.id, content="div#outer")
+  inspect(outer.style.font_size, content="10")
+  inspect(outer.style.line_height, content="10")
+  let text = outer.children[0]
+  let intrinsic = match text.measure {
+    Some(measure) => (measure.func)(9999.0, 9999.0)
+    None => @types.IntrinsicSize::default()
+  }
+  inspect(intrinsic.max_width, content="15")
+  inspect(intrinsic.max_height, content="10")
+}
+
+///|
+test "body font shorthand survives string @import prelude" {
+  let html =
+    #|<!doctype html>
+    #|<style>
+    #|@import "/fonts/ahem.css"; /* optional */
+    #|body {
+    #|  font: 10px/1 monospace;
+    #|}
+    #|</style>
+    #|<div id="outer">X X</div>
+  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  let outer = node.children[0]
+  inspect(outer.style.font_size, content="10")
+  inspect(outer.style.line_height, content="10")
+  let text = outer.children[0]
+  let intrinsic = match text.measure {
+    Some(measure) => (measure.func)(9999.0, 9999.0)
+    None => @types.IntrinsicSize::default()
+  }
+  inspect(intrinsic.max_width, content="15")
+  inspect(intrinsic.max_height, content="10")
+}
+
+///|
+test "later body font style overrides earlier reset style" {
+  let html =
+    #|<!doctype html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|</style>
+    #|<style>
+    #|@import "/fonts/ahem.css"; /* optional */
+    #|body {
+    #|  display: grid;
+    #|  grid-template-columns: repeat(auto-fill, 50px 50px 50px);
+    #|  grid-auto-rows: 50px;
+    #|  font: 10px/1 monospace;
+    #|}
+    #|</style>
+    #|<div id="outer">X X</div>
+  let doc = @html.parse_document(html)
+  inspect(doc.stylesheets.length(), content="2")
+  inspect(doc.stylesheets[0].contains("font-size: 16px"), content="true")
+  inspect(doc.stylesheets[1].contains("font: 10px/1 monospace"), content="true")
+  let cascaded = @cascade.cascade_element_indexed(
+    @selector.Element::new("body"),
+    [
+      @cascade.IndexedStylesheet::new(
+        @parser.parse_stylesheet(doc.stylesheets[0]),
+      ),
+      @cascade.IndexedStylesheet::new(
+        @parser.parse_stylesheet(doc.stylesheets[1]),
+      ),
+    ],
+    [],
+    None,
+  )
+  let body_style = @computed.compute(cascaded, @computed.ComputeContext::new())
+  inspect(body_style.font_size, content="10")
+  inspect(body_style.line_height, content="10")
+  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  inspect(node.id, content="body")
+  inspect(node.style.font_size, content="10")
+  inspect(node.style.line_height, content="10")
+  let outer = node.children[0]
+  inspect(outer.id, content="div#outer")
+  inspect(outer.style.font_size, content="10")
+  inspect(outer.style.line_height, content="10")
+  let text = outer.children[0]
+  let intrinsic = match text.measure {
+    Some(measure) => (measure.func)(9999.0, 9999.0)
+    None => @types.IntrinsicSize::default()
+  }
+  inspect(intrinsic.max_width, content="15")
+  inspect(intrinsic.max_height, content="10")
+}
+
+///|
+test "later font shorthand overrides earlier reset longhands in computed style" {
+  let reset = @parser.parse_stylesheet(
+    "body { font-size: 16px; line-height: 1.2; }",
+  )
+  let authored = @parser.parse_stylesheet("body { font: 10px/1 monospace; }")
+  let body = @selector.Element::new("body")
+  let cascaded = @cascade.cascade_element_indexed(
+    body,
+    [
+      @cascade.IndexedStylesheet::new(reset),
+      @cascade.IndexedStylesheet::new(authored),
+    ],
+    [],
+    None,
+  )
+  inspect(cascaded.get_value("font"), content="Some(\"10px/1 monospace\")")
+  let style = @computed.compute(cascaded, @computed.ComputeContext::new())
+  inspect(style.font_size, content="10")
+  inspect(style.line_height, content="10")
+}
+
+///|
 test "font-size with nested selectors like WPT" {
   // Simulate the WPT align-self-006.html structure
   let html =
@@ -687,7 +871,7 @@ test "text metrics provider affects default text input intrinsic width" {
     Some(measure) => (measure.func)(9999.0, 9999.0)
     None => @types.IntrinsicSize::default()
   }
-  inspect(default_intrinsic.max_width, content="172")
+  inspect(default_intrinsic.max_width, content="143")
 
   let provider = @renderer.TextMetricsProvider::new(fn(
     _text : String,
@@ -713,7 +897,7 @@ test "text metrics provider affects default text input intrinsic width" {
     Some(measure) => (measure.func)(9999.0, 9999.0)
     None => @types.IntrinsicSize::default()
   }
-  inspect(overridden_intrinsic.max_width, content="132")
+  inspect(overridden_intrinsic.max_width, content="133")
   @renderer.clear_text_metrics_provider()
 }
 

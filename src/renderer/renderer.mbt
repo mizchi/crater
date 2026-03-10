@@ -4983,15 +4983,21 @@ fn element_to_node_with_styles_internal(
       Some(t) => t.to_lower()
       None => "text"
     }
-    let font_size = if style.font_size > 0.0 { style.font_size } else { 16.0 }
-    let control_line_height = font_size * 1.15
+    let control_font_size = if style.font_size > 0.0 {
+      style.font_size
+    } else {
+      16.0
+    }
+    let control_line_height = if style.line_height > 0.0 {
+      style.line_height
+    } else {
+      control_font_size * 1.15
+    }
     let char_width = resolve_control_char_width(
-      font_size,
+      control_font_size,
       control_line_height,
       style.writing_mode,
     )
-    let control_extra_width = font_size * 0.75
-    let control_extra_height = font_size * 0.35
     // Get intrinsic dimensions based on input type
     // These are approximate browser defaults
     let (intrinsic_width, intrinsic_height) : (Double, Double) = match
@@ -5012,8 +5018,11 @@ fn element_to_node_with_styles_internal(
           label_cols = label_cols + char_display_width(c)
         }
         let label_width = label_cols.to_double() * char_width * 0.85
-        let min_width = font_size * 1.75
-        let intrinsic_w = @types.max(min_width, label_width + font_size * 0.3)
+        let min_width = control_font_size * 1.75
+        let intrinsic_w = @types.max(
+          min_width,
+          label_width + control_font_size * 0.3,
+        )
         (intrinsic_w, 21.0)
       }
       "range" => (129.0, 21.0)
@@ -5027,6 +5036,16 @@ fn element_to_node_with_styles_internal(
               _ => 20.0
             }
           None => 20.0
+        }
+        let control_extra_width = if control_font_size <= 13.0 {
+          control_font_size
+        } else {
+          control_font_size * 0.75
+        }
+        let control_extra_height = if control_font_size <= 13.0 {
+          4.5
+        } else {
+          control_font_size * 0.35
         }
         (
           size_chars * char_width + control_extra_width,
@@ -6062,6 +6081,8 @@ fn get_ua_default_style(tag : String) -> @style.Style {
         ..default_style,
         display: @types.InlineBlock,
         box_sizing: @types.BorderBox,
+        font_size: 13.0,
+        line_height: 15.0,
       }
     // Buttons use platform UI metrics in browsers and are typically smaller
     // than inherited body text when no explicit font is set.
@@ -6248,20 +6269,86 @@ fn compute_element_style_indexed(
   // (width/height/gap/etc.) resolve against the element's own font.
   match cascaded {
     Some(cascaded_values) => {
-      let font_props = ["font", "font-size", "line-height"]
-      for prop in font_props {
-        match cascaded_values.get_value(prop) {
-          Some(value) =>
-            style = apply_css_property_with_viewport(
-              style,
-              prop,
-              value,
-              ctx.viewport_width,
-              ctx.viewport_height,
-              css_vars,
-              parent_style,
-            )
-          None => ()
+      let mut font_present = false
+      let mut font_order = 0
+      let mut font_value = ""
+      let mut font_size_present = false
+      let mut font_size_order = 0
+      let mut font_size_value = ""
+      let mut line_height_present = false
+      let mut line_height_order = 0
+      let mut line_height_value = ""
+      match cascaded_values.get("font") {
+        Some(decl) =>
+          match decl.value {
+            @cascade.PropertyValue::Value(value) => {
+              font_present = true
+              font_order = decl.source_order
+              font_value = value
+            }
+            _ => ()
+          }
+        None => ()
+      }
+      match cascaded_values.get("font-size") {
+        Some(decl) =>
+          match decl.value {
+            @cascade.PropertyValue::Value(value) => {
+              font_size_present = true
+              font_size_order = decl.source_order
+              font_size_value = value
+            }
+            _ => ()
+          }
+        None => ()
+      }
+      match cascaded_values.get("line-height") {
+        Some(decl) =>
+          match decl.value {
+            @cascade.PropertyValue::Value(value) => {
+              line_height_present = true
+              line_height_order = decl.source_order
+              line_height_value = value
+            }
+            _ => ()
+          }
+        None => ()
+      }
+      for idx = 0; idx < 3; idx = idx + 1 {
+        let mut next_prop = ""
+        let mut next_value = ""
+        let mut next_order = 2147483647
+        if font_present && font_order < next_order {
+          next_prop = "font"
+          next_value = font_value
+          next_order = font_order
+        }
+        if font_size_present && font_size_order < next_order {
+          next_prop = "font-size"
+          next_value = font_size_value
+          next_order = font_size_order
+        }
+        if line_height_present && line_height_order < next_order {
+          next_prop = "line-height"
+          next_value = line_height_value
+        }
+        if next_prop == "" {
+          break
+        }
+        style = apply_css_property_with_viewport(
+          style,
+          next_prop,
+          next_value,
+          ctx.viewport_width,
+          ctx.viewport_height,
+          css_vars,
+          parent_style,
+        )
+        match next_prop {
+          "font" => font_present = false
+          "font-size" => font_size_present = false
+          "line-height" => line_height_present = false
+          _ => ()
         }
       }
 

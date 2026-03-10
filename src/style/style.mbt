@@ -550,7 +550,7 @@ pub fn Style::default() -> Style {
     margin_trim: MarginTrim::None,
     flex_direction: @types.Row,
     flex_wrap: @types.NoWrap,
-    justify_content: @types.Start,
+    justify_content: @types.FlexStart,
     align_items: @types.Stretch,
     align_content: @types.Stretch,
     justify_content_unsafe: false,

@@ -288,6 +288,45 @@ test "multiple stylesheets" {
 }
 
 ///|
+test "later author stylesheet wins at same specificity" {
+  let stylesheet1 = Stylesheet::new(Author)
+  let stylesheet2 = Stylesheet::new(Author)
+  let sel = @selector.parse_selector_text("div")
+  match sel {
+    Some(selector) => {
+      stylesheet1.add_rule("div", selector, [Declaration::new("width", "10px")])
+      stylesheet2.add_rule("div", selector, [Declaration::new("width", "20px")])
+    }
+    None => fail("failed to parse selector")
+  }
+  let element = @selector.Element::new("div")
+  let result = cascade_element(element, [stylesheet1, stylesheet2], [])
+  inspect(result.get_value("width"), content="Some(\"20px\")")
+}
+
+///|
+test "later indexed stylesheet wins at same specificity" {
+  let stylesheet1 = Stylesheet::new(Author)
+  let stylesheet2 = Stylesheet::new(Author)
+  let sel = @selector.parse_selector_text("div")
+  match sel {
+    Some(selector) => {
+      stylesheet1.add_rule("div", selector, [Declaration::new("width", "10px")])
+      stylesheet2.add_rule("div", selector, [Declaration::new("width", "20px")])
+    }
+    None => fail("failed to parse selector")
+  }
+  let element = @selector.Element::new("div")
+  let result = cascade_element_indexed(
+    element,
+    [IndexedStylesheet::new(stylesheet1), IndexedStylesheet::new(stylesheet2)],
+    [],
+    None,
+  )
+  inspect(result.get_value("width"), content="Some(\"20px\")")
+}
+
+///|
 test "specificity - ID beats class" {
   let stylesheet = Stylesheet::new(Author)
 

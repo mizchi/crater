@@ -422,8 +422,15 @@ fn LineBox::add_item(
   // Items are aligned by their baselines, so we need to track:
   // - max distance from top to baseline (above baseline)
   // - max distance from baseline to bottom (below baseline)
-  let above_baseline = baseline + margin_top
-  let below_baseline = line_height - baseline + margin_bottom
+  // Negative vertical margins do not pull the line box itself upward/downward.
+  let effective_margin_top = if margin_top > 0.0 { margin_top } else { 0.0 }
+  let effective_margin_bottom = if margin_bottom > 0.0 {
+    margin_bottom
+  } else {
+    0.0
+  }
+  let above_baseline = baseline + effective_margin_top
+  let below_baseline = line_height - baseline + effective_margin_bottom
   if self.items.length() == 1 {
     // First item sets the initial baseline
     self.baseline = above_baseline

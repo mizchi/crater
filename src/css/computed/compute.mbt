@@ -222,7 +222,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     border_left: @types.Dimension::Length(0.0),
     flex_direction: @types.FlexDirection::Row,
     flex_wrap: @types.FlexWrap::NoWrap,
-    justify_content: @types.Alignment::Start,
+    justify_content: @types.Alignment::FlexStart,
     align_items: @types.Alignment::Stretch,
     align_content: @types.Alignment::Stretch,
     justify_content_unsafe: false,
@@ -663,6 +663,8 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
         @style.Direction::Ltr => "ltr"
         @style.Direction::Rtl => "rtl"
       }
+    "font-size" => style.font_size.to_string() + "px"
+    "line-height" => style.line_height.to_string() + "px"
     "text-align" =>
       match style.text_align {
         @style.TextAlign::Start => "start"
@@ -843,29 +845,76 @@ fn seed_font_metrics(
 ) -> ComputeContext {
   let mut seeded_font_size = ctx.font_size
   let mut seeded_line_height = ctx.font_size
-
+  let mut font_decl : @cascade.Declaration? = None
+  let mut font_size_decl : @cascade.Declaration? = None
+  let mut line_height_decl : @cascade.Declaration? = None
   match cascaded.get("font") {
-    Some(decl) => {
-      let value = resolve_keyword("font", decl.value, ctx)
-      let (font_size, line_height) = parse_font_shorthand(value, ctx)
-      seeded_font_size = font_size
-      seeded_line_height = line_height
-    }
+    Some(decl) => font_decl = Some(decl)
     None => ()
   }
   match cascaded.get("font-size") {
-    Some(decl) => {
-      let value = resolve_keyword("font-size", decl.value, ctx)
-      seeded_font_size = parse_font_size(value, ctx)
-    }
+    Some(decl) => font_size_decl = Some(decl)
     None => ()
   }
   match cascaded.get("line-height") {
-    Some(decl) => {
-      let value = resolve_keyword("line-height", decl.value, ctx)
-      seeded_line_height = parse_line_height(value, seeded_font_size)
-    }
+    Some(decl) => line_height_decl = Some(decl)
     None => ()
+  }
+  for idx = 0; idx < 3; idx = idx + 1 {
+    let mut next_prop = ""
+    let mut next_decl : @cascade.Declaration? = None
+    let mut next_order = 2147483647
+    match font_decl {
+      Some(decl) =>
+        if decl.source_order < next_order {
+          next_prop = "font"
+          next_decl = Some(decl)
+          next_order = decl.source_order
+        }
+      None => ()
+    }
+    match font_size_decl {
+      Some(decl) =>
+        if decl.source_order < next_order {
+          next_prop = "font-size"
+          next_decl = Some(decl)
+          next_order = decl.source_order
+        }
+      None => ()
+    }
+    match line_height_decl {
+      Some(decl) =>
+        if decl.source_order < next_order {
+          next_prop = "line-height"
+          next_decl = Some(decl)
+        }
+      None => ()
+    }
+    if next_prop == "" {
+      break
+    }
+    let decl = match next_decl {
+      Some(decl) => decl
+      None => break
+    }
+    let value = resolve_keyword(next_prop, decl.value, ctx)
+    match next_prop {
+      "font" => {
+        let (font_size, line_height) = parse_font_shorthand(value, ctx)
+        seeded_font_size = font_size
+        seeded_line_height = line_height
+        font_decl = None
+      }
+      "font-size" => {
+        seeded_font_size = parse_font_size(value, ctx)
+        font_size_decl = None
+      }
+      "line-height" => {
+        seeded_line_height = parse_line_height(value, seeded_font_size)
+        line_height_decl = None
+      }
+      _ => ()
+    }
   }
 
   builder.font_size = seeded_font_size
@@ -3006,8 +3055,10 @@ fn apply_inheritance(
     "font-weight", "font-style", "color", "visibility", "white-space",
   ]
   for prop in inherited_props {
+    let covered_by_font_shorthand = cascaded.has("font") &&
+      (prop == "font-size" || prop == "line-height")
     // If property not in cascaded values, inherit from parent
-    if not(cascaded.has(prop)) {
+    if not(cascaded.has(prop)) && not(covered_by_font_shorthand) {
       match ctx.parent_style {
         Some(parent) => {
           let value = get_style_value_as_string(prop, parent)

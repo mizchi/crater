@@ -1344,3 +1344,52 @@ test "table preserves negative descendant offsets inside cell scroll container" 
   inspect(indicator_layout.x, content="0")
   inspect(indicator_layout.y, content="-24")
 }
+
+///|
+test "table percent column consumes remaining width after fixed sibling" {
+  let percent_cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+    width: @types.Percent(1.0),
+    height: @types.Length(10.0),
+  }
+  let fixed_cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+    width: @types.Length(6.0),
+    height: @types.Length(10.0),
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRow,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+    width: @types.Length(100.0),
+    border_spacing: 0.0,
+  }
+
+  let first = @node.Node::new("first", percent_cell_style, [])
+  let second = @node.Node::new("second", fixed_cell_style, [])
+  let row = @node.Node::new("row", row_style, [first, second])
+  let table = @node.Node::new("table", table_style, [row])
+  let ctx : @types.LayoutContext = {
+    available_width: 100.0,
+    available_height: Some(100.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 100.0,
+    viewport_height: 100.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+
+  @dispatch.setup()
+  let layout = @dispatch.compute_layout(table, ctx)
+  let row_layout = layout.children[0]
+  let first_layout = row_layout.children[0]
+  let second_layout = row_layout.children[1]
+  inspect(first_layout.width, content="94")
+  inspect(second_layout.x, content="94")
+  inspect(second_layout.width, content="6")
+}

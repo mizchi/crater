@@ -101,6 +101,32 @@ moon bench -p bench -f render_bench.mbt --release -i 22-24
 
 Conclusion: no high-confidence performance regression found in the current changes.
 
+## Font Cascade Ordering Refactor (2026-03-10)
+
+Measured on the same machine with immediate before/after `--release` runs.
+
+Command:
+```bash
+moon bench -p benchmarks -f optimization_bench.mbt --target js --release
+```
+
+Context:
+- `font` / `font-size` / `line-height` は source order を守る必要がある
+- 直前の実装では各要素ごとに 3 要素配列を作って `sort_by` していた
+- 今回は固定 3 スロットの手動選択に置き換えて、割り当てと sort を除去した
+
+| Benchmark | before | after | delta |
+|-----------|--------|-------|-------|
+| apply_single | 1.51 µs | 1.36 µs | -9.9% |
+| apply_multi_reuse | 4.80 µs | 4.05 µs | -15.6% |
+| apply_multi_new | 5.52 µs | 5.12 µs | -7.2% |
+| pipeline_current | 1.16 ms | 1.02 ms | -12.1% |
+
+Notes:
+- `pipeline_current` は stylesheet を含む end-to-end の小さい render benchmark で、今回の変更経路に近い
+- `render_bench.mbt` の full render 系は run-to-run variance が大きく、この 1 回の比較では高信頼な差分を断言しにくい
+- よって今回の改善確認は `optimization_bench.mbt` を主指標にする
+
 ---
 
 # Optimization Results (2025-01-12)

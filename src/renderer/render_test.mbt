@@ -75,6 +75,152 @@ test "img_intrinsic_src_keeps_auto_size_for_flex_aspect_ratio_constraints" {
 }
 
 ///|
+test "wpt_flex_aspect_ratio_img_column_012_like_min_height_does_not_set_base_size" {
+  let provider = @renderer.ImageIntrinsicSizeProvider::new(fn(
+    src : String,
+  ) -> (Double, Double)? {
+    if src.contains("support/1x1-green.png") {
+      Some((1.0, 1.0))
+    } else {
+      None
+    }
+  })
+  @renderer.set_image_intrinsic_size_provider(provider)
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div style="display: flex; flex-direction: column; width:100px; height: 200px; align-items: flex-start;">
+    #|  <img style="min-height: 100px; flex: 1 0 auto;" src="support/1x1-green.png">
+    #|  <div style="flex: 1 0 1px;"></div>
+    #|</div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let img_node = root.children[0].children[0]
+  inspect(img_node.style.width, content="Auto")
+  inspect(img_node.style.height, content="Auto")
+  inspect(img_node.style.aspect_ratio, content="Some(1)")
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let flex = layout.children[0]
+  let img = flex.children[0]
+  let filler = flex.children[1]
+  inspect(img.height, content="100")
+  inspect(filler.y, content="100")
+  inspect(filler.height, content="100")
+  @renderer.clear_image_intrinsic_size_provider()
+}
+
+///|
+test "wpt_flex_aspect_ratio_svg_column_018_like_transferred_max_width_caps_height" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div style="display: flex; flex-direction: column; align-items: flex-start; width: 200px;">
+    #|  <svg viewBox="0 0 1 1" style="max-width: 100px; background: green;"></svg>
+    #|</div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let flex = root.children[0]
+  let svg = flex.children[0]
+  inspect(svg.style.aspect_ratio, content="Some(1)")
+
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let flex_layout = layout.children[0]
+  let svg_layout = flex_layout.children[0]
+  inspect(flex_layout.height, content="100")
+  inspect(svg_layout.width, content="100")
+  inspect(svg_layout.height, content="100")
+}
+
+///|
+test "wpt_flex_aspect_ratio_svg_row_015_like_transferred_max_height_caps_width" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div style="display: flex; align-items: flex-start; height: 200px;">
+    #|  <svg viewBox="0 0 1 1" style="max-height: 100px; background: green;"></svg>
+    #|</div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let flex = root.children[0]
+  let svg = flex.children[0]
+  inspect(svg.style.aspect_ratio, content="Some(1)")
+
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let svg_layout = layout.children[0].children[0]
+  inspect(svg_layout.width, content="100")
+  inspect(svg_layout.height, content="100")
+}
+
+///|
+test "wpt_row_reverse_default_justify_content_uses_main_start" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div style="display:flex; flex-direction:row-reverse; width:200px; height:200px;">
+    #|  <div style="width:50px; height:50px;"></div>
+    #|  <div style="width:50px; height:50px;"></div>
+    #|  <div style="width:50px; height:50px;"></div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let flex = layout.children[0]
+  inspect(flex.children[0].x, content="150")
+  inspect(flex.children[1].x, content="100")
+  inspect(flex.children[2].x, content="50")
+}
+
+///|
+test "wpt_column_reverse_default_justify_content_uses_main_start" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div style="display:flex; flex-direction:column-reverse; width:200px; height:200px;">
+    #|  <div style="width:50px; height:50px;"></div>
+    #|  <div style="width:50px; height:50px;"></div>
+    #|  <div style="width:50px; height:50px;"></div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let flex = layout.children[0]
+  inspect(flex.children[0].y, content="150")
+  inspect(flex.children[1].y, content="100")
+  inspect(flex.children[2].y, content="50")
+}
+
+///|
+test "wpt_row_direction_matches_inline_axis_in_vertical_writing_mode" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#vertical { writing-mode: vertical-lr; }
+    #|.test { display: flex; width: 3em; flex-direction: row; }
+    #|.test > span { width: 1em; direction: ltr; }
+    #|#row-rtl { direction: rtl; }
+    #|</style>
+    #|<div id="vertical">
+    #|  <div class="test" id="row-ltr"><span>A</span><span>B</span><span>C</span></div>
+    #|  <div class="test" id="row-rtl"><span>C</span><span>B</span><span>A</span></div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let vertical = layout.children[0]
+  let row_ltr = vertical.children[0]
+  let row_rtl = vertical.children[1]
+  inspect(row_ltr.height, content="24")
+  inspect(row_ltr.children[0].y, content="0")
+  inspect(row_ltr.children[1].y, content="8")
+  inspect(row_ltr.children[2].y, content="16")
+  inspect(row_rtl.height, content="24")
+  inspect(row_rtl.children[0].y, content="16")
+  inspect(row_rtl.children[1].y, content="8")
+  inspect(row_rtl.children[2].y, content="0")
+}
+
+///|
 test "contain_size_object_auto_with_padding_uses_empty_intrinsic" {
   // Mirrors css-contain/contain-size-replaced-001.html behavior.
   let html_str =
@@ -2918,6 +3064,59 @@ test "wpt_gap_vertical_row_wrap_uses_column_gap_percentage" {
 }
 
 ///|
+test "wpt_align_content_wrap_004_column_flex_items_use_fit_content_cross_size" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.flex {
+    #|  display: flex;
+    #|  flex-wrap: wrap;
+    #|  align-content: center;
+    #|  flex-direction: column;
+    #|  align-items: flex-start;
+    #|  width: 100px;
+    #|  line-height: 1;
+    #|}
+    #|.flex > div {
+    #|  min-height: 0;
+    #|  background: green;
+    #|}
+    #|.flex * {
+    #|  vertical-align: top;
+    #|}
+    #|</style>
+    #|<div class="flex">
+    #|  <div style="align-self: stretch;">
+    #|    <div style="display: inline-block; width: 20px; height: 40px;"></div>
+    #|  </div>
+    #|  <div style="height: 60px;">
+    #|    <div style="display: inline-block; height: 15px; width: 20px;"></div>
+    #|    <div style="display: inline-block; height: 15px; width: 100px;"></div>
+    #|    <div style="display: inline-block; height: 15px; width: 100px;"></div>
+    #|    <div style="display: inline-block; height: 15px; width: 100px;"></div>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let flex = layout.children[0]
+  let first = flex.children[0]
+  let second = flex.children[1]
+
+  guard first.x.abs() < 0.01 else {
+    fail("first wrapped column flex item should stay at cross-start")
+  }
+  guard (first.width - 100.0).abs() < 0.01 else {
+    fail("stretch item should use fit-content constrained to container width")
+  }
+  guard second.x.abs() < 0.01 else {
+    fail("second wrapped column flex item should stay at cross-start")
+  }
+  guard (second.width - 100.0).abs() < 0.01 else {
+    fail("auto-width wrapped column flex item should use fit-content width")
+  }
+}
+
+///|
 test "wpt_gap_vertical_rl_wrap_progression_is_mirrored" {
   let html_str =
     #|<!DOCTYPE html>
@@ -2933,9 +3132,20 @@ test "wpt_gap_vertical_rl_wrap_progression_is_mirrored" {
   let layout = @renderer.render(html_str, @renderer.RenderContext::default())
   let section = layout.children[0]
   let bp = section.children[0]
+  let ww = section.children[1]
   let f = section.children[3]
-  guard bp.x > f.x else {
-    fail("vertical-rl wrap should progress lines from right to left")
+  guard (bp.x - 80.0).abs() < 0.01 else {
+    fail(
+      "first wrapped line should start on the physical right edge in vertical-rl",
+    )
+  }
+  guard (ww.x - 40.0).abs() < 0.01 else {
+    fail("second wrapped line should stay in the middle track in vertical-rl")
+  }
+  guard f.x.abs() < 0.01 else {
+    fail(
+      "last wrapped line should end on the physical left edge in vertical-rl",
+    )
   }
 }
 
@@ -3594,6 +3804,54 @@ test "flex_baseline_align_offsets_smaller_font_item" {
   }
   guard div2.y > 10.0 else {
     fail("baseline offset for smaller-font item should be visibly non-zero")
+  }
+}
+
+///|
+test "wpt_column_flex_align_items_baseline_falls_back_to_cross_side" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|h1, p { margin: 0; }
+    #|.flexbox { display: flex; }
+    #|.column { flex-direction: column; }
+    #|.align-items-baseline { align-items: baseline; }
+    #|.wrap-reverse { flex-wrap: wrap-reverse; }
+    #|</style>
+    #|<div id="left" class="flexbox column align-items-baseline">
+    #|  <h1>This text</h1>
+    #|  <p>should be left aligned.</p>
+    #|</div>
+    #|<div id="right" class="flexbox column align-items-baseline wrap-reverse">
+    #|  <h1>This text</h1>
+    #|  <p>should be right aligned.</p>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let left = layout.children[0]
+  let right = layout.children[1]
+  let left_h1 = left.children[0]
+  let left_p = left.children[1]
+  let right_h1 = right.children[0]
+  let right_p = right.children[1]
+
+  guard left_h1.x.abs() < 0.01 else {
+    fail(
+      "column flex baseline should fall back to cross-start for the first item",
+    )
+  }
+  guard left_p.x.abs() < 0.01 else {
+    fail(
+      "column flex baseline should fall back to cross-start for the second item",
+    )
+  }
+  guard (right_h1.x - right_p.x).abs() < 0.01 else {
+    fail(
+      "wrap-reverse column baseline should keep both items on one cross-side",
+    )
+  }
+  guard (right_p.x + right_p.width - layout.width).abs() < 0.01 else {
+    fail("wrap-reverse column baseline should fall back to cross-end")
   }
 }
 
@@ -4947,4 +5205,107 @@ test "abspos_canvas_display_table_respects_explicit_css_height" {
   inspect(canvas.id, content="canvas")
   inspect(canvas.width, content="100")
   inspect(canvas.height, content="100")
+}
+
+///|
+test "wpt_flex_container_min_content_uses_item_min_content_contribution" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font: 10px/1 monospace; }
+    #|.wrap > * {
+    #|  width: min-content;
+    #|  height: min-content;
+    #|  float: left;
+    #|}
+    #|.wrap { width: 0; height: 0; }
+    #|.row { display: flex; }
+    #|.item {
+    #|  margin: 5px;
+    #|  padding: 3px;
+    #|  border: 2px solid aqua;
+    #|}
+    #|</style>
+    #|<div class="wrap">
+    #|  <div class="row">
+    #|    <div class="item" style="flex: auto">X X</div>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let wrap = layout.children[0]
+  let row = wrap.children[0]
+  let item = row.children[0]
+  inspect(wrap.width, content="0")
+  inspect(row.width, content="25")
+  inspect(item.width, content="15")
+}
+
+///|
+test "wpt_flex_vertical_align_effect_uses_small_text_input_metrics" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#container {
+    #|  display: flex;
+    #|  align-items: flex-start;
+    #|}
+    #|input { margin: 0; padding: 0; vertical-align: middle; }
+    #|</style>
+    #|<div id="container">
+    #|  <input type="text" value="input1" />
+    #|  <input type="radio" />
+    #|</div>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let container = layout.children[0]
+  let text_input = container.children[0]
+  let radio = container.children[1]
+  guard (text_input.width - 143.0).abs() < 0.1 else {
+    fail(
+      "text input intrinsic width should match browser small-control metrics",
+    )
+  }
+  guard (text_input.height - 19.5).abs() < 0.1 else {
+    fail(
+      "text input intrinsic height should match browser small-control metrics",
+    )
+  }
+  guard (radio.x - text_input.width).abs() < 0.1 else {
+    fail("radio should follow text input width in flex row layout")
+  }
+}
+
+///|
+test "wpt_overflow_top_left_keeps_stretched_item_inside_column_cross_size" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.column-wrapper {
+    #|  width: 300px;
+    #|  overflow: auto;
+    #|  display: flex;
+    #|  flex-direction: column;
+    #|  direction: rtl;
+    #|  border: 2px solid black;
+    #|}
+    #|.column-wrapper > div {
+    #|  margin: 4px;
+    #|  height: 30px;
+    #|  background: #ccc;
+    #|}
+    #|.h-overflow { width: 500px; }
+    #|</style>
+    #|<div class="column-wrapper">
+    #|  <div>one</div>
+    #|  <div class="h-overflow">two</div>
+    #|</div>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let wrapper = layout.children[0]
+  let first = wrapper.children[0]
+  let second = wrapper.children[1]
+  inspect(first.x, content="6")
+  inspect(first.width, content="292")
+  inspect(second.x, content="-202")
+  inspect(second.width, content="500")
 }

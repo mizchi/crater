@@ -77,6 +77,43 @@ test "ifc_horizontal_layout" {
 }
 
 ///|
+test "ifc_negative_top_margin_atomic_inline_keeps_line_box_band" {
+  let default_style = @style.Style::default()
+  let inline_style = {
+    ..default_style,
+    display: @types.InlineFlex,
+    width: @types.Length(64.0),
+    height: @types.Length(19.2),
+    margin: {
+      left: @types.Length(0.0),
+      right: @types.Length(0.0),
+      top: @types.Length(-200.0),
+      bottom: @types.Length(0.0),
+    },
+  }
+  let child = @node.Node::leaf("child", inline_style)
+  let result = compute_ifc(
+    [child],
+    400.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
+  guard result.layouts.length() == 1 else {
+    fail("ifc should keep the atomic inline child")
+  }
+  guard (result.total_height - 19.2).abs() < 0.01 else {
+    fail("negative top margin should not collapse the line box height")
+  }
+  guard result.layouts[0].y.abs() < 0.01 else {
+    fail(
+      "negative top margin should not move the atomic inline box above the line",
+    )
+  }
+}
+
+///|
 test "ifc_line_wrapping" {
   // Three inline-block elements, third should wrap to new line
   let default_style = @style.Style::default()

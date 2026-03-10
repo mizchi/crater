@@ -336,15 +336,15 @@
   - [x] 現在の `scripts/crater_bidi_adapter.py` は `2002` 行
   - [ ] transport 層以外で `.py` に残っている実装責務を TODO から洗い出して消していく
 
-## WPT サポート状況（2026-03-03）
+## WPT サポート状況（2026-03-10）
 
 - 実測コマンド: `npx tsx scripts/wpt-runner.ts <module> --workers 4`
-- 全体: `1366 / 1446 passed`（`94.5%`、`80 failed`）
+- 全体: `1389 / 1446 passed`（`96.1%`、`57 failed`）
 
 | Module | Passed | Failed | Total | Rate |
 |--------|--------|--------|-------|------|
-| css-flexbox | 267 | 22 | 289 | 92.4% |
-| css-grid | 32 | 1 | 33 | 97.0% |
+| css-flexbox | 289 | 0 | 289 | 100.0% |
+| css-grid | 33 | 0 | 33 | 100.0% |
 | css-tables | 26 | 6 | 32 | 81.2% |
 | css-display | 71 | 8 | 79 | 89.9% |
 | css-box | 30 | 0 | 30 | 100.0% |
@@ -359,11 +359,11 @@
 
 ### 直近の改善
 
+- `css-flexbox`: `285 / 289` -> `289 / 289`
 - `css-position`: `74 / 84` -> `84 / 84`
 
 ### 直近の優先候補
 
-- `css-flexbox` の残件（`22 failed`）
 - `css-overflow` の残件（`12 failed`）
 - `css-display` の残件（`8 failed`）
 - `css-variables` の残件（`7 failed`）
@@ -375,6 +375,83 @@
   - text: `set_text_metrics_provider`（`wpt-runner` は `CRATER_TEXT_MODULE` または `mizchi/text` を自動探索）
   - image: `set_image_intrinsic_size_provider`（`CRATER_IMAGE_MODULE` または `mizchi/image`）
   - 画像ローカル寸法解決フォールバックは `CRATER_IMAGE_FILE_RESOLVE=1` のときのみ有効
+
+## css-flexbox WPT 進捗（2026-03-10）
+
+- 現在: `289 / 289 passed`（`0 failed`）
+- 今回の更新:
+  - `align-baseline.html`
+  - `align-content-wrap-004.html`
+  - `flex-aspect-ratio-img-column-012.html`
+  - `flex-aspect-ratio-img-column-018.html`
+  - `flex-aspect-ratio-img-row-015.html`
+  - `aspect-ratio-transferred-max-size.html`
+  - `flex-direction-column-reverse-001-visual.html`
+  - `flex-direction-row-reverse-001-visual.html`
+  - `flex-direction-row-reverse.html`
+  - `flex-direction-row-vertical.html`
+  - `gap-001-lr.html`
+  - `gap-001-rl.html`
+  - `gap-002-lr.html`
+  - `gap-002-rl.html`
+  - `gap-003-lr.html`
+  - `gap-003-rl.html`
+  - `gap-006-rl.html`
+  - `flex-inline.html`
+  - `text-overflow-on-flexbox-001.html`
+  - `flex-container-min-content-001.html`
+  - `flex-vertical-align-effect.html`
+  - `overflow-top-left.html`
+  - `table-with-infinite-max-intrinsic-width.html`
+- 実行コマンド: `npx tsx scripts/wpt-runner.ts css-flexbox`
+- 追加した回帰テスト:
+  - `src/renderer/render_test.mbt`: `wpt_column_flex_align_items_baseline_falls_back_to_cross_side`
+  - `src/renderer/render_test.mbt`: `wpt_align_content_wrap_004_column_flex_items_use_fit_content_cross_size`
+  - `src/renderer/render_test.mbt`: `wpt_flex_aspect_ratio_img_column_012_like_min_height_does_not_set_base_size`
+  - `src/renderer/render_test.mbt`: `wpt_flex_aspect_ratio_svg_column_018_like_transferred_max_width_caps_height`
+  - `src/renderer/render_test.mbt`: `wpt_flex_aspect_ratio_svg_row_015_like_transferred_max_height_caps_width`
+  - `src/renderer/render_test.mbt`: `wpt_row_reverse_default_justify_content_uses_main_start`
+  - `src/renderer/render_test.mbt`: `wpt_column_reverse_default_justify_content_uses_main_start`
+  - `src/renderer/render_test.mbt`: `wpt_row_direction_matches_inline_axis_in_vertical_writing_mode`
+  - `src/renderer/render_test.mbt`: `wpt_gap_vertical_rl_wrap_progression_is_mirrored`
+  - `src/layout/inline/inline_test.mbt`: `ifc_negative_top_margin_atomic_inline_keeps_line_box_band`
+  - `src/layout/flex/flex_test.mbt`: `row_flex_direct_text_leaf_keeps_single_line_cross_size_at_intrinsic_width`
+  - `src/renderer/render_test.mbt`: `wpt_flex_container_min_content_uses_item_min_content_contribution`
+  - `src/renderer/render_test.mbt`: `wpt_flex_vertical_align_effect_uses_small_text_input_metrics`
+  - `src/renderer/render_test.mbt`: `wpt_overflow_top_left_keeps_stretched_item_inside_column_cross_size`
+  - `src/layout/table/table_test.mbt`: `table_percent_column_consumes_remaining_width_after_fixed_sibling`
+  - `src/css/cascade/cascade_wbtest.mbt`: `later author stylesheet wins at same specificity`
+  - `src/css/cascade/cascade_wbtest.mbt`: `later indexed stylesheet wins at same specificity`
+  - `src/renderer/renderer_test.mbt`: `later body font style overrides earlier reset style`
+  - `src/renderer/renderer_test.mbt`: `later font shorthand overrides earlier reset longhands in computed style`
+- 参考:
+  - `css-grid`: `33 / 33 passed`
+
+## 今回対応済み（2026-03-10）
+
+- [x] `align-baseline.html`
+- [x] `align-content-wrap-004.html`
+- [x] `flex-aspect-ratio-img-column-012.html`
+- [x] `flex-aspect-ratio-img-column-018.html`
+- [x] `flex-aspect-ratio-img-row-015.html`
+- [x] `aspect-ratio-transferred-max-size.html`
+- [x] `flex-direction-column-reverse-001-visual.html`
+- [x] `flex-direction-row-reverse-001-visual.html`
+- [x] `flex-direction-row-reverse.html`
+- [x] `flex-direction-row-vertical.html`
+- [x] `gap-001-lr.html`
+- [x] `gap-001-rl.html`
+- [x] `gap-002-lr.html`
+- [x] `gap-002-rl.html`
+- [x] `gap-003-lr.html`
+- [x] `gap-003-rl.html`
+- [x] `gap-006-rl.html`
+- [x] `flex-inline.html`
+- [x] `text-overflow-on-flexbox-001.html`
+- [x] `flex-container-min-content-001.html`
+- [x] `flex-vertical-align-effect.html`
+- [x] `overflow-top-left.html`
+- [x] `table-with-infinite-max-intrinsic-width.html`
 
 ## css-flexbox WPT 進捗（2026-02-21, 履歴）
 

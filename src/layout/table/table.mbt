@@ -1099,6 +1099,65 @@ fn calculate_intrinsic_column_widths(
 }
 
 ///|
+fn calculate_intrinsic_column_percentages(
+  rows : Array[@node.Node],
+  num_columns : Int,
+  grid : Map[String, CellOccupancy],
+  collapsed_columns : Array[Bool],
+) -> Array[Double] {
+  let percentages : Array[Double] = []
+  if num_columns == 0 {
+    return percentages
+  }
+  for _i = 0; _i < num_columns; _i = _i + 1 {
+    percentages.push(0.0)
+  }
+  for row_idx = 0; row_idx < rows.length(); row_idx = row_idx + 1 {
+    let row = rows[row_idx]
+    let cells = get_row_cells(row)
+    let mut col_index = 0
+    for cell_idx = 0; cell_idx < cells.length(); cell_idx = cell_idx + 1 {
+      let cell = cells[cell_idx]
+
+      while true {
+        match grid.get(key_for_pos(row_idx, col_index)) {
+          Some(occ) =>
+            if occ.row_index != row_idx || occ.cell_index != cell_idx {
+              col_index = col_index + 1
+            } else {
+              break
+            }
+          None => break
+        }
+      }
+
+      if col_index >= num_columns {
+        break
+      }
+
+      let raw_colspan = if cell.style.colspan > 0 {
+        cell.style.colspan
+      } else {
+        1
+      }
+      if raw_colspan == 1 &&
+        not(is_collapsed_column(collapsed_columns, col_index)) {
+        match cell.style.width {
+          @types.Percent(p) =>
+            if p > percentages[col_index] {
+              percentages[col_index] = p
+            }
+          _ => ()
+        }
+      }
+
+      col_index = col_index + raw_colspan
+    }
+  }
+  percentages
+}
+
+///|
 /// Calculate column widths for table-layout: fixed
 /// In fixed mode:
 /// - Column widths are determined by the first row's cells or <col> elements
@@ -1216,6 +1275,9 @@ fn calculate_column_widths(
   let col_min_widths = calculate_intrinsic_column_widths(
     rows, num_columns, border_spacing, grid, collapsed_columns,
   )
+  let col_percentages = calculate_intrinsic_column_percentages(
+    rows, num_columns, grid, collapsed_columns,
+  )
 
   // Calculate total spacing
   let total_spacing = border_spacing * (num_columns - 1).to_double()
@@ -1304,13 +1366,43 @@ fn calculate_column_widths(
     if total_min_width <= available_width {
       // All columns fit - use min widths and distribute remaining space
       let remaining = content_available - (total_min_width - total_spacing)
-      let extra_per_col = if num_columns > 0 {
-        remaining / num_columns.to_double()
-      } else {
-        0.0
+      let mut total_percentage = 0.0
+      for i = 0; i < num_columns; i = i + 1 {
+        if is_collapsed_column(collapsed_columns, i) {
+          continue
+        }
+        total_percentage = total_percentage + col_percentages[i]
       }
-      for w in col_min_widths {
-        widths.push(w + extra_per_col)
+      if remaining > 0.0 && total_percentage > 0.0 {
+        let mut distributed = 0.0
+        let mut last_percent_col = -1
+        for i = 0; i < num_columns; i = i + 1 {
+          if not(is_collapsed_column(collapsed_columns, i)) &&
+            col_percentages[i] > 0.0 {
+            last_percent_col = i
+          }
+        }
+        for i = 0; i < num_columns; i = i + 1 {
+          let base_width = col_min_widths[i]
+          if i == last_percent_col {
+            widths.push(base_width + (remaining - distributed))
+          } else if col_percentages[i] > 0.0 {
+            let extra = remaining * (col_percentages[i] / total_percentage)
+            widths.push(base_width + extra)
+            distributed = distributed + extra
+          } else {
+            widths.push(base_width)
+          }
+        }
+      } else {
+        let extra_per_col = if num_columns > 0 {
+          remaining / num_columns.to_double()
+        } else {
+          0.0
+        }
+        for w in col_min_widths {
+          widths.push(w + extra_per_col)
+        }
       }
     } else {
       // Columns don't fit - scale proportionally
