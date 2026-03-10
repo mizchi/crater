@@ -324,7 +324,16 @@
   - [x] `moon -C browser fmt/info/check src/webdriver` / `just build-bidi` / `.venv/bin/python -m py_compile scripts/crater_bidi_adapter.py` / `session/capabilities/unhandled_prompt_behavior/file --quick` (`12/12`) / `browser/create_user_context/unhandled_prompt_behavior.py --quick` (`24/24`) / `--profile strict` (`277/277`) で file dialog helper command 化の回帰がないことを確認した
   - [x] `test_origin` / `test_alt_origin` / `test_page*` / frame page fixture は `browser/src/webdriver_fixture_builder` の `buildNamedBidiFixture` に寄せて、Python 側の `url` / `inline` 合成を削除した
   - [x] `moon -C browser test src/webdriver_fixture_builder` (`17/17`) / `browsing_context/get_tree --quick` (`36/36`) / `script/get_realms --quick` (`24/24`) / `storage/get_cookies/partition.py --quick` (`9/9`) / `network/combined/network_events.py --quick` (`6/6`) / `--profile strict` (`277/277`) で named page builder 化の回帰がないことを確認した
-  - [x] 現在の `scripts/crater_bidi_adapter.py` は `1992` 行
+  - [x] `current_session` / `session` は custom class をやめて `SimpleNamespace(capabilities=...)` の classic harness stub に整理した
+  - [x] `session/new/bidi_upgrade.py --quick` (`4/4`) / `input/perform_actions/pointer_mouse_modifier.py --quick` (`10/10`) / `--profile strict` (`277/277`) で classic stub 整理の回帰がないことを確認した
+  - [x] `current_session` / `session` / `default_capabilities` / `capabilities` / `modifier_key` / `wait_for_future_safe` / `current_time` は MoonBit 本体ではなく WPT harness compatibility layer として Python に残す方針を固定する
+  - [x] `wait_for_future_safe` は foreign loop polling と通常 timeout を `_wait_for_foreign_loop_future` / `_fixture_wait_for_future_safe` に分離し、WPT compatibility helper として責務を明示した
+  - [x] `modifier_key` / `current_time` / capabilities merge も `_fixture_*` helper 名に揃えて、fixture 自体は thin binding に整理した
+  - [x] `timeout_multiplier` を internal helper/fixture として分離し、adapter 内の `fetch` / `wait_for_events` は `configuration["timeout_multiplier"]` に依存しない形へ整理した
+  - [x] `configuration` は WPT harness compatibility fixture としてのみ残し、内部 fixture からは直接参照しない境界にした
+  - [x] `browsing_context/load/load.py --quick` (`10/10`) / `network/before_request_sent/before_request_sent.py --quick` (`24/24`) / `--profile strict` (`277/277`) で harness helper 整理の回帰がないことを確認した
+  - [x] `session/new/bidi_upgrade.py --quick` (`4/4`) / `input/perform_actions/pointer_mouse.py --quick` (`21/21`) / `network/response_completed/response_completed.py --quick` (`57/57`) / `--profile strict` (`277/277`) で `configuration` 境界整理の回帰がないことを確認した
+  - [x] 現在の `scripts/crater_bidi_adapter.py` は `2002` 行
   - [ ] transport 層以外で `.py` に残っている実装責務を TODO から洗い出して消していく
 
 ## WPT サポート状況（2026-03-03）

@@ -12,6 +12,7 @@ Usage:
 
 import asyncio
 import base64
+import copy
 import functools
 import json
 import math
@@ -20,12 +21,14 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Mapping
 import pytest
 import pytest_asyncio
 import websockets
 import webdriver.bidi.error as bidi_error
 from webdriver.bidi.modules.script import ContextTarget, ScriptEvaluateResultException
+from tests.support.helpers import deep_update
 
 
 CRATER_BIDI_URL = os.environ.get("CRATER_BIDI_URL", "ws://127.0.0.1:9222")
@@ -496,12 +499,20 @@ def _current_platform_name() -> str:
     return "linux"
 
 
-def _merge_capabilities_from_request(request, default_capabilities):
-    caps = dict(default_capabilities)
+def _fixture_default_capabilities():
+    return {}
+
+
+def _fixture_capabilities_for_request(request, default_capabilities):
     marker = request.node.get_closest_marker("capabilities")
-    if marker and marker.args and isinstance(marker.args[0], dict):
-        _deep_update(caps, marker.args[0])
-    return caps
+    if marker and marker.args:
+        assert isinstance(
+            marker.args[0], dict
+        ), "capabilities marker must use a dictionary"
+        caps = copy.deepcopy(default_capabilities)
+        deep_update(caps, marker.args[0])
+        return caps
+    return default_capabilities
 
 
 class _CommandProxy:
@@ -1034,22 +1045,6 @@ class BrowserModule(_CommandProxy):
         return await self._command("browser.setDownloadBehavior", params)
 
 
-class CraterClassicSession:
-    """Minimal classic session object used by BiDi upgrade tests."""
-
-    def __init__(self, websocket_url: str):
-        self.capabilities = {
-            "webSocketUrl": websocket_url,
-        }
-
-
-class _CurrentSession:
-    """Minimal classic WebDriver session fixture used by legacy WPT helpers."""
-
-    def __init__(self, platform_name: str):
-        self.capabilities = {"platformName": platform_name}
-
-
 class _TrackedTask:
     """Track whether a scheduled task was explicitly awaited by the test."""
 
@@ -1268,18 +1263,23 @@ def get_actions_origin_page():
 
 
 @pytest.fixture
-def configuration():
-    """Test configuration."""
-    return _fixture_configuration()
+def timeout_multiplier():
+    return _fixture_timeout_multiplier()
 
 
 @pytest.fixture
-def fetch(bidi_session, configuration):
+def configuration(timeout_multiplier):
+    """Test configuration."""
+    return _fixture_configuration(timeout_multiplier)
+
+
+@pytest.fixture
+def fetch(bidi_session, timeout_multiplier):
     """Perform a fetch from the page of the provided context."""
     return functools.partial(
         _fetch_impl,
         bidi_session,
-        configuration["timeout_multiplier"],
+        timeout_multiplier,
     )
 
 
@@ -1312,11 +1312,11 @@ def wait_for_event(bidi_session):
 
 
 @pytest.fixture
-def wait_for_events(bidi_session, configuration):
+def wait_for_events(bidi_session, timeout_multiplier):
     """Wait for BiDi events until a predicate becomes true."""
     yield functools.partial(
         bidi_session.collect_events,
-        timeout_multiplier=configuration["timeout_multiplier"],
+        timeout_multiplier=timeout_multiplier,
     )
 
 
@@ -1355,41 +1355,33 @@ async def load_static_test_page(bidi_session, top_context):
     )
 
 
-@pytest_asyncio.fixture
-async def current_session():
+@pytest.fixture
+def current_session():
     """Minimal classic WebDriver session fixture used by legacy WPT helpers."""
-    return _CurrentSession(_current_platform_name())
+    return _fixture_current_session()
 
 
 @pytest.fixture
 def session():
     """Minimal classic session fixture for session.new BiDi upgrade tests."""
-    return CraterClassicSession(CRATER_BIDI_URL)
+    return _fixture_classic_session()
 
 
 @pytest.fixture
 def default_capabilities():
-    return {}
-
-
-def _deep_update(dst: dict, src: dict):
-    for key, value in src.items():
-        if isinstance(value, dict) and isinstance(dst.get(key), dict):
-            _deep_update(dst[key], value)
-        else:
-            dst[key] = value
+    return _fixture_default_capabilities()
 
 
 @pytest.fixture
 def capabilities(request, default_capabilities):
     """Session capabilities merged with @pytest.mark.capabilities."""
-    return _merge_capabilities_from_request(request, default_capabilities)
+    return _fixture_capabilities_for_request(request, default_capabilities)
 
 
 @pytest.fixture
 def modifier_key():
     """Platform modifier key used by shortcut tests."""
-    return _modifier_key_value()
+    return _fixture_modifier_key()
 
 
 @pytest_asyncio.fixture
@@ -1407,13 +1399,13 @@ async def setup_beforeunload_page(bidi_session):
 @pytest.fixture
 def wait_for_future_safe():
     """Wait for a future with timeout while preserving remote exceptions."""
-    return _wait_for_future_safe_impl
+    return _fixture_wait_for_future_safe
 
 
 @pytest.fixture
 def current_time():
     """Return current time in milliseconds."""
-    return _current_time_impl
+    return _fixture_current_time
 
 
 @pytest.fixture
@@ -1478,10 +1470,20 @@ def _fixture_server_config() -> dict[str, Any]:
     return parsed if isinstance(parsed, dict) else {}
 
 
-def _fixture_configuration() -> dict[str, float]:
-    return {
-        "timeout_multiplier": float(os.environ.get("WPT_TIMEOUT_MULTIPLIER", "1.0")),
-    }
+def _fixture_classic_session():
+    return SimpleNamespace(capabilities={"webSocketUrl": CRATER_BIDI_URL})
+
+
+def _fixture_current_session():
+    return SimpleNamespace(capabilities={"platformName": _current_platform_name()})
+
+
+def _fixture_timeout_multiplier() -> float:
+    return float(os.environ.get("WPT_TIMEOUT_MULTIPLIER", "1.0"))
+
+
+def _fixture_configuration(timeout_multiplier: float) -> dict[str, float]:
+    return {"timeout_multiplier": timeout_multiplier}
 
 
 def _fixture_url(
@@ -1856,7 +1858,22 @@ async def _setup_network_test_impl(
     return collector.events
 
 
-async def _wait_for_future_safe_impl(future, timeout: float = 5.0):
+def _future_timeout_error() -> TimeoutError:
+    return TimeoutError("Future did not resolve within the given timeout")
+
+
+async def _wait_for_foreign_loop_future(future: asyncio.Future, timeout: float):
+    deadline = time.monotonic() + timeout
+    while True:
+        if future.done():
+            return future.result()
+        if time.monotonic() >= deadline:
+            future.cancel()
+            raise _future_timeout_error()
+        await asyncio.sleep(0.01)
+
+
+async def _fixture_wait_for_future_safe(future, timeout: float = 5.0):
     if isinstance(future, asyncio.Future):
         try:
             running_loop = asyncio.get_running_loop()
@@ -1864,26 +1881,19 @@ async def _wait_for_future_safe_impl(future, timeout: float = 5.0):
             running_loop = None
         future_loop = future.get_loop()
         if running_loop is not None and future_loop is not running_loop:
-            deadline = time.monotonic() + timeout
-            while True:
-                if future.done():
-                    return future.result()
-                if time.monotonic() >= deadline:
-                    future.cancel()
-                    raise TimeoutError("Future did not resolve within the given timeout")
-                await asyncio.sleep(0.01)
+            return await _wait_for_foreign_loop_future(future, timeout)
     try:
         return await asyncio.wait_for(asyncio.shield(future), timeout=timeout)
     except asyncio.TimeoutError as exc:
         future.cancel()
-        raise TimeoutError("Future did not resolve within the given timeout") from exc
+        raise _future_timeout_error() from exc
 
 
-async def _current_time_impl():
+async def _fixture_current_time():
     return int(time.time() * 1000)
 
 
-def _modifier_key_value():
+def _fixture_modifier_key():
     from tests.support.keys import Keys
 
     target_platform = os.environ.get("WPT_TARGET_PLATFORM", "mac").lower()
