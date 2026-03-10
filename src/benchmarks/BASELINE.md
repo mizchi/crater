@@ -373,3 +373,47 @@ node --experimental-strip-types tools/bench-github.ts
 | `render_scroll_500` | 141.79 ms | 103.24 ms | **-27.2%** |
 
 Note: `render_scroll_500` は run-to-run variance が大きいので、評価の主指標は `layout_only_scroll_500` を使う。
+
+---
+
+## Large Layout Split And Grid Block Height Fast Path (2026-03-10)
+
+### Problem
+`layout_only_large` を shell / section header / cards に分解すると、grid shell 自体は軽く、card subtree の intrinsic height 計算が支配的だった。`grid.calculate_item_intrinsic_sizes()` は `display:block` item の auto height で `@block.compute()` を 2 回呼んでおり、skeleton card のような単純 block flow でも full block layout を踏んでいた。
+
+### Benchmark Split
+
+| Benchmark | Time |
+|-----------|------|
+| `layout_only_large_shell` | 69.16 µs |
+| `layout_only_large_headers` | 205.07 µs |
+| `layout_only_large_simple_cards` | 834.75 µs |
+| `layout_only_large` | 67.20 ms |
+
+`simple_cards` が 1ms 未満なので、重いのは grid placement ではなく card subtree の中身。
+
+### Solution
+- `benchmarks/render_bench.mbt`
+  - `layout_only_large_shell`
+  - `layout_only_large_headers`
+  - `layout_only_large_simple_cards`
+  - `layout_only_scroll_1k`
+- `layout/grid/grid.mbt`
+  - 単純な static block flow に限定して intrinsic height fast path を追加
+  - inline / replaced / `%height` / non-static / non-block-or-flex descendants は対象外にして full block layout へ fallback
+- `layout/grid/grid_test.mbt`
+  - card-like grid item の intrinsic height 回帰 test を追加
+
+### Results Comparison
+
+| Benchmark | Before | After | Improvement |
+|-----------|--------|-------|-------------|
+| `layout_only_large` | 67.20 ms | 34.21 ms | **-49.1%** |
+| `layout_only_large_simple_cards` | 834.75 µs | 727.87 µs | **-12.8%** |
+| `layout_only_large_headers` | 205.07 µs | 187.70 µs | -8.5% |
+| `layout_only_large_shell` | 69.16 µs | 68.00 µs | ~same |
+
+### Notes
+
+- `css-grid` のうち `grid-in-table-cell-with-img.html`, `grid-item-percentage-quirk-001.html`, `grid-item-percentage-quirk-002.html` は、`b7c3908` の clean worktree でも同じ失敗を再現したので今回の変更による regression ではない。
+- `layout_only_scroll_1k` は今回の最適化対象外で run-to-run variance もあるため、比較指標には使わず現値 `29.87 ms` を baseline として記録する。

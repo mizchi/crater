@@ -1271,6 +1271,85 @@ test "grid_contain_inline_size_fit_content_ignores_item_intrinsic_width" {
 }
 
 ///|
+test "grid_auto_row_card_like_block_item_keeps_intrinsic_height" {
+  let default_style = @style.Style::default()
+  let image = @node.Node::leaf("image", {
+    ..default_style,
+    height: @types.Length(140.0),
+  })
+  let title = @node.Node::leaf("title", {
+    ..default_style,
+    width: @types.Percent(0.8),
+    height: @types.Length(16.0),
+    margin: {
+      top: @types.Length(0.0),
+      right: @types.Length(0.0),
+      bottom: @types.Length(8.0),
+      left: @types.Length(0.0),
+    },
+  })
+  let body_copy = @node.Node::leaf("copy", {
+    ..default_style,
+    height: @types.Length(32.0),
+    margin: {
+      top: @types.Length(0.0),
+      right: @types.Length(0.0),
+      bottom: @types.Length(8.0),
+      left: @types.Length(0.0),
+    },
+  })
+  let footer = @node.Node::new(
+    "footer",
+    {
+      ..default_style,
+      display: @types.Flex,
+      justify_content: @types.SpaceBetween,
+    },
+    [
+      @node.Node::leaf("price", {
+        ..default_style,
+        width: @types.Length(50.0),
+        height: @types.Length(14.0),
+      }),
+      @node.Node::leaf("meta", {
+        ..default_style,
+        width: @types.Length(30.0),
+        height: @types.Length(14.0),
+      }),
+    ],
+  )
+  let body = @node.Node::new(
+    "body",
+    {
+      ..default_style,
+      padding: {
+        top: @types.Length(12.0),
+        right: @types.Length(12.0),
+        bottom: @types.Length(12.0),
+        left: @types.Length(12.0),
+      },
+    },
+    [title, body_copy, footer],
+  )
+  let card = @node.Node::new("card", default_style, [image, body])
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      display: @types.Grid,
+      width: @types.Length(400.0),
+      grid_template_columns: [@types.TrackSizingFunction::Fr(1.0)],
+    },
+    [card],
+  )
+
+  let layout = compute_grid_layout(root, 400.0, 600.0, cross_layout_dispatch())
+
+  assert_eq(layout.height, 242.0)
+  assert_eq(layout.children[0].height, 242.0)
+}
+
+///|
 test "grid_contain_size_inline_grid_auto_size_uses_border_only" {
   let default_style = @style.Style::default()
   let child = @node.Node::leaf("child", {

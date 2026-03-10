@@ -2733,6 +2733,75 @@ fn get_intrinsic_from_measure(
 }
 
 ///|
+fn try_compute_simple_block_intrinsic_height(
+  child : @node.Node,
+  container_width : Double,
+  container_height : Double,
+  margin_percent_base : Double,
+  cache : GridIntrinsicCache,
+  dispatch : @node.DispatchFn,
+) -> Double? {
+  if child.style.position != @types.Static ||
+    child.measure is Some(_) ||
+    child.style.writing_mode.is_vertical() {
+    return None
+  }
+  match child.style.float {
+    @types.Float::Left | @types.Float::Right => return None
+    @types.Float::None => ()
+  }
+  match child.style.height {
+    @types.Percent(_)
+    | @types.MinContent
+    | @types.MaxContent
+    | @types.FitContent(_) => return None
+    _ => ()
+  }
+  let pt = resolve_dimension(child.style.padding.top, container_width, 0.0)
+  let pb = resolve_dimension(child.style.padding.bottom, container_width, 0.0)
+  let bt = resolve_dimension(child.style.border.top, container_width, 0.0)
+  let bb = resolve_dimension(child.style.border.bottom, container_width, 0.0)
+  let mut total_height = pt + pb + bt + bb
+  for grand_child in child.children {
+    let grand_style = grand_child.style
+    if grand_style.display == @types.Display::None {
+      continue
+    }
+    match grand_style.display {
+      @types.Block | @types.Flex | @types.InlineFlex => ()
+      _ => return None
+    }
+    if grand_style.display == @types.Contents ||
+      @inline.is_inline_level(grand_style.display) ||
+      grand_child.id == "br" {
+      return None
+    }
+    if grand_style.position != @types.Static ||
+      grand_child.measure is Some(_) ||
+      grand_style.writing_mode.is_vertical() {
+      return None
+    }
+    match grand_style.float {
+      @types.Float::Left | @types.Float::Right => return None
+      @types.Float::None => ()
+    }
+    match grand_style.height {
+      @types.Percent(_)
+      | @types.MinContent
+      | @types.MaxContent
+      | @types.FitContent(_) => return None
+      _ => ()
+    }
+    let (min_height, _max_height, margin_top, margin_bottom) = calculate_item_intrinsic_sizes(
+      grand_child, false, container_width, container_height, margin_percent_base,
+      cache, dispatch,
+    )
+    total_height = total_height + min_height + margin_top + margin_bottom
+  }
+  Some(total_height)
+}
+
+///|
 /// Calculate intrinsic sizes (min-content, max-content) for a single item
 fn calculate_item_intrinsic_sizes(
   child : @node.Node,
@@ -3209,43 +3278,52 @@ fn calculate_item_intrinsic_sizes(
             }
             @types.Block => {
               add_box = false
-              // Compute block layout for intrinsic height
-              let intrinsic_available_height = if container_height > 0.0 {
-                container_height
-              } else {
-                0.0
+              match
+                try_compute_simple_block_intrinsic_height(
+                  child, container_width, container_height, margin_percent_base,
+                  cache, dispatch,
+                ) {
+                Some(height) => (height, height)
+                None => {
+                  // Compute block layout for intrinsic height
+                  let intrinsic_available_height = if container_height > 0.0 {
+                    container_height
+                  } else {
+                    0.0
+                  }
+                  let max_intrinsic_available_height = if container_height > 0.0 {
+                    container_height
+                  } else {
+                    1.0e10
+                  }
+                  let intrinsic_sizing_mode = if container_height > 0.0 {
+                    @types.Definite
+                  } else {
+                    @types.MaxContent
+                  }
+                  let min_ctx : @types.LayoutContext = {
+                    available_width: container_width,
+                    available_height: Some(intrinsic_available_height),
+                    sizing_mode: intrinsic_sizing_mode,
+                    viewport_width: container_width,
+                    viewport_height: intrinsic_available_height,
+                    stretch_width: false,
+                    stretch_height: false,
+                  }
+                  let min_layout = @block.compute(child, min_ctx, dispatch)
+                  let max_ctx : @types.LayoutContext = {
+                    available_width: container_width,
+                    available_height: Some(max_intrinsic_available_height),
+                    sizing_mode: intrinsic_sizing_mode,
+                    viewport_width: container_width,
+                    viewport_height: max_intrinsic_available_height,
+                    stretch_width: false,
+                    stretch_height: false,
+                  }
+                  let max_layout = @block.compute(child, max_ctx, dispatch)
+                  (min_layout.height, max_layout.height)
+                }
               }
-              let max_intrinsic_available_height = if container_height > 0.0 {
-                container_height
-              } else {
-                1.0e10
-              }
-              let intrinsic_sizing_mode = if container_height > 0.0 {
-                @types.Definite
-              } else {
-                @types.MaxContent
-              }
-              let min_ctx : @types.LayoutContext = {
-                available_width: container_width,
-                available_height: Some(intrinsic_available_height),
-                sizing_mode: intrinsic_sizing_mode,
-                viewport_width: container_width,
-                viewport_height: intrinsic_available_height,
-                stretch_width: false,
-                stretch_height: false,
-              }
-              let min_layout = @block.compute(child, min_ctx, dispatch)
-              let max_ctx : @types.LayoutContext = {
-                available_width: container_width,
-                available_height: Some(max_intrinsic_available_height),
-                sizing_mode: intrinsic_sizing_mode,
-                viewport_width: container_width,
-                viewport_height: max_intrinsic_available_height,
-                stretch_width: false,
-                stretch_height: false,
-              }
-              let max_layout = @block.compute(child, max_ctx, dispatch)
-              (min_layout.height, max_layout.height)
             }
             @types.Table | @types.InlineTable => {
               add_box = false
