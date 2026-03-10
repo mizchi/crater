@@ -417,3 +417,68 @@ Note: `render_scroll_500` は run-to-run variance が大きいので、評価の
 
 - `css-grid` のうち `grid-in-table-cell-with-img.html`, `grid-item-percentage-quirk-001.html`, `grid-item-percentage-quirk-002.html` は、`b7c3908` の clean worktree でも同じ失敗を再現したので今回の変更による regression ではない。
 - `layout_only_scroll_1k` は今回の最適化対象外で run-to-run variance もあるため、比較指標には使わず現値 `29.87 ms` を baseline として記録する。
+
+---
+
+## Large Layout Card Body Width Fast Path (2026-03-10)
+
+### Problem
+height 側を落とした後も、`layout_only_large_card_body` が `33.27 ms` と重く、残りの大半が block item の intrinsic width 計算に残っていた。`grid.calculate_item_intrinsic_sizes()` の block width 分岐は、単純な static block flow でも `@block.compute()` を min/max の 2 回呼んでいた。
+
+### Solution
+- `benchmarks/render_bench.mbt`
+  - `layout_only_large_card_body` を追加
+- `layout/grid/grid.mbt`
+  - 単純な static block flow に限定した intrinsic width fast path を追加
+  - descendant は `block` / `flex` のみ許可
+  - replaced / abspos / float / vertical writing-mode は full block layout に fallback
+- `layout/grid/grid_test.mbt`
+  - `grid_fit_content_block_item_with_flex_child_uses_intrinsic_width`
+
+### Results Comparison
+
+| Benchmark | Before | After | Improvement |
+|-----------|--------|-------|-------------|
+| `layout_only_large` | 35.39 ms | 7.64 ms | **-78.4%** |
+| `layout_only_large_card_body` | 33.27 ms | 6.89 ms | **-79.3%** |
+| `layout_only_large_simple_cards` | 910.27 µs | 638.93 µs | **-29.8%** |
+| `layout_only_large_shell` | 68.23 µs | 57.89 µs | -15.2% |
+
+### Notes
+
+- `layout_only_large` と `layout_only_large_card_body` がほぼ同じ水準まで落ちたので、large layout の支配コストだった card body intrinsic width は大きく削れた。
+- `css-grid` の結果は引き続き `30 / 33` で、既知の 3 failure は変化なし。
+
+---
+
+## Flex Footer Intrinsic Height Fast Path (2026-03-10)
+
+### Problem
+width 側を落とした後も、`layout_only_large_card_footer_body` が `9.96 ms` と依然重かった。`grid` の block fast path から辿る flex child 高さ計算で、単純な row footer に対して `@flex.compute()` を min/max の 2 回呼んでいた。
+
+### Solution
+- `benchmarks/render_bench.mbt`
+  - `layout_only_large_card_text_body`
+  - `layout_only_large_card_footer_body`
+- `layout/grid/grid.mbt`
+  - 単純な `nowrap` row flex に限定した intrinsic height fast path を追加
+  - baseline alignment / non-static / float / vertical writing-mode は fallback
+- `layout/grid/grid_test.mbt`
+  - `grid_auto_row_block_item_with_simple_flex_child_keeps_intrinsic_height`
+
+### Results Comparison
+
+| Benchmark | Before | After | Improvement |
+|-----------|--------|-------|-------------|
+| `render_large_2k5` | 40.45 ms | 23.19 ms | **-42.7%** |
+| `layout_only_large` | 15.13 ms | 5.65 ms | **-62.7%** |
+| `layout_only_large_card_body` | 10.27 ms | 4.61 ms | **-55.1%** |
+| `layout_only_large_card_text_body` | 4.25 ms | 2.78 ms | **-34.6%** |
+| `layout_only_large_card_footer_body` | 9.96 ms | 3.41 ms | **-65.8%** |
+| `pipeline_current` | 1.05 ms | 470.67 µs | **-55.2%** |
+
+### Notes
+
+- `card_footer_body` が `9.96 ms -> 3.41 ms` まで落ちたので、footer flex intrinsic 高さは大きく削れた。
+- 現在は `card_text_body 2.78 ms` と `card_footer_body 3.41 ms` が近く、残りの card body コストは text/block 側と footer 側に大きく偏っていない。
+- `css-grid` は引き続き `30 / 33` で既知の 3 failure のみ。

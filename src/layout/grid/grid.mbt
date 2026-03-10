@@ -2802,6 +2802,128 @@ fn try_compute_simple_block_intrinsic_height(
 }
 
 ///|
+fn try_compute_simple_block_intrinsic_width(
+  child : @node.Node,
+  container_width : Double,
+  container_height : Double,
+  margin_percent_base : Double,
+  cache : GridIntrinsicCache,
+  dispatch : @node.DispatchFn,
+) -> (Double, Double)? {
+  if child.style.position != @types.Static ||
+    child.measure is Some(_) ||
+    child.style.writing_mode.is_vertical() {
+    return None
+  }
+  match child.style.float {
+    @types.Float::Left | @types.Float::Right => return None
+    @types.Float::None => ()
+  }
+  let pl = resolve_dimension(child.style.padding.left, container_width, 0.0)
+  let pr = resolve_dimension(child.style.padding.right, container_width, 0.0)
+  let bl = resolve_dimension(child.style.border.left, container_width, 0.0)
+  let br = resolve_dimension(child.style.border.right, container_width, 0.0)
+  let box_width = pl + pr + bl + br
+  let mut max_min_width = 0.0
+  let mut max_max_width = 0.0
+  for grand_child in child.children {
+    let grand_style = grand_child.style
+    if grand_style.display == @types.Display::None {
+      continue
+    }
+    match grand_style.display {
+      @types.Block | @types.Flex | @types.InlineFlex => ()
+      _ => return None
+    }
+    if grand_style.position != @types.Static ||
+      grand_child.measure is Some(_) ||
+      grand_style.writing_mode.is_vertical() {
+      return None
+    }
+    match grand_style.float {
+      @types.Float::Left | @types.Float::Right => return None
+      @types.Float::None => ()
+    }
+    let (child_min_width, child_max_width, margin_left, margin_right) = calculate_item_intrinsic_sizes(
+      grand_child, true, container_width, container_height, margin_percent_base,
+      cache, dispatch,
+    )
+    let child_min_contribution = child_min_width + margin_left + margin_right
+    let child_max_contribution = child_max_width + margin_left + margin_right
+    if child_min_contribution > max_min_width {
+      max_min_width = child_min_contribution
+    }
+    if child_max_contribution > max_max_width {
+      max_max_width = child_max_contribution
+    }
+  }
+  Some((box_width + max_min_width, box_width + max_max_width))
+}
+
+///|
+fn try_compute_simple_flex_intrinsic_height(
+  child : @node.Node,
+  container_width : Double,
+  container_height : Double,
+  margin_percent_base : Double,
+  cache : GridIntrinsicCache,
+  dispatch : @node.DispatchFn,
+) -> Double? {
+  if child.style.position != @types.Static ||
+    child.style.writing_mode.is_vertical() {
+    return None
+  }
+  match child.style.float {
+    @types.Float::Left | @types.Float::Right => return None
+    @types.Float::None => ()
+  }
+  match child.style.flex_direction {
+    @types.Row | @types.RowReverse => ()
+    _ => return None
+  }
+  match child.style.flex_wrap {
+    @types.NoWrap => ()
+    _ => return None
+  }
+  if child.style.align_items == @types.Baseline {
+    return None
+  }
+  let pt = resolve_dimension(child.style.padding.top, container_width, 0.0)
+  let pb = resolve_dimension(child.style.padding.bottom, container_width, 0.0)
+  let bt = resolve_dimension(child.style.border.top, container_width, 0.0)
+  let bb = resolve_dimension(child.style.border.bottom, container_width, 0.0)
+  let mut max_cross = 0.0
+  for flex_child in child.children {
+    let flex_style = flex_child.style
+    if flex_style.display == @types.Display::None {
+      continue
+    }
+    if flex_style.position != @types.Static ||
+      flex_child.measure is Some(_) ||
+      flex_style.writing_mode.is_vertical() {
+      return None
+    }
+    match flex_style.float {
+      @types.Float::Left | @types.Float::Right => return None
+      @types.Float::None => ()
+    }
+    match flex_style.align_self {
+      @types.Baseline => return None
+      _ => ()
+    }
+    let (child_min_height, _child_max_height, margin_top, margin_bottom) = calculate_item_intrinsic_sizes(
+      flex_child, false, container_width, container_height, margin_percent_base,
+      cache, dispatch,
+    )
+    let child_cross = child_min_height + margin_top + margin_bottom
+    if child_cross > max_cross {
+      max_cross = child_cross
+    }
+  }
+  Some(pt + pb + bt + bb + max_cross)
+}
+
+///|
 /// Calculate intrinsic sizes (min-content, max-content) for a single item
 fn calculate_item_intrinsic_sizes(
   child : @node.Node,
@@ -2956,33 +3078,42 @@ fn calculate_item_intrinsic_sizes(
             }
             @types.Block => {
               add_box = false
-              // Block layout for intrinsic width
-              let available_height = if container_height > 0.0 {
-                Some(container_height)
-              } else {
-                None
+              match
+                try_compute_simple_block_intrinsic_width(
+                  child, container_width, container_height, margin_percent_base,
+                  cache, dispatch,
+                ) {
+                Some((min_width, max_width)) => (min_width, max_width)
+                None => {
+                  // Block layout for intrinsic width
+                  let available_height = if container_height > 0.0 {
+                    Some(container_height)
+                  } else {
+                    None
+                  }
+                  let min_ctx : @types.LayoutContext = {
+                    available_width: 0.0,
+                    available_height,
+                    sizing_mode: @types.MaxContent,
+                    viewport_width: container_width,
+                    viewport_height: 0.0,
+                    stretch_width: false,
+                    stretch_height: false,
+                  }
+                  let min_layout = @block.compute(child, min_ctx, dispatch)
+                  let max_ctx : @types.LayoutContext = {
+                    available_width: container_width,
+                    available_height,
+                    sizing_mode: @types.MaxContent,
+                    viewport_width: container_width,
+                    viewport_height: 0.0,
+                    stretch_width: false,
+                    stretch_height: false,
+                  }
+                  let max_layout = @block.compute(child, max_ctx, dispatch)
+                  (min_layout.width, max_layout.width)
+                }
               }
-              let min_ctx : @types.LayoutContext = {
-                available_width: 0.0,
-                available_height,
-                sizing_mode: @types.MaxContent,
-                viewport_width: container_width,
-                viewport_height: 0.0,
-                stretch_width: false,
-                stretch_height: false,
-              }
-              let min_layout = @block.compute(child, min_ctx, dispatch)
-              let max_ctx : @types.LayoutContext = {
-                available_width: container_width,
-                available_height,
-                sizing_mode: @types.MaxContent,
-                viewport_width: container_width,
-                viewport_height: 0.0,
-                stretch_width: false,
-                stretch_height: false,
-              }
-              let max_layout = @block.compute(child, max_ctx, dispatch)
-              (min_layout.width, max_layout.width)
             }
             @types.Table | @types.InlineTable => {
               add_box = false
@@ -3230,51 +3361,65 @@ fn calculate_item_intrinsic_sizes(
             }
             @types.Flex => {
               add_box = false
-              // Get width for flex layout: use explicit width if specified, else use container width
-              let flex_available_width = match child.style.width {
-                @types.Length(w) => w
-                @types.Percent(p) => p * container_width
-                @types.Auto => container_width
-                @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
-                  container_width
-              }
-              // Check cache for min-content height
-              let min_height = match cache.get(child.uid, true, false) {
-                Some(cached) => cached
+              match
+                try_compute_simple_flex_intrinsic_height(
+                  child, container_width, container_height, margin_percent_base,
+                  cache, dispatch,
+                ) {
+                Some(height) => {
+                  cache.set(child.uid, true, false, height)
+                  cache.set(child.uid, true, true, height)
+                  (height, height)
+                }
                 None => {
-                  let min_ctx : @types.LayoutContext = {
-                    available_width: flex_available_width,
-                    available_height: Some(0.0),
-                    sizing_mode: @types.MaxContent,
-                    viewport_width: container_width,
-                    viewport_height: 0.0,
-                    stretch_width: false,
-                    stretch_height: false,
+                  // Get width for flex layout: use explicit width if specified, else use container width
+                  let flex_available_width = match child.style.width {
+                    @types.Length(w) => w
+                    @types.Percent(p) => p * container_width
+                    @types.Auto => container_width
+                    @types.MinContent
+                    | @types.MaxContent
+                    | @types.FitContent(_) => container_width
                   }
-                  let min_layout = @flex.compute(child, min_ctx, dispatch)
-                  cache.set(child.uid, true, false, min_layout.height)
-                  min_layout.height
+                  // Check cache for min-content height
+                  let min_height = match cache.get(child.uid, true, false) {
+                    Some(cached) => cached
+                    None => {
+                      let min_ctx : @types.LayoutContext = {
+                        available_width: flex_available_width,
+                        available_height: Some(0.0),
+                        sizing_mode: @types.MaxContent,
+                        viewport_width: container_width,
+                        viewport_height: 0.0,
+                        stretch_width: false,
+                        stretch_height: false,
+                      }
+                      let min_layout = @flex.compute(child, min_ctx, dispatch)
+                      cache.set(child.uid, true, false, min_layout.height)
+                      min_layout.height
+                    }
+                  }
+                  // Check cache for max-content height
+                  let max_height = match cache.get(child.uid, true, true) {
+                    Some(cached) => cached
+                    None => {
+                      let max_ctx : @types.LayoutContext = {
+                        available_width: flex_available_width,
+                        available_height: Some(1.0e10),
+                        sizing_mode: @types.MaxContent,
+                        viewport_width: container_width,
+                        viewport_height: 0.0,
+                        stretch_width: false,
+                        stretch_height: false,
+                      }
+                      let max_layout = @flex.compute(child, max_ctx, dispatch)
+                      cache.set(child.uid, true, true, max_layout.height)
+                      max_layout.height
+                    }
+                  }
+                  (min_height, max_height)
                 }
               }
-              // Check cache for max-content height
-              let max_height = match cache.get(child.uid, true, true) {
-                Some(cached) => cached
-                None => {
-                  let max_ctx : @types.LayoutContext = {
-                    available_width: flex_available_width,
-                    available_height: Some(1.0e10),
-                    sizing_mode: @types.MaxContent,
-                    viewport_width: container_width,
-                    viewport_height: 0.0,
-                    stretch_width: false,
-                    stretch_height: false,
-                  }
-                  let max_layout = @flex.compute(child, max_ctx, dispatch)
-                  cache.set(child.uid, true, true, max_layout.height)
-                  max_layout.height
-                }
-              }
-              (min_height, max_height)
             }
             @types.Block => {
               add_box = false

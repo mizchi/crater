@@ -92,6 +92,239 @@ fn large_website_simple_cards(
   buf.to_string()
 }
 
+///|
+fn large_website_card_bodies(
+  sidebar_items : Int,
+  sections : Int,
+  cards_per_section : Int,
+) -> String {
+  let buf = StringBuilder::new()
+  buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
+  buf.write_string("<div style=\"display:flex;min-height:100vh\">")
+  buf.write_string(
+    "<div style=\"width:240px;background:#1a1a2e;flex-shrink:0;padding:16px\">",
+  )
+  buf.write_string(
+    "<div style=\"height:40px;background:#e94560;margin-bottom:24px;border-radius:4px\"></div>",
+  )
+  for i = 0; i < sidebar_items; i = i + 1 {
+    buf.write_string(
+      "<div style=\"height:36px;margin-bottom:8px;display:flex;align-items:center;padding:0 12px;border-radius:4px;background:",
+    )
+    buf.write_string(if i == 0 { "#e94560" } else { "#16213e" })
+    buf.write_string("\">")
+    buf.write_string(
+      "<div style=\"width:16px;height:16px;background:#0f3460;margin-right:12px\"></div>",
+    )
+    buf.write_string("<div style=\"flex:1;height:12px;background:#eee\"></div>")
+    buf.write_string("</div>")
+  }
+  buf.write_string("</div>")
+  buf.write_string("<div style=\"flex:1;background:#f0f0f0\">")
+  buf.write_string(
+    "<div style=\"height:64px;background:#fff;border-bottom:1px solid #ddd;display:flex;align-items:center;padding:0 24px\">",
+  )
+  buf.write_string(
+    "<div style=\"flex:1;height:36px;background:#ecf0f1;border-radius:4px\"></div>",
+  )
+  buf.write_string("</div>")
+  buf.write_string("<div style=\"padding:24px\">")
+  for _s = 0; _s < sections; _s = _s + 1 {
+    buf.write_string("<div style=\"margin-bottom:32px\">")
+    buf.write_string(
+      "<div style=\"display:flex;justify-content:space-between;margin-bottom:16px\">",
+    )
+    buf.write_string(
+      "<div style=\"width:200px;height:28px;background:#2c3e50;border-radius:4px\"></div>",
+    )
+    buf.write_string(
+      "<div style=\"width:80px;height:28px;background:#3498db;border-radius:4px\"></div>",
+    )
+    buf.write_string("</div>")
+    buf.write_string(
+      "<div style=\"display:grid;grid-template-columns:repeat(4,1fr);gap:16px\">",
+    )
+    for _c = 0; _c < cards_per_section; _c = _c + 1 {
+      buf.write_string("<div style=\"background:#fff;border-radius:8px\">")
+      buf.write_string("<div style=\"padding:12px\">")
+      buf.write_string(
+        "<div style=\"height:16px;background:#2c3e50;margin-bottom:8px;width:80%\"></div>",
+      )
+      buf.write_string(
+        "<div style=\"height:32px;background:#ecf0f1;margin-bottom:8px\"></div>",
+      )
+      buf.write_string(
+        "<div style=\"display:flex;justify-content:space-between\">",
+      )
+      buf.write_string(
+        "<div style=\"width:50px;height:14px;background:#e74c3c\"></div>",
+      )
+      buf.write_string(
+        "<div style=\"width:30px;height:14px;background:#27ae60\"></div>",
+      )
+      buf.write_string("</div>")
+      buf.write_string("</div>")
+      buf.write_string("</div>")
+    }
+    buf.write_string("</div>")
+    buf.write_string("</div>")
+  }
+  buf.write_string("</div>")
+  buf.write_string("</div>")
+  buf.write_string("</div></body></html>")
+  buf.to_string()
+}
+
+///|
+fn large_website_card_text_bodies(
+  sidebar_items : Int,
+  sections : Int,
+  cards_per_section : Int,
+) -> String {
+  let buf = StringBuilder::new()
+  buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
+  buf.write_string("<div style=\"display:flex;min-height:100vh\">")
+  buf.write_string(
+    "<div style=\"width:240px;background:#1a1a2e;flex-shrink:0;padding:16px\">",
+  )
+  buf.write_string(
+    "<div style=\"height:40px;background:#e94560;margin-bottom:24px;border-radius:4px\"></div>",
+  )
+  for i = 0; i < sidebar_items; i = i + 1 {
+    buf.write_string(
+      "<div style=\"height:36px;margin-bottom:8px;display:flex;align-items:center;padding:0 12px;border-radius:4px;background:",
+    )
+    buf.write_string(if i == 0 { "#e94560" } else { "#16213e" })
+    buf.write_string("\">")
+    buf.write_string(
+      "<div style=\"width:16px;height:16px;background:#0f3460;margin-right:12px\"></div>",
+    )
+    buf.write_string("<div style=\"flex:1;height:12px;background:#eee\"></div>")
+    buf.write_string("</div>")
+  }
+  buf.write_string("</div>")
+  buf.write_string("<div style=\"flex:1;background:#f0f0f0\">")
+  buf.write_string(
+    "<div style=\"height:64px;background:#fff;border-bottom:1px solid #ddd;display:flex;align-items:center;padding:0 24px\">",
+  )
+  buf.write_string(
+    "<div style=\"flex:1;height:36px;background:#ecf0f1;border-radius:4px\"></div>",
+  )
+  buf.write_string("</div>")
+  buf.write_string("<div style=\"padding:24px\">")
+  for _s = 0; _s < sections; _s = _s + 1 {
+    buf.write_string("<div style=\"margin-bottom:32px\">")
+    buf.write_string(
+      "<div style=\"display:flex;justify-content:space-between;margin-bottom:16px\">",
+    )
+    buf.write_string(
+      "<div style=\"width:200px;height:28px;background:#2c3e50;border-radius:4px\"></div>",
+    )
+    buf.write_string(
+      "<div style=\"width:80px;height:28px;background:#3498db;border-radius:4px\"></div>",
+    )
+    buf.write_string("</div>")
+    buf.write_string(
+      "<div style=\"display:grid;grid-template-columns:repeat(4,1fr);gap:16px\">",
+    )
+    for _c = 0; _c < cards_per_section; _c = _c + 1 {
+      buf.write_string("<div style=\"background:#fff;border-radius:8px\">")
+      buf.write_string("<div style=\"padding:12px\">")
+      buf.write_string(
+        "<div style=\"height:16px;background:#2c3e50;margin-bottom:8px;width:80%\"></div>",
+      )
+      buf.write_string(
+        "<div style=\"height:32px;background:#ecf0f1;margin-bottom:8px\"></div>",
+      )
+      buf.write_string("</div>")
+      buf.write_string("</div>")
+    }
+    buf.write_string("</div>")
+    buf.write_string("</div>")
+  }
+  buf.write_string("</div>")
+  buf.write_string("</div>")
+  buf.write_string("</div></body></html>")
+  buf.to_string()
+}
+
+///|
+fn large_website_card_footer_bodies(
+  sidebar_items : Int,
+  sections : Int,
+  cards_per_section : Int,
+) -> String {
+  let buf = StringBuilder::new()
+  buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
+  buf.write_string("<div style=\"display:flex;min-height:100vh\">")
+  buf.write_string(
+    "<div style=\"width:240px;background:#1a1a2e;flex-shrink:0;padding:16px\">",
+  )
+  buf.write_string(
+    "<div style=\"height:40px;background:#e94560;margin-bottom:24px;border-radius:4px\"></div>",
+  )
+  for i = 0; i < sidebar_items; i = i + 1 {
+    buf.write_string(
+      "<div style=\"height:36px;margin-bottom:8px;display:flex;align-items:center;padding:0 12px;border-radius:4px;background:",
+    )
+    buf.write_string(if i == 0 { "#e94560" } else { "#16213e" })
+    buf.write_string("\">")
+    buf.write_string(
+      "<div style=\"width:16px;height:16px;background:#0f3460;margin-right:12px\"></div>",
+    )
+    buf.write_string("<div style=\"flex:1;height:12px;background:#eee\"></div>")
+    buf.write_string("</div>")
+  }
+  buf.write_string("</div>")
+  buf.write_string("<div style=\"flex:1;background:#f0f0f0\">")
+  buf.write_string(
+    "<div style=\"height:64px;background:#fff;border-bottom:1px solid #ddd;display:flex;align-items:center;padding:0 24px\">",
+  )
+  buf.write_string(
+    "<div style=\"flex:1;height:36px;background:#ecf0f1;border-radius:4px\"></div>",
+  )
+  buf.write_string("</div>")
+  buf.write_string("<div style=\"padding:24px\">")
+  for _s = 0; _s < sections; _s = _s + 1 {
+    buf.write_string("<div style=\"margin-bottom:32px\">")
+    buf.write_string(
+      "<div style=\"display:flex;justify-content:space-between;margin-bottom:16px\">",
+    )
+    buf.write_string(
+      "<div style=\"width:200px;height:28px;background:#2c3e50;border-radius:4px\"></div>",
+    )
+    buf.write_string(
+      "<div style=\"width:80px;height:28px;background:#3498db;border-radius:4px\"></div>",
+    )
+    buf.write_string("</div>")
+    buf.write_string(
+      "<div style=\"display:grid;grid-template-columns:repeat(4,1fr);gap:16px\">",
+    )
+    for _c = 0; _c < cards_per_section; _c = _c + 1 {
+      buf.write_string("<div style=\"background:#fff;border-radius:8px\">")
+      buf.write_string("<div style=\"padding:12px\">")
+      buf.write_string(
+        "<div style=\"display:flex;justify-content:space-between\">",
+      )
+      buf.write_string(
+        "<div style=\"width:50px;height:14px;background:#e74c3c\"></div>",
+      )
+      buf.write_string(
+        "<div style=\"width:30px;height:14px;background:#27ae60\"></div>",
+      )
+      buf.write_string("</div>")
+      buf.write_string("</div>")
+      buf.write_string("</div>")
+    }
+    buf.write_string("</div>")
+    buf.write_string("</div>")
+  }
+  buf.write_string("</div>")
+  buf.write_string("</div>")
+  buf.write_string("</div></body></html>")
+  buf.to_string()
+}
+
 // =============================================================================
 // Simple Pattern Render Benchmarks
 // =============================================================================
@@ -448,6 +681,42 @@ test "bench_layout_only_large_simple_cards" (b : @bench.T) {
   let layout_ctx = default_layout_ctx(ctx)
   @dispatch.setup()
   b.bench(name="layout_only_large_simple_cards", fn() {
+    b.keep(@dispatch.compute_layout(node, layout_ctx))
+  })
+}
+
+///|
+test "bench_layout_only_large_card_body" (b : @bench.T) {
+  let html = large_website_card_bodies(15, 10, 8)
+  let ctx = default_ctx()
+  let node = @renderer.render_to_node(html, ctx)
+  let layout_ctx = default_layout_ctx(ctx)
+  @dispatch.setup()
+  b.bench(name="layout_only_large_card_body", fn() {
+    b.keep(@dispatch.compute_layout(node, layout_ctx))
+  })
+}
+
+///|
+test "bench_layout_only_large_card_text_body" (b : @bench.T) {
+  let html = large_website_card_text_bodies(15, 10, 8)
+  let ctx = default_ctx()
+  let node = @renderer.render_to_node(html, ctx)
+  let layout_ctx = default_layout_ctx(ctx)
+  @dispatch.setup()
+  b.bench(name="layout_only_large_card_text_body", fn() {
+    b.keep(@dispatch.compute_layout(node, layout_ctx))
+  })
+}
+
+///|
+test "bench_layout_only_large_card_footer_body" (b : @bench.T) {
+  let html = large_website_card_footer_bodies(15, 10, 8)
+  let ctx = default_ctx()
+  let node = @renderer.render_to_node(html, ctx)
+  let layout_ctx = default_layout_ctx(ctx)
+  @dispatch.setup()
+  b.bench(name="layout_only_large_card_footer_body", fn() {
     b.keep(@dispatch.compute_layout(node, layout_ctx))
   })
 }

@@ -1350,6 +1350,107 @@ test "grid_auto_row_card_like_block_item_keeps_intrinsic_height" {
 }
 
 ///|
+test "grid_fit_content_block_item_with_flex_child_uses_intrinsic_width" {
+  let default_style = @style.Style::default()
+  let footer = @node.Node::new(
+    "footer",
+    {
+      ..default_style,
+      display: @types.Flex,
+      justify_content: @types.SpaceBetween,
+    },
+    [
+      @node.Node::leaf("price", {
+        ..default_style,
+        width: @types.Length(50.0),
+        height: @types.Length(14.0),
+      }),
+      @node.Node::leaf("meta", {
+        ..default_style,
+        width: @types.Length(30.0),
+        height: @types.Length(14.0),
+      }),
+    ],
+  )
+  let body = @node.Node::new(
+    "body",
+    {
+      ..default_style,
+      padding: {
+        top: @types.Length(12.0),
+        right: @types.Length(12.0),
+        bottom: @types.Length(12.0),
+        left: @types.Length(12.0),
+      },
+    },
+    [footer],
+  )
+  let root = @node.Node::new(
+    "root",
+    { ..default_style, display: @types.Grid, width: @types.FitContent(1.0e10) },
+    [body],
+  )
+
+  let layout = compute_grid_layout(root, 400.0, 600.0, cross_layout_dispatch())
+
+  assert_eq(layout.width, 104.0)
+  assert_eq(layout.children[0].width, 104.0)
+}
+
+///|
+test "grid_auto_row_block_item_with_simple_flex_child_keeps_intrinsic_height" {
+  let default_style = @style.Style::default()
+  let footer = @node.Node::new(
+    "footer",
+    {
+      ..default_style,
+      display: @types.Flex,
+      justify_content: @types.SpaceBetween,
+    },
+    [
+      @node.Node::leaf("price", {
+        ..default_style,
+        width: @types.Length(50.0),
+        height: @types.Length(14.0),
+      }),
+      @node.Node::leaf("meta", {
+        ..default_style,
+        width: @types.Length(30.0),
+        height: @types.Length(14.0),
+      }),
+    ],
+  )
+  let body = @node.Node::new(
+    "body",
+    {
+      ..default_style,
+      padding: {
+        top: @types.Length(12.0),
+        right: @types.Length(12.0),
+        bottom: @types.Length(12.0),
+        left: @types.Length(12.0),
+      },
+    },
+    [footer],
+  )
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      display: @types.Grid,
+      width: @types.Length(400.0),
+      grid_template_columns: [@types.TrackSizingFunction::Fr(1.0)],
+    },
+    [body],
+  )
+
+  let layout = compute_grid_layout(root, 400.0, 600.0, cross_layout_dispatch())
+
+  assert_eq(layout.height, 38.0)
+  assert_eq(layout.children[0].height, 38.0)
+}
+
+///|
 test "grid_contain_size_inline_grid_auto_size_uses_border_only" {
   let default_style = @style.Style::default()
   let child = @node.Node::leaf("child", {
