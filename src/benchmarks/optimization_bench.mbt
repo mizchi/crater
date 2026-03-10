@@ -206,6 +206,38 @@ test "bench_apply_multiple_new_ctx" (b : @bench.T) {
   })
 }
 
+///|
+fn create_cascade_declarations(
+  total : Int,
+  property_kinds : Int,
+) -> Array[@cascade.Declaration] {
+  let declarations : Array[@cascade.Declaration] = []
+  for i = 0; i < total; i = i + 1 {
+    let property = "prop-" + (i % property_kinds).to_string()
+    declarations.push({
+      property,
+      value: @cascade.Value(i.to_string() + "px"),
+      origin: @cascade.Author,
+      importance: if i % 9 == 0 {
+        @cascade.Important
+      } else {
+        @cascade.Normal
+      },
+      specificity: { a: 0, b: i % 5, c: i % 3 },
+      source_order: i,
+    })
+  }
+  declarations
+}
+
+///|
+test "bench_cascade_declarations_200" (b : @bench.T) {
+  let declarations = create_cascade_declarations(200, 20)
+  b.bench(name="cascade_decl_200", fn() {
+    b.keep(@cascade.cascade(declarations))
+  })
+}
+
 // =============================================================================
 // Full Pipeline Comparison
 // =============================================================================

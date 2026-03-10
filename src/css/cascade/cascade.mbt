@@ -59,41 +59,16 @@ pub fn CascadedValues::properties(self : CascadedValues) -> Array[String] {
 /// Declarations should be for a single element
 pub fn cascade(declarations : Array[Declaration]) -> CascadedValues {
   let result = CascadedValues::new()
-
-  // Group declarations by property
-  let by_property : Map[String, Array[Declaration]] = {}
   for decl in declarations {
-    match by_property.get(decl.property) {
-      Some(arr) => arr.push(decl)
-      None => by_property.set(decl.property, [decl])
+    match result.values.get(decl.property) {
+      Some(current) =>
+        if compare_declarations(decl, current) > 0 {
+          result.values.set(decl.property, decl)
+        }
+      None => result.values.set(decl.property, decl)
     }
   }
-
-  // For each property, find the winning declaration
-  by_property.each(fn(property, decls) {
-    let winner = find_winning_declaration(decls)
-    match winner {
-      Some(decl) => result.values.set(property, decl)
-      None => ()
-    }
-  })
   result
-}
-
-///|
-/// Find the winning declaration from a list of declarations for the same property
-fn find_winning_declaration(declarations : Array[Declaration]) -> Declaration? {
-  if declarations.is_empty() {
-    return None
-  }
-  let mut winner = declarations[0]
-  for i = 1; i < declarations.length(); i = i + 1 {
-    let decl = declarations[i]
-    if compare_declarations(decl, winner) > 0 {
-      winner = decl
-    }
-  }
-  Some(winner)
 }
 
 ///|

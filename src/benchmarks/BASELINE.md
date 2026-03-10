@@ -127,6 +127,26 @@ Notes:
 - `render_bench.mbt` の full render 系は run-to-run variance が大きく、この 1 回の比較では高信頼な差分を断言しにくい
 - よって今回の改善確認は `optimization_bench.mbt` を主指標にする
 
+## Direct Cascade Winner Update (2026-03-10)
+
+Command:
+```bash
+moon bench -p benchmarks -f optimization_bench.mbt --target js --release
+```
+
+Context:
+- 直前の `cascade()` は property ごとに `Array[Declaration]` を作ってから winner を再走査していた
+- 今回は `result.values` に対して declaration を 1 回ずつ流し、既存 winner と直接比較して更新する形に変更した
+- 目的は property grouping 用の中間配列を消すこと
+
+| Benchmark | before | after | delta |
+|-----------|--------|-------|-------|
+| cascade_decl_200 | 14.34 µs | 12.74 µs | -11.2% |
+
+Notes:
+- `css-flexbox` WPT 全件はこの変更後も `289 / 289 passed`
+- `pipeline_current` は run-to-run variance が大きく、この変更単体の影響判定には使っていない
+
 ---
 
 # Optimization Results (2025-01-12)
