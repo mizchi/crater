@@ -305,7 +305,11 @@
   - [x] `assert_pdf_image` / `fetch` / `configuration` は top-level helper + `functools.partial` に寄せて fixture ごとの local closure を削った
   - [x] `browsing_context/print --quick` (`137/137`) / `network/add_intercept/url_patterns.py --quick` (`69/69`) / `browsing_context/navigation_committed/navigation_committed.py --quick` (`20/20`) / `network/add_data_collector/user_contexts.py --quick` (`2/2`) / `--profile strict` (`277/277`) で回帰がないことを確認した
   - [x] `browser/src/webdriver_fixture_builder` の test は `14/14 pass`
-  - [x] 現在の `scripts/crater_bidi_adapter.py` は `2086` 行
+  - [x] `get_element` / `load_static_test_page` / `assert_file_dialog_{canceled,not_canceled}` / `setup_network_test` は top-level helper + task/collector group に寄せ、fixture 内の local async closure を削った
+  - [x] `input/set_files --quick` (`46/46`) / `input/perform_actions/wheel --quick` (`17/17`) / `input/file_dialog_opened --quick` (`8/8`) / `session/capabilities/unhandled_prompt_behavior/file --quick` (`12/12`) / `network/set_extra_headers/contexts.py --quick` (`7/7`) / `--profile strict` (`277/277`) で helper 抽出の回帰がないことを確認した
+  - [x] module proxy の `send_command -> await future` 重複を `_CommandProxy._command()` に寄せ、`current_session` / `capabilities` の inline ロジックも top-level helper 化した
+  - [x] `browser/create_user_context --quick` (`182/182`) / `browsing_context/get_tree --quick` (`36/36`) / `script/get_realms --quick` (`24/24`) / `network/add_intercept --quick` (`210/210`) / `storage --quick` (`342/342`) / `input/set_files --quick` (`46/46`) / `--profile strict` (`277/277`) で proxy 共通化の回帰がないことを確認した
+  - [x] 現在の `scripts/crater_bidi_adapter.py` は `2096` 行
   - [ ] transport 層以外で `.py` に残っている実装責務を TODO から洗い出して消していく
 
 ## WPT サポート状況（2026-03-03）

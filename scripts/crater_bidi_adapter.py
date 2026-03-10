@@ -547,48 +547,69 @@ class _BiDiSubscriptionTracker:
         self._subscriptions.clear()
 
 
-class BrowsingContextModule:
+def _require_context_info(value: Any, source: str):
+    if isinstance(value, Mapping) and isinstance(value.get("context"), str):
+        return value
+    raise bidi_error.UnknownErrorException(f"{source} returned invalid context info")
+
+
+def _context_id(context):
+    return context.get("context") if isinstance(context, Mapping) else context
+
+
+def _current_platform_name() -> str:
+    if sys.platform == "darwin":
+        return "mac"
+    if sys.platform.startswith("win"):
+        return "windows"
+    return "linux"
+
+
+def _merge_capabilities_from_request(request, default_capabilities):
+    caps = dict(default_capabilities)
+    marker = request.node.get_closest_marker("capabilities")
+    if marker and marker.args and isinstance(marker.args[0], dict):
+        _deep_update(caps, marker.args[0])
+    return caps
+
+
+class _CommandProxy:
     def __init__(self, session: CraterBidiSession):
         self._session = session
 
-    def _require_context_info(self, value: Any, source: str):
-        if isinstance(value, Mapping) and isinstance(value.get("context"), str):
-            return value
-        raise bidi_error.UnknownErrorException(f"{source} returned invalid context info")
+    async def _command(self, method: str, params: Mapping[str, Any] | None = None):
+        return await self._session.command(method, {} if params is None else params)
+
+
+class BrowsingContextModule(_CommandProxy):
 
     async def create(self, type_hint=_UNSET, **kwargs):
         params = dict(kwargs)
         if type_hint is not _UNSET and "type" not in params and "type_hint" not in params:
             params["type_hint"] = type_hint
-        future = await self._session.send_command(
-            "browsingContext.create", params
-        )
-        return await future
+        return await self._command("browsingContext.create", params)
 
     async def create_context_id(self, type_hint=_UNSET, **kwargs):
         params = dict(kwargs)
         if type_hint is not _UNSET and "type" not in params and "type_hint" not in params:
             params["type_hint"] = type_hint
-        return await self._session.command("browsingContext.createContextId", params)
+        return await self._command("browsingContext.createContextId", params)
 
     async def create_and_get_info_value(self, **params):
-        future = await self._session.send_command(
-            "browsingContext.createAndGetInfoValue", params
-        )
-        return await future
+        return await self._command("browsingContext.createAndGetInfoValue", params)
 
     async def create_and_get_info_required(self, **params):
         result = await self.create_and_get_info_value(**params)
-        return self._require_context_info(
+        return _require_context_info(
             result,
             "browsingContext.createAndGetInfoValue",
         )
 
     async def navigate(self, context: str, url: str, wait: str = "none"):
-        future = await self._session.send_command(
-            "browsingContext.navigateWithState", {"context": context, "url": url, "wait": wait}
+        return await self._command(
+            "browsingContext.navigateWithState",
+            {"context": context, "url": url, "wait": wait},
         )
-        return await future
 
     async def get_tree(self, root=None, max_depth=None):
         params = {}
@@ -596,16 +617,13 @@ class BrowsingContextModule:
             params["root"] = root
         if max_depth is not None:
             params["max_depth"] = max_depth
-        future = await self._session.send_command("browsingContext.getTreeContexts", params)
-        return await future
+        return await self._command("browsingContext.getTreeContexts", params)
 
     async def get_current_url(self, context) -> str | None:
-        context_id = context.get("context") if isinstance(context, Mapping) else context
-        future = await self._session.send_command(
+        return await self._command(
             "browsingContext.getCurrentUrlValue",
-            {"context": context_id},
+            {"context": _context_id(context)},
         )
-        return await future
 
     async def close(self, context: str, prompt_unload=_UNSET):
         params = {"context": context}
@@ -613,8 +631,7 @@ class BrowsingContextModule:
         if prompt_unload is not _UNSET and prompt_unload is not None:
             params["prompt_unload"] = prompt_unload
         self._session.fail_pending_print_requests_for_context(context)
-        future = await self._session.send_command("browsingContext.closeResult", params)
-        return await future
+        return await self._command("browsingContext.closeResult", params)
 
     async def handle_user_prompt(self, context: str, accept=_UNSET, user_text=_UNSET):
         params = {"context": context}
@@ -622,22 +639,15 @@ class BrowsingContextModule:
             params["accept"] = accept
         if user_text is not _UNSET:
             params["user_text"] = user_text
-        future = await self._session.send_command(
-            "browsingContext.handleUserPrompt", params
-        )
-        return await future
+        return await self._command("browsingContext.handleUserPrompt", params)
 
     async def activate(self, context: str):
-        future = await self._session.send_command(
-            "browsingContext.activate", {"context": context}
-        )
-        return await future
+        return await self._command("browsingContext.activate", {"context": context})
 
     async def reload(self, context: str, **kwargs):
-        future = await self._session.send_command(
+        return await self._command(
             "browsingContext.reloadWithState", {"context": context, **kwargs}
         )
-        return await future
 
     async def print(self, context: str, **kwargs):
         params = {"context": context}
@@ -645,11 +655,7 @@ class BrowsingContextModule:
             if value is None:
                 continue
             params[key] = value
-
-        future = await self._session.send_command(
-            "browsingContext.printData", params
-        )
-        return await future
+        return await self._command("browsingContext.printData", params)
 
     async def capture_screenshot(self, context: str, **kwargs):
         params = {"context": context}
@@ -657,10 +663,7 @@ class BrowsingContextModule:
             if value is None:
                 continue
             params[key] = value
-        future = await self._session.send_command(
-            "browsingContext.captureScreenshotData", params
-        )
-        return await future
+        return await self._command("browsingContext.captureScreenshotData", params)
 
     async def locate_nodes(
         self,
@@ -680,8 +683,7 @@ class BrowsingContextModule:
             params["serialization_options"] = serialization_options
         if start_nodes is not _UNSET:
             params["start_nodes"] = start_nodes
-        future = await self._session.send_command("browsingContext.locateNodes", params)
-        return await future
+        return await self._command("browsingContext.locateNodes", params)
 
     async def set_viewport(
         self,
@@ -699,42 +701,28 @@ class BrowsingContextModule:
             params["device_pixel_ratio"] = device_pixel_ratio
         if user_contexts is not None:
             params["user_contexts"] = user_contexts
-        future = await self._session.send_command("browsingContext.setViewport", params)
-        return await future
+        return await self._command("browsingContext.setViewport", params)
 
     async def traverse_history(self, context: str, delta: int):
-        future = await self._session.send_command(
+        return await self._command(
             "browsingContext.traverseHistory", {"context": context, "delta": delta}
         )
-        return await future
 
 
-class SessionModule:
-    def __init__(self, session: CraterBidiSession):
-        self._session = session
-
-    def _require_context_info(self, value: Any, source: str):
-        if isinstance(value, Mapping) and isinstance(value.get("context"), str):
-            return value
-        raise bidi_error.UnknownErrorException(f"{source} returned invalid context info")
+class SessionModule(_CommandProxy):
 
     async def status(self):
-        future = await self._session.send_command("session.status", {})
-        return await future
+        return await self._command("session.status")
 
     async def prepare_baseline_context_for_test(self):
-        future = await self._session.send_command("session.prepareBaselineContextForTest", {})
-        return await future
+        return await self._command("session.prepareBaselineContextForTest")
 
     async def get_baseline_context_info_value_for_test(self):
-        future = await self._session.send_command(
-            "session.getBaselineContextInfoValueForTest", {}
-        )
-        return await future
+        return await self._command("session.getBaselineContextInfoValueForTest")
 
     async def require_baseline_context_info_value_for_test(self):
         result = await self.get_baseline_context_info_value_for_test()
-        return self._require_context_info(
+        return _require_context_info(
             result,
             "session.getBaselineContextInfoValueForTest",
         )
@@ -745,8 +733,7 @@ class SessionModule:
             params["contexts"] = contexts
         if user_contexts is not None:
             params["user_contexts"] = user_contexts
-        future = await self._session.send_command("session.subscribe", params)
-        return await future
+        return await self._command("session.subscribe", params)
 
     async def subscribe_id(self, events: list, contexts: list = None, user_contexts: list = None):
         params = {"events": events}
@@ -754,33 +741,26 @@ class SessionModule:
             params["contexts"] = contexts
         if user_contexts is not None:
             params["user_contexts"] = user_contexts
-        return await self._session.command("session.subscribeId", params)
+        return await self._command("session.subscribeId", params)
 
     async def unsubscribe(self, subscriptions: list = None, **kwargs):
         params = {}
         if subscriptions is not None:
             params["subscriptions"] = subscriptions
         params.update(kwargs)
-        future = await self._session.send_command("session.unsubscribe", params)
-        return await future
+        return await self._command("session.unsubscribe", params)
 
     async def reset_for_test(self):
-        future = await self._session.send_command("session.resetForTest", {})
-        return await future
+        return await self._command("session.resetForTest")
 
 
-class ScriptModule:
-    def __init__(self, session: CraterBidiSession):
-        self._session = session
+class ScriptModule(_CommandProxy):
 
     async def _result_command(self, method: str, params: Mapping[str, Any]):
-        result = await self._session.command(method, params)
+        result = await self._command(method, params)
         if isinstance(result, dict) and "exceptionDetails" in result:
             raise ScriptEvaluateResultException(result)
         return result
-
-    def _context_id(self, context):
-        return context.get("context") if isinstance(context, Mapping) else context
 
     async def evaluate(self, expression, target, await_promise=False, **kwargs):
         raw_result = kwargs.pop("raw_result", False)
@@ -795,7 +775,7 @@ class ScriptModule:
             params[key] = value
         command = "script.evaluate" if raw_result else "script.evaluateResult"
         if raw_result:
-            return await self._session.command(command, params)
+            return await self._command(command, params)
         return await self._result_command(command, params)
 
     async def call_function(self, function_declaration, target, arguments=None, await_promise=False, **kwargs):
@@ -813,22 +793,20 @@ class ScriptModule:
             params[key] = value
         command = "script.callFunction" if raw_result else "script.callFunctionResult"
         if raw_result:
-            return await self._session.command(command, params)
+            return await self._command(command, params)
         return await self._result_command(command, params)
 
     async def disown(self, handles, target):
-        future = await self._session.send_command(
+        return await self._command(
             "script.disown",
             {"handles": handles, "target": target},
         )
-        return await future
 
     async def get_element_for_test(self, selector, context, *, allow_frame_fallback=False):
-        context_id = self._context_id(context)
-        return await self._session.command(
+        return await self._command(
             "script.getElementForTest",
             {
-                "context": context_id,
+                "context": _context_id(context),
                 "selector": selector,
                 "allowFrameFallback": allow_frame_fallback,
             },
@@ -840,8 +818,7 @@ class ScriptModule:
             if value is None or self._session._is_undefined(value):
                 continue
             params[key] = value
-        future = await self._session.send_command("script.addPreloadScriptId", params)
-        return await future
+        return await self._command("script.addPreloadScriptId", params)
 
     async def prepare_loaded_static_test_page(
         self,
@@ -856,24 +833,22 @@ class ScriptModule:
             params["scripts"] = scripts
         if isinstance(html, str):
             params["html"] = html
-        future = await self._session.send_command(
+        return await self._command(
             "script.prepareLoadedStaticTestPage",
             params,
         )
-        return await future
 
     async def create_iframe_context_id_for_test(self, context, url: str):
-        context_id = self._context_id(context)
-        return await self._session.command(
+        return await self._command(
             "script.createIframeContextIdForTest",
-            {"context": context_id, "url": url},
+            {"context": _context_id(context), "url": url},
         )
 
     async def prepare_beforeunload_page_url_for_test(self, context, url: str | None = None):
-        params: dict[str, Any] = {"context": self._context_id(context)}
+        params: dict[str, Any] = {"context": _context_id(context)}
         if isinstance(url, str):
             params["url"] = url
-        return await self._session.command(
+        return await self._command(
             "script.prepareBeforeunloadPageUrlForTest",
             params,
         )
@@ -897,7 +872,7 @@ class ScriptModule:
             "requestHeaders": self._session._network_header_entries_from_map(headers),
             "headersJson": json.dumps(dict(headers)) if isinstance(headers, Mapping) else "null",
         }
-        context_id = self._context_id(context)
+        context_id = _context_id(context)
         if isinstance(context_id, str):
             params["context"] = context_id
         if isinstance(method, str):
@@ -916,22 +891,17 @@ class ScriptModule:
         return await self._result_command("script.fetchForTest", params)
 
     async def remove_preload_script(self, script: str):
-        future = await self._session.send_command("script.removePreloadScript", {"script": script})
-        return await future
+        return await self._command("script.removePreloadScript", {"script": script})
 
     async def remove_all_preload_scripts(self):
-        future = await self._session.send_command("script.removeAllPreloadScripts", {})
-        return await future
+        return await self._command("script.removeAllPreloadScripts")
 
     async def get_realms(self, **kwargs):
         params = dict(kwargs)
-        future = await self._session.send_command("script.getRealmsList", params)
-        return await future
+        return await self._command("script.getRealmsList", params)
 
 
-class NetworkModule:
-    def __init__(self, session: CraterBidiSession):
-        self._session = session
+class NetworkModule(_CommandProxy):
 
     def _validate_request_id(self, request: Any) -> str:
         if not isinstance(request, str):
@@ -951,21 +921,17 @@ class NetworkModule:
             if value is None:
                 continue
             params[key] = value
-        return await self._session.command("network.addInterceptId", params)
+        return await self._command("network.addInterceptId", params)
 
     async def remove_intercept(self, intercept: str):
-        future = await self._session.send_command(
-            "network.removeIntercept",
-            {"intercept": intercept},
-        )
-        return await future
+        return await self._command("network.removeIntercept", {"intercept": intercept})
 
     async def prepare_test_context(self, *, url: str, context=None):
         context_id = context.get("context") if isinstance(context, Mapping) else context
         params = {"url": url}
         if isinstance(context_id, str):
             params["context"] = context_id
-        return await self._session.command("network.prepareContextForTest", params)
+        return await self._command("network.prepareContextForTest", params)
 
     async def continue_request(self, request: str, **kwargs):
         request_id = self._validate_request_id(request)
@@ -979,8 +945,7 @@ class NetworkModule:
         navigation_id = await self._session.blocked_request_navigation(request_id)
         if isinstance(navigation_id, str) and "navigation" not in params:
             params["navigation"] = navigation_id
-        future = await self._session.send_command("network.continueBlockedRequest", params)
-        await future
+        await self._command("network.continueBlockedRequest", params)
         return {}
 
     async def continue_response(self, request: str, **kwargs):
@@ -991,8 +956,7 @@ class NetworkModule:
         }
         for key, value in kwargs.items():
             params[key] = value
-        future = await self._session.send_command("network.continueBlockedResponse", params)
-        await future
+        await self._command("network.continueBlockedResponse", params)
         return {}
 
     async def fail_request(self, request: str):
@@ -1010,7 +974,7 @@ class NetworkModule:
                 request=request,
                 credentials=credentials,
             )
-        await self._session.command(
+        await self._command(
             "network.continueAuthRequest",
             {"request": request_id, "action": action},
         )
@@ -1028,7 +992,7 @@ class NetworkModule:
         for key, value in kwargs.items():
             params[key] = value
 
-        await self._session.command("network.continueBlockedResponse", params)
+        await self._command("network.continueBlockedResponse", params)
         return {}
 
     async def add_data_collector(self, **kwargs):
@@ -1037,7 +1001,7 @@ class NetworkModule:
             if value is None:
                 continue
             params[key] = value
-        return await self._session.command("network.addDataCollectorId", params)
+        return await self._command("network.addDataCollectorId", params)
 
     async def set_extra_headers(self, headers, contexts=_UNSET, user_contexts=_UNSET):
         params = {"headers": headers}
@@ -1045,8 +1009,7 @@ class NetworkModule:
             params["contexts"] = contexts
         if user_contexts is not _UNSET:
             params["user_contexts"] = user_contexts
-        future = await self._session.send_command("network.setExtraHeaders", params)
-        return await future
+        return await self._command("network.setExtraHeaders", params)
 
     async def set_cache_behavior(self, cache_behavior, contexts=_UNSET):
         params: dict[str, Any] = {
@@ -1056,34 +1019,29 @@ class NetworkModule:
             params["contexts"] = contexts
 
         try:
-            await self._session.command("network.setCacheBehavior", params)
+            await self._command("network.setCacheBehavior", params)
         except (bidi_error.UnknownCommandException, bidi_error.UnknownErrorException):
             return {}
         return {}
 
     async def remove_data_collector(self, collector: str):
-        future = await self._session.send_command("network.removeDataCollector", {"collector": collector})
-        return await future
+        return await self._command("network.removeDataCollector", {"collector": collector})
 
     async def get_data(self, request, data_type, collector=None, disown=False):
         params = {"request": request, "data_type": data_type, "disown": disown}
         if collector is not None:
             params["collector"] = collector
-        future = await self._session.send_command("network.getData", params)
-        return await future
+        return await self._command("network.getData", params)
 
     async def disown_data(self, request, data_type, collector):
-        future = await self._session.send_command("network.disownData", {
+        return await self._command("network.disownData", {
             "request": request,
             "data_type": data_type,
             "collector": collector,
         })
-        return await future
 
 
-class StorageModule:
-    def __init__(self, session: CraterBidiSession):
-        self._session = session
+class StorageModule(_CommandProxy):
 
     async def get_cookies(self, filter=None, partition=None):
         params: dict[str, Any] = {}
@@ -1091,15 +1049,13 @@ class StorageModule:
             params["filter"] = filter
         if partition is not None:
             params["partition"] = partition
-        future = await self._session.send_command("storage.getCookies", params)
-        return await future
+        return await self._command("storage.getCookies", params)
 
     async def set_cookie(self, cookie, partition=None):
         params = {"cookie": cookie}
         if partition is not None:
             params["partition"] = partition
-        future = await self._session.send_command("storage.setCookie", params)
-        return await future
+        return await self._command("storage.setCookie", params)
 
     async def delete_cookies(self, filter=None, partition=None):
         params: dict[str, Any] = {}
@@ -1107,29 +1063,24 @@ class StorageModule:
             params["filter"] = filter
         if partition is not None:
             params["partition"] = partition
-        future = await self._session.send_command("storage.deleteCookies", params)
-        return await future
+        return await self._command("storage.deleteCookies", params)
 
 
-class InputModule:
-    def __init__(self, session: CraterBidiSession):
-        self._session = session
+class InputModule(_CommandProxy):
 
     async def perform_actions(self, actions, context: str):
         if hasattr(actions, "to_json"):
             actions = actions.to_json()
         params = {"actions": actions, "context": context}
-        future = await self._session.send_command("input.performActions", params)
-        return await future
+        return await self._command("input.performActions", params)
 
     async def release_actions(self, context: str):
-        future = await self._session.send_command("input.releaseActions", {"context": context})
-        return await future
+        return await self._command("input.releaseActions", {"context": context})
 
     async def set_files(self, context: str, element, files):
         normalized_files = self._normalize_files(files)
         display_names = [self._display_file_name(path) for path in normalized_files]
-        future = await self._session.send_command(
+        await self._command(
             "input.setFiles",
             {
                 "context": context,
@@ -1138,7 +1089,6 @@ class InputModule:
                 "displayNames": display_names,
             },
         )
-        await future
         return {}
 
     def _normalize_files(self, files) -> list[str]:
@@ -1159,26 +1109,20 @@ class InputModule:
         return base if base != "" else normalized
 
 
-class BrowserModule:
-    def __init__(self, session: CraterBidiSession):
-        self._session = session
+class BrowserModule(_CommandProxy):
 
     async def create_user_context(self, **kwargs):
         params = dict(kwargs)
-        future = await self._session.send_command("browser.createUserContextId", params)
-        return await future
+        return await self._command("browser.createUserContextId", params)
 
     async def get_user_contexts(self):
-        future = await self._session.send_command("browser.getUserContextsList", {})
-        return await future
+        return await self._command("browser.getUserContextsList")
 
     async def get_client_windows(self):
-        future = await self._session.send_command("browser.getClientWindowsList", {})
-        return await future
+        return await self._command("browser.getClientWindowsList")
 
     async def remove_user_context(self, user_context: str):
-        future = await self._session.send_command("browser.removeUserContext", {"userContext": user_context})
-        return await future
+        return await self._command("browser.removeUserContext", {"userContext": user_context})
 
     async def set_download_behavior(self, download_behavior=_UNSET, user_contexts=_UNSET):
         params = {}
@@ -1186,8 +1130,7 @@ class BrowserModule:
             params["downloadBehavior"] = download_behavior
         if user_contexts is not _UNSET:
             params["user_contexts"] = user_contexts
-        future = await self._session.send_command("browser.setDownloadBehavior", params)
-        return await future
+        return await self._command("browser.setDownloadBehavior", params)
 
 
 class CraterClassicSession:
@@ -1197,6 +1140,13 @@ class CraterClassicSession:
         self.capabilities = {
             "webSocketUrl": websocket_url,
         }
+
+
+class _CurrentSession:
+    """Minimal classic WebDriver session fixture used by legacy WPT helpers."""
+
+    def __init__(self, platform_name: str):
+        self.capabilities = {"platformName": platform_name}
 
 
 class _TrackedTask:
@@ -1209,6 +1159,39 @@ class _TrackedTask:
     def __await__(self):
         self.awaited = True
         return self.task.__await__()
+
+
+class _TrackedTaskGroup:
+    """Own tracked tasks and await only the ones the test left pending."""
+
+    def __init__(self):
+        self._tasks: list[_TrackedTask] = []
+
+    def spawn(self, coro):
+        tracked = _TrackedTask(asyncio.create_task(coro))
+        self._tasks.append(tracked)
+        return tracked
+
+    async def wait_unawaited(self):
+        for tracked in self._tasks:
+            if tracked.awaited:
+                continue
+            await tracked.task
+
+
+class _CollectorGroup:
+    """Own named event collectors created during a single fixture lifetime."""
+
+    def __init__(self):
+        self._collectors = []
+
+    def add(self, collector):
+        self._collectors.append(collector)
+        return collector
+
+    def close(self):
+        for collector in self._collectors:
+            collector.close()
 
 
 # Pytest fixtures
@@ -1468,21 +1451,12 @@ def send_blocking_command(bidi_session):
 def get_element(bidi_session, top_context):
     """Return a remote reference for the first element matching selector."""
     debug_get_element = os.environ.get("CRATER_DEBUG_GET_ELEMENT", "0") == "1"
-
-    async def _get_element(css_selector, context=top_context):
-        context_id = context["context"]
-        element = await bidi_session.script.get_element_for_test(
-            css_selector,
-            context,
-            allow_frame_fallback=context.get("context") != top_context.get("context"),
-        )
-        if debug_get_element:
-            print(f"[get_element] initial selector={css_selector!r} context={context_id!r} element={element!r}", flush=True)
-        if debug_get_element:
-            print(f"[get_element] final selector={css_selector!r} context={context_id!r} element={element!r}", flush=True)
-        return element
-
-    return _get_element
+    return functools.partial(
+        _get_element_impl,
+        bidi_session,
+        top_context,
+        debug_get_element,
+    )
 
 
 @pytest.fixture
@@ -1494,48 +1468,19 @@ def current_url(bidi_session):
 @pytest_asyncio.fixture
 async def load_static_test_page(bidi_session, top_context, inline):
     """Navigate to a static WPT support page from local checkout."""
-
-    support_html_dir = (
-        Path(__file__).resolve().parent.parent
-        / "wpt"
-        / "webdriver"
-        / "tests"
-        / "support"
-        / "html"
+    return functools.partial(
+        _load_static_test_page_impl,
+        bidi_session,
+        inline,
+        _support_html_dir(),
+        top_context,
     )
-
-    async def _load_static_test_page(page, context=top_context):
-        page_path = support_html_dir / page
-        content = page_path.read_text(encoding="utf-8-sig")
-        await bidi_session.browsing_context.navigate(
-            context=context["context"],
-            url=inline(content),
-            wait="complete",
-        )
-        if "allEvents" not in content:
-            return
-
-        await bidi_session.script.prepare_loaded_static_test_page(
-            context["context"],
-            page,
-            html=content,
-        )
-
-    return _load_static_test_page
 
 
 @pytest_asyncio.fixture
 async def current_session():
     """Minimal classic WebDriver session fixture used by legacy WPT helpers."""
-
-    class _CurrentSession:
-        def __init__(self):
-            platform_name = "mac" if sys.platform == "darwin" else (
-                "windows" if sys.platform.startswith("win") else "linux"
-            )
-            self.capabilities = {"platformName": platform_name}
-
-    return _CurrentSession()
+    return _CurrentSession(_current_platform_name())
 
 
 @pytest.fixture
@@ -1560,11 +1505,7 @@ def _deep_update(dst: dict, src: dict):
 @pytest.fixture
 def capabilities(request, default_capabilities):
     """Session capabilities merged with @pytest.mark.capabilities."""
-    caps = dict(default_capabilities)
-    marker = request.node.get_closest_marker("capabilities")
-    if marker and marker.args and isinstance(marker.args[0], dict):
-        _deep_update(caps, marker.args[0])
-    return caps
+    return _merge_capabilities_from_request(request, default_capabilities)
 
 
 @pytest.fixture
@@ -1922,6 +1863,142 @@ async def _fetch_impl(
     )
 
 
+def _resolve_context_info(context, default_context):
+    return context if context is not None else default_context
+
+
+def _support_html_dir() -> Path:
+    return (
+        Path(__file__).resolve().parent.parent
+        / "wpt"
+        / "webdriver"
+        / "tests"
+        / "support"
+        / "html"
+    )
+
+
+async def _get_element_impl(
+    bidi_session,
+    top_context,
+    debug_get_element: bool,
+    css_selector,
+    context=None,
+):
+    resolved_context = _resolve_context_info(context, top_context)
+    context_id = resolved_context["context"]
+    element = await bidi_session.script.get_element_for_test(
+        css_selector,
+        resolved_context,
+        allow_frame_fallback=context_id != top_context["context"],
+    )
+    if debug_get_element:
+        print(
+            f"[get_element] selector={css_selector!r} context={context_id!r} element={element!r}",
+            flush=True,
+        )
+    return element
+
+
+async def _load_static_test_page_impl(
+    bidi_session,
+    inline,
+    support_html_dir: Path,
+    default_context,
+    page,
+    context=None,
+):
+    resolved_context = _resolve_context_info(context, default_context)
+    page_path = support_html_dir / page
+    content = page_path.read_text(encoding="utf-8-sig")
+    await bidi_session.browsing_context.navigate(
+        context=resolved_context["context"],
+        url=inline(content),
+        wait="complete",
+    )
+    if "allEvents" not in content:
+        return
+    await bidi_session.script.prepare_loaded_static_test_page(
+        resolved_context["context"],
+        page,
+        html=content,
+    )
+
+
+FILE_DIALOG_CANCEL_PROBE = """
+    new Promise(resolve => {
+        const picker = document.createElement('input');
+        picker.type = 'file';
+        picker.addEventListener('cancel', (event) => {
+            resolve(event.isTrusted);
+        });
+        picker.click();
+    })
+"""
+
+
+async def _file_dialog_canceled_impl(bidi_session, top_context, context=None):
+    resolved_context = _resolve_context_info(context, top_context)
+    cancel_event = await bidi_session.script.evaluate(
+        expression=FILE_DIALOG_CANCEL_PROBE,
+        target=ContextTarget(resolved_context["context"]),
+        await_promise=True,
+        user_activation=True,
+    )
+    assert cancel_event == {
+        "type": "boolean",
+        "value": True,
+    }
+
+
+async def _file_dialog_not_canceled_impl(
+    bidi_session,
+    top_context,
+    wait_for_future_safe,
+    context=None,
+):
+    resolved_context = _resolve_context_info(context, top_context)
+    cancel_event_future = asyncio.create_task(
+        bidi_session.script.evaluate(
+            expression=FILE_DIALOG_CANCEL_PROBE,
+            target=ContextTarget(resolved_context["context"]),
+            await_promise=True,
+            user_activation=True,
+        )
+    )
+    try:
+        with pytest.raises(TimeoutError):
+            await wait_for_future_safe(cancel_event_future, timeout=0.5)
+    finally:
+        cancel_event_future.cancel()
+        try:
+            await cancel_event_future
+        except asyncio.CancelledError:
+            pass
+
+
+async def _setup_network_test_impl(
+    bidi_session,
+    subscribe_events,
+    collectors: _CollectorGroup,
+    default_test_url: str,
+    default_context_id: str,
+    events,
+    test_url=None,
+    context=None,
+    contexts=None,
+):
+    resolved_test_url = test_url or default_test_url
+    resolved_context_id = context or default_context_id
+    await bidi_session.network.prepare_test_context(
+        url=resolved_test_url,
+        context=resolved_context_id,
+    )
+    await subscribe_events(events=events, contexts=contexts)
+    collector = collectors.add(bidi_session.capture_named_events(events))
+    return collector.events
+
+
 @pytest.fixture
 def get_test_page():
     """Generate a node-rich page compatible with BiDi script node tests."""
@@ -1973,88 +2050,30 @@ def test_page_same_origin_frame(inline, test_page):
 @pytest_asyncio.fixture
 async def assert_file_dialog_canceled(bidi_session, top_context):
     """Assert that a synthetic file picker is canceled by prompt behavior."""
-    pending_tasks: list[_TrackedTask] = []
+    pending_tasks = _TrackedTaskGroup()
 
-    async def _run(context=None):
-        resolved_context = context or top_context
-        cancel_event = await bidi_session.script.evaluate(
-            expression="""
-                new Promise(resolve => {
-                    const picker = document.createElement('input');
-                    picker.type = 'file';
-                    picker.addEventListener('cancel', (event) => {
-                        resolve(event.isTrusted);
-                    });
-                    picker.click();
-                })
-            """,
-            target=ContextTarget(resolved_context["context"]),
-            await_promise=True,
-            user_activation=True,
-        )
-        assert cancel_event == {
-            "type": "boolean",
-            "value": True,
-        }
+    yield lambda context=None: pending_tasks.spawn(
+        _file_dialog_canceled_impl(bidi_session, top_context, context)
+    )
 
-    def _assert(context=None):
-        tracked = _TrackedTask(asyncio.create_task(_run(context)))
-        pending_tasks.append(tracked)
-        return tracked
-
-    yield _assert
-
-    for tracked in pending_tasks:
-        if tracked.awaited:
-            continue
-        await tracked.task
+    await pending_tasks.wait_unawaited()
 
 
 @pytest_asyncio.fixture
 async def assert_file_dialog_not_canceled(bidi_session, top_context, wait_for_future_safe):
     """Assert that a synthetic file picker remains pending."""
-    pending_tasks: list[_TrackedTask] = []
+    pending_tasks = _TrackedTaskGroup()
 
-    async def _run(context=None):
-        resolved_context = context or top_context
-        cancel_event_future = asyncio.create_task(
-            bidi_session.script.evaluate(
-                expression="""
-                    new Promise(resolve => {
-                        const picker = document.createElement('input');
-                        picker.type = 'file';
-                        picker.addEventListener('cancel', (event) => {
-                            resolve(event.isTrusted);
-                        });
-                        picker.click();
-                    })
-                """,
-                target=ContextTarget(resolved_context["context"]),
-                await_promise=True,
-                user_activation=True,
-            )
+    yield lambda context=None: pending_tasks.spawn(
+        _file_dialog_not_canceled_impl(
+            bidi_session,
+            top_context,
+            wait_for_future_safe,
+            context,
         )
-        try:
-            with pytest.raises(TimeoutError):
-                await wait_for_future_safe(cancel_event_future, timeout=0.5)
-        finally:
-            cancel_event_future.cancel()
-            try:
-                await cancel_event_future
-            except asyncio.CancelledError:
-                pass
+    )
 
-    def _assert(context=None):
-        tracked = _TrackedTask(asyncio.create_task(_run(context)))
-        pending_tasks.append(tracked)
-        return tracked
-
-    yield _assert
-
-    for tracked in pending_tasks:
-        if tracked.awaited:
-            continue
-        await tracked.task
+    await pending_tasks.wait_unawaited()
 
 
 @pytest_asyncio.fixture
@@ -2065,22 +2084,13 @@ async def setup_network_test(
     url,
 ):
     """Best-effort network setup for adapter-backed synthetic network events."""
-    collectors = []
-
-    async def _setup_network_test(
-        events,
-        test_url=url("/webdriver/tests/bidi/network/support/empty.html"),
-        context=top_context["context"],
-        contexts=None,
-    ):
-        await bidi_session.network.prepare_test_context(url=test_url, context=context)
-
-        await subscribe_events(events=events, contexts=contexts)
-        collector = bidi_session.capture_named_events(events)
-        collectors.append(collector)
-        return collector.events
-
-    yield _setup_network_test
-
-    for collector in collectors:
-        collector.close()
+    collectors = _CollectorGroup()
+    yield functools.partial(
+        _setup_network_test_impl,
+        bidi_session,
+        subscribe_events,
+        collectors,
+        url("/webdriver/tests/bidi/network/support/empty.html"),
+        top_context["context"],
+    )
+    collectors.close()
