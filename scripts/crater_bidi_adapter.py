@@ -32,63 +32,6 @@ CRATER_BIDI_URL = os.environ.get("CRATER_BIDI_URL", "ws://127.0.0.1:9222")
 _UNSET = object()
 
 
-def _bytes_value_from_text(value: str):
-    return {"type": "string", "value": value}
-
-
-def _bytes_value_from_bytes(value: bytes):
-    return {"type": "base64", "value": base64.b64encode(value).decode("ascii")}
-
-
-def _synthesize_request_bytes_value(post_data: Any):
-    if post_data is None:
-        return None
-    if isinstance(post_data, str):
-        return _bytes_value_from_text(post_data)
-    if not isinstance(post_data, dict):
-        return _bytes_value_from_text(str(post_data))
-
-    has_binary = False
-    lines: list[str] = []
-    blob_parts: list[bytes] = []
-    boundary = "----crater-boundary"
-    for key, value in post_data.items():
-        field_name = str(key)
-        if isinstance(value, Mapping) and isinstance(value.get("value"), str):
-            has_binary = True
-            encoded = value.get("value")
-            try:
-                blob = base64.b64decode(encoded.encode("ascii"), validate=False)
-            except Exception:
-                blob = b""
-            filename = str(value.get("filename", "blob.bin"))
-            content_type = str(value.get("type", "application/octet-stream"))
-            blob_parts.append(
-                (
-                    f"--{boundary}\r\n"
-                    f'Content-Disposition: form-data; name="{field_name}"; filename="{filename}"\r\n'
-                    f"Content-Type: {content_type}\r\n\r\n"
-                ).encode("utf-8")
-            )
-            blob_parts.append(blob)
-            blob_parts.append(b"\r\n")
-            continue
-
-        lines.append(
-            f"--{boundary}\r\n"
-            f'Content-Disposition: form-data; name="{field_name}"\r\n\r\n'
-            f"{value}\r\n"
-        )
-
-    if has_binary:
-        body = b"".join(blob_parts) + f"--{boundary}--\r\n".encode("utf-8")
-        return _bytes_value_from_bytes(body)
-
-    if lines:
-        return _bytes_value_from_text("".join(lines) + f"--{boundary}--\r\n")
-    return _bytes_value_from_text("")
-
-
 def _base64_text_from_any(value: str | bytes | bytearray) -> str:
     if isinstance(value, (bytes, bytearray)):
         return base64.b64encode(bytes(value)).decode("ascii")
@@ -390,18 +333,6 @@ class CraterBidiSession:
             {"request": request_id},
         )
         return result if isinstance(result, str) else None
-
-    def _network_header_entries_from_map(
-        self,
-        headers: Mapping[str, Any] | None,
-    ) -> list[dict[str, Any]]:
-        if not isinstance(headers, Mapping):
-            return []
-        return [
-            {"name": name, "value": {"type": "string", "value": str(value)}}
-            for name, value in headers.items()
-            if isinstance(name, str)
-        ]
 
     def add_event_listener(self, event_name: str, handler):
         """Add an event listener."""
@@ -820,22 +751,10 @@ class ScriptModule(_CommandProxy):
             params[key] = value
         return await self._command("script.addPreloadScriptId", params)
 
-    async def prepare_loaded_static_test_page(
-        self,
-        context: str,
-        page: str,
-        phase: str = "all",
-        scripts: list[str] | None = None,
-        html: str | None = None,
-    ):
-        params = {"context": context, "page": page, "phase": phase}
-        if scripts is not None:
-            params["scripts"] = scripts
-        if isinstance(html, str):
-            params["html"] = html
+    async def load_static_test_page_for_test(self, context: str, page: str, html: str):
         return await self._command(
-            "script.prepareLoadedStaticTestPage",
-            params,
+            "script.loadStaticTestPageForTest",
+            {"context": context, "page": page, "html": html},
         )
 
     async def create_iframe_context_id_for_test(self, context, url: str):
@@ -869,7 +788,6 @@ class ScriptModule(_CommandProxy):
             "url": url,
             "timeoutMs": int(timeout_ms),
             "shouldAbort": should_abort,
-            "requestHeaders": self._session._network_header_entries_from_map(headers),
             "headersJson": json.dumps(dict(headers)) if isinstance(headers, Mapping) else "null",
         }
         context_id = _context_id(context)
@@ -877,9 +795,6 @@ class ScriptModule(_CommandProxy):
             params["context"] = context_id
         if isinstance(method, str):
             params["method"] = method
-        request_value = _synthesize_request_bytes_value(post_data)
-        if isinstance(request_value, Mapping):
-            params["requestData"] = dict(request_value)
         if isinstance(post_data, dict):
             params["postDataMode"] = "formData"
             params["postDataJson"] = json.dumps(post_data)
@@ -1078,35 +993,21 @@ class InputModule(_CommandProxy):
         return await self._command("input.releaseActions", {"context": context})
 
     async def set_files(self, context: str, element, files):
-        normalized_files = self._normalize_files(files)
-        display_names = [self._display_file_name(path) for path in normalized_files]
         await self._command(
             "input.setFiles",
             {
                 "context": context,
                 "element": element,
-                "sourcePaths": normalized_files,
-                "displayNames": display_names,
+                "files": files,
             },
         )
         return {}
 
-    def _normalize_files(self, files) -> list[str]:
-        if not isinstance(files, list):
-            raise bidi_error.InvalidArgumentException("files must be a list")
-        normalized: list[str] = []
-        for entry in files:
-            if not isinstance(entry, str):
-                raise bidi_error.InvalidArgumentException("files entries must be strings")
-            normalized.append(entry)
-        return normalized
-
-    def _display_file_name(self, file_path: str) -> str:
-        normalized = file_path.replace("\\", "/")
-        if "/" not in normalized:
-            return normalized
-        base = normalized.rsplit("/", maxsplit=1)[-1]
-        return base if base != "" else normalized
+    async def is_file_dialog_canceled_for_test(self, context):
+        return await self._command(
+            "input.isFileDialogCanceledForTest",
+            {"context": _context_id(context)},
+        )
 
 
 class BrowserModule(_CommandProxy):
@@ -1192,6 +1093,21 @@ class _CollectorGroup:
     def close(self):
         for collector in self._collectors:
             collector.close()
+
+
+class _ListenerGroup:
+    """Own event listener removers created during a single fixture lifetime."""
+
+    def __init__(self):
+        self._removers = []
+
+    def add(self, remove_listener):
+        self._removers.append(remove_listener)
+
+    def close(self):
+        for remove_listener in self._removers:
+            remove_listener()
+        self._removers.clear()
 
 
 # Pytest fixtures
@@ -1307,17 +1223,7 @@ def create_iframe(bidi_session):
 @pytest_asyncio.fixture
 async def add_and_remove_iframe(bidi_session):
     """Return an id that behaves like a removed frame context for negative tests."""
-
-    async def _add_and_remove_iframe(_top_context):
-        frame_id = await bidi_session.browsing_context.create_context_id(type_hint="tab")
-        if isinstance(frame_id, str):
-            try:
-                await bidi_session.browsing_context.close(context=frame_id)
-            except Exception:
-                pass
-        return frame_id
-
-    return _add_and_remove_iframe
+    return functools.partial(_add_and_remove_iframe_impl, bidi_session)
 
 
 @pytest.fixture
@@ -1381,17 +1287,7 @@ def fetch(bidi_session, configuration):
 async def subscribe_events(bidi_session):
     """Subscribe to events and clean up after test."""
     tracker = bidi_session.track_subscriptions()
-
-    async def _subscribe(events, contexts=None, user_contexts=None):
-        subscription_id = await bidi_session.session.subscribe_id(
-            events=events,
-            contexts=contexts,
-            user_contexts=user_contexts,
-        )
-        tracker.add(subscription_id)
-        return {"subscription": subscription_id}
-
-    yield _subscribe
+    yield functools.partial(_subscribe_events_impl, bidi_session, tracker)
 
     await tracker.close()
 
@@ -1399,13 +1295,7 @@ async def subscribe_events(bidi_session):
 @pytest_asyncio.fixture
 async def add_preload_script(bidi_session):
     """Add preload scripts and clean them up after test."""
-    async def _add_preload_script(function_declaration: str, **kwargs):
-        return await bidi_session.script.add_preload_script(
-            function_declaration=function_declaration,
-            **kwargs,
-        )
-
-    yield _add_preload_script
+    yield functools.partial(_add_preload_script_impl, bidi_session)
 
     try:
         await bidi_session.script.remove_all_preload_scripts()
@@ -1416,20 +1306,9 @@ async def add_preload_script(bidi_session):
 @pytest.fixture
 def wait_for_event(bidi_session):
     """Wait for a BiDi event."""
-    remove_listeners = []
-
-    def _wait_for_event(event_name: str):
-        future, remove_listener = bidi_session.listen_once(
-            event_name,
-            accept_latest_backlog=event_name == "browsingContext.userPromptOpened",
-        )
-        remove_listeners.append(remove_listener)
-        return future
-
-    yield _wait_for_event
-
-    for remove in remove_listeners:
-        remove()
+    listeners = _ListenerGroup()
+    yield functools.partial(_wait_for_event_impl, bidi_session, listeners)
+    listeners.close()
 
 
 @pytest.fixture
@@ -1466,12 +1345,11 @@ def current_url(bidi_session):
 
 
 @pytest_asyncio.fixture
-async def load_static_test_page(bidi_session, top_context, inline):
+async def load_static_test_page(bidi_session, top_context):
     """Navigate to a static WPT support page from local checkout."""
     return functools.partial(
         _load_static_test_page_impl,
         bidi_session,
-        inline,
         _support_html_dir(),
         top_context,
     )
@@ -1511,12 +1389,7 @@ def capabilities(request, default_capabilities):
 @pytest.fixture
 def modifier_key():
     """Platform modifier key used by shortcut tests."""
-    from tests.support.keys import Keys
-
-    target_platform = os.environ.get("WPT_TARGET_PLATFORM", "mac").lower()
-    if target_platform == "mac":
-        return Keys.META
-    return Keys.CONTROL
+    return _modifier_key_value()
 
 
 @pytest_asyncio.fixture
@@ -1534,42 +1407,18 @@ async def setup_beforeunload_page(bidi_session):
 @pytest.fixture
 def wait_for_future_safe():
     """Wait for a future with timeout while preserving remote exceptions."""
-    async def _wait_for_future_safe(future, timeout: float = 5.0):
-        if isinstance(future, asyncio.Future):
-            try:
-                running_loop = asyncio.get_running_loop()
-            except RuntimeError:
-                running_loop = None
-            future_loop = future.get_loop()
-            if running_loop is not None and future_loop is not running_loop:
-                deadline = time.monotonic() + timeout
-                while True:
-                    if future.done():
-                        return future.result()
-                    if time.monotonic() >= deadline:
-                        future.cancel()
-                        raise TimeoutError("Future did not resolve within the given timeout")
-                    await asyncio.sleep(0.01)
-        try:
-            return await asyncio.wait_for(asyncio.shield(future), timeout=timeout)
-        except asyncio.TimeoutError as exc:
-            future.cancel()
-            raise TimeoutError("Future did not resolve within the given timeout") from exc
-    return _wait_for_future_safe
+    return _wait_for_future_safe_impl
 
 
 @pytest.fixture
 def current_time():
     """Return current time in milliseconds."""
-    async def _current_time():
-        return int(time.time() * 1000)
-
-    return _current_time
+    return _current_time_impl
 
 
 @pytest.fixture
-def test_page(inline):
-    return inline("<div>foo</div>")
+def test_page():
+    return _fixture_named_bidi_fixture("test_page")
 
 
 def _webdriver_fixture_builder_path() -> Path:
@@ -1761,6 +1610,15 @@ def _fixture_get_actions_origin_page(inner_style: str, outer_style: str = "") ->
     )
 
 
+def _fixture_named_bidi_fixture(name: str) -> str:
+    return _build_webdriver_fixture(
+        {
+            "op": "buildNamedBidiFixture",
+            "name": str(name),
+        }
+    )
+
+
 async def _compare_png_bidi_impl(img1, img2):
     from tests.support.image import ImageDifference
 
@@ -1863,6 +1721,52 @@ async def _fetch_impl(
     )
 
 
+async def _add_and_remove_iframe_impl(bidi_session, _top_context):
+    frame_id = await bidi_session.browsing_context.create_context_id(type_hint="tab")
+    if isinstance(frame_id, str):
+        try:
+            await bidi_session.browsing_context.close(context=frame_id)
+        except Exception:
+            pass
+    return frame_id
+
+
+async def _subscribe_events_impl(
+    bidi_session,
+    tracker: _BiDiSubscriptionTracker,
+    events,
+    contexts=None,
+    user_contexts=None,
+):
+    subscription_id = await bidi_session.session.subscribe_id(
+        events=events,
+        contexts=contexts,
+        user_contexts=user_contexts,
+    )
+    tracker.add(subscription_id)
+    return {"subscription": subscription_id}
+
+
+async def _add_preload_script_impl(bidi_session, function_declaration: str, **kwargs):
+    return await bidi_session.script.add_preload_script(
+        function_declaration=function_declaration,
+        **kwargs,
+    )
+
+
+def _wait_for_event_impl(
+    bidi_session,
+    listeners: _ListenerGroup,
+    event_name: str,
+):
+    future, remove_listener = bidi_session.listen_once(
+        event_name,
+        accept_latest_backlog=event_name == "browsingContext.userPromptOpened",
+    )
+    listeners.add(remove_listener)
+    return future
+
+
 def _resolve_context_info(context, default_context):
     return context if context is not None else default_context
 
@@ -1902,7 +1806,6 @@ async def _get_element_impl(
 
 async def _load_static_test_page_impl(
     bidi_session,
-    inline,
     support_html_dir: Path,
     default_context,
     page,
@@ -1911,70 +1814,24 @@ async def _load_static_test_page_impl(
     resolved_context = _resolve_context_info(context, default_context)
     page_path = support_html_dir / page
     content = page_path.read_text(encoding="utf-8-sig")
-    await bidi_session.browsing_context.navigate(
-        context=resolved_context["context"],
-        url=inline(content),
-        wait="complete",
-    )
-    if "allEvents" not in content:
-        return
-    await bidi_session.script.prepare_loaded_static_test_page(
+    await bidi_session.script.load_static_test_page_for_test(
         resolved_context["context"],
         page,
-        html=content,
+        content,
     )
 
 
-FILE_DIALOG_CANCEL_PROBE = """
-    new Promise(resolve => {
-        const picker = document.createElement('input');
-        picker.type = 'file';
-        picker.addEventListener('cancel', (event) => {
-            resolve(event.isTrusted);
-        });
-        picker.click();
-    })
-"""
-
-
-async def _file_dialog_canceled_impl(bidi_session, top_context, context=None):
-    resolved_context = _resolve_context_info(context, top_context)
-    cancel_event = await bidi_session.script.evaluate(
-        expression=FILE_DIALOG_CANCEL_PROBE,
-        target=ContextTarget(resolved_context["context"]),
-        await_promise=True,
-        user_activation=True,
-    )
-    assert cancel_event == {
-        "type": "boolean",
-        "value": True,
-    }
-
-
-async def _file_dialog_not_canceled_impl(
+async def _assert_file_dialog_cancel_state_impl(
     bidi_session,
     top_context,
-    wait_for_future_safe,
+    expected_canceled: bool,
     context=None,
 ):
     resolved_context = _resolve_context_info(context, top_context)
-    cancel_event_future = asyncio.create_task(
-        bidi_session.script.evaluate(
-            expression=FILE_DIALOG_CANCEL_PROBE,
-            target=ContextTarget(resolved_context["context"]),
-            await_promise=True,
-            user_activation=True,
-        )
+    canceled = await bidi_session.input.is_file_dialog_canceled_for_test(
+        resolved_context["context"]
     )
-    try:
-        with pytest.raises(TimeoutError):
-            await wait_for_future_safe(cancel_event_future, timeout=0.5)
-    finally:
-        cancel_event_future.cancel()
-        try:
-            await cancel_event_future
-        except asyncio.CancelledError:
-            pass
+    assert canceled is expected_canceled
 
 
 async def _setup_network_test_impl(
@@ -1999,6 +1856,42 @@ async def _setup_network_test_impl(
     return collector.events
 
 
+async def _wait_for_future_safe_impl(future, timeout: float = 5.0):
+    if isinstance(future, asyncio.Future):
+        try:
+            running_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            running_loop = None
+        future_loop = future.get_loop()
+        if running_loop is not None and future_loop is not running_loop:
+            deadline = time.monotonic() + timeout
+            while True:
+                if future.done():
+                    return future.result()
+                if time.monotonic() >= deadline:
+                    future.cancel()
+                    raise TimeoutError("Future did not resolve within the given timeout")
+                await asyncio.sleep(0.01)
+    try:
+        return await asyncio.wait_for(asyncio.shield(future), timeout=timeout)
+    except asyncio.TimeoutError as exc:
+        future.cancel()
+        raise TimeoutError("Future did not resolve within the given timeout") from exc
+
+
+async def _current_time_impl():
+    return int(time.time() * 1000)
+
+
+def _modifier_key_value():
+    from tests.support.keys import Keys
+
+    target_platform = os.environ.get("WPT_TARGET_PLATFORM", "mac").lower()
+    if target_platform == "mac":
+        return Keys.META
+    return Keys.CONTROL
+
+
 @pytest.fixture
 def get_test_page():
     """Generate a node-rich page compatible with BiDi script node tests."""
@@ -2006,45 +1899,43 @@ def get_test_page():
 
 
 @pytest.fixture
-def test_origin(url):
-    return url("")
+def test_origin():
+    return _fixture_named_bidi_fixture("test_origin")
 
 
 @pytest.fixture
-def test_alt_origin(url):
-    return url("", domain="alt")
+def test_alt_origin():
+    return _fixture_named_bidi_fixture("test_alt_origin")
 
 
 @pytest.fixture
-def test_page2(inline):
-    return inline("<div>bar</div>")
+def test_page2():
+    return _fixture_named_bidi_fixture("test_page2")
 
 
 @pytest.fixture
-def test_page_cross_origin(inline):
-    return inline("<div>bar</div>", domain="alt")
+def test_page_cross_origin():
+    return _fixture_named_bidi_fixture("test_page_cross_origin")
 
 
 @pytest.fixture
-def test_page_multiple_frames(inline, test_page, test_page2):
-    return inline(
-        f"<iframe src='{test_page}'></iframe><iframe src='{test_page2}'></iframe>"
-    )
+def test_page_multiple_frames():
+    return _fixture_named_bidi_fixture("test_page_multiple_frames")
 
 
 @pytest.fixture
-def test_page_nested_frames(inline, test_page_same_origin_frame):
-    return inline(f"<iframe src='{test_page_same_origin_frame}'></iframe>")
+def test_page_nested_frames():
+    return _fixture_named_bidi_fixture("test_page_nested_frames")
 
 
 @pytest.fixture
-def test_page_cross_origin_frame(inline, test_page_cross_origin):
-    return inline(f"<iframe src='{test_page_cross_origin}'></iframe>")
+def test_page_cross_origin_frame():
+    return _fixture_named_bidi_fixture("test_page_cross_origin_frame")
 
 
 @pytest.fixture
-def test_page_same_origin_frame(inline, test_page):
-    return inline(f"<iframe src='{test_page}'></iframe>")
+def test_page_same_origin_frame():
+    return _fixture_named_bidi_fixture("test_page_same_origin_frame")
 
 
 @pytest_asyncio.fixture
@@ -2053,22 +1944,27 @@ async def assert_file_dialog_canceled(bidi_session, top_context):
     pending_tasks = _TrackedTaskGroup()
 
     yield lambda context=None: pending_tasks.spawn(
-        _file_dialog_canceled_impl(bidi_session, top_context, context)
+        _assert_file_dialog_cancel_state_impl(
+            bidi_session,
+            top_context,
+            True,
+            context,
+        )
     )
 
     await pending_tasks.wait_unawaited()
 
 
 @pytest_asyncio.fixture
-async def assert_file_dialog_not_canceled(bidi_session, top_context, wait_for_future_safe):
+async def assert_file_dialog_not_canceled(bidi_session, top_context):
     """Assert that a synthetic file picker remains pending."""
     pending_tasks = _TrackedTaskGroup()
 
     yield lambda context=None: pending_tasks.spawn(
-        _file_dialog_not_canceled_impl(
+        _assert_file_dialog_cancel_state_impl(
             bidi_session,
             top_context,
-            wait_for_future_safe,
+            False,
             context,
         )
     )

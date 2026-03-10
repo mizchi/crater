@@ -514,6 +514,41 @@ fn build_actions_origin_page_url(
 }
 
 ///|
+fn build_named_bidi_fixture(name : String) -> Result[String, String] {
+  let test_page = build_inline_url(content="<div>foo</div>")
+  let test_page2 = build_inline_url(content="<div>bar</div>")
+  let test_page_cross_origin = build_inline_url(
+    content="<div>bar</div>",
+    domain="alt",
+  )
+  match name {
+    "test_origin" => Ok(build_wpt_url())
+    "test_alt_origin" => Ok(build_wpt_url(domain="alt"))
+    "test_page" => Ok(test_page)
+    "test_page2" => Ok(test_page2)
+    "test_page_cross_origin" => Ok(test_page_cross_origin)
+    "test_page_multiple_frames" =>
+      Ok(
+        build_inline_url(
+          content=build_iframe_markup(test_page) +
+            build_iframe_markup(test_page2),
+        ),
+      )
+    "test_page_same_origin_frame" =>
+      Ok(build_inline_url(content=build_iframe_markup(test_page)))
+    "test_page_cross_origin_frame" =>
+      Ok(build_inline_url(content=build_iframe_markup(test_page_cross_origin)))
+    "test_page_nested_frames" => {
+      let same_origin_frame = build_inline_url(
+        content=build_iframe_markup(test_page),
+      )
+      Ok(build_inline_url(content=build_iframe_markup(same_origin_frame)))
+    }
+    _ => Err("unknown named fixture")
+  }
+}
+
+///|
 fn build_synthetic_print_pdf_from_meta(
   page_width_cm : Double,
   page_height_cm : Double,
@@ -743,6 +778,11 @@ fn build_fixture_from_json(input : String) -> Result[String, String] {
           )
         None => Err("innerStyle must be a string")
       }
+    "buildNamedBidiFixture" =>
+      match json_optional_string(map, "name") {
+        Some(name) => build_named_bidi_fixture(name)
+        None => Err("name must be a string")
+      }
     "comparePng" =>
       match
         (json_optional_string(map, "left"), json_optional_string(map, "right")) {
@@ -889,6 +929,52 @@ test "build_fixture_from_json builds actions origin page" {
         content.contains("id=\"inner\" style=\"width:10px;height:20px\""),
       )
     }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "build_fixture_from_json builds named origin fixtures" {
+  let built = match
+    build_fixture_from_json(
+      "{\"op\":\"buildNamedBidiFixture\",\"name\":\"test_alt_origin\"}",
+    ) {
+    Ok(value) => value
+    Err(_) => ""
+  }
+  inspect(built, content="http://alt.localhost:8000/")
+}
+
+///|
+test "build_fixture_from_json builds named multiple frame page" {
+  let built = match
+    build_fixture_from_json(
+      "{\"op\":\"buildNamedBidiFixture\",\"name\":\"test_page_multiple_frames\"}",
+    ) {
+    Ok(value) => value
+    Err(_) => ""
+  }
+  match @webdriver.parse_data_url(built) {
+    Some((_content_type, content)) => {
+      assert_true(content.contains("<iframe src='data:text/html"))
+      assert_true(content.contains("'></iframe><iframe src='"))
+    }
+    None => assert_true(false)
+  }
+}
+
+///|
+test "build_fixture_from_json builds named nested frame page" {
+  let built = match
+    build_fixture_from_json(
+      "{\"op\":\"buildNamedBidiFixture\",\"name\":\"test_page_nested_frames\"}",
+    ) {
+    Ok(value) => value
+    Err(_) => ""
+  }
+  match @webdriver.parse_data_url(built) {
+    Some((_content_type, content)) =>
+      assert_true(content.contains("<iframe src='data:text/html"))
     None => assert_true(false)
   }
 }

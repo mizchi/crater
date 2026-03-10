@@ -891,6 +891,34 @@ test "bidi script prepareLoadedStaticTestPage extracts inline scripts from html"
 }
 
 ///|
+test "bidi script loadStaticTestPageForTest navigates and prepares allEvents" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let html = "<script>var allEvents={events:[{type:'stale'}]};document.addEventListener('DOMContentLoaded',function(){window.__domcontentloaded_ran=true;});</script><input id='keys'><div id='outer'></div>"
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.loadStaticTestPageForTest\",\"params\":{\"context\":\"session-1\",\"page\":\"test_actions.html\",\"html\":\"" +
+    escape_json_string(html) +
+    "\"}}",
+  )
+  let load_json = proto.take_messages()[0].to_json()
+  assert_true(load_json.contains("\"type\":\"success\""))
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"JSON.stringify({count: window.allEvents.events.length, dom: !!window.__domcontentloaded_ran, focused: globalThis.__bidiFocusedElement === null, dataUrl: window.location.href.startsWith('data:text/html')})\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(
+    json.contains(
+      "\"value\":\"{\\\"count\\\":0,\\\"dom\\\":true,\\\"focused\\\":true,\\\"dataUrl\\\":true}\"",
+    ),
+  )
+}
+
+///|
 test "bidi script setupBeforeunloadPageForTest marks input as interacted" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -1925,6 +1953,36 @@ test "bidi prepareBaselineContextForTest preserves default file prompt behavior"
 }
 
 ///|
+test "bidi input isFileDialogCanceledForTest returns false by default" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"input.isFileDialogCanceledForTest\",\"params\":{\"context\":\"session-1\"}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":false"))
+}
+
+///|
+test "bidi input isFileDialogCanceledForTest returns true for dismiss handler" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{\"capabilities\":{\"alwaysMatch\":{\"unhandledPromptBehavior\":{\"file\":\"dismiss\"}}}}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"input.isFileDialogCanceledForTest\",\"params\":{\"context\":\"session-1\"}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":true"))
+}
+
+///|
 test "bidi script evaluate allEvents returns synthetic setFiles events per context" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -1992,6 +2050,90 @@ test "bidi script evaluateResult allEvents unwraps to string remote value" {
   assert_true(json.contains("\"type\":\"success\""))
   assert_true(json.contains("\"result\":{\"type\":\"string\""))
   assert_true(json.contains("\\\"type\\\":\\\"input\\\""))
+}
+
+///|
+test "bidi input setFiles accepts files alias and derives display name" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<body></body>\",\"wait\":\"complete\"}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"input.setFiles\",\"params\":{\"context\":\"session-1\",\"element\":{\"type\":\"null\"},\"files\":[\"path/to/noop.txt\"]}}",
+  )
+  let set_json = proto.take_messages()[0].to_json()
+  assert_true(set_json.contains("\"type\":\"success\""))
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"JSON.stringify(window.allEvents.events)\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let events_json = proto.take_messages()[0].to_json()
+  assert_true(events_json.contains("\\\"files\\\":[\\\"noop.txt\\\"]"))
+}
+
+///|
+test "bidi input setFiles derives display name from windows path" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<body></body>\",\"wait\":\"complete\"}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"input.setFiles\",\"params\":{\"context\":\"session-1\",\"element\":{\"type\":\"null\"},\"files\":[\"C:\\\\tmp\\\\noop.txt\"]}}",
+  )
+  let set_json = proto.take_messages()[0].to_json()
+  assert_true(set_json.contains("\"type\":\"success\""))
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"JSON.stringify(window.allEvents.events)\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let events_json = proto.take_messages()[0].to_json()
+  assert_true(events_json.contains("\\\"files\\\":[\\\"noop.txt\\\"]"))
+}
+
+///|
+test "bidi script fetchForTest derives request data from json fields" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"network.beforeRequestSent\"]}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.addDataCollector\",\"params\":{\"dataTypes\":[\"request\"],\"maxEncodedDataSize\":10000}}",
+  )
+  let collector_json = proto.take_messages()[0].to_json()
+  assert_true(collector_json.contains("\"collector\":\"collector-1\""))
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.fetchForTest\",\"params\":{\"context\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/empty.html\",\"method\":\"POST\",\"headersJson\":\"{\\\"x-test\\\":\\\"ok\\\"}\",\"postDataJson\":\"{\\\"foo\\\":1,\\\"bar\\\":2}\",\"postDataMode\":\"formData\"}}",
+  )
+  let fetch_msgs = proto.take_messages()
+  assert_eq(fetch_msgs.length(), 2)
+  let event_json = fetch_msgs[0].to_json()
+  let result_json = fetch_msgs[1].to_json()
+  assert_true(event_json.contains("\"method\":\"network.beforeRequestSent\""))
+  assert_true(event_json.contains("\"request\":{\"method\":\"POST\""))
+  assert_true(event_json.contains("\"name\":\"x-test\""))
+  assert_true(event_json.contains("\"value\":\"ok\""))
+  assert_true(result_json.contains("\"type\":\"success\""))
+  let _ = proto.process_message(
+    "{\"id\":5,\"method\":\"network.getData\",\"params\":{\"request\":\"request-1\",\"dataType\":\"request\",\"collector\":\"collector-1\"}}",
+  )
+  let data_json = proto.take_messages()[0].to_json()
+  assert_true(data_json.contains("\"type\":\"success\""))
+  assert_true(data_json.contains("\"value\":\""))
+  assert_true(data_json.contains("form-data; name=\\\"foo\\\""))
+  assert_true(data_json.contains("form-data; name=\\\"bar\\\""))
 }
 
 ///|

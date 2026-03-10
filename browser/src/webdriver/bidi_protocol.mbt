@@ -5564,6 +5564,64 @@ fn BidiProtocol::handle_script_prepare_loaded_static_test_page(
 }
 
 ///|
+fn BidiProtocol::handle_script_load_static_test_page_for_test(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match self.resolve_script_load_static_test_page_for_test(request_id, params) {
+    Some((ctx_id, page, html)) =>
+      match self.manager.get_session(ctx_id) {
+        Some(session) => {
+          let url = build_html_data_url(html)
+          self.input_synthetic_events_by_context.remove(ctx_id)
+          self.context_synthetic_scrolled.remove(ctx_id)
+          self.clear_synthetic_location_href(ctx_id)
+          match session.navigate_to(url) {
+            Ok(_) => {
+              self.remember_requested_navigation_url(ctx_id, url)
+              let navigation_id = self.next_navigation_id.to_string()
+              self.next_navigation_id += 1
+              self.apply_navigation_commit_state(ctx_id, url, navigation_id)
+              if html.contains("allEvents") {
+                let scripts = extract_inline_script_blocks(html)
+                self.run_inline_test_scripts(ctx_id, scripts)
+                self.run_test_setup_function(
+                  ctx_id,
+                  js_test_page_dom_content_loaded_source(),
+                )
+                self.run_page_specific_test_setup(ctx_id, page)
+                self.run_test_setup_function(
+                  ctx_id,
+                  js_test_page_reset_state_source(),
+                )
+                self.run_test_setup_function(
+                  ctx_id,
+                  js_test_page_all_events_fallback_source(),
+                )
+              }
+              self.send_success(request_id, Some(make_object({})))
+            }
+            Err(e) =>
+              self.send_error(
+                request_id,
+                "unknown error",
+                "Navigation failed: " + e.message,
+              )
+          }
+        }
+        None =>
+          self.send_error(
+            request_id,
+            "no such frame",
+            "Unknown context: " + ctx_id,
+          )
+      }
+    None => ()
+  }
+}
+
+///|
 fn BidiProtocol::resolve_script_get_element_for_test(
   self : BidiProtocol,
   request_id : Int,
@@ -5714,6 +5772,57 @@ fn BidiProtocol::resolve_script_prepare_loaded_static_test_page(
     }
   }
   Some((ctx_id, page, phase, scripts))
+}
+
+///|
+fn BidiProtocol::resolve_script_load_static_test_page_for_test(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> (String, String, String)? {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return None
+    }
+  }
+  let ctx_id = match map.get("context") {
+    Some(String(ctx_id)) =>
+      if ctx_id == "" || self.manager.get_session(ctx_id) is None {
+        self.send_error(
+          request_id,
+          "no such frame",
+          "Unknown context: " + ctx_id,
+        )
+        return None
+      } else {
+        ctx_id
+      }
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return None
+    }
+  }
+  let page = match map.get("page") {
+    Some(String(page)) => page
+    _ => {
+      self.send_error(request_id, "invalid argument", "page must be a string")
+      return None
+    }
+  }
+  let html = match map.get("html") {
+    Some(String(html)) => html
+    _ => {
+      self.send_error(request_id, "invalid argument", "html must be a string")
+      return None
+    }
+  }
+  Some((ctx_id, page, html))
 }
 
 ///|
@@ -6375,26 +6484,6 @@ fn BidiProtocol::handle_script_fetch_for_test(
       return
     }
   }
-  let request_headers = match
-    self.normalize_synthetic_network_header_entries(
-      request_id,
-      get_map_field_with_alias(map, "requestHeaders", "request_headers"),
-    ) {
-    Some(request_headers) => request_headers
-    None => return
-  }
-  let request_value = match
-    get_map_field_with_alias(map, "requestData", "request_data") {
-    Some(raw_value) =>
-      match
-        self.normalize_synthetic_network_bytes_value(
-          request_id, raw_value, "requestData",
-        ) {
-        Some(value) => Some(value)
-        None => return
-      }
-    None => None
-  }
   let post_data_json = match map.get("postDataJson") {
     Some(String(post_data_json)) => post_data_json
     Some(Null) | None => "null"
@@ -6415,13 +6504,47 @@ fn BidiProtocol::handle_script_fetch_for_test(
       )
       return
     }
-    Some(Null) | None => if request_value != None { "value" } else { "none" }
+    Some(Null) | None =>
+      if get_map_field_with_alias(map, "requestData", "request_data") != None ||
+        post_data_json != "null" {
+        "value"
+      } else {
+        "none"
+      }
     _ => {
       self.send_error(
         request_id, "invalid argument", "postDataMode must be a string",
       )
       return
     }
+  }
+  let request_headers = match
+    get_map_field_with_alias(map, "requestHeaders", "request_headers") {
+    Some(raw_headers) =>
+      match
+        self.normalize_synthetic_network_header_entries(
+          request_id,
+          Some(raw_headers),
+        ) {
+        Some(request_headers) => request_headers
+        None => return
+      }
+    None => synthetic_fetch_request_headers_from_json(headers_json)
+  }
+  let request_value = match
+    get_map_field_with_alias(map, "requestData", "request_data") {
+    Some(raw_value) =>
+      match
+        self.normalize_synthetic_network_bytes_value(
+          request_id, raw_value, "requestData",
+        ) {
+        Some(value) => Some(value)
+        None => return
+      }
+    None =>
+      synthetic_fetch_request_value_from_post_data_json(
+        post_data_json, post_data_mode,
+      )
   }
   let request_method = match map.get("method") {
     Some(String(request_method)) => request_method
@@ -6497,6 +6620,145 @@ fn BidiProtocol::handle_script_fetch_for_test(
     request_id, ctx_id, realm_id, runtime_ctx_id, resolved_url, request_method, headers_json,
     post_data_json, post_data_mode, timeout_ms,
   )
+}
+
+///|
+fn synthetic_fetch_request_headers_from_json(
+  headers_json : String,
+) -> Array[Json] {
+  let parsed = @json.parse(headers_json) catch { _ => return [] }
+  match parsed {
+    Object(headers_map) => {
+      let headers : Array[Json] = []
+      for name, raw_value in headers_map {
+        headers.push(
+          synthetic_network_header_string_entry(
+            name,
+            synthetic_fetch_json_text_value(raw_value),
+          ),
+        )
+      }
+      headers
+    }
+    _ => []
+  }
+}
+
+///|
+fn synthetic_fetch_request_value_from_post_data_json(
+  post_data_json : String,
+  post_data_mode : String,
+) -> Json? {
+  if post_data_mode == "none" {
+    return None
+  }
+  let parsed = @json.parse(post_data_json) catch { _ => return None }
+  synthetic_fetch_request_value_from_post_data(parsed, post_data_mode)
+}
+
+///|
+fn synthetic_fetch_request_value_from_post_data(
+  post_data : Json,
+  post_data_mode : String,
+) -> Json? {
+  if post_data_mode == "formData" {
+    match post_data {
+      Object(form_data) =>
+        Some(synthetic_fetch_multipart_request_value(form_data))
+      _ => None
+    }
+  } else {
+    Some(
+      make_object({
+        "type": Json::string("string"),
+        "value": Json::string(synthetic_fetch_json_text_value(post_data)),
+      }),
+    )
+  }
+}
+
+///|
+fn synthetic_fetch_multipart_request_value(
+  form_data : Map[String, Json],
+) -> Json {
+  let boundary = "----crater-boundary"
+  let mut has_binary = false
+  let mut body = ""
+  for field_name, raw_value in form_data {
+    match synthetic_fetch_form_data_file_entry(raw_value) {
+      Some((filename, content_type, payload)) => {
+        has_binary = true
+        body = body +
+          "--" +
+          boundary +
+          "\r\n" +
+          "Content-Disposition: form-data; name=\"" +
+          field_name +
+          "\"; filename=\"" +
+          filename +
+          "\"\r\n" +
+          "Content-Type: " +
+          content_type +
+          "\r\n\r\n" +
+          payload +
+          "\r\n"
+      }
+      None =>
+        body = body +
+          "--" +
+          boundary +
+          "\r\n" +
+          "Content-Disposition: form-data; name=\"" +
+          field_name +
+          "\"\r\n\r\n" +
+          synthetic_fetch_json_text_value(raw_value) +
+          "\r\n"
+    }
+  }
+  body = body + "--" + boundary + "--\r\n"
+  if has_binary {
+    make_object({
+      "type": Json::string("base64"),
+      "value": Json::string(encode_base64_raw(body)),
+    })
+  } else {
+    make_object({ "type": Json::string("string"), "value": Json::string(body) })
+  }
+}
+
+///|
+fn synthetic_fetch_form_data_file_entry(
+  raw_value : Json,
+) -> (String, String, String)? {
+  let value_map = match raw_value {
+    Object(value_map) => value_map
+    _ => return None
+  }
+  let encoded_value = match value_map.get("value") {
+    Some(String(encoded_value)) => encoded_value
+    _ => return None
+  }
+  let filename = match value_map.get("filename") {
+    Some(String(filename)) => filename
+    _ => "blob.bin"
+  }
+  let content_type = match value_map.get("type") {
+    Some(String(content_type)) => content_type
+    _ => "application/octet-stream"
+  }
+  Some((filename, content_type, decode_base64(encoded_value)))
+}
+
+///|
+fn synthetic_fetch_json_text_value(raw_value : Json) -> String {
+  match raw_value {
+    String(value) => value
+    Number(value, ..) => value.to_string()
+    True => "true"
+    False => "false"
+    Null => "null"
+    Array(_) | Object(_) => raw_value.stringify()
+  }
 }
 
 ///|
@@ -7725,6 +7987,13 @@ fn BidiProtocol::dispatch_script(
       )
       Ok(())
     }
+    "loadStaticTestPageForTest" => {
+      self.handle_script_load_static_test_page_for_test(
+        request.id,
+        request.params,
+      )
+      Ok(())
+    }
     "setupBeforeunloadPageForTest" => {
       self.handle_script_setup_beforeunload_page_for_test(
         request.id,
@@ -8544,6 +8813,13 @@ fn BidiProtocol::dispatch_input(
     }
     "setFiles" => {
       self.handle_input_set_files(request.id, request.params)
+      Ok(())
+    }
+    "isFileDialogCanceledForTest" => {
+      self.handle_input_is_file_dialog_canceled_for_test(
+        request.id,
+        request.params,
+      )
       Ok(())
     }
     _ => {
@@ -9636,21 +9912,12 @@ fn BidiProtocol::handle_input_set_files(
       return
     }
   }
-  let source_paths = match
-    self.input_set_files_string_array(
-      request_id,
-      map.get("sourcePaths"),
-      "sourcePaths",
-    ) {
+  let source_paths = match self.input_set_files_source_paths(request_id, map) {
     Some(values) => values
     None => return
   }
   let display_names = match
-    self.input_set_files_string_array(
-      request_id,
-      map.get("displayNames"),
-      "displayNames",
-    ) {
+    self.input_set_files_display_names(request_id, map, source_paths) {
     Some(values) => values
     None => return
   }
@@ -9738,6 +10005,20 @@ fn BidiProtocol::append_input_synthetic_events(
     )
   }
   self.input_synthetic_events_by_context[ctx_id] = existing
+}
+
+///|
+fn BidiProtocol::handle_input_is_file_dialog_canceled_for_test(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let ctx_id = match self.validate_input_context(request_id, params) {
+    Some(ctx_id) => ctx_id
+    None => return
+  }
+  let handler = self.resolve_unhandled_prompt_handler(ctx_id, "file")
+  self.send_success(request_id, Some(Json::boolean(handler != "ignore")))
 }
 
 ///|
@@ -9905,6 +10186,90 @@ fn BidiProtocol::input_set_files_string_array(
     }
   }
   Some(values)
+}
+
+///|
+fn BidiProtocol::input_set_files_source_paths(
+  self : BidiProtocol,
+  request_id : Int,
+  map : Map[String, Json],
+) -> Array[String]? {
+  match map.get("files") {
+    Some(raw_value) =>
+      self.input_set_files_string_array(request_id, Some(raw_value), "files")
+    None =>
+      self.input_set_files_string_array(
+        request_id,
+        map.get("sourcePaths"),
+        "sourcePaths",
+      )
+  }
+}
+
+///|
+fn BidiProtocol::input_set_files_display_names(
+  self : BidiProtocol,
+  request_id : Int,
+  map : Map[String, Json],
+  source_paths : Array[String],
+) -> Array[String]? {
+  match map.get("displayNames") {
+    Some(raw_value) =>
+      self.input_set_files_string_array(
+        request_id,
+        Some(raw_value),
+        "displayNames",
+      )
+    None => Some(input_set_files_default_display_names(source_paths))
+  }
+}
+
+///|
+fn input_set_files_default_display_names(
+  source_paths : Array[String],
+) -> Array[String] {
+  let display_names : Array[String] = []
+  for source_path in source_paths {
+    display_names.push(input_set_files_display_name(source_path))
+  }
+  display_names
+}
+
+///|
+fn input_set_files_display_name(source_path : String) -> String {
+  let mut last_separator = -1
+  let mut search_from = 0
+  while search_from < source_path.length() {
+    match find_substring(source_path, "/", search_from) {
+      Some(idx) => {
+        last_separator = idx
+        search_from = idx + 1
+      }
+      None => break
+    }
+  }
+  search_from = 0
+  while search_from < source_path.length() {
+    match find_substring(source_path, "\\", search_from) {
+      Some(idx) => {
+        if idx > last_separator {
+          last_separator = idx
+        }
+        search_from = idx + 1
+      }
+      None => break
+    }
+  }
+  if last_separator < 0 {
+    return source_path
+  }
+  let base_name = source_path[last_separator + 1:].to_string() catch {
+    _ => source_path
+  }
+  if base_name.length() == 0 {
+    return source_path
+  }
+  base_name
 }
 
 ///|
@@ -13727,6 +14092,16 @@ extern "js" fn js_encode_base64_utf8(value : String) -> String =
   #| }
 
 ///|
+extern "js" fn js_encode_base64_raw(value : String) -> String =
+  #| (value) => {
+  #|   try {
+  #|     return btoa(String(value ?? ""));
+  #|   } catch (_e) {
+  #|     return "";
+  #|   }
+  #| }
+
+///|
 extern "js" fn js_json_ensure_ascii(value : String) -> String =
   #| (value) => {
   #|   try {
@@ -13763,6 +14138,11 @@ extern "js" fn js_extract_inline_script_blocks(html : String) -> Array[String] =
 ///|
 fn encode_base64_utf8(value : String) -> String {
   js_encode_base64_utf8(value)
+}
+
+///|
+fn encode_base64_raw(value : String) -> String {
+  js_encode_base64_raw(value)
 }
 
 ///|

@@ -251,7 +251,7 @@
   - `prepareBaselineContextForTest` は session capability 由来の default `unhandledPromptBehavior` を保持するよう修正済み
   - `file` prompt の spec default は `ignore` として扱う
   - 未使用の `create_dialog` / `wait_for_class_change` placeholder fixture は削除済み
-  - 現在の `scripts/crater_bidi_adapter.py` は `2071` 行
+  - 現在の `scripts/crater_bidi_adapter.py` は `2107` 行
   - 残りは `browsingContext` / `session` / `script` 周辺の fixture glue と module proxy の整理、および transport 層の棚卸し
 
 ### 2026-03-09 の詳細計画
@@ -309,7 +309,22 @@
   - [x] `input/set_files --quick` (`46/46`) / `input/perform_actions/wheel --quick` (`17/17`) / `input/file_dialog_opened --quick` (`8/8`) / `session/capabilities/unhandled_prompt_behavior/file --quick` (`12/12`) / `network/set_extra_headers/contexts.py --quick` (`7/7`) / `--profile strict` (`277/277`) で helper 抽出の回帰がないことを確認した
   - [x] module proxy の `send_command -> await future` 重複を `_CommandProxy._command()` に寄せ、`current_session` / `capabilities` の inline ロジックも top-level helper 化した
   - [x] `browser/create_user_context --quick` (`182/182`) / `browsing_context/get_tree --quick` (`36/36`) / `script/get_realms --quick` (`24/24`) / `network/add_intercept --quick` (`210/210`) / `storage --quick` (`342/342`) / `input/set_files --quick` (`46/46`) / `--profile strict` (`277/277`) で proxy 共通化の回帰がないことを確認した
-  - [x] 現在の `scripts/crater_bidi_adapter.py` は `2096` 行
+  - [x] `input.setFiles` の `files -> sourcePaths/displayNames` 変換を protocol 側へ移し、Python から `_normalize_files` / `_display_file_name` を削除した
+  - [x] wbtest で `input.setFiles(files=...)` alias と basename 導出 (`path/to/noop.txt`, `C:\\tmp\\noop.txt`) を固定した
+  - [x] `moon -C browser fmt/info/check src/webdriver` / `just build-bidi` / `.venv/bin/python -m py_compile scripts/crater_bidi_adapter.py` / `input/set_files --quick` (`46/46`) / `--profile strict` (`277/277`) で raw forward 化の回帰がないことを確認した
+  - [x] `script.fetchForTest` の `requestHeaders/requestData` 生成を protocol 側へ移し、Python から `_synthesize_request_bytes_value` / `_network_header_entries_from_map` を削除した
+  - [x] wbtest で `script.fetchForTest(headersJson/postDataJson/postDataMode)` から request body と header が導出されることを固定した
+  - [x] `moon -C browser fmt/info/check src/webdriver` / `just build-bidi` / `.venv/bin/python -m py_compile scripts/crater_bidi_adapter.py` / `network/get_data --quick` (`53/53`) / `network/add_data_collector --quick` (`63/63`) / `network --quick` (`1389/1389`) / `--profile strict` (`277/277`) で fetch request shaping 移行の回帰がないことを確認した
+  - [x] `load_static_test_page` の `read -> inline -> navigate -> prepare` を `script.loadStaticTestPageForTest` に畳み、public navigate 相当の commit state を protocol 側で適用するようにした
+  - [x] wbtest で `script.loadStaticTestPageForTest` が `allEvents` reset と data URL navigation を同時に満たすことを固定した
+  - [x] `moon -C browser fmt/info/check src/webdriver` / `just build-bidi` / `.venv/bin/python -m py_compile scripts/crater_bidi_adapter.py` / `input/set_files --quick` (`46/46`) / `input/perform_actions/wheel --quick` (`17/17`) / `input/release_actions --quick` (`12/12`) / `--profile strict` (`277/277`) で load_static_test_page 1-command 化の回帰がないことを確認した
+  - [x] adapter に残っていた dead wrapper `ScriptModule.prepare_loaded_static_test_page()` を削除した
+  - [x] file dialog helper は `input.isFileDialogCanceledForTest` に寄せて、Python から JS probe / timeout ベースの assertion helper を削除した
+  - [x] wbtest で default `ignore` と explicit `dismiss` の file dialog cancel state query を固定した
+  - [x] `moon -C browser fmt/info/check src/webdriver` / `just build-bidi` / `.venv/bin/python -m py_compile scripts/crater_bidi_adapter.py` / `session/capabilities/unhandled_prompt_behavior/file --quick` (`12/12`) / `browser/create_user_context/unhandled_prompt_behavior.py --quick` (`24/24`) / `--profile strict` (`277/277`) で file dialog helper command 化の回帰がないことを確認した
+  - [x] `test_origin` / `test_alt_origin` / `test_page*` / frame page fixture は `browser/src/webdriver_fixture_builder` の `buildNamedBidiFixture` に寄せて、Python 側の `url` / `inline` 合成を削除した
+  - [x] `moon -C browser test src/webdriver_fixture_builder` (`17/17`) / `browsing_context/get_tree --quick` (`36/36`) / `script/get_realms --quick` (`24/24`) / `storage/get_cookies/partition.py --quick` (`9/9`) / `network/combined/network_events.py --quick` (`6/6`) / `--profile strict` (`277/277`) で named page builder 化の回帰がないことを確認した
+  - [x] 現在の `scripts/crater_bidi_adapter.py` は `1992` 行
   - [ ] transport 層以外で `.py` に残っている実装責務を TODO から洗い出して消していく
 
 ## WPT サポート状況（2026-03-03）
