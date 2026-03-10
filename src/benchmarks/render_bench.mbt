@@ -546,6 +546,25 @@ test "bench_render_large_2k5" (b : @bench.T) {
 }
 
 ///|
+test "bench_render_to_node_large_2k5" (b : @bench.T) {
+  let html = large_website(15, 10, 8)
+  let ctx = default_ctx()
+  b.bench(name="node_only_large_2k5", fn() {
+    b.keep(@renderer.render_to_node(html, ctx))
+  })
+}
+
+///|
+test "bench_node_build_large_2k5" (b : @bench.T) {
+  let html = large_website(15, 10, 8)
+  let doc = @html.parse_document(html)
+  let ctx = default_ctx()
+  b.bench(name="node_build_large_2k5", fn() {
+    b.keep(@renderer.render_to_node_with_document(doc, ctx, []))
+  })
+}
+
+///|
 test "bench_render_large_5k" (b : @bench.T) {
   let html = large_website(20, 20, 10)
   let ctx = default_ctx()

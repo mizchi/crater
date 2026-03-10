@@ -727,6 +727,192 @@ fn can_collapse_through(
 }
 
 ///|
+fn block_flow_establishes_bfc(style : @style.Style) -> Bool {
+  let overflow_blocks = match (style.overflow_x, style.overflow_y) {
+    (@types.Overflow::Visible, @types.Overflow::Visible) => false
+    _ => true
+  }
+  let containment_establishes_bfc = containment_applies(style.display) &&
+    (style.contain.layout || style.contain.paint || style.contain.size)
+  overflow_blocks ||
+  style.display == @types.FlowRoot ||
+  containment_establishes_bfc
+}
+
+///|
+fn block_style_has_auto_margin(style : @style.Style) -> Bool {
+  match
+    (
+      style.margin.top,
+      style.margin.right,
+      style.margin.bottom,
+      style.margin.left,
+    ) {
+    (@types.Auto, _, _, _)
+    | (_, @types.Auto, _, _)
+    | (_, _, @types.Auto, _)
+    | (_, _, _, @types.Auto) => true
+    _ => false
+  }
+}
+
+///|
+fn is_simple_block_stack_child(style : @style.Style) -> Bool {
+  let default_justify_self = match style.justify_self {
+    @types.AlignSelf::Auto
+    | @types.AlignSelf::Start
+    | @types.AlignSelf::Baseline => true
+    _ => false
+  }
+  let is_simple_display = match style.display {
+    @types.Block | @types.FlowRoot => true
+    _ => false
+  }
+  is_simple_display &&
+  style.position == @types.Static &&
+  style.float == @types.Float::None &&
+  style.clear == @types.Clear::None &&
+  not(style.writing_mode.is_vertical()) &&
+  default_justify_self &&
+  not(block_style_has_auto_margin(style))
+}
+
+///|
+priv struct SimpleBlockStackResult {
+  child_layouts : Array[@types.Layout]
+  current_pos : Double
+  prev_margin_end : Double
+  escaped_top : Double?
+  escaped_bottom : Double?
+}
+
+///|
+fn layout_simple_block_stack(
+  flow_nodes : Array[@node.Node],
+  flow_children : Array[LayoutWithCollapse],
+  padding : @types.Rect[Double],
+  border : @types.Rect[Double],
+  can_collapse_top : Bool,
+  can_collapse_bottom : Bool,
+) -> SimpleBlockStackResult {
+  let child_layouts : Array[@types.Layout] = []
+  let mut current_pos = 0.0
+  let mut prev_margin_end = 0.0
+  let mut escaped_top : Double? = None
+  let mut escaped_bottom : Double? = None
+  let mut leading_collapse_chain_active = false
+  let mut leading_chain_margin = 0.0
+  for i = 0; i < flow_children.length(); i = i + 1 {
+    let child_result = flow_children[i]
+    let child_layout = child_result.layout
+    let child_collapsed = child_result.collapsed
+    let child_style = flow_nodes[i].style
+    let is_first = i == 0
+    let is_last = i == flow_children.length() - 1
+
+    let effective_margin_top = match child_collapsed.top {
+      Some(escaped) => collapse_margins(child_layout.margin.top, escaped)
+      None => child_layout.margin.top
+    }
+    let effective_margin_bottom = match child_collapsed.bottom {
+      Some(escaped) => collapse_margins(child_layout.margin.bottom, escaped)
+      None => child_layout.margin.bottom
+    }
+    let child_establishes_bfc = block_flow_establishes_bfc(child_style)
+    let child_has_aspect_ratio = match child_style.aspect_ratio {
+      Some(_) => true
+      None => false
+    }
+    let collapses_through = can_collapse_through(
+        child_layout.height,
+        child_layout.border,
+        child_layout.padding,
+      ) &&
+      not(child_establishes_bfc) &&
+      not(child_has_aspect_ratio)
+
+    let child_y : Double = if is_first {
+      if can_collapse_top {
+        if collapses_through {
+          leading_collapse_chain_active = true
+          leading_chain_margin = collapse_margins(
+            effective_margin_top, effective_margin_bottom,
+          )
+          escaped_top = Some(leading_chain_margin)
+          prev_margin_end = effective_margin_bottom
+        } else {
+          escaped_top = Some(effective_margin_top)
+          prev_margin_end = effective_margin_bottom
+        }
+        padding.top + border.top
+      } else {
+        if collapses_through {
+          prev_margin_end = collapse_margins(
+            effective_margin_top, effective_margin_bottom,
+          )
+          current_pos = 0.0
+        } else {
+          prev_margin_end = effective_margin_bottom
+          current_pos = effective_margin_top
+        }
+        effective_margin_top + padding.top + border.top
+      }
+    } else if leading_collapse_chain_active {
+      let collapsed_with_chain = collapse_margins(
+        leading_chain_margin, effective_margin_top,
+      )
+      if collapses_through {
+        leading_chain_margin = collapse_margins(
+          collapsed_with_chain, effective_margin_bottom,
+        )
+      } else {
+        leading_chain_margin = collapsed_with_chain
+      }
+      escaped_top = Some(leading_chain_margin)
+      prev_margin_end = effective_margin_bottom
+      padding.top + border.top
+    } else if collapses_through {
+      let collapsed_for_position = collapse_margins(
+        prev_margin_end, effective_margin_top,
+      )
+      let all_collapsed = collapse_margins(
+        collapsed_for_position, effective_margin_bottom,
+      )
+      prev_margin_end = all_collapsed
+      current_pos + collapsed_for_position + padding.top + border.top
+    } else {
+      let collapsed = collapse_margins(prev_margin_end, effective_margin_top)
+      current_pos = current_pos + collapsed
+      prev_margin_end = effective_margin_bottom
+      current_pos + padding.top + border.top
+    }
+
+    child_layouts.push({
+      ..child_layout,
+      x: padding.left + border.left + child_layout.margin.left,
+      y: child_y,
+    })
+
+    if not(collapses_through) {
+      if is_first && can_collapse_top {
+        current_pos = child_layout.height
+      } else if is_first {
+        current_pos = effective_margin_top + child_layout.height
+      } else {
+        current_pos = current_pos + child_layout.height
+      }
+    }
+    if leading_collapse_chain_active && not(collapses_through) {
+      leading_collapse_chain_active = false
+    }
+    if is_last && can_collapse_bottom {
+      escaped_bottom = Some(prev_margin_end)
+    }
+  }
+  { child_layouts, current_pos, prev_margin_end, escaped_top, escaped_bottom }
+}
+
+///|
 /// Calculate max-content width of children for intrinsic sizing
 /// This is used when min-width or max-width is max-content/min-content
 fn calculate_children_max_content_width(
@@ -1420,6 +1606,258 @@ fn apply_content_driven_height_constraints(
 }
 
 ///|
+fn apply_block_height_constraints(
+  box_height : Double,
+  style : @style.Style,
+  parent_height : Double,
+  content_height_for_auto : Double,
+  padding : @types.Rect[Double],
+  border : @types.Rect[Double],
+) -> Double {
+  let mut resolved = box_height
+  match style.min_height {
+    @types.Length(min_h) => if resolved < min_h { resolved = min_h }
+    @types.Percent(p) => {
+      let min_h = parent_height * p
+      if resolved < min_h {
+        resolved = min_h
+      }
+    }
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) => {
+      let min_h = content_height_for_auto +
+        padding.vertical_sum() +
+        border.vertical_sum()
+      if resolved < min_h {
+        resolved = min_h
+      }
+    }
+    @types.Auto => ()
+  }
+  match style.max_height {
+    @types.Length(max_h) => if resolved > max_h { resolved = max_h }
+    @types.Percent(p) => {
+      let max_h = parent_height * p
+      if resolved > max_h {
+        resolved = max_h
+      }
+    }
+    @types.MinContent | @types.MaxContent | @types.FitContent(_) => {
+      let max_h = content_height_for_auto +
+        padding.vertical_sum() +
+        border.vertical_sum()
+      if resolved > max_h {
+        resolved = max_h
+      }
+    }
+    @types.Auto => ()
+  }
+  let min_box_height = padding.vertical_sum() + border.vertical_sum()
+  if resolved < min_box_height {
+    resolved = min_box_height
+  }
+  resolved
+}
+
+///|
+fn adjust_auto_width_from_height_constrained_aspect_ratio(
+  style : @style.Style,
+  box_width : Double,
+  box_height : Double,
+  parent_width : Double,
+  padding : @types.Rect[Double],
+  border : @types.Rect[Double],
+) -> Double {
+  match (style.aspect_ratio, style.width, style.height) {
+    (Some(ratio), @types.Auto, @types.Auto) if ratio > 0.0 => {
+      let expected_height_from_width = (
+          box_width - padding.horizontal_sum() - border.horizontal_sum()
+        ) /
+        ratio +
+        padding.vertical_sum() +
+        border.vertical_sum()
+      if box_height != expected_height_from_width {
+        let content_height = box_height -
+          padding.vertical_sum() -
+          border.vertical_sum()
+        let new_width = content_height * ratio +
+          padding.horizontal_sum() +
+          border.horizontal_sum()
+        let new_width = match style.max_width {
+          @types.Length(max_w) =>
+            if new_width > max_w {
+              max_w
+            } else {
+              new_width
+            }
+          @types.Percent(p) => {
+            let max_w = parent_width * p
+            if new_width > max_w {
+              max_w
+            } else {
+              new_width
+            }
+          }
+          @types.Auto
+          | @types.MinContent
+          | @types.MaxContent
+          | @types.FitContent(_) => new_width
+        }
+        match style.min_width {
+          @types.Length(min_w) =>
+            if new_width < min_w {
+              min_w
+            } else {
+              new_width
+            }
+          @types.Percent(p) => {
+            let min_w = parent_width * p
+            if new_width < min_w {
+              min_w
+            } else {
+              new_width
+            }
+          }
+          @types.Auto
+          | @types.MinContent
+          | @types.MaxContent
+          | @types.FitContent(_) => new_width
+        }
+      } else {
+        box_width
+      }
+    }
+    _ => box_width
+  }
+}
+
+///|
+fn try_layout_empty_block_leaf_with_definite_height(
+  node : @node.Node,
+  available_width : Double,
+  available_height : Double?,
+  sizing_mode : @types.SizingMode,
+) -> LayoutWithCollapse? {
+  let style = node.style
+  let is_simple_display = match style.display {
+    @types.Block | @types.FlowRoot => true
+    _ => false
+  }
+  let has_definite_height = match style.height {
+    @types.Length(_) => true
+    @types.Percent(_) => available_height is Some(_)
+    _ => false
+  }
+  if sizing_mode != @types.Definite ||
+    node.children.length() > 0 ||
+    node.measure is Some(_) ||
+    node.text is Some(_) ||
+    not(is_simple_display) ||
+    not(has_definite_height) ||
+    style.position != @types.Static ||
+    style.float != @types.Float::None ||
+    style.clear != @types.Clear::None ||
+    style.writing_mode.is_vertical() ||
+    style.aspect_ratio is Some(_) ||
+    style.contain.layout ||
+    style.contain.paint ||
+    style.contain.size ||
+    style.contain.inline_size ||
+    block_style_has_auto_margin(style) {
+    return None
+  }
+  match style.width {
+    @types.Auto | @types.Length(_) | @types.Percent(_) => ()
+    _ => return None
+  }
+  match style.min_width {
+    @types.Auto => ()
+    _ => return None
+  }
+  match style.max_width {
+    @types.Auto => ()
+    _ => return None
+  }
+  match style.min_height {
+    @types.Auto => ()
+    _ => return None
+  }
+  match style.max_height {
+    @types.Auto => ()
+    _ => return None
+  }
+
+  let margin = @types.resolve_rect(style.margin, available_width)
+  let padding = @types.resolve_rect(style.padding, available_width)
+  let border = @types.resolve_rect(style.border, available_width)
+  let mut box_width = match style.width {
+    @types.Length(w) =>
+      if style.box_sizing == @types.BorderBox {
+        w
+      } else {
+        w + padding.horizontal_sum() + border.horizontal_sum()
+      }
+    @types.Percent(p) => {
+      let resolved = available_width * p
+      if style.box_sizing == @types.BorderBox {
+        resolved
+      } else {
+        resolved + padding.horizontal_sum() + border.horizontal_sum()
+      }
+    }
+    @types.Auto => available_width - margin.horizontal_sum()
+    _ => return None
+  }
+  let mut box_height = match style.height {
+    @types.Length(h) =>
+      if style.box_sizing == @types.BorderBox {
+        h
+      } else {
+        h + padding.vertical_sum() + border.vertical_sum()
+      }
+    @types.Percent(p) =>
+      match available_height {
+        Some(parent_height) => {
+          let resolved = parent_height * p
+          if style.box_sizing == @types.BorderBox {
+            resolved
+          } else {
+            resolved + padding.vertical_sum() + border.vertical_sum()
+          }
+        }
+        None => return None
+      }
+    _ => return None
+  }
+  let min_box_width = padding.horizontal_sum() + border.horizontal_sum()
+  if box_width < min_box_width {
+    box_width = min_box_width
+  }
+  let min_box_height = padding.vertical_sum() + border.vertical_sum()
+  if box_height < min_box_height {
+    box_height = min_box_height
+  }
+  Some({
+    layout: {
+      id: node.id,
+      x: 0.0,
+      y: 0.0,
+      width: box_width,
+      height: box_height,
+      margin,
+      padding,
+      border,
+      overflow_x: style.overflow_x,
+      overflow_y: style.overflow_y,
+      scroll_width: 0.0,
+      scroll_height: 0.0,
+      children: [],
+      text: node.text,
+    },
+    collapsed: { top: None, bottom: None },
+  })
+}
+
+///|
 fn place_absolute_children_at_static_y(
   node : @node.Node,
   box_width : Double,
@@ -2006,6 +2444,16 @@ fn compute_with_collapse(
       }
       None => ()
     }
+    match
+      try_layout_empty_block_leaf_with_definite_height(
+        node,
+        ctx.available_width,
+        ctx.available_height,
+        ctx.sizing_mode,
+      ) {
+      Some(layout) => return layout
+      None => ()
+    }
   }
 
   // Resolve box model
@@ -2032,20 +2480,11 @@ fn compute_with_collapse(
   // Check if margins can collapse with children
   // Collapse blocked by: border/padding, BFC-establishing properties.
   // contain:layout/paint/size also establish an independent formatting context.
-  let overflow_blocks = match (style.overflow_x, style.overflow_y) {
-    (@types.Overflow::Visible, @types.Overflow::Visible) => false
-    _ => true
-  }
   let is_float_container = match style.float {
     @types.Float::None => false
     _ => true
   }
-  let containment_establishes_bfc = containment_applies(style.display) &&
-    (style.contain.layout || style.contain.paint || style.contain.size)
-  let establishes_bfc = overflow_blocks ||
-    is_float_container ||
-    style.display == @types.FlowRoot ||
-    containment_establishes_bfc
+  let establishes_bfc = is_float_container || block_flow_establishes_bfc(style)
   // TODO: logical-block-axis margin collapse in vertical writing mode.
   // For now keep vertical flow non-collapsing to avoid double-applying
   // escaped margins during coordinate remapping.
@@ -2416,22 +2855,26 @@ fn compute_with_collapse(
   let flow_indices : Array[Int] = []
   let float_nodes : Array[@node.Node] = []
   let float_indices : Array[Int] = []
+  let mut has_non_flow_children = false
   let mut flow_position = 0
   for i = 0; i < node.children.length(); i = i + 1 {
     let child = node.children[i]
     if is_whitespace_only_flow_text(child) &&
       not(should_preserve_flow_whitespace_text(node.children, i)) {
+      has_non_flow_children = true
       continue
     }
     if child.style.display == @types.Display::None {
       // Add zero-sized layout for display:none children (including descendants)
       layout_map[i] = create_zero_layout(child)
+      has_non_flow_children = true
       continue
     }
     if child.style.position == @types.Absolute ||
       child.style.position == @types.Fixed {
       // Record where this absolute/fixed child appears in flow order
       absolute_static_positions[i] = flow_position
+      has_non_flow_children = true
       continue
     }
     // Check if this is a float element
@@ -2439,6 +2882,7 @@ fn compute_with_collapse(
       @types.Float::Left | @types.Float::Right => {
         float_nodes.push(child)
         float_indices.push(i)
+        has_non_flow_children = true
         // Float elements still advance flow position for absolute static positioning
         flow_position = flow_position + 1
       }
@@ -3654,6 +4098,94 @@ fn compute_with_collapse(
     flow_i = flow_i + 1
   }
 
+  let has_simple_block_stack_hint = flow_nodes.length() == 1 ||
+    padding.horizontal_sum() > 0.0 ||
+    padding.vertical_sum() > 0.0 ||
+    border.horizontal_sum() > 0.0 ||
+    border.vertical_sum() > 0.0
+  let can_use_simple_block_stack = ctx.sizing_mode == @types.Definite &&
+    has_simple_block_stack_hint &&
+    not(style.writing_mode.is_vertical()) &&
+    not(multicol_enabled) &&
+    not(use_ifc) &&
+    not(has_mixed) &&
+    not(has_non_flow_children) &&
+    not(node.id.has_prefix("fieldset")) &&
+    float_nodes.length() == 0 &&
+    flow_nodes.length() == node.children.length() &&
+    flow_children.length() == flow_nodes.length()
+  let can_use_simple_block_stack = if can_use_simple_block_stack {
+    let mut all_simple = true
+    for child in flow_nodes {
+      if not(is_simple_block_stack_child(child.style)) {
+        all_simple = false
+        break
+      }
+    }
+    all_simple
+  } else {
+    false
+  }
+  if can_use_simple_block_stack {
+    let simple_result = layout_simple_block_stack(
+      flow_nodes, flow_children, padding, border, can_collapse_top, can_collapse_bottom,
+    )
+    let flow_content_height = if flow_children.length() == 0 {
+      0.0
+    } else if can_collapse_bottom {
+      @types.max(0.0, simple_result.current_pos)
+    } else {
+      @types.max(0.0, simple_result.current_pos + simple_result.prev_margin_end)
+    }
+    let content_height = flow_content_height
+    let content_height_for_auto = if style.suppresses_intrinsic_height() {
+      style.contained_intrinsic_height_fallback()
+    } else {
+      content_height
+    }
+    let mut box_height = resolve_box_height_from_style(
+      style, box_width, content_height_for_auto, parent_height_opt, fill_vertical_auto_height,
+      margin, padding, border,
+    )
+
+    box_height = apply_block_height_constraints(
+      box_height, style, parent_height, content_height_for_auto, padding, border,
+    )
+    box_width = adjust_auto_width_from_height_constrained_aspect_ratio(
+      style, box_width, box_height, parent_width, padding, border,
+    )
+
+    let (scroll_width, scroll_height) = calculate_scroll_dimensions(
+      box_width,
+      box_height,
+      padding,
+      simple_result.child_layouts,
+    )
+    let layout : @types.Layout = {
+      id: node.id,
+      x: 0.0,
+      y: 0.0,
+      width: box_width,
+      height: box_height,
+      margin,
+      padding,
+      border,
+      overflow_x: style.overflow_x,
+      overflow_y: style.overflow_y,
+      scroll_width,
+      scroll_height,
+      children: simple_result.child_layouts,
+      text: node.text,
+    }
+    return {
+      layout,
+      collapsed: {
+        top: simple_result.escaped_top,
+        bottom: simple_result.escaped_bottom,
+      },
+    }
+  }
+
   // Layout float elements in source order as flow advances.
   let float_layouts : Array[@types.Layout] = []
   fn place_float_layout(
@@ -4738,134 +5270,12 @@ fn compute_with_collapse(
   )
 
   // Apply min/max height constraints
-  match style.min_height {
-    @types.Length(min_h) => if box_height < min_h { box_height = min_h }
-    @types.Percent(p) => {
-      let min_h = parent_height * p
-      if box_height < min_h {
-        box_height = min_h
-      }
-    }
-    @types.MinContent | @types.MaxContent => {
-      // min-height: min-content/max-content uses content height
-      let min_h = content_height_for_auto +
-        padding.vertical_sum() +
-        border.vertical_sum()
-      if box_height < min_h {
-        box_height = min_h
-      }
-    }
-    @types.FitContent(_) => {
-      // fit-content for min-height acts like min-content
-      let min_h = content_height_for_auto +
-        padding.vertical_sum() +
-        border.vertical_sum()
-      if box_height < min_h {
-        box_height = min_h
-      }
-    }
-    @types.Auto => ()
-  }
-  match style.max_height {
-    @types.Length(max_h) => if box_height > max_h { box_height = max_h }
-    @types.Percent(p) => {
-      let max_h = parent_height * p
-      if box_height > max_h {
-        box_height = max_h
-      }
-    }
-    @types.MinContent | @types.MaxContent => {
-      // max-height: min-content/max-content caps at content height
-      let max_h = content_height_for_auto +
-        padding.vertical_sum() +
-        border.vertical_sum()
-      if box_height > max_h {
-        box_height = max_h
-      }
-    }
-    @types.FitContent(_) => {
-      // fit-content for max-height acts like max-content
-      let max_h = content_height_for_auto +
-        padding.vertical_sum() +
-        border.vertical_sum()
-      if box_height > max_h {
-        box_height = max_h
-      }
-    }
-    @types.Auto => ()
-  }
-
-  // Ensure box_height is at least padding + border (CSS rule: padding/border override max-size)
-  let min_box_height = padding.vertical_sum() + border.vertical_sum()
-  if box_height < min_box_height {
-    box_height = min_box_height
-  }
-
-  // If aspect_ratio is set and height was constrained but width wasn't explicitly set,
-  // recalculate width based on the constrained height
-  match (style.aspect_ratio, style.width, style.height) {
-    (Some(ratio), @types.Auto, @types.Auto) if ratio > 0.0 => {
-      // Check if height was actually constrained by min/max
-      let expected_height_from_width = (
-          box_width - padding.horizontal_sum() - border.horizontal_sum()
-        ) /
-        ratio +
-        padding.vertical_sum() +
-        border.vertical_sum()
-      if box_height != expected_height_from_width {
-        // Height was constrained, recalculate width from constrained height
-        let content_height = box_height -
-          padding.vertical_sum() -
-          border.vertical_sum()
-        let new_width = content_height * ratio +
-          padding.horizontal_sum() +
-          border.horizontal_sum()
-        // Apply min/max width constraints to new width
-        let new_width = match style.max_width {
-          @types.Length(max_w) =>
-            if new_width > max_w {
-              max_w
-            } else {
-              new_width
-            }
-          @types.Percent(p) => {
-            let max_w = parent_width * p
-            if new_width > max_w {
-              max_w
-            } else {
-              new_width
-            }
-          }
-          @types.Auto
-          | @types.MinContent
-          | @types.MaxContent
-          | @types.FitContent(_) => new_width
-        }
-        let new_width = match style.min_width {
-          @types.Length(min_w) =>
-            if new_width < min_w {
-              min_w
-            } else {
-              new_width
-            }
-          @types.Percent(p) => {
-            let min_w = parent_width * p
-            if new_width < min_w {
-              min_w
-            } else {
-              new_width
-            }
-          }
-          @types.Auto
-          | @types.MinContent
-          | @types.MaxContent
-          | @types.FitContent(_) => new_width
-        }
-        box_width = new_width
-      }
-    }
-    _ => ()
-  }
+  box_height = apply_block_height_constraints(
+    box_height, style, parent_height, content_height_for_auto, padding, border,
+  )
+  box_width = adjust_auto_width_from_height_constrained_aspect_ratio(
+    style, box_width, box_height, parent_width, padding, border,
+  )
 
   // Now handle absolute positioned children
   for i = 0; i < node.children.length(); i = i + 1 {

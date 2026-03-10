@@ -266,6 +266,46 @@ test "flex_justify_space_between" {
 }
 
 ///|
+test "flex_row_space_between_fixed_leaf_children_fast_path_shape" {
+  let default_style = @style.Style::default()
+  let child1 = @node.Node::leaf("child1", {
+    ..default_style,
+    width: @types.Length(50.0),
+    height: @types.Length(14.0),
+  })
+  let child2 = @node.Node::leaf("child2", {
+    ..default_style,
+    width: @types.Length(30.0),
+    height: @types.Length(14.0),
+  })
+  let root_style = {
+    ..default_style,
+    display: @types.Flex,
+    flex_direction: @types.Row,
+    justify_content: @types.SpaceBetween,
+    width: @types.Length(216.0),
+  }
+  let root = @node.Node::new("root", root_style, [child1, child2])
+  let ctx : @types.LayoutContext = {
+    available_width: 216.0,
+    available_height: Some(100.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 216.0,
+    viewport_height: 100.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.width, content="216")
+  inspect(layout.height, content="14")
+  inspect(layout.children[0].x, content="0")
+  inspect(layout.children[0].y, content="0")
+  inspect(layout.children[1].x, content="186")
+  inspect(layout.children[1].y, content="0")
+  inspect(layout.children[1].width, content="30")
+}
+
+///|
 test "flex_align_center" {
   let default_style = @style.Style::default()
   let child = @node.Node::leaf("child", {

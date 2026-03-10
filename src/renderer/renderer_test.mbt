@@ -991,6 +991,28 @@ test "inline style min-height does not set height" {
 }
 
 ///|
+test "repeated inline styles do not reuse default cache across inherited font sizes" {
+  let html =
+    #|<!doctype html>
+    #|<html><body>
+    #|<div id="outer-default">
+    #|  <span id="default-child" style="line-height: 1em"></span>
+    #|</div>
+    #|<div id="outer-large" style="font-size: 32px; line-height: 1em">
+    #|  <span id="large-child" style="line-height: 1em"></span>
+    #|</div>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+  let default_child = node.children[0].children[0]
+  let large_outer = node.children[1]
+  let large_child = large_outer.children[0]
+  inspect(default_child.style.line_height, content="16")
+  inspect(large_outer.style.font_size, content="32")
+  inspect(large_child.style.line_height, content="32")
+}
+
+///|
 test "anchor remains inline inside fixed-height flex item" {
   let html =
     #|<!doctype html>

@@ -710,6 +710,52 @@ let inline_declaration_cache : Ref[Map[String, Array[(String, String)]]] = {
 }
 
 ///|
+let inline_only_style_cache : Ref[Map[String, @style.Style]] = { val: {} }
+
+///|
+fn string_map_is_empty(map : Map[String, String]) -> Bool {
+  for _k, _v in map {
+    return false
+  }
+  true
+}
+
+///|
+fn has_default_inherited_inline_context(parent_style : @style.Style?) -> Bool {
+  match parent_style {
+    None => true
+    Some(ps) =>
+      ps.color == @types.Color::black() &&
+      ps.font_size == 16.0 &&
+      ps.line_height == 16.0 &&
+      ps.white_space == @style.WhiteSpace::Normal &&
+      ps.writing_mode == @style.WritingMode::HorizontalTb &&
+      ps.direction == @style.Direction::Ltr
+  }
+}
+
+///|
+fn make_inline_only_style_cache_key(
+  tag : String,
+  inline_css : String,
+  is_root : Bool,
+  viewport_width : Double,
+  viewport_height : Double,
+) -> String {
+  let buf = StringBuilder::new()
+  buf.write_string(tag.to_lower())
+  buf.write_string("|")
+  buf.write_string(if is_root { "1" } else { "0" })
+  buf.write_string("|")
+  buf.write_string((viewport_width * 10.0).to_int().to_string())
+  buf.write_string("|")
+  buf.write_string((viewport_height * 10.0).to_int().to_string())
+  buf.write_string("|")
+  buf.write_string(inline_css)
+  buf.to_string()
+}
+
+///|
 fn parse_inline_declarations_cached(
   inline_css : String,
 ) -> Array[(String, String)] {
@@ -1014,13 +1060,8 @@ fn has_display_contents(
   if is_display_contents_suppressed_html_element(elem.tag) {
     return false
   }
-  match elem.style {
-    Some(style_str) => {
-      let parsed = @parser.parse_inline_style(style_str)
-      if parsed.display == @types.Contents {
-        return true
-      }
-    }
+  match get_inline_style_display(elem) {
+    Some(display) => if display == @types.Contents { return true }
     None => ()
   }
   if stylesheets.length() > 0 {
@@ -1366,22 +1407,29 @@ fn has_direct_display_contents_child(
   css_vars : Map[String, String],
 ) -> Bool {
   let mut element_child_count = 0
-  for child in elem.children {
-    match child {
-      @html.Node::Element(_) => element_child_count = element_child_count + 1
-      _ => ()
+  if indexed_stylesheets.length() > 0 {
+    for child in elem.children {
+      match child {
+        @html.Node::Element(_) => element_child_count = element_child_count + 1
+        _ => ()
+      }
     }
   }
   let mut element_child_index = 0
   let mut prev_selector_sibling : @selector.Element? = None
+  let include_selector_match_data = indexed_stylesheets.length() > 0
   for child in elem.children {
     match child {
       @html.Node::Element(child_elem) => {
         element_child_index = element_child_index + 1
-        let child_selector = html_to_selector_element_with_parent(
-          child_elem, parent_selector, element_child_index, element_child_count,
-          prev_selector_sibling,
-        )
+        let child_selector = if include_selector_match_data {
+          html_to_selector_element_with_parent(
+            child_elem, parent_selector, element_child_index, element_child_count,
+            prev_selector_sibling,
+          )
+        } else {
+          html_to_selector_element_minimal(child_elem, Some(parent_selector))
+        }
         let child_style = compute_element_style_indexed(
           child_selector,
           child_elem.style,
@@ -1391,7 +1439,9 @@ fn has_direct_display_contents_child(
           Some(parent_style),
           css_vars,
         )
-        prev_selector_sibling = Some(child_selector)
+        if include_selector_match_data {
+          prev_selector_sibling = Some(child_selector)
+        }
         if child_style.display == @types.Contents {
           return true
         }
@@ -1536,16 +1586,20 @@ fn collect_inline_content(
       }
       @html.Node::Element(elem) => {
         element_sibling_index += 1
-        let child_selector = html_to_selector_element_with_parent(
-          elem,
-          parent_selector,
-          element_sibling_index,
-          element_sibling_count,
-          None,
-        )
-        let has_generated_pseudo = selector_has_generated_pseudo_content(
-          child_selector, stylesheets, ctx,
-        )
+        let has_generated_pseudo = if stylesheets.length() == 0 {
+          false
+        } else {
+          let child_selector = html_to_selector_element_with_parent(
+            elem,
+            parent_selector,
+            element_sibling_index,
+            element_sibling_count,
+            None,
+          )
+          selector_has_generated_pseudo_content(
+            child_selector, stylesheets, ctx,
+          )
+        }
         let tag_lower = elem.tag.to_lower()
         if tag_lower == "br" {
           // Flush accumulated text first
@@ -2446,7 +2500,11 @@ fn resolve_document_root_zoom(
   if doc_root.tag.to_lower() != "html" {
     return 1.0
   }
-  let root_selector = html_to_selector_element(doc_root, None)
+  let root_selector = if indexed_stylesheets.length() == 0 {
+    html_to_selector_element_minimal(doc_root, None)
+  } else {
+    html_to_selector_element(doc_root, None)
+  }
   let root_style = compute_element_style_indexed(
     root_selector,
     doc_root.style,
@@ -2652,7 +2710,11 @@ pub fn render_with_external_css(
   let css_vars = collect_root_css_variables(stylesheets, ctx)
 
   // Resolve document root style once so root-level box suppression can be honored.
-  let doc_root_selector = html_to_selector_element(doc.root, None)
+  let doc_root_selector = if indexed_stylesheets.length() == 0 {
+    html_to_selector_element_minimal(doc.root, None)
+  } else {
+    html_to_selector_element(doc.root, None)
+  }
   let doc_root_style = compute_element_style_indexed(
     doc_root_selector,
     doc.root.style,
@@ -2671,10 +2733,11 @@ pub fn render_with_external_css(
     doc.root.tag.to_lower() != "body" {
     // Body is not the document root. Compute with html as parent so inheritable
     // properties (e.g. writing-mode from :root) are preserved.
-    let body_selector = html_to_selector_element(
-      render_root,
-      Some(doc_root_selector),
-    )
+    let body_selector = if indexed_stylesheets.length() == 0 {
+      html_to_selector_element_minimal(render_root, Some(doc_root_selector))
+    } else {
+      html_to_selector_element(render_root, Some(doc_root_selector))
+    }
     element_to_node_with_styles_internal(
       render_root,
       body_selector,
@@ -2862,7 +2925,11 @@ pub fn render_document_with_external_css(
   // Collect CSS custom properties from :root rules
   let css_vars = collect_root_css_variables(stylesheets, ctx)
 
-  let doc_root_selector = html_to_selector_element(doc.root, None)
+  let doc_root_selector = if indexed_stylesheets.length() == 0 {
+    html_to_selector_element_minimal(doc.root, None)
+  } else {
+    html_to_selector_element(doc.root, None)
+  }
   let doc_root_style = compute_element_style_indexed(
     doc_root_selector,
     doc.root.style,
@@ -2879,10 +2946,11 @@ pub fn render_document_with_external_css(
   // Convert to node tree with stylesheet styles applied
   let root = if render_root.tag.to_lower() == "body" &&
     doc.root.tag.to_lower() != "body" {
-    let body_selector = html_to_selector_element(
-      render_root,
-      Some(doc_root_selector),
-    )
+    let body_selector = if indexed_stylesheets.length() == 0 {
+      html_to_selector_element_minimal(render_root, Some(doc_root_selector))
+    } else {
+      html_to_selector_element(render_root, Some(doc_root_selector))
+    }
     element_to_node_with_styles_internal(
       render_root,
       body_selector,
@@ -3869,7 +3937,11 @@ pub fn render_to_node_with_external_css(
   }
   // Collect CSS custom properties from :root rules
   let css_vars = collect_root_css_variables(stylesheets, ctx)
-  let doc_root_selector = html_to_selector_element(doc.root, None)
+  let doc_root_selector = if indexed_stylesheets.length() == 0 {
+    html_to_selector_element_minimal(doc.root, None)
+  } else {
+    html_to_selector_element(doc.root, None)
+  }
   let doc_root_style = compute_element_style_indexed(
     doc_root_selector,
     doc.root.style,
@@ -3882,10 +3954,11 @@ pub fn render_to_node_with_external_css(
   let render_root = select_render_root(doc.root, doc_root_style)
   let root = if render_root.tag.to_lower() == "body" &&
     doc.root.tag.to_lower() != "body" {
-    let body_selector = html_to_selector_element(
-      render_root,
-      Some(doc_root_selector),
-    )
+    let body_selector = if indexed_stylesheets.length() == 0 {
+      html_to_selector_element_minimal(render_root, Some(doc_root_selector))
+    } else {
+      html_to_selector_element(render_root, Some(doc_root_selector))
+    }
     element_to_node_with_styles_internal(
       render_root,
       body_selector,
@@ -3958,7 +4031,11 @@ pub fn render_to_node_with_document(
   }
   // Collect CSS custom properties from :root rules
   let css_vars = collect_root_css_variables(stylesheets, ctx)
-  let doc_root_selector = html_to_selector_element(doc.root, None)
+  let doc_root_selector = if indexed_stylesheets.length() == 0 {
+    html_to_selector_element_minimal(doc.root, None)
+  } else {
+    html_to_selector_element(doc.root, None)
+  }
   let doc_root_style = compute_element_style_indexed(
     doc_root_selector,
     doc.root.style,
@@ -3971,10 +4048,11 @@ pub fn render_to_node_with_document(
   let render_root = select_render_root(doc.root, doc_root_style)
   let root = if render_root.tag.to_lower() == "body" &&
     doc.root.tag.to_lower() != "body" {
-    let body_selector = html_to_selector_element(
-      render_root,
-      Some(doc_root_selector),
-    )
+    let body_selector = if indexed_stylesheets.length() == 0 {
+      html_to_selector_element_minimal(render_root, Some(doc_root_selector))
+    } else {
+      html_to_selector_element(render_root, Some(doc_root_selector))
+    }
     element_to_node_with_styles_internal(
       render_root,
       body_selector,
@@ -4434,7 +4512,11 @@ fn element_to_node_with_styles(
   owner_id : String,
 ) -> @node.Node {
   // Convert HTML element to selector element for matching
-  let selector_elem = html_to_selector_element(elem, parent)
+  let selector_elem = if indexed_stylesheets.length() == 0 {
+    html_to_selector_element_minimal(elem, parent)
+  } else {
+    html_to_selector_element(elem, parent)
+  }
 
   // Get style from stylesheet matching + inline style (using indexed for performance)
   let computed_style = compute_element_style_indexed(
@@ -4499,25 +4581,37 @@ fn element_to_node_with_styles(
   } else {
     style
   }
-  let own_counters = compute_element_own_counters(
-    incoming_counters, selector_elem, style, stylesheets, ctx, owner_id,
-  )
-  let before_pseudo = resolve_pseudo_spec(
-    selector_elem,
-    style,
-    stylesheets,
-    ctx,
-    Before,
-    own_counters,
-  )
-  let after_pseudo = resolve_pseudo_spec(
-    selector_elem,
-    style,
-    stylesheets,
-    ctx,
-    After,
-    own_counters,
-  )
+  let own_counters = if stylesheets.length() == 0 {
+    incoming_counters
+  } else {
+    compute_element_own_counters(
+      incoming_counters, selector_elem, style, stylesheets, ctx, owner_id,
+    )
+  }
+  let before_pseudo = if stylesheets.length() == 0 {
+    None
+  } else {
+    resolve_pseudo_spec(
+      selector_elem,
+      style,
+      stylesheets,
+      ctx,
+      Before,
+      own_counters,
+    )
+  }
+  let after_pseudo = if stylesheets.length() == 0 {
+    None
+  } else {
+    resolve_pseudo_spec(
+      selector_elem,
+      style,
+      stylesheets,
+      ctx,
+      After,
+      own_counters,
+    )
+  }
   let style = match after_pseudo {
     Some(spec) if spec.position_relative && spec.left_offset != 0.0 =>
       {
@@ -4568,19 +4662,24 @@ fn element_to_node_with_styles(
     children.push(text_node)
   }
 
-  let child_seed_counters = if establishes_style_containment_scope(style) {
+  let child_seed_counters = if stylesheets.length() == 0 {
+    own_counters
+  } else if establishes_style_containment_scope(style) {
     filter_counter_state_for_style_containment(own_counters, owner_id)
   } else {
     own_counters
   }
+  let include_selector_match_data = indexed_stylesheets.length() > 0
   let mut prev_sibling_counters : Map[String, CounterEntry]? = None
   let mut prev_selector_sibling : @selector.Element? = None
   let mut element_child_index = 0
   let mut element_child_count = 0
-  for child in remaining_children {
-    match child {
-      @html.Node::Element(_) => element_child_count = element_child_count + 1
-      _ => ()
+  if include_selector_match_data {
+    for child in remaining_children {
+      match child {
+        @html.Node::Element(_) => element_child_count = element_child_count + 1
+        _ => ()
+      }
     }
   }
   // Process remaining children (elements and synthetic text nodes)
@@ -4592,15 +4691,28 @@ fn element_to_node_with_styles(
           continue
         }
         element_child_index += 1
-        let child_owner_id = owner_id + "/" + element_child_index.to_string()
-        let child_incoming_counters = match prev_sibling_counters {
-          Some(counters) => copy_counter_state(counters)
-          None => copy_counter_state(child_seed_counters)
+        let child_owner_id = if stylesheets.length() == 0 {
+          owner_id
+        } else {
+          owner_id + "/" + element_child_index.to_string()
+        }
+        let child_incoming_counters = if stylesheets.length() == 0 {
+          child_seed_counters
+        } else {
+          match prev_sibling_counters {
+            Some(counters) => copy_counter_state(counters)
+            None => copy_counter_state(child_seed_counters)
+          }
         }
         // Update sibling info on selector element for child processing
-        let child_selector = html_to_selector_element_with_parent(
-          child_elem, selector_elem, element_child_index, element_child_count, prev_selector_sibling,
-        )
+        let child_selector = if include_selector_match_data {
+          html_to_selector_element_with_parent(
+            child_elem, selector_elem, element_child_index, element_child_count,
+            prev_selector_sibling,
+          )
+        } else {
+          html_to_selector_element_minimal(child_elem, Some(selector_elem))
+        }
         let child_style_for_counter = compute_element_style_indexed(
           child_selector,
           child_elem.style,
@@ -4610,12 +4722,20 @@ fn element_to_node_with_styles(
           Some(style),
           css_vars,
         )
-        let child_own_counters = compute_element_own_counters(
-          child_incoming_counters, child_selector, child_style_for_counter, stylesheets,
-          ctx, child_owner_id,
-        )
-        prev_sibling_counters = Some(child_own_counters)
-        prev_selector_sibling = Some(child_selector)
+        let child_own_counters = if stylesheets.length() == 0 {
+          child_incoming_counters
+        } else {
+          compute_element_own_counters(
+            child_incoming_counters, child_selector, child_style_for_counter, stylesheets,
+            ctx, child_owner_id,
+          )
+        }
+        if stylesheets.length() > 0 {
+          prev_sibling_counters = Some(child_own_counters)
+        }
+        if include_selector_match_data {
+          prev_selector_sibling = Some(child_selector)
+        }
         let child_node = element_to_node_with_styles_internal(
           child_elem,
           child_selector,
@@ -4810,25 +4930,37 @@ fn element_to_node_with_styles_internal(
   }
 
   let style = apply_svg_intrinsic_size(style, cell_tag)
-  let own_counters = compute_element_own_counters(
-    incoming_counters, selector_elem, style, stylesheets, ctx, owner_id,
-  )
-  let before_pseudo = resolve_pseudo_spec(
-    selector_elem,
-    style,
-    stylesheets,
-    ctx,
-    Before,
-    own_counters,
-  )
-  let after_pseudo = resolve_pseudo_spec(
-    selector_elem,
-    style,
-    stylesheets,
-    ctx,
-    After,
-    own_counters,
-  )
+  let own_counters = if stylesheets.length() == 0 {
+    incoming_counters
+  } else {
+    compute_element_own_counters(
+      incoming_counters, selector_elem, style, stylesheets, ctx, owner_id,
+    )
+  }
+  let before_pseudo = if stylesheets.length() == 0 {
+    None
+  } else {
+    resolve_pseudo_spec(
+      selector_elem,
+      style,
+      stylesheets,
+      ctx,
+      Before,
+      own_counters,
+    )
+  }
+  let after_pseudo = if stylesheets.length() == 0 {
+    None
+  } else {
+    resolve_pseudo_spec(
+      selector_elem,
+      style,
+      stylesheets,
+      ctx,
+      After,
+      own_counters,
+    )
+  }
   let style = match after_pseudo {
     Some(spec) if spec.position_relative && spec.left_offset != 0.0 =>
       {
@@ -4878,19 +5010,24 @@ fn element_to_node_with_styles_internal(
     children.push(text_node)
   }
 
-  let child_seed_counters = if establishes_style_containment_scope(style) {
+  let child_seed_counters = if stylesheets.length() == 0 {
+    own_counters
+  } else if establishes_style_containment_scope(style) {
     filter_counter_state_for_style_containment(own_counters, owner_id)
   } else {
     own_counters
   }
+  let include_selector_match_data = indexed_stylesheets.length() > 0
   let mut prev_sibling_counters : Map[String, CounterEntry]? = None
   let mut prev_selector_sibling : @selector.Element? = None
   let mut element_child_index = 0
   let mut element_child_count = 0
-  for child in remaining_children {
-    match child {
-      @html.Node::Element(_) => element_child_count = element_child_count + 1
-      _ => ()
+  if include_selector_match_data {
+    for child in remaining_children {
+      match child {
+        @html.Node::Element(_) => element_child_count = element_child_count + 1
+        _ => ()
+      }
     }
   }
   // Process remaining children (elements and synthetic text nodes)
@@ -4902,14 +5039,27 @@ fn element_to_node_with_styles_internal(
           continue
         }
         element_child_index += 1
-        let child_owner_id = owner_id + "/" + element_child_index.to_string()
-        let child_incoming_counters = match prev_sibling_counters {
-          Some(counters) => copy_counter_state(counters)
-          None => copy_counter_state(child_seed_counters)
+        let child_owner_id = if stylesheets.length() == 0 {
+          owner_id
+        } else {
+          owner_id + "/" + element_child_index.to_string()
         }
-        let child_selector = html_to_selector_element_with_parent(
-          child_elem, selector_elem, element_child_index, element_child_count, prev_selector_sibling,
-        )
+        let child_incoming_counters = if stylesheets.length() == 0 {
+          child_seed_counters
+        } else {
+          match prev_sibling_counters {
+            Some(counters) => copy_counter_state(counters)
+            None => copy_counter_state(child_seed_counters)
+          }
+        }
+        let child_selector = if include_selector_match_data {
+          html_to_selector_element_with_parent(
+            child_elem, selector_elem, element_child_index, element_child_count,
+            prev_selector_sibling,
+          )
+        } else {
+          html_to_selector_element_minimal(child_elem, Some(selector_elem))
+        }
         let child_style_for_counter = compute_element_style_indexed(
           child_selector,
           child_elem.style,
@@ -4919,12 +5069,20 @@ fn element_to_node_with_styles_internal(
           Some(style),
           css_vars,
         )
-        let child_own_counters = compute_element_own_counters(
-          child_incoming_counters, child_selector, child_style_for_counter, stylesheets,
-          ctx, child_owner_id,
-        )
-        prev_sibling_counters = Some(child_own_counters)
-        prev_selector_sibling = Some(child_selector)
+        let child_own_counters = if stylesheets.length() == 0 {
+          child_incoming_counters
+        } else {
+          compute_element_own_counters(
+            child_incoming_counters, child_selector, child_style_for_counter, stylesheets,
+            ctx, child_owner_id,
+          )
+        }
+        if stylesheets.length() > 0 {
+          prev_sibling_counters = Some(child_own_counters)
+        }
+        if include_selector_match_data {
+          prev_selector_sibling = Some(child_selector)
+        }
         let child_node = element_to_node_with_styles_internal(
           child_elem,
           child_selector,
@@ -5766,6 +5924,19 @@ fn html_to_selector_element(
 }
 
 ///|
+fn html_to_selector_element_minimal(
+  elem : @html.Element,
+  parent : @selector.Element?,
+) -> @selector.Element {
+  let mut sel_elem = @selector.Element::new(elem.tag)
+  match parent {
+    Some(p) => sel_elem = sel_elem.set_parent(p)
+    None => ()
+  }
+  sel_elem
+}
+
+///|
 /// Convert HTML Element to Selector Element with parent and sibling info
 fn html_to_selector_element_with_parent(
   elem : @html.Element,
@@ -6203,6 +6374,34 @@ fn compute_element_style_indexed(
   } else {
     None
   }
+  // Keep this cache conservative: only reuse when stylesheet cascade and
+  // inherited context cannot change the inline-only result.
+  let inline_only_cache_key = match (cascaded, inline_css) {
+    (None, Some(css)) =>
+      if string_map_is_empty(css_vars) &&
+        has_default_inherited_inline_context(parent_style) {
+        Some(
+          make_inline_only_style_cache_key(
+            selector_elem.tag_name,
+            css,
+            is_root,
+            ctx.viewport_width,
+            ctx.viewport_height,
+          ),
+        )
+      } else {
+        None
+      }
+    _ => None
+  }
+  match inline_only_cache_key {
+    Some(key) =>
+      match inline_only_style_cache.val.get(key) {
+        Some(cached) => return cached
+        None => ()
+      }
+    None => ()
+  }
 
   // Start with default style
   let mut style = @style.Style::default()
@@ -6470,7 +6669,12 @@ fn compute_element_style_indexed(
       }
     }
   }
-  adjust_for_box_sizing(style)
+  let adjusted = adjust_for_box_sizing(style)
+  match inline_only_cache_key {
+    Some(key) => inline_only_style_cache.val[key] = adjusted
+    None => ()
+  }
+  adjusted
 }
 
 ///|

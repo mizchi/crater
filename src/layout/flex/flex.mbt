@@ -60,6 +60,13 @@ priv struct IndexedLayout {
 }
 
 ///|
+priv struct SimpleFixedLeafFlexItem {
+  node : @node.Node
+  width : Double
+  height : Double
+}
+
+///|
 /// Session-scoped cache for intrinsic size computation.
 /// Key: (node_uid * 2 + is_row_flag)
 /// This dramatically reduces redundant calculations in deep nesting.
@@ -3225,6 +3232,145 @@ fn create_hidden_layout(node : @node.Node) -> @types.Layout {
 }
 
 ///|
+fn try_layout_simple_row_space_between_fixed_leaves(
+  node : @node.Node,
+  flattened : Array[FlattenedChild],
+  style : @style.Style,
+  container_width : Double,
+  content_width : Double,
+  content_height : Double?,
+  margin : @types.Rect[Double],
+  padding : @types.Rect[Double],
+  border : @types.Rect[Double],
+  parent_width : Double,
+) -> @types.Layout? {
+  fn is_zero_non_auto_dimension(dim : @types.Dimension) -> Bool {
+    match dim {
+      @types.Length(v) => v == 0.0
+      _ => false
+    }
+  }
+  if style.writing_mode.is_vertical() ||
+    style.flex_direction != @types.Row ||
+    style.flex_wrap != @types.NoWrap ||
+    style.justify_content != @types.SpaceBetween {
+    return None
+  }
+  match style.align_items {
+    @types.Stretch | @types.Start | @types.FlexStart => ()
+    _ => return None
+  }
+  let main_gap = style.column_gap.resolve_or(content_width, 0.0)
+  if main_gap != 0.0 {
+    return None
+  }
+  let items : Array[SimpleFixedLeafFlexItem] = []
+  let mut total_main = 0.0
+  let mut max_cross = 0.0
+  for flat_child in flattened {
+    if flat_child.contents_ancestors.length() > 0 {
+      return None
+    }
+    let child = flat_child.node
+    let child_style = child.style
+    if child.children.length() > 0 ||
+      child.measure is Some(_) ||
+      child_style.display == @types.Display::None ||
+      child_style.position != @types.Static ||
+      child_style.float != @types.Float::None ||
+      child_style.order != 0 ||
+      child_style.flex_grow != 0.0 ||
+      child_style.align_self != @types.AlignSelf::Auto ||
+      child_style.flex_basis != @types.Auto {
+      return None
+    }
+    if not(is_zero_non_auto_dimension(child_style.margin.left)) ||
+      not(is_zero_non_auto_dimension(child_style.margin.right)) ||
+      not(is_zero_non_auto_dimension(child_style.margin.top)) ||
+      not(is_zero_non_auto_dimension(child_style.margin.bottom)) {
+      return None
+    }
+    let child_padding = @types.resolve_rect(child_style.padding, parent_width)
+    let child_border = @types.resolve_rect(child_style.border, parent_width)
+    if child_padding.horizontal_sum() != 0.0 ||
+      child_padding.vertical_sum() != 0.0 ||
+      child_border.horizontal_sum() != 0.0 ||
+      child_border.vertical_sum() != 0.0 {
+      return None
+    }
+    let width = match child_style.width {
+      @types.Length(v) => v
+      _ => return None
+    }
+    let height = match child_style.height {
+      @types.Length(v) => v
+      _ => return None
+    }
+    total_main = total_main + width
+    if height > max_cross {
+      max_cross = height
+    }
+    items.push({ node: child, width, height })
+  }
+  if items.length() == 0 || total_main > content_width {
+    return None
+  }
+  let gap = if items.length() > 1 {
+    (content_width - total_main) / (items.length() - 1).to_double()
+  } else {
+    0.0
+  }
+  let child_layouts : Array[@types.Layout] = []
+  let mut main_pos = padding.left + border.left
+  let cross_pos = padding.top + border.top
+  for item in items {
+    child_layouts.push({
+      id: item.node.id,
+      x: main_pos,
+      y: cross_pos,
+      width: item.width,
+      height: item.height,
+      margin: @types.Rect::zero(),
+      padding: @types.Rect::zero(),
+      border: @types.Rect::zero(),
+      overflow_x: item.node.style.overflow_x,
+      overflow_y: item.node.style.overflow_y,
+      scroll_width: 0.0,
+      scroll_height: 0.0,
+      children: [],
+      text: item.node.text,
+    })
+    main_pos = main_pos + item.width + gap
+  }
+  let used_cross = match content_height {
+    Some(v) => v
+    None => max_cross
+  }
+  let container_height = used_cross +
+    padding.vertical_sum() +
+    border.vertical_sum()
+  let (scroll_width, scroll_height) = calculate_scroll_dimensions(
+    container_width, container_height, padding, child_layouts,
+  )
+  Some({
+    id: node.id,
+    x: 0.0,
+    y: 0.0,
+    width: container_width,
+    height: container_height,
+    margin,
+    padding,
+    border,
+    overflow_x: style.overflow_x,
+    overflow_y: style.overflow_y,
+    scroll_width,
+    scroll_height,
+    children: child_layouts,
+    text: node.text,
+  })
+}
+
+///|
 /// Compute flex layout for a node and its children
 pub fn compute(
   node : @node.Node,
@@ -3875,6 +4021,15 @@ fn compute_internal(
       children: [],
       text: node.text,
     }
+  }
+
+  match
+    try_layout_simple_row_space_between_fixed_leaves(
+      node, flattened, style, container_width, content_width, content_height, margin,
+      padding, border, parent_width,
+    ) {
+    Some(layout) => return layout
+    None => ()
   }
 
   // Collect flex items info (skip display:none children)

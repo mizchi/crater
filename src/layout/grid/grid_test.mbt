@@ -1451,6 +1451,107 @@ test "grid_auto_row_block_item_with_simple_flex_child_keeps_intrinsic_height" {
 }
 
 ///|
+test "grid_auto_row_nested_simple_block_leaf_item_keeps_intrinsic_height" {
+  let default_style = @style.Style::default()
+  let title = @node.Node::leaf("title", {
+    ..default_style,
+    width: @types.Length(120.0),
+    height: @types.Length(16.0),
+    margin: {
+      top: @types.Length(0.0),
+      right: @types.Length(0.0),
+      bottom: @types.Length(8.0),
+      left: @types.Length(0.0),
+    },
+  })
+  let copy = @node.Node::leaf("copy", {
+    ..default_style,
+    width: @types.Length(176.0),
+    height: @types.Length(32.0),
+    margin: {
+      top: @types.Length(0.0),
+      right: @types.Length(0.0),
+      bottom: @types.Length(8.0),
+      left: @types.Length(0.0),
+    },
+  })
+  let body = @node.Node::new(
+    "body",
+    {
+      ..default_style,
+      padding: {
+        top: @types.Length(12.0),
+        right: @types.Length(12.0),
+        bottom: @types.Length(12.0),
+        left: @types.Length(12.0),
+      },
+    },
+    [title, copy],
+  )
+  let card = @node.Node::new("card", default_style, [body])
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      display: @types.Grid,
+      width: @types.Length(400.0),
+      grid_template_columns: [@types.TrackSizingFunction::Fr(1.0)],
+    },
+    [card],
+  )
+
+  let layout = compute_grid_layout(root, 400.0, 600.0, cross_layout_dispatch())
+
+  assert_eq(layout.height, 88.0)
+  assert_eq(layout.children[0].height, 88.0)
+}
+
+///|
+test "grid_fit_content_nested_simple_block_leaf_item_uses_intrinsic_width" {
+  let default_style = @style.Style::default()
+  let title = @node.Node::leaf("title", {
+    ..default_style,
+    width: @types.Length(120.0),
+    height: @types.Length(16.0),
+    margin: {
+      top: @types.Length(0.0),
+      right: @types.Length(0.0),
+      bottom: @types.Length(8.0),
+      left: @types.Length(0.0),
+    },
+  })
+  let copy = @node.Node::leaf("copy", {
+    ..default_style,
+    width: @types.Length(176.0),
+    height: @types.Length(32.0),
+  })
+  let body = @node.Node::new(
+    "body",
+    {
+      ..default_style,
+      padding: {
+        top: @types.Length(12.0),
+        right: @types.Length(12.0),
+        bottom: @types.Length(12.0),
+        left: @types.Length(12.0),
+      },
+    },
+    [title, copy],
+  )
+  let card = @node.Node::new("card", default_style, [body])
+  let root = @node.Node::new(
+    "root",
+    { ..default_style, display: @types.Grid, width: @types.FitContent(1.0e10) },
+    [card],
+  )
+
+  let layout = compute_grid_layout(root, 400.0, 600.0, cross_layout_dispatch())
+
+  assert_eq(layout.width, 200.0)
+  assert_eq(layout.children[0].width, 200.0)
+}
+
+///|
 test "grid_contain_size_inline_grid_auto_size_uses_border_only" {
   let default_style = @style.Style::default()
   let child = @node.Node::leaf("child", {

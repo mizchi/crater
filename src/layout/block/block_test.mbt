@@ -206,6 +206,110 @@ test "block_nested" {
 }
 
 ///|
+test "block_card_like_nested_body_stacks_simple_block_children" {
+  let default_style = @style.Style::default()
+  let title_style = {
+    ..default_style,
+    height: @types.Length(16.0),
+    width: @types.Percent(0.8),
+    margin: {
+      left: @types.Length(0.0),
+      right: @types.Length(0.0),
+      top: @types.Length(0.0),
+      bottom: @types.Length(8.0),
+    },
+  }
+  let body_style = { ..default_style, height: @types.Length(32.0) }
+  let title = @node.Node::leaf("title", title_style)
+  let body = @node.Node::leaf("body", body_style)
+  let content_style = {
+    ..default_style,
+    padding: {
+      top: @types.Length(12.0),
+      right: @types.Length(12.0),
+      bottom: @types.Length(12.0),
+      left: @types.Length(12.0),
+    },
+  }
+  let content = @node.Node::new("content", content_style, [title, body])
+  let card_style = { ..default_style, width: @types.Length(240.0) }
+  let card = @node.Node::new("card", card_style, [content])
+  let ctx : @types.LayoutContext = {
+    available_width: 240.0,
+    available_height: Some(400.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(card, ctx, default_dispatch())
+  inspect(layout.width, content="240")
+  inspect(layout.height, content="80")
+  inspect(layout.children[0].x, content="0")
+  inspect(layout.children[0].y, content="0")
+  inspect(layout.children[0].width, content="240")
+  inspect(layout.children[0].height, content="80")
+  inspect(layout.children[0].children[0].x, content="12")
+  inspect(layout.children[0].children[0].y, content="12")
+  inspect(layout.children[0].children[0].width, content="172.8")
+  inspect(layout.children[0].children[0].height, content="16")
+  inspect(layout.children[0].children[1].x, content="12")
+  inspect(layout.children[0].children[1].y, content="36")
+  inspect(layout.children[0].children[1].width, content="216")
+  inspect(layout.children[0].children[1].height, content="32")
+}
+
+///|
+test "block_leaf_fixed_height_percent_width_keeps_box_model" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Percent(0.5),
+    height: @types.Length(20.0),
+    margin: {
+      left: @types.Length(4.0),
+      right: @types.Length(6.0),
+      top: @types.Length(0.0),
+      bottom: @types.Length(0.0),
+    },
+    padding: {
+      left: @types.Length(3.0),
+      right: @types.Length(5.0),
+      top: @types.Length(2.0),
+      bottom: @types.Length(4.0),
+    },
+    border: {
+      left: @types.Length(1.0),
+      right: @types.Length(2.0),
+      top: @types.Length(1.0),
+      bottom: @types.Length(2.0),
+    },
+  })
+  let root = @node.Node::new(
+    "root",
+    { ..default_style, width: @types.Length(120.0) },
+    [child],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 120.0,
+    available_height: Some(200.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[0].x, content="4")
+  inspect(layout.children[0].y, content="0")
+  inspect(layout.children[0].width, content="71")
+  inspect(layout.children[0].height, content="29")
+  inspect(layout.children[0].margin.left, content="4")
+  inspect(layout.children[0].margin.right, content="6")
+}
+
+///|
 test "block_percentage_width" {
   let default_style = @style.Style::default()
   let child_style = {
