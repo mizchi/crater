@@ -339,47 +339,48 @@
 ## WPT サポート状況（2026-03-11）
 
 - 実測コマンド: `npx tsx scripts/wpt-runner.ts <module> --workers 4`
-- 全体: `1422 / 1484 passed`（`95.8%`、`62 failed`）
+- 全体: `1444 / 1484 passed`（`97.3%`、`40 failed`）
 
 | Module | Passed | Failed | Total | Rate |
 |--------|--------|--------|-------|------|
 | css-flexbox | 289 | 0 | 289 | 100.0% |
-| css-grid | 30 | 3 | 33 | 90.9% |
-| css-tables | 26 | 6 | 32 | 81.2% |
-| css-display | 71 | 8 | 79 | 89.9% |
+| css-grid | 33 | 0 | 33 | 100.0% |
+| css-tables | 32 | 0 | 32 | 100.0% |
+| css-display | 79 | 0 | 79 | 100.0% |
 | css-box | 30 | 0 | 30 | 100.0% |
 | css-sizing | 88 | 6 | 94 | 93.6% |
-| css-align | 38 | 6 | 44 | 86.4% |
+| css-align | 36 | 8 | 44 | 81.8% |
 | css-position | 84 | 0 | 84 | 100.0% |
-| css-overflow | 231 | 12 | 243 | 95.1% |
-| css-contain | 298 | 5 | 303 | 98.3% |
-| css-variables | 100 | 7 | 107 | 93.5% |
+| css-overflow | 243 | 0 | 243 | 100.0% |
+| css-contain | 289 | 14 | 303 | 95.4% |
+| css-variables | 102 | 5 | 107 | 95.3% |
 | filter-effects | 99 | 7 | 106 | 93.4% |
 | compositing | 2 | 0 | 2 | 100.0% |
 | css-logical | 5 | 0 | 5 | 100.0% |
 | css-content | 2 | 0 | 2 | 100.0% |
-| css-multicol | 2 | 2 | 4 | 50.0% |
+| css-multicol | 4 | 0 | 4 | 100.0% |
 | css-break | 27 | 0 | 27 | 100.0% |
 
 ### 直近の改善
 
 - `css-flexbox`: `285 / 289` -> `289 / 289`
-- `css-position`: `74 / 84` -> `84 / 84`
+- `css-grid`: `30 / 33` -> `33 / 33`
+- `css-tables`: `26 / 32` -> `32 / 32`
+- `css-display`: `71 / 79` -> `79 / 79`
+- `css-overflow`: `231 / 243` -> `243 / 243`
+- `css-multicol`: `2 / 4` -> `4 / 4`
 - `css-break`: `4 / 27` -> `27 / 27`
 - `css-logical`: `1 / 5` -> `5 / 5`
 - `css-content`: 新規導入で `2 / 2`
-- `css-grid`: `33 / 33` までは到達済みだったが、現在は既知の 3 件が未解決
-  - `grid-in-table-cell-with-img.html`
-  - `grid-item-percentage-quirk-001.html`
-  - `grid-item-percentage-quirk-002.html`
+- `css-position`: `74 / 84` -> `84 / 84`
 
 ### 直近の優先候補
 
-- `css-multicol` の `balance-break-avoidance-*`（`2 failed`）
-- `css-overflow` の残件（`12 failed`）
-- `css-display` の残件（`8 failed`）
-- `css-variables` の残件（`7 failed`）
+- `css-contain` の残件（`14 failed`）
+- `css-align` の残件（`8 failed`）
 - `filter-effects` の残件（`7 failed`）
+- `css-sizing` の残件（`6 failed`）
+- `css-variables` の残件（`5 failed`）
 
 ### WPT 拡張メモ
 

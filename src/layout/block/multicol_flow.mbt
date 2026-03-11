@@ -402,6 +402,32 @@ fn has_multicol_avoid_tie_between(
 }
 
 ///|
+fn has_prior_multicol_column_content(
+  index : Int,
+  flow_styles : Array[@style.Style],
+  flow_nodes : Array[@node.Node],
+) -> Bool {
+  if index <= 0 {
+    return false
+  }
+  for i = 0; i < index; i = i + 1 {
+    let style = flow_styles[i]
+    let node = flow_nodes[i]
+    if style.display == @types.Display::None {
+      continue
+    }
+    if style.column_span == @style.ColumnSpan::All {
+      continue
+    }
+    if node.id.has_prefix("legend") {
+      continue
+    }
+    return true
+  }
+  false
+}
+
+///|
 fn resolve_multicol_leading_keep_height(
   child_layout : @types.Layout,
   child_style : @style.Style,
@@ -1303,9 +1329,35 @@ fn process_multicol_flow_child(
     starts_with_forced_column_break_descendant(child_node.children)
   let prev_ends_with_forced_column_break = i > 0 &&
     ends_with_forced_column_break_descendant(flow_nodes[i - 1].children)
-  let force_column_break_before = child_style.break_before ==
-    @style.BreakBefore::Column ||
-    nested_starts_with_forced_column_break ||
+  let has_prior_column_content = has_prior_multicol_column_content(
+    i, flow_styles, flow_nodes,
+  )
+  let leading_legend_height = if i > 0 {
+    match (flow_nodes.get(0), flow_children.get(0)) {
+      (Some(first_node), Some(first_child)) =>
+        if first_node.id.has_prefix("legend") {
+          first_child.layout.height
+        } else {
+          0.0
+        }
+      _ => 0.0
+    }
+  } else {
+    0.0
+  }
+  if not(has_prior_column_content) && leading_legend_height > 0.0 {
+    effective_pos = if effective_pos > leading_legend_height {
+      effective_pos - leading_legend_height
+    } else {
+      0.0
+    }
+    current_pos = effective_pos
+  }
+  let force_column_break_before = (
+      child_style.break_before == @style.BreakBefore::Column &&
+      has_prior_column_content
+    ) ||
+    (nested_starts_with_forced_column_break && has_prior_column_content) ||
     (
       i > 0 &&
       (
@@ -1531,10 +1583,20 @@ fn process_multicol_flow_child(
         } else {
           child_layout.height
         }
+        let leading_legend_offset = if i > 0 {
+          let delta = leading_legend_height - border.top
+          if delta > 0.0 {
+            delta
+          } else {
+            0.0
+          }
+        } else {
+          0.0
+        }
         let positioned_y = if child_style.column_span == @style.ColumnSpan::All {
           effective_pos
         } else {
-          row_index.to_double() * limit + local_y
+          row_index.to_double() * limit + local_y + leading_legend_offset
         }
         let has_nested_forced_column_break = has_forced_column_break_descendant(
           child_node.children,

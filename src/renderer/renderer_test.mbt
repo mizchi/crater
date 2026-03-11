@@ -1,4 +1,32 @@
 ///|
+#cfg(target="js")
+extern "js" fn set_builtin_text_advance_ratio_override_for_test(
+  ratio : Double,
+) -> Unit =
+  #|(ratio) => {
+  #|  globalThis.__craterBuiltinTextAdvanceRatio = ratio;
+  #|}
+
+///|
+#cfg(not(target="js"))
+fn set_builtin_text_advance_ratio_override_for_test(_ratio : Double) -> Unit {
+  ()
+}
+
+///|
+#cfg(target="js")
+extern "js" fn clear_builtin_text_advance_ratio_override_for_test() -> Unit =
+  #|() => {
+  #|  delete globalThis.__craterBuiltinTextAdvanceRatio;
+  #|}
+
+///|
+#cfg(not(target="js"))
+fn clear_builtin_text_advance_ratio_override_for_test() -> Unit {
+  ()
+}
+
+///|
 test "position relative with negative offset" {
   let html =
     #|<div style="width: 100px; height: 100px;">
@@ -899,6 +927,56 @@ test "text metrics provider affects default text input intrinsic width" {
   }
   inspect(overridden_intrinsic.max_width, content="133")
   @renderer.clear_text_metrics_provider()
+}
+
+///|
+test "builtin text advance ratio override affects boundary whitespace text width" {
+  @renderer.clear_text_metrics_provider()
+  clear_builtin_text_advance_ratio_override_for_test()
+  let html =
+    #|<!doctype html>
+    #|<html><body>
+    #|<table><tr><td>
+    #|  <div style="height: 10px;"></div>
+    #|  Can you see this text?
+    #|</td></tr></table>
+    #|</body></html>
+  fn find_text_measure_with_phrase(
+    node : @node.Node,
+    phrase : String,
+  ) -> @types.MeasureFunc? {
+    match node.text {
+      Some(text) => if text.contains(phrase) { return node.measure }
+      None => ()
+    }
+    for child in node.children {
+      match find_text_measure_with_phrase(child, phrase) {
+        Some(measure) => return Some(measure)
+        None => ()
+      }
+    }
+    None
+  }
+  let ctx = @renderer.RenderContext::default()
+  let default_node = @renderer.render_to_node(html, ctx)
+  let default_measure = match
+    find_text_measure_with_phrase(default_node, "Can you see this text?") {
+    Some(measure) => measure
+    None => abort("expected text measure")
+  }
+  let default_intrinsic = (default_measure.func)(9999.0, 9999.0)
+  inspect(default_intrinsic.max_width, content="176")
+
+  set_builtin_text_advance_ratio_override_for_test(0.4)
+  let overridden_node = @renderer.render_to_node(html, ctx)
+  let overridden_measure = match
+    find_text_measure_with_phrase(overridden_node, "Can you see this text?") {
+    Some(measure) => measure
+    None => abort("expected overridden text measure")
+  }
+  let overridden_intrinsic = (overridden_measure.func)(9999.0, 9999.0)
+  inspect(overridden_intrinsic.max_width, content="140.8")
+  clear_builtin_text_advance_ratio_override_for_test()
 }
 
 ///|

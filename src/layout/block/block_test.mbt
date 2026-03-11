@@ -2903,3 +2903,65 @@ test "multicol_balance_moves_third_display_contents_item_to_next_column" {
   inspect(layout.children[2].x, content="408")
   inspect(layout.children[2].y, content="8")
 }
+
+///|
+test "multicol_single_display_contents_child_uses_descendant_flow_items" {
+  let default_style = @style.Style::default()
+  let leaf_style = {
+    ..default_style,
+    width: @types.Length(392.0),
+    height: @types.Length(19.2),
+  }
+  let first_contents = @node.Node::new(
+    "div.contents",
+    { ..default_style, display: @types.Contents },
+    [@node.Node::leaf("div", leaf_style)],
+  )
+  let second_contents = @node.Node::new(
+    "div.contents",
+    { ..default_style, display: @types.Contents },
+    [@node.Node::leaf("div", leaf_style)],
+  )
+  let third_contents = @node.Node::new(
+    "div.contents",
+    { ..default_style, display: @types.Contents },
+    [@node.Node::leaf("div", leaf_style)],
+  )
+  let contents_wrapper = @node.Node::new(
+    "div.columns",
+    { ..default_style, display: @types.Contents },
+    [first_contents, second_contents, third_contents],
+  )
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      width: @types.Length(800.0),
+      height: @types.Length(64.0),
+      column_count: Some(2),
+      column_gap: @types.Length(16.0),
+      column_gap_is_normal: false,
+      column_fill: @style.ColumnFill::Balance,
+    },
+    [contents_wrapper],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(64.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 64.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children.length(), content="1")
+  inspect(layout.children[0].width, content="0")
+  inspect(layout.children[0].height, content="0")
+  inspect(layout.children[0].children[0].x, content="0")
+  inspect(layout.children[0].children[0].y, content="0")
+  inspect(layout.children[0].children[1].x, content="0")
+  inspect(layout.children[0].children[1].y, content="19.2")
+  inspect(layout.children[0].children[2].x, content="408")
+  inspect(layout.children[0].children[2].y, content="0")
+}

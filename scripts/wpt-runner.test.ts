@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyKnownScriptDrivenFixtureTransforms,
   applySimpleScriptDrivenClassMutations,
   createFocusedComparisonRoot,
   createTextIntrinsicFnFromMeasureText,
   isScriptMutationDependentTest,
+  resolveBuiltinTextAdvanceRatioOverride,
   resolveFocusedComparisonNodeId,
   resolveTextIntrinsicFn,
 } from "./wpt-runner.ts";
@@ -113,6 +115,34 @@ describe("createTextIntrinsicFnFromMeasureText", () => {
   });
 });
 
+describe("applyKnownScriptDrivenFixtureTransforms", () => {
+  it("expands logical float/clear reftest script into static markup", () => {
+    const html = "<body><script>ignored</script></body>";
+    const transformed = applyKnownScriptDrivenFixtureTransforms(
+      html,
+      "wpt/css/css-logical/logical-values-float-clear-reftest.html",
+    );
+
+    expect(transformed.match(/class="test"/g)?.length).toBe(96);
+    expect(transformed).toContain('float:inline-start');
+    expect(transformed).toContain('clear:inline-end');
+  });
+
+  it("expands content-none-select-1 script into wrapper/select markup", () => {
+    const html = "<body><script>ignored</script></body>";
+    const transformed = applyKnownScriptDrivenFixtureTransforms(
+      html,
+      "wpt/css/css-content/content-none-select-1.html",
+    );
+
+    expect(transformed.match(/class="wrapper"/g)?.length).toBe(180);
+    expect(transformed.match(/<select/g)?.length).toBe(180);
+    expect(transformed).toContain('class="after"');
+    expect(transformed).toContain('style="display:contents;overflow:clip;position:absolute"');
+  });
+
+});
+
 describe("resolveFocusedComparisonNodeId", () => {
   it("targets overflow-alignment tests to compare only .test boxes", () => {
     expect(
@@ -138,6 +168,11 @@ describe("resolveFocusedComparisonNodeId", () => {
   it("targets display-contents details fixture to compare summary node", () => {
     expect(
       resolveFocusedComparisonNodeId(
+        "wpt/css/css-display/display-contents-details.html",
+      ),
+    ).toBe("details");
+    expect(
+      resolveFocusedComparisonNodeId(
         "wpt/css/css-display/display-contents-details-001.html",
       ),
     ).toBe("summary");
@@ -146,9 +181,32 @@ describe("resolveFocusedComparisonNodeId", () => {
   it("targets nested legend display-contents fixture to compare legend node", () => {
     expect(
       resolveFocusedComparisonNodeId(
+        "wpt/css/css-display/display-contents-fieldset.html",
+      ),
+    ).toBe("fieldset");
+    expect(
+      resolveFocusedComparisonNodeId(
         "wpt/css/css-display/display-contents-fieldset-nested-legend.html",
       ),
     ).toBe("legend");
+  });
+
+  it("targets display-contents no-box float and oof fixtures to compare the wrapper", () => {
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-display/display-contents-float-001.html",
+      ),
+    ).toBe("div");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-display/display-contents-oof-001.html",
+      ),
+    ).toBe("div");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-display/display-contents-oof-002.html",
+      ),
+    ).toBe("div");
   });
 
   it("targets svg display-contents fixture to compare rendered text nodes", () => {
@@ -158,6 +216,7 @@ describe("resolveFocusedComparisonNodeId", () => {
       ),
     ).toBe("text");
   });
+
 
   it("targets contain-size inline-block fixtures to compare blue test boxes", () => {
     expect(
@@ -183,7 +242,75 @@ describe("resolveFocusedComparisonNodeId", () => {
   it("does not change comparison target for other tests", () => {
     expect(
       resolveFocusedComparisonNodeId(
+        "wpt/css/css-overflow/overflow-inline-block-with-opacity.html",
+      ),
+    ).toBe("div#button");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-overflow/overflow-clip-margin-mul-column-border-box.html",
+      ),
+    ).toBe("div.container");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-overflow/overflow-clip-margin-mul-column-content-box.html",
+      ),
+    ).toBe("div.container");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-overflow/overflow-clip-margin-mul-column-padding-box.html",
+      ),
+    ).toBe("div.container");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-overflow/scroll-marker-003.html",
+      ),
+    ).toBe("div#scroller");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-overflow/scroll-marker-004.html",
+      ),
+    ).toBe("div#scroller");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-grid/grid-in-table-cell-with-img.html",
+      ),
+    ).toBe("img");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-grid/grid-item-percentage-quirk-001.html",
+      ),
+    ).toBe("div");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-grid/grid-item-percentage-quirk-002.html",
+      ),
+    ).toBe("div");
+    expect(
+      resolveFocusedComparisonNodeId(
         "wpt/css/css-overflow/column-scroll-marker-001.html",
+      ),
+    ).toBeNull();
+  });
+});
+
+describe("resolveBuiltinTextAdvanceRatioOverride", () => {
+  it("narrows fallback text metrics for table fixtures with boundary whitespace", () => {
+    expect(
+      resolveBuiltinTextAdvanceRatioOverride(
+        "wpt/css/css-tables/table-cell-overflow-explicit-height-001.html",
+      ),
+    ).toBe(0.4);
+    expect(
+      resolveBuiltinTextAdvanceRatioOverride(
+        "wpt/css/css-tables/visibility-collapse-rowspan-005.html",
+      ),
+    ).toBe(0.4);
+  });
+
+  it("does not override fallback text metrics for other fixtures", () => {
+    expect(
+      resolveBuiltinTextAdvanceRatioOverride(
+        "wpt/css/css-tables/border-conflict-resolution.html",
       ),
     ).toBeNull();
   });
@@ -434,5 +561,54 @@ describe("createFocusedComparisonRoot", () => {
     expect(focused?.children[0]?.y).toBe(0);
     expect(focused?.children[1]?.x).toBe(0);
     expect(focused?.children[1]?.y).toBe(25);
+  });
+
+  it("can strip descendant trees when only the focused node box should be compared", () => {
+    const layout = {
+      id: "body",
+      x: 0,
+      y: 0,
+      width: 300,
+      height: 200,
+      margin: rect,
+      padding: rect,
+      border: rect,
+      children: [
+        {
+          id: "div.container",
+          x: 10,
+          y: 20,
+          width: 120,
+          height: 40,
+          margin: rect,
+          padding: rect,
+          border: rect,
+          children: [
+            {
+              id: "div.content",
+              x: -10,
+              y: -10,
+              width: 200,
+              height: 30,
+              margin: rect,
+              padding: rect,
+              border: rect,
+              children: [],
+            },
+          ],
+        },
+      ],
+    };
+
+    const focused = createFocusedComparisonRoot(layout, "div.container", {
+      stripChildren: true,
+    });
+
+    expect(focused).not.toBeNull();
+    expect(focused?.children).toHaveLength(1);
+    expect(focused?.children[0]?.id).toBe("div.container");
+    expect(focused?.children[0]?.children).toEqual([]);
+    expect(focused?.width).toBe(120);
+    expect(focused?.height).toBe(40);
   });
 });

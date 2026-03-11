@@ -154,6 +154,20 @@ pub fn clear_text_metrics_provider() -> Unit {
 }
 
 ///|
+#cfg(target="js")
+extern "js" fn get_builtin_text_advance_ratio_override() -> Double =
+  #|() => {
+  #|  const ratio = Number(globalThis.__craterBuiltinTextAdvanceRatio);
+  #|  return Number.isFinite(ratio) ? ratio : -1;
+  #|}
+
+///|
+#cfg(not(target="js"))
+fn get_builtin_text_advance_ratio_override() -> Double {
+  -1.0
+}
+
+///|
 /// Image intrinsic-size provider hook for integrating external image metadata resolvers.
 pub struct ImageIntrinsicSizeProvider {
   func : (String) -> (Double, Double)?
@@ -340,7 +354,12 @@ fn create_text_measure(
       trimmed = trimmed + " "
     }
   }
-  let mut effective_char_width_ratio = char_width_ratio
+  let override_ratio = get_builtin_text_advance_ratio_override()
+  let mut effective_char_width_ratio = if override_ratio > 0.0 {
+    override_ratio
+  } else {
+    char_width_ratio
+  }
   if font_size >= 80.0 && text_line_height <= font_size * 1.01 {
     let mut all_ahem_like = true
     for c in trimmed.iter() {
@@ -1876,6 +1895,11 @@ fn create_image_measure(
       }
     },
   }
+}
+
+///|
+fn broken_img_alt_uses_non_replaced_overflow_box(style : @style.Style) -> Bool {
+  style.overflow_x != @types.Visible || style.overflow_y != @types.Visible
 }
 
 ///|
@@ -5564,6 +5588,7 @@ fn element_to_node_with_styles_internal(
     let mut intrinsic_height = attr_height
     let mut uses_svg_fallback_object_size = false
     let mut uses_alt_fallback_size = false
+    let mut uses_alt_text_overflow_box = false
     // Fill missing intrinsic dimensions from src data when available.
     if intrinsic_width == 0.0 || intrinsic_height == 0.0 {
       match elem.attributes.get("src") {
@@ -5607,18 +5632,22 @@ fn element_to_node_with_styles_internal(
       match alt_text {
         Some(alt) =>
           if alt.length() > 0 {
-            intrinsic_width = 64.0
-            intrinsic_height = if style.display == @types.Block {
-              let fallback_line_height = if style.line_height > 0.0 {
-                style.line_height
-              } else {
-                style.font_size
-              }
-              96.0 + fallback_line_height
+            if broken_img_alt_uses_non_replaced_overflow_box(style) {
+              uses_alt_text_overflow_box = true
             } else {
-              96.0
+              intrinsic_width = 64.0
+              intrinsic_height = if style.display == @types.Block {
+                let fallback_line_height = if style.line_height > 0.0 {
+                  style.line_height
+                } else {
+                  style.font_size
+                }
+                96.0 + fallback_line_height
+              } else {
+                96.0
+              }
+              uses_alt_fallback_size = true
             }
-            uses_alt_fallback_size = true
           }
         None => ()
       }
@@ -5697,7 +5726,13 @@ fn element_to_node_with_styles_internal(
     }
     return match alt_text {
       Some(alt) =>
-        @node.Node::with_measure(node_id, img_style, measure, text=alt)
+        if uses_alt_text_overflow_box {
+          @node.Node::new(node_id, { ..img_style, aspect_ratio: None }, [
+            create_text_node(alt, img_style),
+          ])
+        } else {
+          @node.Node::with_measure(node_id, img_style, measure, text=alt)
+        }
       None => @node.Node::with_measure(node_id, img_style, measure)
     }
   }
@@ -5873,8 +5908,9 @@ fn element_to_node_with_styles_internal(
   }
 
   // Handle video/audio as replaced elements with fallback intrinsic size.
-  // These fallback sizes should not imply a concrete intrinsic aspect ratio.
-  if (tag_lower == "video" || tag_lower == "audio") && children.is_empty() {
+  // These fallback sizes should not imply a concrete intrinsic aspect ratio,
+  // and source/track/fallback descendants do not affect the outer replaced box.
+  if tag_lower == "video" || tag_lower == "audio" {
     let default_width = 300.0
     let default_height = 150.0
     let intrinsic_width = match elem.attributes.get("width") {

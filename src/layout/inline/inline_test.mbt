@@ -114,6 +114,42 @@ test "ifc_negative_top_margin_atomic_inline_keeps_line_box_band" {
 }
 
 ///|
+test "ifc_atomic_inline_flex_with_block_descendants_stays_on_same_line" {
+  let default_style = @style.Style::default()
+  let block_child = @node.Node::leaf("inner", {
+    ..default_style,
+    display: @types.Block,
+    width: @types.Length(8.0),
+    height: @types.Length(19.2),
+  })
+  let inline_flex_style = {
+    ..default_style,
+    display: @types.InlineFlex,
+    width: @types.Length(24.0),
+    height: @types.Length(19.2),
+  }
+  let child1 = @node.Node::new("iflex1", inline_flex_style, [block_child])
+  let child2 = @node.Node::new("iflex2", inline_flex_style, [block_child])
+  let child3 = @node.Node::new("iflex3", inline_flex_style, [block_child])
+  let result = compute_ifc(
+    [child1, child2, child3],
+    200.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
+  inspect(result.layouts.length(), content="3")
+  inspect(result.layouts[0].x, content="0")
+  inspect(result.layouts[1].x, content="24")
+  inspect(result.layouts[2].x, content="48")
+  inspect(result.layouts[0].y, content="0")
+  inspect(result.layouts[1].y, content="0")
+  inspect(result.layouts[2].y, content="0")
+  inspect(result.total_height, content="19.2")
+}
+
+///|
 test "ifc_line_wrapping" {
   // Three inline-block elements, third should wrap to new line
   let default_style = @style.Style::default()

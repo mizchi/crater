@@ -313,6 +313,100 @@ test "contain_size_inline_block_img_uses_broken_alt_fallback_size" {
 }
 
 ///|
+test "broken_img_with_scroll_overflow_uses_non_replaced_alt_box_height" {
+  let html_str =
+    #|<!doctype html>
+    #|<style>
+    #|  img {
+    #|    border: solid;
+    #|    display: block;
+    #|    width: 150px;
+    #|    padding: 10px;
+    #|    overflow: scroll;
+    #|  }
+    #|</style>
+    #|<img src="about:invalid" alt="I have scrollbar ................................................................">
+  let body = @renderer.render(html_str, @renderer.RenderContext::default())
+  let layout = body.children[0]
+  guard (layout.width - 173.0).abs() < 0.01 else {
+    fail("broken img scroll fallback should keep explicit border-box width")
+  }
+  guard layout.children.length() == 1 else {
+    fail("broken img scroll fallback should expose alt text as inline child")
+  }
+  guard layout.children[0].id == "#text" else {
+    fail("broken img scroll fallback child should be text")
+  }
+  guard layout.height < 140.0 else {
+    fail(
+      "broken img scroll fallback should not keep large replaced fallback height",
+    )
+  }
+}
+
+///|
+test "video_with_source_children_keeps_explicit_replaced_size" {
+  let html_str =
+    #|<!doctype html>
+    #|<style>
+    #|  body { margin: 0; }
+    #|  video {
+    #|    border: 4px solid red;
+    #|    width: 400px;
+    #|    height: 300px;
+    #|}
+    #|</style>
+    #|<video controls><source src="about:invalid" type="video/mp4"></video>
+  let body = @renderer.render(html_str, @renderer.RenderContext::default())
+  let layout = body.children[0]
+  guard (layout.width - 408.0).abs() < 0.01 else {
+    fail("video with source child should keep explicit replaced width")
+  }
+  guard (layout.height - 308.0).abs() < 0.01 else {
+    fail("video with source child should keep explicit replaced height")
+  }
+}
+
+///|
+test "fieldset_multicol_ignores_first_break_before_column_after_legend" {
+  let html_str =
+    #|<!doctype html>
+    #|<style>
+    #|  body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|  #scroller {
+    #|    overflow: hidden;
+    #|    columns: 2;
+    #|    column-fill: auto;
+    #|    padding: 0;
+    #|    gap: 0;
+    #|    width: 400px;
+    #|    height: 100px;
+    #|}
+    #|  fieldset {
+    #|    border: 3px solid black;
+    #|  }
+    #|</style>
+    #|<fieldset id="scroller">
+    #|  <legend>Legend</legend>
+    #|  <div style="break-before:column;">first</div>
+    #|  <div style="break-before:column;">second</div>
+    #|</fieldset>
+  let body = @renderer.render(html_str, @renderer.RenderContext::default())
+  let fieldset = body.children[0]
+  let first = fieldset.children[1]
+  let second = fieldset.children[2]
+  guard (first.x - 3.0).abs() < 0.01 else {
+    fail("first post-legend multicol child should stay in first column")
+  }
+  guard (first.y - 19.2).abs() < 0.01 else {
+    fail("first post-legend multicol child should start below legend band")
+  }
+  guard (second.x - 203.0).abs() < 0.01 else {
+    fail("second child with break-before:column should move to second column")
+  }
+}
+
+///|
 test "contain_size_svg_leaf_collapses_to_border_box" {
   // Regression for css-contain/contain-size-replaced-003a{b,c}.html:
   // inline svg should stay replaced and keep contain:size suppression.

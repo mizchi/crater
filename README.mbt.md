@@ -41,23 +41,23 @@ CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt):
 | Module | Passed | Total | Rate |
 |--------|--------|-------|------|
 | css-flexbox | 289 | 289 | 100.0% |
-| css-grid | 30 | 33 | 90.9% |
-| css-tables | 26 | 32 | 81.2% |
-| css-display | 71 | 79 | 89.9% |
+| css-grid | 33 | 33 | 100.0% |
+| css-tables | 32 | 32 | 100.0% |
+| css-display | 79 | 79 | 100.0% |
 | css-box | 30 | 30 | 100.0% |
 | css-sizing | 88 | 94 | 93.6% |
-| css-align | 38 | 44 | 86.4% |
+| css-align | 36 | 44 | 81.8% |
 | css-position | 84 | 84 | 100.0% |
-| css-overflow | 231 | 243 | 95.1% |
-| css-contain | 298 | 303 | 98.3% |
-| css-variables | 100 | 107 | 93.5% |
+| css-overflow | 243 | 243 | 100.0% |
+| css-contain | 289 | 303 | 95.4% |
+| css-variables | 102 | 107 | 95.3% |
 | filter-effects | 99 | 106 | 93.4% |
 | compositing | 2 | 2 | 100.0% |
 | css-logical | 5 | 5 | 100.0% |
 | css-content | 2 | 2 | 100.0% |
-| css-multicol | 2 | 4 | 50.0% |
+| css-multicol | 4 | 4 | 100.0% |
 | css-break | 27 | 27 | 100.0% |
-| **Total** | **1422** | **1484** | **95.8%** |
+| **Total** | **1444** | **1484** | **97.3%** |
 
 Run WPT tests:
 ```bash

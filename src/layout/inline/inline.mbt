@@ -525,6 +525,19 @@ fn has_inflow_block_descendant(node : @node.Node) -> Bool {
 }
 
 ///|
+fn inline_atomic_box_ignores_descendant_block_breaks(
+  display : @types.Display,
+) -> Bool {
+  match display {
+    @types.InlineBlock
+    | @types.InlineFlex
+    | @types.InlineGrid
+    | @types.InlineTable => true
+    _ => false
+  }
+}
+
+///|
 fn shift_layout_subtree(
   layout : @types.Layout,
   dx : Double,
@@ -1087,6 +1100,10 @@ pub fn compute_ifc(
   let child_has_inflow_block_desc_flag : Array[Bool] = []
   for child in children {
     if child.style.display == @types.Display::None {
+      child_has_inflow_block_desc_flag.push(false)
+    } else if inline_atomic_box_ignores_descendant_block_breaks(
+        child.style.display,
+      ) {
       child_has_inflow_block_desc_flag.push(false)
     } else {
       child_has_inflow_block_desc_flag.push(has_inflow_block_descendant(child))

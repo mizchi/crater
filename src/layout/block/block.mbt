@@ -3704,6 +3704,44 @@ fn compute_with_collapse(
   } else {
     (1, actual_child_available_width, 0.0)
   }
+  if multicol_enabled &&
+    float_nodes.length() == 0 &&
+    not(has_non_flow_children) &&
+    flow_nodes.length() == 1 &&
+    flow_nodes[0].style.display == @types.Contents {
+    let contents_child = flow_nodes[0]
+    let synthetic_node = @node.Node::with_uid_and_measure(
+      node.id,
+      node.uid,
+      style,
+      contents_child.children,
+      node.measure,
+      node.text,
+    )
+    let synthetic_result = compute_with_collapse(
+      synthetic_node, ctx, warnings, dispatch,
+    )
+    let contents_layout : @types.Layout = {
+      id: contents_child.id,
+      x: 0.0,
+      y: 0.0,
+      width: 0.0,
+      height: 0.0,
+      margin: @types.Rect::zero(),
+      padding: @types.Rect::zero(),
+      border: @types.Rect::zero(),
+      overflow_x: @types.Visible,
+      overflow_y: @types.Visible,
+      scroll_width: 0.0,
+      scroll_height: 0.0,
+      children: synthetic_result.layout.children,
+      text: contents_child.text,
+    }
+    return {
+      layout: { ..synthetic_result.layout, children: [contents_layout] },
+      collapsed: synthetic_result.collapsed,
+    }
+  }
 
   // Check if we should use Inline Formatting Context (IFC)
   // IFC is used when all flow children are inline-level elements
