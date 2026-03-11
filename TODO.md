@@ -339,7 +339,7 @@
 ## WPT サポート状況（2026-03-11）
 
 - 実測コマンド: `npx tsx scripts/wpt-runner.ts <module> --workers 4`
-- 全体: `1472 / 1484 passed`（`99.2%`、`12 failed`）
+- 全体: `1477 / 1484 passed`（`99.5%`、`7 failed`）
 
 | Module | Passed | Failed | Total | Rate |
 |--------|--------|--------|-------|------|
@@ -352,7 +352,7 @@
 | css-align | 44 | 0 | 44 | 100.0% |
 | css-position | 84 | 0 | 84 | 100.0% |
 | css-overflow | 243 | 0 | 243 | 100.0% |
-| css-contain | 298 | 5 | 303 | 98.3% |
+| css-contain | 303 | 0 | 303 | 100.0% |
 | css-variables | 107 | 0 | 107 | 100.0% |
 | filter-effects | 99 | 7 | 106 | 93.4% |
 | compositing | 2 | 0 | 2 | 100.0% |
@@ -376,15 +376,10 @@
 - `css-sizing`: `88 / 94` -> `94 / 94`
 - `css-variables`: `102 / 107` -> `107 / 107`
 - `css-align`: `36 / 44` -> `44 / 44`
+- `css-contain`: `298 / 303` -> `303 / 303`
 
 ### 直近の優先候補
 
-- `css-contain` の残件（`5 failed`）
-  - `contain-layout-breaks-002.html`
-  - `contain-layout-suppress-baseline-002.html`
-  - `contain-size-button-002.html`
-  - `contain-size-monolithic-001.html`
-  - `contain-size-monolithic-002.html`
 - `filter-effects` の残件（`7 failed`）
 
 ### WPT 拡張メモ
@@ -539,7 +534,7 @@
 
 ## WPT 伸び代メモ（2026-02-27, 履歴）
 
-- 注: この節は 2026-02-27 時点の履歴メモ。現状は上のサマリを参照（2026-03-11 時点で `298 / 303 passed`）。
+- 注: この節は 2026-02-27 時点の履歴メモ。現状は上のサマリを参照（2026-03-11 時点で `303 / 303 passed`）。
 
 - 全体: `1064 / 1446 passed`（`382 failed`）
 - 失敗上位モジュール:

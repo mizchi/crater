@@ -5457,11 +5457,11 @@ fn element_to_node_with_styles_internal(
         for c in label.iter() {
           label_cols = label_cols + char_display_width(c)
         }
-        let label_width = label_cols.to_double() * char_width * 0.85
+        let label_width = label_cols.to_double() * char_width
         let min_width = control_font_size * 1.75
         let intrinsic_w = @types.max(
           min_width,
-          label_width + control_font_size * 0.3,
+          label_width + control_font_size * 0.72,
         )
         (intrinsic_w, 21.0)
       }
@@ -5512,6 +5512,35 @@ fn element_to_node_with_styles_internal(
       },
     }
     return @node.Node::with_measure(node_id, input_style, measure)
+  }
+  let style = if tag_lower == "button" &&
+    not(style.contain.size) &&
+    not(style.writing_mode.is_vertical()) {
+    fn is_zero_padding(dim : @types.Dimension) -> Bool {
+      match dim {
+        @types.Length(v) => v == 0.0
+        _ => false
+      }
+    }
+    let has_zero_padding = is_zero_padding(style.padding.top) &&
+      is_zero_padding(style.padding.right) &&
+      is_zero_padding(style.padding.bottom) &&
+      is_zero_padding(style.padding.left)
+    if has_zero_padding {
+      {
+        ..style,
+        padding: {
+          top: @types.Length(0.7),
+          right: @types.Length(4.75),
+          bottom: @types.Length(0.7),
+          left: @types.Length(4.75),
+        },
+      }
+    } else {
+      style
+    }
+  } else {
+    style
   }
   if tag_lower == "textarea" {
     let font_size = if style.font_size > 0.0 { style.font_size } else { 16.0 }

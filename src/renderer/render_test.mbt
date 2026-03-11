@@ -1402,6 +1402,44 @@ test "wpt_contain_layout_breaks_forced_column_break_stays_in_multicol" {
 }
 
 ///|
+test "wpt_contain_layout_forced_break_does_not_escape_parent" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|article {
+    #|  columns: 2 100px;
+    #|  column-fill: auto;
+    #|  column-gap: 0;
+    #|  float: left;
+    #|  height: 400px;
+    #|}
+    #|#yellow-normal { border-top: yellow solid 100px; }
+    #|#blue-parent {
+    #|  border-top: blue solid 100px;
+    #|  contain: layout;
+    #|}
+    #|#orange-child {
+    #|  border-top: orange solid 100px;
+    #|  break-before: column;
+    #|}
+    #|</style>
+    #|<article>
+    #|  <div id="yellow-normal"></div>
+    #|  <div id="blue-parent"><div id="orange-child"></div></div>
+    #|</article>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let article = layout.children[0]
+  let blue_parent = article.children[1]
+  let orange_child = blue_parent.children[0]
+  inspect(blue_parent.x, content="0")
+  inspect(blue_parent.y, content="100")
+  inspect(blue_parent.height, content="200")
+  inspect(orange_child.x, content="0")
+  inspect(orange_child.y, content="100")
+}
+
+///|
 test "multicol_break_inside_avoid_keeps_block_unfragmented" {
   // Regression for css-contain/contain-style-breaks-00{1,2,3}.html.
   let html_str =
@@ -1856,6 +1894,57 @@ test "contain_size_multicol_fragment_union_matches_browser_rects" {
   guard inner.height < 30.0 else {
     fail("fragmented union height should collapse to one fragment band")
   }
+}
+
+///|
+test "contain_size_text_only_multicol_child_keeps_zero_outer_height" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#multi-column {
+    #|  column-count: 2;
+    #|  column-fill: balance;
+    #|  column-gap: 4ch;
+    #|  column-rule: red solid 4ch;
+    #|  column-width: 2ch;
+    #|  font-family: monospace;
+    #|  font-size: 20px;
+    #|  width: 8ch;
+    #|}
+    #|#size-contain { contain: size; }
+    #|</style>
+    #|<div id="multi-column"><div id="size-contain">AB CD EF GH</div></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let multicol = layout.children[0]
+  let contain = multicol.children[0]
+  inspect(multicol.height, content="0")
+  inspect(contain.height, content="0")
+}
+
+///|
+test "contain_size_abspos_monolithic_box_keeps_explicit_size_inside_multicol" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#multicol { width: 300px; column-count: 3; }
+    #|#container { position: relative; }
+    #|#abs-size-contain {
+    #|  position: absolute;
+    #|  contain: size;
+    #|  width: 100px;
+    #|  height: 100px;
+    #|  background: green;
+    #|}
+    #|</style>
+    #|<div id="multicol"><div id="container"><div id="abs-size-contain"></div></div></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let multicol = layout.children[0]
+  let container = multicol.children[0]
+  let abs_box = container.children[0]
+  inspect(abs_box.width, content="100")
+  inspect(abs_box.height, content="100")
 }
 
 ///|

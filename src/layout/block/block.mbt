@@ -4603,6 +4603,7 @@ fn compute_with_collapse(
     let mut content_height = flow_content_height
     if style.height == @types.Auto {
       let mut adjusted_flow_extent = 0.0
+      let content_offset_y = padding.top + border.top
       for i = 0
           i < adjusted_child_layouts.length() && i < flow_nodes.length()
           i = i + 1 {
@@ -4622,7 +4623,12 @@ fn compute_with_collapse(
         } else {
           descendant_h
         }
-        let extent = adjusted_child_layouts[i].y + child_block
+        let child_content_y = if adjusted_child_layouts[i].y > content_offset_y {
+          adjusted_child_layouts[i].y - content_offset_y
+        } else {
+          0.0
+        }
+        let extent = child_content_y + child_block
         if extent > adjusted_flow_extent {
           adjusted_flow_extent = extent
         }
@@ -5958,12 +5964,13 @@ fn compute_with_collapse(
     for i = 0; i < flow_indices.length() && i < flow_styles.length(); i = i + 1 {
       match layout_map.get(flow_indices[i]) {
         Some(positioned_layout) => {
-          let child_children_height = get_children_flow_extent_height(
-            positioned_layout.children,
+          let child_descendant_height = get_child_descendant_flow_extent_for_auto_height(
+            flow_nodes[i],
+            positioned_layout,
           )
-          let child_visual_height = if child_children_height >
+          let child_visual_height = if child_descendant_height >
             positioned_layout.height {
-            child_children_height
+            child_descendant_height
           } else {
             positioned_layout.height
           }
@@ -6182,6 +6189,7 @@ fn compute_with_collapse(
 
   let child_layouts : Array[@types.Layout] = []
   let mut adjusted_flow_extent = 0.0
+  let content_offset_y = padding.top + border.top
   for i = 0; i < node.children.length(); i = i + 1 {
     match layout_map.get(i) {
       Some(raw_layout) => {
@@ -6202,7 +6210,12 @@ fn compute_with_collapse(
           } else {
             descendant_h
           }
-          let extent = adjusted_layout.y +
+          let child_content_y = if adjusted_layout.y > content_offset_y {
+            adjusted_layout.y - content_offset_y
+          } else {
+            0.0
+          }
+          let extent = child_content_y +
             child_block +
             adjusted_layout.margin.bottom
           if extent > adjusted_flow_extent {

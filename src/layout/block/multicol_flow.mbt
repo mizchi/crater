@@ -319,11 +319,24 @@ fn resolve_text_align_offset(
 
 ///|
 fn is_inline_flow_participant(node : @node.Node, style : @style.Style) -> Bool {
+  fn atomic_inline_ignores_descendant_flow(display : @types.Display) -> Bool {
+    match display {
+      @types.InlineBlock
+      | @types.InlineFlex
+      | @types.InlineGrid
+      | @types.InlineTable => true
+      _ => false
+    }
+  }
   node.id == "br" ||
   node.id.has_prefix("#text") ||
   (
     @inline.is_inline_level(style.display) &&
-    (node.children.length() == 0 || contents_is_inline_flow(node))
+    (
+      atomic_inline_ignores_descendant_flow(style.display) ||
+      node.children.length() == 0 ||
+      contents_is_inline_flow(node)
+    )
   )
 }
 
@@ -389,7 +402,11 @@ fn resolve_multicol_flow_child_outer_height(
   let child_flow_height = if child_style.display == @types.Contents {
     get_children_total_height(child_layout.children)
   } else if child_layout.height <= 0.0 && child_layout.children.length() > 0 {
-    get_children_total_height(child_layout.children)
+    if child_style.suppresses_intrinsic_height() {
+      child_layout.height
+    } else {
+      get_children_total_height(child_layout.children)
+    }
   } else {
     child_layout.height
   }
@@ -404,7 +421,11 @@ fn resolve_multicol_layout_outer_height(
   let child_flow_height = if child_style.display == @types.Contents {
     get_children_total_height(child_layout.children)
   } else if child_layout.height <= 0.0 && child_layout.children.length() > 0 {
-    get_children_total_height(child_layout.children)
+    if child_style.suppresses_intrinsic_height() {
+      child_layout.height
+    } else {
+      get_children_total_height(child_layout.children)
+    }
   } else {
     child_layout.height
   }
@@ -968,6 +989,9 @@ fn resolve_multicol_positioned_column_span(
 ///|
 fn has_forced_column_break_descendant(children : Array[@node.Node]) -> Bool {
   for child in children {
+    if child.style.contain.layout {
+      continue
+    }
     if child.style.break_before == @style.BreakBefore::Column ||
       child.style.break_after == @style.BreakBefore::Column {
       return true
@@ -1002,6 +1026,9 @@ fn starts_with_forced_column_break_descendant(
     if child.children.length() == 0 {
       return false
     }
+    if child.style.contain.layout {
+      return false
+    }
     return starts_with_forced_column_break_descendant(child.children)
   }
   false
@@ -1033,6 +1060,9 @@ fn ends_with_forced_column_break_descendant(
       return true
     }
     if child.children.length() == 0 {
+      return false
+    }
+    if child.style.contain.layout {
       return false
     }
     return ends_with_forced_column_break_descendant(child.children)
@@ -1355,6 +1385,13 @@ fn process_multicol_flow_child(
   let child_has_direct_inflow_float = has_direct_inflow_float(
     child_node.children,
   )
+  let suppress_contained_nested_forced_break = child_style.contain.layout &&
+    (
+      child_layout.border.top > 0.0 ||
+      child_layout.border.bottom > 0.0 ||
+      child_layout.padding.top > 0.0 ||
+      child_layout.padding.bottom > 0.0
+    )
   let child_can_fragment_internally = child_layout.children.length() > 0 &&
     is_multicol_block_flow_box(child_node, child_style) &&
     not(child_has_direct_inflow_float) &&
@@ -1362,6 +1399,7 @@ fn process_multicol_flow_child(
   let nested_starts_with_forced_column_break = not(
       multicol_participates_in_inline_run,
     ) &&
+    not(suppress_contained_nested_forced_break) &&
     starts_with_forced_column_break_descendant(child_node.children)
   let prev_ends_with_forced_column_break = i > 0 &&
     ends_with_forced_column_break_descendant(flow_nodes[i - 1].children)
@@ -1634,9 +1672,10 @@ fn process_multicol_flow_child(
         } else {
           row_index.to_double() * limit + local_y + leading_legend_offset
         }
-        let has_nested_forced_column_break = has_forced_column_break_descendant(
-          child_node.children,
-        )
+        let has_nested_forced_column_break = not(
+            suppress_contained_nested_forced_break,
+          ) &&
+          has_forced_column_break_descendant(child_node.children)
         let multicol_nested_reflow_candidate = is_multicol_nested_reflow_candidate(
           multicol_participates_in_inline_run, child_layout, multicol_column_width,
         )
@@ -1675,6 +1714,11 @@ fn process_multicol_flow_child(
                 nested_source_children[j].style
               } else {
                 @style.Style::default()
+              }
+              if nested_style.position == @types.Absolute ||
+                nested_style.position == @types.Fixed {
+                nested_layouts.push(nested_layout)
+                continue
               }
               let nested_following_reserved_height = if following_reserved_height >
                 0.0 {

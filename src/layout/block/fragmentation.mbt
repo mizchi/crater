@@ -167,6 +167,11 @@ fn reflow_fragmented_children_with_offset(
     } else {
       @style.Style::default()
     }
+    if child_style.position == @types.Absolute ||
+      child_style.position == @types.Fixed {
+      positioned.push(child_layout)
+      continue
+    }
     let child_following_reserved_height = if first_fragment_end_reserve > 0.0 {
       first_fragment_end_reserve
     } else {
