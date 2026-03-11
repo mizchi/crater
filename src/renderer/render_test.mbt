@@ -158,6 +158,29 @@ test "wpt_flex_aspect_ratio_svg_row_015_like_transferred_max_height_caps_width" 
 }
 
 ///|
+test "wpt_display_flex_svg_default_overflow_uses_zero_auto_min_size" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|div { display: flex; width: 100px; height: 100px; }
+    #|svg { flex-grow: 1; }
+    #|</style>
+    #|<div>
+    #|  <svg>
+    #|    <rect width="150" height="150" fill="green"></rect>
+    #|  </svg>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let flex_layout = layout.children[0]
+  let svg_layout = flex_layout.children[0]
+  inspect(flex_layout.width, content="100")
+  inspect(flex_layout.height, content="100")
+  inspect(svg_layout.width, content="100")
+  inspect(svg_layout.height, content="100")
+}
+
+///|
 test "wpt_row_reverse_default_justify_content_uses_main_start" {
   let html_str =
     #|<!DOCTYPE html>
@@ -4937,6 +4960,36 @@ test "body_auto_height_follows_content_not_viewport" {
 
   inspect(layout.id, content="body")
   inspect(layout.height, content="20")
+}
+
+///|
+test "empty_body_root_with_html_viewport_styles_keeps_viewport_height" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|html {
+    #|  scrollbar-gutter: stable both-edges;
+    #|  background-image: linear-gradient(to right, green, blue);
+    #|}
+    #|</style>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+
+  inspect(layout.height, content="600")
+}
+
+///|
+test "frameset_root_without_content_keeps_viewport_height" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<frameset style="overflow:scroll"></frameset>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+
+  inspect(layout.height, content="600")
+  let frameset = layout.children[0]
+  inspect(frameset.id, content="frameset")
+  inspect(frameset.height, content="600")
 }
 
 ///|

@@ -84,6 +84,25 @@ fn has_percent_sized_replaced_descendant(node : @node.Node) -> Bool {
 }
 
 ///|
+fn has_percent_sized_descendant(node : @node.Node) -> Bool {
+  for child in node.children {
+    let child_uses_percent_size = match
+      (child.style.width, child.style.height) {
+      (@types.Percent(_), _) => true
+      (_, @types.Percent(_)) => true
+      _ => false
+    }
+    if child_uses_percent_size {
+      return true
+    }
+    if has_percent_sized_descendant(child) {
+      return true
+    }
+  }
+  false
+}
+
+///|
 /// Collapsed margins that escape from a child element
 priv struct CollapsedMargins {
   top : Double? // Margin that escapes upward
@@ -2846,7 +2865,7 @@ fn compute_with_collapse(
               // uses viewport-height as the percentage basis in practice.
               Some(available_h) if style.writing_mode.is_vertical() ||
                 node.id == "body" ||
-                has_percent_sized_replaced_descendant(node) =>
+                has_percent_sized_descendant(node) =>
                 Some(
                   @types.max(
                     0.0,
@@ -2861,7 +2880,7 @@ fn compute_with_collapse(
       match ctx.available_height {
         Some(available_h) if style.writing_mode.is_vertical() ||
           node.id == "body" ||
-          has_percent_sized_replaced_descendant(node) =>
+          has_percent_sized_descendant(node) =>
           Some(
             @types.max(
               0.0,

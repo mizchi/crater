@@ -2657,6 +2657,68 @@ fn should_clamp_body_to_viewport(root : @node.Node) -> Bool {
 }
 
 ///|
+fn adjust_root_height_for_viewport(
+  layout : @types.Layout,
+  root : @node.Node,
+  render_root_tag : String,
+  viewport_height : Double,
+) -> @types.Layout {
+  let content_extent = calculate_content_extent(layout)
+  if should_clamp_body_to_viewport(root) {
+    let min_viewport_height = if layout.height < viewport_height {
+      viewport_height
+    } else {
+      layout.height
+    }
+    let final_height = if content_extent > min_viewport_height {
+      content_extent
+    } else {
+      min_viewport_height
+    }
+    return { ..layout, height: final_height }
+  }
+  let keeps_empty_viewport_height = (
+      render_root_tag == "body" || render_root_tag == "html"
+    ) &&
+    root.style.display != @types.Display::Contents &&
+    root.style.position != @types.Absolute &&
+    root.style.position != @types.Fixed &&
+    layout.height <= 0.0 &&
+    content_extent <= 0.0
+  if keeps_empty_viewport_height {
+    return { ..layout, height: viewport_height }
+  }
+  layout
+}
+
+///|
+fn stretch_single_frameset_child_to_root(
+  layout : @types.Layout,
+) -> @types.Layout {
+  if layout.children.length() != 1 {
+    return layout
+  }
+  let child = layout.children[0]
+  let is_frameset = child.id == "frameset" ||
+    child.id.has_prefix("frameset#") ||
+    child.id.has_prefix("frameset.")
+  if not(is_frameset) || child.height > 0.0 {
+    return layout
+  }
+  let adjusted_children : Array[@types.Layout] = []
+  adjusted_children.push({
+    ..child,
+    width: if child.width > 0.0 {
+      child.width
+    } else {
+      layout.width
+    },
+    height: layout.height,
+  })
+  { ..layout, children: adjusted_children }
+}
+
+///|
 /// Create a recursive zero-sized layout for nodes that don't generate a box
 /// (e.g. display:none on root/body).
 fn create_zero_layout_from_node(node : @node.Node) -> @types.Layout {
@@ -2810,7 +2872,12 @@ pub fn render_with_external_css(
   )
   // Root with explicit/% height should resolve against viewport; otherwise keep
   // height unconstrained so content can grow naturally.
-  let root_available_height : Double? = if render_root.tag.to_lower() == "body" {
+  let render_root_tag = render_root.tag.to_lower()
+  let root_available_height : Double? = if render_root_tag == "body" {
+    Some(ctx.viewport_height)
+  } else if render_root_tag == "html" &&
+    root.style.position != @types.Absolute &&
+    root.style.position != @types.Fixed {
     Some(ctx.viewport_height)
   } else {
     match root.style.height {
@@ -2849,24 +2916,13 @@ pub fn render_with_external_css(
     ctx.viewport_width,
     ctx.viewport_height,
   )
-  let scaled_layout = if should_clamp_body_to_viewport(root) {
-    // Body auto-height should be at least viewport-height, but still grow to
-    // include overflowing normal-flow descendants.
-    let min_viewport_height = if scaled_layout.height < ctx.viewport_height {
-      ctx.viewport_height
-    } else {
-      scaled_layout.height
-    }
-    let content_extent = calculate_content_extent(scaled_layout)
-    let final_height = if content_extent > min_viewport_height {
-      content_extent
-    } else {
-      min_viewport_height
-    }
-    { ..scaled_layout, height: final_height }
-  } else {
-    scaled_layout
-  }
+  let scaled_layout = adjust_root_height_for_viewport(
+    scaled_layout,
+    root,
+    render_root_tag,
+    ctx.viewport_height,
+  )
+  let scaled_layout = stretch_single_frameset_child_to_root(scaled_layout)
 
   // Apply root margin as position offset
   // For margin:auto, center horizontally
@@ -3017,7 +3073,12 @@ pub fn render_document_with_external_css(
       None
     },
   )
-  let root_available_height : Double? = if render_root.tag.to_lower() == "body" {
+  let render_root_tag = render_root.tag.to_lower()
+  let root_available_height : Double? = if render_root_tag == "body" {
+    Some(ctx.viewport_height)
+  } else if render_root_tag == "html" &&
+    root.style.position != @types.Absolute &&
+    root.style.position != @types.Fixed {
     Some(ctx.viewport_height)
   } else {
     match root.style.height {
@@ -3056,22 +3117,13 @@ pub fn render_document_with_external_css(
     ctx.viewport_width,
     ctx.viewport_height,
   )
-  let scaled_layout = if should_clamp_body_to_viewport(root) {
-    let min_viewport_height = if scaled_layout.height < ctx.viewport_height {
-      ctx.viewport_height
-    } else {
-      scaled_layout.height
-    }
-    let content_extent = calculate_content_extent(scaled_layout)
-    let final_height = if content_extent > min_viewport_height {
-      content_extent
-    } else {
-      min_viewport_height
-    }
-    { ..scaled_layout, height: final_height }
-  } else {
-    scaled_layout
-  }
+  let scaled_layout = adjust_root_height_for_viewport(
+    scaled_layout,
+    root,
+    render_root_tag,
+    ctx.viewport_height,
+  )
+  let scaled_layout = stretch_single_frameset_child_to_root(scaled_layout)
 
   // Apply root margin offset to final layout
   let margin_left_is_auto = match root.style.margin.left {
@@ -6030,6 +6082,12 @@ fn get_ua_default_style(tag : String) -> @style.Style {
   // Default margins for block elements (based on typical browser defaults)
   // Values are in em units, converted to px assuming 16px base font
   match tag.to_lower() {
+    "frameset" =>
+      {
+        ..default_style,
+        width: @types.Percent(1.0),
+        height: @types.Percent(1.0),
+      }
     "p" =>
       {
         // p has 1em margin-top and margin-bottom

@@ -4528,6 +4528,89 @@ fn compute_internal(
       }
     }
 
+    let svg_default_intrinsic_box = uses_svg_default_intrinsic_box(child)
+    let resolve_row_auto_cross = fn() -> (Double, Bool) {
+      match (child_style.aspect_ratio, explicit_main) {
+        (Some(ratio), Some(main_val)) => (main_val / ratio, true)
+        _ =>
+          if child.children.length() > 0 {
+            (
+              compute_intrinsic_main_size(
+                child,
+                false,
+                Some(content_width),
+                cache,
+                dispatch,
+              ),
+              true,
+            )
+          } else {
+            match child.measure {
+              Some(mf) => {
+                let cross_measure_main = max(
+                  0.0,
+                  base_main -
+                  child_resolved.padding.horizontal_sum() -
+                  child_resolved.border.horizontal_sum(),
+                )
+                let intrinsic = (mf.func)(cross_measure_main, 0.0)
+                (intrinsic.max_height, true)
+              }
+              None => (0.0, true)
+            }
+          }
+      }
+    }
+    let resolve_column_auto_cross = fn() -> (Double, Bool) {
+      match (child_style.aspect_ratio, explicit_main) {
+        (Some(ratio), Some(main_val)) => (main_val * ratio, true)
+        _ => {
+          let is_wrap = match child_style.flex_wrap {
+            @types.Wrap | @types.WrapReverse => true
+            _ => false
+          }
+          let is_row_flex = match child_style.flex_direction {
+            @types.Row | @types.RowReverse => true
+            _ => false
+          }
+          let parent_wraps = match style.flex_wrap {
+            @types.Wrap | @types.WrapReverse => true
+            _ => false
+          }
+          if is_wrap && is_row_flex {
+            (content_width, true)
+          } else if parent_wraps {
+            let min_content_width = compute_min_content_main_size(
+              child, true, row_intrinsic_cross_for_child, cache, dispatch,
+            )
+            let max_content_width = compute_intrinsic_main_size(
+              child, true, row_intrinsic_cross_for_child, cache, dispatch,
+            )
+            let fit_content_width = min(
+              max_content_width,
+              max(min_content_width, available_cross_for_intrinsic),
+            )
+            (fit_content_width, true)
+          } else if child.children.length() > 0 {
+            (
+              compute_intrinsic_main_size(
+                child, true, row_intrinsic_cross_for_child, cache, dispatch,
+              ),
+              true,
+            )
+          } else {
+            match child.measure {
+              Some(mf) => {
+                let intrinsic = (mf.func)(content_width, 0.0)
+                (intrinsic.max_width, true)
+              }
+              None => (0.0, true)
+            }
+          }
+        }
+      }
+    }
+
     // Calculate size on cross axis
     // cross_is_auto indicates whether the cross style dimension is Auto
     // (this is used for stretch behavior - stretch only applies to Auto dimensions)
@@ -4546,7 +4629,9 @@ fn compute_internal(
       } else {
         match child_style.height {
           @types.Length(h) =>
-            if is_table_item {
+            if svg_default_intrinsic_box {
+              resolve_row_auto_cross()
+            } else if is_table_item {
               (
                 max(
                   0.0,
@@ -4577,41 +4662,7 @@ fn compute_internal(
                 }
               None => (0.0, false)
             }
-          @types.Auto =>
-            // Try to use aspect_ratio if main dimension is known
-            // Otherwise compute intrinsic height from children
-            match (child_style.aspect_ratio, explicit_main) {
-              (Some(ratio), Some(main_val)) => (main_val / ratio, true)
-              _ =>
-                // Compute intrinsic height for containers with children
-                if child.children.length() > 0 {
-                  (
-                    compute_intrinsic_main_size(
-                      child,
-                      false,
-                      Some(content_width),
-                      cache,
-                      dispatch,
-                    ),
-                    true,
-                  )
-                } else {
-                  // Leaf node - use MeasureFunc if available
-                  match child.measure {
-                    Some(mf) => {
-                      let cross_measure_main = max(
-                        0.0,
-                        base_main -
-                        child_resolved.padding.horizontal_sum() -
-                        child_resolved.border.horizontal_sum(),
-                      )
-                      let intrinsic = (mf.func)(cross_measure_main, 0.0)
-                      (intrinsic.max_height, true)
-                    }
-                    None => (0.0, true)
-                  }
-                }
-            }
+          @types.Auto => resolve_row_auto_cross()
           @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
             (
               compute_intrinsic_main_size(
@@ -4627,64 +4678,14 @@ fn compute_internal(
       }
     } else {
       match child_style.width {
-        @types.Length(w) => (w, false)
-        @types.Percent(p) => (content_width * p, false)
-        @types.Auto =>
-          // Try to use aspect_ratio if main dimension is known
-          // Otherwise compute intrinsic width from children
-          match (child_style.aspect_ratio, explicit_main) {
-            (Some(ratio), Some(main_val)) => (main_val * ratio, true)
-            _ => {
-              // For row wrap containers, use available width
-              // (they need a definite width to determine when to wrap)
-              let is_wrap = match child_style.flex_wrap {
-                @types.Wrap | @types.WrapReverse => true
-                _ => false
-              }
-              let is_row_flex = match child_style.flex_direction {
-                @types.Row | @types.RowReverse => true
-                _ => false
-              }
-              let parent_wraps = match style.flex_wrap {
-                @types.Wrap | @types.WrapReverse => true
-                _ => false
-              }
-              // Note: Check for wrap/direction regardless of explicit display
-              // (flex_wrap/flex_direction imply flex behavior)
-              if is_wrap && is_row_flex {
-                (content_width, true) // Use available width for row wrap container
-              } else if parent_wraps {
-                let min_content_width = compute_min_content_main_size(
-                  child, true, row_intrinsic_cross_for_child, cache, dispatch,
-                )
-                let max_content_width = compute_intrinsic_main_size(
-                  child, true, row_intrinsic_cross_for_child, cache, dispatch,
-                )
-                let fit_content_width = min(
-                  max_content_width,
-                  max(min_content_width, available_cross_for_intrinsic),
-                )
-                (fit_content_width, true)
-              } else if child.children.length() > 0 {
-                // Compute intrinsic width for containers with children
-                (
-                  compute_intrinsic_main_size(
-                    child, true, row_intrinsic_cross_for_child, cache, dispatch,
-                  ),
-                  true,
-                )
-              } else {
-                // Leaf node - use MeasureFunc if available
-                match child.measure {
-                  Some(mf) => {
-                    let intrinsic = (mf.func)(content_width, 0.0)
-                    (intrinsic.max_width, true)
-                  }
-                  None => (0.0, true)
-                }
-              }
-            }
+        @types.Length(w) =>
+          if svg_default_intrinsic_box {
+            resolve_column_auto_cross()
+          } else {
+            (w, false)
           }
+        @types.Percent(p) => (content_width * p, false)
+        @types.Auto => resolve_column_auto_cross()
         @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
           (
             compute_intrinsic_main_size(
@@ -4713,9 +4714,11 @@ fn compute_internal(
     // Note: In CSS Flexbox, min-width/min-height: auto means the content minimum size
     // For flex items with children, this prevents shrinking below content size
     // Check if overflow is visible (affects automatic minimum size)
+    let has_svg_zero_auto_min = uses_svg_default_intrinsic_box(child)
     let is_overflow_visible = match
       (child_style.overflow_x, child_style.overflow_y) {
-      (@types.Overflow::Visible, @types.Overflow::Visible) => true
+      (@types.Overflow::Visible, @types.Overflow::Visible) =>
+        not(has_svg_zero_auto_min)
       _ => false
     }
     let (min_main, max_main) = if is_row {
