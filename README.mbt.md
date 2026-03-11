@@ -53,7 +53,11 @@ CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt):
 | css-variables | 100 | 107 | 93.5% |
 | filter-effects | 99 | 106 | 93.4% |
 | compositing | 2 | 2 | 100.0% |
-| **Total** | **1386** | **1446** | **95.9%** |
+| css-logical | 5 | 5 | 100.0% |
+| css-content | 2 | 2 | 100.0% |
+| css-multicol | 2 | 4 | 50.0% |
+| css-break | 27 | 27 | 100.0% |
+| **Total** | **1422** | **1484** | **95.8%** |
 
 Run WPT tests:
 ```bash

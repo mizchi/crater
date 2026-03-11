@@ -204,6 +204,15 @@ test "compute_inline break-after parses column value" {
 }
 
 ///|
+test "compute_inline break-before and break-after parse avoid value" {
+  let ctx = @computed.ComputeContext::new()
+  let before = @computed.compute_inline("break-before: avoid", ctx)
+  inspect(before.break_before, content="Avoid")
+  let after = @computed.compute_inline("break-after: avoid", ctx)
+  inspect(after.break_after, content="Avoid")
+}
+
+///|
 test "compute_inline break-inside parses avoid value" {
   let ctx = @computed.ComputeContext::new()
   let style = @computed.compute_inline("break-inside: avoid", ctx)
@@ -322,6 +331,22 @@ test "compute_inline flex properties" {
   inspect(style.display, content="Flex")
   inspect(style.flex_direction, content="Column")
   inspect(style.justify_content, content="Center")
+}
+
+///|
+test "compute_inline resolves logical float and clear with final direction" {
+  let ctx = @computed.ComputeContext::new()
+  let rtl_first = @computed.compute_inline(
+    "direction: rtl; float: inline-start; clear: inline-end", ctx,
+  )
+  inspect(rtl_first.float, content="Right")
+  inspect(rtl_first.clear, content="Left")
+
+  let rtl_last = @computed.compute_inline(
+    "float: inline-start; clear: inline-end; direction: rtl", ctx,
+  )
+  inspect(rtl_last.float, content="Right")
+  inspect(rtl_last.clear, content="Left")
 }
 
 ///|

@@ -38,6 +38,8 @@ pub fn parse_aspect_ratio(String) -> Double?
 
 pub fn parse_clear(String) -> @types.Clear
 
+pub fn parse_clear_with_direction(String, @style.Direction) -> @types.Clear
+
 pub fn parse_clip(String) -> @types.ClipRect
 
 pub fn parse_color(String) -> CssColorValue
@@ -55,6 +57,8 @@ pub fn parse_flex_direction(String) -> @types.FlexDirection
 pub fn parse_flex_wrap(String) -> @types.FlexWrap
 
 pub fn parse_float(String) -> @types.Float
+
+pub fn parse_float_with_direction(String, @style.Direction) -> @types.Float
 
 pub fn parse_grid_area_shorthand(String) -> (@types.GridPlacement, @types.GridPlacement, @types.GridPlacement, @types.GridPlacement)
 

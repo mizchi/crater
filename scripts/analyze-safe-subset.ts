@@ -16,11 +16,13 @@ import puppeteer from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 import { renderer } from '../wasm/dist/crater.js';
+import { loadWptConfig } from './wpt-config.ts';
 
 // Load config from wpt.json
-const wptConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'wpt.json'), 'utf-8'));
+const wptConfig = loadWptConfig();
 const CSS_MODULES: string[] = wptConfig.modules;
 const INCLUDE_PREFIXES: string[] = wptConfig.includePrefixes;
+const MODULE_PREFIXES: Record<string, string[]> = wptConfig.modulePrefixes ?? {};
 
 const WPT_DIR = 'wpt/css';
 const CACHE_FILE = '.wpt-safe-subset-cache.json';
@@ -73,12 +75,12 @@ const CSS_RESET = `
 /**
  * Check if a file is a layout test
  */
-function isLayoutTest(filename: string): boolean {
+function isLayoutTest(filename: string, prefixes: string[] = INCLUDE_PREFIXES): boolean {
   if (!filename.endsWith('.html')) return false;
   if (filename.endsWith('-ref.html')) return false;
   if (filename.includes('support')) return false;
   if (filename.startsWith('reference')) return false;
-  return INCLUDE_PREFIXES.some(prefix => filename.startsWith(prefix));
+  return prefixes.some(prefix => filename.startsWith(prefix));
 }
 
 /**
@@ -89,8 +91,9 @@ function getTestFiles(moduleName: string): string[] {
   if (!fs.existsSync(moduleDir)) {
     return [];
   }
+  const includePrefixes = MODULE_PREFIXES[moduleName] ?? INCLUDE_PREFIXES;
   return fs.readdirSync(moduleDir)
-    .filter(isLayoutTest)
+    .filter(filename => isLayoutTest(filename, includePrefixes))
     .map(f => path.join(moduleDir, f));
 }
 

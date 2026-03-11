@@ -5,10 +5,10 @@
 
 import { execSync } from 'child_process';
 import * as fs from 'fs';
-import * as path from 'path';
+import { loadWptConfig } from './wpt-config.ts';
 
 // Load config from wpt.json
-const wptConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'wpt.json'), 'utf-8'));
+const wptConfig = loadWptConfig();
 const CSS_MODULES: string[] = wptConfig.modules;
 
 interface ModuleResult {

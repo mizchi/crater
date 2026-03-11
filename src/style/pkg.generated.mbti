@@ -20,6 +20,7 @@ pub impl Show for BorderCollapse
 pub(all) enum BreakBefore {
   Auto
   Column
+  Avoid
 }
 pub impl Eq for BreakBefore
 pub impl Show for BreakBefore

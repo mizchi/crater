@@ -612,11 +612,13 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
       match style.break_before {
         @style.BreakBefore::Auto => "auto"
         @style.BreakBefore::Column => "column"
+        @style.BreakBefore::Avoid => "avoid"
       }
     "break-after" =>
       match style.break_after {
         @style.BreakBefore::Auto => "auto"
         @style.BreakBefore::Column => "column"
+        @style.BreakBefore::Avoid => "avoid"
       }
     "break-inside" | "page-break-inside" =>
       match style.break_inside {
@@ -732,6 +734,7 @@ pub fn compute(
     }
   })
 
+  seed_direction(builder, cascaded, ctx)
   // Seed writing-mode before applying logical properties.
   // Logical sizing must follow the element's effective writing mode.
   seed_writing_mode(builder, cascaded, ctx)
@@ -769,6 +772,7 @@ pub fn compute_with_vars(
   })
 
   // Seed writing-mode before applying logical properties.
+  seed_direction(builder, cascaded, ctx)
   seed_writing_mode(builder, cascaded, ctx)
   let font_ctx = seed_font_metrics(builder, cascaded, ctx)
 
@@ -785,6 +789,25 @@ pub fn compute_with_vars(
 
   // Return both the style and the custom properties for children
   (builder.build(), ctx.custom_properties)
+}
+
+///|
+fn seed_direction(
+  builder : StyleBuilder,
+  cascaded : @cascade.CascadedValues,
+  ctx : ComputeContext,
+) -> Unit {
+  match ctx.parent_style {
+    Some(parent_style) => builder.direction = parent_style.direction
+    None => ()
+  }
+  match cascaded.get("direction") {
+    Some(decl) => {
+      let value = resolve_keyword("direction", decl.value, ctx)
+      builder.direction = parse_direction(value)
+    }
+    None => ()
+  }
 }
 
 ///|
@@ -912,8 +935,10 @@ fn apply_property(
     // Display and positioning
     "display" => builder.display = parse_display(value)
     "position" => builder.position = parse_position(value)
-    "float" => builder.float = parse_float(value)
-    "clear" => builder.clear = parse_clear(value)
+    "float" =>
+      builder.float = parse_float_with_direction(value, builder.direction)
+    "clear" =>
+      builder.clear = parse_clear_with_direction(value, builder.direction)
     "box-sizing" =>
       builder.box_sizing = match value.trim().to_lower() {
         "border-box" => @types.BoxSizing::BorderBox
@@ -3487,6 +3512,7 @@ fn parse_column_fill(value : String) -> @style.ColumnFill {
 fn parse_break_before(value : String) -> @style.BreakBefore {
   match value.trim().to_string() {
     "column" => @style.BreakBefore::Column
+    "avoid" => @style.BreakBefore::Avoid
     _ => @style.BreakBefore::Auto
   }
 }

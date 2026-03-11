@@ -282,6 +282,37 @@ fn is_flow_whitespace_char(c : Char) -> Bool {
 }
 
 ///|
+fn white_space_collapses_edges(white_space : @style.WhiteSpace) -> Bool {
+  match white_space {
+    @style.WhiteSpace::Normal
+    | @style.WhiteSpace::Nowrap
+    | @style.WhiteSpace::PreLine => true
+    @style.WhiteSpace::Pre | @style.WhiteSpace::PreWrap => false
+  }
+}
+
+///|
+fn text_ends_with_collapsible_flow_whitespace(node : @node.Node) -> Bool {
+  if not(node.id.has_prefix("#text")) ||
+    not(white_space_collapses_edges(node.style.white_space)) {
+    return false
+  }
+  match node.text {
+    Some(text) => {
+      let chars : Array[Char] = []
+      for c in text.iter() {
+        chars.push(c)
+      }
+      if chars.length() == 0 {
+        return false
+      }
+      is_flow_whitespace_char(chars[chars.length() - 1])
+    }
+    None => false
+  }
+}
+
+///|
 fn is_whitespace_only_flow_text(node : @node.Node) -> Bool {
   if not(node.id.has_prefix("#text")) {
     return false
@@ -2896,10 +2927,22 @@ fn compute_with_collapse(
   }
 
   // Create float context for managing float positions
-  let float_ctx = @float.FloatContext::new(
-    child_available_width,
-    padding.left + border.left,
-  )
+  let float_ctx = if style.writing_mode.is_vertical() {
+    let float_container_height = match child_available_height {
+      Some(h) if h > 0.0 => h
+      _ => if parent_height > 0.0 { parent_height } else { ctx.viewport_height }
+    }
+    @float.FloatContext::new_vertical(
+      child_available_width,
+      padding.left + border.left,
+      float_container_height,
+      padding.top + border.top,
+      style.writing_mode.is_block_rtl(),
+      not(style.direction.is_rtl()),
+    )
+  } else {
+    @float.FloatContext::new(child_available_width, padding.left + border.left)
+  }
 
   // For MaxContent mode, first determine max-content width from children's contributions
   // But if aspect-ratio calculated width is available, prefer that
@@ -3634,8 +3677,7 @@ fn compute_with_collapse(
   let actual_child_available_width = box_width -
     padding.horizontal_sum() -
     border.horizontal_sum()
-  let multicol_enabled = not(style.writing_mode.is_vertical()) &&
-    style.has_multicol()
+  let multicol_enabled = style.has_multicol()
   let (multicol_column_count, multicol_column_width, multicol_column_gap) = if multicol_enabled {
     resolve_multicol_track_geometry(
       style, actual_child_available_width, parent_width,
@@ -3760,6 +3802,48 @@ fn compute_with_collapse(
     }
     if ifc_descendant_extent > content_height {
       content_height = ifc_descendant_extent
+    }
+    if style.writing_mode.is_vertical() {
+      let content_left = padding.left + border.left
+      let content_right = content_left + actual_child_available_width
+      let mut min_inline_x = content_right
+      let mut max_inline_right = content_left
+      for i = 0; i < flow_indices.length(); i = i + 1 {
+        match layout_map.get(flow_indices[i]) {
+          Some(layout) => {
+            if layout.x < min_inline_x {
+              min_inline_x = layout.x
+            }
+            let layout_right = layout.x + layout.width
+            if layout_right > max_inline_right {
+              max_inline_right = layout_right
+            }
+          }
+          None => ()
+        }
+      }
+      let ifc_block_extent = if style.writing_mode.is_block_rtl() {
+        let extent = content_right - min_inline_x
+        if extent > 0.0 {
+          extent
+        } else {
+          0.0
+        }
+      } else {
+        let extent = max_inline_right - content_left
+        if extent > 0.0 {
+          extent
+        } else {
+          0.0
+        }
+      }
+      match (style.width, style.min_width, style.max_width) {
+        (@types.Auto, @types.Auto, @types.Auto) =>
+          box_width = ifc_block_extent +
+            padding.horizontal_sum() +
+            border.horizontal_sum()
+        _ => ()
+      }
     }
     let content_height_for_auto = if style.suppresses_intrinsic_height() {
       style.contained_intrinsic_height_fallback()
@@ -4453,22 +4537,51 @@ fn compute_with_collapse(
   let mut leading_collapse_chain_active = false
   let mut leading_chain_margin = 0.0
   let mut next_float_index = 0
+  let float_start_positions : Map[Int, Double] = {}
+  let mut vertical_multicol_simple_width_override : Double? = None
   let enable_float_inline_run = not(is_vertical_writing) &&
     float_nodes.length() > 0
   let mut inline_run_active = false
   let mut inline_run_x = 0.0
   let mut inline_run_height = 0.0
   let mut inline_run_align_offset = 0.0
+  let mut inline_run_trailing_whitespace_adjust = 0.0
   fn reset_inline_run_state() -> Unit {
     inline_run_active = false
     inline_run_x = 0.0
     inline_run_height = 0.0
     inline_run_align_offset = 0.0
+    inline_run_trailing_whitespace_adjust = 0.0
     prev_margin_end = 0.0
   }
   fn flush_inline_run_state() -> Unit {
     current_pos = current_pos + inline_run_height
     reset_inline_run_state()
+  }
+  fn current_float_start_pos() -> Double {
+    if inline_run_active {
+      current_pos + inline_run_height
+    } else {
+      current_pos
+    }
+  }
+  fn resolve_vertical_float_whitespace_adjust(flow_index : Int) -> Double {
+    if not(is_vertical_writing) || flow_index <= 0 {
+      return 0.0
+    }
+    let prev_node = flow_nodes[flow_index - 1]
+    let prev_style = flow_styles[flow_index - 1]
+    if text_ends_with_collapsible_flow_whitespace(prev_node) {
+      if prev_style.line_height > 0.0 {
+        prev_style.line_height
+      } else if style.line_height > 0.0 {
+        style.line_height
+      } else {
+        0.0
+      }
+    } else {
+      0.0
+    }
   }
   fn resolve_inline_run_line_height(
     inline_item_height : Double,
@@ -4526,9 +4639,29 @@ fn compute_with_collapse(
     let child_node = flow_nodes[i]
     while next_float_index < float_nodes.length() &&
           float_indices[next_float_index] < flow_indices[i] {
-      let float_layout = place_float_layout(next_float_index, current_pos)
+      let float_start_pos = if inline_run_active {
+        let raw_start = current_float_start_pos()
+        let adjusted_start = if inline_run_trailing_whitespace_adjust > 0.0 &&
+          raw_start > inline_run_trailing_whitespace_adjust {
+          raw_start - inline_run_trailing_whitespace_adjust
+        } else {
+          raw_start
+        }
+        flush_inline_run_state()
+        adjusted_start
+      } else {
+        let raw_start = current_float_start_pos()
+        let adjust = resolve_vertical_float_whitespace_adjust(i)
+        if adjust > 0.0 && raw_start > adjust {
+          raw_start - adjust
+        } else {
+          raw_start
+        }
+      }
+      let float_layout = place_float_layout(next_float_index, float_start_pos)
       float_layouts.push(float_layout)
       layout_map[float_indices[next_float_index]] = float_layout
+      float_start_positions[float_indices[next_float_index]] = float_start_pos
       next_float_index = next_float_index + 1
     }
     if multicol_enabled {
@@ -4672,7 +4805,7 @@ fn compute_with_collapse(
     // Calculate position and track escaping margins
     let child_y : Double = if participates_in_inline_run {
       current_pos + padding.top + border.top
-    } else if is_first {
+    } else if is_first && current_pos <= 0.01 {
       if can_collapse_top {
         // First child margin escapes to parent
         if collapses_through {
@@ -5107,6 +5240,18 @@ fn compute_with_collapse(
           child_layout.margin.left +
           child_layout.margin.right
         extend_inline_run(inline_advance, inline_item_height)
+        if text_ends_with_collapsible_flow_whitespace(child_node) {
+          inline_run_trailing_whitespace_adjust = if child_style.line_height >
+            0.0 {
+            child_style.line_height
+          } else if style.line_height > 0.0 {
+            style.line_height
+          } else {
+            0.0
+          }
+        } else {
+          inline_run_trailing_whitespace_adjust = 0.0
+        }
       }
     } else {
       // Update current_pos (only if not collapsing through)
@@ -5159,13 +5304,129 @@ fn compute_with_collapse(
     }
   }
   while next_float_index < float_nodes.length() {
-    let float_layout = place_float_layout(next_float_index, current_pos)
+    let float_start_pos = if inline_run_active {
+      let raw_start = current_float_start_pos()
+      let adjusted_start = if inline_run_trailing_whitespace_adjust > 0.0 &&
+        raw_start > inline_run_trailing_whitespace_adjust {
+        raw_start - inline_run_trailing_whitespace_adjust
+      } else {
+        raw_start
+      }
+      flush_inline_run_state()
+      adjusted_start
+    } else {
+      let raw_start = current_float_start_pos()
+      let adjust = resolve_vertical_float_whitespace_adjust(
+        flow_children.length(),
+      )
+      if adjust > 0.0 && raw_start > adjust {
+        raw_start - adjust
+      } else {
+        raw_start
+      }
+    }
+    let float_layout = place_float_layout(next_float_index, float_start_pos)
     float_layouts.push(float_layout)
     layout_map[float_indices[next_float_index]] = float_layout
+    float_start_positions[float_indices[next_float_index]] = float_start_pos
     next_float_index = next_float_index + 1
   }
   if inline_run_active {
     flush_inline_run_state()
+  }
+
+  if multicol_enabled {
+    match multicol_height_limit {
+      Some(limit) if limit > 0.0 =>
+        for idx in float_indices {
+          match (float_start_positions.get(idx), layout_map.get(idx)) {
+            (Some(start_pos), Some(float_layout)) => {
+              let absolute_col = (start_pos / limit).to_int()
+              let row_index = if multicol_fragment_contained {
+                absolute_col / multicol_column_count
+              } else {
+                0
+              }
+              let column_index = if multicol_fragment_contained {
+                absolute_col % multicol_column_count
+              } else {
+                absolute_col
+              }
+              let local_y = start_pos - absolute_col.to_double() * limit
+              layout_map[idx] = {
+                ..float_layout,
+                x: column_index.to_double() *
+                (multicol_column_width + multicol_column_gap) +
+                float_layout.x,
+                y: row_index.to_double() * limit + local_y,
+              }
+            }
+            _ => ()
+          }
+        }
+      _ => ()
+    }
+  }
+
+  if multicol_enabled &&
+    is_vertical_writing &&
+    float_indices.length() == 0 &&
+    flow_children.length() > 0 {
+    let mut simple_vertical_multicol = true
+    let mut item_width = 0.0
+    for i = 0; i < flow_children.length() && i < flow_styles.length(); i = i + 1 {
+      let child_style = flow_styles[i]
+      let child_layout = flow_children[i].layout
+      if child_style.position == @types.Absolute ||
+        child_style.position == @types.Fixed ||
+        child_style.float != @types.Float::None ||
+        @inline.is_inline_level(child_style.display) ||
+        child_layout.children.length() > 0 {
+        simple_vertical_multicol = false
+        break
+      }
+      let candidate_width = match child_style.min_width {
+        @types.Length(v) => v
+        _ => 0.0
+      }
+      if candidate_width <= 0.0 {
+        simple_vertical_multicol = false
+        break
+      }
+      if candidate_width > item_width {
+        item_width = candidate_width
+      }
+    }
+    let track_extent = match style.height {
+      @types.Length(h) =>
+        if multicol_column_count > 0 {
+          let total_gaps = multicol_column_gap *
+            (multicol_column_count - 1).to_double()
+          if h > total_gaps {
+            (h - total_gaps) / multicol_column_count.to_double()
+          } else {
+            0.0
+          }
+        } else {
+          0.0
+        }
+      _ => 0.0
+    }
+    if simple_vertical_multicol && item_width > 0.0 && track_extent > 0.0 {
+      for i = 0
+          i < flow_indices.length() && i < flow_children.length()
+          i = i + 1 {
+        let child_layout = flow_children[i].layout
+        layout_map[flow_indices[i]] = {
+          ..child_layout,
+          x: 0.0,
+          y: i.to_double() * (track_extent + multicol_column_gap),
+          width: item_width,
+          height: track_extent,
+        }
+      }
+      vertical_multicol_simple_width_override = Some(item_width)
+    }
   }
 
   // Replace anonymous-table placeholders with projected original children.
@@ -5203,8 +5464,36 @@ fn compute_with_collapse(
   } else {
     0.0
   }
+  fn estimate_multicol_rendered_height() -> Double {
+    let mut max_bottom = 0.0
+    for i = 0; i < flow_indices.length() && i < flow_styles.length(); i = i + 1 {
+      match layout_map.get(flow_indices[i]) {
+        Some(positioned_layout) => {
+          let child_children_height = get_children_flow_extent_height(
+            positioned_layout.children,
+          )
+          let child_visual_height = if child_children_height >
+            positioned_layout.height {
+            child_children_height
+          } else {
+            positioned_layout.height
+          }
+          let child_bottom = positioned_layout.y +
+            child_visual_height +
+            positioned_layout.margin.bottom
+          if child_bottom > max_bottom {
+            max_bottom = child_bottom
+          }
+        }
+        None => ()
+      }
+    }
+    max_bottom
+  }
   let flow_content_height = if flow_children.length() == 0 {
     0.0
+  } else if multicol_enabled {
+    estimate_multicol_rendered_height()
   } else if can_collapse_bottom {
     @types.max(0.0, current_pos) // Don't include escaped bottom margin
   } else {
@@ -5247,19 +5536,38 @@ fn compute_with_collapse(
       }
     }
     content_height_for_auto = @types.max(inline_cross_extent, float_height)
-
-    // For unconstrained vertical blocks, auto width should follow block-flow extent.
-    match (style.width, style.min_width, style.max_width) {
-      (@types.Auto, @types.Auto, @types.Auto) => {
-        box_width = content_height +
-          padding.horizontal_sum() +
-          border.horizontal_sum()
-        let min_box_width = padding.horizontal_sum() + border.horizontal_sum()
-        if box_width < min_box_width {
-          box_width = min_box_width
+    match vertical_multicol_simple_width_override {
+      Some(width_override) => {
+        let width_is_auto = match style.width {
+          @types.Auto => true
+          _ => false
+        }
+        if width_is_auto {
+          box_width = width_override +
+            padding.horizontal_sum() +
+            border.horizontal_sum()
         }
       }
-      _ => ()
+      None => ()
+    }
+
+    // For unconstrained vertical blocks, auto width should follow block-flow extent.
+    match vertical_multicol_simple_width_override {
+      Some(_) => ()
+      None =>
+        match (style.width, style.min_width, style.max_width) {
+          (@types.Auto, @types.Auto, @types.Auto) => {
+            box_width = content_height +
+              padding.horizontal_sum() +
+              border.horizontal_sum()
+            let min_box_width = padding.horizontal_sum() +
+              border.horizontal_sum()
+            if box_width < min_box_width {
+              box_width = min_box_width
+            }
+          }
+          _ => ()
+        }
     }
   }
 
@@ -5319,6 +5627,31 @@ fn compute_with_collapse(
     dispatch,
     layout_map,
   )
+
+  if is_vertical_writing && is_block_rtl && float_indices.length() > 0 {
+    let final_float_content_width = box_width -
+      padding.horizontal_sum() -
+      border.horizontal_sum()
+    for idx in float_indices {
+      match (float_start_positions.get(idx), layout_map.get(idx)) {
+        (Some(start_pos), Some(float_layout)) => {
+          let child_margin = @types.resolve_rect(
+            node.children[idx].style.margin,
+            final_float_content_width,
+          )
+          let outer_x = padding.left +
+            border.left +
+            final_float_content_width -
+            start_pos -
+            float_layout.width -
+            child_margin.left -
+            child_margin.right
+          layout_map[idx] = { ..float_layout, x: outer_x + child_margin.left }
+        }
+        _ => ()
+      }
+    }
+  }
 
   let child_layouts = collect_child_layouts_in_source_order(node, layout_map)
   // Calculate scroll dimensions

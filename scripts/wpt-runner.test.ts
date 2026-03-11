@@ -77,6 +77,22 @@ describe("createTextIntrinsicFnFromMeasureText", () => {
     expect(result?.minHeight).toBe(0);
   });
 
+  it("wraps vertical text by available height", () => {
+    const fn = createTextIntrinsicFnFromMeasureText((text) => text.length * 10);
+    const result = fn(
+      "a b c d e f g h i j k l m n o p q r s t u v w x y z",
+      16,
+      20,
+      "normal",
+      "vertical-rl",
+      160,
+      120,
+    );
+
+    expect(result?.maxWidth).toBeGreaterThan(20);
+    expect(result?.maxHeight).toBe(120);
+  });
+
   it("adapts measureText-only modules instead of treating them as intrinsic providers", () => {
     const fn = resolveTextIntrinsicFn({
       measureText: () => 0,

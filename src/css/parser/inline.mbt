@@ -292,7 +292,10 @@ fn parse_position(tokens : ArrayView[@token.Token]) -> @types.Position? {
 
 ///|
 /// Parse float property
-fn parse_float(tokens : ArrayView[@token.Token]) -> @types.Float? {
+fn parse_float(
+  tokens : ArrayView[@token.Token],
+  direction : @style.Direction,
+) -> @types.Float? {
   if tokens.length() == 0 {
     return None
   }
@@ -302,6 +305,22 @@ fn parse_float(tokens : ArrayView[@token.Token]) -> @types.Float? {
         Some(@types.Float::Left)
       } else if s == "right" {
         Some(@types.Float::Right)
+      } else if s == "inline-start" {
+        Some(
+          if direction.is_rtl() {
+            @types.Float::Right
+          } else {
+            @types.Float::Left
+          },
+        )
+      } else if s == "inline-end" {
+        Some(
+          if direction.is_rtl() {
+            @types.Float::Left
+          } else {
+            @types.Float::Right
+          },
+        )
       } else if s == "none" {
         Some(@types.Float::None)
       } else {
@@ -313,7 +332,10 @@ fn parse_float(tokens : ArrayView[@token.Token]) -> @types.Float? {
 
 ///|
 /// Parse clear property
-fn parse_clear(tokens : ArrayView[@token.Token]) -> @types.Clear? {
+fn parse_clear(
+  tokens : ArrayView[@token.Token],
+  direction : @style.Direction,
+) -> @types.Clear? {
   if tokens.length() == 0 {
     return None
   }
@@ -323,6 +345,22 @@ fn parse_clear(tokens : ArrayView[@token.Token]) -> @types.Clear? {
         Some(@types.Clear::Left)
       } else if s == "right" {
         Some(@types.Clear::Right)
+      } else if s == "inline-start" {
+        Some(
+          if direction.is_rtl() {
+            @types.Clear::Right
+          } else {
+            @types.Clear::Left
+          },
+        )
+      } else if s == "inline-end" {
+        Some(
+          if direction.is_rtl() {
+            @types.Clear::Left
+          } else {
+            @types.Clear::Right
+          },
+        )
       } else if s == "both" {
         Some(@types.Clear::Both)
       } else if s == "none" {
@@ -1716,14 +1754,14 @@ fn apply_property(
   }
   // float
   if property == "float" {
-    match parse_float(value_tokens) {
+    match parse_float(value_tokens, style.direction) {
       Some(v) => return { ..style, float: v }
       None => ()
     }
   }
   // clear
   if property == "clear" {
-    match parse_clear(value_tokens) {
+    match parse_clear(value_tokens, style.direction) {
       Some(v) => return { ..style, clear: v }
       None => ()
     }
@@ -2327,11 +2365,62 @@ fn apply_property(
 }
 
 ///|
+fn seed_direction(tokens : Array[@token.Token]) -> @style.Direction {
+  let mut direction = @style.Direction::Ltr
+  let mut pos = 0
+  while pos < tokens.length() {
+    match tokens[pos] {
+      @token.Token::Whitespace | @token.Token::Semicolon => {
+        pos += 1
+        continue
+      }
+      @token.Token::EOF => break
+      _ => ()
+    }
+
+    match parse_declaration(tokens[pos:]) {
+      Some((property, value_tokens)) => {
+        if property == "direction" {
+          match value_tokens.length() {
+            0 => ()
+            _ =>
+              match value_tokens[0] {
+                @token.Token::Ident(s) =>
+                  if s == "rtl" {
+                    direction = @style.Direction::Rtl
+                  } else if s == "ltr" {
+                    direction = @style.Direction::Ltr
+                  }
+                _ => ()
+              }
+          }
+        }
+        while pos < tokens.length() {
+          match tokens[pos] {
+            @token.Token::Semicolon => {
+              pos += 1
+              break
+            }
+            @token.Token::EOF => break
+            _ => pos += 1
+          }
+        }
+      }
+      None => pos += 1
+    }
+  }
+  direction
+}
+
+///|
 /// Parse inline CSS style string and return a Style object
 /// e.g., "width: 100px; height: 50px; display: flex"
 pub fn parse_inline_style(css : String) -> @style.Style {
   let tokens = @token.tokenize(css)
-  let mut style = @style.Style::default()
+  let mut style = {
+    ..@style.Style::default(),
+    direction: seed_direction(tokens),
+  }
   let mut pos = 0
   while pos < tokens.length() {
     // Skip leading whitespace and semicolons

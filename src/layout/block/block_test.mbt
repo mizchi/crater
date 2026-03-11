@@ -810,6 +810,105 @@ test "block_flow_root_zero_width_avoids_float_overlap_with_inline_offset" {
 }
 
 ///|
+test "block_first_inflow_child_clear_left_starts_below_left_float" {
+  let default_style = @style.Style::default()
+  let left_float_style = {
+    ..default_style,
+    float: @types.Float::Left,
+    width: @types.Length(56.0),
+    height: @types.Length(80.0),
+  }
+  let right_float_style = {
+    ..default_style,
+    float: @types.Float::Right,
+    width: @types.Length(40.0),
+    height: @types.Length(48.0),
+  }
+  let cleared_style = {
+    ..default_style,
+    clear: @types.Clear::Left,
+    width: @types.Length(240.0),
+    height: @types.Length(58.0),
+  }
+  let left_float = @node.Node::leaf("left-float", left_float_style)
+  let right_float = @node.Node::leaf("right-float", right_float_style)
+  let cleared = @node.Node::leaf("cleared", cleared_style)
+  let root_style = { ..default_style, width: @types.Length(240.0) }
+  let root = @node.Node::new("root", root_style, [
+    left_float, right_float, cleared,
+  ])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  let cleared_layout = layout.children[2]
+  inspect(cleared_layout.y, content="80")
+}
+
+///|
+test "block_float_after_inline_run_flushes_previous_line_progress" {
+  let default_style = @style.Style::default()
+  let inline1_style = {
+    ..default_style,
+    display: @types.InlineBlock,
+    width: @types.Length(50.0),
+    height: @types.Length(30.0),
+  }
+  let float1_style = {
+    ..default_style,
+    float: @types.Float::Left,
+    width: @types.Length(20.0),
+    height: @types.Length(10.0),
+  }
+  let inline2_style = {
+    ..default_style,
+    display: @types.InlineBlock,
+    width: @types.Length(50.0),
+    height: @types.Length(40.0),
+  }
+  let float2_style = {
+    ..default_style,
+    float: @types.Float::Left,
+    width: @types.Length(20.0),
+    height: @types.Length(10.0),
+  }
+  let inline3_style = {
+    ..default_style,
+    display: @types.InlineBlock,
+    width: @types.Length(50.0),
+    height: @types.Length(50.0),
+  }
+  let inline1 = @node.Node::leaf("inline1", inline1_style)
+  let float1 = @node.Node::leaf("float1", float1_style)
+  let inline2 = @node.Node::leaf("inline2", inline2_style)
+  let float2 = @node.Node::leaf("float2", float2_style)
+  let inline3 = @node.Node::leaf("inline3", inline3_style)
+  let root_style = { ..default_style, width: @types.Length(200.0) }
+  let root = @node.Node::new("root", root_style, [
+    inline1, float1, inline2, float2, inline3,
+  ])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[1].y, content="30")
+  inspect(layout.children[3].y, content="70")
+  inspect(layout.height, content="120")
+}
+
+///|
 test "block_absolute_positioning_works" {
   let default_style = @style.Style::default()
   let abs_child_style = {

@@ -1234,6 +1234,331 @@ test "multicol_break_inside_avoid_keeps_block_unfragmented" {
 }
 
 ///|
+test "multicol_balance_break_before_avoid_keeps_balanced_column_boundary" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div id="target" style="width:100px; columns:2; column-gap:0;">
+    #|  <div style="height:25px;"></div>
+    #|  <div style="height:50px;"></div>
+    #|  <div style="height:25px; break-before:avoid;"></div>
+    #|  <div id="last" style="height:50px;"></div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let target = layout.children[0]
+  let last = target.children[3]
+  inspect(target.height, content="100")
+  inspect(last.x, content="50")
+  inspect(last.y, content="0")
+}
+
+///|
+test "multicol_auto_fill_break_avoid_moves_group_start_to_next_column" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div id="target" style="columns:2; column-fill:auto; column-gap:0; width:100px; height:160px;">
+    #|  <div style="height:50px;"></div>
+    #|  <div style="height:50px;"></div>
+    #|  <div id="third" style="height:50px;"></div>
+    #|  <div id="last" style="height:50px; break-before:avoid;"></div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let target = layout.children[0]
+  let third = target.children[2]
+  let last = target.children[3]
+  inspect(third.x, content="50")
+  inspect(third.y, content="0")
+  inspect(last.x, content="50")
+  inspect(last.y, content="50")
+}
+
+///|
+test "multicol_nested_forced_break_at_start_moves_wrapper_to_next_column" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div id="outer" style="width:100px; height:100px;">
+    #|  <div id="target" style="columns:2; column-fill:auto; column-gap:0; height:250px;">
+    #|    <div id="first" style="height:100px;"></div>
+    #|    <div id="wrapper"><div style="break-before:column;"></div></div>
+    #|    <div id="last" style="height:100px;"></div>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let target = layout.children[0].children[0]
+  let wrapper = target.children[1]
+  let last = target.children[2]
+  inspect(wrapper.x, content="50")
+  inspect(wrapper.y, content="0")
+  inspect(last.x, content="50")
+  inspect(last.y, content="0")
+}
+
+///|
+test "multicol_nested_forced_break_at_end_moves_next_sibling_to_next_column" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div id="outer" style="width:100px; height:100px;">
+    #|  <div id="target" style="columns:2; column-fill:auto; column-gap:0; height:250px;">
+    #|    <div id="first" style="height:100px;"></div>
+    #|    <div id="wrapper"><div style="break-after:column;"></div></div>
+    #|    <div id="last" style="height:100px;"></div>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let target = layout.children[0].children[0]
+  let last = target.children[2]
+  inspect(last.x, content="50")
+  inspect(last.y, content="0")
+}
+
+///|
+test "multicol_forced_break_trumps_break_avoid_grouping" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div id="target" style="columns:2; column-fill:auto; column-gap:0; width:100px; height:110px;">
+    #|  <div style="height:50px;"></div>
+    #|  <div id="second" style="height:50px; break-after:column;"></div>
+    #|  <div id="third" style="height:50px; break-before:avoid;"></div>
+    #|  <div id="last" style="height:50px;"></div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let target = layout.children[0]
+  let second = target.children[1]
+  let third = target.children[2]
+  let last = target.children[3]
+  inspect(second.x, content="0")
+  inspect(second.y, content="50")
+  inspect(third.x, content="50")
+  inspect(third.y, content="0")
+  inspect(last.x, content="50")
+  inspect(last.y, content="50")
+}
+
+///|
+test "multicol_discards_top_margin_at_fragment_start" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div id="target" style="columns:2; column-fill:auto; column-gap:0; width:100px; height:100px;">
+    #|  <div style="height:70px;"><div style="height:150px;"></div></div>
+    #|  <div id="wrapper">
+    #|    <div id="inner" style="margin-top:60px;">
+    #|      <div style="height:50px;"></div>
+    #|      <div id="green" style="height:50px;"></div>
+    #|    </div>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let target = layout.children[0]
+  let first = target.children[0]
+  let tall = first.children[0]
+  let wrapper = target.children[1]
+  let inner = wrapper.children[0]
+  let green = inner.children[1]
+  inspect(tall.width, content="100")
+  inspect(tall.height, content="100")
+  inspect(wrapper.x, content="50")
+  inspect(wrapper.y, content="0")
+  inspect(wrapper.width, content="50")
+  inspect(inner.y, content="0")
+  inspect(green.y, content="50")
+}
+
+///|
+test "multicol_break_avoid_backtracks_inside_wrapper_for_following_sibling" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div id="target" style="columns:2; column-fill:auto; column-gap:0; width:100px; height:160px;">
+    #|  <div id="wrapper">
+    #|    <div style="height:50px;"></div>
+    #|    <div>
+    #|      <div id="deep">
+    #|        <div style="height:50px; break-inside:avoid;"></div>
+    #|        <div id="moved" style="height:50px; break-inside:avoid;"></div>
+    #|      </div>
+    #|    </div>
+    #|  </div>
+    #|  <div id="tail" style="height:50px; break-before:avoid;"></div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let target = layout.children[0]
+  let wrapper = target.children[0]
+  let nested = wrapper.children[1]
+  let deep = nested.children[0]
+  let moved = deep.children[1]
+  let tail = target.children[1]
+  inspect(wrapper.width, content="100")
+  inspect(nested.y, content="0")
+  inspect(deep.width, content="100")
+  inspect(moved.x, content="50")
+  inspect(moved.y, content="0")
+  inspect(tail.x, content="50")
+  inspect(tail.y, content="50")
+}
+
+///|
+test "multicol_break_avoid_can_move_previous_sibling_to_keep_group_together" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div id="target" style="column-count:4; column-gap:0; column-fill:auto; width:100px; height:100px;">
+    #|  <div style="width:25px; height:50px;"></div>
+    #|  <div id="second" style="width:25px; height:50px;"></div>
+    #|  <div id="wrapper">
+    #|    <div id="keep" style="height:50px; break-before:avoid;"></div>
+    #|    <div id="spill" style="height:200px;"></div>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let target = layout.children[0]
+  let second = target.children[1]
+  let wrapper = target.children[2]
+  let keep = wrapper.children[0]
+  let spill = wrapper.children[1]
+  inspect(second.x, content="25")
+  inspect(second.y, content="0")
+  inspect(keep.y, content="50")
+  inspect(spill.x, content="25")
+  inspect(spill.y, content="0")
+}
+
+///|
+test "multicol_break_avoid_reflows_single_child_block_wrapper_descendants" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div style="width:100px; height:100px;">
+    #|  <div id="target" style="columns:2; column-fill:auto; width:250px; column-gap:50px; margin-left:-150px; height:110px;">
+    #|    <div style="height:2px;"></div>
+    #|    <div id="wrapper1">
+    #|      <div id="wrapper2">
+    #|        <div id="wrapper3">
+    #|          <div style="contain:size; height:50px;"></div>
+    #|          <div id="b" style="contain:size; height:50px;"></div>
+    #|        </div>
+    #|      </div>
+    #|      <div id="c" style="break-before:avoid; contain:size; height:50px;"></div>
+    #|    </div>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let target = layout.children[0].children[0]
+  let wrapper1 = target.children[1]
+  let wrapper2 = wrapper1.children[0]
+  let wrapper3 = wrapper2.children[0]
+  let b = wrapper3.children[1]
+  let c = wrapper1.children[1]
+  inspect(wrapper2.width, content="250")
+  inspect(wrapper3.width, content="250")
+  inspect(b.x, content="150")
+  inspect(b.y, content="0")
+  inspect(c.x, content="150")
+  inspect(c.y, content="42")
+}
+
+///|
+test "multicol_break_avoid_moves_float_with_following_reserved_group" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div style="width:100px; height:100px;">
+    #|  <div id="target" style="columns:2; gap:0; column-fill:auto; height:150px;">
+    #|    <div style="height:100px;"></div>
+    #|    <div style="height:30px;"></div>
+    #|    <div id="float" style="float:left; width:50%;">
+    #|      <div style="height:10px; contain:size;"></div>
+    #|      <div style="height:10px; contain:size;"></div>
+    #|    </div>
+    #|    <div id="keep" style="break-before:avoid; break-inside:avoid;">
+    #|      <div id="keep-first" style="margin-left:auto; width:50%; height:20px;"></div>
+    #|      <div style="height:50px;"></div>
+    #|    </div>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let target = layout.children[0].children[0]
+  let float_box = target.children[2]
+  let keep = target.children[3]
+  let keep_first = keep.children[0]
+  inspect(float_box.x, content="50")
+  inspect(float_box.y, content="30")
+  inspect(keep.x, content="50")
+  inspect(keep.y, content="30")
+  inspect(keep_first.x, content="25")
+}
+
+///|
+test "multicol_margin_fragment_start_preserves_block_stack_width_inside_inline_wrapper" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div id="target" style="columns:2; gap:0; column-fill:auto; width:100px; height:100px;">
+    #|  <span>
+    #|    <div style="height:70px;"><div style="height:150px;"></div></div>
+    #|    <span>
+    #|      <div style="margin-top:60px;">
+    #|        <div id="first" style="height:50px;"></div>
+    #|        <div id="green" style="height:50px;"></div>
+    #|      </div>
+    #|    </span>
+    #|  </span>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let outer = layout.children[0]
+  let span = outer.children[0]
+  let tail_span = span.children[1]
+  let inner = tail_span.children[0]
+  let first = inner.children[0]
+  let green = inner.children[1]
+  inspect(span.width, content="100")
+  inspect(tail_span.x, content="50")
+  inspect(tail_span.width, content="50")
+  inspect(inner.width, content="50")
+  inspect(first.y, content="0")
+  inspect(green.x, content="0")
+  inspect(green.y, content="50")
+}
+
+///|
+test "multicol_margin_fragment_start_keeps_float_only_inline_wrapper_zero_sized" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div id="target" style="columns:2; gap:0; column-fill:auto; width:100px; height:100px;">
+    #|  <span>
+    #|    <div style="height:70px;"><div style="height:150px;"></div></div>
+    #|    <span id="tail-span">
+    #|      <div id="float-wrap" style="margin-top:160px;">
+    #|        <div style="float:left; width:100%;">
+    #|          <div id="first" style="height:50px;"></div>
+    #|          <div id="green" style="height:50px;"></div>
+    #|        </div>
+    #|      </div>
+    #|    </span>
+    #|  </span>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let outer = layout.children[0]
+  let span = outer.children[0]
+  let tail_span = span.children[1]
+  let float_wrap = tail_span.children[0]
+  let float_box = float_wrap.children[0]
+  let green = float_box.children[1]
+  inspect(span.width, content="150")
+  inspect(tail_span.x, content="100")
+  inspect(tail_span.width, content="50")
+  inspect(float_wrap.x, content="50")
+  inspect(float_wrap.width, content="50")
+  inspect(float_box.width, content="50")
+  inspect(green.y, content="50")
+}
+
+///|
 test "wpt_contain_inline_size_multicol_spanner_balances_height" {
   let html_str =
     #|<!DOCTYPE html>
@@ -3145,6 +3470,71 @@ test "wpt_gap_vertical_rl_wrap_progression_is_mirrored" {
   guard f.x.abs() < 0.01 else {
     fail(
       "last wrapped line should end on the physical left edge in vertical-rl",
+    )
+  }
+}
+
+///|
+test "vertical_text_block_wraps_to_available_height" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; writing-mode: vertical-rl; }
+    #|.box { width: 160px; height: 240px; }
+    #|p { margin: 0; }
+    #|</style>
+    #|<div class="box">
+    #|  <p>a b c d e f g h i j k l m n o p q r s t u v w x y z LTR clear:inline-start</p>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let box = layout.children[0]
+  let paragraph = box.children[0]
+  inspect(paragraph.height, content="240")
+  guard paragraph.width > 0.0 && paragraph.width < 160.0 else {
+    fail("vertical text block should wrap into multiple columns")
+  }
+}
+
+///|
+test "wpt_logical_float_vertical_rl_auto_width_shift_keeps_float_positions" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|html { writing-mode: vertical-rl; }
+    #|body > div { height: 20em; margin: 1em; padding: 2px; border: 1px solid silver; }
+    #|div > div { margin: .5em; padding: .5em; background: yellow; }
+    #|.is { float: left; }
+    #|.ie { float: right; }
+    #|.ltr { direction: ltr; }
+    #|</style>
+    #|<div class="ltr">
+    #| Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+    #| Phasellus efficitur nisi at sollicitudin eleifend.
+    #| <div class="is">Inline-start</div>
+    #| Vestibulum ac condimentum diam. Vivamus viverra iaculis mollis.
+    #| Nam bibendum, dolor id porttitor egestas, metus sem pretium eros,
+    #| ut mollis mauris ligula eu risus. Aenean eget vestibulum nunc.
+    #| <div class="ie">Inline-end</div>
+    #| Nam vitae eleifend tellus. Vestibulum ut accumsan lacus.
+    #| Vivamus vitae eros hendrerit, tincidunt augue non, laoreet justo.
+    #| Aliquam erat volutpat.
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let target = layout.children[0]
+  let inline_start = target.children[1]
+  let inline_end = target.children[3]
+  guard target.width > 200.0 && target.width < 300.0 else {
+    fail("vertical logical float container should shrink to content width")
+  }
+  guard inline_start.x > inline_end.x else {
+    fail("inline-start float should stay on the block-start side")
+  }
+  guard inline_start.x < target.width else {
+    fail("inline-start float should remain inside the container width")
+  }
+  guard inline_end.x >= 0.0 else {
+    fail(
+      "inline-end float should not end up with a negative x after width shrink",
     )
   }
 }

@@ -357,6 +357,28 @@ pub fn parse_float(value : String) -> @types.Float {
 }
 
 ///|
+pub fn parse_float_with_direction(
+  value : String,
+  direction : @style.Direction,
+) -> @types.Float {
+  match value.trim().to_lower() {
+    "inline-start" =>
+      if direction.is_rtl() {
+        @types.Float::Right
+      } else {
+        @types.Float::Left
+      }
+    "inline-end" =>
+      if direction.is_rtl() {
+        @types.Float::Left
+      } else {
+        @types.Float::Right
+      }
+    _ => parse_float(value)
+  }
+}
+
+///|
 /// Parse clear value
 pub fn parse_clear(value : String) -> @types.Clear {
   match value.trim().to_lower() {
@@ -365,6 +387,28 @@ pub fn parse_clear(value : String) -> @types.Clear {
     "both" => @types.Clear::Both
     "none" => @types.Clear::None
     _ => @types.Clear::None
+  }
+}
+
+///|
+pub fn parse_clear_with_direction(
+  value : String,
+  direction : @style.Direction,
+) -> @types.Clear {
+  match value.trim().to_lower() {
+    "inline-start" =>
+      if direction.is_rtl() {
+        @types.Clear::Right
+      } else {
+        @types.Clear::Left
+      }
+    "inline-end" =>
+      if direction.is_rtl() {
+        @types.Clear::Left
+      } else {
+        @types.Clear::Right
+      }
+    _ => parse_clear(value)
   }
 }
 

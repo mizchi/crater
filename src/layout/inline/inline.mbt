@@ -1734,9 +1734,16 @@ fn compute_inline_child(
       } else {
         constrained.max_height
       }
-      let width = content_width +
+      let text_like_vertical_auto_width = style.writing_mode.is_vertical() &&
+        style.width == @types.Auto &&
+        node.id.has_prefix("#text")
+      let width = if text_like_vertical_auto_width {
+        constrained.max_width +
         padding.horizontal_sum() +
         border.horizontal_sum()
+      } else {
+        content_width + padding.horizontal_sum() + border.horizontal_sum()
+      }
 
       // Calculate final height
       let height = match style.height {

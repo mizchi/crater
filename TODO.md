@@ -339,7 +339,7 @@
 ## WPT サポート状況（2026-03-11）
 
 - 実測コマンド: `npx tsx scripts/wpt-runner.ts <module> --workers 4`
-- 全体: `1386 / 1446 passed`（`95.9%`、`60 failed`）
+- 全体: `1422 / 1484 passed`（`95.8%`、`62 failed`）
 
 | Module | Passed | Failed | Total | Rate |
 |--------|--------|--------|-------|------|
@@ -356,11 +356,18 @@
 | css-variables | 100 | 7 | 107 | 93.5% |
 | filter-effects | 99 | 7 | 106 | 93.4% |
 | compositing | 2 | 0 | 2 | 100.0% |
+| css-logical | 5 | 0 | 5 | 100.0% |
+| css-content | 2 | 0 | 2 | 100.0% |
+| css-multicol | 2 | 2 | 4 | 50.0% |
+| css-break | 27 | 0 | 27 | 100.0% |
 
 ### 直近の改善
 
 - `css-flexbox`: `285 / 289` -> `289 / 289`
 - `css-position`: `74 / 84` -> `84 / 84`
+- `css-break`: `4 / 27` -> `27 / 27`
+- `css-logical`: `1 / 5` -> `5 / 5`
+- `css-content`: 新規導入で `2 / 2`
 - `css-grid`: `33 / 33` までは到達済みだったが、現在は既知の 3 件が未解決
   - `grid-in-table-cell-with-img.html`
   - `grid-item-percentage-quirk-001.html`
@@ -368,10 +375,31 @@
 
 ### 直近の優先候補
 
+- `css-multicol` の `balance-break-avoidance-*`（`2 failed`）
 - `css-overflow` の残件（`12 failed`）
 - `css-display` の残件（`8 failed`）
 - `css-variables` の残件（`7 failed`）
 - `filter-effects` の残件（`7 failed`）
+
+### WPT 拡張メモ
+
+- 今回 `wpt.json` に追加:
+  - `css-logical`
+  - `css-content`
+  - `css-multicol`
+  - `css-break`
+- いまは module ごとの narrow prefix で導入し、広い sub-scope はコメントアウトで保留:
+  - `css-content`: `quotes-*`, `element-replacement-*`
+  - `css-multicol`: `column-span-*`, `column-balancing-*`, `abspos-*`
+  - `css-break`: `orphans-*`, `widows-*`, `page-break-*`, `break-at-end-*`
+- 後回しだが今後対応する候補:
+  - `css-ruby`
+  - `css-writing-modes`
+  - `css-pseudo`
+  - `css-text`
+  - `css-transforms`
+  - `css-backgrounds`
+  - `css-color`
 
 ### WPT runner / intrinsic provider メモ
 

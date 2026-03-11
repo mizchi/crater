@@ -12,12 +12,74 @@
     "css-contain",
     "css-variables",
     "filter-effects",
-    "compositing"
+    "compositing",
+
+    // Near-term expansion: already close to current layout engine and WPT harness.
+    "css-logical",
+    "css-content",
+    "css-multicol",
+    "css-break"
+
+    // Later: meaningful, but deferred for now.
+    // "css-ruby",           // JP-oriented value is high, but general UI/layout wins come first.
+    // "css-writing-modes",  // Broader orthogonal flow matrix after logical properties settle.
+    // "css-pseudo",         // first-line / first-letter need a wider inline model pass.
+    // "css-text",           // broad text shaping / wrapping surface; current text model is still approximate.
+    // "css-transforms",     // current support is translate-only.
+    // "css-backgrounds",    // mostly paint-oriented for the current layout-tree runner.
+    // "css-color"           // mostly paint-oriented for the current layout-tree runner.
   ],
   "recursiveModules": [
     "css-align",
     "css-box"
   ],
+  "modulePrefixes": {
+    "css-logical": [
+      "logical-box-",
+      "logicalprops-",
+      "logical-values-",
+      "block-size-",
+      "inline-size-",
+      "min-block-size-",
+      "max-block-size-",
+      "min-inline-size-",
+      "max-inline-size-",
+      "margin-block-",
+      "margin-inline-",
+      "padding-block-",
+      "padding-inline-",
+      "inset-"
+    ],
+    "css-content": [
+      "content-",
+      "pseudo-element-inline-box"
+      // Later:
+      // "quotes-",
+      // "element-replacement-"
+    ],
+    "css-multicol": [
+      "column-count-",
+      "break-before-",
+      "break-inside-",
+      "balance-break-avoidance-"
+      // Later:
+      // "column-span-",
+      // "column-balancing-",
+      // "abspos-",
+      // "balance-"
+    ],
+    "css-break": [
+      "break-between-avoid-",
+      "break-between-force-",
+      "break-inside-avoid-",
+      "margin-at-break-"
+      // Later:
+      // "orphans-",
+      // "widows-",
+      // "page-break-",
+      // "break-at-end-"
+    ]
+  },
   "includePrefixes": [
     "align-", "place-",
     "align-content", "align-items", "align-self",

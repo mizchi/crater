@@ -416,7 +416,7 @@ fn create_text_measure(
       // In vertical mode, the inline axis is vertical (height constrains)
       // In horizontal mode, the inline axis is horizontal (width constrains)
       let (available_inline, line_size) = if is_vertical {
-        (available_height, text_line_height)
+        (available_height, char_width)
       } else {
         (available_width, char_width)
       }
@@ -514,12 +514,24 @@ fn create_text_measure(
       // - Height = characters per line (inline dimension)
       if is_vertical {
         let width = total_lines.to_double() * text_line_height
+        let max_wrapped_height = if no_wrap {
+          text_max_width
+        } else if available_inline > 0.0 {
+          let wrapped_height = cols_available.to_double() * char_width
+          if text_max_width < wrapped_height {
+            text_max_width
+          } else {
+            wrapped_height
+          }
+        } else {
+          text_max_width
+        }
         let min_width = min_lines.to_double() * text_line_height
         {
           min_width,
           max_width: width,
           min_height: text_min_width, // word length becomes height
-          max_height: text_max_width, // line length becomes height
+          max_height: max_wrapped_height,
         }
       } else {
         let height = total_lines.to_double() * text_line_height

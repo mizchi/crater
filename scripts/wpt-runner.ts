@@ -15,11 +15,13 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import { pathToFileURL } from 'url';
+import { loadWptConfig } from './wpt-config.ts';
 
 // Load config from wpt.json
-const wptConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'wpt.json'), 'utf-8'));
+const wptConfig = loadWptConfig();
 const CSS_MODULES: string[] = wptConfig.modules;
 const INCLUDE_PREFIXES: string[] = wptConfig.includePrefixes;
+const MODULE_PREFIXES: Record<string, string[]> = wptConfig.modulePrefixes ?? {};
 const RECURSIVE_MODULES: string[] = wptConfig.recursiveModules ?? [];
 
 const WPT_DIR = 'wpt/css';
@@ -153,7 +155,7 @@ export function createTextIntrinsicFnFromMeasureText(
     whiteSpace: string,
     writingMode: string,
     availableWidth: number,
-    _availableHeight: number,
+    availableHeight: number,
   ) => {
     const effectiveLineHeight = lineHeight > 0 ? lineHeight : (fontSize > 0 ? fontSize : 16);
     const measure = (s: string): number => {
@@ -198,10 +200,18 @@ export function createTextIntrinsicFnFromMeasureText(
     const noWrap = whiteSpaceMode.includes('nowrap') || whiteSpaceMode === 'pre';
     const spaceWidth = measure(' ');
     const wrapEpsilon = 0.01;
+    const isVertical = writingMode.toLowerCase().includes('vertical');
+    const availableInline = isVertical ? availableHeight : availableWidth;
+    const lineSize = isVertical ? (fontSize > 0 ? fontSize * 0.5 : 8) : effectiveLineHeight;
+    const colsAvailable = noWrap
+      ? Number.MAX_SAFE_INTEGER
+      : availableInline > 0
+        ? Math.max(1, Math.floor(availableInline / lineSize))
+        : 0;
     let wrappedLines = 0;
     for (const rawLine of rawLines) {
       const line = normalizeLine(rawLine);
-      if (noWrap || availableWidth <= 0) {
+      if (noWrap || availableInline <= 0) {
         wrappedLines += 1;
         continue;
       }
@@ -218,7 +228,7 @@ export function createTextIntrinsicFnFromMeasureText(
           continue;
         }
         const next = current + spaceWidth + width;
-        if (next <= availableWidth + wrapEpsilon) {
+        if (next <= availableInline + wrapEpsilon) {
           current = next;
         } else {
           wrappedLines += 1;
@@ -230,13 +240,17 @@ export function createTextIntrinsicFnFromMeasureText(
     const minLineCount = preserveLineBreaks ? rawLines.length : 1;
     const minHeight = Math.max(minLineCount, 1) * effectiveLineHeight;
     const maxHeight = Math.max(wrappedLines, 1) * effectiveLineHeight;
-    const isVertical = writingMode.toLowerCase().includes('vertical');
     if (isVertical) {
+      const maxWrappedHeight = noWrap
+        ? maxWidth
+        : availableInline > 0
+          ? Math.min(maxWidth, colsAvailable * lineSize)
+          : maxWidth;
       return {
         minWidth: minHeight,
         maxWidth: maxHeight,
         minHeight: minWordWidth,
-        maxHeight: maxWidth,
+        maxHeight: maxWrappedHeight,
       };
     }
     return {
@@ -582,12 +596,12 @@ const CSS_RESET = `
 /**
  * Check if a file is a layout test
  */
-function isLayoutTest(filename: string): boolean {
+function isLayoutTest(filename: string, prefixes: string[] = INCLUDE_PREFIXES): boolean {
   if (!filename.endsWith('.html')) return false;
   if (filename.endsWith('-ref.html')) return false;
   if (filename.includes('support')) return false;
   if (filename.startsWith('reference')) return false;
-  return INCLUDE_PREFIXES.some(prefix => filename.startsWith(prefix));
+  return prefixes.some(prefix => filename.startsWith(prefix));
 }
 
 function isScriptHarnessTest(htmlPath: string): boolean {
@@ -632,16 +646,17 @@ function getTestFiles(moduleName: string): string[] {
     return [];
   }
 
+  const includePrefixes = MODULE_PREFIXES[moduleName] ?? INCLUDE_PREFIXES;
   const recursive = RECURSIVE_MODULES.includes(moduleName);
   if (recursive) {
     return collectHtmlFilesRecursive(moduleDir)
-      .filter(fullPath => isLayoutTest(path.basename(fullPath)))
+      .filter(fullPath => isLayoutTest(path.basename(fullPath), includePrefixes))
       .filter(fullPath => !isScriptHarnessTest(fullPath))
       .map(fullPath => path.relative(process.cwd(), fullPath));
   }
 
   return fs.readdirSync(moduleDir)
-    .filter(isLayoutTest)
+    .filter(filename => isLayoutTest(filename, includePrefixes))
     .map(f => path.join(moduleDir, f))
     .filter(fullPath => !isScriptHarnessTest(fullPath));
 }

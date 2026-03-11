@@ -132,7 +132,7 @@ fn estimate_multicol_column_height_limit(
     if column_count <= 1 {
       return None
     }
-    let mut total = 0.0
+    let groups : Array[Double] = []
     for i = 0; i < flow_children.length() && i < flow_styles.length(); i = i + 1 {
       if flow_styles[i].column_span == @style.ColumnSpan::All {
         continue
@@ -143,12 +143,95 @@ fn estimate_multicol_column_height_limit(
       } else {
         layout.height
       }
-      total = total + flow_height + layout.margin.top + layout.margin.bottom
+      let outer_height = flow_height + layout.margin.top + layout.margin.bottom
+      let glue_with_previous = i > 0 &&
+        (
+          flow_styles[i].break_before == @style.BreakBefore::Avoid ||
+          flow_styles[i - 1].break_after == @style.BreakBefore::Avoid
+        )
+      if glue_with_previous && groups.length() > 0 {
+        let last_index = groups.length() - 1
+        groups[last_index] = groups[last_index] + outer_height
+      } else {
+        groups.push(outer_height)
+      }
     }
-    if total > 0.0 {
-      Some(total / column_count.to_double())
-    } else {
+    if groups.length() == 0 {
+      return None
+    }
+    let mut total = 0.0
+    let mut lower = 0.0
+    for group in groups {
+      total = total + group
+      if group > lower {
+        lower = group
+      }
+    }
+    if total <= 0.0 {
       None
+    } else {
+      let mut low = lower
+      let mut high = total
+      let epsilon = 0.01
+      fn can_partition(
+        groups : Array[Double],
+        limit : Double,
+        column_count : Int,
+      ) -> Bool {
+        let mut used = 1
+        let mut current = 0.0
+        for group in groups {
+          if group > limit {
+            return false
+          }
+          if current > 0.0 && current + group > limit + 0.0001 {
+            used = used + 1
+            current = group
+            if used > column_count {
+              return false
+            }
+          } else {
+            current = current + group
+          }
+        }
+        true
+      }
+      fn tighten_partition_limit(
+        groups : Array[Double],
+        limit : Double,
+        column_count : Int,
+      ) -> Double {
+        let mut used = 1
+        let mut current = 0.0
+        let mut max_used = 0.0
+        for group in groups {
+          if current > 0.0 && current + group > limit + 0.0001 {
+            if current > max_used {
+              max_used = current
+            }
+            used = used + 1
+            current = group
+            if used > column_count {
+              return limit
+            }
+          } else {
+            current = current + group
+          }
+        }
+        if current > max_used {
+          max_used = current
+        }
+        max_used
+      }
+      while high - low > epsilon {
+        let mid = (low + high) / 2.0
+        if can_partition(groups, mid, column_count) {
+          high = mid
+        } else {
+          low = mid
+        }
+      }
+      Some(tighten_partition_limit(groups, high, column_count))
     }
   }
   let balanced = estimate_balanced_limit(
@@ -202,7 +285,10 @@ fn resolve_text_align_offset(
 fn is_inline_flow_participant(node : @node.Node, style : @style.Style) -> Bool {
   node.id == "br" ||
   node.id.has_prefix("#text") ||
-  @inline.is_inline_level(style.display)
+  (
+    @inline.is_inline_level(style.display) &&
+    (node.children.length() == 0 || contents_is_inline_flow(node))
+  )
 }
 
 ///|
@@ -259,6 +345,279 @@ fn collect_preserved_flow_source_children(
 }
 
 ///|
+fn resolve_multicol_flow_child_outer_height(
+  child_result : LayoutWithCollapse,
+  child_style : @style.Style,
+) -> Double {
+  let child_layout = child_result.layout
+  let child_flow_height = if child_style.display == @types.Contents {
+    get_children_total_height(child_layout.children)
+  } else if child_layout.height <= 0.0 && child_layout.children.length() > 0 {
+    get_children_total_height(child_layout.children)
+  } else {
+    child_layout.height
+  }
+  child_flow_height + child_layout.margin.top + child_layout.margin.bottom
+}
+
+///|
+fn resolve_multicol_layout_outer_height(
+  child_layout : @types.Layout,
+  child_style : @style.Style,
+) -> Double {
+  let child_flow_height = if child_style.display == @types.Contents {
+    get_children_total_height(child_layout.children)
+  } else if child_layout.height <= 0.0 && child_layout.children.length() > 0 {
+    get_children_total_height(child_layout.children)
+  } else {
+    child_layout.height
+  }
+  child_flow_height + child_layout.margin.top + child_layout.margin.bottom
+}
+
+///|
+fn has_multicol_forced_break_between(
+  current_style : @style.Style,
+  current_node : @node.Node,
+  next_style : @style.Style,
+  next_node : @node.Node,
+) -> Bool {
+  current_style.break_after == @style.BreakBefore::Column ||
+  ends_with_forced_column_break_descendant(current_node.children) ||
+  next_style.break_before == @style.BreakBefore::Column ||
+  starts_with_forced_column_break_descendant(next_node.children)
+}
+
+///|
+fn has_multicol_avoid_tie_between(
+  current_style : @style.Style,
+  current_node : @node.Node,
+  next_style : @style.Style,
+  next_node : @node.Node,
+) -> Bool {
+  current_style.break_after == @style.BreakBefore::Avoid ||
+  ends_with_break_avoid_descendant(current_node.children) ||
+  next_style.break_before == @style.BreakBefore::Avoid ||
+  starts_with_break_avoid_descendant(next_node.children)
+}
+
+///|
+fn resolve_multicol_leading_keep_height(
+  child_layout : @types.Layout,
+  child_style : @style.Style,
+  child_node : @node.Node,
+) -> Double {
+  let outer_height = resolve_multicol_layout_outer_height(
+    child_layout, child_style,
+  )
+  if outer_height <= 0.0 ||
+    child_style.break_inside == @style.BreakInside::Avoid ||
+    has_break_inside_avoid_descendant(child_node.children) ||
+    child_layout.children.length() == 0 {
+    return outer_height
+  }
+  if not(is_multicol_block_flow_box(child_node, child_style)) {
+    return outer_height
+  }
+  let source_children = collect_preserved_flow_source_children(
+    child_node.children,
+  )
+  let layout_index = 0
+  let mut source_index = 0
+  while layout_index < child_layout.children.length() &&
+        source_index < source_children.length() {
+    let source_child = source_children[source_index]
+    let source_style = source_child.style
+    if source_style.display == @types.Display::None {
+      source_index = source_index + 1
+      continue
+    }
+    if source_style.position == @types.Absolute ||
+      source_style.position == @types.Fixed {
+      source_index = source_index + 1
+      continue
+    }
+    if source_child.id == "br" {
+      return outer_height
+    }
+    let leading = resolve_multicol_leading_keep_height(
+      child_layout.children[layout_index],
+      source_style,
+      source_child,
+    )
+    return if leading > 0.0 && leading < outer_height {
+      leading
+    } else {
+      outer_height
+    }
+  }
+  outer_height
+}
+
+///|
+fn resolve_multicol_following_reserved_height(
+  start_index : Int,
+  flow_children : Array[LayoutWithCollapse],
+  flow_styles : Array[@style.Style],
+  flow_nodes : Array[@node.Node],
+) -> Double {
+  if start_index < 0 ||
+    start_index >= flow_children.length() ||
+    start_index >= flow_styles.length() ||
+    start_index >= flow_nodes.length() {
+    return 0.0
+  }
+  let mut total = 0.0
+  let mut current_index = start_index
+  while current_index + 1 < flow_children.length() &&
+        current_index + 1 < flow_styles.length() &&
+        current_index + 1 < flow_nodes.length() {
+    let next_index = current_index + 1
+    let current_style = flow_styles[current_index]
+    let current_node = flow_nodes[current_index]
+    let next_style = flow_styles[next_index]
+    let next_node = flow_nodes[next_index]
+    if has_multicol_forced_break_between(
+        current_style, current_node, next_style, next_node,
+      ) ||
+      not(
+        has_multicol_avoid_tie_between(
+          current_style, current_node, next_style, next_node,
+        ),
+      ) {
+      break
+    }
+    if next_style.column_span == @style.ColumnSpan::All ||
+      next_style.position == @types.Absolute ||
+      next_style.position == @types.Fixed ||
+      is_inline_flow_participant(next_node, next_style) {
+      break
+    }
+    total = total +
+      resolve_multicol_leading_keep_height(
+        flow_children[next_index].layout,
+        next_style,
+        next_node,
+      )
+    current_index = next_index
+  }
+  total
+}
+
+///|
+fn resolve_multicol_nested_following_reserved_height(
+  start_index : Int,
+  child_layouts : Array[@types.Layout],
+  source_children : Array[@node.Node],
+) -> Double {
+  if start_index < 0 ||
+    start_index >= child_layouts.length() ||
+    start_index >= source_children.length() {
+    return 0.0
+  }
+  let mut total = 0.0
+  let mut current_index = start_index
+  while current_index + 1 < child_layouts.length() &&
+        current_index + 1 < source_children.length() {
+    let next_index = current_index + 1
+    let current_node = source_children[current_index]
+    let next_node = source_children[next_index]
+    let current_style = current_node.style
+    let next_style = next_node.style
+    if has_multicol_forced_break_between(
+        current_style, current_node, next_style, next_node,
+      ) ||
+      not(
+        has_multicol_avoid_tie_between(
+          current_style, current_node, next_style, next_node,
+        ),
+      ) {
+      break
+    }
+    if next_style.column_span == @style.ColumnSpan::All ||
+      next_style.position == @types.Absolute ||
+      next_style.position == @types.Fixed ||
+      is_inline_flow_participant(next_node, next_style) {
+      break
+    }
+    total = total +
+      resolve_multicol_leading_keep_height(
+        child_layouts[next_index],
+        next_style,
+        next_node,
+      )
+    current_index = next_index
+  }
+  total
+}
+
+///|
+fn resolve_multicol_break_group_outer_height(
+  start_index : Int,
+  flow_children : Array[LayoutWithCollapse],
+  flow_styles : Array[@style.Style],
+  flow_nodes : Array[@node.Node],
+) -> Double? {
+  if start_index < 0 ||
+    start_index >= flow_children.length() ||
+    start_index >= flow_styles.length() ||
+    start_index >= flow_nodes.length() {
+    return None
+  }
+  let start_style = flow_styles[start_index]
+  let start_node = flow_nodes[start_index]
+  if start_style.column_span == @style.ColumnSpan::All ||
+    start_style.position == @types.Absolute ||
+    start_style.position == @types.Fixed ||
+    is_inline_flow_participant(start_node, start_style) {
+    return None
+  }
+  let mut total = resolve_multicol_flow_child_outer_height(
+    flow_children[start_index],
+    start_style,
+  )
+  let mut last_index = start_index
+  while last_index + 1 < flow_children.length() &&
+        last_index + 1 < flow_styles.length() &&
+        last_index + 1 < flow_nodes.length() {
+    let next_index = last_index + 1
+    let current_style = flow_styles[last_index]
+    let current_node = flow_nodes[last_index]
+    let next_style = flow_styles[next_index]
+    let next_node = flow_nodes[next_index]
+    let forced_break_between = has_multicol_forced_break_between(
+      current_style, current_node, next_style, next_node,
+    )
+    if forced_break_between {
+      break
+    }
+    let tied = has_multicol_avoid_tie_between(
+      current_style, current_node, next_style, next_node,
+    )
+    if not(tied) {
+      break
+    }
+    if next_style.column_span == @style.ColumnSpan::All ||
+      next_style.position == @types.Absolute ||
+      next_style.position == @types.Fixed ||
+      is_inline_flow_participant(next_node, next_style) {
+      break
+    }
+    total = total +
+      resolve_multicol_flow_child_outer_height(
+        flow_children[next_index],
+        next_style,
+      )
+    last_index = next_index
+  }
+  if last_index == start_index {
+    None
+  } else {
+    Some(total)
+  }
+}
+
+///|
 fn has_inflow_fragment_child(children : Array[@node.Node]) -> Bool {
   for i = 0; i < children.length(); i = i + 1 {
     let child = children[i]
@@ -279,6 +638,33 @@ fn has_inflow_fragment_child(children : Array[@node.Node]) -> Bool {
     return true
   }
   false
+}
+
+///|
+fn has_direct_inflow_float(children : Array[@node.Node]) -> Bool {
+  for child in children {
+    if child.style.display == @types.Display::None {
+      continue
+    }
+    if child.style.position == @types.Absolute ||
+      child.style.position == @types.Fixed {
+      continue
+    }
+    if child.style.float != @types.Float::None {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn is_multicol_block_flow_box(node : @node.Node, style : @style.Style) -> Bool {
+  not(@inline.is_inline_level(style.display)) ||
+  (
+    @inline.is_inline_level(style.display) &&
+    node.children.length() > 0 &&
+    not(contents_is_inline_flow(node))
+  )
 }
 
 ///|
@@ -308,12 +694,346 @@ fn resolve_nested_fragment_flow_height(
 }
 
 ///|
+fn resolve_multicol_positioned_flow_extent(
+  children : Array[@types.Layout],
+  limit : Double,
+  multicol_column_width : Double,
+  multicol_column_gap : Double,
+) -> Double {
+  if children.length() == 0 || limit <= 0.0 {
+    return 0.0
+  }
+  let column_step = multicol_column_width + multicol_column_gap
+  let mut max_bottom = 0.0
+  for child in children {
+    let nested_extent = if child.children.length() > 0 {
+      resolve_multicol_positioned_flow_extent(
+        child.children,
+        limit,
+        multicol_column_width,
+        multicol_column_gap,
+      )
+    } else {
+      0.0
+    }
+    let child_extent = if nested_extent > child.height {
+      nested_extent
+    } else {
+      child.height
+    }
+    let column_index = if column_step > 0.0 && child.x > 0.0 {
+      (child.x / column_step).floor().to_int()
+    } else {
+      0
+    }
+    let bottom = child.y + child_extent + column_index.to_double() * limit
+    if bottom > max_bottom {
+      max_bottom = bottom
+    }
+  }
+  max_bottom
+}
+
+///|
+fn get_children_immediate_extent_width(
+  children : Array[@types.Layout],
+) -> Double {
+  if children.length() == 0 {
+    return 0.0
+  }
+  let mut min_left = @double.infinity
+  let mut max_right = -@double.infinity
+  for child in children {
+    if child.width <= 0.0 {
+      continue
+    }
+    let left = child.x
+    let right = child.x + child.width
+    if left < min_left {
+      min_left = left
+    }
+    if right > max_right {
+      max_right = right
+    }
+  }
+  if min_left == @double.infinity || max_right == -@double.infinity {
+    0.0
+  } else {
+    let extent = max_right - min_left
+    if extent > 0.0 {
+      extent
+    } else {
+      0.0
+    }
+  }
+}
+
+///|
+fn shrink_span_to_positive_children_extent(
+  layout : @types.Layout,
+) -> @types.Layout {
+  if layout.id != "span" || layout.children.length() == 0 {
+    return layout
+  }
+  let mut min_left = @double.infinity
+  let mut max_right = -@double.infinity
+  let mut min_top = @double.infinity
+  let mut max_bottom = -@double.infinity
+  for child in layout.children {
+    if child.width > 0.0 {
+      if child.x < min_left {
+        min_left = child.x
+      }
+      let right = child.x + child.width
+      if right > max_right {
+        max_right = right
+      }
+    }
+    if child.height > 0.0 {
+      if child.y < min_top {
+        min_top = child.y
+      }
+      let bottom = child.y + child.height
+      if bottom > max_bottom {
+        max_bottom = bottom
+      }
+    }
+  }
+  let width = if min_left == @double.infinity || max_right == -@double.infinity {
+    layout.width
+  } else {
+    let extent = max_right - min_left
+    if extent > 0.0 && extent < layout.width {
+      extent
+    } else {
+      layout.width
+    }
+  }
+  let height = if min_top == @double.infinity || max_bottom == -@double.infinity {
+    layout.height
+  } else {
+    let extent = max_bottom - min_top
+    if extent > 0.0 && extent < layout.height {
+      extent
+    } else {
+      layout.height
+    }
+  }
+  { ..layout, width, height }
+}
+
+///|
+fn normalize_fragment_start_margin_boxes(
+  layout : @types.Layout,
+  limit : Double,
+) -> @types.Layout {
+  if limit <= 0.0 {
+    return layout
+  }
+  let normalized_children : Array[@types.Layout] = []
+  for child in layout.children {
+    normalized_children.push(
+      normalize_fragment_start_margin_boxes(child, limit),
+    )
+  }
+  let child_extent = get_children_flow_extent_height(normalized_children)
+  let child_width_extent = get_children_immediate_extent_width(
+    normalized_children,
+  )
+  let should_snap_to_row_start = layout.margin.top > 0.0 &&
+    layout.y > 0.0 &&
+    layout.children.length() > 0 &&
+    child_extent <= layout.height + 0.01 &&
+    layout.y + layout.height > limit + 0.01
+  if should_snap_to_row_start {
+    let width = if child_width_extent > 0.0 && child_width_extent < layout.width {
+      child_width_extent
+    } else {
+      layout.width
+    }
+    { ..layout, y: 0.0, width, children: normalized_children }
+  } else {
+    { ..layout, children: normalized_children }
+  }
+}
+
+///|
+fn resolve_multicol_positioned_column_span_with_offset(
+  children : Array[@types.Layout],
+  column_step : Double,
+  offset_x : Double,
+) -> Int {
+  if children.length() == 0 || column_step <= 0.0 {
+    return 1
+  }
+  let mut max_column = 0
+  for child in children {
+    let absolute_x = offset_x + child.x
+    let child_column = if absolute_x > 0.0 {
+      (absolute_x / column_step).floor().to_int()
+    } else {
+      0
+    }
+    if child_column > max_column {
+      max_column = child_column
+    }
+    let nested_span = resolve_multicol_positioned_column_span_with_offset(
+      child.children,
+      column_step,
+      absolute_x,
+    )
+    let nested_column = nested_span - 1
+    if nested_column > max_column {
+      max_column = nested_column
+    }
+  }
+  max_column + 1
+}
+
+///|
+fn resolve_multicol_positioned_column_span(
+  children : Array[@types.Layout],
+  multicol_column_width : Double,
+  multicol_column_gap : Double,
+) -> Int {
+  resolve_multicol_positioned_column_span_with_offset(
+    children,
+    multicol_column_width + multicol_column_gap,
+    0.0,
+  )
+}
+
+///|
 fn has_forced_column_break_descendant(children : Array[@node.Node]) -> Bool {
   for child in children {
     if child.style.break_before == @style.BreakBefore::Column ||
       child.style.break_after == @style.BreakBefore::Column {
       return true
     }
+  }
+  false
+}
+
+///|
+fn starts_with_forced_column_break_descendant(
+  children : Array[@node.Node],
+) -> Bool {
+  for i = 0; i < children.length(); i = i + 1 {
+    let child = children[i]
+    if child.style.display == @types.Display::None {
+      continue
+    }
+    if child.style.position == @types.Absolute ||
+      child.style.position == @types.Fixed {
+      continue
+    }
+    if child.style.float != @types.Float::None {
+      return false
+    }
+    if is_whitespace_only_flow_text(child) &&
+      not(should_preserve_flow_whitespace_text(children, i)) {
+      continue
+    }
+    if child.style.break_before == @style.BreakBefore::Column {
+      return true
+    }
+    if child.children.length() == 0 {
+      return false
+    }
+    return starts_with_forced_column_break_descendant(child.children)
+  }
+  false
+}
+
+///|
+fn ends_with_forced_column_break_descendant(
+  children : Array[@node.Node],
+) -> Bool {
+  let mut i = children.length()
+  while i > 0 {
+    i = i - 1
+    let child = children[i]
+    if child.style.display == @types.Display::None {
+      continue
+    }
+    if child.style.position == @types.Absolute ||
+      child.style.position == @types.Fixed {
+      continue
+    }
+    if child.style.float != @types.Float::None {
+      return false
+    }
+    if is_whitespace_only_flow_text(child) &&
+      not(should_preserve_flow_whitespace_text(children, i)) {
+      continue
+    }
+    if child.style.break_after == @style.BreakBefore::Column {
+      return true
+    }
+    if child.children.length() == 0 {
+      return false
+    }
+    return ends_with_forced_column_break_descendant(child.children)
+  }
+  false
+}
+
+///|
+fn starts_with_break_avoid_descendant(children : Array[@node.Node]) -> Bool {
+  for i = 0; i < children.length(); i = i + 1 {
+    let child = children[i]
+    if child.style.display == @types.Display::None {
+      continue
+    }
+    if child.style.position == @types.Absolute ||
+      child.style.position == @types.Fixed {
+      continue
+    }
+    if child.style.float != @types.Float::None {
+      return false
+    }
+    if is_whitespace_only_flow_text(child) &&
+      not(should_preserve_flow_whitespace_text(children, i)) {
+      continue
+    }
+    if child.style.break_before == @style.BreakBefore::Avoid {
+      return true
+    }
+    if child.children.length() == 0 {
+      return false
+    }
+    return starts_with_break_avoid_descendant(child.children)
+  }
+  false
+}
+
+///|
+fn ends_with_break_avoid_descendant(children : Array[@node.Node]) -> Bool {
+  let mut i = children.length()
+  while i > 0 {
+    i = i - 1
+    let child = children[i]
+    if child.style.display == @types.Display::None {
+      continue
+    }
+    if child.style.position == @types.Absolute ||
+      child.style.position == @types.Fixed {
+      continue
+    }
+    if child.style.float != @types.Float::None {
+      return false
+    }
+    if is_whitespace_only_flow_text(child) &&
+      not(should_preserve_flow_whitespace_text(children, i)) {
+      continue
+    }
+    if child.style.break_after == @style.BreakBefore::Avoid {
+      return true
+    }
+    if child.children.length() == 0 {
+      return false
+    }
+    return ends_with_break_avoid_descendant(child.children)
   }
   false
 }
@@ -345,6 +1065,17 @@ fn is_multicol_nested_reflow_candidate(
 }
 
 ///|
+fn has_single_child_block_wrapper_for_multicol_reflow(
+  child_layout : @types.Layout,
+  child_style : @style.Style,
+) -> Bool {
+  child_layout.children.length() == 1 &&
+  not(@inline.is_inline_level(child_style.display)) &&
+  child_style.display != @types.Contents &&
+  child_layout.children[0].children.length() > 0
+}
+
+///|
 fn should_reflow_multicol_nested_children(
   child_layout : @types.Layout,
   child_style : @style.Style,
@@ -352,17 +1083,42 @@ fn should_reflow_multicol_nested_children(
   fragmented_columns : Int,
   multicol_nested_reflow_candidate : Bool,
   local_y : Double,
+  following_reserved_height : Double,
 ) -> Bool {
-  child_layout.children.length() > 1 &&
+  let child_descendant_height = get_children_flow_extent_height(
+    child_layout.children,
+  )
+  let has_overflowing_descendants = child_layout.children.length() > 0 &&
+    child_descendant_height > child_layout.height + 0.01
+  let has_single_child_block_wrapper = has_single_child_block_wrapper_for_multicol_reflow(
+    child_layout, child_style,
+  )
+  let single_child_has_fragment_start_margin = has_single_child_block_wrapper &&
+    child_layout.children[0].margin.top > 0.0
+  let has_nested_structure = child_layout.children.length() > 1 ||
+    has_overflowing_descendants ||
+    has_single_child_block_wrapper
+  let needs_reserved_height_reflow = following_reserved_height > 0.0 &&
+    multicol_nested_reflow_candidate &&
+    child_layout.children.length() > 0 &&
+    (
+      child_layout.children.length() > 1 ||
+      has_overflowing_descendants ||
+      has_single_child_block_wrapper
+    )
+  let needs_local_offset_reflow = multicol_nested_reflow_candidate &&
+    child_style.column_span != @style.ColumnSpan::All &&
+    local_y > 0.0 &&
+    has_overflowing_descendants
+  has_nested_structure &&
   (
     has_nested_forced_column_break ||
+    (has_overflowing_descendants && multicol_nested_reflow_candidate) ||
     child_style.display == @types.Contents ||
+    needs_reserved_height_reflow ||
+    (single_child_has_fragment_start_margin && multicol_nested_reflow_candidate) ||
     (fragmented_columns > 1 && multicol_nested_reflow_candidate) ||
-    (
-      multicol_nested_reflow_candidate &&
-      child_style.column_span != @style.ColumnSpan::All &&
-      local_y > 0.0
-    )
+    needs_local_offset_reflow
   )
 }
 
@@ -521,6 +1277,81 @@ fn process_multicol_flow_child(
   let child_outer_height = child_flow_height +
     visual_margin_top +
     visual_margin_bottom
+  let fragment_start_margin_top = if visual_margin_top > 0.0 {
+    0.0
+  } else {
+    visual_margin_top
+  }
+  let fragment_start_outer_height = child_flow_height +
+    fragment_start_margin_top +
+    visual_margin_bottom
+  let mut effective_child_outer_height = child_outer_height
+  let mut discard_top_margin_at_fragment_start = false
+  let keep_unfragmented_for_monolithic = child_style.contain.size ||
+    child_style.break_inside == @style.BreakInside::Avoid ||
+    has_break_inside_avoid_descendant(child_node.children)
+  let child_has_direct_inflow_float = has_direct_inflow_float(
+    child_node.children,
+  )
+  let child_can_fragment_internally = child_layout.children.length() > 0 &&
+    is_multicol_block_flow_box(child_node, child_style) &&
+    not(child_has_direct_inflow_float) &&
+    not(keep_unfragmented_for_monolithic)
+  let nested_starts_with_forced_column_break = not(
+      multicol_participates_in_inline_run,
+    ) &&
+    starts_with_forced_column_break_descendant(child_node.children)
+  let prev_ends_with_forced_column_break = i > 0 &&
+    ends_with_forced_column_break_descendant(flow_nodes[i - 1].children)
+  let force_column_break_before = child_style.break_before ==
+    @style.BreakBefore::Column ||
+    nested_starts_with_forced_column_break ||
+    (
+      i > 0 &&
+      (
+        flow_styles[i - 1].break_after == @style.BreakBefore::Column ||
+        prev_ends_with_forced_column_break
+      )
+    )
+  let break_group_outer_height_cached = if multicol_participates_in_inline_run {
+    None
+  } else {
+    resolve_multicol_break_group_outer_height(
+      i, flow_children, flow_styles, flow_nodes,
+    )
+  }
+  let following_reserved_height_cached = if multicol_participates_in_inline_run {
+    0.0
+  } else {
+    resolve_multicol_following_reserved_height(
+      i, flow_children, flow_styles, flow_nodes,
+    )
+  }
+  match multicol_height_limit {
+    Some(limit) if limit > 0.0 =>
+      if child_style.column_span != @style.ColumnSpan::All &&
+        not(multicol_participates_in_inline_run) &&
+        not(force_column_break_before) &&
+        fragment_start_outer_height <= limit &&
+        effective_pos > 0.0 {
+        let absolute_col = (effective_pos / limit).to_int()
+        let local_y = effective_pos - absolute_col.to_double() * limit
+        if local_y > 0.0 && local_y + fragment_start_outer_height > limit {
+          if not(
+              child_can_fragment_internally &&
+              following_reserved_height_cached > 0.0,
+            ) {
+            effective_pos = (absolute_col + 1).to_double() * limit
+            current_pos = effective_pos
+            effective_child_outer_height = fragment_start_outer_height
+            discard_top_margin_at_fragment_start = true
+          }
+        }
+      }
+    _ => ()
+  }
+  let break_group_outer_height = break_group_outer_height_cached
+  let following_reserved_height = following_reserved_height_cached
   if multicol_participates_in_inline_run &&
     child_node.id != "br" &&
     inline_run_x == 0.0 {
@@ -536,9 +1367,6 @@ fn process_multicol_flow_child(
       _ => ()
     }
   }
-  let keep_unfragmented_for_monolithic = child_style.contain.size ||
-    child_style.break_inside == @style.BreakInside::Avoid ||
-    has_break_inside_avoid_descendant(child_node.children)
   let multicol_fragmentable_box = child_style.column_span !=
     @style.ColumnSpan::All &&
     not(multicol_participates_in_inline_run) &&
@@ -546,7 +1374,7 @@ fn process_multicol_flow_child(
   let fragmented_columns = if multicol_fragmentable_box {
     match multicol_height_limit {
       Some(limit) if limit > 0.0 => {
-        let mut needed = (child_outer_height / limit).ceil().to_int()
+        let mut needed = (effective_child_outer_height / limit).ceil().to_int()
         if needed < 1 {
           needed = 1
         }
@@ -568,6 +1396,18 @@ fn process_multicol_flow_child(
   } else {
     1
   }
+  let single_column_fragment_width = if child_style.display != @types.Contents &&
+    child_style.column_span != @style.ColumnSpan::All &&
+    not(multicol_participates_in_inline_run) &&
+    fragmented_columns == 1 &&
+    multicol_column_width > 0.0 {
+    match child_style.width {
+      @types.Dimension::Auto => multicol_column_width
+      _ => child_layout.width
+    }
+  } else {
+    child_layout.width
+  }
   let fragmented_union_width = if child_style.display == @types.Contents {
     child_layout.width
   } else if fragmented_columns > 1 {
@@ -575,35 +1415,73 @@ fn process_multicol_flow_child(
     (multicol_column_width + multicol_column_gap) *
     (fragmented_columns - 1).to_double()
   } else {
-    child_layout.width
+    single_column_fragment_width
   }
   match multicol_height_limit {
     Some(limit) =>
       if limit <= 0.0 {
         ()
       } else {
-        if child_style.column_span != @style.ColumnSpan::All &&
-          not(multicol_participates_in_inline_run) &&
-          style.column_fill == @style.ColumnFill::Auto &&
-          child_outer_height <= limit &&
-          effective_pos > 0.0 {
-          let absolute_col = (effective_pos / limit).to_int()
-          let local_y = effective_pos - absolute_col.to_double() * limit
-          if local_y > 0.0 && local_y + child_outer_height > limit {
-            effective_pos = (absolute_col + 1).to_double() * limit
-          }
-        }
-        let force_column_break_before = child_style.break_before ==
-          @style.BreakBefore::Column ||
-          (
-            i > 0 &&
-            flow_styles[i - 1].break_after == @style.BreakBefore::Column
-          )
         if force_column_break_before && effective_pos > 0.0 {
           let absolute_col = (effective_pos / limit).to_int()
           effective_pos = (absolute_col + 1).to_double() * limit
+          current_pos = effective_pos
         }
-
+        match break_group_outer_height {
+          Some(group_height) =>
+            if child_style.column_span != @style.ColumnSpan::All &&
+              not(force_column_break_before) &&
+              group_height <= limit &&
+              effective_pos > 0.0 {
+              let absolute_col = (effective_pos / limit).to_int()
+              let local_y = effective_pos - absolute_col.to_double() * limit
+              if local_y > 0.0 && local_y + group_height > limit {
+                effective_pos = (absolute_col + 1).to_double() * limit
+                current_pos = effective_pos
+              }
+            }
+          None => ()
+        }
+        if child_style.column_span != @style.ColumnSpan::All &&
+          not(multicol_participates_in_inline_run) &&
+          not(force_column_break_before) &&
+          style.column_fill == @style.ColumnFill::Auto &&
+          effective_child_outer_height <= limit &&
+          effective_pos > 0.0 {
+          let absolute_col = (effective_pos / limit).to_int()
+          let local_y = effective_pos - absolute_col.to_double() * limit
+          if local_y > 0.0 && local_y + effective_child_outer_height > limit {
+            if not(
+                child_can_fragment_internally && following_reserved_height > 0.0,
+              ) {
+              effective_pos = (absolute_col + 1).to_double() * limit
+              current_pos = effective_pos
+              if visual_margin_top > 0.0 {
+                discard_top_margin_at_fragment_start = true
+              }
+            }
+          }
+        }
+        if child_style.column_span != @style.ColumnSpan::All &&
+          not(multicol_participates_in_inline_run) &&
+          not(force_column_break_before) &&
+          following_reserved_height > 0.0 &&
+          following_reserved_height < limit &&
+          effective_pos > 0.0 &&
+          not(child_can_fragment_internally) {
+          let absolute_col = (effective_pos / limit).to_int()
+          let local_y = effective_pos - absolute_col.to_double() * limit
+          let allowed_end = limit - following_reserved_height
+          if local_y > 0.0 &&
+            child_outer_height <= limit &&
+            local_y + child_outer_height > allowed_end {
+            effective_pos = (absolute_col + 1).to_double() * limit
+            current_pos = effective_pos
+            if visual_margin_top > 0.0 {
+              discard_top_margin_at_fragment_start = true
+            }
+          }
+        }
         if child_style.column_span == @style.ColumnSpan::All {
           let absolute_col = (effective_pos / limit).to_int()
           let row_index = absolute_col / multicol_column_count
@@ -627,6 +1505,11 @@ fn process_multicol_flow_child(
           absolute_col
         }
         let local_y = effective_pos - absolute_col.to_double() * limit
+        let fragment_visual_margin_top = if discard_top_margin_at_fragment_start {
+          fragment_start_margin_top
+        } else {
+          visual_margin_top
+        }
         let col_offset = if child_style.column_span == @style.ColumnSpan::All {
           0.0
         } else {
@@ -659,16 +1542,27 @@ fn process_multicol_flow_child(
         let multicol_nested_reflow_candidate = is_multicol_nested_reflow_candidate(
           multicol_participates_in_inline_run, child_layout, multicol_column_width,
         )
+        let normalize_descendant_row_start = following_reserved_height > 0.0 ||
+          fragmented_columns > 1
         let should_reflow_nested_children = should_reflow_multicol_nested_children(
           child_layout, child_style, has_nested_forced_column_break, fragmented_columns,
-          multicol_nested_reflow_candidate, local_y,
+          multicol_nested_reflow_candidate, local_y, following_reserved_height,
         )
         let positioned_children : Array[@types.Layout] = if should_reflow_nested_children {
           let nested_layouts : Array[@types.Layout] = []
           let nested_source_children = collect_preserved_flow_source_children(
             child_node.children,
           )
-          let use_existing_nested_offsets = fragmented_columns > 1 &&
+          let child_descendant_height = get_children_flow_extent_height(
+            child_layout.children,
+          )
+          let child_descendant_overflows = child_layout.children.length() > 0 &&
+            child_descendant_height > child_layout.height + 0.01
+          let use_existing_nested_offsets = (
+              fragmented_columns > 1 ||
+              child_descendant_overflows ||
+              following_reserved_height > 0.0
+            ) &&
             not(has_nested_forced_column_break) &&
             child_style.display != @types.Contents
           if use_existing_nested_offsets {
@@ -684,6 +1578,16 @@ fn process_multicol_flow_child(
               } else {
                 @style.Style::default()
               }
+              let nested_following_reserved_height = if following_reserved_height >
+                0.0 {
+                following_reserved_height
+              } else {
+                resolve_multicol_nested_following_reserved_height(
+                  j,
+                  child_layout.children,
+                  nested_source_children,
+                )
+              }
               let nested_height_zero_by_layout = nested_layout.height <= 0.01
               let nested_height_zero_by_style = match nested_style.height {
                 @types.Dimension::Length(h) => h == 0.0
@@ -694,8 +1598,18 @@ fn process_multicol_flow_child(
               let nested_flow_height = resolve_nested_fragment_flow_height(
                 nested_layout, nested_style,
               )
+              let nested_style_margin_top = match nested_style.margin.top {
+                @types.Dimension::Length(v) => v
+                _ => 0.0
+              }
+              let nested_visual_margin_top = if nested_layout.margin.top >
+                nested_style_margin_top {
+                nested_layout.margin.top
+              } else {
+                nested_style_margin_top
+              }
               let nested_outer_height = nested_flow_height +
-                nested_layout.margin.top +
+                nested_visual_margin_top +
                 nested_layout.margin.bottom
               let nested_is_inflow_float = nested_style.float !=
                 @types.Float::None &&
@@ -719,10 +1633,30 @@ fn process_multicol_flow_child(
               let mut nested_col = (effective_nested_y / limit).to_int()
               let mut nested_local_y = effective_nested_y -
                 nested_col.to_double() * limit
-              if nested_unbreakable &&
-                nested_outer_height <= limit &&
+              let nested_fragment_start_margin_top = if nested_visual_margin_top >
+                0.0 {
+                0.0
+              } else {
+                nested_visual_margin_top
+              }
+              let nested_fragment_start_outer_height = nested_flow_height +
+                nested_fragment_start_margin_top +
+                nested_layout.margin.bottom
+              let mut nested_effective_outer_height = nested_outer_height
+              let mut discard_nested_top_margin_at_fragment_start = false
+              if nested_visual_margin_top > 0.0 &&
+                nested_fragment_start_outer_height <= limit &&
                 nested_local_y > 0.0 &&
-                nested_local_y + nested_outer_height > limit {
+                nested_local_y + nested_fragment_start_outer_height > limit {
+                effective_nested_y = nested_col.to_double() * limit
+                nested_local_y = 0.0
+                nested_effective_outer_height = nested_fragment_start_outer_height
+                discard_nested_top_margin_at_fragment_start = true
+              }
+              if nested_unbreakable &&
+                nested_effective_outer_height <= limit &&
+                nested_local_y > 0.0 &&
+                nested_local_y + nested_effective_outer_height > limit {
                 let next_effective = (nested_col + 1).to_double() * limit
                 let float_line_adjust = if nested_is_inflow_float &&
                   nested_style.line_height > 0.0 {
@@ -747,6 +1681,12 @@ fn process_multicol_flow_child(
                 nested_col % multicol_column_count
               } else {
                 nested_col
+              }
+              let nested_source_node_for_box = if j <
+                nested_source_children.length() {
+                nested_source_children[j]
+              } else {
+                @node.Node::new(nested_layout.id, @style.Style::default(), [])
               }
               let mut nested_has_direct_inflow_float = false
               let nested_positioned_children = if nested_layout.children.length() >
@@ -787,17 +1727,89 @@ fn process_multicol_flow_child(
                   }
                   nested_grand_source_children.push(source_grand)
                 }
-                reflow_fragmented_children_with_offset(
-                  nested_layout.children,
-                  nested_grand_source_children,
-                  limit,
-                  nested_local_y,
-                  nested_height_zero,
-                  multicol_fragment_contained,
-                  multicol_column_count,
-                  multicol_column_width,
-                  multicol_column_gap,
-                )
+                let deep_single_child_reserve_case = nested_following_reserved_height >
+                  0.0 &&
+                  nested_layout.children.length() == 1 &&
+                  nested_layout.children[0].children.length() > 0 &&
+                  not(@inline.is_inline_level(nested_style.display))
+                if deep_single_child_reserve_case {
+                  let deep_layout = nested_layout.children[0]
+                  let deep_source_node = if nested_source_node.children.length() >
+                    0 {
+                    nested_source_node.children[0]
+                  } else {
+                    @node.Node::new(deep_layout.id, @style.Style::default(), [])
+                  }
+                  let deep_source_children = collect_preserved_flow_source_children(
+                    deep_source_node.children,
+                  )
+                  let deep_first_child_y = if deep_layout.children.length() > 0 {
+                    deep_layout.children[0].y
+                  } else {
+                    0.0
+                  }
+                  let deep_fragment_offset = nested_local_y + deep_first_child_y
+                  let deep_positioned_children = reflow_fragmented_children_with_offset(
+                    deep_layout.children,
+                    deep_source_children,
+                    limit,
+                    deep_fragment_offset,
+                    nested_following_reserved_height,
+                    normalize_descendant_row_start,
+                    false,
+                    multicol_fragment_contained,
+                    multicol_column_count,
+                    multicol_column_width,
+                    multicol_column_gap,
+                  )
+                  let deep_positioned_span = resolve_multicol_positioned_column_span(
+                    deep_positioned_children, multicol_column_width, multicol_column_gap,
+                  )
+                  let deep_children_width = get_children_flow_extent_width(
+                    deep_positioned_children,
+                  )
+                  let deep_base_width = if deep_positioned_span > 1 {
+                    deep_layout.width +
+                    (multicol_column_width + multicol_column_gap) *
+                    (deep_positioned_span - 1).to_double()
+                  } else {
+                    deep_layout.width
+                  }
+                  let deep_width = if deep_children_width > deep_base_width {
+                    deep_children_width
+                  } else {
+                    deep_base_width
+                  }
+                  let deep_height = if deep_positioned_span > 1 &&
+                    deep_layout.height > 0.0 &&
+                    deep_layout.height < limit {
+                    limit
+                  } else {
+                    deep_layout.height
+                  }
+                  [
+                    {
+                      ..deep_layout,
+                      width: deep_width,
+                      height: deep_height,
+                      children: deep_positioned_children,
+                    },
+                  ]
+                } else {
+                  reflow_fragmented_children_with_offset(
+                    nested_layout.children,
+                    nested_grand_source_children,
+                    limit,
+                    nested_local_y,
+                    nested_following_reserved_height,
+                    normalize_descendant_row_start,
+                    nested_height_zero,
+                    multicol_fragment_contained,
+                    multicol_column_count,
+                    multicol_column_width,
+                    multicol_column_gap,
+                  )
+                }
               } else {
                 nested_layout.children
               }
@@ -868,28 +1880,109 @@ fn process_multicol_flow_child(
               let nested_children_width = get_children_flow_extent_width(
                 normalized_nested_children,
               )
+              let nested_positioned_column_span = resolve_multicol_positioned_column_span(
+                normalized_nested_children, multicol_column_width, multicol_column_gap,
+              )
+              let nested_fragment_columns = if nested_style.column_span !=
+                @style.ColumnSpan::All &&
+                is_multicol_block_flow_box(
+                  nested_source_node_for_box, nested_style,
+                ) &&
+                nested_effective_outer_height > limit {
+                let mut needed = (nested_effective_outer_height / limit)
+                  .ceil()
+                  .to_int()
+                if needed < 1 {
+                  needed = 1
+                }
+                if multicol_fragment_contained && needed > multicol_column_count {
+                  multicol_column_count
+                } else {
+                  needed
+                }
+              } else {
+                1
+              }
+              let nested_single_column_fragment_width = if nested_style.display !=
+                @types.Contents &&
+                nested_style.column_span != @style.ColumnSpan::All &&
+                nested_fragment_columns == 1 &&
+                multicol_column_width > 0.0 {
+                match nested_style.width {
+                  @types.Dimension::Auto => multicol_column_width
+                  _ => nested_layout.width
+                }
+              } else {
+                nested_layout.width
+              }
+              let nested_base_fragmented_width = if nested_fragment_columns > 1 {
+                nested_layout.width +
+                (multicol_column_width + multicol_column_gap) *
+                (nested_fragment_columns - 1).to_double()
+              } else {
+                nested_single_column_fragment_width
+              }
+              let nested_is_inline_wrapper = nested_layout.id == "span" ||
+                @inline.is_inline_level(nested_style.display)
+              let nested_inline_wrapper_width = if nested_is_inline_wrapper {
+                get_children_immediate_extent_width(normalized_nested_children)
+              } else {
+                nested_children_width
+              }
+              let nested_base_fragmented_height = if nested_fragment_columns > 1 {
+                limit
+              } else {
+                nested_layout.height
+              }
               let nested_auto_height = match nested_style.height {
                 @types.Dimension::Auto => true
                 _ => false
               }
               let allow_nested_fragment_box_expansion = nested_auto_height &&
                 nested_style.column_span != @style.ColumnSpan::All &&
-                not(@inline.is_inline_level(nested_style.display)) &&
-                not(nested_has_direct_inflow_float)
+                is_multicol_block_flow_box(
+                  nested_source_node_for_box, nested_style,
+                ) &&
+                not(nested_has_direct_inflow_float) &&
+                nested_positioned_column_span > 1
               let nested_fragmented_width = if allow_nested_fragment_box_expansion &&
-                nested_children_width > nested_layout.width {
+                nested_children_width > nested_base_fragmented_width {
                 nested_children_width
+              } else if nested_is_inline_wrapper &&
+                nested_inline_wrapper_width > 0.0 {
+                nested_inline_wrapper_width
               } else {
-                nested_layout.width
+                nested_base_fragmented_width
               }
               let nested_fragmented_height = if allow_nested_fragment_box_expansion &&
-                nested_fragmented_width > nested_layout.width &&
-                nested_layout.height < limit &&
-                nested_layout.height > 0.0 {
+                nested_fragmented_width > nested_base_fragmented_width &&
+                nested_base_fragmented_height < limit &&
+                nested_base_fragmented_height > 0.0 {
                 limit
               } else {
-                nested_layout.height
+                nested_base_fragmented_height
               }
+              let nested_children_flow_extent = resolve_multicol_positioned_flow_extent(
+                normalized_nested_children, limit, multicol_column_width, multicol_column_gap,
+              )
+              let parent_has_explicit_non_auto_height = match
+                child_style.height {
+                @types.Dimension::Auto => false
+                _ => true
+              }
+              let normalize_nested_to_row_start = normalize_descendant_row_start ||
+                nested_fragment_columns > 1 ||
+                nested_children_flow_extent >
+                nested_effective_outer_height + 0.01
+              let preserve_parent_local_nested_offsets = parent_has_explicit_non_auto_height &&
+                nested_fragment_columns == 1 &&
+                nested_children_width <= nested_base_fragmented_width + 0.01 &&
+                nested_layout.children.length() == 0
+              let normalize_nested_box_to_row_start = nested_fragment_columns >
+                1 ||
+                nested_positioned_column_span > 1 ||
+                nested_children_flow_extent >
+                nested_effective_outer_height + 0.01
               let mut nested_positioned_x = nested_layout.x +
                 nested_col_index.to_double() *
                 (multicol_column_width + multicol_column_gap)
@@ -913,17 +2006,74 @@ fn process_multicol_flow_child(
                   nested_positioned_x = prev_nested_x
                 }
               }
-              nested_layouts.push({
-                ..nested_layout,
-                x: nested_positioned_x,
-                y: nested_row.to_double() * limit +
+              let preserve_zero_height_nested_wrapper_origin = nested_layout.id ==
+                "span" &&
+                nested_layout.height <= 0.01 &&
+                nested_layout.children.length() == 1 &&
+                nested_layout.children[0].margin.top > 0.0
+              let force_nested_margin_box_to_row_start = nested_layout.margin.top >
+                0.0 &&
+                nested_fragment_start_outer_height <= limit &&
+                nested_layout.children.length() > 0 &&
+                nested_layout.y > 0.0
+              let raw_nested_y = if preserve_zero_height_nested_wrapper_origin ||
+                force_nested_margin_box_to_row_start {
+                nested_row.to_double() * limit + nested_child_y_offset
+              } else if discard_nested_top_margin_at_fragment_start {
+                nested_row.to_double() * limit + nested_child_y_offset
+              } else if normalize_nested_box_to_row_start {
+                nested_row.to_double() * limit + nested_child_y_offset
+              } else if normalize_nested_to_row_start &&
+                not(preserve_parent_local_nested_offsets) {
+                nested_row.to_double() * limit +
+                nested_local_y +
+                nested_child_y_offset
+              } else {
+                nested_row.to_double() * limit +
                 nested_local_y -
                 nested_fragment_offset +
-                nested_child_y_offset,
+                nested_child_y_offset
+              }
+              let fragment_row_start = nested_row.to_double() * limit +
+                nested_child_y_offset
+              let fragment_row_end = fragment_row_start + limit
+              let snapped_nested_y = if nested_layout.margin.top > 0.0 &&
+                nested_fragment_start_outer_height <= limit &&
+                nested_layout.children.length() > 0 &&
+                raw_nested_y > fragment_row_start &&
+                raw_nested_y + nested_layout.height > fragment_row_end + 0.01 {
+                fragment_row_start
+              } else {
+                raw_nested_y
+              }
+              let raw_nested_layout : @types.Layout = {
+                ..nested_layout,
+                x: if preserve_zero_height_nested_wrapper_origin {
+                  nested_layout.x
+                } else {
+                  nested_positioned_x
+                },
+                y: snapped_nested_y,
                 width: nested_fragmented_width,
                 height: nested_fragmented_height,
                 children: normalized_nested_children,
-              })
+              }
+              let finalized_nested_layout = shrink_span_to_positive_children_extent(
+                adjust_inline_span_float_quirk(
+                  normalize_fragment_start_margin_boxes(
+                    raw_nested_layout, limit,
+                  ),
+                  nested_source_node_for_box,
+                  style.writing_mode.is_vertical(),
+                ),
+              )
+              nested_layouts.push(finalized_nested_layout)
+              if not(nested_is_inflow_float) &&
+                nested_children_flow_extent >
+                finalized_nested_layout.height + 0.01 {
+                nested_carry_delta = nested_carry_delta +
+                  (nested_children_flow_extent - finalized_nested_layout.height)
+              }
             }
           } else {
             let mut nested_pos = 0.0
@@ -1005,16 +2155,73 @@ fn process_multicol_flow_child(
               }
               let nested_local_y = effective_nested_pos -
                 nested_col.to_double() * limit
-              nested_layouts.push({
+              let nested_fragment_columns = if nested_style.column_span !=
+                @style.ColumnSpan::All &&
+                j < nested_source_children.length() &&
+                is_multicol_block_flow_box(
+                  nested_source_children[j],
+                  nested_style,
+                ) &&
+                nested_outer_height > limit {
+                let mut needed = (nested_outer_height / limit).ceil().to_int()
+                if needed < 1 {
+                  needed = 1
+                }
+                if multicol_fragment_contained && needed > multicol_column_count {
+                  multicol_column_count
+                } else {
+                  needed
+                }
+              } else {
+                1
+              }
+              let nested_fragmented_width = if nested_fragment_columns > 1 {
+                nested_layout.width +
+                (multicol_column_width + multicol_column_gap) *
+                (nested_fragment_columns - 1).to_double()
+              } else {
+                nested_layout.width
+              }
+              let nested_fragmented_height = if nested_fragment_columns > 1 {
+                limit
+              } else {
+                nested_layout.height
+              }
+              let raw_nested_layout : @types.Layout = {
                 ..nested_layout,
                 x: nested_col_index.to_double() *
                 (multicol_column_width + multicol_column_gap) +
                 nested_layout.margin.left,
-                y: nested_row.to_double() * limit +
-                nested_local_y +
-                nested_layout.margin.top -
-                nested_fragment_offset,
-              })
+                y: if normalize_descendant_row_start {
+                  nested_row.to_double() * limit +
+                  nested_local_y +
+                  nested_layout.margin.top
+                } else {
+                  nested_row.to_double() * limit +
+                  nested_local_y +
+                  nested_layout.margin.top -
+                  nested_fragment_offset
+                },
+                width: nested_fragmented_width,
+                height: nested_fragmented_height,
+              }
+              let nested_source_node_for_box = if j <
+                nested_source_children.length() {
+                nested_source_children[j]
+              } else {
+                @node.Node::new(nested_layout.id, @style.Style::default(), [])
+              }
+              nested_layouts.push(
+                shrink_span_to_positive_children_extent(
+                  adjust_inline_span_float_quirk(
+                    normalize_fragment_start_margin_boxes(
+                      raw_nested_layout, limit,
+                    ),
+                    nested_source_node_for_box,
+                    style.writing_mode.is_vertical(),
+                  ),
+                ),
+              )
               nested_pos = nested_pos + nested_outer_height
             }
           }
@@ -1027,6 +2234,49 @@ fn process_multicol_flow_child(
         } else {
           0.0
         }
+        let child_children_width = get_children_flow_extent_width(
+          positioned_children,
+        )
+        let child_is_inline_wrapper = child_layout.id == "span" ||
+          @inline.is_inline_level(child_style.display)
+        let child_inline_wrapper_width = if child_is_inline_wrapper {
+          get_children_immediate_extent_width(positioned_children)
+        } else {
+          child_children_width
+        }
+        let child_positioned_column_span = resolve_multicol_positioned_column_span(
+          positioned_children, multicol_column_width, multicol_column_gap,
+        )
+        let child_children_flow_extent = resolve_multicol_positioned_flow_extent(
+          positioned_children, limit, multicol_column_width, multicol_column_gap,
+        )
+        let child_auto_height = match child_style.height {
+          @types.Dimension::Auto => true
+          _ => false
+        }
+        let allow_child_fragment_box_expansion = child_auto_height &&
+          child_style.column_span != @style.ColumnSpan::All &&
+          is_multicol_block_flow_box(child_node, child_style) &&
+          not(child_has_direct_inflow_float) &&
+          child_positioned_column_span > 1
+        let positioned_width = if allow_child_fragment_box_expansion &&
+          child_children_width > fragmented_union_width {
+          child_children_width
+        } else if child_is_inline_wrapper && child_inline_wrapper_width > 0.0 {
+          child_inline_wrapper_width
+        } else {
+          fragmented_union_width
+        }
+        let positioned_height = if allow_child_fragment_box_expansion &&
+          positioned_width > fragmented_union_width &&
+          clipped_height < limit &&
+          clipped_height > 0.0 {
+          limit
+        } else {
+          clipped_height
+        }
+        let normalize_to_row_start = fragmented_columns > 1 ||
+          child_positioned_column_span > 1
         let final_positioned_children = positioned_children
         let positioned_layout : @types.Layout = {
           id: child_layout.id,
@@ -1035,9 +2285,13 @@ fn process_multicol_flow_child(
           col_offset +
           multicol_inline_run_offset +
           child_layout.margin.left,
-          y: padding.top + border.top + positioned_y + visual_margin_top,
-          width: fragmented_union_width,
-          height: clipped_height,
+          y: if normalize_to_row_start {
+            padding.top + border.top + row_index.to_double() * limit
+          } else {
+            padding.top + border.top + positioned_y + fragment_visual_margin_top
+          },
+          width: positioned_width,
+          height: positioned_height,
           margin: child_layout.margin,
           padding: child_layout.padding,
           border: child_layout.border,
@@ -1048,7 +2302,13 @@ fn process_multicol_flow_child(
           children: final_positioned_children,
           text: child_layout.text,
         }
-        layout_map[flow_indices[i]] = positioned_layout
+        layout_map[flow_indices[i]] = shrink_span_to_positive_children_extent(
+          adjust_inline_span_float_quirk(
+            normalize_fragment_start_margin_boxes(positioned_layout, limit),
+            child_node,
+            style.writing_mode.is_vertical(),
+          ),
+        )
         if multicol_participates_in_inline_run {
           let inline_descendant_height = get_children_flow_extent_height(
             child_layout.children,
@@ -1079,12 +2339,13 @@ fn process_multicol_flow_child(
             current_pos = effective_pos
           }
         } else {
-          let child_fragment_advance = if child_flow_height > child_outer_height {
+          let child_fragment_advance = if child_flow_height >
+            effective_child_outer_height {
             child_flow_height
           } else {
-            child_outer_height
+            effective_child_outer_height
           }
-          let advance = if multicol_fragment_contained &&
+          let base_advance = if multicol_fragment_contained &&
             child_style.column_span != @style.ColumnSpan::All &&
             fragmented_columns > 1 &&
             child_fragment_advance > limit {
@@ -1092,7 +2353,12 @@ fn process_multicol_flow_child(
           } else {
             child_fragment_advance
           }
-          current_pos = effective_pos + advance
+          current_pos = if normalize_to_row_start &&
+            child_children_flow_extent > 0.0 {
+            row_index.to_double() * limit + child_children_flow_extent
+          } else {
+            effective_pos + base_advance
+          }
         }
         flow_y_positions.push(current_pos)
         return (

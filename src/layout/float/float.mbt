@@ -37,6 +37,16 @@ pub(all) struct FloatContext {
   container_width : Double
   /// Container left edge (content area start)
   container_left : Double
+  /// Container height (inline-axis span in vertical writing)
+  container_height : Double
+  /// Container top edge (inline-axis start in vertical writing)
+  container_top : Double
+  /// Whether this float context is for vertical writing mode
+  is_vertical : Bool
+  /// Whether block flow runs from right to left (vertical-rl)
+  block_rtl : Bool
+  /// Whether line-left maps to the physical top side
+  line_left_is_top : Bool
   /// All left floats currently in effect
   left_floats : Array[FloatBox]
   /// All right floats currently in effect
@@ -49,7 +59,86 @@ pub fn FloatContext::new(
   container_width : Double,
   container_left : Double,
 ) -> FloatContext {
-  { container_width, container_left, left_floats: [], right_floats: [] }
+  {
+    container_width,
+    container_left,
+    container_height: 0.0,
+    container_top: 0.0,
+    is_vertical: false,
+    block_rtl: false,
+    line_left_is_top: true,
+    left_floats: [],
+    right_floats: [],
+  }
+}
+
+///|
+/// Create a float context for vertical writing mode.
+pub fn FloatContext::new_vertical(
+  container_width : Double,
+  container_left : Double,
+  container_height : Double,
+  container_top : Double,
+  block_rtl : Bool,
+  line_left_is_top : Bool,
+) -> FloatContext {
+  {
+    container_width,
+    container_left,
+    container_height,
+    container_top,
+    is_vertical: true,
+    block_rtl,
+    line_left_is_top,
+    left_floats: [],
+    right_floats: [],
+  }
+}
+
+///|
+fn FloatContext::float_block_start(
+  self : FloatContext,
+  float : FloatBox,
+) -> Double {
+  if self.is_vertical {
+    if self.block_rtl {
+      self.container_left + self.container_width - float.right()
+    } else {
+      float.x - self.container_left
+    }
+  } else {
+    float.y
+  }
+}
+
+///|
+fn FloatContext::float_block_end(
+  self : FloatContext,
+  float : FloatBox,
+) -> Double {
+  let block_size = if self.is_vertical { float.width } else { float.height }
+  self.float_block_start(float) + block_size
+}
+
+///|
+fn FloatContext::float_main_start(
+  self : FloatContext,
+  float : FloatBox,
+) -> Double {
+  if self.is_vertical {
+    float.y
+  } else {
+    float.x
+  }
+}
+
+///|
+fn FloatContext::float_main_end(
+  self : FloatContext,
+  float : FloatBox,
+) -> Double {
+  let main_size = if self.is_vertical { float.height } else { float.width }
+  self.float_main_start(float) + main_size
 }
 
 ///|
@@ -65,8 +154,9 @@ pub fn FloatContext::get_clear_y(
     @types.Clear::Left | @types.Clear::Both =>
       // Find the bottom of all left floats
       for float in self.left_floats {
-        if float.bottom() > clear_y {
-          clear_y = float.bottom()
+        let block_end = self.float_block_end(float)
+        if block_end > clear_y {
+          clear_y = block_end
         }
       }
     _ => ()
@@ -75,8 +165,9 @@ pub fn FloatContext::get_clear_y(
     @types.Clear::Right | @types.Clear::Both =>
       // Find the bottom of all right floats
       for float in self.right_floats {
-        if float.bottom() > clear_y {
-          clear_y = float.bottom()
+        let block_end = self.float_block_end(float)
+        if block_end > clear_y {
+          clear_y = block_end
         }
       }
     _ => ()
@@ -92,15 +183,35 @@ pub fn FloatContext::get_available_space(
   y : Double,
   height : Double,
 ) -> (Double, Double) {
-  let mut left_edge = self.container_left
-  let mut right_edge = self.container_left + self.container_width
+  let mut left_edge = if self.is_vertical {
+    self.container_top
+  } else {
+    self.container_left
+  }
+  let mut right_edge = if self.is_vertical {
+    self.container_top + self.container_height
+  } else {
+    self.container_left + self.container_width
+  }
 
   // Check against left floats
   for float in self.left_floats {
-    // Check if this float overlaps vertically with the given region
-    if float.y < y + height && float.bottom() > y {
-      // Float overlaps, push left edge to the right
-      if float.right() > left_edge {
+    // Check if this float overlaps along the block-flow axis with the given region.
+    if self.float_block_start(float) < y + height &&
+      self.float_block_end(float) > y {
+      if self.is_vertical {
+        if self.line_left_is_top {
+          let float_bottom = self.float_main_end(float)
+          if float_bottom > left_edge {
+            left_edge = float_bottom
+          }
+        } else {
+          let float_top = self.float_main_start(float)
+          if float_top < right_edge {
+            right_edge = float_top
+          }
+        }
+      } else if float.right() > left_edge {
         left_edge = float.right()
       }
     }
@@ -108,9 +219,21 @@ pub fn FloatContext::get_available_space(
 
   // Check against right floats
   for float in self.right_floats {
-    if float.y < y + height && float.bottom() > y {
-      // Float overlaps, push right edge to the left
-      if float.x < right_edge {
+    if self.float_block_start(float) < y + height &&
+      self.float_block_end(float) > y {
+      if self.is_vertical {
+        if self.line_left_is_top {
+          let float_top = self.float_main_start(float)
+          if float_top < right_edge {
+            right_edge = float_top
+          }
+        } else {
+          let float_bottom = self.float_main_end(float)
+          if float_bottom > left_edge {
+            left_edge = float_bottom
+          }
+        }
+      } else if float.x < right_edge {
         right_edge = float.x
       }
     }
@@ -130,19 +253,23 @@ pub fn FloatContext::find_y_with_space(
   // Collect all Y positions where float regions change
   let y_positions : Array[Double] = [start_y]
   for float in self.left_floats {
-    if float.y > start_y {
-      y_positions.push(float.y)
+    let block_start = self.float_block_start(float)
+    let block_end = self.float_block_end(float)
+    if block_start > start_y {
+      y_positions.push(block_start)
     }
-    if float.bottom() > start_y {
-      y_positions.push(float.bottom())
+    if block_end > start_y {
+      y_positions.push(block_end)
     }
   }
   for float in self.right_floats {
-    if float.y > start_y {
-      y_positions.push(float.y)
+    let block_start = self.float_block_start(float)
+    let block_end = self.float_block_end(float)
+    if block_start > start_y {
+      y_positions.push(block_start)
     }
-    if float.bottom() > start_y {
-      y_positions.push(float.bottom())
+    if block_end > start_y {
+      y_positions.push(block_end)
     }
   }
 
@@ -166,13 +293,15 @@ pub fn FloatContext::find_y_with_space(
   // If no space found, place below all floats
   let mut max_bottom = start_y
   for float in self.left_floats {
-    if float.bottom() > max_bottom {
-      max_bottom = float.bottom()
+    let block_end = self.float_block_end(float)
+    if block_end > max_bottom {
+      max_bottom = block_end
     }
   }
   for float in self.right_floats {
-    if float.bottom() > max_bottom {
-      max_bottom = float.bottom()
+    let block_end = self.float_block_end(float)
+    if block_end > max_bottom {
+      max_bottom = block_end
     }
   }
   max_bottom
@@ -192,6 +321,50 @@ pub fn FloatContext::place_float(
   margin_bottom : Double,
   current_y : Double,
 ) -> (Double, Double) {
+  if self.is_vertical {
+    let total_block_size = width + margin_left + margin_right
+    let total_main_size = height + margin_top + margin_bottom
+    let block_pos = self.find_y_with_space(
+      current_y, total_main_size, total_block_size,
+    )
+    let (main_start, main_end) = self.get_available_space(
+      block_pos, total_block_size,
+    )
+    let outer_main_pos = match float_type {
+      @types.Float::Left =>
+        if self.line_left_is_top {
+          main_start
+        } else {
+          main_end - total_main_size
+        }
+      @types.Float::Right =>
+        if self.line_left_is_top {
+          main_end - total_main_size
+        } else {
+          main_start
+        }
+      @types.Float::None => main_start
+    }
+    let outer_x = if self.block_rtl {
+      self.container_left + self.container_width - block_pos - total_block_size
+    } else {
+      self.container_left + block_pos
+    }
+    let float_box : FloatBox = {
+      x: outer_x,
+      y: outer_main_pos,
+      width: total_block_size,
+      height: total_main_size,
+      float_type,
+    }
+    match float_type {
+      @types.Float::Left => self.left_floats.push(float_box)
+      @types.Float::Right => self.right_floats.push(float_box)
+      @types.Float::None => ()
+    }
+    return (outer_x + margin_left, outer_main_pos + margin_top)
+  }
+
   let total_width = width + margin_left + margin_right
   let total_height = height + margin_top + margin_bottom
 
@@ -232,7 +405,7 @@ pub fn FloatContext::prune_floats_above(
   // Keep only floats that extend below y
   let new_left : Array[FloatBox] = []
   for float in self.left_floats {
-    if float.bottom() > y {
+    if self.float_block_end(float) > y {
       new_left.push(float)
     }
   }
@@ -242,7 +415,7 @@ pub fn FloatContext::prune_floats_above(
   }
   let new_right : Array[FloatBox] = []
   for float in self.right_floats {
-    if float.bottom() > y {
+    if self.float_block_end(float) > y {
       new_right.push(float)
     }
   }
@@ -258,13 +431,15 @@ pub fn FloatContext::prune_floats_above(
 pub fn FloatContext::get_float_height(self : FloatContext) -> Double {
   let mut max_bottom = 0.0
   for float in self.left_floats {
-    if float.bottom() > max_bottom {
-      max_bottom = float.bottom()
+    let block_end = self.float_block_end(float)
+    if block_end > max_bottom {
+      max_bottom = block_end
     }
   }
   for float in self.right_floats {
-    if float.bottom() > max_bottom {
-      max_bottom = float.bottom()
+    let block_end = self.float_block_end(float)
+    if block_end > max_bottom {
+      max_bottom = block_end
     }
   }
   max_bottom

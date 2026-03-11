@@ -174,6 +174,7 @@ pub(all) enum ColumnFill {
 pub(all) enum BreakBefore {
   Auto
   Column
+  Avoid
 } derive(Show, Eq)
 
 ///|

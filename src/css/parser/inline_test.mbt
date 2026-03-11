@@ -457,6 +457,14 @@ test "parse float right" {
 }
 
 ///|
+test "parse float inline-start uses final direction" {
+  let rtl_first = parse_inline_style("direction: rtl; float: inline-start")
+  inspect(rtl_first.float, content="Right")
+  let rtl_last = parse_inline_style("float: inline-start; direction: rtl")
+  inspect(rtl_last.float, content="Right")
+}
+
+///|
 test "parse clear both" {
   let style = parse_inline_style("clear: both")
   inspect(style.clear, content="Both")
@@ -466,6 +474,14 @@ test "parse clear both" {
 test "parse clear left" {
   let style = parse_inline_style("clear: left")
   inspect(style.clear, content="Left")
+}
+
+///|
+test "parse clear inline-end uses final direction" {
+  let rtl_first = parse_inline_style("direction: rtl; clear: inline-end")
+  inspect(rtl_first.clear, content="Left")
+  let rtl_last = parse_inline_style("clear: inline-end; direction: rtl")
+  inspect(rtl_last.clear, content="Left")
 }
 
 ///|
