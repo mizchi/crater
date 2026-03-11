@@ -602,6 +602,9 @@ fn get_child_descendant_flow_extent_for_auto_height(
   if id_matches_tag(child_node.id, "ruby") {
     return 0.0
   }
+  if child_node.style.suppresses_intrinsic_height() {
+    return 0.0
+  }
   let explicit_zero_height = match child_node.style.height {
     @types.Length(v) => v == 0.0
     _ => false
@@ -6213,7 +6216,9 @@ fn compute_with_collapse(
   }
   let adjusted_content_height_for_auto = match style.height {
     @types.Auto =>
-      if adjusted_flow_extent > content_height_for_auto {
+      if style.suppresses_intrinsic_height() {
+        content_height_for_auto
+      } else if adjusted_flow_extent > content_height_for_auto {
         @types.max(adjusted_flow_extent, float_height)
       } else {
         content_height_for_auto

@@ -538,19 +538,6 @@ fn inline_atomic_box_ignores_descendant_block_breaks(
 }
 
 ///|
-fn shift_layout_subtree(
-  layout : @types.Layout,
-  dx : Double,
-  dy : Double,
-) -> @types.Layout {
-  let shifted_children : Array[@types.Layout] = []
-  for child in layout.children {
-    shifted_children.push(shift_layout_subtree(child, dx, dy))
-  }
-  { ..layout, x: layout.x + dx, y: layout.y + dy, children: shifted_children }
-}
-
-///|
 fn is_generated_pseudo_text_only(node : @node.Node) -> Bool {
   if node.id.has_prefix("#text") {
     return true
@@ -1184,7 +1171,6 @@ pub fn compute_ifc(
   let mut current_line = LineBox::new()
   let layout_map : Map[Int, @types.Layout] = {}
   let child_has_abs_desc_cache : Map[Int, Bool] = {}
-  let child_has_non_ws_text_cache : Map[Int, Bool] = {}
   let child_has_inflow_block_desc_flag : Array[Bool] = []
   for child in children {
     if child.style.display == @types.Display::None {
@@ -1424,21 +1410,6 @@ pub fn compute_ifc(
       let item = line.items[item_index]
       let child = children[item.index]
       let child_has_inflow_block_desc = child_has_inflow_block_desc_flag[item.index]
-      let child_establishes_abs_cb = inline_establishes_abs_containing_block(
-        child.style,
-      )
-      let child_has_abs_desc = if child_establishes_abs_cb {
-        match child_has_abs_desc_cache.get(item.index) {
-          Some(v) => v
-          None => {
-            let v = has_absolute_descendant(child)
-            child_has_abs_desc_cache[item.index] = v
-            v
-          }
-        }
-      } else {
-        false
-      }
       let child_margin = @types.resolve_rect(
         child.style.margin,
         available_width,
@@ -1604,44 +1575,7 @@ pub fn compute_ifc(
         positioned_x = positioned_x + x_offset
         positioned_y = positioned_y + y_offset
       }
-      let mut effective_layout = item.layout
-      if item_index > 0 &&
-        child_establishes_abs_cb &&
-        child_has_abs_desc &&
-        not(child_has_inflow_block_desc) &&
-        positioned_x > content_offset_x {
-        let carry_x = positioned_x - content_offset_x
-        let shifted_children : Array[@types.Layout] = []
-        for child_layout in effective_layout.children {
-          shifted_children.push(
-            shift_layout_subtree(child_layout, carry_x, 0.0),
-          )
-        }
-        let child_has_non_ws_text = match
-          child_has_non_ws_text_cache.get(item.index) {
-          Some(v) => v
-          None => {
-            let v = has_non_whitespace_text_descendant(child)
-            child_has_non_ws_text_cache[item.index] = v
-            v
-          }
-        }
-        let line_band = line_height_from_style(child.style)
-        let expanded_height = if effective_layout.height > line_band &&
-          child_has_non_ws_text {
-          effective_layout.height + line_band * 2.0
-        } else if effective_layout.height > line_band {
-          effective_layout.height + line_band
-        } else {
-          effective_layout.height
-        }
-        effective_layout = {
-          ..effective_layout,
-          height: expanded_height,
-          children: shifted_children,
-        }
-        positioned_x = content_offset_x
-      }
+      let effective_layout = item.layout
       let is_contents_child = child.style.display == @types.Contents
       let positioned : @types.Layout = {
         id: effective_layout.id,

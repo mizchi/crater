@@ -49,7 +49,7 @@ CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt):
 | css-align | 44 | 44 | 100.0% |
 | css-position | 84 | 84 | 100.0% |
 | css-overflow | 243 | 243 | 100.0% |
-| css-contain | 279 | 303 | 92.1% |
+| css-contain | 298 | 303 | 98.3% |
 | css-variables | 107 | 107 | 100.0% |
 | filter-effects | 99 | 106 | 93.4% |
 | compositing | 2 | 2 | 100.0% |
@@ -57,7 +57,7 @@ CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt):
 | css-content | 2 | 2 | 100.0% |
 | css-multicol | 4 | 4 | 100.0% |
 | css-break | 27 | 27 | 100.0% |
-| **Total** | **1453** | **1484** | **97.9%** |
+| **Total** | **1472** | **1484** | **99.2%** |
 
 Run WPT tests:
 ```bash

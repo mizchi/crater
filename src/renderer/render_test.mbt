@@ -1795,6 +1795,38 @@ test "wpt_contain_inline_size_multicol_spanner_balances_height" {
 }
 
 ///|
+test "contain_size_aspect_ratio_auto_height_ignores_child_height" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div id="outer" style="position: relative;">
+    #|  <div id="bottom" style="contain: size; aspect-ratio: 1; background: red; width: 100px;">
+    #|    <img height="200">
+    #|  </div>
+    #|  <div id="top" style="position: absolute; top: 0; left: 0; background: green; width: 100px; height: 100px;"></div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let outer = layout.children[0]
+  let bottom = outer.children[0]
+  inspect(outer.height, content="100")
+  inspect(bottom.height, content="100")
+}
+
+///|
+test "contain_inline_size_vertical_rl_fit_content_ignores_child_inline_extent" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<div id="outer" style="writing-mode:vertical-rl; contain:inline-size; width:fit-content; border:solid green; border-width:50px 0; background:red;">
+    #|  <div style="width:100px; height:100px;"></div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let outer = layout.children[0]
+  inspect(outer.width, content="100")
+  inspect(outer.height, content="100")
+}
+
+///|
 test "contain_size_multicol_fragment_union_matches_browser_rects" {
   let html_str =
     #|<!DOCTYPE html>

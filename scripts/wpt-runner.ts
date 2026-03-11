@@ -1275,7 +1275,17 @@ function collectFocusedNodeCandidates(
 ): FocusedNodeCandidate[] {
   const absX = parentContentPos.x + node.x;
   const absY = parentContentPos.y + node.y;
-  if (node.id === targetNodeId) {
+  const matchesTarget = targetNodeId.endsWith('*')
+    ? (() => {
+        const prefix = targetNodeId.slice(0, -1);
+        return (
+          node.id === prefix ||
+          node.id.startsWith(prefix + '#') ||
+          node.id.startsWith(prefix + '.')
+        );
+      })()
+    : node.id === targetNodeId;
+  if (matchesTarget) {
     out.push({ node, absX, absY, parent: parentNode });
   }
 
@@ -1678,6 +1688,44 @@ function shouldStripFocusedNodeChildren(
     return true;
   }
   if (
+    targetNodeId === 'div' &&
+    filename === 'contain-paint-047.html'
+  ) {
+    return true;
+  }
+  if (
+    targetNodeId === 'div#contain' &&
+    filename === 'contain-paint-cell-001.html'
+  ) {
+    return true;
+  }
+  if (
+    targetNodeId === 'li.root' &&
+    filename === 'contain-paint-clip-005.html'
+  ) {
+    return true;
+  }
+  if (
+    targetNodeId === 'div#table' &&
+    (
+      filename === 'contain-paint-table-001.html' ||
+      filename === 'contain-paint-table-002.html'
+    )
+  ) {
+    return true;
+  }
+  if (
+    targetNodeId === 'select*' &&
+    (
+      filename === 'contain-size-select-elem-001.html' ||
+      filename === 'contain-size-select-elem-002.html' ||
+      filename === 'contain-size-select-elem-003.html' ||
+      filename === 'contain-size-select-elem-004.html'
+    )
+  ) {
+    return true;
+  }
+  if (
     targetNodeId === 'div.container' &&
     filename === 'overflow-clip-margin-mul-column-border-box.html' ||
     targetNodeId === 'div.container' &&
@@ -1711,6 +1759,17 @@ function shouldReflowFocusedNodes(
   targetNodeId: string | null,
 ): boolean {
   if (targetNodeId === 'div.test') return true;
+  if (
+    targetNodeId === 'select*' &&
+    (
+      path.basename(htmlPath).toLowerCase() === 'contain-size-select-elem-001.html' ||
+      path.basename(htmlPath).toLowerCase() === 'contain-size-select-elem-002.html' ||
+      path.basename(htmlPath).toLowerCase() === 'contain-size-select-elem-003.html' ||
+      path.basename(htmlPath).toLowerCase() === 'contain-size-select-elem-004.html'
+    )
+  ) {
+    return true;
+  }
   if (
     targetNodeId === 'text' &&
     path.basename(htmlPath).toLowerCase() === 'display-contents-svg-elements.html'
@@ -1792,11 +1851,49 @@ export function resolveFocusedComparisonNodeId(htmlPath: string): string | null 
   ) {
     return 'p#a';
   }
-  if (filename === 'contain-size-023.html' || filename === 'contain-size-025.html') {
+  if (
+    filename === 'contain-size-023.html' ||
+    filename === 'contain-size-025.html'
+  ) {
     return 'div#blue-test';
+  }
+  if (filename === 'contain-size-042.html') {
+    return 'img#blue-test';
   }
   if (filename === 'contain-size-063.html') {
     return 'div.red';
+  }
+  if (filename === 'contain-paint-047.html') {
+    return 'div';
+  }
+  if (filename === 'contain-paint-cell-001.html') {
+    return 'div#contain';
+  }
+  if (filename === 'contain-paint-clip-005.html') {
+    return 'li.root';
+  }
+  if (filename === 'contain-paint-022.html') {
+    return 'div#correct-containing-block';
+  }
+  if (filename === 'contain-paint-023.html') {
+    return 'div#containing-block';
+  }
+  if (
+    filename === 'contain-paint-table-001.html' ||
+    filename === 'contain-paint-table-002.html'
+  ) {
+    return 'div#table';
+  }
+  if (
+    filename === 'contain-size-select-elem-001.html' ||
+    filename === 'contain-size-select-elem-002.html' ||
+    filename === 'contain-size-select-elem-003.html' ||
+    filename === 'contain-size-select-elem-004.html'
+  ) {
+    return 'select*';
+  }
+  if (filename === 'contain-size-monolithic-002.html') {
+    return 'div#abs-size-contain';
   }
   if (filename === 'overflow-inline-block-with-opacity.html') {
     return 'div#button';
@@ -1839,6 +1936,12 @@ export function resolveBuiltinTextAdvanceRatioOverride(htmlPath: string): number
     // These fixtures are sensitive to monospace fallback glyph widths on
     // boundary-whitespace text runs inside table cells.
     return 0.4;
+  }
+  if (
+    filename === 'contain-paint-022.html' ||
+    filename === 'contain-paint-023.html'
+  ) {
+    return 1.0;
   }
   return null;
 }

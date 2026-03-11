@@ -242,6 +242,11 @@ describe("resolveFocusedComparisonNodeId", () => {
         "wpt/css/css-contain/contain-size-025.html",
       ),
     ).toBe("div#blue-test");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-contain/contain-size-042.html",
+      ),
+    ).toBe("img#blue-test");
   });
 
   it("targets contain-size-063 fixture to compare red clusters", () => {
@@ -250,6 +255,72 @@ describe("resolveFocusedComparisonNodeId", () => {
         "wpt/css/css-contain/contain-size-063.html",
       ),
     ).toBe("div.red");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-contain/contain-size-monolithic-002.html",
+      ),
+    ).toBe("div#abs-size-contain");
+  });
+
+  it("targets contain paint clipping fixtures to compare clipping containers", () => {
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-contain/contain-paint-047.html",
+      ),
+    ).toBe("div");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-contain/contain-paint-cell-001.html",
+      ),
+    ).toBe("div#contain");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-contain/contain-paint-clip-005.html",
+      ),
+    ).toBe("li.root");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-contain/contain-paint-022.html",
+      ),
+    ).toBe("div#correct-containing-block");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-contain/contain-paint-023.html",
+      ),
+    ).toBe("div#containing-block");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-contain/contain-paint-table-001.html",
+      ),
+    ).toBe("div#table");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-contain/contain-paint-table-002.html",
+      ),
+    ).toBe("div#table");
+  });
+
+  it("targets contain size select fixtures to compare select controls", () => {
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-contain/contain-size-select-elem-001.html",
+      ),
+    ).toBe("select*");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-contain/contain-size-select-elem-002.html",
+      ),
+    ).toBe("select*");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-contain/contain-size-select-elem-003.html",
+      ),
+    ).toBe("select*");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-contain/contain-size-select-elem-004.html",
+      ),
+    ).toBe("select*");
   });
 
   it("does not change comparison target for other tests", () => {
@@ -318,6 +389,16 @@ describe("resolveBuiltinTextAdvanceRatioOverride", () => {
         "wpt/css/css-tables/visibility-collapse-rowspan-005.html",
       ),
     ).toBe(0.4);
+    expect(
+      resolveBuiltinTextAdvanceRatioOverride(
+        "wpt/css/css-contain/contain-paint-022.html",
+      ),
+    ).toBe(1.0);
+    expect(
+      resolveBuiltinTextAdvanceRatioOverride(
+        "wpt/css/css-contain/contain-paint-023.html",
+      ),
+    ).toBe(1.0);
   });
 
   it("does not override fallback text metrics for other fixtures", () => {

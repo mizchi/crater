@@ -134,26 +134,39 @@ fn estimate_multicol_column_height_limit(
     if column_count <= 1 {
       return None
     }
-    if flow_children.length() == 1 &&
-      flow_styles.length() > 0 &&
-      flow_nodes.length() > 0 {
-      let child_style = flow_styles[0]
-      let child_node = flow_nodes[0]
+    let mut single_fragmentable_child_height = 0.0
+    let mut fragmentable_child_count = 0
+    for i = 0
+        i < flow_children.length() &&
+       i < flow_styles.length() &&
+       i < flow_nodes.length()
+        i = i + 1 {
+      let child_style = flow_styles[i]
+      if child_style.column_span == @style.ColumnSpan::All ||
+        child_style.position == @types.Absolute ||
+        child_style.position == @types.Fixed {
+        continue
+      }
+      let child_node = flow_nodes[i]
       let child_outer_height = resolve_multicol_flow_child_outer_height(
-        flow_children[0],
+        flow_children[i],
         child_style,
       )
-      let single_fragmentable_child = child_style.column_span !=
-        @style.ColumnSpan::All &&
-        child_style.position != @types.Absolute &&
-        child_style.position != @types.Fixed &&
-        child_style.break_inside != @style.BreakInside::Avoid &&
+      if child_outer_height <= 0.0 {
+        continue
+      }
+      fragmentable_child_count = fragmentable_child_count + 1
+      let single_fragmentable_child = child_style.break_inside !=
+        @style.BreakInside::Avoid &&
         not(has_break_inside_avoid_descendant(child_node.children)) &&
         not(is_inline_flow_participant(child_node, child_style)) &&
         is_multicol_block_flow_box(child_node, child_style)
-      if single_fragmentable_child && child_outer_height > 0.0 {
-        return Some(child_outer_height / column_count.to_double())
+      if single_fragmentable_child {
+        single_fragmentable_child_height = child_outer_height
       }
+    }
+    if fragmentable_child_count == 1 && single_fragmentable_child_height > 0.0 {
+      return Some(single_fragmentable_child_height / column_count.to_double())
     }
     let groups : Array[Double] = []
     for i = 0; i < flow_children.length() && i < flow_styles.length(); i = i + 1 {
