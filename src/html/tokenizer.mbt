@@ -102,7 +102,6 @@ fn tok_is_name_char(c : Char) -> Bool {
 fn is_unquoted_attr_end(c : Char) -> Bool {
   tok_is_whitespace(c) ||
   c == '>' ||
-  c == '/' ||
   c == '=' ||
   c == '"' ||
   c == '\'' ||

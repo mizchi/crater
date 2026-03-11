@@ -1557,6 +1557,44 @@ test "min_content_vertical_child_percent_max_block_size_not_zero" {
 }
 
 ///|
+test "min_content_vertical_auto_child_percent_max_block_size_keeps_ratio" {
+  let default_style = @style.Style::default()
+  let canvas_style = {
+    ..default_style,
+    writing_mode: @style.WritingMode::VerticalRl,
+    max_width: @types.Percent(0.5),
+  }
+  let canvas_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      {
+        min_width: 200.0,
+        max_width: 200.0,
+        min_height: 200.0,
+        max_height: 200.0,
+      }
+    },
+  }
+  let canvas = @node.Node::with_measure("canvas", canvas_style, canvas_measure)
+  let root_style = { ..default_style, width: @types.MinContent }
+  let root = @node.Node::new("root", root_style, [canvas])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  let canvas_layout = layout.children[0]
+  inspect(layout.width, content="200")
+  inspect(layout.height, content="100")
+  inspect(canvas_layout.width, content="100")
+  inspect(canvas_layout.height, content="100")
+}
+
+///|
 test "vertical_auto_block_uses_block_extent_for_width_and_cross_extent_for_height" {
   let default_style = @style.Style::default()
   let child_style = {

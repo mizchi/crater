@@ -201,3 +201,31 @@ test "tree_builder/document parsing with style" {
   }
   inspect(has_body, content="true")
 }
+
+///|
+test "tree_builder/document parsing moves metadata elements out of body flow" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<title>Variable reference without whitespace</title>
+    #|<link rel=match href=reference/variable-reference-without-whitespace-ref.html>
+    #|<meta rel=assert content="should stay out of body">
+    #|<style>p { color: red; }</style>
+    #|<p>Visible paragraph
+  let result = @html.parse_document_v2(html)
+  let body = find_body_v2(result)
+
+  let tags : Array[String] = []
+  let texts : Array[String] = []
+  for child in body.children {
+    match child {
+      @html.Node::Element(e) => tags.push(e.tag)
+      @html.Node::Text(t) =>
+        if not(t.trim().is_empty()) {
+          texts.push(t.trim().to_string())
+        }
+    }
+  }
+
+  inspect(tags, content="[\"p\"]")
+  inspect(texts, content="[]")
+}

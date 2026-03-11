@@ -177,6 +177,28 @@ fn TreeBuilder::insert_element(self : TreeBuilder, element : Element) -> Unit {
 }
 
 ///|
+/// Insert metadata/raw-text element into the stored <head> element even when the
+/// current insertion mode is in-body.
+fn TreeBuilder::insert_into_head(
+  self : TreeBuilder,
+  element : Element,
+  push_to_stack : Bool,
+) -> Unit {
+  self.flush_pending_text(next_tag=Some(element.tag))
+  match self.head_element {
+    Some(head) => head.children.push(Node::Element(element))
+    None =>
+      match self.current_node() {
+        Some(current) => current.children.push(Node::Element(element))
+        None => ()
+      }
+  }
+  if push_to_stack {
+    self.open_elements.push(element)
+  }
+}
+
+///|
 /// Insert character at appropriate place - accumulates in pending_text buffer
 fn TreeBuilder::insert_character(self : TreeBuilder, c : Char) -> Unit {
   if self.foster_parenting && is_table_context(self.current_node()) {

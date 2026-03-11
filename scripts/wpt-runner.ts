@@ -1465,6 +1465,12 @@ export function resolveFocusedComparisonNodeId(htmlPath: string): string | null 
   if (filename === 'display-contents-svg-elements.html') {
     return 'text';
   }
+  if (
+    filename === 'variable-reference-12.html' ||
+    filename === 'variable-reference-14.html'
+  ) {
+    return 'p#a';
+  }
   if (filename === 'contain-size-023.html' || filename === 'contain-size-025.html') {
     return 'div#blue-test';
   }

@@ -121,16 +121,39 @@ fn estimate_multicol_column_height_limit(
   child_available_height : Double?,
   flow_children : Array[LayoutWithCollapse],
   flow_styles : Array[@style.Style],
+  flow_nodes : Array[@node.Node],
   column_count : Int,
   column_fill : @style.ColumnFill,
 ) -> Double? {
   fn estimate_balanced_limit(
     flow_children : Array[LayoutWithCollapse],
     flow_styles : Array[@style.Style],
+    flow_nodes : Array[@node.Node],
     column_count : Int,
   ) -> Double? {
     if column_count <= 1 {
       return None
+    }
+    if flow_children.length() == 1 &&
+      flow_styles.length() > 0 &&
+      flow_nodes.length() > 0 {
+      let child_style = flow_styles[0]
+      let child_node = flow_nodes[0]
+      let child_outer_height = resolve_multicol_flow_child_outer_height(
+        flow_children[0],
+        child_style,
+      )
+      let single_fragmentable_child = child_style.column_span !=
+        @style.ColumnSpan::All &&
+        child_style.position != @types.Absolute &&
+        child_style.position != @types.Fixed &&
+        child_style.break_inside != @style.BreakInside::Avoid &&
+        not(has_break_inside_avoid_descendant(child_node.children)) &&
+        not(is_inline_flow_participant(child_node, child_style)) &&
+        is_multicol_block_flow_box(child_node, child_style)
+      if single_fragmentable_child && child_outer_height > 0.0 {
+        return Some(child_outer_height / column_count.to_double())
+      }
     }
     let groups : Array[Double] = []
     for i = 0; i < flow_children.length() && i < flow_styles.length(); i = i + 1 {
@@ -235,7 +258,7 @@ fn estimate_multicol_column_height_limit(
     }
   }
   let balanced = estimate_balanced_limit(
-    flow_children, flow_styles, column_count,
+    flow_children, flow_styles, flow_nodes, column_count,
   )
   match column_fill {
     @style.ColumnFill::Auto =>

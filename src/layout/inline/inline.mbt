@@ -704,6 +704,83 @@ fn is_replaced_strut_candidate(node : @node.Node) -> Bool {
 }
 
 ///|
+fn inline_source_children_only_contribute_floats(
+  children : Array[@node.Node],
+) -> Bool {
+  let mut has_float_contribution = false
+  for child in children {
+    if child.style.display == @types.Display::None {
+      continue
+    }
+    if child.style.position == @types.Absolute ||
+      child.style.position == @types.Fixed {
+      continue
+    }
+    if child.id.has_prefix("#text") {
+      match child.text {
+        Some(text) =>
+          if not(is_whitespace_text_node(child)) && not(text.is_empty()) {
+            return false
+          }
+        None => ()
+      }
+      continue
+    }
+    match child.style.float {
+      @types.Float::Left | @types.Float::Right => {
+        has_float_contribution = true
+        continue
+      }
+      @types.Float::None => ()
+    }
+    if child.children.length() == 0 ||
+      is_inline_level(child.style.display) ||
+      child.style.display == @types.Contents ||
+      not(inline_source_children_only_contribute_floats(child.children)) {
+      return false
+    }
+    has_float_contribution = true
+  }
+  has_float_contribution
+}
+
+///|
+fn adjust_inline_float_only_wrapper(
+  layout : @types.Layout,
+  source_node : @node.Node,
+  writing_mode : @style.WritingMode,
+) -> @types.Layout {
+  if not(id_matches_tag(layout.id, "span")) ||
+    not(id_matches_tag(source_node.id, "span")) ||
+    writing_mode.is_vertical() ||
+    layout.height != 0.0 ||
+    layout.width <= 0.0 ||
+    layout.children.length() == 0 {
+    return layout
+  }
+  if not(inline_source_children_only_contribute_floats(source_node.children)) {
+    return layout
+  }
+  let shifted_children : Array[@types.Layout] = []
+  let mut has_visible_child = false
+  for child in layout.children {
+    if child.width > 0.0 || child.height > 0.0 {
+      has_visible_child = true
+    }
+    shifted_children.push({ ..child, x: child.x - layout.width })
+  }
+  if not(has_visible_child) {
+    return layout
+  }
+  {
+    ..layout,
+    x: layout.x + layout.width,
+    width: 0.0,
+    children: shifted_children,
+  }
+}
+
+///|
 fn is_replaced_intrinsic_candidate(node : @node.Node) -> Bool {
   if node.text is Some(_) {
     return false
@@ -824,6 +901,11 @@ fn LineBox::ensure_line_strut(
   if has_text_item || (replaced_like_count == 0 && not(has_br_item)) {
     return ()
   }
+  if replaced_like_count > 0 && not(has_br_item) {
+    // Browser WPT behavior: replaced-only lines size to the replaced items
+    // themselves; they do not get an additional inline formatting strut band.
+    return ()
+  }
   let first_item = self.items[0]
   let first_child = children[first_item.index]
   let font_size = first_child.style.font_size
@@ -868,7 +950,13 @@ fn LineBox::can_fit(
   margin_right : Double,
   available_width : Double,
 ) -> Bool {
+  let item_advance = item_width + margin_left + margin_right
   self.width + item_width + margin_left + margin_right <= available_width ||
+  (
+    self.items.length() > 0 &&
+    self.width > available_width &&
+    item_advance <= 0.0
+  ) ||
   self.items.length() == 0 // Always fit at least one item per line
 }
 
@@ -1587,6 +1675,9 @@ pub fn compute_ifc(
         children: effective_layout.children,
         text: effective_layout.text,
       }
+      let positioned = adjust_inline_float_only_wrapper(
+        positioned, child, container_writing_mode,
+      )
       layout_map[item.index] = positioned
       current_x = if is_rtl_inline {
         positioned_x - child_margin.left
@@ -2068,6 +2159,11 @@ fn compute_inline_child(
         y: child_y,
         margin: child_margin,
       }
+      let positioned_child = adjust_inline_float_only_wrapper(
+        positioned_child,
+        child,
+        style.writing_mode,
+      )
       children.push(positioned_child)
       // Accumulate content size from flow children
       // For inline elements, children are laid out horizontally.

@@ -350,6 +350,43 @@ fn is_whitespace_only_flow_text(node : @node.Node) -> Bool {
 }
 
 ///|
+fn flow_whitespace_contains_line_break(node : @node.Node) -> Bool {
+  if not(node.id.has_prefix("#text")) {
+    return false
+  }
+  match node.text {
+    Some(text) =>
+      for c in text.iter() {
+        if c == '\n' || c == '\r' || c == '\t' || c == '\u000C' {
+          return true
+        }
+      }
+    None => ()
+  }
+  false
+}
+
+///|
+fn is_replaced_like_flow_node(node : @node.Node) -> Bool {
+  if node.text is Some(_) {
+    return false
+  }
+  match node.measure {
+    Some(_) => node.children.length() == 0
+    None => false
+  }
+}
+
+///|
+fn has_percent_size_for_flow(node : @node.Node) -> Bool {
+  match (node.style.width, node.style.height) {
+    (@types.Percent(_), _) => true
+    (_, @types.Percent(_)) => true
+    _ => false
+  }
+}
+
+///|
 fn participates_inline_for_flow_whitespace(node : @node.Node) -> Bool {
   if node.style.display == @types.Display::None {
     return false
@@ -417,11 +454,61 @@ fn should_preserve_flow_whitespace_text(
     Some(i) => siblings[i]
     None => return false
   }
+  if flow_whitespace_contains_line_break(siblings[index]) &&
+    is_replaced_like_flow_node(prev) &&
+    is_replaced_like_flow_node(next) {
+    return false
+  }
+  if is_replaced_like_flow_node(prev) &&
+    is_replaced_like_flow_node(next) &&
+    (has_percent_size_for_flow(prev) || has_percent_size_for_flow(next)) {
+    return false
+  }
   if prev.id == "br" || next.id == "br" {
     return false
   }
   participates_inline_for_flow_whitespace(prev) &&
   participates_inline_for_flow_whitespace(next)
+}
+
+///|
+fn is_replaced_only_whitespace_separator(
+  siblings : Array[@node.Node],
+  index : Int,
+) -> Bool {
+  if index <= 0 || index >= siblings.length() - 1 {
+    return false
+  }
+  let node = siblings[index]
+  if not(is_whitespace_only_flow_text(node)) {
+    return false
+  }
+  let mut prev_index : Int? = None
+  let mut p = index - 1
+  while p >= 0 {
+    let sibling = siblings[p]
+    if sibling.style.display != @types.Display::None {
+      prev_index = Some(p)
+      break
+    }
+    p = p - 1
+  }
+  let mut next_index : Int? = None
+  let mut n = index + 1
+  while n < siblings.length() {
+    let sibling = siblings[n]
+    if sibling.style.display != @types.Display::None {
+      next_index = Some(n)
+      break
+    }
+    n = n + 1
+  }
+  match (prev_index, next_index) {
+    (Some(pi), Some(ni)) =>
+      is_replaced_like_flow_node(siblings[pi]) &&
+      is_replaced_like_flow_node(siblings[ni])
+    _ => false
+  }
 }
 
 ///|
@@ -1005,7 +1092,11 @@ fn calculate_children_max_content_width(
     None => ()
   }
   // Calculate max-content width from children
-  for child in flow_children {
+  for i = 0; i < flow_children.length(); i = i + 1 {
+    let child = flow_children[i]
+    if inline_only && is_replaced_only_whitespace_separator(flow_children, i) {
+      continue
+    }
     let child_style = child.style
     let child_suppress_intrinsic_inline = child_style.suppresses_intrinsic_width() &&
       not(is_ruby_internal_id(child.id))
@@ -1157,7 +1248,12 @@ fn calculate_children_min_content_width(
     None => ()
   }
   // Calculate min-content width from children
-  for child in flow_children {
+  for i = 0; i < flow_children.length(); i = i + 1 {
+    let child = flow_children[i]
+    if inline_needs_line_width &&
+      is_replaced_only_whitespace_separator(flow_children, i) {
+      continue
+    }
     let child_style = child.style
     let child_suppress_intrinsic_inline = child_style.suppresses_intrinsic_width() &&
       not(is_ruby_internal_id(child.id))
@@ -1972,6 +2068,48 @@ fn collect_child_layouts_in_source_order(
 }
 
 ///|
+fn adjust_float_only_inline_wrapper_for_parent(
+  layout : @types.Layout,
+  child_node : @node.Node,
+  parent_style : @style.Style,
+  is_vertical_writing : Bool,
+  include_inline_quirk_fallback : Bool,
+) -> @types.Layout {
+  let parent_is_floated_auto_block = not(is_vertical_writing) &&
+    parent_style.height == @types.Auto &&
+    parent_style.float != @types.Float::None
+  if parent_is_floated_auto_block &&
+    id_matches_tag(child_node.id, "span") &&
+    source_children_only_contribute_floats(child_node.children) &&
+    layout.width > 0.0 &&
+    layout.children.length() > 0 {
+    let shifted_children : Array[@types.Layout] = []
+    let mut has_visible_child = false
+    for child_layout in layout.children {
+      if child_layout.width > 0.0 || child_layout.height > 0.0 {
+        has_visible_child = true
+      }
+      shifted_children.push({ ..child_layout, x: child_layout.x - layout.width })
+    }
+    if has_visible_child {
+      {
+        ..layout,
+        x: layout.x + layout.width,
+        width: 0.0,
+        height: 0.0,
+        children: shifted_children,
+      }
+    } else {
+      layout
+    }
+  } else if include_inline_quirk_fallback {
+    adjust_inline_span_float_quirk(layout, child_node, is_vertical_writing)
+  } else {
+    layout
+  }
+}
+
+///|
 /// Compute layout with collapse at root level (no parent to escape to)
 fn compute_root_layout(
   node : @node.Node,
@@ -2359,6 +2497,14 @@ fn compute_with_collapse(
           Some(r) => Some(r)
           None => intrinsic_ratio
         }
+        let width_is_auto = match style.width {
+          @types.Auto => true
+          _ => false
+        }
+        let height_is_auto = match style.height {
+          @types.Auto => true
+          _ => false
+        }
 
         // Resolve min/max constraints
         let min_width = style.min_width.resolve_or(parent_width, 0.0)
@@ -2472,6 +2618,35 @@ fn compute_with_collapse(
           box_width, box_height, style_with_ratio, min_width, max_width, min_height,
           max_height,
         )
+        let (box_width, box_height) = if width_is_auto && height_is_auto {
+          match (ratio_for_auto, initial_width, initial_height) {
+            (Some(ratio), Some(initial_box_width), Some(initial_box_height)) =>
+              if ratio > 0.0 &&
+                initial_box_width > 0.0 &&
+                initial_box_height > 0.0 {
+                let width_scale = box_width / initial_box_width
+                let height_scale = box_height / initial_box_height
+                if width_scale + 0.0001 < height_scale {
+                  (
+                    box_width,
+                    @types.clamp(box_width / ratio, min_height, max_height),
+                  )
+                } else if height_scale + 0.0001 < width_scale {
+                  (
+                    @types.clamp(box_height * ratio, min_width, max_width),
+                    box_height,
+                  )
+                } else {
+                  (box_width, box_height)
+                }
+              } else {
+                (box_width, box_height)
+              }
+            _ => (box_width, box_height)
+          }
+        } else {
+          (box_width, box_height)
+        }
         return {
           layout: {
             id: node.id,
@@ -3914,7 +4089,6 @@ fn compute_with_collapse(
     let box_height = apply_content_driven_height_constraints(
       box_height, style, node, parent_width, content_height_for_auto, padding, border,
     )
-
     place_absolute_children_at_static_y(
       node, box_width, box_height, border, content_height, warnings, dispatch, layout_map,
     )
@@ -3936,7 +4110,22 @@ fn compute_with_collapse(
       dispatch,
       layout_map,
     )
-    let child_layouts = collect_child_layouts_in_source_order(node, layout_map)
+    let child_layouts : Array[@types.Layout] = []
+    for i = 0; i < node.children.length(); i = i + 1 {
+      match layout_map.get(i) {
+        Some(raw_layout) => {
+          let adjusted_layout = adjust_float_only_inline_wrapper_for_parent(
+            raw_layout,
+            node.children[i],
+            style,
+            style.writing_mode.is_vertical(),
+            false,
+          )
+          child_layouts.push(adjusted_layout)
+        }
+        None => ()
+      }
+    }
     // Calculate scroll dimensions
     let (scroll_width, scroll_height) = calculate_scroll_dimensions(
       box_width, box_height, padding, child_layouts,
@@ -4271,6 +4460,20 @@ fn compute_with_collapse(
     let simple_result = layout_simple_block_stack(
       flow_nodes, flow_children, padding, border, can_collapse_top, can_collapse_bottom,
     )
+    let adjusted_child_layouts : Array[@types.Layout] = []
+    for i = 0
+        i < simple_result.child_layouts.length() && i < flow_nodes.length()
+        i = i + 1 {
+      adjusted_child_layouts.push(
+        adjust_float_only_inline_wrapper_for_parent(
+          simple_result.child_layouts[i],
+          flow_nodes[i],
+          style,
+          style.writing_mode.is_vertical(),
+          false,
+        ),
+      )
+    }
     let flow_content_height = if flow_children.length() == 0 {
       0.0
     } else if can_collapse_bottom {
@@ -4278,7 +4481,37 @@ fn compute_with_collapse(
     } else {
       @types.max(0.0, simple_result.current_pos + simple_result.prev_margin_end)
     }
-    let content_height = flow_content_height
+    let mut content_height = flow_content_height
+    if style.height == @types.Auto {
+      let mut adjusted_flow_extent = 0.0
+      for i = 0
+          i < adjusted_child_layouts.length() && i < flow_nodes.length()
+          i = i + 1 {
+        let child_style = flow_nodes[i].style
+        let skip_out_of_flow = child_style.position == @types.Absolute ||
+          child_style.position == @types.Fixed ||
+          child_style.float != @types.Float::None
+        if skip_out_of_flow {
+          continue
+        }
+        let descendant_h = get_inflow_children_flow_extent_height(
+          flow_nodes[i],
+          adjusted_child_layouts[i].children,
+        )
+        let child_block = if adjusted_child_layouts[i].height > descendant_h {
+          adjusted_child_layouts[i].height
+        } else {
+          descendant_h
+        }
+        let extent = adjusted_child_layouts[i].y + child_block
+        if extent > adjusted_flow_extent {
+          adjusted_flow_extent = extent
+        }
+      }
+      if adjusted_flow_extent > content_height {
+        content_height = adjusted_flow_extent
+      }
+    }
     let content_height_for_auto = if style.suppresses_intrinsic_height() {
       style.contained_intrinsic_height_fallback()
     } else {
@@ -4297,10 +4530,7 @@ fn compute_with_collapse(
     )
 
     let (scroll_width, scroll_height) = calculate_scroll_dimensions(
-      box_width,
-      box_height,
-      padding,
-      simple_result.child_layouts,
+      box_width, box_height, padding, adjusted_child_layouts,
     )
     let layout : @types.Layout = {
       id: node.id,
@@ -4315,7 +4545,7 @@ fn compute_with_collapse(
       overflow_y: style.overflow_y,
       scroll_width,
       scroll_height,
-      children: simple_result.child_layouts,
+      children: adjusted_child_layouts,
       text: node.text,
     }
     return {
@@ -4596,8 +4826,24 @@ fn compute_with_collapse(
   let mut next_float_index = 0
   let float_start_positions : Map[Int, Double] = {}
   let mut vertical_multicol_simple_width_override : Double? = None
+  fn has_inline_float_only_wrapper() -> Bool {
+    for i = 0; i < flow_nodes.length() && i < flow_styles.length(); i = i + 1 {
+      let child_node = flow_nodes[i]
+      let child_style = flow_styles[i]
+      if child_node.id == "br" || child_node.id.has_prefix("#text") {
+        continue
+      }
+      if not(is_inline_flow_participant(child_node, child_style)) {
+        continue
+      }
+      if source_children_only_contribute_floats(child_node.children) {
+        return true
+      }
+    }
+    false
+  }
   let enable_float_inline_run = not(is_vertical_writing) &&
-    float_nodes.length() > 0
+    (float_nodes.length() > 0 || has_inline_float_only_wrapper())
   let mut inline_run_active = false
   let mut inline_run_x = 0.0
   let mut inline_run_height = 0.0
@@ -4677,6 +4923,7 @@ fn compute_with_collapse(
       child_available_height,
       flow_children,
       flow_styles,
+      flow_nodes,
       multicol_column_count,
       style.column_fill,
     )
@@ -4684,7 +4931,11 @@ fn compute_with_collapse(
     None
   }
   let multicol_fragment_contained = multicol_enabled &&
-    (style.contain.inline_size || style.contain.size) &&
+    (
+      style.column_fill == @style.ColumnFill::Balance ||
+      style.contain.inline_size ||
+      style.contain.size
+    ) &&
     multicol_column_count > 1
   for i = 0; i < flow_children.length(); i = i + 1 {
     let child_result = flow_children[i]
@@ -4744,8 +4995,16 @@ fn compute_with_collapse(
       inline_run_align_offset = next_inline_run_align_offset
       continue
     }
+    let is_inline_float_only_wrapper = not(is_vertical_writing) &&
+      @inline.is_inline_level(child_style.display) &&
+      child_node.id != "br" &&
+      not(child_node.id.has_prefix("#text")) &&
+      source_children_only_contribute_floats(child_node.children)
     let participates_in_inline_run = enable_float_inline_run &&
-      is_inline_flow_participant(child_node, child_style) &&
+      (
+        is_inline_flow_participant(child_node, child_style) ||
+        is_inline_float_only_wrapper
+      ) &&
       child_style.position != @types.Absolute &&
       child_style.position != @types.Fixed
     if not(participates_in_inline_run) && inline_run_active {
@@ -5710,7 +5969,60 @@ fn compute_with_collapse(
     }
   }
 
-  let child_layouts = collect_child_layouts_in_source_order(node, layout_map)
+  let child_layouts : Array[@types.Layout] = []
+  let mut adjusted_flow_extent = 0.0
+  for i = 0; i < node.children.length(); i = i + 1 {
+    match layout_map.get(i) {
+      Some(raw_layout) => {
+        let child_node = node.children[i]
+        let adjusted_layout = adjust_float_only_inline_wrapper_for_parent(
+          raw_layout, child_node, style, is_vertical_writing, true,
+        )
+        let child_style = child_node.style
+        let skip_out_of_flow = child_style.position == @types.Absolute ||
+          child_style.position == @types.Fixed ||
+          child_style.float != @types.Float::None
+        if not(skip_out_of_flow) {
+          let descendant_h = get_inflow_children_flow_extent_height(
+            child_node,
+            adjusted_layout.children,
+          )
+          let child_block = if adjusted_layout.height > descendant_h {
+            adjusted_layout.height
+          } else {
+            descendant_h
+          }
+          let extent = adjusted_layout.y +
+            child_block +
+            adjusted_layout.margin.bottom
+          if extent > adjusted_flow_extent {
+            adjusted_flow_extent = extent
+          }
+        }
+        child_layouts.push(adjusted_layout)
+      }
+      None => ()
+    }
+  }
+  let adjusted_content_height_for_auto = match style.height {
+    @types.Auto =>
+      if adjusted_flow_extent > content_height_for_auto {
+        @types.max(adjusted_flow_extent, float_height)
+      } else {
+        content_height_for_auto
+      }
+    _ => content_height_for_auto
+  }
+  if adjusted_content_height_for_auto != content_height_for_auto {
+    box_height = resolve_box_height_from_style(
+      style, box_width, adjusted_content_height_for_auto, parent_height_opt, fill_vertical_auto_height,
+      margin, padding, border,
+    )
+    box_height = apply_block_height_constraints(
+      box_height, style, parent_height, adjusted_content_height_for_auto, padding,
+      border,
+    )
+  }
   // Calculate scroll dimensions
   let (scroll_width, scroll_height) = calculate_scroll_dimensions(
     box_width, box_height, padding, child_layouts,

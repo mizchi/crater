@@ -45,6 +45,21 @@ test "parse element with style" {
 }
 
 ///|
+test "parse element with unquoted attribute containing slash" {
+  let html = "<link rel=match href=reference/variable-reference-ref.html>"
+  match @html.parse(html) {
+    Some(e) => {
+      inspect(e.tag, content="link")
+      inspect(
+        e.attributes.get("href"),
+        content="Some(\"reference/variable-reference-ref.html\")",
+      )
+    }
+    None => inspect(false, content="should parse")
+  }
+}
+
+///|
 test "parse nested elements" {
   let html = "<div><span></span><p></p></div>"
   match @html.parse(html) {

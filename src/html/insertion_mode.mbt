@@ -195,7 +195,20 @@ fn TreeBuilder::handle_in_body_start_tag(
     | "script"
     | "style"
     | "template"
-    | "title" => self.handle_in_head(Token::StartTag(tag, attrs, self_closing))
+    | "title" =>
+      match tag {
+        "base" | "basefont" | "bgsound" | "link" | "meta" => {
+          let elem = create_element(tag, attrs)
+          self.insert_into_head(elem, false)
+        }
+        "noframes" | "script" | "style" | "template" | "title" => {
+          let elem = create_element(tag, attrs)
+          self.insert_into_head(elem, true)
+          self.original_insertion_mode = Some(InsertionMode::InBody)
+          self.insertion_mode = InsertionMode::Text
+        }
+        _ => ()
+      }
     "body" =>
       // Merge attributes if already have body
       ()

@@ -555,6 +555,8 @@ test "font-size parsing" {
   let ctx = @computed.ComputeContext::new()
   let style = @computed.compute_inline("font-size: 20px", ctx)
   inspect(style.font_size, content="20")
+  let zero_style = @computed.compute_inline("font-size: 0", ctx)
+  inspect(zero_style.font_size, content="0")
 }
 
 ///|

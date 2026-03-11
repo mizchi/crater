@@ -3299,6 +3299,11 @@ fn parse_font_size(value : String, ctx : ComputeContext) -> Double {
     None => ()
   }
 
+  let plain_number = @strconv.parse_double(v) catch { _ => -1.0 }
+  if plain_number == 0.0 {
+    return 0.0
+  }
+
   // Handle keyword values
   match v {
     "xx-small" => 9.0

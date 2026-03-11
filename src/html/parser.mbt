@@ -326,7 +326,25 @@ fn Parser::consume_quoted_string(self : Parser) -> String {
       let _ = self.consume() // closing quote
       decode_html_entities(s)
     }
-    _ => self.consume_name()
+    _ => {
+      let buf = StringBuilder::new()
+      while not(self.is_eof()) {
+        match self.peek() {
+          Some(c) if is_whitespace(c) ||
+            c == '>' ||
+            c == '=' ||
+            c == '"' ||
+            c == '\'' ||
+            c == '<' => break
+          Some(c) => {
+            buf.write_char(c)
+            let _ = self.consume()
+          }
+          None => break
+        }
+      }
+      decode_html_entities(buf.to_string())
+    }
   }
 }
 

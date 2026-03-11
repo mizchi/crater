@@ -217,6 +217,19 @@ describe("resolveFocusedComparisonNodeId", () => {
     ).toBe("text");
   });
 
+  it("targets variable reference generated-content fixtures to compare the paragraph", () => {
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-variables/variable-reference-12.html",
+      ),
+    ).toBe("p#a");
+    expect(
+      resolveFocusedComparisonNodeId(
+        "wpt/css/css-variables/variable-reference-14.html",
+      ),
+    ).toBe("p#a");
+  });
+
 
   it("targets contain-size inline-block fixtures to compare blue test boxes", () => {
     expect(

@@ -757,6 +757,59 @@ test "display_contents_selector_matches_when_class_is_not_first" {
 }
 
 ///|
+test "pseudo_content_var_from_root_custom_properties_renders_text" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|:root { --a: "hello"; --b: "there"; }
+    #|#a::before { content: var(--a) " " var(--b); }
+    #|</style>
+    #|<p id="a"></p>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let host = root.children[0]
+  guard host.id == "p#a" else { fail("expected target paragraph") }
+  guard host.children.length() > 0 else {
+    fail("pseudo content should create inline text child")
+  }
+  let generated = host.children[0]
+  inspect(generated.id, content="#text")
+  inspect(generated.text, content="Some(\"hello there\")")
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let p = layout.children[0]
+  inspect(p.height, content="16")
+}
+
+///|
+test "pseudo_content_var_can_expand_attr_based_custom_property" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|div::before {
+    #|  --my-attr: attr(data-foo);
+    #|  content: var(--my-attr);
+    #|}
+    #|</style>
+    #|<div data-foo="PASS"></div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let host = root.children[0]
+  guard host.id == "div" else { fail("expected target div") }
+  guard host.children.length() > 0 else {
+    fail("attr()-based pseudo content should create child text")
+  }
+  let generated = host.children[0]
+  inspect(generated.id, content="#text")
+  inspect(generated.text, content="Some(\"PASS\")")
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  inspect(layout.children[0].height, content="16")
+}
+
+///|
 test "display_contents_columns_combo_keeps_contents_display_in_wpt_like_tree" {
   let html_str =
     #|<!DOCTYPE html>
@@ -804,6 +857,54 @@ test "display_inline_with_contents_child_stays_inline_sized" {
   let outer_layout = layout.children[0]
   let inline_layout = outer_layout.children[0]
   inspect(inline_layout.width, content="8")
+}
+
+///|
+test "inline_anchor_with_block_child_and_replaced_descendant_becomes_block" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|div { min-height: 10px; margin-bottom: 10px; }
+    #|</style>
+    #|<a href="">
+    #|  <div>Text should be green</div>
+    #|  <svg width="20" height="50"></svg>
+    #|</a>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let anchor = root.children[0]
+  inspect(anchor.id, content="a")
+  inspect(anchor.style.display, content="Block")
+
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let anchor_layout = layout.children[0]
+  inspect(anchor_layout.width, content="800")
+}
+
+///|
+test "balanced_multicol_child_uses_union_width_without_containment" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|div { min-height: 10px; margin-bottom: 10px; }
+    #|.columns {
+    #|  columns: 2;
+    #|  column-rule-width: medium;
+    #|  column-rule-style: solid;
+    #|}
+    #|.inner { height: 20px; }
+    #|</style>
+    #|<div class="columns"><div class="inner"></div></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let columns = layout.children[0]
+  let inner = columns.children[0]
+  inspect(columns.height, content="25")
+  inspect(inner.width, content="800")
+  inspect(inner.height, content="15")
 }
 
 ///|
@@ -5491,6 +5592,210 @@ test "wpt_intrinsic_percent_replaced_dynamic_010_static_layout" {
 }
 
 ///|
+test "wpt_margin_collapse_indefinite_block_size_005_like_stretch_behaves_as_auto" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|</style>
+    #|<p>Test passes if there is a filled green square and no red.</p>
+    #|<div style="width: 100px; height: stretch; background: red">
+    #|  <div style="height: 100px; margin-bottom: 100px; background: green"></div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let outer = layout.children[1]
+  let inner = outer.children[0]
+
+  inspect(outer.height, content="100")
+  inspect(inner.height, content="100")
+  inspect(inner.y, content="0")
+}
+
+///|
+test "wpt_intrinsic_percent_replaced_017_like_zero_sized_img_does_not_gain_line_strut" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.outer {
+    #|  display: flex;
+    #|  flex-direction: column;
+    #|  width: 100px;
+    #|  height: 100px;
+    #|  align-items: center;
+    #|}
+    #|.inner {
+    #|  max-height: 100%;
+    #|}
+    #|img {
+    #|  max-height: 100%;
+    #|}
+    #|</style>
+    #|<div class="outer">
+    #|  <div class="inner">
+    #|    <img src="aspect-ratio/support/200x200-green.png">
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let outer = layout.children[0]
+  let inner = outer.children[0]
+  let img = inner.children[0]
+  inspect(inner.width, content="0")
+  inspect(inner.height, content="0")
+  inspect(img.y, content="0")
+  inspect(img.height, content="0")
+}
+
+///|
+test "wpt_intrinsic_percent_replaced_018_like_table_min_content_ignores_newline_gap" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.outer {
+    #|  display: table;
+    #|  width: min-content;
+    #|  height: 100px;
+    #|}
+    #|.inner {
+    #|  display: table-cell;
+    #|  height: 100%;
+    #|}
+    #|canvas {
+    #|  vertical-align: top;
+    #|}
+    #|</style>
+    #|<div class="outer">
+    #|  <div class="inner">
+    #|    <canvas width="10" height="4" style="height: 40%"></canvas>
+    #|    <canvas width="10" height="6" style="height: 60%"></canvas>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let outer = layout.children[0]
+  let inner = outer.children[0]
+  inspect(outer.width, content="20")
+  inspect(inner.height, content="100")
+}
+
+///|
+test "wpt_intrinsic_percent_replaced_019_like_abspos_flex_basis_content_uses_definite_cross_chain" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.outer { width: 500px; }
+    #|.abspos-cb {
+    #|  position: relative;
+    #|  height: 0;
+    #|  width: 0;
+    #|  padding: 9%;
+    #|  border: 5px solid green;
+    #|}
+    #|.flex-container {
+    #|  height: 100%;
+    #|  width: 100%;
+    #|  position: absolute;
+    #|  display: flex;
+    #|  border: 5px solid green;
+    #|  box-sizing: border-box;
+    #|  top: 0;
+    #|  left: 0;
+    #|}
+    #|.item {
+    #|  border: 5px solid green;
+    #|  height: 100%;
+    #|  flex-basis: content;
+    #|  box-sizing: border-box;
+    #|}
+    #|canvas {
+    #|  width: 100%;
+    #|  height: 100%;
+    #|  border: 5px solid green;
+    #|  background: green;
+    #|  box-sizing: border-box;
+    #|}
+    #|</style>
+    #|<div class="outer">
+    #|  <div class="abspos-cb">
+    #|    <div class="flex-container">
+    #|      <div class="item">
+    #|        <canvas width="10" height="10"></canvas>
+    #|      </div>
+    #|    </div>
+    #|  </div>
+    #|</div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let outer = root.children[0]
+  let abspos_cb = outer.children[0]
+  let flex = abspos_cb.children[0]
+  let item = flex.children[0]
+  let canvas = item.children[0]
+  inspect(flex.style.width, content="Percent(1)")
+  inspect(flex.style.height, content="Percent(1)")
+  inspect(item.style.height, content="Percent(1)")
+  inspect(canvas.style.width, content="Percent(1)")
+  inspect(canvas.style.height, content="Percent(1)")
+  inspect(canvas.style.aspect_ratio, content="Some(1)")
+
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let laid_out_outer = layout.children[0]
+  let laid_out_abspos_cb = laid_out_outer.children[0]
+  let laid_out_flex = laid_out_abspos_cb.children[0]
+  let laid_out_item = laid_out_flex.children[0]
+  let laid_out_canvas = laid_out_item.children[0]
+  inspect(laid_out_abspos_cb.width, content="100")
+  inspect(laid_out_flex.width, content="90")
+  inspect(laid_out_flex.height, content="90")
+  inspect(laid_out_item.width, content="80")
+  inspect(laid_out_item.height, content="80")
+  inspect(laid_out_canvas.width, content="70")
+  inspect(laid_out_canvas.height, content="70")
+}
+
+///|
+test "wpt_intrinsic_percent_replaced_030_like_vertical_max_block_size_keeps_ratio" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<div style="inline-size: min-content">
+    #|  <canvas width="200" height="200"
+    #|          style="writing-mode: vertical-rl; background: green; max-block-size: 50%"></canvas>
+    #|</div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let outer = layout.children[0]
+  let canvas = outer.children[0]
+
+  inspect(outer.width, content="200")
+  inspect(outer.height, content="100")
+  inspect(canvas.width, content="100")
+  inspect(canvas.height, content="100")
+}
+
+///|
+test "wpt_intrinsic_percent_replaced_dynamic_005_like_abspos_auto_height_tracks_canvas" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|</style>
+    #|<div style="position: relative; width: 100px; height: 100px;">
+    #|  <div id="target" style="position: absolute; top:0; background: green;">
+    #|    <canvas width="1" height="1" style="height: 100%;"></canvas>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let target = layout.children[0].children[0]
+  let canvas = target.children[0]
+  inspect(target.height, content="1")
+  inspect(canvas.y, content="0")
+  inspect(canvas.height, content="1")
+}
+
+///|
 test "wpt_flex_item_min_width_min_content_like" {
   let html_str =
     #|<!DOCTYPE html>
@@ -5645,6 +5950,52 @@ test "wpt_flex_child_percent_basis_resize_1_like" {
   inspect(flex_item.height, content="100")
   inspect(scroll_outer.height, content="100")
   inspect(scroll_inner.height, content="100")
+}
+
+///|
+test "wpt_min_content_le_max_content_zero_font_whitespace_has_zero_advance" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|main {
+    #|  width: 100px;
+    #|  height: 100px;
+    #|  font-size: 0;
+    #|}
+    #|span {
+    #|  display: inline-block;
+    #|  vertical-align: top;
+    #|  height: 50px;
+    #|}
+    #|</style>
+    #|<main>
+    #|  <div style="width: min-content">
+    #|    <span style="width: 100px"></span>
+    #|    <span style="margin-right: -50px"></span>
+    #|  </div>
+    #|</main>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  inspect(root.id, content="body")
+  let main = root.children[0]
+  inspect(main.id, content="main")
+  inspect(main.style.font_size, content="0")
+  let inner = main.children[0]
+  inspect(inner.style.font_size, content="0")
+  let gap = inner.children[1]
+  inspect(gap.id, content="#text")
+  inspect(gap.style.font_size, content="0")
+
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let main_layout = layout.children[0]
+  let inner_layout = main_layout.children[0]
+  let second = inner_layout.children[2]
+  inspect(inner_layout.children[1].width, content="0")
+  inspect(inner_layout.height, content="50")
+  inspect(second.x, content="100")
+  inspect(second.y, content="0")
 }
 
 ///|

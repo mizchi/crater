@@ -250,6 +250,58 @@ fn is_whitespace_only_table_text(text : String) -> Bool {
 }
 
 ///|
+fn is_replaced_like_table_intrinsic_node(node : @node.Node) -> Bool {
+  if node.text is Some(_) {
+    return false
+  }
+  match node.measure {
+    Some(_) => node.children.length() == 0
+    None => false
+  }
+}
+
+///|
+fn has_percent_size_for_table_intrinsic(node : @node.Node) -> Bool {
+  match (node.style.width, node.style.height) {
+    (@types.Percent(_), _) => true
+    (_, @types.Percent(_)) => true
+    _ => false
+  }
+}
+
+///|
+fn is_whitespace_only_table_text_node(node : @node.Node) -> Bool {
+  if not(node.id.has_prefix("#text")) {
+    return false
+  }
+  match node.text {
+    Some(text) => is_whitespace_only_table_text(text)
+    None => true
+  }
+}
+
+///|
+fn is_percent_replaced_whitespace_separator(
+  siblings : Array[@node.Node],
+  index : Int,
+) -> Bool {
+  if index <= 0 || index >= siblings.length() - 1 {
+    return false
+  }
+  if not(is_whitespace_only_table_text_node(siblings[index])) {
+    return false
+  }
+  let prev = siblings[index - 1]
+  let next = siblings[index + 1]
+  is_replaced_like_table_intrinsic_node(prev) &&
+  is_replaced_like_table_intrinsic_node(next) &&
+  (
+    has_percent_size_for_table_intrinsic(prev) ||
+    has_percent_size_for_table_intrinsic(next)
+  )
+}
+
+///|
 fn zero_layout_rect() -> @types.Rect[Double] {
   { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 }
 }
@@ -696,8 +748,12 @@ fn measure_cell_content_width(cell : @node.Node) -> Double {
   let mut min_child_width = 0.0
   if inline_only && has_inline_flow {
     let mut current_line_width = 0.0
-    for child in cell.children {
+    for i = 0; i < cell.children.length(); i = i + 1 {
+      let child = cell.children[i]
       if not(is_in_flow_intrinsic_child(child)) {
+        continue
+      }
+      if is_percent_replaced_whitespace_separator(cell.children, i) {
         continue
       }
       if child.id == "br" {
@@ -816,8 +872,12 @@ fn measure_node_intrinsic_width(node : @node.Node) -> Double {
   if is_horizontal_inline_only && has_horizontal_inline_flow {
     let mut max_line_width = 0.0
     let mut current_line_width = 0.0
-    for child in node.children {
+    for i = 0; i < node.children.length(); i = i + 1 {
+      let child = node.children[i]
       if child.style.display == @types.Display::None {
+        continue
+      }
+      if is_percent_replaced_whitespace_separator(node.children, i) {
         continue
       }
       if child.id == "br" {

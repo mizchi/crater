@@ -74,7 +74,6 @@ fn stok_is_name_char(c : Char) -> Bool {
 fn stok_is_unquoted_attr_end(c : Char) -> Bool {
   stok_is_whitespace(c) ||
   c == '>' ||
-  c == '/' ||
   c == '=' ||
   c == '"' ||
   c == '\'' ||

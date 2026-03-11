@@ -1961,7 +1961,7 @@ fn should_preserve_auto_replaced_height(style : @style.Style) -> Bool {
 ///|
 fn is_definite_replaced_size(dim : @types.Dimension) -> Bool {
   match dim {
-    @types.Length(_) | @types.Percent(_) => true
+    @types.Length(_) => true
     _ => false
   }
 }
@@ -3476,6 +3476,182 @@ fn parse_css_quoted_string(value : String, start : Int) -> (String, Int)? {
 }
 
 ///|
+fn escape_css_string_content(value : String) -> String {
+  let buf = StringBuilder::new()
+  for c in value.iter() {
+    if c == '\\' || c == '"' {
+      buf.write_char('\\')
+    }
+    buf.write_char(c)
+  }
+  buf.to_string()
+}
+
+///|
+fn clone_string_map(source : Map[String, String]) -> Map[String, String] {
+  let cloned : Map[String, String] = {}
+  for entry in source {
+    let (key, value) = entry
+    cloned[key] = value
+  }
+  cloned
+}
+
+///|
+fn resolve_pseudo_attr_functions(
+  value : String,
+  element_attributes : Map[String, String],
+) -> String {
+  if not(value.contains("attr(")) {
+    return value
+  }
+  let buf = StringBuilder::new()
+  let mut i = 0
+  while i < value.length() {
+    let remaining = value.length() - i
+    if remaining >= 5 {
+      let chunk = value[i:i + 5].to_string() catch { _ => "" }
+      if chunk == "attr(" {
+        let mut depth = 1
+        let arg_start = i + 5
+        let mut j = arg_start
+        while j < value.length() {
+          let c = value[j].to_int().unsafe_to_char()
+          if c == '(' {
+            depth += 1
+          } else if c == ')' {
+            depth -= 1
+            if depth == 0 {
+              break
+            }
+          }
+          j += 1
+        }
+        if j < value.length() && depth == 0 {
+          let raw_args = value[arg_start:j].to_string() catch { _ => "" }
+          let attr_name = first_token_or_empty(
+            split_ascii_whitespace_tokens(raw_args),
+          )
+          let attr_value = match element_attributes.get(attr_name) {
+            Some(found) => found
+            None => ""
+          }
+          buf.write_char('"')
+          buf.write_string(escape_css_string_content(attr_value))
+          buf.write_char('"')
+          i = j + 1
+          continue
+        }
+      }
+    }
+    buf.write_char(value[i].to_int().unsafe_to_char())
+    i += 1
+  }
+  buf.to_string()
+}
+
+///|
+fn find_top_level_comma(value : String) -> Int? {
+  let mut depth = 0
+  let mut i = 0
+  while i < value.length() {
+    let c = value[i].to_int().unsafe_to_char()
+    if c == '(' {
+      depth += 1
+    } else if c == ')' {
+      if depth > 0 {
+        depth -= 1
+      }
+    } else if c == ',' && depth == 0 {
+      return Some(i)
+    }
+    i += 1
+  }
+  None
+}
+
+///|
+fn resolve_pseudo_content_value(
+  value : String,
+  css_vars : Map[String, String],
+  element_attributes : Map[String, String],
+) -> String {
+  let mut resolved = value
+  let mut loop_count = 0
+  while loop_count < 16 && resolved.contains("var(") {
+    let buf = StringBuilder::new()
+    let mut i = 0
+    let mut changed = false
+    while i < resolved.length() {
+      let remaining = resolved.length() - i
+      if remaining >= 4 {
+        let chunk = resolved[i:i + 4].to_string() catch { _ => "" }
+        if chunk == "var(" {
+          let mut depth = 1
+          let arg_start = i + 4
+          let mut j = arg_start
+          while j < resolved.length() {
+            let c = resolved[j].to_int().unsafe_to_char()
+            if c == '(' {
+              depth += 1
+            } else if c == ')' {
+              depth -= 1
+              if depth == 0 {
+                break
+              }
+            }
+            j += 1
+          }
+          if j < resolved.length() && depth == 0 {
+            let raw_args = resolved[arg_start:j].to_string() catch { _ => "" }
+            let replacement = match find_top_level_comma(raw_args) {
+              Some(comma_index) => {
+                let name = raw_args[0:comma_index].to_string() catch { _ => "" }
+                let fallback = raw_args[comma_index + 1:raw_args.length()].to_string() catch {
+                  _ => ""
+                }
+                match css_vars.get(name.trim().to_string()) {
+                  Some(found) =>
+                    resolve_pseudo_content_value(
+                      found, css_vars, element_attributes,
+                    )
+                  None =>
+                    resolve_pseudo_content_value(
+                      fallback, css_vars, element_attributes,
+                    )
+                }
+              }
+              None => {
+                let name = raw_args.trim().to_string()
+                match css_vars.get(name) {
+                  Some(found) =>
+                    resolve_pseudo_content_value(
+                      found, css_vars, element_attributes,
+                    )
+                  None => ""
+                }
+              }
+            }
+            buf.write_string(replacement)
+            i = j + 1
+            changed = true
+            continue
+          }
+        }
+      }
+      buf.write_char(resolved[i].to_int().unsafe_to_char())
+      i += 1
+    }
+    resolved = if changed { buf.to_string() } else { resolved }
+    if not(changed) {
+      break
+    }
+    loop_count += 1
+  }
+  resolve_pseudo_attr_functions(resolved, element_attributes)
+}
+
+///|
 fn parse_content_parts(value : String) -> Array[ContentPart]? {
   let trimmed = value.trim().to_string()
   if trimmed.is_empty() || trimmed == "none" || trimmed == "normal" {
@@ -3756,6 +3932,8 @@ fn resolve_pseudo_spec(
   ctx : RenderContext,
   pseudo_kind : PseudoKind,
   counters : Map[String, CounterEntry],
+  css_vars : Map[String, String],
+  element_attributes : Map[String, String],
 ) -> AfterPseudoSpec? {
   let media_env = @media.MediaEnvironment::with_color_scheme(
     ctx.viewport_width,
@@ -3768,6 +3946,7 @@ fn resolve_pseudo_spec(
   let mut position_relative = false
   let mut out_of_flow = false
   let mut left_offset = 0.0
+  let pseudo_css_vars = clone_string_map(css_vars)
   // ::before/::after default to inline formatting participation.
   let mut generated_style = { ..host_style, display: @types.Inline }
 
@@ -3795,14 +3974,22 @@ fn resolve_pseudo_spec(
               match decl.value {
                 @cascade.PropertyValue::Value(v) => {
                   let prop = decl.property.to_lower()
-                  if prop == "content" {
+                  if prop.has_prefix("--") {
+                    pseudo_css_vars[prop] = v
+                  } else if prop == "content" {
                     content_specified = true
-                    let normalized = v.trim().to_lower().to_string()
+                    let resolved_value = resolve_pseudo_content_value(
+                      v, pseudo_css_vars, element_attributes,
+                    )
+                    let normalized = resolved_value
+                      .trim()
+                      .to_lower()
+                      .to_string()
                     if normalized == "none" || normalized == "normal" {
                       content_parts = None
                       content_disabled = true
                     } else {
-                      content_parts = parse_content_parts(v)
+                      content_parts = parse_content_parts(resolved_value)
                       content_disabled = false
                     }
                   } else if prop == "position" {
@@ -3815,7 +4002,7 @@ fn resolve_pseudo_spec(
                   } else if prop == "left" {
                     left_offset = parse_relative_left_offset(v, host_style)
                   }
-                  if prop != "content" {
+                  if prop != "content" && not(prop.has_prefix("--")) {
                     generated_style = apply_css_property(
                       generated_style, prop, v,
                     )
@@ -3885,6 +4072,8 @@ fn selector_has_generated_pseudo_content(
   ctx : RenderContext,
 ) -> Bool {
   let empty_counters : Map[String, CounterEntry] = {}
+  let empty_css_vars : Map[String, String] = {}
+  let empty_attributes : Map[String, String] = {}
   let default_style = @style.Style::default()
   let has_before = match
     resolve_pseudo_spec(
@@ -3894,6 +4083,8 @@ fn selector_has_generated_pseudo_content(
       ctx,
       Before,
       empty_counters,
+      empty_css_vars,
+      empty_attributes,
     ) {
     Some(_) => true
     None => false
@@ -3906,6 +4097,8 @@ fn selector_has_generated_pseudo_content(
       ctx,
       After,
       empty_counters,
+      empty_css_vars,
+      empty_attributes,
     ) {
     Some(_) => true
     None => false
@@ -4685,6 +4878,8 @@ fn element_to_node_with_styles(
       ctx,
       Before,
       own_counters,
+      css_vars,
+      elem.attributes,
     )
   }
   let after_pseudo = if stylesheets.length() == 0 {
@@ -4697,6 +4892,8 @@ fn element_to_node_with_styles(
       ctx,
       After,
       own_counters,
+      css_vars,
+      elem.attributes,
     )
   }
   let style = match after_pseudo {
@@ -4933,15 +5130,7 @@ fn element_to_node_with_styles_internal(
     tag_lower == "rtc" ||
     tag_lower == "rp"
 
-  // If this is an inline element containing replaced elements (like <a><img></a>),
-  // treat it as inline-block so it gets proper sizing from its content
-  // Also, if inline element contains block children (like <code><span class="line">),
-  // treat it as block so children can be properly laid out
-  let style = if computed_style.display == @types.Inline &&
-    elem.tag.to_lower() != "picture" &&
-    contains_replaced_element(elem) {
-    { ..computed_style, display: @types.InlineBlock }
-  } else if computed_style.display == @types.Inline &&
+  let inline_has_block_child = computed_style.display == @types.Inline &&
     not(is_ruby_internal) &&
     computed_style.position == @types.Static &&
     contains_block_child(elem, stylesheets, ctx) &&
@@ -4950,10 +5139,20 @@ fn element_to_node_with_styles_internal(
         elem, selector_elem, computed_style, indexed_stylesheets, ctx, css_vars,
       ) ||
       has_direct_contents_class_child(elem),
-    ) {
+    )
+
+  // If this is an inline element containing replaced elements (like <a><img></a>),
+  // treat it as inline-block so it gets proper sizing from its content
+  // Also, if inline element contains block children (like <code><span class="line">),
+  // treat it as block so children can be properly laid out
+  let style = if inline_has_block_child {
     // Inline element with block children should become block
     // This handles cases like <code><span class="line" style="display:block">
     { ..computed_style, display: @types.Block }
+  } else if computed_style.display == @types.Inline &&
+    elem.tag.to_lower() != "picture" &&
+    contains_replaced_element(elem) {
+    { ..computed_style, display: @types.InlineBlock }
   } else {
     computed_style
   }
@@ -5030,6 +5229,8 @@ fn element_to_node_with_styles_internal(
       ctx,
       Before,
       own_counters,
+      css_vars,
+      elem.attributes,
     )
   }
   let after_pseudo = if stylesheets.length() == 0 {
@@ -5042,6 +5243,8 @@ fn element_to_node_with_styles_internal(
       ctx,
       After,
       own_counters,
+      css_vars,
+      elem.attributes,
     )
   }
   let style = match after_pseudo {
@@ -5760,10 +5963,10 @@ fn element_to_node_with_styles_internal(
     }
 
     // Build canvas style:
-    // - Use HTML attribute dimension as default when CSS is Auto
-    // - CSS dimensions (%, px, etc.) override HTML attributes
+    // - Keep CSS auto dimensions as auto; intrinsic size still comes from MeasureFunc
+    // - CSS dimensions (%, px, etc.) override the intrinsic defaults
     // - Set aspect ratio from intrinsic dimensions if not already set
-    // - If height is %, keep width as Auto so aspect_ratio can compute it
+    // - If one axis is percentage-sized, keep the opposite axis auto so aspect-ratio can compute it
     let height_is_percent = match style.height {
       @types.Percent(_) => true
       _ => false
@@ -5781,7 +5984,7 @@ fn element_to_node_with_styles_internal(
       } else if height_is_percent {
         @types.Auto
       } else {
-        @types.Length(intrinsic_width)
+        @types.Auto
       }
     } else {
       style.width
@@ -5793,7 +5996,7 @@ fn element_to_node_with_styles_internal(
       } else if width_is_percent {
         @types.Auto
       } else {
-        @types.Length(intrinsic_height)
+        @types.Auto
       }
     } else {
       style.height

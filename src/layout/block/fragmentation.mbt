@@ -649,8 +649,8 @@ fn adjust_inline_span_float_quirk(
   source_node : @node.Node,
   is_vertical_writing : Bool,
 ) -> @types.Layout {
-  if layout.id != "span" ||
-    source_node.id != "span" ||
+  if not(id_matches_tag(layout.id, "span")) ||
+    not(id_matches_tag(source_node.id, "span")) ||
     is_vertical_writing ||
     layout.height != 0.0 ||
     layout.width <= 0.0 ||

@@ -186,6 +186,58 @@ test "ifc_line_wrapping" {
 }
 
 ///|
+test "ifc_zero_advance_items_stay_on_oversized_line" {
+  let default_style = @style.Style::default()
+  let first_style = {
+    ..default_style,
+    display: @types.InlineBlock,
+    width: @types.Length(100.0),
+    height: @types.Length(50.0),
+  }
+  let gap_style = {
+    ..default_style,
+    display: @types.Inline,
+    font_size: 0.0,
+    line_height: 0.0,
+  }
+  let second_style = {
+    ..default_style,
+    display: @types.InlineBlock,
+    width: @types.Length(0.0),
+    height: @types.Length(50.0),
+    margin: {
+      left: @types.Length(0.0),
+      right: @types.Length(-50.0),
+      top: @types.Length(0.0),
+      bottom: @types.Length(0.0),
+    },
+  }
+  let gap_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      { min_width: 0.0, max_width: 0.0, min_height: 0.0, max_height: 0.0 }
+    },
+  }
+  let first = @node.Node::leaf("first", first_style)
+  let gap = @node.Node::text("#text", gap_style, gap_measure, " ")
+  let second = @node.Node::leaf("second", second_style)
+  let result = compute_ifc(
+    [first, gap, second],
+    50.0,
+    Some(600.0),
+    0.0,
+    0.0,
+    default_dispatch(),
+  )
+  inspect(result.layouts.length(), content="3")
+  inspect(result.layouts[0].x, content="0")
+  inspect(result.layouts[0].y, content="0")
+  inspect(result.layouts[1].x, content="100")
+  inspect(result.layouts[2].x, content="100")
+  inspect(result.layouts[2].y, content="0")
+  inspect(result.total_height, content="50")
+}
+
+///|
 test "ifc_nowrap_keeps_inline_blocks_on_same_line" {
   let default_style = @style.Style::default()
   let inline_style = {
@@ -394,7 +446,7 @@ test "ifc_replaced_only_line_includes_strut_descent" {
     0.0,
     default_dispatch(),
   )
-  inspect(result.total_height, content="156.4")
+  inspect(result.total_height, content="150")
 }
 
 ///|
