@@ -499,10 +499,8 @@ pub fn parse_alignment_with_overflow(
     return (@types.Alignment::FlexStart, false)
   }
   let mut offset = 0
-  let mut is_safe = false
   let mut is_unsafe = false
   if tokens[0] == "safe" {
-    is_safe = true
     offset = 1
   } else if tokens[0] == "unsafe" {
     is_unsafe = true
@@ -519,17 +517,7 @@ pub fn parse_alignment_with_overflow(
     tokens[offset]
   }
   let parsed = parse_alignment_keyword(keyword)
-  let alignment = if is_safe {
-    match parsed {
-      @types.Alignment::Center
-      | @types.Alignment::End
-      | @types.Alignment::FlexEnd => @types.Alignment::Start
-      _ => parsed
-    }
-  } else {
-    parsed
-  }
-  (alignment, is_unsafe)
+  (parsed, is_unsafe)
 }
 
 ///|

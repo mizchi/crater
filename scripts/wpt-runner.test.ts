@@ -576,6 +576,321 @@ describe("createFocusedComparisonRoot", () => {
     expect(focused?.children[1]?.y).toBe(25);
   });
 
+  it("can expand multicol block-alignment candidates into fragment sequence", () => {
+    const layout = {
+      id: "body",
+      x: 0,
+      y: 0,
+      width: 400,
+      height: 400,
+      margin: rect,
+      padding: rect,
+      border: rect,
+      children: [
+        {
+          id: "div.pager",
+          x: 0,
+          y: 0,
+          width: 248,
+          height: 84,
+          margin: rect,
+          padding: rect,
+          border: { top: 2, right: 2, bottom: 2, left: 2 },
+          children: [
+            {
+              id: "div.test",
+              x: 2,
+              y: 2,
+              width: 248,
+              height: 304,
+              margin: rect,
+              padding: rect,
+              border: rect,
+              children: [
+                {
+                  id: "span.label",
+                  x: 78,
+                  y: 50.4,
+                  width: 60,
+                  height: 19.2,
+                  margin: rect,
+                  padding: rect,
+                  border: rect,
+                  children: [],
+                },
+                {
+                  id: "br",
+                  x: 138,
+                  y: 52.0,
+                  width: 0,
+                  height: 0,
+                  margin: rect,
+                  padding: rect,
+                  border: rect,
+                  children: [],
+                },
+                {
+                  id: "#text",
+                  x: 84,
+                  y: 69.6,
+                  width: 48,
+                  height: 19.2,
+                  margin: rect,
+                  padding: rect,
+                  border: rect,
+                  children: [],
+                },
+                {
+                  id: "br",
+                  x: 132,
+                  y: 71.2,
+                  width: 0,
+                  height: 0,
+                  margin: rect,
+                  padding: rect,
+                  border: rect,
+                  children: [],
+                },
+                {
+                  id: "#text",
+                  x: 80,
+                  y: 88.8,
+                  width: 56,
+                  height: 19.2,
+                  margin: rect,
+                  padding: rect,
+                  border: rect,
+                  children: [],
+                },
+                {
+                  id: "div.large",
+                  x: 0,
+                  y: 108.0,
+                  width: 216,
+                  height: 44,
+                  margin: rect,
+                  padding: rect,
+                  border: rect,
+                  children: [],
+                },
+                {
+                  id: "div.large",
+                  x: 0,
+                  y: 152.0,
+                  width: 216,
+                  height: 44,
+                  margin: rect,
+                  padding: rect,
+                  border: rect,
+                  children: [],
+                },
+                {
+                  id: "div",
+                  x: 0,
+                  y: 196.0,
+                  width: 216,
+                  height: 57.6,
+                  margin: rect,
+                  padding: rect,
+                  border: rect,
+                  children: [
+                    {
+                      id: "#text",
+                      x: 0,
+                      y: 0,
+                      width: 56,
+                      height: 19.2,
+                      margin: rect,
+                      padding: rect,
+                      border: rect,
+                      children: [],
+                    },
+                    {
+                      id: "div.nobr",
+                      x: 0,
+                      y: 19.2,
+                      width: 216,
+                      height: 38.4,
+                      margin: rect,
+                      padding: rect,
+                      border: rect,
+                      children: [],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const focused = createFocusedComparisonRoot(layout, "div.test", {
+      reflowAsSequence: true,
+      fragmentBlockAlignMulticol: true,
+    });
+
+    expect(focused).not.toBeNull();
+    expect(focused?.children).toHaveLength(4);
+    expect(focused?.children.map(child => child.height)).toEqual([80, 80, 80, 64]);
+    expect(focused?.children[0]?.children[0]?.id).toBe("span.label");
+    expect(focused?.children[1]?.children[0]?.id).toBe("div.large");
+    expect(focused?.children[2]?.children.map(child => child.id)).toEqual(["div.large", "div"]);
+    expect(focused?.children[3]?.children[0]?.id).toBe("div");
+    expect(focused?.children[0]?.children[0]?.y).toBeGreaterThan(0);
+    expect(focused?.children[0]?.children[0]?.y).toBeLessThan(20);
+  });
+
+  it("flattens zero-height overflow wrappers during multicol fragment expansion", () => {
+    const layout = {
+      id: "body",
+      x: 0,
+      y: 0,
+      width: 400,
+      height: 200,
+      margin: rect,
+      padding: rect,
+      border: rect,
+      children: [
+        {
+          id: "div.pager",
+          x: 0,
+          y: 0,
+          width: 248,
+          height: 84,
+          margin: rect,
+          padding: rect,
+          border: { top: 2, right: 2, bottom: 2, left: 2 },
+          children: [
+            {
+              id: "div.test",
+              x: 2,
+              y: 2,
+              width: 248,
+              height: 304,
+              margin: rect,
+              padding: rect,
+              border: rect,
+              children: [
+                {
+                  id: "span.label",
+                  x: 90,
+                  y: 142.4,
+                  width: 60,
+                  height: 19.2,
+                  margin: rect,
+                  padding: rect,
+                  border: rect,
+                  children: [],
+                },
+                {
+                  id: "div.overflow",
+                  x: 0,
+                  y: 161.6,
+                  width: 216,
+                  height: 0,
+                  margin: rect,
+                  padding: rect,
+                  border: rect,
+                  children: [
+                    {
+                      id: "br",
+                      x: 154,
+                      y: 0,
+                      width: 0,
+                      height: 0,
+                      margin: rect,
+                      padding: rect,
+                      border: rect,
+                      children: [],
+                    },
+                    {
+                      id: "div.large",
+                      x: 0,
+                      y: 19.2,
+                      width: 216,
+                      height: 44,
+                      margin: rect,
+                      padding: rect,
+                      border: rect,
+                      children: [],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const focused = createFocusedComparisonRoot(layout, "div.test", {
+      reflowAsSequence: true,
+      fragmentBlockAlignMulticol: true,
+    });
+
+    expect(focused).not.toBeNull();
+    expect(focused?.children[0]?.children.map(child => child.id)).toEqual([
+      "span.label",
+      "div.large",
+    ]);
+  });
+
+  it("can force fixed fragment count for block-alignment multicol comparisons", () => {
+    const layout = {
+      id: "body",
+      x: 0,
+      y: 0,
+      width: 400,
+      height: 400,
+      margin: rect,
+      padding: rect,
+      border: rect,
+      children: [
+        {
+          id: "div.pager",
+          x: 0,
+          y: 0,
+          width: 248,
+          height: 84,
+          margin: rect,
+          padding: rect,
+          border: { top: 2, right: 2, bottom: 2, left: 2 },
+          children: [
+            {
+              id: "div.test",
+              x: 2,
+              y: 2,
+              width: 248,
+              height: 312,
+              margin: rect,
+              padding: rect,
+              border: rect,
+              children: [
+                { id: "span.label", x: 0, y: 0, width: 20, height: 20, margin: rect, padding: rect, border: rect, children: [] },
+                { id: "div.large", x: 0, y: 40, width: 200, height: 40, margin: rect, padding: rect, border: rect, children: [] },
+                { id: "div.large", x: 0, y: 80, width: 200, height: 40, margin: rect, padding: rect, border: rect, children: [] },
+                { id: "div.large", x: 0, y: 120, width: 200, height: 40, margin: rect, padding: rect, border: rect, children: [] },
+                { id: "div.large", x: 0, y: 160, width: 200, height: 40, margin: rect, padding: rect, border: rect, children: [] },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const focused = createFocusedComparisonRoot(layout, "div.test", {
+      reflowAsSequence: true,
+      stripChildren: true,
+      fragmentBlockAlignMulticol: true,
+      fixedBlockAlignFragmentCount: 4,
+    });
+
+    expect(focused).not.toBeNull();
+    expect(focused?.children).toHaveLength(4);
+    expect(focused?.children.map(child => child.height)).toEqual([80, 80, 80, 72]);
+  });
+
   it("can strip descendant trees when only the focused node box should be compared", () => {
     const layout = {
       id: "body",

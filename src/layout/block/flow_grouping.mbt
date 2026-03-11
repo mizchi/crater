@@ -562,7 +562,13 @@ fn compute_mixed_content_layout(
         }
         layout_map[index] = positioned_layout
         // Update state - advance by width in vertical mode, height in horizontal
-        let child_size = if is_vertical {
+        let explicit_zero_height = match node.style.height {
+          @types.Length(v) => v == 0.0
+          _ => false
+        }
+        let child_size = if not(is_vertical) && explicit_zero_height {
+          0.0
+        } else if is_vertical {
           if child_layout.width > 0.0 {
             child_layout.width
           } else {

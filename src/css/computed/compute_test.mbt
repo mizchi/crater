@@ -76,8 +76,8 @@ test "parse_alignment" {
   inspect(@computed.parse_alignment("center"), content="Center")
   inspect(@computed.parse_alignment("space-between"), content="SpaceBetween")
   inspect(@computed.parse_alignment("stretch"), content="Stretch")
-  inspect(@computed.parse_alignment("safe center"), content="Start")
-  inspect(@computed.parse_alignment("safe end"), content="Start")
+  inspect(@computed.parse_alignment("safe center"), content="Center")
+  inspect(@computed.parse_alignment("safe end"), content="End")
   inspect(@computed.parse_alignment("unsafe center"), content="Center")
   inspect(@computed.parse_alignment("unsafe end"), content="End")
 }
@@ -87,8 +87,8 @@ test "compute_inline place-content shorthand" {
   let ctx = @computed.ComputeContext::new()
 
   let safe_center = @computed.compute_inline("place-content: safe center", ctx)
-  inspect(safe_center.align_content, content="Start")
-  inspect(safe_center.justify_content, content="Start")
+  inspect(safe_center.align_content, content="Center")
+  inspect(safe_center.justify_content, content="Center")
   inspect(safe_center.align_content_unsafe, content="false")
   inspect(safe_center.justify_content_unsafe, content="false")
 
@@ -109,6 +109,22 @@ test "compute_inline place-content shorthand" {
   inspect(left_right.justify_content, content="Left")
   inspect(left_right.align_content_unsafe, content="false")
   inspect(left_right.justify_content_unsafe, content="false")
+}
+
+///|
+test "compute_inline align-content normal maps to stretch" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("align-content: normal", ctx)
+  inspect(style.align_content, content="Stretch")
+  inspect(style.align_content_unsafe, content="false")
+}
+
+///|
+test "compute_inline align-content last baseline falls back to baseline packing" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("align-content: last baseline", ctx)
+  inspect(style.align_content, content="Baseline")
+  inspect(style.align_content_unsafe, content="false")
 }
 
 ///|

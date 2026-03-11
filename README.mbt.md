@@ -45,19 +45,19 @@ CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt):
 | css-tables | 32 | 32 | 100.0% |
 | css-display | 79 | 79 | 100.0% |
 | css-box | 30 | 30 | 100.0% |
-| css-sizing | 88 | 94 | 93.6% |
-| css-align | 36 | 44 | 81.8% |
+| css-sizing | 94 | 94 | 100.0% |
+| css-align | 44 | 44 | 100.0% |
 | css-position | 84 | 84 | 100.0% |
 | css-overflow | 243 | 243 | 100.0% |
-| css-contain | 289 | 303 | 95.4% |
-| css-variables | 102 | 107 | 95.3% |
+| css-contain | 279 | 303 | 92.1% |
+| css-variables | 107 | 107 | 100.0% |
 | filter-effects | 99 | 106 | 93.4% |
 | compositing | 2 | 2 | 100.0% |
 | css-logical | 5 | 5 | 100.0% |
 | css-content | 2 | 2 | 100.0% |
 | css-multicol | 4 | 4 | 100.0% |
 | css-break | 27 | 27 | 100.0% |
-| **Total** | **1444** | **1484** | **97.3%** |
+| **Total** | **1453** | **1484** | **97.9%** |
 
 Run WPT tests:
 ```bash

@@ -5518,6 +5518,9 @@ fn element_to_node_with_styles_internal(
     // Browser default textarea intrinsic row-height is tighter than generic
     // line-height: normal; approximate as font-size + 1px per row.
     let control_line_height = font_size + 1.0
+    // Browsers include textarea chrome around the rows even under border-box.
+    // Keep this narrow so form-control regressions stay localized to textarea.
+    let control_extra_height = 6.0
     let char_width = resolve_control_char_width(
       font_size,
       control_line_height,
@@ -5540,7 +5543,7 @@ fn element_to_node_with_styles_internal(
       None => 2.0
     }
     let intrinsic_width = cols * char_width + font_size * 1.1
-    let intrinsic_height = rows * control_line_height
+    let intrinsic_height = rows * control_line_height + control_extra_height
     let measure = create_input_measure(intrinsic_width, intrinsic_height)
     let preserve_auto_width = should_preserve_auto_replaced_width(style)
     let preserve_auto_height = should_preserve_auto_replaced_height(style)

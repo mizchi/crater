@@ -1341,7 +1341,14 @@ fn apply_property(
     }
     "align-items" => builder.align_items = parse_alignment(value)
     "align-content" => {
-      let (alignment, is_unsafe) = parse_alignment_with_overflow(value)
+      let normalized = value.trim().to_lower().to_string()
+      let (alignment, is_unsafe) = if normalized == "normal" {
+        (@types.Alignment::Stretch, false)
+      } else if normalized == "last baseline" {
+        (@types.Alignment::Baseline, false)
+      } else {
+        parse_alignment_with_overflow(value)
+      }
       builder.align_content = alignment
       builder.align_content_unsafe = is_unsafe
     }

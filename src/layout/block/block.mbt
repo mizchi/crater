@@ -553,7 +553,17 @@ fn get_inflow_children_flow_extent_height(
     if skip_out_of_flow {
       continue
     }
-    let child_height = if child_layout.height > 0.0 {
+    let explicit_zero_height = if i < source_node.children.length() {
+      match source_node.children[i].style.height {
+        @types.Length(v) => v == 0.0
+        _ => false
+      }
+    } else {
+      false
+    }
+    let child_height = if explicit_zero_height {
+      0.0
+    } else if child_layout.height > 0.0 {
       child_layout.height
     } else if i < source_node.children.length() {
       get_inflow_children_flow_extent_height(
@@ -581,6 +591,25 @@ fn get_inflow_children_flow_extent_height(
     } else {
       0.0
     }
+  }
+}
+
+///|
+fn get_child_descendant_flow_extent_for_auto_height(
+  child_node : @node.Node,
+  child_layout : @types.Layout,
+) -> Double {
+  if id_matches_tag(child_node.id, "ruby") {
+    return 0.0
+  }
+  let explicit_zero_height = match child_node.style.height {
+    @types.Length(v) => v == 0.0
+    _ => false
+  }
+  if explicit_zero_height && child_layout.height == 0.0 {
+    0.0
+  } else {
+    get_inflow_children_flow_extent_height(child_node, child_layout.children)
   }
 }
 
@@ -683,7 +712,16 @@ fn shift_direct_float_children_for_intrusion(
         } else {
           layout_child
         }
-      @types.Float::None => layout_child
+      @types.Float::None =>
+        if node_child.style.position == @types.Static &&
+          not(block_flow_establishes_bfc(node_child.style)) &&
+          not(@inline.is_inline_level(node_child.style.display)) {
+          shift_direct_float_children_for_intrusion(
+            layout_child, node_child, shift_left, shift_right,
+          )
+        } else {
+          layout_child
+        }
     }
     adjusted_children.push(adjusted_child)
     layout_cursor = matched_index + 1
@@ -869,11 +907,37 @@ fn block_flow_establishes_bfc(style : @style.Style) -> Bool {
     (@types.Overflow::Visible, @types.Overflow::Visible) => false
     _ => true
   }
+  let non_normal_block_alignment = match style.align_content {
+    @types.Stretch => false
+    _ => true
+  }
   let containment_establishes_bfc = containment_applies(style.display) &&
     (style.contain.layout || style.contain.paint || style.contain.size)
   overflow_blocks ||
+  non_normal_block_alignment ||
   style.display == @types.FlowRoot ||
   containment_establishes_bfc
+}
+
+///|
+fn compute_block_content_alignment_offset(
+  alignment : @types.Alignment,
+  container_size : Double,
+  content_size : Double,
+) -> Double {
+  if alignment == @types.Stretch || container_size <= 0.0 || content_size <= 0.0 {
+    return 0.0
+  }
+  let aligned = @core.align_content_tracks(
+    [{ position: 0.0, size: content_size, stretchable: false }],
+    container_size,
+    alignment,
+  )
+  if aligned.length() == 0 {
+    0.0
+  } else {
+    aligned[0].position
+  }
 }
 
 ///|
@@ -4089,6 +4153,32 @@ fn compute_with_collapse(
     let box_height = apply_content_driven_height_constraints(
       box_height, style, node, parent_width, content_height_for_auto, padding, border,
     )
+    let block_content_alignment_offset = if not(
+        style.writing_mode.is_vertical(),
+      ) {
+      let content_box_height = box_height -
+        padding.vertical_sum() -
+        border.vertical_sum()
+      compute_block_content_alignment_offset(
+        style.align_content,
+        content_box_height,
+        content_height,
+      )
+    } else {
+      0.0
+    }
+    if block_content_alignment_offset.abs() > 0.0001 {
+      for idx in flow_indices {
+        match layout_map.get(idx) {
+          Some(positioned_layout) =>
+            layout_map[idx] = {
+              ..positioned_layout,
+              y: positioned_layout.y + block_content_alignment_offset,
+            }
+          None => ()
+        }
+      }
+    }
     place_absolute_children_at_static_y(
       node, box_width, box_height, border, content_height, warnings, dispatch, layout_map,
     )
@@ -4195,11 +4285,10 @@ fn compute_with_collapse(
       for i = 0; i < node.children.length(); i = i + 1 {
         match layout_map.get(i) {
           Some(layout) => {
-            let descendant_h = if id_matches_tag(node.children[i].id, "ruby") {
-              0.0
-            } else {
-              get_children_total_height(layout.children)
-            }
+            let descendant_h = get_child_descendant_flow_extent_for_auto_height(
+              node.children[i],
+              layout,
+            )
             let child_block = if layout.height > descendant_h {
               layout.height
             } else {
@@ -4229,6 +4318,32 @@ fn compute_with_collapse(
     let box_height = apply_content_driven_height_constraints(
       box_height, style, node, parent_width, content_height_for_auto, padding, border,
     )
+    let block_content_alignment_offset = if not(
+        style.writing_mode.is_vertical(),
+      ) {
+      let content_box_height = box_height -
+        padding.vertical_sum() -
+        border.vertical_sum()
+      compute_block_content_alignment_offset(
+        style.align_content,
+        content_box_height,
+        content_height,
+      )
+    } else {
+      0.0
+    }
+    if block_content_alignment_offset.abs() > 0.0001 {
+      for i = 0; i < node.children.length(); i = i + 1 {
+        match layout_map.get(i) {
+          Some(positioned_layout) =>
+            layout_map[i] = {
+              ..positioned_layout,
+              y: positioned_layout.y + block_content_alignment_offset,
+            }
+          None => ()
+        }
+      }
+    }
     place_absolute_children_at_static_y(
       node, box_width, box_height, border, content_height, warnings, dispatch, layout_map,
     )
@@ -4435,6 +4550,7 @@ fn compute_with_collapse(
     border.vertical_sum() > 0.0
   let can_use_simple_block_stack = ctx.sizing_mode == @types.Definite &&
     has_simple_block_stack_hint &&
+    style.align_content == @types.Stretch &&
     not(style.writing_mode.is_vertical()) &&
     not(multicol_enabled) &&
     not(use_ifc) &&
@@ -4494,9 +4610,9 @@ fn compute_with_collapse(
         if skip_out_of_flow {
           continue
         }
-        let descendant_h = get_inflow_children_flow_extent_height(
+        let descendant_h = get_child_descendant_flow_extent_for_auto_height(
           flow_nodes[i],
-          adjusted_child_layouts[i].children,
+          adjusted_child_layouts[i],
         )
         let child_block = if adjusted_child_layouts[i].height > descendant_h {
           adjusted_child_layouts[i].height
@@ -4939,8 +5055,8 @@ fn compute_with_collapse(
     multicol_column_count > 1
   for i = 0; i < flow_children.length(); i = i + 1 {
     let child_result = flow_children[i]
-    let child_layout = child_result.layout
-    let child_collapsed = child_result.collapsed
+    let mut child_layout = child_result.layout
+    let mut child_collapsed = child_result.collapsed
     let is_first = i == 0
     let is_last = i == flow_children.length() - 1
     let child_style = flow_styles[i]
@@ -5056,24 +5172,78 @@ fn compute_with_collapse(
       None => child_layout.margin.bottom
     }
 
+    let child_establishes_bfc = block_flow_establishes_bfc(child_style)
+    if not(is_vertical_writing) &&
+      child_establishes_bfc &&
+      float_ctx.has_floats() &&
+      not(participates_in_inline_run) &&
+      child_style.position != @types.Absolute &&
+      child_style.position != @types.Fixed {
+      let probe_height = if child_layout.height > 0.0 {
+        child_layout.height
+      } else if style.line_height > 0.0 {
+        style.line_height
+      } else {
+        1.0
+      }
+      let probe_y = if current_pos > 0.0 { current_pos } else { 0.0 }
+      let (left_edge, right_edge) = float_ctx.get_available_space(
+        probe_y, probe_height,
+      )
+      let constrained_parent_width = right_edge - left_edge
+      if constrained_parent_width > 0.0 &&
+        constrained_parent_width + 0.01 < flow_child_available_width {
+        let child_height_for_ctx : Double? = match child_style.display {
+          @types.Flex
+          | @types.InlineFlex
+          | @types.Grid
+          | @types.InlineGrid
+          | @types.Table
+          | @types.InlineTable =>
+            match child_style.height {
+              @types.Auto =>
+                if child_style.writing_mode.is_vertical() {
+                  child_available_height
+                } else {
+                  None
+                }
+              _ => child_available_height
+            }
+          _ => child_available_height
+        }
+        let child_ctx : @types.LayoutContext = {
+          available_width: constrained_parent_width,
+          available_height: child_height_for_ctx,
+          sizing_mode: @types.Definite,
+          viewport_width: ctx.viewport_width,
+          viewport_height: ctx.viewport_height,
+          stretch_width: false,
+          stretch_height: false,
+        }
+        match child_style.display {
+          @types.Flex
+          | @types.InlineFlex
+          | @types.Grid
+          | @types.InlineGrid
+          | @types.Table
+          | @types.InlineTable => {
+            let @node.DispatchFn(dispatch_fn) = dispatch
+            child_layout = dispatch_fn(child_node, child_ctx, dispatch)
+            child_collapsed = { top: None, bottom: None }
+          }
+          _ => {
+            let raw = compute_with_collapse(
+              child_node, child_ctx, warnings, dispatch,
+            )
+            child_layout = apply_initial_scroll_snap(child_node, raw.layout)
+            child_collapsed = raw.collapsed
+          }
+        }
+      }
+    }
+
     // Check if child collapses through
     // Blocked by: height, border, padding, BFC-establishing properties, aspect_ratio
-    let child_overflow_blocks = match
-      (child_style.overflow_x, child_style.overflow_y) {
-      (@types.Overflow::Visible, @types.Overflow::Visible) => false
-      _ => true
-    }
-    let child_containment_establishes_bfc = containment_applies(
-        child_style.display,
-      ) &&
-      (
-        child_style.contain.layout ||
-        child_style.contain.paint ||
-        child_style.contain.size
-      )
-    let child_establishes_bfc = child_overflow_blocks ||
-      child_style.display == @types.FlowRoot ||
-      child_containment_establishes_bfc
     let child_has_aspect_ratio = match child_style.aspect_ratio {
       Some(_) => true
       None => false
@@ -5901,6 +6071,44 @@ fn compute_with_collapse(
     style, box_width, box_height, parent_width, padding, border,
   )
 
+  let block_content_alignment_offset = if not(is_vertical_writing) {
+    let content_box_height = box_height -
+      padding.vertical_sum() -
+      border.vertical_sum()
+    compute_block_content_alignment_offset(
+      style.align_content,
+      content_box_height,
+      content_height,
+    )
+  } else {
+    0.0
+  }
+  if block_content_alignment_offset.abs() > 0.0001 {
+    for idx in flow_indices {
+      match layout_map.get(idx) {
+        Some(positioned_layout) =>
+          layout_map[idx] = {
+            ..positioned_layout,
+            y: positioned_layout.y + block_content_alignment_offset,
+          }
+        None => ()
+      }
+    }
+    for idx in float_indices {
+      match layout_map.get(idx) {
+        Some(positioned_layout) =>
+          layout_map[idx] = {
+            ..positioned_layout,
+            y: positioned_layout.y + block_content_alignment_offset,
+          }
+        None => ()
+      }
+    }
+    for i = 0; i < flow_y_positions.length(); i = i + 1 {
+      flow_y_positions[i] = flow_y_positions[i] + block_content_alignment_offset
+    }
+  }
+
   // Now handle absolute positioned children
   for i = 0; i < node.children.length(); i = i + 1 {
     let child = node.children[i]
@@ -5983,9 +6191,8 @@ fn compute_with_collapse(
           child_style.position == @types.Fixed ||
           child_style.float != @types.Float::None
         if not(skip_out_of_flow) {
-          let descendant_h = get_inflow_children_flow_extent_height(
-            child_node,
-            adjusted_layout.children,
+          let descendant_h = get_child_descendant_flow_extent_for_auto_height(
+            child_node, adjusted_layout,
           )
           let child_block = if adjusted_layout.height > descendant_h {
             adjusted_layout.height

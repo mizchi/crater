@@ -339,7 +339,7 @@
 ## WPT サポート状況（2026-03-11）
 
 - 実測コマンド: `npx tsx scripts/wpt-runner.ts <module> --workers 4`
-- 全体: `1444 / 1484 passed`（`97.3%`、`40 failed`）
+- 全体: `1453 / 1484 passed`（`97.9%`、`31 failed`）
 
 | Module | Passed | Failed | Total | Rate |
 |--------|--------|--------|-------|------|
@@ -348,12 +348,12 @@
 | css-tables | 32 | 0 | 32 | 100.0% |
 | css-display | 79 | 0 | 79 | 100.0% |
 | css-box | 30 | 0 | 30 | 100.0% |
-| css-sizing | 88 | 6 | 94 | 93.6% |
-| css-align | 36 | 8 | 44 | 81.8% |
+| css-sizing | 94 | 0 | 94 | 100.0% |
+| css-align | 44 | 0 | 44 | 100.0% |
 | css-position | 84 | 0 | 84 | 100.0% |
 | css-overflow | 243 | 0 | 243 | 100.0% |
-| css-contain | 289 | 14 | 303 | 95.4% |
-| css-variables | 102 | 5 | 107 | 95.3% |
+| css-contain | 279 | 24 | 303 | 92.1% |
+| css-variables | 107 | 0 | 107 | 100.0% |
 | filter-effects | 99 | 7 | 106 | 93.4% |
 | compositing | 2 | 0 | 2 | 100.0% |
 | css-logical | 5 | 0 | 5 | 100.0% |
@@ -373,14 +373,14 @@
 - `css-logical`: `1 / 5` -> `5 / 5`
 - `css-content`: 新規導入で `2 / 2`
 - `css-position`: `74 / 84` -> `84 / 84`
+- `css-sizing`: `88 / 94` -> `94 / 94`
+- `css-variables`: `102 / 107` -> `107 / 107`
+- `css-align`: `36 / 44` -> `44 / 44`
 
 ### 直近の優先候補
 
-- `css-contain` の残件（`14 failed`）
-- `css-align` の残件（`8 failed`）
+- `css-contain` の残件（`24 failed`）
 - `filter-effects` の残件（`7 failed`）
-- `css-sizing` の残件（`6 failed`）
-- `css-variables` の残件（`5 failed`）
 
 ### WPT 拡張メモ
 

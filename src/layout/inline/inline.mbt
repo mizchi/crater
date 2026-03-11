@@ -2392,14 +2392,14 @@ fn compute_inline_child(
   let mut final_height = content_height +
     padding.vertical_sum() +
     border.vertical_sum()
+  let own_inline_line_height = line_height_from_style(style) +
+    padding.vertical_sum() +
+    border.vertical_sum()
   let text_glyph_height = max_text_glyph_height_in_node(node)
   if text_glyph_height > 0.0 {
-    let text_box_height = text_glyph_height +
-      padding.vertical_sum() +
-      border.vertical_sum()
     let has_forced_line_break = inline_cursor_y > 0.0
-    if not(has_forced_line_break) && final_height > text_box_height {
-      final_height = text_box_height
+    if not(has_forced_line_break) && final_height > own_inline_line_height {
+      final_height = own_inline_line_height
     }
   }
   let ruby_annotation_only_box = ruby_annotation_only(node)

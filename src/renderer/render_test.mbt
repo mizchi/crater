@@ -5612,6 +5612,71 @@ test "wpt_margin_collapse_indefinite_block_size_005_like_stretch_behaves_as_auto
 }
 
 ///|
+test "wpt_align_self_static_position_005_parent_inline_keeps_own_line_height" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.container {
+    #|  position: relative;
+    #|  border: 1px solid;
+    #|}
+    #|.abs {
+    #|  position: absolute;
+    #|  background: purple;
+    #|  align-self: end;
+    #|  opacity: 0.5;
+    #|}
+    #|</style>
+    #|<div class="container">
+    #|  <span style="font: 20px/1 Ahem;">hello
+    #|    <span class="abs">hello</span>
+    #|    <span style="vertical-align: top; font-size: 50px;">world</span>
+    #|  </span>
+    #|</div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let container = layout.children[0]
+  let inline_span = container.children[0]
+
+  inspect(inline_span.height, content="20")
+}
+
+///|
+test "wpt_justify_self_widgets_textarea_keeps_browser_default_block_heights" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|.widget {
+    #|  display: block;
+    #|  width: auto;
+    #|  box-sizing: border-box;
+    #|}
+    #|</style>
+    #|<input class="widget" style="justify-self: normal">
+    #|<input class="widget" style="justify-self: start">
+    #|<input class="widget" style="justify-self: end">
+    #|<input class="widget" style="justify-self: stretch">
+    #|<select class="widget" style="justify-self: normal"></select>
+    #|<select class="widget" style="justify-self: start"></select>
+    #|<select class="widget" style="justify-self: end"></select>
+    #|<select class="widget" style="justify-self: stretch"></select>
+    #|<textarea class="widget" style="justify-self: normal"></textarea>
+    #|<textarea class="widget" style="justify-self: start"></textarea>
+    #|<textarea class="widget" style="justify-self: end"></textarea>
+    #|<textarea class="widget" style="justify-self: stretch"></textarea>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let textarea_normal = layout.children[8]
+  let textarea_start = layout.children[9]
+  let textarea_end = layout.children[10]
+  let textarea_stretch = layout.children[11]
+
+  inspect(textarea_normal.height, content="34")
+  inspect(textarea_start.y - textarea_normal.y, content="34")
+  inspect(textarea_end.y - textarea_start.y, content="34")
+  inspect(textarea_stretch.y - textarea_end.y, content="34")
+}
+
+///|
 test "wpt_intrinsic_percent_replaced_017_like_zero_sized_img_does_not_gain_line_strut" {
   let html_str =
     #|<!DOCTYPE html>

@@ -766,6 +766,157 @@ test "block_flow_root_stays_at_top_when_short_enough_between_floats" {
 }
 
 ///|
+test "block_align_content_start_establishes_bfc_against_outer_floats" {
+  let default_style = @style.Style::default()
+  let float1_style = {
+    ..default_style,
+    float: @types.Float::Right,
+    width: @types.Length(200.0),
+    height: @types.Length(100.0),
+  }
+  let float2_style = {
+    ..default_style,
+    float: @types.Float::Left,
+    width: @types.Length(250.0),
+    height: @types.Length(100.0),
+  }
+  let float3_style = {
+    ..default_style,
+    float: @types.Float::Right,
+    width: @types.Length(300.0),
+    height: @types.Length(100.0),
+  }
+  let aligned_block_style = {
+    ..default_style,
+    align_content: @types.Start,
+    width: @types.Length(0.0),
+    height: @types.Length(170.0),
+  }
+  let float1 = @node.Node::leaf("float1", float1_style)
+  let float2 = @node.Node::leaf("float2", float2_style)
+  let float3 = @node.Node::leaf("float3", float3_style)
+  let aligned_block = @node.Node::leaf("aligned-block", aligned_block_style)
+  let root_style = { ..default_style, width: @types.Length(400.0) }
+  let root = @node.Node::new("root", root_style, [
+    float1, float2, float3, aligned_block,
+  ])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.MaxContent,
+    viewport_width: 400.0,
+    viewport_height: 300.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  let aligned_layout = layout.children[3]
+  inspect(aligned_layout.y, content="200")
+  inspect(layout.height, content="370")
+}
+
+///|
+test "block_align_content_center_offsets_single_child_in_content_box" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    width: @types.Length(20.0),
+    height: @types.Length(19.2),
+  })
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      width: @types.Length(100.0),
+      height: @types.Length(48.0),
+      align_content: @types.Center,
+    },
+    [child],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.children[0].y, content="14.4")
+}
+
+///|
+test "block_non_bfc_wrapper_propagates_float_intrusion_to_nested_float_child" {
+  let default_style = @style.Style::default()
+  let outer_float = @node.Node::leaf("outer-float", {
+    ..default_style,
+    float: @types.Float::Left,
+    width: @types.Length(30.0),
+    height: @types.Length(80.0),
+  })
+  let inner_float = @node.Node::leaf("inner-float", {
+    ..default_style,
+    float: @types.Float::Left,
+    width: @types.Length(20.0),
+    height: @types.Length(20.0),
+  })
+  let wrapper = @node.Node::new("wrapper", default_style, [inner_float])
+  let container = @node.Node::new("container", default_style, [wrapper])
+  let root = @node.Node::new(
+    "root",
+    { ..default_style, width: @types.Length(100.0) },
+    [outer_float, container],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  let container_layout = layout.children[1]
+  let wrapper_layout = container_layout.children[0]
+  let inner_float_layout = wrapper_layout.children[0]
+  inspect(inner_float_layout.x, content="30")
+}
+
+///|
+test "block_auto_height_ignores_explicit_zero_height_overflow_wrapper_descendants" {
+  let default_style = @style.Style::default()
+  let overflowing_child = @node.Node::leaf("overflowing-child", {
+    ..default_style,
+    width: @types.Length(40.0),
+    height: @types.Length(19.2),
+  })
+  let zero_height_wrapper = @node.Node::new(
+    "zero-height-wrapper",
+    { ..default_style, height: @types.Length(0.0) },
+    [overflowing_child],
+  )
+  let root = @node.Node::new(
+    "root",
+    { ..default_style, width: @types.Length(100.0) },
+    [zero_height_wrapper],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.height, content="0")
+  inspect(layout.children[0].height, content="0")
+}
+
+///|
 test "block_flow_root_zero_width_avoids_float_overlap_with_inline_offset" {
   let default_style = @style.Style::default()
   let right_float_style = {
