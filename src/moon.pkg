@@ -7,11 +7,8 @@ import {
   "mizchi/crater/layout/grid",
   "mizchi/crater/layout/table",
   "mizchi/crater/x/webvitals",
-  "mizchi/crater/layout/tree",
   "mizchi/crater/layout/dispatch",
 }
 
 import {
-  "mizchi/crater/layout/trace",
-  "mizchi/crater/css/parser",
 } for "test"
