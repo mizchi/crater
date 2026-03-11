@@ -189,7 +189,18 @@ pub async fn wait_for_enter() -> Unit {
 extern "js" fn js_get_terminal_columns() -> Int =
   #| () => {
   #|   if (typeof process === 'undefined') return 80;
-  #|   return process.stdout.columns || 80;
+  #|   if (process.stdout.columns) return process.stdout.columns;
+  #|   if (process.stderr.columns) return process.stderr.columns;
+  #|   if (process.env && process.env.COLUMNS) {
+  #|     const c = parseInt(process.env.COLUMNS, 10);
+  #|     if (c > 0) return c;
+  #|   }
+  #|   try {
+  #|     const { execSync } = require('child_process');
+  #|     const cols = parseInt(execSync('tput cols', { stdio: ['pipe', 'pipe', 'pipe'], encoding: 'utf8' }).trim(), 10);
+  #|     if (cols > 0) return cols;
+  #|   } catch {}
+  #|   return 80;
   #| }
 
 ///|
@@ -197,7 +208,18 @@ extern "js" fn js_get_terminal_columns() -> Int =
 extern "js" fn js_get_terminal_rows() -> Int =
   #| () => {
   #|   if (typeof process === 'undefined') return 24;
-  #|   return process.stdout.rows || 24;
+  #|   if (process.stdout.rows) return process.stdout.rows;
+  #|   if (process.stderr.rows) return process.stderr.rows;
+  #|   if (process.env && process.env.LINES) {
+  #|     const r = parseInt(process.env.LINES, 10);
+  #|     if (r > 0) return r;
+  #|   }
+  #|   try {
+  #|     const { execSync } = require('child_process');
+  #|     const rows = parseInt(execSync('tput lines', { stdio: ['pipe', 'pipe', 'pipe'], encoding: 'utf8' }).trim(), 10);
+  #|     if (rows > 0) return rows;
+  #|   } catch {}
+  #|   return 24;
   #| }
 
 ///|

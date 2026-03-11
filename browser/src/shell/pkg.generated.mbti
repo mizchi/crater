@@ -25,7 +25,7 @@ pub async fn Browser::go_forward(Self) -> String? raise @http.HttpError
 pub fn Browser::is_hint_mode(Self) -> Bool
 pub async fn Browser::navigate(Self, String) -> String raise @http.HttpError
 pub async fn Browser::navigate_lightweight(Self, String) -> String raise @http.HttpError
-pub fn Browser::new(Int, Int) -> Self
+pub fn Browser::new(Int, Int, terminal_cols? : Int) -> Self
 pub fn Browser::next_link(Self) -> Unit
 pub fn Browser::prev_link(Self) -> Unit
 pub fn Browser::process_hint_char(Self, String) -> String?

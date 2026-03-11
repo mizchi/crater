@@ -2,32 +2,42 @@
 /// TUI Browser - Main entry point
 
 ///|
-/// Character size constants for TUI mode (monospace font)
 let char_width : Int = 8 // Width of one character in pixels
 
 ///|
 let char_height : Int = 16 // Height of one character in pixels
 
 ///|
-/// Default viewport size (used when terminal size not available)
-let default_viewport_width : Int = 640 // 80 columns * 8px
-
-///|
 let default_viewport_height : Int = 384 // 24 rows * 16px
 
 ///|
-/// Calculate viewport size from terminal dimensions
-fn calculate_viewport(text_mode : Bool) -> (Int, Int) {
-  if text_mode {
-    // TUI text mode: use terminal size
-    let (cols, rows) = @tui.get_terminal_size()
-    let width = cols * char_width
-    let height = rows * char_height
-    (width, height)
-  } else {
-    // Sixel/debug mode: use default size
-    (default_viewport_width, default_viewport_height)
+/// Parse a simple integer from string (returns 0 on failure)
+fn parse_int_simple(s : String) -> Int {
+  let mut result = 0
+  for i = 0; i < s.length(); i = i + 1 {
+    let c = s[i]
+    if c >= '0' && c <= '9' {
+      result = result * 10 + (c.to_int() - '0'.to_int())
+    } else {
+      return 0
+    }
   }
+  result
+}
+
+///|
+/// Calculate viewport size and terminal columns from terminal dimensions
+/// Returns (viewport_width_px, viewport_height_px, terminal_cols)
+fn calculate_viewport(text_mode : Bool, override_cols : Int) -> (Int, Int, Int) {
+  let (detected_cols, rows) = @tui.get_terminal_size()
+  let cols = if override_cols > 0 { override_cols } else { detected_cols }
+  let height = if text_mode {
+    rows * char_height
+  } else {
+    default_viewport_height
+  }
+  let width = cols * char_width
+  (width, height, cols)
 }
 
 ///|
@@ -54,6 +64,17 @@ struct Options {
   extract_main : Bool // Extract main content text only
   headless : HeadlessMode // Headless rendering mode
   show_help : Bool // Show help message
+  width : Int // Override viewport width in columns (0 = auto-detect)
+}
+
+///|
+/// Navigate with error handling
+async fn safe_navigate(browser : @shell.Browser, url : String) -> Unit {
+  try {
+    let _ = browser.navigate(url)
+  } catch {
+    err => println("Navigation error: \{err}")
+  }
 }
 
 ///|
@@ -140,6 +161,7 @@ fn print_help() -> Unit {
     "    --dark            Start in dark mode (prefers-color-scheme: dark)",
   )
   println("    --no-color        Disable color output (underline links only)")
+  println("    --width=N         Override viewport width in columns")
   println("")
   println("EXAMPLES:")
   println("  npx @mizchi/crater-browser https://example.com")
@@ -182,9 +204,13 @@ fn parse_args() -> Options {
   let mut extract_main = false
   let mut headless : HeadlessMode = Off
   let mut show_help = false
+  let mut width = 0
   for arg in args {
     if arg == "-h" || arg == "--help" {
       show_help = true
+    } else if arg.has_prefix("--width=") {
+      let val = arg.substring(start=8)
+      width = parse_int_simple(val)
     } else if arg == "--sixel" {
       sixel = true
     } else if arg == "--text" {
@@ -240,6 +266,7 @@ fn parse_args() -> Options {
     extract_main,
     headless,
     show_help,
+    width,
   }
 }
 
@@ -261,8 +288,15 @@ async fn main {
     return
   }
   // Calculate viewport size based on mode (TUI uses terminal size)
-  let (viewport_width, viewport_height) = calculate_viewport(options.text)
-  let browser = @shell.Browser::new(viewport_width, viewport_height)
+  let (viewport_width, viewport_height, terminal_cols) = calculate_viewport(
+    options.text,
+    options.width,
+  )
+  let browser = @shell.Browser::new(
+    viewport_width,
+    viewport_height,
+    terminal_cols~,
+  )
   // Set dark mode if requested
   if options.dark {
     browser.set_dark_mode(true)
@@ -273,13 +307,21 @@ async fn main {
   }
   // For JSON/AOM modes, use lightweight navigation (skip CSS cascade and layout)
   if options.json || options.aom {
-    let _ = browser.navigate_lightweight(options.url)
+    try {
+      let _ = browser.navigate_lightweight(options.url)
+    } catch {
+      err => println("Navigation error: \{err}")
+    }
     render_page(browser, options)
     return
   }
   // For Arc90/Grounding/ExtractMain modes, still need full rendering for bounds info
   if options.arc90 || options.grounding || options.extract_main {
-    let _ = browser.navigate(options.url)
+    try {
+      let _ = browser.navigate(options.url)
+    } catch {
+      err => println("Navigation error: \{err}")
+    }
     render_page(browser, options)
     return
   }
@@ -287,7 +329,11 @@ async fn main {
   match options.headless {
     Full => {
       // Render full page content
-      let _ = browser.navigate(options.url)
+      try {
+        let _ = browser.navigate(options.url)
+      } catch {
+        err => println("Navigation error: \{err}")
+      }
       // For full mode, we need to scroll through entire content
       // For now, just render the initial viewport
       // TODO: Implement full page rendering by scrolling through content
@@ -297,7 +343,11 @@ async fn main {
     }
     Viewport => {
       // Render viewport only
-      let _ = browser.navigate(options.url)
+      try {
+        let _ = browser.navigate(options.url)
+      } catch {
+        err => println("Navigation error: \{err}")
+      }
       let text_output = browser.render_output(@shell.OutputMode::Text)
       @tui.print_raw(text_output)
       return
@@ -315,7 +365,11 @@ async fn main {
   // Show loading message (will be cleared when page renders)
   println("Loading " + options.url + "...")
   // Navigate to initial URL
-  let _ = browser.navigate(options.url)
+  try {
+    let _ = browser.navigate(options.url)
+  } catch {
+    err => println("Navigation error: \{err}")
+  }
   render_page(browser, options)
   // Only enter interactive mode for sixel or text mode
   if not(options.sixel) && not(options.text) {
@@ -369,7 +423,7 @@ async fn main {
         match browser.get_focused_link_url() {
           Some(url) => {
             println("Navigating to: " + url)
-            let _ = browser.navigate(url)
+            safe_navigate(browser, url)
             render_page(browser, options)
           }
           None => ()
@@ -380,37 +434,41 @@ async fn main {
         @tui.print_raw(@tui.hide_cursor())
         if url.length() > 0 {
           println("Navigating to: " + url)
-          let _ = browser.navigate(url)
+          safe_navigate(browser, url)
           render_page(browser, options)
         }
       }
       Some(@tui.Refresh) => {
         println("Refreshing...")
-        let _ = browser.navigate(browser.get_current_url())
+        safe_navigate(browser, browser.get_current_url())
         render_page(browser, options)
       }
-      Some(@tui.Back) =>
-        match browser.go_back() {
+      Some(@tui.Back) => {
+        let back_url : String? = browser.go_back() catch { _ => None }
+        match back_url {
           Some(url) => {
             println("Going back to: " + url)
             render_page(browser, options)
           }
           None => ()
         }
-      Some(@tui.Forward) =>
-        match browser.go_forward() {
+      }
+      Some(@tui.Forward) => {
+        let fwd_url : String? = browser.go_forward() catch { _ => None }
+        match fwd_url {
           Some(url) => {
             println("Going forward to: " + url)
             render_page(browser, options)
           }
           None => ()
         }
+      }
       Some(@tui.MouseClick(col, row)) =>
         // Handle mouse click - check for link at position
         match browser.get_link_at(col, row) {
           Some(url) => {
             println("Clicking link: " + url)
-            let _ = browser.navigate(url)
+            safe_navigate(browser, url)
             render_page(browser, options)
           }
           None => ()
@@ -437,7 +495,7 @@ async fn main {
         // Process hint character and navigate if matched
         match browser.process_hint_char(c) {
           Some(url) => {
-            let _ = browser.navigate(url)
+            safe_navigate(browser, url)
             render_page(browser, options)
           }
           None =>

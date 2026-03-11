@@ -90,11 +90,17 @@ struct Browser {
   focused_scrollable : Ref[String?]
   /// No-color mode (disable ANSI color codes)
   mut no_color : Bool
+  /// Terminal columns (for pixel-to-column scaling)
+  terminal_cols : Int
 }
 
 ///|
 /// Create a new browser instance
-pub fn Browser::new(width : Int, height : Int) -> Browser {
+pub fn Browser::new(
+  width : Int,
+  height : Int,
+  terminal_cols? : Int = 80,
+) -> Browser {
   {
     current_url: "",
     request_sandbox: @http.RequestSandbox::Open,
@@ -129,6 +135,7 @@ pub fn Browser::new(width : Int, height : Int) -> Browser {
     element_scroll_states: {},
     focused_scrollable: Ref::new(None),
     no_color: false,
+    terminal_cols,
   }
 }
 
@@ -527,6 +534,8 @@ fn Browser::render_text(self : Browser) -> String {
     }
   }
   // Convert pixel dimensions to character dimensions
+  // Buffer width = viewport / 8 (wider than terminal for proper CSS layout)
+  // Output is clipped to terminal_cols at ANSI rendering stage
   let char_width = self.viewport_width / 8
   let char_height = self.viewport_height / 16
   let char_scroll_y = self.scroll_y / 16
@@ -615,6 +624,8 @@ fn Browser::render_text(self : Browser) -> String {
     }
   }
   // Choose buffer-to-output based on no_color mode
+  // Clip output to terminal_cols (buffer may be wider than terminal)
+  let max_cols = self.terminal_cols
   let ansi = match self.prev_buffer {
     Some(prev) =>
       if force_full {
@@ -622,7 +633,8 @@ fn Browser::render_text(self : Browser) -> String {
           @tui.clear_screen() +
           @tui.buffer_to_plain_with_links(buffer_result.buffer, plain_links)
         } else {
-          @tui.clear_screen() + @tui.buffer_to_ansi(buffer_result.buffer)
+          @tui.clear_screen() +
+          @tui.buffer_to_ansi(buffer_result.buffer, max_cols~)
         }
       } else if dirty_rects.length() > 0 && not(self.no_color) {
         // Diff rendering only for color mode (plain mode always does full redraw)
@@ -639,7 +651,12 @@ fn Browser::render_text(self : Browser) -> String {
           content_height,
           row_offset,
         )
-        @tui.buffer_diff_to_ansi_rects(buffer_result.buffer, prev, dirty_cells)
+        @tui.buffer_diff_to_ansi_rects(
+          buffer_result.buffer,
+          prev,
+          dirty_cells,
+          max_cols~,
+        )
       } else if self.no_color {
         @tui.clear_screen() +
         @tui.buffer_to_plain_with_links(buffer_result.buffer, plain_links)
@@ -651,7 +668,8 @@ fn Browser::render_text(self : Browser) -> String {
         @tui.clear_screen() +
         @tui.buffer_to_plain_with_links(buffer_result.buffer, plain_links)
       } else {
-        @tui.clear_screen() + @tui.buffer_to_ansi(buffer_result.buffer)
+        @tui.clear_screen() +
+        @tui.buffer_to_ansi(buffer_result.buffer, max_cols~)
       }
   }
   self.prev_buffer = Some(buffer_result.buffer)

@@ -95,6 +95,70 @@ priv struct BidiProtocol {
   user_context_prompt_behavior : Map[String, Json] // user context -> unhandledPromptBehavior object
   mut global_download_behavior : Json?
   user_context_download_behavior : Map[String, Json] // user context -> downloadBehavior object
+  installed_web_extensions : Map[String, String] // extension id -> source kind
+  mut next_web_extension_id : Int
+  permission_state_by_scope : Map[String, String] // "<name>|<userContext>|<origin>|<embeddedOrigin>" -> state
+  mut emulation_user_agent_global : String?
+  emulation_user_agent_by_context : Map[String, String] // top-level context -> userAgent override
+  emulation_user_agent_by_user_context : Map[String, String] // user context -> userAgent override
+  mut emulation_locale_global : String?
+  emulation_locale_by_context : Map[String, String] // top-level context -> locale override
+  emulation_locale_by_user_context : Map[String, String] // user context -> locale override
+  mut emulation_timezone_global : String?
+  emulation_timezone_by_context : Map[String, String] // top-level context -> timezone override
+  emulation_timezone_by_user_context : Map[String, String] // user context -> timezone override
+  mut emulation_geolocation_global : Json?
+  emulation_geolocation_by_context : Map[String, Json] // top-level context -> geolocation override
+  emulation_geolocation_by_user_context : Map[String, Json] // user context -> geolocation override
+  mut emulation_network_conditions_global : Json?
+  emulation_network_conditions_by_context : Map[String, Json] // top-level context -> network conditions override
+  emulation_network_conditions_by_user_context : Map[String, Json] // user context -> network conditions override
+  mut emulation_screen_orientation_global : Json?
+  emulation_screen_orientation_by_context : Map[String, Json] // top-level context -> screen orientation override
+  emulation_screen_orientation_by_user_context : Map[String, Json] // user context -> screen orientation override
+  mut emulation_screen_area_global : Json?
+  emulation_screen_area_by_context : Map[String, Json] // top-level context -> screen area override
+  emulation_screen_area_by_user_context : Map[String, Json] // user context -> screen area override
+  geolocation_watch_channel_by_scope : Map[String, String] // "<context>|<watchId>" -> script.message channel
+  geolocation_watch_realm_by_scope : Map[String, String] // "<context>|<watchId>" -> originating realm
+  geolocation_watch_notify_success_by_scope : Map[String, Bool] // "<context>|<watchId>" -> emit coords updates
+  geolocation_watch_notify_error_by_scope : Map[String, Bool] // "<context>|<watchId>" -> emit error updates
+  mut next_geolocation_watch_id : Int
+  bluetooth_adapter_state_by_context : Map[String, String] // context -> absent|powered-off|powered-on
+  bluetooth_simulation_disabled_by_context : Map[String, Bool] // context -> simulation disabled
+  bluetooth_preconnected_devices_by_context : Map[String, Array[Json]] // context -> synthetic device descriptors
+  bluetooth_granted_devices_by_context : Map[String, Array[Json]] // context -> granted synthetic device descriptors
+  bluetooth_pending_prompt_request : Map[String, Int] // context -> deferred requestDevice request id
+  bluetooth_pending_prompt_realm : Map[String, String] // context -> deferred requestDevice realm id
+  bluetooth_pending_prompt_unwrap_result : Map[String, Bool] // context -> deferred requestDevice unwrap mode
+  bluetooth_pending_prompt_id : Map[String, String] // context -> active bluetooth prompt id
+  bluetooth_pending_prompt_device_address : Map[String, String] // context -> prompt-selected device address
+  bluetooth_pending_prompt_device_name : Map[String, String] // context -> prompt-selected device name
+  bluetooth_gatt_connected_by_scope : Map[String, Bool] // "<context>|<address>" -> connected flag
+  bluetooth_services_by_scope : Map[String, Array[String]] // "<context>|<address>" -> primary service uuids
+  bluetooth_characteristics_by_scope : Map[String, Json] // "<context>|<address>|<service>|<characteristic>" -> properties object
+  bluetooth_descriptors_by_scope : Map[String, Bool] // "<context>|<address>|<service>|<characteristic>|<descriptor>" -> descriptor exists
+  bluetooth_pending_gatt_request : Map[String, Int] // context -> deferred gatt.connect request id
+  bluetooth_pending_gatt_realm : Map[String, String] // context -> deferred gatt.connect realm id
+  bluetooth_pending_gatt_unwrap_result : Map[String, Bool] // context -> deferred gatt.connect unwrap mode
+  bluetooth_pending_gatt_address : Map[String, String] // context -> deferred gatt.connect device address
+  bluetooth_pending_gatt_response_kind : Map[String, String] // context -> deferred response mode
+  bluetooth_pending_characteristic_request : Map[String, Int] // context -> deferred characteristic request id
+  bluetooth_pending_characteristic_realm : Map[String, String] // context -> deferred characteristic realm id
+  bluetooth_pending_characteristic_unwrap_result : Map[String, Bool] // context -> deferred characteristic unwrap mode
+  bluetooth_pending_characteristic_address : Map[String, String] // context -> deferred characteristic device address
+  bluetooth_pending_characteristic_service_uuid : Map[String, String] // context -> deferred characteristic service uuid
+  bluetooth_pending_characteristic_uuid : Map[String, String] // context -> deferred characteristic uuid
+  bluetooth_pending_characteristic_type : Map[String, String] // context -> deferred characteristic response type
+  bluetooth_pending_descriptor_request : Map[String, Int] // context -> deferred descriptor request id
+  bluetooth_pending_descriptor_realm : Map[String, String] // context -> deferred descriptor realm id
+  bluetooth_pending_descriptor_unwrap_result : Map[String, Bool] // context -> deferred descriptor unwrap mode
+  bluetooth_pending_descriptor_address : Map[String, String] // context -> deferred descriptor device address
+  bluetooth_pending_descriptor_service_uuid : Map[String, String] // context -> deferred descriptor service uuid
+  bluetooth_pending_descriptor_characteristic_uuid : Map[String, String] // context -> deferred descriptor characteristic uuid
+  bluetooth_pending_descriptor_uuid : Map[String, String] // context -> deferred descriptor uuid
+  bluetooth_pending_descriptor_type : Map[String, String] // context -> deferred descriptor response type
+  mut next_bluetooth_prompt_id : Int
   user_context_viewport_width : Map[String, Int] // user context -> default viewport width override
   user_context_viewport_height : Map[String, Int] // user context -> default viewport height override
   user_context_device_pixel_ratio : Map[String, Double] // user context -> default devicePixelRatio override
@@ -156,6 +220,7 @@ priv struct BidiProtocol {
   input_action_clock_ms : Map[String, Double] // context -> virtual input clock advanced by pause durations
   input_synthetic_events_by_context : Map[String, Array[Json]] // context -> synthetic window.allEvents.events entries
   context_synthetic_scrolled : Map[String, Bool] // context -> synthetic scroll fallback applied
+  speculation_prefetch_target_by_context : Map[String, String] // context -> last synthetic prefetch target
   network_intercepts : Map[String, Json] // intercept id -> network.addIntercept options
   mut next_network_intercept_id : Int
   mut next_network_request_id : Int
@@ -203,6 +268,70 @@ fn BidiProtocol::new() -> BidiProtocol {
     user_context_prompt_behavior: {},
     global_download_behavior: None,
     user_context_download_behavior: {},
+    installed_web_extensions: {},
+    next_web_extension_id: 1,
+    permission_state_by_scope: {},
+    emulation_user_agent_global: None,
+    emulation_user_agent_by_context: {},
+    emulation_user_agent_by_user_context: {},
+    emulation_locale_global: None,
+    emulation_locale_by_context: {},
+    emulation_locale_by_user_context: {},
+    emulation_timezone_global: None,
+    emulation_timezone_by_context: {},
+    emulation_timezone_by_user_context: {},
+    emulation_geolocation_global: None,
+    emulation_geolocation_by_context: {},
+    emulation_geolocation_by_user_context: {},
+    emulation_network_conditions_global: None,
+    emulation_network_conditions_by_context: {},
+    emulation_network_conditions_by_user_context: {},
+    emulation_screen_orientation_global: None,
+    emulation_screen_orientation_by_context: {},
+    emulation_screen_orientation_by_user_context: {},
+    emulation_screen_area_global: None,
+    emulation_screen_area_by_context: {},
+    emulation_screen_area_by_user_context: {},
+    geolocation_watch_channel_by_scope: {},
+    geolocation_watch_realm_by_scope: {},
+    geolocation_watch_notify_success_by_scope: {},
+    geolocation_watch_notify_error_by_scope: {},
+    next_geolocation_watch_id: 1,
+    bluetooth_adapter_state_by_context: {},
+    bluetooth_simulation_disabled_by_context: {},
+    bluetooth_preconnected_devices_by_context: {},
+    bluetooth_granted_devices_by_context: {},
+    bluetooth_pending_prompt_request: {},
+    bluetooth_pending_prompt_realm: {},
+    bluetooth_pending_prompt_unwrap_result: {},
+    bluetooth_pending_prompt_id: {},
+    bluetooth_pending_prompt_device_address: {},
+    bluetooth_pending_prompt_device_name: {},
+    bluetooth_gatt_connected_by_scope: {},
+    bluetooth_services_by_scope: {},
+    bluetooth_characteristics_by_scope: {},
+    bluetooth_descriptors_by_scope: {},
+    bluetooth_pending_gatt_request: {},
+    bluetooth_pending_gatt_realm: {},
+    bluetooth_pending_gatt_unwrap_result: {},
+    bluetooth_pending_gatt_address: {},
+    bluetooth_pending_gatt_response_kind: {},
+    bluetooth_pending_characteristic_request: {},
+    bluetooth_pending_characteristic_realm: {},
+    bluetooth_pending_characteristic_unwrap_result: {},
+    bluetooth_pending_characteristic_address: {},
+    bluetooth_pending_characteristic_service_uuid: {},
+    bluetooth_pending_characteristic_uuid: {},
+    bluetooth_pending_characteristic_type: {},
+    bluetooth_pending_descriptor_request: {},
+    bluetooth_pending_descriptor_realm: {},
+    bluetooth_pending_descriptor_unwrap_result: {},
+    bluetooth_pending_descriptor_address: {},
+    bluetooth_pending_descriptor_service_uuid: {},
+    bluetooth_pending_descriptor_characteristic_uuid: {},
+    bluetooth_pending_descriptor_uuid: {},
+    bluetooth_pending_descriptor_type: {},
+    next_bluetooth_prompt_id: 1,
     user_context_viewport_width: {},
     user_context_viewport_height: {},
     user_context_device_pixel_ratio: {},
@@ -264,6 +393,7 @@ fn BidiProtocol::new() -> BidiProtocol {
     input_action_clock_ms: {},
     input_synthetic_events_by_context: {},
     context_synthetic_scrolled: {},
+    speculation_prefetch_target_by_context: {},
     network_intercepts: {},
     next_network_intercept_id: 1,
     next_network_request_id: 1,
@@ -394,6 +524,368 @@ fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
   for key in download_behavior_keys {
     self.user_context_download_behavior.remove(key)
   }
+  let permission_scope_keys : Array[String] = []
+  for key, _ in self.permission_state_by_scope {
+    permission_scope_keys.push(key)
+  }
+  for key in permission_scope_keys {
+    self.permission_state_by_scope.remove(key)
+  }
+  self.emulation_user_agent_global = None
+  let emulation_user_agent_context_keys : Array[String] = []
+  for key, _ in self.emulation_user_agent_by_context {
+    emulation_user_agent_context_keys.push(key)
+  }
+  for key in emulation_user_agent_context_keys {
+    self.emulation_user_agent_by_context.remove(key)
+  }
+  let emulation_user_agent_user_context_keys : Array[String] = []
+  for key, _ in self.emulation_user_agent_by_user_context {
+    emulation_user_agent_user_context_keys.push(key)
+  }
+  for key in emulation_user_agent_user_context_keys {
+    self.emulation_user_agent_by_user_context.remove(key)
+  }
+  self.emulation_locale_global = None
+  let emulation_locale_context_keys : Array[String] = []
+  for key, _ in self.emulation_locale_by_context {
+    emulation_locale_context_keys.push(key)
+  }
+  for key in emulation_locale_context_keys {
+    self.emulation_locale_by_context.remove(key)
+  }
+  let emulation_locale_user_context_keys : Array[String] = []
+  for key, _ in self.emulation_locale_by_user_context {
+    emulation_locale_user_context_keys.push(key)
+  }
+  for key in emulation_locale_user_context_keys {
+    self.emulation_locale_by_user_context.remove(key)
+  }
+  self.emulation_timezone_global = None
+  let emulation_timezone_context_keys : Array[String] = []
+  for key, _ in self.emulation_timezone_by_context {
+    emulation_timezone_context_keys.push(key)
+  }
+  for key in emulation_timezone_context_keys {
+    self.emulation_timezone_by_context.remove(key)
+  }
+  let emulation_timezone_user_context_keys : Array[String] = []
+  for key, _ in self.emulation_timezone_by_user_context {
+    emulation_timezone_user_context_keys.push(key)
+  }
+  for key in emulation_timezone_user_context_keys {
+    self.emulation_timezone_by_user_context.remove(key)
+  }
+  self.emulation_geolocation_global = None
+  let emulation_geolocation_context_keys : Array[String] = []
+  for key, _ in self.emulation_geolocation_by_context {
+    emulation_geolocation_context_keys.push(key)
+  }
+  for key in emulation_geolocation_context_keys {
+    self.emulation_geolocation_by_context.remove(key)
+  }
+  let emulation_geolocation_user_context_keys : Array[String] = []
+  for key, _ in self.emulation_geolocation_by_user_context {
+    emulation_geolocation_user_context_keys.push(key)
+  }
+  for key in emulation_geolocation_user_context_keys {
+    self.emulation_geolocation_by_user_context.remove(key)
+  }
+  self.emulation_network_conditions_global = None
+  let emulation_network_conditions_context_keys : Array[String] = []
+  for key, _ in self.emulation_network_conditions_by_context {
+    emulation_network_conditions_context_keys.push(key)
+  }
+  for key in emulation_network_conditions_context_keys {
+    self.emulation_network_conditions_by_context.remove(key)
+  }
+  let emulation_network_conditions_user_context_keys : Array[String] = []
+  for key, _ in self.emulation_network_conditions_by_user_context {
+    emulation_network_conditions_user_context_keys.push(key)
+  }
+  for key in emulation_network_conditions_user_context_keys {
+    self.emulation_network_conditions_by_user_context.remove(key)
+  }
+  self.emulation_screen_orientation_global = None
+  let emulation_screen_orientation_context_keys : Array[String] = []
+  for key, _ in self.emulation_screen_orientation_by_context {
+    emulation_screen_orientation_context_keys.push(key)
+  }
+  for key in emulation_screen_orientation_context_keys {
+    self.emulation_screen_orientation_by_context.remove(key)
+  }
+  let emulation_screen_orientation_user_context_keys : Array[String] = []
+  for key, _ in self.emulation_screen_orientation_by_user_context {
+    emulation_screen_orientation_user_context_keys.push(key)
+  }
+  for key in emulation_screen_orientation_user_context_keys {
+    self.emulation_screen_orientation_by_user_context.remove(key)
+  }
+  self.emulation_screen_area_global = None
+  let emulation_screen_area_context_keys : Array[String] = []
+  for key, _ in self.emulation_screen_area_by_context {
+    emulation_screen_area_context_keys.push(key)
+  }
+  for key in emulation_screen_area_context_keys {
+    self.emulation_screen_area_by_context.remove(key)
+  }
+  let emulation_screen_area_user_context_keys : Array[String] = []
+  for key, _ in self.emulation_screen_area_by_user_context {
+    emulation_screen_area_user_context_keys.push(key)
+  }
+  for key in emulation_screen_area_user_context_keys {
+    self.emulation_screen_area_by_user_context.remove(key)
+  }
+  let geolocation_watch_channel_keys : Array[String] = []
+  for key, _ in self.geolocation_watch_channel_by_scope {
+    geolocation_watch_channel_keys.push(key)
+  }
+  for key in geolocation_watch_channel_keys {
+    self.geolocation_watch_channel_by_scope.remove(key)
+    self.geolocation_watch_realm_by_scope.remove(key)
+    self.geolocation_watch_notify_success_by_scope.remove(key)
+    self.geolocation_watch_notify_error_by_scope.remove(key)
+  }
+  self.next_geolocation_watch_id = 1
+  let bluetooth_adapter_state_keys : Array[String] = []
+  for key, _ in self.bluetooth_adapter_state_by_context {
+    bluetooth_adapter_state_keys.push(key)
+  }
+  for key in bluetooth_adapter_state_keys {
+    self.bluetooth_adapter_state_by_context.remove(key)
+  }
+  let bluetooth_disabled_keys : Array[String] = []
+  for key, _ in self.bluetooth_simulation_disabled_by_context {
+    bluetooth_disabled_keys.push(key)
+  }
+  for key in bluetooth_disabled_keys {
+    self.bluetooth_simulation_disabled_by_context.remove(key)
+  }
+  let bluetooth_preconnected_keys : Array[String] = []
+  for key, _ in self.bluetooth_preconnected_devices_by_context {
+    bluetooth_preconnected_keys.push(key)
+  }
+  for key in bluetooth_preconnected_keys {
+    self.bluetooth_preconnected_devices_by_context.remove(key)
+  }
+  let bluetooth_granted_keys : Array[String] = []
+  for key, _ in self.bluetooth_granted_devices_by_context {
+    bluetooth_granted_keys.push(key)
+  }
+  for key in bluetooth_granted_keys {
+    self.bluetooth_granted_devices_by_context.remove(key)
+  }
+  let bluetooth_pending_request_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_prompt_request {
+    bluetooth_pending_request_keys.push(key)
+  }
+  for key in bluetooth_pending_request_keys {
+    self.bluetooth_pending_prompt_request.remove(key)
+  }
+  let bluetooth_pending_realm_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_prompt_realm {
+    bluetooth_pending_realm_keys.push(key)
+  }
+  for key in bluetooth_pending_realm_keys {
+    self.bluetooth_pending_prompt_realm.remove(key)
+  }
+  let bluetooth_pending_unwrap_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_prompt_unwrap_result {
+    bluetooth_pending_unwrap_keys.push(key)
+  }
+  for key in bluetooth_pending_unwrap_keys {
+    self.bluetooth_pending_prompt_unwrap_result.remove(key)
+  }
+  let bluetooth_pending_prompt_id_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_prompt_id {
+    bluetooth_pending_prompt_id_keys.push(key)
+  }
+  for key in bluetooth_pending_prompt_id_keys {
+    self.bluetooth_pending_prompt_id.remove(key)
+  }
+  let bluetooth_pending_address_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_prompt_device_address {
+    bluetooth_pending_address_keys.push(key)
+  }
+  for key in bluetooth_pending_address_keys {
+    self.bluetooth_pending_prompt_device_address.remove(key)
+  }
+  let bluetooth_pending_name_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_prompt_device_name {
+    bluetooth_pending_name_keys.push(key)
+  }
+  for key in bluetooth_pending_name_keys {
+    self.bluetooth_pending_prompt_device_name.remove(key)
+  }
+  let bluetooth_gatt_connected_keys : Array[String] = []
+  for key, _ in self.bluetooth_gatt_connected_by_scope {
+    bluetooth_gatt_connected_keys.push(key)
+  }
+  for key in bluetooth_gatt_connected_keys {
+    self.bluetooth_gatt_connected_by_scope.remove(key)
+  }
+  let bluetooth_service_scope_keys : Array[String] = []
+  for key, _ in self.bluetooth_services_by_scope {
+    bluetooth_service_scope_keys.push(key)
+  }
+  for key in bluetooth_service_scope_keys {
+    self.bluetooth_services_by_scope.remove(key)
+  }
+  let bluetooth_characteristic_scope_keys : Array[String] = []
+  for key, _ in self.bluetooth_characteristics_by_scope {
+    bluetooth_characteristic_scope_keys.push(key)
+  }
+  for key in bluetooth_characteristic_scope_keys {
+    self.bluetooth_characteristics_by_scope.remove(key)
+  }
+  let bluetooth_descriptor_scope_keys : Array[String] = []
+  for key, _ in self.bluetooth_descriptors_by_scope {
+    bluetooth_descriptor_scope_keys.push(key)
+  }
+  for key in bluetooth_descriptor_scope_keys {
+    self.bluetooth_descriptors_by_scope.remove(key)
+  }
+  let bluetooth_pending_gatt_request_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_gatt_request {
+    bluetooth_pending_gatt_request_keys.push(key)
+  }
+  for key in bluetooth_pending_gatt_request_keys {
+    self.bluetooth_pending_gatt_request.remove(key)
+  }
+  let bluetooth_pending_gatt_realm_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_gatt_realm {
+    bluetooth_pending_gatt_realm_keys.push(key)
+  }
+  for key in bluetooth_pending_gatt_realm_keys {
+    self.bluetooth_pending_gatt_realm.remove(key)
+  }
+  let bluetooth_pending_gatt_unwrap_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_gatt_unwrap_result {
+    bluetooth_pending_gatt_unwrap_keys.push(key)
+  }
+  for key in bluetooth_pending_gatt_unwrap_keys {
+    self.bluetooth_pending_gatt_unwrap_result.remove(key)
+  }
+  let bluetooth_pending_gatt_address_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_gatt_address {
+    bluetooth_pending_gatt_address_keys.push(key)
+  }
+  for key in bluetooth_pending_gatt_address_keys {
+    self.bluetooth_pending_gatt_address.remove(key)
+  }
+  let bluetooth_pending_gatt_kind_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_gatt_response_kind {
+    bluetooth_pending_gatt_kind_keys.push(key)
+  }
+  for key in bluetooth_pending_gatt_kind_keys {
+    self.bluetooth_pending_gatt_response_kind.remove(key)
+  }
+  let bluetooth_pending_characteristic_request_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_characteristic_request {
+    bluetooth_pending_characteristic_request_keys.push(key)
+  }
+  for key in bluetooth_pending_characteristic_request_keys {
+    self.bluetooth_pending_characteristic_request.remove(key)
+  }
+  let bluetooth_pending_characteristic_realm_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_characteristic_realm {
+    bluetooth_pending_characteristic_realm_keys.push(key)
+  }
+  for key in bluetooth_pending_characteristic_realm_keys {
+    self.bluetooth_pending_characteristic_realm.remove(key)
+  }
+  let bluetooth_pending_characteristic_unwrap_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_characteristic_unwrap_result {
+    bluetooth_pending_characteristic_unwrap_keys.push(key)
+  }
+  for key in bluetooth_pending_characteristic_unwrap_keys {
+    self.bluetooth_pending_characteristic_unwrap_result.remove(key)
+  }
+  let bluetooth_pending_characteristic_address_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_characteristic_address {
+    bluetooth_pending_characteristic_address_keys.push(key)
+  }
+  for key in bluetooth_pending_characteristic_address_keys {
+    self.bluetooth_pending_characteristic_address.remove(key)
+  }
+  let bluetooth_pending_characteristic_service_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_characteristic_service_uuid {
+    bluetooth_pending_characteristic_service_keys.push(key)
+  }
+  for key in bluetooth_pending_characteristic_service_keys {
+    self.bluetooth_pending_characteristic_service_uuid.remove(key)
+  }
+  let bluetooth_pending_characteristic_uuid_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_characteristic_uuid {
+    bluetooth_pending_characteristic_uuid_keys.push(key)
+  }
+  for key in bluetooth_pending_characteristic_uuid_keys {
+    self.bluetooth_pending_characteristic_uuid.remove(key)
+  }
+  let bluetooth_pending_characteristic_type_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_characteristic_type {
+    bluetooth_pending_characteristic_type_keys.push(key)
+  }
+  for key in bluetooth_pending_characteristic_type_keys {
+    self.bluetooth_pending_characteristic_type.remove(key)
+  }
+  let bluetooth_pending_descriptor_request_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_descriptor_request {
+    bluetooth_pending_descriptor_request_keys.push(key)
+  }
+  for key in bluetooth_pending_descriptor_request_keys {
+    self.bluetooth_pending_descriptor_request.remove(key)
+  }
+  let bluetooth_pending_descriptor_realm_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_descriptor_realm {
+    bluetooth_pending_descriptor_realm_keys.push(key)
+  }
+  for key in bluetooth_pending_descriptor_realm_keys {
+    self.bluetooth_pending_descriptor_realm.remove(key)
+  }
+  let bluetooth_pending_descriptor_unwrap_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_descriptor_unwrap_result {
+    bluetooth_pending_descriptor_unwrap_keys.push(key)
+  }
+  for key in bluetooth_pending_descriptor_unwrap_keys {
+    self.bluetooth_pending_descriptor_unwrap_result.remove(key)
+  }
+  let bluetooth_pending_descriptor_address_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_descriptor_address {
+    bluetooth_pending_descriptor_address_keys.push(key)
+  }
+  for key in bluetooth_pending_descriptor_address_keys {
+    self.bluetooth_pending_descriptor_address.remove(key)
+  }
+  let bluetooth_pending_descriptor_service_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_descriptor_service_uuid {
+    bluetooth_pending_descriptor_service_keys.push(key)
+  }
+  for key in bluetooth_pending_descriptor_service_keys {
+    self.bluetooth_pending_descriptor_service_uuid.remove(key)
+  }
+  let bluetooth_pending_descriptor_characteristic_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_descriptor_characteristic_uuid {
+    bluetooth_pending_descriptor_characteristic_keys.push(key)
+  }
+  for key in bluetooth_pending_descriptor_characteristic_keys {
+    self.bluetooth_pending_descriptor_characteristic_uuid.remove(key)
+  }
+  let bluetooth_pending_descriptor_uuid_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_descriptor_uuid {
+    bluetooth_pending_descriptor_uuid_keys.push(key)
+  }
+  for key in bluetooth_pending_descriptor_uuid_keys {
+    self.bluetooth_pending_descriptor_uuid.remove(key)
+  }
+  let bluetooth_pending_descriptor_type_keys : Array[String] = []
+  for key, _ in self.bluetooth_pending_descriptor_type {
+    bluetooth_pending_descriptor_type_keys.push(key)
+  }
+  for key in bluetooth_pending_descriptor_type_keys {
+    self.bluetooth_pending_descriptor_type.remove(key)
+  }
+  self.next_bluetooth_prompt_id = 1
   let user_context_viewport_width_keys : Array[String] = []
   for key, _ in self.user_context_viewport_width {
     user_context_viewport_width_keys.push(key)
@@ -749,6 +1241,14 @@ fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
     self.input_synthetic_events_by_context.remove(key)
   }
 
+  let speculation_prefetch_target_keys : Array[String] = []
+  for key, _ in self.speculation_prefetch_target_by_context {
+    speculation_prefetch_target_keys.push(key)
+  }
+  for key in speculation_prefetch_target_keys {
+    self.speculation_prefetch_target_by_context.remove(key)
+  }
+
   let intercept_keys : Array[String] = []
   for key, _ in self.network_intercepts {
     intercept_keys.push(key)
@@ -775,6 +1275,14 @@ fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
   }
   self.next_network_data_collector_id = 1
   self.next_preload_script_id = 1
+  let installed_web_extension_keys : Array[String] = []
+  for key, _ in self.installed_web_extensions {
+    installed_web_extension_keys.push(key)
+  }
+  for key in installed_web_extension_keys {
+    self.installed_web_extensions.remove(key)
+  }
+  self.next_web_extension_id = 1
   self.preload_scripts = []
 }
 
@@ -839,7 +1347,11 @@ fn BidiProtocol::dispatch(
     "script" => self.dispatch_script(request, action)
     "input" => self.dispatch_input(request, action)
     "network" => self.dispatch_network(request, action)
+    "emulation" => self.dispatch_emulation(request, action)
+    "bluetooth" => self.dispatch_bluetooth(request, action)
+    "permissions" => self.dispatch_permissions(request, action)
     "storage" => self.dispatch_storage(request, action)
+    "webExtension" => self.dispatch_web_extension(request, action)
     "log" => self.dispatch_log(request, action)
     _ => {
       self.send_error(
@@ -1112,6 +1624,7 @@ fn BidiProtocol::dispatch_browser(
               self.force_close_context_from_input(ctx_id) |> ignore
             }
             self.remove_storage_cookies_for_user_context(id)
+            self.remove_permission_state_for_user_context(id)
             self.network_extra_headers_by_user_context.remove(id)
             self.user_contexts.remove(id)
             self.user_context_prompt_behavior.remove(id)
@@ -1393,6 +1906,17 @@ fn BidiProtocol::dispatch_browsing_context(
       )
       if not(is_valid_navigation_target_url(resolved_url)) {
         self.send_error(request.id, "invalid argument", "url is invalid")
+        return Ok(())
+      }
+      if self.navigation_blocked_by_network_conditions(ctx_id, resolved_url) {
+        let nav_id = self.next_navigation_id.to_string()
+        self.next_navigation_id += 1
+        self.emit_navigation_started_event(ctx_id, resolved_url, nav_id)
+        self.send_error(
+          request.id,
+          "unknown error",
+          "Navigation failed: network offline",
+        )
         return Ok(())
       }
       if should_fail_navigation_with_unknown_error(resolved_url) {
@@ -2763,6 +3287,15 @@ fn BidiProtocol::handle_browsing_context_navigate_with_state(
   )
   if not(is_valid_navigation_target_url(resolved_url)) {
     self.send_error(request_id, "invalid argument", "url is invalid")
+    return
+  }
+  if self.navigation_blocked_by_network_conditions(ctx_id, resolved_url) {
+    let nav_id = self.next_navigation_id.to_string()
+    self.next_navigation_id += 1
+    self.emit_navigation_started_event(ctx_id, resolved_url, nav_id)
+    self.send_error(
+      request_id, "unknown error", "Navigation failed: network offline",
+    )
     return
   }
   if should_fail_navigation_with_unknown_error(resolved_url) {
@@ -6186,6 +6719,15 @@ fn BidiProtocol::handle_script_prepare_beforeunload_page_for_test_internal(
         self.send_error(request_id, "invalid argument", "url is invalid")
         return
       }
+      if self.navigation_blocked_by_network_conditions(ctx_id, resolved_url) {
+        let nav_id = self.next_navigation_id.to_string()
+        self.next_navigation_id += 1
+        self.emit_navigation_started_event(ctx_id, resolved_url, nav_id)
+        self.send_error(
+          request_id, "unknown error", "Navigation failed: network offline",
+        )
+        return
+      }
       if should_fail_navigation_with_unknown_error(resolved_url) {
         let nav_id = self.next_navigation_id.to_string()
         self.next_navigation_id += 1
@@ -8271,6 +8813,14 @@ fn BidiProtocol::handle_script_evaluate(
     ) {
     return
   }
+  if self.try_handle_synthetic_speculation_eval(
+      request.id,
+      ctx_id,
+      realm_id,
+      expr,
+    ) {
+    return
+  }
   if self.try_handle_synthetic_user_prompt(request.id, ctx_id, realm_id, expr) {
     return
   }
@@ -8289,6 +8839,42 @@ fn BidiProtocol::handle_script_evaluate(
     return
   }
   if self.try_handle_synthetic_window_location_href_eval(
+      request.id,
+      ctx_id,
+      realm_id,
+      expr,
+      unwrap_result,
+    ) {
+    return
+  }
+  if self.try_handle_synthetic_bluetooth_availability_eval(
+      request.id,
+      ctx_id,
+      realm_id,
+      expr,
+      unwrap_result,
+    ) {
+    return
+  }
+  if self.try_handle_synthetic_user_agent_fetch_eval(
+      request.id,
+      ctx_id,
+      realm_id,
+      expr,
+      unwrap_result,
+    ) {
+    return
+  }
+  if self.try_handle_synthetic_locale_eval(
+      request.id,
+      ctx_id,
+      realm_id,
+      expr,
+      unwrap_result,
+    ) {
+    return
+  }
+  if self.try_handle_synthetic_timezone_eval(
       request.id,
       ctx_id,
       realm_id,
@@ -8578,6 +9164,63 @@ fn BidiProtocol::handle_script_call_function(
       ctx_id_call,
       realm_id_call,
       func,
+      unwrap_result,
+    ) {
+    return
+  }
+  if self.try_handle_synthetic_bluetooth_request_device_call(
+      request.id,
+      ctx_id_call,
+      realm_id_call,
+      func,
+      request.params,
+      unwrap_result,
+    ) {
+    return
+  }
+  if self.try_handle_synthetic_bluetooth_gatt_call(
+      request.id,
+      ctx_id_call,
+      realm_id_call,
+      func,
+      unwrap_result,
+    ) {
+    return
+  }
+  if self.try_handle_synthetic_window_location_origin_call(
+      request.id,
+      ctx_id_call,
+      realm_id_call,
+      func,
+      unwrap_result,
+    ) {
+    return
+  }
+  if self.try_handle_synthetic_network_conditions_fetch_call(
+      request.id,
+      ctx_id_call,
+      realm_id_call,
+      func,
+      request.params,
+      unwrap_result,
+    ) {
+    return
+  }
+  if self.try_handle_synthetic_permissions_query_call(
+      request.id,
+      ctx_id_call,
+      realm_id_call,
+      func,
+      unwrap_result,
+    ) {
+    return
+  }
+  if self.try_handle_synthetic_geolocation_call(
+      request.id,
+      ctx_id_call,
+      realm_id_call,
+      func,
+      request.params,
       unwrap_result,
     ) {
     return
@@ -12717,6 +13360,100 @@ fn BidiProtocol::try_handle_synthetic_register_service_worker_eval(
 }
 
 ///|
+extern "js" fn js_extract_speculation_prefetch_target(
+  expression : String,
+) -> String =
+  #| (expression) => {
+  #|   try {
+  #|     const source = String(expression ?? "");
+  #|     const match = source.match(/"href_matches"\s*:\s*"([^"]+)"/);
+  #|     return match ? String(match[1] || "") : "";
+  #|   } catch (_) {
+  #|     return "";
+  #|   }
+  #| }
+
+///|
+fn is_synthetic_speculation_rules_expression(expression : String) -> Bool {
+  (
+    expression.contains("script.type = 'speculationrules'") ||
+    expression.contains("script.type = \"speculationrules\"")
+  ) &&
+  expression.contains("document.head.appendChild(script)")
+}
+
+///|
+fn is_synthetic_speculation_success_click(expression : String) -> Bool {
+  expression.contains("prefetchLink.click()")
+}
+
+///|
+fn BidiProtocol::emit_speculation_prefetch_status_updated(
+  self : BidiProtocol,
+  ctx_id : String,
+  url : String,
+  status : String,
+) -> Unit {
+  let event_name = "speculation.prefetchStatusUpdated"
+  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+    return
+  }
+  self.outbox.push(
+    Event({
+      event_method: event_name,
+      params: make_object({
+        "context": Json::string(ctx_id),
+        "url": Json::string(url),
+        "status": Json::string(status),
+      }),
+    }),
+  )
+}
+
+///|
+fn BidiProtocol::try_handle_synthetic_speculation_eval(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  realm_id : String,
+  expression : String,
+) -> Bool {
+  let trimmed = expression.trim().to_string()
+  if is_synthetic_speculation_rules_expression(trimmed) {
+    let target_url = js_extract_speculation_prefetch_target(trimmed)
+    if target_url != "" {
+      self.speculation_prefetch_target_by_context[ctx_id] = target_url
+      self.emit_speculation_prefetch_status_updated(
+        ctx_id, target_url, "pending",
+      )
+      let terminal_status = if target_url.contains("/nonexistent/") ||
+        target_url.contains("/404") {
+        "failure"
+      } else {
+        "ready"
+      }
+      self.emit_speculation_prefetch_status_updated(
+        ctx_id, target_url, terminal_status,
+      )
+    }
+    self.send_script_undefined_result(request_id, realm_id)
+    return true
+  }
+  if is_synthetic_speculation_success_click(trimmed) {
+    match self.speculation_prefetch_target_by_context.get(ctx_id) {
+      Some(target_url) =>
+        self.emit_speculation_prefetch_status_updated(
+          ctx_id, target_url, "success",
+        )
+      None => ()
+    }
+    self.send_script_undefined_result(request_id, realm_id)
+    return true
+  }
+  false
+}
+
+///|
 fn is_document_dimensions_expression(expression : String) -> Bool {
   expression.contains("document.documentElement.scrollHeight") &&
   expression.contains("document.documentElement.scrollWidth")
@@ -14743,7 +15480,7 @@ fn BidiProtocol::resolve_effective_device_pixel_ratio(
 }
 
 ///|
-/// Apply effective viewport/devicePixelRatio to runtime context window.
+/// Apply effective runtime overrides to runtime context window.
 fn BidiProtocol::apply_effective_viewport_to_runtime_context(
   self : BidiProtocol,
   runtime_ctx_id : String,
@@ -14753,6 +15490,34 @@ fn BidiProtocol::apply_effective_viewport_to_runtime_context(
   let height = self.resolve_effective_viewport_height(logical_ctx_id)
   let dpr = self.resolve_effective_device_pixel_ratio(logical_ctx_id)
   set_runtime_context_viewport(runtime_ctx_id, width, height, dpr)
+  set_runtime_context_user_agent(
+    runtime_ctx_id,
+    self.resolve_effective_user_agent(logical_ctx_id),
+  )
+  set_runtime_context_locale(
+    runtime_ctx_id,
+    self.resolve_effective_locale(logical_ctx_id),
+  )
+  set_runtime_context_network_online(
+    runtime_ctx_id,
+    not(self.resolve_effective_network_offline(logical_ctx_id)),
+  )
+  let screen_orientation = self.resolve_effective_screen_orientation(
+    logical_ctx_id,
+  )
+  set_runtime_context_screen_orientation(
+    runtime_ctx_id,
+    get_string_field(screen_orientation, "type").unwrap_or("portrait-primary"),
+    get_int_field(screen_orientation, "angle").unwrap_or(0),
+  )
+  let screen_area = self.resolve_effective_screen_area(logical_ctx_id)
+  set_runtime_context_screen_area(
+    runtime_ctx_id,
+    get_int_field(screen_area, "width").unwrap_or(width),
+    get_int_field(screen_area, "height").unwrap_or(height),
+    get_int_field(screen_area, "availWidth").unwrap_or(width),
+    get_int_field(screen_area, "availHeight").unwrap_or(height),
+  )
 }
 
 ///|
@@ -18878,6 +19643,10 @@ fn is_valid_session_subscription_event_name(name : String) -> Bool {
     "network.fetchError" => true
     "network.authRequired" => true
     "input.fileDialogOpened" => true
+    "bluetooth.requestDevicePromptUpdated" => true
+    "bluetooth.gattConnectionAttempted" => true
+    "bluetooth.characteristicEventGenerated" => true
+    "bluetooth.descriptorEventGenerated" => true
     "speculation.prefetchStatusUpdated" => true
     _ => false
   }

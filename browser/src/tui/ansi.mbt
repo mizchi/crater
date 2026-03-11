@@ -93,16 +93,21 @@ pub fn ansi_bg_color(color : @types.Color) -> String {
 
 ///|
 /// Convert CharBuffer to ANSI-encoded string
-pub fn buffer_to_ansi(buf : CharBuffer) -> String {
+pub fn buffer_to_ansi(buf : CharBuffer, max_cols? : Int = 0) -> String {
   let sb = StringBuilder::new()
   let mut last_fg = -1
   let mut last_bg = -1
   let mut last_bold = false
   let mut last_underline = false
+  let cols = if max_cols > 0 && max_cols < buf.width {
+    max_cols
+  } else {
+    buf.width
+  }
   for row = 0; row < buf.height; row = row + 1 {
     // Move to start of row (1-indexed)
     sb.write_string(ansi_move_to(row + 1, 1))
-    for col = 0; col < buf.width; col = col + 1 {
+    for col = 0; col < cols; col = col + 1 {
       let cell = buf.get_cell(col, row)
       // Skip wide char placeholder
       if cell.char == '\u0000' {
@@ -160,7 +165,11 @@ pub fn buffer_to_ansi(buf : CharBuffer) -> String {
 
 ///|
 /// Optimized ANSI output with diff (only output changed cells)
-pub fn buffer_diff_to_ansi(current : CharBuffer, prev : CharBuffer) -> String {
+pub fn buffer_diff_to_ansi(
+  current : CharBuffer,
+  prev : CharBuffer,
+  max_cols? : Int = 0,
+) -> String {
   let sb = StringBuilder::new()
   let mut last_row = -1
   let mut last_col = -1
@@ -168,8 +177,13 @@ pub fn buffer_diff_to_ansi(current : CharBuffer, prev : CharBuffer) -> String {
   let mut last_bg = -1
   let mut last_bold = false
   let mut last_underline = false
+  let cols = if max_cols > 0 && max_cols < current.width {
+    max_cols
+  } else {
+    current.width
+  }
   for row = 0; row < current.height; row = row + 1 {
-    for col = 0; col < current.width; col = col + 1 {
+    for col = 0; col < cols; col = col + 1 {
       let cell = current.get_cell(col, row)
       let prev_cell = prev.get_cell(col, row)
       // Skip if unchanged
@@ -244,6 +258,7 @@ pub fn buffer_diff_to_ansi_rects(
   current : CharBuffer,
   prev : CharBuffer,
   rects : Array[DirtyRect],
+  max_cols? : Int = 0,
 ) -> String {
   if rects.length() == 0 {
     return ""
@@ -255,13 +270,22 @@ pub fn buffer_diff_to_ansi_rects(
   let mut last_bg = -1
   let mut last_bold = false
   let mut last_underline = false
+  let clip_width = if max_cols > 0 && max_cols < current.width {
+    max_cols
+  } else {
+    current.width
+  }
   let visited : Array[Bool] = Array::make(current.width * current.height, false)
   for rect in rects {
     let mut x0 = rect.col
     let mut y0 = rect.row
     let mut x1 = rect.col + rect.width
     let mut y1 = rect.row + rect.height
-    if x1 <= 0 || y1 <= 0 || x0 >= current.width || y0 >= current.height {
+    // Clip to terminal width
+    if x1 > clip_width {
+      x1 = clip_width
+    }
+    if x1 <= 0 || y1 <= 0 || x0 >= clip_width || y0 >= current.height {
       continue
     }
     if x0 < 0 {

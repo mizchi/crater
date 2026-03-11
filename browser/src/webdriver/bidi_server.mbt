@@ -1673,11 +1673,65 @@ extern "js" fn js_evaluate_expression(
   #|       });
   #|     };
   #|     globalThis.matchMedia = function(query) {
+  #|       const source = String(query ?? "");
+  #|       const normalized = source.trim().toLowerCase();
+  #|       const match = normalized.match(/^\(\s*([a-z-]+)\s*:\s*(-?\d+(?:\.\d+)?)px\s*\)$/);
+  #|       const activeWindow = globalThis.window && typeof globalThis.window === "object"
+  #|         ? globalThis.window
+  #|         : globalThis;
+  #|       const screen = activeWindow.screen && typeof activeWindow.screen === "object"
+  #|         ? activeWindow.screen
+  #|         : {};
+  #|       const screenWidth = Number(screen.width);
+  #|       const screenHeight = Number(screen.height);
+  #|       const viewportWidth = Number(activeWindow.innerWidth);
+  #|       const viewportHeight = Number(activeWindow.innerHeight);
+  #|       const resolveMetric = (feature) => {
+  #|         switch (feature) {
+  #|           case "min-device-width":
+  #|           case "max-device-width":
+  #|           case "device-width":
+  #|             return screenWidth;
+  #|           case "min-device-height":
+  #|           case "max-device-height":
+  #|           case "device-height":
+  #|             return screenHeight;
+  #|           case "min-width":
+  #|           case "max-width":
+  #|           case "width":
+  #|             return viewportWidth;
+  #|           case "min-height":
+  #|           case "max-height":
+  #|           case "height":
+  #|             return viewportHeight;
+  #|           default:
+  #|             return NaN;
+  #|         }
+  #|       };
+  #|       let matches = false;
+  #|       if (match) {
+  #|         const feature = match[1];
+  #|         const expected = Number(match[2]);
+  #|         const actual = resolveMetric(feature);
+  #|         if (Number.isFinite(actual) && Number.isFinite(expected)) {
+  #|           if (feature.startsWith("min-")) {
+  #|             matches = actual >= expected;
+  #|           } else if (feature.startsWith("max-")) {
+  #|             matches = actual <= expected;
+  #|           } else {
+  #|             matches = actual === expected;
+  #|           }
+  #|         }
+  #|       }
   #|       return {
-  #|         matches: false,
-  #|         media: query,
+  #|         matches,
+  #|         media: source,
+  #|         onchange: null,
   #|         addEventListener: function() {},
-  #|         removeEventListener: function() {}
+  #|         removeEventListener: function() {},
+  #|         addListener: function() {},
+  #|         removeListener: function() {},
+  #|         dispatchEvent: function() { return true; }
   #|       };
   #|     };
   #|     globalThis.innerWidth = 1024;
@@ -1820,6 +1874,9 @@ extern "js" fn js_evaluate_expression(
   #|       globalThis.__rawFetch = originalFetch;
   #|       const fetchWithPolicy = (url, options, enforceCors) => {
   #|         const resolvedUrl = globalThis.__resolveUrl(url, globalThis.__pageUrl);
+  #|         if (globalThis.navigator && globalThis.navigator.onLine === false) {
+  #|           return Promise.reject(new TypeError('Network is offline'));
+  #|         }
   #|         const sourceOrigin = getOrigin(globalThis.__pageUrl || '');
   #|         const targetOrigin = getOrigin(resolvedUrl);
   #|         const mode = (options && options.mode) || 'cors';
@@ -1830,8 +1887,15 @@ extern "js" fn js_evaluate_expression(
   #|           return Promise.reject(new TypeError('Blocked by same-origin policy'));
   #|         }
   #|         let reqOptions = options || {};
+  #|         const headers = new Headers(reqOptions.headers || {});
+  #|         if (!headers.has('User-Agent') && globalThis.navigator && globalThis.navigator.userAgent) {
+  #|           headers.set('User-Agent', String(globalThis.navigator.userAgent));
+  #|         }
+  #|         if (!headers.has('Accept-Language') && globalThis.navigator && globalThis.navigator.language) {
+  #|           headers.set('Accept-Language', String(globalThis.navigator.language));
+  #|         }
+  #|         reqOptions = { ...reqOptions, headers };
   #|         if (enforceCors && (mode === 'cors' || mode === 'same-origin') && sourceOrigin && targetOrigin && sourceOrigin !== targetOrigin) {
-  #|           const headers = new Headers(reqOptions.headers || {});
   #|           if (!headers.has('Origin')) headers.set('Origin', sourceOrigin);
   #|           reqOptions = { ...reqOptions, headers };
   #|         }
@@ -1898,6 +1962,13 @@ extern "js" fn js_evaluate_expression(
   #|         };
   #|
   #|         xhr.send = function() {
+  #|           if (globalThis.navigator && globalThis.navigator.onLine === false) {
+  #|             const err = new TypeError('Network is offline');
+  #|             if (typeof this.onerror === 'function') {
+  #|               try { this.onerror(err); } catch {}
+  #|             }
+  #|             throw err;
+  #|           }
   #|           const sourceOrigin = this.__sourceOrigin || getOrigin(globalThis.__pageUrl || '');
   #|           const targetOrigin = this.__targetOrigin || getOrigin(this.__requestUrl || '');
   #|           if (!sandboxAllows(targetOrigin, sourceOrigin)) {
@@ -2705,6 +2776,33 @@ extern "js" fn js_evaluate_expression(
   #|     const win = {};
   #|     win.__bidiContextId = currentCtx;
   #|     win.window = win;
+  #|     const baseNavigator = globalThis.navigator && typeof globalThis.navigator === 'object'
+  #|       ? globalThis.navigator
+  #|       : {
+  #|           userAgent: 'Crater/1.0 (MoonBit; BiDi)',
+  #|           platform: 'Crater',
+  #|           language: 'en-US',
+  #|           languages: ['en-US', 'en'],
+  #|           onLine: true,
+  #|           cookieEnabled: false,
+  #|           userActivation: {
+  #|             isActive: false,
+  #|             hasBeenActive: false,
+  #|           },
+  #|         };
+  #|     win.navigator = {
+  #|       userAgent: String(baseNavigator.userAgent ?? 'Crater/1.0 (MoonBit; BiDi)'),
+  #|       platform: String(baseNavigator.platform ?? 'Crater'),
+  #|       language: String(baseNavigator.language ?? 'en-US'),
+  #|       languages: Array.isArray(baseNavigator.languages)
+  #|         ? Array.from(baseNavigator.languages)
+  #|         : ['en-US', 'en'],
+  #|       onLine: baseNavigator.onLine !== false,
+  #|       cookieEnabled: Boolean(baseNavigator.cookieEnabled ?? false),
+  #|       userActivation: baseNavigator.userActivation && typeof baseNavigator.userActivation === 'object'
+  #|         ? { ...baseNavigator.userActivation }
+  #|         : { isActive: false, hasBeenActive: false },
+  #|     };
   #|     win.innerWidth = Number(globalThis.innerWidth || 1024);
   #|     win.innerHeight = Number(globalThis.innerHeight || 768);
   #|     win.outerWidth = Number(globalThis.outerWidth || win.innerWidth);
@@ -2736,6 +2834,11 @@ extern "js" fn js_evaluate_expression(
   #|   const frameWindows = Array.isArray(contextWindow.frames) ? contextWindow.frames : [];
   #|   globalThis.window = contextWindow;
   #|   globalThis.frames = frameWindows;
+  #|   if (contextWindow.navigator && typeof contextWindow.navigator === 'object') {
+  #|     globalThis.navigator = contextWindow.navigator;
+  #|   } else if (globalThis.navigator && typeof globalThis.navigator === 'object') {
+  #|     contextWindow.navigator = globalThis.navigator;
+  #|   }
   #|   if (contextWindow.document && typeof contextWindow.document === "object") {
   #|     globalThis.document = contextWindow.document;
   #|   } else if (globalThis.document && typeof globalThis.document === "object") {
@@ -4511,7 +4614,83 @@ extern "js" fn js_set_runtime_context(ctx_id : String) -> Unit =
   #|       devicePixelRatio: Number.isFinite(dpr) && dpr > 0 ? dpr : fallback.devicePixelRatio,
   #|     };
   #|   };
+  #|   const resolveScreenOrientationState = (id) => {
+  #|     const fallback = { type: "portrait-primary", angle: 0 };
+  #|     const map = globalThis.__bidiContextScreenOrientationState;
+  #|     if (!map || !map.has(id)) return fallback;
+  #|     const raw = map.get(id) || {};
+  #|     const type = typeof raw.type === "string" && raw.type ? raw.type : fallback.type;
+  #|     const angle = Number(raw.angle);
+  #|     return {
+  #|       type,
+  #|       angle: Number.isFinite(angle) ? angle : fallback.angle,
+  #|     };
+  #|   };
+  #|   const resolveScreenAreaState = (id, fallbackMetrics) => {
+  #|     const fallback = {
+  #|       width: fallbackMetrics.width,
+  #|       height: fallbackMetrics.height,
+  #|       availWidth: fallbackMetrics.width,
+  #|       availHeight: fallbackMetrics.height,
+  #|     };
+  #|     const map = globalThis.__bidiContextScreenAreaState;
+  #|     if (!map || !map.has(id)) return fallback;
+  #|     const raw = map.get(id) || {};
+  #|     const width = Number(raw.width);
+  #|     const height = Number(raw.height);
+  #|     const availWidth = Number(raw.availWidth);
+  #|     const availHeight = Number(raw.availHeight);
+  #|     return {
+  #|       width: Number.isFinite(width) && width >= 0 ? width : fallback.width,
+  #|       height: Number.isFinite(height) && height >= 0 ? height : fallback.height,
+  #|       availWidth: Number.isFinite(availWidth) && availWidth >= 0 ? availWidth : fallback.availWidth,
+  #|       availHeight: Number.isFinite(availHeight) && availHeight >= 0 ? availHeight : fallback.availHeight,
+  #|     };
+  #|   };
+  #|   const ensureOrientationTarget = (orientation, state) => {
+  #|     const target = orientation && typeof orientation === "object" ? orientation : {};
+  #|     target.type = state.type;
+  #|     target.angle = state.angle;
+  #|     if (!target._listeners || typeof target._listeners !== "object") target._listeners = {};
+  #|     if (typeof target.addEventListener !== "function") {
+  #|       target.addEventListener = function(type, fn) {
+  #|         if (!this._listeners[type]) this._listeners[type] = [];
+  #|         this._listeners[type].push(fn);
+  #|       };
+  #|     }
+  #|     if (typeof target.removeEventListener !== "function") {
+  #|       target.removeEventListener = function(type, fn) {
+  #|         if (!this._listeners[type]) return;
+  #|         this._listeners[type] = this._listeners[type].filter((entry) => entry !== fn);
+  #|       };
+  #|     }
+  #|     if (typeof target.dispatchEvent !== "function") {
+  #|       target.dispatchEvent = function(event) {
+  #|         try { event.currentTarget = this; } catch (_e) {}
+  #|         try { event.target = this; } catch (_e) {}
+  #|         const listeners = this._listeners[event.type] || [];
+  #|         for (const fn of listeners) {
+  #|           try { fn.call(this, event); } catch (_e) {}
+  #|         }
+  #|         return !event.defaultPrevented;
+  #|       };
+  #|     }
+  #|     return target;
+  #|   };
+  #|   const ensureScreenObject = (win, orientationState, screenMetrics) => {
+  #|     if (!win || typeof win !== "object") return null;
+  #|     const screen = win.screen && typeof win.screen === "object" ? win.screen : {};
+  #|     screen.width = screenMetrics.width;
+  #|     screen.height = screenMetrics.height;
+  #|     screen.availWidth = screenMetrics.availWidth;
+  #|     screen.availHeight = screenMetrics.availHeight;
+  #|     screen.orientation = ensureOrientationTarget(screen.orientation, orientationState);
+  #|     win.screen = screen;
+  #|     return screen;
+  #|   };
   #|   const metrics = resolveViewportState(String(ctxId));
+  #|   const screenOrientationState = resolveScreenOrientationState(String(ctxId));
+  #|   const screenAreaState = resolveScreenAreaState(String(ctxId), metrics);
   #|   if (!globalThis.__bidiContextWindows.has(ctxId)) {
   #|     const win = {};
   #|     win.__bidiContextId = String(ctxId);
@@ -4550,9 +4729,12 @@ extern "js" fn js_set_runtime_context(ctx_id : String) -> Unit =
   #|     contextWindow.outerWidth = metrics.width;
   #|     contextWindow.outerHeight = metrics.height;
   #|     contextWindow.devicePixelRatio = metrics.devicePixelRatio;
+  #|     const screen = ensureScreenObject(contextWindow, screenOrientationState, screenAreaState);
   #|     const frameWindows = Array.isArray(contextWindow.frames) ? contextWindow.frames : [];
   #|     globalThis.window = contextWindow;
+  #|     contextWindow.matchMedia = globalThis.matchMedia;
   #|     globalThis.frames = frameWindows;
+  #|     globalThis.screen = screen;
   #|     globalThis.innerWidth = metrics.width;
   #|     globalThis.innerHeight = metrics.height;
   #|     globalThis.outerWidth = metrics.width;
@@ -4811,6 +4993,313 @@ pub fn set_runtime_context_viewport(
   device_pixel_ratio : Double,
 ) -> Unit {
   js_set_runtime_context_viewport(ctx_id, width, height, device_pixel_ratio)
+}
+
+///|
+/// Set runtime navigator.userAgent for a specific context.
+extern "js" fn js_set_runtime_context_user_agent(
+  ctx_id : String,
+  user_agent : String,
+) -> Unit =
+  #| (ctxId, userAgent) => {
+  #|   const normalized = String(userAgent ?? "Crater/1.0 (MoonBit; BiDi)");
+  #|   if (globalThis.__bidiContextWindows && globalThis.__bidiContextWindows.has(ctxId)) {
+  #|     const win = globalThis.__bidiContextWindows.get(ctxId);
+  #|     if (win && typeof win === "object") {
+  #|       if (!win.navigator || typeof win.navigator !== "object") {
+  #|         win.navigator = { userAgent: normalized };
+  #|       } else {
+  #|         win.navigator.userAgent = normalized;
+  #|       }
+  #|     }
+  #|   }
+  #|   if (String(globalThis.__bidiCurrentContext || "") === String(ctxId)) {
+  #|     if (!globalThis.navigator || typeof globalThis.navigator !== "object") {
+  #|       globalThis.navigator = { userAgent: normalized };
+  #|     } else {
+  #|       globalThis.navigator.userAgent = normalized;
+  #|     }
+  #|   }
+  #| }
+
+///|
+/// Set runtime navigator.userAgent for a specific context.
+pub fn set_runtime_context_user_agent(
+  ctx_id : String,
+  user_agent : String,
+) -> Unit {
+  js_set_runtime_context_user_agent(ctx_id, user_agent)
+}
+
+///|
+/// Set runtime navigator.language(s) for a specific context.
+extern "js" fn js_set_runtime_context_locale(
+  ctx_id : String,
+  locale : String,
+) -> Unit =
+  #| (ctxId, locale) => {
+  #|   const normalized = String(locale ?? "en-US");
+  #|   const languages = [normalized];
+  #|   if (globalThis.__bidiContextWindows && globalThis.__bidiContextWindows.has(ctxId)) {
+  #|     const win = globalThis.__bidiContextWindows.get(ctxId);
+  #|     if (win && typeof win === "object") {
+  #|       if (!win.navigator || typeof win.navigator !== "object") {
+  #|         win.navigator = { language: normalized, languages };
+  #|       } else {
+  #|         win.navigator.language = normalized;
+  #|         win.navigator.languages = Array.from(languages);
+  #|       }
+  #|     }
+  #|   }
+  #|   if (String(globalThis.__bidiCurrentContext || "") === String(ctxId)) {
+  #|     if (!globalThis.navigator || typeof globalThis.navigator !== "object") {
+  #|       globalThis.navigator = { language: normalized, languages };
+  #|     } else {
+  #|       globalThis.navigator.language = normalized;
+  #|       globalThis.navigator.languages = Array.from(languages);
+  #|     }
+  #|   }
+  #| }
+
+///|
+/// Set runtime navigator.language(s) for a specific context.
+pub fn set_runtime_context_locale(ctx_id : String, locale : String) -> Unit {
+  js_set_runtime_context_locale(ctx_id, locale)
+}
+
+///|
+extern "js" fn js_set_runtime_context_network_online(
+  ctx_id : String,
+  is_online : Bool,
+) -> Unit =
+  #| (ctxId, isOnline) => {
+  #|   const normalized = !!isOnline;
+  #|   const dispatchStateEvent = (target, type) => {
+  #|     if (!target || typeof target.dispatchEvent !== "function") return;
+  #|     let event;
+  #|     if (typeof globalThis.__bidiCreateEvent === "function") {
+  #|       event = globalThis.__bidiCreateEvent(type, { bubbles: false, cancelable: false });
+  #|     } else {
+  #|       event = { type, bubbles: false, cancelable: false, defaultPrevented: false };
+  #|     }
+  #|     try { event.isTrusted = true; } catch (_e) {}
+  #|     try { target.dispatchEvent(event); } catch (_e) {}
+  #|   };
+  #|   const ensureNavigator = (target) => {
+  #|     if (!target || typeof target !== "object") return null;
+  #|     if (!target.navigator || typeof target.navigator !== "object") {
+  #|       target.navigator = { onLine: normalized };
+  #|     }
+  #|     return target.navigator;
+  #|   };
+  #|   let contextWindow = null;
+  #|   let previousOnline = null;
+  #|   if (globalThis.__bidiContextWindows && globalThis.__bidiContextWindows.has(ctxId)) {
+  #|     contextWindow = globalThis.__bidiContextWindows.get(ctxId);
+  #|     const navigator = ensureNavigator(contextWindow);
+  #|     if (navigator) {
+  #|       previousOnline = navigator.onLine !== false;
+  #|       navigator.onLine = normalized;
+  #|     }
+  #|   }
+  #|   if (String(globalThis.__bidiCurrentContext || "") === String(ctxId)) {
+  #|     const globalNavigator = ensureNavigator(globalThis);
+  #|     if (globalNavigator) globalNavigator.onLine = normalized;
+  #|     const activeWindow = globalThis.window && typeof globalThis.window === "object"
+  #|       ? globalThis.window
+  #|       : null;
+  #|     if (activeWindow && activeWindow !== contextWindow) {
+  #|       const windowNavigator = ensureNavigator(activeWindow);
+  #|       if (windowNavigator) {
+  #|         const prev = windowNavigator.onLine !== false;
+  #|         windowNavigator.onLine = normalized;
+  #|         if (prev !== normalized) {
+  #|           dispatchStateEvent(activeWindow, normalized ? "online" : "offline");
+  #|         }
+  #|       }
+  #|     }
+  #|   }
+  #|   if (contextWindow && previousOnline !== null && previousOnline !== normalized) {
+  #|     dispatchStateEvent(contextWindow, normalized ? "online" : "offline");
+  #|   }
+  #| }
+
+///|
+pub fn set_runtime_context_network_online(
+  ctx_id : String,
+  is_online : Bool,
+) -> Unit {
+  js_set_runtime_context_network_online(ctx_id, is_online)
+}
+
+///|
+extern "js" fn js_set_runtime_context_screen_orientation(
+  ctx_id : String,
+  orientation_type : String,
+  angle : Int,
+) -> Unit =
+  #| (ctxId, orientationType, angle) => {
+  #|   if (!globalThis.__bidiContextScreenOrientationState) {
+  #|     globalThis.__bidiContextScreenOrientationState = new Map();
+  #|   }
+  #|   const normalizedType =
+  #|     typeof orientationType === "string" && orientationType
+  #|       ? orientationType
+  #|       : "portrait-primary";
+  #|   const normalizedAngle = Number.isFinite(Number(angle)) ? Number(angle) : 0;
+  #|   globalThis.__bidiContextScreenOrientationState.set(String(ctxId), {
+  #|     type: normalizedType,
+  #|     angle: normalizedAngle,
+  #|   });
+  #|   const dispatchChange = (target) => {
+  #|     if (!target || typeof target.dispatchEvent !== "function") return;
+  #|     let event;
+  #|     if (typeof globalThis.__bidiCreateEvent === "function") {
+  #|       event = globalThis.__bidiCreateEvent("change", { bubbles: false, cancelable: false });
+  #|     } else {
+  #|       event = { type: "change", bubbles: false, cancelable: false, defaultPrevented: false };
+  #|     }
+  #|     try { event.isTrusted = true; } catch (_e) {}
+  #|     try { event.target = target; } catch (_e) {}
+  #|     try { target.dispatchEvent(event); } catch (_e) {}
+  #|   };
+  #|   const ensureOrientationTarget = (orientation) => {
+  #|     const target = orientation && typeof orientation === "object" ? orientation : {};
+  #|     if (!target._listeners || typeof target._listeners !== "object") target._listeners = {};
+  #|     if (typeof target.addEventListener !== "function") {
+  #|       target.addEventListener = function(type, fn) {
+  #|         if (!this._listeners[type]) this._listeners[type] = [];
+  #|         this._listeners[type].push(fn);
+  #|       };
+  #|     }
+  #|     if (typeof target.removeEventListener !== "function") {
+  #|       target.removeEventListener = function(type, fn) {
+  #|         if (!this._listeners[type]) return;
+  #|         this._listeners[type] = this._listeners[type].filter((entry) => entry !== fn);
+  #|       };
+  #|     }
+  #|     if (typeof target.dispatchEvent !== "function") {
+  #|       target.dispatchEvent = function(event) {
+  #|         try { event.currentTarget = this; } catch (_e) {}
+  #|         try { event.target = this; } catch (_e) {}
+  #|         const listeners = this._listeners[event.type] || [];
+  #|         for (const fn of listeners) {
+  #|           try { fn.call(this, event); } catch (_e) {}
+  #|         }
+  #|         return !event.defaultPrevented;
+  #|       };
+  #|     }
+  #|     return target;
+  #|   };
+  #|   const ensureScreenObject = (target) => {
+  #|     if (!target || typeof target !== "object") return null;
+  #|     const screen = target.screen && typeof target.screen === "object" ? target.screen : {};
+  #|     screen.orientation = ensureOrientationTarget(screen.orientation);
+  #|     target.screen = screen;
+  #|     return screen;
+  #|   };
+  #|   const apply = (target) => {
+  #|     const screen = ensureScreenObject(target);
+  #|     if (!screen || !screen.orientation) return;
+  #|     const orientation = screen.orientation;
+  #|     const previousType = typeof orientation.type === "string" ? orientation.type : "";
+  #|     const previousAngle = Number.isFinite(Number(orientation.angle)) ? Number(orientation.angle) : 0;
+  #|     orientation.type = normalizedType;
+  #|     orientation.angle = normalizedAngle;
+  #|     if (previousType !== normalizedType || previousAngle !== normalizedAngle) {
+  #|       dispatchChange(orientation);
+  #|     }
+  #|   };
+  #|   let contextWindow = null;
+  #|   if (globalThis.__bidiContextWindows && globalThis.__bidiContextWindows.has(ctxId)) {
+  #|     contextWindow = globalThis.__bidiContextWindows.get(ctxId);
+  #|     apply(contextWindow);
+  #|   }
+  #|   if (String(globalThis.__bidiCurrentContext || "") === String(ctxId)) {
+  #|     const activeWindow = globalThis.window && typeof globalThis.window === "object"
+  #|       ? globalThis.window
+  #|       : globalThis;
+  #|     if (activeWindow !== contextWindow) {
+  #|       apply(activeWindow);
+  #|     }
+  #|     if (globalThis.window && typeof globalThis.window === "object" && globalThis.window.screen) {
+  #|       globalThis.screen = globalThis.window.screen;
+  #|     }
+  #|   }
+  #| }
+
+///|
+pub fn set_runtime_context_screen_orientation(
+  ctx_id : String,
+  orientation_type : String,
+  angle : Int,
+) -> Unit {
+  js_set_runtime_context_screen_orientation(ctx_id, orientation_type, angle)
+}
+
+///|
+extern "js" fn js_set_runtime_context_screen_area(
+  ctx_id : String,
+  width : Int,
+  height : Int,
+  avail_width : Int,
+  avail_height : Int,
+) -> Unit =
+  #| (ctxId, width, height, availWidth, availHeight) => {
+  #|   if (!globalThis.__bidiContextScreenAreaState) {
+  #|     globalThis.__bidiContextScreenAreaState = new Map();
+  #|   }
+  #|   const normalizedWidth = Number.isFinite(Number(width)) && Number(width) >= 0 ? Number(width) : 1024;
+  #|   const normalizedHeight = Number.isFinite(Number(height)) && Number(height) >= 0 ? Number(height) : 768;
+  #|   const normalizedAvailWidth = Number.isFinite(Number(availWidth)) && Number(availWidth) >= 0
+  #|     ? Number(availWidth)
+  #|     : normalizedWidth;
+  #|   const normalizedAvailHeight = Number.isFinite(Number(availHeight)) && Number(availHeight) >= 0
+  #|     ? Number(availHeight)
+  #|     : normalizedHeight;
+  #|   globalThis.__bidiContextScreenAreaState.set(String(ctxId), {
+  #|     width: normalizedWidth,
+  #|     height: normalizedHeight,
+  #|     availWidth: normalizedAvailWidth,
+  #|     availHeight: normalizedAvailHeight,
+  #|   });
+  #|   const apply = (target) => {
+  #|     if (!target || typeof target !== "object") return null;
+  #|     const screen = target.screen && typeof target.screen === "object" ? target.screen : {};
+  #|     screen.width = normalizedWidth;
+  #|     screen.height = normalizedHeight;
+  #|     screen.availWidth = normalizedAvailWidth;
+  #|     screen.availHeight = normalizedAvailHeight;
+  #|     target.screen = screen;
+  #|     return screen;
+  #|   };
+  #|   let contextWindow = null;
+  #|   if (globalThis.__bidiContextWindows && globalThis.__bidiContextWindows.has(ctxId)) {
+  #|     contextWindow = globalThis.__bidiContextWindows.get(ctxId);
+  #|     apply(contextWindow);
+  #|   }
+  #|   if (String(globalThis.__bidiCurrentContext || "") === String(ctxId)) {
+  #|     const activeWindow = globalThis.window && typeof globalThis.window === "object"
+  #|       ? globalThis.window
+  #|       : globalThis;
+  #|     const screen = activeWindow === contextWindow ? activeWindow.screen : apply(activeWindow);
+  #|     if (screen) {
+  #|       globalThis.screen = screen;
+  #|     }
+  #|   }
+  #| }
+
+///|
+pub fn set_runtime_context_screen_area(
+  ctx_id : String,
+  width : Int,
+  height : Int,
+  avail_width : Int,
+  avail_height : Int,
+) -> Unit {
+  js_set_runtime_context_screen_area(
+    ctx_id, width, height, avail_width, avail_height,
+  )
 }
 
 ///|

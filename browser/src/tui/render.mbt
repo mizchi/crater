@@ -4,7 +4,6 @@
 
 ///|
 /// Font metrics for coordinate conversion
-/// These match the sixel renderer's assumptions
 let font_width : Double = 8.0
 
 ///|
@@ -21,7 +20,6 @@ pub fn px_to_col(px : Double) -> Int {
 fn px_to_col_width(px : Double) -> Int {
   let result = px / font_width
   let int_part = result.to_int()
-  // Ceiling: if there's any fractional part, add 1
   if result > int_part.to_double() {
     int_part + 1
   } else {

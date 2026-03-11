@@ -135,6 +135,16 @@ pub fn set_runtime_context(String) -> Unit
 
 pub fn set_runtime_context_frames(String, Array[String]) -> Unit
 
+pub fn set_runtime_context_locale(String, String) -> Unit
+
+pub fn set_runtime_context_network_online(String, Bool) -> Unit
+
+pub fn set_runtime_context_screen_area(String, Int, Int, Int, Int) -> Unit
+
+pub fn set_runtime_context_screen_orientation(String, String, Int) -> Unit
+
+pub fn set_runtime_context_user_agent(String, String) -> Unit
+
 pub fn set_runtime_context_viewport(String, Int, Int, Double) -> Unit
 
 pub fn success_bool(Bool) -> WebDriverResponse

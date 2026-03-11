@@ -2,6 +2,21 @@
 /// JavaScript fetch() wrapper for JS target
 
 ///|
+/// Disable TLS certificate verification for Node.js
+/// Terminal browser doesn't need strict TLS - content rendering is the priority
+extern "js" fn js_disable_tls_verify() -> Unit =
+  #| () => {
+  #|   if (typeof process !== 'undefined' && process.env) {
+  #|     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+  #|   }
+  #| }
+
+///|
+fn init {
+  js_disable_tls_verify()
+}
+
+///|
 /// Internal: fetch response as JSON string
 extern "js" fn js_fetch_internal(
   url : String,

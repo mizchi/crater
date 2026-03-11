@@ -26,6 +26,7 @@ from typing import Any, Mapping
 import pytest
 import pytest_asyncio
 import websockets
+from webdriver.error import TimeoutException
 import webdriver.bidi.error as bidi_error
 from webdriver.bidi.modules.script import ContextTarget, ScriptEvaluateResultException
 from tests.support.helpers import deep_update
@@ -33,12 +34,34 @@ from tests.support.helpers import deep_update
 
 CRATER_BIDI_URL = os.environ.get("CRATER_BIDI_URL", "ws://127.0.0.1:9222")
 _UNSET = object()
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 def _base64_text_from_any(value: str | bytes | bytearray) -> str:
     if isinstance(value, (bytes, bytearray)):
         return base64.b64encode(bytes(value)).decode("ascii")
     return str(value)
+
+
+@functools.lru_cache(maxsize=1)
+def _chrome_extension_data() -> dict[str, Any]:
+    extension_root = (
+        _REPO_ROOT
+        / "wpt"
+        / "webdriver"
+        / "tests"
+        / "support"
+        / "webextensions"
+        / "chrome"
+    )
+    archive_path = extension_root / "packed.crx"
+    return {
+        "id": None,
+        "path": str(extension_root / "unpacked"),
+        "archivePath": str(archive_path),
+        "archivePathInvalid": str(extension_root / "invalid"),
+        "base64": base64.b64encode(archive_path.read_bytes()).decode("ascii"),
+    }
 
 
 class CraterBidiSession:
@@ -67,6 +90,10 @@ class CraterBidiSession:
         self._storage = None
         self._input = None
         self._browser = None
+        self._emulation = None
+        self._bluetooth = None
+        self._permissions = None
+        self._web_extension = None
 
     def _trace(self, message: str):
         if self._trace_enabled:
@@ -407,6 +434,30 @@ class CraterBidiSession:
             self._browser = BrowserModule(self)
         return self._browser
 
+    @property
+    def emulation(self):
+        if self._emulation is None:
+            self._emulation = EmulationModule(self)
+        return self._emulation
+
+    @property
+    def bluetooth(self):
+        if self._bluetooth is None:
+            self._bluetooth = BluetoothModule(self)
+        return self._bluetooth
+
+    @property
+    def permissions(self):
+        if self._permissions is None:
+            self._permissions = PermissionsModule(self)
+        return self._permissions
+
+    @property
+    def web_extension(self):
+        if self._web_extension is None:
+            self._web_extension = WebExtensionModule(self)
+        return self._web_extension
+
 
 class _BiDiEventCollector:
     def __init__(self, session: CraterBidiSession, event_names, timeout_multiplier: float):
@@ -423,7 +474,7 @@ class _BiDiEventCollector:
             if predicate(self.events):
                 return self.events
             if loop.time() >= deadline:
-                raise AssertionError("Didn't receive expected events")
+                raise TimeoutException("Timed out waiting for expected events")
             await asyncio.sleep(0.01)
 
     def __enter__(self):
@@ -1045,6 +1096,256 @@ class BrowserModule(_CommandProxy):
         return await self._command("browser.setDownloadBehavior", params)
 
 
+class EmulationModule(_CommandProxy):
+
+    async def set_user_agent_override(self, user_agent, **kwargs):
+        params = {"user_agent": user_agent}
+        for key, value in kwargs.items():
+            params[key] = value
+        return await self._command("emulation.setUserAgentOverride", params)
+
+    async def set_locale_override(self, locale, **kwargs):
+        params = {"locale": locale}
+        for key, value in kwargs.items():
+            params[key] = value
+        return await self._command("emulation.setLocaleOverride", params)
+
+    async def set_timezone_override(self, timezone, **kwargs):
+        params = {"timezone": timezone}
+        for key, value in kwargs.items():
+            params[key] = value
+        return await self._command("emulation.setTimezoneOverride", params)
+
+    async def set_geolocation_override(self, coordinates=_UNSET, error=_UNSET, **kwargs):
+        params = {}
+        if coordinates is not _UNSET:
+            params["coordinates"] = coordinates
+        if error is not _UNSET:
+            params["error"] = error
+        for key, value in kwargs.items():
+            params[key] = value
+        return await self._command("emulation.setGeolocationOverride", params)
+
+    async def set_network_conditions(self, network_conditions=_UNSET, **kwargs):
+        params = {}
+        if network_conditions is not _UNSET:
+            params["network_conditions"] = network_conditions
+        for key, value in kwargs.items():
+            params[key] = value
+        return await self._command("emulation.setNetworkConditions", params)
+
+    async def set_screen_orientation_override(
+        self,
+        screen_orientation=_UNSET,
+        **kwargs,
+    ):
+        params = {}
+        if screen_orientation is not _UNSET:
+            params["screen_orientation"] = screen_orientation
+        for key, value in kwargs.items():
+            params[key] = value
+        return await self._command("emulation.setScreenOrientationOverride", params)
+
+    async def set_screen_settings_override(
+        self,
+        screen_area=_UNSET,
+        **kwargs,
+    ):
+        params = {}
+        if screen_area is not _UNSET:
+            params["screen_area"] = screen_area
+        for key, value in kwargs.items():
+            params[key] = value
+        return await self._command("emulation.setScreenSettingsOverride", params)
+
+
+class PermissionsModule(_CommandProxy):
+
+    async def set_permission(self, descriptor, state, origin, **kwargs):
+        params = {
+            "descriptor": descriptor,
+            "state": state,
+            "origin": origin,
+        }
+        for key, value in kwargs.items():
+            if value is None:
+                continue
+            params[key] = value
+        await self._command("permissions.setPermission", params)
+        return {}
+
+
+class BluetoothModule(_CommandProxy):
+
+    async def simulate_adapter(self, context, state):
+        await self._command(
+            "bluetooth.simulateAdapter",
+            {"context": _context_id(context), "state": state},
+        )
+        return {}
+
+    async def disable_simulation(self, context):
+        await self._command(
+            "bluetooth.disableSimulation",
+            {"context": _context_id(context)},
+        )
+        return {}
+
+    async def simulate_preconnected_peripheral(self, context, **kwargs):
+        params = {"context": _context_id(context)}
+        for key, value in kwargs.items():
+            if value is None:
+                continue
+            params[key] = value
+        await self._command("bluetooth.simulatePreconnectedPeripheral", params)
+        return {}
+
+    async def handle_request_device_prompt(self, context, prompt, accept, device=None):
+        params = {
+            "context": _context_id(context),
+            "prompt": prompt,
+            "accept": accept,
+        }
+        if device is not None:
+            params["device"] = device
+        await self._command("bluetooth.handleRequestDevicePrompt", params)
+        return {}
+
+    async def simulate_gatt_connection_response(self, context, address, code):
+        await self._command(
+            "bluetooth.simulateGATTConnectionResponse",
+            {"context": _context_id(context), "address": address, "code": code},
+        )
+        return {}
+
+    async def simulate_gatt_disconnection(self, context, address):
+        await self._command(
+            "bluetooth.simulateGATTDisconnection",
+            {"context": _context_id(context), "address": address},
+        )
+        return {}
+
+    async def simulate_service(self, context, address, uuid, type):
+        await self._command(
+            "bluetooth.simulateService",
+            {
+                "context": _context_id(context),
+                "address": address,
+                "uuid": uuid,
+                "type": type,
+            },
+        )
+        return {}
+
+    async def simulate_characteristic(
+        self,
+        context,
+        address,
+        service_uuid,
+        characteristic_uuid,
+        characteristic_properties,
+        type,
+    ):
+        await self._command(
+            "bluetooth.simulateCharacteristic",
+            {
+                "context": _context_id(context),
+                "address": address,
+                "service_uuid": service_uuid,
+                "characteristic_uuid": characteristic_uuid,
+                "characteristic_properties": characteristic_properties,
+                "type": type,
+            },
+        )
+        return {}
+
+    async def simulate_characteristic_response(
+        self,
+        context,
+        address,
+        service_uuid,
+        characteristic_uuid,
+        type,
+        code,
+        data,
+    ):
+        params = {
+            "context": _context_id(context),
+            "address": address,
+            "service_uuid": service_uuid,
+            "characteristic_uuid": characteristic_uuid,
+            "type": type,
+            "code": code,
+            "data": data,
+        }
+        await self._command("bluetooth.simulateCharacteristicResponse", params)
+        return {}
+
+    async def simulate_descriptor(
+        self,
+        context,
+        address,
+        service_uuid,
+        characteristic_uuid,
+        descriptor_uuid,
+        type,
+    ):
+        await self._command(
+            "bluetooth.simulateDescriptor",
+            {
+                "context": _context_id(context),
+                "address": address,
+                "service_uuid": service_uuid,
+                "characteristic_uuid": characteristic_uuid,
+                "descriptor_uuid": descriptor_uuid,
+                "type": type,
+            },
+        )
+        return {}
+
+    async def simulate_descriptor_response(
+        self,
+        context,
+        address,
+        service_uuid,
+        characteristic_uuid,
+        descriptor_uuid,
+        type,
+        code,
+        data,
+    ):
+        params = {
+            "context": _context_id(context),
+            "address": address,
+            "service_uuid": service_uuid,
+            "characteristic_uuid": characteristic_uuid,
+            "descriptor_uuid": descriptor_uuid,
+            "type": type,
+            "code": code,
+            "data": data,
+        }
+        await self._command("bluetooth.simulateDescriptorResponse", params)
+        return {}
+
+
+class WebExtensionModule(_CommandProxy):
+
+    async def install(self, extension_data):
+        result = await self._command(
+            "webExtension.install",
+            {"extensionData": extension_data},
+        )
+        if isinstance(result, Mapping):
+            return result.get("extension")
+        return result
+
+    async def uninstall(self, extension):
+        return await self._command(
+            "webExtension.uninstall",
+            {"extension": extension},
+        )
+
+
 class _TrackedTask:
     """Track whether a scheduled task was explicitly awaited by the test."""
 
@@ -1205,14 +1506,20 @@ def iframe():
 @pytest.fixture
 def create_iframe(bidi_session):
     """
-    Create an iframe and return its context id.
+    Create an iframe and return a context mapping.
 
     Some synthetic pages in Crater do not expose `document.body` in a way that
     WPT helper expects. In that case, fall back to creating a synthetic child
     browsing context linked to the parent context for header scope tests.
     """
+    async def create_iframe(context, url):
+        context_id = await bidi_session.script.create_iframe_context_id_for_test(
+            context,
+            url,
+        )
+        return {"context": context_id}
 
-    return bidi_session.script.create_iframe_context_id_for_test
+    return create_iframe
 
 
 @pytest_asyncio.fixture
@@ -1406,6 +1713,11 @@ def wait_for_future_safe():
 def current_time():
     """Return current time in milliseconds."""
     return _fixture_current_time
+
+
+@pytest.fixture
+def extension_data():
+    return _chrome_extension_data()
 
 
 @pytest.fixture

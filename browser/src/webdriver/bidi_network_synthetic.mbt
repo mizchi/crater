@@ -2650,6 +2650,8 @@ fn BidiProtocol::build_network_headers_echo_payload(
   request_headers : Array[Json],
 ) -> String {
   let headers : Map[String, Json] = {}
+  let mut has_user_agent = false
+  let mut has_accept_language = false
   for
     header in self.resolve_network_extra_header_entries(
       context_id, request_headers,
@@ -2662,7 +2664,23 @@ fn BidiProtocol::build_network_headers_echo_payload(
       Some(value) => value
       None => continue
     }
+    if name == "user-agent" {
+      has_user_agent = true
+    }
+    if name == "accept-language" {
+      has_accept_language = true
+    }
     headers[name] = Json::array([Json::string(value)])
+  }
+  if not(has_user_agent) {
+    headers["user-agent"] = Json::array([
+      Json::string(self.resolve_effective_user_agent(context_id)),
+    ])
+  }
+  if not(has_accept_language) {
+    headers["accept-language"] = Json::array([
+      Json::string(self.resolve_effective_locale(context_id)),
+    ])
   }
   make_object({ "headers": make_object(headers) }).stringify()
 }

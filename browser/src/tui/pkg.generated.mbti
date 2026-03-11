@@ -30,11 +30,11 @@ pub fn ansi_reverse() -> String
 
 pub fn ansi_underline() -> String
 
-pub fn buffer_diff_to_ansi(CharBuffer, CharBuffer) -> String
+pub fn buffer_diff_to_ansi(CharBuffer, CharBuffer, max_cols? : Int) -> String
 
-pub fn buffer_diff_to_ansi_rects(CharBuffer, CharBuffer, Array[DirtyRect]) -> String
+pub fn buffer_diff_to_ansi_rects(CharBuffer, CharBuffer, Array[DirtyRect], max_cols? : Int) -> String
 
-pub fn buffer_to_ansi(CharBuffer) -> String
+pub fn buffer_to_ansi(CharBuffer, max_cols? : Int) -> String
 
 pub fn buffer_to_plain(CharBuffer) -> String
 
