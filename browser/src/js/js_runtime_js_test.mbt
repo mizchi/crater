@@ -2984,6 +2984,96 @@ test "fetch: returns a Promise" {
 }
 
 ///|
+test "persisted input listener survives later execution" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let setup =
+    #|const input = document.createElement('input');
+    #|input.id = 'field';
+    #|document.body.appendChild(input);
+    #|input.addEventListener('input', function () {
+    #|  document.body.setAttribute('data-status', 'input');
+    #|});
+    #|'ok'
+  let setup_result = ctx.execute(setup)
+  inspect(setup_result.success, content="true")
+  inspect(setup_result.value, content="ok")
+
+  let run =
+    #|const input = document.getElementById('field');
+    #|input.dispatchEvent(new Event('input', { bubbles: true }));
+    #|document.body.getAttribute('data-status')
+  let run_result = ctx.execute(run)
+  inspect(run_result.success, content="true")
+  inspect(run_result.value, content="input")
+}
+
+///|
+test "persisted change listener survives later execution" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let setup =
+    #|const input = document.createElement('input');
+    #|input.id = 'field';
+    #|document.body.appendChild(input);
+    #|input.addEventListener('change', function () {
+    #|  document.body.setAttribute('data-status', 'change');
+    #|});
+    #|'ok'
+  let setup_result = ctx.execute(setup)
+  inspect(setup_result.success, content="true")
+
+  let run =
+    #|const input = document.getElementById('field');
+    #|input.dispatchEvent(new Event('change', { bubbles: true }));
+    #|document.body.getAttribute('data-status')
+  let run_result = ctx.execute(run)
+  inspect(run_result.success, content="true")
+  inspect(run_result.value, content="change")
+}
+
+///|
+test "persisted submit listener survives later execution" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let setup =
+    #|const form = document.createElement('form');
+    #|form.id = 'form';
+    #|document.body.appendChild(form);
+    #|form.addEventListener('submit', function (event) {
+    #|  event.preventDefault();
+    #|  document.body.setAttribute('data-status', 'submit');
+    #|});
+    #|'ok'
+  let setup_result = ctx.execute(setup)
+  inspect(setup_result.success, content="true")
+
+  let run =
+    #|const form = document.getElementById('form');
+    #|const event = new Event('submit', { bubbles: true, cancelable: true });
+    #|form.dispatchEvent(event);
+    #|[String(event.defaultPrevented), document.body.getAttribute('data-status')].join('|')
+  let run_result = ctx.execute(run)
+  inspect(run_result.success, content="true")
+  inspect(run_result.value, content="true|submit")
+}
+
+///|
 test "fetch: Response has required methods" {
   let dom = @dom.DomTree::new()
   let ctx = JsContext::new(dom)

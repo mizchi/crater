@@ -525,8 +525,9 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       return target._listeners;
   #|     }
   #|     const _persistedListenerAttrPrefix = 'data-crater-listeners-';
+  #|     const _persistedListenerTypes = ['click', 'input', 'change', 'submit'];
   #|     function _shouldPersistListener(target, eventType, listener) {
-  #|       return eventType === 'click' &&
+  #|       return _persistedListenerTypes.includes(eventType) &&
   #|         target &&
   #|         typeof target.getAttribute === 'function' &&
   #|         typeof target.setAttribute === 'function' &&
@@ -579,18 +580,20 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     }
   #|     function _restorePersistedListenersForNode(target) {
   #|       if (!target || typeof target.getAttribute !== 'function') return;
-  #|       const sources = _getPersistedListenerSources(target, 'click');
-  #|       if (sources.length === 0) return;
   #|       target.__craterRestoringListeners = true;
   #|       try {
   #|         const store = getListenerStore(target);
-  #|         if (!store.click) store.click = [];
-  #|         for (const source of sources) {
-  #|           try {
-  #|             const listener = eval('(' + source + ')');
-  #|             if (!store.click.includes(listener)) store.click.push(listener);
-  #|           } catch (e) {
-  #|             logs.push('[WARN] restore click listener failed: ' + e);
+  #|         for (const eventType of _persistedListenerTypes) {
+  #|           const sources = _getPersistedListenerSources(target, eventType);
+  #|           if (sources.length === 0) continue;
+  #|           if (!store[eventType]) store[eventType] = [];
+  #|           for (const source of sources) {
+  #|             try {
+  #|               const listener = eval('(' + source + ')');
+  #|               if (!store[eventType].includes(listener)) store[eventType].push(listener);
+  #|             } catch (e) {
+  #|               logs.push('[WARN] restore ' + eventType + ' listener failed: ' + e);
+  #|             }
   #|           }
   #|         }
   #|       } finally {
