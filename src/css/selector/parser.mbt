@@ -622,11 +622,16 @@ fn SelectorParser::parse_nth_expr(self : SelectorParser) -> NthExpr? {
         return Some({ a, b })
       }
       if unit_lower.length() > 1 && unit_lower[0] == 'n' {
-        let suffix = unit_lower[1:unit_lower.length()].to_string()
+        let suffix = unit_lower.unsafe_substring(
+          start=1,
+          end=unit_lower.length(),
+        )
         let b = @strconv.parse_int(suffix) catch {
           _ =>
             if suffix.length() > 1 && suffix[0] == '+' {
-              @strconv.parse_int(suffix[1:suffix.length()].to_string()) catch {
+              @strconv.parse_int(
+                suffix.unsafe_substring(start=1, end=suffix.length()),
+              ) catch {
                 _ => 0
               }
             } else {

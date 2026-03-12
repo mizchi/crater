@@ -76,25 +76,25 @@ fn DomTree::matches_selector(
   // Simple selector matching
   if selector.has_prefix("#") {
     // ID selector
-    let id = selector[1:].to_string()
+    let id = selector.unsafe_substring(start=1, end=selector.length())
     node.attributes.get("id") == Some(id)
   } else if selector.has_prefix(".") {
     // Class selector
-    let class_name = selector[1:].to_string()
+    let class_name = selector.unsafe_substring(start=1, end=selector.length())
     match node.attributes.get("class") {
       Some(classes) => classes.contains(class_name)
       None => false
     }
   } else if selector.has_prefix("[") && selector.has_suffix("]") {
     // Attribute selector (simple: [attr] or [attr=value])
-    let inner = selector[1:selector.length() - 1].to_string()
+    let inner = selector.unsafe_substring(start=1, end=selector.length() - 1)
     if inner.contains("=") {
       match split_once(inner, '=') {
         Some((attr, value)) => {
           let clean_value = value.trim().to_string()
           let clean_value = if clean_value.has_prefix("\"") &&
             clean_value.has_suffix("\"") {
-            clean_value[1:clean_value.length() - 1].to_string()
+            clean_value.unsafe_substring(start=1, end=clean_value.length() - 1)
           } else {
             clean_value
           }

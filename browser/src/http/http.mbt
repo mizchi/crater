@@ -104,9 +104,9 @@ pub fn headers_to_json(headers : Map[String, String]) -> String {
 fn extract_origin(url : String) -> String {
   match url.find("://") {
     Some(i) => {
-      let after_protocol = url[i + 3:].to_string()
+      let after_protocol = url.unsafe_substring(start=i + 3, end=url.length())
       match after_protocol.find("/") {
-        Some(j) => url[:i + 3 + j].to_string()
+        Some(j) => url.unsafe_substring(start=0, end=i + 3 + j)
         None => url
       }
     }

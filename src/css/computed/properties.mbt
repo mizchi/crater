@@ -136,7 +136,7 @@ pub fn parse_dimension(value : String) -> @types.Dimension {
   if v.has_prefix("fit-content(") && v.has_suffix(")") {
     // Extract content between "fit-content(" and ")"
     let v_str = v.to_string()
-    let inner = v_str[12:v_str.length() - 1].to_string()
+    let inner = v_str.unsafe_substring(start=12, end=v_str.length() - 1)
     // Parse the inner value as a length
     match inner.strip_suffix("px") {
       Some(num_str) => {
@@ -738,7 +738,7 @@ pub fn parse_grid_placement(value : String) -> @types.GridPlacement {
   }
   // Check for "span N" pattern
   if v.has_prefix("span") {
-    let num_str = v[4:].to_string()
+    let num_str = view_to_string(v.view(start_offset=4))
     let num = @strconv.parse_int(num_str.trim().to_string()) catch { _ => 1 }
     return @types.GridPlacement::Span(num)
   }
@@ -915,8 +915,8 @@ pub fn parse_aspect_ratio(value : String) -> Double? {
     }
     if slash_pos > 0 {
       // Use view slicing
-      let width_str = v[:slash_pos].to_string().trim()
-      let height_str = v[slash_pos + 1:].to_string().trim()
+      let width_str = view_to_string(v.view(end_offset=slash_pos)).trim()
+      let height_str = view_to_string(v.view(start_offset=slash_pos + 1)).trim()
       let w = @strconv.parse_double(width_str.to_string()) catch {
         _ => return None
       }
@@ -946,7 +946,9 @@ pub fn parse_clip(value : String) -> @types.ClipRect {
   // Parse rect(top, right, bottom, left)
   if v.has_prefix("rect(") && v.has_suffix(")") {
     // Extract the content inside rect()
-    let content = v[5:v.length() - 1].to_string().trim()
+    let content = view_to_string(
+      v.view(start_offset=5, end_offset=v.length() - 1),
+    ).trim()
     // Split by comma or space (both are valid in CSS)
     let parts : Array[String] = []
     let mut current = StringBuilder::new()

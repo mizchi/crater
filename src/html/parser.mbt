@@ -689,7 +689,7 @@ fn decode_entity(entity : String) -> String? {
   // Numeric entities
   if entity.has_prefix("#x") || entity.has_prefix("#X") {
     // Hex numeric entity
-    let hex = entity[2:].to_string()
+    let hex = entity.unsafe_substring(start=2, end=entity.length())
     match parse_hex(hex) {
       Some(code) => return Some(code.unsafe_to_char().to_string())
       None => return None
@@ -697,7 +697,7 @@ fn decode_entity(entity : String) -> String? {
   }
   if entity.has_prefix("#") {
     // Decimal numeric entity
-    let num = entity[1:].to_string()
+    let num = entity.unsafe_substring(start=1, end=entity.length())
     match parse_decimal(num) {
       Some(code) => return Some(code.unsafe_to_char().to_string())
       None => return None

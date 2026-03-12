@@ -198,7 +198,7 @@ fn extract_source_id(node_id : String) -> String? {
   match node_id.find("#") {
     Some(idx) =>
       if idx + 1 < node_id.length() {
-        Some(node_id[idx + 1:].to_string())
+        Some(node_id.unsafe_substring(start=idx + 1, end=node_id.length()))
       } else {
         None
       }

@@ -404,7 +404,7 @@ fn extract_tag_from_id(id : String) -> String {
     }
   }
   match end_pos {
-    Some(pos) => id[:pos].to_string()
+    Some(pos) => id.unsafe_substring(start=0, end=pos)
     None => id
   }
 }

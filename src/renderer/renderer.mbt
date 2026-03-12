@@ -20,6 +20,13 @@ let large_ahem_like_char_width_ratio : Double = 0.722
 let normal_line_height_ratio : Double = 1.045
 
 ///|
+fn view_to_string(v : StringView) -> String {
+  let sb = StringBuilder::new()
+  sb.write_stringview(v)
+  sb.to_string()
+}
+
+///|
 /// Check if a character is East Asian Wide (CJK characters that take 2 columns)
 fn is_wide_char(c : Char) -> Bool {
   let cp = c.to_int()
@@ -810,8 +817,13 @@ fn parse_inline_declarations_cached(
           }
         }
         if colon_idx > 0 {
-          let prop = decl_str[0:colon_idx].trim().to_string().to_lower()
-          let value = decl_str[colon_idx + 1:].trim().to_string()
+          let prop = view_to_string(decl_str.view(end_offset=colon_idx))
+            .trim()
+            .to_string()
+            .to_lower()
+          let value = view_to_string(decl_str.view(start_offset=colon_idx + 1))
+            .trim()
+            .to_string()
           if prop.length() > 0 && value.length() > 0 {
             parsed.push((prop, value))
           }
@@ -2057,7 +2069,7 @@ fn parse_html_dimension(value : String) -> Double? {
   }
   // Remove "px" suffix if present
   let num_str = if trimmed.has_suffix("px") {
-    trimmed[:trimmed.length() - 2].to_string()
+    trimmed.unsafe_substring(start=0, end=trimmed.length() - 2)
   } else {
     trimmed
   }
@@ -2137,7 +2149,7 @@ fn extract_svg_attribute(svg : String, attr_name : String) -> String? {
       // Find closing quote
       for end = start; end < svg.length(); end = end + 1 {
         if svg[end].to_int().unsafe_to_char() == quote_char {
-          let result = svg[start:end].to_string()
+          let result = svg.unsafe_substring(start~, end~)
           if result.length() > 0 {
             return Some(result)
           }
@@ -2204,7 +2216,7 @@ fn parse_svg_data_uri(src : String) -> (Double, Double)? {
     return None
   }
   // URL decode the SVG content
-  let svg_encoded = src[comma_idx + 1:].to_string()
+  let svg_encoded = src.unsafe_substring(start=comma_idx + 1, end=src.length())
   let svg = url_decode(svg_encoded)
   // Extract width, height, and viewBox
   let width_attr = extract_svg_attribute(svg, "width")
@@ -2318,7 +2330,7 @@ fn parse_gif_data_uri(src : String) -> (Double, Double)? {
   if comma_idx < 0 {
     return None
   }
-  let encoded = src[comma_idx + 1:].to_string()
+  let encoded = src.unsafe_substring(start=comma_idx + 1, end=src.length())
   match decode_base64_prefix(encoded, 10) {
     Some(bytes) => {
       if bytes.length() < 10 {
@@ -2357,7 +2369,7 @@ fn parse_png_data_uri(src : String) -> (Double, Double)? {
   if comma_idx < 0 {
     return None
   }
-  let encoded = src[comma_idx + 1:].to_string()
+  let encoded = src.unsafe_substring(start=comma_idx + 1, end=src.length())
   match decode_base64_prefix(encoded, 24) {
     Some(bytes) => {
       if bytes.length() < 24 {
@@ -3348,7 +3360,7 @@ fn resolve_pseudo_attr_functions(
   while i < value.length() {
     let remaining = value.length() - i
     if remaining >= 5 {
-      let chunk = value[i:i + 5].to_string()
+      let chunk = value.unsafe_substring(start=i, end=i + 5)
       if chunk == "attr(" {
         let mut depth = 1
         let arg_start = i + 5
@@ -3366,7 +3378,7 @@ fn resolve_pseudo_attr_functions(
           j += 1
         }
         if j < value.length() && depth == 0 {
-          let raw_args = value[arg_start:j].to_string()
+          let raw_args = value.unsafe_substring(start=arg_start, end=j)
           let attr_name = first_token_or_empty(
             split_ascii_whitespace_tokens(raw_args),
           )
@@ -3423,7 +3435,7 @@ fn resolve_pseudo_content_value(
     while i < resolved.length() {
       let remaining = resolved.length() - i
       if remaining >= 4 {
-        let chunk = resolved[i:i + 4].to_string()
+        let chunk = resolved.unsafe_substring(start=i, end=i + 4)
         if chunk == "var(" {
           let mut depth = 1
           let arg_start = i + 4
@@ -3441,11 +3453,14 @@ fn resolve_pseudo_content_value(
             j += 1
           }
           if j < resolved.length() && depth == 0 {
-            let raw_args = resolved[arg_start:j].to_string()
+            let raw_args = resolved.unsafe_substring(start=arg_start, end=j)
             let replacement = match find_top_level_comma(raw_args) {
               Some(comma_index) => {
-                let name = raw_args[0:comma_index].to_string()
-                let fallback = raw_args[comma_index + 1:raw_args.length()].to_string()
+                let name = raw_args.unsafe_substring(start=0, end=comma_index)
+                let fallback = raw_args.unsafe_substring(
+                  start=comma_index + 1,
+                  end=raw_args.length(),
+                )
                 match css_vars.get(name.trim().to_string()) {
                   Some(found) =>
                     resolve_pseudo_content_value(
@@ -3520,7 +3535,7 @@ fn parse_content_parts(value : String) -> Array[ContentPart]? {
         }
         end += 1
       }
-      let ident = trimmed[i:end].to_string()
+      let ident = trimmed.unsafe_substring(start=i, end~)
       let ident_lower = ident.to_lower()
       let mut j = end
       while j < trimmed.length() {
@@ -3547,7 +3562,7 @@ fn parse_content_parts(value : String) -> Array[ContentPart]? {
           k += 1
         }
         if k < trimmed.length() && depth == 0 {
-          let args = trimmed[arg_start:k].to_string()
+          let args = trimmed.unsafe_substring(start=arg_start, end=k)
           if ident_lower == "counter" {
             let name = first_token_or_empty(split_ascii_whitespace_tokens(args))
             let name = name.trim().to_string()
@@ -3558,8 +3573,11 @@ fn parse_content_parts(value : String) -> Array[ContentPart]? {
             let comma_index = find_char_index(args, ',')
             match comma_index {
               Some(ci) => {
-                let name = args[0:ci].to_string()
-                let raw_sep = args[ci + 1:args.length()].to_string()
+                let name = args.unsafe_substring(start=0, end=ci)
+                let raw_sep = args.unsafe_substring(
+                  start=ci + 1,
+                  end=args.length(),
+                )
                 let sep = match
                   parse_css_quoted_string(raw_sep.trim().to_string(), 0) {
                   Some((s, _)) => s
@@ -3659,7 +3677,7 @@ fn selector_text_without_pseudo(
   if trimmed.has_suffix(double_suffix) {
     let len = trimmed.length()
     let base_len = len - double_suffix.length()
-    let base = trimmed[0:base_len].to_string()
+    let base = trimmed.unsafe_substring(start=0, end=base_len)
     let cleaned = base.trim().to_string()
     if cleaned.is_empty() {
       None
@@ -3669,7 +3687,7 @@ fn selector_text_without_pseudo(
   } else if trimmed.has_suffix(single_suffix) {
     let len = trimmed.length()
     let base_len = len - single_suffix.length()
-    let base = trimmed[0:base_len].to_string()
+    let base = trimmed.unsafe_substring(start=0, end=base_len)
     let cleaned = base.trim().to_string()
     if cleaned.is_empty() {
       None
@@ -7422,7 +7440,11 @@ fn is_svg_container_id(id : String) -> Bool {
       break
     }
   }
-  let tag = if end < id.length() { id[:end].to_string() } else { id }
+  let tag = if end < id.length() {
+    id.unsafe_substring(start=0, end~)
+  } else {
+    id
+  }
   match tag {
     "svg"
     | "g"
