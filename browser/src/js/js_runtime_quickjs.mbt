@@ -525,7 +525,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       return target._listeners;
   #|     }
   #|     const _persistedListenerAttrPrefix = 'data-crater-listeners-';
-  #|     const _persistedListenerTypes = ['click', 'input', 'change', 'submit', 'keydown', 'keypress', 'keyup'];
+  #|     const _persistedListenerTypes = ['click', 'input', 'change', 'submit', 'keydown', 'keypress', 'keyup', 'focus', 'blur', 'focusin', 'focusout'];
   #|     function _shouldPersistListener(target, eventType, listener) {
   #|       return _persistedListenerTypes.includes(eventType) &&
   #|         target &&

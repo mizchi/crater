@@ -981,7 +981,7 @@ fn is_focusable(element : @html.Element, role : Role) -> Bool {
         return not(element.attributes.contains("disabled"))
       }
     "select" | "textarea" => return not(element.attributes.contains("disabled"))
-    "details" | "summary" => return true
+    "summary" => return true
     _ => ()
   }
 
@@ -1233,7 +1233,7 @@ fn extract_node_layout_bounds_recursive(
 fn extract_element_id(node_id : String) -> String {
   // Look for # which indicates an ID
   match node_id.find("#") {
-    Some(idx) => node_id[idx + 1:].to_string()
+    Some(idx) => node_id.unsafe_substring(start=idx + 1, end=node_id.length())
     None => ""
   }
 }

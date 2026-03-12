@@ -253,10 +253,13 @@ fn resolve_url(base_url : String, href : String) -> String {
     Some(i) => i
     None => return href
   }
-  let after_protocol = base_url[protocol_end + 3:].to_string()
+  let after_protocol = base_url.unsafe_substring(
+    start=protocol_end + 3,
+    end=base_url.length(),
+  )
   let path_start = after_protocol.find("/")
   let origin = match path_start {
-    Some(i) => base_url[:protocol_end + 3 + i].to_string()
+    Some(i) => base_url.unsafe_substring(start=0, end=protocol_end + 3 + i)
     None => base_url
   }
   // Root-relative
@@ -266,7 +269,8 @@ fn resolve_url(base_url : String, href : String) -> String {
   // Relative - append to current path
   let last_slash = base_url.rev_find("/")
   match last_slash {
-    Some(i) if i > protocol_end + 2 => base_url[:i + 1].to_string() + href
+    Some(i) if i > protocol_end + 2 =>
+      base_url.unsafe_substring(start=0, end=i + 1) + href
     _ => origin + "/" + href
   }
 }
@@ -904,10 +908,18 @@ pub fn Browser::next_link(self : Browser) -> Unit {
       if count == 0 {
         return
       }
+      let previous_source_id = match fm.current() {
+        Some(node) => node.source_id
+        None => None
+      }
       for attempt = 0; attempt < count; attempt = attempt + 1 {
         let _ = fm.focus_next()
         match fm.current() {
-          Some(node) => if self.is_focus_node_visible(node) { return }
+          Some(node) =>
+            if self.is_focus_node_visible(node) {
+              self.dispatch_focus_transition(previous_source_id, node.source_id)
+              return
+            }
           None => return
         }
       }
@@ -932,10 +944,18 @@ pub fn Browser::prev_link(self : Browser) -> Unit {
       if count == 0 {
         return
       }
+      let previous_source_id = match fm.current() {
+        Some(node) => node.source_id
+        None => None
+      }
       for attempt = 0; attempt < count; attempt = attempt + 1 {
         let _ = fm.focus_prev()
         match fm.current() {
-          Some(node) => if self.is_focus_node_visible(node) { return }
+          Some(node) =>
+            if self.is_focus_node_visible(node) {
+              self.dispatch_focus_transition(previous_source_id, node.source_id)
+              return
+            }
           None => return
         }
       }
@@ -1266,9 +1286,64 @@ fn Browser::focus_source_id(self : Browser, source_id : String) -> Unit {
   }
   match self.focus_manager {
     Some(fm) => {
+      let previous_source_id = match fm.current() {
+        Some(node) => node.source_id
+        None => None
+      }
       let _ = fm.focus_by_source_id(source_id)
+      self.dispatch_focus_transition(previous_source_id, Some(source_id))
     }
     None => ()
+  }
+}
+
+///|
+fn Browser::dispatch_focus_transition(
+  self : Browser,
+  previous_source_id : String?,
+  next_source_id : String?,
+) -> Unit {
+  if not(self.enable_js) {
+    return
+  }
+  if previous_source_id == next_source_id {
+    return
+  }
+  let previous_js = match previous_source_id {
+    Some(id) => "'" + escape_js_string(id) + "'"
+    None => "null"
+  }
+  let next_js = match next_source_id {
+    Some(id) => "'" + escape_js_string(id) + "'"
+    None => "null"
+  }
+  let source = "(function(){const prevId=" +
+    previous_js +
+    ";const nextId=" +
+    next_js +
+    ";const prev=prevId?document.getElementById(prevId):null;const next=nextId?document.getElementById(nextId):null;function isTextLike(target){if(!target){return false;}const tag=(target.tagName||'').toLowerCase();const type=(target.getAttribute?((target.getAttribute('type')||'').toLowerCase()):'');if(tag==='textarea'||tag==='select'){return true;}if(tag!=='input'){return false;}return type===''||type==='text'||type==='search'||type==='url'||type==='tel'||type==='email'||type==='password'||type==='number';}if(prev&&prev!==next){if(isTextLike(prev)){prev.dispatchEvent(new Event('change',{bubbles:true}));}prev.dispatchEvent(new Event('blur'));prev.dispatchEvent(new Event('focusout',{bubbles:true}));}if(next&&prev!==next){next.dispatchEvent(new Event('focus'));next.dispatchEvent(new Event('focusin',{bubbles:true}));}return 'ok';})()"
+  let _ = self.execute_inline_js(source)
+  let _ = self.sync_render_state_from_dom_tree()
+}
+
+///|
+fn Browser::dispatch_activation_default_to_source_id(
+  self : Browser,
+  source_id : String,
+) -> Bool {
+  if not(self.enable_js) {
+    return false
+  }
+  let escaped = escape_js_string(source_id)
+  let source = "(function(){const target=document.getElementById('" +
+    escaped +
+    "');if(!target){return 'false';}const tag=(target.tagName||'').toLowerCase();if(tag!=='summary'){return 'false';}const details=target.closest?target.closest('details'):null;if(!details||!details.setAttribute){return 'false';}if(details.hasAttribute('open')){details.removeAttribute('open');}else{details.setAttribute('open','');}return 'true';})()"
+  match self.execute_inline_js(source) {
+    Some("true") => {
+      let _ = self.sync_render_state_from_dom_tree()
+      true
+    }
+    _ => false
   }
 }
 
@@ -1539,6 +1614,9 @@ pub async fn Browser::activate_focused_link(
       if not(dispatch.allow_default) {
         return true
       }
+      if self.dispatch_activation_default_to_source_id(id) {
+        return true
+      }
       match self.dispatch_submit_to_source_id(id) {
         Prevented => return true
         Handled => return true
@@ -1583,6 +1661,9 @@ pub async fn Browser::activate_at(
       self.focus_source_id(id)
       let dispatch = self.dispatch_click_to_source_id(id)
       if not(dispatch.allow_default) {
+        return true
+      }
+      if self.dispatch_activation_default_to_source_id(id) {
         return true
       }
       match self.dispatch_submit_to_source_id(id) {

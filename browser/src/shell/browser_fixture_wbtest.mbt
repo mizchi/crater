@@ -208,3 +208,27 @@ async test "fixture focused select ArrowDown changes selection and repaints" {
   assert_true(rendered.contains("b"))
   assert_true(not(rendered.contains("before")))
 }
+
+///|
+async test "fixture focused summary Enter toggles details and repaints" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <details id="det">
+    #|    <summary id="sum" style="display:block;width:120px;height:32px">More</summary>
+    #|    <p>Body</p>
+    #|  </details>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let before = browser.render_output(Text)
+  assert_true(not(before.contains("Body")))
+  browser.next_link()
+  let handled = browser.handle_focused_key("Enter") catch { _ => false }
+  inspect(handled, content="true")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("Body"))
+}

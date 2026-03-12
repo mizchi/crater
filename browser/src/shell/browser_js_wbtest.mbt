@@ -1642,3 +1642,88 @@ async test "Browser handle_focused_key changes focused select with ArrowDown" {
   assert_true(rendered.contains("b"))
   assert_true(not(rendered.contains("before")))
 }
+
+///|
+async test "Browser focus transition dispatches change blur and focus" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="" style="display:block;width:120px;height:32px" />
+    #|  <button id="btn" style="display:block;width:96px;height:32px">Go</button>
+    #|  <div id="log"></div>
+    #|  <script>
+    #|    const field = document.getElementById('field');
+    #|    const btn = document.getElementById('btn');
+    #|    field.addEventListener('change', function (event) {
+    #|      const log = document.getElementById('log');
+    #|      const current = log.textContent || '';
+    #|      log.textContent = current ? current + '|change:' + event.target.value : 'change:' + event.target.value;
+    #|    });
+    #|    field.addEventListener('blur', function () {
+    #|      const log = document.getElementById('log');
+    #|      const current = log.textContent || '';
+    #|      log.textContent = current ? current + '|blur' : 'blur';
+    #|    });
+    #|    btn.addEventListener('focus', function () {
+    #|      const log = document.getElementById('log');
+    #|      const current = log.textContent || '';
+    #|      log.textContent = current ? current + '|focus' : 'focus';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.handle_focused_key("x") catch { _ => false }
+  let before_focus = browser.get_focused_source_id()
+  assert_true(match before_focus { Some(_) => true; None => false })
+  let persisted = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); const btn=document.getElementById('btn'); return [String(!!(field&&field.getAttribute('data-crater-listeners-change'))), String(!!(field&&field.getAttribute('data-crater-listeners-blur'))), String(!!(btn&&btn.getAttribute('data-crater-listeners-focus')))].join('|'); })()",
+  )
+  inspect(persisted, content="Some(\"true|true|true\")")
+  browser.next_link()
+  let after_focus = browser.get_focused_source_id()
+  assert_true(match after_focus { Some(_) => true; None => false })
+  assert_true(after_focus != before_focus)
+
+  let log = browser.execute_inline_js(
+    "(function(){ return document.getElementById('log').textContent; })()",
+  )
+  inspect(log, content="Some(\"change:x|blur|focus\")")
+}
+
+///|
+async test "Browser handle_focused_key toggles details via focused summary" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <details id="det">
+    #|    <summary id="sum" style="display:block;width:120px;height:32px">More</summary>
+    #|    <p>Body</p>
+    #|  </details>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+
+  let handled = browser.handle_focused_key("Enter") catch { _ => false }
+  inspect(handled, content="true")
+  let open = browser.execute_inline_js(
+    "(function(){ return String(document.getElementById('det').hasAttribute('open')); })()",
+  )
+  inspect(open, content="Some(\"true\")")
+}
