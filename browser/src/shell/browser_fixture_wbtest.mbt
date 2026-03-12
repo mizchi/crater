@@ -67,3 +67,61 @@ async test "builtin github snapshot fixture can stream kitty output to writer" {
   let streamed = reader.read_all().text()
   assert_eq(streamed, expected)
 }
+
+///|
+async test "fixture form submit navigates on focused button activation" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="get">
+    #|    <button id="btn" type="submit" style="display:block;width:96px;height:32px">Go</button>
+    #|  </form>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let activated = browser.activate_focused_link() catch { _ => false }
+  inspect(activated, content="true")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E",
+  )
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("done"))
+}
+
+///|
+async test "fixture submit preventDefault repaints without navigation" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form id="form" action="data:text/html,%3Cp%3Enavigated%3C/p%3E" method="get">
+    #|    <button id="btn" type="submit" style="display:block;width:96px;height:32px">Go</button>
+    #|  </form>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('form').addEventListener('submit', function (event) {
+    #|      event.preventDefault();
+    #|      document.getElementById('status').textContent = 'after';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let initial = browser.render_output(Text)
+  assert_true(initial.contains("before"))
+  browser.next_link()
+  let activated = browser.activate_focused_link() catch { _ => false }
+  inspect(activated, content="true")
+  inspect(browser.get_current_url(), content="")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("after"))
+  assert_true(not(rendered.contains("before")))
+}

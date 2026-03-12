@@ -379,6 +379,11 @@ test "resolve_url resolves script paths correctly" {
   // Protocol-relative
   let proto = resolve_url("https://example.com/page", "//cdn.com/lib.js")
   inspect(proto, content="https://cdn.com/lib.js")
+  // Data URL
+  let data = resolve_url(
+    "https://example.com/page", "data:text/html,%3Cp%3Eok%3C/p%3E",
+  )
+  inspect(data, content="data:text/html,%3Cp%3Eok%3C/p%3E")
 }
 
 ///|
@@ -1309,4 +1314,132 @@ async test "Browser activate_at prefers topmost persisted addEventListener eleme
     "(function(){ return document.getElementById('status').textContent; })()",
   )
   inspect(status, content="Some(\"top\")")
+}
+
+///|
+async test "Browser activate_at submits GET form and navigates" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="get">
+    #|    <button id="btn" type="submit" style="display:block;width:96px;height:32px">Go</button>
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+
+  let activated = browser.activate_at(1, 1) catch { _ => false }
+  inspect(activated, content="true")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E",
+  )
+
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("done"))
+}
+
+///|
+async test "Browser activate_at submit preventDefault repaints without navigation" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form id="form" action="data:text/html,%3Cp%3Enavigated%3C/p%3E" method="get">
+    #|    <button id="btn" type="submit" style="display:block;width:96px;height:32px">Go</button>
+    #|  </form>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('form').addEventListener('submit', function (event) {
+    #|      event.preventDefault();
+    #|      document.getElementById('status').textContent = 'after';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let initial = browser.render_output(Text)
+  assert_true(initial.contains("before"))
+
+  let activated = browser.activate_at(1, 1) catch { _ => false }
+  inspect(activated, content="true")
+  inspect(browser.get_current_url(), content="")
+
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("after"))
+  assert_true(not(rendered.contains("before")))
+}
+
+///|
+async test "Browser activate_focused_link submits focused button form" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="get">
+    #|    <button id="btn" type="submit" style="display:block;width:96px;height:32px">Go</button>
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  browser.next_link()
+
+  let activated = browser.activate_focused_link() catch { _ => false }
+  inspect(activated, content="true")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E",
+  )
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("done"))
+}
+
+///|
+async test "Browser activate_focused_link submits focused text input form" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="get">
+    #|    <input id="field" type="text" value="hello" style="display:block;width:120px;height:32px" />
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  browser.next_link()
+
+  let activated = browser.activate_focused_link() catch { _ => false }
+  inspect(activated, content="true")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E",
+  )
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("done"))
 }

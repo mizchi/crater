@@ -15,6 +15,14 @@ priv struct ClickDispatchResult {
 }
 
 ///|
+priv enum SubmitDispatchResult {
+  NotSubmittable
+  Prevented
+  Handled
+  Navigate(String)
+}
+
+///|
 priv struct HitTarget {
   source_id : String
   area : Double
@@ -215,6 +223,12 @@ fn resolve_url(base_url : String, href : String) -> String {
   }
   // Already absolute
   if href.has_prefix("http://") || href.has_prefix("https://") {
+    return href
+  }
+  if href.has_prefix("data:") ||
+    href.has_prefix("about:") ||
+    href.has_prefix("blob:") ||
+    href.has_prefix("file:") {
     return href
   }
   // Protocol-relative
@@ -846,37 +860,46 @@ fn Browser::get_element_scroll_positions(
 }
 
 ///|
-/// Check if a link is currently visible on screen
-/// A link is visible if its text appears in the link_regions array
-fn Browser::is_link_visible(self : Browser, link_name : String) -> Bool {
-  for region in self.link_regions {
-    if region.text == link_name {
-      return true
+fn Browser::is_bounds_visible(self : Browser, bounds : @aom.Bounds?) -> Bool {
+  match bounds {
+    Some(b) => {
+      let view_left = 0.0
+      let view_right = self.viewport_width.to_double()
+      let view_top = self.scroll_y.to_double()
+      let view_bottom = view_top + self.viewport_height.to_double()
+      b.x + b.width > view_left &&
+      b.x < view_right &&
+      b.y + b.height > view_top &&
+      b.y < view_bottom
     }
+    None => false
   }
-  false
+}
+
+///|
+fn Browser::is_focus_node_visible(
+  self : Browser,
+  node : @aom.AccessibilityNode,
+) -> Bool {
+  self.is_bounds_visible(node.bounds)
 }
 
 ///|
 /// Focus next visible focusable element (Tab)
-/// Skips elements that are not currently visible on screen
 pub fn Browser::next_link(self : Browser) -> Unit {
+  if self.a11y_tree is None || self.focus_manager is None {
+    self.build_accessibility_tree()
+  }
   match self.focus_manager {
     Some(fm) => {
-      // Try to find next visible focusable element
       let count = fm.focusable_count()
       if count == 0 {
         return
       }
-      // Try up to count times to find a visible element
       for attempt = 0; attempt < count; attempt = attempt + 1 {
         let _ = fm.focus_next()
         match fm.current() {
-          Some(node) =>
-            match node.name {
-              Some(name) => if self.is_link_visible(name) { return }
-              None => ()
-            }
+          Some(node) => if self.is_focus_node_visible(node) { return }
           None => return
         }
       }
@@ -891,24 +914,20 @@ pub fn Browser::next_link(self : Browser) -> Unit {
 
 ///|
 /// Focus previous visible focusable element (Shift+Tab)
-/// Skips elements that are not currently visible on screen
 pub fn Browser::prev_link(self : Browser) -> Unit {
+  if self.a11y_tree is None || self.focus_manager is None {
+    self.build_accessibility_tree()
+  }
   match self.focus_manager {
     Some(fm) => {
-      // Try to find previous visible focusable element
       let count = fm.focusable_count()
       if count == 0 {
         return
       }
-      // Try up to count times to find a visible element
       for attempt = 0; attempt < count; attempt = attempt + 1 {
         let _ = fm.focus_prev()
         match fm.current() {
-          Some(node) =>
-            match node.name {
-              Some(name) => if self.is_link_visible(name) { return }
-              None => ()
-            }
+          Some(node) => if self.is_focus_node_visible(node) { return }
           None => return
         }
       }
@@ -1247,24 +1266,49 @@ fn Browser::get_href_for_source_id(
 }
 
 ///|
-/// Get number of visible focusable elements (links visible on screen)
+/// Get number of visible focusable elements currently on screen
 fn Browser::get_visible_focusable_count(self : Browser) -> Int {
-  self.link_regions.length()
+  if self.a11y_tree is None || self.focus_manager is None {
+    self.build_accessibility_tree()
+  }
+  match self.focus_manager {
+    Some(fm) => {
+      let mut count = 0
+      for item in fm.get_tab_order() {
+        if self.is_focus_node_visible(item.node) {
+          count += 1
+        }
+      }
+      count
+    }
+    None => self.link_regions.length()
+  }
 }
 
 ///|
-/// Get current focus index among visible elements (-1 if no focus or not visible)
+/// Get current focus index among visible focusable elements (-1 if not visible)
 fn Browser::get_visible_focus_index(self : Browser) -> Int {
-  let focused_name = self.get_focused_element_name()
-  match focused_name {
-    Some(name) => {
-      for i, region in self.link_regions {
-        if region.text == name {
-          return i
+  if self.a11y_tree is None || self.focus_manager is None {
+    self.build_accessibility_tree()
+  }
+  match self.focus_manager {
+    Some(fm) =>
+      match fm.current() {
+        Some(node) => {
+          let focused_source_id = node.source_id
+          let mut visible_index = 0
+          for item in fm.get_tab_order() {
+            if self.is_focus_node_visible(item.node) {
+              if item.node.source_id == focused_source_id {
+                return visible_index
+              }
+              visible_index += 1
+            }
+          }
+          -1
         }
+        None => -1
       }
-      -1
-    }
     None => -1
   }
 }
@@ -1350,6 +1394,37 @@ fn Browser::dispatch_click_to_source_id(
 }
 
 ///|
+fn Browser::dispatch_submit_to_source_id(
+  self : Browser,
+  source_id : String,
+) -> SubmitDispatchResult {
+  if not(self.enable_js) {
+    return NotSubmittable
+  }
+  let escaped = escape_js_string(source_id)
+  let source = "(function(){const target=document.getElementById('" +
+    escaped +
+    "');if(!target){return 'none';}const tag=(target.tagName||'').toLowerCase();const type=(target.getAttribute?((target.getAttribute('type')||'').toLowerCase()):'');let form=null;let submitter=null;if(tag==='form'){form=target;}else{if(tag==='button'){if(type!==''&&type!=='submit'){return 'none';}submitter=target;}else if(tag==='input'){if(type==='submit'||type==='image'){submitter=target;}else if(type==='button'||type==='reset'||type==='checkbox'||type==='radio'||type==='file'){return 'none';}}else if(tag==='textarea'||tag==='select'){return 'none';}form=target.closest?target.closest('form'):null;}if(!form){return 'none';}const submitEvent=new Event('submit',{bubbles:true,cancelable:true});if(!form.dispatchEvent(submitEvent)){return 'prevent';}const method=((form.getAttribute&&form.getAttribute('method'))||'get').toLowerCase();let action=((form.getAttribute&&form.getAttribute('action'))||'');if(!action){action=(document&&document.URL)||((window&&window.location&&window.location.href)||'');}if(method!=='get'||!action){return 'handled';}const pairs=[];function pushField(el){if(!el||!el.getAttribute){return;}const name=el.getAttribute('name');if(!name){return;}const elTag=(el.tagName||'').toLowerCase();const elType=((el.getAttribute('type')||'').toLowerCase());if((elTag==='input')&&(elType==='submit'||elType==='button'||elType==='image'||elType==='reset'||elType==='file')){return;}if((elType==='checkbox'||elType==='radio')&&!el.checked){return;}const value=(el.value!==undefined&&el.value!==null)?String(el.value):String(el.getAttribute('value')||'');pairs.push(encodeURIComponent(name)+'='+encodeURIComponent(value));}function walk(node){if(!node||!node.childNodes){return;}for(let i=0;i<node.childNodes.length;i++){const child=node.childNodes[i];if(!child||child.nodeType!==1){continue;}const childTag=(child.tagName||'').toLowerCase();if(childTag==='input'||childTag==='select'||childTag==='textarea'){pushField(child);}walk(child);}}walk(form);if(submitter&&submitter.getAttribute){const submitName=submitter.getAttribute('name');if(submitName){const submitValue=(submitter.value!==undefined&&submitter.value!==null)?String(submitter.value):String(submitter.getAttribute('value')||'');pairs.push(encodeURIComponent(submitName)+'='+encodeURIComponent(submitValue));}}if(pairs.length>0){action += (action.indexOf('?')>=0 ? '&' : '?') + pairs.join('&');}return 'navigate:' + action;})()"
+  match self.execute_inline_js(source) {
+    Some(result) => {
+      let _ = self.sync_render_state_from_dom_tree()
+      if result == "none" {
+        NotSubmittable
+      } else if result == "prevent" {
+        Prevented
+      } else if result == "handled" {
+        Handled
+      } else if result.has_prefix("navigate:") {
+        Navigate(result.unsafe_substring(start=9, end=result.length()))
+      } else {
+        NotSubmittable
+      }
+    }
+    None => NotSubmittable
+  }
+}
+
+///|
 pub fn Browser::tick_js(self : Browser) -> Bool {
   if not(self.enable_js) {
     return false
@@ -1382,6 +1457,15 @@ pub async fn Browser::activate_focused_link(
       let dispatch = self.dispatch_click_to_source_id(id)
       if not(dispatch.allow_default) {
         return true
+      }
+      match self.dispatch_submit_to_source_id(id) {
+        Prevented => return true
+        Handled => return true
+        Navigate(url) => {
+          let _ = self.navigate(resolve_url(self.current_url, url))
+          return true
+        }
+        NotSubmittable => ()
       }
       if href is None && dispatch.handled {
         return true
@@ -1419,6 +1503,15 @@ pub async fn Browser::activate_at(
       let dispatch = self.dispatch_click_to_source_id(id)
       if not(dispatch.allow_default) {
         return true
+      }
+      match self.dispatch_submit_to_source_id(id) {
+        Prevented => return true
+        Handled => return true
+        Navigate(url) => {
+          let _ = self.navigate(resolve_url(self.current_url, url))
+          return true
+        }
+        NotSubmittable => ()
       }
       match href {
         Some(url) if url.length() > 0 => {
