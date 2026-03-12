@@ -263,23 +263,45 @@ fn normalize_native_key(key : String) -> String {
 }
 
 ///|
-pub async fn read_key() -> String {
+pub fn read_key() -> String {
+  read_key_with_timeout(-1)
+}
+
+///|
+pub fn read_key_with_timeout(timeout_ms : Int) -> String {
   if not(is_tty()) {
+    if timeout_ms >= 0 {
+      tui_sleep_ms(timeout_ms)
+      return ""
+    }
     return "q"
   }
   if not(is_raw_mode()) {
     enable_raw_mode()
   }
-  match @stdio.stdin.read_some(max_len=32) {
-    Some(bytes) => {
-      let prefix : Array[Byte] = []
-      for b in bytes {
-        prefix.push(b)
-      }
-      normalize_native_key(read_raw_key_from_prefix(prefix))
+  let prefix : Array[Byte] = []
+  let mut waited = 0
+  let step_ms = 5
+  while true {
+    let b = tui_read_byte()
+    if b >= 0 {
+      prefix.push(b.to_byte())
+      break
     }
-    None => "q"
+    if timeout_ms >= 0 && waited >= timeout_ms {
+      return ""
+    }
+    tui_sleep_ms(step_ms)
+    waited = waited + step_ms
   }
+  for _i = 0; _i < 31; _i = _i + 1 {
+    let b = tui_read_byte()
+    if b < 0 {
+      break
+    }
+    prefix.push(b.to_byte())
+  }
+  normalize_native_key(read_raw_key_from_prefix(prefix))
 }
 
 ///|

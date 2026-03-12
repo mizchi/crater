@@ -3,13 +3,19 @@
 
 ///|
 /// Read a key - not supported in WASM
-pub fn read_key() -> String {
+pub async fn read_key() -> String {
+  panic()
+}
+
+///|
+/// Read a key with timeout - not supported in WASM
+pub async fn read_key_with_timeout(_timeout_ms : Int) -> String {
   panic()
 }
 
 ///|
 /// Read a line - not supported in WASM
-pub fn read_line(_prompt : String) -> String {
+pub async fn read_line(_prompt : String) -> String {
   panic()
 }
 
@@ -45,6 +51,6 @@ pub fn enable_raw_mode() -> Unit {
 
 ///|
 /// Wait for Enter key - not supported in WASM
-pub fn wait_for_enter() -> Unit {
+pub async fn wait_for_enter() -> Unit {
   ()
 }

@@ -151,6 +151,13 @@ pub(all) enum Visibility {
 } derive(Show, Eq)
 
 ///|
+/// CSS pointer-events property (minimum subset for browser hit testing).
+pub(all) enum PointerEvents {
+  Auto
+  None
+} derive(Show, Eq)
+
+///|
 /// CSS margin-trim property
 pub(all) enum MarginTrim {
   None
@@ -481,6 +488,7 @@ pub(all) struct Style {
   mut clip : @types.ClipRect
   // Paint properties (visual, not layout)
   mut visibility : Visibility
+  mut pointer_events : PointerEvents
   mut z_index : ZIndex
   mut opacity : Double // 0.0 = transparent, 1.0 = opaque
   // Color properties (resolved RGBA values)
@@ -594,6 +602,7 @@ pub fn Style::default() -> Style {
     vertical_align: Baseline,
     clip: @types.ClipRect::Auto,
     visibility: Visible,
+    pointer_events: PointerEvents::Auto,
     z_index: Auto,
     opacity: 1.0,
     color: @types.Color::black(),

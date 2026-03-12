@@ -763,7 +763,8 @@ fn has_default_inherited_inline_context(parent_style : @style.Style?) -> Bool {
       ps.line_height == 16.0 &&
       ps.white_space == @style.WhiteSpace::Normal &&
       ps.writing_mode == @style.WritingMode::HorizontalTb &&
-      ps.direction == @style.Direction::Ltr
+      ps.direction == @style.Direction::Ltr &&
+      ps.pointer_events == @style.PointerEvents::Auto
   }
 }
 
@@ -2448,6 +2449,7 @@ pub fn element_to_node(
           inherited.writing_mode = ps.writing_mode
           inherited.direction = ps.direction
           inherited.color = ps.color
+          inherited.pointer_events = ps.pointer_events
           inherited
         }
         None => @style.Style::default()
@@ -6472,6 +6474,7 @@ fn compute_element_style_indexed(
         white_space: ps.white_space,
         writing_mode: ps.writing_mode,
         direction: ps.direction,
+        pointer_events: ps.pointer_events,
       }
     }
     None => ()

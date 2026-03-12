@@ -31,6 +31,15 @@ pub fn ScriptExecutor::clear_logs(self : ScriptExecutor) -> Unit {
 }
 
 ///|
+/// Execute inline JavaScript source immediately against the current DOM.
+pub fn ScriptExecutor::execute_source(
+  self : ScriptExecutor,
+  source : String,
+) -> JsResult raise JsError {
+  self.ctx.execute(source)
+}
+
+///|
 /// Enqueue a script for execution
 pub fn enqueue_script(
   scheduler : @scheduler.Scheduler,

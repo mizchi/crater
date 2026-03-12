@@ -18,6 +18,7 @@
 pub(all) struct PaintProperties {
   z_index : @style.ZIndex
   visibility : @style.Visibility
+  pointer_events : @style.PointerEvents
   opacity : Double // 0.0 = transparent, 1.0 = opaque
   color : @types.Color // Text color (computed)
   background_color : @types.Color // Background color (computed)
@@ -28,6 +29,7 @@ pub fn PaintProperties::default() -> PaintProperties {
   {
     z_index: @style.ZIndex::Auto,
     visibility: @style.Visibility::Visible,
+    pointer_events: @style.PointerEvents::Auto,
     opacity: 1.0,
     color: @types.Color::black(),
     background_color: @types.Color::transparent(),
@@ -39,6 +41,7 @@ pub fn PaintProperties::from_style(style : @style.Style) -> PaintProperties {
   {
     z_index: style.z_index,
     visibility: style.visibility,
+    pointer_events: style.pointer_events,
     opacity: style.opacity,
     color: style.color,
     background_color: style.background_color,
@@ -53,6 +56,8 @@ pub impl Show for PaintProperties with output(self, logger) {
   self.visibility.output(logger)
   logger.write_string(", opacity: ")
   self.opacity.output(logger)
+  logger.write_string(", pointer_events: ")
+  self.pointer_events.output(logger)
   logger.write_string(", color: ")
   self.color.output(logger)
   logger.write_string(", background_color: ")

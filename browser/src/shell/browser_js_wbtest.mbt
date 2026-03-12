@@ -630,3 +630,683 @@ test "Browser syncs JS DOM mutations into html_content and link cache" {
   inspect(browser.links[0].href, content="/after")
   inspect(browser.links[0].text, content="after")
 }
+
+///|
+test "Browser tick_js applies queued JS tasks to render output" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body>
+    #|<p id="greet">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  browser.init_js_execution()
+  let script =
+    #|const el = document.getElementById('greet');
+    #|if (el) el.textContent = 'after';
+  let _ = @js.enqueue_script(browser.scheduler, script, true)
+
+  inspect(browser.tick_js(), content="true")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("after"))
+  assert_true(not(rendered.contains("before")))
+}
+
+///|
+async test "Browser activate_focused_link dispatches onclick and repaints" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body>
+    #|  <p id="status">before</p>
+    #|  <a href="/next" onclick="document.getElementById('status').textContent='after'; event.preventDefault();">Go</a>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let activated = browser.activate_focused_link() catch { _ => false }
+  inspect(activated, content="true")
+
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("after"))
+  assert_true(not(rendered.contains("before")))
+}
+
+///|
+async test "Browser activate_at dispatches button onclick and repaints" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; }
+    #|    button { display: block; width: 96px; height: 32px; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <button id="btn" onclick="document.getElementById('status').textContent='after';">Go</button>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  browser.build_accessibility_tree()
+  let (col, row) = match browser.a11y_tree {
+    Some(tree) =>
+      match tree.find_by_source_id("btn") {
+        Some(node) =>
+          match node.bounds {
+            Some(bounds) =>
+              (
+                @tui.px_to_col(bounds.x + bounds.width / 2.0),
+                @tui.px_to_row(bounds.y + bounds.height / 2.0) + 1,
+              )
+            None => panic()
+          }
+        None => panic()
+      }
+    None => panic()
+  }
+
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("after"))
+  assert_true(not(rendered.contains("before")))
+}
+
+///|
+async test "Browser activate_at dispatches generic onclick element and repaints" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; }
+    #|    div#target { display: block; width: 120px; height: 40px; background: #ddd; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="target" onclick="document.getElementById('status').textContent='after';">Tap</div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let initial = browser.render_output(Text)
+  assert_true(initial.contains("before"))
+  browser.build_accessibility_tree()
+  let (col, row) = match browser.a11y_tree {
+    Some(tree) =>
+      match tree.find_by_source_id("target") {
+        Some(node) =>
+          match node.bounds {
+            Some(bounds) =>
+              (
+                @tui.px_to_col(bounds.x + bounds.width / 2.0),
+                @tui.px_to_row(bounds.y + bounds.height / 2.0) + 1,
+              )
+            None => panic()
+          }
+        None => panic()
+      }
+    None => panic()
+  }
+
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("after"))
+  assert_true(not(rendered.contains("before")))
+}
+
+///|
+async test "Browser activate_at flushes requestAnimationFrame mutation and repaints" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; }
+    #|    button { display: block; width: 96px; height: 32px; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <button id="btn" onclick="requestAnimationFrame(() => { document.getElementById('status').textContent='after'; });">Go</button>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let initial = browser.render_output(Text)
+  assert_true(initial.contains("before"))
+  browser.build_accessibility_tree()
+  let (col, row) = match browser.a11y_tree {
+    Some(tree) =>
+      match tree.find_by_source_id("btn") {
+        Some(node) =>
+          match node.bounds {
+            Some(bounds) =>
+              (
+                @tui.px_to_col(bounds.x + bounds.width / 2.0),
+                @tui.px_to_row(bounds.y + bounds.height / 2.0) + 1,
+              )
+            None => panic()
+          }
+        None => panic()
+      }
+    None => panic()
+  }
+
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("after"))
+  assert_true(not(rendered.contains("before")))
+}
+
+///|
+async test "Browser activate_at prefers topmost overlapping painted element" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 160px; height: 80px; background: #ccc; }
+    #|    #top { position: absolute; left: 20px; top: 10px; width: 160px; height: 80px; background: #999; z-index: 1; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <p id="status" style="margin-top: 100px">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let mut top_region : @tui.HitRegion? = None
+  let mut bottom_region : @tui.HitRegion? = None
+  for region in browser.hit_regions {
+    if region.source_id == "top" {
+      top_region = Some(region)
+    }
+    if region.source_id == "bottom" {
+      bottom_region = Some(region)
+    }
+  }
+  let (col, row) = match (top_region, bottom_region) {
+    (Some(top), Some(bottom)) => {
+      let overlap_left = top.col.max(bottom.col)
+      let overlap_top = top.row.max(bottom.row)
+      let overlap_right = (top.col + top.width).min(bottom.col + bottom.width)
+      let overlap_bottom = (top.row + top.height).min(
+        bottom.row + bottom.height,
+      )
+      assert_true(overlap_right > overlap_left)
+      assert_true(overlap_bottom > overlap_top)
+      (overlap_left, overlap_top)
+    }
+    _ => panic()
+  }
+
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("top"))
+  assert_true(not(rendered.contains("bottom")))
+  assert_true(not(rendered.contains("before")))
+}
+
+///|
+async test "Browser activate_at ignores clipped overflow area" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; }
+    #|    #clip { position: relative; width: 80px; height: 32px; overflow: hidden; background: #ddd; }
+    #|    #target { position: absolute; left: 48px; top: 0; width: 96px; height: 32px; background: #999; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="clip">
+    #|    <div id="target" onclick="document.getElementById('status').textContent='after';"></div>
+    #|  </div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let initial = browser.render_output(Text)
+  assert_true(initial.contains("before"))
+  let mut target_region : @tui.HitRegion? = None
+  for region in browser.hit_regions {
+    if region.source_id == "target" {
+      target_region = Some(region)
+    }
+  }
+  let region = match target_region {
+    Some(region) => region
+    None => panic()
+  }
+  let hidden_col = region.col + region.width + 1
+  let hidden_row = region.row
+
+  let hidden_activated = browser.activate_at(hidden_col, hidden_row) catch {
+    _ => false
+  }
+  inspect(hidden_activated, content="false")
+
+  let after_hidden = browser.render_output(Text)
+  assert_true(after_hidden.contains("before"))
+  assert_true(not(after_hidden.contains("after")))
+
+  let visible_activated = browser.activate_at(region.col, region.row) catch {
+    _ => false
+  }
+  inspect(visible_activated, content="true")
+
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("after"))
+  assert_true(not(rendered.contains("before")))
+}
+
+///|
+async test "Browser activate_at prefers underlying element outside clipped overlap" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 160px; height: 32px; background: #ccc; }
+    #|    #clip { position: absolute; left: 0; top: 0; width: 80px; height: 32px; overflow: hidden; }
+    #|    #top { position: absolute; left: 48px; top: 0; width: 96px; height: 32px; background: #999; z-index: 1; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="clip">
+    #|    <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  </div>
+    #|  <div style="height: 48px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let mut top_region : @tui.HitRegion? = None
+  let mut bottom_region : @tui.HitRegion? = None
+  for region in browser.hit_regions {
+    if region.source_id == "top" {
+      top_region = Some(region)
+    }
+    if region.source_id == "bottom" {
+      bottom_region = Some(region)
+    }
+  }
+  let (col, row) = match (top_region, bottom_region) {
+    (Some(top), Some(bottom)) => {
+      let hidden_left = top.col + top.width
+      let hidden_right = bottom.col + bottom.width
+      assert_true(hidden_right > hidden_left)
+      (hidden_left, bottom.row.max(top.row))
+    }
+    _ => panic()
+  }
+
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(browser.get_source_id_at(col, row), content="Some(\"bottom\")")
+  inspect(activated, content="true")
+
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(status, content="Some(\"bottom\")")
+}
+
+///|
+async test "Browser activate_at skips pointer_events_none overlay" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 160px; height: 48px; background: #ccc; }
+    #|    #top { position: absolute; left: 0; top: 0; width: 160px; height: 48px; background: #999; pointer-events: none; z-index: 1; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 64px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let activated = browser.activate_at(1, 1) catch { _ => false }
+  inspect(browser.get_source_id_at(1, 1), content="Some(\"bottom\")")
+  inspect(activated, content="true")
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(status, content="Some(\"bottom\")")
+}
+
+///|
+async test "Browser activate_at respects inherited pointer_events_none" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #wrapper { pointer-events: none; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 160px; height: 48px; background: #ccc; }
+    #|    #child { position: absolute; left: 0; top: 0; width: 160px; height: 48px; background: #999; z-index: 1; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="wrapper">
+    #|    <div id="child" onclick="document.getElementById('status').textContent='child';"></div>
+    #|  </div>
+    #|  <div style="height: 64px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let activated = browser.activate_at(1, 1) catch { _ => false }
+  inspect(browser.get_source_id_at(1, 1), content="Some(\"bottom\")")
+  inspect(activated, content="true")
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(status, content="Some(\"bottom\")")
+}
+
+///|
+async test "Browser activate_at allows child pointer_events_auto under inherited none" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 160px; height: 48px; background: #ccc; }
+    #|    #wrapper { pointer-events: none; position: absolute; left: 0; top: 0; }
+    #|    #child { pointer-events: auto; position: absolute; left: 0; top: 0; width: 160px; height: 48px; background: #999; z-index: 1; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="wrapper">
+    #|    <div id="child" onclick="document.getElementById('status').textContent='child';"></div>
+    #|  </div>
+    #|  <div style="height: 64px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let activated = browser.activate_at(1, 1) catch { _ => false }
+  inspect(browser.get_source_id_at(1, 1), content="Some(\"child\")")
+  inspect(activated, content="true")
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(status, content="Some(\"child\")")
+}
+
+///|
+async test "Browser activate_at prefers transformed topmost element at visual position" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 160px; height: 48px; background: #ccc; }
+    #|    #top { position: absolute; left: 0; top: 0; width: 160px; height: 48px; background: #999; z-index: 1; transform: translate(48px, 0); }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 64px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let mut top_region : @tui.HitRegion? = None
+  let mut bottom_region : @tui.HitRegion? = None
+  for region in browser.hit_regions {
+    if region.source_id == "top" {
+      top_region = Some(region)
+    }
+    if region.source_id == "bottom" {
+      bottom_region = Some(region)
+    }
+  }
+  let (col, row) = match (top_region, bottom_region) {
+    (Some(top), Some(bottom)) => {
+      let overlap_left = top.col.max(bottom.col)
+      let overlap_top = top.row.max(bottom.row)
+      let overlap_right = (top.col + top.width).min(bottom.col + bottom.width)
+      let overlap_bottom = (top.row + top.height).min(
+        bottom.row + bottom.height,
+      )
+      assert_true(overlap_right > overlap_left)
+      assert_true(overlap_bottom > overlap_top)
+      (overlap_left, overlap_top)
+    }
+    _ => panic()
+  }
+
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
+  inspect(activated, content="true")
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(status, content="Some(\"top\")")
+}
+
+///|
+async test "Browser activate_at dispatches persisted addEventListener click handler" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <button id="btn">Go</button>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('btn').addEventListener('click', function () {
+    #|      document.getElementById('status').textContent = 'after';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let initial = browser.render_output(Text)
+  assert_true(initial.contains("before"))
+
+  let activated = browser.activate_at(1, 1) catch { _ => false }
+  inspect(activated, content="true")
+
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("after"))
+  assert_true(not(rendered.contains("before")))
+}
+
+///|
+async test "Browser activate_at dispatches persisted generic addEventListener click handler" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <div id="target" style="width:160px;height:48px;background:#999">Go</div>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('target').addEventListener('click', function () {
+    #|      document.getElementById('status').textContent = 'after';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let initial = browser.render_output(Text)
+  assert_true(initial.contains("before"))
+
+  let activated = browser.activate_at(1, 1) catch { _ => false }
+  inspect(activated, content="true")
+
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("after"))
+  assert_true(not(rendered.contains("before")))
+}
+
+///|
+async test "Browser activate_at prefers topmost persisted addEventListener element" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 160px; height: 64px; background: #ccc; }
+    #|    #top { position: absolute; left: 24px; top: 8px; width: 160px; height: 64px; background: #999; z-index: 1; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top"></div>
+    #|  <p id="status" style="margin-top: 96px">before</p>
+    #|  <script>
+    #|    document.getElementById('top').addEventListener('click', function () {
+    #|      document.getElementById('status').textContent = 'top';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let mut top_region : @tui.HitRegion? = None
+  let mut bottom_region : @tui.HitRegion? = None
+  for region in browser.hit_regions {
+    if region.source_id == "top" {
+      top_region = Some(region)
+    }
+    if region.source_id == "bottom" {
+      bottom_region = Some(region)
+    }
+  }
+  let (col, row) = match (top_region, bottom_region) {
+    (Some(top), Some(bottom)) => {
+      let overlap_left = top.col.max(bottom.col)
+      let overlap_top = top.row.max(bottom.row)
+      let overlap_right = (top.col + top.width).min(bottom.col + bottom.width)
+      let overlap_bottom = (top.row + top.height).min(
+        bottom.row + bottom.height,
+      )
+      assert_true(overlap_right > overlap_left)
+      assert_true(overlap_bottom > overlap_top)
+      (overlap_left, overlap_top)
+    }
+    _ => panic()
+  }
+
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
+  inspect(activated, content="true")
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(status, content="Some(\"top\")")
+}

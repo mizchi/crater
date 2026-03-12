@@ -12,6 +12,9 @@ import {
 
 // Types and methods
 type Browser
+pub async fn Browser::activate_at(Self, Int, Int) -> Bool raise @http.HttpError
+pub async fn Browser::activate_focused_link(Self) -> Bool raise @http.HttpError
+pub async fn Browser::activate_link_at(Self, Int, Int) -> Bool raise @http.HttpError
 pub fn Browser::debug_layout(Self) -> Unit
 pub fn Browser::enter_hint_mode(Self) -> Unit
 pub fn Browser::execute_scripts(Self) -> Int
@@ -38,6 +41,7 @@ pub fn Browser::set_dark_mode(Self, Bool) -> Unit
 pub fn Browser::set_enable_js(Self, Bool) -> Unit
 pub fn Browser::set_no_color(Self, Bool) -> Unit
 pub fn Browser::set_request_sandbox(Self, @http.RequestSandbox) -> Unit
+pub fn Browser::tick_js(Self) -> Bool
 pub fn Browser::toggle_dark_mode(Self) -> Unit
 pub fn Browser::toggle_selection_mode(Self) -> Bool
 pub async fn[T : @io.Writer] Browser::write_output(Self, OutputMode, T) -> Unit

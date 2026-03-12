@@ -2829,6 +2829,21 @@ test "setTimeout: callback is executed" {
 }
 
 ///|
+test "requestAnimationFrame: callback is executed" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|let called = false;
+    #|requestAnimationFrame(() => { called = true; console.log('raf executed'); });
+    #|called
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="false")
+  let has_raf = result.logs.iter().any(fn(log) { log.contains("raf executed") })
+  inspect(has_raf, content="true")
+}
+
+///|
 test "setTimeout: multiple timeouts execute in order" {
   let dom = @dom.DomTree::new()
   let ctx = JsContext::new(dom)

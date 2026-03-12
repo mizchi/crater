@@ -64,6 +64,54 @@ fn min_double(a : Double, b : Double) -> Double {
 }
 
 ///|
+fn intersect_pixel_rects(
+  a : (Double, Double, Double, Double),
+  b : (Double, Double, Double, Double),
+) -> (Double, Double, Double, Double)? {
+  let (ax, ay, aw, ah) = a
+  let (bx, by, bw, bh) = b
+  let left = max_double(ax, bx)
+  let top = max_double(ay, by)
+  let right = min_double(ax + aw, bx + bw)
+  let bottom = min_double(ay + ah, by + bh)
+  if right <= left || bottom <= top {
+    None
+  } else {
+    Some((left, top, right - left, bottom - top))
+  }
+}
+
+///|
+fn get_local_clip_rect(
+  node : @paint.PaintNode,
+  abs_x : Double,
+  abs_y : Double,
+) -> (Double, Double, Double, Double)? {
+  match node.clip {
+    @types.ClipRect::Rect(top~, right~, bottom~, left~) =>
+      Some((abs_x + left, abs_y + top, right - left, bottom - top))
+    @types.ClipRect::Auto =>
+      match (node.overflow_x, node.overflow_y) {
+        (@types.Visible, @types.Visible) => None
+        _ => Some((abs_x, abs_y, node.width, node.height))
+      }
+  }
+}
+
+///|
+fn combine_clip_rects(
+  inherited : (Double, Double, Double, Double)?,
+  local_clip : (Double, Double, Double, Double)?,
+) -> (Double, Double, Double, Double)? {
+  match (inherited, local_clip) {
+    (Some(a), Some(b)) => intersect_pixel_rects(a, b)
+    (Some(a), None) => Some(a)
+    (None, Some(b)) => Some(b)
+    (None, None) => None
+  }
+}
+
+///|
 /// Convert dirty rects in pixel coordinates to character grid rectangles
 pub fn dirty_rects_to_cells(
   rects : Array[@types.BoundingRect],
@@ -105,6 +153,57 @@ pub(all) struct LinkRegion {
   width : Int // Width in characters
   height : Int // Height in characters
   text : String // Link text (used to match with Browser.links for href)
+  source_id : String // Source element id for DOM event dispatch
+}
+
+///|
+pub(all) struct HitRegion {
+  col : Int
+  row : Int
+  width : Int
+  height : Int
+  source_id : String
+}
+
+///|
+pub fn HitRegion::contains(self : HitRegion, col : Int, row : Int) -> Bool {
+  col >= self.col &&
+  col < self.col + self.width &&
+  row >= self.row &&
+  row < self.row + self.height
+}
+
+///|
+pub fn find_hit_region_at(
+  regions : Array[HitRegion],
+  col : Int,
+  row : Int,
+) -> HitRegion? {
+  if regions.is_empty() {
+    return None
+  }
+  let mut i = regions.length() - 1
+  while i >= 0 {
+    let region = regions[i]
+    if region.contains(col, row) {
+      return Some(region)
+    }
+    i = i - 1
+  }
+  None
+}
+
+///|
+fn extract_source_id(node_id : String) -> String? {
+  match node_id.find("#") {
+    Some(idx) =>
+      if idx + 1 < node_id.length() {
+        Some(node_id[idx + 1:].to_string())
+      } else {
+        None
+      }
+    None => None
+  }
 }
 
 ///|
@@ -133,9 +232,22 @@ pub fn find_link_at(
   col : Int,
   row : Int,
 ) -> String? {
+  match find_link_region_at(regions, col, row) {
+    Some(region) => Some(region.text)
+    None => None
+  }
+}
+
+///|
+/// Find link region at given screen coordinates
+pub fn find_link_region_at(
+  regions : Array[LinkRegion],
+  col : Int,
+  row : Int,
+) -> LinkRegion? {
   for region in regions {
     if region.contains(col, row) {
-      return Some(region.text)
+      return Some(region)
     }
   }
   None
@@ -156,6 +268,7 @@ pub struct TuiContext {
   scroll_y : Int // Scroll offset in character rows
   viewport_height : Int // Visible height in character rows
   link_regions : Array[LinkRegion] // Collected link regions
+  hit_regions : Array[HitRegion] // Paint-order hit regions
   focused_element_name : String? // Name of currently focused element (for :focus styling)
   dark_mode : Bool // Dark mode enabled
   element_scroll_positions : Map[String, ElementScrollPos] // Element-level scroll positions
@@ -169,7 +282,9 @@ fn render_paint_node(
   parent_x : Double,
   parent_y : Double,
   inside_link : Bool,
+  current_link_source_id? : String? = None,
   inside_pre? : Bool = false,
+  clip_rect? : (Double, Double, Double, Double)? = None,
 ) -> Unit {
   // Skip invisible nodes
   if not(node.paint.should_render()) {
@@ -184,11 +299,26 @@ fn render_paint_node(
   // Use ceiling for width and height to ensure text content fits
   let w = px_to_col_width(node.width)
   let h = px_to_row_height(node.height)
+  let node_rect = (abs_x, abs_y, node.width, node.height)
+  let effective_clip = combine_clip_rects(
+    clip_rect,
+    get_local_clip_rect(node, abs_x, abs_y),
+  )
+  let visible_rect = match effective_clip {
+    Some(clip) => intersect_pixel_rects(node_rect, clip)
+    None => Some(node_rect)
+  }
   // Check if we're inside a pre/code element (no text wrapping)
   // Also disable wrapping inside table cells (th/td) - cells should clip, not wrap
   let is_pre = node.tag == "pre" || node.tag == "code"
   let is_table_cell = node.tag == "th" || node.tag == "td"
   let child_inside_pre = inside_pre || is_pre || is_table_cell
+  let child_link_source_id = if node.tag == "a" &&
+    node.paint.pointer_events != @style.PointerEvents::None {
+    extract_source_id(node.id)
+  } else {
+    current_link_source_id
+  }
   // Skip if completely outside viewport
   if row + h < 0 || row >= ctx.viewport_height {
     // Still need to render children that might be visible
@@ -200,7 +330,9 @@ fn render_paint_node(
         abs_x,
         abs_y,
         child_inside_link,
+        current_link_source_id=child_link_source_id,
         inside_pre=child_inside_pre,
+        clip_rect=effective_clip,
       )
     }
     return
@@ -215,10 +347,28 @@ fn render_paint_node(
         abs_x,
         abs_y,
         child_inside_link,
+        current_link_source_id=child_link_source_id,
         inside_pre=child_inside_pre,
+        clip_rect=effective_clip,
       )
     }
     return
+  }
+  match (extract_source_id(node.id), visible_rect) {
+    (Some(source_id), Some((visible_x, visible_y, visible_w, visible_h))) =>
+      if node.tag != "#text" &&
+        node.paint.pointer_events != @style.PointerEvents::None &&
+        visible_w > 0.0 &&
+        visible_h > 0.0 {
+        ctx.hit_regions.push({
+          col: px_to_col(visible_x),
+          row: px_to_row(visible_y) - ctx.scroll_y,
+          width: px_to_col_width(visible_w),
+          height: px_to_row_height(visible_h),
+          source_id,
+        })
+      }
+    _ => ()
   }
   // Draw background if not transparent
   if not(node.paint.background_color.is_transparent()) {
@@ -380,14 +530,38 @@ fn render_paint_node(
           }
           // Collect link region for hit testing
           if is_link && w > 0 && h > 0 {
-            let text_len = text_content.to_array().length()
-            ctx.link_regions.push({
-              col,
-              row,
-              width: text_len.min(w),
-              height: 1,
-              text: text_content,
-            })
+            match child_link_source_id {
+              Some(source_id) => {
+                let text_len = text_content.to_array().length()
+                let link_col = match visible_rect {
+                  Some((visible_x, _, _, _)) => px_to_col(visible_x)
+                  None => col
+                }
+                let link_row = match visible_rect {
+                  Some((_, visible_y, _, _)) =>
+                    px_to_row(visible_y) - ctx.scroll_y
+                  None => row
+                }
+                let link_width = match visible_rect {
+                  Some((_, _, visible_w, _)) =>
+                    text_len.min(px_to_col_width(visible_w))
+                  None => text_len.min(w)
+                }
+                let link_height = match visible_rect {
+                  Some((_, _, _, visible_h)) => px_to_row_height(visible_h)
+                  None => 1
+                }
+                ctx.link_regions.push({
+                  col: link_col,
+                  row: link_row,
+                  width: link_width,
+                  height: link_height,
+                  text: text_content,
+                  source_id,
+                })
+              }
+              None => ()
+            }
           }
         }
       None => ()
@@ -402,7 +576,9 @@ fn render_paint_node(
       abs_x,
       abs_y,
       child_inside_link,
+      current_link_source_id=child_link_source_id,
       inside_pre=child_inside_pre,
+      clip_rect=effective_clip,
     )
   }
   // Draw scrollbar for scrollable elements
@@ -437,6 +613,7 @@ fn render_paint_node(
 pub(all) struct RenderResult {
   ansi : String
   link_regions : Array[LinkRegion]
+  hit_regions : Array[HitRegion]
 }
 
 ///|
@@ -444,6 +621,7 @@ pub(all) struct RenderResult {
 pub(all) struct BufferRenderResult {
   buffer : CharBuffer
   link_regions : Array[LinkRegion]
+  hit_regions : Array[HitRegion]
   scrollable_elements : Array[@paint.ScrollableElement]
 }
 
@@ -465,7 +643,11 @@ pub fn render_to_ansi(
     scroll_y,
     focused_element_name~,
   )
-  { ansi: buffer_to_ansi(result.buffer), link_regions: result.link_regions }
+  {
+    ansi: buffer_to_ansi(result.buffer),
+    link_regions: result.link_regions,
+    hit_regions: result.hit_regions,
+  }
 }
 
 ///|
@@ -498,22 +680,30 @@ pub fn render_to_buffer(
       node, layout, viewport_top, viewport_bottom, 0.0,
     ) {
     Some(n) => n
-    None => return { buffer: buf, link_regions: [], scrollable_elements: [] }
+    None =>
+      return {
+        buffer: buf,
+        link_regions: [],
+        hit_regions: [],
+        scrollable_elements: [],
+      }
   }
   let sorted = @paint.sort_tree_by_stacking_order(paint_node)
   let link_regions : Array[LinkRegion] = []
+  let hit_regions : Array[HitRegion] = []
   let scrollable_elements = @paint.collect_scrollable_elements(sorted)
   let ctx : TuiContext = {
     buffer: buf,
     scroll_y,
     viewport_height: height,
     link_regions,
+    hit_regions,
     focused_element_name,
     dark_mode: false,
     element_scroll_positions: {},
   }
   render_paint_node(ctx, sorted, 0.0, 0.0, false)
-  { buffer: buf, link_regions, scrollable_elements }
+  { buffer: buf, link_regions, hit_regions, scrollable_elements }
 }
 
 ///|
@@ -546,7 +736,11 @@ pub fn render_to_ansi_with_status(
     selection_mode~,
     dark_mode~,
   )
-  { ansi: buffer_to_ansi(result.buffer), link_regions: result.link_regions }
+  {
+    ansi: buffer_to_ansi(result.buffer),
+    link_regions: result.link_regions,
+    hit_regions: result.hit_regions,
+  }
 }
 
 ///|
@@ -609,7 +803,12 @@ pub fn render_to_buffer_with_status(
         selection_mode~,
         dark_mode~,
       )
-      return { buffer: buf, link_regions: [], scrollable_elements: [] }
+      return {
+        buffer: buf,
+        link_regions: [],
+        hit_regions: [],
+        scrollable_elements: [],
+      }
     }
   }
   // Sort by stacking order
@@ -619,11 +818,13 @@ pub fn render_to_buffer_with_status(
   // Create context with link regions array
   // Content is drawn with a 1-row offset via parent_y
   let link_regions : Array[LinkRegion] = []
+  let hit_regions : Array[HitRegion] = []
   let ctx : TuiContext = {
     buffer: buf,
     scroll_y,
     viewport_height: content_height,
     link_regions,
+    hit_regions,
     focused_element_name,
     dark_mode,
     element_scroll_positions,
@@ -661,7 +862,7 @@ pub fn render_to_buffer_with_status(
     )
   }
   // Return buffer, link regions, and scrollable elements
-  { buffer: buf, link_regions, scrollable_elements }
+  { buffer: buf, link_regions, hit_regions, scrollable_elements }
 }
 
 ///|
@@ -760,7 +961,11 @@ pub fn render_to_ansi_with_hints(
     hint_input,
     focused_element_name~,
   )
-  { ansi: buffer_to_ansi(result.buffer), link_regions: result.link_regions }
+  {
+    ansi: buffer_to_ansi(result.buffer),
+    link_regions: result.link_regions,
+    hit_regions: result.hit_regions,
+  }
 }
 
 ///|
@@ -802,7 +1007,12 @@ pub fn render_to_buffer_with_hints(
       // Content is outside viewport, just draw hints and status bar
       draw_hints(buf, hints, content_height)
       draw_hint_mode_status_bar(buf, content_height, hint_input, hints)
-      return { buffer: buf, link_regions: [], scrollable_elements: [] }
+      return {
+        buffer: buf,
+        link_regions: [],
+        hit_regions: [],
+        scrollable_elements: [],
+      }
     }
   }
   // Sort by stacking order
@@ -811,11 +1021,13 @@ pub fn render_to_buffer_with_hints(
   let scrollable_elements = @paint.collect_scrollable_elements(sorted)
   // Create context with link regions array
   let link_regions : Array[LinkRegion] = []
+  let hit_regions : Array[HitRegion] = []
   let ctx : TuiContext = {
     buffer: buf,
     scroll_y,
     viewport_height: content_height,
     link_regions,
+    hit_regions,
     focused_element_name,
     dark_mode: false, // TODO: Add dark_mode support for hints
     element_scroll_positions: {},
@@ -827,7 +1039,7 @@ pub fn render_to_buffer_with_hints(
   // Draw status bar with hint list
   draw_hint_mode_status_bar(buf, content_height, hint_input, hints)
   // Return buffer, link regions, and scrollable elements
-  { buffer: buf, link_regions, scrollable_elements }
+  { buffer: buf, link_regions, hit_regions, scrollable_elements }
 }
 
 ///|

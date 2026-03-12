@@ -2,6 +2,7 @@ import {
   "mizchi/crater/types",
   "mizchi/crater/layout/node",
   "mizchi/crater/paint",
+  "mizchi/crater/style",
   "mizchi/x/stdio",
   "mizchi/x/sys",
   "moonbitlang/async/js_async",

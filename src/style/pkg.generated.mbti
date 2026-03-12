@@ -89,6 +89,13 @@ pub fn MarginTrim::trim_block_start(Self) -> Bool
 pub impl Eq for MarginTrim
 pub impl Show for MarginTrim
 
+pub(all) enum PointerEvents {
+  Auto
+  None
+}
+pub impl Eq for PointerEvents
+pub impl Show for PointerEvents
+
 pub(all) enum ScrollSnapAlign {
   None
   Start
@@ -187,6 +194,7 @@ pub(all) struct Style {
   mut vertical_align : VerticalAlign
   mut clip : @types.ClipRect
   mut visibility : Visibility
+  mut pointer_events : PointerEvents
   mut z_index : ZIndex
   mut opacity : Double
   mut color : @types.Color

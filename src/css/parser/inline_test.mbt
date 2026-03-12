@@ -886,6 +886,12 @@ test "parse transform translate with percentage" {
 }
 
 ///|
+test "parse pointer-events none" {
+  let style = parse_inline_style("pointer-events: none")
+  inspect(style.pointer_events, content="None")
+}
+
+///|
 test "parse justify-self center" {
   let style = parse_inline_style("justify-self: center")
   inspect(style.justify_self, content="Center")

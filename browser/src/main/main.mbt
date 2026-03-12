@@ -407,7 +407,13 @@ async fn main {
   // Main event loop
   let mut running = true
   while running {
-    let key = @tui.read_key()
+    let key = @tui.read_key_with_timeout(16)
+    if key.length() == 0 {
+      if browser.tick_js() {
+        render_page(browser, options)
+      }
+      continue
+    }
     // Use different key handling based on hint mode
     let action = if browser.is_hint_mode() {
       @tui.key_to_hint_action(key)
@@ -448,15 +454,12 @@ async fn main {
         browser.prev_link()
         render_page(browser, options)
       }
-      Some(@tui.ActivateLink) =>
-        match browser.get_focused_link_url() {
-          Some(url) => {
-            println("Navigating to: " + url)
-            safe_navigate(browser, url)
-            render_page(browser, options)
-          }
-          None => ()
+      Some(@tui.ActivateLink) => {
+        let activated = browser.activate_focused_link() catch { _ => false }
+        if activated {
+          render_page(browser, options)
         }
+      }
       Some(@tui.GoToUrl(_)) => {
         @tui.print_raw(@tui.show_cursor())
         let url = @tui.read_line("Enter URL: ")
@@ -492,16 +495,12 @@ async fn main {
           None => ()
         }
       }
-      Some(@tui.MouseClick(col, row)) =>
-        // Handle mouse click - check for link at position
-        match browser.get_link_at(col, row) {
-          Some(url) => {
-            println("Clicking link: " + url)
-            safe_navigate(browser, url)
-            render_page(browser, options)
-          }
-          None => ()
+      Some(@tui.MouseClick(col, row)) => {
+        let activated = browser.activate_link_at(col, row) catch { _ => false }
+        if activated {
+          render_page(browser, options)
         }
+      }
       Some(@tui.MouseScrollUp(_, _)) => {
         // Mouse wheel scroll up - scroll page up
         browser.scroll_up(48) // 3 lines * 16px

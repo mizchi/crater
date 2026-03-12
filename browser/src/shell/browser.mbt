@@ -9,6 +9,18 @@ priv struct Link {
 }
 
 ///|
+priv struct ClickDispatchResult {
+  handled : Bool
+  allow_default : Bool
+}
+
+///|
+priv struct HitTarget {
+  source_id : String
+  area : Double
+}
+
+///|
 /// Browser output mode
 pub(all) enum OutputMode {
   Sixel
@@ -48,6 +60,8 @@ struct Browser {
   mut content_height : Int
   /// Link regions for click hit testing (updated on each render)
   mut link_regions : Array[@tui.LinkRegion]
+  /// Paint-order hit regions for generic click hit testing
+  mut hit_regions : Array[@tui.HitRegion]
   /// Hit-a-hint mode state
   mut hint_mode : Bool
   /// Current hints (generated when entering hint mode)
@@ -115,6 +129,7 @@ pub fn Browser::new(
     scroll_y: 0,
     content_height: 0,
     link_regions: [],
+    hit_regions: [],
     hint_mode: false,
     hints: [],
     hint_input: "",
@@ -450,6 +465,19 @@ pub fn Browser::render_output(self : Browser, mode : OutputMode) -> String {
 }
 
 ///|
+fn Browser::flush_js_logs(self : Browser) -> Unit {
+  match self.script_executor {
+    Some(executor) => {
+      for log in executor.get_logs() {
+        println("[JS] " + log)
+      }
+      executor.clear_logs()
+    }
+    None => ()
+  }
+}
+
+///|
 pub async fn[T : @io.Writer] Browser::write_output(
   self : Browser,
   mode : OutputMode,
@@ -655,6 +683,7 @@ fn Browser::render_text(self : Browser) -> String {
   let rt3 = perf_now()
   // Store link regions for click hit testing
   self.link_regions = buffer_result.link_regions
+  self.hit_regions = buffer_result.hit_regions
   // Initialize scroll states for scrollable elements
   self.init_scrollable_elements(buffer_result.scrollable_elements)
   // Build plain links array for no_color mode with clickable hyperlinks
@@ -1014,6 +1043,210 @@ pub fn Browser::get_focused_link_url(self : Browser) -> String? {
 }
 
 ///|
+fn Browser::get_focused_source_id(self : Browser) -> String? {
+  if self.a11y_tree is None || self.focus_manager is None {
+    self.build_accessibility_tree()
+  }
+  match self.focus_manager {
+    Some(fm) =>
+      match fm.current() {
+        Some(node) => node.source_id
+        None =>
+          match self.a11y_tree {
+            Some(tree) => {
+              let mut link_index = 0
+              for node in tree.find_focusable() {
+                if node.role == @aom.Link {
+                  if link_index == self.focused_link {
+                    return node.source_id
+                  }
+                  link_index = link_index + 1
+                }
+              }
+              None
+            }
+            None => None
+          }
+      }
+    None =>
+      match self.a11y_tree {
+        Some(tree) => {
+          let mut link_index = 0
+          for node in tree.find_focusable() {
+            if node.role == @aom.Link {
+              if link_index == self.focused_link {
+                return node.source_id
+              }
+              link_index = link_index + 1
+            }
+          }
+          None
+        }
+        None => None
+      }
+  }
+}
+
+///|
+fn Browser::get_link_source_id_at(
+  self : Browser,
+  col : Int,
+  row : Int,
+) -> String? {
+  match @tui.find_link_region_at(self.link_regions, col, row) {
+    Some(region) => Some(region.source_id)
+    None => None
+  }
+}
+
+///|
+fn Browser::is_clickable_source_id(self : Browser, source_id : String) -> Bool {
+  match self.get_href_for_source_id(source_id) {
+    Some(href) if href.length() > 0 => true
+    _ => {
+      if not(self.enable_js) {
+        return false
+      }
+      let escaped = escape_js_string(source_id)
+      let source = "(function(){const target=document.getElementById('" +
+        escaped +
+        "');if(!target){return false;}if(target.hasAttribute&&(target.hasAttribute('onclick')||target.hasAttribute('data-crater-listeners-click'))){return true;}const tag=(target.tagName||'').toLowerCase();if(tag==='button'||tag==='input'||tag==='select'||tag==='textarea'||tag==='summary'){return true;}const role=target.getAttribute?target.getAttribute('role'):null;return role==='button'||role==='link';})()"
+      match self.execute_inline_js(source) {
+        Some("true") => true
+        _ => false
+      }
+    }
+  }
+}
+
+///|
+fn Browser::get_paint_source_id_at(
+  self : Browser,
+  col : Int,
+  row : Int,
+) -> String? {
+  if self.hit_regions.is_empty() {
+    return None
+  }
+  let mut i = self.hit_regions.length() - 1
+  while i >= 0 {
+    let region = self.hit_regions[i]
+    if region.contains(col, row) &&
+      self.is_clickable_source_id(region.source_id) {
+      return Some(region.source_id)
+    }
+    i = i - 1
+  }
+  None
+}
+
+///|
+fn bounds_contains_click(
+  bounds : @aom.Bounds,
+  px_x : Double,
+  px_y : Double,
+) -> Bool {
+  px_x >= bounds.x &&
+  px_x < bounds.x + bounds.width &&
+  px_y >= bounds.y &&
+  px_y < bounds.y + bounds.height
+}
+
+///|
+fn find_smallest_a11y_hit_target(
+  node : @aom.AccessibilityNode,
+  px_x : Double,
+  px_y : Double,
+  current_best : HitTarget?,
+) -> HitTarget? {
+  let mut best = current_best
+  match (node.source_id, node.bounds) {
+    (Some(source_id), Some(bounds)) =>
+      if bounds.width > 0.0 &&
+        bounds.height > 0.0 &&
+        bounds_contains_click(bounds, px_x, px_y) {
+        let area = bounds.width * bounds.height
+        match best {
+          Some(existing) =>
+            if area < existing.area {
+              best = Some({ source_id, area })
+            }
+          None => best = Some({ source_id, area })
+        }
+      }
+    _ => ()
+  }
+  for child in node.children {
+    best = find_smallest_a11y_hit_target(child, px_x, px_y, best)
+  }
+  best
+}
+
+///|
+fn Browser::get_a11y_source_id_at(
+  self : Browser,
+  col : Int,
+  row : Int,
+) -> String? {
+  if row <= 0 {
+    return None
+  }
+  if self.a11y_tree is None {
+    self.build_accessibility_tree()
+  }
+  let px_x = col.to_double() * 8.0 + 4.0
+  let px_y = (row - 1 + self.scroll_y).to_double() * 16.0 + 8.0
+  match self.a11y_tree {
+    Some(tree) =>
+      match find_smallest_a11y_hit_target(tree.root, px_x, px_y, None) {
+        Some(target) => Some(target.source_id)
+        None => None
+      }
+    None => None
+  }
+}
+
+///|
+fn Browser::get_source_id_at(self : Browser, col : Int, row : Int) -> String? {
+  match self.get_link_source_id_at(col, row) {
+    Some(source_id) => Some(source_id)
+    None =>
+      match self.get_paint_source_id_at(col, row) {
+        Some(source_id) => Some(source_id)
+        None => self.get_a11y_source_id_at(col, row)
+      }
+  }
+}
+
+///|
+fn Browser::focus_source_id(self : Browser, source_id : String) -> Unit {
+  if self.a11y_tree is None || self.focus_manager is None {
+    self.build_accessibility_tree()
+  }
+  match self.focus_manager {
+    Some(fm) => {
+      let _ = fm.focus_by_source_id(source_id)
+    }
+    None => ()
+  }
+}
+
+///|
+fn Browser::get_href_for_source_id(
+  self : Browser,
+  source_id : String,
+) -> String? {
+  let escaped = escape_js_string(source_id)
+  let source = "(function(){const target=document.getElementById('" +
+    escaped +
+    "');if(!target||typeof target.getAttribute!=='function'){return '';}const href=target.getAttribute('href');return typeof href==='string'?href:'';})()"
+  match self.execute_inline_js(source) {
+    Some(href) if href.length() > 0 => Some(href)
+    _ => None
+  }
+}
+
+///|
 /// Get number of visible focusable elements (links visible on screen)
 fn Browser::get_visible_focusable_count(self : Browser) -> Int {
   self.link_regions.length()
@@ -1054,6 +1287,165 @@ pub fn Browser::get_link_at(self : Browser, col : Int, row : Int) -> String? {
     }
     None => None
   }
+}
+
+///|
+fn escape_js_string(s : String) -> String {
+  let buf = StringBuilder::new()
+  for c in s {
+    match c {
+      '\\' => buf.write_string("\\\\")
+      '\'' => buf.write_string("\\'")
+      '\n' => buf.write_string("\\n")
+      '\r' => buf.write_string("\\r")
+      '\t' => buf.write_string("\\t")
+      _ => buf.write_char(c)
+    }
+  }
+  buf.to_string()
+}
+
+///|
+fn Browser::execute_inline_js(self : Browser, source : String) -> String? {
+  if not(self.enable_js) {
+    return None
+  }
+  if self.dom_tree is None {
+    self.init_js_execution()
+  }
+  match self.script_executor {
+    Some(executor) =>
+      try {
+        let result = executor.execute_source(source)
+        self.flush_js_logs()
+        Some(result.value)
+      } catch {
+        err => {
+          println("[JS] Error: " + err.to_string())
+          self.flush_js_logs()
+          None
+        }
+      }
+    None => None
+  }
+}
+
+///|
+fn Browser::dispatch_click_to_source_id(
+  self : Browser,
+  source_id : String,
+) -> ClickDispatchResult {
+  let escaped = escape_js_string(source_id)
+  let source = "(function(){const target=document.getElementById('" +
+    escaped +
+    "');if(!target){return 'missing';}const event=new MouseEvent('click',{bubbles:true,cancelable:true});return target.dispatchEvent(event)?'allow':'prevent';})()"
+  let result = self.execute_inline_js(source)
+  let _ = self.sync_render_state_from_dom_tree()
+  match result {
+    Some("prevent") => { handled: true, allow_default: false }
+    Some("allow") => { handled: true, allow_default: true }
+    Some(_) => { handled: false, allow_default: true }
+    None => { handled: false, allow_default: true }
+  }
+}
+
+///|
+pub fn Browser::tick_js(self : Browser) -> Bool {
+  if not(self.enable_js) {
+    return false
+  }
+  if self.dom_tree is None {
+    self.init_js_execution()
+  }
+  match self.dom_tree {
+    Some(dom) => {
+      let processed = @js.process_script_tasks(self.scheduler, dom)
+      if processed <= 0 {
+        return false
+      }
+      self.flush_js_logs()
+      self.sync_render_state_from_dom_tree()
+    }
+    None => false
+  }
+}
+
+///|
+pub async fn Browser::activate_focused_link(
+  self : Browser,
+) -> Bool raise @http.HttpError {
+  let source_id = self.get_focused_source_id()
+  let href = self.get_focused_link_url()
+  match source_id {
+    Some(id) => {
+      self.focus_source_id(id)
+      let dispatch = self.dispatch_click_to_source_id(id)
+      if not(dispatch.allow_default) {
+        return true
+      }
+      if href is None && dispatch.handled {
+        return true
+      }
+    }
+    None => ()
+  }
+  match href {
+    Some(url) if url.length() > 0 => {
+      let _ = self.navigate(url)
+      true
+    }
+    _ => false
+  }
+}
+
+///|
+pub async fn Browser::activate_at(
+  self : Browser,
+  col : Int,
+  row : Int,
+) -> Bool raise @http.HttpError {
+  let source_id = self.get_source_id_at(col, row)
+  let href = match self.get_link_at(col, row) {
+    Some(url) => Some(resolve_url(self.current_url, url))
+    None =>
+      match source_id {
+        Some(id) => self.get_href_for_source_id(id)
+        None => None
+      }
+  }
+  match source_id {
+    Some(id) => {
+      self.focus_source_id(id)
+      let dispatch = self.dispatch_click_to_source_id(id)
+      if not(dispatch.allow_default) {
+        return true
+      }
+      match href {
+        Some(url) if url.length() > 0 => {
+          let _ = self.navigate(url)
+          true
+        }
+        _ => dispatch.handled
+      }
+    }
+    None =>
+      match href {
+        Some(url) if url.length() > 0 => {
+          let _ = self.navigate(url)
+          true
+        }
+        _ => false
+      }
+  }
+}
+
+///|
+pub async fn Browser::activate_link_at(
+  self : Browser,
+  col : Int,
+  row : Int,
+) -> Bool raise @http.HttpError {
+  self.activate_at(col, row)
 }
 
 ///|
@@ -1559,18 +1951,9 @@ pub fn Browser::execute_scripts(self : Browser) -> Int {
     Some(dom) => {
       executed = @js.process_script_tasks(self.scheduler, dom)
       if executed > 0 {
-        self.sync_render_state_from_dom_tree()
+        let _ = self.sync_render_state_from_dom_tree()
       }
-      // Print JS logs
-      match self.script_executor {
-        Some(executor) => {
-          for log in executor.get_logs() {
-            println("[JS] " + log)
-          }
-          executor.clear_logs()
-        }
-        None => ()
-      }
+      self.flush_js_logs()
     }
     None => ()
   }
@@ -1656,18 +2039,9 @@ async fn Browser::execute_scripts_async(self : Browser) -> Int {
     Some(dom) => {
       executed = @js.process_script_tasks(self.scheduler, dom)
       if executed > 0 {
-        self.sync_render_state_from_dom_tree()
+        let _ = self.sync_render_state_from_dom_tree()
       }
-      // Print JS logs
-      match self.script_executor {
-        Some(executor) => {
-          for log in executor.get_logs() {
-            println("[JS] " + log)
-          }
-          executor.clear_logs()
-        }
-        None => ()
-      }
+      self.flush_js_logs()
     }
     None => ()
   }
@@ -1677,12 +2051,15 @@ async fn Browser::execute_scripts_async(self : Browser) -> Int {
 
 ///|
 /// Apply JS-mutated DomTree back to renderer inputs and invalidate caches
-fn Browser::sync_render_state_from_dom_tree(self : Browser) -> Unit {
+fn Browser::sync_render_state_from_dom_tree(self : Browser) -> Bool {
   match self.dom_tree {
     Some(dom) => {
       let next_html = @js.serialize_dom_to_html(dom)
       if next_html.length() == 0 {
-        return
+        return false
+      }
+      if next_html == self.html_content {
+        return false
       }
       self.html_content = next_html
       self.links = extract_links(self.html_content)
@@ -1706,8 +2083,9 @@ fn Browser::sync_render_state_from_dom_tree(self : Browser) -> Unit {
         self.external_css,
       )
       self.build_accessibility_tree()
+      true
     }
-    None => ()
+    None => false
   }
 }
 
@@ -1723,6 +2101,12 @@ fn build_dom_tree_from_document(doc : @html.Document) -> @dom.DomTree {
 ///|
 fn build_dom_element(dom : @dom.DomTree, elem : @html.Element) -> @dom.NodeId {
   let node_id = dom.create_element(elem.tag)
+  match elem.id {
+    Some(id) => {
+      let _ = dom.set_attribute(node_id, "id", id)
+    }
+    None => ()
+  }
   for name, value in elem.attributes {
     let _ = dom.set_attribute(node_id, name, value)
   }

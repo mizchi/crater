@@ -159,6 +159,7 @@ priv struct StyleBuilder {
   mut clip : @types.ClipRect
   // Paint properties
   mut visibility : @style.Visibility
+  mut pointer_events : @style.PointerEvents
   mut z_index : @style.ZIndex
   mut opacity : Double
   // Color properties
@@ -261,6 +262,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     vertical_align: @style.VerticalAlign::Baseline,
     clip: @types.ClipRect::Auto,
     visibility: @style.Visibility::Visible,
+    pointer_events: @style.PointerEvents::Auto,
     z_index: @style.ZIndex::Auto,
     opacity: 1.0,
     color: @types.Color::black(),
@@ -358,6 +360,7 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     vertical_align: style.vertical_align,
     clip: style.clip,
     visibility: style.visibility,
+    pointer_events: style.pointer_events,
     z_index: style.z_index,
     opacity: style.opacity,
     color: style.color,
@@ -464,6 +467,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     vertical_align: self.vertical_align,
     clip: self.clip,
     visibility: self.visibility,
+    pointer_events: self.pointer_events,
     z_index: self.z_index,
     opacity: self.opacity,
     color: self.color,
@@ -683,6 +687,11 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
         @style.WhiteSpace::Pre => "pre"
         @style.WhiteSpace::PreWrap => "pre-wrap"
         @style.WhiteSpace::PreLine => "pre-line"
+      }
+    "pointer-events" =>
+      match style.pointer_events {
+        @style.PointerEvents::Auto => "auto"
+        @style.PointerEvents::None => "none"
       }
     "contain-intrinsic-inline-size" =>
       match style.contain_intrinsic_inline_size {
@@ -1742,6 +1751,7 @@ fn apply_property(
     "clip" => builder.clip = parse_clip(value)
     // Paint properties (visual, not layout)
     "visibility" => builder.visibility = parse_visibility(value)
+    "pointer-events" => builder.pointer_events = parse_pointer_events(value)
     "z-index" => builder.z_index = parse_z_index(value)
     "opacity" => builder.opacity = parse_opacity(value)
     // Color properties
@@ -3036,7 +3046,7 @@ fn apply_inheritance(
   // List of inherited properties we support
   let inherited_props = [
     "direction", "writing-mode", "text-align", "line-height", "font-size", "font-family",
-    "font-weight", "font-style", "color", "visibility", "white-space",
+    "font-weight", "font-style", "color", "visibility", "white-space", "pointer-events",
   ]
   for prop in inherited_props {
     let covered_by_font_shorthand = cascaded.has("font") &&
@@ -3687,6 +3697,14 @@ fn parse_visibility(value : String) -> @style.Visibility {
     "hidden" => @style.Visibility::Hidden
     "collapse" => @style.Visibility::Collapse
     _ => @style.Visibility::Visible
+  }
+}
+
+///|
+fn parse_pointer_events(value : String) -> @style.PointerEvents {
+  match value.trim().to_string() {
+    "none" => @style.PointerEvents::None
+    _ => @style.PointerEvents::Auto
   }
 }
 

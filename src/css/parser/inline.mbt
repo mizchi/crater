@@ -1506,6 +1506,25 @@ fn parse_transform(tokens : ArrayView[@token.Token]) -> @style.Transform {
 }
 
 ///|
+fn parse_pointer_events(
+  tokens : ArrayView[@token.Token],
+) -> @style.PointerEvents {
+  let remaining = skip_whitespace(tokens)
+  if remaining.length() == 0 {
+    return @style.PointerEvents::Auto
+  }
+  match remaining[0] {
+    @token.Token::Ident(s) =>
+      if s == "none" {
+        @style.PointerEvents::None
+      } else {
+        @style.PointerEvents::Auto
+      }
+    _ => @style.PointerEvents::Auto
+  }
+}
+
+///|
 /// Parse CSS transform from a string value
 fn parse_transform_string(value : String) -> @style.Transform {
   let v = value.trim().to_lower()
@@ -2353,6 +2372,11 @@ fn apply_property(
   if property == "transform" {
     let transform = parse_transform(value_tokens)
     return { ..style, transform, }
+  }
+  // pointer-events
+  if property == "pointer-events" {
+    let pointer_events = parse_pointer_events(value_tokens)
+    return { ..style, pointer_events, }
   }
   // Unknown property - ignore
   style

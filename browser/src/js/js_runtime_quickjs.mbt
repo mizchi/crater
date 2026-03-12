@@ -324,6 +324,16 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       while (count < limit && _runOneTimeout()) { count++; }
   #|       return count;
   #|     }
+  #|     function _runOneAnimationFrame() {
+  #|       const ids = Object.keys(_animationFrames.callbacks);
+  #|       if (ids.length === 0) return false;
+  #|       ids.sort((a, b) => Number(a) - Number(b));
+  #|       const id = ids[0];
+  #|       const callback = _animationFrames.callbacks[id];
+  #|       delete _animationFrames.callbacks[id];
+  #|       try { callback(Date.now()); } catch (e) { logs.push('[ERROR] requestAnimationFrame: ' + e); }
+  #|       return true;
+  #|     }
   #|     // Check if there are pending timers
   #|     function _hasPendingTimers() {
   #|       return Object.keys(_timers.timeouts).length > 0 || Object.keys(_timers.intervals).length > 0;
@@ -514,12 +524,94 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       if (!target._listeners) target._listeners = Object.create(null);
   #|       return target._listeners;
   #|     }
+  #|     const _persistedListenerAttrPrefix = 'data-crater-listeners-';
+  #|     function _shouldPersistListener(target, eventType, listener) {
+  #|       return eventType === 'click' &&
+  #|         target &&
+  #|         typeof target.getAttribute === 'function' &&
+  #|         typeof target.setAttribute === 'function' &&
+  #|         typeof listener === 'function' &&
+  #|         target._mockId !== undefined &&
+  #|         !target.__craterRestoringListeners;
+  #|     }
+  #|     function _getPersistedListenerAttrName(eventType) {
+  #|       return _persistedListenerAttrPrefix + eventType;
+  #|     }
+  #|     function _getPersistedListenerSources(target, eventType) {
+  #|       const raw = target.getAttribute(_getPersistedListenerAttrName(eventType));
+  #|       if (!raw) return [];
+  #|       try {
+  #|         const parsed = JSON.parse(raw);
+  #|         return Array.isArray(parsed) ? parsed.filter(v => typeof v === 'string') : [];
+  #|       } catch (e) {
+  #|         return [];
+  #|       }
+  #|     }
+  #|     function _setPersistedListenerSources(target, eventType, sources) {
+  #|       const attrName = _getPersistedListenerAttrName(eventType);
+  #|       if (!sources || sources.length === 0) {
+  #|         if (target.hasAttribute(attrName)) target.removeAttribute(attrName);
+  #|         return;
+  #|       }
+  #|       const encoded = JSON.stringify(sources);
+  #|       if (target.getAttribute(attrName) !== encoded) {
+  #|         target.setAttribute(attrName, encoded);
+  #|       }
+  #|     }
+  #|     function _persistEventListener(target, eventType, listener) {
+  #|       if (!_shouldPersistListener(target, eventType, listener)) return;
+  #|       let source = '';
+  #|       try { source = Function.prototype.toString.call(listener); } catch (e) { source = ''; }
+  #|       if (!source || source.indexOf('[native code]') >= 0) return;
+  #|       const sources = _getPersistedListenerSources(target, eventType);
+  #|       if (!sources.includes(source)) {
+  #|         sources.push(source);
+  #|         _setPersistedListenerSources(target, eventType, sources);
+  #|       }
+  #|     }
+  #|     function _removePersistedEventListener(target, eventType, listener) {
+  #|       if (!_shouldPersistListener(target, eventType, listener)) return;
+  #|       let source = '';
+  #|       try { source = Function.prototype.toString.call(listener); } catch (e) { source = ''; }
+  #|       if (!source) return;
+  #|       const sources = _getPersistedListenerSources(target, eventType).filter(v => v !== source);
+  #|       _setPersistedListenerSources(target, eventType, sources);
+  #|     }
+  #|     function _restorePersistedListenersForNode(target) {
+  #|       if (!target || typeof target.getAttribute !== 'function') return;
+  #|       const sources = _getPersistedListenerSources(target, 'click');
+  #|       if (sources.length === 0) return;
+  #|       target.__craterRestoringListeners = true;
+  #|       try {
+  #|         const store = getListenerStore(target);
+  #|         if (!store.click) store.click = [];
+  #|         for (const source of sources) {
+  #|           try {
+  #|             const listener = eval('(' + source + ')');
+  #|             if (!store.click.includes(listener)) store.click.push(listener);
+  #|           } catch (e) {
+  #|             logs.push('[WARN] restore click listener failed: ' + e);
+  #|           }
+  #|         }
+  #|       } finally {
+  #|         target.__craterRestoringListeners = false;
+  #|       }
+  #|     }
+  #|     function _restorePersistedListenersTree(root) {
+  #|       if (!root) return;
+  #|       _restorePersistedListenersForNode(root);
+  #|       const children = root.childNodes || [];
+  #|       for (let i = 0; i < children.length; i++) {
+  #|         _restorePersistedListenersTree(children[i]);
+  #|       }
+  #|     }
   #|     function addEventListenerImpl(target, type, listener) {
   #|       if (listener === null || listener === undefined) return;
   #|       const eventType = String(type);
   #|       const store = getListenerStore(target);
   #|       if (!store[eventType]) store[eventType] = [];
   #|       if (!store[eventType].includes(listener)) store[eventType].push(listener);
+  #|       _persistEventListener(target, eventType, listener);
   #|     }
   #|     function removeEventListenerImpl(target, type, listener) {
   #|       if (listener === null || listener === undefined || !target._listeners) return;
@@ -528,6 +620,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       if (!list) return;
   #|       const index = list.indexOf(listener);
   #|       if (index >= 0) list.splice(index, 1);
+  #|       _removePersistedEventListener(target, eventType, listener);
   #|     }
   #|     function dispatchEventImpl(target, event) {
   #|       if (!event || typeof event !== 'object') {
@@ -7299,9 +7392,24 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           timerResult.error.dispose();
   #|         }
   #|
-  #|         if (!ranTimer) break; // No more timers
+  #|         if (ranTimer) {
+  #|           // Microtask checkpoint after each task
+  #|           flushAllMicrotasks();
+  #|           continue;
+  #|         }
   #|
-  #|         // Microtask checkpoint after each task
+  #|         const rafResult = vm.evalCode('_runOneAnimationFrame()');
+  #|         let ranAnimationFrame = false;
+  #|         if (!rafResult.error && rafResult.value) {
+  #|           ranAnimationFrame = vm.dump(rafResult.value) === true;
+  #|           rafResult.value.dispose();
+  #|         } else if (rafResult.error) {
+  #|           rafResult.error.dispose();
+  #|         }
+  #|
+  #|         if (!ranAnimationFrame) break; // No more timers or animation frames
+  #|
+  #|         // Microtask checkpoint after each animation frame
   #|         flushAllMicrotasks();
   #|       }
   #|
@@ -7344,7 +7452,12 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       // Run timers with microtask checkpoints after each
   #|       for (let i = 0; i < 100; i++) {
   #|         const ranTimer = vm.runInContext('_runOneTimeout()', sandbox, { timeout: 1000 });
-  #|         if (!ranTimer) break;
+  #|         if (ranTimer) {
+  #|           vm.runInContext('_flushMicrotasks()', sandbox, { timeout: 1000 });
+  #|           continue;
+  #|         }
+  #|         const ranAnimationFrame = vm.runInContext('_runOneAnimationFrame()', sandbox, { timeout: 1000 });
+  #|         if (!ranAnimationFrame) break;
   #|         vm.runInContext('_flushMicrotasks()', sandbox, { timeout: 1000 });
   #|       }
   #|       // Phase 3: Collect logs and domOps
@@ -7411,7 +7524,9 @@ impl JsRuntime for QuickJsRuntime with execute(
   let dom_init_code = create_dom_init_code(dom)
 
   // Execute: setupCode -> dom_init_code -> user_code
-  let full_code = dom_init_code + "\n" + code
+  let full_code = dom_init_code +
+    "\n_restorePersistedListenersTree(document);\n" +
+    code
   let result_json = quickjs_execute_with_mock_dom(full_code)
 
   // Parse result
@@ -7686,9 +7801,91 @@ fn extract_json_field(json : String, field : String) -> String {
         }
         end = end + 1
       }
-      json.unsafe_substring(start=value_start, end~)
+      unescape_json_string(json.unsafe_substring(start=value_start, end~))
     }
     None => ""
+  }
+}
+
+///|
+fn unescape_json_string(value : String) -> String {
+  let out = StringBuilder::new()
+  let chars = value.to_array()
+  let mut i = 0
+  while i < chars.length() {
+    let c = chars[i]
+    if c != '\\' || i + 1 >= chars.length() {
+      out.write_char(c)
+      i = i + 1
+      continue
+    }
+    let next = chars[i + 1]
+    match next {
+      '"' => out.write_char('"')
+      '\\' => out.write_char('\\')
+      '/' => out.write_char('/')
+      'b' => out.write_char('\b')
+      'f' => out.write_char('\u000C')
+      'n' => out.write_char('\n')
+      'r' => out.write_char('\r')
+      't' => out.write_char('\t')
+      'u' =>
+        if i + 5 < chars.length() {
+          let code = parse_json_hex4(
+            chars[i + 2],
+            chars[i + 3],
+            chars[i + 4],
+            chars[i + 5],
+          )
+          match code {
+            Some(code) => out.write_char(code.unsafe_to_char())
+            None => {
+              out.write_char('\\')
+              out.write_char('u')
+              out.write_char(chars[i + 2])
+              out.write_char(chars[i + 3])
+              out.write_char(chars[i + 4])
+              out.write_char(chars[i + 5])
+            }
+          }
+          i = i + 6
+          continue
+        } else {
+          out.write_char('\\')
+          out.write_char('u')
+        }
+      _ => out.write_char(next)
+    }
+    i = i + 2
+  }
+  out.to_string()
+}
+
+///|
+fn parse_json_hex_digit(c : Char) -> Int? {
+  if c >= '0' && c <= '9' {
+    Some(c.to_int() - '0'.to_int())
+  } else if c >= 'a' && c <= 'f' {
+    Some(10 + c.to_int() - 'a'.to_int())
+  } else if c >= 'A' && c <= 'F' {
+    Some(10 + c.to_int() - 'A'.to_int())
+  } else {
+    None
+  }
+}
+
+///|
+fn parse_json_hex4(c0 : Char, c1 : Char, c2 : Char, c3 : Char) -> Int? {
+  match
+    (
+      parse_json_hex_digit(c0),
+      parse_json_hex_digit(c1),
+      parse_json_hex_digit(c2),
+      parse_json_hex_digit(c3),
+    ) {
+    (Some(d0), Some(d1), Some(d2), Some(d3)) =>
+      Some(d0 * 4096 + d1 * 256 + d2 * 16 + d3)
+    _ => None
   }
 }
 
@@ -7712,7 +7909,11 @@ fn extract_json_array(json : String, field : String) -> Array[String] {
             }
             str_end = str_end + 1
           }
-          result.push(json.unsafe_substring(start=str_start, end=str_end))
+          result.push(
+            unescape_json_string(
+              json.unsafe_substring(start=str_start, end=str_end),
+            ),
+          )
           i = str_end + 1
         } else {
           i = i + 1

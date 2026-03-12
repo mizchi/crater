@@ -58,6 +58,7 @@ pub impl Show for PaintNode
 pub(all) struct PaintProperties {
   z_index : @style.ZIndex
   visibility : @style.Visibility
+  pointer_events : @style.PointerEvents
   opacity : Double
   color : @types.Color
   background_color : @types.Color

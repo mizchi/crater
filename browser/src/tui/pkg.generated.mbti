@@ -76,7 +76,11 @@ pub fn enter_alt_screen() -> String
 
 pub fn exit_alt_screen() -> String
 
+pub fn find_hit_region_at(Array[HitRegion], Int, Int) -> HitRegion?
+
 pub fn find_link_at(Array[LinkRegion], Int, Int) -> String?
+
+pub fn find_link_region_at(Array[LinkRegion], Int, Int) -> LinkRegion?
 
 pub fn format_status_bar(String, Int, Int) -> String
 
@@ -103,6 +107,8 @@ pub fn px_to_col(Double) -> Int
 pub fn px_to_row(Double) -> Int
 
 pub async fn read_key() -> String
+
+pub async fn read_key_with_timeout(Int) -> String
 
 pub async fn read_line(String) -> String
 
@@ -160,6 +166,7 @@ pub enum BrowserAction {
 pub(all) struct BufferRenderResult {
   buffer : CharBuffer
   link_regions : Array[LinkRegion]
+  hit_regions : Array[HitRegion]
   scrollable_elements : Array[@paint.ScrollableElement]
 }
 
@@ -213,12 +220,22 @@ pub(all) struct HintData {
   row : Int
 }
 
+pub(all) struct HitRegion {
+  col : Int
+  row : Int
+  width : Int
+  height : Int
+  source_id : String
+}
+pub fn HitRegion::contains(Self, Int, Int) -> Bool
+
 pub(all) struct LinkRegion {
   col : Int
   row : Int
   width : Int
   height : Int
   text : String
+  source_id : String
 }
 pub fn LinkRegion::contains(Self, Int, Int) -> Bool
 
@@ -232,6 +249,7 @@ pub(all) struct PlainLink {
 pub(all) struct RenderResult {
   ansi : String
   link_regions : Array[LinkRegion]
+  hit_regions : Array[HitRegion]
 }
 
 pub(all) struct TextStyle {
@@ -247,6 +265,7 @@ pub struct TuiContext {
   scroll_y : Int
   viewport_height : Int
   link_regions : Array[LinkRegion]
+  hit_regions : Array[HitRegion]
   focused_element_name : String?
   dark_mode : Bool
   element_scroll_positions : Map[String, ElementScrollPos]

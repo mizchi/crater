@@ -58,6 +58,7 @@ pub struct ScriptExecutor {
 }
 pub fn ScriptExecutor::clear_logs(Self) -> Unit
 pub fn ScriptExecutor::execute(Self, @scheduler.Task) -> @scheduler.TaskResult
+pub fn ScriptExecutor::execute_source(Self, String) -> JsResult raise JsError
 pub fn ScriptExecutor::get_logs(Self) -> Array[String]
 pub fn ScriptExecutor::new(@dom.DomTree) -> Self
 

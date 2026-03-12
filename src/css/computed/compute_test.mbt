@@ -501,6 +501,7 @@ test "is_inherited" {
   inspect(@computed.is_inherited("font-size"), content="true")
   inspect(@computed.is_inherited("line-height"), content="true")
   inspect(@computed.is_inherited("white-space"), content="true")
+  inspect(@computed.is_inherited("pointer-events"), content="true")
   // Non-inherited properties
   inspect(@computed.is_inherited("width"), content="false")
   inspect(@computed.is_inherited("display"), content="false")
@@ -681,6 +682,24 @@ test "white-space inherits from parent style" {
   let child_ctx = @computed.ComputeContext::with_parent(parent)
   let child = @computed.compute_inline("", child_ctx)
   inspect(child.white_space, content="Nowrap")
+}
+
+///|
+test "pointer-events inherits from parent style" {
+  let root_ctx = @computed.ComputeContext::new()
+  let parent = @computed.compute_inline("pointer-events: none", root_ctx)
+  let child_ctx = @computed.ComputeContext::with_parent(parent)
+  let child = @computed.compute_inline("", child_ctx)
+  inspect(child.pointer_events, content="None")
+}
+
+///|
+test "pointer-events auto overrides inherited none" {
+  let root_ctx = @computed.ComputeContext::new()
+  let parent = @computed.compute_inline("pointer-events: none", root_ctx)
+  let child_ctx = @computed.ComputeContext::with_parent(parent)
+  let child = @computed.compute_inline("pointer-events: auto", child_ctx)
+  inspect(child.pointer_events, content="Auto")
 }
 
 ///|

@@ -22,6 +22,7 @@ pub fn is_inherited(property : String) -> Bool {
     "caption-side" | "border-collapse" | "border-spacing" => true
     // Containment is not inherited
     "contain" => false
+    "pointer-events" => true
     // All layout properties are not inherited
     _ => false
   }
@@ -38,6 +39,7 @@ pub fn initial_value(property : String) -> String {
     "clear" => "none"
     // Overflow
     "overflow" | "overflow-x" | "overflow-y" => "visible"
+    "pointer-events" => "auto"
     "scroll-snap-type" => "none"
     "scroll-snap-align" => "none"
     // Sizing
