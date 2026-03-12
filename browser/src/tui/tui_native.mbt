@@ -1,4 +1,4 @@
-///|
+///|  
 /// TUI implementation for native target
 /// Note: Full TUI is simplified for MVP - use JS target for interactive mode
 
@@ -32,7 +32,6 @@ pub fn cleanup_stdin() -> Unit {
 ///|
 /// Get command line arguments (native implementation)
 pub fn get_args() -> Array[String] {
-  // Get command line args using sys module (skips first element which is program name)
   let all_args = @sys.get_cli_args()
   let result : Array[String] = []
   for i = 1; i < all_args.length(); i = i + 1 {

@@ -60,6 +60,43 @@ fn write_kitty_chunk_header(
 }
 
 ///|
+async fn[T : @io.Writer] write_kitty_chunk_header_to(
+  writer : T,
+  width : Int,
+  height : Int,
+  is_first : Bool,
+  has_more : Bool,
+) -> Unit {
+  if is_first {
+    writer.write("\u001b_Ga=T,f=24,s=") catch {
+      _ => return
+    }
+    writer.write(width.to_string()) catch {
+      _ => return
+    }
+    writer.write(",v=") catch {
+      _ => return
+    }
+    writer.write(height.to_string()) catch {
+      _ => return
+    }
+    writer.write(",m=") catch {
+      _ => return
+    }
+  } else {
+    writer.write("\u001b_Gm=") catch {
+      _ => return
+    }
+  }
+  writer.write(if has_more { "1" } else { "0" }) catch {
+    _ => return
+  }
+  writer.write(";") catch {
+    _ => return
+  }
+}
+
+///|
 /// Convert Framebuffer to Kitty Graphics Protocol string
 pub fn to_kitty(
   fb : @sixel.Framebuffer,
@@ -92,6 +129,50 @@ pub fn to_kitty(
 }
 
 ///|
+pub async fn[T : @io.Writer] write_kitty(
+  writer : T,
+  fb : @sixel.Framebuffer,
+  palette : @sixel.DynamicPalette,
+) -> Unit {
+  let mut chunk = StringBuilder::new()
+  let mut chunk_len = 0
+  let mut first_chunk = true
+  let pixel_count = fb.width * fb.height
+  for pixel_index in 0..<pixel_count {
+    if chunk_len + 4 > kitty_chunk_size {
+      write_kitty_chunk_header_to(
+        writer,
+        fb.width,
+        fb.height,
+        first_chunk,
+        true,
+      )
+      writer.write(chunk.to_string()) catch {
+        _ => return
+      }
+      writer.write("\u001b\\") catch {
+        _ => return
+      }
+      chunk = StringBuilder::new()
+      chunk_len = 0
+      first_chunk = false
+    }
+    let color = kitty_palette_color_at(palette, fb.pixels[pixel_index])
+    write_base64_triplet(chunk, color.r, color.g, color.b)
+    chunk_len += 4
+  }
+  write_kitty_chunk_header_to(writer, fb.width, fb.height, first_chunk, false)
+  if chunk_len > 0 {
+    writer.write(chunk.to_string()) catch {
+      _ => return
+    }
+  }
+  writer.write("\u001b\\") catch {
+    _ => return
+  }
+}
+
+///|
 /// Render SVG scene to Kitty Graphics Protocol string
 pub fn render_svg_to_kitty(
   scene : @svg.Scene,
@@ -106,6 +187,20 @@ pub fn render_svg_to_kitty(
   @sixel.render_svg_scene(scene, fb, palette)
   // Convert to Kitty
   to_kitty(fb, palette)
+}
+
+///|
+pub async fn[T : @io.Writer] write_svg_to_kitty(
+  writer : T,
+  scene : @svg.Scene,
+  width : Int,
+  height : Int,
+) -> Unit {
+  let fb = @sixel.Framebuffer::new(width, height)
+  let palette = @sixel.DynamicPalette::new()
+  fb.fill_rect(0, 0, width, height, 0)
+  @sixel.render_svg_scene(scene, fb, palette)
+  write_kitty(writer, fb, palette)
 }
 
 ///|
@@ -142,6 +237,20 @@ pub fn render_paint_node_to_kitty_scrolled(
   @sixel.render_paint_node_to_framebuffer_scrolled(node, fb, palette, scroll_y)
   // Convert to Kitty
   to_kitty(fb, palette)
+}
+
+///|
+pub async fn[T : @io.Writer] write_paint_node_to_kitty_scrolled(
+  writer : T,
+  node : @paint.PaintNode,
+  width : Int,
+  height : Int,
+  scroll_y : Int,
+) -> Unit {
+  let fb = @sixel.Framebuffer::new(width, height)
+  let palette = @sixel.DynamicPalette::new()
+  @sixel.render_paint_node_to_framebuffer_scrolled(node, fb, palette, scroll_y)
+  write_kitty(writer, fb, palette)
 }
 
 ///|

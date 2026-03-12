@@ -7,6 +7,7 @@ import {
   "mizchi/crater/layout/node",
   "mizchi/crater/style",
   "mizchi/crater/types",
+  "moonbitlang/async/io",
 }
 
 // Values
@@ -61,6 +62,8 @@ pub fn render_with_external_css(String, RenderContext, Array[String]) -> @types.
 pub fn set_image_intrinsic_size_provider(ImageIntrinsicSizeProvider) -> Unit
 
 pub fn set_text_metrics_provider(TextMetricsProvider) -> Unit
+
+pub async fn[T : @io.Writer] write_kitty_with_css(T, String, Int, Int, Int, Array[String]) -> Unit
 
 // Errors
 

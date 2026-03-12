@@ -54,3 +54,16 @@ test "fixed article fixture renders kitty graphics output" {
   assert_true(rendered.has_prefix("\u001b_Ga=T,f=24,s="))
   assert_true(rendered.length() > 64)
 }
+
+///|
+async test "builtin github snapshot fixture can stream kitty output to writer" {
+  let browser = Browser::new(1440, 960)
+  load_fixture(browser, builtin_github_snapshot_fixture())
+  let expected = browser.render_output(Kitty)
+  let (reader, writer) = @pipe.pipe()
+  defer reader.close()
+  browser.write_output(Kitty, writer)
+  writer.close()
+  let streamed = reader.read_all().text()
+  assert_eq(streamed, expected)
+}

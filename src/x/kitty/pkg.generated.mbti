@@ -5,6 +5,7 @@ import {
   "mizchi/crater/paint",
   "mizchi/crater/svg",
   "mizchi/crater/x/sixel",
+  "moonbitlang/async/io",
 }
 
 // Values
@@ -19,6 +20,12 @@ pub fn render_svg_to_kitty(@svg.Scene, Int, Int) -> String
 pub fn render_svg_to_kitty_with_camera(@svg.Scene, @svg.Camera) -> String
 
 pub fn to_kitty(@sixel.Framebuffer, @sixel.DynamicPalette) -> String
+
+pub async fn[T : @io.Writer] write_kitty(T, @sixel.Framebuffer, @sixel.DynamicPalette) -> Unit
+
+pub async fn[T : @io.Writer] write_paint_node_to_kitty_scrolled(T, @paint.PaintNode, Int, Int, Int) -> Unit
+
+pub async fn[T : @io.Writer] write_svg_to_kitty(T, @svg.Scene, Int, Int) -> Unit
 
 // Errors
 

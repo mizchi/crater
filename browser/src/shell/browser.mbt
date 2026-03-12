@@ -2,23 +2,6 @@
 /// Browser Shell - TUI browser application layer
 
 ///|
-extern "js" fn perf_now() -> Double =
-  #| () => {
-  #|   if (typeof performance !== 'undefined') return performance.now();
-  #|   if (typeof process !== 'undefined') {
-  #|     const [s, ns] = process.hrtime();
-  #|     return s * 1000 + ns / 1e6;
-  #|   }
-  #|   return Date.now();
-  #| }
-
-///|
-extern "js" fn perf_log(msg : String) -> Unit =
-  #| (msg) => {
-  #|   if (typeof process !== 'undefined') process.stderr.write(msg + '\n');
-  #| }
-
-///|
 /// Link found in the page
 priv struct Link {
   href : String
@@ -467,6 +450,18 @@ pub fn Browser::render_output(self : Browser, mode : OutputMode) -> String {
 }
 
 ///|
+pub async fn[T : @io.Writer] Browser::write_output(
+  self : Browser,
+  mode : OutputMode,
+  writer : T,
+) -> Unit {
+  match mode {
+    Kitty => self.write_kitty_output(writer)
+    _ => writer.write(self.render_output(mode)) catch { _ => () }
+  }
+}
+
+///|
 /// Render current content to Sixel
 fn Browser::render(self : Browser) -> String {
   if self.html_content.length() == 0 {
@@ -488,6 +483,24 @@ fn Browser::render_kitty(self : Browser) -> String {
     return ""
   }
   @renderer.render_to_kitty_with_css(
+    self.html_content,
+    self.viewport_width,
+    self.viewport_height,
+    self.scroll_y,
+    self.external_css,
+  )
+}
+
+///|
+async fn[T : @io.Writer] Browser::write_kitty_output(
+  self : Browser,
+  writer : T,
+) -> Unit {
+  if self.html_content.length() == 0 {
+    return
+  }
+  @renderer.write_kitty_with_css(
+    writer,
     self.html_content,
     self.viewport_width,
     self.viewport_height,

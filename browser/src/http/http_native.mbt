@@ -24,9 +24,7 @@ fn extract_host_url(url : String) -> String {
   if path_start == -1 {
     url // No path, return as-is
   } else {
-    url[:path_start].to_string() catch {
-      _ => url
-    }
+    url[:path_start].to_string()
   }
 }
 
@@ -52,9 +50,7 @@ fn extract_path_from_url(url : String) -> String {
   if path_start == -1 {
     "/" // No path, use root
   } else {
-    url[path_start:].to_string() catch {
-      _ => "/"
-    }
+    url[path_start:].to_string()
   }
 }
 

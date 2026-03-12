@@ -7219,6 +7219,30 @@ pub fn render_to_kitty_with_css(
 }
 
 ///|
+pub async fn[T : @io.Writer] write_kitty_with_css(
+  writer : T,
+  html : String,
+  width : Int,
+  height : Int,
+  scroll_y : Int,
+  external_css : Array[String],
+) -> Unit {
+  let ctx : RenderContext = {
+    viewport_width: width.to_double(),
+    viewport_height: height.to_double(),
+    root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
+  }
+  let (node, layout) = render_to_node_and_layout_with_external_css(
+    html, ctx, external_css,
+  )
+  let paint_node = @paint.from_node_and_layout(node, layout)
+  @kitty.write_paint_node_to_kitty_scrolled(
+    writer, paint_node, width, height, scroll_y,
+  )
+}
+
+///|
 /// Get content height with external CSS
 pub fn get_content_height_with_css(
   html : String,

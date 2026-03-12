@@ -3,6 +3,7 @@ package "mizchi/crater-browser/shell"
 
 import {
   "mizchi/crater-browser/http",
+  "moonbitlang/async/io",
 }
 
 // Values
@@ -39,6 +40,7 @@ pub fn Browser::set_no_color(Self, Bool) -> Unit
 pub fn Browser::set_request_sandbox(Self, @http.RequestSandbox) -> Unit
 pub fn Browser::toggle_dark_mode(Self) -> Unit
 pub fn Browser::toggle_selection_mode(Self) -> Bool
+pub async fn[T : @io.Writer] Browser::write_output(Self, OutputMode, T) -> Unit
 
 pub(all) enum OutputMode {
   Sixel

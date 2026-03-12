@@ -79,8 +79,15 @@ async fn safe_navigate(browser : @shell.Browser, url : String) -> Unit {
 }
 
 ///|
+async fn write_stdout_io(s : String) -> Unit {
+  @stdio.stdout.write(s) catch {
+    _ => ()
+  }
+}
+
+///|
 /// Render and display the current page
-fn render_page(browser : @shell.Browser, options : Options) -> Unit {
+async fn render_page(browser : @shell.Browser, options : Options) -> Unit {
   if options.json {
     // AOM JSON output for AI scraping
     let json_output = browser.render_output(@shell.OutputMode::Json)
@@ -114,9 +121,8 @@ fn render_page(browser : @shell.Browser, options : Options) -> Unit {
       ),
     )
   } else if options.kitty {
-    let kitty = browser.render_output(@shell.OutputMode::Kitty)
-    @tui.print_raw(@tui.clear_screen())
-    @tui.print_raw(kitty)
+    write_stdout_io(@tui.clear_screen())
+    browser.write_output(@shell.OutputMode::Kitty, @stdio.stdout)
     println("")
     println(
       @tui.format_status_bar(

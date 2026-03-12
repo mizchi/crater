@@ -1,4 +1,5 @@
 import {
+  "moonbitlang/async/io",
   "mizchi/crater/renderer",
   "mizchi/crater/html",
   "mizchi/crater/browser_contract",
@@ -14,9 +15,23 @@ import {
 }
 
 import {
+  "moonbitlang/async",
   "moonbitlang/core/bench",
   "mizchi/crater/benchmarks",
   "mizchi/crater/css/media",
+  "mizchi/x/pipe",
   "mizchi/crater/x/kitty",
   "mizchi/crater/x/sixel",
 } for "wbtest"
+
+warnings = "-unused_package"
+
+options(
+  targets: {
+    "browser_bench_wbtest.mbt": [ "js" ],
+    "browser_fixture_wbtest.mbt": [ "js" ],
+    "browser_js_wbtest.mbt": [ "js" ],
+    "perf_js.mbt": [ "js" ],
+    "perf_native.mbt": [ "native" ],
+  },
+)

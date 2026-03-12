@@ -2,6 +2,7 @@ import {
   "mizchi/crater/types",
   "mizchi/crater/layout/node",
   "mizchi/crater/paint",
+  "mizchi/x/sys",
   "moonbitlang/async/js_async",
   "moonbitlang/core/strconv",
 }
@@ -10,6 +11,8 @@ import {
   "mizchi/crater/renderer",
   "mizchi/crater/css/media",
 } for "test"
+
+warnings = "-unused_package"
 
 options(
   targets: {
