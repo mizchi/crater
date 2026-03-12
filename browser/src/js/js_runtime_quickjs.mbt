@@ -344,6 +344,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     DOMException.INVALID_CHARACTER_ERR = 5;
   #|     DOMException.NOT_FOUND_ERR = 8;
   #|     DOMException.NOT_SUPPORTED_ERR = 9;
+  #|     DOMException.INUSE_ATTRIBUTE_ERR = 10;
   #|     DOMException.INVALID_STATE_ERR = 11;
   #|     DOMException.SYNTAX_ERR = 12;
   #|     DOMException.INVALID_MODIFICATION_ERR = 13;
@@ -354,6 +355,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     DOMException.InvalidCharacterError = 5;
   #|     DOMException.NotFoundError = 8;
   #|     DOMException.NotSupportedError = 9;
+  #|     DOMException.InUseAttributeError = 10;
   #|     DOMException.InvalidStateError = 11;
   #|     DOMException.SyntaxError = 12;
   #|     DOMException.InvalidModificationError = 13;
@@ -455,7 +457,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     Object.defineProperty(Node.prototype, 'parentElement', {
   #|       get() {
   #|         const p = this.parentNode;
-  #|         return p && getNodeType(p) === 1 ? p : null;
+  #|         return p && __craterGetNodeType(p) === 1 ? p : null;
   #|       },
   #|       configurable: true
   #|     });
@@ -501,16 +503,65 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     };
   #|     Node.prototype.isDefaultNamespace = function(namespace) {
   #|       const ns = namespace === undefined || namespace === null || namespace === '' ? null : String(namespace);
-  #|       const nodeType = getNodeType(this);
+  #|       const nodeType = __craterGetNodeType(this);
   #|       if ((nodeType === 10 || nodeType === 11) && !getParentNode(this)) {
   #|         return ns === null;
   #|       }
   #|       const current = lookupNamespaceURIImpl(this, null);
   #|       return current === ns;
   #|     };
-  #|     Node.prototype.addEventListener = function(type, listener, options) {};
-  #|     Node.prototype.removeEventListener = function(type, listener, options) {};
-  #|     Node.prototype.dispatchEvent = function(event) { return true; };
+  #|     function getListenerStore(target) {
+  #|       if (!target._listeners) target._listeners = Object.create(null);
+  #|       return target._listeners;
+  #|     }
+  #|     function addEventListenerImpl(target, type, listener) {
+  #|       if (listener === null || listener === undefined) return;
+  #|       const eventType = String(type);
+  #|       const store = getListenerStore(target);
+  #|       if (!store[eventType]) store[eventType] = [];
+  #|       if (!store[eventType].includes(listener)) store[eventType].push(listener);
+  #|     }
+  #|     function removeEventListenerImpl(target, type, listener) {
+  #|       if (listener === null || listener === undefined || !target._listeners) return;
+  #|       const eventType = String(type);
+  #|       const list = target._listeners[eventType];
+  #|       if (!list) return;
+  #|       const index = list.indexOf(listener);
+  #|       if (index >= 0) list.splice(index, 1);
+  #|     }
+  #|     function dispatchEventImpl(target, event) {
+  #|       if (!event || typeof event !== 'object') {
+  #|         throw new TypeError('Failed to execute dispatchEvent: parameter 1 is not of type Event');
+  #|       }
+  #|       const eventType = String(event.type || event._type || '');
+  #|       event._type = eventType;
+  #|       event._target = target;
+  #|       event.target = target;
+  #|       event._currentTarget = target;
+  #|       event.currentTarget = target;
+  #|       const propName = 'on' + eventType;
+  #|       const inlineHandler = target.getAttribute ? target.getAttribute(propName) : null;
+  #|       if (inlineHandler !== null && inlineHandler !== undefined) {
+  #|         const handler = Function('event', 'with(globalThis){ with(this){ ' + String(inlineHandler) + ' } }');
+  #|         handler.call(target, event);
+  #|       }
+  #|       const propHandler = target[propName];
+  #|       if (typeof propHandler === 'function') {
+  #|         propHandler.call(target, event);
+  #|       }
+  #|       const listeners = target._listeners && target._listeners[eventType] ? target._listeners[eventType].slice() : [];
+  #|       for (const listener of listeners) {
+  #|         if (typeof listener === 'function') {
+  #|           listener.call(target, event);
+  #|         } else if (listener && typeof listener.handleEvent === 'function') {
+  #|           listener.handleEvent(event);
+  #|         }
+  #|       }
+  #|       return !event.defaultPrevented;
+  #|     }
+  #|     Node.prototype.addEventListener = function(type, listener, options) { addEventListenerImpl(this, type, listener); };
+  #|     Node.prototype.removeEventListener = function(type, listener, options) { removeEventListenerImpl(this, type, listener); };
+  #|     Node.prototype.dispatchEvent = function(event) { return dispatchEventImpl(this, event); };
   #|
   #|     function CharacterData() {}
   #|     CharacterData.prototype = Object.create(Node.prototype);
@@ -519,6 +570,26 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     function Element() {}
   #|     Element.prototype = Object.create(Node.prototype);
   #|     Element.prototype.constructor = Element;
+  #|     Object.defineProperty(Element.prototype, 'fetchPriority', {
+  #|       get() {
+  #|         const value = this.getAttribute ? String(this.getAttribute('fetchpriority') || '').toLowerCase() : '';
+  #|         return value === 'high' || value === 'low' || value === 'auto' ? value : 'auto';
+  #|       },
+  #|       set(v) {
+  #|         const value = String(v || '').toLowerCase();
+  #|         const normalized = value === 'high' || value === 'low' || value === 'auto' ? value : 'auto';
+  #|         if (this.setAttribute) this.setAttribute('fetchpriority', normalized);
+  #|       },
+  #|       configurable: true
+  #|     });
+  #|     Element.prototype[Symbol.unscopables] = {
+  #|       before: true,
+  #|       after: true,
+  #|       replaceWith: true,
+  #|       remove: true,
+  #|       prepend: true,
+  #|       append: true,
+  #|     };
   #|
   #|     function NodeList() {}
   #|     NodeList.prototype = Object.create(Array.prototype);
@@ -540,7 +611,9 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     HTMLCollection.prototype.constructor = HTMLCollection;
   #|     HTMLCollection.prototype.item = function(i) {
   #|       const items = this._itemsFn ? this._itemsFn() : this;
-  #|       return items[i] || null;
+  #|       if (arguments.length === 0) return null;
+  #|       const index = Number(i) >>> 0;
+  #|       return items[index] || null;
   #|     };
   #|     HTMLCollection.prototype.namedItem = function(name) {
   #|       const items = this._itemsFn ? this._itemsFn() : this;
@@ -550,6 +623,64 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         if (el._namespaceURI === 'http://www.w3.org/1999/xhtml' && el._attrs.name === name) return el;
   #|       }
   #|       return null;
+  #|     };
+  #|
+  #|     function NamedNodeMap() {}
+  #|     NamedNodeMap.prototype.item = function(i) {
+  #|       const element = this._element;
+  #|       if (!element) return null;
+  #|       return element._attrList[i] || null;
+  #|     };
+  #|     NamedNodeMap.prototype.getNamedItem = function(name) {
+  #|       const element = this._element;
+  #|       if (!element) return null;
+  #|       return getAttrNodeByExactName(element, name);
+  #|     };
+  #|     NamedNodeMap.prototype.getNamedItemNS = function(ns, localName) {
+  #|       const element = this._element;
+  #|       if (!element) return null;
+  #|       return getAttrNodeByNSLocalName(element, ns, localName);
+  #|     };
+  #|     NamedNodeMap.prototype.setNamedItem = function(attr) {
+  #|       const element = this._element;
+  #|       if (!element || !attr || attr._nodeType !== 2) {
+  #|         throw new TypeError('Failed to execute setNamedItem: parameter 1 is not of type Attr');
+  #|       }
+  #|       if (attr.ownerElement && attr.ownerElement !== element) {
+  #|         throw new DOMException('Attribute already in use', 'InUseAttributeError');
+  #|       }
+  #|       const oldClassValue = attr.localName === 'class' && (attr.namespaceURI === null || attr.namespaceURI === '') ? element.getAttribute('class') : null;
+  #|       const existing = attr.namespaceURI !== null && attr.namespaceURI !== ''
+  #|         ? getAttrNodeByNSLocalName(element, attr.namespaceURI, attr.localName)
+  #|         : getAttrNodeByExactName(element, attr.name);
+  #|       if (existing) {
+  #|         if (existing === attr) return attr;
+  #|         const idx = element._attrList.indexOf(existing);
+  #|         if (idx >= 0) element._attrList.splice(idx, 1, attr);
+  #|         existing.ownerElement = null;
+  #|       } else {
+  #|         element._attrList.push(attr);
+  #|       }
+  #|       attr.ownerElement = element;
+  #|       attr.ownerDocument = element.ownerDocument || getGlobalDocument();
+  #|       if (oldClassValue !== null) updateClassIndex(element, oldClassValue, attr.value);
+  #|       return existing || null;
+  #|     };
+  #|     NamedNodeMap.prototype.removeNamedItem = function(name) {
+  #|       const element = this._element;
+  #|       if (!element) {
+  #|         throw new DOMException('Attribute not found', 'NotFoundError');
+  #|       }
+  #|       const existing = getAttrNodeByExactName(element, name);
+  #|       if (!existing) {
+  #|         throw new DOMException('Attribute not found', 'NotFoundError');
+  #|       }
+  #|       const oldClassValue = existing.localName === 'class' && (existing.namespaceURI === null || existing.namespaceURI === '') ? element.getAttribute('class') : null;
+  #|       const idx = element._attrList.indexOf(existing);
+  #|       if (idx >= 0) element._attrList.splice(idx, 1);
+  #|       existing.ownerElement = null;
+  #|       if (oldClassValue !== null) updateClassIndex(element, oldClassValue, null);
+  #|       return existing;
   #|     };
   #|
   #|     function makeLiveList(ctor, itemsFn, withNamedItem) {
@@ -725,7 +856,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     function lookupNamespaceURIImpl(node, prefix) {
   #|       if (!node) return null;
   #|       const pref = prefix === undefined || prefix === null || prefix === '' ? null : String(prefix);
-  #|       const nodeType = getNodeType(node);
+  #|       const nodeType = __craterGetNodeType(node);
   #|       if (nodeType === 10) {
   #|         return null;
   #|       }
@@ -750,7 +881,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           }
   #|         }
   #|         const parent = getParentNode(node);
-  #|         if (parent && getNodeType(parent) === 9) return null;
+  #|         if (parent && __craterGetNodeType(parent) === 9) return null;
   #|         return parent ? lookupNamespaceURIImpl(parent, pref) : null;
   #|       }
   #|       if (nodeType === 9) {
@@ -761,7 +892,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         return node.ownerElement ? lookupNamespaceURIImpl(node.ownerElement, pref) : null;
   #|       }
   #|       const parent = getParentNode(node);
-  #|       if (parent && getNodeType(parent) === 9) return null;
+  #|       if (parent && __craterGetNodeType(parent) === 9) return null;
   #|       return parent ? lookupNamespaceURIImpl(parent, pref) : null;
   #|     }
   #|     function isNodeLike(node) {
@@ -784,21 +915,128 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       let parent = getParentNode(n);
   #|       while (parent) {
   #|         n = parent;
+  #|         if (n && n._isShadowRoot) break;
   #|         parent = getParentNode(n);
   #|       }
   #|       return n;
   #|     }
-  #|     function getRootNodePublic(node) {
+  #|     function getRootNodePublic(node, options) {
   #|       const root = getRootNodeInternal(node);
-  #|       if (root && getNodeType(root) === 9) {
-  #|         const docEl = root.documentElement || (root._children ? root._children.find(n => n && n._nodeType === 1) : null);
-  #|         return docEl || root;
+  #|       if (options && options.composed && root && root._isShadowRoot && root.host) {
+  #|         return getRootNodePublic(root.host, options);
   #|       }
   #|       return root;
   #|     }
   #|     function isConnectedToDocument(node) {
   #|       const root = getRootNodeInternal(node);
-  #|       return root && getNodeType(root) === 9;
+  #|       return root && __craterGetNodeType(root) === 9;
+  #|     }
+  #|     const __craterMutationObservers = [];
+  #|     function matchesObservedTarget(target, observedTarget, options) {
+  #|       if (target === observedTarget) return true;
+  #|       return !!(options && options.subtree && nodeContains(observedTarget, target));
+  #|     }
+  #|     function normalizeMutationRecord(record) {
+  #|       return {
+  #|         type: record.type,
+  #|         target: record.target,
+  #|         addedNodes: record.addedNodes || [],
+  #|         removedNodes: record.removedNodes || [],
+  #|         previousSibling: record.previousSibling === undefined ? null : record.previousSibling,
+  #|         nextSibling: record.nextSibling === undefined ? null : record.nextSibling,
+  #|         attributeName: record.attributeName === undefined ? null : record.attributeName,
+  #|         attributeNamespace: record.attributeNamespace === undefined ? null : record.attributeNamespace,
+  #|         oldValue: record.oldValue === undefined ? null : record.oldValue
+  #|       };
+  #|     }
+  #|     function enqueueMutationCallback(observer) {
+  #|       if (observer._scheduled) return;
+  #|       observer._scheduled = true;
+  #|       queueMicrotask(function() {
+  #|         observer._scheduled = false;
+  #|         if (observer._records.length === 0) return;
+  #|         const records = observer.takeRecords();
+  #|         if (records.length === 0) return;
+  #|         try {
+  #|           observer._callback(records, observer);
+  #|         } catch (error) {
+  #|           const callbackRealm = observer._callback && observer._callback.__craterRealm
+  #|             ? observer._callback.__craterRealm
+  #|             : null;
+  #|           if (callbackRealm && typeof callbackRealm.onerror === 'function') {
+  #|             callbackRealm.onerror(error && error.message ? error.message : String(error), '', 0, 0, error);
+  #|             return;
+  #|           }
+  #|           throw error;
+  #|         }
+  #|       });
+  #|     }
+  #|     function queueMutationRecord(target, record) {
+  #|       for (const observer of __craterMutationObservers) {
+  #|         if (!observer || !observer._targets || observer._targets.length === 0) continue;
+  #|         for (const observation of observer._targets) {
+  #|           if (!matchesObservedTarget(target, observation.target, observation.options)) continue;
+  #|           const options = observation.options || {};
+  #|           if (record.type === 'attributes') {
+  #|             if (!options.attributes) continue;
+  #|             if (options.attributeFilter !== undefined) {
+  #|               const filter = Array.isArray(options.attributeFilter)
+  #|                 ? options.attributeFilter.map(String)
+  #|                 : [String(options.attributeFilter)];
+  #|               if (!filter.includes(record.attributeName)) continue;
+  #|             }
+  #|             observer._records.push(normalizeMutationRecord({
+  #|               type: 'attributes',
+  #|               target: target,
+  #|               attributeName: record.attributeName,
+  #|               attributeNamespace: record.attributeNamespace,
+  #|               oldValue: options.attributeOldValue ? record.oldValue : null
+  #|             }));
+  #|             enqueueMutationCallback(observer);
+  #|             continue;
+  #|           }
+  #|           if (record.type === 'characterData') {
+  #|             if (!options.characterData) continue;
+  #|             observer._records.push(normalizeMutationRecord({
+  #|               type: 'characterData',
+  #|               target: target,
+  #|               oldValue: options.characterDataOldValue ? record.oldValue : null
+  #|             }));
+  #|             enqueueMutationCallback(observer);
+  #|             continue;
+  #|           }
+  #|           if (record.type === 'childList') {
+  #|             if (!options.childList) continue;
+  #|             observer._records.push(normalizeMutationRecord({
+  #|               type: 'childList',
+  #|               target: target,
+  #|               addedNodes: record.addedNodes || [],
+  #|               removedNodes: record.removedNodes || [],
+  #|               previousSibling: record.previousSibling,
+  #|               nextSibling: record.nextSibling
+  #|             }));
+  #|             enqueueMutationCallback(observer);
+  #|           }
+  #|         }
+  #|       }
+  #|     }
+  #|     function maybeExecuteScriptElement(el) {
+  #|       if (!el || String(el._tagName || '').toLowerCase() !== 'script' || el.__craterManualExecution) return;
+  #|       if (el._alreadyStarted) return;
+  #|       const type = el.getAttribute ? String(el.getAttribute('type') || '').trim().toLowerCase() : '';
+  #|       if (type && type !== 'text/javascript' && type !== 'application/javascript' && type !== 'module') return;
+  #|       const src = el.getAttribute ? el.getAttribute('src') : null;
+  #|       if (src) return;
+  #|       const code = el.textContent || '';
+  #|       if (!code.trim()) return;
+  #|       el._alreadyStarted = true;
+  #|       globalThis.__craterCurrentScript = el;
+  #|       try {
+  #|         (0, eval)(code);
+  #|       } finally {
+  #|         globalThis.__craterCurrentScript = null;
+  #|         if (typeof _flushMicrotasks === 'function') _flushMicrotasks();
+  #|       }
   #|     }
   #|     function compareDocumentPositionImpl(reference, other) {
   #|       if (!isNodeLike(other)) {
@@ -847,10 +1085,10 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     }
   #|     function validateDocumentInsert(doc, node, refChild, excludeChild) {
   #|       const exclude = (excludeChild === undefined) ? null : excludeChild;
-  #|       const excludeType = exclude ? getNodeType(exclude) : null;
+  #|       const excludeType = exclude ? __craterGetNodeType(exclude) : null;
   #|       const excludeElement = excludeType === 1 ? exclude : null;
   #|       const excludeDoctype = excludeType === 10 ? exclude : null;
-  #|       const nodeType = getNodeType(node);
+  #|       const nodeType = __craterGetNodeType(node);
   #|       if (nodeType === 9 || nodeType === 2) {
   #|         throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
   #|       }
@@ -879,7 +1117,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         let hasText = false;
   #|         let hasDoctype = false;
   #|         for (const child of children) {
-  #|           const ctype = getNodeType(child);
+  #|           const ctype = __craterGetNodeType(child);
   #|           if (ctype === 1) elementCount++;
   #|           else if (ctype === 3) hasText = true;
   #|           else if (ctype === 10) hasDoctype = true;
@@ -921,11 +1159,89 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       }
   #|       throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
   #|     }
+  #|     function convertParentNodeInputNode(doc, input) {
+  #|       return isNodeLike(input) ? input : doc.createTextNode(String(input));
+  #|     }
+  #|     function convertParentNodeNodes(doc, nodes) {
+  #|       if (!doc || nodes.length === 0) return null;
+  #|       if (nodes.length === 1) {
+  #|         return convertParentNodeInputNode(doc, nodes[0]);
+  #|       }
+  #|       const frag = doc.createDocumentFragment();
+  #|       for (const node of nodes) {
+  #|         frag.appendChild(convertParentNodeInputNode(doc, node));
+  #|       }
+  #|       return frag;
+  #|     }
+  #|     function validateDocumentReplaceChildren(doc, replacement) {
+  #|       if (!replacement) return;
+  #|       const nodeType = __craterGetNodeType(replacement);
+  #|       if (nodeType === 9 || nodeType === 2) {
+  #|         throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
+  #|       }
+  #|       if (nodeType === 3) {
+  #|         throw new DOMException('Cannot insert a text node into document', 'HierarchyRequestError');
+  #|       }
+  #|       if (nodeType === 7 || nodeType === 8 || nodeType === 10 || nodeType === 1) {
+  #|         return;
+  #|       }
+  #|       if (nodeType !== 11) {
+  #|         throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
+  #|       }
+  #|       let elementCount = 0;
+  #|       let doctypeCount = 0;
+  #|       let seenElement = false;
+  #|       for (const child of replacement._children || []) {
+  #|         const childType = __craterGetNodeType(child);
+  #|         if (childType === 1) {
+  #|           elementCount++;
+  #|           seenElement = true;
+  #|         } else if (childType === 10) {
+  #|           doctypeCount++;
+  #|           if (seenElement) {
+  #|             throw new DOMException('Cannot insert doctype after element', 'HierarchyRequestError');
+  #|           }
+  #|         } else if (childType === 3) {
+  #|           throw new DOMException('Cannot insert a text node into document', 'HierarchyRequestError');
+  #|         } else if (childType !== 7 && childType !== 8) {
+  #|           throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
+  #|         }
+  #|       }
+  #|       if (elementCount > 1 || doctypeCount > 1) {
+  #|         throw new DOMException('Invalid DocumentFragment for document', 'HierarchyRequestError');
+  #|       }
+  #|     }
+  #|     function parentNodeAppend(parent, ownerDoc, nodes) {
+  #|       const node = convertParentNodeNodes(ownerDoc, nodes);
+  #|       if (!node) return;
+  #|       parent.appendChild(node);
+  #|     }
+  #|     function parentNodePrepend(parent, ownerDoc, nodes) {
+  #|       const node = convertParentNodeNodes(ownerDoc, nodes);
+  #|       if (!node) return;
+  #|       parent.insertBefore(node, parent.firstChild);
+  #|     }
+  #|     function parentNodeReplaceChildren(parent, ownerDoc, nodes) {
+  #|       const replacement = convertParentNodeNodes(ownerDoc, nodes);
+  #|       if (__craterGetNodeType(parent) === 9) {
+  #|         if (replacement) {
+  #|           if ((parent._children || []).length > 0) {
+  #|             validateDocumentInsert(parent, replacement, null, null);
+  #|           } else {
+  #|             validateDocumentReplaceChildren(parent, replacement);
+  #|           }
+  #|         }
+  #|       }
+  #|       while (parent._children.length > 0) parent.removeChild(parent._children[0]);
+  #|       if (replacement) {
+  #|         parent.appendChild(replacement);
+  #|       }
+  #|     }
   #|     function getGlobalDocument() {
   #|       if (typeof globalThis !== 'undefined' && globalThis.document) return globalThis.document;
   #|       return null;
   #|     }
-  #|     function getNodeType(node) {
+  #|     function __craterGetNodeType(node) {
   #|       return node && node._nodeType !== undefined ? node._nodeType : (node ? node.nodeType : undefined);
   #|     }
   #|     function getOwnerDocument(node) {
@@ -941,10 +1257,36 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       if (node._nodeType === 9) return;
   #|       if ('ownerDocument' in node) node.ownerDocument = doc;
   #|       if ('_ownerDocument' in node) node._ownerDocument = doc;
+  #|       if (node._attrList) {
+  #|         for (const attr of node._attrList) {
+  #|           attr.ownerDocument = doc;
+  #|         }
+  #|       }
   #|       if (node._children) {
   #|         for (const child of node._children) {
   #|           adoptSubtree(child, doc);
   #|         }
+  #|       }
+  #|     }
+  #|     function insertAdjacentNode(target, position, node) {
+  #|       const pos = String(position).toLowerCase();
+  #|       switch (pos) {
+  #|         case 'beforebegin':
+  #|           if (!target._parent) return null;
+  #|           target._parent.insertBefore(node, target);
+  #|           return node;
+  #|         case 'afterbegin':
+  #|           target.insertBefore(node, target.firstChild);
+  #|           return node;
+  #|         case 'beforeend':
+  #|           target.appendChild(node);
+  #|           return node;
+  #|         case 'afterend':
+  #|           if (!target._parent) return null;
+  #|           target._parent.insertBefore(node, target.nextSibling);
+  #|           return node;
+  #|         default:
+  #|           throw new DOMException("Invalid position: " + position, "SyntaxError");
   #|       }
   #|     }
   #|     function detachNode(node) {
@@ -1075,9 +1417,339 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         }
   #|       }
   #|     }
+  #|     function isNameStartCharCode(code) {
+  #|       return (
+  #|         (code >= 65 && code <= 90) ||
+  #|         (code >= 97 && code <= 122) ||
+  #|         code === 95 ||
+  #|         code === 58 ||
+  #|         code >= 0x80
+  #|       );
+  #|     }
+  #|     function isNameCharCode(code) {
+  #|       return (
+  #|         isNameStartCharCode(code) ||
+  #|         (code >= 48 && code <= 57) ||
+  #|         code === 45 ||
+  #|         code === 46
+  #|       );
+  #|     }
+  #|     function isForbiddenAttributeCharCode(code) {
+  #|       return (
+  #|         code === 0 ||
+  #|         code === 9 ||
+  #|         code === 10 ||
+  #|         code === 12 ||
+  #|         code === 13 ||
+  #|         code === 32 ||
+  #|         code === 47 ||
+  #|         code === 62 ||
+  #|         code === 61
+  #|       );
+  #|     }
+  #|     function isForbiddenDoctypeCharCode(code) {
+  #|       return (
+  #|         code === 0 ||
+  #|         code === 9 ||
+  #|         code === 10 ||
+  #|         code === 12 ||
+  #|         code === 13 ||
+  #|         code === 32 ||
+  #|         code === 62
+  #|       );
+  #|     }
+  #|     function isForbiddenNamespacePrefixCharCode(code) {
+  #|       return (
+  #|         code === 0 ||
+  #|         code === 9 ||
+  #|         code === 10 ||
+  #|         code === 12 ||
+  #|         code === 13 ||
+  #|         code === 32 ||
+  #|         code === 47 ||
+  #|         code === 62
+  #|       );
+  #|     }
+  #|     function isValidElementName(name) {
+  #|       if (name === '') return false;
+  #|       const first = name.charCodeAt(0);
+  #|       if ((first >= 65 && first <= 90) || (first >= 97 && first <= 122)) {
+  #|         for (let i = 1; i < name.length; i++) {
+  #|           const code = name.charCodeAt(i);
+  #|           if (
+  #|             code === 0 ||
+  #|             code === 9 ||
+  #|             code === 10 ||
+  #|             code === 12 ||
+  #|             code === 13 ||
+  #|             code === 32 ||
+  #|             code === 47 ||
+  #|             code === 62
+  #|           ) {
+  #|             return false;
+  #|           }
+  #|         }
+  #|         return true;
+  #|       }
+  #|       if (first !== 58 && first !== 95 && first < 0x80) return false;
+  #|       for (let i = 1; i < name.length; i++) {
+  #|         const code = name.charCodeAt(i);
+  #|         if (!isNameCharCode(code)) {
+  #|           return false;
+  #|         }
+  #|       }
+  #|       return true;
+  #|     }
+  #|     function isValidAttributeName(name) {
+  #|       if (name === '') return false;
+  #|       for (let i = 0; i < name.length; i++) {
+  #|         if (isForbiddenAttributeCharCode(name.charCodeAt(i))) return false;
+  #|       }
+  #|       return true;
+  #|     }
+  #|     function isValidNamespacePrefix(name) {
+  #|       if (name === '') return false;
+  #|       for (let i = 0; i < name.length; i++) {
+  #|         if (isForbiddenNamespacePrefixCharCode(name.charCodeAt(i))) return false;
+  #|       }
+  #|       return true;
+  #|     }
+  #|     function isValidDoctypeName(name) {
+  #|       if (name === '') return true;
+  #|       for (let i = 0; i < name.length; i++) {
+  #|         if (isForbiddenDoctypeCharCode(name.charCodeAt(i))) return false;
+  #|       }
+  #|       return true;
+  #|     }
+  #|     function parseQualifiedName(name) {
+  #|       const firstColon = name.indexOf(':');
+  #|       if (firstColon < 0) return { prefix: null, localName: name };
+  #|       const prefix = name.slice(0, firstColon);
+  #|       const remainder = name.slice(firstColon + 1);
+  #|       const secondColon = remainder.indexOf(':');
+  #|       const localName = secondColon >= 0 ? remainder.slice(0, secondColon) : remainder;
+  #|       if (prefix === '' || localName === '') return null;
+  #|       return { prefix, localName };
+  #|     }
+  #|     function validateElementQualifiedName(namespace, qualifiedName) {
+  #|       const name = String(qualifiedName);
+  #|       const parsed = parseQualifiedName(name);
+  #|       const nsNormalized = namespace === undefined || namespace === '' ? null : namespace;
+  #|       if (parsed === null) {
+  #|         throw new DOMException('Invalid character in qualifiedName', 'InvalidCharacterError');
+  #|       }
+  #|       if (parsed.prefix === null) {
+  #|         if (!isValidElementName(name)) {
+  #|           throw new DOMException('Invalid character in qualifiedName', 'InvalidCharacterError');
+  #|         }
+  #|       } else {
+  #|         if (!isValidNamespacePrefix(parsed.prefix) || !isValidElementName(parsed.localName)) {
+  #|           throw new DOMException('Invalid character in qualifiedName', 'InvalidCharacterError');
+  #|         }
+  #|       }
+  #|       if (parsed.prefix !== null && nsNormalized === null) {
+  #|         throw new DOMException('Invalid namespace', 'NamespaceError');
+  #|       }
+  #|       if (parsed.prefix === 'xml' && nsNormalized !== 'http://www.w3.org/XML/1998/namespace') {
+  #|         throw new DOMException('Invalid namespace', 'NamespaceError');
+  #|       }
+  #|       if ((parsed.prefix === 'xmlns' || name === 'xmlns') && nsNormalized !== 'http://www.w3.org/2000/xmlns/') {
+  #|         throw new DOMException('Invalid namespace', 'NamespaceError');
+  #|       }
+  #|       if (nsNormalized === 'http://www.w3.org/2000/xmlns/' && !(parsed.prefix === 'xmlns' || name === 'xmlns')) {
+  #|         throw new DOMException('Invalid namespace', 'NamespaceError');
+  #|       }
+  #|       return parsed;
+  #|     }
+  #|     function validateAttributeQualifiedName(namespace, qualifiedName) {
+  #|       const name = String(qualifiedName);
+  #|       const parsed = parseQualifiedName(name);
+  #|       const nsNormalized = namespace === undefined || namespace === '' ? null : namespace;
+  #|       if (parsed === null) {
+  #|         throw new DOMException('Invalid character in attribute name', 'InvalidCharacterError');
+  #|       }
+  #|       if (parsed.prefix === null) {
+  #|         if (!isValidAttributeName(name)) {
+  #|           throw new DOMException('Invalid character in attribute name', 'InvalidCharacterError');
+  #|         }
+  #|       } else {
+  #|         if (!isValidNamespacePrefix(parsed.prefix) || !isValidAttributeName(parsed.localName)) {
+  #|           throw new DOMException('Invalid character in attribute name', 'InvalidCharacterError');
+  #|         }
+  #|       }
+  #|       if (parsed.prefix !== null && nsNormalized === null) {
+  #|         throw new DOMException('Invalid namespace', 'NamespaceError');
+  #|       }
+  #|       if (parsed.prefix === 'xml' && nsNormalized !== 'http://www.w3.org/XML/1998/namespace') {
+  #|         throw new DOMException('Invalid namespace', 'NamespaceError');
+  #|       }
+  #|       if ((parsed.prefix === 'xmlns' || name === 'xmlns') && nsNormalized !== 'http://www.w3.org/2000/xmlns/') {
+  #|         throw new DOMException('Invalid namespace', 'NamespaceError');
+  #|       }
+  #|       if (nsNormalized === 'http://www.w3.org/2000/xmlns/' && !(parsed.prefix === 'xmlns' || name === 'xmlns')) {
+  #|         throw new DOMException('Invalid namespace', 'NamespaceError');
+  #|       }
+  #|       return parsed;
+  #|     }
+  #|     function validateDoctypeQualifiedName(qualifiedName) {
+  #|       const name = String(qualifiedName);
+  #|       if (!isValidDoctypeName(name)) {
+  #|         throw new DOMException('Invalid character in qualifiedName', 'InvalidCharacterError');
+  #|       }
+  #|       return name;
+  #|     }
+  #|     function createAttrNode(ownerDoc, namespace, qualifiedName, value, ownerElement, lowercase) {
+  #|       const rawName = String(qualifiedName);
+  #|       const nsNormalized = namespace === undefined || namespace === '' ? null : namespace;
+  #|       const parsed = nsNormalized === null
+  #|         ? (function() {
+  #|             if (!isValidAttributeName(rawName)) {
+  #|               throw new DOMException('Invalid character in attribute name', 'InvalidCharacterError');
+  #|             }
+  #|             return { prefix: null, localName: lowercase ? asciiLowercase(rawName) : rawName };
+  #|           })()
+  #|         : validateAttributeQualifiedName(nsNormalized, rawName);
+  #|       const attrName = lowercase && parsed.prefix === null ? asciiLowercase(rawName) : rawName;
+  #|       const attr = {
+  #|         _nodeType: 2,
+  #|         nodeType: 2,
+  #|         name: attrName,
+  #|         localName: parsed.localName,
+  #|         nodeName: attrName,
+  #|         value: value === undefined ? '' : String(value),
+  #|         get nodeValue() { return this.value; },
+  #|         set nodeValue(v) { this.value = v === null ? '' : String(v); },
+  #|         get textContent() { return this.value; },
+  #|         set textContent(v) { this.value = v === null ? '' : String(v); },
+  #|         get baseURI() {
+  #|           const doc = this.ownerDocument || getGlobalDocument();
+  #|           return doc && doc.baseURI ? doc.baseURI : 'about:blank';
+  #|         },
+  #|         namespaceURI: nsNormalized,
+  #|         prefix: parsed.prefix,
+  #|         ownerDocument: ownerDoc || getGlobalDocument(),
+  #|         ownerElement: ownerElement || null,
+  #|         specified: true,
+  #|         isSameNode(other) { return this === other; },
+  #|         isEqualNode(other) {
+  #|           return other && other._nodeType === 2 &&
+  #|             other.name === this.name &&
+  #|             other.value === this.value &&
+  #|             other.namespaceURI === this.namespaceURI;
+  #|         },
+  #|         cloneNode() {
+  #|           const doc = this.ownerDocument || getGlobalDocument();
+  #|           const cloned = this.namespaceURI
+  #|             ? (doc && doc.createAttributeNS ? doc.createAttributeNS(this.namespaceURI, this.name) : document.createAttributeNS(this.namespaceURI, this.name))
+  #|             : (doc && doc.createAttribute ? doc.createAttribute(this.name) : document.createAttribute(this.name));
+  #|           cloned.value = this.value;
+  #|           return cloned;
+  #|         }
+  #|       };
+  #|       Object.setPrototypeOf(attr, Attr.prototype);
+  #|       return attr;
+  #|     }
+  #|     function normalizeElementAttrLookupName(el, name) {
+  #|       const rawName = String(name);
+  #|       return el && el._namespaceURI === 'http://www.w3.org/1999/xhtml' ? asciiLowercase(rawName) : rawName;
+  #|     }
+  #|     function getAttrNodeByExactName(el, name) {
+  #|       const searchName = String(name);
+  #|       return el._attrList.find(a => a.name === searchName) || null;
+  #|     }
+  #|     function getAttrNodeByName(el, name) {
+  #|       const searchName = normalizeElementAttrLookupName(el, name);
+  #|       return el._attrList.find(a => a.name === searchName) || null;
+  #|     }
+  #|     function getAttrNodeByNSLocalName(el, ns, localName) {
+  #|       const normalNs = ns === '' || ns === null || ns === undefined ? null : ns;
+  #|       return el._attrList.find(a => {
+  #|         const attrNs = a.namespaceURI === '' || a.namespaceURI === null || a.namespaceURI === undefined ? null : a.namespaceURI;
+  #|         return attrNs === normalNs && a.localName === localName;
+  #|       }) || null;
+  #|     }
+  #|     function shouldExposeNamedNodeMapProperty(element, attr) {
+  #|       if (!element || !attr) return false;
+  #|       const ownerDoc = element.ownerDocument || getGlobalDocument();
+  #|       const isHtmlDoc = ownerDoc && ownerDoc.contentType === 'text/html';
+  #|       const isHtmlElement = element._namespaceURI === 'http://www.w3.org/1999/xhtml';
+  #|       if (isHtmlElement && isHtmlDoc) {
+  #|         return attr.name === asciiLowercase(attr.name);
+  #|       }
+  #|       return true;
+  #|     }
+  #|     function getNamedNodeMapPropertyNames(element) {
+  #|       const names = [];
+  #|       for (const attr of element._attrList) {
+  #|         if (!shouldExposeNamedNodeMapProperty(element, attr)) continue;
+  #|         if (!names.includes(attr.name)) names.push(attr.name);
+  #|       }
+  #|       return names;
+  #|     }
+  #|     function getNamedNodeMapPropertyAttr(element, prop) {
+  #|       if (typeof prop !== 'string') return undefined;
+  #|       for (const attr of element._attrList) {
+  #|         if (!shouldExposeNamedNodeMapProperty(element, attr)) continue;
+  #|         if (attr.name === prop) return attr;
+  #|       }
+  #|       return undefined;
+  #|     }
+  #|     function makeNamedNodeMap(element) {
+  #|       const target = {};
+  #|       Object.defineProperty(target, '_element', {
+  #|         value: element,
+  #|         writable: false,
+  #|         configurable: true,
+  #|         enumerable: false,
+  #|       });
+  #|       Object.setPrototypeOf(target, NamedNodeMap.prototype);
+  #|       const getItems = () => element._attrList;
+  #|       const getNamed = (prop) => {
+  #|         if (typeof prop !== 'string') return undefined;
+  #|         if (prop in target || prop in NamedNodeMap.prototype) return undefined;
+  #|         return getNamedNodeMapPropertyAttr(element, prop);
+  #|       };
+  #|       return new Proxy(target, {
+  #|         get(obj, prop, receiver) {
+  #|           if (prop === 'length') return getItems().length;
+  #|           if (typeof prop === 'string' && /^[0-9]+$/.test(prop)) return getItems()[Number(prop)];
+  #|           if (prop in obj || prop in NamedNodeMap.prototype) return Reflect.get(obj, prop, receiver);
+  #|           return getNamed(prop);
+  #|         },
+  #|         has(obj, prop) {
+  #|           if (prop === 'length') return true;
+  #|           if (typeof prop === 'string' && /^[0-9]+$/.test(prop)) return Number(prop) < getItems().length;
+  #|           if (prop in obj || prop in NamedNodeMap.prototype) return true;
+  #|           return getNamed(prop) !== undefined;
+  #|         },
+  #|         ownKeys(obj) {
+  #|           const keys = [];
+  #|           for (let i = 0; i < getItems().length; i++) keys.push(String(i));
+  #|           for (const name of getNamedNodeMapPropertyNames(element)) {
+  #|             if (!keys.includes(name)) keys.push(name);
+  #|           }
+  #|           return keys;
+  #|         },
+  #|         getOwnPropertyDescriptor(obj, prop) {
+  #|           if (prop === 'length') return { configurable: true, enumerable: false, writable: false, value: getItems().length };
+  #|           if (typeof prop === 'string' && /^[0-9]+$/.test(prop)) {
+  #|             const idx = Number(prop);
+  #|             if (idx < getItems().length) {
+  #|               return { configurable: true, enumerable: true, writable: false, value: getItems()[idx] };
+  #|             }
+  #|           }
+  #|           if (prop in obj) return Object.getOwnPropertyDescriptor(obj, prop);
+  #|           const named = getNamed(prop);
+  #|           if (named !== undefined) {
+  #|             return { configurable: true, enumerable: false, writable: false, value: named };
+  #|           }
+  #|           return undefined;
+  #|         }
+  #|       });
+  #|     }
   #|     function getCandidatesByFilter(root, includeRoot, filter, allowLarge) {
   #|       if (!filter) return null;
-  #|       if (!isConnectedToDocument(root) && getNodeType(root) !== 9) return null;
+  #|       if (!isConnectedToDocument(root) && __craterGetNodeType(root) !== 9) return null;
   #|       const doc = ensureDocumentIndexes(getOwnerDocument(root));
   #|       if (!doc) return null;
   #|       let candidates = null;
@@ -1166,12 +1838,9 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     function matchesTagName(node, tag) {
   #|       if (tag === '*') return true;
   #|       const name = String(tag);
-  #|       if (node._namespaceURI === 'http://www.w3.org/1999/xhtml') {
-  #|         const lower = asciiLowercase(name);
-  #|         if (name.indexOf(':') >= 0) {
-  #|           return asciiLowercase(node._tagName) === lower;
-  #|         }
-  #|         return node.localName === lower;
+  #|       const ownerDoc = node._ownerDocument || getGlobalDocument();
+  #|       if (node._namespaceURI === 'http://www.w3.org/1999/xhtml' && ownerDoc && ownerDoc.contentType === 'text/html') {
+  #|         return node._tagName === asciiLowercase(name);
   #|       }
   #|       return node._tagName === name;
   #|     }
@@ -1650,11 +2319,16 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|             const isInvalidControl = (node) => {
   #|               if (!node || node._nodeType !== 1) return false;
   #|               if (!node.hasAttribute || !node.hasAttribute('required')) return false;
-  #|               const tag = node._tagName;
-  #|               if (tag === 'SELECT') {
-  #|                 const options = node._children ? node._children.filter(n => n._nodeType === 1 && n._tagName === 'OPTION') : [];
-  #|                 const hasSelected = options.some(opt => opt.hasAttribute && opt.hasAttribute('selected'));
-  #|                 return !hasSelected;
+  #|               const tag = asciiLowercase(node._tagName || '');
+  #|               if (tag === 'select') {
+  #|                 const options = node._children ? node._children.filter(n => n._nodeType === 1 && asciiLowercase(n._tagName || '') === 'option') : [];
+  #|                 const selected = options.find(opt => opt.hasAttribute && opt.hasAttribute('selected')) || options[0] || null;
+  #|                 if (!selected) return true;
+  #|                 let selectedValue = selected.getAttribute ? selected.getAttribute('value') : null;
+  #|                 if (selectedValue === null || selectedValue === undefined) {
+  #|                   selectedValue = selected.textContent || '';
+  #|                 }
+  #|                 return String(selectedValue) === '';
   #|               }
   #|               const value = node.getAttribute ? node.getAttribute('value') : null;
   #|               return value === null || value === '';
@@ -1709,6 +2383,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       if (!sel) return null;
   #|       if (sel === '*') return '*';
   #|       if (sel[0] === '.' || sel[0] === '#' || sel[0] === '[' || sel[0] === ':') return null;
+  #|       if (sel.indexOf('|') >= 0) return null;
   #|       const res = readCssIdentifier(sel, 0);
   #|       if (!res.value) return null;
   #|       if (res.end !== sel.length) return null;
@@ -2588,6 +3263,19 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           return this._tagName.toLowerCase();
   #|         },
   #|         get namespaceURI() { return this._namespaceURI; },
+  #|         get ownerSVGElement() {
+  #|           if (this._namespaceURI !== 'http://www.w3.org/2000/svg') return null;
+  #|           let node = this._parent;
+  #|           while (node) {
+  #|             if (node._nodeType === 1 && node._namespaceURI === 'http://www.w3.org/2000/svg') {
+  #|               const local = asciiLowercase(node.localName || node._tagName || '');
+  #|               if (local === 'foreignobject') return null;
+  #|               if (local === 'svg') return node;
+  #|             }
+  #|             node = node._parent;
+  #|           }
+  #|           return null;
+  #|         },
   #|         get prefix() { return this._prefix; },
   #|         get baseURI() {
   #|           const doc = this.ownerDocument || getGlobalDocument();
@@ -2602,7 +3290,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           while (node._parent) node = node._parent;
   #|           return node && node._nodeType === 9;
   #|         },
-  #|         getRootNode() { return getRootNodePublic(this); },
+  #|         getRootNode(options) { return getRootNodePublic(this, options); },
   #|         // Legacy _attrs getter for backwards compatibility
   #|         get _attrs() {
   #|           const obj = {};
@@ -2614,38 +3302,41 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         get slot() { return this.getAttribute('slot') || ''; },
   #|         set slot(v) { this.setAttribute('slot', v); },
   #|         setAttribute(name, value) {
-  #|           // Validate attribute name - empty string is invalid
-  #|           if (name === '') {
+  #|           const rawName = String(name);
+  #|           if (!isValidAttributeName(rawName)) {
   #|             throw new DOMException('Invalid character in attribute name', 'InvalidCharacterError');
   #|           }
-  #|           const rawName = String(name);
   #|           const isHtml = this._namespaceURI === 'http://www.w3.org/1999/xhtml';
   #|           const normalizedName = isHtml ? asciiLowercase(rawName) : rawName;
   #|           const oldClassValue = normalizedName === 'class' ? this.getAttribute('class') : null;
-  #|           const colonIdx = rawName.indexOf(':');
-  #|           const rawLocal = colonIdx >= 0 ? rawName.slice(colonIdx + 1) : rawName;
-  #|           const rawPrefix = colonIdx >= 0 ? rawName.slice(0, colonIdx) : null;
-  #|           const localName = isHtml ? asciiLowercase(rawLocal) : rawLocal;
-  #|           const prefix = rawPrefix ? (isHtml ? asciiLowercase(rawPrefix) : rawPrefix) : null;
   #|           const strValue = String(value);
-  #|           const idx = this._attrList.findIndex(a => a.name === normalizedName);
-  #|           if (idx >= 0) {
-  #|             this._attrList[idx].value = strValue;
-  #|             this._attrList[idx].localName = localName;
-  #|             this._attrList[idx].prefix = prefix;
+  #|           const oldValue = this.getAttribute(normalizedName);
+  #|           const existing = getAttrNodeByName(this, normalizedName);
+  #|           if (existing) {
+  #|             existing.value = strValue;
   #|           } else {
-  #|             this._attrList.push({ ns: null, localName: localName, prefix: prefix, name: normalizedName, value: strValue });
+  #|             this._attrList.push(createAttrNode(
+  #|               this.ownerDocument || getGlobalDocument(),
+  #|               null,
+  #|               normalizedName,
+  #|               strValue,
+  #|               this,
+  #|               false,
+  #|             ));
   #|           }
   #|           if (normalizedName === 'class') {
   #|             updateClassIndex(this, oldClassValue, strValue);
   #|           }
   #|           domOps.push({ op: 'setAttribute', id: this._mockId, name: normalizedName, value: strValue });
+  #|           queueMutationRecord(this, {
+  #|             type: 'attributes',
+  #|             attributeName: normalizedName,
+  #|             attributeNamespace: null,
+  #|             oldValue: oldValue
+  #|           });
   #|         },
   #|         getAttribute(name) {
-  #|           const rawName = String(name);
-  #|           const isHtml = this._namespaceURI === 'http://www.w3.org/1999/xhtml';
-  #|           const searchName = isHtml ? asciiLowercase(rawName) : rawName;
-  #|           const attr = this._attrList.find(a => (isHtml ? asciiLowercase(a.name) === searchName : a.name === searchName));
+  #|           const attr = getAttrNodeByName(this, name);
   #|           return attr ? attr.value : null;
   #|         },
   #|         removeAttribute(name) {
@@ -2653,187 +3344,123 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           const isHtml = this._namespaceURI === 'http://www.w3.org/1999/xhtml';
   #|           const searchName = isHtml ? asciiLowercase(rawName) : rawName;
   #|           const oldClassValue = searchName === 'class' ? this.getAttribute('class') : null;
-  #|           const idx = this._attrList.findIndex(a => (isHtml ? asciiLowercase(a.name) === searchName : a.name === searchName));
+  #|           const oldValue = this.getAttribute(searchName);
+  #|           const idx = this._attrList.findIndex(a => normalizeElementAttrLookupName(this, a.name) === searchName);
   #|           if (idx >= 0) {
+  #|             this._attrList[idx].ownerElement = null;
   #|             this._attrList.splice(idx, 1);
   #|           }
   #|           if (searchName === 'class') {
   #|             updateClassIndex(this, oldClassValue, null);
   #|           }
   #|           domOps.push({ op: 'removeAttribute', id: this._mockId, name: searchName });
+  #|           if (oldValue !== null) {
+  #|             queueMutationRecord(this, {
+  #|               type: 'attributes',
+  #|               attributeName: searchName,
+  #|               attributeNamespace: null,
+  #|               oldValue: oldValue
+  #|             });
+  #|           }
   #|         },
   #|         hasAttribute(name) {
-  #|           const rawName = String(name);
-  #|           const isHtml = this._namespaceURI === 'http://www.w3.org/1999/xhtml';
-  #|           const searchName = isHtml ? asciiLowercase(rawName) : rawName;
-  #|           return this._attrList.some(a => (isHtml ? asciiLowercase(a.name) === searchName : a.name === searchName));
+  #|           return getAttrNodeByName(this, name) !== null;
   #|         },
   #|         hasAttributes() { return this._attrList.length > 0; },
   #|         getAttributeNames() { return this._attrList.map(a => a.name); },
   #|         get attributes() {
-  #|           const self = this;
-  #|           const items = this._attrList.map(function(a) {
-  #|             const attrName = a.name;
-  #|             const attr = {
-  #|               name: a.name,
-  #|               localName: a.localName,
-  #|               nodeName: a.name,
-  #|               namespaceURI: a.ns,
-  #|               prefix: a.prefix,
-  #|               ownerElement: self,
-  #|               ownerDocument: self.ownerDocument || getGlobalDocument(),
-  #|               specified: true,
-  #|               nodeType: 2,
-  #|               _nodeType: 2
-  #|             };
-  #|             Object.defineProperty(attr, 'value', {
-  #|               get() { const v = self.getAttribute(attrName); return v === null ? '' : v; },
-  #|               set(v) { self.setAttribute(attrName, v); }
-  #|             });
-  #|             Object.defineProperty(attr, 'nodeValue', {
-  #|               get() { const v = self.getAttribute(attrName); return v === null ? '' : v; },
-  #|               set(v) { self.setAttribute(attrName, v); }
-  #|             });
-  #|             Object.defineProperty(attr, 'textContent', {
-  #|               get() { const v = self.getAttribute(attrName); return v === null ? '' : v; },
-  #|               set(v) { self.setAttribute(attrName, v); }
-  #|             });
-  #|             Object.defineProperty(attr, 'baseURI', {
-  #|               get() {
-  #|                 if (self && self.baseURI) return self.baseURI;
-  #|                 const doc = self && self.ownerDocument ? self.ownerDocument : getGlobalDocument();
-  #|                 return doc && doc.baseURI ? doc.baseURI : 'about:blank';
-  #|               }
-  #|             });
-  #|             attr.cloneNode = function() {
-  #|               const doc = this.ownerDocument || getGlobalDocument();
-  #|               let cloned;
-  #|               if (this.namespaceURI) {
-  #|                 cloned = doc && doc.createAttributeNS ? doc.createAttributeNS(this.namespaceURI, this.name) : document.createAttributeNS(this.namespaceURI, this.name);
-  #|               } else {
-  #|                 cloned = doc && doc.createAttribute ? doc.createAttribute(this.name) : document.createAttribute(this.name);
-  #|               }
-  #|               cloned.value = this.value;
-  #|               return cloned;
-  #|             };
-  #|             attr.isSameNode = function(other) { return this === other; };
-  #|             attr.isEqualNode = function(other) { return other && other._nodeType === 2 && other.name === this.name && other.value === this.value && other.namespaceURI === this.namespaceURI; };
-  #|             Object.setPrototypeOf(attr, Attr.prototype);
-  #|             return attr;
-  #|           });
-  #|           const namedNodeMap = {
-  #|             length: items.length,
-  #|             item(i) { return items[i] || null; },
-  #|             getNamedItem(name) {
-  #|               const rawName = String(name);
-  #|               const isHtml = self._namespaceURI === 'http://www.w3.org/1999/xhtml';
-  #|               const searchName = isHtml ? asciiLowercase(rawName) : rawName;
-  #|               return items.find(function(a) {
-  #|                 return isHtml ? asciiLowercase(a.name) === searchName : a.name === searchName;
-  #|               }) || null;
-  #|             },
-  #|             getNamedItemNS(ns, localName) {
-  #|               const normalNs = (ns === '' || ns === null) ? null : ns;
-  #|               return items.find(function(a) {
-  #|                 const attrNs = (a.namespaceURI === '' || a.namespaceURI === null) ? null : a.namespaceURI;
-  #|                 return attrNs === normalNs && a.localName === localName;
-  #|               }) || null;
-  #|             },
-  #|             setNamedItem(attr) { self.setAttribute(attr.name, attr.value); return attr; },
-  #|             removeNamedItem(name) { const old = this.getNamedItem(name); self.removeAttribute(name); return old; },
-  #|             [Symbol.iterator]() { return items[Symbol.iterator](); }
-  #|           };
-  #|           // Add numeric index access
-  #|           for (let i = 0; i < items.length; i++) {
-  #|             namedNodeMap[i] = items[i];
+  #|           if (!this._namedNodeMap) {
+  #|             this._namedNodeMap = makeNamedNodeMap(this);
   #|           }
-  #|           return namedNodeMap;
+  #|           return this._namedNodeMap;
   #|         },
   #|         getAttributeNS(ns, localName) {
-  #|           // NS methods match by (namespace, localName) - case-sensitive
-  #|           // Treat null and "" as equivalent namespace
-  #|           const normalNs = (ns === '' || ns === null) ? null : ns;
-  #|           const attr = this._attrList.find(a => {
-  #|             const attrNs = (a.ns === '' || a.ns === null) ? null : a.ns;
-  #|             return attrNs === normalNs && a.localName === localName;
-  #|           });
+  #|           const attr = getAttrNodeByNSLocalName(this, ns, localName);
   #|           return attr ? attr.value : null;
   #|         },
   #|         setAttributeNS(ns, qualifiedName, value) {
-  #|           // Validate qualifiedName - empty string is invalid
-  #|           if (qualifiedName === '') {
-  #|             throw new DOMException('Invalid character in attribute name', 'InvalidCharacterError');
-  #|           }
-  #|           // Normalize namespace (treat "" as null)
-  #|           const normalNs = (ns === '' || ns === null) ? null : ns;
-  #|           // Extract localName and prefix from qualifiedName
-  #|           const colonIdx = qualifiedName.indexOf(':');
-  #|           const localName = colonIdx >= 0 ? qualifiedName.slice(colonIdx + 1) : qualifiedName;
-  #|           const prefix = colonIdx >= 0 ? qualifiedName.slice(0, colonIdx) : null;
+  #|           const normalNs = (ns === '' || ns === null || ns === undefined) ? null : ns;
+  #|           const parsed = validateAttributeQualifiedName(normalNs, qualifiedName);
+  #|           const localName = parsed.localName;
   #|           const oldClassValue = (normalNs === null && localName === 'class') ? this.getAttribute('class') : null;
   #|           const strValue = String(value);
-  #|           // Find existing attr with same (namespace, localName)
-  #|           const idx = this._attrList.findIndex(a => {
-  #|             const attrNs = (a.ns === '' || a.ns === null) ? null : a.ns;
-  #|             return attrNs === normalNs && a.localName === localName;
-  #|           });
-  #|           if (idx >= 0) {
-  #|             this._attrList[idx].value = strValue;
-  #|             this._attrList[idx].prefix = prefix;
-  #|             this._attrList[idx].name = qualifiedName;
+  #|           const oldValue = this.getAttributeNS(normalNs, localName);
+  #|           const existing = getAttrNodeByNSLocalName(this, normalNs, localName);
+  #|           if (existing) {
+  #|             existing.value = strValue;
   #|           } else {
-  #|             this._attrList.push({ ns: normalNs, localName: localName, prefix: prefix, name: qualifiedName, value: strValue });
+  #|             this._attrList.push(createAttrNode(
+  #|               this.ownerDocument || getGlobalDocument(),
+  #|               normalNs,
+  #|               qualifiedName,
+  #|               strValue,
+  #|               this,
+  #|               false,
+  #|             ));
   #|           }
   #|           if (normalNs === null && localName === 'class') {
   #|             updateClassIndex(this, oldClassValue, strValue);
   #|           }
   #|           domOps.push({ op: 'setAttribute', id: this._mockId, name: qualifiedName, value: strValue });
+  #|           queueMutationRecord(this, {
+  #|             type: 'attributes',
+  #|             attributeName: localName,
+  #|             attributeNamespace: normalNs,
+  #|             oldValue: oldValue
+  #|           });
   #|         },
   #|         removeAttributeNS(ns, localName) {
-  #|           // NS methods match by (namespace, localName) - case-sensitive
-  #|           // Treat null and "" as equivalent namespace
-  #|           const normalNs = (ns === '' || ns === null) ? null : ns;
+  #|           const normalNs = (ns === '' || ns === null || ns === undefined) ? null : ns;
   #|           const oldClassValue = (normalNs === null && localName === 'class') ? this.getAttribute('class') : null;
+  #|           const oldValue = this.getAttributeNS(normalNs, localName);
   #|           const idx = this._attrList.findIndex(a => {
-  #|             const attrNs = (a.ns === '' || a.ns === null) ? null : a.ns;
+  #|             const attrNs = a.namespaceURI === '' || a.namespaceURI === null ? null : a.namespaceURI;
   #|             return attrNs === normalNs && a.localName === localName;
   #|           });
   #|           if (idx >= 0) {
+  #|             this._attrList[idx].ownerElement = null;
   #|             this._attrList.splice(idx, 1);
   #|           }
   #|           if (normalNs === null && localName === 'class') {
   #|             updateClassIndex(this, oldClassValue, null);
   #|           }
   #|           domOps.push({ op: 'removeAttribute', id: this._mockId, name: localName });
+  #|           if (oldValue !== null) {
+  #|             queueMutationRecord(this, {
+  #|               type: 'attributes',
+  #|               attributeName: localName,
+  #|               attributeNamespace: normalNs,
+  #|               oldValue: oldValue
+  #|             });
+  #|           }
   #|         },
   #|         hasAttributeNS(ns, localName) {
-  #|           // NS methods match by (namespace, localName) - case-sensitive
-  #|           // Treat null and "" as equivalent namespace
-  #|           const normalNs = (ns === '' || ns === null) ? null : ns;
-  #|           return this._attrList.some(a => {
-  #|             const attrNs = (a.ns === '' || a.ns === null) ? null : a.ns;
-  #|             return attrNs === normalNs && a.localName === localName;
-  #|           });
+  #|           return getAttrNodeByNSLocalName(this, ns, localName) !== null;
   #|         },
   #|         getAttributeNode(name) { return this.attributes.getNamedItem(name); },
   #|         getAttributeNodeNS(ns, localName) { return this.attributes.getNamedItemNS(ns, localName); },
   #|         setAttributeNode(attr) {
-  #|           this.setAttribute(attr.name, attr.value);
-  #|           if (attr) {
-  #|             attr.ownerElement = this;
-  #|             attr.ownerDocument = this.ownerDocument || getGlobalDocument();
-  #|           }
-  #|           return attr;
+  #|           return this.attributes.setNamedItem(attr);
   #|         },
   #|         setAttributeNodeNS(attr) { return this.setAttributeNode(attr); },
   #|         removeAttributeNode(attr) {
-  #|           this.removeAttribute(attr.name);
-  #|           if (attr) attr.ownerElement = null;
+  #|           if (!attr || attr._nodeType !== 2 || attr.ownerElement !== this) {
+  #|             throw new DOMException('Attribute not found', 'NotFoundError');
+  #|           }
+  #|           if (attr.namespaceURI === null || attr.namespaceURI === '') {
+  #|             this.attributes.removeNamedItem(attr.name);
+  #|           } else {
+  #|             const idx = this._attrList.indexOf(attr);
+  #|             if (idx < 0) throw new DOMException('Attribute not found', 'NotFoundError');
+  #|             const oldClassValue = attr.localName === 'class' ? this.getAttribute('class') : null;
+  #|             this._attrList.splice(idx, 1);
+  #|             attr.ownerElement = null;
+  #|             if (oldClassValue !== null) updateClassIndex(this, oldClassValue, null);
+  #|           }
   #|           return attr;
   #|         },
   #|         toggleAttribute(name, force) {
-  #|           // Validate name - empty string is invalid
-  #|           if (name === '') {
+  #|           if (!isValidAttributeName(String(name))) {
   #|             throw new DOMException('Invalid character in attribute name', 'InvalidCharacterError');
   #|           }
   #|           const rawName = String(name);
@@ -2897,6 +3524,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         },
   #|         set textContent(v) {
   #|           const str = (v === null || v === undefined) ? '' : String(v);
+  #|           const removedNodes = this._children.slice();
   #|           if (isConnectedToDocument(this)) {
   #|             const doc = getOwnerDocument(this);
   #|             if (doc) {
@@ -2915,6 +3543,15 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|             this._children.push(textNode);
   #|           }
   #|           domOps.push({ op: 'setTextContent', id: this._mockId, value: str });
+  #|           if (removedNodes.length > 0 || this._children.length > 0) {
+  #|             queueMutationRecord(this, {
+  #|               type: 'childList',
+  #|               addedNodes: this._children.slice(),
+  #|               removedNodes: removedNodes,
+  #|               previousSibling: null,
+  #|               nextSibling: null
+  #|             });
+  #|           }
   #|         },
   #|         get innerHTML() { return this._children.map(c => c.outerHTML || c.textContent).join(''); },
   #|         set innerHTML(v) {
@@ -2963,7 +3600,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           if (!isNodeLike(child)) {
   #|             throw new TypeError('Failed to execute appendChild: parameter 1 is not of type Node');
   #|           }
-  #|           const childType = getNodeType(child);
+  #|           const childType = __craterGetNodeType(child);
   #|           if (childType === 9 || childType === 10) {
   #|             throw new DOMException('Cannot append this node type', 'HierarchyRequestError');
   #|           }
@@ -2983,6 +3620,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           }
   #|           detachNode(child);
   #|           adoptSubtree(child, getOwnerDocument(this));
+  #|           const previousSibling = this._children.length > 0 ? this._children[this._children.length - 1] : null;
   #|           this._children.push(child);
   #|           child._parent = this;
   #|           if (isConnectedToDocument(this)) {
@@ -2990,6 +3628,15 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|             if (doc) indexSubtree(child, doc);
   #|           }
   #|           domOps.push({ op: 'appendChild', parentId: this._mockId, childId: child._mockId });
+  #|           queueMutationRecord(this, {
+  #|             type: 'childList',
+  #|             addedNodes: [child],
+  #|             removedNodes: [],
+  #|             previousSibling: previousSibling,
+  #|             nextSibling: null
+  #|           });
+  #|           if (String(this._tagName || '').toLowerCase() === 'script') maybeExecuteScriptElement(this);
+  #|           if (String(child._tagName || '').toLowerCase() === 'script') maybeExecuteScriptElement(child);
   #|           return child;
   #|         },
   #|         insertBefore(newChild, refChild) {
@@ -3009,7 +3656,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           if (refChild._parent !== this) {
   #|             throw new DOMException('The node before which the new node is to be inserted is not a child of this node', 'NotFoundError');
   #|           }
-  #|           const newType = getNodeType(newChild);
+  #|           const newType = __craterGetNodeType(newChild);
   #|           if (newType === 9 || newType === 10) {
   #|             throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
   #|           }
@@ -3036,6 +3683,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           }
   #|           const idx = this._children.indexOf(actualRef);
   #|           if (idx >= 0) {
+  #|             const previousSibling = idx > 0 ? this._children[idx - 1] : null;
   #|             this._children.splice(idx, 0, newChild);
   #|             newChild._parent = this;
   #|             if (isConnectedToDocument(this)) {
@@ -3043,6 +3691,15 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|               if (doc) indexSubtree(newChild, doc);
   #|             }
   #|             domOps.push({ op: 'insertBefore', parentId: this._mockId, childId: newChild._mockId, refId: actualRef._mockId });
+  #|             queueMutationRecord(this, {
+  #|               type: 'childList',
+  #|               addedNodes: [newChild],
+  #|               removedNodes: [],
+  #|               previousSibling: previousSibling,
+  #|               nextSibling: actualRef
+  #|             });
+  #|             if (String(this._tagName || '').toLowerCase() === 'script') maybeExecuteScriptElement(this);
+  #|             if (String(newChild._tagName || '').toLowerCase() === 'script') maybeExecuteScriptElement(newChild);
   #|           } else {
   #|             return this.appendChild(newChild);
   #|           }
@@ -3056,6 +3713,8 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           if (idx < 0) {
   #|             throw new DOMException('The node to be removed is not a child of this node', 'NotFoundError');
   #|           }
+  #|           const previousSibling = idx > 0 ? this._children[idx - 1] : null;
+  #|           const nextSibling = idx + 1 < this._children.length ? this._children[idx + 1] : null;
   #|           this._children.splice(idx, 1);
   #|           child._parent = null;
   #|           if (isConnectedToDocument(this)) {
@@ -3063,6 +3722,13 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|             if (doc) unindexSubtree(child, doc);
   #|           }
   #|           domOps.push({ op: 'removeChild', parentId: this._mockId, childId: child._mockId });
+  #|           queueMutationRecord(this, {
+  #|             type: 'childList',
+  #|             addedNodes: [],
+  #|             removedNodes: [child],
+  #|             previousSibling: previousSibling,
+  #|             nextSibling: nextSibling
+  #|           });
   #|           return child;
   #|         },
   #|         replaceChild(newChild, oldChild) {
@@ -3077,7 +3743,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|             throw new DOMException('The node to be replaced is not a child of this node', 'NotFoundError');
   #|           }
   #|           if (newChild === oldChild) return oldChild;
-  #|           const newType = getNodeType(newChild);
+  #|           const newType = __craterGetNodeType(newChild);
   #|           if (newType === 9 || newType === 10) {
   #|             throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
   #|           }
@@ -3152,7 +3818,19 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|               Object.setPrototypeOf(clone, Element.prototype);
   #|             }
   #|             for (const attr of el._attrList) {
-  #|               clone._attrList.push({ ns: attr.ns, localName: attr.localName, prefix: attr.prefix, name: attr.name, value: attr.value });
+  #|               const clonedAttr = attr.cloneNode
+  #|                 ? attr.cloneNode()
+  #|                 : createAttrNode(
+  #|                     clone._ownerDocument || getGlobalDocument(),
+  #|                     attr.namespaceURI,
+  #|                     attr.name,
+  #|                     attr.value,
+  #|                     clone,
+  #|                     false,
+  #|                   );
+  #|               clonedAttr.ownerDocument = clone._ownerDocument || getGlobalDocument();
+  #|               clonedAttr.ownerElement = clone;
+  #|               clone._attrList.push(clonedAttr);
   #|               domOps.push({ op: 'setAttribute', id, name: attr.name, value: attr.value });
   #|             }
   #|             if (el._textContent && el._children.length === 0) {
@@ -3181,9 +3859,9 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           const attrs2 = other._attrList || [];
   #|           if (attrs1.length !== attrs2.length) return false;
   #|           for (const a1 of attrs1) {
-  #|             const ns1 = (a1.ns === '' || a1.ns === undefined) ? null : a1.ns;
+  #|             const ns1 = (a1.namespaceURI === '' || a1.namespaceURI === undefined) ? null : a1.namespaceURI;
   #|             const match = attrs2.find(a2 => {
-  #|               const ns2 = (a2.ns === '' || a2.ns === undefined) ? null : a2.ns;
+  #|               const ns2 = (a2.namespaceURI === '' || a2.namespaceURI === undefined) ? null : a2.namespaceURI;
   #|               return ns1 === ns2 && a1.localName === a2.localName;
   #|             });
   #|             if (!match || match.value !== a1.value) return false;
@@ -3298,55 +3976,69 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           return this.matches(selector);
   #|         },
   #|         insertAdjacentElement(position, element) {
-  #|           if (!element) return null;
-  #|           const pos = String(position).toLowerCase();
-  #|           switch (pos) {
-  #|             case 'beforebegin': if (this._parent) this._parent.insertBefore(element, this); break;
-  #|             case 'afterbegin': this.insertBefore(element, this.firstChild); break;
-  #|             case 'beforeend': this.appendChild(element); break;
-  #|             case 'afterend': if (this._parent) this._parent.insertBefore(element, this.nextSibling); break;
-  #|             default: throw new DOMException("Invalid position: " + position, "SyntaxError");
+  #|           if (!isNodeLike(element) || __craterGetNodeType(element) !== 1) {
+  #|             throw new TypeError('Failed to execute insertAdjacentElement: parameter 2 is not of type Element');
   #|           }
-  #|           return element;
+  #|           return insertAdjacentNode(this, position, element);
   #|         },
   #|         insertAdjacentText(position, text) {
   #|           const node = document.createTextNode(text);
-  #|           this.insertAdjacentElement(position, node);
+  #|           insertAdjacentNode(this, position, node);
+  #|           return null;
   #|         },
   #|         insertAdjacentHTML(position, html) {
   #|           const temp = document.createElement('template');
   #|           temp._textContent = html;
-  #|           this.insertAdjacentElement(position, temp);
+  #|           insertAdjacentNode(this, position, temp);
   #|         },
   #|         get shadowRoot() { return this._shadowRoot || null; },
   #|         attachShadow(init) {
   #|           if (this._shadowRoot) throw new Error('Already has shadow root');
-  #|           const shadow = {
-  #|             mode: init.mode,
-  #|             host: this,
-  #|             _children: [],
-  #|             _parent: this,
-  #|             appendChild(c) {
-  #|               if (c && c._parent) {
-  #|                 detachNode(c);
+  #|           const shadowId = nodeIdCounter++;
+  #|           domOps.push({ op: 'createDocumentFragment', id: shadowId });
+  #|           const shadow = createMockDocumentFragment(shadowId);
+  #|           shadow.mode = init.mode;
+  #|           shadow.host = this;
+  #|           shadow._isShadowRoot = true;
+  #|           shadow._parent = this;
+  #|           shadow._ownerDocument = getOwnerDocument(this);
+  #|           Object.defineProperty(shadow, 'innerHTML', {
+  #|             get() { return this._children.map(c => c.outerHTML || c.textContent).join(''); },
+  #|             set(v) {
+  #|               const html = (v === null || v === undefined) ? '' : String(v);
+  #|               if (isConnectedToDocument(this)) {
+  #|                 const doc = getOwnerDocument(this);
+  #|                 if (doc) {
+  #|                   for (const child of this._children) {
+  #|                     unindexSubtree(child, doc);
+  #|                   }
+  #|                 }
   #|               }
-  #|               this._children.push(c);
-  #|               if (c) {
-  #|                 c._parent = this;
-  #|                 if ('parentNode' in c) c.parentNode = this;
+  #|               if (this._children && this._children.length > 0) {
+  #|                 for (const child of this._children) {
+  #|                   if (child && child._parent === this) child._parent = null;
+  #|                   if (child && 'parentNode' in child) child.parentNode = null;
+  #|                 }
   #|               }
-  #|               return c;
-  #|             }
-  #|           };
+  #|               this._children = [];
+  #|               if (html === '') return;
+  #|               const owner = getOwnerDocument(this) || document;
+  #|               const nodes = parseHtmlFragment(html, owner);
+  #|               for (const node of nodes) {
+  #|                 this.appendChild(node);
+  #|               }
+  #|             },
+  #|             configurable: true
+  #|           });
   #|           this._shadowRoot = shadow;
   #|           return shadow;
   #|         },
   #|         focus() {},
   #|         blur() {},
   #|         click() {},
-  #|         dispatchEvent(event) { return true; },
-  #|         addEventListener(type, listener, options) {},
-  #|         removeEventListener(type, listener, options) {},
+  #|         dispatchEvent(event) { return dispatchEventImpl(this, event); },
+  #|         addEventListener(type, listener, options) { addEventListenerImpl(this, type, listener); },
+  #|         removeEventListener(type, listener, options) { removeEventListenerImpl(this, type, listener); },
   #|         querySelector(selector) {
   #|           const sel = String(selector);
   #|           const classTokens = parseSimpleClassSelector(sel);
@@ -3470,25 +4162,10 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           return makeNodeList(results);
   #|         },
   #|         append(...nodes) {
-  #|           for (const node of nodes) {
-  #|             if (typeof node === 'string') {
-  #|               const text = document.createTextNode(node);
-  #|               this.appendChild(text);
-  #|             } else {
-  #|               this.appendChild(node);
-  #|             }
-  #|           }
+  #|           parentNodeAppend(this, getOwnerDocument(this) || document, nodes);
   #|         },
   #|         prepend(...nodes) {
-  #|           const first = this.firstChild;
-  #|           for (const node of nodes) {
-  #|             if (typeof node === 'string') {
-  #|               const text = document.createTextNode(node);
-  #|               this.insertBefore(text, first);
-  #|             } else {
-  #|               this.insertBefore(node, first);
-  #|             }
-  #|           }
+  #|           parentNodePrepend(this, getOwnerDocument(this) || document, nodes);
   #|         },
   #|         remove() {
   #|           if (this._parent) this._parent.removeChild(this);
@@ -3532,8 +4209,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           }
   #|         },
   #|         replaceChildren(...nodes) {
-  #|           while (this._children.length > 0) this.removeChild(this._children[0]);
-  #|           this.append(...nodes);
+  #|           parentNodeReplaceChildren(this, getOwnerDocument(this) || document, nodes);
   #|         },
   #|         getBoundingClientRect() { return { x: 0, y: 0, width: 0, height: 0, top: 0, right: 0, bottom: 0, left: 0 }; },
   #|         get style() {
@@ -3678,19 +4354,23 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           while (n._parent) n = n._parent;
   #|           return n._tagName === 'HTML';
   #|         },
-  #|         getRootNode(options) { return getRootNodePublic(this); },
+  #|         getRootNode(options) { return getRootNodePublic(this, options); },
   #|         get textContent() { return this._textContent; },
   #|         set textContent(v) {
+  #|           const oldValue = this._textContent;
   #|           this._textContent = String(v);
   #|           domOps.push({ op: 'setTextContent', id: this._mockId, value: String(v) });
+  #|           queueMutationRecord(this, { type: 'characterData', oldValue: oldValue });
   #|         },
   #|         get nodeValue() { return this._textContent; },
   #|         set nodeValue(v) { this.data = v; },
   #|         get data() { return this._textContent; },
   #|         set data(v) {
   #|           const str = v === null ? '' : String(v);
+  #|           const oldValue = this._textContent;
   #|           this._textContent = str;
   #|           domOps.push({ op: 'setTextContent', id: this._mockId, value: str });
+  #|           queueMutationRecord(this, { type: 'characterData', oldValue: oldValue });
   #|         },
   #|         get length() { return this._textContent.length; },
   #|         get parentNode() { return this._parent; },
@@ -3892,7 +4572,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           while (n._parent) n = n._parent;
   #|           return n._tagName === 'HTML';
   #|         },
-  #|         getRootNode() { return getRootNodePublic(this); },
+  #|         getRootNode(options) { return getRootNodePublic(this, options); },
   #|         get nextSibling() {
   #|           if (!this._parent) return null;
   #|           const siblings = getSiblingArray(this);
@@ -4017,7 +4697,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           while (n._parent) n = n._parent;
   #|           return n._tagName === 'HTML';
   #|         },
-  #|         getRootNode(options) { return getRootNodePublic(this); },
+  #|         getRootNode(options) { return getRootNodePublic(this, options); },
   #|         get firstChild() { return null; },
   #|         get lastChild() { return null; },
   #|         get childNodes() { return emptyNodeList; },
@@ -4193,7 +4873,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           if (!isNodeLike(child)) {
   #|             throw new TypeError('Failed to execute appendChild: parameter 1 is not of type Node');
   #|           }
-  #|           const childType = getNodeType(child);
+  #|           const childType = __craterGetNodeType(child);
   #|           if (childType === 9 || childType === 10) {
   #|             throw new DOMException('Cannot append this node type', 'HierarchyRequestError');
   #|           }
@@ -4226,7 +4906,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           if (refChild !== null && refChild !== undefined && refChild._parent !== this) {
   #|             throw new DOMException('The node before which the new node is to be inserted is not a child of this node', 'NotFoundError');
   #|           }
-  #|           const newType = getNodeType(newChild);
+  #|           const newType = __craterGetNodeType(newChild);
   #|           if (newType === 9 || newType === 10) {
   #|             throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
   #|           }
@@ -4286,7 +4966,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|             throw new DOMException('The node to be replaced is not a child of this node', 'NotFoundError');
   #|           }
   #|           if (newChild === oldChild) return oldChild;
-  #|           const newType = getNodeType(newChild);
+  #|           const newType = __craterGetNodeType(newChild);
   #|           if (newType === 9 || newType === 10) {
   #|             throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
   #|           }
@@ -4313,21 +4993,13 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           return oldChild;
   #|         },
   #|         append(...nodes) {
-  #|           for (const n of nodes) {
-  #|             const node = (n && n._mockId !== undefined) ? n : document.createTextNode(String(n));
-  #|             this.appendChild(node);
-  #|           }
+  #|           parentNodeAppend(this, getOwnerDocument(this) || document, nodes);
   #|         },
   #|         prepend(...nodes) {
-  #|           const first = this.firstChild;
-  #|           for (const n of nodes) {
-  #|             const node = (n && n._mockId !== undefined) ? n : document.createTextNode(String(n));
-  #|             this.insertBefore(node, first);
-  #|           }
+  #|           parentNodePrepend(this, getOwnerDocument(this) || document, nodes);
   #|         },
   #|         replaceChildren(...nodes) {
-  #|           while (this._children.length > 0) this.removeChild(this._children[0]);
-  #|           this.append(...nodes);
+  #|           parentNodeReplaceChildren(this, getOwnerDocument(this) || document, nodes);
   #|         },
   #|         querySelector(selector) {
   #|           const sel = String(selector);
@@ -4513,21 +5185,18 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       get previousSibling() { return null; },
   #|       get URL() {
   #|         if (typeof location !== 'undefined') {
-  #|           if (location && typeof location.href === 'string') return location.href;
   #|           return String(location);
   #|         }
   #|         return 'about:blank';
   #|       },
   #|       get documentURI() {
   #|         if (typeof location !== 'undefined') {
-  #|           if (location && typeof location.href === 'string') return location.href;
   #|           return String(location);
   #|         }
   #|         return 'about:blank';
   #|       },
   #|       get baseURI() {
   #|         if (typeof location !== 'undefined') {
-  #|           if (location && typeof location.href === 'string') return location.href;
   #|           return String(location);
   #|         }
   #|         return 'about:blank';
@@ -4550,61 +5219,10 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|                 throw new TypeError("Failed to execute 'createDocument': 2 arguments required");
   #|               }
   #|               const validateQualifiedName = (ns, qname) => {
-  #|                 if (qname === null || qname === undefined) return;
+  #|                 if (qname === null || qname === undefined) return null;
   #|                 const name = String(qname);
-  #|                 if (name === '') return;
-  #|                 if (name.indexOf('>') >= 0) {
-  #|                   throw new DOMException('Invalid character in qualifiedName', 'InvalidCharacterError');
-  #|                 }
-  #|                 if (/\\s/.test(name)) {
-  #|                   throw new DOMException('Invalid character in qualifiedName', 'InvalidCharacterError');
-  #|                 }
-  #|                 if (name.indexOf('::') >= 0) {
-  #|                   throw new DOMException('Invalid character in qualifiedName', 'InvalidCharacterError');
-  #|                 }
-  #|                 const nsNormalized = ns === undefined || ns === '' ? null : ns;
-  #|                 const colonIdx = name.indexOf(':');
-  #|                 const prefix = colonIdx >= 0 ? name.split(":", 2)[0] : null;
-  #|                 const localName = colonIdx >= 0 ? name.split(":", 2)[1] : name;
-  #|                 if (colonIdx < 0) {
-  #|                   const first = name[0];
-  #|                   if ((first >= '0' && first <= '9') || first === '-' || first === '.' || first === ':' || first === '}' || first === '^' || first === '<') {
-  #|                     throw new DOMException('Invalid character in qualifiedName', 'InvalidCharacterError');
-  #|                   }
-  #|                 } else {
-  #|                   if (colonIdx === 0) {
-  #|                     throw new DOMException('Invalid character in qualifiedName', 'InvalidCharacterError');
-  #|                   }
-  #|                   if (!localName) {
-  #|                     throw new DOMException('Invalid character in qualifiedName', 'InvalidCharacterError');
-  #|                   }
-  #|                   const localFirst = localName[0];
-  #|                   if ((localFirst >= '0' && localFirst <= '9') || localFirst === '-' || localFirst === '.' || localFirst === ':') {
-  #|                     throw new DOMException('Invalid character in qualifiedName', 'InvalidCharacterError');
-  #|                   }
-  #|                   for (let i = 0; i < localName.length; i++) {
-  #|                     const ch = localName[i];
-  #|                     if (ch >= '\\u0080') continue;
-  #|                     if (!/[A-Za-z0-9._-]/.test(ch)) {
-  #|                       throw new DOMException('Invalid character in qualifiedName', 'InvalidCharacterError');
-  #|                     }
-  #|                   }
-  #|                 }
-  #|                 if (name.endsWith(':')) {
-  #|                   throw new DOMException('Invalid character in qualifiedName', 'InvalidCharacterError');
-  #|                 }
-  #|                 if (prefix !== null && nsNormalized === null) {
-  #|                   throw new DOMException('Invalid namespace', 'NamespaceError');
-  #|                 }
-  #|                 if (prefix === 'xml' && nsNormalized !== 'http://www.w3.org/XML/1998/namespace') {
-  #|                   throw new DOMException('Invalid namespace', 'NamespaceError');
-  #|                 }
-  #|                 if ((prefix === 'xmlns' || name === 'xmlns') && nsNormalized !== 'http://www.w3.org/2000/xmlns/') {
-  #|                   throw new DOMException('Invalid namespace', 'NamespaceError');
-  #|                 }
-  #|                 if (nsNormalized === 'http://www.w3.org/2000/xmlns/' && !(prefix === 'xmlns' || name === 'xmlns')) {
-  #|                   throw new DOMException('Invalid namespace', 'NamespaceError');
-  #|                 }
+  #|                 if (name === '') return null;
+  #|                 return validateElementQualifiedName(ns, name);
   #|               };
   #|               validateQualifiedName(namespace, qualifiedName);
   #|               if (doctype !== undefined && doctype !== null && (!doctype._nodeType || doctype._nodeType !== 10)) {
@@ -4621,67 +5239,35 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|               const createElementForDoc = function(ns, qname) {
   #|                 const normalizedNs = ns === undefined || ns === '' ? null : ns;
   #|                 const name = String(qname);
+  #|                 const parsed = normalizedNs === null
+  #|                   ? (function() {
+  #|                       if (!isValidElementName(name)) {
+  #|                         throw new DOMException('Invalid character in qualifiedName', 'InvalidCharacterError');
+  #|                       }
+  #|                       return { prefix: null, localName: name };
+  #|                     })()
+  #|                   : validateElementQualifiedName(normalizedNs, name);
+  #|                 const isHtmlNamespace = normalizedNs === 'http://www.w3.org/1999/xhtml';
+  #|                 const localName = parsed.localName;
+  #|                 const prefix = parsed.prefix;
+  #|                 const tagName = prefix === null ? localName : prefix + ':' + localName;
   #|                 const id = nodeIdCounter++;
-  #|                 domOps.push({ op: 'createElement', id, tagName: name });
-  #|                 const el = createMockElement(name, id);
-  #|                 const colonIdx = name.indexOf(':');
-  #|                 const parts = colonIdx >= 0 ? name.split(":", 2) : [null, name];
-  #|                 const prefix = colonIdx >= 0 ? parts[0] : null;
-  #|                 const localName = parts[1];
-  #|                 const tagName = colonIdx >= 0 ? parts.join(":") : name;
+  #|                 domOps.push({ op: 'createElement', id, tagName });
+  #|                 const el = createMockElement(tagName, id);
   #|                 el._tagName = tagName;
   #|                 el._localName = localName;
   #|                 el._namespaceURI = normalizedNs;
   #|                 el._prefix = prefix;
   #|                 el._ownerDocument = doc;
-  #|                 const lowerName = name.toLowerCase();
-  #|                 const isHtmlNamespace = normalizedNs === 'http://www.w3.org/1999/xhtml';
-  #|                 const Ctor = isHtmlNamespace ? (tagToConstructor[lowerName] || HTMLElement) : Element;
+  #|                 const lowerName = asciiLowercase(localName);
+  #|                 const Ctor = isHtmlNamespace
+  #|                   ? (localName === lowerName ? (tagToConstructor[lowerName] || HTMLElement) : HTMLUnknownElement)
+  #|                   : Element;
   #|                 Object.setPrototypeOf(el, Ctor.prototype);
   #|                 return el;
   #|               };
   #|               const createAttributeForDoc = function(name, lowercase) {
-  #|                 const rawName = String(name);
-  #|                 if (rawName === '') {
-  #|                   throw new DOMException('Invalid character in attribute name', 'InvalidCharacterError');
-  #|                 }
-  #|                 const finalName = lowercase ? rawName.toLowerCase() : rawName;
-  #|                 const attr = {
-  #|                   _nodeType: 2,
-  #|                   nodeType: 2,
-  #|                   name: finalName,
-  #|                   localName: finalName,
-  #|                   nodeName: finalName,
-  #|                   value: '',
-  #|                   get nodeValue() { return this.value; },
-  #|                   set nodeValue(v) { this.value = v === null ? '' : String(v); },
-  #|                   get textContent() { return this.value; },
-  #|                   set textContent(v) { this.value = v === null ? '' : String(v); },
-  #|                   get baseURI() {
-  #|                     const d = this.ownerDocument || getGlobalDocument();
-  #|                     return d && d.baseURI ? d.baseURI : 'about:blank';
-  #|                   },
-  #|                   namespaceURI: null,
-  #|                   prefix: null,
-  #|                   ownerDocument: doc,
-  #|                   ownerElement: null,
-  #|                   specified: true,
-  #|                   isSameNode(other) { return this === other; },
-  #|                   isEqualNode(other) { return other && other._nodeType === 2 && other.name === this.name && other.value === this.value; },
-  #|                   cloneNode() {
-  #|                     const docRef = this.ownerDocument || document;
-  #|                     let cloned;
-  #|                     if (this.namespaceURI) {
-  #|                       cloned = docRef.createAttributeNS ? docRef.createAttributeNS(this.namespaceURI, this.name) : document.createAttributeNS(this.namespaceURI, this.name);
-  #|                     } else {
-  #|                       cloned = docRef.createAttribute ? docRef.createAttribute(this.name) : document.createAttribute(this.name);
-  #|                     }
-  #|                     cloned.value = this.value;
-  #|                     return cloned;
-  #|                   }
-  #|                 };
-  #|                 Object.setPrototypeOf(attr, Attr.prototype);
-  #|                 return attr;
+  #|                 return createAttrNode(doc, null, name, '', null, lowercase);
   #|               };
   #|               doc = {
   #|                 _nodeType: 9,
@@ -4758,14 +5344,8 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|                 },
   #|                 createAttribute(name) { return createAttributeForDoc(name, false); },
   #|                 createAttributeNS(ns, name) {
-  #|                   const attr = createAttributeForDoc(name, false);
-  #|                   attr.namespaceURI = ns === undefined || ns === '' ? null : ns;
-  #|                   const colonIdx = String(name).indexOf(':');
-  #|                   if (colonIdx >= 0) {
-  #|                     attr.prefix = String(name).slice(0, colonIdx);
-  #|                     attr.localName = String(name).slice(colonIdx + 1);
-  #|                   }
-  #|                   return attr;
+  #|                   const normalizedNs = ns === undefined || ns === '' ? null : ns;
+  #|                   return createAttrNode(doc, normalizedNs, name, '', null, false);
   #|                 },
   #|                 insertBefore(newChild, refChild) {
   #|                   if (arguments.length < 2) {
@@ -4789,7 +5369,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|                     actualRef = newChild.nextSibling;
   #|                   }
   #|                   validateDocumentInsert(this, newChild, actualRef, exclude);
-  #|                   const newType = getNodeType(newChild);
+  #|                   const newType = __craterGetNodeType(newChild);
   #|                   if (newType === 11) {
   #|                     const nodes = newChild._children ? newChild._children.slice() : [];
   #|                     for (const node of nodes) {
@@ -4847,24 +5427,13 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|                   return child;
   #|                 },
   #|                 append(...nodes) {
-  #|                   const frag = this.createDocumentFragment();
-  #|                   for (const n of nodes) {
-  #|                     const node = (n && n._mockId !== undefined) ? n : this.createTextNode(String(n));
-  #|                     frag.appendChild(node);
-  #|                   }
-  #|                   this.insertBefore(frag, null);
+  #|                   parentNodeAppend(this, this, nodes);
   #|                 },
   #|                 prepend(...nodes) {
-  #|                   const frag = this.createDocumentFragment();
-  #|                   for (const n of nodes) {
-  #|                     const node = (n && n._mockId !== undefined) ? n : this.createTextNode(String(n));
-  #|                     frag.appendChild(node);
-  #|                   }
-  #|                   this.insertBefore(frag, this.firstChild);
+  #|                   parentNodePrepend(this, this, nodes);
   #|                 },
   #|                 replaceChildren(...nodes) {
-  #|                   while (this._children.length > 0) this.removeChild(this._children[0]);
-  #|                   this.append(...nodes);
+  #|                   parentNodeReplaceChildren(this, this, nodes);
   #|                 },
   #|                 get childNodes() {
   #|                   if (!this._childNodesList) {
@@ -4970,9 +5539,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|             createDocumentType(qualifiedName, publicId, systemId) {
   #|               const ownerDoc = this._ownerDocument || document;
   #|               const qname = String(qualifiedName);
-  #|               if (qname.indexOf('>') >= 0 || qname.indexOf(' ') >= 0) {
-  #|                 throw new DOMException('Invalid character in qualifiedName', 'InvalidCharacterError');
-  #|               }
+  #|               validateDoctypeQualifiedName(qname);
   #|               const doctype = {
   #|                 _nodeType: 10,
   #|                 nodeType: 10,
@@ -5127,10 +5694,18 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       get plugins() { return []; },
   #|       hasFocus() { return true; },
   #|       createElement(tagName) {
+  #|         const rawName = String(tagName);
+  #|         if (!isValidElementName(rawName)) {
+  #|           throw new DOMException('Invalid character in qualifiedName', 'InvalidCharacterError');
+  #|         }
+  #|         const normalizedName = asciiLowercase(rawName);
   #|         const id = nodeIdCounter++;
-  #|         domOps.push({ op: 'createElement', id, tagName });
-  #|         const el = createMockElement(tagName, id);
-  #|         const Ctor = tagToConstructor[tagName.toLowerCase()] || HTMLUnknownElement;
+  #|         domOps.push({ op: 'createElement', id, tagName: normalizedName });
+  #|         const el = createMockElement(normalizedName, id);
+  #|         el._tagName = normalizedName;
+  #|         el._localName = normalizedName;
+  #|         el._prefix = null;
+  #|         const Ctor = tagToConstructor[normalizedName] || HTMLUnknownElement;
   #|         Object.setPrototypeOf(el, Ctor.prototype);
   #|         return el;
   #|       },
@@ -5159,57 +5734,11 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         return node;
   #|       },
   #|       createAttribute(name) {
-  #|         const rawName = String(name);
-  #|         if (rawName === '') {
-  #|           throw new DOMException('Invalid character in attribute name', 'InvalidCharacterError');
-  #|         }
-  #|         const attrName = rawName.toLowerCase();
-  #|         const attr = {
-  #|           _nodeType: 2,
-  #|           nodeType: 2,
-  #|           name: attrName,
-  #|           localName: attrName,
-  #|           nodeName: attrName,
-  #|           value: '',
-  #|           get nodeValue() { return this.value; },
-  #|           set nodeValue(v) { this.value = v === null ? '' : String(v); },
-  #|           get textContent() { return this.value; },
-  #|           set textContent(v) { this.value = v === null ? '' : String(v); },
-  #|           get baseURI() {
-  #|             const doc = this.ownerDocument || getGlobalDocument();
-  #|             return doc && doc.baseURI ? doc.baseURI : 'about:blank';
-  #|           },
-  #|           namespaceURI: null,
-  #|           prefix: null,
-  #|           ownerDocument: getGlobalDocument(),
-  #|           ownerElement: null,
-  #|           specified: true,
-  #|           isSameNode(other) { return this === other; },
-  #|           isEqualNode(other) { return other && other._nodeType === 2 && other.name === this.name && other.value === this.value; },
-  #|           cloneNode() {
-  #|             const doc = this.ownerDocument || getGlobalDocument();
-  #|             let cloned;
-  #|             if (this.namespaceURI) {
-  #|               cloned = doc && doc.createAttributeNS ? doc.createAttributeNS(this.namespaceURI, this.name) : document.createAttributeNS(this.namespaceURI, this.name);
-  #|             } else {
-  #|               cloned = doc && doc.createAttribute ? doc.createAttribute(this.name) : document.createAttribute(this.name);
-  #|             }
-  #|             cloned.value = this.value;
-  #|             return cloned;
-  #|           }
-  #|         };
-  #|         Object.setPrototypeOf(attr, Attr.prototype);
-  #|         return attr;
+  #|         return createAttrNode(getGlobalDocument(), null, name, '', null, true);
   #|       },
   #|       createAttributeNS(ns, name) {
-  #|         const attr = this.createAttribute(name);
-  #|         attr.namespaceURI = ns;
-  #|         const colonIdx = name.indexOf(':');
-  #|         if (colonIdx >= 0) {
-  #|           attr.prefix = name.slice(0, colonIdx);
-  #|           attr.localName = name.slice(colonIdx + 1);
-  #|         }
-  #|         return attr;
+  #|         const normalizedNs = ns === undefined || ns === '' ? null : ns;
+  #|         return createAttrNode(getGlobalDocument(), normalizedNs, name, '', null, false);
   #|       },
   #|       createDocumentFragment() {
   #|         const id = nodeIdCounter++;
@@ -5231,7 +5760,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         if (!isNodeLike(child)) {
   #|           throw new TypeError('Failed to execute appendChild: parameter 1 is not of type Node');
   #|         }
-  #|         const type = getNodeType(child);
+  #|         const type = __craterGetNodeType(child);
   #|         if (type === 9 || type === 2) {
   #|           throw new DOMException('Cannot insert this node type', 'HierarchyRequestError');
   #|         }
@@ -5489,22 +6018,24 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       createElementNS(ns, qualifiedName) {
   #|         const normalizedNs = ns === undefined || ns === '' ? null : ns;
   #|         const name = String(qualifiedName);
+  #|         const parsed = validateElementQualifiedName(normalizedNs, name);
+  #|         const isHtmlNamespace = normalizedNs === 'http://www.w3.org/1999/xhtml';
+  #|         const localName = parsed.localName;
+  #|         const prefix = parsed.prefix;
+  #|         const tagName = prefix === null ? localName : prefix + ':' + localName;
   #|         const id = nodeIdCounter++;
-  #|         domOps.push({ op: 'createElement', id, tagName: name });
-  #|         const el = createMockElement(name, id);
-  #|         const colonIdx = name.indexOf(':');
-  #|         const parts = colonIdx >= 0 ? name.split(":", 2) : [null, name];
-  #|         const prefix = colonIdx >= 0 ? parts[0] : null;
-  #|         const localName = parts[1];
-  #|         const tagName = colonIdx >= 0 ? parts.join(":") : name;
+  #|         domOps.push({ op: 'createElement', id, tagName });
+  #|         const el = createMockElement(tagName, id);
   #|         el._localName = localName;
   #|         el._namespaceURI = normalizedNs;
   #|         el._prefix = prefix;
   #|         el._tagName = tagName;
   #|         el._ownerDocument = document;
   #|         if (normalizedNs === 'http://www.w3.org/1999/xhtml') {
-  #|           const isLower = localName === localName.toLowerCase();
-  #|           const Ctor = isLower ? (tagToConstructor[localName] || HTMLElement) : HTMLUnknownElement;
+  #|           const lowerName = asciiLowercase(localName);
+  #|           const Ctor = localName === lowerName
+  #|             ? (tagToConstructor[lowerName] || HTMLElement)
+  #|             : HTMLUnknownElement;
   #|           Object.setPrototypeOf(el, Ctor.prototype);
   #|         } else {
   #|           Object.setPrototypeOf(el, Element.prototype);
@@ -5527,6 +6058,11 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         const updateOwner = (n) => {
   #|           n._ownerDocument = this;
   #|           if ('ownerDocument' in n) n.ownerDocument = this;
+  #|           if (n._attrList) {
+  #|             for (const attr of n._attrList) {
+  #|               attr.ownerDocument = this;
+  #|             }
+  #|           }
   #|           if (n._children) {
   #|             for (const c of n._children) updateOwner(c);
   #|           }
@@ -5573,6 +6109,12 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         };
   #|         const updateOwner = (n) => {
   #|           n.ownerDocument = this;
+  #|           if ('_ownerDocument' in n) n._ownerDocument = this;
+  #|           if (n._attrList) {
+  #|             for (const attr of n._attrList) {
+  #|               attr.ownerDocument = this;
+  #|             }
+  #|           }
   #|           if (n._children) {
   #|             for (const c of n._children) updateOwner(c);
   #|           }
@@ -5932,7 +6474,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     const _timers = { nextId: 1, timeouts: {}, intervals: {} };
   #|     const _animationFrames = { nextId: 1, callbacks: {} };
   #|
-  #|     const window = {
+  #|     const windowTarget = {
   #|       get window() { return this; },
   #|       get self() { return this; },
   #|       get document() { return document; },
@@ -5953,7 +6495,20 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       BeforeUnloadEvent: BeforeUnloadEvent,
   #|       TouchEvent: TouchEvent,
   #|       get name() { return ''; },
-  #|       get location() { return { href: 'about:blank', protocol: 'about:', host: '', hostname: '', port: '', pathname: 'blank', search: '', hash: '', origin: 'null' }; },
+  #|       get location() {
+  #|         return {
+  #|           href: 'about:blank',
+  #|           protocol: 'about:',
+  #|           host: '',
+  #|           hostname: '',
+  #|           port: '',
+  #|           pathname: 'blank',
+  #|           search: '',
+  #|           hash: '',
+  #|           origin: 'null',
+  #|           toString() { return this.href; },
+  #|         };
+  #|       },
   #|       get history() { return { length: 1, state: null, back() {}, forward() {}, go() {}, pushState() {}, replaceState() {} }; },
   #|       get navigator() { return { userAgent: 'Crater/1.0', language: 'en', languages: ['en'], platform: 'Unknown', cookieEnabled: false, onLine: true }; },
   #|       devicePixelRatio: 1,
@@ -5974,6 +6529,25 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       close() {},
   #|       focus() {},
   #|       blur() {},
+  #|       open(url, target, features) {
+  #|         const popupDocument = document.implementation.createHTMLDocument('');
+  #|         const popupWindow = {
+  #|           document: popupDocument,
+  #|           opener: this,
+  #|           parent: null,
+  #|           top: null,
+  #|           window: null,
+  #|           self: null,
+  #|           close() {},
+  #|           postMessage(message, origin) {},
+  #|         };
+  #|         popupWindow.parent = popupWindow;
+  #|         popupWindow.top = popupWindow;
+  #|         popupWindow.window = popupWindow;
+  #|         popupWindow.self = popupWindow;
+  #|         popupDocument.defaultView = popupWindow;
+  #|         return popupWindow;
+  #|       },
   #|       print() {},
   #|       stop() {},
   #|       setTimeout(handler, timeout) {
@@ -6012,9 +6586,9 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|           dispatchEvent(ev) { return true; }
   #|         };
   #|       },
-  #|       addEventListener(type, listener, options) {},
-  #|       removeEventListener(type, listener, options) {},
-  #|       dispatchEvent(event) { return true; },
+  #|       addEventListener(type, listener, options) { addEventListenerImpl(this, type, listener); },
+  #|       removeEventListener(type, listener, options) { removeEventListenerImpl(this, type, listener); },
+  #|       dispatchEvent(event) { return dispatchEventImpl(this, event); },
   #|       Event: Event,
   #|       Node: Node,
   #|       Attr: Attr,
@@ -6101,11 +6675,33 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       HTMLFrameSetElement: HTMLFrameSetElement,
   #|       HTMLParamElement: HTMLParamElement
   #|     };
+  #|     const window = new Proxy(windowTarget, {
+  #|       get(target, prop, receiver) {
+  #|         if (Reflect.has(target, prop)) return Reflect.get(target, prop, receiver);
+  #|         if (typeof globalThis !== 'undefined') return globalThis[prop];
+  #|         return undefined;
+  #|       },
+  #|       set(target, prop, value, receiver) {
+  #|         const ok = Reflect.set(target, prop, value, receiver);
+  #|         if (typeof globalThis !== 'undefined' && prop !== 'window' && prop !== 'self') {
+  #|           globalThis[prop] = value;
+  #|         }
+  #|         return ok;
+  #|       },
+  #|       has(target, prop) {
+  #|         return Reflect.has(target, prop) || (typeof globalThis !== 'undefined' && prop in globalThis);
+  #|       }
+  #|     });
   #|     if (typeof globalThis !== 'undefined') {
   #|       globalThis.window = window;
   #|       globalThis.self = window;
+  #|       globalThis.parent = window;
+  #|       globalThis.top = window;
   #|       globalThis.location = window.location;
   #|       globalThis.navigator = window.navigator;
+  #|       globalThis.addEventListener = window.addEventListener.bind(window);
+  #|       globalThis.removeEventListener = window.removeEventListener.bind(window);
+  #|       globalThis.dispatchEvent = window.dispatchEvent.bind(window);
   #|       globalThis.queueMicrotask = queueMicrotask;
   #|       globalThis.fetch = fetch;
   #|       globalThis.Response = Response;
@@ -6119,7 +6715,41 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     window.Request = Request;
   #|     window.Headers = Headers;
   #|     window.Blob = Blob;
-  #|     const frames = [ { document: document.implementation.createHTMLDocument('') } ];
+  #|     window.parent = window;
+  #|     window.top = window;
+  #|     const NativeFunction = Function;
+  #|     function createFrameRealm() {
+  #|       const realmDocument = document.implementation.createHTMLDocument('');
+  #|       const realm = {
+  #|         document: realmDocument,
+  #|         onerror: null,
+  #|         parent: window,
+  #|         top: window,
+  #|         frames: null,
+  #|         MutationObserver: null,
+  #|         Error: Error,
+  #|         window: null,
+  #|         self: null,
+  #|       };
+  #|       realm.Function = function() {
+  #|         const fn = NativeFunction.apply(null, arguments);
+  #|         fn.__craterRealm = realm;
+  #|         return fn;
+  #|       };
+  #|       realm.window = realm;
+  #|       realm.self = realm;
+  #|       if (realmDocument) {
+  #|         realmDocument.defaultView = realm;
+  #|         realmDocument.parentWindow = realm;
+  #|       }
+  #|       return realm;
+  #|     }
+  #|     const frames = [createFrameRealm(), createFrameRealm(), createFrameRealm()];
+  #|     for (const frame of frames) {
+  #|       frame.frames = frames;
+  #|       frame.parent = window;
+  #|       frame.top = window;
+  #|     }
   #|     window.frames = frames;
   #|     if (typeof globalThis !== 'undefined') {
   #|       globalThis.frames = frames;
@@ -6132,6 +6762,9 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     const clearInterval = window.clearInterval.bind(window);
   #|     const requestAnimationFrame = window.requestAnimationFrame.bind(window);
   #|     const cancelAnimationFrame = window.cancelAnimationFrame.bind(window);
+  #|     const addEventListener = window.addEventListener.bind(window);
+  #|     const removeEventListener = window.removeEventListener.bind(window);
+  #|     const dispatchEvent = window.dispatchEvent.bind(window);
   #|     const alert = window.alert.bind(window);
   #|     const navigator = window.navigator;
   #|
@@ -6311,10 +6944,33 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|
   #|     // MutationObserver class
   #|     class MutationObserver {
-  #|       constructor(callback) { this._callback = callback; this._records = []; this._targets = []; }
-  #|       observe(target, options) { this._targets.push({ target, options }); }
-  #|       disconnect() { this._targets = []; }
+  #|       constructor(callback) { this._callback = callback; this._records = []; this._targets = []; this._scheduled = false; }
+  #|       observe(target, options) {
+  #|         const normalized = options ? Object.assign({}, options) : {};
+  #|         if (normalized.attributeOldValue || normalized.attributeFilter !== undefined) {
+  #|           if (normalized.attributes === false) throw new TypeError('attributes must be true when attributeOldValue or attributeFilter is set');
+  #|           if (normalized.attributes === undefined) normalized.attributes = true;
+  #|         }
+  #|         if (normalized.characterDataOldValue) {
+  #|           if (normalized.characterData === false) throw new TypeError('characterData must be true when characterDataOldValue is set');
+  #|           if (normalized.characterData === undefined) normalized.characterData = true;
+  #|         }
+  #|         if (!normalized.childList && !normalized.attributes && !normalized.characterData) {
+  #|           throw new TypeError('At least one of childList, attributes, or characterData must be true');
+  #|         }
+  #|         const idx = this._targets.findIndex(function(entry) { return entry.target === target; });
+  #|         if (idx >= 0) this._targets[idx] = { target, options: normalized };
+  #|         else this._targets.push({ target, options: normalized });
+  #|         if (!__craterMutationObservers.includes(this)) {
+  #|           __craterMutationObservers.push(this);
+  #|         }
+  #|       }
+  #|       disconnect() { this._targets = []; this._records = []; this._scheduled = false; }
   #|       takeRecords() { const records = this._records; this._records = []; return records; }
+  #|     }
+  #|     window.MutationObserver = MutationObserver;
+  #|     for (const frame of frames) {
+  #|       frame.MutationObserver = MutationObserver;
   #|     }
   #|
   #|     // IntersectionObserver class

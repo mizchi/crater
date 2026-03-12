@@ -76,6 +76,119 @@ extern "js" fn reset_runtime_js_state() -> Unit =
   #|     globalThis.__bidiCurrentContext = "default-context";
   #|     globalThis.__bidiContextWindows = new Map();
   #|     globalThis.__bidiContextViewportState = new Map();
+  #|     globalThis.__bidiPatchNavigatorTarget = (target, patch) => {
+  #|       if (!target || typeof target !== "object") return null;
+  #|       const current = target.navigator && typeof target.navigator === "object"
+  #|         ? target.navigator
+  #|         : null;
+  #|       const next = (() => {
+  #|         try {
+  #|           const proto = current && typeof current === "object"
+  #|             ? Object.getPrototypeOf(current)
+  #|             : Object.prototype;
+  #|           const value = Object.create(proto || Object.prototype);
+  #|           if (current && typeof current === "object") {
+  #|             try {
+  #|               Object.defineProperties(value, Object.getOwnPropertyDescriptors(current));
+  #|             } catch (_e) {
+  #|               for (const key of Object.keys(current)) {
+  #|                 try { value[key] = current[key]; } catch (_e2) {}
+  #|               }
+  #|             }
+  #|           }
+  #|           return value;
+  #|         } catch (_e) {
+  #|           const value = {};
+  #|           if (current && typeof current === "object") {
+  #|             for (const key of Object.keys(current)) {
+  #|               try { value[key] = current[key]; } catch (_e2) {}
+  #|             }
+  #|           }
+  #|           return value;
+  #|         }
+  #|       })();
+  #|       const setField = (holder, name, value) => {
+  #|         if (!holder || typeof holder !== "object") return;
+  #|         try {
+  #|           Object.defineProperty(holder, name, {
+  #|             configurable: true,
+  #|             enumerable: true,
+  #|             writable: true,
+  #|             value,
+  #|           });
+  #|           return;
+  #|         } catch (_e) {}
+  #|         try { holder[name] = value; } catch (_e) {}
+  #|       };
+  #|       const resolvedLanguage = String(
+  #|         patch && patch.language !== undefined
+  #|           ? patch.language
+  #|           : (current && current.language !== undefined ? current.language : "en-US")
+  #|       );
+  #|       const resolvedLanguages =
+  #|         patch && Array.isArray(patch.languages)
+  #|           ? Array.from(patch.languages)
+  #|           : (
+  #|             current && Array.isArray(current.languages)
+  #|               ? Array.from(current.languages)
+  #|               : [resolvedLanguage]
+  #|           );
+  #|       setField(
+  #|         next,
+  #|         "userAgent",
+  #|         String(
+  #|           patch && patch.userAgent !== undefined
+  #|             ? patch.userAgent
+  #|             : (current && current.userAgent !== undefined
+  #|                 ? current.userAgent
+  #|                 : "Crater/1.0 (MoonBit; BiDi)")
+  #|         ),
+  #|       );
+  #|       setField(
+  #|         next,
+  #|         "platform",
+  #|         String(current && current.platform !== undefined ? current.platform : "Crater"),
+  #|       );
+  #|       setField(next, "language", resolvedLanguage);
+  #|       setField(next, "languages", resolvedLanguages);
+  #|       setField(
+  #|         next,
+  #|         "onLine",
+  #|         patch && patch.onLine !== undefined
+  #|           ? !!patch.onLine
+  #|           : (current ? current.onLine !== false : true),
+  #|       );
+  #|       setField(
+  #|         next,
+  #|         "cookieEnabled",
+  #|         Boolean(current && current.cookieEnabled !== undefined ? current.cookieEnabled : false),
+  #|       );
+  #|       const userActivation =
+  #|         current && current.userActivation && typeof current.userActivation === "object"
+  #|           ? { ...current.userActivation }
+  #|           : { isActive: false, hasBeenActive: false };
+  #|       setField(next, "userActivation", userActivation);
+  #|       try {
+  #|         Object.defineProperty(target, "navigator", {
+  #|           configurable: true,
+  #|           enumerable: true,
+  #|           writable: true,
+  #|           value: next,
+  #|         });
+  #|         return next;
+  #|       } catch (_e) {}
+  #|       try {
+  #|         target.navigator = next;
+  #|         return target.navigator;
+  #|       } catch (_e) {}
+  #|       if (current && typeof current === "object") {
+  #|         for (const name of ["userAgent", "platform", "language", "languages", "onLine", "cookieEnabled", "userActivation"]) {
+  #|           try { setField(current, name, next[name]); } catch (_e) {}
+  #|         }
+  #|         return current;
+  #|       }
+  #|       return null;
+  #|     };
   #|     if (!globalThis.__bidiProxyInstances) {
   #|       globalThis.__bidiProxyInstances = new WeakSet();
   #|     }
@@ -87,6 +200,130 @@ extern "js" fn reset_runtime_js_state() -> Unit =
   #|     globalThis.__bidiSharedNodeStore = new Map();
   #|     globalThis.__bidiHandleStore = new Map();
   #|     globalThis.__bidiNextHandleId = 1;
+  #|   } catch (_e) {}
+  #| }
+
+///|
+/// Ensure JS-side navigator patch helper exists for runtime emulation overrides.
+extern "js" fn ensure_runtime_navigator_patch_helper() -> Unit =
+  #| () => {
+  #|   if (typeof globalThis.__bidiPatchNavigatorTarget === "function") return;
+  #|   try { globalThis.__bidiCurrentContext = globalThis.__bidiCurrentContext || "default-context"; } catch (_e) {}
+  #|   try { globalThis.__bidiContextWindows = globalThis.__bidiContextWindows || new Map(); } catch (_e) {}
+  #|   try {
+  #|     globalThis.__bidiPatchNavigatorTarget = (target, patch) => {
+  #|       if (!target || typeof target !== "object") return null;
+  #|       const current = target.navigator && typeof target.navigator === "object"
+  #|         ? target.navigator
+  #|         : null;
+  #|       const next = (() => {
+  #|         try {
+  #|           const proto = current && typeof current === "object"
+  #|             ? Object.getPrototypeOf(current)
+  #|             : Object.prototype;
+  #|           const value = Object.create(proto || Object.prototype);
+  #|           if (current && typeof current === "object") {
+  #|             try {
+  #|               Object.defineProperties(value, Object.getOwnPropertyDescriptors(current));
+  #|             } catch (_e) {
+  #|               for (const key of Object.keys(current)) {
+  #|                 try { value[key] = current[key]; } catch (_e2) {}
+  #|               }
+  #|             }
+  #|           }
+  #|           return value;
+  #|         } catch (_e) {
+  #|           const value = {};
+  #|           if (current && typeof current === "object") {
+  #|             for (const key of Object.keys(current)) {
+  #|               try { value[key] = current[key]; } catch (_e2) {}
+  #|             }
+  #|           }
+  #|           return value;
+  #|         }
+  #|       })();
+  #|       const setField = (holder, name, value) => {
+  #|         if (!holder || typeof holder !== "object") return;
+  #|         try {
+  #|           Object.defineProperty(holder, name, {
+  #|             configurable: true,
+  #|             enumerable: true,
+  #|             writable: true,
+  #|             value,
+  #|           });
+  #|           return;
+  #|         } catch (_e) {}
+  #|         try { holder[name] = value; } catch (_e) {}
+  #|       };
+  #|       const resolvedLanguage = String(
+  #|         patch && patch.language !== undefined
+  #|           ? patch.language
+  #|           : (current && current.language !== undefined ? current.language : "en-US")
+  #|       );
+  #|       const resolvedLanguages =
+  #|         patch && Array.isArray(patch.languages)
+  #|           ? Array.from(patch.languages)
+  #|           : (
+  #|             current && Array.isArray(current.languages)
+  #|               ? Array.from(current.languages)
+  #|               : [resolvedLanguage]
+  #|           );
+  #|       setField(
+  #|         next,
+  #|         "userAgent",
+  #|         String(
+  #|           patch && patch.userAgent !== undefined
+  #|             ? patch.userAgent
+  #|             : (current && current.userAgent !== undefined
+  #|                 ? current.userAgent
+  #|                 : "Crater/1.0 (MoonBit; BiDi)")
+  #|         ),
+  #|       );
+  #|       setField(
+  #|         next,
+  #|         "platform",
+  #|         String(current && current.platform !== undefined ? current.platform : "Crater"),
+  #|       );
+  #|       setField(next, "language", resolvedLanguage);
+  #|       setField(next, "languages", resolvedLanguages);
+  #|       setField(
+  #|         next,
+  #|         "onLine",
+  #|         patch && patch.onLine !== undefined
+  #|           ? !!patch.onLine
+  #|           : (current ? current.onLine !== false : true),
+  #|       );
+  #|       setField(
+  #|         next,
+  #|         "cookieEnabled",
+  #|         Boolean(current && current.cookieEnabled !== undefined ? current.cookieEnabled : false),
+  #|       );
+  #|       const userActivation =
+  #|         current && current.userActivation && typeof current.userActivation === "object"
+  #|           ? { ...current.userActivation }
+  #|           : { isActive: false, hasBeenActive: false };
+  #|       setField(next, "userActivation", userActivation);
+  #|       try {
+  #|         Object.defineProperty(target, "navigator", {
+  #|           configurable: true,
+  #|           enumerable: true,
+  #|           writable: true,
+  #|           value: next,
+  #|         });
+  #|         return next;
+  #|       } catch (_e) {}
+  #|       try {
+  #|         target.navigator = next;
+  #|         return target.navigator;
+  #|       } catch (_e) {}
+  #|       if (current && typeof current === "object") {
+  #|         for (const name of ["userAgent", "platform", "language", "languages", "onLine", "cookieEnabled", "userActivation"]) {
+  #|           try { setField(current, name, next[name]); } catch (_e) {}
+  #|         }
+  #|         return current;
+  #|       }
+  #|       return null;
+  #|     };
   #|   } catch (_e) {}
   #| }
 
@@ -4481,9 +4718,9 @@ extern "js" fn js_eval_and_send_async(
   #|   let response;
   #|   try {
   #|     const runInContext = (code) => {
-  #|       return (function(window, document, __code) {
-  #|         return eval(__code);
-  #|       })(contextWindow, contextWindow.document || globalThis.document, code);
+  #|       // Use indirect eval so script.evaluate keeps script-style sloppy mode
+  #|       // unless the expression explicitly opts into strict mode.
+  #|       return (0, eval)(code);
   #|     };
   #|     let result = runInContext(expression);
   #|     // Await if result is a Promise
@@ -5003,22 +5240,15 @@ extern "js" fn js_set_runtime_context_user_agent(
 ) -> Unit =
   #| (ctxId, userAgent) => {
   #|   const normalized = String(userAgent ?? "Crater/1.0 (MoonBit; BiDi)");
+  #|   const patchNavigator = globalThis.__bidiPatchNavigatorTarget;
   #|   if (globalThis.__bidiContextWindows && globalThis.__bidiContextWindows.has(ctxId)) {
   #|     const win = globalThis.__bidiContextWindows.get(ctxId);
   #|     if (win && typeof win === "object") {
-  #|       if (!win.navigator || typeof win.navigator !== "object") {
-  #|         win.navigator = { userAgent: normalized };
-  #|       } else {
-  #|         win.navigator.userAgent = normalized;
-  #|       }
+  #|       patchNavigator(win, { userAgent: normalized });
   #|     }
   #|   }
   #|   if (String(globalThis.__bidiCurrentContext || "") === String(ctxId)) {
-  #|     if (!globalThis.navigator || typeof globalThis.navigator !== "object") {
-  #|       globalThis.navigator = { userAgent: normalized };
-  #|     } else {
-  #|       globalThis.navigator.userAgent = normalized;
-  #|     }
+  #|     patchNavigator(globalThis, { userAgent: normalized });
   #|   }
   #| }
 
@@ -5028,6 +5258,7 @@ pub fn set_runtime_context_user_agent(
   ctx_id : String,
   user_agent : String,
 ) -> Unit {
+  ensure_runtime_navigator_patch_helper()
   js_set_runtime_context_user_agent(ctx_id, user_agent)
 }
 
@@ -5040,30 +5271,22 @@ extern "js" fn js_set_runtime_context_locale(
   #| (ctxId, locale) => {
   #|   const normalized = String(locale ?? "en-US");
   #|   const languages = [normalized];
+  #|   const patchNavigator = globalThis.__bidiPatchNavigatorTarget;
   #|   if (globalThis.__bidiContextWindows && globalThis.__bidiContextWindows.has(ctxId)) {
   #|     const win = globalThis.__bidiContextWindows.get(ctxId);
   #|     if (win && typeof win === "object") {
-  #|       if (!win.navigator || typeof win.navigator !== "object") {
-  #|         win.navigator = { language: normalized, languages };
-  #|       } else {
-  #|         win.navigator.language = normalized;
-  #|         win.navigator.languages = Array.from(languages);
-  #|       }
+  #|       patchNavigator(win, { language: normalized, languages });
   #|     }
   #|   }
   #|   if (String(globalThis.__bidiCurrentContext || "") === String(ctxId)) {
-  #|     if (!globalThis.navigator || typeof globalThis.navigator !== "object") {
-  #|       globalThis.navigator = { language: normalized, languages };
-  #|     } else {
-  #|       globalThis.navigator.language = normalized;
-  #|       globalThis.navigator.languages = Array.from(languages);
-  #|     }
+  #|     patchNavigator(globalThis, { language: normalized, languages });
   #|   }
   #| }
 
 ///|
 /// Set runtime navigator.language(s) for a specific context.
 pub fn set_runtime_context_locale(ctx_id : String, locale : String) -> Unit {
+  ensure_runtime_navigator_patch_helper()
   js_set_runtime_context_locale(ctx_id, locale)
 }
 
@@ -5085,13 +5308,8 @@ extern "js" fn js_set_runtime_context_network_online(
   #|     try { event.isTrusted = true; } catch (_e) {}
   #|     try { target.dispatchEvent(event); } catch (_e) {}
   #|   };
-  #|   const ensureNavigator = (target) => {
-  #|     if (!target || typeof target !== "object") return null;
-  #|     if (!target.navigator || typeof target.navigator !== "object") {
-  #|       target.navigator = { onLine: normalized };
-  #|     }
-  #|     return target.navigator;
-  #|   };
+  #|   const patchNavigator = globalThis.__bidiPatchNavigatorTarget;
+  #|   const ensureNavigator = (target) => patchNavigator(target, { onLine: normalized });
   #|   let contextWindow = null;
   #|   let previousOnline = null;
   #|   if (globalThis.__bidiContextWindows && globalThis.__bidiContextWindows.has(ctxId)) {
@@ -5129,6 +5347,7 @@ pub fn set_runtime_context_network_online(
   ctx_id : String,
   is_online : Bool,
 ) -> Unit {
+  ensure_runtime_navigator_patch_helper()
   js_set_runtime_context_network_online(ctx_id, is_online)
 }
 

@@ -409,6 +409,93 @@
   - image: `set_image_intrinsic_size_provider`（`CRATER_IMAGE_MODULE` または `mizchi/image`）
   - 画像ローカル寸法解決フォールバックは `CRATER_IMAGE_FILE_RESOLVE=1` のときのみ有効
 
+## Browser 挙動確認 WPT（2026-03-12）
+
+- 目的:
+  - layout engine の互換性ではなく、「ブラウザとして何が動くか」を継続確認する
+  - DOM API と WebDriver BiDi を別 KPI で追い、browser shell / automation / app 実行の土台を見える化する
+
+### 実行順
+
+- [x] P0: WebDriver BiDi の bootstrap を直して `strict` を再び gate に戻す
+  - コマンド: `just wpt-webdriver-profile strict`
+  - 2026-03-12 baseline:
+    - 直前までは `globalThis.navigator.userAgent = normalized` が `TypeError`
+    - 波及で `ws://127.0.0.1:9222` が落ち、`ConnectionRefusedError` に連鎖していた
+  - 2026-03-12 現在:
+    - `just wpt-webdriver-profile strict` -> `277 / 277 passed`
+    - bootstrap failure は `0`
+
+- [x] P1: DOM core の baseline を取り、selector / tree mutation の穴を先に埋める
+  - コマンド: `just wpt-dom-all`
+  - 2026-03-12 baseline:
+    - `8908 passed, 81 failed, 8 errors`
+  - 2026-03-12 現在:
+    - `9296 passed, 0 failed, 0 errors`
+  - 片付けたクラスター:
+    - selector / HTML case semantics
+    - tree mutation / `insertAdjacent*`
+    - attribute / naming / `NamedNodeMap`
+    - `cloneNode` / `isEqualNode` / `adoptNode`
+    - `rootNode` / shadow root / `remove-unscopable`
+  - KPI:
+    - [x] `Element-*` の fail/error file を `0`
+    - [x] `ParentNode-*` の fail/error file を `0`
+    - [x] `wpt/dom/nodes` の error を `8 -> 0`
+
+- [x] P2: MutationObserver を独立クラスターとして詰める
+  - コマンド: `just wpt-dom \"MutationObserver-*\"`
+  - 2026-03-12 baseline:
+    - `MutationObserver-characterData`
+    - `MutationObserver-document`
+    - `MutationObserver-sanity`
+    - `MutationObserver-takeRecords`
+    - `MutationObserver-cross-realm-callback-report-exception`
+  - KPI:
+    - [x] `MutationObserver-*` の fail/error file を `0`
+    - [x] parser insertion / takeRecords / option validation を回帰 test で固定する
+
+- [x] P3: BiDi の browser surface を module 単位で広げる
+  - 優先順:
+    - `session`
+    - `browsing_context`
+    - `script`
+    - `input`
+    - `network`
+  - コマンド:
+    - `just wpt-webdriver session`
+    - `just wpt-webdriver browsing_context`
+    - `just wpt-webdriver script`
+    - `just wpt-webdriver input`
+    - `just wpt-webdriver network`
+  - 2026-03-12 現在:
+    - `session` -> `130 / 130 passed`
+    - `browsing_context` -> `1008 / 1008 passed`
+    - `script` -> `1025 / 1025 passed`
+    - `input` -> `708 / 708 passed`
+    - `network` -> `1389 / 1389 passed`
+  - KPI:
+    - [x] `session` module を green にする
+    - [x] `browsing_context/get_tree` と `script/get_realms` を strict 以外でも安定 green に保つ
+    - [x] `input` を通して click / key / wheel の browser 操作面を固定する
+
+- [x] P4: SVG / namespace を browser DOM として確認する
+  - コマンド:
+    - `npx tsx scripts/wpt-dom-runner.ts --svg`
+  - 2026-03-12 現在:
+    - `20 passed, 0 failed, 0 errors`
+  - KPI:
+    - [x] `svg` category を green に保つ
+
+### 補足
+
+- `css-*` WPT は引き続き layout regression の主指標として使う
+- browser の挙動確認では `wpt-dom` と `wpt-webdriver` を優先し、paint / visual fidelity は別 benchmark と fixture snapshot で追う
+- 統合確認:
+  - `just test-playwright` -> `13 / 13 passed`
+  - `just test-playwright-adapter` -> `30 / 30 passed`
+  - `just test-preact` -> `49 / 49 passed`
+
 ## パフォーマンス改善メモ（2026-03-11）
 
 - 現在の目安:
@@ -418,8 +505,15 @@
   - `layout_only_large`: `2.15 ms`
   - `layout_only_large_card_body`: `1.56 ms`
   - `layout_only_large_simple_cards`: `228.10 µs`
+  - `paint_viewport_culling_3280`: `677.83 µs`
+  - `paint_stacking_sort`: `92.61 µs`
+  - `paint_scroll_sim_50`: `8.02 ms`
+  - `browser_text_dashboard`: `8.49 ms`
+  - `browser_text_article`: `9.79 ms`
+  - `browser_sixel_scroll_500`: `295.36 ms`
 - 優先タスク:
   - [ ] `node_build_large_2k5` を `style compute` と `node assembly` に分解する benchmark を追加
+  - [ ] browser shell の fixed benchmark に screenshot diff か AOM snapshot を併設して、速度だけでなく見た目回帰も追えるようにする
   - [ ] inline-only style cache を inherited default 以外にも安全に効かせる key 設計を詰める
   - [ ] `layout_only_large_card_body` をさらに `wrapper/text/footer` 単位で分解して、支配コストを固定観測する
   - [ ] `card_body` の block wrapper / empty leaf path をもう一段削る

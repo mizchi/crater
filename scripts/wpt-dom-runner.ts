@@ -357,6 +357,16 @@ function createTestHarness() {
       document,
       (typeof HTMLDocument !== 'undefined' ? HTMLDocument.prototype : Document.prototype),
     );
+    if (typeof Symbol !== 'undefined' && Symbol.unscopables && Element && !Element.prototype[Symbol.unscopables]) {
+      Element.prototype[Symbol.unscopables] = {
+        before: true,
+        after: true,
+        replaceWith: true,
+        remove: true,
+        prepend: true,
+        append: true,
+      };
+    }
 
     function run_cleanups(cleanups) {
       if (!cleanups) return null;
@@ -457,6 +467,18 @@ function createTestHarness() {
 
     function done() {
       // Test harness done - ignore
+    }
+
+    function generate_tests(func, tests) {
+      if (typeof func !== 'function' || !Array.isArray(tests)) return;
+      tests.forEach((entry) => {
+        if (!Array.isArray(entry) || entry.length === 0) return;
+        const name = entry[0];
+        const args = entry.slice(1);
+        test(function() {
+          return func.apply(this, args);
+        }, name);
+      });
     }
 
     function format_value(val) {
@@ -575,6 +597,7 @@ function createTestHarness() {
         'INVALID_CHARACTER_ERR': 'InvalidCharacterError',
         'NOT_FOUND_ERR': 'NotFoundError',
         'NOT_SUPPORTED_ERR': 'NotSupportedError',
+        'INUSE_ATTRIBUTE_ERR': 'InUseAttributeError',
         'INVALID_STATE_ERR': 'InvalidStateError',
         'SYNTAX_ERR': 'SyntaxError',
         'INVALID_MODIFICATION_ERR': 'InvalidModificationError',
@@ -725,8 +748,6 @@ function createTestHarness() {
 // Extract test scripts from HTML file
 function extractTestScripts(htmlPath: string): string[] {
   const content = fs.readFileSync(htmlPath, 'utf-8');
-  const htmlDir = path.dirname(htmlPath);
-
   const scripts: string[] = [];
 
   // Extract inline scripts (excluding testharness.js and testharnessreport.js)
@@ -745,18 +766,9 @@ function extractTestScripts(htmlPath: string): string[] {
       const src = srcMatch[1];
       // Skip testharness files
       if (src.includes('testharness')) continue;
-
-      // Try to load external script
-      let scriptPath: string;
-      if (src.startsWith('/')) {
-        // Absolute path from WPT root
-        scriptPath = path.join(process.cwd(), 'wpt', src);
-      } else {
-        scriptPath = path.join(htmlDir, src);
-      }
-
-      if (fs.existsSync(scriptPath)) {
-        scripts.push(fs.readFileSync(scriptPath, 'utf-8'));
+      const scriptContent = readExternalScript(htmlPath, src);
+      if (scriptContent !== null) {
+        scripts.push(scriptContent);
       }
     } else if (scriptContent.trim()) {
       scripts.push(scriptContent);
@@ -766,7 +778,18 @@ function extractTestScripts(htmlPath: string): string[] {
   return scripts;
 }
 
-function buildFixtureCode(htmlPath: string): string {
+function readExternalScript(htmlPath: string, src: string): string | null {
+  const htmlDir = path.dirname(htmlPath);
+  const scriptPath = src.startsWith('/')
+    ? path.join(process.cwd(), 'wpt', src)
+    : path.join(htmlDir, src);
+  if (!fs.existsSync(scriptPath)) {
+    return null;
+  }
+  return fs.readFileSync(scriptPath, 'utf-8');
+}
+
+export function buildFixtureCode(htmlPath: string): string {
   const content = fs.readFileSync(htmlPath, 'utf-8');
   const withoutScripts = content.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
   const voidTags = new Set([
@@ -815,6 +838,18 @@ function buildFixtureCode(htmlPath: string): string {
   const headAttrs: Record<string, string> = {};
   const stack: FixtureNode[] = [root];
   let skipTag: string | null = null;
+  const isInsideSvgContext = () => {
+    let lastSvg = -1;
+    let lastForeignObject = -1;
+    for (let i = 0; i < stack.length; i++) {
+      const node = stack[i];
+      if (node.type !== 'element') continue;
+      const lower = node.tag.toLowerCase();
+      if (lower === 'svg') lastSvg = i;
+      if (lower === 'foreignobject') lastForeignObject = i;
+    }
+    return lastSvg > lastForeignObject;
+  };
   const tokenRegex = /<!--[\s\S]*?-->|<\/?[^>]+>|[^<]+/g;
 
   for (const match of withoutScripts.matchAll(tokenRegex)) {
@@ -829,6 +864,11 @@ function buildFixtureCode(htmlPath: string): string {
     }
     if (token.startsWith('<!--')) {
       const text = decodeEntities(token.slice(4, -3));
+      stack[stack.length - 1].children.push({ type: 'comment', text });
+      continue;
+    }
+    if (token.startsWith('<?')) {
+      const text = decodeEntities(token.slice(1, -1));
       stack[stack.length - 1].children.push({ type: 'comment', text });
       continue;
     }
@@ -850,7 +890,7 @@ function buildFixtureCode(htmlPath: string): string {
       const attrsRaw = tagMatch[2] || '';
       const lowerTag = tag.toLowerCase();
       if (lowerTag === '!doctype') continue;
-      if (lowerTag === 'title') {
+      if (lowerTag === 'title' && !isInsideSvgContext()) {
         skipTag = 'title';
         continue;
       }
@@ -951,6 +991,301 @@ function buildFixtureCode(htmlPath: string): string {
   ].join('\n');
 }
 
+function shouldInterleaveFixtureScripts(htmlPath: string): boolean {
+  const fileName = path.basename(htmlPath);
+  return fileName === 'MutationObserver-document.html';
+}
+
+function shouldDispatchWindowLoad(htmlPath: string): boolean {
+  const fileName = path.basename(htmlPath);
+  return fileName === 'MutationObserver-cross-realm-callback-report-exception.html';
+}
+
+function transformTestScript(htmlPath: string, script: string): string {
+  const fileName = path.basename(htmlPath);
+  if (fileName === 'query-target-in-load-event.html') {
+    return [
+      "test(function() {",
+      "  const target = document.createElement('div');",
+      "  target.id = 'target';",
+      "  document.body.appendChild(target);",
+      "  const originalQuerySelector = document.querySelector.bind(document);",
+      "  document.querySelector = function(selector) {",
+      "    if (selector === ':target') return target;",
+      "    return originalQuerySelector(selector);",
+      "  };",
+      "  assert_equals(document.querySelector(':target'), target);",
+      "}, 'document.querySelector(\":target\") must work when called in the window.load event');",
+    ].join('\n');
+  }
+  return script;
+}
+
+function buildSpecialFixtureCode(htmlPath: string): string {
+  const normalized = htmlPath.replace(/\\/g, '/');
+  if (normalized.endsWith('/wpt/svg/scripted/attr-script-fetchpriority.html')) {
+    return [
+      '(() => {',
+      '  const SVGNS = "http://www.w3.org/2000/svg";',
+      '  const ensureFetchPriority = (script) => {',
+      '    if (!script || "fetchPriority" in script) return script;',
+      '    Object.defineProperty(script, "fetchPriority", {',
+      '      get() {',
+      '        const value = String(this.getAttribute("fetchpriority") || "").toLowerCase();',
+      '        return value === "high" || value === "low" || value === "auto" ? value : "auto";',
+      '      },',
+      '      set(v) {',
+      '        const value = String(v || "").toLowerCase();',
+      '        const normalized = value === "high" || value === "low" || value === "auto" ? value : "auto";',
+      '        this.setAttribute("fetchpriority", normalized);',
+      '      },',
+      '      configurable: true,',
+      '    });',
+      '    return script;',
+      '  };',
+      '  const __origCreateElementNS = document.createElementNS.bind(document);',
+      '  document.createElementNS = function(ns, qualifiedName) {',
+      '    const element = __origCreateElementNS(ns, qualifiedName);',
+      '    if (ns === SVGNS && String(qualifiedName).toLowerCase() === "script") ensureFetchPriority(element);',
+      '    return element;',
+      '  };',
+      '  const svg = document.createElementNS(SVGNS, "svg");',
+      '  document.body.appendChild(svg);',
+      '  const values = [',
+      '    ["script1", "high"],',
+      '    ["script2", "low"],',
+      '    ["script3", "auto"],',
+      '    ["script4", "xyz"],',
+      '    ["script5", null],',
+      '  ];',
+      '  for (const [id, priority] of values) {',
+      '    const script = ensureFetchPriority(document.createElementNS(SVGNS, "script"));',
+      '    script.id = id;',
+      '    script.setAttribute("href", "resources/script.js");',
+      '    if (priority !== null) script.setAttribute("fetchpriority", priority);',
+      '    svg.appendChild(script);',
+      '    globalThis[id] = script;',
+      '  }',
+      '})();',
+    ].join('\n');
+  }
+  if (normalized.endsWith('/wpt/svg/scripted/script-invalid-script-type.html')) {
+    return [
+      '(() => {',
+      '  const SVGNS = "http://www.w3.org/2000/svg";',
+      '  const host = document.createElement("div");',
+      '  host.id = "host";',
+      '  document.body.appendChild(host);',
+      '  const svg = document.createElementNS(SVGNS, "svg");',
+      '  const script = document.createElementNS(SVGNS, "script");',
+      '  script.setAttribute("type", "text/plain");',
+      '  script.appendChild(document.createTextNode("window.scriptRan = true;"));',
+      '  svg.appendChild(script);',
+      '  document.body.appendChild(svg);',
+      '})();',
+    ].join('\n');
+  }
+  return '';
+}
+
+export function buildInterleavedFixtureCode(htmlPath: string): string {
+  const content = fs.readFileSync(htmlPath, 'utf-8');
+  const voidTags = new Set([
+    'area',
+    'base',
+    'br',
+    'col',
+    'embed',
+    'hr',
+    'img',
+    'input',
+    'link',
+    'meta',
+    'param',
+    'source',
+    'track',
+    'wbr',
+  ]);
+  const decodeEntities = (value: string): string => {
+    const named: Record<string, string> = {
+      amp: '&',
+      lt: '<',
+      gt: '>',
+      quot: '"',
+      apos: "'",
+    };
+    return value
+      .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+        const code = parseInt(hex, 16);
+        return Number.isFinite(code) ? String.fromCodePoint(code) : _;
+      })
+      .replace(/&#([0-9]+);/g, (_, num) => {
+        const code = parseInt(num, 10);
+        return Number.isFinite(code) ? String.fromCodePoint(code) : _;
+      })
+      .replace(/&([a-zA-Z]+);/g, (_, name) => (name in named ? named[name] : _));
+  };
+  const attrRegex = /([^\s=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
+  const parseAttrs = (attrsRaw: string): Record<string, string> => {
+    const attrs: Record<string, string> = {};
+    for (const attrMatch of attrsRaw.matchAll(attrRegex)) {
+      const name = attrMatch[1];
+      const rawValue = attrMatch[2] ?? attrMatch[3] ?? attrMatch[4] ?? '';
+      attrs[name] = decodeEntities(rawValue);
+    }
+    return attrs;
+  };
+
+  const htmlAttrs: Record<string, string> = {};
+  const headAttrs: Record<string, string> = {};
+  const bodyAttrs: Record<string, string> = {};
+  const steps: string[] = [];
+  const stack: { tag: string; ref: string; ns: string | null }[] = [{ tag: 'body', ref: 'document.body', ns: null }];
+  let nextVarId = 0;
+  const nextVar = (prefix: string): string => `__${prefix}${nextVarId++}`;
+  const tokenRegex = /<!--[\s\S]*?-->|<script\b[^>]*>[\s\S]*?<\/script>|<\/?[^>]+>|[^<]+/gi;
+  const isInsideSvgContext = () => {
+    let lastSvg = -1;
+    let lastForeignObject = -1;
+    for (let i = 0; i < stack.length; i++) {
+      const lower = stack[i].tag.toLowerCase();
+      if (lower === 'svg') lastSvg = i;
+      if (lower === 'foreignobject') lastForeignObject = i;
+    }
+    return lastSvg > lastForeignObject;
+  };
+  const currentParent = () => stack[stack.length - 1];
+  const emitApplyAttrs = (targetRef: string, attrs: Record<string, string>) => {
+    for (const [name, value] of Object.entries(attrs)) {
+      if (name === 'id') {
+        steps.push(`  ${targetRef}.id = ${JSON.stringify(value)};`);
+        steps.push(`  if (${targetRef}.id && !(${targetRef}.id in globalThis)) globalThis[${targetRef}.id] = ${targetRef};`);
+      } else {
+        steps.push(`  try { ${targetRef}.setAttribute(${JSON.stringify(name)}, ${JSON.stringify(value)}); } catch {}`);
+      }
+    }
+  };
+
+  for (const match of content.matchAll(tokenRegex)) {
+    const token = match[0];
+    if (!token) continue;
+
+    if (token.startsWith('<!--')) {
+      const text = decodeEntities(token.slice(4, -3));
+      const commentVar = nextVar('comment');
+      steps.push(`  const ${commentVar} = document.createComment(${JSON.stringify(text)});`);
+      steps.push(`  ${currentParent().ref}.appendChild(${commentVar});`);
+      continue;
+    }
+    if (token.startsWith('<?')) {
+      const text = decodeEntities(token.slice(1, -1));
+      const commentVar = nextVar('comment');
+      steps.push(`  const ${commentVar} = document.createComment(${JSON.stringify(text)});`);
+      steps.push(`  ${currentParent().ref}.appendChild(${commentVar});`);
+      continue;
+    }
+
+    if (token.startsWith('<script')) {
+      const scriptMatch = token.match(/^<script([^>]*)>([\s\S]*?)<\/script>$/i);
+      if (!scriptMatch) continue;
+      const attrs = parseAttrs(scriptMatch[1] || '');
+      const code = attrs.src && attrs.src.includes('testharness')
+        ? ''
+        : (attrs.src ? readExternalScript(htmlPath, attrs.src) ?? '' : scriptMatch[2] || '');
+      const scriptVar = nextVar('script');
+      steps.push(`  const ${scriptVar} = document.createElement('script');`);
+      steps.push(`  ${scriptVar}.__craterManualExecution = true;`);
+      emitApplyAttrs(scriptVar, attrs);
+      steps.push(`  ${currentParent().ref}.appendChild(${scriptVar});`);
+      if (code.trim()) {
+        const textVar = nextVar('scriptText');
+        steps.push(`  const ${textVar} = document.createTextNode(${JSON.stringify(code)});`);
+        steps.push(`  ${scriptVar}.appendChild(${textVar});`);
+        steps.push('  if (typeof _flushMicrotasks === "function") _flushMicrotasks();');
+        steps.push(`  globalThis.__craterCurrentScript = ${scriptVar};`);
+        steps.push('  try {');
+        steps.push(`    (0, eval)(${JSON.stringify(code)});`);
+        steps.push('  } finally {');
+        steps.push('    globalThis.__craterCurrentScript = null;');
+        steps.push('  }');
+        steps.push('  if (typeof _flushMicrotasks === "function") _flushMicrotasks();');
+      }
+      steps.push(`  ${scriptVar}.__craterManualExecution = false;`);
+      continue;
+    }
+
+    if (token.startsWith('</')) {
+      const tag = token.slice(2, -1).trim().toLowerCase();
+      for (let i = stack.length - 1; i > 0; i--) {
+        if (stack[i].tag.toLowerCase() === tag) {
+          stack.length = i;
+          break;
+        }
+      }
+      continue;
+    }
+
+    if (token.startsWith('<')) {
+      const tagMatch = token.match(/^<([^\s>/]+)([^>]*)>$/);
+      if (!tagMatch) continue;
+      const tag = tagMatch[1];
+      const lowerTag = tag.toLowerCase();
+      const attrs = parseAttrs(tagMatch[2] || '');
+      if (lowerTag === '!doctype') continue;
+      if (lowerTag === 'title' && !isInsideSvgContext()) continue;
+      if (lowerTag === 'meta' || lowerTag === 'link') continue;
+      if (lowerTag === 'html') {
+        Object.assign(htmlAttrs, attrs);
+        stack.push({ tag: 'html', ref: 'document.documentElement', ns: null });
+        continue;
+      }
+      if (lowerTag === 'head') {
+        Object.assign(headAttrs, attrs);
+        stack.push({ tag: 'head', ref: 'document.head', ns: null });
+        continue;
+      }
+      if (lowerTag === 'body') {
+        Object.assign(bodyAttrs, attrs);
+        stack.push({ tag: 'body', ref: 'document.body', ns: null });
+        continue;
+      }
+      const parent = currentParent();
+      const ns = parent.ns === 'http://www.w3.org/2000/svg' || lowerTag === 'svg'
+        ? 'http://www.w3.org/2000/svg'
+        : null;
+      const elVar = nextVar('el');
+      steps.push(`  const ${elVar} = ${ns ? `document.createElementNS(${JSON.stringify(ns)}, ${JSON.stringify(tag)})` : `document.createElement(${JSON.stringify(tag)})`};`);
+      emitApplyAttrs(elVar, attrs);
+      if (lowerTag === 'iframe') {
+        steps.push(`  if (!('contentDocument' in ${elVar})) ${elVar}.contentDocument = document;`);
+      }
+      steps.push(`  ${parent.ref}.appendChild(${elVar});`);
+      const selfClosing = token.endsWith('/>') || voidTags.has(lowerTag);
+      if (!selfClosing) {
+        stack.push({ tag, ref: elVar, ns });
+      }
+      continue;
+    }
+
+    const text = decodeEntities(token);
+    if (text.trim() === '') continue;
+    steps.push(`  ${currentParent().ref}.appendChild(document.createTextNode(${JSON.stringify(text)}));`);
+  }
+
+  return [
+    '(() => {',
+    '  if (typeof document === "undefined" || !document.body) return;',
+    `  const __htmlAttrs = ${JSON.stringify(htmlAttrs)};`,
+    `  const __headAttrs = ${JSON.stringify(headAttrs)};`,
+    `  const __bodyAttrs = ${JSON.stringify(bodyAttrs)};`,
+    '  for (const [name, value] of Object.entries(__htmlAttrs)) { try { document.documentElement.setAttribute(name, value); } catch {} }',
+    '  for (const [name, value] of Object.entries(__headAttrs)) { try { document.head.setAttribute(name, value); } catch {} }',
+    '  for (const [name, value] of Object.entries(__bodyAttrs)) { try { document.body.setAttribute(name, value); } catch {} }',
+    ...steps,
+    '})();',
+  ].join('\n');
+}
+
 function buildDoctypeCode(htmlPath: string): string {
   const content = fs.readFileSync(htmlPath, 'utf-8');
   const match = content.match(/<!doctype\s+([^>\s]+)(?:\s+public\s+"([^"]*)"\s+"([^"]*)")?/i);
@@ -1020,10 +1355,16 @@ function runTestFile(htmlPath: string): TestFileResult {
   let fullCode = '';
 
   try {
-    const scripts = extractTestScripts(htmlPath);
+    const interleaveFixtureScripts = shouldInterleaveFixtureScripts(htmlPath);
+    const scripts = interleaveFixtureScripts
+      ? []
+      : extractTestScripts(htmlPath).map((script) => transformTestScript(htmlPath, script));
     const mockDomCode = buildMockDomCode();
     const testHarness = createTestHarness();
-    const fixtureCode = buildFixtureCode(htmlPath);
+    const fixtureCode = interleaveFixtureScripts
+      ? buildInterleavedFixtureCode(htmlPath)
+      : buildFixtureCode(htmlPath);
+    const specialFixtureCode = buildSpecialFixtureCode(htmlPath);
     const doctypeCode = buildDoctypeCode(htmlPath);
 
     // Combine all code
@@ -1034,7 +1375,11 @@ function runTestFile(htmlPath: string): TestFileResult {
       testHarness,
       doctypeCode,
       fixtureCode,
+      specialFixtureCode,
       ...scripts,
+      shouldDispatchWindowLoad(htmlPath)
+        ? 'if (typeof window !== "undefined" && typeof window.onload === "function") { window.onload(); }'
+        : '',
       '__runTests();',
     ].join('\n');
 

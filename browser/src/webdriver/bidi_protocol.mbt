@@ -171,6 +171,7 @@ priv struct BidiProtocol {
   pending_close_response_mode : Map[String, String] // context -> close response kind
   pending_prompt_request : Map[String, Int] // context -> deferred script.evaluate request id
   pending_prompt_realm : Map[String, String] // context -> deferred script.evaluate realm id
+  pending_prompt_unwrap_result : Map[String, Bool] // context -> deferred script.evaluate unwrap mode
   pending_beforeunload_request : Map[String, Int] // context -> deferred navigate request id
   pending_beforeunload_url : Map[String, String] // context -> deferred navigate destination
   pending_beforeunload_requested_url : Map[String, String] // context -> deferred original requested URL
@@ -344,6 +345,7 @@ fn BidiProtocol::new() -> BidiProtocol {
     pending_close_response_mode: {},
     pending_prompt_request: {},
     pending_prompt_realm: {},
+    pending_prompt_unwrap_result: {},
     pending_beforeunload_request: {},
     pending_beforeunload_url: {},
     pending_beforeunload_requested_url: {},
@@ -2275,6 +2277,9 @@ fn BidiProtocol::dispatch_browsing_context(
               let pending_script_realm = self.pending_prompt_realm.get(
                 prompt_ctx_id,
               )
+              let pending_prompt_unwrap_result = self.pending_prompt_unwrap_result
+                .get(prompt_ctx_id)
+                .unwrap_or(false)
               let pending_beforeunload_request = self.pending_beforeunload_request.get(
                 prompt_ctx_id,
               )
@@ -2430,7 +2435,12 @@ fn BidiProtocol::dispatch_browsing_context(
                           .unwrap_or("realm-" + prompt_ctx_id)
                       }
                       self.send_script_prompt_result(
-                        eval_request_id, realm_id, prompt_type, accepted, user_text,
+                        eval_request_id,
+                        realm_id,
+                        prompt_type,
+                        accepted,
+                        user_text,
+                        pending_prompt_unwrap_result,
                       )
                     }
                     None => ()
@@ -8821,7 +8831,13 @@ fn BidiProtocol::handle_script_evaluate(
     ) {
     return
   }
-  if self.try_handle_synthetic_user_prompt(request.id, ctx_id, realm_id, expr) {
+  if self.try_handle_synthetic_user_prompt(
+      request.id,
+      ctx_id,
+      realm_id,
+      expr,
+      unwrap_result,
+    ) {
     return
   }
   if self.try_handle_synthetic_download(request.id, ctx_id, realm_id, expr) {
@@ -8918,7 +8934,13 @@ fn BidiProtocol::handle_script_evaluate(
     ) {
     return
   }
-  if self.try_handle_window_open(request.id, ctx_id, expr) {
+  if self.try_handle_window_open(
+      request.id,
+      ctx_id,
+      realm_id,
+      expr,
+      unwrap_result,
+    ) {
     return
   }
   if self.try_handle_synthetic_iframe_creation(
@@ -12975,18 +12997,6 @@ fn BidiProtocol::send_script_undefined_response(
 }
 
 ///|
-
-///|
-fn BidiProtocol::send_script_eval_result(
-  self : BidiProtocol,
-  request_id : Int,
-  realm_id : String,
-  eval_result : Json,
-) -> Unit {
-  self.send_script_eval_result_mode(request_id, realm_id, eval_result, false)
-}
-
-///|
 fn BidiProtocol::send_script_eval_result_mode(
   self : BidiProtocol,
   request_id : Int,
@@ -13161,6 +13171,7 @@ fn BidiProtocol::send_script_prompt_result(
   prompt_type : String,
   accepted : Bool,
   user_text : String?,
+  unwrap_result : Bool,
 ) -> Unit {
   let remote_value = match prompt_type {
     "confirm" =>
@@ -13179,11 +13190,12 @@ fn BidiProtocol::send_script_prompt_result(
       }
     _ => make_object({ "type": Json::string("undefined") })
   }
-  let result = make_object({
-    "realm": Json::string(realm_id),
-    "result": remote_value,
-  })
-  self.send_success(request_id, Some(result))
+  self.send_script_remote_value_response(
+    request_id,
+    realm_id,
+    remote_value,
+    unwrap_result,
+  )
 }
 
 ///|
@@ -13966,6 +13978,7 @@ fn BidiProtocol::try_handle_synthetic_user_prompt(
   ctx_id : String,
   realm_id : String,
   expression : String,
+  unwrap_result : Bool,
 ) -> Bool {
   let expr = expression.trim().to_string()
   let mut prompt_type : String? = None
@@ -13989,6 +14002,7 @@ fn BidiProtocol::try_handle_synthetic_user_prompt(
       self.pending_prompt_type[ctx_id] = kind
       self.pending_prompt_request[ctx_id] = request_id
       self.pending_prompt_realm[ctx_id] = realm_id
+      self.pending_prompt_unwrap_result[ctx_id] = unwrap_result
       self.emit_user_prompt_opened(
         ctx_id, kind, handler, message, default_value,
       )
@@ -15545,6 +15559,7 @@ fn BidiProtocol::clear_pending_prompt_state(
   self.pending_close_response_mode.remove(ctx_id)
   self.pending_prompt_request.remove(ctx_id)
   self.pending_prompt_realm.remove(ctx_id)
+  self.pending_prompt_unwrap_result.remove(ctx_id)
   self.pending_beforeunload_request.remove(ctx_id)
   self.pending_beforeunload_url.remove(ctx_id)
   self.pending_beforeunload_requested_url.remove(ctx_id)
@@ -20229,7 +20244,9 @@ fn BidiProtocol::try_handle_window_open(
   self : BidiProtocol,
   request_id : Int,
   opener_ctx_id : String,
+  opener_realm_id : String,
   expression : String,
+  unwrap_result : Bool,
 ) -> Bool {
   let trimmed = expression.trim().to_string()
   let open_marker_idx = match find_substring(trimmed, "window.open(", 0) {
@@ -20318,13 +20335,12 @@ fn BidiProtocol::try_handle_window_open(
       "value": make_object({ "context": Json::string(new_ctx_id) }),
     })
   }
-  let result = make_object({
-    "realm": Json::string(
-      self.context_realm.get(opener_ctx_id).unwrap_or("realm-" + opener_ctx_id),
-    ),
-    "result": remote_value,
-  })
-  self.send_success(request_id, Some(result))
+  self.send_script_remote_value_response(
+    request_id,
+    opener_realm_id,
+    remote_value,
+    unwrap_result,
+  )
   true
 }
 

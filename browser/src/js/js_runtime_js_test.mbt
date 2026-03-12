@@ -812,12 +812,12 @@ test "getRootNode returns root" {
     #|div.appendChild(span);
     #|document.body.appendChild(div);
     #|[
-    #|  span.getRootNode().tagName,
-    #|  div.getRootNode().tagName
+    #|  span.getRootNode() === document,
+    #|  div.getRootNode() === document
     #|].join(',')
   let result = ctx.execute(code)
   inspect(result.success, content="true")
-  inspect(result.value, content="HTML,HTML")
+  inspect(result.value, content="true,true")
 }
 
 ///|
@@ -970,6 +970,98 @@ test "attachShadow" {
   let result = ctx.execute(code)
   inspect(result.success, content="true")
   inspect(result.value, content="open,true,true")
+}
+
+///|
+test "getRootNode supports shadow root composed option" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|const shadow = host.attachShadow({ mode: 'open' });
+    #|shadow.innerHTML = "<div class='shadowChild'>content</div>";
+    #|const child = shadow.querySelector('.shadowChild');
+    #|[
+    #|  child.getRootNode() === shadow,
+    #|  child.getRootNode({ composed: false }) === shadow,
+    #|  child.getRootNode({ composed: true }) === document
+    #|].join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true|true|true")
+}
+
+///|
+test "insertAdjacent validates element arguments and detached beforebegin returns null" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const detached = document.createElement('div');
+    #|const typeError = (() => {
+    #|  try {
+    #|    detached.insertAdjacentElement('afterbegin', document.implementation.createDocumentType('html', '', ''));
+    #|    return 'no';
+    #|  } catch (e) {
+    #|    return e.name;
+    #|  }
+    #|})();
+    #|const beforeBegin = detached.insertAdjacentElement('beforebegin', document.createElement('span'));
+    #|const textResult = detached.insertAdjacentText('beforeend', 'hello');
+    #|[typeError, beforeBegin === null, textResult === null, detached.textContent].join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="TypeError|true|true|hello")
+}
+
+///|
+test "SVG script fetchPriority reflects attribute values" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const SVGNS = 'http://www.w3.org/2000/svg';
+    #|const high = document.createElementNS(SVGNS, 'script');
+    #|high.setAttribute('fetchpriority', 'high');
+    #|const invalid = document.createElementNS(SVGNS, 'script');
+    #|invalid.setAttribute('fetchpriority', 'xyz');
+    #|const empty = document.createElementNS(SVGNS, 'script');
+    #|[high.fetchPriority, invalid.fetchPriority, empty.fetchPriority].join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="high|auto|auto")
+}
+
+///|
+test "dispatchEvent evaluates inline handlers with element unscopables" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|window.remove = 'Hello there';
+    #|let result1;
+    #|let result2;
+    #|const div = document.createElement('div');
+    #|div.setAttribute('onclick', 'result1 = remove; result2 = this.remove;');
+    #|document.body.appendChild(div);
+    #|div.dispatchEvent(new Event('click'));
+    #|[typeof result1, typeof result2].join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="string|function")
 }
 
 // ============================================
@@ -1288,6 +1380,260 @@ test "WPT: ParentNode.prepend" {
   let result = ctx.execute(code)
   inspect(result.success, content="true")
   inspect(result.value, content="true,true,true,true")
+}
+
+///|
+test "WPT: ParentNode.append/prepend coerce null and undefined" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const results = [];
+    #|const elementParent = document.createElement('div');
+    #|elementParent.append(null, undefined);
+    #|results.push(elementParent.childNodes.length === 2);
+    #|results.push(elementParent.childNodes[0].textContent === 'null');
+    #|results.push(elementParent.childNodes[1].textContent === 'undefined');
+    #|const fragmentParent = document.createDocumentFragment();
+    #|fragmentParent.prepend(null, undefined);
+    #|results.push(fragmentParent.childNodes.length === 2);
+    #|results.push(fragmentParent.childNodes[0].textContent === 'null');
+    #|results.push(fragmentParent.childNodes[1].textContent === 'undefined');
+    #|results.join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true,true,true,true,true,true")
+}
+
+///|
+test "WPT: ParentNode.replaceChildren coerces null and preserves order" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const results = [];
+    #|const elementParent = document.createElement('div');
+    #|elementParent.replaceChildren(null, 'tail');
+    #|results.push(elementParent.childNodes.length === 2);
+    #|results.push(elementParent.childNodes[0].textContent === 'null');
+    #|results.push(elementParent.childNodes[1].textContent === 'tail');
+    #|const fragmentParent = document.createDocumentFragment();
+    #|fragmentParent.replaceChildren(null, 'tail');
+    #|results.push(fragmentParent.childNodes.length === 2);
+    #|results.push(fragmentParent.childNodes[0].textContent === 'null');
+    #|results.push(fragmentParent.childNodes[1].textContent === 'tail');
+    #|results.join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true,true,true,true,true,true")
+}
+
+///|
+test "WPT: ParentNode.replaceChildren validates document hierarchy before mutation" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const target = document.implementation.createHTMLDocument('title');
+    #|const originalDoctype = target.doctype;
+    #|const originalElement = target.documentElement;
+    #|let threw = false;
+    #|try {
+    #|  target.replaceChildren(target.createTextNode('nope'));
+    #|} catch (e) {
+    #|  threw = e && e.name === 'HierarchyRequestError';
+    #|}
+    #|[
+    #|  threw,
+    #|  target.doctype === originalDoctype,
+    #|  target.documentElement === originalElement,
+    #|  target.childNodes.length === 2
+    #|].join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true,true,true,true")
+}
+
+///|
+test "WPT: ParentNode.replaceChildren rejects duplicate document element before mutation" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const target = document.implementation.createHTMLDocument('title');
+    #|const originalDoctype = target.doctype;
+    #|const originalElement = target.documentElement;
+    #|let threw = false;
+    #|try {
+    #|  target.replaceChildren(target.createElement('replacement'));
+    #|} catch (e) {
+    #|  threw = e && e.name === 'HierarchyRequestError';
+    #|}
+    #|[
+    #|  threw,
+    #|  target.doctype === originalDoctype,
+    #|  target.documentElement === originalElement,
+    #|  target.childNodes.length === 2
+    #|].join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true,true,true,true")
+}
+
+///|
+test "JS runtime DOM internals are isolated from page getNodeType shadowing" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|function getNodeType() { throw new Error('shadowed'); }
+    #|const doc2 = document.implementation.createHTMLDocument('title');
+    #|const div = doc2.createElement('div');
+    #|doc2.body.appendChild(div);
+    #|[
+    #|  doc2.documentElement !== null,
+    #|  doc2.body.firstChild === div
+    #|].join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true,true")
+}
+
+///|
+test "HTMLCollection.item coerces non-numeric strings to index 0" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const parent = document.createElement('div');
+    #|parent.innerHTML = '<img><img id="foo"><img id="foo"><img name="bar">';
+    #|const result = parent.children.item('foo');
+    #|[
+    #|  result instanceof Element,
+    #|  result === parent.children[0]
+    #|].join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true,true")
+}
+
+///|
+test "closest(':invalid') uses select value semantics before ancestors" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|document.body.innerHTML = `
+    #|  <form id="test5">
+    #|    <fieldset id="test2">
+    #|      <select id="test3" required>
+    #|        <option default id="test4" value="">Test4</option>
+    #|        <option selected id="test11">Test11</option>
+    #|      </select>
+    #|      <input id="test9" type="text" required>
+    #|    </fieldset>
+    #|  </form>`;
+    #|document.getElementById('test11').closest(':invalid').id
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="test2")
+}
+
+///|
+test "matches supports wildcard namespace selectors" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const element = document.createElementNS('urn:ns', 'h');
+    #|[
+    #|  element.matches('h'),
+    #|  element.matches('*|h'),
+    #|  element.webkitMatchesSelector('*|h')
+    #|].join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true,true,true")
+}
+
+///|
+test "window property assignment exposes a global identifier" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|window.tests = [1, 2, 3];
+    #|typeof tests + ':' + tests.length
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="object:3")
+}
+
+///|
+test "ownerSVGElement stops at foreignObject boundaries" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const top = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    #|top.setAttribute('id', 'top');
+    #|const inner = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    #|inner.setAttribute('id', 'inner');
+    #|const foreignObject = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+    #|const inFo = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    #|const nested = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    #|top.appendChild(inner);
+    #|top.appendChild(foreignObject);
+    #|foreignObject.appendChild(inFo);
+    #|inFo.appendChild(nested);
+    #|[
+    #|  inner.ownerSVGElement === top,
+    #|  inFo.ownerSVGElement === null,
+    #|  nested.ownerSVGElement === inFo
+    #|].join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true,true,true")
 }
 
 ///|
@@ -1935,6 +2281,199 @@ test "MutationObserver: basic usage" {
   let result = ctx.execute(code)
   inspect(result.success, content="true")
   inspect(result.value, content="true,true,true")
+}
+
+///|
+test "MutationObserver.observe validates option combinations" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const results = [];
+    #|const observer = new MutationObserver(function() {});
+    #|const expectTypeError = function(fn) {
+    #|  try {
+    #|    fn();
+    #|    return false;
+    #|  } catch (e) {
+    #|    return e instanceof TypeError;
+    #|  }
+    #|};
+    #|results.push(expectTypeError(function() {
+    #|  observer.observe(document, {});
+    #|}));
+    #|results.push(expectTypeError(function() {
+    #|  observer.observe(document, { childList: true, attributeOldValue: true, attributes: false });
+    #|}));
+    #|results.push(expectTypeError(function() {
+    #|  observer.observe(document, { childList: true, attributeFilter: ['abc'], attributes: false });
+    #|}));
+    #|results.push(expectTypeError(function() {
+    #|  observer.observe(document, { childList: true, characterDataOldValue: true, characterData: false });
+    #|}));
+    #|observer.observe(document, { attributeOldValue: true });
+    #|results.push(observer._targets[0].options.attributes === true);
+    #|observer.disconnect();
+    #|observer.observe(document, { characterDataOldValue: true });
+    #|results.push(observer._targets[0].options.characterData === true);
+    #|results.join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true,true,true,true,true,true")
+}
+
+///|
+test "MutationObserver.takeRecords captures attribute childList and characterData" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const results = [];
+    #|const target = document.createElement('p');
+    #|target.id = 'n00';
+    #|document.body.appendChild(target);
+    #|const observer = new MutationObserver(function() {
+    #|  results.push('callback');
+    #|});
+    #|observer.observe(target, {
+    #|  childList: true,
+    #|  attributes: true,
+    #|  characterData: true,
+    #|  subtree: true,
+    #|  attributeOldValue: true,
+    #|  characterDataOldValue: true
+    #|});
+    #|target.id = 'foo';
+    #|target.textContent = 'old data';
+    #|target.firstChild.data = 'new data';
+    #|const records = observer.takeRecords();
+    #|results.push(records.length === 3);
+    #|results.push(records[0].type === 'attributes' && records[0].oldValue === 'n00');
+    #|results.push(records[1].type === 'childList' && records[1].addedNodes[0] === target.firstChild);
+    #|results.push(records[2].type === 'characterData' && records[2].oldValue === 'old data');
+    #|results.push(observer.takeRecords().length === 0);
+    #|results.join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true,true,true,true,true")
+}
+
+///|
+test "MutationObserver on document subtree sees dynamic inline script side effects" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const results = [];
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|const inserted = document.createElement('span');
+    #|inserted.id = 'inserted';
+    #|let callbackRecords = [];
+    #|const observer = new MutationObserver(function(records) {
+    #|  callbackRecords = records;
+    #|});
+    #|observer.observe(document, { childList: true, subtree: true });
+    #|const script = document.createElement('script');
+    #|script.textContent = 'document.body.appendChild(inserted);';
+    #|host.appendChild(script);
+    #|results.push(callbackRecords.length === 2);
+    #|results.push(callbackRecords[0].target === host && callbackRecords[0].addedNodes[0] === script);
+    #|results.push(callbackRecords[1].target === document.body && callbackRecords[1].addedNodes[0] === inserted);
+    #|results.join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true,true,true")
+}
+
+///|
+test "setAttributeNode throws InUseAttributeError for bound attr" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const results = [];
+    #|const el1 = document.createElement('div');
+    #|const el2 = document.createElement('div');
+    #|const attr = document.createAttribute('foo');
+    #|results.push(el1.setAttributeNode(attr) === null);
+    #|try {
+    #|  el2.setAttributeNode(attr);
+    #|  results.push(false);
+    #|} catch (e) {
+    #|  results.push(e instanceof DOMException);
+    #|  results.push(e.name === 'InUseAttributeError');
+    #|  results.push(e.code === DOMException.INUSE_ATTRIBUTE_ERR);
+    #|}
+    #|results.join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true,true,true,true")
+}
+
+///|
+test "NamedNodeMap own properties expose only lowercase HTML qualified names" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const el = document.createElement('div');
+    #|el.setAttributeNS('foo', 'A:B', '');
+    #|el.setAttributeNS('bar', 'c:D', '');
+    #|el.setAttributeNS('baz', 'e:F', '');
+    #|el.setAttributeNS('qux', 'g:h', '');
+    #|el.setAttributeNS('', 'I', '');
+    #|el.setAttributeNS('', 'j', '');
+    #|Object.getOwnPropertyNames(el.attributes).join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="0,1,2,3,4,5,g:h,j")
+}
+
+///|
+test "MutationObserver reports callback exceptions to callback realm onerror" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const calls = [];
+    #|window.onerror = () => { calls.push('top'); };
+    #|frames[0].onerror = () => { calls.push('frame0'); };
+    #|frames[1].onerror = () => { calls.push('frame1'); };
+    #|frames[2].onerror = () => { calls.push('frame2'); };
+    #|const target = frames[0].document.body;
+    #|const observer = new frames[0].MutationObserver(new frames[1].Function('throw new parent.frames[2].Error("PASS");'));
+    #|observer.observe(target, { childList: true, subtree: true });
+    #|target.append('x');
+    #|_flushMicrotasks();
+    #|calls.join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="frame1")
 }
 
 ///|
@@ -2728,4 +3267,165 @@ test "fetch: zenn-like page - fetch user articles and render" {
     .iter()
     .any(fn(log) { log.contains("titles:Article 1,Article 2,Article 3") })
   inspect(has_titles, content="true")
+}
+
+///|
+test "createElementNS preserves HTML namespace qualified name case" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const plain = document.createElementNS('http://www.w3.org/1999/xhtml', 'SPAN');
+    #|const prefixed = document.createElementNS('http://www.w3.org/1999/xhtml', 'html:span');
+    #|[
+    #|  plain.localName,
+    #|  plain.tagName,
+    #|  plain instanceof HTMLUnknownElement,
+    #|  prefixed.localName,
+    #|  prefixed.tagName,
+    #|  prefixed.prefix,
+    #|  prefixed instanceof HTMLSpanElement
+    #|].join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="SPAN|SPAN|true|span|HTML:SPAN|html|true")
+}
+
+///|
+test "getElementsByTagName and NS keep HTML namespace createElementNS case-sensitive semantics" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const root = document.createElement('div');
+    #|const upper = document.createElementNS('http://www.w3.org/1999/xhtml', 'I');
+    #|root.appendChild(upper);
+    #|document.body.appendChild(root);
+    #|[
+    #|  root.getElementsByTagName('I').length,
+    #|  root.getElementsByTagName('i').length,
+    #|  root.getElementsByTagNameNS('http://www.w3.org/1999/xhtml', 'I').length,
+    #|  root.getElementsByTagNameNS('http://www.w3.org/1999/xhtml', 'i').length
+    #|].join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="0|0|1|0")
+}
+
+///|
+test "XHTML createDocument preserves createElement localName case" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const doc = document.implementation.createDocument('http://www.w3.org/1999/xhtml', 'html', null);
+    #|const el = doc.createElement('DIV');
+    #|[doc.contentType, el.localName, el.tagName].join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="application/xhtml+xml|DIV|DIV")
+}
+
+///|
+test "createDocument rejects multi-colon qualified name without namespace" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|try {
+    #|  document.implementation.createDocument(null, 'f:o:o', null);
+    #|  'ok';
+    #|} catch (e) {
+    #|  e.name;
+    #|}
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="NamespaceError")
+}
+
+///|
+test "createElementNS keeps first-colon split for qualified name" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const el = document.createElementNS('http://example.com/', 'f:o:o');
+    #|[el.prefix, el.localName, el.tagName].join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="f|o|f:o")
+}
+
+///|
+test "cloneNode preserves namespaced attribute metadata" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const SVGNS = 'http://www.w3.org/2000/svg';
+    #|const XMLNS = 'http://www.w3.org/2000/xmlns/';
+    #|const XLINK = 'http://www.w3.org/1999/xlink';
+    #|const svg = document.createElementNS(SVGNS, 'svg');
+    #|svg.setAttributeNS(XMLNS, 'xmlns:xlink', XLINK);
+    #|const use = document.createElementNS(SVGNS, 'use');
+    #|use.setAttributeNS(XLINK, 'xlink:href', '#test');
+    #|svg.appendChild(use);
+    #|const clone = svg.cloneNode(true);
+    #|const rootAttr = clone.attributes[0];
+    #|const useAttr = clone.firstElementChild.attributes[0];
+    #|[
+    #|  rootAttr.namespaceURI,
+    #|  rootAttr.prefix,
+    #|  rootAttr.localName,
+    #|  rootAttr.name,
+    #|  useAttr.namespaceURI,
+    #|  useAttr.prefix,
+    #|  useAttr.localName,
+    #|  useAttr.name
+    #|].join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content=
+      "http://www.w3.org/2000/xmlns/|xmlns|xlink|xmlns:xlink|http://www.w3.org/1999/xlink|xlink|href|xlink:href",
+  )
+}
+
+///|
+test "isEqualNode compares attribute namespaces" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const left = document.createElement('div');
+    #|left.setAttributeNS('urn:left', 'p:name', 'value');
+    #|const right = document.createElement('div');
+    #|right.setAttributeNS('urn:right', 'p:name', 'value');
+    #|String(left.isEqualNode(right))
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="false")
+}
+
+///|
+test "appendChild adopting into another document updates attribute ownerDocument" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const oldDoc = document.implementation.createHTMLDocument('');
+    #|const otherDoc = document.implementation.createHTMLDocument('');
+    #|const div = oldDoc.createElement('div');
+    #|div.setAttribute('id', 'foobar');
+    #|otherDoc.body.appendChild(div);
+    #|[
+    #|  div.ownerDocument === otherDoc,
+    #|  div.attributes[0].ownerDocument === otherDoc
+    #|].join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true|true")
 }

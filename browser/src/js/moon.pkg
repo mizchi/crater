@@ -2,7 +2,6 @@ import {
   "mizchi/crater/dom",
   "mizchi/crater/scheduler",
   "moonbitlang/core/strconv",
-  "moonbitlang/async/js_async",
 }
 
 options(

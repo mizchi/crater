@@ -2796,6 +2796,57 @@ test "bidi script evaluateResult unwraps async remote value" {
 }
 
 ///|
+test "bidi script evaluateResult window.open unwraps window remote value" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"window.open('about:blank', '_blank', '')\",\"target\":{\"context\":\"session-1\"},\"await_promise\":false}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"result\":{\"type\":\"window\",\"value\":{\"context\":\"session-2\"}}"))
+  assert_false(json.contains("\"realm\""))
+}
+
+///|
+test "bidi handleUserPrompt unwraps evaluateResult confirm remote value" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"session.subscribe\",\"params\":{\"events\":[\"browsingContext.userPromptOpened\"]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"window.confirm('test')\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"browsingContext.handleUserPrompt\",\"params\":{\"context\":\"session-1\",\"accept\":true}}",
+  )
+  let msgs = proto.take_messages()
+  let mut saw_eval_result = false
+  for msg in msgs {
+    let json = msg.to_json()
+    if json.contains("\"id\":3") {
+      saw_eval_result = true
+      assert_true(json.contains("\"type\":\"success\""))
+      assert_true(json.contains("\"result\":{\"type\":\"boolean\",\"value\":true}"))
+      assert_false(json.contains("\"realm\""))
+    }
+  }
+  assert_true(saw_eval_result)
+}
+
+///|
 test "bidi script evaluateResult keeps exceptionDetails payload" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -2810,6 +2861,30 @@ test "bidi script evaluateResult keeps exceptionDetails payload" {
   assert_true(json.contains("\"type\":\"success\""))
   assert_true(json.contains("\"exceptionDetails\""))
   assert_true(json.contains("\"text\":\"Error: boom\""))
+}
+
+///|
+test "bidi script evaluateResult async path keeps sloppy mode unless expression opts into strict mode" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"'use strict';SOME_VARIABLE=1\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":true}}",
+  )
+  let strict_json = proto.take_messages()[0].to_json()
+  assert_true(strict_json.contains("\"type\":\"success\""))
+  assert_true(strict_json.contains("\"exceptionDetails\""))
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"SOME_VARIABLE=1\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":true}}",
+  )
+  let sloppy_json = proto.take_messages()[0].to_json()
+  assert_true(sloppy_json.contains("\"type\":\"success\""))
+  assert_true(sloppy_json.contains("\"result\":{\"type\":\"number\",\"value\":1}"))
+  assert_false(sloppy_json.contains("\"exceptionDetails\""))
 }
 
 ///|

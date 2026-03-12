@@ -209,7 +209,7 @@ fn parse_args() -> Options {
     if arg == "-h" || arg == "--help" {
       show_help = true
     } else if arg.has_prefix("--width=") {
-      let val = arg.substring(start=8)
+      let val = arg[8:].to_string() catch { _ => "" }
       width = parse_int_simple(val)
     } else if arg == "--sixel" {
       sixel = true
