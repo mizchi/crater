@@ -1233,11 +1233,7 @@ fn extract_node_layout_bounds_recursive(
 fn extract_element_id(node_id : String) -> String {
   // Look for # which indicates an ID
   match node_id.find("#") {
-    Some(idx) => {
-      // Return everything after the #
-      let id = node_id[idx + 1:].to_string() catch { _ => "" }
-      id
-    }
+    Some(idx) => node_id[idx + 1:].to_string()
     None => ""
   }
 }

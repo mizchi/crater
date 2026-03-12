@@ -467,7 +467,7 @@ fn extract_emulation_fetch_url(expression : String) -> String? {
   if end >= chars.length() {
     return None
   }
-  Some(expression[cursor + 1:end].to_string() catch { _ => "" })
+  Some(expression[cursor + 1:end].to_string())
 }
 
 ///|

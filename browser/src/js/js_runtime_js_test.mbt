@@ -3391,8 +3391,7 @@ test "cloneNode preserves namespaced attribute metadata" {
   inspect(result.success, content="true")
   inspect(
     result.value,
-    content=
-      "http://www.w3.org/2000/xmlns/|xmlns|xlink|xmlns:xlink|http://www.w3.org/1999/xlink|xlink|href|xlink:href",
+    content="http://www.w3.org/2000/xmlns/|xmlns|xlink|xmlns:xlink|http://www.w3.org/1999/xlink|xlink|href|xlink:href",
   )
 }
 

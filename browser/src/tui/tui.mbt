@@ -85,11 +85,11 @@ pub fn key_to_hint_action(key : String) -> BrowserAction? {
 /// Parse mouse click event "Mouse:col,row" into MouseClick action
 fn parse_mouse_click(key : String) -> BrowserAction? {
   // Format: "Mouse:col,row"
-  let parts = key[6:].to_string() catch { _ => return None }
+  let parts = key[6:].to_string()
   match parts.find(",") {
     Some(comma_idx) => {
-      let col_str = parts[:comma_idx].to_string() catch { _ => return None }
-      let row_str = parts[comma_idx + 1:].to_string() catch { _ => return None }
+      let col_str = parts[:comma_idx].to_string()
+      let row_str = parts[comma_idx + 1:].to_string()
       let col = @strconv.parse_int(col_str) catch { _ => return None }
       let row = @strconv.parse_int(row_str) catch { _ => return None }
       Some(MouseClick(col, row))
@@ -102,11 +102,11 @@ fn parse_mouse_click(key : String) -> BrowserAction? {
 /// Parse mouse scroll up event "MouseScrollUp:col,row"
 fn parse_mouse_scroll_up(key : String) -> BrowserAction? {
   // Format: "MouseScrollUp:col,row"
-  let parts = key[14:].to_string() catch { _ => return None }
+  let parts = key[14:].to_string()
   match parts.find(",") {
     Some(comma_idx) => {
-      let col_str = parts[:comma_idx].to_string() catch { _ => return None }
-      let row_str = parts[comma_idx + 1:].to_string() catch { _ => return None }
+      let col_str = parts[:comma_idx].to_string()
+      let row_str = parts[comma_idx + 1:].to_string()
       let col = @strconv.parse_int(col_str) catch { _ => return None }
       let row = @strconv.parse_int(row_str) catch { _ => return None }
       Some(MouseScrollUp(col, row))
@@ -119,11 +119,11 @@ fn parse_mouse_scroll_up(key : String) -> BrowserAction? {
 /// Parse mouse scroll down event "MouseScrollDown:col,row"
 fn parse_mouse_scroll_down(key : String) -> BrowserAction? {
   // Format: "MouseScrollDown:col,row"
-  let parts = key[16:].to_string() catch { _ => return None }
+  let parts = key[16:].to_string()
   match parts.find(",") {
     Some(comma_idx) => {
-      let col_str = parts[:comma_idx].to_string() catch { _ => return None }
-      let row_str = parts[comma_idx + 1:].to_string() catch { _ => return None }
+      let col_str = parts[:comma_idx].to_string()
+      let row_str = parts[comma_idx + 1:].to_string()
       let col = @strconv.parse_int(col_str) catch { _ => return None }
       let row = @strconv.parse_int(row_str) catch { _ => return None }
       Some(MouseScrollDown(col, row))

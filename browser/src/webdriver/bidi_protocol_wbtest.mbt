@@ -2808,7 +2808,11 @@ test "bidi script evaluateResult window.open unwraps window remote value" {
   )
   let json = proto.take_messages()[0].to_json()
   assert_true(json.contains("\"type\":\"success\""))
-  assert_true(json.contains("\"result\":{\"type\":\"window\",\"value\":{\"context\":\"session-2\"}}"))
+  assert_true(
+    json.contains(
+      "\"result\":{\"type\":\"window\",\"value\":{\"context\":\"session-2\"}}",
+    ),
+  )
   assert_false(json.contains("\"realm\""))
 }
 
@@ -2839,7 +2843,9 @@ test "bidi handleUserPrompt unwraps evaluateResult confirm remote value" {
     if json.contains("\"id\":3") {
       saw_eval_result = true
       assert_true(json.contains("\"type\":\"success\""))
-      assert_true(json.contains("\"result\":{\"type\":\"boolean\",\"value\":true}"))
+      assert_true(
+        json.contains("\"result\":{\"type\":\"boolean\",\"value\":true}"),
+      )
       assert_false(json.contains("\"realm\""))
     }
   }
@@ -2883,7 +2889,9 @@ test "bidi script evaluateResult async path keeps sloppy mode unless expression 
   )
   let sloppy_json = proto.take_messages()[0].to_json()
   assert_true(sloppy_json.contains("\"type\":\"success\""))
-  assert_true(sloppy_json.contains("\"result\":{\"type\":\"number\",\"value\":1}"))
+  assert_true(
+    sloppy_json.contains("\"result\":{\"type\":\"number\",\"value\":1}"),
+  )
   assert_false(sloppy_json.contains("\"exceptionDetails\""))
 }
 

@@ -521,10 +521,7 @@ fn synthetic_fetch_requires_preflight(
 ///|
 fn synthetic_fetch_is_cors_safelisted_content_type(value : String) -> Bool {
   let raw_media_type = match find_substring(value, ";", 0) {
-    Some(idx) =>
-      value[:idx].to_string().to_lower() catch {
-        _ => value.to_lower()
-      }
+    Some(idx) => value[:idx].to_string().to_lower()
     None => value.to_lower()
   }
   let media_type = raw_media_type.trim()

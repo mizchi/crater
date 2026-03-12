@@ -54,9 +54,7 @@ fn storage_now_seconds() -> Int {
 
 ///|
 fn storage_slice(value : String, start : Int, end : Int) -> String {
-  value[start:end].to_string() catch {
-    _ => ""
-  }
+  value[start:end].to_string()
 }
 
 ///|
@@ -64,9 +62,7 @@ fn storage_slice_from(value : String, start : Int) -> String {
   if start > value.length() {
     ""
   } else {
-    value[start:].to_string() catch {
-      _ => ""
-    }
+    value[start:].to_string()
   }
 }
 
@@ -1005,7 +1001,7 @@ fn storage_extract_url_fragment_param(url : String, key : String) -> String? {
       if start >= url.length() {
         return None
       }
-      let fragment = url[start:].to_string() catch { _ => "" }
+      let fragment = url[start:].to_string()
       for part in fragment.split("&") {
         let raw = part.to_string()
         if raw.length() == 0 {
@@ -1013,11 +1009,11 @@ fn storage_extract_url_fragment_param(url : String, key : String) -> String? {
         }
         match find_substring(raw, "=", 0) {
           Some(eq_idx) => {
-            let part_key = raw[:eq_idx].to_string() catch { _ => "" }
+            let part_key = raw[:eq_idx].to_string()
             if part_key == key {
               let value_start = eq_idx + 1
               if value_start <= raw.length() {
-                return Some(raw[value_start:].to_string() catch { _ => "" })
+                return Some(raw[value_start:].to_string())
               }
               return Some("")
             }
@@ -1068,7 +1064,7 @@ fn storage_http_host(url : String, scheme_len : Int) -> String? {
   if end <= scheme_len {
     return None
   }
-  let host = url[scheme_len:end].to_string() catch { _ => "" }
+  let host = url[scheme_len:end].to_string()
   if host.length() == 0 {
     None
   } else {
@@ -1079,7 +1075,7 @@ fn storage_http_host(url : String, scheme_len : Int) -> String? {
 ///|
 fn storage_strip_port(host : String) -> String {
   match find_substring(host, ":", 0) {
-    Some(idx) => host[:idx].to_string() catch { _ => host }
+    Some(idx) => host[:idx].to_string()
     None => host
   }
 }
@@ -1107,7 +1103,7 @@ fn storage_http_path(url : String, scheme_len : Int) -> String {
       break
     }
   }
-  let path = url[start:end].to_string() catch { _ => "/" }
+  let path = url[start:end].to_string()
   if path.length() == 0 {
     "/"
   } else {
@@ -1171,7 +1167,7 @@ fn storage_cookie_default_path(base_url : String) -> String {
     return "/"
   }
   if path.has_suffix("/") {
-    let trimmed = path[:path.length() - 1].to_string() catch { _ => "/" }
+    let trimmed = path[:path.length() - 1].to_string()
     if trimmed.length() == 0 {
       "/"
     } else {
@@ -1179,14 +1175,7 @@ fn storage_cookie_default_path(base_url : String) -> String {
     }
   } else {
     match find_last_slash(path) {
-      Some(idx) =>
-        if idx == 0 {
-          "/"
-        } else {
-          path[:idx].to_string() catch {
-            _ => "/"
-          }
-        }
+      Some(idx) => if idx == 0 { "/" } else { path[:idx].to_string() }
       None => "/"
     }
   }
@@ -1811,7 +1800,7 @@ fn extract_document_cookie_assignment(expression : String) -> String? {
   if start > end {
     return Some("")
   }
-  Some(trimmed[start:end].to_string() catch { _ => "" })
+  Some(trimmed[start:end].to_string())
 }
 
 ///|

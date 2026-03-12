@@ -1947,13 +1947,13 @@ fn parse_css_value_to_px(value : String, ctx : ComputeContext) -> Double? {
 
   // Handle nested calc()
   if v.has_prefix("calc(") && v.has_suffix(")") {
-    let inner = v[5:v.length() - 1].to_string() catch { _ => return None }
+    let inner = v[5:v.length() - 1].to_string()
     return parse_simple_calc_expr(inner, ctx)
   }
 
   // Handle nested min()
   if v.has_prefix("min(") && v.has_suffix(")") {
-    let inner = v[4:v.length() - 1].to_string() catch { _ => return None }
+    let inner = v[4:v.length() - 1].to_string()
     let args = split_css_args(inner)
     let mut min_val : Double? = None
     for arg in args {
@@ -1971,7 +1971,7 @@ fn parse_css_value_to_px(value : String, ctx : ComputeContext) -> Double? {
 
   // Handle nested max()
   if v.has_prefix("max(") && v.has_suffix(")") {
-    let inner = v[4:v.length() - 1].to_string() catch { _ => return None }
+    let inner = v[4:v.length() - 1].to_string()
     let args = split_css_args(inner)
     let mut max_val : Double? = None
     for arg in args {
@@ -1989,7 +1989,7 @@ fn parse_css_value_to_px(value : String, ctx : ComputeContext) -> Double? {
 
   // Handle nested clamp()
   if v.has_prefix("clamp(") && v.has_suffix(")") {
-    let inner = v[6:v.length() - 1].to_string() catch { _ => return None }
+    let inner = v[6:v.length() - 1].to_string()
     let args = split_css_args(inner)
     if args.length() != 3 {
       return None
@@ -2071,7 +2071,7 @@ fn parse_simple_calc_expr(expr : String, ctx : ComputeContext) -> Double? {
     }
     if c == '+' || c == '-' || c == '*' || c == '/' || i == expr.length() {
       if i > token_start {
-        let token = expr[token_start:i].to_string().trim() catch { _ => "" }
+        let token = expr[token_start:i].to_string().trim()
         if not(token.is_empty()) {
           match parse_css_value_to_px(token.to_string(), ctx) {
             Some(val) =>
@@ -2155,7 +2155,7 @@ fn parse_calc_terms(expr : String, ctx : ComputeContext) -> (Double, Double)? {
     return None
   }
   // Extract content: "calc(" has 5 chars, ")" has 1 char
-  let inner = v[5:v.length() - 1].to_string() catch { _ => return None }
+  let inner = v[5:v.length() - 1].to_string()
   // Parse simple expressions: accumulate px and % values
   let mut result_px : Double = 0.0
   let mut result_pct : Double = 0.0
@@ -2172,13 +2172,11 @@ fn parse_calc_terms(expr : String, ctx : ComputeContext) -> (Double, Double)? {
     if c == '+' || c == '-' || c == '*' || c == '/' || i == inner.length() {
       // Process token before operator
       if i > token_start {
-        let token = inner[token_start:i].to_string().trim() catch { _ => "" }
+        let token = inner[token_start:i].to_string().trim()
         if not(token.is_empty()) {
           // Parse the token
           if token.has_suffix("%") {
-            let num_str = token[:token.length() - 1].to_string() catch {
-              _ => ""
-            }
+            let num_str = token[:token.length() - 1].to_string()
             let n = @strconv.parse_double(num_str.to_string()) catch {
               _ => 0.0
             }
@@ -2192,33 +2190,25 @@ fn parse_calc_terms(expr : String, ctx : ComputeContext) -> (Double, Double)? {
           } else {
             // Try to resolve known length units to px for calc() simplification.
             let resolved_px : Double? = if token.has_suffix("px") {
-              let num_str = token[:token.length() - 2].to_string() catch {
-                _ => ""
-              }
+              let num_str = token[:token.length() - 2].to_string()
               let n = @strconv.parse_double(num_str.to_string()) catch {
                 _ => return None
               }
               Some(n)
             } else if token.has_suffix("vw") {
-              let num_str = token[:token.length() - 2].to_string() catch {
-                _ => ""
-              }
+              let num_str = token[:token.length() - 2].to_string()
               let n = @strconv.parse_double(num_str.to_string()) catch {
                 _ => return None
               }
               Some(n * ctx.viewport_width / 100.0)
             } else if token.has_suffix("vh") {
-              let num_str = token[:token.length() - 2].to_string() catch {
-                _ => ""
-              }
+              let num_str = token[:token.length() - 2].to_string()
               let n = @strconv.parse_double(num_str.to_string()) catch {
                 _ => return None
               }
               Some(n * ctx.viewport_height / 100.0)
             } else if token.has_suffix("vmin") {
-              let num_str = token[:token.length() - 4].to_string() catch {
-                _ => ""
-              }
+              let num_str = token[:token.length() - 4].to_string()
               let n = @strconv.parse_double(num_str.to_string()) catch {
                 _ => return None
               }
@@ -2229,9 +2219,7 @@ fn parse_calc_terms(expr : String, ctx : ComputeContext) -> (Double, Double)? {
               }
               Some(n * min_dimension / 100.0)
             } else if token.has_suffix("vmax") {
-              let num_str = token[:token.length() - 4].to_string() catch {
-                _ => ""
-              }
+              let num_str = token[:token.length() - 4].to_string()
               let n = @strconv.parse_double(num_str.to_string()) catch {
                 _ => return None
               }
@@ -2242,25 +2230,19 @@ fn parse_calc_terms(expr : String, ctx : ComputeContext) -> (Double, Double)? {
               }
               Some(n * max_dimension / 100.0)
             } else if token.has_suffix("rem") {
-              let num_str = token[:token.length() - 3].to_string() catch {
-                _ => ""
-              }
+              let num_str = token[:token.length() - 3].to_string()
               let n = @strconv.parse_double(num_str.to_string()) catch {
                 _ => return None
               }
               Some(n * ctx.root_font_size)
             } else if token.has_suffix("em") {
-              let num_str = token[:token.length() - 2].to_string() catch {
-                _ => ""
-              }
+              let num_str = token[:token.length() - 2].to_string()
               let n = @strconv.parse_double(num_str.to_string()) catch {
                 _ => return None
               }
               Some(n * ctx.font_size)
             } else if token.has_suffix("pt") {
-              let num_str = token[:token.length() - 2].to_string() catch {
-                _ => ""
-              }
+              let num_str = token[:token.length() - 2].to_string()
               let n = @strconv.parse_double(num_str.to_string()) catch {
                 _ => return None
               }
@@ -2332,7 +2314,7 @@ fn extract_first_percent_ratio(expr : String) -> Double? {
         }
         break
       }
-      let num = expr[start:i].to_string().trim() catch { _ => "" }
+      let num = expr[start:i].to_string().trim()
       if not(num.is_empty()) {
         let n = @strconv.parse_double(num.to_string()) catch {
           _ => return None
@@ -2458,7 +2440,7 @@ fn resolve_var(value : String, ctx : ComputeContext) -> String {
     return v
   }
   // Extract content inside var(...) - skip "var(" (4 chars) and ")" (1 char)
-  let inner : String = v[4:v.length() - 1].to_string() catch { _ => return v }
+  let inner : String = v[4:v.length() - 1].to_string()
   // Find the comma separating variable name from fallback
   // Need to handle nested var() and other functions
   let mut paren_depth = 0
@@ -2476,7 +2458,7 @@ fn resolve_var(value : String, ctx : ComputeContext) -> String {
   }
   // Extract variable name as String
   let var_name : String = if comma_pos > 0 {
-    let slice = inner[:comma_pos].to_string() catch { _ => inner }
+    let slice = inner[:comma_pos].to_string()
     slice.trim().to_string()
   } else {
     inner.trim().to_string()
@@ -2493,9 +2475,7 @@ fn resolve_var(value : String, ctx : ComputeContext) -> String {
     None =>
       // Variable not found - use fallback if available
       if comma_pos > 0 {
-        let fallback_slice = inner[comma_pos + 1:].to_string() catch {
-          _ => return ""
-        }
+        let fallback_slice = inner[comma_pos + 1:].to_string()
         let fallback = fallback_slice.trim().to_string()
         // Recursively resolve fallback (it may also contain var())
         resolve_var(fallback, ctx)
@@ -2543,7 +2523,7 @@ fn resolve_all_vars(value : String, ctx : ComputeContext) -> String {
   while i < v.length() {
     // Look for "var("
     if i + 4 <= v.length() {
-      let substr = v[i:i + 4].to_string() catch { _ => "" }
+      let substr = v[i:i + 4].to_string()
       if substr == "var(" {
         // Find matching closing paren
         let mut depth = 1
@@ -2558,7 +2538,7 @@ fn resolve_all_vars(value : String, ctx : ComputeContext) -> String {
           j += 1
         }
         // Extract and resolve the var()
-        let var_expr = v[i:j].to_string() catch { _ => "" }
+        let var_expr = v[i:j].to_string()
         let resolved = resolve_var(var_expr, ctx)
         result.write_string(resolved)
         i = j
@@ -2953,7 +2933,7 @@ fn parse_zoom(value : String) -> Double {
   }
   // Check for percentage (e.g., "150%")
   if v.has_suffix("%") {
-    let num_str = v[:v.length() - 1].to_string() catch { _ => return 1.0 }
+    let num_str = v[:v.length() - 1].to_string()
     let n = @strconv.parse_double(num_str.trim()) catch { _ => return 1.0 }
     return n / 100.0
   }
@@ -2972,17 +2952,13 @@ fn parse_translate_value(value : String) -> @style.TranslateValue {
   }
   // Check for percentage
   if v.has_suffix("%") {
-    let num_str = v[:v.length() - 1].to_string() catch {
-      _ => return @style.TranslateValue::Length(0.0)
-    }
+    let num_str = v[:v.length() - 1].to_string()
     let n = @strconv.parse_double(num_str.trim()) catch {
       _ => return @style.TranslateValue::Length(0.0)
     }
     @style.TranslateValue::Percent(n / 100.0)
   } else if v.has_suffix("px") {
-    let num_str = v[:v.length() - 2].to_string() catch {
-      _ => return @style.TranslateValue::Length(0.0)
-    }
+    let num_str = v[:v.length() - 2].to_string()
     let n = @strconv.parse_double(num_str.trim()) catch {
       _ => return @style.TranslateValue::Length(0.0)
     }
@@ -2990,9 +2966,7 @@ fn parse_translate_value(value : String) -> @style.TranslateValue {
   } else if v.has_suffix("em") || v.has_suffix("rem") {
     // em/rem - convert to pixels assuming 16px base
     let suffix_len = if v.has_suffix("rem") { 3 } else { 2 }
-    let num_str = v[:v.length() - suffix_len].to_string() catch {
-      _ => return @style.TranslateValue::Length(0.0)
-    }
+    let num_str = v[:v.length() - suffix_len].to_string()
     let n = @strconv.parse_double(num_str.trim()) catch {
       _ => return @style.TranslateValue::Length(0.0)
     }
@@ -3107,8 +3081,8 @@ pub fn compute_inline_raw(
       }
     }
     if colon_pos > 0 {
-      let prop = pair_str[:colon_pos].to_string().trim() catch { _ => "" }
-      let val = pair_str[colon_pos + 1:].to_string().trim() catch { _ => "" }
+      let prop = pair_str[:colon_pos].to_string().trim()
+      let val = pair_str[colon_pos + 1:].to_string().trim()
       if not(prop.is_empty()) && not(val.is_empty()) {
         decls.push(
           @cascade.Declaration::with_metadata(
@@ -3440,15 +3414,11 @@ fn parse_font_shorthand(
         }
       }
       if slash_idx > 0 {
-        try {
-          let size_part = part[:slash_idx].to_string()
-          let lh_part = part[slash_idx + 1:].to_string()
-          font_size = parse_font_size(size_part, ctx)
-          line_height = parse_line_height(lh_part, font_size)
-          break
-        } catch {
-          _ => ()
-        }
+        let size_part = part[:slash_idx].to_string()
+        let lh_part = part[slash_idx + 1:].to_string()
+        font_size = parse_font_size(size_part, ctx)
+        line_height = parse_line_height(lh_part, font_size)
+        break
       }
     } else {
       // Check if it's a size value (starts with digit or contains unit)

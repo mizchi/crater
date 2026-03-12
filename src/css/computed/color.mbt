@@ -62,9 +62,7 @@ fn resolve_color_var_fallback(value : String) -> String {
     return v.to_string()
   }
   // Extract content inside var(...)
-  let inner = v[4:v.length() - 1].to_string() catch {
-    _ => return v.to_string()
-  }
+  let inner = v[4:v.length() - 1].to_string()
   // Find the comma separating variable name from fallback
   let mut paren_depth = 0
   let mut comma_pos = -1
@@ -81,9 +79,7 @@ fn resolve_color_var_fallback(value : String) -> String {
   }
   if comma_pos > 0 {
     // Has fallback value
-    let fallback = inner[comma_pos + 1:].to_string().trim() catch {
-        _ => return v.to_string()
-      }
+    let fallback = inner[comma_pos + 1:].to_string().trim()
     // Recursively resolve if fallback also contains var()
     return resolve_color_var_fallback(fallback.to_string())
   }
@@ -99,7 +95,7 @@ fn resolve_color_var(value : String, ctx : ComputeContext) -> String {
     return v
   }
   // Extract content inside var(...)
-  let inner : String = v[4:v.length() - 1].to_string() catch { _ => return v }
+  let inner : String = v[4:v.length() - 1].to_string()
   // Find the comma separating variable name from fallback
   let mut paren_depth = 0
   let mut comma_pos = -1
@@ -116,7 +112,7 @@ fn resolve_color_var(value : String, ctx : ComputeContext) -> String {
   }
   // Extract variable name as String
   let var_name : String = if comma_pos > 0 {
-    let slice = inner[:comma_pos].to_string() catch { _ => inner }
+    let slice = inner[:comma_pos].to_string()
     slice.trim().to_string()
   } else {
     inner.trim().to_string()
@@ -133,9 +129,7 @@ fn resolve_color_var(value : String, ctx : ComputeContext) -> String {
     None =>
       // Variable not found - use fallback if available
       if comma_pos > 0 {
-        let fallback_slice = inner[comma_pos + 1:].to_string() catch {
-          _ => return ""
-        }
+        let fallback_slice = inner[comma_pos + 1:].to_string()
         let fallback = fallback_slice.trim().to_string()
         resolve_color_var(fallback, ctx)
       } else {

@@ -232,15 +232,10 @@ fn resolve_url(base_url : String, href : String) -> String {
     Some(i) => i
     None => return href
   }
-  let after_protocol = base_url[protocol_end + 3:].to_string() catch {
-    _ => return href
-  }
+  let after_protocol = base_url[protocol_end + 3:].to_string()
   let path_start = after_protocol.find("/")
   let origin = match path_start {
-    Some(i) =>
-      base_url[:protocol_end + 3 + i].to_string() catch {
-        _ => base_url
-      }
+    Some(i) => base_url[:protocol_end + 3 + i].to_string()
     None => base_url
   }
   // Root-relative
@@ -250,10 +245,7 @@ fn resolve_url(base_url : String, href : String) -> String {
   // Relative - append to current path
   let last_slash = base_url.rev_find("/")
   match last_slash {
-    Some(i) if i > protocol_end + 2 =>
-      try base_url[:i + 1].to_string() + href catch {
-        _ => origin + "/" + href
-      }
+    Some(i) if i > protocol_end + 2 => base_url[:i + 1].to_string() + href
     _ => origin + "/" + href
   }
 }
@@ -1499,7 +1491,7 @@ fn Browser::init_js_execution(self : Browser) -> Unit {
 ///|
 /// Execute scripts from the page (inline only, sync version)
 /// Requires enable_js to be set to true (use --enable-js flag)
-fn Browser::execute_scripts(self : Browser) -> Int {
+pub fn Browser::execute_scripts(self : Browser) -> Int {
   // Check if JS execution is enabled
   if not(self.enable_js) {
     return 0

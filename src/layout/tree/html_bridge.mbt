@@ -220,14 +220,14 @@ fn parse_dimension(value : String) -> @types.Dimension? {
     return Some(@types.Auto)
   }
   if v.has_suffix("px") && v.length() > 2 {
-    let num_str = v[:v.length() - 2].to_string() catch { _ => "" }
+    let num_str = v[:v.length() - 2].to_string()
     match try_parse_double(num_str) {
       Some(n) => return Some(@types.Length(n))
       None => ()
     }
   }
   if v.has_suffix("%") && v.length() > 1 {
-    let num_str = v[:v.length() - 1].to_string() catch { _ => "" }
+    let num_str = v[:v.length() - 1].to_string()
     match try_parse_double(num_str) {
       Some(n) => return Some(@types.Percent(n / 100.0))
       None => ()
@@ -621,9 +621,7 @@ fn setup_canvas_node(node : LayoutNode, element : @html.Element) -> Unit {
 fn parse_html_dimension(value : String) -> Double? {
   // Remove "px" suffix if present
   let num_str : String = if value.has_suffix("px") && value.length() > 2 {
-    value[:value.length() - 2].to_string() catch {
-      _ => return None
-    }
+    value[:value.length() - 2].to_string()
   } else {
     value
   }

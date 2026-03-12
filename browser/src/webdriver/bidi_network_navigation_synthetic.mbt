@@ -669,7 +669,7 @@ fn synthetic_navigation_join_origin_path(
   path : String,
 ) -> String {
   if origin.has_suffix("/") && path.has_prefix("/") {
-    origin + (path[1:].to_string() catch { _ => path })
+    origin + path[1:].to_string()
   } else {
     origin + path
   }
@@ -710,7 +710,7 @@ fn strip_wrapping_quotes_and_spaces(raw : String) -> String {
     let first = chars[0]
     let last = chars[chars.length() - 1]
     if (first == '"' && last == '"') || (first == '\'' && last == '\'') {
-      return trimmed[1:trimmed.length() - 1].to_string() catch { _ => trimmed }
+      return trimmed[1:trimmed.length() - 1].to_string()
     }
   }
   trimmed
@@ -790,7 +790,7 @@ fn collect_css_import_urls(source : String) -> Array[String] {
           cursor += 1
         }
         if cursor + 4 <= chars.length() {
-          let marker = source[cursor:cursor + 4].to_string() catch { _ => "" }
+          let marker = source[cursor:cursor + 4].to_string()
           if marker == "url(" {
             cursor += 4
             while cursor < chars.length() &&
@@ -807,9 +807,7 @@ fn collect_css_import_urls(source : String) -> Array[String] {
               cursor += 1
             }
             if cursor <= chars.length() {
-              let raw_value = source[value_start:cursor].to_string() catch {
-                _ => ""
-              }
+              let raw_value = source[value_start:cursor].to_string()
               let cleaned = strip_wrapping_quotes_and_spaces(raw_value)
               if cleaned != "" {
                 urls.push(cleaned)
@@ -868,9 +866,7 @@ fn collect_dynamic_import_urls(source : String) -> Array[String] {
               cursor += 1
             }
             if cursor <= chars.length() {
-              let value = source[value_start:cursor].to_string() catch {
-                _ => ""
-              }
+              let value = source[value_start:cursor].to_string()
               if value != "" {
                 values.push(value)
               }
@@ -918,7 +914,7 @@ fn collect_quoted_values_after_marker(
             cursor += 1
           }
           if cursor <= chars.length() {
-            let value = source[value_start:cursor].to_string() catch { _ => "" }
+            let value = source[value_start:cursor].to_string()
             if value != "" {
               values.push(value)
             }
@@ -991,15 +987,13 @@ fn synthetic_navigation_response_status_text_from_event(event : Json) -> String 
 ///|
 fn synthetic_navigation_synthesize_response_value(url : String) -> Json {
   if url.has_prefix("data:") {
-    let payload = url[5:url.length()].to_string() catch { _ => "" }
+    let payload = url[5:url.length()].to_string()
     match find_substring(payload, ",", 0) {
       Some(idx) => {
-        let meta = payload[:idx].to_string() catch { _ => "" }
-        let encoded = payload[idx + 1:payload.length()].to_string() catch {
-          _ => ""
-        }
+        let meta = payload[:idx].to_string()
+        let encoded = payload[idx + 1:payload.length()].to_string()
         let mime = match find_substring(meta, ";", 0) {
-          Some(semi_idx) => meta[:semi_idx].to_string() catch { _ => "" }
+          Some(semi_idx) => meta[:semi_idx].to_string()
           None => meta
         }
         if meta.contains(";base64") {
@@ -1115,15 +1109,13 @@ fn synthetic_navigation_raw_query_values(
     }
     match find_substring(raw, "=", 0) {
       Some(eq_idx) => {
-        let part_key = raw[:eq_idx].to_string() catch { _ => "" }
+        let part_key = raw[:eq_idx].to_string()
         if part_key != key {
           continue
         }
         let value_start = eq_idx + 1
         let raw_value = if value_start <= raw.length() {
-          raw[value_start:].to_string() catch {
-            _ => ""
-          }
+          raw[value_start:].to_string()
         } else {
           ""
         }

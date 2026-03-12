@@ -1338,9 +1338,7 @@ fn BidiProtocol::try_handle_synthetic_bluetooth_gatt_call(
     for key, properties in self.bluetooth_characteristics_by_scope {
       ignore(properties)
       if key.has_prefix(prefix) {
-        let characteristic_uuid = key[prefix.length():].to_string() catch {
-          _ => ""
-        }
+        let characteristic_uuid = key[prefix.length():].to_string()
         if characteristic_uuid != "" {
           items.push(
             make_object({
@@ -1374,9 +1372,7 @@ fn BidiProtocol::try_handle_synthetic_bluetooth_gatt_call(
     let items : Array[Json] = []
     for key, exists in self.bluetooth_descriptors_by_scope {
       if exists && key.has_prefix(prefix) {
-        let descriptor_uuid = key[prefix.length():].to_string() catch {
-          _ => ""
-        }
+        let descriptor_uuid = key[prefix.length():].to_string()
         if descriptor_uuid != "" {
           items.push(
             make_object({
@@ -2061,9 +2057,7 @@ fn extract_bluetooth_call_string_argument(
       let value_start = start_idx + single_prefix.length()
       match find_substring(source, "')", value_start) {
         Some(end_idx) if end_idx >= value_start =>
-          source[value_start:end_idx].to_string() catch {
-            _ => ""
-          }
+          source[value_start:end_idx].to_string()
         _ => ""
       }
     }
@@ -2074,9 +2068,7 @@ fn extract_bluetooth_call_string_argument(
           let value_start = start_idx + double_prefix.length()
           match find_substring(source, "\")", value_start) {
             Some(end_idx) if end_idx >= value_start =>
-              source[value_start:end_idx].to_string() catch {
-                _ => ""
-              }
+              source[value_start:end_idx].to_string()
             _ => ""
           }
         }
@@ -2189,7 +2181,7 @@ fn extract_bluetooth_uint8_array_data(source : String) -> Array[Json] {
       let data_start = start_idx + prefix.length()
       match find_substring(source, ")", data_start) {
         Some(end_idx) if end_idx >= data_start => {
-          let raw = source[data_start:end_idx].to_string() catch { _ => "" }
+          let raw = source[data_start:end_idx].to_string()
           extract_bluetooth_byte_array_literal(raw.trim().to_string())
         }
         _ => []
@@ -2204,7 +2196,7 @@ fn extract_bluetooth_byte_array_literal(raw : String) -> Array[Json] {
   if raw.length() < 2 || not(raw.has_prefix("[")) || not(raw.has_suffix("]")) {
     return []
   }
-  let body = raw[1:raw.length() - 1].to_string() catch { _ => "" }
+  let body = raw[1:raw.length() - 1].to_string()
   if body.trim().to_string() == "" {
     return []
   }

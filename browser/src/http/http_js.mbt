@@ -119,9 +119,7 @@ fn extract_json_string(json : String, key : String) -> String {
         }
         end = end + 1
       }
-      unescape_json_string(json[start:end].to_string()) catch {
-        _ => ""
-      }
+      unescape_json_string(json[start:end].to_string())
     }
     None => ""
   }

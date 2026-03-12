@@ -986,9 +986,7 @@ fn CdpProtocol::dispatch_runtime(
                           // Also extract title from HTML if present
                           match (html.find("<title>"), html.find("</title>")) {
                             (Some(start), Some(end_)) if end_ > start => {
-                              let title = html[start + 7:end_].to_string() catch {
-                                _ => ""
-                              }
+                              let title = html[start + 7:end_].to_string()
                               ctx.set_title(title)
                             }
                             _ => ()

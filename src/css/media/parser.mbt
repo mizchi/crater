@@ -99,7 +99,7 @@ fn parse_single_media_query(input : String) -> MediaQuery? {
     }
     if token.has_prefix("(") && token.has_suffix(")") {
       // Extract content inside parentheses
-      let content = token[1:token.length() - 1].to_string() catch { _ => "" }
+      let content = token[1:token.length() - 1].to_string()
       match parse_media_feature(content) {
         Some(feature) => conditions.push(feature)
         None => ()
@@ -193,8 +193,8 @@ fn parse_media_feature(content : String) -> MediaFeature? {
   // Check for colon (property: value)
   let colon_pos = find_char(content, ':')
   if colon_pos >= 0 {
-    let name = content[0:colon_pos].to_string() catch { _ => "" }
-    let value = content[colon_pos + 1:].to_string() catch { _ => "" }
+    let name = content[0:colon_pos].to_string()
+    let value = content[colon_pos + 1:].to_string()
     return parse_feature_with_value(
       name.trim().to_string(),
       value.trim().to_string(),
@@ -213,10 +213,8 @@ fn parse_range_feature(content : String) -> MediaFeature? {
   for op in ops {
     let op_pos = find_substring(content, op)
     if op_pos >= 0 {
-      let name = content[0:op_pos].to_string() catch { _ => "" }
-      let value_str = content[op_pos + op.length():].to_string() catch {
-        _ => ""
-      }
+      let name = content[0:op_pos].to_string()
+      let value_str = content[op_pos + op.length():].to_string()
       match parse_media_value(value_str.trim().to_string()) {
         Some(value) => {
           let range_op = match op {
@@ -318,8 +316,8 @@ fn parse_media_value(s : String) -> MediaValue? {
   // Check for ratio (e.g., "16/9")
   let slash_pos = find_char(s, '/')
   if slash_pos > 0 {
-    let left = s[0:slash_pos].to_string() catch { _ => "" }
-    let right = s[slash_pos + 1:].to_string() catch { _ => "" }
+    let left = s[0:slash_pos].to_string()
+    let right = s[slash_pos + 1:].to_string()
     match
       (parse_int(left.trim().to_string()), parse_int(right.trim().to_string())) {
       (Some(l), Some(r)) => return Some(Ratio(l, r))
@@ -356,8 +354,8 @@ fn parse_dimension_value(s : String) -> (Double, String)? {
     }
   }
   if num_end > 0 && num_end < s.length() {
-    let num_str = s[0:num_end].to_string() catch { _ => return None }
-    let unit = s[num_end:].to_string() catch { _ => return None }
+    let num_str = s[0:num_end].to_string()
+    let unit = s[num_end:].to_string()
     try {
       let value = @strconv.parse_double(num_str)
       Some((value, unit))

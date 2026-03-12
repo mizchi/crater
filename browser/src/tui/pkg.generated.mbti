@@ -82,6 +82,8 @@ pub fn format_status_bar(String, Int, Int) -> String
 
 pub fn get_args() -> Array[String]
 
+pub fn get_content_extent(@types.Layout) -> Double
+
 pub fn get_content_height_chars(@types.Layout) -> Int
 
 pub fn get_terminal_size() -> (Int, Int)

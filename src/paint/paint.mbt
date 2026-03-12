@@ -399,7 +399,7 @@ fn extract_tag_from_id(id : String) -> String {
     }
   }
   match end_pos {
-    Some(pos) => try! id[:pos].to_string()
+    Some(pos) => id[:pos].to_string()
     None => id
   }
 }

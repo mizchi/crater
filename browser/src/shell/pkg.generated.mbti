@@ -13,6 +13,7 @@ import {
 type Browser
 pub fn Browser::debug_layout(Self) -> Unit
 pub fn Browser::enter_hint_mode(Self) -> Unit
+pub fn Browser::execute_scripts(Self) -> Int
 pub fn Browser::exit_hint_mode(Self) -> Unit
 pub fn Browser::get_current_url(Self) -> String
 pub fn Browser::get_focused_link_index(Self) -> Int

@@ -6,6 +6,8 @@ import {
   "moonbitlang/core/strconv",
 }
 
+warnings = "-unused_package"
+
 options(
   targets: {
     "http_js.mbt": [ "js" ],

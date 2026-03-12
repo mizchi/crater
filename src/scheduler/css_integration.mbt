@@ -87,18 +87,16 @@ fn parse_inline_declarations(
     if not(trimmed.is_empty()) {
       let colon_idx = find_colon(trimmed)
       if colon_idx >= 0 {
-        let prop = trimmed[:colon_idx].to_string() catch { _ => "" }
+        let prop = trimmed[:colon_idx].to_string()
         let prop_trimmed = prop.trim().to_string()
-        let val = trimmed[colon_idx + 1:].to_string() catch { _ => "" }
+        let val = trimmed[colon_idx + 1:].to_string()
         let val_trimmed = val.trim().to_string()
         if not(prop_trimmed.is_empty()) && not(val_trimmed.is_empty()) {
           // !important チェック
           let (clean_val, importance) = if val_trimmed
             .to_lower()
             .has_suffix("!important") {
-            let clean = val_trimmed[:val_trimmed.length() - 10].to_string() catch {
-              _ => ""
-            }
+            let clean = val_trimmed[:val_trimmed.length() - 10].to_string()
             (clean.trim().to_string(), @cascade.Important)
           } else {
             (val_trimmed, @cascade.Normal)

@@ -227,9 +227,9 @@ fn extract_origin(url : String) -> String {
   // Simple origin extraction
   match url.find("://") {
     Some(i) => {
-      let after_protocol = url[i + 3:].to_string() catch { _ => return url }
+      let after_protocol = url[i + 3:].to_string()
       match after_protocol.find("/") {
-        Some(j) => url[:i + 3 + j].to_string() catch { _ => url }
+        Some(j) => url[:i + 3 + j].to_string()
         None => url
       }
     }

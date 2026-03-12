@@ -658,9 +658,7 @@ fn network_object_url_pattern_matches(
     None => return false
   }
   let target_path_token = if target.path.has_prefix("/") {
-    target.path[1:].to_string() catch {
-      _ => target.path
-    }
+    target.path[1:].to_string()
   } else {
     target.path
   }
@@ -739,7 +737,7 @@ fn canonicalize_network_http_url(url : String) -> CanonicalNetworkHttpUrl? {
 ///|
 fn extract_network_url_scheme(url : String) -> String? {
   match find_substring(url, "://", 0) {
-    Some(idx) => Some((url[:idx].to_string() catch { _ => "" }).to_lower())
+    Some(idx) => Some(url[:idx].to_string().to_lower())
     None => None
   }
 }
@@ -767,8 +765,8 @@ fn parse_network_host_and_port(
   if colon_idx < 0 {
     return Some((host_port.to_lower(), default_port_for_network_scheme(scheme)))
   }
-  let host = host_port[:colon_idx].to_string() catch { _ => "" }
-  let port_text = host_port[colon_idx + 1:].to_string() catch { _ => "" }
+  let host = host_port[:colon_idx].to_string()
+  let port_text = host_port[colon_idx + 1:].to_string()
   let port = match parse_decimal_string(port_text) {
     Some(port) => port
     None => return None
@@ -792,7 +790,7 @@ fn default_port_for_network_scheme(scheme : String) -> Int {
 fn extract_network_url_query(url : String) -> String {
   let without_fragment = strip_url_fragment(url)
   match find_substring(without_fragment, "?", 0) {
-    Some(idx) => without_fragment[idx + 1:].to_string() catch { _ => "" }
+    Some(idx) => without_fragment[idx + 1:].to_string()
     None => ""
   }
 }
@@ -800,9 +798,7 @@ fn extract_network_url_query(url : String) -> String {
 ///|
 fn normalize_network_pattern_protocol(protocol : String) -> String {
   if protocol.has_suffix(":") {
-    protocol[:protocol.length() - 1].to_string().to_lower() catch {
-      _ => protocol.to_lower()
-    }
+    protocol[:protocol.length() - 1].to_string().to_lower()
   } else {
     protocol.to_lower()
   }
