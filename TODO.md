@@ -556,13 +556,27 @@
     - `browser_sixel_github_mizchi_shared_node_layout`: `7.13 ms ± 661.42 µs`
     - `browser_sixel_github_mizchi_paint_tree`: `0.06 µs ± 0.01 µs`
     - `browser_sixel_github_mizchi_sixel_encode`: `12.82 ms ± 1.37 ms`
+  - sixel band encode 最適化後:
+    - `browser_sixel_github_mizchi`: `17.45 ms ± 970.56 µs`
+    - `browser_sixel_github_mizchi_sixel_encode`: `10.57 ms ± 1.60 ms`
+    - `browser_sixel_scroll_500`: `114.81 ms ± 6.13 ms`
+  - sixel repeat 圧縮導入後:
+    - `browser_sixel_github_mizchi`: `15.16 ms ± 487.56 µs`
+    - `browser_sixel_github_mizchi_node`: `7.16 ms ± 301.60 µs`
+    - `browser_sixel_github_mizchi_layout`: `6.65 ms ± 260.71 µs`
+    - `browser_sixel_github_mizchi_shared_node_layout`: `6.40 ms ± 136.13 µs`
+    - `browser_sixel_github_mizchi_paint_tree`: `0.05 µs ± 0.00 µs`
+    - `browser_sixel_github_mizchi_sixel_encode`: `8.29 ms ± 219.64 µs`
+    - `browser_sixel_scroll_500`: `97.47 ms ± 11.56 ms`
   - 見立て:
     - `render_to_node + render_with_external_css` の二重計算が主要な無駄だった
-    - shared 化後の主 bottleneck は `sixel_encode`
+    - 依然として主 bottleneck は `sixel_encode` だが、shared `node+layout` との差はかなり縮んだ
 - 次の優先タスク:
   - [x] `browser_sixel_github_mizchi` を `render_to_node/layout/paint_tree/sixel_encode` に分解する
   - [x] `render_to_sixel_with_css` の node/layout 二重構築を shared pass に統合する
-  - [ ] `@sixel.render_paint_node_to_sixel_scrolled` を profile して encode hot path を詰める
+  - [x] `@sixel.render_paint_node_to_sixel_scrolled` の band encode を 1-pass 化する
+  - [x] `@sixel.render_paint_node_to_sixel_scrolled` に `!n<char>` repeat 圧縮を入れる
+  - [ ] palette definition の文字列生成と band ごとの固定ヘッダ書き込みを削る
   - [ ] `captureScreenshotData` を `paint tree build` / `raster` / `PNG encode` に分解して timer を仕込む
   - [ ] PNG ではなく raw RGBA か PPM を返す debug path を追加して、encode cost を分離する
   - [ ] screenshot benchmark に visual sanity check を追加して、blank だが速い出力を除外する

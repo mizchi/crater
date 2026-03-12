@@ -77,6 +77,51 @@ pub fn Color::blend(self : Color, bg : Color, alpha : Int) -> Color {
 }
 
 ///|
+let sixel_bit_masks : Array[Int] = [1, 2, 4, 8, 16, 32]
+
+///|
+fn write_sixel_repeat_or_char(
+  buf : StringBuilder,
+  ch : Char,
+  repeat_count : Int,
+) -> Unit {
+  if repeat_count >= 4 {
+    buf.write_string("!")
+    buf.write_string(repeat_count.to_string())
+    buf.write_char(ch)
+  } else {
+    for _i in 0..<repeat_count {
+      buf.write_char(ch)
+    }
+  }
+}
+
+///|
+fn write_sixel_row_compressed(
+  buf : StringBuilder,
+  band_rows : Array[Int],
+  row_base : Int,
+  width : Int,
+) -> Unit {
+  if width <= 0 {
+    return
+  }
+  let mut run_char = (63 + band_rows[row_base]).unsafe_to_char()
+  let mut run_len = 1
+  for x = 1; x < width; x = x + 1 {
+    let next_char = (63 + band_rows[row_base + x]).unsafe_to_char()
+    if next_char == run_char {
+      run_len = run_len + 1
+    } else {
+      write_sixel_repeat_or_char(buf, run_char, run_len)
+      run_char = next_char
+      run_len = 1
+    }
+  }
+  write_sixel_repeat_or_char(buf, run_char, run_len)
+}
+
+///|
 /// Simple framebuffer for rendering
 pub struct Framebuffer {
   width : Int
@@ -941,6 +986,7 @@ fn render_paint_node(
 /// Convert framebuffer to Sixel string with dynamic palette
 pub fn to_sixel_dynamic(fb : Framebuffer, palette : DynamicPalette) -> String {
   let buf = StringBuilder::new()
+  let palette_len = palette.colors.length()
 
   // Sixel start sequence: ESC P q
   buf.write_string("\u001bPq")
@@ -961,26 +1007,30 @@ pub fn to_sixel_dynamic(fb : Framebuffer, palette : DynamicPalette) -> String {
   let num_bands = (fb.height + 5) / 6
   for band = 0; band < num_bands; band = band + 1 {
     let y_start = band * 6
-    for color_idx = 0
-        color_idx < palette.colors.length()
-        color_idx = color_idx + 1 {
+    let active_colors = Array::make(palette_len, false)
+    let band_rows = Array::make(palette_len * fb.width, 0)
+    for bit = 0; bit < 6; bit = bit + 1 {
+      let y = y_start + bit
+      if y >= fb.height {
+        continue
+      }
+      let row_offset = y * fb.width
+      let bit_mask = sixel_bit_masks[bit]
+      for x = 0; x < fb.width; x = x + 1 {
+        let color_idx = fb.pixels[row_offset + x]
+        active_colors[color_idx] = true
+        let cell_idx = color_idx * fb.width + x
+        band_rows[cell_idx] = band_rows[cell_idx] | bit_mask
+      }
+    }
+    for color_idx = 0; color_idx < palette_len; color_idx = color_idx + 1 {
+      if not(active_colors[color_idx]) {
+        continue
+      }
       buf.write_string("#")
       buf.write_string(color_idx.to_string())
-      for x = 0; x < fb.width; x = x + 1 {
-        let mut sixel_value = 0
-        let bit_masks = [1, 2, 4, 8, 16, 32]
-        for bit = 0; bit < 6; bit = bit + 1 {
-          let y = y_start + bit
-          if y < fb.height {
-            let pixel = fb.get_pixel(x, y)
-            if pixel == color_idx {
-              sixel_value = sixel_value | bit_masks[bit]
-            }
-          }
-        }
-        let ch = (63 + sixel_value).unsafe_to_char()
-        buf.write_char(ch)
-      }
+      let row_base = color_idx * fb.width
+      write_sixel_row_compressed(buf, band_rows, row_base, fb.width)
       buf.write_string("$")
     }
     buf.write_string("-")
