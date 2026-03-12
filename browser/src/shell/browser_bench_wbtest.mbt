@@ -47,13 +47,23 @@ fn builtin_github_snapshot_fixture() -> String {
 }
 
 ///|
-fn github_snapshot_render_ctx() -> @renderer.RenderContext {
+fn make_render_ctx(width : Int, height : Int) -> @renderer.RenderContext {
   {
-    viewport_width: 1440.0,
-    viewport_height: 960.0,
+    viewport_width: width.to_double(),
+    viewport_height: height.to_double(),
     root_font_size: 16.0,
     color_scheme: @media.ColorScheme::Light,
   }
+}
+
+///|
+fn github_snapshot_render_ctx() -> @renderer.RenderContext {
+  make_render_ctx(1440, 960)
+}
+
+///|
+fn kitty_article_render_ctx() -> @renderer.RenderContext {
+  make_render_ctx(720, 480)
 }
 
 ///|
@@ -150,6 +160,26 @@ test "bench_browser_sixel_github_mizchi_snapshot" (b : @bench.T) {
 }
 
 ///|
+test "bench_browser_kitty_github_mizchi_snapshot" (b : @bench.T) {
+  let browser = Browser::new(1440, 960)
+  let html = builtin_github_snapshot_fixture()
+  b.bench(name="browser_kitty_github_mizchi", fn() {
+    load_fixture(browser, html)
+    b.keep(browser.render_output(Kitty))
+  })
+}
+
+///|
+test "bench_browser_kitty_article_fixed" (b : @bench.T) {
+  let browser = Browser::new(720, 480)
+  let html = docs_article_fixture()
+  b.bench(name="browser_kitty_article", fn() {
+    load_fixture(browser, html)
+    b.keep(browser.render_output(Kitty))
+  })
+}
+
+///|
 test "bench_browser_sixel_github_mizchi_node" (b : @bench.T) {
   let html = builtin_github_snapshot_fixture()
   let ctx = github_snapshot_render_ctx()
@@ -196,5 +226,29 @@ test "bench_browser_sixel_github_mizchi_sixel_encode" (b : @bench.T) {
   let paint_node = @paint.from_node_and_layout(node, layout)
   b.bench(name="browser_sixel_github_mizchi_sixel_encode", fn() {
     b.keep(@sixel.render_paint_node_to_sixel_scrolled(paint_node, 1440, 960, 0))
+  })
+}
+
+///|
+test "bench_browser_kitty_github_mizchi_kitty_encode" (b : @bench.T) {
+  let html = builtin_github_snapshot_fixture()
+  let ctx = github_snapshot_render_ctx()
+  let node = @renderer.render_to_node_with_external_css(html, ctx, [])
+  let layout = @renderer.render_with_external_css(html, ctx, [])
+  let paint_node = @paint.from_node_and_layout(node, layout)
+  b.bench(name="browser_kitty_github_mizchi_kitty_encode", fn() {
+    b.keep(@kitty.render_paint_node_to_kitty_scrolled(paint_node, 1440, 960, 0))
+  })
+}
+
+///|
+test "bench_browser_kitty_article_kitty_encode" (b : @bench.T) {
+  let html = docs_article_fixture()
+  let ctx = kitty_article_render_ctx()
+  let node = @renderer.render_to_node_with_external_css(html, ctx, [])
+  let layout = @renderer.render_with_external_css(html, ctx, [])
+  let paint_node = @paint.from_node_and_layout(node, layout)
+  b.bench(name="browser_kitty_article_kitty_encode", fn() {
+    b.keep(@kitty.render_paint_node_to_kitty_scrolled(paint_node, 720, 480, 0))
   })
 }

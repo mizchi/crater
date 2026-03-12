@@ -7,9 +7,11 @@ import {
   "mizchi/crater/css/cascade",
   "mizchi/crater/css/media",
   "mizchi/crater/layout/node",
+  "mizchi/crater/paint",
   "mizchi/crater/style",
   "mizchi/crater/types",
   "mizchi/crater/layout/dispatch",
+  "mizchi/crater/x/kitty",
   "mizchi/crater/x/sixel",
 }
 

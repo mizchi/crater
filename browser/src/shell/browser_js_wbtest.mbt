@@ -16,6 +16,7 @@ test "Browser render_output returns defaults when content is empty" {
   let browser = Browser::new(800, 600)
   inspect(browser.render_output(Text), content="")
   inspect(browser.render_output(Sixel), content="")
+  inspect(browser.render_output(Kitty), content="")
   inspect(browser.render_output(Json), content="{}")
   inspect(browser.render_output(Aom), content="")
   inspect(

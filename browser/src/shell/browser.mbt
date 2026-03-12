@@ -29,6 +29,7 @@ priv struct Link {
 /// Browser output mode
 pub(all) enum OutputMode {
   Sixel
+  Kitty
   Text
   Json
   Aom
@@ -455,6 +456,7 @@ pub async fn Browser::go_forward(
 pub fn Browser::render_output(self : Browser, mode : OutputMode) -> String {
   match mode {
     Sixel => self.render()
+    Kitty => self.render_kitty()
     Text => self.render_text()
     Json => self.render_json()
     Aom => self.render_aom()
@@ -471,6 +473,21 @@ fn Browser::render(self : Browser) -> String {
     return ""
   }
   @renderer.render_to_sixel_with_css(
+    self.html_content,
+    self.viewport_width,
+    self.viewport_height,
+    self.scroll_y,
+    self.external_css,
+  )
+}
+
+///|
+/// Render current content to Kitty graphics protocol
+fn Browser::render_kitty(self : Browser) -> String {
+  if self.html_content.length() == 0 {
+    return ""
+  }
+  @renderer.render_to_kitty_with_css(
     self.html_content,
     self.viewport_width,
     self.viewport_height,

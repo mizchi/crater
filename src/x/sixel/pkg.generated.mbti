@@ -29,6 +29,8 @@ pub fn render_layout_with_options(@types.Layout, Int, Int, Bool) -> String
 
 pub fn render_paint_node_to_framebuffer(@paint.PaintNode, Framebuffer, DynamicPalette) -> Unit
 
+pub fn render_paint_node_to_framebuffer_scrolled(@paint.PaintNode, Framebuffer, DynamicPalette, Int) -> Unit
+
 pub fn render_paint_node_to_sixel(@paint.PaintNode, Int, Int) -> String
 
 pub fn render_paint_node_to_sixel_scrolled(@paint.PaintNode, Int, Int, Int) -> String

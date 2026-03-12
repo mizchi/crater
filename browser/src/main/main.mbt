@@ -53,6 +53,7 @@ enum HeadlessMode {
 struct Options {
   url : String
   sixel : Bool
+  kitty : Bool
   text : Bool // New: TUI text mode
   debug : Bool
   json : Bool // AOM JSON output for AI scraping
@@ -112,6 +113,18 @@ fn render_page(browser : @shell.Browser, options : Options) -> Unit {
         browser.get_focused_link_index(),
       ),
     )
+  } else if options.kitty {
+    let kitty = browser.render_output(@shell.OutputMode::Kitty)
+    @tui.print_raw(@tui.clear_screen())
+    @tui.print_raw(kitty)
+    println("")
+    println(
+      @tui.format_status_bar(
+        browser.get_current_url(),
+        browser.get_link_count(),
+        browser.get_focused_link_index(),
+      ),
+    )
   } else if options.text {
     // TUI text mode: character-based rendering
     let text_output = browser.render_output(@shell.OutputMode::Text)
@@ -121,7 +134,7 @@ fn render_page(browser : @shell.Browser, options : Options) -> Unit {
     browser.debug_layout()
   } else {
     println(
-      "Page loaded. Use --sixel, --text, --json, --aom, or --debug to render.",
+      "Page loaded. Use --sixel, --kitty, --text, --json, --aom, or --debug to render.",
     )
   }
 }
@@ -143,6 +156,7 @@ fn print_help() -> Unit {
   println("  Output Modes (mutually exclusive):")
   println("    --text            Render page as ANSI text (default)")
   println("    --sixel           Render page as Sixel graphics")
+  println("    --kitty           Render page with Kitty graphics protocol")
   println("    --json            Output accessibility tree as JSON")
   println(
     "    --aom             Output accessibility tree as YAML (Playwright format)",
@@ -190,9 +204,14 @@ fn print_help() -> Unit {
 ///|
 /// Parse command line arguments
 fn parse_args() -> Options {
-  let args = @tui.get_args()
+  parse_args_list(@tui.get_args())
+}
+
+///|
+fn parse_args_list(args : Array[String]) -> Options {
   let mut url = ""
   let mut sixel = false
+  let mut kitty = false
   let mut text = false
   let mut debug = false
   let mut json = false
@@ -213,6 +232,8 @@ fn parse_args() -> Options {
       width = parse_int_simple(val)
     } else if arg == "--sixel" {
       sixel = true
+    } else if arg == "--kitty" {
+      kitty = true
     } else if arg == "--text" {
       text = true
     } else if arg == "--debug" {
@@ -241,6 +262,7 @@ fn parse_args() -> Options {
   }
   // Default to text mode if no output mode is specified
   let text = if not(sixel) &&
+    not(kitty) &&
     not(text) &&
     not(debug) &&
     not(json) &&
@@ -255,6 +277,7 @@ fn parse_args() -> Options {
   {
     url,
     sixel,
+    kitty,
     text,
     debug,
     json,
@@ -355,7 +378,7 @@ async fn main {
     Off => ()
   }
   // Enter TUI mode
-  if options.sixel || options.text {
+  if options.sixel || options.kitty || options.text {
     // Enter alternate screen buffer (like vim/less) for clean display
     @tui.print_raw(@tui.enter_alt_screen())
     @tui.print_raw(@tui.hide_cursor())
@@ -372,7 +395,7 @@ async fn main {
   }
   render_page(browser, options)
   // Only enter interactive mode for sixel or text mode
-  if not(options.sixel) && not(options.text) {
+  if not(options.sixel) && not(options.kitty) && not(options.text) {
     return
   }
   // Main event loop

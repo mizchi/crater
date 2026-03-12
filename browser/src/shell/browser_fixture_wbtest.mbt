@@ -35,3 +35,22 @@ test "builtin github snapshot fixture loads and renders non-empty text output" {
   let rendered = browser.render_output(Text)
   assert_true(rendered.length() > 0)
 }
+
+///|
+test "builtin github snapshot fixture renders kitty graphics output" {
+  let browser = Browser::new(1440, 960)
+  let html = builtin_github_snapshot_fixture()
+  load_fixture(browser, html)
+  let rendered = browser.render_output(Kitty)
+  assert_true(rendered.has_prefix("\u001b_Ga=T,f=24,s="))
+  assert_true(rendered.length() > 64)
+}
+
+///|
+test "fixed article fixture renders kitty graphics output" {
+  let browser = Browser::new(1440, 960)
+  load_fixture(browser, docs_article_fixture())
+  let rendered = browser.render_output(Kitty)
+  assert_true(rendered.has_prefix("\u001b_Ga=T,f=24,s="))
+  assert_true(rendered.length() > 64)
+}

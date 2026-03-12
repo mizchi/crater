@@ -42,6 +42,7 @@ pub fn Browser::toggle_selection_mode(Self) -> Bool
 
 pub(all) enum OutputMode {
   Sixel
+  Kitty
   Text
   Json
   Aom

@@ -34,6 +34,8 @@ pub fn render(String, RenderContext) -> @types.Layout
 
 pub fn render_document_with_external_css(@html.Document, RenderContext, Array[String]) -> @types.Layout
 
+pub fn render_to_kitty_with_css(String, Int, Int, Int, Array[String]) -> String
+
 pub fn render_to_node(String, RenderContext) -> @node.Node
 
 pub fn render_to_node_and_layout(String, RenderContext) -> (@node.Node, @types.Layout)

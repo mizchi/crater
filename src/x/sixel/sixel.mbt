@@ -1087,16 +1087,27 @@ pub fn render_paint_node_to_sixel_scrolled(
 ) -> String {
   let fb = Framebuffer::new(width, height)
   let palette = DynamicPalette::new()
+  render_paint_node_to_framebuffer_scrolled(node, fb, palette, scroll_y)
+  // Convert to Sixel
+  to_sixel_dynamic(fb, palette)
+}
+
+///|
+/// Render PaintNode tree to framebuffer with scroll offset
+pub fn render_paint_node_to_framebuffer_scrolled(
+  node : @paint.PaintNode,
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  scroll_y : Int,
+) -> Unit {
   // Fill with white background
-  fb.fill_rect(0, 0, width, height, 0)
+  fb.fill_rect(0, 0, fb.width, fb.height, 0)
   // Sort by stacking order (z-index) for correct rendering
   let sorted_node = @paint.sort_tree_by_stacking_order(node)
   // Collect all colors first
   collect_colors(palette, sorted_node)
   // Render the tree with scroll offset
   render_paint_node(fb, palette, sorted_node, 0.0, -scroll_y.to_double())
-  // Convert to Sixel
-  to_sixel_dynamic(fb, palette)
 }
 
 ///|

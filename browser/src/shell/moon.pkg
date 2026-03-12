@@ -17,5 +17,6 @@ import {
   "moonbitlang/core/bench",
   "mizchi/crater/benchmarks",
   "mizchi/crater/css/media",
+  "mizchi/crater/x/kitty",
   "mizchi/crater/x/sixel",
 } for "wbtest"

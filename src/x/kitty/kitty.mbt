@@ -7,58 +7,56 @@
 let base64_chars : String = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
 ///|
-/// Encode bytes to base64
-fn encode_base64(data : Array[Int]) -> String {
-  let buf = StringBuilder::new()
-  let len = data.length()
-  let mut i = 0
-  while i < len {
-    let b0 = data[i]
-    let b1 = if i + 1 < len { data[i + 1] } else { 0 }
-    let b2 = if i + 2 < len { data[i + 2] } else { 0 }
-    // Encode 3 bytes to 4 base64 characters
-    let c0 = (b0 >> 2) & 0x3F
-    let c1 = ((b0 << 4) | (b1 >> 4)) & 0x3F
-    let c2 = ((b1 << 2) | (b2 >> 6)) & 0x3F
-    let c3 = b2 & 0x3F
-    buf.write_char(base64_chars[c0].unsafe_to_char())
-    buf.write_char(base64_chars[c1].unsafe_to_char())
-    if i + 1 < len {
-      buf.write_char(base64_chars[c2].unsafe_to_char())
-    } else {
-      buf.write_char('=')
-    }
-    if i + 2 < len {
-      buf.write_char(base64_chars[c3].unsafe_to_char())
-    } else {
-      buf.write_char('=')
-    }
-    i = i + 3
-  }
-  buf.to_string()
+let kitty_chunk_size = 4096
+
+///|
+fn write_base64_triplet(
+  buf : StringBuilder,
+  b0 : Int,
+  b1 : Int,
+  b2 : Int,
+) -> Unit {
+  let c0 = (b0 >> 2) & 0x3F
+  let c1 = ((b0 << 4) | (b1 >> 4)) & 0x3F
+  let c2 = ((b1 << 2) | (b2 >> 6)) & 0x3F
+  let c3 = b2 & 0x3F
+  buf.write_char(base64_chars[c0].unsafe_to_char())
+  buf.write_char(base64_chars[c1].unsafe_to_char())
+  buf.write_char(base64_chars[c2].unsafe_to_char())
+  buf.write_char(base64_chars[c3].unsafe_to_char())
 }
 
 ///|
-/// Convert Framebuffer to RGB byte array
-fn framebuffer_to_rgb(
-  fb : @sixel.Framebuffer,
+fn kitty_palette_color_at(
   palette : @sixel.DynamicPalette,
-) -> Array[Int] {
-  let data : Array[Int] = []
-  for y = 0; y < fb.height; y = y + 1 {
-    for x = 0; x < fb.width; x = x + 1 {
-      let idx = fb.get_pixel(x, y)
-      let color = if idx < palette.colors.length() {
-        palette.colors[idx]
-      } else {
-        @sixel.Color::white()
-      }
-      data.push(color.r)
-      data.push(color.g)
-      data.push(color.b)
-    }
+  idx : Int,
+) -> @sixel.Color {
+  if idx >= 0 && idx < palette.colors.length() {
+    palette.colors[idx]
+  } else {
+    @sixel.Color::white()
   }
-  data
+}
+
+///|
+fn write_kitty_chunk_header(
+  buf : StringBuilder,
+  width : Int,
+  height : Int,
+  is_first : Bool,
+  has_more : Bool,
+) -> Unit {
+  if is_first {
+    buf.write_string("\u001b_Ga=T,f=24,s=")
+    buf.write_string(width.to_string())
+    buf.write_string(",v=")
+    buf.write_string(height.to_string())
+    buf.write_string(",m=")
+  } else {
+    buf.write_string("\u001b_Gm=")
+  }
+  buf.write_string(if has_more { "1" } else { "0" })
+  buf.write_string(";")
 }
 
 ///|
@@ -67,57 +65,29 @@ pub fn to_kitty(
   fb : @sixel.Framebuffer,
   palette : @sixel.DynamicPalette,
 ) -> String {
-  let rgb_data = framebuffer_to_rgb(fb, palette)
-  let base64_data = encode_base64(rgb_data)
   let buf = StringBuilder::new()
-  // Kitty graphics escape sequence
-  // ESC _ G a=T,f=24,s=<width>,v=<height>,m=0 ; <base64_data> ESC \
-  // a=T: direct transmission
-  // f=24: RGB format (24 bits per pixel)
-  // s: width in pixels
-  // v: height in pixels
-  // m=0: no more data chunks
-  buf.write_string("\u001b_Ga=T,f=24,s=")
-  buf.write_string(fb.width.to_string())
-  buf.write_string(",v=")
-  buf.write_string(fb.height.to_string())
-  // If data is large, split into chunks (max ~4096 bytes per chunk recommended)
-  let chunk_size = 4096
-  if base64_data.length() <= chunk_size {
-    buf.write_string(",m=0;")
-    buf.write_string(base64_data)
-    buf.write_string("\u001b\\")
-  } else {
-    // Send in chunks
-    let mut offset = 0
-    let data_len = base64_data.length()
-    let mut first = true
-    while offset < data_len {
-      let remaining = data_len - offset
-      let this_chunk = if remaining > chunk_size {
-        chunk_size
-      } else {
-        remaining
-      }
-      let is_last = offset + this_chunk >= data_len
-      if first {
-        buf.write_string(",m=")
-        buf.write_string(if is_last { "0" } else { "1" })
-        buf.write_string(";")
-        first = false
-      } else {
-        buf.write_string("\u001b_Gm=")
-        buf.write_string(if is_last { "0" } else { "1" })
-        buf.write_string(";")
-      }
-      // Extract substring
-      for i = offset; i < offset + this_chunk; i = i + 1 {
-        buf.write_char(base64_data[i].unsafe_to_char())
-      }
+  let mut chunk = StringBuilder::new()
+  let mut chunk_len = 0
+  let mut first_chunk = true
+  let pixel_count = fb.width * fb.height
+  for pixel_index in 0..<pixel_count {
+    if chunk_len + 4 > kitty_chunk_size {
+      write_kitty_chunk_header(buf, fb.width, fb.height, first_chunk, true)
+      buf.write_string(chunk.to_string())
       buf.write_string("\u001b\\")
-      offset = offset + this_chunk
+      chunk = StringBuilder::new()
+      chunk_len = 0
+      first_chunk = false
     }
+    let color = kitty_palette_color_at(palette, fb.pixels[pixel_index])
+    write_base64_triplet(chunk, color.r, color.g, color.b)
+    chunk_len += 4
   }
+  write_kitty_chunk_header(buf, fb.width, fb.height, first_chunk, false)
+  if chunk_len > 0 {
+    buf.write_string(chunk.to_string())
+  }
+  buf.write_string("\u001b\\")
   buf.to_string()
 }
 
@@ -156,12 +126,20 @@ pub fn render_paint_node_to_kitty(
   width : Int,
   height : Int,
 ) -> String {
+  render_paint_node_to_kitty_scrolled(node, width, height, 0)
+}
+
+///|
+/// Render PaintNode to Kitty Graphics Protocol string with scroll offset
+pub fn render_paint_node_to_kitty_scrolled(
+  node : @paint.PaintNode,
+  width : Int,
+  height : Int,
+  scroll_y : Int,
+) -> String {
   let fb = @sixel.Framebuffer::new(width, height)
   let palette = @sixel.DynamicPalette::new()
-  // Fill with white background
-  fb.fill_rect(0, 0, width, height, 0)
-  // Render paint node
-  @sixel.render_paint_node_to_framebuffer(node, fb, palette)
+  @sixel.render_paint_node_to_framebuffer_scrolled(node, fb, palette, scroll_y)
   // Convert to Kitty
   to_kitty(fb, palette)
 }
