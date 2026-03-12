@@ -10,10 +10,10 @@
 ### 現状整理
 
 - MoonBit 化済みの中核:
-  - `browser/src/bidi_main/main.mbt`
-  - `browser/src/webdriver/bidi_protocol.mbt`
-  - `browser/src/webdriver/bidi_server.mbt`
-  - `browser/src/webdriver/bidi_storage.mbt`
+  - `browser/jsbidi/bidi_main/main.mbt`
+  - `browser/jsbidi/webdriver/bidi_protocol.mbt`
+  - `browser/jsbidi/webdriver/bidi_server.mbt`
+  - `browser/jsbidi/webdriver/bidi_storage.mbt`
 - まだ Python に大きく残っている本実装:
   - `scripts/crater_bidi_adapter.py`
   - `browsingContext` / `session` / `script` / `network` / `storage` / `input` / `browser`
@@ -242,7 +242,7 @@
   - `provideResponse` の body override は MoonBit 側へ移行済み
   - `get_element` / `fetch` / `setup_network_test` は MoonBit command ベースに整理済み
   - `get_element` の Python 側 `sharedId` normalize は削除済み
-  - 同期 fixture の `get_test_page` は protocol command ではなく、MoonBit helper package `browser/src/webdriver_fixture_builder` を subprocess + cache で呼ぶ形に移行済み
+  - 同期 fixture の `get_test_page` は protocol command ではなく、MoonBit helper package `browser/jsbidi/webdriver_fixture_builder` を subprocess + cache で呼ぶ形に移行済み
   - `url` / `inline` / `iframe` / `get_actions_origin_page` も同 helper package 経由に移行済み
   - `compare_png_bidi` / `render_pdf_to_png_bidi` / `assert_pdf_dimensions` も同 helper package 経由に移行済み
   - synthetic print payload に `pages` / `signature` を追加し、`assert_pdf_content` / `assert_pdf_image` も helper package 経由で実動化済み
@@ -285,9 +285,9 @@
   - [x] `top_context` / `new_tab` fixture の dict copy unwrap を削除
   - [x] `top_context` / `new_tab` の fallback object を fail-fast helper に置き換えた
   - [x] `get_test_page` の page builder を pure helper に切り出して MoonBit 移植対象を分離した
-  - [x] 同期 fixture 制約に合わせて `browser/src/webdriver_fixture_builder` を追加し、`get_test_page` の page builder 自体を MoonBit helper に移した
-  - [x] `url` / `inline` / `iframe` / `get_actions_origin_page` も `browser/src/webdriver_fixture_builder` 経由へ移した
-  - [x] `compare_png_bidi` / `render_pdf_to_png_bidi` / `assert_pdf_dimensions` も `browser/src/webdriver_fixture_builder` 経由へ移した
+  - [x] 同期 fixture 制約に合わせて `browser/jsbidi/webdriver_fixture_builder` を追加し、`get_test_page` の page builder 自体を MoonBit helper に移した
+  - [x] `url` / `inline` / `iframe` / `get_actions_origin_page` も `browser/jsbidi/webdriver_fixture_builder` 経由へ移した
+  - [x] `compare_png_bidi` / `render_pdf_to_png_bidi` / `assert_pdf_dimensions` も `browser/jsbidi/webdriver_fixture_builder` 経由へ移した
   - [x] synthetic print payload に `pages` / `signature` を追加し、`assert_pdf_content` / `assert_pdf_image` を helper package 経由の実動 assertion に置き換えた
   - [x] `print --quick` (`137/137`) と `--profile strict` (`277/277`) で回帰がないことを確認した
   - [x] `scripts/crater_bidi_adapter.py` を `2212` 行から `2002` 行へ縮めた
@@ -304,26 +304,26 @@
   - [x] `server_config` を helper package の `buildServerConfig` 経由に移し、Python 側の static dict を削除した
   - [x] `assert_pdf_image` / `fetch` / `configuration` は top-level helper + `functools.partial` に寄せて fixture ごとの local closure を削った
   - [x] `browsing_context/print --quick` (`137/137`) / `network/add_intercept/url_patterns.py --quick` (`69/69`) / `browsing_context/navigation_committed/navigation_committed.py --quick` (`20/20`) / `network/add_data_collector/user_contexts.py --quick` (`2/2`) / `--profile strict` (`277/277`) で回帰がないことを確認した
-  - [x] `browser/src/webdriver_fixture_builder` の test は `14/14 pass`
+  - [x] `browser/jsbidi/webdriver_fixture_builder` の test は `14/14 pass`
   - [x] `get_element` / `load_static_test_page` / `assert_file_dialog_{canceled,not_canceled}` / `setup_network_test` は top-level helper + task/collector group に寄せ、fixture 内の local async closure を削った
   - [x] `input/set_files --quick` (`46/46`) / `input/perform_actions/wheel --quick` (`17/17`) / `input/file_dialog_opened --quick` (`8/8`) / `session/capabilities/unhandled_prompt_behavior/file --quick` (`12/12`) / `network/set_extra_headers/contexts.py --quick` (`7/7`) / `--profile strict` (`277/277`) で helper 抽出の回帰がないことを確認した
   - [x] module proxy の `send_command -> await future` 重複を `_CommandProxy._command()` に寄せ、`current_session` / `capabilities` の inline ロジックも top-level helper 化した
   - [x] `browser/create_user_context --quick` (`182/182`) / `browsing_context/get_tree --quick` (`36/36`) / `script/get_realms --quick` (`24/24`) / `network/add_intercept --quick` (`210/210`) / `storage --quick` (`342/342`) / `input/set_files --quick` (`46/46`) / `--profile strict` (`277/277`) で proxy 共通化の回帰がないことを確認した
   - [x] `input.setFiles` の `files -> sourcePaths/displayNames` 変換を protocol 側へ移し、Python から `_normalize_files` / `_display_file_name` を削除した
   - [x] wbtest で `input.setFiles(files=...)` alias と basename 導出 (`path/to/noop.txt`, `C:\\tmp\\noop.txt`) を固定した
-  - [x] `moon -C browser fmt/info/check src/webdriver` / `just build-bidi` / `.venv/bin/python -m py_compile scripts/crater_bidi_adapter.py` / `input/set_files --quick` (`46/46`) / `--profile strict` (`277/277`) で raw forward 化の回帰がないことを確認した
+  - [x] `moon -C browser/jsbidi fmt/info/check --target js` / `just build-bidi` / `.venv/bin/python -m py_compile scripts/crater_bidi_adapter.py` / `input/set_files --quick` (`46/46`) / `--profile strict` (`277/277`) で raw forward 化の回帰がないことを確認した
   - [x] `script.fetchForTest` の `requestHeaders/requestData` 生成を protocol 側へ移し、Python から `_synthesize_request_bytes_value` / `_network_header_entries_from_map` を削除した
   - [x] wbtest で `script.fetchForTest(headersJson/postDataJson/postDataMode)` から request body と header が導出されることを固定した
-  - [x] `moon -C browser fmt/info/check src/webdriver` / `just build-bidi` / `.venv/bin/python -m py_compile scripts/crater_bidi_adapter.py` / `network/get_data --quick` (`53/53`) / `network/add_data_collector --quick` (`63/63`) / `network --quick` (`1389/1389`) / `--profile strict` (`277/277`) で fetch request shaping 移行の回帰がないことを確認した
+  - [x] `moon -C browser/jsbidi fmt/info/check --target js` / `just build-bidi` / `.venv/bin/python -m py_compile scripts/crater_bidi_adapter.py` / `network/get_data --quick` (`53/53`) / `network/add_data_collector --quick` (`63/63`) / `network --quick` (`1389/1389`) / `--profile strict` (`277/277`) で fetch request shaping 移行の回帰がないことを確認した
   - [x] `load_static_test_page` の `read -> inline -> navigate -> prepare` を `script.loadStaticTestPageForTest` に畳み、public navigate 相当の commit state を protocol 側で適用するようにした
   - [x] wbtest で `script.loadStaticTestPageForTest` が `allEvents` reset と data URL navigation を同時に満たすことを固定した
-  - [x] `moon -C browser fmt/info/check src/webdriver` / `just build-bidi` / `.venv/bin/python -m py_compile scripts/crater_bidi_adapter.py` / `input/set_files --quick` (`46/46`) / `input/perform_actions/wheel --quick` (`17/17`) / `input/release_actions --quick` (`12/12`) / `--profile strict` (`277/277`) で load_static_test_page 1-command 化の回帰がないことを確認した
+  - [x] `moon -C browser/jsbidi fmt/info/check --target js` / `just build-bidi` / `.venv/bin/python -m py_compile scripts/crater_bidi_adapter.py` / `input/set_files --quick` (`46/46`) / `input/perform_actions/wheel --quick` (`17/17`) / `input/release_actions --quick` (`12/12`) / `--profile strict` (`277/277`) で load_static_test_page 1-command 化の回帰がないことを確認した
   - [x] adapter に残っていた dead wrapper `ScriptModule.prepare_loaded_static_test_page()` を削除した
   - [x] file dialog helper は `input.isFileDialogCanceledForTest` に寄せて、Python から JS probe / timeout ベースの assertion helper を削除した
   - [x] wbtest で default `ignore` と explicit `dismiss` の file dialog cancel state query を固定した
-  - [x] `moon -C browser fmt/info/check src/webdriver` / `just build-bidi` / `.venv/bin/python -m py_compile scripts/crater_bidi_adapter.py` / `session/capabilities/unhandled_prompt_behavior/file --quick` (`12/12`) / `browser/create_user_context/unhandled_prompt_behavior.py --quick` (`24/24`) / `--profile strict` (`277/277`) で file dialog helper command 化の回帰がないことを確認した
-  - [x] `test_origin` / `test_alt_origin` / `test_page*` / frame page fixture は `browser/src/webdriver_fixture_builder` の `buildNamedBidiFixture` に寄せて、Python 側の `url` / `inline` 合成を削除した
-  - [x] `moon -C browser test src/webdriver_fixture_builder` (`17/17`) / `browsing_context/get_tree --quick` (`36/36`) / `script/get_realms --quick` (`24/24`) / `storage/get_cookies/partition.py --quick` (`9/9`) / `network/combined/network_events.py --quick` (`6/6`) / `--profile strict` (`277/277`) で named page builder 化の回帰がないことを確認した
+  - [x] `moon -C browser/jsbidi fmt/info/check --target js` / `just build-bidi` / `.venv/bin/python -m py_compile scripts/crater_bidi_adapter.py` / `session/capabilities/unhandled_prompt_behavior/file --quick` (`12/12`) / `browser/create_user_context/unhandled_prompt_behavior.py --quick` (`24/24`) / `--profile strict` (`277/277`) で file dialog helper command 化の回帰がないことを確認した
+  - [x] `test_origin` / `test_alt_origin` / `test_page*` / frame page fixture は `browser/jsbidi/webdriver_fixture_builder` の `buildNamedBidiFixture` に寄せて、Python 側の `url` / `inline` 合成を削除した
+  - [x] `moon -C browser/jsbidi test webdriver_fixture_builder --target js` (`17/17`) / `browsing_context/get_tree --quick` (`36/36`) / `script/get_realms --quick` (`24/24`) / `storage/get_cookies/partition.py --quick` (`9/9`) / `network/combined/network_events.py --quick` (`6/6`) / `--profile strict` (`277/277`) で named page builder 化の回帰がないことを確認した
   - [x] `current_session` / `session` は custom class をやめて `SimpleNamespace(capabilities=...)` の classic harness stub に整理した
   - [x] `session/new/bidi_upgrade.py --quick` (`4/4`) / `input/perform_actions/pointer_mouse_modifier.py --quick` (`10/10`) / `--profile strict` (`277/277`) で classic stub 整理の回帰がないことを確認した
   - [x] `current_session` / `session` / `default_capabilities` / `capabilities` / `modifier_key` / `wait_for_future_safe` / `current_time` は MoonBit 本体ではなく WPT harness compatibility layer として Python に残す方針を固定する
