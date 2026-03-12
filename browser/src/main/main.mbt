@@ -540,6 +540,7 @@ async fn main {
           @tui.print_raw(@tui.show_cursor())
         } else {
           // Exiting selection mode - re-enable raw mode
+          @tui.enable_raw_mode()
           @tui.print_raw(@tui.hide_cursor())
           @tui.print_raw(@tui.enable_mouse())
         }
