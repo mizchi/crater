@@ -2,6 +2,23 @@
 /// Browser Shell - TUI browser application layer
 
 ///|
+extern "js" fn perf_now() -> Double =
+  #| () => {
+  #|   if (typeof performance !== 'undefined') return performance.now();
+  #|   if (typeof process !== 'undefined') {
+  #|     const [s, ns] = process.hrtime();
+  #|     return s * 1000 + ns / 1e6;
+  #|   }
+  #|   return Date.now();
+  #| }
+
+///|
+extern "js" fn perf_log(msg : String) -> Unit =
+  #| (msg) => {
+  #|   if (typeof process !== 'undefined') process.stderr.write(msg + '\n');
+  #| }
+
+///|
 /// Link found in the page
 priv struct Link {
   href : String
@@ -313,6 +330,7 @@ async fn Browser::load_url(
   url : String,
 ) -> String raise @http.HttpError {
   self.current_url = url
+  let t0 = perf_now()
   // Fetch the page
   let page_options = {
     ..@http.FetchOptions::default(),
@@ -322,6 +340,7 @@ async fn Browser::load_url(
   }
   let response = @http.fetch(url, options=page_options)
   self.html_content = response.body
+  let t1 = perf_now()
   // Fetch external CSS using lightweight extraction (no full parsing)
   self.external_css = fetch_external_css(
     self.html_content,
@@ -330,6 +349,7 @@ async fn Browser::load_url(
   ) catch {
     _ => [] // Fallback to no external CSS on error
   }
+  let t2 = perf_now()
   // Extract links from HTML (lightweight, no full parsing)
   self.links = extract_links(self.html_content)
   self.focused_link = 0
@@ -343,6 +363,7 @@ async fn Browser::load_url(
   self.layout_tree = None
   self.prev_buffer = None
   self.last_render_key = ""
+  let t3 = perf_now()
   // Execute scripts including external (JS execution)
   let script_count = self.execute_scripts_async() catch { _ => 0 }
   if script_count > 0 {
@@ -350,19 +371,17 @@ async fn Browser::load_url(
       "Executed " + script_count.to_string() + " script(s) during page load",
     )
   }
-  // Calculate content height from latest parsed document
-  let content_doc = match self.parsed_doc {
-    Some(d) => d
-    None => doc
-  }
-  self.content_height = @renderer.get_content_height_with_document(
-    content_doc,
-    self.viewport_width,
-    self.viewport_height,
-    self.external_css,
+  let t4 = perf_now()
+  // Content height is computed lazily from the layout tree in render_text()
+  // to avoid a duplicate full layout pass here.
+  self.content_height = 0
+  // Accessibility tree is built lazily on first focus navigation
+  // to avoid a duplicate full layout pass here.
+  self.a11y_tree = None
+  self.focus_manager = None
+  perf_log(
+    "[perf] fetch=\{(t1 - t0).to_int()}ms css=\{(t2 - t1).to_int()}ms parse=\{(t3 - t2).to_int()}ms scripts=\{(t4 - t3).to_int()}ms total=\{(t4 - t0).to_int()}ms",
   )
-  // Build accessibility tree for focus navigation (uses cached doc)
-  self.build_accessibility_tree()
   // Render to Sixel
   self.render()
 }
@@ -474,6 +493,7 @@ fn Browser::render_text(self : Browser) -> String {
   if self.html_content.length() == 0 {
     return ""
   }
+  let rt0 = perf_now()
   let ctx = @browser_contract.create_render_context(
     self.viewport_width,
     self.viewport_height,
@@ -491,6 +511,7 @@ fn Browser::render_text(self : Browser) -> String {
     (Some(node), Some(_tree)) => node
     _ => {
       force_full = true
+      let rn0 = perf_now()
       let n = match self.parsed_doc {
         Some(doc) =>
           @renderer.render_to_node_with_document(doc, ctx, self.external_css)
@@ -501,16 +522,22 @@ fn Browser::render_text(self : Browser) -> String {
             self.external_css,
           )
       }
+      let rn1 = perf_now()
       let tree = @layout.LayoutTree::from_node(
         n,
         self.viewport_width.to_double(),
         self.viewport_height.to_double(),
+      )
+      let rn2 = perf_now()
+      perf_log(
+        "[perf:build] css_cascade+node=\{(rn1 - rn0).to_int()}ms layout_tree_init=\{(rn2 - rn1).to_int()}ms",
       )
       self.render_node = Some(n)
       self.layout_tree = Some(tree)
       n
     }
   }
+  let rt1 = perf_now()
   let (layout, dirty_rects) = match self.layout_tree {
     Some(tree) => {
       let l = tree.compute_incremental()
@@ -532,6 +559,11 @@ fn Browser::render_text(self : Browser) -> String {
       self.layout_tree = Some(tree)
       (l, rects)
     }
+  }
+  let rt2 = perf_now()
+  // Update content_height from layout result (avoids duplicate layout pass)
+  if self.content_height == 0 {
+    self.content_height = @tui.get_content_extent(layout).to_int()
   }
   // Convert pixel dimensions to character dimensions
   // Buffer width = viewport / 8 (wider than terminal for proper CSS layout)
@@ -598,6 +630,7 @@ fn Browser::render_text(self : Browser) -> String {
       element_scroll_positions=self.get_element_scroll_positions(),
     )
   }
+  let rt3 = perf_now()
   // Store link regions for click hit testing
   self.link_regions = buffer_result.link_regions
   // Initialize scroll states for scrollable elements
@@ -672,9 +705,13 @@ fn Browser::render_text(self : Browser) -> String {
         @tui.buffer_to_ansi(buffer_result.buffer, max_cols~)
       }
   }
+  let rt4 = perf_now()
   self.prev_buffer = Some(buffer_result.buffer)
   self.last_render_key = render_key
   self.last_color_scheme_dark = self.dark_mode
+  perf_log(
+    "[perf:render] node+layout_build=\{(rt1 - rt0).to_int()}ms layout_compute=\{(rt2 - rt1).to_int()}ms tui_buffer=\{(rt3 - rt2).to_int()}ms ansi=\{(rt4 - rt3).to_int()}ms total=\{(rt4 - rt0).to_int()}ms",
+  )
   ansi
 }
 

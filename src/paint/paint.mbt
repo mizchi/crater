@@ -306,7 +306,23 @@ pub fn PaintNode::get_clip_rect(
 ///|
 /// Sort children by stacking order for correct rendering
 /// CSS stacking order: lower z-index renders first (behind)
+/// Skips sort if all children have the same stacking order (common case)
 pub fn sort_by_stacking_order(nodes : Array[PaintNode]) -> Array[PaintNode] {
+  if nodes.length() <= 1 {
+    return nodes
+  }
+  // Check if sorting is needed (all same stacking_order => already in DOM order)
+  let first_order = nodes[0].stacking_order
+  let mut needs_sort = false
+  for i = 1; i < nodes.length(); i = i + 1 {
+    if nodes[i].stacking_order != first_order {
+      needs_sort = true
+      break
+    }
+  }
+  if not(needs_sort) {
+    return nodes
+  }
   // Create a copy to sort
   let sorted = nodes.copy()
   // Simple insertion sort (stable sort preserves DOM order for equal z-index)
@@ -325,7 +341,11 @@ pub fn sort_by_stacking_order(nodes : Array[PaintNode]) -> Array[PaintNode] {
 
 ///|
 /// Recursively sort all nodes in the tree by stacking order
+/// Skips subtrees where no sorting is needed
 pub fn sort_tree_by_stacking_order(node : PaintNode) -> PaintNode {
+  if node.children.length() == 0 {
+    return node
+  }
   let sorted_children = sort_by_stacking_order(node.children).map(
     sort_tree_by_stacking_order,
   )
@@ -428,18 +448,30 @@ pub fn from_node_and_layout(
 }
 
 ///|
-/// Calculate the maximum extent (bottom Y position) of a layout tree
-/// This recursively finds the furthest point any content reaches
-fn calculate_layout_extent(layout : @types.Layout, parent_y : Double) -> Double {
-  let abs_y = parent_y + layout.y
-  let mut max_extent = abs_y + layout.height
+/// Pre-compute the relative extent (max bottom relative to own y) for a layout
+/// subtree. Returns a tree of extent values mirroring the layout tree structure.
+/// This is computed once in O(n), then passed alongside the layout during culling,
+/// avoiding the previous O(n²) approach of recalculating extent at every node.
+priv struct ExtentNode {
+  relative_extent : Double // max content bottom relative to this node's top
+  children : Array[ExtentNode]
+}
+
+///|
+fn precompute_extent_tree(layout : @types.Layout) -> ExtentNode {
+  let children : Array[ExtentNode] = Array::new(
+    capacity=layout.children.length(),
+  )
+  let mut max_extent = layout.height
   for child in layout.children {
-    let child_extent = calculate_layout_extent(child, abs_y)
+    let child_node = precompute_extent_tree(child)
+    let child_extent = child.y + child_node.relative_extent
     if child_extent > max_extent {
       max_extent = child_extent
     }
+    children.push(child_node)
   }
-  max_extent
+  { relative_extent: max_extent, children }
 }
 
 ///|
@@ -458,19 +490,29 @@ pub fn from_node_and_layout_with_viewport(
   viewport_bottom : Double,
   parent_y : Double,
 ) -> PaintNode? {
+  // Pre-compute extent tree in O(n) for the entire tree
+  let extent_tree = precompute_extent_tree(layout)
+  from_node_and_layout_with_viewport_inner(
+    node, layout, extent_tree, viewport_top, viewport_bottom, parent_y,
+  )
+}
+
+///|
+fn from_node_and_layout_with_viewport_inner(
+  node : @node.Node,
+  layout : @types.Layout,
+  extent : ExtentNode,
+  viewport_top : Double,
+  viewport_bottom : Double,
+  parent_y : Double,
+) -> PaintNode? {
   // Compute absolute Y position
   let abs_y = parent_y + layout.y
 
-  // Calculate effective bottom including all descendants
-  // This handles cases where:
-  // 1. Parent has height: 100% (resolves to viewport height) but children extend beyond
-  // 2. Parent has height: 0 but children have content
-  // Recursively find the true content extent
-  let effective_bottom = calculate_layout_extent(layout, abs_y)
+  // Use precomputed relative extent to get absolute effective bottom
+  let effective_bottom = abs_y + extent.relative_extent
 
   // Skip nodes that are completely outside the viewport
-  // A node is outside if its effective bottom edge is above viewport top
-  // or its top edge is below viewport bottom
   if effective_bottom < viewport_top || abs_y > viewport_bottom {
     return None
   }
@@ -483,18 +525,25 @@ pub fn from_node_and_layout_with_viewport(
   } else {
     layout.children.length()
   }
+  let extent_count = extent.children.length()
   for i = 0; i < child_count; i = i + 1 {
-    // Recursively process children with viewport culling
+    // Use extent child if available, otherwise create a fallback
+    let child_extent = if i < extent_count {
+      extent.children[i]
+    } else {
+      { relative_extent: layout.children[i].height, children: [] }
+    }
     match
-      from_node_and_layout_with_viewport(
+      from_node_and_layout_with_viewport_inner(
         node.children[i],
         layout.children[i],
+        child_extent,
         viewport_top,
         viewport_bottom,
         abs_y,
       ) {
       Some(child) => children.push(child)
-      None => () // Child is outside viewport, skip it
+      None => ()
     }
   }
 

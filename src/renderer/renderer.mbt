@@ -3950,8 +3950,17 @@ fn resolve_pseudo_spec(
   // ::before/::after default to inline formatting participation.
   let mut generated_style = { ..host_style, display: @types.Inline }
 
+  // Quick suffix check keyword to skip rules that can't match this pseudo
+  let pseudo_keyword = match pseudo_kind {
+    Before => "before"
+    After => "after"
+  }
   for stylesheet in stylesheets {
     for rule in stylesheet.rules {
+      // Fast path: skip rules whose selector text doesn't contain the pseudo keyword
+      if not(rule.selector_text.contains(pseudo_keyword)) {
+        continue
+      }
       let media_matches = match rule.media_query {
         Some(mq) => mq.evaluate(media_env)
         None => true
@@ -5092,6 +5101,10 @@ fn element_to_node_with_styles_internal(
     parent_style,
     css_vars,
   )
+  // Early return for display:none - skip all child processing
+  if computed_style.display == @types.Display::None {
+    return @node.Node::leaf(make_node_id(elem), computed_style)
+  }
   let tag_lower = elem.tag.to_lower()
   // Keep contain flags on <rt> so ruby-specific fallback logic can distinguish
   // contain:size/paint test fixtures. Other inline elements still strip contain.

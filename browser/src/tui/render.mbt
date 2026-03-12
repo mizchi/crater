@@ -897,3 +897,16 @@ fn draw_hint_mode_status_bar(
   let status = sb.to_string()
   let _ = buf.write_text(0, y, status, style, buf.width)
 }
+
+///|
+/// Calculate content extent from layout tree (max y + height of descendants)
+pub fn get_content_extent(layout : @types.Layout) -> Double {
+  let mut max_extent = layout.y + layout.height
+  for child in layout.children {
+    let child_extent = get_content_extent(child)
+    if child_extent > max_extent {
+      max_extent = child_extent
+    }
+  }
+  max_extent
+}

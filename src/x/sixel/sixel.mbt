@@ -739,6 +739,84 @@ fn types_color_to_sixel(c : @types.Color) -> Color {
 }
 
 ///|
+fn clamp_byte(v : Int) -> Int {
+  if v < 0 {
+    0
+  } else if v > 255 {
+    255
+  } else {
+    v
+  }
+}
+
+///|
+fn effective_alpha_byte(color : @types.Color, opacity : Double) -> Int {
+  clamp_byte((color.a * opacity * 255.0).to_int())
+}
+
+///|
+fn palette_color_at(palette : DynamicPalette, idx : Int) -> Color {
+  if idx >= 0 && idx < palette.colors.length() {
+    palette.colors[idx]
+  } else {
+    Color::white()
+  }
+}
+
+///|
+fn blend_types_color_over_pixel(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  x : Int,
+  y : Int,
+  color : @types.Color,
+  opacity : Double,
+) -> Unit {
+  let alpha = effective_alpha_byte(color, opacity)
+  if alpha <= 0 {
+    return
+  }
+  let src = types_color_to_sixel(color)
+  if alpha >= 255 {
+    let idx = palette.get_or_add(src)
+    fb.set_pixel(x, y, idx)
+    return
+  }
+  let dst_idx = fb.get_pixel(x, y)
+  let dst = palette_color_at(palette, dst_idx)
+  let blended = src.blend(dst, alpha)
+  let idx = palette.get_or_add(blended)
+  fb.set_pixel(x, y, idx)
+}
+
+///|
+fn fill_rect_with_types_color(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  x : Int,
+  y : Int,
+  w : Int,
+  h : Int,
+  color : @types.Color,
+  opacity : Double,
+) -> Unit {
+  let alpha = effective_alpha_byte(color, opacity)
+  if alpha <= 0 {
+    return
+  }
+  if alpha >= 255 {
+    let idx = palette.get_or_add(types_color_to_sixel(color))
+    fb.fill_rect(x, y, w, h, idx)
+    return
+  }
+  for py = y; py < y + h; py = py + 1 {
+    for px = x; px < x + w; px = px + 1 {
+      blend_types_color_over_pixel(fb, palette, px, py, color, opacity)
+    }
+  }
+}
+
+///|
 /// Hash a color for map lookup
 fn color_hash(c : Color) -> Int {
   c.r * 65536 + c.g * 256 + c.b
@@ -829,12 +907,18 @@ fn render_paint_node(
     return
   }
 
-  // Draw background if not transparent
+  // Draw background with alpha-aware compositing.
   if not(node.paint.background_color.is_transparent()) {
-    let bg_idx = palette.get_or_add(
-      types_color_to_sixel(node.paint.background_color),
+    fill_rect_with_types_color(
+      fb,
+      palette,
+      x,
+      y,
+      w,
+      h,
+      node.paint.background_color,
+      node.paint.opacity,
     )
-    fb.fill_rect(x, y, w, h, bg_idx)
   }
 
   // Draw text if this is a text node
@@ -845,13 +929,6 @@ fn render_paint_node(
       let _ = fb.draw_text(x, y, text_content, w, text_idx, scale)
     }
     None => ()
-  }
-
-  // Draw border (1px black outline for non-text nodes)
-  if node.tag != "#text" && w > 2 && h > 2 {
-    let border_color : Color = { r: 0, g: 0, b: 0 }
-    let border_idx = palette.get_or_add(border_color)
-    fb.stroke_rect(x, y, w, h, border_idx)
   }
 
   // Render children

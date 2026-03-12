@@ -12,3 +12,8 @@ import {
   "mizchi/crater-browser/tui",
   "mizchi/crater-browser/js",
 }
+
+import {
+  "moonbitlang/core/bench",
+  "mizchi/crater/benchmarks",
+} for "wbtest"

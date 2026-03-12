@@ -63,3 +63,50 @@ test "color blend" {
   inspect(blended.g > 150, content="true")
   inspect(blended.b > 200, content="true")
 }
+
+///|
+test "render_paint_node_to_framebuffer does not add debug border for block" {
+  let style = @style.Style::default()
+  style.background_color = @types.Color::rgb(220, 30, 30)
+  let node = @paint.PaintNode::new(
+    "div",
+    "div",
+    0.0,
+    0.0,
+    6.0,
+    6.0,
+    @paint.PaintProperties::from_style(style),
+    [],
+  )
+  let fb = @sixel.Framebuffer::new(6, 6)
+  let palette = @sixel.DynamicPalette::new()
+  @sixel.render_paint_node_to_framebuffer(node, fb, palette)
+
+  inspect(fb.get_pixel(0, 0), content="1")
+  inspect(fb.get_pixel(1, 1), content="1")
+  inspect(fb.get_pixel(5, 5), content="1")
+}
+
+///|
+test "render_paint_node_to_framebuffer blends semi transparent background" {
+  let style = @style.Style::default()
+  style.background_color = @types.Color::rgba(255, 0, 0, 0.5)
+  let node = @paint.PaintNode::new(
+    "div",
+    "div",
+    0.0,
+    0.0,
+    4.0,
+    4.0,
+    @paint.PaintProperties::from_style(style),
+    [],
+  )
+  let fb = @sixel.Framebuffer::new(4, 4)
+  let palette = @sixel.DynamicPalette::new()
+  @sixel.render_paint_node_to_framebuffer(node, fb, palette)
+
+  let color = palette.colors[fb.get_pixel(0, 0)]
+  inspect(color.r, content="255")
+  inspect(color.g > 100, content="true")
+  inspect(color.b > 100, content="true")
+}

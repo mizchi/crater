@@ -177,9 +177,19 @@ fn containment_applies(display : @types.Display) -> Bool {
 
 ///|
 fn id_matches_tag(node_id : String, tag : String) -> Bool {
-  node_id == tag ||
-  node_id.has_prefix(tag + "#") ||
-  node_id.has_prefix(tag + ".")
+  let tlen = tag.length()
+  let nlen = node_id.length()
+  if nlen < tlen {
+    return false
+  }
+  // Check prefix matches tag
+  for i = 0; i < tlen; i = i + 1 {
+    if node_id[i] != tag[i] {
+      return false
+    }
+  }
+  // Exact match or followed by '#' or '.'
+  nlen == tlen || node_id[tlen] == '#' || node_id[tlen] == '.'
 }
 
 ///|
@@ -4486,9 +4496,9 @@ fn compute_with_collapse(
       flow_i = run_end
       continue
     }
-
     // Flex, Grid, Table, and InlineBlock containers establish a new BFC, so use dispatch for them
     // and don't participate in margin collapsing
+
     let child_result = match child.style.display {
       @types.Flex
       | @types.InlineFlex
