@@ -1700,6 +1700,68 @@ async test "Browser focus transition dispatches change blur and focus" {
 }
 
 ///|
+async test "Browser activate_at dispatches change blur and focus when click moves focus" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="" style="display:block;width:120px;height:32px" />
+    #|  <button id="btn" style="display:block;width:96px;height:32px">Go</button>
+    #|  <div id="log"></div>
+    #|  <script>
+    #|    document.getElementById('field').addEventListener('change', function (event) {
+    #|      const log = document.getElementById('log');
+    #|      const current = log.textContent || '';
+    #|      log.textContent = current ? current + '|change:' + event.target.value : 'change:' + event.target.value;
+    #|    });
+    #|    document.getElementById('field').addEventListener('blur', function () {
+    #|      const log = document.getElementById('log');
+    #|      const current = log.textContent || '';
+    #|      log.textContent = current ? current + '|blur' : 'blur';
+    #|    });
+    #|    document.getElementById('btn').addEventListener('focus', function () {
+    #|      const log = document.getElementById('log');
+    #|      const current = log.textContent || '';
+    #|      log.textContent = current ? current + '|focus' : 'focus';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.handle_focused_key("x") catch { _ => false }
+  browser.build_accessibility_tree()
+  let (col, row) = match browser.a11y_tree {
+    Some(tree) =>
+      match tree.find_by_source_id("btn") {
+        Some(node) =>
+          match node.bounds {
+            Some(bounds) =>
+              (
+                @tui.px_to_col(bounds.x + bounds.width / 2.0),
+                @tui.px_to_row(bounds.y + bounds.height / 2.0) + 1,
+              )
+            None => panic()
+          }
+        None => panic()
+      }
+    None => panic()
+  }
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  let log = browser.execute_inline_js(
+    "(function(){ return document.getElementById('log').textContent; })()",
+  )
+  inspect(log, content="Some(\"change:x|blur|focus\")")
+}
+
+///|
 async test "Browser handle_focused_key toggles details via focused summary" {
   let browser = Browser::new(800, 600)
   let html =
@@ -1726,4 +1788,106 @@ async test "Browser handle_focused_key toggles details via focused summary" {
     "(function(){ return String(document.getElementById('det').hasAttribute('open')); })()",
   )
   inspect(open, content="Some(\"true\")")
+}
+
+///|
+async test "Browser handle_focused_key inserts newline for focused textarea on Enter" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form action="data:text/html,%3Cp%3Esubmitted%3C/p%3E" method="get">
+    #|    <textarea id="field" style="display:block;width:160px;height:64px"></textarea>
+    #|    <p id="status">before</p>
+    #|  </form>
+    #|  <script>
+    #|    document.getElementById('field').addEventListener('input', function (event) {
+    #|      document.getElementById('status').textContent = JSON.stringify(event.target.value);
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+
+  let handled = browser.handle_focused_key("Enter") catch { _ => false }
+  inspect(handled, content="true")
+  inspect(browser.get_current_url(), content="")
+  let value = browser.execute_inline_js(
+    "(function(){ return JSON.stringify(document.getElementById('field').value); })()",
+  )
+  inspect(value, content="Some(\"\\\"\\\\n\\\"\")")
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(status, content="Some(\"\\\"\\\\n\\\"\")")
+}
+
+///|
+async test "Browser activate_at resets form controls for reset button" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form>
+    #|    <input id="field" type="text" value="seed" style="display:block;width:120px;height:32px" />
+    #|    <input id="check" type="checkbox" checked style="display:block;width:24px;height:24px" />
+    #|    <button id="reset" type="reset" style="display:block;width:96px;height:32px">Reset</button>
+    #|    <p id="status">before</p>
+    #|  </form>
+    #|  <script>
+    #|    function render() {
+    #|      const field = document.getElementById('field');
+    #|      const check = document.getElementById('check');
+    #|      document.getElementById('status').textContent = field.value + '|' + String(check.checked);
+    #|    }
+    #|    document.getElementById('field').addEventListener('input', render);
+    #|    document.getElementById('check').addEventListener('change', render);
+    #|    document.querySelector('form').addEventListener('reset', function () {
+    #|      setTimeout(render, 0);
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.handle_focused_key("x") catch { _ => false }
+  browser.next_link()
+  let _ = browser.handle_focused_key(" ") catch { _ => false }
+  browser.build_accessibility_tree()
+  let (col, row) = match browser.a11y_tree {
+    Some(tree) =>
+      match tree.find_by_source_id("reset") {
+        Some(node) =>
+          match node.bounds {
+            Some(bounds) =>
+              (
+                @tui.px_to_col(bounds.x + bounds.width / 2.0),
+                @tui.px_to_row(bounds.y + bounds.height / 2.0) + 1,
+              )
+            None => panic()
+          }
+        None => panic()
+      }
+    None => panic()
+  }
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  let _ = browser.tick_js()
+  let state = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); const check=document.getElementById('check'); return field.value + '|' + String(check.checked); })()",
+  )
+  inspect(state, content="Some(\"seed|true\")")
 }

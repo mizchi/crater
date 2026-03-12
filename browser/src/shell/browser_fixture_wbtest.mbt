@@ -154,6 +154,36 @@ async test "fixture focused text input Enter submits form" {
 }
 
 ///|
+async test "fixture focused textarea Enter inserts newline without submit" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="get">
+    #|    <textarea id="field" style="display:block;width:160px;height:64px"></textarea>
+    #|    <p id="status">before</p>
+    #|  </form>
+    #|  <script>
+    #|    document.getElementById('field').addEventListener('input', function (event) {
+    #|      document.getElementById('status').textContent = JSON.stringify(event.target.value);
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let handled = browser.handle_focused_key("Enter") catch { _ => false }
+  inspect(handled, content="true")
+  inspect(browser.get_current_url(), content="")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("\"\\n\""))
+  assert_true(not(rendered.contains("done")))
+}
+
+///|
 async test "fixture focused checkbox Space toggles and repaints" {
   let browser = Browser::new(800, 600)
   let html =
@@ -177,6 +207,192 @@ async test "fixture focused checkbox Space toggles and repaints" {
   inspect(handled, content="true")
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("checked"))
+}
+
+///|
+async test "fixture Tab blur/focus dispatches change blur and focus repaint" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="" style="display:block;width:120px;height:32px" />
+    #|  <button id="btn" style="display:block;width:96px;height:32px">Go</button>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('field').addEventListener('change', function (event) {
+    #|      const status = document.getElementById('status');
+    #|      const current = status.textContent || '';
+    #|      status.textContent = current === 'before' ? 'change:' + event.target.value : current + '|change:' + event.target.value;
+    #|    });
+    #|    document.getElementById('field').addEventListener('blur', function () {
+    #|      const status = document.getElementById('status');
+    #|      const current = status.textContent || '';
+    #|      status.textContent = current === 'before' ? 'blur' : current + '|blur';
+    #|    });
+    #|    document.getElementById('btn').addEventListener('focus', function () {
+    #|      const status = document.getElementById('status');
+    #|      const current = status.textContent || '';
+    #|      status.textContent = current === 'before' ? 'focus' : current + '|focus';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.handle_focused_key("x") catch { _ => false }
+  browser.next_link()
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("change:x|blur|focus"))
+}
+
+///|
+async test "fixture click blur/focus dispatches change blur and focus repaint" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="" style="display:block;width:120px;height:32px" />
+    #|  <button id="btn" style="display:block;width:96px;height:32px">Go</button>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('field').addEventListener('change', function (event) {
+    #|      const status = document.getElementById('status');
+    #|      const current = status.textContent || '';
+    #|      status.textContent = current === 'before' ? 'change:' + event.target.value : current + '|change:' + event.target.value;
+    #|    });
+    #|    document.getElementById('field').addEventListener('blur', function () {
+    #|      const status = document.getElementById('status');
+    #|      const current = status.textContent || '';
+    #|      status.textContent = current === 'before' ? 'blur' : current + '|blur';
+    #|    });
+    #|    document.getElementById('btn').addEventListener('focus', function () {
+    #|      const status = document.getElementById('status');
+    #|      const current = status.textContent || '';
+    #|      status.textContent = current === 'before' ? 'focus' : current + '|focus';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.handle_focused_key("x") catch { _ => false }
+  browser.build_accessibility_tree()
+  let (col, row) = match browser.a11y_tree {
+    Some(tree) =>
+      match tree.find_by_source_id("btn") {
+        Some(node) =>
+          match node.bounds {
+            Some(bounds) =>
+              (
+                @tui.px_to_col(bounds.x + bounds.width / 2.0),
+                @tui.px_to_row(bounds.y + bounds.height / 2.0) + 1,
+              )
+            None => panic()
+          }
+        None => panic()
+      }
+    None => panic()
+  }
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("change:x|blur|focus"))
+}
+
+///|
+async test "fixture focused radio Space updates exclusive selection" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="a" name="group" type="radio" checked style="display:block;width:24px;height:24px" />
+    #|  <input id="b" name="group" type="radio" style="display:block;width:24px;height:24px" />
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('b').addEventListener('change', function () {
+    #|      document.getElementById('status').textContent = String(document.getElementById('a').checked) + '|' + String(document.getElementById('b').checked);
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  browser.next_link()
+  let handled = browser.handle_focused_key(" ") catch { _ => false }
+  inspect(handled, content="true")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("false|true"))
+}
+
+///|
+async test "fixture reset button restores initial control values" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form>
+    #|    <input id="field" type="text" value="seed" style="display:block;width:120px;height:32px" />
+    #|    <input id="check" type="checkbox" checked style="display:block;width:24px;height:24px" />
+    #|    <button id="reset" type="reset" style="display:block;width:96px;height:32px">Reset</button>
+    #|    <p id="status">before</p>
+    #|  </form>
+    #|  <script>
+    #|    function render() {
+    #|      const field = document.getElementById('field');
+    #|      const check = document.getElementById('check');
+    #|      document.getElementById('status').textContent = field.value + '|' + String(check.checked);
+    #|    }
+    #|    document.getElementById('field').addEventListener('input', render);
+    #|    document.getElementById('check').addEventListener('change', render);
+    #|    document.querySelector('form').addEventListener('reset', function () {
+    #|      setTimeout(render, 0);
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.handle_focused_key("x") catch { _ => false }
+  browser.next_link()
+  let _ = browser.handle_focused_key(" ") catch { _ => false }
+  browser.build_accessibility_tree()
+  let (col, row) = match browser.a11y_tree {
+    Some(tree) =>
+      match tree.find_by_source_id("reset") {
+        Some(node) =>
+          match node.bounds {
+            Some(bounds) =>
+              (
+                @tui.px_to_col(bounds.x + bounds.width / 2.0),
+                @tui.px_to_row(bounds.y + bounds.height / 2.0) + 1,
+              )
+            None => panic()
+          }
+        None => panic()
+      }
+    None => panic()
+  }
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  for i = 0; i < 4; i = i + 1 {
+    let _ = browser.tick_js()
+  }
+  let state = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); const check=document.getElementById('check'); return field.value + '|' + String(check.checked); })()",
+  )
+  inspect(state, content="Some(\"seed|true\")")
 }
 
 ///|
