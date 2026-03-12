@@ -576,11 +576,15 @@
     - `browser_kitty_github_mizchi_kitty_encode`: `231.97 ms ± 55.74 ms`
     - `browser_kitty_article` (`720x480`): `70.79 ms ± 18.46 ms`
     - `browser_kitty_article_kitty_encode` (`720x480`): `43.39 ms ± 10.07 ms`
+  - kitty pure encode baseline:
+    - `kitty_encode_blank_1440x960`: `285.02 ms ± 127.59 ms`
+    - `kitty_encode_blank_720x480`: `56.05 ms ± 24.20 ms`
   - 見立て:
     - `render_to_node + render_with_external_css` の二重計算が主要な無駄だった
     - 依然として主 bottleneck は `sixel_encode` だが、shared `node+layout` との差はかなり縮んだ
     - `kitty` の支配コストは引き続き encode path だが、`framebuffer_to_rgb + 全量 base64` の二重バッファは外せた
     - `720x480` の article fixture を control benchmark にすると、`github` より振れが小さく改善確認しやすい
+    - それでも browser shell bench は variance が大きいので、`src/x/kitty/kitty_bench_wbtest.mbt` の pure encode を first-class 指標にする
 - 次の優先タスク:
   - [x] `browser_sixel_github_mizchi` を `render_to_node/layout/paint_tree/sixel_encode` に分解する
   - [x] `render_to_sixel_with_css` の node/layout 二重構築を shared pass に統合する
@@ -590,7 +594,9 @@
   - [x] `kitty` の `framebuffer_to_rgb` と `encode_base64` を streaming 化して、巨大 `Array[Int]` と全量 base64 の二重バッファを消す
   - [x] browser main に `--kitty` を追加して CLI から `OutputMode::Kitty` を使えるようにする
   - [x] `720x480` の小さい article fixture を kitty control benchmark として追加する
+  - [x] `src/x/kitty/kitty_bench_wbtest.mbt` に pure encode benchmark を追加する
   - [ ] palette definition の文字列生成と band ごとの固定ヘッダ書き込みを削る
+  - [ ] browser shell bench より振れの少ない target か測定手順を決めて、kitty encode の比較を安定化する
   - [ ] `captureScreenshotData` を `paint tree build` / `raster` / `PNG encode` に分解して timer を仕込む
   - [ ] PNG ではなく raw RGBA か PPM を返す debug path を追加して、encode cost を分離する
   - [ ] screenshot benchmark に visual sanity check を追加して、blank だが速い出力を除外する
