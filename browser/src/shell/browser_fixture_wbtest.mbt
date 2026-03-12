@@ -249,6 +249,45 @@ async test "fixture Tab blur/focus dispatches change blur and focus repaint" {
 }
 
 ///|
+async test "fixture Tab blur/focus does not dispatch change for untouched text input" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="seed" style="display:block;width:120px;height:32px" />
+    #|  <button id="btn" style="display:block;width:96px;height:32px">Go</button>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('field').addEventListener('change', function () {
+    #|      const status = document.getElementById('status');
+    #|      const current = status.textContent || '';
+    #|      status.textContent = current === 'before' ? 'change' : current + '|change';
+    #|    });
+    #|    document.getElementById('field').addEventListener('blur', function () {
+    #|      const status = document.getElementById('status');
+    #|      const current = status.textContent || '';
+    #|      status.textContent = current === 'before' ? 'blur' : current + '|blur';
+    #|    });
+    #|    document.getElementById('btn').addEventListener('focus', function () {
+    #|      const status = document.getElementById('status');
+    #|      const current = status.textContent || '';
+    #|      status.textContent = current === 'before' ? 'focus' : current + '|focus';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  browser.next_link()
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("blur|focus"))
+  assert_true(not(rendered.contains("change")))
+}
+
+///|
 async test "fixture click blur/focus dispatches change blur and focus repaint" {
   let browser = Browser::new(800, 600)
   let html =
@@ -423,6 +462,125 @@ async test "fixture focused select ArrowDown changes selection and repaints" {
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("b"))
   assert_true(not(rendered.contains("before")))
+}
+
+///|
+async test "fixture focused reset input Space restores initial values" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form>
+    #|    <input id="field" type="text" value="seed" style="display:block;width:120px;height:32px" />
+    #|    <input id="reset" type="reset" value="Reset" style="display:block;width:96px;height:32px" />
+    #|    <p id="status">before</p>
+    #|  </form>
+    #|  <script>
+    #|    function render() {
+    #|      document.getElementById('status').textContent = document.getElementById('field').value;
+    #|    }
+    #|    document.getElementById('field').addEventListener('input', render);
+    #|    document.querySelector('form').addEventListener('reset', function () {
+    #|      setTimeout(render, 0);
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.handle_focused_key("x") catch { _ => false }
+  browser.next_link()
+  let handled = browser.handle_focused_key(" ") catch { _ => false }
+  inspect(handled, content="true")
+  for _ in 0..<4 {
+    let _ = browser.tick_js()
+  }
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("seed"))
+}
+
+///|
+async test "fixture focused submit input Space submits form" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form action="data:text/html,%3Cp%3Esubmitted-input%3C/p%3E" method="get">
+    #|    <input id="submit" type="submit" value="Go" style="display:block;width:96px;height:32px" />
+    #|  </form>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let handled = browser.handle_focused_key(" ") catch { _ => false }
+  inspect(handled, content="true")
+  assert_true(browser.html_content.contains("submitted-input"))
+}
+
+///|
+async test "fixture focused input button Space dispatches click repaint" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="btn" type="button" value="Go" style="display:block;width:96px;height:32px" />
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('btn').addEventListener('click', function () {
+    #|      document.getElementById('status').textContent = 'after';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let handled = browser.handle_focused_key(" ") catch { _ => false }
+  inspect(handled, content="true")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("after"))
+}
+
+///|
+async test "fixture select blur does not duplicate change repaint" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <select id="sel" style="display:block;width:120px;height:32px">
+    #|    <option value="a">A</option>
+    #|    <option value="b">B</option>
+    #|  </select>
+    #|  <button id="btn" style="display:block;width:96px;height:32px">Go</button>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('sel').addEventListener('change', function (event) {
+    #|      const status = document.getElementById('status');
+    #|      const current = status.textContent || '';
+    #|      const next = 'change:' + event.target.value;
+    #|      status.textContent = current === 'before' ? next : current + '|' + next;
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.handle_focused_key("ArrowDown") catch { _ => false }
+  browser.next_link()
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("change:b"))
+  assert_true(not(rendered.contains("change:b|change:b")))
 }
 
 ///|

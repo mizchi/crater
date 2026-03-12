@@ -1683,20 +1683,126 @@ async test "Browser focus transition dispatches change blur and focus" {
   browser.next_link()
   let _ = browser.handle_focused_key("x") catch { _ => false }
   let before_focus = browser.get_focused_source_id()
-  assert_true(match before_focus { Some(_) => true; None => false })
+  assert_true(
+    match before_focus {
+      Some(_) => true
+      None => false
+    },
+  )
   let persisted = browser.execute_inline_js(
     "(function(){ const field=document.getElementById('field'); const btn=document.getElementById('btn'); return [String(!!(field&&field.getAttribute('data-crater-listeners-change'))), String(!!(field&&field.getAttribute('data-crater-listeners-blur'))), String(!!(btn&&btn.getAttribute('data-crater-listeners-focus')))].join('|'); })()",
   )
   inspect(persisted, content="Some(\"true|true|true\")")
   browser.next_link()
   let after_focus = browser.get_focused_source_id()
-  assert_true(match after_focus { Some(_) => true; None => false })
+  assert_true(
+    match after_focus {
+      Some(_) => true
+      None => false
+    },
+  )
   assert_true(after_focus != before_focus)
 
   let log = browser.execute_inline_js(
     "(function(){ return document.getElementById('log').textContent; })()",
   )
   inspect(log, content="Some(\"change:x|blur|focus\")")
+}
+
+///|
+async test "Browser handle_focused_key activates focused reset input with Space" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form>
+    #|    <input id="field" type="text" value="seed" style="display:block;width:120px;height:32px" />
+    #|    <input id="reset" type="reset" value="Reset" style="display:block;width:96px;height:32px" />
+    #|    <p id="status">before</p>
+    #|  </form>
+    #|  <script>
+    #|    function render() {
+    #|      document.getElementById('status').textContent = document.getElementById('field').value;
+    #|    }
+    #|    document.getElementById('field').addEventListener('input', render);
+    #|    document.querySelector('form').addEventListener('reset', function () {
+    #|      setTimeout(render, 0);
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.handle_focused_key("x") catch { _ => false }
+  browser.next_link()
+  let handled = browser.handle_focused_key(" ") catch { _ => false }
+  inspect(handled, content="true")
+  for _ in 0..<4 {
+    let _ = browser.tick_js()
+  }
+  let state = browser.execute_inline_js(
+    "(function(){ return document.getElementById('field').value; })()",
+  )
+  inspect(state, content="Some(\"seed\")")
+}
+
+///|
+async test "Browser handle_focused_key submits focused submit input form" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form action="data:text/html,%3Cp%3Esubmitted-input%3C/p%3E" method="get">
+    #|    <input id="submit" type="submit" value="Go" style="display:block;width:96px;height:32px" />
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let handled = browser.handle_focused_key(" ") catch { _ => false }
+  inspect(handled, content="true")
+  assert_true(browser.html_content.contains("submitted-input"))
+}
+
+///|
+async test "Browser handle_focused_key activates focused input button with Space" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="btn" type="button" value="Go" style="display:block;width:96px;height:32px" />
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('btn').addEventListener('click', function () {
+    #|      document.getElementById('status').textContent = 'after';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let handled = browser.handle_focused_key(" ") catch { _ => false }
+  inspect(handled, content="true")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("after"))
 }
 
 ///|
@@ -1759,6 +1865,44 @@ async test "Browser activate_at dispatches change blur and focus when click move
     "(function(){ return document.getElementById('log').textContent; })()",
   )
   inspect(log, content="Some(\"change:x|blur|focus\")")
+}
+
+///|
+async test "Browser focus transition does not duplicate select change on blur" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <select id="sel" style="display:block;width:120px;height:32px">
+    #|    <option value="a">A</option>
+    #|    <option value="b">B</option>
+    #|  </select>
+    #|  <button id="btn" style="display:block;width:96px;height:32px">Go</button>
+    #|  <div id="log"></div>
+    #|  <script>
+    #|    document.getElementById('sel').addEventListener('change', function (event) {
+    #|      const log = document.getElementById('log');
+    #|      const current = log.textContent || '';
+    #|      const next = 'change:' + event.target.value;
+    #|      log.textContent = current ? current + '|' + next : next;
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.focus_source_id("sel")
+  let _ = browser.handle_focused_key("ArrowDown") catch { _ => false }
+  browser.focus_source_id("btn")
+  let log = browser.execute_inline_js(
+    "(function(){ return document.getElementById('log').textContent; })()",
+  )
+  inspect(log, content="Some(\"change:b\")")
 }
 
 ///|
