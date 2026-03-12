@@ -29,7 +29,15 @@ afterEach(() => {
 });
 
 describe("resolveBidiServerPath", () => {
-  it("detects server in browser/_build when browser/target is missing", () => {
+  it("detects server in browser/jsbidi/_build when available", () => {
+    const cwd = mkTempProject();
+    const serverPath = path.join(cwd, "browser/jsbidi/_build/js/release/build/bidi_main/bidi_main.js");
+    touch(serverPath);
+
+    expect(resolveBidiServerPath(cwd)).toBe(serverPath);
+  });
+
+  it("detects server in browser/_build when newer submodule build is missing", () => {
     const cwd = mkTempProject();
     const serverPath = path.join(cwd, "browser/_build/js/release/build/bidi_main/bidi_main.js");
     touch(serverPath);
@@ -37,14 +45,16 @@ describe("resolveBidiServerPath", () => {
     expect(resolveBidiServerPath(cwd)).toBe(serverPath);
   });
 
-  it("prefers browser/target when both browser/target and browser/_build exist", () => {
+  it("prefers browser/jsbidi/_build over legacy paths", () => {
     const cwd = mkTempProject();
+    const submodulePath = path.join(cwd, "browser/jsbidi/_build/js/release/build/bidi_main/bidi_main.js");
     const targetPath = path.join(cwd, "browser/target/js/release/build/bidi_main/bidi_main.js");
     const buildPath = path.join(cwd, "browser/_build/js/release/build/bidi_main/bidi_main.js");
+    touch(submodulePath);
     touch(buildPath);
     touch(targetPath);
 
-    expect(resolveBidiServerPath(cwd)).toBe(targetPath);
+    expect(resolveBidiServerPath(cwd)).toBe(submodulePath);
   });
 
   it("returns null when no server file exists", () => {

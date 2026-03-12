@@ -165,11 +165,11 @@ ci-timing-summary input json markdown:
 
 # Build BiDi server
 build-bidi:
-    moon build --manifest-path browser/moon.mod.json --target js --release
+    moon -C browser/jsbidi build --target js --release
 
 # Start BiDi server (Deno)
 start-bidi:
-    deno run -A browser/_build/js/release/build/bidi_main/bidi_main.js
+    deno run -A browser/jsbidi/_build/js/release/build/bidi_main/bidi_main.js
 
 # === WPT WebDriver BiDi Tests ===
 

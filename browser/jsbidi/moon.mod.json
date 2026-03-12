@@ -1,0 +1,14 @@
+{
+  "name": "mizchi/crater-browser-js",
+  "version": "0.1.0",
+  "deps": {
+    "mizchi/crater": {
+      "path": "../.."
+    },
+    "mizchi/crater-browser": {
+      "path": ".."
+    },
+    "mizchi/js": "0.10.13",
+    "moonbitlang/async": "0.16.6"
+  }
+}

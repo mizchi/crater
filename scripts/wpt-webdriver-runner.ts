@@ -89,6 +89,7 @@ function checkUv(): boolean {
 // Start Crater BiDi server
 export function resolveBidiServerPath(cwd: string = process.cwd()): string | null {
   const candidates = [
+    path.join(cwd, "browser/jsbidi/_build/js/release/build/bidi_main/bidi_main.js"),
     path.join(cwd, "browser/target/js/release/build/bidi_main/bidi_main.js"),
     path.join(cwd, "browser/_build/js/release/build/bidi_main/bidi_main.js"),
   ];
@@ -108,6 +109,7 @@ function startServer(): ChildProcess {
   if (!serverPath) {
     console.error("BiDi server not built. Run: just build-bidi");
     console.error("Expected one of:");
+    console.error("  browser/jsbidi/_build/js/release/build/bidi_main/bidi_main.js");
     console.error("  browser/target/js/release/build/bidi_main/bidi_main.js");
     console.error("  browser/_build/js/release/build/bidi_main/bidi_main.js");
     process.exit(1);

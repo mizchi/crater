@@ -5,7 +5,6 @@
     "mizchi/crater": {
       "path": ".."
     },
-    "mizchi/js": "0.10.13",
     "mizchi/x": "0.1.6",
     "moonbitlang/async": "0.16.6",
     "moonbitlang/x": "0.4.40"

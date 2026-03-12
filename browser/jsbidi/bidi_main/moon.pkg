@@ -1,0 +1,8 @@
+import {
+  "mizchi/crater-browser-js/webdriver" @webdriver,
+}
+
+options(
+  "is-main": true,
+  "supported-targets": [ "js" ],
+)

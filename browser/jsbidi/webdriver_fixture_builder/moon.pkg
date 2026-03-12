@@ -1,10 +1,10 @@
 import {
   "mizchi/js/deno",
-  "mizchi/crater-browser/webdriver",
+  "mizchi/crater-browser-js/webdriver" @webdriver,
   "moonbitlang/core/json",
 }
 
 options(
   "is-main": true,
-  "supported-targets": "js",
+  "supported-targets": [ "js" ],
 )
