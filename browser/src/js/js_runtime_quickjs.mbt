@@ -3140,6 +3140,92 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       set(v) { this.textContent = v === null || v === undefined ? '' : String(v); },
   #|       configurable: true
   #|     });
+  #|     Object.defineProperties(HTMLOptionElement.prototype, {
+  #|       value: {
+  #|         get() {
+  #|           const attr = this.getAttribute ? this.getAttribute('value') : null;
+  #|           return attr === null || attr === undefined ? String(this.textContent || '') : String(attr);
+  #|         },
+  #|         set(v) { setReflectedStringAttribute(this, 'value', v); },
+  #|         configurable: true
+  #|       },
+  #|       selected: {
+  #|         get() { return getReflectedBooleanAttribute(this, 'selected'); },
+  #|         set(v) { setReflectedBooleanAttribute(this, 'selected', v); },
+  #|         configurable: true
+  #|       }
+  #|     });
+  #|     function getSelectOptions(select) {
+  #|       const items = [];
+  #|       function walk(node) {
+  #|         if (!node || !node.childNodes) return;
+  #|         for (let i = 0; i < node.childNodes.length; i++) {
+  #|           const child = node.childNodes[i];
+  #|           if (!child || child.nodeType !== 1) continue;
+  #|           const tag = (child.tagName || '').toLowerCase();
+  #|           if (tag === 'option') items.push(child);
+  #|           else if (tag === 'optgroup') walk(child);
+  #|         }
+  #|       }
+  #|       walk(select);
+  #|       return items;
+  #|     }
+  #|     function ensureSelectSelection(select) {
+  #|       const options = getSelectOptions(select);
+  #|       let selectedIndex = -1;
+  #|       for (let i = 0; i < options.length; i++) {
+  #|         if (options[i].selected) {
+  #|           selectedIndex = i;
+  #|           break;
+  #|         }
+  #|       }
+  #|       if (selectedIndex < 0 && options.length > 0) {
+  #|         options[0].selected = true;
+  #|         selectedIndex = 0;
+  #|       }
+  #|       return { options, selectedIndex };
+  #|     }
+  #|     Object.defineProperties(HTMLSelectElement.prototype, {
+  #|       options: {
+  #|         get() {
+  #|           const items = getSelectOptions(this);
+  #|           return makeNodeList(() => items.slice());
+  #|         },
+  #|         configurable: true
+  #|       },
+  #|       selectedIndex: {
+  #|         get() {
+  #|           return ensureSelectSelection(this).selectedIndex;
+  #|         },
+  #|         set(v) {
+  #|           const state = ensureSelectSelection(this);
+  #|           const next = Number(v);
+  #|           for (let i = 0; i < state.options.length; i++) {
+  #|             state.options[i].selected = i === next;
+  #|           }
+  #|         },
+  #|         configurable: true
+  #|       },
+  #|       value: {
+  #|         get() {
+  #|           const state = ensureSelectSelection(this);
+  #|           if (state.selectedIndex < 0) return '';
+  #|           return state.options[state.selectedIndex].value;
+  #|         },
+  #|         set(v) {
+  #|           const value = v === null || v === undefined ? '' : String(v);
+  #|           const state = ensureSelectSelection(this);
+  #|           let matched = false;
+  #|           for (let i = 0; i < state.options.length; i++) {
+  #|             const option = state.options[i];
+  #|             const isMatch = !matched && option.value === value;
+  #|             option.selected = isMatch;
+  #|             if (isMatch) matched = true;
+  #|           }
+  #|         },
+  #|         configurable: true
+  #|       }
+  #|     });
   #|
   #|     function HTMLTimeElement() {}
   #|     HTMLTimeElement.prototype = Object.create(HTMLElement.prototype);

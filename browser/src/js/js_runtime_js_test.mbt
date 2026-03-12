@@ -3073,6 +3073,33 @@ test "persisted change listener sees reflected input value" {
 }
 
 ///|
+test "select exposes reflected value and selectedIndex" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const select = document.createElement('select');
+    #|const a = document.createElement('option');
+    #|a.value = 'a';
+    #|a.textContent = 'A';
+    #|const b = document.createElement('option');
+    #|b.value = 'b';
+    #|b.textContent = 'B';
+    #|select.appendChild(a);
+    #|select.appendChild(b);
+    #|document.body.appendChild(select);
+    #|select.selectedIndex = 1;
+    #|[select.value, String(select.selectedIndex), String(b.selected)].join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="b|1|true")
+}
+
+///|
 test "persisted submit listener survives later execution" {
   let dom = @dom.DomTree::new()
   let html = dom.create_element("html")

@@ -1607,3 +1607,38 @@ async test "Browser handle_focused_key activates focused button with Space" {
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("after"))
 }
+
+///|
+async test "Browser handle_focused_key changes focused select with ArrowDown" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <select id="sel" style="display:block;width:120px;height:32px">
+    #|    <option value="a">A</option>
+    #|    <option value="b">B</option>
+    #|  </select>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('sel').addEventListener('change', function (event) {
+    #|      document.getElementById('status').textContent = event.target.value;
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+
+  let handled = browser.handle_focused_key("ArrowDown") catch { _ => false }
+  inspect(handled, content="true")
+
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("b"))
+  assert_true(not(rendered.contains("before")))
+}
