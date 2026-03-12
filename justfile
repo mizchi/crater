@@ -215,6 +215,14 @@ test-website:
 bench-playwright:
     pnpm bench:playwright
 
+# Capture a live site into real-world/ (gitignored)
+capture-realworld *args:
+    pnpm capture:realworld -- {{args}}
+
+# Run real-world paint benchmark against Chromium and Crater
+bench-realworld *args:
+    pnpm bench:realworld -- {{args}}
+
 # Run all Playwright-based tests
 test-playwright-all: test-playwright test-playwright-adapter test-website
 

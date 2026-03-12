@@ -36,6 +36,12 @@ pub fn render_document_with_external_css(@html.Document, RenderContext, Array[St
 
 pub fn render_to_node(String, RenderContext) -> @node.Node
 
+pub fn render_to_node_and_layout(String, RenderContext) -> (@node.Node, @types.Layout)
+
+pub fn render_to_node_and_layout_with_document(@html.Document, RenderContext, Array[String]) -> (@node.Node, @types.Layout)
+
+pub fn render_to_node_and_layout_with_external_css(String, RenderContext, Array[String]) -> (@node.Node, @types.Layout)
+
 pub fn render_to_node_with_document(@html.Document, RenderContext, Array[String]) -> @node.Node
 
 pub fn render_to_node_with_external_css(String, RenderContext, Array[String]) -> @node.Node

@@ -521,6 +521,54 @@
 - 失敗した案のメモ:
   - [ ] `collect_inline_content()` の no-stylesheet pre-scan fast path は悪化したので、再設計するまで再投入しない
 
+## Paint 実サイト baseline（2026-03-12）
+
+- 追加した tooling:
+  - `pnpm capture:realworld -- <url> --name <slug>`
+  - `pnpm bench:realworld -- <snapshot...> --iterations 1 --warmup 0 --save-images`
+  - `just capture-realworld ...`
+  - `just bench-realworld ...`
+- 取得した snapshot:
+  - built-in: `github-mizchi`
+  - local: `real-world/mdn-wasm-text`
+  - local: `real-world/playwright-intro`
+- baseline:
+  - `playwright-intro`
+    - Chromium: `load 119.07 ms`, `shot 56.39 ms`, `load+shot 58.90 ms`
+    - Crater: `load 75.43 ms`, `shot 4.37 ms`, `load+shot 47.30 ms`
+    - ただし `output/playwright/real-world-paint/playwright-intro/crater.png` は `105B` しかなく、blank/欠落描画の疑いが強い
+  - `github-mizchi`
+    - Chromium: `load 205.02 ms`, `shot 39.67 ms`, `load+shot 85.68 ms`
+    - Crater: `browsingContext.captureScreenshotData` が `60s` 超で timeout
+  - `mdn-wasm-text`
+    - Chromium: `load 335.24 ms`, `shot 58.80 ms`, `load+shot 77.06 ms`
+    - Crater: 単体実行でも `browsingContext.captureScreenshotData` が `60s` 超で timeout
+- 注意:
+  - `browsingContext.captureScreenshotData` は現状 synthetic screenshot で、actual paint benchmark ではない
+  - paint の主指標は `/Users/mz/ghq/github.com/mizchi/crater/browser/src/shell/browser_bench_wbtest.mbt` 側へ寄せる
+- actual paint baseline:
+  - 初回 baseline:
+    - `browser_sixel_github_mizchi`: `64.01 ms ± 11.94 ms`
+  - 共有 render pass 導入後:
+    - `browser_sixel_github_mizchi`: `22.60 ms ± 1.79 ms`
+    - `browser_sixel_github_mizchi_node`: `6.97 ms ± 239.38 µs`
+    - `browser_sixel_github_mizchi_layout`: `7.22 ms ± 224.60 µs`
+    - `browser_sixel_github_mizchi_shared_node_layout`: `7.13 ms ± 661.42 µs`
+    - `browser_sixel_github_mizchi_paint_tree`: `0.06 µs ± 0.01 µs`
+    - `browser_sixel_github_mizchi_sixel_encode`: `12.82 ms ± 1.37 ms`
+  - 見立て:
+    - `render_to_node + render_with_external_css` の二重計算が主要な無駄だった
+    - shared 化後の主 bottleneck は `sixel_encode`
+- 次の優先タスク:
+  - [x] `browser_sixel_github_mizchi` を `render_to_node/layout/paint_tree/sixel_encode` に分解する
+  - [x] `render_to_sixel_with_css` の node/layout 二重構築を shared pass に統合する
+  - [ ] `@sixel.render_paint_node_to_sixel_scrolled` を profile して encode hot path を詰める
+  - [ ] `captureScreenshotData` を `paint tree build` / `raster` / `PNG encode` に分解して timer を仕込む
+  - [ ] PNG ではなく raw RGBA か PPM を返す debug path を追加して、encode cost を分離する
+  - [ ] screenshot benchmark に visual sanity check を追加して、blank だが速い出力を除外する
+  - [ ] viewport 単位の clip / occlusion pruning を paint tree 生成前に入れる
+  - [ ] repeated screenshot で再利用できる display list / clipped paint subtree cache を検討する
+
 ## css-flexbox WPT 進捗（2026-03-10）
 
 - 現在: `289 / 289 passed`（`0 failed`）

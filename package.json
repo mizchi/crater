@@ -13,6 +13,8 @@
     "test:preact": "playwright test tests/preact-compat.test.ts",
     "test:playwright": "playwright test tests/playwright-adapter.test.ts",
     "bench:playwright": "playwright test tests/playwright-benchmark.test.ts",
+    "bench:realworld": "tsx scripts/real-world-paint-bench.ts",
+    "capture:realworld": "tsx scripts/capture-real-world-snapshot.ts",
     "test:website": "playwright test tests/website-loading.test.ts"
   },
   "dependencies": {

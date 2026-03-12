@@ -24,3 +24,14 @@ test "fixed article fixture exposes links and article role in aom output" {
   )
   assert_true(aom.contains("WebAssembly テキスト形式の理解"))
 }
+
+///|
+test "builtin github snapshot fixture loads and renders non-empty text output" {
+  let browser = Browser::new(1440, 960)
+  let html = builtin_github_snapshot_fixture()
+  assert_true(html.contains("GitHub"))
+  assert_true(not(html.contains("<script")))
+  load_fixture(browser, html)
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.length() > 0)
+}

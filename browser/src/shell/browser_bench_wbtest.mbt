@@ -12,6 +12,51 @@ fn load_fixture(browser : Browser, html : String) -> Unit {
 }
 
 ///|
+extern "js" fn js_load_builtin_github_snapshot() -> String =
+  #| () => {
+  #|   const fs = require("node:fs");
+  #|   const path = require("node:path");
+  #|   const root = path.resolve(process.cwd(), "..");
+  #|   const dir = path.join(root, "src", "benchmarks", "fixtures");
+  #|   const html = fs.readFileSync(path.join(dir, "github_mizchi.html"), "utf8");
+  #|   const cssFiles = [
+  #|     "github_primer.css",
+  #|     "github_global.css",
+  #|     "github_main.css",
+  #|     "github_profile.css",
+  #|   ];
+  #|   const styles = cssFiles.map((name, index) => {
+  #|     const css = fs.readFileSync(path.join(dir, name), "utf8");
+  #|     return `<style data-real-world-style="${index + 1}">\n${css}\n</style>`;
+  #|   }).join("\n");
+  #|   const withoutScripts = String(html)
+  #|     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+  #|     .replace(/<script\b[^>]*\/\s*>/gi, "");
+  #|   const withoutLinks = withoutScripts
+  #|     .replace(/<link\b[^>]*rel=(['"])[^'"]*stylesheet[^'"]*\1[^>]*>/gi, "")
+  #|     .replace(/<link\b[^>]*rel=(['"])[^'"]*(dns-prefetch|preconnect|prefetch|preload)[^'"]*\1[^>]*>/gi, "");
+  #|   return withoutLinks.replace(
+  #|     /<\/head>/i,
+  #|     `<base href="https://github.com/mizchi">\n${styles}\n</head>`,
+  #|   );
+  #| }
+
+///|
+fn builtin_github_snapshot_fixture() -> String {
+  js_load_builtin_github_snapshot()
+}
+
+///|
+fn github_snapshot_render_ctx() -> @renderer.RenderContext {
+  {
+    viewport_width: 1440.0,
+    viewport_height: 960.0,
+    root_font_size: 16.0,
+    color_scheme: @media.ColorScheme::Light,
+  }
+}
+
+///|
 fn docs_article_fixture() -> String {
   let buf = StringBuilder::new()
   buf.write_string(
@@ -91,5 +136,65 @@ test "bench_browser_sixel_scroll_fixed" (b : @bench.T) {
   b.bench(name="browser_sixel_scroll_500", fn() {
     load_fixture(browser, html)
     b.keep(browser.render_output(Sixel))
+  })
+}
+
+///|
+test "bench_browser_sixel_github_mizchi_snapshot" (b : @bench.T) {
+  let browser = Browser::new(1440, 960)
+  let html = builtin_github_snapshot_fixture()
+  b.bench(name="browser_sixel_github_mizchi", fn() {
+    load_fixture(browser, html)
+    b.keep(browser.render_output(Sixel))
+  })
+}
+
+///|
+test "bench_browser_sixel_github_mizchi_node" (b : @bench.T) {
+  let html = builtin_github_snapshot_fixture()
+  let ctx = github_snapshot_render_ctx()
+  b.bench(name="browser_sixel_github_mizchi_node", fn() {
+    b.keep(@renderer.render_to_node_with_external_css(html, ctx, []))
+  })
+}
+
+///|
+test "bench_browser_sixel_github_mizchi_layout" (b : @bench.T) {
+  let html = builtin_github_snapshot_fixture()
+  let ctx = github_snapshot_render_ctx()
+  b.bench(name="browser_sixel_github_mizchi_layout", fn() {
+    b.keep(@renderer.render_with_external_css(html, ctx, []))
+  })
+}
+
+///|
+test "bench_browser_sixel_github_mizchi_node_and_layout_shared" (b : @bench.T) {
+  let html = builtin_github_snapshot_fixture()
+  let ctx = github_snapshot_render_ctx()
+  b.bench(name="browser_sixel_github_mizchi_shared_node_layout", fn() {
+    b.keep(@renderer.render_to_node_and_layout_with_external_css(html, ctx, []))
+  })
+}
+
+///|
+test "bench_browser_sixel_github_mizchi_paint_tree" (b : @bench.T) {
+  let html = builtin_github_snapshot_fixture()
+  let ctx = github_snapshot_render_ctx()
+  let node = @renderer.render_to_node_with_external_css(html, ctx, [])
+  let layout = @renderer.render_with_external_css(html, ctx, [])
+  b.bench(name="browser_sixel_github_mizchi_paint_tree", fn() {
+    b.keep(@paint.from_node_and_layout(node, layout))
+  })
+}
+
+///|
+test "bench_browser_sixel_github_mizchi_sixel_encode" (b : @bench.T) {
+  let html = builtin_github_snapshot_fixture()
+  let ctx = github_snapshot_render_ctx()
+  let node = @renderer.render_to_node_with_external_css(html, ctx, [])
+  let layout = @renderer.render_with_external_css(html, ctx, [])
+  let paint_node = @paint.from_node_and_layout(node, layout)
+  b.bench(name="browser_sixel_github_mizchi_sixel_encode", fn() {
+    b.keep(@sixel.render_paint_node_to_sixel_scrolled(paint_node, 1440, 960, 0))
   })
 }

@@ -2763,6 +2763,236 @@ fn create_zero_layout_from_node(node : @node.Node) -> @types.Layout {
 }
 
 ///|
+priv struct PreparedRenderDocument {
+  stylesheets : Array[@cascade.Stylesheet]
+  indexed_stylesheets : Array[@cascade.IndexedStylesheet]
+  css_vars : Map[String, String]
+  doc_root_selector : @selector.Element
+  doc_root_style : @style.Style
+  render_root : @html.Element
+  render_root_tag : String
+  body_uses_document_root_style : Bool
+}
+
+///|
+fn prepare_render_document(
+  doc : @html.Document,
+  ctx : RenderContext,
+  external_css : Array[String],
+) -> PreparedRenderDocument {
+  let stylesheets : Array[@cascade.Stylesheet] = []
+  for css in external_css {
+    let stylesheet = @parser.parse_stylesheet(css)
+    stylesheets.push(stylesheet)
+  }
+  for css in doc.stylesheets {
+    let stylesheet = @parser.parse_stylesheet(css)
+    stylesheets.push(stylesheet)
+  }
+
+  let indexed_stylesheets : Array[@cascade.IndexedStylesheet] = []
+  for stylesheet in stylesheets {
+    indexed_stylesheets.push(@cascade.IndexedStylesheet::new(stylesheet))
+  }
+
+  let css_vars = collect_root_css_variables(stylesheets, ctx)
+  let doc_root_selector = if indexed_stylesheets.length() == 0 {
+    html_to_selector_element_minimal(doc.root, None)
+  } else {
+    html_to_selector_element(doc.root, None)
+  }
+  let doc_root_style = compute_element_style_indexed(
+    doc_root_selector,
+    doc.root.style,
+    indexed_stylesheets,
+    true,
+    ctx,
+    None,
+    css_vars,
+  )
+  let render_root = select_render_root(doc.root, doc_root_style)
+  let render_root_tag = render_root.tag.to_lower()
+  {
+    stylesheets,
+    indexed_stylesheets,
+    css_vars,
+    doc_root_selector,
+    doc_root_style,
+    render_root,
+    render_root_tag,
+    body_uses_document_root_style: render_root_tag == "body" &&
+    doc.root.tag.to_lower() != "body",
+  }
+}
+
+///|
+fn build_render_root_node(
+  doc : @html.Document,
+  ctx : RenderContext,
+  prepared : PreparedRenderDocument,
+) -> @node.Node {
+  let root = if prepared.body_uses_document_root_style {
+    let body_selector = if prepared.indexed_stylesheets.length() == 0 {
+      html_to_selector_element_minimal(
+        prepared.render_root,
+        Some(prepared.doc_root_selector),
+      )
+    } else {
+      html_to_selector_element(
+        prepared.render_root,
+        Some(prepared.doc_root_selector),
+      )
+    }
+    element_to_node_with_styles_internal(
+      prepared.render_root,
+      body_selector,
+      ctx,
+      prepared.stylesheets,
+      prepared.indexed_stylesheets,
+      Some(prepared.doc_root_style),
+      prepared.css_vars,
+      {},
+      "root",
+    )
+  } else {
+    element_to_node_with_styles(
+      prepared.render_root,
+      None,
+      ctx,
+      prepared.stylesheets,
+      prepared.indexed_stylesheets,
+      prepared.css_vars,
+      {},
+      "root",
+    )
+  }
+  let root = if prepared.body_uses_document_root_style {
+    node_with_style(
+      root,
+      propagate_document_root_multicol_to_body(
+        root.style,
+        prepared.doc_root_style,
+      ),
+    )
+  } else {
+    root
+  }
+  if prepared.render_root_tag == "body" {
+    let root_zoom = resolve_document_root_zoom(
+      doc.root,
+      ctx,
+      prepared.indexed_stylesheets,
+      prepared.css_vars,
+    )
+    if root_zoom != 1.0 {
+      root.style.zoom = root.style.zoom * root_zoom
+    }
+  }
+  root
+}
+
+///|
+fn compute_layout_from_render_root(
+  root : @node.Node,
+  prepared : PreparedRenderDocument,
+  ctx : RenderContext,
+) -> @types.Layout {
+  if prepared.doc_root_style.display == @types.Display::None ||
+    root.style.display == @types.Display::None {
+    return create_zero_layout_from_node(root)
+  }
+
+  let root_margin = @types.resolve_rect(root.style.margin, ctx.viewport_width)
+  let available_width = resolve_root_available_width(
+    ctx.viewport_width,
+    root_margin,
+    if prepared.body_uses_document_root_style {
+      Some(prepared.doc_root_style)
+    } else {
+      None
+    },
+  )
+  let root_available_height : Double? = if prepared.render_root_tag == "body" {
+    Some(ctx.viewport_height)
+  } else if prepared.render_root_tag == "html" &&
+    root.style.position != @types.Absolute &&
+    root.style.position != @types.Fixed {
+    Some(ctx.viewport_height)
+  } else {
+    match root.style.height {
+      @types.Length(_) | @types.Percent(_) => Some(ctx.viewport_height)
+      _ => None
+    }
+  }
+  let layout_ctx : @types.LayoutContext = {
+    available_width,
+    available_height: root_available_height,
+    sizing_mode: @types.SizingMode::Definite,
+    viewport_width: ctx.viewport_width,
+    viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
+  }
+
+  @dispatch.setup()
+
+  let layout = @dispatch.compute_layout(root, layout_ctx)
+  let scaled_layout = apply_zoom_and_scale(
+    layout,
+    root,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    0.0,
+    false,
+    0.0,
+    0.0,
+    ctx.viewport_width,
+    ctx.viewport_height,
+  )
+  let scaled_layout = adjust_root_height_for_viewport(
+    scaled_layout,
+    root,
+    prepared.render_root_tag,
+    ctx.viewport_height,
+  )
+  let scaled_layout = stretch_single_frameset_child_to_root(scaled_layout)
+
+  let margin_left_is_auto = match root.style.margin.left {
+    @types.Dimension::Auto => true
+    _ => false
+  }
+  let margin_right_is_auto = match root.style.margin.right {
+    @types.Dimension::Auto => true
+    _ => false
+  }
+  let x_offset = if margin_left_is_auto && margin_right_is_auto {
+    (ctx.viewport_width - scaled_layout.width) / 2.0
+  } else if margin_left_is_auto {
+    ctx.viewport_width - scaled_layout.width - root_margin.right
+  } else {
+    root_margin.left
+  }
+  {
+    id: scaled_layout.id,
+    x: x_offset,
+    y: root_margin.top,
+    width: scaled_layout.width,
+    height: scaled_layout.height,
+    margin: scaled_layout.margin,
+    padding: scaled_layout.padding,
+    border: scaled_layout.border,
+    overflow_x: scaled_layout.overflow_x,
+    overflow_y: scaled_layout.overflow_y,
+    scroll_width: scaled_layout.scroll_width,
+    scroll_height: scaled_layout.scroll_height,
+    children: scaled_layout.children,
+    text: scaled_layout.text,
+  }
+}
+
+///|
 /// Render HTML string to Layout
 pub fn render(html : String, ctx : RenderContext) -> @types.Layout {
   render_with_external_css(html, ctx, [])
@@ -2775,209 +3005,8 @@ pub fn render_with_external_css(
   ctx : RenderContext,
   external_css : Array[String],
 ) -> @types.Layout {
-  // Parse HTML document (includes stylesheet extraction)
   let doc = @html.parse_document(html)
-
-  // Parse stylesheets from <style> tags and external CSS
-  let stylesheets : Array[@cascade.Stylesheet] = []
-  // First add external CSS (lower priority)
-  for css in external_css {
-    let stylesheet = @parser.parse_stylesheet(css)
-    stylesheets.push(stylesheet)
-  }
-  // Then add inline styles (higher priority)
-  for css in doc.stylesheets {
-    let stylesheet = @parser.parse_stylesheet(css)
-    stylesheets.push(stylesheet)
-  }
-
-  // Build indexed stylesheets for faster selector matching
-  let indexed_stylesheets : Array[@cascade.IndexedStylesheet] = []
-  for stylesheet in stylesheets {
-    indexed_stylesheets.push(@cascade.IndexedStylesheet::new(stylesheet))
-  }
-
-  // Collect CSS custom properties from :root rules
-  let css_vars = collect_root_css_variables(stylesheets, ctx)
-
-  // Resolve document root style once so root-level box suppression can be honored.
-  let doc_root_selector = if indexed_stylesheets.length() == 0 {
-    html_to_selector_element_minimal(doc.root, None)
-  } else {
-    html_to_selector_element(doc.root, None)
-  }
-  let doc_root_style = compute_element_style_indexed(
-    doc_root_selector,
-    doc.root.style,
-    indexed_stylesheets,
-    true,
-    ctx,
-    None,
-    css_vars,
-  )
-
-  // Find layout root. Use document root when html itself is out-of-flow.
-  let render_root = select_render_root(doc.root, doc_root_style)
-
-  // Convert to node tree with stylesheet styles applied
-  let root = if render_root.tag.to_lower() == "body" &&
-    doc.root.tag.to_lower() != "body" {
-    // Body is not the document root. Compute with html as parent so inheritable
-    // properties (e.g. writing-mode from :root) are preserved.
-    let body_selector = if indexed_stylesheets.length() == 0 {
-      html_to_selector_element_minimal(render_root, Some(doc_root_selector))
-    } else {
-      html_to_selector_element(render_root, Some(doc_root_selector))
-    }
-    element_to_node_with_styles_internal(
-      render_root,
-      body_selector,
-      ctx,
-      stylesheets,
-      indexed_stylesheets,
-      Some(doc_root_style),
-      css_vars,
-      {},
-      "root",
-    )
-  } else {
-    element_to_node_with_styles(
-      render_root,
-      None,
-      ctx,
-      stylesheets,
-      indexed_stylesheets,
-      css_vars,
-      {},
-      "root",
-    )
-  }
-  let root = if render_root.tag.to_lower() == "body" &&
-    doc.root.tag.to_lower() != "body" {
-    node_with_style(
-      root,
-      propagate_document_root_multicol_to_body(root.style, doc_root_style),
-    )
-  } else {
-    root
-  }
-  if doc_root_style.display == @types.Display::None ||
-    root.style.display == @types.Display::None {
-    return create_zero_layout_from_node(root)
-  }
-  if render_root.tag.to_lower() == "body" {
-    let root_zoom = resolve_document_root_zoom(
-      doc.root,
-      ctx,
-      indexed_stylesheets,
-      css_vars,
-    )
-    if root_zoom != 1.0 {
-      root.style.zoom = root.style.zoom * root_zoom
-    }
-  }
-
-  // Create layout context - subtract root margin from available space
-  let root_margin = @types.resolve_rect(root.style.margin, ctx.viewport_width)
-  let available_width = resolve_root_available_width(
-    ctx.viewport_width,
-    root_margin,
-    if render_root.tag.to_lower() == "body" && doc.root.tag.to_lower() != "body" {
-      Some(doc_root_style)
-    } else {
-      None
-    },
-  )
-  // Root with explicit/% height should resolve against viewport; otherwise keep
-  // height unconstrained so content can grow naturally.
-  let render_root_tag = render_root.tag.to_lower()
-  let root_available_height : Double? = if render_root_tag == "body" {
-    Some(ctx.viewport_height)
-  } else if render_root_tag == "html" &&
-    root.style.position != @types.Absolute &&
-    root.style.position != @types.Fixed {
-    Some(ctx.viewport_height)
-  } else {
-    match root.style.height {
-      @types.Length(_) | @types.Percent(_) => Some(ctx.viewport_height)
-      _ => None
-    }
-  }
-  let layout_ctx : @types.LayoutContext = {
-    available_width,
-    available_height: root_available_height,
-    sizing_mode: @types.SizingMode::Definite,
-    viewport_width: ctx.viewport_width,
-    viewport_height: ctx.viewport_height,
-    stretch_width: false,
-    stretch_height: false,
-  }
-
-  // Initialize the layout dispatcher for cross-layout-type support
-  @dispatch.setup()
-
-  // Compute layout using dispatcher (handles display type switching)
-  let layout = @dispatch.compute_layout(root, layout_ctx)
-
-  // Apply zoom and transform scale to layout
-  let scaled_layout = apply_zoom_and_scale(
-    layout,
-    root,
-    1.0,
-    1.0,
-    1.0,
-    0.0,
-    0.0,
-    false,
-    0.0,
-    0.0,
-    ctx.viewport_width,
-    ctx.viewport_height,
-  )
-  let scaled_layout = adjust_root_height_for_viewport(
-    scaled_layout,
-    root,
-    render_root_tag,
-    ctx.viewport_height,
-  )
-  let scaled_layout = stretch_single_frameset_child_to_root(scaled_layout)
-
-  // Apply root margin as position offset
-  // For margin:auto, center horizontally
-  let margin_left_is_auto = match root.style.margin.left {
-    @types.Dimension::Auto => true
-    _ => false
-  }
-  let margin_right_is_auto = match root.style.margin.right {
-    @types.Dimension::Auto => true
-    _ => false
-  }
-  let x_offset = if margin_left_is_auto && margin_right_is_auto {
-    // Center horizontally
-    (ctx.viewport_width - scaled_layout.width) / 2.0
-  } else if margin_left_is_auto {
-    // Push to right
-    ctx.viewport_width - scaled_layout.width - root_margin.right
-  } else {
-    // Use left margin
-    root_margin.left
-  }
-  {
-    id: scaled_layout.id,
-    x: x_offset,
-    y: root_margin.top,
-    width: scaled_layout.width,
-    height: scaled_layout.height,
-    margin: scaled_layout.margin,
-    padding: scaled_layout.padding,
-    border: scaled_layout.border,
-    overflow_x: scaled_layout.overflow_x,
-    overflow_y: scaled_layout.overflow_y,
-    scroll_width: scaled_layout.scroll_width,
-    scroll_height: scaled_layout.scroll_height,
-    children: scaled_layout.children,
-    text: scaled_layout.text,
-  }
+  render_document_with_external_css(doc, ctx, external_css)
 }
 
 ///|
@@ -2988,196 +3017,9 @@ pub fn render_document_with_external_css(
   ctx : RenderContext,
   external_css : Array[String],
 ) -> @types.Layout {
-  // Parse stylesheets from <style> tags and external CSS
-  let stylesheets : Array[@cascade.Stylesheet] = []
-  // First add external CSS (lower priority)
-  for css in external_css {
-    let stylesheet = @parser.parse_stylesheet(css)
-    stylesheets.push(stylesheet)
-  }
-  // Then add inline styles (higher priority)
-  for css in doc.stylesheets {
-    let stylesheet = @parser.parse_stylesheet(css)
-    stylesheets.push(stylesheet)
-  }
-
-  // Build indexed stylesheets for faster selector matching
-  let indexed_stylesheets : Array[@cascade.IndexedStylesheet] = []
-  for stylesheet in stylesheets {
-    indexed_stylesheets.push(@cascade.IndexedStylesheet::new(stylesheet))
-  }
-
-  // Collect CSS custom properties from :root rules
-  let css_vars = collect_root_css_variables(stylesheets, ctx)
-
-  let doc_root_selector = if indexed_stylesheets.length() == 0 {
-    html_to_selector_element_minimal(doc.root, None)
-  } else {
-    html_to_selector_element(doc.root, None)
-  }
-  let doc_root_style = compute_element_style_indexed(
-    doc_root_selector,
-    doc.root.style,
-    indexed_stylesheets,
-    true,
-    ctx,
-    None,
-    css_vars,
-  )
-
-  // Find layout root. Use document root when html itself is out-of-flow.
-  let render_root = select_render_root(doc.root, doc_root_style)
-
-  // Convert to node tree with stylesheet styles applied
-  let root = if render_root.tag.to_lower() == "body" &&
-    doc.root.tag.to_lower() != "body" {
-    let body_selector = if indexed_stylesheets.length() == 0 {
-      html_to_selector_element_minimal(render_root, Some(doc_root_selector))
-    } else {
-      html_to_selector_element(render_root, Some(doc_root_selector))
-    }
-    element_to_node_with_styles_internal(
-      render_root,
-      body_selector,
-      ctx,
-      stylesheets,
-      indexed_stylesheets,
-      Some(doc_root_style),
-      css_vars,
-      {},
-      "root",
-    )
-  } else {
-    element_to_node_with_styles(
-      render_root,
-      None,
-      ctx,
-      stylesheets,
-      indexed_stylesheets,
-      css_vars,
-      {},
-      "root",
-    )
-  }
-  let root = if render_root.tag.to_lower() == "body" &&
-    doc.root.tag.to_lower() != "body" {
-    node_with_style(
-      root,
-      propagate_document_root_multicol_to_body(root.style, doc_root_style),
-    )
-  } else {
-    root
-  }
-  if render_root.tag.to_lower() == "body" {
-    let root_zoom = resolve_document_root_zoom(
-      doc.root,
-      ctx,
-      indexed_stylesheets,
-      css_vars,
-    )
-    if root_zoom != 1.0 {
-      root.style.zoom = root.style.zoom * root_zoom
-    }
-  }
-
-  // Create layout context - subtract root margin from available space
-  let root_margin = @types.resolve_rect(root.style.margin, ctx.viewport_width)
-  let available_width = resolve_root_available_width(
-    ctx.viewport_width,
-    root_margin,
-    if render_root.tag.to_lower() == "body" && doc.root.tag.to_lower() != "body" {
-      Some(doc_root_style)
-    } else {
-      None
-    },
-  )
-  let render_root_tag = render_root.tag.to_lower()
-  let root_available_height : Double? = if render_root_tag == "body" {
-    Some(ctx.viewport_height)
-  } else if render_root_tag == "html" &&
-    root.style.position != @types.Absolute &&
-    root.style.position != @types.Fixed {
-    Some(ctx.viewport_height)
-  } else {
-    match root.style.height {
-      @types.Length(_) | @types.Percent(_) => Some(ctx.viewport_height)
-      _ => None
-    }
-  }
-  let layout_ctx : @types.LayoutContext = {
-    available_width,
-    available_height: root_available_height,
-    sizing_mode: @types.SizingMode::Definite,
-    viewport_width: ctx.viewport_width,
-    viewport_height: ctx.viewport_height,
-    stretch_width: false,
-    stretch_height: false,
-  }
-
-  // Initialize the layout dispatcher for cross-layout-type support
-  @dispatch.setup()
-
-  // Compute layout
-  let layout = @dispatch.compute_layout(root, layout_ctx)
-
-  // Apply zoom and transform scale to layout
-  let scaled_layout = apply_zoom_and_scale(
-    layout,
-    root,
-    1.0,
-    1.0,
-    1.0,
-    0.0,
-    0.0,
-    false,
-    0.0,
-    0.0,
-    ctx.viewport_width,
-    ctx.viewport_height,
-  )
-  let scaled_layout = adjust_root_height_for_viewport(
-    scaled_layout,
-    root,
-    render_root_tag,
-    ctx.viewport_height,
-  )
-  let scaled_layout = stretch_single_frameset_child_to_root(scaled_layout)
-
-  // Apply root margin offset to final layout
-  let margin_left_is_auto = match root.style.margin.left {
-    @types.Dimension::Auto => true
-    _ => false
-  }
-  let margin_right_is_auto = match root.style.margin.right {
-    @types.Dimension::Auto => true
-    _ => false
-  }
-  let x_offset = if margin_left_is_auto && margin_right_is_auto {
-    // Center horizontally
-    (ctx.viewport_width - scaled_layout.width) / 2.0
-  } else if margin_left_is_auto {
-    // Push to right
-    ctx.viewport_width - scaled_layout.width - root_margin.right
-  } else {
-    // Use left margin
-    root_margin.left
-  }
-  {
-    id: scaled_layout.id,
-    x: x_offset,
-    y: root_margin.top,
-    width: scaled_layout.width,
-    height: scaled_layout.height,
-    margin: scaled_layout.margin,
-    padding: scaled_layout.padding,
-    border: scaled_layout.border,
-    overflow_x: scaled_layout.overflow_x,
-    overflow_y: scaled_layout.overflow_y,
-    scroll_width: scaled_layout.scroll_width,
-    scroll_height: scaled_layout.scroll_height,
-    children: scaled_layout.children,
-    text: scaled_layout.text,
-  }
+  let prepared = prepare_render_document(doc, ctx, external_css)
+  let root = build_render_root_node(doc, ctx, prepared)
+  compute_layout_from_render_root(root, prepared, ctx)
 }
 
 ///|
@@ -4198,90 +4040,27 @@ pub fn render_to_node_with_external_css(
   external_css : Array[String],
 ) -> @node.Node {
   let doc = @html.parse_document(html)
-  let stylesheets : Array[@cascade.Stylesheet] = []
-  // First add external CSS (lower priority)
-  for css in external_css {
-    let stylesheet = @parser.parse_stylesheet(css)
-    stylesheets.push(stylesheet)
-  }
-  // Then add inline styles (higher priority)
-  for css in doc.stylesheets {
-    let stylesheet = @parser.parse_stylesheet(css)
-    stylesheets.push(stylesheet)
-  }
-  // Build indexed stylesheets for faster selector matching
-  let indexed_stylesheets : Array[@cascade.IndexedStylesheet] = []
-  for stylesheet in stylesheets {
-    indexed_stylesheets.push(@cascade.IndexedStylesheet::new(stylesheet))
-  }
-  // Collect CSS custom properties from :root rules
-  let css_vars = collect_root_css_variables(stylesheets, ctx)
-  let doc_root_selector = if indexed_stylesheets.length() == 0 {
-    html_to_selector_element_minimal(doc.root, None)
-  } else {
-    html_to_selector_element(doc.root, None)
-  }
-  let doc_root_style = compute_element_style_indexed(
-    doc_root_selector,
-    doc.root.style,
-    indexed_stylesheets,
-    true,
-    ctx,
-    None,
-    css_vars,
-  )
-  let render_root = select_render_root(doc.root, doc_root_style)
-  let root = if render_root.tag.to_lower() == "body" &&
-    doc.root.tag.to_lower() != "body" {
-    let body_selector = if indexed_stylesheets.length() == 0 {
-      html_to_selector_element_minimal(render_root, Some(doc_root_selector))
-    } else {
-      html_to_selector_element(render_root, Some(doc_root_selector))
-    }
-    element_to_node_with_styles_internal(
-      render_root,
-      body_selector,
-      ctx,
-      stylesheets,
-      indexed_stylesheets,
-      Some(doc_root_style),
-      css_vars,
-      {},
-      "root",
-    )
-  } else {
-    element_to_node_with_styles(
-      render_root,
-      None,
-      ctx,
-      stylesheets,
-      indexed_stylesheets,
-      css_vars,
-      {},
-      "root",
-    )
-  }
-  let root = if render_root.tag.to_lower() == "body" &&
-    doc.root.tag.to_lower() != "body" {
-    node_with_style(
-      root,
-      propagate_document_root_multicol_to_body(root.style, doc_root_style),
-    )
-  } else {
-    root
-  }
-  if render_root.tag.to_lower() == "body" {
-    let root_zoom = resolve_document_root_zoom(
-      doc.root,
-      ctx,
-      indexed_stylesheets,
-      css_vars,
-    )
-    if root_zoom != 1.0 {
-      root.style.zoom = root.style.zoom * root_zoom
-    }
-  }
-  root
+  render_to_node_with_document(doc, ctx, external_css)
+}
+
+///|
+/// Render HTML to Node tree and Layout in a shared pass.
+pub fn render_to_node_and_layout(
+  html : String,
+  ctx : RenderContext,
+) -> (@node.Node, @types.Layout) {
+  render_to_node_and_layout_with_external_css(html, ctx, [])
+}
+
+///|
+/// Render HTML to Node tree and Layout with external CSS in a shared pass.
+pub fn render_to_node_and_layout_with_external_css(
+  html : String,
+  ctx : RenderContext,
+  external_css : Array[String],
+) -> (@node.Node, @types.Layout) {
+  let doc = @html.parse_document(html)
+  render_to_node_and_layout_with_document(doc, ctx, external_css)
 }
 
 ///|
@@ -4292,90 +4071,22 @@ pub fn render_to_node_with_document(
   ctx : RenderContext,
   external_css : Array[String],
 ) -> @node.Node {
-  let stylesheets : Array[@cascade.Stylesheet] = []
-  // First add external CSS (lower priority)
-  for css in external_css {
-    let stylesheet = @parser.parse_stylesheet(css)
-    stylesheets.push(stylesheet)
-  }
-  // Then add inline styles (higher priority)
-  for css in doc.stylesheets {
-    let stylesheet = @parser.parse_stylesheet(css)
-    stylesheets.push(stylesheet)
-  }
-  // Build indexed stylesheets for faster selector matching
-  let indexed_stylesheets : Array[@cascade.IndexedStylesheet] = []
-  for stylesheet in stylesheets {
-    indexed_stylesheets.push(@cascade.IndexedStylesheet::new(stylesheet))
-  }
-  // Collect CSS custom properties from :root rules
-  let css_vars = collect_root_css_variables(stylesheets, ctx)
-  let doc_root_selector = if indexed_stylesheets.length() == 0 {
-    html_to_selector_element_minimal(doc.root, None)
-  } else {
-    html_to_selector_element(doc.root, None)
-  }
-  let doc_root_style = compute_element_style_indexed(
-    doc_root_selector,
-    doc.root.style,
-    indexed_stylesheets,
-    true,
-    ctx,
-    None,
-    css_vars,
-  )
-  let render_root = select_render_root(doc.root, doc_root_style)
-  let root = if render_root.tag.to_lower() == "body" &&
-    doc.root.tag.to_lower() != "body" {
-    let body_selector = if indexed_stylesheets.length() == 0 {
-      html_to_selector_element_minimal(render_root, Some(doc_root_selector))
-    } else {
-      html_to_selector_element(render_root, Some(doc_root_selector))
-    }
-    element_to_node_with_styles_internal(
-      render_root,
-      body_selector,
-      ctx,
-      stylesheets,
-      indexed_stylesheets,
-      Some(doc_root_style),
-      css_vars,
-      {},
-      "root",
-    )
-  } else {
-    element_to_node_with_styles(
-      render_root,
-      None,
-      ctx,
-      stylesheets,
-      indexed_stylesheets,
-      css_vars,
-      {},
-      "root",
-    )
-  }
-  let root = if render_root.tag.to_lower() == "body" &&
-    doc.root.tag.to_lower() != "body" {
-    node_with_style(
-      root,
-      propagate_document_root_multicol_to_body(root.style, doc_root_style),
-    )
-  } else {
-    root
-  }
-  if render_root.tag.to_lower() == "body" {
-    let root_zoom = resolve_document_root_zoom(
-      doc.root,
-      ctx,
-      indexed_stylesheets,
-      css_vars,
-    )
-    if root_zoom != 1.0 {
-      root.style.zoom = root.style.zoom * root_zoom
-    }
-  }
-  root
+  let prepared = prepare_render_document(doc, ctx, external_css)
+  build_render_root_node(doc, ctx, prepared)
+}
+
+///|
+/// Render a parsed HTML Document to Node tree and Layout with external CSS
+/// while sharing HTML/CSS preparation and node construction.
+pub fn render_to_node_and_layout_with_document(
+  doc : @html.Document,
+  ctx : RenderContext,
+  external_css : Array[String],
+) -> (@node.Node, @types.Layout) {
+  let prepared = prepare_render_document(doc, ctx, external_css)
+  let root = build_render_root_node(doc, ctx, prepared)
+  let layout = compute_layout_from_render_root(root, prepared, ctx)
+  (root, layout)
 }
 
 ///|
@@ -7477,9 +7188,9 @@ pub fn render_to_sixel_with_css(
     root_font_size: 16.0,
     color_scheme: @media.ColorScheme::Light,
   }
-  // Get both Node tree (for styles) and Layout (for positions)
-  let node = render_to_node_with_external_css(html, ctx, external_css)
-  let layout = render_with_external_css(html, ctx, external_css)
+  let (node, layout) = render_to_node_and_layout_with_external_css(
+    html, ctx, external_css,
+  )
   @sixel.render_with_styles_scrolled(node, layout, width, height, scroll_y)
 }
 
