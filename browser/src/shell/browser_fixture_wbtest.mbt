@@ -125,3 +125,56 @@ async test "fixture submit preventDefault repaints without navigation" {
   assert_true(rendered.contains("after"))
   assert_true(not(rendered.contains("before")))
 }
+
+///|
+async test "fixture focused text input Enter submits form" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="get">
+    #|    <input id="field" type="text" value="" style="display:block;width:120px;height:32px" />
+    #|  </form>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.handle_focused_key("x") catch { _ => false }
+  let handled = browser.handle_focused_key("Enter") catch { _ => false }
+  inspect(handled, content="true")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E",
+  )
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("done"))
+}
+
+///|
+async test "fixture focused checkbox Space toggles and repaints" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="check" type="checkbox" style="display:block;width:24px;height:24px" />
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('check').addEventListener('change', function (event) {
+    #|      document.getElementById('status').textContent = event.target.checked ? 'checked' : 'unchecked';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let handled = browser.handle_focused_key(" ") catch { _ => false }
+  inspect(handled, content="true")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("checked"))
+}

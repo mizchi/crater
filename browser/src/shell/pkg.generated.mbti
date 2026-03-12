@@ -27,6 +27,7 @@ pub fn Browser::get_link_count(Self) -> Int
 pub fn Browser::get_viewport_height(Self) -> Int
 pub async fn Browser::go_back(Self) -> String? raise @http.HttpError
 pub async fn Browser::go_forward(Self) -> String? raise @http.HttpError
+pub async fn Browser::handle_focused_key(Self, String) -> Bool raise @http.HttpError
 pub fn Browser::is_hint_mode(Self) -> Bool
 pub async fn Browser::navigate(Self, String) -> String raise @http.HttpError
 pub async fn Browser::navigate_lightweight(Self, String) -> String raise @http.HttpError

@@ -1443,3 +1443,167 @@ async test "Browser activate_focused_link submits focused text input form" {
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("done"))
 }
+
+///|
+async test "Browser handle_focused_key dispatches input event for focused text input" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="" style="display:block;width:120px;height:32px" />
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('field').addEventListener('input', function (event) {
+    #|      document.getElementById('status').textContent = event.target.value;
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+
+  let handled = browser.handle_focused_key("x") catch { _ => false }
+  inspect(handled, content="true")
+
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("x"))
+  assert_true(not(rendered.contains("before")))
+}
+
+///|
+async test "Browser handle_focused_key dispatches change event for focused text input on Enter" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="" style="display:block;width:120px;height:32px" />
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    const field = document.getElementById('field');
+    #|    field.addEventListener('change', function (event) {
+    #|      document.getElementById('status').textContent = 'change:' + event.target.value;
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.handle_focused_key("x") catch { _ => false }
+
+  let handled = browser.handle_focused_key("Enter") catch { _ => false }
+  inspect(handled, content="true")
+
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(status, content="Some(\"change:x\")")
+}
+
+///|
+async test "Browser handle_focused_key toggles focused checkbox with Space" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="check" type="checkbox" style="display:block;width:24px;height:24px" />
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    const check = document.getElementById('check');
+    #|    check.addEventListener('change', function (event) {
+    #|      document.getElementById('status').textContent = event.target.checked ? 'checked' : 'unchecked';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+
+  let handled = browser.handle_focused_key(" ") catch { _ => false }
+  inspect(handled, content="true")
+
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("checked"))
+}
+
+///|
+async test "Browser handle_focused_key toggles focused radio with Space" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="a" name="group" type="radio" checked style="display:block;width:24px;height:24px" />
+    #|  <input id="b" name="group" type="radio" style="display:block;width:24px;height:24px" />
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    const radio = document.getElementById('b');
+    #|    radio.addEventListener('change', function (event) {
+    #|      document.getElementById('status').textContent = event.target.checked ? 'radio-b' : 'radio-none';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  browser.next_link()
+
+  let handled = browser.handle_focused_key(" ") catch { _ => false }
+  inspect(handled, content="true")
+
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("radio-b"))
+}
+
+///|
+async test "Browser handle_focused_key activates focused button with Space" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <button id="btn" style="display:block;width:96px;height:32px">Go</button>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('btn').addEventListener('click', function () {
+    #|      document.getElementById('status').textContent = 'after';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+
+  let handled = browser.handle_focused_key(" ") catch { _ => false }
+  inspect(handled, content="true")
+
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("after"))
+}

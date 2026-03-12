@@ -3099,6 +3099,48 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|     HTMLTextAreaElement.prototype = Object.create(HTMLElement.prototype);
   #|     HTMLTextAreaElement.prototype.constructor = HTMLTextAreaElement;
   #|
+  #|     function getReflectedStringAttribute(element, name) {
+  #|       const value = element && element.getAttribute ? element.getAttribute(name) : null;
+  #|       return value === null || value === undefined ? '' : String(value);
+  #|     }
+  #|     function setReflectedStringAttribute(element, name, value) {
+  #|       if (!element || !element.setAttribute) return;
+  #|       element.setAttribute(name, value === null || value === undefined ? '' : String(value));
+  #|     }
+  #|     function getReflectedBooleanAttribute(element, name) {
+  #|       return !!(element && element.hasAttribute && element.hasAttribute(name));
+  #|     }
+  #|     function setReflectedBooleanAttribute(element, name, value) {
+  #|       if (!element) return;
+  #|       if (value) {
+  #|         if (element.setAttribute) element.setAttribute(name, '');
+  #|       } else if (element.removeAttribute) {
+  #|         element.removeAttribute(name);
+  #|       }
+  #|     }
+  #|     Object.defineProperties(HTMLInputElement.prototype, {
+  #|       value: {
+  #|         get() { return getReflectedStringAttribute(this, 'value'); },
+  #|         set(v) { setReflectedStringAttribute(this, 'value', v); },
+  #|         configurable: true
+  #|       },
+  #|       checked: {
+  #|         get() { return getReflectedBooleanAttribute(this, 'checked'); },
+  #|         set(v) { setReflectedBooleanAttribute(this, 'checked', v); },
+  #|         configurable: true
+  #|       }
+  #|     });
+  #|     Object.defineProperty(HTMLButtonElement.prototype, 'value', {
+  #|       get() { return getReflectedStringAttribute(this, 'value'); },
+  #|       set(v) { setReflectedStringAttribute(this, 'value', v); },
+  #|       configurable: true
+  #|     });
+  #|     Object.defineProperty(HTMLTextAreaElement.prototype, 'value', {
+  #|       get() { return this.textContent || ''; },
+  #|       set(v) { this.textContent = v === null || v === undefined ? '' : String(v); },
+  #|       configurable: true
+  #|     });
+  #|
   #|     function HTMLTimeElement() {}
   #|     HTMLTimeElement.prototype = Object.create(HTMLElement.prototype);
   #|     HTMLTimeElement.prototype.constructor = HTMLTimeElement;

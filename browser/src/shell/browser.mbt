@@ -23,6 +23,14 @@ priv enum SubmitDispatchResult {
 }
 
 ///|
+priv enum FocusedKeyDispatchResult {
+  NotHandled
+  Handled
+  Activate
+  Submit
+}
+
+///|
 priv struct HitTarget {
   source_id : String
   area : Double
@@ -944,6 +952,14 @@ pub fn Browser::prev_link(self : Browser) -> Unit {
 ///|
 /// Build accessibility tree from current HTML content
 fn Browser::build_accessibility_tree(self : Browser) -> Unit {
+  let previous_focus_source_id = match self.focus_manager {
+    Some(fm) =>
+      match fm.current() {
+        Some(node) => node.source_id
+        None => None
+      }
+    None => None
+  }
   // Use cached parsed document if available
   let doc = match self.parsed_doc {
     Some(d) => d
@@ -979,6 +995,12 @@ fn Browser::build_accessibility_tree(self : Browser) -> Unit {
   self.a11y_tree = Some(tree)
   // Create focus manager
   self.focus_manager = Some(@aom.FocusManager::new(tree))
+  match (self.focus_manager, previous_focus_source_id) {
+    (Some(fm), Some(source_id)) => {
+      let _ = fm.focus_by_source_id(source_id)
+    }
+    _ => ()
+  }
 }
 
 ///|
@@ -1425,6 +1447,36 @@ fn Browser::dispatch_submit_to_source_id(
 }
 
 ///|
+fn Browser::dispatch_focused_key_to_source_id(
+  self : Browser,
+  source_id : String,
+  key : String,
+) -> FocusedKeyDispatchResult {
+  if not(self.enable_js) {
+    return NotHandled
+  }
+  let escaped_id = escape_js_string(source_id)
+  let escaped_key = escape_js_string(key)
+  let source = "(function(){const target=document.getElementById('" +
+    escaped_id +
+    "');const key='" +
+    escaped_key +
+    "';if(!target){return 'none';}const tag=(target.tagName||'').toLowerCase();const type=(target.getAttribute?((target.getAttribute('type')||'').toLowerCase()):'');function dispatchKeyboard(typeName,cancelable){const ev=new KeyboardEvent(typeName,{bubbles:true,cancelable,key:key});return target.dispatchEvent(ev);}function finishHandled(){dispatchKeyboard('keyup',false);return 'handled';}function finish(result){dispatchKeyboard('keyup',false);return result;}function dispatchInput(){target.dispatchEvent(new Event('input',{bubbles:true}));}function dispatchChange(){target.dispatchEvent(new Event('change',{bubbles:true}));}function syncValueAttr(el){if(el&&el.setAttribute){const value=(el.value!==undefined&&el.value!==null)?String(el.value):String(el.getAttribute&&el.getAttribute('value')||'');el.setAttribute('value',value);}}function syncCheckedAttr(el){if(!el||!el.setAttribute){return;}if(el.checked){el.setAttribute('checked','');}else if(el.removeAttribute){el.removeAttribute('checked');}}function isTextLikeInput(){if(tag==='textarea'){return true;}if(tag!=='input'){return false;}return type===''||type==='text'||type==='search'||type==='url'||type==='tel'||type==='email'||type==='password'||type==='number';}function toggleRadio(el){if(el.checked){return false;}const name=el.getAttribute?el.getAttribute('name'):null;const form=el.closest?el.closest('form'):null;const root=form||document;function walk(node){if(!node||!node.childNodes){return;}for(let i=0;i<node.childNodes.length;i++){const child=node.childNodes[i];if(!child||child.nodeType!==1){continue;}const childTag=(child.tagName||'').toLowerCase();if(childTag==='input'){const childType=((child.getAttribute('type')||'').toLowerCase());if(childType==='radio'&&child!==el&&(child.getAttribute('name')||'')===(name||'')){child.checked=false;syncCheckedAttr(child);}}walk(child);}}walk(root);el.checked=true;syncCheckedAttr(el);return true;}if(tag==='a'){if(key!=='Enter'){return 'none';}if(!dispatchKeyboard('keydown',true)){return finish('handled');}if(!dispatchKeyboard('keypress',true)){return finish('handled');}return finish('activate');}if(tag==='button'||(tag==='input'&&(type==='submit'||type==='button'||type==='image'))||tag==='summary'){if(key!=='Enter'&&key!==' '){return 'none';}if(!dispatchKeyboard('keydown',true)){return finish('handled');}if(!dispatchKeyboard('keypress',true)){return finish('handled');}return finish('activate');}if(tag==='input'&&(type==='checkbox'||type==='radio')){if(key!=='Enter'&&key!==' '){return 'none';}if(!dispatchKeyboard('keydown',true)){return finish('handled');}if(!dispatchKeyboard('keypress',true)){return finish('handled');}const clickEvent=new MouseEvent('click',{bubbles:true,cancelable:true});const allowClick=target.dispatchEvent(clickEvent);if(allowClick){let changed=false;if(type==='checkbox'){target.checked=!target.checked;syncCheckedAttr(target);changed=true;}else{changed=toggleRadio(target);}if(changed){dispatchInput();dispatchChange();}}return finish('handled');}if(isTextLikeInput()){if(key==='Enter'){if(!dispatchKeyboard('keydown',true)){return finish('handled');}if(!dispatchKeyboard('keypress',true)){return finish('handled');}dispatchChange();if(target.closest&&target.closest('form')){return finish('submit');}return finish('handled');}if(key==='Backspace'){if(!dispatchKeyboard('keydown',true)){return finish('handled');}const current=(target.value!==undefined&&target.value!==null)?String(target.value):String(target.getAttribute&&target.getAttribute('value')||'');if(current.length>0){target.value=current.slice(0,-1);syncValueAttr(target);dispatchInput();}return finish('handled');}if(key.length===1){if(!dispatchKeyboard('keydown',true)){return finish('handled');}if(!dispatchKeyboard('keypress',true)){return finish('handled');}const current=(target.value!==undefined&&target.value!==null)?String(target.value):String(target.getAttribute&&target.getAttribute('value')||'');target.value=current+key;syncValueAttr(target);dispatchInput();return finish('handled');}return 'none';}if(tag==='select'){if(key!=='Enter'&&key!==' '){return 'none';}if(!dispatchKeyboard('keydown',true)){return finish('handled');}if(!dispatchKeyboard('keypress',true)){return finish('handled');}dispatchChange();return finish('handled');}return 'none';})()"
+  match self.execute_inline_js(source) {
+    Some(result) => {
+      let _ = self.sync_render_state_from_dom_tree()
+      match result {
+        "handled" => Handled
+        "activate" => Activate
+        "submit" => Submit
+        _ => NotHandled
+      }
+    }
+    None => NotHandled
+  }
+}
+
+///|
 pub fn Browser::tick_js(self : Browser) -> Bool {
   if not(self.enable_js) {
     return false
@@ -1440,6 +1492,35 @@ pub fn Browser::tick_js(self : Browser) -> Bool {
       }
       self.flush_js_logs()
       self.sync_render_state_from_dom_tree()
+    }
+    None => false
+  }
+}
+
+///|
+pub async fn Browser::handle_focused_key(
+  self : Browser,
+  key : String,
+) -> Bool raise @http.HttpError {
+  let source_id = self.get_focused_source_id()
+  match source_id {
+    Some(id) => {
+      self.focus_source_id(id)
+      match self.dispatch_focused_key_to_source_id(id, key) {
+        Handled => true
+        Activate => self.activate_focused_link()
+        Submit =>
+          match self.dispatch_submit_to_source_id(id) {
+            Prevented => true
+            Handled => true
+            Navigate(url) => {
+              let _ = self.navigate(resolve_url(self.current_url, url))
+              true
+            }
+            NotSubmittable => true
+          }
+        NotHandled => false
+      }
     }
     None => false
   }

@@ -3043,6 +3043,36 @@ test "persisted change listener survives later execution" {
 }
 
 ///|
+test "persisted change listener sees reflected input value" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let setup =
+    #|const input = document.createElement('input');
+    #|input.id = 'field';
+    #|input.value = 'x';
+    #|document.body.appendChild(input);
+    #|input.addEventListener('change', function (event) {
+    #|  document.body.setAttribute('data-status', String(event.target.value));
+    #|});
+    #|'ok'
+  let setup_result = ctx.execute(setup)
+  inspect(setup_result.success, content="true")
+
+  let run =
+    #|const input = document.getElementById('field');
+    #|input.dispatchEvent(new Event('change', { bubbles: true }));
+    #|document.body.getAttribute('data-status')
+  let run_result = ctx.execute(run)
+  inspect(run_result.success, content="true")
+  inspect(run_result.value, content="x")
+}
+
+///|
 test "persisted submit listener survives later execution" {
   let dom = @dom.DomTree::new()
   let html = dom.create_element("html")

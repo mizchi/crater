@@ -414,6 +414,13 @@ async fn main {
       }
       continue
     }
+    if not(browser.is_hint_mode()) {
+      let handled = browser.handle_focused_key(key) catch { _ => false }
+      if handled {
+        render_page(browser, options)
+        continue
+      }
+    }
     // Use different key handling based on hint mode
     let action = if browser.is_hint_mode() {
       @tui.key_to_hint_action(key)
