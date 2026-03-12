@@ -3792,10 +3792,13 @@ fn BidiProtocol::resolve_synthetic_response_overrides_internal(
     for raw_header in synthetic_network_query_values(url, "header") {
       match find_substring(raw_header, ":", 0) {
         Some(idx) => {
-          let name = raw_header[:idx].to_string()
+          let name = raw_header.unsafe_substring(start=0, end=idx)
           let value_start = idx + 1
           let value = if value_start <= raw_header.length() {
-            raw_header[value_start:].to_string()
+            raw_header.unsafe_substring(
+              start=value_start,
+              end=raw_header.length(),
+            )
           } else {
             ""
           }
@@ -4039,7 +4042,7 @@ fn synthetic_network_query_values(url : String, key : String) -> Array[String] {
       if query_start >= url.length() {
         return values
       }
-      let query = url[query_start:].to_string()
+      let query = url.unsafe_substring(start=query_start, end=url.length())
       for part in query.split("&") {
         let raw = part.to_string()
         if raw.length() == 0 {
@@ -4047,13 +4050,13 @@ fn synthetic_network_query_values(url : String, key : String) -> Array[String] {
         }
         match find_substring(raw, "=", 0) {
           Some(eq_idx) => {
-            let part_key = raw[:eq_idx].to_string()
+            let part_key = raw.unsafe_substring(start=0, end=eq_idx)
             if part_key != key {
               continue
             }
             let value_start = eq_idx + 1
             let raw_value = if value_start <= raw.length() {
-              raw[value_start:].to_string()
+              raw.unsafe_substring(start=value_start, end=raw.length())
             } else {
               ""
             }
@@ -4134,13 +4137,13 @@ fn synthetic_network_infer_mime_type(url : String, path : String) -> String {
       None => url.length()
     }
     let prefix = if payload_start > 5 {
-      url[5:payload_start].to_string()
+      url.unsafe_substring(start=5, end=payload_start)
     } else {
       ""
     }
     match find_substring(prefix, ";", 0) {
       Some(idx) => {
-        let mime_type = prefix[:idx].to_string()
+        let mime_type = prefix.unsafe_substring(start=0, end=idx)
         if mime_type == "" {
           "text/plain"
         } else {

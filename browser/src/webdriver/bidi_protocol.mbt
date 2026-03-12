@@ -5110,20 +5110,23 @@ fn is_valid_print_page_range(raw : String) -> Bool {
         None => ()
       }
       if first_dash == 0 {
-        let end_text = value[1:].to_string()
+        let end_text = value.unsafe_substring(start=1, end=value.length())
         match parse_decimal_string(end_text) {
           Some(v) => v >= 1
           None => false
         }
       } else if first_dash == value.length() - 1 {
-        let start_text = value[:first_dash].to_string()
+        let start_text = value.unsafe_substring(start=0, end=first_dash)
         match parse_decimal_string(start_text) {
           Some(v) => v >= 1
           None => false
         }
       } else {
-        let start_text = value[:first_dash].to_string()
-        let end_text = value[first_dash + 1:].to_string()
+        let start_text = value.unsafe_substring(start=0, end=first_dash)
+        let end_text = value.unsafe_substring(
+          start=first_dash + 1,
+          end=value.length(),
+        )
         let start = match parse_decimal_string(start_text) {
           Some(v) => v
           None => return false
@@ -5161,9 +5164,9 @@ fn xpath_to_css_selector(xpath : String) -> String? {
   }
 
   let body = if trimmed.has_prefix(".//") {
-    trimmed[3:].to_string()
+    trimmed.unsafe_substring(start=3, end=trimmed.length())
   } else if trimmed.has_prefix("//") {
-    trimmed[2:].to_string()
+    trimmed.unsafe_substring(start=2, end=trimmed.length())
   } else {
     return None
   }
@@ -5174,21 +5177,30 @@ fn xpath_to_css_selector(xpath : String) -> String? {
   match find_substring(body, "[@", 0) {
     None => if body.contains("[") { None } else { Some(body) }
     Some(predicate_idx) => {
-      let selector_tag = body[0:predicate_idx].to_string()
+      let selector_tag = body.unsafe_substring(start=0, end=predicate_idx)
       if selector_tag == "" {
         return None
       }
       let predicate_start = predicate_idx + 2
-      let predicate_full = body[predicate_start:].to_string()
+      let predicate_full = body.unsafe_substring(
+        start=predicate_start,
+        end=body.length(),
+      )
       if predicate_full == "" || not(predicate_full.has_suffix("]")) {
         return None
       }
-      let predicate = predicate_full[0:predicate_full.length() - 1].to_string()
+      let predicate = predicate_full.unsafe_substring(
+        start=0,
+        end=predicate_full.length() - 1,
+      )
       match find_substring(predicate, "=", 0) {
         None => None
         Some(eq_idx) => {
-          let attr_name = predicate[0:eq_idx].to_string()
-          let quoted_value = predicate[eq_idx + 1:].to_string()
+          let attr_name = predicate.unsafe_substring(start=0, end=eq_idx)
+          let quoted_value = predicate.unsafe_substring(
+            start=eq_idx + 1,
+            end=predicate.length(),
+          )
           if attr_name == "" || quoted_value.length() < 2 {
             return None
           }
@@ -5198,7 +5210,10 @@ fn xpath_to_css_selector(xpath : String) -> String? {
           if (quote != '\'' && quote != '"') || end_quote != quote {
             return None
           }
-          let attr_value = quoted_value[1:quoted_value.length() - 1].to_string()
+          let attr_value = quoted_value.unsafe_substring(
+            start=1,
+            end=quoted_value.length() - 1,
+          )
           Some(
             selector_tag +
             "[" +
@@ -10914,7 +10929,10 @@ fn input_set_files_display_name(source_path : String) -> String {
   if last_separator < 0 {
     return source_path
   }
-  let base_name = source_path[last_separator + 1:].to_string()
+  let base_name = source_path.unsafe_substring(
+    start=last_separator + 1,
+    end=source_path.length(),
+  )
   if base_name.length() == 0 {
     return source_path
   }
@@ -14086,7 +14104,7 @@ fn extract_click_target_identifier(expression : String) -> String? {
   let source = expression.trim().to_string()
   match find_substring(source, ".click(", 0) {
     Some(idx) => {
-      let name = source[:idx].to_string()
+      let name = source.unsafe_substring(start=0, end=idx)
       let identifier = name.trim().to_string()
       if identifier.length() == 0 {
         None
@@ -14119,9 +14137,9 @@ fn extract_raw_query_param_value(url : String, key : String) -> String? {
       if start >= url.length() {
         return Some("")
       }
-      let tail = url[start:].to_string()
+      let tail = url.unsafe_substring(start~, end=url.length())
       match find_substring(tail, "&", 0) {
-        Some(end_idx) => Some(tail[:end_idx].to_string())
+        Some(end_idx) => Some(tail.unsafe_substring(start=0, end=end_idx))
         None => Some(tail)
       }
     }
@@ -14448,7 +14466,7 @@ fn BidiProtocol::apply_synthetic_history_state_from_expression(
   while push_continue {
     match find_substring(source, "history.pushState(", push_cursor) {
       Some(idx) => {
-        let fragment = source[idx:].to_string()
+        let fragment = source.unsafe_substring(start=idx, end=source.length())
         let push_url = extract_third_quoted_after_marker(
           fragment, "history.pushState(",
         ).unwrap_or("")
@@ -14471,7 +14489,7 @@ fn BidiProtocol::apply_synthetic_history_state_from_expression(
   while replace_continue {
     match find_substring(source, "history.replaceState(", replace_cursor) {
       Some(idx) => {
-        let fragment = source[idx:].to_string()
+        let fragment = source.unsafe_substring(start=idx, end=source.length())
         let replace_url = extract_third_quoted_after_marker(
           fragment, "history.replaceState(",
         ).unwrap_or("")
@@ -14583,7 +14601,7 @@ fn has_invalid_http_zero_port(url : String) -> Bool {
       break
     }
   }
-  let host_port = url[scheme_len:host_end].to_string()
+  let host_port = url.unsafe_substring(start=scheme_len, end=host_end)
   host_port.has_suffix(":0")
 }
 
@@ -14799,7 +14817,7 @@ fn is_slow_image_navigation_url(url : String) -> Bool {
 /// Remove URL fragment part (after `#`) if present.
 fn strip_url_fragment(url : String) -> String {
   match find_substring(url, "#", 0) {
-    Some(idx) => url[:idx].to_string()
+    Some(idx) => url.unsafe_substring(start=0, end=idx)
     None => url
   }
 }
@@ -14808,7 +14826,7 @@ fn strip_url_fragment(url : String) -> String {
 /// Remove URL query part (after `?`) if present.
 fn strip_url_query(url : String) -> String {
   match find_substring(url, "?", 0) {
-    Some(idx) => url[:idx].to_string()
+    Some(idx) => url.unsafe_substring(start=0, end=idx)
     None => url
   }
 }
@@ -14890,7 +14908,7 @@ fn extract_inline_script_blocks(html : String) -> Array[String] {
 ///|
 fn extract_url_fragment_suffix(url : String) -> String {
   match find_substring(url, "#", 0) {
-    Some(idx) => url[idx:].to_string()
+    Some(idx) => url.unsafe_substring(start=idx, end=url.length())
     None => ""
   }
 }
@@ -14912,7 +14930,7 @@ fn extract_http_url_authority(url : String) -> String? {
       if host_start >= host_end {
         None
       } else {
-        Some(url[host_start:host_end].to_string())
+        Some(url.unsafe_substring(start=host_start, end=host_end))
       }
     }
     None => None
@@ -14947,7 +14965,7 @@ fn extract_http_url_path(url : String) -> String? {
           break
         }
       }
-      Some(url[path_start:path_end].to_string())
+      Some(url.unsafe_substring(start=path_start, end=path_end))
     }
     None => None
   }
@@ -15051,7 +15069,7 @@ fn resolve_relative_url_against_base(
       let path_start = find_substring(base_url, "/", host_start).unwrap_or(
         base_url.length(),
       )
-      let origin = base_url[:path_start].to_string()
+      let origin = base_url.unsafe_substring(start=0, end=path_start)
       if target_url.has_prefix("/") {
         return origin + target_url
       }
@@ -15066,7 +15084,10 @@ fn resolve_relative_url_against_base(
           last_slash = i
         }
       }
-      let base_dir = normalized_base[:last_slash + 1].to_string()
+      let base_dir = normalized_base.unsafe_substring(
+        start=0,
+        end=last_slash + 1,
+      )
       base_dir + target_url
     }
     None => target_url
@@ -15125,10 +15146,10 @@ fn resolve_http_equiv_redirect_url(url : String) -> String? {
   let to_path = "/webdriver/tests/bidi/network/support/redirected.html"
   match find_substring(url, from_path, 0) {
     Some(idx) => {
-      let prefix = url[:idx].to_string()
+      let prefix = url.unsafe_substring(start=0, end=idx)
       let suffix_start = idx + from_path.length()
       let suffix = if suffix_start <= url.length() {
-        url[suffix_start:].to_string()
+        url.unsafe_substring(start=suffix_start, end=url.length())
       } else {
         ""
       }
@@ -16178,7 +16199,7 @@ fn extract_quoted_after_marker(source : String, marker : String) -> String? {
       if end >= chars.length() {
         return None
       }
-      let value = source[quote_start + 1:end].to_string()
+      let value = source.unsafe_substring(start=quote_start + 1, end~)
       if value.length() == 0 {
         None
       } else {
@@ -16241,7 +16262,7 @@ fn extract_second_quoted_after_marker(
       if end >= chars.length() {
         return None
       }
-      let value = source[start:end].to_string()
+      let value = source.unsafe_substring(start~, end~)
       if value.length() == 0 {
         Some("")
       } else {
@@ -16277,7 +16298,7 @@ fn extract_third_quoted_after_marker(
           }
           quoted_index += 1
           if quoted_index == 3 {
-            let value = source[start:end].to_string()
+            let value = source.unsafe_substring(start~, end~)
             return Some(value)
           }
           cursor = end + 1
@@ -16927,7 +16948,7 @@ fn extract_http_origin(url : String, scheme : String, start : Int) -> String {
       break
     }
   }
-  let host = url[start:end].to_string()
+  let host = url.unsafe_substring(start~, end~)
   if host.length() == 0 {
     "null"
   } else {
@@ -17801,7 +17822,10 @@ fn BidiProtocol::emit_existing_realms_for_context(
   let prefix = ctx_id + "::"
   for key, realm_id in self.context_sandbox_realm {
     if key.has_prefix(prefix) {
-      let sandbox_name = key[prefix.length():].to_string()
+      let sandbox_name = key.unsafe_substring(
+        start=prefix.length(),
+        end=key.length(),
+      )
       self.emit_realm_created(ctx_id, realm_id, Some(sandbox_name))
     }
   }
@@ -19074,12 +19098,15 @@ fn is_valid_proxy_endpoint_value(value : String) -> Bool {
     return false
   }
 
-  let host = value[:colon_idx].to_string()
+  let host = value.unsafe_substring(start=0, end=colon_idx)
   if host.length() == 0 {
     return false
   }
 
-  let port_text = value[colon_idx + 1:].to_string()
+  let port_text = value.unsafe_substring(
+    start=colon_idx + 1,
+    end=value.length(),
+  )
   let port = match parse_decimal_string(port_text) {
     Some(v) => v
     None => return false
@@ -19274,11 +19301,14 @@ fn is_valid_network_string_url_pattern(pattern : String) -> Bool {
     Some(idx) => idx
     None => return false
   }
-  let scheme = pattern[:scheme_sep].to_string()
+  let scheme = pattern.unsafe_substring(start=0, end=scheme_sep)
   if not(is_valid_network_pattern_protocol_value(scheme)) {
     return false
   }
-  let authority_and_path = pattern[scheme_sep + 3:].to_string()
+  let authority_and_path = pattern.unsafe_substring(
+    start=scheme_sep + 3,
+    end=pattern.length(),
+  )
   if authority_and_path.length() == 0 {
     return false
   }
@@ -19290,7 +19320,10 @@ fn is_valid_network_string_url_pattern(pattern : String) -> Bool {
       break
     }
   }
-  let authority = authority_and_path[:authority_end].to_string()
+  let authority = authority_and_path.unsafe_substring(
+    start=0,
+    end=authority_end,
+  )
   if authority.length() == 0 {
     return false
   }
@@ -19314,7 +19347,7 @@ fn extract_authority_host_port(authority : String) -> String {
   if at_index < 0 {
     return authority
   }
-  authority[at_index + 1:].to_string()
+  authority.unsafe_substring(start=at_index + 1, end=authority.length())
 }
 
 ///|
@@ -19339,11 +19372,14 @@ fn validate_host_port_pattern(host_port : String) -> Bool {
   if colon_idx < 0 {
     return true
   }
-  let host = host_port[:colon_idx].to_string()
+  let host = host_port.unsafe_substring(start=0, end=colon_idx)
   if host.length() == 0 || colon_idx >= chars.length() - 1 {
     return false
   }
-  let port_text = host_port[colon_idx + 1:].to_string()
+  let port_text = host_port.unsafe_substring(
+    start=colon_idx + 1,
+    end=host_port.length(),
+  )
   let port = match parse_decimal_string(port_text) {
     Some(port) => port
     None => return false
@@ -19472,7 +19508,7 @@ fn is_valid_network_pattern_protocol_value(value : String) -> Bool {
     if colon_idx != chars.length() - 1 {
       return false
     }
-    value[:colon_idx].to_string()
+    value.unsafe_substring(start=0, end=colon_idx)
   } else {
     value
   }
@@ -19496,7 +19532,7 @@ fn is_valid_network_pattern_protocol_value(value : String) -> Bool {
 /// True when protocol token represents `file` (case-insensitive, optional `:`).
 fn is_network_file_protocol(value : String) -> Bool {
   let scheme = if value.has_suffix(":") {
-    value[:value.length() - 1].to_string()
+    value.unsafe_substring(start=0, end=value.length() - 1)
   } else {
     value
   }
@@ -20220,7 +20256,10 @@ fn BidiProtocol::try_handle_window_open(
     Some(idx) => idx
     None => return false
   }
-  let open_call_source = trimmed[open_marker_idx:].to_string()
+  let open_call_source = trimmed.unsafe_substring(
+    start=open_marker_idx,
+    end=trimmed.length(),
+  )
   let opened_url = extract_quoted_after_marker(open_call_source, "window.open(").unwrap_or(
     "about:blank",
   )
@@ -20904,7 +20943,10 @@ fn BidiProtocol::resolve_realms_list(
       let prefix = ctx_id + "::"
       for key, sandbox_realm in self.context_sandbox_realm {
         if key.has_prefix(prefix) {
-          let sandbox_name = key[prefix.length():].to_string()
+          let sandbox_name = key.unsafe_substring(
+            start=prefix.length(),
+            end=key.length(),
+          )
           realms.push(
             make_object({
               "realm": Json::string(sandbox_realm),

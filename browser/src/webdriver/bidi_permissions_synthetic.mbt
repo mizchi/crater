@@ -179,7 +179,10 @@ fn permission_scope_belongs_to_user_context(
     Some(first_sep) =>
       match find_substring(key, "|", first_sep + 1) {
         Some(second_sep) => {
-          let scope_user_context = key[first_sep + 1:second_sep].to_string()
+          let scope_user_context = key.unsafe_substring(
+            start=first_sep + 1,
+            end=second_sep,
+          )
           scope_user_context == user_context_id
         }
         None => false
@@ -264,7 +267,7 @@ fn normalize_permission_origin(origin : String) -> String {
   }
   if origin.has_suffix("/") &&
     (origin.has_prefix("http://") || origin.has_prefix("https://")) {
-    return origin[:origin.length() - 1].to_string()
+    return origin.unsafe_substring(start=0, end=origin.length() - 1)
   }
   origin
 }

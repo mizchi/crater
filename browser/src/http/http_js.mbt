@@ -94,7 +94,7 @@ fn extract_json_int(json : String, key : String) -> Int {
         end = end + 1
       }
       try {
-        let num_str = json[start:end].to_string()
+        let num_str = json.unsafe_substring(start~, end~)
         @strconv.parse_int(num_str)
       } catch {
         _ => 0
@@ -119,7 +119,7 @@ fn extract_json_string(json : String, key : String) -> String {
         }
         end = end + 1
       }
-      unescape_json_string(json[start:end].to_string())
+      unescape_json_string(json.unsafe_substring(start~, end~))
     }
     None => ""
   }

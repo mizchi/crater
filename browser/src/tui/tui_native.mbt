@@ -186,7 +186,7 @@ fn parse_mouse_event(key : String) -> String? {
   guard key.length() > 4 else { return None }
   let suffix = key[key.length() - 1]
   guard suffix == 'M' || suffix == 'm' else { return None }
-  let payload = key[3:key.length() - 1].to_string()
+  let payload = key.unsafe_substring(start=3, end=key.length() - 1)
   let parts = payload.split(";").collect()
   guard parts.length() == 3 else { return None }
   let btn = @strconv.parse_int(parts[0].to_string()) catch { _ => return None }
@@ -215,7 +215,7 @@ fn trim_line_endings(s : String) -> String {
       break
     }
   }
-  s[:end].to_string()
+  s.unsafe_substring(start=0, end~)
 }
 
 ///|

@@ -68,7 +68,7 @@ pub fn loadHtmlContent(html : String) -> String {
       // Extract and set title from HTML
       match (html.find("<title>"), html.find("</title>")) {
         (Some(start), Some(end_)) if end_ > start => {
-          let title = html[start + 7:end_].to_string()
+          let title = html.unsafe_substring(start=start + 7, end=end_)
           ctx.set_title(title)
           session.set_title(title)
         }

@@ -218,7 +218,7 @@ fn dispatch_method(
 fn parse_element_id(element_id : String) -> Int? {
   // Format: "element-123" or just "123"
   let id_str = if element_id.has_prefix("element-") {
-    element_id[8:].to_string()
+    element_id.unsafe_substring(start=8, end=element_id.length())
   } else {
     element_id
   }

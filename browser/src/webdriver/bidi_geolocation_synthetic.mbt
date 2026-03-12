@@ -154,7 +154,7 @@ fn geolocation_watch_scope_key(ctx_id : String, watch_id : Int) -> String {
 ///|
 fn geolocation_watch_scope_context(scope_key : String) -> String {
   match find_substring(scope_key, "|", 0) {
-    Some(separator) => scope_key[:separator].to_string()
+    Some(separator) => scope_key.unsafe_substring(start=0, end=separator)
     None => scope_key
   }
 }
