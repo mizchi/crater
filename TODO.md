@@ -496,6 +496,51 @@
   - `just test-playwright-adapter` -> `30 / 30 passed`
   - `just test-preact` -> `49 / 49 passed`
 
+### Browser shell 到達済み surface
+
+- DOM tree / selector / mutation:
+  - `createElement`, `appendChild`, `removeChild`, `replaceChildren`
+  - `textContent`, `setAttribute`, `className`, `id`
+  - `querySelector`, `querySelectorAll`, `getElementById`
+  - `insertAdjacent*`, `cloneNode`, `adoptNode`, `getRootNode`
+- 非同期と継続更新:
+  - `setTimeout(...)` で queued task を `Browser::tick_js()` が drain
+  - `requestAnimationFrame(...)` の簡易 flush
+  - `MutationObserver-*` は WPT green
+- event/listener:
+  - `onclick` attribute
+  - `addEventListener("click" | "input" | "change" | "submit" | "keydown" | "keypress" | "keyup", ...)`
+  - listener は DOM 再実行を跨いで persisted restore
+- browser shell default action:
+  - `Tab` focus 移動
+  - `Enter` / `Space` で link / button / submit / reset / checkbox / radio / summary
+  - text input / textarea / select の入力と repaint
+  - form `submit` / `reset`
+- paint-side integration:
+  - `tick_js()` -> DOM sync -> repaint
+  - clip-aware topmost hit-test
+  - `pointer-events: none`
+  - `transform: translate(...)` 後の hit-test は fixture で確認済み
+
+### Browser shell の未実装 / 未整理
+
+- [ ] persistent JS context 化
+  - 現状は DOM へ persisted listener を戻して継続性を作っている
+  - closure state や full VM lifetime は保持していない
+- [ ] `requestAnimationFrame` の本物の frame loop
+  - 現状は JS flush 中に 1 frame 進める簡易モデル
+- [ ] event persistence の一般化
+  - 今は `click/input/change/submit/keydown/keypress/keyup` に限定
+- [ ] visual hit-test の厳密化
+  - `pointer-events` は `none` のみ
+  - complex transform / shape / clip-path / pixel-perfect hit-test は未対応
+- [ ] control default action の残件
+  - `select` popup UI
+  - blur 時 `change` の細かい spec 差分
+  - IME / selection / caret
+- [ ] browser shell fixture の実ページ寄りカバレッジ拡張
+  - article / dashboard / GitHub snapshot で DOM mutation + repaint を固定観測する
+
 ## パフォーマンス改善メモ（2026-03-11）
 
 - 現在の目安:

@@ -69,6 +69,44 @@ async test "builtin github snapshot fixture can stream kitty output to writer" {
 }
 
 ///|
+fn inject_after_marker(
+  html : String,
+  marker : String,
+  extra : String,
+) -> String {
+  match html.find(marker) {
+    Some(idx) => {
+      let end_idx = idx + marker.length()
+      html.unsafe_substring(start=0, end=end_idx) +
+      extra +
+      html.unsafe_substring(start=end_idx, end=html.length())
+    }
+    None => html + extra
+  }
+}
+
+///|
+fn center_of_source_id(browser : Browser, source_id : String) -> (Int, Int) {
+  browser.build_accessibility_tree()
+  match browser.a11y_tree {
+    Some(tree) =>
+      match tree.find_by_source_id(source_id) {
+        Some(node) =>
+          match node.bounds {
+            Some(bounds) =>
+              (
+                @tui.px_to_col(bounds.x + bounds.width / 2.0),
+                @tui.px_to_row(bounds.y + bounds.height / 2.0) + 1,
+              )
+            None => panic()
+          }
+        None => panic()
+      }
+    None => panic()
+  }
+}
+
+///|
 async test "fixture form submit navigates on focused button activation" {
   let browser = Browser::new(800, 600)
   let html =
@@ -547,6 +585,52 @@ async test "fixture focused input button Space dispatches click repaint" {
   inspect(handled, content="true")
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("after"))
+}
+
+///|
+async test "docs article fixture applies timer mutation and click repaint" {
+  let browser = Browser::new(1440, 960)
+  let runtime =
+    #|<section style="padding:24px 0">
+    #|  <button id="demo-toggle" style="display:block;width:120px;height:36px">更新</button>
+    #|  <p id="runtime-status">before</p>
+    #|</section>
+    #|<script>
+    #|  document.getElementById('demo-toggle').addEventListener('click', function () {
+    #|    document.getElementById('runtime-status').textContent = 'clicked';
+    #|  });
+    #|</script>
+  let html = inject_after_marker(docs_article_fixture(), "</h1>", runtime)
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let initial = browser.render_output(Text)
+  assert_true(initial.contains("WebAssembly テキスト形式の理解"))
+  let initial_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('runtime-status').textContent; })()",
+  )
+  inspect(initial_status, content="Some(\"before\")")
+
+  let _ = @js.enqueue_script(
+    browser.scheduler,
+    "const heading=document.querySelector('h1'); const status=document.getElementById('runtime-status'); if (heading) heading.textContent='WebAssembly テキスト形式の理解 (updated)'; if (status) status.textContent='timer';",
+    true,
+  )
+  inspect(browser.tick_js(), content="true")
+  let after_timer = browser.render_output(Text)
+  assert_true(
+    after_timer.contains("WebAssembly テキスト形式の理解 (updated)"),
+  )
+  assert_true(after_timer.contains("timer"))
+
+  let (col, row) = center_of_source_id(browser, "demo-toggle")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  let after_click = browser.render_output(Text)
+  assert_true(after_click.contains("clicked"))
+  assert_true(
+    after_click.contains("WebAssembly テキスト形式の理解 (updated)"),
+  )
 }
 
 ///|
