@@ -1669,19 +1669,26 @@ fn Browser::dispatch_drag_event_status_to_source_id(
   event_type : String,
   client_x : Int,
   client_y : Int,
+  related_source_id? : String? = None,
 ) -> (Bool, Bool) {
   let escaped = escape_js_string(source_id)
+  let related_js = match related_source_id {
+    Some(id) => "document.getElementById('" + escape_js_string(id) + "')"
+    None => "null"
+  }
   let source = "(function(){const target=document.getElementById('" +
     escaped +
     "');if(!target){return 'missing';}const clientX=" +
     client_x.to_string() +
     ";const clientY=" +
     client_y.to_string() +
+    ";const relatedTarget=" +
+    related_js +
     ";let dataTransfer=globalThis.__craterDragDataTransfer||null;if('" +
     escape_js_string(event_type) +
     "'==='dragstart'){dataTransfer=new DataTransfer();globalThis.__craterDragDataTransfer=dataTransfer;}const dispatched=target.dispatchEvent(new DragEvent('" +
     escape_js_string(event_type) +
-    "',{bubbles:true,cancelable:true,clientX,clientY,dataTransfer}));if('" +
+    "',{bubbles:true,cancelable:true,clientX,clientY,relatedTarget,dataTransfer}));if('" +
     escape_js_string(event_type) +
     "'==='dragend'){globalThis.__craterDragDataTransfer=null;}return dispatched?'ok':'canceled';})()"
   let result = self.execute_inline_js(source)
@@ -1700,12 +1707,14 @@ fn Browser::dispatch_drag_event_to_source_id(
   event_type : String,
   client_x : Int,
   client_y : Int,
+  related_source_id? : String? = None,
 ) -> Bool {
   let (handled, _) = self.dispatch_drag_event_status_to_source_id(
     source_id,
     event_type,
     client_x,
     client_y,
+    related_source_id=related_source_id,
   )
   handled
 }
@@ -1960,7 +1969,11 @@ pub fn Browser::pointer_move_at(self : Browser, col : Int, row : Int) -> Bool {
       if self.dragging_source_id is None &&
         self.is_draggable_source_id(pressed_id) {
         if self.dispatch_drag_event_to_source_id(
-            pressed_id, "dragstart", client_x, client_y,
+            pressed_id,
+            "dragstart",
+            client_x,
+            client_y,
+            related_source_id=None,
           ) {
           self.dragging_source_id = Some(pressed_id)
           changed = true
@@ -1968,18 +1981,26 @@ pub fn Browser::pointer_move_at(self : Browser, col : Int, row : Int) -> Bool {
       }
       match self.dragging_source_id {
         Some(drag_id) => {
+          let next_target = self.get_hover_source_id_at(col, row)
           if self.dispatch_drag_event_to_source_id(
-              drag_id, "drag", client_x, client_y,
+              drag_id,
+              "drag",
+              client_x,
+              client_y,
+              related_source_id=next_target,
             ) {
             changed = true
           }
-          let next_target = self.get_hover_source_id_at(col, row)
           if self.drag_over_source_id != next_target {
             self.drop_allowed_source_id = None
             match self.drag_over_source_id {
               Some(previous_target) if previous_target != drag_id =>
                 if self.dispatch_drag_event_to_source_id(
-                    previous_target, "dragleave", client_x, client_y,
+                    previous_target,
+                    "dragleave",
+                    client_x,
+                    client_y,
+                    related_source_id=next_target,
                   ) {
                   changed = true
                 }
@@ -1988,7 +2009,11 @@ pub fn Browser::pointer_move_at(self : Browser, col : Int, row : Int) -> Bool {
             match next_target {
               Some(next_id) if next_id != drag_id =>
                 if self.dispatch_drag_event_to_source_id(
-                    next_id, "dragenter", client_x, client_y,
+                    next_id,
+                    "dragenter",
+                    client_x,
+                    client_y,
+                    related_source_id=self.drag_over_source_id,
                   ) {
                   changed = true
                 }
@@ -2004,6 +2029,7 @@ pub fn Browser::pointer_move_at(self : Browser, col : Int, row : Int) -> Bool {
                   "dragover",
                   client_x,
                   client_y,
+                  related_source_id=Some(drag_id),
                 )
               if handled_drag_over {
                 changed = true
@@ -2057,14 +2083,22 @@ pub async fn Browser::pointer_up_at(
           target_id != drag_id &&
           drop_allowed_source_id == Some(target_id) =>
           if self.dispatch_drag_event_to_source_id(
-              target_id, "drop", client_x, client_y,
+              target_id,
+              "drop",
+              client_x,
+              client_y,
+              related_source_id=Some(drag_id),
             ) {
             handled = true
           }
         _ => ()
       }
       if self.dispatch_drag_event_to_source_id(
-          drag_id, "dragend", client_x, client_y,
+          drag_id,
+          "dragend",
+          client_x,
+          client_y,
+          related_source_id=drag_over_source_id,
         ) {
         handled = true
       }

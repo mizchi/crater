@@ -3528,6 +3528,46 @@ test "DataTransfer stores and clears string data" {
 }
 
 ///|
+test "DragEvent exposes relatedTarget and shared DataTransfer state" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(function () {
+    #|  const source = document.createElement('div');
+    #|  const target = document.createElement('div');
+    #|  const other = document.createElement('div');
+    #|  source.id = 'source';
+    #|  target.id = 'target';
+    #|  other.id = 'other';
+    #|  document.body.appendChild(source);
+    #|  document.body.appendChild(target);
+    #|  document.body.appendChild(other);
+    #|  const dt = new DataTransfer();
+    #|  dt.effectAllowed = 'copyMove';
+    #|  let enterLog = '';
+    #|  let dropLog = '';
+    #|  target.addEventListener('dragenter', function (event) {
+    #|    enterLog = (event.relatedTarget ? event.relatedTarget.id : 'none') + '/' + event.dataTransfer.effectAllowed;
+    #|    event.dataTransfer.dropEffect = 'move';
+    #|  });
+    #|  target.addEventListener('drop', function (event) {
+    #|    dropLog = (event.relatedTarget ? event.relatedTarget.id : 'none') + '/' + event.dataTransfer.effectAllowed + '/' + event.dataTransfer.dropEffect;
+    #|  });
+    #|  target.dispatchEvent(new DragEvent('dragenter', { bubbles: true, relatedTarget: other, dataTransfer: dt }));
+    #|  target.dispatchEvent(new DragEvent('drop', { bubbles: true, relatedTarget: source, dataTransfer: dt }));
+    #|  return enterLog + '|' + dropLog;
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="other/copyMove|source/copyMove/move")
+}
+
+///|
 test "fetch: Response has required methods" {
   let dom = @dom.DomTree::new()
   let ctx = JsContext::new(dom)

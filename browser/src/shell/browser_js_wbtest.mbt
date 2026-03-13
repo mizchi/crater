@@ -1474,6 +1474,7 @@ async test "Browser pointer drag preserves dataTransfer and switches drag target
     #|    const events = [];
     #|    document.getElementById('source').addEventListener('dragstart', function (event) {
     #|      event.dataTransfer.setData('text/plain', 'payload');
+    #|      event.dataTransfer.effectAllowed = 'copyMove';
     #|      events.push('source:dragstart:' + event.dataTransfer.getData('text/plain'));
     #|      status.textContent = events.join('|');
     #|    });
@@ -1489,8 +1490,16 @@ async test "Browser pointer drag preserves dataTransfer and switches drag target
     #|      const el = document.getElementById(id);
     #|      for (const type of types) {
     #|        el.addEventListener(type, function (event) {
-    #|          if (id === 'target' && type === 'dragover') event.preventDefault();
-    #|          events.push(id + ':' + type + ':' + event.dataTransfer.getData('text/plain'));
+    #|          if (id === 'target' && type === 'dragover') {
+    #|            event.preventDefault();
+    #|            event.dataTransfer.dropEffect = 'move';
+    #|          }
+    #|          const rel = event.relatedTarget ? event.relatedTarget.id : 'none';
+    #|          if (type === 'drop') {
+    #|            events.push(id + ':' + type + ':' + rel + ':' + event.dataTransfer.effectAllowed + '/' + event.dataTransfer.dropEffect + ':' + event.dataTransfer.getData('text/plain'));
+    #|          } else {
+    #|            events.push(id + ':' + type + ':' + rel + ':' + event.dataTransfer.getData('text/plain'));
+    #|          }
     #|          status.textContent = events.join('|');
     #|        });
     #|      }
@@ -1517,7 +1526,7 @@ async test "Browser pointer drag preserves dataTransfer and switches drag target
     browser.execute_inline_js(
       "(function(){ return document.getElementById('status').textContent; })()",
     ),
-    content="Some(\"source:dragstart:payload|source:drag:payload|mid:dragenter:payload|mid:dragover:payload|source:drag:payload|mid:dragleave:payload|target:dragenter:payload|target:dragover:payload|target:drop:payload|source:dragend:payload\")",
+    content="Some(\"source:dragstart:payload|source:drag:payload|mid:dragenter:none:payload|mid:dragover:source:payload|source:drag:payload|mid:dragleave:target:payload|target:dragenter:mid:payload|target:dragover:source:payload|target:drop:source:copyMove/move:payload|source:dragend:payload\")",
   )
 }
 
