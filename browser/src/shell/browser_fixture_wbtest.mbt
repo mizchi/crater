@@ -459,6 +459,66 @@ async test "fixture focused textarea Enter inserts newline without submit" {
 }
 
 ///|
+async test "fixture focused textarea replaces selected text" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <textarea id="field" style="display:block;width:160px;height:64px">abcd</textarea>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('field').addEventListener('input', function (event) {
+    #|      document.getElementById('status').textContent =
+    #|        event.target.value + '|' + String(event.target.selectionStart) + '|' + String(event.target.selectionEnd);
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); field.selectionStart=1; field.selectionEnd=3; return 'ok'; })()",
+  )
+  let handled = browser.handle_focused_key("x") catch { _ => false }
+  inspect(handled, content="true")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("axd|2|2"))
+}
+
+///|
+async test "fixture focused textarea deletes text after caret" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <textarea id="field" style="display:block;width:160px;height:64px">abc</textarea>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('field').addEventListener('input', function (event) {
+    #|      document.getElementById('status').textContent =
+    #|        event.target.value + '|' + String(event.target.selectionStart) + '|' + String(event.target.selectionEnd);
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); field.selectionStart=1; field.selectionEnd=1; return 'ok'; })()",
+  )
+  let handled = browser.handle_focused_key("Delete") catch { _ => false }
+  inspect(handled, content="true")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("ac|1|1"))
+}
+
+///|
 async test "fixture focused checkbox Space toggles and repaints" {
   let browser = Browser::new(800, 600)
   let html =

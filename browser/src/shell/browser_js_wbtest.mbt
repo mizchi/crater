@@ -2330,6 +2330,68 @@ async test "Browser handle_focused_key dispatches change event for focused text 
 }
 
 ///|
+async test "Browser handle_focused_key replaces selected text in focused textarea" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <textarea id="field" style="display:block;width:160px;height:64px">abcd</textarea>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); field.selectionStart=1; field.selectionEnd=3; return 'ok'; })()",
+  )
+
+  let handled = browser.handle_focused_key("x") catch { _ => false }
+  inspect(handled, content="true")
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ const field=document.getElementById('field'); return field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
+    ),
+    content="Some(\"axd|2|2\")",
+  )
+}
+
+///|
+async test "Browser handle_focused_key deletes text after caret in focused textarea" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <textarea id="field" style="display:block;width:160px;height:64px">abc</textarea>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); field.selectionStart=1; field.selectionEnd=1; return 'ok'; })()",
+  )
+
+  let handled = browser.handle_focused_key("Delete") catch { _ => false }
+  inspect(handled, content="true")
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ const field=document.getElementById('field'); return field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
+    ),
+    content="Some(\"ac|1|1\")",
+  )
+}
+
+///|
 async test "Browser handle_focused_key toggles focused checkbox with Space" {
   let browser = Browser::new(800, 600)
   let html =
