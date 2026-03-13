@@ -205,6 +205,78 @@ test.describe("Browser user scenarios", () => {
     await page.waitForText("#status", "Saved newsletter:on theme:dark");
   });
 
+  test("menu flow: hover to open actions and archive item", async () => {
+    await page.setContentWithScripts(`
+      <html>
+        <body>
+          <div id="card">
+            <button id="more" type="button">More</button>
+            <div id="menu" hidden>
+              <button id="archive" type="button">Archive</button>
+            </div>
+          </div>
+          <div id="status">open</div>
+          <script>
+            const more = document.getElementById('more');
+            const menu = document.getElementById('menu');
+            const status = document.getElementById('status');
+            more.addEventListener('pointerenter', () => {
+              menu.hidden = false;
+              status.textContent = 'menu-open';
+            });
+            document.getElementById('archive').addEventListener('click', () => {
+              status.textContent = 'archived';
+              menu.hidden = true;
+            });
+          </script>
+        </body>
+      </html>
+    `);
+
+    await page.hover("#more");
+    await page.waitForText("#status", "menu-open");
+
+    await page.click("#archive");
+    await page.waitForText("#status", "archived");
+  });
+
+  test("radio flow: switch mode and save preferences", async () => {
+    await page.setContentWithScripts(`
+      <html>
+        <body>
+          <form id="settings">
+            <label><input id="mode-basic" type="radio" name="mode" value="basic" checked /> Basic</label>
+            <label><input id="mode-advanced" type="radio" name="mode" value="advanced" /> Advanced</label>
+            <button id="save" type="button">Save</button>
+          </form>
+          <div id="summary"></div>
+          <div id="status">idle</div>
+          <script>
+            const basic = document.getElementById('mode-basic');
+            const advanced = document.getElementById('mode-advanced');
+            const summary = document.getElementById('summary');
+            const status = document.getElementById('status');
+            const render = () => {
+              summary.textContent = 'mode:' + (advanced.checked ? 'advanced' : 'basic');
+            };
+            document.getElementById('save').addEventListener('click', () => {
+              status.textContent = 'saved:' + (advanced.checked ? 'advanced' : 'basic');
+            });
+            basic.addEventListener('change', render);
+            advanced.addEventListener('change', render);
+            render();
+          </script>
+        </body>
+      </html>
+    `);
+
+    await page.waitForText("#summary", "mode:basic");
+    await page.check("#mode-advanced");
+    await page.waitForText("#summary", "mode:advanced");
+    await page.click("#save");
+    await page.waitForText("#status", "saved:advanced");
+  });
+
   test("hover flow: move pointer in and out of a card", async () => {
     await page.setContentWithScripts(`
       <html>

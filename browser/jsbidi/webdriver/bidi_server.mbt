@@ -6695,7 +6695,118 @@ extern "js" fn js_input_dispatch_pointer_event(
   #|     const event = globalThis.__bidiCreateEvent(type, { bubbles: true, cancelable: false });
   #|     return safeTarget.dispatchEvent(event);
   #|   };
+  #|   const findAncestorForm = (node) => {
+  #|     if (!node || typeof node !== "object") return null;
+  #|     const containsNode = (root, target) => {
+  #|       if (!root || !target) return false;
+  #|       if (root === target) return true;
+  #|       if (!root.childNodes) return false;
+  #|       for (let i = 0; i < root.childNodes.length; i += 1) {
+  #|         const child = root.childNodes[i];
+  #|         if (containsNode(child, target)) return true;
+  #|       }
+  #|       return false;
+  #|     };
+  #|     if (node.form && typeof node.form === "object") return node.form;
+  #|     if (typeof node.closest === "function") {
+  #|       try {
+  #|         const form = node.closest("form");
+  #|         if (form) return form;
+  #|       } catch (_e) {}
+  #|     }
+  #|     let current = node.parentNode || node.parentElement || node._parent || null;
+  #|     while (current) {
+  #|       const tag = String(current.tagName || current.nodeName || "").toLowerCase();
+  #|       if (tag === "form") return current;
+  #|       current = current.parentNode || current.parentElement || current._parent || null;
+  #|     }
+  #|     if (doc && typeof doc.querySelectorAll === "function") {
+  #|       try {
+  #|         for (const form of Array.from(doc.querySelectorAll("form"))) {
+  #|           if (containsNode(form, node)) return form;
+  #|         }
+  #|       } catch (_e) {}
+  #|     }
+  #|     return null;
+  #|   };
+  #|   const resetForm = (form) => {
+  #|     const resetNode = (node) => {
+  #|       if (!node || !node.childNodes) return;
+  #|       for (let i = 0; i < node.childNodes.length; i += 1) {
+  #|         const child = node.childNodes[i];
+  #|         if (!child || child.nodeType !== 1) continue;
+  #|         const childTag = String(child.tagName || child.nodeName || "").toLowerCase();
+  #|         if (childTag === "input") {
+  #|           const childType = String(
+  #|             (typeof child.getAttribute === "function" ? child.getAttribute("type") : "") ||
+  #|             child.type ||
+  #|             "",
+  #|           ).toLowerCase();
+  #|           if (childType === "checkbox" || childType === "radio") {
+  #|             const hasChecked =
+  #|               typeof child.hasAttribute === "function" &&
+  #|               child.hasAttribute("checked");
+  #|             child.checked = !!hasChecked;
+  #|           } else if (
+  #|             childType !== "submit" &&
+  #|             childType !== "button" &&
+  #|             childType !== "image" &&
+  #|             childType !== "reset" &&
+  #|             childType !== "file"
+  #|           ) {
+  #|             const nextValue =
+  #|               (typeof child.getAttribute === "function" ? child.getAttribute("value") : null) ??
+  #|               "";
+  #|             child.value = String(nextValue);
+  #|           }
+  #|         } else if (childTag === "textarea") {
+  #|           child.value = String(child.textContent ?? "");
+  #|         } else if (childTag === "select" && child.options !== undefined) {
+  #|           let selectedIndex = -1;
+  #|           for (let j = 0; j < child.options.length; j += 1) {
+  #|             const option = child.options[j];
+  #|             const selected =
+  #|               !!(option &&
+  #|                 typeof option.hasAttribute === "function" &&
+  #|                 option.hasAttribute("selected"));
+  #|             option.selected = selected;
+  #|             if (selected && selectedIndex < 0) selectedIndex = j;
+  #|           }
+  #|           if (selectedIndex < 0 && child.options.length > 0) {
+  #|             child.options[0].selected = true;
+  #|             selectedIndex = 0;
+  #|           }
+  #|           child.selectedIndex = selectedIndex;
+  #|           if (selectedIndex >= 0 && child.options[selectedIndex]) {
+  #|             child.value = String(
+  #|               child.options[selectedIndex].value ??
+  #|               child.options[selectedIndex].textContent ??
+  #|               "",
+  #|             );
+  #|           } else {
+  #|             child.value = "";
+  #|           }
+  #|         }
+  #|         resetNode(child);
+  #|       }
+  #|     };
+  #|     resetNode(form);
+  #|   };
   #|   const applyClickDefaultAction = () => {
+  #|     if (safeTagName === "button" || safeTagName === "input") {
+  #|       const inputType = safeInputType();
+  #|       if (inputType === "reset") {
+  #|         const form = findAncestorForm(safeTarget);
+  #|         if (!form) return;
+  #|         const resetEvent = globalThis.__bidiCreateEvent("reset", { bubbles: true, cancelable: true });
+  #|         if (typeof form.dispatchEvent === "function") {
+  #|           form.dispatchEvent(resetEvent);
+  #|         }
+  #|         if (resetEvent.defaultPrevented) return;
+  #|         resetForm(form);
+  #|         return;
+  #|       }
+  #|     }
   #|     if (safeTagName !== "input") return;
   #|     const inputType = safeInputType();
   #|     if (inputType === "checkbox") {
@@ -6710,9 +6821,10 @@ extern "js" fn js_input_dispatch_pointer_event(
   #|         (typeof safeTarget.getAttribute === "function" ? safeTarget.getAttribute("name") : null) ||
   #|         safeTarget.name ||
   #|         "";
-  #|       if (name && doc && typeof doc.querySelectorAll === "function") {
+  #|       const radioRoot = findAncestorForm(safeTarget) || doc;
+  #|       if (name && radioRoot && typeof radioRoot.querySelectorAll === "function") {
   #|         try {
-  #|           for (const radio of Array.from(doc.querySelectorAll('input[type=\"radio\"]'))) {
+  #|           for (const radio of Array.from(radioRoot.querySelectorAll('input[type=\"radio\"]'))) {
   #|             const radioName =
   #|               (typeof radio.getAttribute === "function" ? radio.getAttribute("name") : null) ||
   #|               radio.name ||
@@ -6942,7 +7054,8 @@ extern "js" fn js_input_dispatch_pointer_event(
   #|   let dispatchAllowed = true;
   #|   if (dispatchTarget) {
   #|     const event = createSyntheticEvent(dispatchTarget);
-  #|     dispatchAllowed = dispatchTarget.dispatchEvent(event) !== false;
+  #|     dispatchTarget.dispatchEvent(event);
+  #|     dispatchAllowed = !event.defaultPrevented;
   #|   }
   #|   if (eventType === "click" && dispatchAllowed) {
   #|     applyClickDefaultAction();
