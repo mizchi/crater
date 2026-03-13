@@ -65,6 +65,10 @@ extern "js" fn js_read_key_with_timeout(
   #|             finish('MouseScrollDown:' + col + ',' + row);
   #|             return;
   #|           }
+  #|           if (pressed && btn >= 32) {
+  #|             finish('MouseMove:' + col + ',' + row);
+  #|             return;
+  #|           }
   #|         }
   #|       }
   #|       finish(key);

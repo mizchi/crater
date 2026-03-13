@@ -3401,6 +3401,58 @@ test "persisted pointer listeners survive later execution" {
 }
 
 ///|
+test "persisted hover listeners survive later execution" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let setup =
+    #|const left = document.createElement('div');
+    #|const right = document.createElement('div');
+    #|left.id = 'left';
+    #|right.id = 'right';
+    #|document.body.appendChild(left);
+    #|document.body.appendChild(right);
+    #|for (const [el, name] of [[left, 'left'], [right, 'right']]) {
+    #|  for (const type of ['pointerover', 'mouseover', 'pointerenter', 'mouseenter', 'pointerout', 'mouseout', 'pointerleave', 'mouseleave']) {
+    #|    el.addEventListener(type, function (event) {
+    #|      const current = document.body.getAttribute('data-status') || '';
+    #|      const related = event.relatedTarget ? event.relatedTarget.id : 'none';
+    #|      const suffix = name + ':' + type + ':' + related;
+    #|      document.body.setAttribute('data-status', current ? current + '|' + suffix : suffix);
+    #|    });
+    #|  }
+    #|}
+    #|'ok'
+  let setup_result = ctx.execute(setup)
+  inspect(setup_result.success, content="true")
+
+  let run =
+    #|(function () {
+    #|  const left = document.getElementById('left');
+    #|  const right = document.getElementById('right');
+    #|  left.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, relatedTarget: null }));
+    #|  left.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, relatedTarget: null }));
+    #|  left.dispatchEvent(new PointerEvent('pointerenter', { bubbles: false, relatedTarget: null }));
+    #|  left.dispatchEvent(new MouseEvent('mouseenter', { bubbles: false, relatedTarget: null }));
+    #|  left.dispatchEvent(new PointerEvent('pointerout', { bubbles: true, relatedTarget: right }));
+    #|  left.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, relatedTarget: right }));
+    #|  left.dispatchEvent(new PointerEvent('pointerleave', { bubbles: false, relatedTarget: right }));
+    #|  left.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false, relatedTarget: right }));
+    #|  return document.body.getAttribute('data-status');
+    #|})()
+  let run_result = ctx.execute(run)
+  inspect(run_result.success, content="true")
+  inspect(
+    run_result.value,
+    content="left:pointerover:none|left:mouseover:none|left:pointerenter:none|left:mouseenter:none|left:pointerout:right|left:mouseout:right|left:pointerleave:right|left:mouseleave:right",
+  )
+}
+
+///|
 test "fetch: Response has required methods" {
   let dom = @dom.DomTree::new()
   let ctx = JsContext::new(dom)

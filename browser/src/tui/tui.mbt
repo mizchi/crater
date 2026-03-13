@@ -17,6 +17,7 @@ pub enum BrowserAction {
   Back // Go back to previous page
   Forward // Go forward to next page
   MouseClick(Int, Int) // (col, row) coordinates
+  MouseMove(Int, Int) // Mouse move at (col, row)
   MouseScrollUp(Int, Int) // Mouse wheel scroll up at (col, row)
   MouseScrollDown(Int, Int) // Mouse wheel scroll down at (col, row)
   EnterHintMode // Start hit-a-hint mode (triggered by 'f')
@@ -47,11 +48,14 @@ pub fn key_to_action(key : String) -> BrowserAction? {
     "H" | "Backspace" | "Delete" => Some(Back)
     "L" => Some(Forward)
     _ =>
-      // Check for mouse events: "Mouse:col,row" or "MouseScrollUp:col,row" or "MouseScrollDown:col,row"
+      // Check for mouse events: "Mouse:col,row", "MouseMove:col,row",
+      // "MouseScrollUp:col,row", or "MouseScrollDown:col,row"
       if key.has_prefix("MouseScrollUp:") {
         parse_mouse_scroll_up(key)
       } else if key.has_prefix("MouseScrollDown:") {
         parse_mouse_scroll_down(key)
+      } else if key.has_prefix("MouseMove:") {
+        parse_mouse_move(key)
       } else if key.has_prefix("Mouse:") {
         parse_mouse_click(key)
       } else {
@@ -96,6 +100,24 @@ fn parse_mouse_click(key : String) -> BrowserAction? {
       let col = @strconv.parse_int(col_str) catch { _ => return None }
       let row = @strconv.parse_int(row_str) catch { _ => return None }
       Some(MouseClick(col, row))
+    }
+    None => None
+  }
+}
+
+///|
+fn parse_mouse_move(key : String) -> BrowserAction? {
+  let parts = key.unsafe_substring(start=10, end=key.length())
+  match parts.find(",") {
+    Some(comma_idx) => {
+      let col_str = parts.unsafe_substring(start=0, end=comma_idx)
+      let row_str = parts.unsafe_substring(
+        start=comma_idx + 1,
+        end=parts.length(),
+      )
+      let col = @strconv.parse_int(col_str) catch { _ => return None }
+      let row = @strconv.parse_int(row_str) catch { _ => return None }
+      Some(MouseMove(col, row))
     }
     None => None
   }

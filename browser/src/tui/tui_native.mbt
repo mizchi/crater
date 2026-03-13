@@ -201,6 +201,9 @@ fn parse_mouse_event(key : String) -> String? {
   if btn == 65 {
     return Some("MouseScrollDown:\{col},\{row}")
   }
+  if suffix == 'M' && btn >= 32 {
+    return Some("MouseMove:\{col},\{row}")
+  }
   None
 }
 

@@ -366,13 +366,13 @@ pub fn buffer_diff_to_ansi_rects(
 ///|
 /// Enable mouse tracking (SGR mode for better coordinates)
 pub fn enable_mouse() -> String {
-  "\u001b[?1000h\u001b[?1006h"
+  "\u001b[?1003h\u001b[?1006h"
 }
 
 ///|
 /// Disable mouse tracking
 pub fn disable_mouse() -> String {
-  "\u001b[?1006l\u001b[?1000l"
+  "\u001b[?1006l\u001b[?1003l"
 }
 
 ///|

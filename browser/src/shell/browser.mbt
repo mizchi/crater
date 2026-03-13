@@ -119,6 +119,8 @@ struct Browser {
   element_scroll_states : Map[String, @dom.ScrollState]
   /// Currently focused scrollable element id (for keyboard scrolling)
   focused_scrollable : Ref[String?]
+  /// Currently hovered source element id
+  mut hovered_source_id : String?
   /// No-color mode (disable ANSI color codes)
   mut no_color : Bool
   /// Terminal columns (for pixel-to-column scaling)
@@ -166,6 +168,7 @@ pub fn Browser::new(
     enable_js: false, // Disabled by default for security
     element_scroll_states: {},
     focused_scrollable: Ref::new(None),
+    hovered_source_id: None,
     no_color: false,
     terminal_cols,
   }
@@ -1202,6 +1205,18 @@ fn Browser::get_paint_source_id_at(
 }
 
 ///|
+fn Browser::get_any_paint_source_id_at(
+  self : Browser,
+  col : Int,
+  row : Int,
+) -> String? {
+  match @tui.find_hit_region_at(self.hit_regions, col, row) {
+    Some(region) => Some(region.source_id)
+    None => None
+  }
+}
+
+///|
 fn bounds_contains_click(
   bounds : @aom.Bounds,
   px_x : Double,
@@ -1273,6 +1288,22 @@ fn Browser::get_source_id_at(self : Browser, col : Int, row : Int) -> String? {
     Some(source_id) => Some(source_id)
     None =>
       match self.get_paint_source_id_at(col, row) {
+        Some(source_id) => Some(source_id)
+        None => self.get_a11y_source_id_at(col, row)
+      }
+  }
+}
+
+///|
+fn Browser::get_hover_source_id_at(
+  self : Browser,
+  col : Int,
+  row : Int,
+) -> String? {
+  match self.get_link_source_id_at(col, row) {
+    Some(source_id) => Some(source_id)
+    None =>
+      match self.get_any_paint_source_id_at(col, row) {
         Some(source_id) => Some(source_id)
         None => self.get_a11y_source_id_at(col, row)
       }
@@ -1552,6 +1583,42 @@ fn Browser::dispatch_click_to_source_id(
 }
 
 ///|
+fn Browser::dispatch_hover_transition(
+  self : Browser,
+  previous_source_id : String?,
+  next_source_id : String?,
+  client_x : Int,
+  client_y : Int,
+) -> Bool {
+  if not(self.enable_js) {
+    return false
+  }
+  match (previous_source_id, next_source_id) {
+    (None, None) => return false
+    _ => ()
+  }
+  let previous_js = match previous_source_id {
+    Some(id) => "document.getElementById('" + escape_js_string(id) + "')"
+    None => "null"
+  }
+  let next_js = match next_source_id {
+    Some(id) => "document.getElementById('" + escape_js_string(id) + "')"
+    None => "null"
+  }
+  let source = "(function(){const previous=" +
+    previous_js +
+    ";const next=" +
+    next_js +
+    ";const clientX=" +
+    client_x.to_string() +
+    ";const clientY=" +
+    client_y.to_string() +
+    ";function dispatch(target,type,ctor,related,bubbles){if(!target){return;}const event=new ctor(type,{bubbles:bubbles,cancelable:false,clientX,clientY,pointerId:1,pointerType:'mouse',isPrimary:true,relatedTarget:related});target.dispatchEvent(event);}if(previous&&previous!==next){dispatch(previous,'pointerout',PointerEvent,next,true);dispatch(previous,'mouseout',MouseEvent,next,true);dispatch(previous,'pointerleave',PointerEvent,next,false);dispatch(previous,'mouseleave',MouseEvent,next,false);}if(next&&previous!==next){dispatch(next,'pointerover',PointerEvent,previous,true);dispatch(next,'mouseover',MouseEvent,previous,true);dispatch(next,'pointerenter',PointerEvent,previous,false);dispatch(next,'mouseenter',MouseEvent,previous,false);}if(next){dispatch(next,'pointermove',PointerEvent,previous,true);dispatch(next,'mousemove',MouseEvent,previous,true);}return 'ok';})()"
+  let _ = self.execute_inline_js(source)
+  self.sync_render_state_from_dom_tree()
+}
+
+///|
 fn Browser::dispatch_submit_to_source_id(
   self : Browser,
   source_id : String,
@@ -1714,6 +1781,19 @@ pub async fn Browser::activate_focused_link(
     }
     _ => false
   }
+}
+
+///|
+pub fn Browser::hover_at(self : Browser, col : Int, row : Int) -> Bool {
+  let next_source_id = self.get_hover_source_id_at(col, row)
+  let changed = self.dispatch_hover_transition(
+    self.hovered_source_id,
+    next_source_id,
+    cell_to_client_x(col),
+    cell_to_client_y(row),
+  )
+  self.hovered_source_id = next_source_id
+  changed
 }
 
 ///|

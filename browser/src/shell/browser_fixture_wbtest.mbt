@@ -107,6 +107,16 @@ fn center_of_source_id(browser : Browser, source_id : String) -> (Int, Int) {
 }
 
 ///|
+fn center_of_hit_source_id(browser : Browser, source_id : String) -> (Int, Int) {
+  for region in browser.hit_regions {
+    if region.source_id == source_id {
+      return (region.col + region.width / 2, region.row + region.height / 2)
+    }
+  }
+  panic()
+}
+
+///|
 async test "fixture form submit navigates on focused button activation" {
   let browser = Browser::new(800, 600)
   let html =
@@ -652,6 +662,48 @@ async test "fixture click dispatches pointer and mouse sequence before click rep
   )
   let rendered = browser.render_output(Text)
   assert_true(not(rendered.contains("before")))
+}
+
+///|
+async test "fixture hover dispatches pointer and mouse hover sequence" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0;position:relative">
+    #|  <div id="left" style="position:absolute;left:16px;top:16px;width:64px;height:32px;background:#ccc"></div>
+    #|  <div id="right" style="position:absolute;left:112px;top:16px;width:64px;height:32px;background:#999"></div>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    const status = document.getElementById('status');
+    #|    const events = [];
+    #|    function bind(id) {
+    #|      const el = document.getElementById(id);
+    #|      for (const type of ['pointerover', 'mouseover', 'pointerenter', 'mouseenter', 'pointermove', 'mousemove', 'pointerout', 'mouseout', 'pointerleave', 'mouseleave']) {
+    #|        el.addEventListener(type, function (event) {
+    #|          events.push(id + ':' + type + ':' + (event.relatedTarget ? event.relatedTarget.id : 'none'));
+    #|          status.textContent = events.join('|');
+    #|        });
+    #|      }
+    #|    }
+    #|    bind('left');
+    #|    bind('right');
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let (left_col, left_row) = center_of_hit_source_id(browser, "left")
+  let (right_col, right_row) = center_of_hit_source_id(browser, "right")
+  inspect(browser.hover_at(left_col, left_row), content="true")
+  inspect(browser.hover_at(right_col, right_row), content="true")
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ return document.getElementById('status').textContent; })()",
+    ),
+    content="Some(\"left:pointerover:none|left:mouseover:none|left:pointerenter:none|left:mouseenter:none|left:pointermove:none|left:mousemove:none|left:pointerout:right|left:mouseout:right|left:pointerleave:right|left:mouseleave:right|right:pointerover:left|right:mouseover:left|right:pointerenter:left|right:mouseenter:left|right:pointermove:left|right:mousemove:left\")",
+  )
 }
 
 ///|

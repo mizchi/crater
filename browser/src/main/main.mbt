@@ -508,6 +508,10 @@ async fn main {
           render_page(browser, options)
         }
       }
+      Some(@tui.MouseMove(col, row)) =>
+        if browser.hover_at(col, row) {
+          render_page(browser, options)
+        }
       Some(@tui.MouseScrollUp(_, _)) => {
         // Mouse wheel scroll up - scroll page up
         browser.scroll_up(48) // 3 lines * 16px

@@ -1329,6 +1329,70 @@ async test "Browser activate_at dispatches pointer and mouse events before click
 }
 
 ///|
+async test "Browser hover_at dispatches pointer and mouse hover sequence" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0;position:relative">
+    #|  <div id="left" style="position:absolute;left:16px;top:16px;width:64px;height:32px;background:#ccc"></div>
+    #|  <div id="right" style="position:absolute;left:112px;top:16px;width:64px;height:32px;background:#999"></div>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    const status = document.getElementById('status');
+    #|    const events = [];
+    #|    function bind(id) {
+    #|      const el = document.getElementById(id);
+    #|      for (const type of ['pointerover', 'mouseover', 'pointerenter', 'mouseenter', 'pointermove', 'mousemove', 'pointerout', 'mouseout', 'pointerleave', 'mouseleave']) {
+    #|        el.addEventListener(type, function (event) {
+    #|          events.push(id + ':' + type + ':' + (event.relatedTarget ? event.relatedTarget.id : 'none'));
+    #|          status.textContent = events.join('|');
+    #|        });
+    #|      }
+    #|    }
+    #|    bind('left');
+    #|    bind('right');
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let mut left_region : @tui.HitRegion? = None
+  let mut right_region : @tui.HitRegion? = None
+  for region in browser.hit_regions {
+    if region.source_id == "left" {
+      left_region = Some(region)
+    }
+    if region.source_id == "right" {
+      right_region = Some(region)
+    }
+  }
+  let (left_col, left_row, right_col, right_row) = match
+    (left_region, right_region) {
+    (Some(left), Some(right)) =>
+      (
+        left.col + left.width / 2,
+        left.row + left.height / 2,
+        right.col + right.width / 2,
+        right.row + right.height / 2,
+      )
+    _ => panic()
+  }
+  inspect(browser.hover_at(left_col, left_row), content="true")
+  inspect(browser.hover_at(right_col, right_row), content="true")
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ return document.getElementById('status').textContent; })()",
+    ),
+    content="Some(\"left:pointerover:none|left:mouseover:none|left:pointerenter:none|left:mouseenter:none|left:pointermove:none|left:mousemove:none|left:pointerout:right|left:mouseout:right|left:pointerleave:right|left:mouseleave:right|right:pointerover:left|right:mouseover:left|right:pointerenter:left|right:mouseenter:left|right:pointermove:left|right:mousemove:left\")",
+  )
+}
+
+///|
 async test "Browser activate_at prefers topmost persisted addEventListener element" {
   let browser = Browser::new(800, 600)
   let html =

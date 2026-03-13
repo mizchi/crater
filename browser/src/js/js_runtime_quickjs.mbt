@@ -530,7 +530,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       return target._listeners;
   #|     }
   #|     const _persistedListenerAttrPrefix = 'data-crater-listeners-';
-  #|     const _persistedListenerTypes = ['click', 'input', 'change', 'submit', 'keydown', 'keypress', 'keyup', 'focus', 'blur', 'focusin', 'focusout', 'pointerdown', 'pointermove', 'pointerup', 'compositionstart', 'compositionupdate', 'compositionend'];
+  #|     const _persistedListenerTypes = ['click', 'input', 'change', 'submit', 'keydown', 'keypress', 'keyup', 'focus', 'blur', 'focusin', 'focusout', 'pointerdown', 'pointermove', 'pointerup', 'pointerover', 'pointerout', 'pointerenter', 'pointerleave', 'mousedown', 'mousemove', 'mouseup', 'mouseover', 'mouseout', 'mouseenter', 'mouseleave', 'compositionstart', 'compositionupdate', 'compositionend'];
   #|     function _shouldPersistListener(target, eventType, listener) {
   #|       return _persistedListenerTypes.includes(eventType) &&
   #|         target &&
@@ -6634,11 +6634,13 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         this._screenY = options.screenY || 0;
   #|         this._clientX = options.clientX || 0;
   #|         this._clientY = options.clientY || 0;
+  #|         this._relatedTarget = options.relatedTarget || null;
   #|       }
   #|       get screenX() { return this._screenX; }
   #|       get screenY() { return this._screenY; }
   #|       get clientX() { return this._clientX; }
   #|       get clientY() { return this._clientY; }
+  #|       get relatedTarget() { return this._relatedTarget; }
   #|     }
   #|     class FocusEvent extends UIEvent {}
   #|     class KeyboardEvent extends UIEvent {}
