@@ -399,6 +399,36 @@ async test "fixture focused text input moves caret with Home and End" {
 }
 
 ///|
+async test "fixture focused text input select() replaces all text" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="abcd" style="display:block;width:120px;height:32px" />
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('field').addEventListener('input', function (event) {
+    #|      document.getElementById('status').textContent =
+    #|        event.target.value + '|' + String(event.target.selectionStart) + '|' + String(event.target.selectionEnd);
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); field.select(); return 'ok'; })()",
+  )
+  let handled = browser.handle_focused_key("x") catch { _ => false }
+  inspect(handled, content="true")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("x|1|1"))
+}
+
+///|
 async test "fixture focused textarea Enter inserts newline without submit" {
   let browser = Browser::new(800, 600)
   let html =

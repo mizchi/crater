@@ -3430,6 +3430,33 @@ test "text controls expose selectionStart and setSelectionRange" {
 }
 
 ///|
+test "text controls select() selects entire value" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const input = document.createElement('input');
+    #|input.value = 'abcd';
+    #|input.select();
+    #|const textarea = document.createElement('textarea');
+    #|textarea.value = 'xyz';
+    #|textarea.select();
+    #|[
+    #|  String(input.selectionStart),
+    #|  String(input.selectionEnd),
+    #|  String(textarea.selectionStart),
+    #|  String(textarea.selectionEnd)
+    #|].join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="0|4|0|3")
+}
+
+///|
 test "persisted pointer listeners survive later execution" {
   let dom = @dom.DomTree::new()
   let html = dom.create_element("html")

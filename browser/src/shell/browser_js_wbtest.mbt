@@ -2264,6 +2264,37 @@ async test "Browser handle_focused_key moves caret with Home and End" {
 }
 
 ///|
+async test "Browser handle_focused_key replaces all text after select()" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="abcd" style="display:block;width:120px;height:32px" />
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); field.select(); return 'ok'; })()",
+  )
+
+  let handled = browser.handle_focused_key("x") catch { _ => false }
+  inspect(handled, content="true")
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ const field=document.getElementById('field'); return field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
+    ),
+    content="Some(\"x|1|1\")",
+  )
+}
+
+///|
 async test "Browser handle_focused_key dispatches change event for focused text input on Enter" {
   let browser = Browser::new(800, 600)
   let html =

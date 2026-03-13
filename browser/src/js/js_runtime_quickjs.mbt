@@ -3185,6 +3185,9 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|     HTMLInputElement.prototype.setSelectionRange = function(start, end) {
   #|       setSelectionState(this, start, end);
   #|     };
+  #|     HTMLInputElement.prototype.select = function() {
+  #|       setSelectionState(this, 0, getTextControlValue(this).length);
+  #|     };
   #|     Object.defineProperty(HTMLButtonElement.prototype, 'value', {
   #|       get() { return getReflectedStringAttribute(this, 'value'); },
   #|       set(v) { setReflectedStringAttribute(this, 'value', v); },
@@ -3209,6 +3212,9 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|     });
   #|     HTMLTextAreaElement.prototype.setSelectionRange = function(start, end) {
   #|       setSelectionState(this, start, end);
+  #|     };
+  #|     HTMLTextAreaElement.prototype.select = function() {
+  #|       setSelectionState(this, 0, getTextControlValue(this).length);
   #|     };
   #|     Object.defineProperties(HTMLOptionElement.prototype, {
   #|       value: {
