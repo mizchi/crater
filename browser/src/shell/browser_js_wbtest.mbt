@@ -1412,6 +1412,7 @@ async test "Browser pointer drag dispatches drag sequence between source and tar
     #|    }
     #|    for (const type of ['dragenter', 'dragover', 'drop']) {
     #|      document.getElementById('target').addEventListener(type, function (event) {
+    #|        if (type === 'dragover') event.preventDefault();
     #|        events.push('target:' + type + '@' + event.clientX + ',' + event.clientY);
     #|        status.textContent = events.join('|');
     #|      });
@@ -1488,6 +1489,7 @@ async test "Browser pointer drag preserves dataTransfer and switches drag target
     #|      const el = document.getElementById(id);
     #|      for (const type of types) {
     #|        el.addEventListener(type, function (event) {
+    #|          if (id === 'target' && type === 'dragover') event.preventDefault();
     #|          events.push(id + ':' + type + ':' + event.dataTransfer.getData('text/plain'));
     #|          status.textContent = events.join('|');
     #|        });
@@ -1574,6 +1576,54 @@ async test "Browser pointer drag leaving targets dispatches dragleave without dr
       "(function(){ return document.getElementById('status').textContent; })()",
     ),
     content="Some(\"source:dragstart|source:drag|target:dragenter|target:dragover|source:drag|target:dragleave|source:dragend\")",
+  )
+}
+
+///|
+async test "Browser pointer drag does not drop without dragover preventDefault" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0;position:relative">
+    #|  <div id="source" draggable="true" style="position:absolute;left:16px;top:16px;width:72px;height:40px;background:#ccc"></div>
+    #|  <div id="target" style="position:absolute;left:144px;top:16px;width:96px;height:48px;background:#999"></div>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    const status = document.getElementById('status');
+    #|    const events = [];
+    #|    for (const type of ['dragstart', 'drag', 'dragend']) {
+    #|      document.getElementById('source').addEventListener(type, function () {
+    #|        events.push('source:' + type);
+    #|        status.textContent = events.join('|');
+    #|      });
+    #|    }
+    #|    for (const type of ['dragenter', 'dragover', 'drop']) {
+    #|      document.getElementById('target').addEventListener(type, function () {
+    #|        events.push('target:' + type);
+    #|        status.textContent = events.join('|');
+    #|      });
+    #|    }
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let (source_col, source_row) = center_of_hit_source_id(browser, "source")
+  let (target_col, target_row) = center_of_hit_source_id(browser, "target")
+  inspect(browser.pointer_down_at(source_col, source_row), content="true")
+  inspect(browser.pointer_move_at(target_col, target_row), content="true")
+  let released = browser.pointer_up_at(target_col, target_row) catch { _ => false }
+  inspect(released, content="true")
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ return document.getElementById('status').textContent; })()",
+    ),
+    content="Some(\"source:dragstart|source:drag|target:dragenter|target:dragover|source:dragend\")",
   )
 }
 
