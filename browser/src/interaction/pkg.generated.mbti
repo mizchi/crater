@@ -8,7 +8,13 @@ import {
 }
 
 // Values
+pub fn command_name(InteractionCommand) -> String
+
+pub fn command_of_action(@tui.BrowserAction) -> InteractionCommand
+
 pub async fn dispatch_action(@shell.Browser, @tui.BrowserAction) -> DispatchEffect raise @http.HttpError
+
+pub async fn dispatch_command(@shell.Browser, InteractionCommand) -> DispatchEffect raise @http.HttpError
 
 pub async fn dispatch_key(@shell.Browser, String) -> DispatchEffect raise @http.HttpError
 
@@ -23,6 +29,30 @@ pub enum DispatchEffect {
   Quit
   PromptUrl
   SelectionModeChanged(Bool)
+}
+
+pub enum InteractionCommand {
+  IdleTick
+  FocusedKey(String)
+  ScrollBy(Int)
+  PageScroll(Int)
+  FocusNext
+  FocusPrev
+  ActivateFocused
+  PromptUrl
+  Refresh
+  Back
+  Forward
+  PointerClick(Int, Int)
+  PointerDown(Int, Int)
+  PointerUp(Int, Int)
+  PointerMove(Int, Int)
+  EnterHintMode
+  ExitHintMode
+  HintChar(String)
+  ToggleSelectionMode
+  ToggleDarkMode
+  Quit
 }
 
 // Type aliases
