@@ -3470,7 +3470,7 @@ test "persisted drag listeners survive later execution" {
     #|document.body.appendChild(source);
     #|document.body.appendChild(target);
     #|window.__dragLog = [];
-    #|for (const type of ['dragstart', 'dragend']) {
+    #|for (const type of ['dragstart', 'drag', 'dragend']) {
     #|  source.addEventListener(type, function (event) {
     #|    window.__dragLog.push('source:' + type + ':' + event.clientX + ',' + event.clientY);
     #|  });
@@ -3488,6 +3488,7 @@ test "persisted drag listeners survive later execution" {
     #|  const source = document.getElementById('source');
     #|  const target = document.getElementById('target');
     #|  source.dispatchEvent(new DragEvent('dragstart', { bubbles: true, clientX: 20, clientY: 12 }));
+    #|  source.dispatchEvent(new DragEvent('drag', { bubbles: true, clientX: 32, clientY: 20 }));
     #|  target.dispatchEvent(new DragEvent('dragenter', { bubbles: true, clientX: 44, clientY: 28 }));
     #|  target.dispatchEvent(new DragEvent('dragover', { bubbles: true, clientX: 44, clientY: 28 }));
     #|  target.dispatchEvent(new DragEvent('drop', { bubbles: true, clientX: 44, clientY: 28 }));
@@ -3498,7 +3499,7 @@ test "persisted drag listeners survive later execution" {
   inspect(run_result.success, content="true")
   inspect(
     run_result.value,
-    content="source:dragstart:20,12|target:dragenter:44,28|target:dragover:44,28|target:drop:44,28|source:dragend:44,28",
+    content="source:dragstart:20,12|source:drag:32,20|target:dragenter:44,28|target:dragover:44,28|target:drop:44,28|source:dragend:44,28",
   )
 }
 

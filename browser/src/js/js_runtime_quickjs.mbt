@@ -530,7 +530,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       return target._listeners;
   #|     }
   #|     const _persistedListenerAttrPrefix = 'data-crater-listeners-';
-  #|     const _persistedListenerTypes = ['click', 'input', 'change', 'submit', 'keydown', 'keypress', 'keyup', 'focus', 'blur', 'focusin', 'focusout', 'pointerdown', 'pointermove', 'pointerup', 'pointerover', 'pointerout', 'pointerenter', 'pointerleave', 'mousedown', 'mousemove', 'mouseup', 'mouseover', 'mouseout', 'mouseenter', 'mouseleave', 'dragstart', 'dragenter', 'dragover', 'dragleave', 'drop', 'dragend', 'compositionstart', 'compositionupdate', 'compositionend'];
+  #|     const _persistedListenerTypes = ['click', 'input', 'change', 'submit', 'keydown', 'keypress', 'keyup', 'focus', 'blur', 'focusin', 'focusout', 'pointerdown', 'pointermove', 'pointerup', 'pointerover', 'pointerout', 'pointerenter', 'pointerleave', 'mousedown', 'mousemove', 'mouseup', 'mouseover', 'mouseout', 'mouseenter', 'mouseleave', 'dragstart', 'drag', 'dragenter', 'dragover', 'dragleave', 'drop', 'dragend', 'compositionstart', 'compositionupdate', 'compositionend'];
   #|     function _shouldPersistListener(target, eventType, listener) {
   #|       return _persistedListenerTypes.includes(eventType) &&
   #|         target &&

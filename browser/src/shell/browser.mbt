@@ -1943,6 +1943,11 @@ pub fn Browser::pointer_move_at(self : Browser, col : Int, row : Int) -> Bool {
       }
       match self.dragging_source_id {
         Some(drag_id) => {
+          if self.dispatch_drag_event_to_source_id(
+              drag_id, "drag", client_x, client_y,
+            ) {
+            changed = true
+          }
           let next_target = self.get_hover_source_id_at(col, row)
           if self.drag_over_source_id != next_target {
             match self.drag_over_source_id {

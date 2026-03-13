@@ -1404,7 +1404,7 @@ async test "Browser pointer drag dispatches drag sequence between source and tar
     #|  <script>
     #|    const status = document.getElementById('status');
     #|    const events = [];
-    #|    for (const type of ['dragstart', 'dragend']) {
+    #|    for (const type of ['dragstart', 'drag', 'dragend']) {
     #|      document.getElementById('source').addEventListener(type, function (event) {
     #|        events.push('source:' + type + '@' + event.clientX + ',' + event.clientY);
     #|        status.textContent = events.join('|');
@@ -1444,6 +1444,8 @@ async test "Browser pointer drag dispatches drag sequence between source and tar
     ),
     content="Some(\"source:dragstart" +
       target_point +
+      "|source:drag" +
+      target_point +
       "|target:dragenter" +
       target_point +
       "|target:dragover" +
@@ -1472,6 +1474,10 @@ async test "Browser pointer drag preserves dataTransfer and switches drag target
     #|    document.getElementById('source').addEventListener('dragstart', function (event) {
     #|      event.dataTransfer.setData('text/plain', 'payload');
     #|      events.push('source:dragstart:' + event.dataTransfer.getData('text/plain'));
+    #|      status.textContent = events.join('|');
+    #|    });
+    #|    document.getElementById('source').addEventListener('drag', function (event) {
+    #|      events.push('source:drag:' + event.dataTransfer.getData('text/plain'));
     #|      status.textContent = events.join('|');
     #|    });
     #|    document.getElementById('source').addEventListener('dragend', function (event) {
@@ -1509,7 +1515,7 @@ async test "Browser pointer drag preserves dataTransfer and switches drag target
     browser.execute_inline_js(
       "(function(){ return document.getElementById('status').textContent; })()",
     ),
-    content="Some(\"source:dragstart:payload|mid:dragenter:payload|mid:dragover:payload|mid:dragleave:payload|target:dragenter:payload|target:dragover:payload|target:drop:payload|source:dragend:payload\")",
+    content="Some(\"source:dragstart:payload|source:drag:payload|mid:dragenter:payload|mid:dragover:payload|source:drag:payload|mid:dragleave:payload|target:dragenter:payload|target:dragover:payload|target:drop:payload|source:dragend:payload\")",
   )
 }
 
@@ -1529,6 +1535,10 @@ async test "Browser pointer drag leaving targets dispatches dragleave without dr
     #|    document.getElementById('source').addEventListener('dragstart', function (event) {
     #|      event.dataTransfer.setData('text/plain', 'payload');
     #|      events.push('source:dragstart');
+    #|      status.textContent = events.join('|');
+    #|    });
+    #|    document.getElementById('source').addEventListener('drag', function () {
+    #|      events.push('source:drag');
     #|      status.textContent = events.join('|');
     #|    });
     #|    document.getElementById('source').addEventListener('dragend', function () {
@@ -1563,7 +1573,7 @@ async test "Browser pointer drag leaving targets dispatches dragleave without dr
     browser.execute_inline_js(
       "(function(){ return document.getElementById('status').textContent; })()",
     ),
-    content="Some(\"source:dragstart|target:dragenter|target:dragover|target:dragleave|source:dragend\")",
+    content="Some(\"source:dragstart|source:drag|target:dragenter|target:dragover|source:drag|target:dragleave|source:dragend\")",
   )
 }
 
