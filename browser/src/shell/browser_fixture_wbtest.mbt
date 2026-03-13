@@ -429,6 +429,29 @@ async test "fixture focused text input select() replaces all text" {
 }
 
 ///|
+async test "fixture execute_inline_js setRangeText updates render" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="abcd" style="display:block;width:120px;height:32px" />
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let result = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); const status=document.getElementById('status'); field.setRangeText('xy',1,3,'select'); status.textContent = field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); return status.textContent; })()",
+  )
+  inspect(result, content="Some(\"axyd|1|3\")")
+  let _ = browser.sync_render_state_from_dom_tree()
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("axyd|1|3"))
+}
+
+///|
 async test "fixture focused textarea Enter inserts newline without submit" {
   let browser = Browser::new(800, 600)
   let html =

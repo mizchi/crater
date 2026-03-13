@@ -2295,6 +2295,34 @@ async test "Browser handle_focused_key replaces all text after select()" {
 }
 
 ///|
+async test "Browser execute_inline_js setRangeText updates focused text input" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="abcd" style="display:block;width:120px;height:32px" />
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+
+  let result = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); const status=document.getElementById('status'); field.setRangeText('xy',1,3,'select'); status.textContent = field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); return status.textContent; })()",
+  )
+  inspect(result, content="Some(\"axyd|1|3\")")
+  let _ = browser.sync_render_state_from_dom_tree()
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("axyd|1|3"))
+}
+
+///|
 async test "Browser handle_focused_key dispatches change event for focused text input on Enter" {
   let browser = Browser::new(800, 600)
   let html =

@@ -3457,6 +3457,31 @@ test "text controls select() selects entire value" {
 }
 
 ///|
+test "text controls setRangeText replaces range and updates selection" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const input = document.createElement('input');
+    #|input.value = 'abcd';
+    #|input.setRangeText('xy', 1, 3);
+    #|const textarea = document.createElement('textarea');
+    #|textarea.value = 'abcd';
+    #|textarea.setRangeText('xy', 1, 3, 'select');
+    #|[
+    #|  input.value + '|' + String(input.selectionStart) + '|' + String(input.selectionEnd),
+    #|  textarea.value + '|' + String(textarea.selectionStart) + '|' + String(textarea.selectionEnd)
+    #|].join('||')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="axyd|3|3||axyd|1|3")
+}
+
+///|
 test "persisted pointer listeners survive later execution" {
   let dom = @dom.DomTree::new()
   let html = dom.create_element("html")

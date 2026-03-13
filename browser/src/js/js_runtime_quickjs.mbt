@@ -3188,6 +3188,33 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|     HTMLInputElement.prototype.select = function() {
   #|       setSelectionState(this, 0, getTextControlValue(this).length);
   #|     };
+  #|     HTMLInputElement.prototype.setRangeText = function(replacement, start, end, selectionMode) {
+  #|       const value = getTextControlValue(this);
+  #|       const state = ensureSelectionState(this);
+  #|       const rangeStart = start === undefined ? state.start : start;
+  #|       const rangeEnd = end === undefined ? state.end : end;
+  #|       const nextStart = clampSelectionIndex(this, rangeStart);
+  #|       let nextEnd = clampSelectionIndex(this, rangeEnd);
+  #|       if (nextEnd < nextStart) nextEnd = nextStart;
+  #|       const text = replacement === null || replacement === undefined ? '' : String(replacement);
+  #|       setReflectedStringAttribute(this, 'value', value.slice(0, nextStart) + text + value.slice(nextEnd));
+  #|       const insertedEnd = nextStart + text.length;
+  #|       switch (selectionMode) {
+  #|         case 'select':
+  #|           setSelectionState(this, nextStart, insertedEnd);
+  #|           break;
+  #|         case 'start':
+  #|           setSelectionState(this, nextStart, nextStart);
+  #|           break;
+  #|         case 'preserve':
+  #|         case undefined:
+  #|         case null:
+  #|         case 'end':
+  #|         default:
+  #|           setSelectionState(this, insertedEnd, insertedEnd);
+  #|           break;
+  #|       }
+  #|     };
   #|     Object.defineProperty(HTMLButtonElement.prototype, 'value', {
   #|       get() { return getReflectedStringAttribute(this, 'value'); },
   #|       set(v) { setReflectedStringAttribute(this, 'value', v); },
@@ -3215,6 +3242,33 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|     };
   #|     HTMLTextAreaElement.prototype.select = function() {
   #|       setSelectionState(this, 0, getTextControlValue(this).length);
+  #|     };
+  #|     HTMLTextAreaElement.prototype.setRangeText = function(replacement, start, end, selectionMode) {
+  #|       const value = getTextControlValue(this);
+  #|       const state = ensureSelectionState(this);
+  #|       const rangeStart = start === undefined ? state.start : start;
+  #|       const rangeEnd = end === undefined ? state.end : end;
+  #|       const nextStart = clampSelectionIndex(this, rangeStart);
+  #|       let nextEnd = clampSelectionIndex(this, rangeEnd);
+  #|       if (nextEnd < nextStart) nextEnd = nextStart;
+  #|       const text = replacement === null || replacement === undefined ? '' : String(replacement);
+  #|       this.textContent = value.slice(0, nextStart) + text + value.slice(nextEnd);
+  #|       const insertedEnd = nextStart + text.length;
+  #|       switch (selectionMode) {
+  #|         case 'select':
+  #|           setSelectionState(this, nextStart, insertedEnd);
+  #|           break;
+  #|         case 'start':
+  #|           setSelectionState(this, nextStart, nextStart);
+  #|           break;
+  #|         case 'preserve':
+  #|         case undefined:
+  #|         case null:
+  #|         case 'end':
+  #|         default:
+  #|           setSelectionState(this, insertedEnd, insertedEnd);
+  #|           break;
+  #|       }
   #|     };
   #|     Object.defineProperties(HTMLOptionElement.prototype, {
   #|       value: {
