@@ -202,6 +202,39 @@ async test "fixture focused text input Enter submits form" {
 }
 
 ///|
+async test "fixture focused text input beforeinput can prevent typing repaint" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="" style="display:block;width:120px;height:32px" />
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    const field = document.getElementById('field');
+    #|    field.addEventListener('beforeinput', function (event) {
+    #|      document.getElementById('status').textContent = String(event.inputType || '') + ':' + String(event.data || '');
+    #|      event.preventDefault();
+    #|    });
+    #|    field.addEventListener('input', function () {
+    #|      const status = document.getElementById('status');
+    #|      status.textContent = status.textContent + '|input';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let handled = browser.handle_focused_key("x") catch { _ => false }
+  inspect(handled, content="true")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("insertText:x"))
+  assert_true(not(rendered.contains("|input")))
+}
+
+///|
 async test "fixture focused textarea Enter inserts newline without submit" {
   let browser = Browser::new(800, 600)
   let html =
@@ -867,7 +900,9 @@ async test "fixture pointer drag preserves dataTransfer and switches drag target
   inspect(browser.pointer_down_at(source_col, source_row), content="true")
   inspect(browser.pointer_move_at(mid_col, mid_row), content="true")
   inspect(browser.pointer_move_at(target_col, target_row), content="true")
-  let released = browser.pointer_up_at(target_col, target_row) catch { _ => false }
+  let released = browser.pointer_up_at(target_col, target_row) catch {
+    _ => false
+  }
   inspect(released, content="true")
   inspect(
     browser.execute_inline_js(
@@ -924,7 +959,9 @@ async test "fixture pointer drag shares DataTransfer mutations through drop" {
   let (target_col, target_row) = center_of_hit_source_id(browser, "target")
   inspect(browser.pointer_down_at(source_col, source_row), content="true")
   inspect(browser.pointer_move_at(target_col, target_row), content="true")
-  let released = browser.pointer_up_at(target_col, target_row) catch { _ => false }
+  let released = browser.pointer_up_at(target_col, target_row) catch {
+    _ => false
+  }
   inspect(released, content="true")
   inspect(
     browser.execute_inline_js(
@@ -979,7 +1016,9 @@ async test "fixture pointer drag leaving targets dispatches dragleave without dr
   inspect(browser.pointer_down_at(source_col, source_row), content="true")
   inspect(browser.pointer_move_at(target_col, target_row), content="true")
   inspect(browser.pointer_move_at(outside_col, outside_row), content="true")
-  let released = browser.pointer_up_at(outside_col, outside_row) catch { _ => false }
+  let released = browser.pointer_up_at(outside_col, outside_row) catch {
+    _ => false
+  }
   inspect(released, content="true")
   inspect(
     browser.execute_inline_js(
@@ -1024,7 +1063,9 @@ async test "fixture pointer drag does not drop without dragover preventDefault" 
   let (target_col, target_row) = center_of_hit_source_id(browser, "target")
   inspect(browser.pointer_down_at(source_col, source_row), content="true")
   inspect(browser.pointer_move_at(target_col, target_row), content="true")
-  let released = browser.pointer_up_at(target_col, target_row) catch { _ => false }
+  let released = browser.pointer_up_at(target_col, target_row) catch {
+    _ => false
+  }
   inspect(released, content="true")
   inspect(
     browser.execute_inline_js(
@@ -1080,7 +1121,9 @@ async test "fixture pointer drag does not drop when effectAllowed is none" {
   let (target_col, target_row) = center_of_hit_source_id(browser, "target")
   inspect(browser.pointer_down_at(source_col, source_row), content="true")
   inspect(browser.pointer_move_at(target_col, target_row), content="true")
-  let released = browser.pointer_up_at(target_col, target_row) catch { _ => false }
+  let released = browser.pointer_up_at(target_col, target_row) catch {
+    _ => false
+  }
   inspect(released, content="true")
   inspect(
     browser.execute_inline_js(
@@ -1136,7 +1179,9 @@ async test "fixture pointer drag does not drop when dropEffect is incompatible w
   let (target_col, target_row) = center_of_hit_source_id(browser, "target")
   inspect(browser.pointer_down_at(source_col, source_row), content="true")
   inspect(browser.pointer_move_at(target_col, target_row), content="true")
-  let released = browser.pointer_up_at(target_col, target_row) catch { _ => false }
+  let released = browser.pointer_up_at(target_col, target_row) catch {
+    _ => false
+  }
   inspect(released, content="true")
   inspect(
     browser.execute_inline_js(

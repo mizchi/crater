@@ -3361,6 +3361,47 @@ test "persisted composition listeners survive later execution" {
 }
 
 ///|
+test "persisted beforeinput listeners survive later execution" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let setup =
+    #|const field = document.createElement('input');
+    #|field.id = 'field';
+    #|document.body.appendChild(field);
+    #|field.addEventListener('beforeinput', function (event) {
+    #|  document.body.setAttribute(
+    #|    'data-status',
+    #|    String(event.inputType || '') + ':' + String(event.data || '')
+    #|  );
+    #|  event.preventDefault();
+    #|});
+    #|'ok'
+  let setup_result = ctx.execute(setup)
+  inspect(setup_result.success, content="true")
+
+  let run =
+    #|(function () {
+    #|  const field = document.getElementById('field');
+    #|  const event = new InputEvent('beforeinput', {
+    #|    bubbles: true,
+    #|    cancelable: true,
+    #|    inputType: 'insertText',
+    #|    data: 'x',
+    #|  });
+    #|  const allowed = field.dispatchEvent(event);
+    #|  return String(allowed) + '|' + String(document.body.getAttribute('data-status'));
+    #|})()
+  let run_result = ctx.execute(run)
+  inspect(run_result.success, content="true")
+  inspect(run_result.value, content="false|insertText:x")
+}
+
+///|
 test "persisted pointer listeners survive later execution" {
   let dom = @dom.DomTree::new()
   let html = dom.create_element("html")

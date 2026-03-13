@@ -530,7 +530,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       return target._listeners;
   #|     }
   #|     const _persistedListenerAttrPrefix = 'data-crater-listeners-';
-  #|     const _persistedListenerTypes = ['click', 'input', 'change', 'submit', 'keydown', 'keypress', 'keyup', 'focus', 'blur', 'focusin', 'focusout', 'pointerdown', 'pointermove', 'pointerup', 'pointerover', 'pointerout', 'pointerenter', 'pointerleave', 'mousedown', 'mousemove', 'mouseup', 'mouseover', 'mouseout', 'mouseenter', 'mouseleave', 'dragstart', 'drag', 'dragenter', 'dragover', 'dragleave', 'drop', 'dragend', 'compositionstart', 'compositionupdate', 'compositionend'];
+  #|     const _persistedListenerTypes = ['click', 'beforeinput', 'input', 'change', 'submit', 'keydown', 'keypress', 'keyup', 'focus', 'blur', 'focusin', 'focusout', 'pointerdown', 'pointermove', 'pointerup', 'pointerover', 'pointerout', 'pointerenter', 'pointerleave', 'mousedown', 'mousemove', 'mouseup', 'mouseover', 'mouseout', 'mouseenter', 'mouseleave', 'dragstart', 'drag', 'dragenter', 'dragover', 'dragleave', 'drop', 'dragend', 'compositionstart', 'compositionupdate', 'compositionend'];
   #|     function _shouldPersistListener(target, eventType, listener) {
   #|       return _persistedListenerTypes.includes(eventType) &&
   #|         target &&
@@ -6214,6 +6214,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           'focusevent': FocusEvent,
   #|           'hashchangeevent': HashChangeEvent,
   #|           'htmlevents': Event,
+  #|           'inputevent': InputEvent,
   #|           'keyboardevent': KeyboardEvent,
   #|           'messageevent': MessageEvent,
   #|           'mouseevent': MouseEvent,
@@ -6658,6 +6659,15 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         this.isPrimary = options.isPrimary !== undefined ? !!options.isPrimary : true;
   #|       }
   #|     }
+  #|     class InputEvent extends UIEvent {
+  #|       constructor(type, options) {
+  #|         options = options || {};
+  #|         super(type, options);
+  #|         this.data = options.data !== undefined ? options.data : null;
+  #|         this.inputType = options.inputType || '';
+  #|         this.isComposing = !!options.isComposing;
+  #|       }
+  #|     }
   #|     class CompositionEvent extends UIEvent {
   #|       constructor(type, options) {
   #|         options = options || {};
@@ -6766,6 +6776,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       PointerEvent: PointerEvent,
   #|       FocusEvent: FocusEvent,
   #|       KeyboardEvent: KeyboardEvent,
+  #|       InputEvent: InputEvent,
   #|       CompositionEvent: CompositionEvent,
   #|       CustomEvent: CustomEvent,
   #|       HashChangeEvent: HashChangeEvent,
