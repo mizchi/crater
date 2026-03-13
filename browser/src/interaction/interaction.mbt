@@ -27,6 +27,14 @@ pub struct DragDispatchEvent {
 }
 
 ///|
+pub struct DragMoveTargetPlan {
+  over_target : String
+  emit_dragleave : Bool
+  emit_dragenter : Bool
+  emit_dragover : Bool
+}
+
+///|
 pub enum InteractionCommand {
   IdleTick
   FocusedKey(String)
@@ -170,6 +178,23 @@ pub fn pointer_dispatch_event_names(
 }
 
 ///|
+pub fn drag_move_target_plan(
+  drag_source : String,
+  previous_over_target : String,
+  hover_target : String,
+) -> DragMoveTargetPlan {
+  let plan = @interaction_policy.drag_move_target_plan(
+    drag_source, previous_over_target, hover_target,
+  )
+  {
+    over_target: plan.over_target,
+    emit_dragleave: plan.emit_dragleave,
+    emit_dragenter: plan.emit_dragenter,
+    emit_dragover: plan.emit_dragover,
+  }
+}
+
+///|
 pub fn drag_move_event_sequence(
   emit_dragstart? : Bool = false,
   emit_dragleave? : Bool = false,
@@ -211,11 +236,9 @@ pub fn drag_accept_target(
   drag_target : String,
   dragover_prevented : Bool,
 ) -> String {
-  if dragover_prevented && drag_target != "" && drag_target != drag_source {
-    drag_target
-  } else {
-    ""
-  }
+  @interaction_policy.drag_accept_target(
+    drag_source, drag_target, dragover_prevented,
+  )
 }
 
 ///|
@@ -224,13 +247,25 @@ pub fn drag_drop_target(
   drag_over_target : String,
   accepted_target : String,
 ) -> String {
-  if drag_over_target != "" &&
-    accepted_target == drag_over_target &&
-    drag_over_target != drag_source {
-    drag_over_target
-  } else {
-    ""
-  }
+  @interaction_policy.drag_drop_target(
+    drag_source, drag_over_target, accepted_target,
+  )
+}
+
+///|
+pub fn normalized_drop_effect(
+  effect_allowed : String,
+  drop_effect : String,
+) -> String {
+  @interaction_policy.normalized_drop_effect(effect_allowed, drop_effect)
+}
+
+///|
+pub fn is_drop_effect_compatible(
+  effect_allowed : String,
+  drop_effect : String,
+) -> Bool {
+  @interaction_policy.is_drop_effect_compatible(effect_allowed, drop_effect)
 }
 
 ///|

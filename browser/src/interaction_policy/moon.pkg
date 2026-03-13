@@ -1,0 +1,12 @@
+import {
+}
+
+import {
+  "moonbitlang/async",
+} for "wbtest"
+
+warnings = "-unused_package"
+
+options(
+  targets: { "interaction_policy_wbtest.mbt": [ "js" ] },
+)

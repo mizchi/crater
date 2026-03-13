@@ -1,6 +1,7 @@
 import {
   "mizchi/crater-browser/cdp",
   "mizchi/crater-browser/http",
+  "mizchi/crater-browser/interaction_policy",
   "mizchi/crater-browser/shell",
   "mizchi/crater-browser/tui",
 }

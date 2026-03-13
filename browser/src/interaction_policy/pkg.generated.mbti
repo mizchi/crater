@@ -1,0 +1,28 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser/interaction_policy"
+
+// Values
+pub fn drag_accept_target(String, String, Bool) -> String
+
+pub fn drag_drop_target(String, String, String) -> String
+
+pub fn drag_move_target_plan(String, String, String) -> DragMoveTargetPlan
+
+pub fn is_drop_effect_compatible(String, String) -> Bool
+
+pub fn normalized_drop_effect(String, String) -> String
+
+// Errors
+
+// Types and methods
+pub struct DragMoveTargetPlan {
+  over_target : String
+  emit_dragleave : Bool
+  emit_dragenter : Bool
+  emit_dragover : Bool
+}
+
+// Type aliases
+
+// Traits
+

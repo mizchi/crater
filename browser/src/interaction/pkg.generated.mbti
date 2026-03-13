@@ -29,13 +29,19 @@ pub fn drag_drop_target(String, String, String) -> String
 
 pub fn drag_move_event_sequence(emit_dragstart? : Bool, emit_dragleave? : Bool, emit_dragenter? : Bool, emit_dragover? : Bool) -> Array[DragDispatchEvent]
 
+pub fn drag_move_target_plan(String, String, String) -> DragMoveTargetPlan
+
 pub fn drag_release_event_sequence(emit_drop? : Bool) -> Array[DragDispatchEvent]
+
+pub fn is_drop_effect_compatible(String, String) -> Bool
 
 pub fn key_down_command(String) -> InteractionCommand
 
 pub fn key_up_command(String) -> InteractionCommand
 
 pub fn none_effect() -> DispatchEffect
+
+pub fn normalized_drop_effect(String, String) -> String
 
 pub fn pointer_button_down_command(Int, Int, Int) -> InteractionCommand
 
@@ -81,6 +87,13 @@ pub enum DragDispatchTarget {
   Source
   PreviousTarget
   CurrentTarget
+}
+
+pub struct DragMoveTargetPlan {
+  over_target : String
+  emit_dragleave : Bool
+  emit_dragenter : Bool
+  emit_dragover : Bool
 }
 
 pub enum InteractionCommand {

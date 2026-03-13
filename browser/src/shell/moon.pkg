@@ -10,6 +10,7 @@ import {
   "mizchi/crater/paint",
   "mizchi/crater/scheduler",
   "mizchi/crater-browser/http",
+  "mizchi/crater-browser/interaction_policy",
   "mizchi/crater-browser/tui",
   "mizchi/crater-browser/js",
 }

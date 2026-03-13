@@ -9996,19 +9996,10 @@ fn BidiProtocol::handle_input_perform_actions(
                 let previous_drag_target = self.input_html_drag_over_shared
                   .get(ctx_id)
                   .unwrap_or("")
-                let drag_target = if target_shared != "" {
-                  target_shared
-                } else {
-                  drag_source
-                }
-                let emit_dragleave = previous_drag_target != "" &&
-                  previous_drag_target != drag_target &&
-                  previous_drag_target != drag_source
-                let emit_dragenter = drag_target != "" &&
-                  drag_target != previous_drag_target &&
-                  drag_target != drag_source
-                let emit_dragover = drag_target != "" &&
-                  drag_target != drag_source
+                let move_plan = @interaction.drag_move_target_plan(
+                  drag_source, previous_drag_target, target_shared,
+                )
+                let drag_target = move_plan.over_target
                 let drag_transfer_id = self.input_html_drag_transfer_id
                   .get(ctx_id)
                   .unwrap_or("")
@@ -10016,9 +10007,9 @@ fn BidiProtocol::handle_input_perform_actions(
                 for
                   event in @interaction.drag_move_event_sequence(
                     emit_dragstart=not(drag_active),
-                    emit_dragleave~,
-                    emit_dragenter~,
-                    emit_dragover~,
+                    emit_dragleave=move_plan.emit_dragleave,
+                    emit_dragenter=move_plan.emit_dragenter,
+                    emit_dragover=move_plan.emit_dragover,
                   ) {
                   let dispatch_target = match event.target {
                     @interaction.Source => drag_source

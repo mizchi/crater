@@ -1822,29 +1822,6 @@ fn Browser::dispatch_drag_event_to_source_id(
 }
 
 ///|
-fn is_drop_effect_compatible(
-  effect_allowed : String,
-  drop_effect : String,
-) -> Bool {
-  let allowed = effect_allowed.to_lower()
-  let effect = drop_effect.to_lower()
-  if effect == "none" {
-    return false
-  }
-  match allowed {
-    "all" => true
-    "uninitialized" => true
-    "copy" => effect == "copy"
-    "copylink" => effect == "copy" || effect == "link"
-    "copymove" => effect == "copy" || effect == "move"
-    "link" => effect == "link"
-    "linkmove" => effect == "link" || effect == "move"
-    "move" => effect == "move"
-    _ => false
-  }
-}
-
-///|
 fn Browser::is_current_drop_allowed(self : Browser) -> Bool {
   match
     self.execute_inline_js(
@@ -1861,7 +1838,9 @@ fn Browser::is_current_drop_allowed(self : Browser) -> Bool {
           let drop_effect = state
             .unsafe_substring(start=idx + 1, end=state.length())
             .to_lower()
-          is_drop_effect_compatible(effect_allowed, drop_effect)
+          @interaction_policy.is_drop_effect_compatible(
+            effect_allowed, drop_effect,
+          )
         }
         None => false
       }
@@ -2156,7 +2135,16 @@ pub fn Browser::pointer_move_at(self : Browser, col : Int, row : Int) -> Bool {
       }
       match self.dragging_source_id {
         Some(drag_id) => {
-          let next_target = self.get_hover_source_id_at(col, row)
+          let plan = @interaction_policy.drag_move_target_plan(
+            drag_id,
+            self.drag_over_source_id.unwrap_or(""),
+            self.get_hover_source_id_at(col, row).unwrap_or(""),
+          )
+          let next_target = if plan.over_target != "" {
+            Some(plan.over_target)
+          } else {
+            None
+          }
           if self.dispatch_drag_event_to_source_id(
               drag_id,
               "drag",
@@ -2169,7 +2157,7 @@ pub fn Browser::pointer_move_at(self : Browser, col : Int, row : Int) -> Bool {
           if self.drag_over_source_id != next_target {
             self.drop_allowed_source_id = None
             match self.drag_over_source_id {
-              Some(previous_target) if previous_target != drag_id =>
+              Some(previous_target) if plan.emit_dragleave =>
                 if self.dispatch_drag_event_to_source_id(
                     previous_target,
                     "dragleave",
@@ -2182,7 +2170,7 @@ pub fn Browser::pointer_move_at(self : Browser, col : Int, row : Int) -> Bool {
               _ => ()
             }
             match next_target {
-              Some(next_id) if next_id != drag_id =>
+              Some(next_id) if plan.emit_dragenter =>
                 if self.dispatch_drag_event_to_source_id(
                     next_id,
                     "dragenter",
@@ -2197,7 +2185,7 @@ pub fn Browser::pointer_move_at(self : Browser, col : Int, row : Int) -> Bool {
             self.drag_over_source_id = next_target
           }
           match self.drag_over_source_id {
-            Some(target_id) if target_id != drag_id => {
+            Some(target_id) if plan.emit_dragover => {
               let (handled_drag_over, canceled_drag_over) = self.dispatch_drag_event_status_to_source_id(
                 target_id,
                 "dragover",
