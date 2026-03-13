@@ -121,6 +121,12 @@ struct Browser {
   focused_scrollable : Ref[String?]
   /// Currently hovered source element id
   mut hovered_source_id : String?
+  /// Source currently pressed by pointer
+  mut pressed_source_id : String?
+  /// Source currently in drag session
+  mut dragging_source_id : String?
+  /// Current drag-over target
+  mut drag_over_source_id : String?
   /// No-color mode (disable ANSI color codes)
   mut no_color : Bool
   /// Terminal columns (for pixel-to-column scaling)
@@ -169,6 +175,9 @@ pub fn Browser::new(
     element_scroll_states: {},
     focused_scrollable: Ref::new(None),
     hovered_source_id: None,
+    pressed_source_id: None,
+    dragging_source_id: None,
+    drag_over_source_id: None,
     no_color: false,
     terminal_cols,
   }
@@ -1583,6 +1592,101 @@ fn Browser::dispatch_click_to_source_id(
 }
 
 ///|
+fn Browser::dispatch_pointer_mouse_event_to_source_id(
+  self : Browser,
+  source_id : String,
+  pointer_type : String,
+  mouse_type : String,
+  client_x : Int,
+  client_y : Int,
+) -> Bool {
+  let escaped = escape_js_string(source_id)
+  let source = "(function(){const target=document.getElementById('" +
+    escaped +
+    "');if(!target){return 'missing';}const clientX=" +
+    client_x.to_string() +
+    ";const clientY=" +
+    client_y.to_string() +
+    ";target.dispatchEvent(new PointerEvent('" +
+    escape_js_string(pointer_type) +
+    "',{bubbles:true,cancelable:true,clientX,clientY,pointerId:1,pointerType:'mouse',isPrimary:true}));target.dispatchEvent(new MouseEvent('" +
+    escape_js_string(mouse_type) +
+    "',{bubbles:true,cancelable:true,clientX,clientY}));return 'ok';})()"
+  let result = self.execute_inline_js(source)
+  let _ = self.sync_render_state_from_dom_tree()
+  result == Some("ok")
+}
+
+///|
+fn Browser::dispatch_click_only_to_source_id(
+  self : Browser,
+  source_id : String,
+  client_x : Int,
+  client_y : Int,
+) -> ClickDispatchResult {
+  let escaped = escape_js_string(source_id)
+  let source = "(function(){const target=document.getElementById('" +
+    escaped +
+    "');if(!target){return 'missing';}const clientX=" +
+    client_x.to_string() +
+    ";const clientY=" +
+    client_y.to_string() +
+    ";return target.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,clientX,clientY}))?'allow':'prevent';})()"
+  let result = self.execute_inline_js(source)
+  let _ = self.sync_render_state_from_dom_tree()
+  match result {
+    Some("prevent") => { handled: true, allow_default: false }
+    Some("allow") => { handled: true, allow_default: true }
+    Some(_) => { handled: false, allow_default: true }
+    None => { handled: false, allow_default: true }
+  }
+}
+
+///|
+fn Browser::is_draggable_source_id(self : Browser, source_id : String) -> Bool {
+  if not(self.enable_js) {
+    return false
+  }
+  let escaped = escape_js_string(source_id)
+  match
+    self.execute_inline_js(
+      "(function(){const target=document.getElementById('" +
+      escaped +
+      "');return target&&target.draggable===true?'true':'false';})()",
+    ) {
+    Some("true") => true
+    _ => false
+  }
+}
+
+///|
+fn Browser::dispatch_drag_event_to_source_id(
+  self : Browser,
+  source_id : String,
+  event_type : String,
+  client_x : Int,
+  client_y : Int,
+) -> Bool {
+  let escaped = escape_js_string(source_id)
+  let source = "(function(){const target=document.getElementById('" +
+    escaped +
+    "');if(!target){return 'missing';}const clientX=" +
+    client_x.to_string() +
+    ";const clientY=" +
+    client_y.to_string() +
+    ";let dataTransfer=globalThis.__craterDragDataTransfer||null;if('" +
+    escape_js_string(event_type) +
+    "'==='dragstart'){dataTransfer=new DataTransfer();globalThis.__craterDragDataTransfer=dataTransfer;}target.dispatchEvent(new DragEvent('" +
+    escape_js_string(event_type) +
+    "',{bubbles:true,cancelable:true,clientX,clientY,dataTransfer}));if('" +
+    escape_js_string(event_type) +
+    "'==='dragend'){globalThis.__craterDragDataTransfer=null;}return 'ok';})()"
+  let result = self.execute_inline_js(source)
+  let _ = self.sync_render_state_from_dom_tree()
+  result == Some("ok")
+}
+
+///|
 fn Browser::dispatch_hover_transition(
   self : Browser,
   previous_source_id : String?,
@@ -1794,6 +1898,166 @@ pub fn Browser::hover_at(self : Browser, col : Int, row : Int) -> Bool {
   )
   self.hovered_source_id = next_source_id
   changed
+}
+
+///|
+pub fn Browser::pointer_down_at(self : Browser, col : Int, row : Int) -> Bool {
+  let source_id = self.get_hover_source_id_at(col, row)
+  self.hovered_source_id = source_id
+  self.dragging_source_id = None
+  self.drag_over_source_id = None
+  match source_id {
+    Some(id) => {
+      self.focus_source_id(id)
+      self.pressed_source_id = Some(id)
+      self.dispatch_pointer_mouse_event_to_source_id(
+        id,
+        "pointerdown",
+        "mousedown",
+        cell_to_client_x(col),
+        cell_to_client_y(row),
+      )
+    }
+    None => {
+      self.pressed_source_id = None
+      false
+    }
+  }
+}
+
+///|
+pub fn Browser::pointer_move_at(self : Browser, col : Int, row : Int) -> Bool {
+  let client_x = cell_to_client_x(col)
+  let client_y = cell_to_client_y(row)
+  let mut changed = self.hover_at(col, row)
+  match self.pressed_source_id {
+    Some(pressed_id) => {
+      if self.dragging_source_id is None &&
+        self.is_draggable_source_id(pressed_id) {
+        if self.dispatch_drag_event_to_source_id(
+            pressed_id, "dragstart", client_x, client_y,
+          ) {
+          self.dragging_source_id = Some(pressed_id)
+          changed = true
+        }
+      }
+      match self.dragging_source_id {
+        Some(drag_id) => {
+          let next_target = self.get_hover_source_id_at(col, row)
+          if self.drag_over_source_id != next_target {
+            match self.drag_over_source_id {
+              Some(previous_target) if previous_target != drag_id =>
+                if self.dispatch_drag_event_to_source_id(
+                    previous_target, "dragleave", client_x, client_y,
+                  ) {
+                  changed = true
+                }
+              _ => ()
+            }
+            match next_target {
+              Some(next_id) if next_id != drag_id =>
+                if self.dispatch_drag_event_to_source_id(
+                    next_id, "dragenter", client_x, client_y,
+                  ) {
+                  changed = true
+                }
+              _ => ()
+            }
+            self.drag_over_source_id = next_target
+          }
+          match self.drag_over_source_id {
+            Some(target_id) if target_id != drag_id =>
+              if self.dispatch_drag_event_to_source_id(
+                  target_id, "dragover", client_x, client_y,
+                ) {
+                changed = true
+              }
+            _ => ()
+          }
+        }
+        None => ()
+      }
+      changed
+    }
+    None => changed
+  }
+}
+
+///|
+pub async fn Browser::pointer_up_at(
+  self : Browser,
+  col : Int,
+  row : Int,
+) -> Bool raise @http.HttpError {
+  let client_x = cell_to_client_x(col)
+  let client_y = cell_to_client_y(row)
+  let up_source_id = self.get_hover_source_id_at(col, row)
+  let pressed_source_id = self.pressed_source_id
+  let dragging_source_id = self.dragging_source_id
+  let drag_over_source_id = self.drag_over_source_id
+  let mut handled = false
+  match up_source_id {
+    Some(id) =>
+      if self.dispatch_pointer_mouse_event_to_source_id(
+          id, "pointerup", "mouseup", client_x, client_y,
+        ) {
+        handled = true
+      }
+    None => ()
+  }
+  self.pressed_source_id = None
+  self.dragging_source_id = None
+  self.drag_over_source_id = None
+  match dragging_source_id {
+    Some(drag_id) => {
+      match drag_over_source_id {
+        Some(target_id) if target_id != drag_id =>
+          if self.dispatch_drag_event_to_source_id(
+              target_id, "drop", client_x, client_y,
+            ) {
+            handled = true
+          }
+        _ => ()
+      }
+      if self.dispatch_drag_event_to_source_id(
+          drag_id, "dragend", client_x, client_y,
+        ) {
+        handled = true
+      }
+      return handled
+    }
+    None => ()
+  }
+  match (pressed_source_id, up_source_id) {
+    (Some(down_id), Some(up_id)) if down_id == up_id => {
+      let dispatch = self.dispatch_click_only_to_source_id(
+        down_id, client_x, client_y,
+      )
+      if not(dispatch.allow_default) {
+        return true
+      }
+      if self.dispatch_activation_default_to_source_id(down_id) {
+        return true
+      }
+      match self.dispatch_submit_to_source_id(down_id) {
+        Prevented => return true
+        Handled => return true
+        Navigate(url) => {
+          let _ = self.navigate(resolve_url(self.current_url, url))
+          return true
+        }
+        NotSubmittable => ()
+      }
+      match self.get_href_for_source_id(down_id) {
+        Some(url) if url.length() > 0 => {
+          let _ = self.navigate(resolve_url(self.current_url, url))
+          true
+        }
+        _ => handled || dispatch.handled
+      }
+    }
+    _ => handled
+  }
 }
 
 ///|

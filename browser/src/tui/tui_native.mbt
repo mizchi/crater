@@ -193,7 +193,10 @@ fn parse_mouse_event(key : String) -> String? {
   let col = @strconv.parse_int(parts[1].to_string()) catch { _ => return None }
   let row = @strconv.parse_int(parts[2].to_string()) catch { _ => return None }
   if btn == 0 && suffix == 'M' {
-    return Some("Mouse:\{col},\{row}")
+    return Some("MouseDown:\{col},\{row}")
+  }
+  if btn == 0 && suffix == 'm' {
+    return Some("MouseUp:\{col},\{row}")
   }
   if btn == 64 {
     return Some("MouseScrollUp:\{col},\{row}")

@@ -707,6 +707,160 @@ async test "fixture hover dispatches pointer and mouse hover sequence" {
 }
 
 ///|
+async test "fixture hover repaint reflects pointermove coordinates" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0;position:relative">
+    #|  <div id="hover" style="position:absolute;left:40px;top:24px;width:96px;height:48px;background:#ccc"></div>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    const hover = document.getElementById('hover');
+    #|    const status = document.getElementById('status');
+    #|    hover.addEventListener('pointermove', function (event) {
+    #|      status.textContent = 'pointer:' + event.clientX + ',' + event.clientY;
+    #|    });
+    #|    hover.addEventListener('mousemove', function (event) {
+    #|      status.textContent += '|mouse:' + event.clientX + ',' + event.clientY;
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let initial = browser.render_output(Text)
+  assert_true(initial.contains("before"))
+  let (col, row) = center_of_hit_source_id(browser, "hover")
+  inspect(browser.hover_at(col, row), content="true")
+  let point = (col * 8 + 4).to_string() + "," + (row * 16 + 8).to_string()
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ return document.getElementById('status').textContent; })()",
+    ),
+    content="Some(\"pointer:" + point + "|mouse:" + point + "\")",
+  )
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("pointer:" + point + "|mouse:" + point))
+  assert_true(not(rendered.contains("before")))
+}
+
+///|
+async test "fixture pointer drag dispatches drag sequence between source and target" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0;position:relative">
+    #|  <div id="source" draggable="true" style="position:absolute;left:16px;top:16px;width:72px;height:40px;background:#ccc"></div>
+    #|  <div id="target" style="position:absolute;left:144px;top:16px;width:96px;height:48px;background:#999"></div>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    const status = document.getElementById('status');
+    #|    const events = [];
+    #|    for (const type of ['dragstart', 'dragend']) {
+    #|      document.getElementById('source').addEventListener(type, function (event) {
+    #|        events.push('source:' + type + '@' + event.clientX + ',' + event.clientY);
+    #|        status.textContent = events.join('|');
+    #|      });
+    #|    }
+    #|    for (const type of ['dragenter', 'dragover', 'drop']) {
+    #|      document.getElementById('target').addEventListener(type, function (event) {
+    #|        events.push('target:' + type + '@' + event.clientX + ',' + event.clientY);
+    #|        status.textContent = events.join('|');
+    #|      });
+    #|    }
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let (source_col, source_row) = center_of_hit_source_id(browser, "source")
+  let (target_col, target_row) = center_of_hit_source_id(browser, "target")
+  inspect(browser.pointer_down_at(source_col, source_row), content="true")
+  inspect(browser.pointer_move_at(target_col, target_row), content="true")
+  let released = browser.pointer_up_at(target_col, target_row) catch {
+    _ => false
+  }
+  inspect(released, content="true")
+  let target_point = "@" +
+    (target_col * 8 + 4).to_string() +
+    "," +
+    (target_row * 16 + 8).to_string()
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ return document.getElementById('status').textContent; })()",
+    ),
+    content="Some(\"source:dragstart" +
+      target_point +
+      "|target:dragenter" +
+      target_point +
+      "|target:dragover" +
+      target_point +
+      "|target:drop" +
+      target_point +
+      "|source:dragend" +
+      target_point +
+      "\")",
+  )
+}
+
+///|
+async test "fixture pointer drag preserves dataTransfer and switches drag targets" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0;position:relative">
+    #|  <div id="source" draggable="true" style="position:absolute;left:16px;top:16px;width:72px;height:40px;background:#ccc"></div>
+    #|  <div id="mid" style="position:absolute;left:120px;top:16px;width:72px;height:40px;background:#bbb"></div>
+    #|  <div id="target" style="position:absolute;left:224px;top:16px;width:96px;height:48px;background:#999"></div>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    const status = document.getElementById('status');
+    #|    const events = [];
+    #|    document.getElementById('source').addEventListener('dragstart', function (event) {
+    #|      event.dataTransfer.setData('text/plain', 'payload');
+    #|      events.push('source:dragstart:' + event.dataTransfer.getData('text/plain'));
+    #|      status.textContent = events.join('|');
+    #|    });
+    #|    document.getElementById('source').addEventListener('dragend', function (event) {
+    #|      events.push('source:dragend:' + event.dataTransfer.getData('text/plain'));
+    #|      status.textContent = events.join('|');
+    #|    });
+    #|    for (const [id, types] of [['mid', ['dragenter', 'dragover', 'dragleave']], ['target', ['dragenter', 'dragover', 'drop']]]) {
+    #|      const el = document.getElementById(id);
+    #|      for (const type of types) {
+    #|        el.addEventListener(type, function (event) {
+    #|          events.push(id + ':' + type + ':' + event.dataTransfer.getData('text/plain'));
+    #|          status.textContent = events.join('|');
+    #|        });
+    #|      }
+    #|    }
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let (source_col, source_row) = center_of_hit_source_id(browser, "source")
+  let (mid_col, mid_row) = center_of_hit_source_id(browser, "mid")
+  let (target_col, target_row) = center_of_hit_source_id(browser, "target")
+  inspect(browser.pointer_down_at(source_col, source_row), content="true")
+  inspect(browser.pointer_move_at(mid_col, mid_row), content="true")
+  inspect(browser.pointer_move_at(target_col, target_row), content="true")
+  let released = browser.pointer_up_at(target_col, target_row) catch { _ => false }
+  inspect(released, content="true")
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ return document.getElementById('status').textContent; })()",
+    ),
+    content="Some(\"source:dragstart:payload|mid:dragenter:payload|mid:dragover:payload|mid:dragleave:payload|target:dragenter:payload|target:dragover:payload|target:drop:payload|source:dragend:payload\")",
+  )
+}
+
+///|
 async test "docs article fixture applies timer mutation and click repaint" {
   let browser = Browser::new(1440, 960)
   let runtime =

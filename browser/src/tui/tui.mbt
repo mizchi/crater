@@ -16,7 +16,9 @@ pub enum BrowserAction {
   Quit
   Back // Go back to previous page
   Forward // Go forward to next page
-  MouseClick(Int, Int) // (col, row) coordinates
+  MouseClick(Int, Int) // Legacy synthesized click at (col, row)
+  MouseDown(Int, Int) // Mouse button press at (col, row)
+  MouseUp(Int, Int) // Mouse button release at (col, row)
   MouseMove(Int, Int) // Mouse move at (col, row)
   MouseScrollUp(Int, Int) // Mouse wheel scroll up at (col, row)
   MouseScrollDown(Int, Int) // Mouse wheel scroll down at (col, row)
@@ -48,12 +50,17 @@ pub fn key_to_action(key : String) -> BrowserAction? {
     "H" | "Backspace" | "Delete" => Some(Back)
     "L" => Some(Forward)
     _ =>
-      // Check for mouse events: "Mouse:col,row", "MouseMove:col,row",
+      // Check for mouse events: "Mouse:col,row", "MouseDown:col,row",
+      // "MouseUp:col,row", "MouseMove:col,row",
       // "MouseScrollUp:col,row", or "MouseScrollDown:col,row"
       if key.has_prefix("MouseScrollUp:") {
         parse_mouse_scroll_up(key)
       } else if key.has_prefix("MouseScrollDown:") {
         parse_mouse_scroll_down(key)
+      } else if key.has_prefix("MouseDown:") {
+        parse_mouse_down(key)
+      } else if key.has_prefix("MouseUp:") {
+        parse_mouse_up(key)
       } else if key.has_prefix("MouseMove:") {
         parse_mouse_move(key)
       } else if key.has_prefix("Mouse:") {
@@ -100,6 +107,42 @@ fn parse_mouse_click(key : String) -> BrowserAction? {
       let col = @strconv.parse_int(col_str) catch { _ => return None }
       let row = @strconv.parse_int(row_str) catch { _ => return None }
       Some(MouseClick(col, row))
+    }
+    None => None
+  }
+}
+
+///|
+fn parse_mouse_down(key : String) -> BrowserAction? {
+  let parts = key.unsafe_substring(start=10, end=key.length())
+  match parts.find(",") {
+    Some(comma_idx) => {
+      let col_str = parts.unsafe_substring(start=0, end=comma_idx)
+      let row_str = parts.unsafe_substring(
+        start=comma_idx + 1,
+        end=parts.length(),
+      )
+      let col = @strconv.parse_int(col_str) catch { _ => return None }
+      let row = @strconv.parse_int(row_str) catch { _ => return None }
+      Some(MouseDown(col, row))
+    }
+    None => None
+  }
+}
+
+///|
+fn parse_mouse_up(key : String) -> BrowserAction? {
+  let parts = key.unsafe_substring(start=8, end=key.length())
+  match parts.find(",") {
+    Some(comma_idx) => {
+      let col_str = parts.unsafe_substring(start=0, end=comma_idx)
+      let row_str = parts.unsafe_substring(
+        start=comma_idx + 1,
+        end=parts.length(),
+      )
+      let col = @strconv.parse_int(col_str) catch { _ => return None }
+      let row = @strconv.parse_int(row_str) catch { _ => return None }
+      Some(MouseUp(col, row))
     }
     None => None
   }

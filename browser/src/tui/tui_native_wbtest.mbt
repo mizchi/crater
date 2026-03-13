@@ -16,7 +16,8 @@ test "normalize_native_key maps control and navigation keys" {
 
 ///|
 test "normalize_native_key maps sgr mouse events" {
-  assert_eq(normalize_native_key("\u001b[<0;12;8M"), "Mouse:12,8")
+  assert_eq(normalize_native_key("\u001b[<0;12;8M"), "MouseDown:12,8")
+  assert_eq(normalize_native_key("\u001b[<0;12;8m"), "MouseUp:12,8")
   assert_eq(normalize_native_key("\u001b[<35;12;8M"), "MouseMove:12,8")
   assert_eq(normalize_native_key("\u001b[<64;12;8M"), "MouseScrollUp:12,8")
   assert_eq(normalize_native_key("\u001b[<65;12;8M"), "MouseScrollDown:12,8")

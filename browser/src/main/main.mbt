@@ -508,8 +508,18 @@ async fn main {
           render_page(browser, options)
         }
       }
+      Some(@tui.MouseDown(col, row)) =>
+        if browser.pointer_down_at(col, row) {
+          render_page(browser, options)
+        }
+      Some(@tui.MouseUp(col, row)) => {
+        let released = browser.pointer_up_at(col, row) catch { _ => false }
+        if released {
+          render_page(browser, options)
+        }
+      }
       Some(@tui.MouseMove(col, row)) =>
-        if browser.hover_at(col, row) {
+        if browser.pointer_move_at(col, row) {
           render_page(browser, options)
         }
       Some(@tui.MouseScrollUp(_, _)) => {

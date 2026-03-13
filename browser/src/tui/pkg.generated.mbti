@@ -154,6 +154,9 @@ pub enum BrowserAction {
   Back
   Forward
   MouseClick(Int, Int)
+  MouseDown(Int, Int)
+  MouseUp(Int, Int)
+  MouseMove(Int, Int)
   MouseScrollUp(Int, Int)
   MouseScrollDown(Int, Int)
   EnterHintMode

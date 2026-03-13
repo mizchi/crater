@@ -3453,6 +3453,80 @@ test "persisted hover listeners survive later execution" {
 }
 
 ///|
+test "persisted drag listeners survive later execution" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let setup =
+    #|const source = document.createElement('div');
+    #|const target = document.createElement('div');
+    #|source.id = 'source';
+    #|target.id = 'target';
+    #|source.draggable = true;
+    #|document.body.appendChild(source);
+    #|document.body.appendChild(target);
+    #|window.__dragLog = [];
+    #|for (const type of ['dragstart', 'dragend']) {
+    #|  source.addEventListener(type, function (event) {
+    #|    window.__dragLog.push('source:' + type + ':' + event.clientX + ',' + event.clientY);
+    #|  });
+    #|}
+    #|for (const type of ['dragenter', 'dragover', 'drop']) {
+    #|  target.addEventListener(type, function (event) {
+    #|    window.__dragLog.push('target:' + type + ':' + event.clientX + ',' + event.clientY);
+    #|  });
+    #|}
+    #|'ok'
+  let setup_result = ctx.execute(setup)
+  inspect(setup_result.success, content="true")
+  let run =
+    #|(function () {
+    #|  const source = document.getElementById('source');
+    #|  const target = document.getElementById('target');
+    #|  source.dispatchEvent(new DragEvent('dragstart', { bubbles: true, clientX: 20, clientY: 12 }));
+    #|  target.dispatchEvent(new DragEvent('dragenter', { bubbles: true, clientX: 44, clientY: 28 }));
+    #|  target.dispatchEvent(new DragEvent('dragover', { bubbles: true, clientX: 44, clientY: 28 }));
+    #|  target.dispatchEvent(new DragEvent('drop', { bubbles: true, clientX: 44, clientY: 28 }));
+    #|  source.dispatchEvent(new DragEvent('dragend', { bubbles: true, clientX: 44, clientY: 28 }));
+    #|  return window.__dragLog.join('|');
+    #|})()
+  let run_result = ctx.execute(run)
+  inspect(run_result.success, content="true")
+  inspect(
+    run_result.value,
+    content="source:dragstart:20,12|target:dragenter:44,28|target:dragover:44,28|target:drop:44,28|source:dragend:44,28",
+  )
+}
+
+///|
+test "DataTransfer stores and clears string data" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const dt = new DataTransfer();
+    #|dt.setData('text/plain', 'hello');
+    #|dt.setData('text/html', '<b>x</b>');
+    #|const first = dt.types.join(',');
+    #|const second = dt.getData('text/plain');
+    #|dt.clearData('text/plain');
+    #|const third = dt.types.join(',');
+    #|dt.clearData();
+    #|[first, second, third, dt.types.length].join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="text/plain,text/html|hello|text/html|0")
+}
+
+///|
 test "fetch: Response has required methods" {
   let dom = @dom.DomTree::new()
   let ctx = JsContext::new(dom)

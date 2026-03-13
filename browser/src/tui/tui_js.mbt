@@ -54,7 +54,11 @@ extern "js" fn js_read_key_with_timeout(
   #|           const row = parseInt(match[3]);
   #|           const pressed = match[4] === 'M';
   #|           if (btn === 0 && pressed) {
-  #|             finish('Mouse:' + col + ',' + row);
+  #|             finish('MouseDown:' + col + ',' + row);
+  #|             return;
+  #|           }
+  #|           if (btn === 0 && !pressed) {
+  #|             finish('MouseUp:' + col + ',' + row);
   #|             return;
   #|           }
   #|           if (btn === 64) {

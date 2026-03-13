@@ -530,7 +530,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       return target._listeners;
   #|     }
   #|     const _persistedListenerAttrPrefix = 'data-crater-listeners-';
-  #|     const _persistedListenerTypes = ['click', 'input', 'change', 'submit', 'keydown', 'keypress', 'keyup', 'focus', 'blur', 'focusin', 'focusout', 'pointerdown', 'pointermove', 'pointerup', 'pointerover', 'pointerout', 'pointerenter', 'pointerleave', 'mousedown', 'mousemove', 'mouseup', 'mouseover', 'mouseout', 'mouseenter', 'mouseleave', 'compositionstart', 'compositionupdate', 'compositionend'];
+  #|     const _persistedListenerTypes = ['click', 'input', 'change', 'submit', 'keydown', 'keypress', 'keyup', 'focus', 'blur', 'focusin', 'focusout', 'pointerdown', 'pointermove', 'pointerup', 'pointerover', 'pointerout', 'pointerenter', 'pointerleave', 'mousedown', 'mousemove', 'mouseup', 'mouseover', 'mouseout', 'mouseenter', 'mouseleave', 'dragstart', 'dragenter', 'dragover', 'dragleave', 'drop', 'dragend', 'compositionstart', 'compositionupdate', 'compositionend'];
   #|     function _shouldPersistListener(target, eventType, listener) {
   #|       return _persistedListenerTypes.includes(eventType) &&
   #|         target &&
@@ -6665,6 +6665,30 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         this.data = options.data || '';
   #|       }
   #|     }
+  #|     class DataTransfer {
+  #|       constructor() {
+  #|         this._items = {};
+  #|         this.dropEffect = 'none';
+  #|         this.effectAllowed = 'all';
+  #|         this.files = [];
+  #|       }
+  #|       setData(type, data) {
+  #|         this._items[String(type)] = String(data);
+  #|       }
+  #|       getData(type) {
+  #|         const key = String(type);
+  #|         return Object.prototype.hasOwnProperty.call(this._items, key) ? this._items[key] : '';
+  #|       }
+  #|       clearData(type) {
+  #|         if (type === undefined) {
+  #|           this._items = {};
+  #|           return;
+  #|         }
+  #|         delete this._items[String(type)];
+  #|       }
+  #|       get types() { return Object.keys(this._items); }
+  #|       setDragImage() {}
+  #|     }
   #|     class CustomEvent extends Event {
   #|       constructor(type, options) {
   #|         options = options || {};
@@ -6709,7 +6733,13 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         this.storageArea = options.storageArea || null;
   #|       }
   #|     }
-  #|     class DragEvent extends MouseEvent {}
+  #|     class DragEvent extends MouseEvent {
+  #|       constructor(type, options = {}) {
+  #|         super(type, options);
+  #|         this._dataTransfer = options.dataTransfer || null;
+  #|       }
+  #|       get dataTransfer() { return this._dataTransfer; }
+  #|     }
   #|     class DeviceMotionEvent extends Event {}
   #|     class DeviceOrientationEvent extends Event {}
   #|     class TextEvent extends UIEvent {
@@ -6742,6 +6772,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       MessageEvent: MessageEvent,
   #|       StorageEvent: StorageEvent,
   #|       DragEvent: DragEvent,
+  #|       DataTransfer: DataTransfer,
   #|       DeviceMotionEvent: DeviceMotionEvent,
   #|       DeviceOrientationEvent: DeviceOrientationEvent,
   #|       TextEvent: TextEvent,
