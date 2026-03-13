@@ -8,6 +8,11 @@
 - [x] local snapshot がある環境では `playwright-intro` / `mdn-wasm-text` も比較対象に含める
 - [x] text/content mask を入れて sparse page の diff 評価をさらに安定化する
 - [ ] fixture ごとの threshold を artifact を見ながら段階的に tighten する
+- [ ] `tests/helpers/crater-vrt.ts` の mask を text / replaced / box decoration 単位に分けて false positive を減らす
+- [ ] built-in real-world snapshot を増やして、local `real-world/` なしでも CI で 3-5 ページ比較できるようにする
+- [ ] `output/playwright/vrt/**/report.json` を CI summary に集約して threshold 超過の内訳を見やすくする
+- [ ] live form state や script 後の動的 UI も actual paint 比較できるように scenario fixture を追加する
+- [ ] `github-mizchi` / `playwright-intro` / `mdn-wasm-text` の diff artifact を見ながら、page ごとに ROI と mask の parameter を固定する
 
 ## WebDriver BiDi の MoonBit 全面移行（2026-03-08）
 
