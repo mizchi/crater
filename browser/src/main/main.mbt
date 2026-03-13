@@ -408,27 +408,11 @@ async fn main {
   let mut running = true
   while running {
     let key = @tui.read_key_with_timeout(16)
-    if key.length() == 0 {
-      if browser.tick_js() {
-        render_page(browser, options)
-      }
-      continue
+    let effect = @interaction.dispatch_key(browser, key) catch {
+      _ => @interaction.none_effect()
     }
-    if not(browser.is_hint_mode()) {
-      let handled = browser.handle_focused_key(key) catch { _ => false }
-      if handled {
-        render_page(browser, options)
-        continue
-      }
-    }
-    // Use different key handling based on hint mode
-    let action = if browser.is_hint_mode() {
-      @tui.key_to_hint_action(key)
-    } else {
-      @tui.key_to_action(key)
-    }
-    match action {
-      Some(@tui.Quit) => {
+    match effect {
+      @interaction.Quit => {
         @tui.cleanup_stdin()
         @tui.print_raw(@tui.disable_mouse())
         @tui.print_raw(@tui.show_cursor())
@@ -436,38 +420,8 @@ async fn main {
         println("Goodbye!")
         running = false
       }
-      Some(@tui.ScrollDown) => {
-        browser.scroll_down(50)
-        render_page(browser, options)
-      }
-      Some(@tui.ScrollUp) => {
-        browser.scroll_up(50)
-        render_page(browser, options)
-      }
-      Some(@tui.PageDown) => {
-        // Scroll by viewport height (minus some overlap)
-        browser.scroll_down(browser.get_viewport_height() - 50)
-        render_page(browser, options)
-      }
-      Some(@tui.PageUp) => {
-        browser.scroll_up(browser.get_viewport_height() - 50)
-        render_page(browser, options)
-      }
-      Some(@tui.NextLink) => {
-        browser.next_link()
-        render_page(browser, options)
-      }
-      Some(@tui.PrevLink) => {
-        browser.prev_link()
-        render_page(browser, options)
-      }
-      Some(@tui.ActivateLink) => {
-        let activated = browser.activate_focused_link() catch { _ => false }
-        if activated {
-          render_page(browser, options)
-        }
-      }
-      Some(@tui.GoToUrl(_)) => {
+      @interaction.Render => render_page(browser, options)
+      @interaction.PromptUrl => {
         @tui.print_raw(@tui.show_cursor())
         let url = @tui.read_line("Enter URL: ")
         @tui.print_raw(@tui.hide_cursor())
@@ -477,82 +431,7 @@ async fn main {
           render_page(browser, options)
         }
       }
-      Some(@tui.Refresh) => {
-        println("Refreshing...")
-        safe_navigate(browser, browser.get_current_url())
-        render_page(browser, options)
-      }
-      Some(@tui.Back) => {
-        let back_url : String? = browser.go_back() catch { _ => None }
-        match back_url {
-          Some(url) => {
-            println("Going back to: " + url)
-            render_page(browser, options)
-          }
-          None => ()
-        }
-      }
-      Some(@tui.Forward) => {
-        let fwd_url : String? = browser.go_forward() catch { _ => None }
-        match fwd_url {
-          Some(url) => {
-            println("Going forward to: " + url)
-            render_page(browser, options)
-          }
-          None => ()
-        }
-      }
-      Some(@tui.MouseClick(col, row)) => {
-        let activated = browser.activate_link_at(col, row) catch { _ => false }
-        if activated {
-          render_page(browser, options)
-        }
-      }
-      Some(@tui.MouseDown(col, row)) =>
-        if browser.pointer_down_at(col, row) {
-          render_page(browser, options)
-        }
-      Some(@tui.MouseUp(col, row)) => {
-        let released = browser.pointer_up_at(col, row) catch { _ => false }
-        if released {
-          render_page(browser, options)
-        }
-      }
-      Some(@tui.MouseMove(col, row)) =>
-        if browser.pointer_move_at(col, row) {
-          render_page(browser, options)
-        }
-      Some(@tui.MouseScrollUp(_, _)) => {
-        // Mouse wheel scroll up - scroll page up
-        browser.scroll_up(48) // 3 lines * 16px
-        render_page(browser, options)
-      }
-      Some(@tui.MouseScrollDown(_, _)) => {
-        // Mouse wheel scroll down - scroll page down
-        browser.scroll_down(48) // 3 lines * 16px
-        render_page(browser, options)
-      }
-      Some(@tui.EnterHintMode) => {
-        browser.enter_hint_mode()
-        render_page(browser, options)
-      }
-      Some(@tui.ExitHintMode) => {
-        browser.exit_hint_mode()
-        render_page(browser, options)
-      }
-      Some(@tui.HintChar(c)) =>
-        // Process hint character and navigate if matched
-        match browser.process_hint_char(c) {
-          Some(url) => {
-            safe_navigate(browser, url)
-            render_page(browser, options)
-          }
-          None =>
-            // Re-render to show updated hint input
-            render_page(browser, options)
-        }
-      Some(@tui.ToggleRawMode) => {
-        let entering = browser.toggle_selection_mode()
+      @interaction.SelectionModeChanged(entering) => {
         if entering {
           // Entering selection mode - disable raw mode for text selection
           @tui.cleanup_stdin()
@@ -566,11 +445,7 @@ async fn main {
         }
         render_page(browser, options)
       }
-      Some(@tui.ToggleDarkMode) => {
-        browser.toggle_dark_mode()
-        render_page(browser, options)
-      }
-      None => ()
+      @interaction.None => ()
     }
   }
 }

@@ -1,4 +1,5 @@
 import {
+  "mizchi/crater-browser/interaction",
   "mizchi/crater-browser/shell",
   "mizchi/crater-browser/tui",
   "mizchi/x/stdio",

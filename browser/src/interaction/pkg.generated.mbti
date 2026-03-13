@@ -1,0 +1,31 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser/interaction"
+
+import {
+  "mizchi/crater-browser/http",
+  "mizchi/crater-browser/shell",
+  "mizchi/crater-browser/tui",
+}
+
+// Values
+pub async fn dispatch_action(@shell.Browser, @tui.BrowserAction) -> DispatchEffect raise @http.HttpError
+
+pub async fn dispatch_key(@shell.Browser, String) -> DispatchEffect raise @http.HttpError
+
+pub fn none_effect() -> DispatchEffect
+
+// Errors
+
+// Types and methods
+pub enum DispatchEffect {
+  None
+  Render
+  Quit
+  PromptUrl
+  SelectionModeChanged(Bool)
+}
+
+// Type aliases
+
+// Traits
+

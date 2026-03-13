@@ -1,0 +1,15 @@
+import {
+  "mizchi/crater-browser/http",
+  "mizchi/crater-browser/shell",
+  "mizchi/crater-browser/tui",
+}
+
+import {
+  "moonbitlang/async",
+} for "wbtest"
+
+warnings = "-unused_package"
+
+options(
+  targets: { "interaction_wbtest.mbt": [ "js" ] },
+)
