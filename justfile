@@ -207,7 +207,7 @@ test-playwright:
 test-playwright-adapter:
     pnpm test:playwright
 
-# Test website loading scenarios
+# Test website loading and browser user scenarios
 test-website:
     pnpm test:website
 
