@@ -952,3 +952,96 @@ async test "fixture removed focused element falls forward to next focusable on n
   )
   inspect(final_status, content="Some(\"next\")")
 }
+
+///|
+async test "fixture removed focused element falls backward to previous focusable on shift-tab" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <button id="prev" style="display:block;width:96px;height:32px">Prev</button>
+    #|  <button id="gone" style="display:block;width:96px;height:32px">Gone</button>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('prev').addEventListener('click', function () {
+    #|      document.getElementById('status').textContent = 'prev';
+    #|    });
+    #|    document.getElementById('gone').addEventListener('click', function () {
+    #|      const target = document.getElementById('gone');
+    #|      if (target) target.remove();
+    #|      document.getElementById('status').textContent = 'removed';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+
+  browser.next_link()
+  browser.next_link()
+  inspect(browser.get_focused_source_id(), content="Some(\"gone\")")
+
+  let removed = browser.handle_focused_key("Enter") catch { _ => false }
+  inspect(removed, content="true")
+  let after_remove = browser.render_output(Text)
+  assert_true(after_remove.contains("removed"))
+  assert_true(not(after_remove.contains("Gone")))
+
+  browser.prev_link()
+  inspect(browser.get_focused_source_id(), content="Some(\"prev\")")
+
+  let activated = browser.handle_focused_key("Enter") catch { _ => false }
+  inspect(activated, content="true")
+  let final_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(final_status, content="Some(\"prev\")")
+}
+
+///|
+async test "fixture mouse click falls through after focused element removal" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <button id="gone" style="display:block;width:96px;height:32px">Gone</button>
+    #|  <button id="next" style="display:block;width:96px;height:32px">Next</button>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('gone').addEventListener('click', function () {
+    #|      const target = document.getElementById('gone');
+    #|      if (target) target.remove();
+    #|      document.getElementById('status').textContent = 'removed';
+    #|    });
+    #|    document.getElementById('next').addEventListener('click', function () {
+    #|      document.getElementById('status').textContent = 'next';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+
+  browser.next_link()
+  inspect(browser.get_focused_source_id(), content="Some(\"gone\")")
+  let (gone_col, gone_row) = center_of_source_id(browser, "gone")
+  let removed = browser.activate_at(gone_col, gone_row) catch { _ => false }
+  inspect(removed, content="true")
+
+  let after_remove = browser.render_output(Text)
+  assert_true(after_remove.contains("removed"))
+  assert_true(not(after_remove.contains("Gone")))
+
+  let (next_col, next_row) = center_of_source_id(browser, "next")
+  let clicked = browser.activate_at(next_col, next_row) catch { _ => false }
+  inspect(clicked, content="true")
+  inspect(browser.get_focused_source_id(), content="Some(\"next\")")
+  let final_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(final_status, content="Some(\"next\")")
+}
