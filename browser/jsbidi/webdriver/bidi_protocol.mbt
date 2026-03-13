@@ -9914,16 +9914,20 @@ fn BidiProtocol::handle_input_perform_actions(
             let should_emit_move = pointer_type == "mouse" ||
               button_state_contains(buttons, button_to_mask(0))
             if should_emit_move {
-              input_dispatch_pointer_event(
-                target_shared, "pointermove", final_x, final_y, 0, buttons, pointer_type,
-                ctrl, alt, shift, meta,
+              self.dispatch_interaction_pointer_command(
+                bidi_pointer_interaction_command(
+                  "pointerMove", final_x, final_y, 0,
+                ),
+                target_shared,
+                final_x,
+                final_y,
+                buttons,
+                pointer_type,
+                ctrl,
+                alt,
+                shift,
+                meta,
               )
-              if pointer_type == "mouse" {
-                input_dispatch_pointer_event(
-                  target_shared, "mousemove", final_x, final_y, 0, buttons, pointer_type,
-                  ctrl, alt, shift, meta,
-                )
-              }
             }
             if button_state_contains(buttons, button_to_mask(0)) {
               let drag_source = self.input_html_drag_source_shared
@@ -10042,9 +10046,19 @@ fn BidiProtocol::handle_input_perform_actions(
                   pointer_type, ctrl, alt, shift, meta,
                 )
               }
-              input_dispatch_pointer_event(
-                target_shared, "pointerdown", current_x, current_y, button, next_buttons,
-                pointer_type, ctrl, alt, shift, meta,
+              self.dispatch_interaction_pointer_command(
+                bidi_pointer_interaction_command(
+                  "pointerDown", current_x, current_y, button,
+                ),
+                target_shared,
+                current_x,
+                current_y,
+                next_buttons,
+                pointer_type,
+                ctrl,
+                alt,
+                shift,
+                meta,
               )
               input_clear_pointer_event_properties()
               if self.handle_inline_attribute_navigation(
@@ -10128,9 +10142,19 @@ fn BidiProtocol::handle_input_perform_actions(
               input_set_pointer_event_properties(
                 width, height, 0.0, tangential_pressure, twist, altitude_angle, azimuth_angle,
               )
-              input_dispatch_pointer_event(
-                target_shared, "pointerup", current_x, current_y, button, next_buttons,
-                pointer_type, ctrl, alt, shift, meta,
+              self.dispatch_interaction_pointer_command(
+                bidi_pointer_interaction_command(
+                  "pointerUp", current_x, current_y, button,
+                ),
+                target_shared,
+                current_x,
+                current_y,
+                next_buttons,
+                pointer_type,
+                ctrl,
+                alt,
+                shift,
+                meta,
               )
               if pointer_type == "touch" && button == 0 {
                 input_dispatch_pointer_event(
