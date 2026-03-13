@@ -59,6 +59,18 @@ CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt):
 | css-break | 27 | 27 | 100.0% |
 | **Total** | **1477** | **1484** | **99.5%** |
 
+Browser behavior tests:
+
+| Suite | Passed | Total | Rate |
+|-------|--------|-------|------|
+| DOM WPT (`wpt/dom/nodes`) | 9296 | 9296 | 100.0% |
+| WebDriver BiDi `strict` | 277 | 277 | 100.0% |
+| WebDriver BiDi `session` | 130 | 130 | 100.0% |
+| WebDriver BiDi `browsing_context` | 1008 | 1008 | 100.0% |
+| WebDriver BiDi `script` | 1025 | 1025 | 100.0% |
+| WebDriver BiDi `input` | 708 | 708 | 100.0% |
+| WebDriver BiDi `network` | 1389 | 1389 | 100.0% |
+
 Run WPT tests:
 ```bash
 npm run wpt:fetch-all  # Fetch all WPT tests
@@ -66,6 +78,18 @@ npm run wpt:run-all    # Run all WPT tests
 ```
 
 WPT target selection is configured in `wpt.json`.
+
+Browser WPT commands:
+
+```bash
+just wpt-dom-all
+just wpt-webdriver-profile strict
+just wpt-webdriver session
+just wpt-webdriver browsing_context
+just wpt-webdriver script
+just wpt-webdriver input
+just wpt-webdriver network
+```
 
 Optional: external intrinsic providers for text/image in WPT runner:
 
