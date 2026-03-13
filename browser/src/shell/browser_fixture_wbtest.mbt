@@ -602,6 +602,40 @@ async test "fixture focused input button Space dispatches click repaint" {
 }
 
 ///|
+async test "fixture click dispatches pointer and mouse sequence before click repaint" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <button id="btn" style="display:block;width:96px;height:32px">Go</button>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    const btn = document.getElementById('btn');
+    #|    const status = document.getElementById('status');
+    #|    const order = [];
+    #|    for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
+    #|      btn.addEventListener(type, function () {
+    #|        order.push(type);
+    #|        status.textContent = order.join('|');
+    #|      });
+    #|    }
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let (col, row) = center_of_source_id(browser, "btn")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  let rendered = browser.render_output(Text)
+  assert_true(
+    rendered.contains("pointerdown|mousedown|pointerup|mouseup|click"),
+  )
+}
+
+///|
 async test "docs article fixture applies timer mutation and click repaint" {
   let browser = Browser::new(1440, 960)
   let runtime =

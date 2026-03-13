@@ -1255,6 +1255,43 @@ async test "Browser activate_at dispatches persisted generic addEventListener cl
 }
 
 ///|
+async test "Browser activate_at dispatches pointer and mouse events before click" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <button id="btn" style="display:block;width:96px;height:32px">Go</button>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    const btn = document.getElementById('btn');
+    #|    const status = document.getElementById('status');
+    #|    const order = [];
+    #|    for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
+    #|      btn.addEventListener(type, function () {
+    #|        order.push(type);
+    #|        status.textContent = order.join('|');
+    #|      });
+    #|    }
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let activated = browser.activate_at(1, 1) catch { _ => false }
+  inspect(activated, content="true")
+
+  let rendered = browser.render_output(Text)
+  assert_true(
+    rendered.contains("pointerdown|mousedown|pointerup|mouseup|click"),
+  )
+}
+
+///|
 async test "Browser activate_at prefers topmost persisted addEventListener element" {
   let browser = Browser::new(800, 600)
   let html =

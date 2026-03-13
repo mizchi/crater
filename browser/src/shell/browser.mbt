@@ -1500,7 +1500,7 @@ fn Browser::dispatch_click_to_source_id(
   let escaped = escape_js_string(source_id)
   let source = "(function(){const target=document.getElementById('" +
     escaped +
-    "');if(!target){return 'missing';}const event=new MouseEvent('click',{bubbles:true,cancelable:true});return target.dispatchEvent(event)?'allow':'prevent';})()"
+    "');if(!target){return 'missing';}function dispatch(type, ctor){const event=new ctor(type,{bubbles:true,cancelable:true,clientX:0,clientY:0,pointerId:1,pointerType:'mouse',isPrimary:true});return target.dispatchEvent(event);}dispatch('pointerdown',PointerEvent);dispatch('mousedown',MouseEvent);dispatch('pointerup',PointerEvent);dispatch('mouseup',MouseEvent);return dispatch('click',MouseEvent)?'allow':'prevent';})()"
   let result = self.execute_inline_js(source)
   let _ = self.sync_render_state_from_dom_tree()
   match result {
