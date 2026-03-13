@@ -80,6 +80,56 @@ pub fn Color::blend(self : Color, bg : Color, alpha : Int) -> Color {
 let sixel_bit_masks : Array[Int] = [1, 2, 4, 8, 16, 32]
 
 ///|
+let base64_chars : String = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+
+///|
+fn write_base64_quad(
+  buf : StringBuilder,
+  b0 : Int,
+  b1 : Int,
+  b2 : Int,
+  padding : Int,
+) -> Unit {
+  let c0 = (b0 >> 2) & 0x3F
+  let c1 = ((b0 << 4) | (b1 >> 4)) & 0x3F
+  let c2 = ((b1 << 2) | (b2 >> 6)) & 0x3F
+  let c3 = b2 & 0x3F
+  buf.write_char(base64_chars[c0].unsafe_to_char())
+  buf.write_char(base64_chars[c1].unsafe_to_char())
+  if padding >= 2 {
+    buf.write_char('=')
+  } else {
+    buf.write_char(base64_chars[c2].unsafe_to_char())
+  }
+  if padding >= 1 {
+    buf.write_char('=')
+  } else {
+    buf.write_char(base64_chars[c3].unsafe_to_char())
+  }
+}
+
+///|
+fn encode_bytes_base64(bytes : Array[Int]) -> String {
+  let out = StringBuilder::new()
+  let mut i = 0
+  while i < bytes.length() {
+    let b0 = bytes[i]
+    let remaining = bytes.length() - i
+    if remaining >= 3 {
+      write_base64_quad(out, b0, bytes[i + 1], bytes[i + 2], 0)
+      i = i + 3
+    } else if remaining == 2 {
+      write_base64_quad(out, b0, bytes[i + 1], 0, 1)
+      i = i + 2
+    } else {
+      write_base64_quad(out, b0, 0, 0, 2)
+      i = i + 1
+    }
+  }
+  out.to_string()
+}
+
+///|
 fn write_sixel_repeat_or_char(
   buf : StringBuilder,
   ch : Char,
@@ -806,6 +856,24 @@ fn palette_color_at(palette : DynamicPalette, idx : Int) -> Color {
   } else {
     Color::white()
   }
+}
+
+///|
+pub fn framebuffer_to_rgba_base64(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+) -> String {
+  let total_pixels = fb.width * fb.height
+  let bytes = Array::make(total_pixels * 4, 0)
+  for pixel_index in 0..<total_pixels {
+    let color = palette_color_at(palette, fb.pixels[pixel_index])
+    let base = pixel_index * 4
+    bytes[base] = color.r
+    bytes[base + 1] = color.g
+    bytes[base + 2] = color.b
+    bytes[base + 3] = 255
+  }
+  encode_bytes_base64(bytes)
 }
 
 ///|

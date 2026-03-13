@@ -2512,6 +2512,10 @@ fn BidiProtocol::dispatch_browsing_context(
       self.handle_capture_screenshot_data(request.id, request.params)
       Ok(())
     }
+    "capturePaintData" => {
+      self.handle_capture_paint_data(request.id, request.params)
+      Ok(())
+    }
     "print" => {
       self.handle_print(request)
       Ok(())
@@ -9961,8 +9965,7 @@ fn BidiProtocol::handle_input_perform_actions(
                   pointer_type,
                   previous_target_shared != "" &&
                   previous_target_shared != target_shared,
-                  target_shared != "" &&
-                  previous_target_shared != target_shared,
+                  target_shared != "" && previous_target_shared != target_shared,
                   target_shared != "",
                 ),
                 previous_target_shared,

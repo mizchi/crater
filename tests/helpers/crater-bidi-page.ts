@@ -54,7 +54,11 @@ export class CraterBidiPage {
 
   async close(): Promise<void> {
     if (this.contextId) {
-      await this.sendBidi("browsingContext.close", { context: this.contextId });
+      try {
+        await this.sendBidi("browsingContext.close", { context: this.contextId });
+      } catch {
+        // Best-effort close for long-running VRT cases; the socket is closed below regardless.
+      }
     }
     this.contextId = null;
     this.ws?.close();
@@ -76,6 +80,13 @@ export class CraterBidiPage {
     });
   }
 
+  async setViewport(width: number, height: number): Promise<void> {
+    await this.sendBidi("browsingContext.setViewport", {
+      context: this.requireContextId(),
+      viewport: { width, height },
+    });
+  }
+
   async evaluate<T>(expression: string, options: { awaitPromise?: boolean } = {}): Promise<T> {
     const resp = await this.sendBidi("script.evaluate", {
       expression,
@@ -92,6 +103,36 @@ export class CraterBidiPage {
       throw new Error(JSON.stringify(result.exceptionDetails));
     }
     return result.result?.value as T;
+  }
+
+  async captureScreenshot(): Promise<Buffer> {
+    const resp = await this.sendBidi("browsingContext.captureScreenshotData", {
+      context: this.requireContextId(),
+      origin: "viewport",
+    });
+    if (resp.type === "error") {
+      throw new Error(resp.message || resp.error || "captureScreenshotData failed");
+    }
+    return Buffer.from(String(resp.result || ""), "base64");
+  }
+
+  async capturePaintData(): Promise<{ width: number; height: number; data: Uint8Array }> {
+    const resp = await this.sendBidi("browsingContext.capturePaintData", {
+      context: this.requireContextId(),
+      origin: "viewport",
+    });
+    if (resp.type === "error") {
+      throw new Error(resp.message || resp.error || "capturePaintData failed");
+    }
+    const result = resp.result as { width?: number; height?: number; data?: string };
+    const width = Number(result.width ?? 0);
+    const height = Number(result.height ?? 0);
+    const data = Buffer.from(String(result.data || ""), "base64");
+    return {
+      width,
+      height,
+      data: Uint8Array.from(data),
+    };
   }
 
   async click(selector: string): Promise<void> {

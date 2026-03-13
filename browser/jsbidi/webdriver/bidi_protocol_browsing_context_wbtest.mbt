@@ -44,6 +44,30 @@ extern "js" fn js_test_build_html_data_url(html : String) -> String =
   #| }
 
 ///|
+extern "js" fn js_test_rgba_meta(
+  encoded : String,
+  width : Int,
+  x : Int,
+  y : Int,
+) -> String =
+  #| (encoded, width, x, y) => {
+  #|   try {
+  #|     const raw = atob(String(encoded || ""));
+  #|     const bytes = Uint8Array.from(raw, (ch) => ch.charCodeAt(0));
+  #|     const index = ((Number(y) * Number(width)) + Number(x)) * 4;
+  #|     return JSON.stringify({
+  #|       length: bytes.length,
+  #|       r: bytes[index] ?? -1,
+  #|       g: bytes[index + 1] ?? -1,
+  #|       b: bytes[index + 2] ?? -1,
+  #|       a: bytes[index + 3] ?? -1,
+  #|     });
+  #|   } catch (_err) {
+  #|     return "{}";
+  #|   }
+  #| }
+
+///|
 fn extract_success_result(msgs : Array[BidiOutMessage]) -> Map[String, Json] {
   let json = @json.parse(msgs[0].to_json()) catch { _ => make_object({}) }
   match json {
@@ -80,6 +104,22 @@ fn png_dimensions_from_base64(encoded : String) -> (Int, Int) {
 ///|
 fn pdf_meta_from_base64(encoded : String) -> Map[String, Json] {
   let parsed = @json.parse(js_test_pdf_meta(encoded)) catch {
+    _ => make_object({})
+  }
+  match parsed {
+    Object(map) => map
+    _ => {}
+  }
+}
+
+///|
+fn rgba_meta_from_base64(
+  encoded : String,
+  width : Int,
+  x : Int,
+  y : Int,
+) -> Map[String, Json] {
+  let parsed = @json.parse(js_test_rgba_meta(encoded, width, x, y)) catch {
     _ => make_object({})
   }
   match parsed {
@@ -134,6 +174,77 @@ test "bidi captureScreenshot uses viewport and document dimensions" {
   )
   assert_eq(document_width, 1024)
   assert_true(document_height > viewport_height)
+}
+
+///|
+test "bidi capturePaintData returns actual viewport rgba payload" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":2,\"method\":\"browsingContext.setViewport\",\"params\":{\"context\":\"session-1\",\"viewport\":{\"width\":320,\"height\":240}}}",
+    ),
+  )
+  ignore(proto.take_messages())
+  let html = "<!DOCTYPE html><html><body style='margin:0;background:#ffffff'><div style='width:120px;height:90px;background:#ff0000'></div></body></html>"
+  let navigate_message = "{\"id\":3,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"" +
+    js_test_build_html_data_url(html) +
+    "\",\"wait\":\"complete\"}}"
+  ignore(proto.process_message(navigate_message))
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":4,\"method\":\"browsingContext.capturePaintData\",\"params\":{\"context\":\"session-1\",\"origin\":\"viewport\"}}",
+    ),
+  )
+  let result = extract_success_result(proto.take_messages())
+  let width = match result.get("width") {
+    Some(Number(value, ..)) => value.to_int()
+    _ => 0
+  }
+  let height = match result.get("height") {
+    Some(Number(value, ..)) => value.to_int()
+    _ => 0
+  }
+  let data = match result.get("data") {
+    Some(String(value)) => value
+    _ => ""
+  }
+  assert_eq(width, 320)
+  assert_eq(height, 240)
+  let red_meta = rgba_meta_from_base64(data, width, 40, 40)
+  let white_meta = rgba_meta_from_base64(data, width, 200, 200)
+  match red_meta.get("length") {
+    Some(Number(value, ..)) => assert_eq(value.to_int(), width * height * 4)
+    _ => assert_true(false)
+  }
+  match red_meta.get("r") {
+    Some(Number(value, ..)) => assert_true(value > 200)
+    _ => assert_true(false)
+  }
+  match red_meta.get("g") {
+    Some(Number(value, ..)) => assert_true(value < 80)
+    _ => assert_true(false)
+  }
+  match red_meta.get("b") {
+    Some(Number(value, ..)) => assert_true(value < 80)
+    _ => assert_true(false)
+  }
+  match white_meta.get("r") {
+    Some(Number(value, ..)) => assert_true(value > 200)
+    _ => assert_true(false)
+  }
+  match white_meta.get("g") {
+    Some(Number(value, ..)) => assert_true(value > 200)
+    _ => assert_true(false)
+  }
+  match white_meta.get("b") {
+    Some(Number(value, ..)) => assert_true(value > 200)
+    _ => assert_true(false)
+  }
 }
 
 ///|

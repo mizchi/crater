@@ -1,5 +1,14 @@
 # TODO
 
+## Paint VRT
+
+- [x] actual paint ベースの VRT を Playwright から実行できるようにする
+- [x] `tests/paint-vrt.test.ts` は `just test-website` から分離して `just test-vrt` で回す
+- [x] CI では `playwright-bidi-tests` と別の `playwright-vrt-tests` job で回す
+- [x] local snapshot がある環境では `playwright-intro` / `mdn-wasm-text` も比較対象に含める
+- [x] text/content mask を入れて sparse page の diff 評価をさらに安定化する
+- [ ] fixture ごとの threshold を artifact を見ながら段階的に tighten する
+
 ## WebDriver BiDi の MoonBit 全面移行（2026-03-08）
 
 - 目的:

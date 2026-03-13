@@ -1,7 +1,12 @@
 import {
+  "mizchi/crater/browser_contract",
   "mizchi/crater-browser/cdp",
+  "mizchi/crater-browser/js",
   "mizchi/crater-browser/interaction",
   "mizchi/crater/dom",
+  "mizchi/crater/paint",
+  "mizchi/crater/renderer",
+  "mizchi/crater/x/sixel",
   "mizchi/js/core",
   "mizchi/js/deno",
   "moonbitlang/core/json",

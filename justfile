@@ -211,6 +211,10 @@ test-playwright-adapter:
 test-website:
     pnpm test:website
 
+# Run relaxed paint visual regression tests against Chromium screenshots
+test-vrt:
+    pnpm test:vrt
+
 # Run Playwright benchmark
 bench-playwright:
     pnpm bench:playwright
