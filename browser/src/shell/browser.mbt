@@ -1472,6 +1472,38 @@ fn Browser::execute_inline_js(self : Browser, source : String) -> String? {
 }
 
 ///|
+fn cell_to_client_x(col : Int) -> Int {
+  col * 8 + 4
+}
+
+///|
+fn cell_to_client_y(row : Int) -> Int {
+  let viewport_row = if row > 0 { row } else { 0 }
+  viewport_row * 16 + 8
+}
+
+///|
+fn Browser::get_client_coords_for_source_id(
+  self : Browser,
+  source_id : String,
+) -> (Int, Int)? {
+  if self.hit_regions.is_empty() {
+    return None
+  }
+  let mut i = self.hit_regions.length() - 1
+  while i >= 0 {
+    let region = self.hit_regions[i]
+    if region.source_id == source_id {
+      let center_col = region.col + region.width / 2
+      let center_row = region.row + region.height / 2
+      return Some((cell_to_client_x(center_col), cell_to_client_y(center_row)))
+    }
+    i = i - 1
+  }
+  None
+}
+
+///|
 fn Browser::process_pending_script_tasks(self : Browser) -> Int {
   let ready_tasks = self.scheduler.poll_ready()
   let mut processed = 0
@@ -1496,11 +1528,19 @@ fn Browser::process_pending_script_tasks(self : Browser) -> Int {
 fn Browser::dispatch_click_to_source_id(
   self : Browser,
   source_id : String,
+  client_x? : Int = 0,
+  client_y? : Int = 0,
 ) -> ClickDispatchResult {
   let escaped = escape_js_string(source_id)
+  let client_x_source = client_x.to_string()
+  let client_y_source = client_y.to_string()
   let source = "(function(){const target=document.getElementById('" +
     escaped +
-    "');if(!target){return 'missing';}function dispatch(type, ctor){const event=new ctor(type,{bubbles:true,cancelable:true,clientX:0,clientY:0,pointerId:1,pointerType:'mouse',isPrimary:true});return target.dispatchEvent(event);}dispatch('pointerdown',PointerEvent);dispatch('mousedown',MouseEvent);dispatch('pointerup',PointerEvent);dispatch('mouseup',MouseEvent);return dispatch('click',MouseEvent)?'allow':'prevent';})()"
+    "');if(!target){return 'missing';}const clientX=" +
+    client_x_source +
+    ";const clientY=" +
+    client_y_source +
+    ";function dispatch(type, ctor){const event=new ctor(type,{bubbles:true,cancelable:true,clientX,clientY,pointerId:1,pointerType:'mouse',isPrimary:true});return target.dispatchEvent(event);}dispatch('pointerdown',PointerEvent);dispatch('mousedown',MouseEvent);dispatch('pointerup',PointerEvent);dispatch('mouseup',MouseEvent);return dispatch('click',MouseEvent)?'allow':'prevent';})()"
   let result = self.execute_inline_js(source)
   let _ = self.sync_render_state_from_dom_tree()
   match result {
@@ -1640,7 +1680,12 @@ pub async fn Browser::activate_focused_link(
   match source_id {
     Some(id) => {
       self.focus_source_id(id)
-      let dispatch = self.dispatch_click_to_source_id(id)
+      let (client_x, client_y) = match
+        self.get_client_coords_for_source_id(id) {
+        Some(coords) => coords
+        None => (0, 0)
+      }
+      let dispatch = self.dispatch_click_to_source_id(id, client_x~, client_y~)
       if not(dispatch.allow_default) {
         return true
       }
@@ -1689,7 +1734,11 @@ pub async fn Browser::activate_at(
   match source_id {
     Some(id) => {
       self.focus_source_id(id)
-      let dispatch = self.dispatch_click_to_source_id(id)
+      let dispatch = self.dispatch_click_to_source_id(
+        id,
+        client_x=cell_to_client_x(col),
+        client_y=cell_to_client_y(row),
+      )
       if not(dispatch.allow_default) {
         return true
       }

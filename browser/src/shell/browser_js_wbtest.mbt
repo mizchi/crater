@@ -1259,16 +1259,16 @@ async test "Browser activate_at dispatches pointer and mouse events before click
   let browser = Browser::new(800, 600)
   let html =
     #|<html>
-    #|<body style="margin:0">
-    #|  <button id="btn" style="display:block;width:96px;height:32px">Go</button>
+    #|<body style="margin:0;position:relative">
+    #|  <button id="btn" style="position:absolute;left:80px;top:48px;display:block;width:96px;height:32px">Go</button>
     #|  <p id="status">before</p>
     #|  <script>
     #|    const btn = document.getElementById('btn');
     #|    const status = document.getElementById('status');
     #|    const order = [];
     #|    for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
-    #|      btn.addEventListener(type, function () {
-    #|        order.push(type);
+    #|      btn.addEventListener(type, function (event) {
+    #|        order.push(type + '@' + event.clientX + ',' + event.clientY);
     #|        status.textContent = order.join('|');
     #|      });
     #|    }
@@ -1282,13 +1282,50 @@ async test "Browser activate_at dispatches pointer and mouse events before click
   browser.set_enable_js(true)
 
   let _ = browser.execute_scripts()
-  let activated = browser.activate_at(1, 1) catch { _ => false }
+  let _ = browser.render_output(Text)
+  browser.build_accessibility_tree()
+  let (col, row) = match browser.a11y_tree {
+    Some(tree) =>
+      match tree.find_by_source_id("btn") {
+        Some(node) =>
+          match node.bounds {
+            Some(bounds) =>
+              (
+                @tui.px_to_col(bounds.x + bounds.width / 2.0),
+                @tui.px_to_row(bounds.y + bounds.height / 2.0) + 1,
+              )
+            None => panic()
+          }
+        None => panic()
+      }
+    None => panic()
+  }
+  let expected = "@" +
+    (col * 8 + 4).to_string() +
+    "," +
+    (row * 16 + 8).to_string()
+  let activated = browser.activate_at(col, row) catch { _ => false }
   inspect(activated, content="true")
 
-  let rendered = browser.render_output(Text)
-  assert_true(
-    rendered.contains("pointerdown|mousedown|pointerup|mouseup|click"),
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
   )
+  inspect(
+    status,
+    content="Some(\"pointerdown" +
+      expected +
+      "|mousedown" +
+      expected +
+      "|pointerup" +
+      expected +
+      "|mouseup" +
+      expected +
+      "|click" +
+      expected +
+      "\")",
+  )
+  let rendered = browser.render_output(Text)
+  assert_true(not(rendered.contains("before")))
 }
 
 ///|
