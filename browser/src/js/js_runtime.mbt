@@ -51,6 +51,12 @@ pub struct JsResult {
 }
 
 ///|
+pub enum AsyncExecutionMode {
+  ImmediateFlush
+  DeferredFlush
+}
+
+///|
 /// Create a new JS result value
 pub fn JsResult::new(
   value : String,
@@ -67,7 +73,10 @@ pub(open) trait JsRuntime {
   init(Self) -> Unit
 
   /// Execute JS against DomTree and return result
-  execute(Self, Int, @dom.DomTree, String) -> JsResult raise JsError
+  execute(Self, Int, @dom.DomTree, String, AsyncExecutionMode) -> JsResult raise JsError
+
+  /// Run one pending async step for an existing context
+  tick(Self, Int, @dom.DomTree) -> JsResult raise JsError
 }
 
 ///|
@@ -75,6 +84,8 @@ pub(open) trait JsRuntime {
 pub struct JsContext {
   /// Stable runtime context id for persistent VM backends
   context_id : Int
+  /// Async flush policy for execution
+  async_mode : AsyncExecutionMode
   /// The DOM tree this context operates on
   dom : @dom.DomTree
   /// Console log buffer
@@ -88,6 +99,18 @@ pub struct JsContext {
 pub fn JsContext::new(dom : @dom.DomTree) -> JsContext {
   {
     context_id: allocate_runtime_context_id(),
+    async_mode: ImmediateFlush,
+    dom,
+    logs: [],
+    runtime: default_js_runtime(),
+  }
+}
+
+///|
+pub fn JsContext::new_deferred(dom : @dom.DomTree) -> JsContext {
+  {
+    context_id: allocate_runtime_context_id(),
+    async_mode: DeferredFlush,
     dom,
     logs: [],
     runtime: default_js_runtime(),
@@ -100,7 +123,28 @@ pub fn JsContext::new_with_runtime(
   dom : @dom.DomTree,
   runtime : &JsRuntime,
 ) -> JsContext {
-  { context_id: allocate_runtime_context_id(), dom, logs: [], runtime }
+  {
+    context_id: allocate_runtime_context_id(),
+    async_mode: ImmediateFlush,
+    dom,
+    logs: [],
+    runtime,
+  }
+}
+
+///|
+pub fn JsContext::new_with_runtime_and_mode(
+  dom : @dom.DomTree,
+  runtime : &JsRuntime,
+  async_mode : AsyncExecutionMode,
+) -> JsContext {
+  {
+    context_id: allocate_runtime_context_id(),
+    async_mode,
+    dom,
+    logs: [],
+    runtime,
+  }
 }
 
 ///|
@@ -128,7 +172,12 @@ pub fn JsContext::execute(
   code : String,
 ) -> JsResult raise JsError {
   self.runtime.init()
-  let result = self.runtime.execute(self.context_id, self.dom, code)
+  let result = self.runtime.execute(
+    self.context_id,
+    self.dom,
+    code,
+    self.async_mode,
+  )
   for log in result.logs {
     self.logs.push(log)
   }
@@ -136,4 +185,17 @@ pub fn JsContext::execute(
     raise ExecutionError(result.value)
   }
   result
+}
+
+///|
+pub fn JsContext::tick(self : JsContext) -> Bool raise JsError {
+  self.runtime.init()
+  let result = self.runtime.tick(self.context_id, self.dom)
+  for log in result.logs {
+    self.logs.push(log)
+  }
+  if not(result.success) {
+    raise ExecutionError(result.value)
+  }
+  result.value == "true"
 }

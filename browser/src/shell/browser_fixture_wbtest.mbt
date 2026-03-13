@@ -1045,3 +1045,47 @@ async test "fixture mouse click falls through after focused element removal" {
   )
   inspect(final_status, content="Some(\"next\")")
 }
+
+///|
+async test "fixture requestAnimationFrame advances across browser ticks" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <button id="start" style="display:block;width:96px;height:32px">Start</button>
+    #|  <p id="status">0</p>
+    #|  <script>
+    #|    let count = 0;
+    #|    function step() {
+    #|      count += 1;
+    #|      document.getElementById('status').textContent = String(count);
+    #|      if (count < 2) {
+    #|        requestAnimationFrame(step);
+    #|      }
+    #|    }
+    #|    document.getElementById('start').addEventListener('click', function () {
+    #|      requestAnimationFrame(step);
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let initial = browser.render_output(Text)
+  assert_true(initial.contains("0"))
+
+  browser.next_link()
+  let activated = browser.activate_focused_link() catch { _ => false }
+  inspect(activated, content="true")
+  let after_activate = browser.render_output(Text)
+  assert_true(after_activate.contains("0"))
+
+  inspect(browser.tick_js(), content="true")
+  let after_first_tick = browser.render_output(Text)
+  assert_true(after_first_tick.contains("1"))
+
+  inspect(browser.tick_js(), content="true")
+  let after_second_tick = browser.render_output(Text)
+  assert_true(after_second_tick.contains("2"))
+}

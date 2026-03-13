@@ -32,12 +32,26 @@ impl JsRuntime for WasmStubRuntime with execute(
   context_id : Int,
   dom : @dom.DomTree,
   code : String,
+  async_mode : AsyncExecutionMode,
 ) -> JsResult raise JsError {
   let _ = self
   let _ = context_id
   let _ = dom
   let _ = code
+  let _ = async_mode
   raise NotSupported
+}
+
+///|
+impl JsRuntime for WasmStubRuntime with tick(
+  self : WasmStubRuntime,
+  context_id : Int,
+  dom : @dom.DomTree,
+) -> JsResult raise JsError {
+  let _ = self
+  let _ = context_id
+  let _ = dom
+  JsResult::new("false", [], true)
 }
 
 ///|

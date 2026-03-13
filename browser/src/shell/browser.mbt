@@ -1581,7 +1581,21 @@ pub fn Browser::tick_js(self : Browser) -> Bool {
     self.init_js_execution()
   }
   let processed = self.process_pending_script_tasks()
-  if processed <= 0 {
+  if processed > 0 {
+    self.flush_js_logs()
+    return self.sync_render_state_from_dom_tree()
+  }
+  let ticked = match self.script_executor {
+    Some(executor) =>
+      executor.tick() catch {
+        err => {
+          println("[JS] Error: " + err.to_string())
+          false
+        }
+      }
+    None => false
+  }
+  if not(ticked) {
     return false
   }
   self.flush_js_logs()
@@ -2178,7 +2192,7 @@ fn Browser::init_js_execution(self : Browser) -> Unit {
       }
   }
   self.dom_tree = Some(dom)
-  self.script_executor = Some(@js.ScriptExecutor::new(dom))
+  self.script_executor = Some(@js.ScriptExecutor::new_deferred(dom))
 }
 
 ///|

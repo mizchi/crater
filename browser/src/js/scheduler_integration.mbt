@@ -19,6 +19,11 @@ pub fn ScriptExecutor::new(dom : @dom.DomTree) -> ScriptExecutor {
 }
 
 ///|
+pub fn ScriptExecutor::new_deferred(dom : @dom.DomTree) -> ScriptExecutor {
+  { dom, ctx: JsContext::new_deferred(dom) }
+}
+
+///|
 /// Get accumulated logs from the JS context
 pub fn ScriptExecutor::get_logs(self : ScriptExecutor) -> Array[String] {
   self.ctx.get_logs()
@@ -37,6 +42,11 @@ pub fn ScriptExecutor::execute_source(
   source : String,
 ) -> JsResult raise JsError {
   self.ctx.execute(source)
+}
+
+///|
+pub fn ScriptExecutor::tick(self : ScriptExecutor) -> Bool raise JsError {
+  self.ctx.tick()
 }
 
 ///|

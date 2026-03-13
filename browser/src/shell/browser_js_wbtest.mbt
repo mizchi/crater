@@ -833,8 +833,11 @@ async test "Browser activate_at flushes requestAnimationFrame mutation and repai
   inspect(activated, content="true")
 
   let rendered = browser.render_output(Text)
-  assert_true(rendered.contains("after"))
-  assert_true(not(rendered.contains("before")))
+  assert_true(rendered.contains("before"))
+  inspect(browser.tick_js(), content="true")
+  let after_tick = browser.render_output(Text)
+  assert_true(after_tick.contains("after"))
+  assert_true(not(after_tick.contains("before")))
 }
 
 ///|

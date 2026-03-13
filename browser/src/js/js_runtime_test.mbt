@@ -35,11 +35,25 @@ impl JsRuntime for MockRuntime with execute(
   context_id : Int,
   dom : @dom.DomTree,
   code : String,
+  async_mode : AsyncExecutionMode,
 ) -> JsResult raise JsError {
   let _ = self
   let _ = context_id
   let _ = dom
+  let _ = async_mode
   JsResult::new("mock:" + code, ["mock-log"], true)
+}
+
+///|
+impl JsRuntime for MockRuntime with tick(
+  self : MockRuntime,
+  context_id : Int,
+  dom : @dom.DomTree,
+) -> JsResult raise JsError {
+  let _ = self
+  let _ = context_id
+  let _ = dom
+  JsResult::new("false", ["mock-tick"], true)
 }
 
 ///|
@@ -59,12 +73,26 @@ impl JsRuntime for FailRuntime with execute(
   context_id : Int,
   dom : @dom.DomTree,
   code : String,
+  async_mode : AsyncExecutionMode,
 ) -> JsResult raise JsError {
   let _ = self
   let _ = context_id
   let _ = dom
   let _ = code
+  let _ = async_mode
   JsResult::new("boom", ["before-fail"], false)
+}
+
+///|
+impl JsRuntime for FailRuntime with tick(
+  self : FailRuntime,
+  context_id : Int,
+  dom : @dom.DomTree,
+) -> JsResult raise JsError {
+  let _ = self
+  let _ = context_id
+  let _ = dom
+  JsResult::new("boom", ["tick-fail"], false)
 }
 
 ///|
@@ -109,4 +137,11 @@ test "JsContext::execute calls runtime.init on each execution" {
   let _ = ctx.execute("second")
   inspect(ctx.get_logs().length(), content="2")
   inspect(init_calls.val, content="2")
+}
+
+///|
+test "JsContext::new_deferred configures deferred async mode" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new_deferred(dom)
+  let _ = ctx.get_dom()
 }

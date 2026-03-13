@@ -58,8 +58,9 @@ extern "js" fn quickjs_execute_with_mock_dom(
   context_id : Int,
   init_code : String,
   code : String,
+  flush_async : Bool,
 ) -> String =
-  #| (contextId, initCode, code) => {
+  #| (contextId, initCode, code, flushAsync) => {
   #|   const persistentContexts = globalThis.__craterPersistentJsContexts || (globalThis.__craterPersistentJsContexts = new Map());
   #|   // Mock DOM setup code (shared between QuickJS and Node.js vm)
   #|   const setupCode = `
@@ -7534,30 +7535,32 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       };
   #|
   #|       flushAllMicrotasks();
-  #|       while (maxIterations-- > 0) {
-  #|         const timerResult = vm.evalCode('_runOneTimeout()');
-  #|         let ranTimer = false;
-  #|         if (!timerResult.error && timerResult.value) {
-  #|           ranTimer = vm.dump(timerResult.value) === true;
-  #|           timerResult.value.dispose();
-  #|         } else if (timerResult.error) {
-  #|           timerResult.error.dispose();
-  #|         }
-  #|         if (ranTimer) {
-  #|           flushAllMicrotasks();
-  #|           continue;
-  #|         }
+  #|       if (flushAsync) {
+  #|         while (maxIterations-- > 0) {
+  #|           const timerResult = vm.evalCode('_runOneTimeout()');
+  #|           let ranTimer = false;
+  #|           if (!timerResult.error && timerResult.value) {
+  #|             ranTimer = vm.dump(timerResult.value) === true;
+  #|             timerResult.value.dispose();
+  #|           } else if (timerResult.error) {
+  #|             timerResult.error.dispose();
+  #|           }
+  #|           if (ranTimer) {
+  #|             flushAllMicrotasks();
+  #|             continue;
+  #|           }
   #|
-  #|         const rafResult = vm.evalCode('_runOneAnimationFrame()');
-  #|         let ranAnimationFrame = false;
-  #|         if (!rafResult.error && rafResult.value) {
-  #|           ranAnimationFrame = vm.dump(rafResult.value) === true;
-  #|           rafResult.value.dispose();
-  #|         } else if (rafResult.error) {
-  #|           rafResult.error.dispose();
+  #|           const rafResult = vm.evalCode('_runOneAnimationFrame()');
+  #|           let ranAnimationFrame = false;
+  #|           if (!rafResult.error && rafResult.value) {
+  #|             ranAnimationFrame = vm.dump(rafResult.value) === true;
+  #|             rafResult.value.dispose();
+  #|           } else if (rafResult.error) {
+  #|             rafResult.error.dispose();
+  #|           }
+  #|           if (!ranAnimationFrame) break;
+  #|           flushAllMicrotasks();
   #|         }
-  #|         if (!ranAnimationFrame) break;
-  #|         flushAllMicrotasks();
   #|       }
   #|
   #|       const collectResult = vm.evalCode('JSON.stringify({ logs, domOps })');
@@ -7619,15 +7622,17 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|     try {
   #|       const userResult = entry.vm.runInContext(code, entry.sandbox, { timeout: 5000 });
   #|       entry.vm.runInContext('_flushMicrotasks()', entry.sandbox, { timeout: 1000 });
-  #|       for (let i = 0; i < 100; i++) {
-  #|         const ranTimer = entry.vm.runInContext('_runOneTimeout()', entry.sandbox, { timeout: 1000 });
-  #|         if (ranTimer) {
+  #|       if (flushAsync) {
+  #|         for (let i = 0; i < 100; i++) {
+  #|           const ranTimer = entry.vm.runInContext('_runOneTimeout()', entry.sandbox, { timeout: 1000 });
+  #|           if (ranTimer) {
+  #|             entry.vm.runInContext('_flushMicrotasks()', entry.sandbox, { timeout: 1000 });
+  #|             continue;
+  #|           }
+  #|           const ranAnimationFrame = entry.vm.runInContext('_runOneAnimationFrame()', entry.sandbox, { timeout: 1000 });
+  #|           if (!ranAnimationFrame) break;
   #|           entry.vm.runInContext('_flushMicrotasks()', entry.sandbox, { timeout: 1000 });
-  #|           continue;
   #|         }
-  #|         const ranAnimationFrame = entry.vm.runInContext('_runOneAnimationFrame()', entry.sandbox, { timeout: 1000 });
-  #|         if (!ranAnimationFrame) break;
-  #|         entry.vm.runInContext('_flushMicrotasks()', entry.sandbox, { timeout: 1000 });
   #|       }
   #|       const collected = entry.vm.runInContext('({ logs, domOps })', entry.sandbox, { timeout: 1000 });
   #|       return JSON.stringify({
@@ -7649,6 +7654,101 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         error: buildErrorMessage(e)
   #|       });
   #|     }
+  #|   }
+  #| }
+
+///|
+extern "js" fn quickjs_tick_with_mock_dom(context_id : Int) -> String =
+  #| (contextId) => {
+  #|   const persistentContexts = globalThis.__craterPersistentJsContexts || (globalThis.__craterPersistentJsContexts = new Map());
+  #|   const entry = persistentContexts.get(contextId);
+  #|   if (!entry) {
+  #|     return JSON.stringify({ success: true, value: 'false', logs: [], domOps: [] });
+  #|   }
+  #|   const sanitizeErrorText = (value) => String(value).replace(/"/g, "'");
+  #|   if (entry.kind === 'quickjs') {
+  #|     const vm = entry.vm;
+  #|     try {
+  #|       const resetResult = vm.evalCode('logs.length = 0; domOps.length = 0;');
+  #|       if (resetResult.error) {
+  #|         const errorStr = vm.dump(resetResult.error);
+  #|         resetResult.error.dispose();
+  #|         return JSON.stringify({ success: false, value: '', logs: [], domOps: [], error: sanitizeErrorText(errorStr) });
+  #|       }
+  #|       if (resetResult.value) resetResult.value.dispose();
+  #|       let hadWork = false;
+  #|       const timerResult = vm.evalCode('_runOneTimeout()');
+  #|       if (!timerResult.error && timerResult.value) {
+  #|         hadWork = vm.dump(timerResult.value) === true;
+  #|         timerResult.value.dispose();
+  #|       } else if (timerResult.error) {
+  #|         const errorStr = vm.dump(timerResult.error);
+  #|         timerResult.error.dispose();
+  #|         return JSON.stringify({ success: false, value: '', logs: [], domOps: [], error: sanitizeErrorText(errorStr) });
+  #|       }
+  #|       if (!hadWork) {
+  #|         const rafResult = vm.evalCode('_runOneAnimationFrame()');
+  #|         if (!rafResult.error && rafResult.value) {
+  #|           hadWork = vm.dump(rafResult.value) === true;
+  #|           rafResult.value.dispose();
+  #|         } else if (rafResult.error) {
+  #|           const errorStr = vm.dump(rafResult.error);
+  #|           rafResult.error.dispose();
+  #|           return JSON.stringify({ success: false, value: '', logs: [], domOps: [], error: sanitizeErrorText(errorStr) });
+  #|         }
+  #|       }
+  #|       if (hadWork) {
+  #|         const flushResult = vm.evalCode('_flushMicrotasks()');
+  #|         if (flushResult.error) {
+  #|           const errorStr = vm.dump(flushResult.error);
+  #|           flushResult.error.dispose();
+  #|           return JSON.stringify({ success: false, value: '', logs: [], domOps: [], error: sanitizeErrorText(errorStr) });
+  #|         }
+  #|         if (flushResult.value) flushResult.value.dispose();
+  #|       }
+  #|       const collectResult = vm.evalCode('JSON.stringify({ logs, domOps })');
+  #|       if (collectResult.error) {
+  #|         const errorStr = vm.dump(collectResult.error);
+  #|         collectResult.error.dispose();
+  #|         return JSON.stringify({ success: false, value: '', logs: [], domOps: [], error: sanitizeErrorText(errorStr) });
+  #|       }
+  #|       const resultStr = vm.dump(collectResult.value);
+  #|       collectResult.value.dispose();
+  #|       const parsed = JSON.parse(resultStr);
+  #|       return JSON.stringify({
+  #|         success: true,
+  #|         value: hadWork ? 'true' : 'false',
+  #|         logs: parsed.logs || [],
+  #|         domOps: parsed.domOps || []
+  #|       });
+  #|     } catch (e) {
+  #|       return JSON.stringify({ success: false, value: '', logs: [], domOps: [], error: sanitizeErrorText(e && e.message ? e.message : String(e)) });
+  #|     }
+  #|   }
+  #|   try {
+  #|     entry.vm.runInContext('logs.length = 0; domOps.length = 0;', entry.sandbox, { timeout: 1000 });
+  #|     let hadWork = entry.vm.runInContext('_runOneTimeout()', entry.sandbox, { timeout: 1000 });
+  #|     if (!hadWork) {
+  #|       hadWork = entry.vm.runInContext('_runOneAnimationFrame()', entry.sandbox, { timeout: 1000 });
+  #|     }
+  #|     if (hadWork) {
+  #|       entry.vm.runInContext('_flushMicrotasks()', entry.sandbox, { timeout: 1000 });
+  #|     }
+  #|     const collected = entry.vm.runInContext('({ logs, domOps })', entry.sandbox, { timeout: 1000 });
+  #|     return JSON.stringify({
+  #|       success: true,
+  #|       value: hadWork ? 'true' : 'false',
+  #|       logs: collected.logs || [],
+  #|       domOps: collected.domOps || []
+  #|     });
+  #|   } catch (e) {
+  #|     return JSON.stringify({
+  #|       success: false,
+  #|       value: '',
+  #|       logs: [],
+  #|       domOps: [],
+  #|       error: sanitizeErrorText(e && e.message ? e.message : String(e))
+  #|     });
   #|   }
   #| }
 
@@ -7683,6 +7783,7 @@ impl JsRuntime for QuickJsRuntime with execute(
   context_id : Int,
   dom : @dom.DomTree,
   code : String,
+  async_mode : AsyncExecutionMode,
 ) -> JsResult raise JsError {
   let _ = self
   update_context(context_id, dom)
@@ -7692,8 +7793,12 @@ impl JsRuntime for QuickJsRuntime with execute(
   let dom_init_code = create_dom_init_code(dom)
 
   // Execute against a stable runtime context so top-level JS state survives.
+  let flush_async = match async_mode {
+    ImmediateFlush => true
+    DeferredFlush => false
+  }
   let result_json = quickjs_execute_with_mock_dom(
-    context_id, dom_init_code, code,
+    context_id, dom_init_code, code, flush_async,
   )
 
   // Parse result
@@ -7702,6 +7807,20 @@ impl JsRuntime for QuickJsRuntime with execute(
   // Apply DOM operations to actual DomTree
   apply_dom_ops(dom, dom_ops)
 
+  result
+}
+
+///|
+impl JsRuntime for QuickJsRuntime with tick(
+  self : QuickJsRuntime,
+  context_id : Int,
+  dom : @dom.DomTree,
+) -> JsResult raise JsError {
+  let _ = self
+  update_context(context_id, dom)
+  let result_json = quickjs_tick_with_mock_dom(context_id)
+  let (result, dom_ops) = parse_js_result_with_ops(result_json)
+  apply_dom_ops(dom, dom_ops)
   result
 }
 

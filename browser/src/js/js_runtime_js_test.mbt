@@ -2844,6 +2844,30 @@ test "requestAnimationFrame: callback is executed" {
 }
 
 ///|
+test "requestAnimationFrame: deferred context advances on tick" {
+  let dom = @dom.DomTree::new()
+  let ctx = JsContext::new_deferred(dom)
+  let setup =
+    #|globalThis.__craterRafCount = 0;
+    #|globalThis.__craterStep = function () {
+    #|  globalThis.__craterRafCount += 1;
+    #|  if (globalThis.__craterRafCount < 2) {
+    #|    requestAnimationFrame(globalThis.__craterStep);
+    #|  }
+    #|};
+    #|requestAnimationFrame(globalThis.__craterStep);
+    #|String(globalThis.__craterRafCount)
+  let setup_result = ctx.execute(setup)
+  inspect(setup_result.value, content="0")
+  inspect(ctx.tick(), content="true")
+  let after_first = ctx.execute("String(globalThis.__craterRafCount)")
+  inspect(after_first.value, content="1")
+  inspect(ctx.tick(), content="true")
+  let after_second = ctx.execute("String(globalThis.__craterRafCount)")
+  inspect(after_second.value, content="2")
+}
+
+///|
 test "setTimeout: multiple timeouts execute in order" {
   let dom = @dom.DomTree::new()
   let ctx = JsContext::new(dom)

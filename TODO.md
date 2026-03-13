@@ -530,8 +530,12 @@
   - `browser/src/shell/browser_fixture_wbtest.mbt` の
     `fixture listener and closure state survive re-execution`
     で、closure state と DOM-backed state の両方が `0 -> 2` まで進むことを固定
-- [ ] `requestAnimationFrame` の本物の frame loop
-  - 現状は JS flush 中に 1 frame 進める簡易モデル
+- [x] `requestAnimationFrame` の frame loop を browser shell に接続
+  - `ScriptExecutor::new_deferred` で JS 実行と async frame/timer flush を分離
+  - `Browser::tick_js()` が idle 時に 1 step ずつ timer / `requestAnimationFrame` を進める
+  - `browser/src/shell/browser_fixture_wbtest.mbt` の
+    `fixture requestAnimationFrame advances across browser ticks`
+    で `click -> tick -> tick` の段階描画を固定
 - [ ] event persistence の一般化
   - 今は `click/input/change/submit/keydown/keypress/keyup` に限定
 - [ ] visual hit-test の厳密化
