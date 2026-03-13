@@ -1472,6 +1472,27 @@ fn Browser::execute_inline_js(self : Browser, source : String) -> String? {
 }
 
 ///|
+fn Browser::process_pending_script_tasks(self : Browser) -> Int {
+  let ready_tasks = self.scheduler.poll_ready()
+  let mut processed = 0
+  for task in ready_tasks {
+    match task.action {
+      @scheduler.ExecuteScript(_) =>
+        match self.script_executor {
+          Some(executor) => {
+            let result = executor.execute(task)
+            let _ = self.scheduler.complete(task.id, result)
+            processed = processed + 1
+          }
+          None => ()
+        }
+      _ => ()
+    }
+  }
+  processed
+}
+
+///|
 fn Browser::dispatch_click_to_source_id(
   self : Browser,
   source_id : String,
@@ -1559,17 +1580,12 @@ pub fn Browser::tick_js(self : Browser) -> Bool {
   if self.dom_tree is None {
     self.init_js_execution()
   }
-  match self.dom_tree {
-    Some(dom) => {
-      let processed = @js.process_script_tasks(self.scheduler, dom)
-      if processed <= 0 {
-        return false
-      }
-      self.flush_js_logs()
-      self.sync_render_state_from_dom_tree()
-    }
-    None => false
+  let processed = self.process_pending_script_tasks()
+  if processed <= 0 {
+    return false
   }
+  self.flush_js_logs()
+  self.sync_render_state_from_dom_tree()
 }
 
 ///|
@@ -2202,16 +2218,11 @@ pub fn Browser::execute_scripts(self : Browser) -> Int {
     )
   }
   // Process queued scripts
-  match self.dom_tree {
-    Some(dom) => {
-      executed = @js.process_script_tasks(self.scheduler, dom)
-      if executed > 0 {
-        let _ = self.sync_render_state_from_dom_tree()
-      }
-      self.flush_js_logs()
-    }
-    None => ()
+  executed = self.process_pending_script_tasks()
+  if executed > 0 {
+    let _ = self.sync_render_state_from_dom_tree()
   }
+  self.flush_js_logs()
   println("Executed " + executed.to_string() + " script(s)")
   executed
 }
@@ -2290,16 +2301,11 @@ async fn Browser::execute_scripts_async(self : Browser) -> Int {
     )
   }
   // Process queued scripts
-  match self.dom_tree {
-    Some(dom) => {
-      executed = @js.process_script_tasks(self.scheduler, dom)
-      if executed > 0 {
-        let _ = self.sync_render_state_from_dom_tree()
-      }
-      self.flush_js_logs()
-    }
-    None => ()
+  executed = self.process_pending_script_tasks()
+  if executed > 0 {
+    let _ = self.sync_render_state_from_dom_tree()
   }
+  self.flush_js_logs()
   println("Executed " + executed.to_string() + " script(s)")
   executed
 }

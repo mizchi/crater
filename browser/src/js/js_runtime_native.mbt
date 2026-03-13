@@ -11,6 +11,11 @@ priv struct NativeStubRuntime {
 let native_stub_runtime : NativeStubRuntime = { _unused: 0 }
 
 ///|
+fn allocate_runtime_context_id() -> Int {
+  0
+}
+
+///|
 fn default_js_runtime() -> &JsRuntime {
   native_stub_runtime as &JsRuntime
 }
@@ -24,10 +29,12 @@ impl JsRuntime for NativeStubRuntime with init(self : NativeStubRuntime) -> Unit
 ///|
 impl JsRuntime for NativeStubRuntime with execute(
   self : NativeStubRuntime,
+  context_id : Int,
   dom : @dom.DomTree,
   code : String,
 ) -> JsResult raise JsError {
   let _ = self
+  let _ = context_id
   let _ = dom
   let _ = code
   raise NotSupported

@@ -524,9 +524,12 @@
 
 ### Browser shell の未実装 / 未整理
 
-- [ ] persistent JS context 化
-  - 現状は DOM へ persisted listener を戻して継続性を作っている
-  - closure state や full VM lifetime は保持していない
+- [x] persistent JS context 化
+  - `JsContext` ごとに stable VM を再利用
+  - top-level JS state と event listener closure state は後続 execute / click でも保持
+  - `browser/src/shell/browser_fixture_wbtest.mbt` の
+    `fixture listener and closure state survive re-execution`
+    で、closure state と DOM-backed state の両方が `0 -> 2` まで進むことを固定
 - [ ] `requestAnimationFrame` の本物の frame loop
   - 現状は JS flush 中に 1 frame 進める簡易モデル
 - [ ] event persistence の一般化

@@ -3005,9 +3005,11 @@ test "persisted input listener survives later execution" {
   inspect(setup_result.value, content="ok")
 
   let run =
-    #|const input = document.getElementById('field');
-    #|input.dispatchEvent(new Event('input', { bubbles: true }));
-    #|document.body.getAttribute('data-status')
+    #|(function () {
+    #|  const input = document.getElementById('field');
+    #|  input.dispatchEvent(new Event('input', { bubbles: true }));
+    #|  return document.body.getAttribute('data-status');
+    #|})()
   let run_result = ctx.execute(run)
   inspect(run_result.success, content="true")
   inspect(run_result.value, content="input")
@@ -3034,12 +3036,32 @@ test "persisted change listener survives later execution" {
   inspect(setup_result.success, content="true")
 
   let run =
-    #|const input = document.getElementById('field');
-    #|input.dispatchEvent(new Event('change', { bubbles: true }));
-    #|document.body.getAttribute('data-status')
+    #|(function () {
+    #|  const input = document.getElementById('field');
+    #|  input.dispatchEvent(new Event('change', { bubbles: true }));
+    #|  return document.body.getAttribute('data-status');
+    #|})()
   let run_result = ctx.execute(run)
   inspect(run_result.success, content="true")
   inspect(run_result.value, content="change")
+}
+
+///|
+test "top-level JS state survives later execution in same context" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let first = ctx.execute("let counter = 0; counter += 1; String(counter)")
+  inspect(first.success, content="true")
+  inspect(first.value, content="1")
+
+  let second = ctx.execute("counter += 1; String(counter)")
+  inspect(second.success, content="true")
+  inspect(second.value, content="2")
 }
 
 ///|
@@ -3064,9 +3086,11 @@ test "persisted change listener sees reflected input value" {
   inspect(setup_result.success, content="true")
 
   let run =
-    #|const input = document.getElementById('field');
-    #|input.dispatchEvent(new Event('change', { bubbles: true }));
-    #|document.body.getAttribute('data-status')
+    #|(function () {
+    #|  const input = document.getElementById('field');
+    #|  input.dispatchEvent(new Event('change', { bubbles: true }));
+    #|  return document.body.getAttribute('data-status');
+    #|})()
   let run_result = ctx.execute(run)
   inspect(run_result.success, content="true")
   inspect(run_result.value, content="x")
@@ -3121,10 +3145,12 @@ test "persisted submit listener survives later execution" {
   inspect(setup_result.success, content="true")
 
   let run =
-    #|const form = document.getElementById('form');
-    #|const event = new Event('submit', { bubbles: true, cancelable: true });
-    #|form.dispatchEvent(event);
-    #|[String(event.defaultPrevented), document.body.getAttribute('data-status')].join('|')
+    #|(function () {
+    #|  const form = document.getElementById('form');
+    #|  const event = new Event('submit', { bubbles: true, cancelable: true });
+    #|  form.dispatchEvent(event);
+    #|  return [String(event.defaultPrevented), document.body.getAttribute('data-status')].join('|');
+    #|})()
   let run_result = ctx.execute(run)
   inspect(run_result.success, content="true")
   inspect(run_result.value, content="true|submit")
@@ -3151,9 +3177,11 @@ test "persisted keydown listener survives later execution" {
   inspect(setup_result.success, content="true")
 
   let run =
-    #|const input = document.getElementById('field');
-    #|input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'A' }));
-    #|document.body.getAttribute('data-status')
+    #|(function () {
+    #|  const input = document.getElementById('field');
+    #|  input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'A' }));
+    #|  return document.body.getAttribute('data-status');
+    #|})()
   let run_result = ctx.execute(run)
   inspect(run_result.success, content="true")
   inspect(run_result.value, content="keydown")
@@ -3180,9 +3208,11 @@ test "persisted keypress listener survives later execution" {
   inspect(setup_result.success, content="true")
 
   let run =
-    #|const input = document.getElementById('field');
-    #|input.dispatchEvent(new KeyboardEvent('keypress', { bubbles: true, key: 'A' }));
-    #|document.body.getAttribute('data-status')
+    #|(function () {
+    #|  const input = document.getElementById('field');
+    #|  input.dispatchEvent(new KeyboardEvent('keypress', { bubbles: true, key: 'A' }));
+    #|  return document.body.getAttribute('data-status');
+    #|})()
   let run_result = ctx.execute(run)
   inspect(run_result.success, content="true")
   inspect(run_result.value, content="keypress")
@@ -3209,9 +3239,11 @@ test "persisted keyup listener survives later execution" {
   inspect(setup_result.success, content="true")
 
   let run =
-    #|const input = document.getElementById('field');
-    #|input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'A' }));
-    #|document.body.getAttribute('data-status')
+    #|(function () {
+    #|  const input = document.getElementById('field');
+    #|  input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'A' }));
+    #|  return document.body.getAttribute('data-status');
+    #|})()
   let run_result = ctx.execute(run)
   inspect(run_result.success, content="true")
   inspect(run_result.value, content="keyup")

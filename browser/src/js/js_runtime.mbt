@@ -67,12 +67,14 @@ pub(open) trait JsRuntime {
   init(Self) -> Unit
 
   /// Execute JS against DomTree and return result
-  execute(Self, @dom.DomTree, String) -> JsResult raise JsError
+  execute(Self, Int, @dom.DomTree, String) -> JsResult raise JsError
 }
 
 ///|
 /// JavaScript execution context bound to a DomTree
 pub struct JsContext {
+  /// Stable runtime context id for persistent VM backends
+  context_id : Int
   /// The DOM tree this context operates on
   dom : @dom.DomTree
   /// Console log buffer
@@ -84,7 +86,12 @@ pub struct JsContext {
 ///|
 /// Create a new JS execution context with a DOM tree
 pub fn JsContext::new(dom : @dom.DomTree) -> JsContext {
-  { dom, logs: [], runtime: default_js_runtime() }
+  {
+    context_id: allocate_runtime_context_id(),
+    dom,
+    logs: [],
+    runtime: default_js_runtime(),
+  }
 }
 
 ///|
@@ -93,7 +100,7 @@ pub fn JsContext::new_with_runtime(
   dom : @dom.DomTree,
   runtime : &JsRuntime,
 ) -> JsContext {
-  { dom, logs: [], runtime }
+  { context_id: allocate_runtime_context_id(), dom, logs: [], runtime }
 }
 
 ///|
@@ -121,7 +128,7 @@ pub fn JsContext::execute(
   code : String,
 ) -> JsResult raise JsError {
   self.runtime.init()
-  let result = self.runtime.execute(self.dom, code)
+  let result = self.runtime.execute(self.context_id, self.dom, code)
   for log in result.logs {
     self.logs.push(log)
   }

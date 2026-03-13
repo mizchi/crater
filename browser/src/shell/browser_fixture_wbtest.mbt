@@ -690,3 +690,46 @@ async test "fixture focused summary Enter toggles details and repaints" {
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("Body"))
 }
+
+///|
+async test "fixture listener and closure state survive re-execution" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <button id="closure" style="display:block;width:96px;height:32px">Closure</button>
+    #|  <p id="closure-status">0</p>
+    #|  <button id="dom" style="display:block;width:96px;height:32px">DOM</button>
+    #|  <p id="dom-status">0</p>
+    #|  <script>
+    #|    let closureCount = 0;
+    #|    document.getElementById('closure').addEventListener('click', function () {
+    #|      closureCount += 1;
+    #|      document.getElementById('closure-status').textContent = String(closureCount);
+    #|    });
+    #|    document.getElementById('dom').addEventListener('click', function () {
+    #|      const status = document.getElementById('dom-status');
+    #|      const current = Number(status.textContent || '0');
+    #|      status.textContent = String(current + 1);
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+
+  let (closure_col, closure_row) = center_of_source_id(browser, "closure")
+  let (dom_col, dom_row) = center_of_source_id(browser, "dom")
+
+  let _ = browser.activate_at(closure_col, closure_row) catch { _ => false }
+  let _ = browser.activate_at(closure_col, closure_row) catch { _ => false }
+  let _ = browser.activate_at(dom_col, dom_row) catch { _ => false }
+  let _ = browser.activate_at(dom_col, dom_row) catch { _ => false }
+
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('closure-status').textContent + '|' + document.getElementById('dom-status').textContent; })()",
+  )
+  inspect(status, content="Some(\"2|2\")")
+}

@@ -11,6 +11,11 @@ priv struct WasmStubRuntime {
 let wasm_stub_runtime : WasmStubRuntime = { _unused: 0 }
 
 ///|
+fn allocate_runtime_context_id() -> Int {
+  0
+}
+
+///|
 fn default_js_runtime() -> &JsRuntime {
   wasm_stub_runtime as &JsRuntime
 }
@@ -24,10 +29,12 @@ impl JsRuntime for WasmStubRuntime with init(self : WasmStubRuntime) -> Unit {
 ///|
 impl JsRuntime for WasmStubRuntime with execute(
   self : WasmStubRuntime,
+  context_id : Int,
   dom : @dom.DomTree,
   code : String,
 ) -> JsResult raise JsError {
   let _ = self
+  let _ = context_id
   let _ = dom
   let _ = code
   raise NotSupported

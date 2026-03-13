@@ -21,18 +21,17 @@ let runtime_state : RuntimeState = {
 }
 
 ///|
-/// Register a context and return its ID
-fn register_context(dom : @dom.DomTree) -> Int {
+/// Allocate a stable runtime context id
+fn allocate_runtime_context_id() -> Int {
   let id = runtime_state.counter
   runtime_state.counter = runtime_state.counter + 1
-  runtime_state.contexts.set(id, dom)
   id
 }
 
 ///|
-/// Unregister a context
-fn unregister_context(id : Int) -> Unit {
-  runtime_state.contexts.remove(id)
+/// Update DomTree mapping for an existing context id
+fn update_context(id : Int, dom : @dom.DomTree) -> Unit {
+  runtime_state.contexts.set(id, dom)
 }
 
 ///|
@@ -55,8 +54,13 @@ extern "js" fn quickjs_init() -> Bool =
 /// FFI: Execute JavaScript code with DOM mock
 /// Uses QuickJS if initialized, otherwise falls back to Node.js vm
 /// Returns JSON: { success, value, logs, domOps, error? }
-extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
-  #| (code) => {
+extern "js" fn quickjs_execute_with_mock_dom(
+  context_id : Int,
+  init_code : String,
+  code : String,
+) -> String =
+  #| (contextId, initCode, code) => {
+  #|   const persistentContexts = globalThis.__craterPersistentJsContexts || (globalThis.__craterPersistentJsContexts = new Map());
   #|   // Mock DOM setup code (shared between QuickJS and Node.js vm)
   #|   const setupCode = `
   #|     const logs = [];
@@ -7445,37 +7449,62 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|
   #|   // Use QuickJS if initialized, otherwise use Node.js vm
   #|   if (globalThis.__quickjs_initialized && globalThis.__quickjs && !globalThis.__use_nodejs_vm) {
-  #|     // QuickJS execution
   #|     const QuickJS = globalThis.__quickjs;
-  #|     const vm = QuickJS.newContext();
+  #|     let entry = persistentContexts.get(contextId);
+  #|     if (!entry || entry.kind !== 'quickjs') {
+  #|       const vm = QuickJS.newContext();
+  #|       try {
+  #|         const initResult = vm.evalCode(setupCode + '\n' + initCode + '\n_restorePersistedListenersTree(document);');
+  #|         if (initResult.error) {
+  #|           const errorStr = vm.dump(initResult.error);
+  #|           initResult.error.dispose();
+  #|           try { vm.dispose(); } catch {}
+  #|           return JSON.stringify({
+  #|             success: false, value: '', logs: [], domOps: [],
+  #|             error: sanitizeErrorText(errorStr)
+  #|           });
+  #|         }
+  #|         if (initResult.value) initResult.value.dispose();
+  #|         entry = { kind: 'quickjs', vm };
+  #|         persistentContexts.set(contextId, entry);
+  #|       } catch (e) {
+  #|         try { vm.dispose(); } catch {}
+  #|         return JSON.stringify({
+  #|           success: false, value: '', logs: [], domOps: [],
+  #|           error: buildErrorMessage(e)
+  #|         });
+  #|       }
+  #|     } else {
+  #|       try {
+  #|         const resetResult = entry.vm.evalCode('logs.length = 0; domOps.length = 0; "ok"');
+  #|         if (resetResult.error) {
+  #|           resetResult.error.dispose();
+  #|         } else if (resetResult.value) {
+  #|           resetResult.value.dispose();
+  #|         }
+  #|       } catch {}
+  #|     }
+  #|     const vm = entry.vm;
   #|     try {
-  #|       // Phase 1: Run setup + user code and capture result
-  #|       const userCodeResult = vm.evalCode(setupCode + '\n' + code);
+  #|       const userCodeResult = vm.evalCode(code);
   #|       if (userCodeResult.error) {
   #|         const errorStr = vm.dump(userCodeResult.error);
   #|         userCodeResult.error.dispose();
-  #|         vm.dispose();
   #|         return JSON.stringify({
   #|           success: false, value: '', logs: [], domOps: [],
   #|           error: sanitizeErrorText(errorStr)
   #|         });
   #|       }
-  #|       // Capture the return value before disposing
   #|       let userValue = 'undefined';
   #|       if (userCodeResult.value) {
   #|         userValue = vm.dump(userCodeResult.value);
   #|         userCodeResult.value.dispose();
   #|       }
   #|
-  #|       // Phase 2: Event loop - process microtasks and timers
-  #|       // Model: script -> microtasks -> task -> microtasks -> task -> ...
-  #|       let maxIterations = 1000; // Prevent infinite loops
-  #|
-  #|       // Helper to flush all microtasks (Promise + queueMicrotask)
+  #|       let maxIterations = 1000;
   #|       const flushAllMicrotasks = () => {
   #|         let totalWork = 0;
   #|         for (let i = 0; i < 100; i++) {
-  #|           // Process QuickJS pending jobs (Promise.then callbacks)
   #|           let jobsExecuted = 0;
   #|           try {
   #|             const pendingResult = vm.runtime.executePendingJobs();
@@ -7487,12 +7516,8 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|             } else {
   #|               jobsExecuted = pendingResult.value || 0;
   #|             }
-  #|           } catch (e) {
-  #|             // executePendingJobs might not be available in all environments
-  #|             // Fall back to no-op
-  #|           }
+  #|           } catch (e) {}
   #|
-  #|           // Process custom microtask queue
   #|           const flushResult = vm.evalCode('_flushMicrotasks(); _microtaskQueue.length');
   #|           let queueLength = 0;
   #|           if (!flushResult.error && flushResult.value) {
@@ -7508,12 +7533,8 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         return totalWork;
   #|       };
   #|
-  #|       // Initial microtask checkpoint (after script execution)
   #|       flushAllMicrotasks();
-  #|
-  #|       // Event loop: run timers and their microtasks
   #|       while (maxIterations-- > 0) {
-  #|         // Run one setTimeout callback (task)
   #|         const timerResult = vm.evalCode('_runOneTimeout()');
   #|         let ranTimer = false;
   #|         if (!timerResult.error && timerResult.value) {
@@ -7522,9 +7543,7 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         } else if (timerResult.error) {
   #|           timerResult.error.dispose();
   #|         }
-  #|
   #|         if (ranTimer) {
-  #|           // Microtask checkpoint after each task
   #|           flushAllMicrotasks();
   #|           continue;
   #|         }
@@ -7537,19 +7556,14 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         } else if (rafResult.error) {
   #|           rafResult.error.dispose();
   #|         }
-  #|
-  #|         if (!ranAnimationFrame) break; // No more timers or animation frames
-  #|
-  #|         // Microtask checkpoint after each animation frame
+  #|         if (!ranAnimationFrame) break;
   #|         flushAllMicrotasks();
   #|       }
   #|
-  #|       // Phase 3: Collect logs and domOps
   #|       const collectResult = vm.evalCode('JSON.stringify({ logs, domOps })');
   #|       if (collectResult.error) {
   #|         const errorStr = vm.dump(collectResult.error);
   #|         collectResult.error.dispose();
-  #|         vm.dispose();
   #|         return JSON.stringify({
   #|           success: false, value: '', logs: [], domOps: [],
   #|           error: sanitizeErrorText(errorStr)
@@ -7557,42 +7571,65 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|       }
   #|       const resultStr = vm.dump(collectResult.value);
   #|       collectResult.value.dispose();
-  #|       vm.dispose();
   #|       const parsed = JSON.parse(resultStr);
   #|       return JSON.stringify({
   #|         success: true, value: userValue,
   #|         logs: parsed.logs || [], domOps: parsed.domOps || []
   #|       });
   #|     } catch (e) {
-  #|       try { vm.dispose(); } catch {}
+  #|       let logs = [], domOps = [];
+  #|       try {
+  #|         const collectResult = vm.evalCode('JSON.stringify({ logs, domOps })');
+  #|         if (!collectResult.error && collectResult.value) {
+  #|           const resultStr = vm.dump(collectResult.value);
+  #|           collectResult.value.dispose();
+  #|           const parsed = JSON.parse(resultStr);
+  #|           logs = parsed.logs || [];
+  #|           domOps = parsed.domOps || [];
+  #|         } else if (collectResult.error) {
+  #|           collectResult.error.dispose();
+  #|         }
+  #|       } catch {}
   #|       return JSON.stringify({
-  #|         success: false, value: '', logs: [], domOps: [],
+  #|         success: false, value: '', logs, domOps,
   #|         error: buildErrorMessage(e)
   #|       });
   #|     }
   #|   } else {
-  #|     // Node.js vm fallback - two-phase execution
   #|     const vm = require('vm');
-  #|     const sandbox = {};
+  #|     let entry = persistentContexts.get(contextId);
+  #|     if (!entry || entry.kind !== 'node') {
+  #|       const sandbox = {};
+  #|       try {
+  #|         vm.createContext(sandbox);
+  #|         vm.runInContext(setupCode + '\n' + initCode + '\n_restorePersistedListenersTree(document);', sandbox, { timeout: 5000 });
+  #|         entry = { kind: 'node', vm, sandbox };
+  #|         persistentContexts.set(contextId, entry);
+  #|       } catch (e) {
+  #|         return JSON.stringify({
+  #|           success: false, value: '', logs: [], domOps: [],
+  #|           error: buildErrorMessage(e)
+  #|         });
+  #|       }
+  #|     } else {
+  #|       try {
+  #|         entry.vm.runInContext('logs.length = 0; domOps.length = 0;', entry.sandbox, { timeout: 1000 });
+  #|       } catch {}
+  #|     }
   #|     try {
-  #|       vm.createContext(sandbox);
-  #|       // Phase 1: Run setup + user code and capture result
-  #|       const userResult = vm.runInContext(setupCode + '\n' + code, sandbox, { timeout: 5000 });
-  #|       // Phase 2: Process microtasks and timers (event loop simulation)
-  #|       vm.runInContext('_flushMicrotasks()', sandbox, { timeout: 1000 });
-  #|       // Run timers with microtask checkpoints after each
+  #|       const userResult = entry.vm.runInContext(code, entry.sandbox, { timeout: 5000 });
+  #|       entry.vm.runInContext('_flushMicrotasks()', entry.sandbox, { timeout: 1000 });
   #|       for (let i = 0; i < 100; i++) {
-  #|         const ranTimer = vm.runInContext('_runOneTimeout()', sandbox, { timeout: 1000 });
+  #|         const ranTimer = entry.vm.runInContext('_runOneTimeout()', entry.sandbox, { timeout: 1000 });
   #|         if (ranTimer) {
-  #|           vm.runInContext('_flushMicrotasks()', sandbox, { timeout: 1000 });
+  #|           entry.vm.runInContext('_flushMicrotasks()', entry.sandbox, { timeout: 1000 });
   #|           continue;
   #|         }
-  #|         const ranAnimationFrame = vm.runInContext('_runOneAnimationFrame()', sandbox, { timeout: 1000 });
+  #|         const ranAnimationFrame = entry.vm.runInContext('_runOneAnimationFrame()', entry.sandbox, { timeout: 1000 });
   #|         if (!ranAnimationFrame) break;
-  #|         vm.runInContext('_flushMicrotasks()', sandbox, { timeout: 1000 });
+  #|         entry.vm.runInContext('_flushMicrotasks()', entry.sandbox, { timeout: 1000 });
   #|       }
-  #|       // Phase 3: Collect logs and domOps
-  #|       const collected = vm.runInContext('({ logs, domOps })', sandbox, { timeout: 1000 });
+  #|       const collected = entry.vm.runInContext('({ logs, domOps })', entry.sandbox, { timeout: 1000 });
   #|       return JSON.stringify({
   #|         success: true,
   #|         value: userResult === undefined ? 'undefined' : String(userResult),
@@ -7600,10 +7637,9 @@ extern "js" fn quickjs_execute_with_mock_dom(code : String) -> String =
   #|         domOps: collected.domOps || []
   #|       });
   #|     } catch (e) {
-  #|       // Try to collect logs even on error
   #|       let logs = [], domOps = [];
   #|       try {
-  #|         const collected = vm.runInContext('({ logs: logs || [], domOps: domOps || [] })', sandbox, { timeout: 100 });
+  #|         const collected = entry.vm.runInContext('({ logs: logs || [], domOps: domOps || [] })', entry.sandbox, { timeout: 100 });
   #|         logs = collected.logs || [];
   #|         domOps = collected.domOps || [];
   #|       } catch {}
@@ -7644,30 +7680,27 @@ impl JsRuntime for QuickJsRuntime with init(self : QuickJsRuntime) -> Unit {
 ///|
 impl JsRuntime for QuickJsRuntime with execute(
   self : QuickJsRuntime,
+  context_id : Int,
   dom : @dom.DomTree,
   code : String,
 ) -> JsResult raise JsError {
   let _ = self
-  let context_id = register_context(dom)
+  update_context(context_id, dom)
 
   // Generate DOM initialization code from DomTree
   // This populates the mock DOM with actual HTML content
   let dom_init_code = create_dom_init_code(dom)
 
-  // Execute: setupCode -> dom_init_code -> user_code
-  let full_code = dom_init_code +
-    "\n_restorePersistedListenersTree(document);\n" +
-    code
-  let result_json = quickjs_execute_with_mock_dom(full_code)
+  // Execute against a stable runtime context so top-level JS state survives.
+  let result_json = quickjs_execute_with_mock_dom(
+    context_id, dom_init_code, code,
+  )
 
   // Parse result
   let (result, dom_ops) = parse_js_result_with_ops(result_json)
 
   // Apply DOM operations to actual DomTree
   apply_dom_ops(dom, dom_ops)
-
-  // Cleanup
-  unregister_context(context_id)
 
   result
 }

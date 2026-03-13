@@ -32,10 +32,12 @@ impl JsRuntime for MockRuntime with init(self : MockRuntime) -> Unit {
 ///|
 impl JsRuntime for MockRuntime with execute(
   self : MockRuntime,
+  context_id : Int,
   dom : @dom.DomTree,
   code : String,
 ) -> JsResult raise JsError {
   let _ = self
+  let _ = context_id
   let _ = dom
   JsResult::new("mock:" + code, ["mock-log"], true)
 }
@@ -54,10 +56,12 @@ impl JsRuntime for FailRuntime with init(self : FailRuntime) -> Unit {
 ///|
 impl JsRuntime for FailRuntime with execute(
   self : FailRuntime,
+  context_id : Int,
   dom : @dom.DomTree,
   code : String,
 ) -> JsResult raise JsError {
   let _ = self
+  let _ = context_id
   let _ = dom
   let _ = code
   JsResult::new("boom", ["before-fail"], false)

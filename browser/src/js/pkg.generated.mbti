@@ -34,6 +34,7 @@ pub impl Show for JsError
 
 // Types and methods
 pub struct JsContext {
+  context_id : Int
   dom : @dom.DomTree
   mut logs : Array[String]
   runtime : &JsRuntime
@@ -67,6 +68,6 @@ pub fn ScriptExecutor::new(@dom.DomTree) -> Self
 // Traits
 pub(open) trait JsRuntime {
   init(Self) -> Unit
-  execute(Self, @dom.DomTree, String) -> JsResult raise JsError
+  execute(Self, Int, @dom.DomTree, String) -> JsResult raise JsError
 }
 
