@@ -861,6 +861,57 @@ async test "fixture pointer drag preserves dataTransfer and switches drag target
 }
 
 ///|
+async test "fixture pointer drag leaving targets dispatches dragleave without drop" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0;position:relative">
+    #|  <div id="source" draggable="true" style="position:absolute;left:16px;top:16px;width:72px;height:40px;background:#ccc"></div>
+    #|  <div id="target" style="position:absolute;left:144px;top:16px;width:96px;height:48px;background:#999"></div>
+    #|  <div id="outside" style="position:absolute;left:320px;top:16px;width:96px;height:48px;background:#666"></div>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    const status = document.getElementById('status');
+    #|    const events = [];
+    #|    document.getElementById('source').addEventListener('dragstart', function (event) {
+    #|      event.dataTransfer.setData('text/plain', 'payload');
+    #|      events.push('source:dragstart');
+    #|      status.textContent = events.join('|');
+    #|    });
+    #|    document.getElementById('source').addEventListener('dragend', function () {
+    #|      events.push('source:dragend');
+    #|      status.textContent = events.join('|');
+    #|    });
+    #|    for (const type of ['dragenter', 'dragover', 'dragleave', 'drop']) {
+    #|      document.getElementById('target').addEventListener(type, function () {
+    #|        events.push('target:' + type);
+    #|        status.textContent = events.join('|');
+    #|      });
+    #|    }
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let (source_col, source_row) = center_of_hit_source_id(browser, "source")
+  let (target_col, target_row) = center_of_hit_source_id(browser, "target")
+  let (outside_col, outside_row) = center_of_hit_source_id(browser, "outside")
+  inspect(browser.pointer_down_at(source_col, source_row), content="true")
+  inspect(browser.pointer_move_at(target_col, target_row), content="true")
+  inspect(browser.pointer_move_at(outside_col, outside_row), content="true")
+  let released = browser.pointer_up_at(outside_col, outside_row) catch { _ => false }
+  inspect(released, content="true")
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ return document.getElementById('status').textContent; })()",
+    ),
+    content="Some(\"source:dragstart|target:dragenter|target:dragover|target:dragleave|source:dragend\")",
+  )
+}
+
+///|
 async test "docs article fixture applies timer mutation and click repaint" {
   let browser = Browser::new(1440, 960)
   let runtime =
