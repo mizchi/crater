@@ -878,6 +878,63 @@ async test "fixture pointer drag preserves dataTransfer and switches drag target
 }
 
 ///|
+async test "fixture pointer drag shares DataTransfer mutations through drop" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0;position:relative">
+    #|  <div id="source" draggable="true" style="position:absolute;left:16px;top:16px;width:72px;height:40px;background:#ccc"></div>
+    #|  <div id="target" style="position:absolute;left:144px;top:16px;width:96px;height:48px;background:#999"></div>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    const status = document.getElementById('status');
+    #|    const events = [];
+    #|    document.getElementById('source').addEventListener('dragstart', function (event) {
+    #|      event.dataTransfer.setData('text/plain', 'payload');
+    #|      event.dataTransfer.setData('text/html', '<b>x</b>');
+    #|      events.push('source:' + event.dataTransfer.types.join(','));
+    #|      status.textContent = events.join('|');
+    #|    });
+    #|    document.getElementById('target').addEventListener('dragover', function (event) {
+    #|      event.preventDefault();
+    #|      event.dataTransfer.clearData('text/plain');
+    #|      event.dataTransfer.dropEffect = 'copy';
+    #|      events.push('target:dragover:' + event.dataTransfer.types.join(','));
+    #|      status.textContent = events.join('|');
+    #|    });
+    #|    document.getElementById('target').addEventListener('drop', function (event) {
+    #|      events.push(
+    #|        'target:drop:' +
+    #|        event.dataTransfer.types.join(',') +
+    #|        ':' +
+    #|        event.dataTransfer.getData('text/plain') +
+    #|        ':' +
+    #|        event.dataTransfer.getData('text/html')
+    #|      );
+    #|      status.textContent = events.join('|');
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let (source_col, source_row) = center_of_hit_source_id(browser, "source")
+  let (target_col, target_row) = center_of_hit_source_id(browser, "target")
+  inspect(browser.pointer_down_at(source_col, source_row), content="true")
+  inspect(browser.pointer_move_at(target_col, target_row), content="true")
+  let released = browser.pointer_up_at(target_col, target_row) catch { _ => false }
+  inspect(released, content="true")
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ return document.getElementById('status').textContent; })()",
+    ),
+    content="Some(\"source:text/plain,text/html|target:dragover:text/html|target:drop:text/html::<b>x</b>\")",
+  )
+}
+
+///|
 async test "fixture pointer drag leaving targets dispatches dragleave without drop" {
   let browser = Browser::new(800, 600)
   let html =
