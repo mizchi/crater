@@ -41,6 +41,7 @@ wasm/dist/
 
 # Browser npm build output
 browser/dist/
+output/
 
 # MoonBit build output
 _build/
