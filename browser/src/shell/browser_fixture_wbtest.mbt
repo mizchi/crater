@@ -906,3 +906,49 @@ async test "fixture replaced focused element keeps focus on replacement with sam
   let final_render = browser.render_output(Text)
   assert_true(final_render.contains("after:1"))
 }
+
+///|
+async test "fixture removed focused element falls forward to next focusable on next tab" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <button id="gone" style="display:block;width:96px;height:32px">Gone</button>
+    #|  <button id="next" style="display:block;width:96px;height:32px">Next</button>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('gone').addEventListener('click', function () {
+    #|      const target = document.getElementById('gone');
+    #|      if (target) target.remove();
+    #|      document.getElementById('status').textContent = 'removed';
+    #|    });
+    #|    document.getElementById('next').addEventListener('click', function () {
+    #|      document.getElementById('status').textContent = 'next';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+
+  browser.next_link()
+  inspect(browser.get_focused_source_id(), content="Some(\"gone\")")
+
+  let removed = browser.handle_focused_key("Enter") catch { _ => false }
+  inspect(removed, content="true")
+  let after_remove = browser.render_output(Text)
+  assert_true(after_remove.contains("removed"))
+  assert_true(not(after_remove.contains("Gone")))
+
+  browser.next_link()
+  inspect(browser.get_focused_source_id(), content="Some(\"next\")")
+
+  let activated = browser.handle_focused_key("Enter") catch { _ => false }
+  inspect(activated, content="true")
+  let final_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(final_status, content="Some(\"next\")")
+}

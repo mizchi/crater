@@ -547,6 +547,7 @@
     render/a11y/hit-test へ再同期されることを fixture で固定する
   - 動的に削除された interactive 要素が stale hit region を残さないことを fixture で固定する
   - 同じ `source_id` の要素差し替えで focus が replacement に継続することを fixture で固定する
+  - focus 中の要素が消えたとき、次の `Tab` で次の focusable へ進めることを fixture で固定する
 
 ## パフォーマンス改善メモ（2026-03-11）
 
