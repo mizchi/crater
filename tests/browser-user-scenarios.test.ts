@@ -204,4 +204,87 @@ test.describe("Browser user scenarios", () => {
     await page.click("#save");
     await page.waitForText("#status", "Saved newsletter:on theme:dark");
   });
+
+  test("editor flow: selection replacement and deletion update preview", async () => {
+    await page.setContentWithScripts(`
+      <html>
+        <body>
+          <input id="editor" type="text" />
+          <div id="preview"></div>
+          <script>
+            const editor = document.getElementById('editor');
+            const preview = document.getElementById('preview');
+            const render = () => {
+              preview.textContent = editor.value + ' @ ' + editor.selectionStart + ':' + editor.selectionEnd;
+            };
+            editor.addEventListener('input', render);
+            editor.addEventListener('click', render);
+            editor.addEventListener('keyup', render);
+            render();
+          </script>
+        </body>
+      </html>
+    `);
+
+    await page.type("#editor", "hello");
+    await page.waitForText("#preview", "hello @ 5:5");
+
+    await page.evaluate(`(() => {
+      const editor = document.getElementById('editor');
+      editor.setSelectionRange(1, 4);
+      editor.dispatchEvent(new Event('click', { bubbles: true }));
+    })()`);
+    await page.press("x");
+    await page.waitForText("#preview", "hxo @ 2:2");
+
+    await page.press("Backspace");
+    await page.waitForText("#preview", "ho @ 1:1");
+
+    await page.press("Delete");
+    await page.waitForText("#preview", "h @ 1:1");
+  });
+
+  test("kanban flow: drag card into done column", async () => {
+    await page.setContentWithScripts(`
+      <html>
+        <body>
+          <div id="board">
+            <div id="todo" data-state="todo">
+              <div id="card" draggable="true">Ship jsbidi</div>
+            </div>
+            <div id="done" data-state="done"></div>
+          </div>
+          <div id="status">todo</div>
+          <script>
+            const todo = document.getElementById('todo');
+            const done = document.getElementById('done');
+            const card = document.getElementById('card');
+            const status = document.getElementById('status');
+            let dragId = null;
+            card.addEventListener('dragstart', (event) => {
+              dragId = card.id;
+              event.dataTransfer.effectAllowed = 'move';
+            });
+            done.addEventListener('dragover', (event) => {
+              event.preventDefault();
+              event.dataTransfer.dropEffect = 'move';
+            });
+            done.addEventListener('drop', () => {
+              if (dragId === 'card') {
+                done.appendChild(card);
+                status.textContent = 'done';
+              }
+            });
+            todo.addEventListener('drop', () => {
+              status.textContent = 'todo';
+            });
+          </script>
+        </body>
+      </html>
+    `);
+
+    await page.drag("#card", "#done");
+    await page.waitForText("#status", "done");
+    await expect(page.evaluate(`document.querySelector("#done")?.textContent ?? ""`)).resolves.toContain("Ship jsbidi");
+  });
 });

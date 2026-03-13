@@ -120,6 +120,14 @@ export class CraterBidiPage {
     await this.performKey(actions);
   }
 
+  async press(key: string): Promise<void> {
+    const value = keyValue(key);
+    await this.performKey([
+      { type: "keyDown", value },
+      { type: "keyUp", value },
+    ]);
+  }
+
   async check(selector: string): Promise<void> {
     const checked = await this.evaluate<boolean>(`(() => {
       const el = document.querySelector(${JSON.stringify(selector)});
@@ -186,6 +194,27 @@ export class CraterBidiPage {
 
   async count(selector: string): Promise<number> {
     return this.evaluate<number>(`document.querySelectorAll(${JSON.stringify(selector)}).length`);
+  }
+
+  async drag(sourceSelector: string, targetSelector: string): Promise<void> {
+    const sourceSharedId = await this.elementSharedId(sourceSelector);
+    const targetSharedId = await this.elementSharedId(targetSelector);
+    await this.performPointer([
+      {
+        type: "pointerMove",
+        origin: { type: "element", element: { sharedId: sourceSharedId } },
+        x: 0,
+        y: 0,
+      },
+      { type: "pointerDown", button: 0 },
+      {
+        type: "pointerMove",
+        origin: { type: "element", element: { sharedId: targetSharedId } },
+        x: 0,
+        y: 0,
+      },
+      { type: "pointerUp", button: 0 },
+    ]);
   }
 
   async waitForText(selector: string, expected: string, options: { timeout?: number } = {}): Promise<void> {

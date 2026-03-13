@@ -1298,6 +1298,18 @@ extern "js" fn js_evaluate_expression(
   #|             }
   #|           } catch (_e) {}
   #|         },
+  #|         setSelectionRange(start, end) {
+  #|           const value = typeof this.value === "string" ? this.value : "";
+  #|           const safeStart = Math.max(0, Math.min(value.length, Number(start)));
+  #|           const safeEnd = Math.max(0, Math.min(value.length, Number(end)));
+  #|           this.selectionStart = safeStart;
+  #|           this.selectionEnd = safeEnd;
+  #|         },
+  #|         select() {
+  #|           const value = typeof this.value === "string" ? this.value : "";
+  #|           this.selectionStart = 0;
+  #|           this.selectionEnd = value.length;
+  #|         },
   #|         attachShadow(opts) {
   #|           if (this.shadowRoot) return this.shadowRoot;
   #|           const root = createMockElement('shadow-root');
