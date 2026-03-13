@@ -21,7 +21,15 @@ pub async fn dispatch_command(@shell.Browser, InteractionCommand) -> DispatchEff
 
 pub async fn dispatch_key(@shell.Browser, String) -> DispatchEffect raise @http.HttpError
 
+pub fn key_down_command(String) -> InteractionCommand
+
+pub fn key_up_command(String) -> InteractionCommand
+
 pub fn none_effect() -> DispatchEffect
+
+pub fn pointer_button_down_command(Int, Int, Int) -> InteractionCommand
+
+pub fn pointer_button_up_command(Int, Int, Int) -> InteractionCommand
 
 pub fn text_input_command(String) -> InteractionCommand
 
@@ -39,6 +47,8 @@ pub enum DispatchEffect {
 pub enum InteractionCommand {
   IdleTick
   FocusedKey(String)
+  KeyDown(String)
+  KeyUp(String)
   TextInput(String)
   ScrollBy(Int)
   PageScroll(Int)
@@ -53,6 +63,8 @@ pub enum InteractionCommand {
   PointerDown(Int, Int)
   PointerUp(Int, Int)
   PointerMove(Int, Int)
+  PointerButtonDown(Int, Int, Int)
+  PointerButtonUp(Int, Int, Int)
   EnterHintMode
   ExitHintMode
   HintChar(String)

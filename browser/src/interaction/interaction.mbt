@@ -11,6 +11,8 @@ pub enum DispatchEffect {
 pub enum InteractionCommand {
   IdleTick
   FocusedKey(String)
+  KeyDown(String)
+  KeyUp(String)
   TextInput(String)
   ScrollBy(Int)
   PageScroll(Int)
@@ -25,6 +27,8 @@ pub enum InteractionCommand {
   PointerDown(Int, Int)
   PointerUp(Int, Int)
   PointerMove(Int, Int)
+  PointerButtonDown(Int, Int, Int)
+  PointerButtonUp(Int, Int, Int)
   EnterHintMode
   ExitHintMode
   HintChar(String)
@@ -41,6 +45,34 @@ pub fn none_effect() -> DispatchEffect {
 ///|
 pub fn text_input_command(text : String) -> InteractionCommand {
   TextInput(text)
+}
+
+///|
+pub fn key_down_command(key : String) -> InteractionCommand {
+  KeyDown(key)
+}
+
+///|
+pub fn key_up_command(key : String) -> InteractionCommand {
+  KeyUp(key)
+}
+
+///|
+pub fn pointer_button_down_command(
+  col : Int,
+  row : Int,
+  button : Int,
+) -> InteractionCommand {
+  PointerButtonDown(col, row, button)
+}
+
+///|
+pub fn pointer_button_up_command(
+  col : Int,
+  row : Int,
+  button : Int,
+) -> InteractionCommand {
+  PointerButtonUp(col, row, button)
 }
 
 ///|
@@ -77,6 +109,8 @@ pub fn command_name(command : InteractionCommand) -> String {
   match command {
     IdleTick => "IdleTick"
     FocusedKey(key) => "FocusedKey(" + key + ")"
+    KeyDown(key) => "KeyDown(" + key + ")"
+    KeyUp(key) => "KeyUp(" + key + ")"
     TextInput(text) => "TextInput(" + text + ")"
     ScrollBy(delta) => "ScrollBy(" + delta.to_string() + ")"
     PageScroll(direction) => "PageScroll(" + direction.to_string() + ")"
@@ -95,6 +129,22 @@ pub fn command_name(command : InteractionCommand) -> String {
       "PointerUp(" + col.to_string() + "," + row.to_string() + ")"
     PointerMove(col, row) =>
       "PointerMove(" + col.to_string() + "," + row.to_string() + ")"
+    PointerButtonDown(col, row, button) =>
+      "PointerButtonDown(" +
+      col.to_string() +
+      "," +
+      row.to_string() +
+      "," +
+      button.to_string() +
+      ")"
+    PointerButtonUp(col, row, button) =>
+      "PointerButtonUp(" +
+      col.to_string() +
+      "," +
+      row.to_string() +
+      "," +
+      button.to_string() +
+      ")"
     EnterHintMode => "EnterHintMode"
     ExitHintMode => "ExitHintMode"
     HintChar(c) => "HintChar(" + c + ")"
@@ -153,6 +203,15 @@ pub async fn dispatch_command(
       } else {
         None
       }
+    KeyDown(key) =>
+      if browser.is_hint_mode() {
+        None
+      } else if browser.handle_focused_key(key) {
+        Render
+      } else {
+        None
+      }
+    KeyUp(_) => None
     TextInput(text) =>
       if browser.handle_focused_key(text) {
         Render
@@ -229,6 +288,18 @@ pub async fn dispatch_command(
       } else {
         None
       }
+    PointerButtonDown(col, row, button) =>
+      if button == 0 && browser.pointer_down_at(col, row) {
+        Render
+      } else {
+        None
+      }
+    PointerButtonUp(col, row, button) =>
+      if button == 0 && browser.pointer_up_at(col, row) {
+        Render
+      } else {
+        None
+      }
     EnterHintMode => {
       browser.enter_hint_mode()
       Render
@@ -301,6 +372,36 @@ pub fn dispatch_cdp_command(
         1,
       )
     }
+    PointerButtonDown(col, row, button) =>
+      input.dispatch_mouse_event(
+        "mousePressed",
+        col.to_double(),
+        row.to_double(),
+        if button == 2 {
+          "right"
+        } else if button == 1 {
+          "middle"
+        } else {
+          "left"
+        },
+        1,
+      )
+    PointerButtonUp(col, row, button) =>
+      input.dispatch_mouse_event(
+        "mouseReleased",
+        col.to_double(),
+        row.to_double(),
+        if button == 2 {
+          "right"
+        } else if button == 1 {
+          "middle"
+        } else {
+          "left"
+        },
+        1,
+      )
+    KeyDown(key) => input.dispatch_key_event("keyDown", key, key, None)
+    KeyUp(key) => input.dispatch_key_event("keyUp", key, key, None)
     TextInput(text) => session.type_text(text)
     FocusedKey(key) =>
       if key == "Enter" || key == "Tab" || key == "Escape" {

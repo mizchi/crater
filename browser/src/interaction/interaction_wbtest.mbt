@@ -67,6 +67,19 @@ async test "dispatch_command reports prompt and selection effects directly" {
 }
 
 ///|
+test "command_name includes automation-oriented key and pointer button commands" {
+  inspect(
+    (
+      command_name(key_down_command("Enter")),
+      command_name(key_up_command("a")),
+      command_name(pointer_button_down_command(10, 20, 0)),
+      command_name(pointer_button_up_command(10, 20, 2)),
+    ),
+    content="(\"KeyDown(Enter)\", \"KeyUp(a)\", \"PointerButtonDown(10,20,0)\", \"PointerButtonUp(10,20,2)\")",
+  )
+}
+
+///|
 test "dispatch_cdp_command inserts text into focused control" {
   let session = @cdp.CdpSession::new("test-session")
   let tree = session.get_tree()
@@ -118,5 +131,26 @@ test "dispatch_cdp_command rejects shell-only commands" {
     Ok(_) => fail("expected unsupported command error")
     Err(err) =>
       inspect(err.message, content="Unknown key event type: __unsupported__")
+  }
+}
+
+///|
+test "dispatch_cdp_command accepts key and pointer button commands" {
+  let session = @cdp.CdpSession::new("test-session")
+  match dispatch_cdp_command(session, key_down_command("Enter")) {
+    Ok(_) => ()
+    Err(err) => fail("unexpected keyDown error: " + err.message)
+  }
+  match dispatch_cdp_command(session, key_up_command("Enter")) {
+    Ok(_) => ()
+    Err(err) => fail("unexpected keyUp error: " + err.message)
+  }
+  match dispatch_cdp_command(session, pointer_button_down_command(10, 20, 0)) {
+    Ok(_) => ()
+    Err(err) => fail("unexpected pointerDown error: " + err.message)
+  }
+  match dispatch_cdp_command(session, pointer_button_up_command(10, 20, 0)) {
+    Ok(_) => ()
+    Err(err) => fail("unexpected pointerUp error: " + err.message)
   }
 }
