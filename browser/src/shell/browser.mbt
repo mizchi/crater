@@ -2196,8 +2196,13 @@ pub fn Browser::pointer_move_at(self : Browser, col : Int, row : Int) -> Bool {
               if handled_drag_over {
                 changed = true
               }
-              if canceled_drag_over {
-                self.drop_allowed_source_id = Some(target_id)
+              let accepted_target = @interaction_policy.drag_accept_target(
+                drag_id, target_id, canceled_drag_over,
+              )
+              self.drop_allowed_source_id = if accepted_target != "" {
+                Some(accepted_target)
+              } else {
+                None
               }
             }
             _ => ()
@@ -2241,10 +2246,13 @@ pub async fn Browser::pointer_up_at(
   self.drop_allowed_source_id = None
   match dragging_source_id {
     Some(drag_id) => {
+      let drop_target = @interaction_policy.drag_drop_target(
+        drag_id,
+        drag_over_source_id.unwrap_or(""),
+        drop_allowed_source_id.unwrap_or(""),
+      )
       match drag_over_source_id {
-        Some(target_id) if target_id != drag_id &&
-          drop_allowed_source_id == Some(target_id) &&
-          self.is_current_drop_allowed() =>
+        Some(target_id) if drop_target == target_id && self.is_current_drop_allowed() =>
           if self.dispatch_drag_event_to_source_id(
               target_id,
               "drop",
