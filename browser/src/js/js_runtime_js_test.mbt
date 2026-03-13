@@ -3482,6 +3482,32 @@ test "text controls setRangeText replaces range and updates selection" {
 }
 
 ///|
+test "text controls expose selectionDirection and preserve selection on setRangeText" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const input = document.createElement('input');
+    #|input.value = 'abcdef';
+    #|input.setSelectionRange(4, 6, 'backward');
+    #|input.setRangeText('Z', 1, 3, 'preserve');
+    #|const textarea = document.createElement('textarea');
+    #|textarea.value = 'abcdef';
+    #|textarea.selectionDirection = 'forward';
+    #|[
+    #|  input.value + '|' + String(input.selectionStart) + '|' + String(input.selectionEnd) + '|' + String(input.selectionDirection),
+    #|  String(textarea.selectionDirection)
+    #|].join('||')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="aZdef|3|5|backward||forward")
+}
+
+///|
 test "persisted pointer listeners survive later execution" {
   let dom = @dom.DomTree::new()
   let html = dom.create_element("html")

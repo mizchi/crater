@@ -3138,6 +3138,16 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       if (index > length) return length;
   #|       return index;
   #|     }
+  #|     function normalizeSelectionDirection(direction) {
+  #|       switch (direction) {
+  #|         case 'forward':
+  #|         case 'backward':
+  #|         case 'none':
+  #|           return direction;
+  #|         default:
+  #|           return 'none';
+  #|       }
+  #|     }
   #|     function ensureSelectionState(element) {
   #|       const value = getTextControlValue(element);
   #|       const length = value.length;
@@ -3150,20 +3160,41 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       if (end < start) end = start;
   #|       element._selectionStart = start;
   #|       element._selectionEnd = end;
-  #|       return { start, end };
+  #|       if (element._selectionDirection === undefined || element._selectionDirection === null) {
+  #|         element._selectionDirection = 'none';
+  #|       }
+  #|       return { start, end, direction: normalizeSelectionDirection(element._selectionDirection) };
   #|     }
-  #|     function setSelectionState(element, start, end) {
+  #|     function setSelectionState(element, start, end, direction) {
   #|       const nextStart = clampSelectionIndex(element, start);
   #|       const rawEnd = end === undefined || end === null ? nextStart : end;
   #|       let nextEnd = clampSelectionIndex(element, rawEnd);
   #|       if (nextEnd < nextStart) nextEnd = nextStart;
   #|       element._selectionStart = nextStart;
   #|       element._selectionEnd = nextEnd;
+  #|       element._selectionDirection = normalizeSelectionDirection(direction);
+  #|     }
+  #|     function preserveSelectionState(element, oldState, replaceStart, replaceEnd, insertedLength) {
+  #|       const replacedLength = Math.max(0, replaceEnd - replaceStart);
+  #|       const delta = insertedLength - replacedLength;
+  #|       let nextStart = oldState.start;
+  #|       let nextEnd = oldState.end;
+  #|       if (oldState.end <= replaceStart) {
+  #|         nextStart = oldState.start;
+  #|         nextEnd = oldState.end;
+  #|       } else if (oldState.start >= replaceEnd) {
+  #|         nextStart = oldState.start + delta;
+  #|         nextEnd = oldState.end + delta;
+  #|       } else {
+  #|         nextStart = Math.min(oldState.start, replaceStart);
+  #|         nextEnd = Math.max(nextStart, replaceStart + insertedLength);
+  #|       }
+  #|       setSelectionState(element, nextStart, nextEnd, oldState.direction);
   #|     }
   #|     Object.defineProperties(HTMLInputElement.prototype, {
   #|       value: {
   #|         get() { return getReflectedStringAttribute(this, 'value'); },
-  #|         set(v) { setReflectedStringAttribute(this, 'value', v); setSelectionState(this, getTextControlValue(this).length); },
+  #|         set(v) { setReflectedStringAttribute(this, 'value', v); setSelectionState(this, getTextControlValue(this).length, getTextControlValue(this).length, 'none'); },
   #|         configurable: true
   #|       },
   #|       checked: {
@@ -3173,20 +3204,25 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       },
   #|       selectionStart: {
   #|         get() { return ensureSelectionState(this).start; },
-  #|         set(v) { const state = ensureSelectionState(this); setSelectionState(this, v, state.end); },
+  #|         set(v) { const state = ensureSelectionState(this); setSelectionState(this, v, state.end, state.direction); },
   #|         configurable: true
   #|       },
   #|       selectionEnd: {
   #|         get() { return ensureSelectionState(this).end; },
-  #|         set(v) { const state = ensureSelectionState(this); setSelectionState(this, state.start, v); },
+  #|         set(v) { const state = ensureSelectionState(this); setSelectionState(this, state.start, v, state.direction); },
+  #|         configurable: true
+  #|       },
+  #|       selectionDirection: {
+  #|         get() { return ensureSelectionState(this).direction; },
+  #|         set(v) { const state = ensureSelectionState(this); setSelectionState(this, state.start, state.end, v); },
   #|         configurable: true
   #|       }
   #|     });
-  #|     HTMLInputElement.prototype.setSelectionRange = function(start, end) {
-  #|       setSelectionState(this, start, end);
+  #|     HTMLInputElement.prototype.setSelectionRange = function(start, end, direction) {
+  #|       setSelectionState(this, start, end, direction);
   #|     };
   #|     HTMLInputElement.prototype.select = function() {
-  #|       setSelectionState(this, 0, getTextControlValue(this).length);
+  #|       setSelectionState(this, 0, getTextControlValue(this).length, 'none');
   #|     };
   #|     HTMLInputElement.prototype.setRangeText = function(replacement, start, end, selectionMode) {
   #|       const value = getTextControlValue(this);
@@ -3201,17 +3237,19 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       const insertedEnd = nextStart + text.length;
   #|       switch (selectionMode) {
   #|         case 'select':
-  #|           setSelectionState(this, nextStart, insertedEnd);
+  #|           setSelectionState(this, nextStart, insertedEnd, 'none');
   #|           break;
   #|         case 'start':
-  #|           setSelectionState(this, nextStart, nextStart);
+  #|           setSelectionState(this, nextStart, nextStart, 'none');
   #|           break;
   #|         case 'preserve':
+  #|           preserveSelectionState(this, state, nextStart, nextEnd, text.length);
+  #|           break;
   #|         case undefined:
   #|         case null:
   #|         case 'end':
   #|         default:
-  #|           setSelectionState(this, insertedEnd, insertedEnd);
+  #|           setSelectionState(this, insertedEnd, insertedEnd, 'none');
   #|           break;
   #|       }
   #|     };
@@ -3222,26 +3260,31 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|     });
   #|     Object.defineProperty(HTMLTextAreaElement.prototype, 'value', {
   #|       get() { return this.textContent || ''; },
-  #|       set(v) { this.textContent = v === null || v === undefined ? '' : String(v); setSelectionState(this, getTextControlValue(this).length); },
+  #|       set(v) { this.textContent = v === null || v === undefined ? '' : String(v); setSelectionState(this, getTextControlValue(this).length, getTextControlValue(this).length, 'none'); },
   #|       configurable: true
   #|     });
   #|     Object.defineProperties(HTMLTextAreaElement.prototype, {
   #|       selectionStart: {
   #|         get() { return ensureSelectionState(this).start; },
-  #|         set(v) { const state = ensureSelectionState(this); setSelectionState(this, v, state.end); },
+  #|         set(v) { const state = ensureSelectionState(this); setSelectionState(this, v, state.end, state.direction); },
   #|         configurable: true
   #|       },
   #|       selectionEnd: {
   #|         get() { return ensureSelectionState(this).end; },
-  #|         set(v) { const state = ensureSelectionState(this); setSelectionState(this, state.start, v); },
+  #|         set(v) { const state = ensureSelectionState(this); setSelectionState(this, state.start, v, state.direction); },
+  #|         configurable: true
+  #|       },
+  #|       selectionDirection: {
+  #|         get() { return ensureSelectionState(this).direction; },
+  #|         set(v) { const state = ensureSelectionState(this); setSelectionState(this, state.start, state.end, v); },
   #|         configurable: true
   #|       }
   #|     });
-  #|     HTMLTextAreaElement.prototype.setSelectionRange = function(start, end) {
-  #|       setSelectionState(this, start, end);
+  #|     HTMLTextAreaElement.prototype.setSelectionRange = function(start, end, direction) {
+  #|       setSelectionState(this, start, end, direction);
   #|     };
   #|     HTMLTextAreaElement.prototype.select = function() {
-  #|       setSelectionState(this, 0, getTextControlValue(this).length);
+  #|       setSelectionState(this, 0, getTextControlValue(this).length, 'none');
   #|     };
   #|     HTMLTextAreaElement.prototype.setRangeText = function(replacement, start, end, selectionMode) {
   #|       const value = getTextControlValue(this);
@@ -3256,17 +3299,19 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       const insertedEnd = nextStart + text.length;
   #|       switch (selectionMode) {
   #|         case 'select':
-  #|           setSelectionState(this, nextStart, insertedEnd);
+  #|           setSelectionState(this, nextStart, insertedEnd, 'none');
   #|           break;
   #|         case 'start':
-  #|           setSelectionState(this, nextStart, nextStart);
+  #|           setSelectionState(this, nextStart, nextStart, 'none');
   #|           break;
   #|         case 'preserve':
+  #|           preserveSelectionState(this, state, nextStart, nextEnd, text.length);
+  #|           break;
   #|         case undefined:
   #|         case null:
   #|         case 'end':
   #|         default:
-  #|           setSelectionState(this, insertedEnd, insertedEnd);
+  #|           setSelectionState(this, insertedEnd, insertedEnd, 'none');
   #|           break;
   #|       }
   #|     };
