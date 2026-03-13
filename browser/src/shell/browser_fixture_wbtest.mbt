@@ -852,3 +852,57 @@ async test "fixture removed clickable element disappears from hit test after DOM
   )
   inspect(final_status, content="Some(\"missing|removed\")")
 }
+
+///|
+async test "fixture replaced focused element keeps focus on replacement with same source id" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <button id="swap" style="display:block;width:96px;height:32px">Before</button>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    let replaceCount = 0;
+    #|    function bindSwap() {
+    #|      const button = document.getElementById('swap');
+    #|      if (!button) return;
+    #|      button.addEventListener('click', function () {
+    #|        replaceCount += 1;
+    #|        if (replaceCount === 1) {
+    #|          const next = document.createElement('button');
+    #|          next.id = 'swap';
+    #|          next.textContent = 'After';
+    #|          next.style.display = 'block';
+    #|          next.style.width = '96px';
+    #|          next.style.height = '32px';
+    #|          button.replaceWith(next);
+    #|          bindSwap();
+    #|          document.getElementById('status').textContent = 'replaced';
+    #|          return;
+    #|        }
+    #|        document.getElementById('status').textContent = 'after:' + String(replaceCount - 1);
+    #|      });
+    #|    }
+    #|    bindSwap();
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  inspect(browser.get_focused_source_id(), content="Some(\"swap\")")
+
+  let first = browser.handle_focused_key("Enter") catch { _ => false }
+  inspect(first, content="true")
+  let after_replace = browser.render_output(Text)
+  assert_true(after_replace.contains("After"))
+  assert_true(after_replace.contains("replaced"))
+  inspect(browser.get_focused_source_id(), content="Some(\"swap\")")
+
+  let second = browser.handle_focused_key("Enter") catch { _ => false }
+  inspect(second, content="true")
+  let final_render = browser.render_output(Text)
+  assert_true(final_render.contains("after:1"))
+}
