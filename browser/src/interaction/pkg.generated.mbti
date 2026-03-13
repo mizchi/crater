@@ -2,6 +2,7 @@
 package "mizchi/crater-browser/interaction"
 
 import {
+  "mizchi/crater-browser/cdp",
   "mizchi/crater-browser/http",
   "mizchi/crater-browser/shell",
   "mizchi/crater-browser/tui",
@@ -14,11 +15,15 @@ pub fn command_of_action(@tui.BrowserAction) -> InteractionCommand
 
 pub async fn dispatch_action(@shell.Browser, @tui.BrowserAction) -> DispatchEffect raise @http.HttpError
 
+pub fn dispatch_cdp_command(@cdp.CdpSession, InteractionCommand) -> Result[Unit, @cdp.CdpError]
+
 pub async fn dispatch_command(@shell.Browser, InteractionCommand) -> DispatchEffect raise @http.HttpError
 
 pub async fn dispatch_key(@shell.Browser, String) -> DispatchEffect raise @http.HttpError
 
 pub fn none_effect() -> DispatchEffect
+
+pub fn text_input_command(String) -> InteractionCommand
 
 // Errors
 
@@ -34,6 +39,7 @@ pub enum DispatchEffect {
 pub enum InteractionCommand {
   IdleTick
   FocusedKey(String)
+  TextInput(String)
   ScrollBy(Int)
   PageScroll(Int)
   FocusNext

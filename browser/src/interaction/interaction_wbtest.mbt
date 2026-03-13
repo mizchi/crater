@@ -65,3 +65,58 @@ async test "dispatch_command reports prompt and selection effects directly" {
     _ => fail("expected selection-mode effect")
   }
 }
+
+///|
+test "dispatch_cdp_command inserts text into focused control" {
+  let session = @cdp.CdpSession::new("test-session")
+  let tree = session.get_tree()
+  let doc = tree.get_document()
+  let html = tree.create_element("html")
+  let body = tree.create_element("body")
+  let input = tree.create_element("input")
+  let _ = tree.append_child(doc, html)
+  let _ = tree.append_child(html, body)
+  let _ = tree.append_child(body, input)
+  let _ = tree.set_attribute(input, "value", "a")
+  let _ = session.focus_element(input.to_int())
+  match dispatch_cdp_command(session, text_input_command("bc")) {
+    Ok(_) => ()
+    Err(err) => fail("unexpected cdp dispatch error: " + err.message)
+  }
+  match tree.get_attribute(input, "value") {
+    Ok(Some(value)) => inspect(value, content="abc")
+    _ => fail("expected updated input value")
+  }
+}
+
+///|
+test "dispatch_cdp_command treats grapheme focused key as text input" {
+  let session = @cdp.CdpSession::new("test-session")
+  let tree = session.get_tree()
+  let doc = tree.get_document()
+  let html = tree.create_element("html")
+  let body = tree.create_element("body")
+  let input = tree.create_element("input")
+  let _ = tree.append_child(doc, html)
+  let _ = tree.append_child(html, body)
+  let _ = tree.append_child(body, input)
+  let _ = session.focus_element(input.to_int())
+  match dispatch_cdp_command(session, FocusedKey("x")) {
+    Ok(_) => ()
+    Err(err) => fail("unexpected cdp dispatch error: " + err.message)
+  }
+  match tree.get_attribute(input, "value") {
+    Ok(Some(value)) => inspect(value, content="x")
+    _ => fail("expected focused key to insert text")
+  }
+}
+
+///|
+test "dispatch_cdp_command rejects shell-only commands" {
+  let session = @cdp.CdpSession::new("test-session")
+  match dispatch_cdp_command(session, FocusNext) {
+    Ok(_) => fail("expected unsupported command error")
+    Err(err) =>
+      inspect(err.message, content="Unknown key event type: __unsupported__")
+  }
+}

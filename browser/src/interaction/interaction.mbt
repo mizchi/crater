@@ -11,6 +11,7 @@ pub enum DispatchEffect {
 pub enum InteractionCommand {
   IdleTick
   FocusedKey(String)
+  TextInput(String)
   ScrollBy(Int)
   PageScroll(Int)
   FocusNext
@@ -35,6 +36,11 @@ pub enum InteractionCommand {
 ///|
 pub fn none_effect() -> DispatchEffect {
   None
+}
+
+///|
+pub fn text_input_command(text : String) -> InteractionCommand {
+  TextInput(text)
 }
 
 ///|
@@ -71,6 +77,7 @@ pub fn command_name(command : InteractionCommand) -> String {
   match command {
     IdleTick => "IdleTick"
     FocusedKey(key) => "FocusedKey(" + key + ")"
+    TextInput(text) => "TextInput(" + text + ")"
     ScrollBy(delta) => "ScrollBy(" + delta.to_string() + ")"
     PageScroll(direction) => "PageScroll(" + direction.to_string() + ")"
     FocusNext => "FocusNext"
@@ -142,6 +149,12 @@ pub async fn dispatch_command(
       if browser.is_hint_mode() {
         None
       } else if browser.handle_focused_key(key) {
+        Render
+      } else {
+        None
+      }
+    TextInput(text) =>
+      if browser.handle_focused_key(text) {
         Render
       } else {
         None
@@ -238,5 +251,84 @@ pub async fn dispatch_command(
       Render
     }
     Quit => Quit
+  }
+}
+
+///|
+pub fn dispatch_cdp_command(
+  session : @cdp.CdpSession,
+  command : InteractionCommand,
+) -> Result[Unit, @cdp.CdpError] {
+  let input = session.get_input()
+  match command {
+    PointerMove(col, row) =>
+      input.dispatch_mouse_event(
+        "mouseMoved",
+        col.to_double(),
+        row.to_double(),
+        "left",
+        0,
+      )
+    PointerDown(col, row) =>
+      input.dispatch_mouse_event(
+        "mousePressed",
+        col.to_double(),
+        row.to_double(),
+        "left",
+        1,
+      )
+    PointerUp(col, row) =>
+      input.dispatch_mouse_event(
+        "mouseReleased",
+        col.to_double(),
+        row.to_double(),
+        "left",
+        1,
+      )
+    PointerClick(col, row) => {
+      let _ = input.dispatch_mouse_event(
+        "mousePressed",
+        col.to_double(),
+        row.to_double(),
+        "left",
+        1,
+      )
+      input.dispatch_mouse_event(
+        "mouseReleased",
+        col.to_double(),
+        row.to_double(),
+        "left",
+        1,
+      )
+    }
+    TextInput(text) => session.type_text(text)
+    FocusedKey(key) =>
+      if key == "Enter" || key == "Tab" || key == "Escape" {
+        input.dispatch_key_event("keyDown", key, key, None)
+      } else {
+        session.type_text(key)
+      }
+    Refresh =>
+      match session.get_page().reload() {
+        Ok(_) => Ok(())
+        Err(err) => Err(err)
+      }
+    Back =>
+      match session.get_page().go_back() {
+        Ok(_) => Ok(())
+        Err(err) => Err(err)
+      }
+    Forward =>
+      match session.get_page().go_forward() {
+        Ok(_) => Ok(())
+        Err(err) => Err(err)
+      }
+    _ =>
+      input.dispatch_key_event(
+        "__unsupported__",
+        command_name(command),
+        "",
+        None,
+      )
   }
 }
