@@ -34,6 +34,19 @@ test "Browser render_output returns defaults when content is empty" {
 }
 
 ///|
+fn hit_region_of_source_id(
+  browser : Browser,
+  source_id : String,
+) -> @tui.HitRegion {
+  for region in browser.hit_regions {
+    if region.source_id == source_id {
+      return region
+    }
+  }
+  panic()
+}
+
+///|
 test "extract_scripts extracts inline script" {
   let html =
     #|<html>
@@ -2385,6 +2398,102 @@ async test "Browser handle_focused_key replaces selected text in focused textare
       "(function(){ const field=document.getElementById('field'); return field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
     ),
     content="Some(\"axd|2|2\")",
+  )
+}
+
+///|
+async test "Browser activate_at moves caret in focused text input before typing" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="abcd" style="display:block;width:120px;height:32px" />
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let region = hit_region_of_source_id(browser, "field")
+
+  let activated = browser.activate_at(region.col, region.row) catch {
+    _ => false
+  }
+  inspect(activated, content="true")
+  let handled = browser.handle_focused_key("x") catch { _ => false }
+  inspect(handled, content="true")
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ const field=document.getElementById('field'); return field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
+    ),
+    content="Some(\"xabcd|1|1\")",
+  )
+}
+
+///|
+async test "Browser pointer drag selects text in focused input before typing" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="abcd" style="display:block;width:120px;height:32px" />
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let region = hit_region_of_source_id(browser, "field")
+
+  inspect(browser.pointer_down_at(region.col + 1, region.row), content="true")
+  inspect(browser.pointer_move_at(region.col + 3, region.row), content="true")
+  let _ = browser.pointer_up_at(region.col + 3, region.row) catch { _ => false }
+  let handled = browser.handle_focused_key("x") catch { _ => false }
+  inspect(handled, content="true")
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ const field=document.getElementById('field'); return field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
+    ),
+    content="Some(\"axd|2|2\")",
+  )
+}
+
+///|
+async test "Browser activate_at moves caret in focused textarea before typing" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <textarea id="field" style="display:block;width:160px;height:64px">ab
+    #|cd</textarea>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let region = hit_region_of_source_id(browser, "field")
+
+  let activated = browser.activate_at(region.col + 1, region.row + 1) catch {
+    _ => false
+  }
+  inspect(activated, content="true")
+  let handled = browser.handle_focused_key("x") catch { _ => false }
+  inspect(handled, content="true")
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ const field=document.getElementById('field'); return field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
+    ),
+    content="Some(\"ab\\ncxd|5|5\")",
   )
 }
 

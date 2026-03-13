@@ -452,6 +452,102 @@ async test "fixture execute_inline_js setRangeText updates render" {
 }
 
 ///|
+async test "fixture activate_at moves caret in focused text input before typing" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="abcd" style="display:block;width:120px;height:32px" />
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('field').addEventListener('input', function (event) {
+    #|      document.getElementById('status').textContent =
+    #|        event.target.value + '|' + String(event.target.selectionStart) + '|' + String(event.target.selectionEnd);
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let region = hit_region_of_source_id(browser, "field")
+
+  let activated = browser.activate_at(region.col, region.row) catch {
+    _ => false
+  }
+  inspect(activated, content="true")
+  let handled = browser.handle_focused_key("x") catch { _ => false }
+  inspect(handled, content="true")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("xabcd|1|1"))
+}
+
+///|
+async test "fixture pointer drag selects text in focused input before typing" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="abcd" style="display:block;width:120px;height:32px" />
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('field').addEventListener('input', function (event) {
+    #|      document.getElementById('status').textContent =
+    #|        event.target.value + '|' + String(event.target.selectionStart) + '|' + String(event.target.selectionEnd);
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let region = hit_region_of_source_id(browser, "field")
+
+  inspect(browser.pointer_down_at(region.col + 1, region.row), content="true")
+  inspect(browser.pointer_move_at(region.col + 3, region.row), content="true")
+  let _ = browser.pointer_up_at(region.col + 3, region.row) catch { _ => false }
+  let handled = browser.handle_focused_key("x") catch { _ => false }
+  inspect(handled, content="true")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("axd|2|2"))
+}
+
+///|
+async test "fixture activate_at moves caret in focused textarea before typing" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <textarea id="field" style="display:block;width:160px;height:64px">ab
+    #|cd</textarea>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('field').addEventListener('input', function (event) {
+    #|      document.getElementById('status').textContent =
+    #|        JSON.stringify(event.target.value) + '|' + String(event.target.selectionStart) + '|' + String(event.target.selectionEnd);
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let region = hit_region_of_source_id(browser, "field")
+
+  let activated = browser.activate_at(region.col + 1, region.row + 1) catch {
+    _ => false
+  }
+  inspect(activated, content="true")
+  let handled = browser.handle_focused_key("x") catch { _ => false }
+  inspect(handled, content="true")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("\"ab\\ncxd\"|5|5"))
+}
+
+///|
 async test "fixture focused textarea Enter inserts newline without submit" {
   let browser = Browser::new(800, 600)
   let html =

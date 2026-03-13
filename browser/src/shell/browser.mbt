@@ -123,6 +123,12 @@ struct Browser {
   mut hovered_source_id : String?
   /// Source currently pressed by pointer
   mut pressed_source_id : String?
+  /// Text-control selection anchor source id during pointer drag
+  mut text_selection_anchor_source_id : String?
+  /// Text-control selection anchor column during pointer drag
+  mut text_selection_anchor_col : Int
+  /// Text-control selection anchor row during pointer drag
+  mut text_selection_anchor_row : Int
   /// Source currently in drag session
   mut dragging_source_id : String?
   /// Current drag-over target
@@ -178,6 +184,9 @@ pub fn Browser::new(
     focused_scrollable: Ref::new(None),
     hovered_source_id: None,
     pressed_source_id: None,
+    text_selection_anchor_source_id: None,
+    text_selection_anchor_col: 0,
+    text_selection_anchor_row: 0,
     dragging_source_id: None,
     drag_over_source_id: None,
     drop_allowed_source_id: None,
@@ -1547,6 +1556,99 @@ fn Browser::get_client_coords_for_source_id(
 }
 
 ///|
+fn Browser::get_hit_region_for_source_id(
+  self : Browser,
+  source_id : String,
+) -> @tui.HitRegion? {
+  if self.hit_regions.is_empty() {
+    return None
+  }
+  let mut i = self.hit_regions.length() - 1
+  while i >= 0 {
+    let region = self.hit_regions[i]
+    if region.source_id == source_id {
+      return Some(region)
+    }
+    i = i - 1
+  }
+  None
+}
+
+///|
+fn Browser::set_text_control_selection_from_cells(
+  self : Browser,
+  source_id : String,
+  anchor_col : Int,
+  anchor_row : Int,
+  focus_col : Int,
+  focus_row : Int,
+) -> Bool {
+  if not(self.enable_js) {
+    return false
+  }
+  match self.get_hit_region_for_source_id(source_id) {
+    Some(region) => {
+      let anchor_local_col = if anchor_col <= region.col {
+        0
+      } else if anchor_col >= region.col + region.width {
+        region.width
+      } else {
+        anchor_col - region.col
+      }
+      let anchor_local_row = if anchor_row <= region.row {
+        0
+      } else if anchor_row >= region.row + region.height {
+        region.height - 1
+      } else {
+        anchor_row - region.row
+      }
+      let focus_local_col = if focus_col <= region.col {
+        0
+      } else if focus_col >= region.col + region.width {
+        region.width
+      } else {
+        focus_col - region.col
+      }
+      let focus_local_row = if focus_row <= region.row {
+        0
+      } else if focus_row >= region.row + region.height {
+        region.height - 1
+      } else {
+        focus_row - region.row
+      }
+      let escaped = escape_js_string(source_id)
+      let source = "(function(){const target=document.getElementById('" +
+        escaped +
+        "');if(!target){return 'missing';}const tag=(target.tagName||'').toLowerCase();const type=(target.getAttribute?((target.getAttribute('type')||'').toLowerCase()):'');function isTextLikeInput(){if(tag!=='input'){return false;}return type===''||type==='text'||type==='search'||type==='url'||type==='tel'||type==='email'||type==='password'||type==='number';}function currentValue(el){if(!el){return '';}if(el.value!==undefined&&el.value!==null){return String(el.value);}if(el.getAttribute){return String(el.getAttribute('value')||'');}return '';}function setCaret(index){const value=currentValue(target);const clamped=Math.max(0,Math.min(value.length,Number(index)||0));if(typeof target.setSelectionRange==='function'){target.setSelectionRange(clamped,clamped);}else{target.selectionStart=clamped;target.selectionEnd=clamped;}return 'ok';}if(tag==='textarea'){const value=currentValue(target);const lines=value.split('\\n');const localRow=" +
+        anchor_local_row.to_string() +
+        ";const anchorCol=" +
+        anchor_local_col.to_string() +
+        ";const focusRow=" +
+        focus_local_row.to_string() +
+        ";const focusCol=" +
+        focus_local_col.to_string() +
+        ";const anchorRow=localRow;function indexForPosition(row,col){let offset=0;for(let i=0;i<lines.length;i++){const line=lines[i];if(i>=row||i===lines.length-1){return offset+Math.max(0,Math.min(line.length,col));}offset+=line.length+1;}return value.length;}const anchor=indexForPosition(anchorRow,anchorCol);const focus=indexForPosition(focusRow,focusCol);const start=Math.min(anchor,focus);const end=Math.max(anchor,focus);if(typeof target.setSelectionRange==='function'){target.setSelectionRange(start,end);}else{target.selectionStart=start;target.selectionEnd=end;}return 'ok';}if(isTextLikeInput()){const value=currentValue(target);const anchor=Math.max(0,Math.min(value.length," +
+        anchor_local_col.to_string() +
+        "));const focus=Math.max(0,Math.min(value.length," +
+        focus_local_col.to_string() +
+        "));const start=Math.min(anchor,focus);const end=Math.max(anchor,focus);if(typeof target.setSelectionRange==='function'){target.setSelectionRange(start,end);}else{target.selectionStart=start;target.selectionEnd=end;}return 'ok';}return 'none';})()"
+      self.execute_inline_js(source) == Some("ok")
+    }
+    None => false
+  }
+}
+
+///|
+fn Browser::set_text_control_caret_from_cell(
+  self : Browser,
+  source_id : String,
+  col : Int,
+  row : Int,
+) -> Bool {
+  self.set_text_control_selection_from_cells(source_id, col, row, col, row)
+}
+
+///|
 fn Browser::process_pending_script_tasks(self : Browser) -> Int {
   let ready_tasks = self.scheduler.poll_ready()
   let mut processed = 0
@@ -1994,6 +2096,13 @@ pub fn Browser::pointer_down_at(self : Browser, col : Int, row : Int) -> Bool {
   match source_id {
     Some(id) => {
       self.focus_source_id(id)
+      if self.set_text_control_caret_from_cell(id, col, row) {
+        self.text_selection_anchor_source_id = Some(id)
+        self.text_selection_anchor_col = col
+        self.text_selection_anchor_row = row
+      } else {
+        self.text_selection_anchor_source_id = None
+      }
       self.pressed_source_id = Some(id)
       self.dispatch_pointer_mouse_event_to_source_id(
         id,
@@ -2005,6 +2114,7 @@ pub fn Browser::pointer_down_at(self : Browser, col : Int, row : Int) -> Bool {
     }
     None => {
       self.pressed_source_id = None
+      self.text_selection_anchor_source_id = None
       false
     }
   }
@@ -2017,6 +2127,20 @@ pub fn Browser::pointer_move_at(self : Browser, col : Int, row : Int) -> Bool {
   let mut changed = self.hover_at(col, row)
   match self.pressed_source_id {
     Some(pressed_id) => {
+      match self.text_selection_anchor_source_id {
+        Some(anchor_source_id) if anchor_source_id == pressed_id &&
+          self.dragging_source_id is None =>
+          if self.set_text_control_selection_from_cells(
+              pressed_id,
+              self.text_selection_anchor_col,
+              self.text_selection_anchor_row,
+              col,
+              row,
+            ) {
+            changed = true
+          }
+        _ => ()
+      }
       if self.dragging_source_id is None &&
         self.is_draggable_source_id(pressed_id) {
         if self.dispatch_drag_event_to_source_id(
@@ -2123,6 +2247,7 @@ pub async fn Browser::pointer_up_at(
     None => ()
   }
   self.pressed_source_id = None
+  self.text_selection_anchor_source_id = None
   self.dragging_source_id = None
   self.drag_over_source_id = None
   self.drop_allowed_source_id = None
@@ -2206,6 +2331,7 @@ pub async fn Browser::activate_at(
   match source_id {
     Some(id) => {
       self.focus_source_id(id)
+      let _ = self.set_text_control_caret_from_cell(id, col, row)
       let dispatch = self.dispatch_click_to_source_id(
         id,
         client_x=cell_to_client_x(col),
