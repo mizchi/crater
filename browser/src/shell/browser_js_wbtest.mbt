@@ -2101,6 +2101,169 @@ async test "Browser handle_focused_key dispatches beforeinput for focused text i
 }
 
 ///|
+async test "Browser handle_focused_key inserts text at caret in focused text input" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="ab" style="display:block;width:120px;height:32px" />
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); field.selectionStart=1; field.selectionEnd=1; return 'ok'; })()",
+  )
+
+  let handled = browser.handle_focused_key("x") catch { _ => false }
+  inspect(handled, content="true")
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ const field=document.getElementById('field'); return field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
+    ),
+    content="Some(\"axb|2|2\")",
+  )
+}
+
+///|
+async test "Browser handle_focused_key deletes text before caret in focused text input" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="abc" style="display:block;width:120px;height:32px" />
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); field.selectionStart=2; field.selectionEnd=2; return 'ok'; })()",
+  )
+
+  let handled = browser.handle_focused_key("Backspace") catch { _ => false }
+  inspect(handled, content="true")
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ const field=document.getElementById('field'); return field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
+    ),
+    content="Some(\"ac|1|1\")",
+  )
+}
+
+///|
+async test "Browser handle_focused_key replaces selected text in focused text input" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="abcd" style="display:block;width:120px;height:32px" />
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); field.selectionStart=1; field.selectionEnd=3; return 'ok'; })()",
+  )
+
+  let handled = browser.handle_focused_key("x") catch { _ => false }
+  inspect(handled, content="true")
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ const field=document.getElementById('field'); return field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
+    ),
+    content="Some(\"axd|2|2\")",
+  )
+}
+
+///|
+async test "Browser handle_focused_key deletes text after caret in focused text input" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="abc" style="display:block;width:120px;height:32px" />
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); field.selectionStart=1; field.selectionEnd=1; return 'ok'; })()",
+  )
+
+  let handled = browser.handle_focused_key("Delete") catch { _ => false }
+  inspect(handled, content="true")
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ const field=document.getElementById('field'); return field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
+    ),
+    content="Some(\"ac|1|1\")",
+  )
+}
+
+///|
+async test "Browser handle_focused_key moves caret with Home and End" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="abcd" style="display:block;width:120px;height:32px" />
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); field.selectionStart=2; field.selectionEnd=2; return 'ok'; })()",
+  )
+
+  let moved_home = browser.handle_focused_key("Home") catch { _ => false }
+  inspect(moved_home, content="true")
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ const field=document.getElementById('field'); return String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
+    ),
+    content="Some(\"0|0\")",
+  )
+  let moved_end = browser.handle_focused_key("End") catch { _ => false }
+  inspect(moved_end, content="true")
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ const field=document.getElementById('field'); return String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
+    ),
+    content="Some(\"4|4\")",
+  )
+}
+
+///|
 async test "Browser handle_focused_key dispatches change event for focused text input on Enter" {
   let browser = Browser::new(800, 600)
   let html =

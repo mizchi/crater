@@ -3402,6 +3402,34 @@ test "persisted beforeinput listeners survive later execution" {
 }
 
 ///|
+test "text controls expose selectionStart and setSelectionRange" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const input = document.createElement('input');
+    #|input.value = 'abcd';
+    #|input.selectionStart = 1;
+    #|input.selectionEnd = 3;
+    #|const textarea = document.createElement('textarea');
+    #|textarea.value = 'xyz';
+    #|textarea.setSelectionRange(1, 2);
+    #|[
+    #|  String(input.selectionStart),
+    #|  String(input.selectionEnd),
+    #|  String(textarea.selectionStart),
+    #|  String(textarea.selectionEnd)
+    #|].join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="1|3|1|2")
+}
+
+///|
 test "persisted pointer listeners survive later execution" {
   let dom = @dom.DomTree::new()
   let html = dom.create_element("html")

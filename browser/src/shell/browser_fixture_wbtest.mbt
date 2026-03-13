@@ -235,6 +235,170 @@ async test "fixture focused text input beforeinput can prevent typing repaint" {
 }
 
 ///|
+async test "fixture focused text input inserts text at caret" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="ab" style="display:block;width:120px;height:32px" />
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('field').addEventListener('input', function (event) {
+    #|      document.getElementById('status').textContent =
+    #|        event.target.value + '|' + String(event.target.selectionStart) + '|' + String(event.target.selectionEnd);
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); field.selectionStart=1; field.selectionEnd=1; return 'ok'; })()",
+  )
+  let handled = browser.handle_focused_key("x") catch { _ => false }
+  inspect(handled, content="true")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("axb|2|2"))
+}
+
+///|
+async test "fixture focused text input deletes text before caret" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="abc" style="display:block;width:120px;height:32px" />
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('field').addEventListener('input', function (event) {
+    #|      document.getElementById('status').textContent =
+    #|        event.target.value + '|' + String(event.target.selectionStart) + '|' + String(event.target.selectionEnd);
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); field.selectionStart=2; field.selectionEnd=2; return 'ok'; })()",
+  )
+  let handled = browser.handle_focused_key("Backspace") catch { _ => false }
+  inspect(handled, content="true")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("ac|1|1"))
+}
+
+///|
+async test "fixture focused text input replaces selected text" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="abcd" style="display:block;width:120px;height:32px" />
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('field').addEventListener('input', function (event) {
+    #|      document.getElementById('status').textContent =
+    #|        event.target.value + '|' + String(event.target.selectionStart) + '|' + String(event.target.selectionEnd);
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); field.selectionStart=1; field.selectionEnd=3; return 'ok'; })()",
+  )
+  let handled = browser.handle_focused_key("x") catch { _ => false }
+  inspect(handled, content="true")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("axd|2|2"))
+}
+
+///|
+async test "fixture focused text input deletes text after caret" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="abc" style="display:block;width:120px;height:32px" />
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('field').addEventListener('input', function (event) {
+    #|      document.getElementById('status').textContent =
+    #|        event.target.value + '|' + String(event.target.selectionStart) + '|' + String(event.target.selectionEnd);
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); field.selectionStart=1; field.selectionEnd=1; return 'ok'; })()",
+  )
+  let handled = browser.handle_focused_key("Delete") catch { _ => false }
+  inspect(handled, content="true")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("ac|1|1"))
+}
+
+///|
+async test "fixture focused text input moves caret with Home and End" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <input id="field" type="text" value="abcd" style="display:block;width:120px;height:32px" />
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    function render() {
+    #|      const field = document.getElementById('field');
+    #|      document.getElementById('status').textContent =
+    #|        String(field.selectionStart) + '|' + String(field.selectionEnd);
+    #|    }
+    #|    document.getElementById('field').addEventListener('keydown', render);
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  let _ = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); field.selectionStart=2; field.selectionEnd=2; return 'ok'; })()",
+  )
+  let moved_home = browser.handle_focused_key("Home") catch { _ => false }
+  inspect(moved_home, content="true")
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ const field=document.getElementById('field'); return String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
+    ),
+    content="Some(\"0|0\")",
+  )
+  let moved_end = browser.handle_focused_key("End") catch { _ => false }
+  inspect(moved_end, content="true")
+  inspect(
+    browser.execute_inline_js(
+      "(function(){ const field=document.getElementById('field'); return String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
+    ),
+    content="Some(\"4|4\")",
+  )
+}
+
+///|
 async test "fixture focused textarea Enter inserts newline without submit" {
   let browser = Browser::new(800, 600)
   let html =
