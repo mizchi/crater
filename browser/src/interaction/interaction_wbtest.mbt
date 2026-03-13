@@ -154,3 +154,21 @@ test "dispatch_cdp_command accepts key and pointer button commands" {
     Err(err) => fail("unexpected pointerUp error: " + err.message)
   }
 }
+
+///|
+test "pointer event sequence helpers preserve browser-style ordering" {
+  inspect(
+    (
+      pointer_dispatch_event_names(pointer_move_event_sequence("mouse")),
+      pointer_dispatch_event_names(pointer_press_event_sequence("touch", 0)),
+      pointer_dispatch_event_names(pointer_release_event_sequence("mouse", 0)),
+      pointer_dispatch_event_names(
+        pointer_post_release_mouse_event_sequence(0, false, true, true),
+      ),
+      pointer_dispatch_event_names(
+        pointer_post_release_mouse_event_sequence(2, true, false, false),
+      ),
+    ),
+    content="([\"pointermove\", \"mousemove\"], [\"pointerover\", \"pointerenter\", \"pointerdown\", \"mousedown\"], [\"pointerup\"], [\"mouseup\", \"click\", \"dblclick\"], [\"contextmenu\", \"mouseup\"])",
+  )
+}

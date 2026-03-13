@@ -9914,10 +9914,8 @@ fn BidiProtocol::handle_input_perform_actions(
             let should_emit_move = pointer_type == "mouse" ||
               button_state_contains(buttons, button_to_mask(0))
             if should_emit_move {
-              self.dispatch_interaction_pointer_command(
-                bidi_pointer_interaction_command(
-                  "pointerMove", final_x, final_y, 0,
-                ),
+              self.dispatch_interaction_pointer_sequence(
+                @interaction.pointer_move_event_sequence(pointer_type),
                 target_shared,
                 final_x,
                 final_y,
@@ -10036,20 +10034,8 @@ fn BidiProtocol::handle_input_perform_actions(
                 width, height, pressure, tangential_pressure, twist, altitude_angle,
                 azimuth_angle,
               )
-              if button == 0 && pointer_type != "mouse" {
-                input_dispatch_pointer_event(
-                  target_shared, "pointerover", current_x, current_y, button, next_buttons,
-                  pointer_type, ctrl, alt, shift, meta,
-                )
-                input_dispatch_pointer_event(
-                  target_shared, "pointerenter", current_x, current_y, button, next_buttons,
-                  pointer_type, ctrl, alt, shift, meta,
-                )
-              }
-              self.dispatch_interaction_pointer_command(
-                bidi_pointer_interaction_command(
-                  "pointerDown", current_x, current_y, button,
-                ),
+              self.dispatch_interaction_pointer_sequence(
+                @interaction.pointer_press_event_sequence(pointer_type, button),
                 target_shared,
                 current_x,
                 current_y,
@@ -10075,25 +10061,18 @@ fn BidiProtocol::handle_input_perform_actions(
                   )
                   return false
                 }
-              } else {
-                input_dispatch_pointer_event(
-                  target_shared, "mousedown", current_x, current_y, button, next_buttons,
-                  pointer_type, ctrl, alt, shift, meta,
-                )
-                if self.handle_inline_attribute_navigation(
-                    ctx_id, "onmousedown",
-                  ) {
-                  continue
-                }
-                if self.context_has_window_close_onmousedown(ctx_id) {
-                  if not(self.force_close_context_from_input(ctx_id)) {
-                    self.send_error(
-                      request_id,
-                      "no such frame",
-                      "Unknown context: " + ctx_id,
-                    )
-                    return false
-                  }
+              }
+              if self.handle_inline_attribute_navigation(ctx_id, "onmousedown") {
+                continue
+              }
+              if self.context_has_window_close_onmousedown(ctx_id) {
+                if not(self.force_close_context_from_input(ctx_id)) {
+                  self.send_error(
+                    request_id,
+                    "no such frame",
+                    "Unknown context: " + ctx_id,
+                  )
+                  return false
                 }
               }
               if button == 0 {
@@ -10142,9 +10121,9 @@ fn BidiProtocol::handle_input_perform_actions(
               input_set_pointer_event_properties(
                 width, height, 0.0, tangential_pressure, twist, altitude_angle, azimuth_angle,
               )
-              self.dispatch_interaction_pointer_command(
-                bidi_pointer_interaction_command(
-                  "pointerUp", current_x, current_y, button,
+              self.dispatch_interaction_pointer_sequence(
+                @interaction.pointer_release_event_sequence(
+                  pointer_type, button,
                 ),
                 target_shared,
                 current_x,
@@ -10156,28 +10135,24 @@ fn BidiProtocol::handle_input_perform_actions(
                 shift,
                 meta,
               )
-              if pointer_type == "touch" && button == 0 {
-                input_dispatch_pointer_event(
-                  target_shared, "pointerout", current_x, current_y, button, next_buttons,
-                  pointer_type, ctrl, alt, shift, meta,
-                )
-                input_dispatch_pointer_event(
-                  target_shared, "pointerleave", current_x, current_y, button, next_buttons,
-                  pointer_type, ctrl, alt, shift, meta,
-                )
-              }
               input_clear_pointer_event_properties()
               let is_mac_ctrl_left_click = button == 0 &&
                 ctrl &&
                 input_is_mac_platform()
               if is_mac_ctrl_left_click {
-                input_dispatch_pointer_event(
-                  target_shared, "contextmenu", current_x, current_y, button, next_buttons,
-                  pointer_type, ctrl, alt, shift, meta,
-                )
-                input_dispatch_pointer_event(
-                  target_shared, "mouseup", current_x, current_y, button, next_buttons,
-                  pointer_type, ctrl, alt, shift, meta,
+                self.dispatch_interaction_pointer_sequence(
+                  @interaction.pointer_post_release_mouse_event_sequence(
+                    button, true, false, false,
+                  ),
+                  target_shared,
+                  current_x,
+                  current_y,
+                  next_buttons,
+                  pointer_type,
+                  ctrl,
+                  alt,
+                  shift,
+                  meta,
                 )
                 self.input_pending_double_click.remove(ctx_id)
                 if button == 0 {
@@ -10188,73 +10163,98 @@ fn BidiProtocol::handle_input_perform_actions(
                   self.input_html_drag_source_shared.remove(ctx_id)
                   self.input_html_drag_active.remove(ctx_id)
                 }
-              } else {
-                input_dispatch_pointer_event(
-                  target_shared, "mouseup", current_x, current_y, button, next_buttons,
-                  pointer_type, ctrl, alt, shift, meta,
-                )
-                if button == 0 {
-                  let drag_source = self.input_html_drag_source_shared
-                    .get(ctx_id)
-                    .unwrap_or("")
-                  let drag_active = self.input_html_drag_active
-                    .get(ctx_id)
-                    .unwrap_or(false)
-                  if drag_source != "" && drag_active {
-                    let drop_target = if target_shared != "" {
-                      target_shared
-                    } else {
-                      drag_source
-                    }
-                    input_dispatch_pointer_event(
-                      drop_target, "drop", current_x, current_y, button, next_buttons,
-                      pointer_type, ctrl, alt, shift, meta,
-                    )
-                    input_dispatch_pointer_event(
-                      drag_source, "dragend", current_x, current_y, button, next_buttons,
-                      pointer_type, ctrl, alt, shift, meta,
-                    )
+              } else if button == 0 {
+                let drag_source = self.input_html_drag_source_shared
+                  .get(ctx_id)
+                  .unwrap_or("")
+                let drag_active = self.input_html_drag_active
+                  .get(ctx_id)
+                  .unwrap_or(false)
+                if drag_source != "" && drag_active {
+                  let drop_target = if target_shared != "" {
+                    target_shared
+                  } else {
+                    drag_source
                   }
-                  let was_dragged = self.input_pointer_dragged
-                    .get(ctx_id)
-                    .unwrap_or(false)
-                  if not(was_dragged) {
-                    input_dispatch_pointer_event(
-                      target_shared, "click", current_x, current_y, button, next_buttons,
-                      pointer_type, ctrl, alt, shift, meta,
-                    )
-                    if self.input_pending_double_click
-                      .get(ctx_id)
-                      .unwrap_or(false) {
-                      input_dispatch_pointer_event(
-                        target_shared, "dblclick", current_x, current_y, button,
-                        next_buttons, pointer_type, ctrl, alt, shift, meta,
-                      )
-                    }
-                    self.input_last_click_time[ctx_id] = self.input_action_clock_ms
-                      .get(ctx_id)
-                      .unwrap_or(0.0)
-                    self.input_last_click_x[ctx_id] = current_x
-                    self.input_last_click_y[ctx_id] = current_y
-                    self.input_last_click_target_shared[ctx_id] = target_shared
-                    self.handle_pointer_click_navigation(
-                      ctx_id, target_shared, current_x, current_y,
-                    )
-                  }
-                  self.input_pending_double_click.remove(ctx_id)
-                  self.input_pointer_down_x.remove(ctx_id)
-                  self.input_pointer_down_y.remove(ctx_id)
-                  self.input_pointer_down_target_shared.remove(ctx_id)
-                  self.input_pointer_dragged.remove(ctx_id)
-                  self.input_html_drag_source_shared.remove(ctx_id)
-                  self.input_html_drag_active.remove(ctx_id)
-                } else if button == 2 {
                   input_dispatch_pointer_event(
-                    target_shared, "contextmenu", current_x, current_y, button, next_buttons,
+                    drop_target, "drop", current_x, current_y, button, next_buttons,
                     pointer_type, ctrl, alt, shift, meta,
                   )
-                  self.input_pending_double_click.remove(ctx_id)
+                  input_dispatch_pointer_event(
+                    drag_source, "dragend", current_x, current_y, button, next_buttons,
+                    pointer_type, ctrl, alt, shift, meta,
+                  )
                 }
+                let was_dragged = self.input_pointer_dragged
+                  .get(ctx_id)
+                  .unwrap_or(false)
+                self.dispatch_interaction_pointer_sequence(
+                  @interaction.pointer_post_release_mouse_event_sequence(
+                    button,
+                    false,
+                    not(was_dragged),
+                    not(was_dragged) &&
+                    self.input_pending_double_click.get(ctx_id).unwrap_or(false),
+                  ),
+                  target_shared,
+                  current_x,
+                  current_y,
+                  next_buttons,
+                  pointer_type,
+                  ctrl,
+                  alt,
+                  shift,
+                  meta,
+                )
+                if not(was_dragged) {
+                  self.input_last_click_time[ctx_id] = self.input_action_clock_ms
+                    .get(ctx_id)
+                    .unwrap_or(0.0)
+                  self.input_last_click_x[ctx_id] = current_x
+                  self.input_last_click_y[ctx_id] = current_y
+                  self.input_last_click_target_shared[ctx_id] = target_shared
+                  self.handle_pointer_click_navigation(
+                    ctx_id, target_shared, current_x, current_y,
+                  )
+                }
+                self.input_pending_double_click.remove(ctx_id)
+                self.input_pointer_down_x.remove(ctx_id)
+                self.input_pointer_down_y.remove(ctx_id)
+                self.input_pointer_down_target_shared.remove(ctx_id)
+                self.input_pointer_dragged.remove(ctx_id)
+                self.input_html_drag_source_shared.remove(ctx_id)
+                self.input_html_drag_active.remove(ctx_id)
+              } else if button == 2 {
+                self.dispatch_interaction_pointer_sequence(
+                  @interaction.pointer_post_release_mouse_event_sequence(
+                    button, true, false, false,
+                  ),
+                  target_shared,
+                  current_x,
+                  current_y,
+                  next_buttons,
+                  pointer_type,
+                  ctrl,
+                  alt,
+                  shift,
+                  meta,
+                )
+                self.input_pending_double_click.remove(ctx_id)
+              } else {
+                self.dispatch_interaction_pointer_sequence(
+                  @interaction.pointer_post_release_mouse_event_sequence(
+                    button, false, false, false,
+                  ),
+                  target_shared,
+                  current_x,
+                  current_y,
+                  next_buttons,
+                  pointer_type,
+                  ctrl,
+                  alt,
+                  shift,
+                  meta,
+                )
               }
             }
           }

@@ -33,9 +33,19 @@ pub fn pointer_button_up_command(Int, Int, Int) -> InteractionCommand
 
 pub fn pointer_click_command(Int, Int) -> InteractionCommand
 
+pub fn pointer_dispatch_event_names(Array[PointerDispatchEvent]) -> Array[String]
+
 pub fn pointer_down_command(Int, Int) -> InteractionCommand
 
 pub fn pointer_move_command(Int, Int) -> InteractionCommand
+
+pub fn pointer_move_event_sequence(String) -> Array[PointerDispatchEvent]
+
+pub fn pointer_post_release_mouse_event_sequence(Int, Bool, Bool, Bool) -> Array[PointerDispatchEvent]
+
+pub fn pointer_press_event_sequence(String, Int) -> Array[PointerDispatchEvent]
+
+pub fn pointer_release_event_sequence(String, Int) -> Array[PointerDispatchEvent]
 
 pub fn pointer_up_command(Int, Int) -> InteractionCommand
 
@@ -79,6 +89,11 @@ pub enum InteractionCommand {
   ToggleSelectionMode
   ToggleDarkMode
   Quit
+}
+
+pub struct PointerDispatchEvent {
+  event_type : String
+  button : Int
 }
 
 // Type aliases
