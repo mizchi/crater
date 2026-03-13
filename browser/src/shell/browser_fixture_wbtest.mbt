@@ -733,3 +733,122 @@ async test "fixture listener and closure state survive re-execution" {
   )
   inspect(status, content="Some(\"2|2\")")
 }
+
+///|
+async test "fixture dynamic clickable element becomes target after DOM sync" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <button id="spawn" style="display:block;width:96px;height:32px">Spawn</button>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    let dynamicCount = 0;
+    #|    document.getElementById('spawn').addEventListener('click', function () {
+    #|      let late = document.getElementById('late');
+    #|      if (!late) {
+    #|        late = document.createElement('button');
+    #|        late.id = 'late';
+    #|        late.textContent = 'Late';
+    #|        late.style.display = 'block';
+    #|        late.style.width = '96px';
+    #|        late.style.height = '32px';
+    #|        late.addEventListener('click', function () {
+    #|          dynamicCount += 1;
+    #|          document.getElementById('status').textContent = 'late:' + String(dynamicCount);
+    #|        });
+    #|        document.body.appendChild(late);
+    #|      }
+    #|      document.getElementById('status').textContent = 'spawned';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let initial = browser.render_output(Text)
+  assert_true(initial.contains("before"))
+
+  let (spawn_col, spawn_row) = center_of_source_id(browser, "spawn")
+  let spawned = browser.activate_at(spawn_col, spawn_row) catch { _ => false }
+  inspect(spawned, content="true")
+
+  let after_spawn = browser.render_output(Text)
+  assert_true(after_spawn.contains("spawned"))
+  assert_true(after_spawn.contains("Late"))
+
+  let (late_col, late_row) = center_of_source_id(browser, "late")
+  let _ = browser.activate_at(late_col, late_row) catch { _ => false }
+  let _ = browser.activate_at(late_col, late_row) catch { _ => false }
+
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(status, content="Some(\"late:2\")")
+}
+
+///|
+async test "fixture removed clickable element disappears from hit test after DOM sync" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <button id="remove" style="display:block;width:96px;height:32px">Remove</button>
+    #|  <button id="late" style="display:block;width:96px;height:32px">Late</button>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    let lateCount = 0;
+    #|    document.getElementById('late').addEventListener('click', function () {
+    #|      lateCount += 1;
+    #|      document.getElementById('status').textContent = 'late:' + String(lateCount);
+    #|    });
+    #|    document.getElementById('remove').addEventListener('click', function () {
+    #|      const late = document.getElementById('late');
+    #|      if (late) {
+    #|        late.remove();
+    #|      }
+    #|      document.getElementById('status').textContent = 'removed';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+
+  let (remove_col, remove_row) = center_of_source_id(browser, "remove")
+  let (late_col, late_row) = center_of_source_id(browser, "late")
+
+  let _ = browser.activate_at(late_col, late_row) catch { _ => false }
+  let before_remove = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(before_remove, content="Some(\"late:1\")")
+
+  let removed = browser.activate_at(remove_col, remove_row) catch { _ => false }
+  inspect(removed, content="true")
+  let after_remove = browser.render_output(Text)
+  assert_true(after_remove.contains("removed"))
+  assert_true(not(after_remove.contains("Late")))
+  browser.build_accessibility_tree()
+  match browser.a11y_tree {
+    Some(tree) => assert_true(tree.find_by_source_id("late") is None)
+    None => panic()
+  }
+  let mut has_late_hit_region = false
+  for region in browser.hit_regions {
+    if region.source_id == "late" {
+      has_late_hit_region = true
+    }
+  }
+  assert_true(not(has_late_hit_region))
+
+  let stale_hit = browser.activate_at(late_col, late_row) catch { _ => false }
+  let _ = stale_hit
+  let final_status = browser.execute_inline_js(
+    "(function(){ return (document.getElementById('late') ? 'present' : 'missing') + '|' + document.getElementById('status').textContent; })()",
+  )
+  inspect(final_status, content="Some(\"missing|removed\")")
+}

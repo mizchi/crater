@@ -543,6 +543,9 @@
   - IME / selection / caret
 - [ ] browser shell fixture の実ページ寄りカバレッジ拡張
   - article / dashboard / GitHub snapshot で DOM mutation + repaint を固定観測する
+  - 動的に追加された interactive 要素が `sync_render_state_from_dom_tree()` 後に
+    render/a11y/hit-test へ再同期されることを fixture で固定する
+  - 動的に削除された interactive 要素が stale hit region を残さないことを fixture で固定する
 
 ## パフォーマンス改善メモ（2026-03-11）
 
