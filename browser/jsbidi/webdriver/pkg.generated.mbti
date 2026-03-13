@@ -81,6 +81,8 @@ pub fn input_dispatch_pointer_event(String, String, Double, Double, Int, Int, St
 
 pub fn input_dispatch_wheel_event(String, Double, Double, Double, Double, Bool, Bool, Bool, Bool) -> Unit
 
+pub fn input_drag_transfer_state(String) -> String
+
 pub fn input_is_mac_platform() -> Bool
 
 pub fn input_is_single_grapheme(String) -> Bool

@@ -7110,6 +7110,32 @@ pub fn input_dispatch_drag_event(
 }
 
 ///|
+extern "js" fn js_input_drag_transfer_state(
+  drag_transfer_id : String,
+) -> String =
+  #| (dragTransferId) => {
+  #|   if (
+  #|     !globalThis.__bidiDragTransfers ||
+  #|     typeof globalThis.__bidiDragTransfers.get !== "function" ||
+  #|     !dragTransferId
+  #|   ) {
+  #|     return "none/none";
+  #|   }
+  #|   const dataTransfer = globalThis.__bidiDragTransfers.get(dragTransferId) || null;
+  #|   if (!dataTransfer) {
+  #|     return "none/none";
+  #|   }
+  #|   const allowed = String(dataTransfer.effectAllowed || "all").toLowerCase();
+  #|   const drop = String(dataTransfer.dropEffect || "none").toLowerCase();
+  #|   return allowed + "/" + drop;
+  #| }
+
+///|
+pub fn input_drag_transfer_state(drag_transfer_id : String) -> String {
+  js_input_drag_transfer_state(drag_transfer_id)
+}
+
+///|
 extern "js" fn js_input_clear_drag_transfer(drag_transfer_id : String) -> Unit =
   #| (dragTransferId) => {
   #|   if (

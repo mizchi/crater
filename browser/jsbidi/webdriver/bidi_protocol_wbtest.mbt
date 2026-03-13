@@ -1799,6 +1799,62 @@ test "bidi input pointer drag actions emit drag sequence" {
 }
 
 ///|
+test "bidi input pointer drag does not drop when effectAllowed is none" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<div id='draggable' draggable='true' style='position:absolute;left:0;top:0;width:40px;height:40px'></div><div id='droppable' style='position:absolute;left:60px;top:0;width:40px;height:40px'></div><script>window.allEvents={events:[]};const src=document.getElementById('draggable');const dst=document.getElementById('droppable');src.addEventListener('dragstart',e=>{e.dataTransfer.effectAllowed='none';});dst.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';});</script>\"}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"input.performActions\",\"params\":{\"context\":\"session-1\",\"actions\":[{\"type\":\"pointer\",\"id\":\"pointer-0\",\"parameters\":{\"pointerType\":\"mouse\"},\"actions\":[{\"type\":\"pointerMove\",\"x\":10,\"y\":10},{\"type\":\"pointerDown\",\"button\":0},{\"type\":\"pointerMove\",\"x\":70,\"y\":10},{\"type\":\"pointerUp\",\"button\":0}]}]}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"JSON.stringify(window.allEvents.events.filter(e => e.type.indexOf('drag') === 0).map(e => [e.type, e.effectAllowed || '', e.dropEffect || '']))\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 1)
+  let json = msgs[0].to_json()
+  assert_true(
+    json.contains(
+      "\"value\":\"[[\\\"dragstart\\\",\\\"none\\\",\\\"none\\\"],[\\\"drag\\\",\\\"none\\\",\\\"none\\\"],[\\\"dragenter\\\",\\\"none\\\",\\\"none\\\"],[\\\"dragover\\\",\\\"none\\\",\\\"move\\\"],[\\\"dragend\\\",\\\"none\\\",\\\"move\\\"]]\"",
+    ),
+  )
+}
+
+///|
+test "bidi input pointer drag does not drop when dropEffect is incompatible" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<div id='draggable' draggable='true' style='position:absolute;left:0;top:0;width:40px;height:40px'></div><div id='droppable' style='position:absolute;left:60px;top:0;width:40px;height:40px'></div><script>window.allEvents={events:[]};const src=document.getElementById('draggable');const dst=document.getElementById('droppable');src.addEventListener('dragstart',e=>{e.dataTransfer.effectAllowed='copy';});dst.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';});</script>\"}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"input.performActions\",\"params\":{\"context\":\"session-1\",\"actions\":[{\"type\":\"pointer\",\"id\":\"pointer-0\",\"parameters\":{\"pointerType\":\"mouse\"},\"actions\":[{\"type\":\"pointerMove\",\"x\":10,\"y\":10},{\"type\":\"pointerDown\",\"button\":0},{\"type\":\"pointerMove\",\"x\":70,\"y\":10},{\"type\":\"pointerUp\",\"button\":0}]}]}}",
+  )
+  let _ = proto.take_messages()
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"JSON.stringify(window.allEvents.events.filter(e => e.type.indexOf('drag') === 0).map(e => [e.type, e.effectAllowed || '', e.dropEffect || '']))\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let msgs = proto.take_messages()
+  assert_eq(msgs.length(), 1)
+  let json = msgs[0].to_json()
+  assert_true(
+    json.contains(
+      "\"value\":\"[[\\\"dragstart\\\",\\\"copy\\\",\\\"none\\\"],[\\\"drag\\\",\\\"copy\\\",\\\"none\\\"],[\\\"dragenter\\\",\\\"copy\\\",\\\"none\\\"],[\\\"dragover\\\",\\\"copy\\\",\\\"move\\\"],[\\\"dragend\\\",\\\"copy\\\",\\\"move\\\"]]\"",
+    ),
+  )
+}
+
+///|
 test "bidi input pointerDown can close context without trailing action" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(

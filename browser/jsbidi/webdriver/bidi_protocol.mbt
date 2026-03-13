@@ -10327,9 +10327,28 @@ fn BidiProtocol::handle_input_perform_actions(
                   let drop_target = @interaction.drag_drop_target(
                     drag_source, drag_over_target, drag_accept_target,
                   )
+                  let drop_allowed = if drop_target != "" {
+                    let state = input_drag_transfer_state(drag_transfer_id)
+                    match state.find("/") {
+                      Some(idx) => {
+                        let effect_allowed = state
+                          .unsafe_substring(start=0, end=idx)
+                          .to_lower()
+                        let drop_effect = state
+                          .unsafe_substring(start=idx + 1, end=state.length())
+                          .to_lower()
+                        @interaction.is_drop_effect_compatible(
+                          effect_allowed, drop_effect,
+                        )
+                      }
+                      None => false
+                    }
+                  } else {
+                    false
+                  }
                   for
                     event in @interaction.drag_release_event_sequence(
-                      emit_drop=drop_target != "",
+                      emit_drop=drop_allowed,
                     ) {
                     let dispatch_target = match event.target {
                       @interaction.Source => drag_source
