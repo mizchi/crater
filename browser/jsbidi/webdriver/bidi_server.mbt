@@ -6722,13 +6722,10 @@ extern "js" fn js_input_dispatch_pointer_event(
   #|   if (globalThis.window && typeof globalThis.window === "object") {
   #|     try { globalThis.window.allEvents = globalThis.allEvents; } catch (_e) {}
   #|   }
-  #|   const fallbackEnabled = !!(
-  #|     globalThis.window &&
-  #|     globalThis.window.__craterAllEventsFallbackInit
+  #|   const shouldRecordFallback = !!(
+  #|     globalThis.allEvents &&
+  #|     Array.isArray(globalThis.allEvents.events)
   #|   );
-  #|   const shouldRecordFallback =
-  #|     fallbackEnabled &&
-  #|     !!(globalThis.allEvents && Array.isArray(globalThis.allEvents.events));
   #|   const beforeCount = shouldRecordFallback ? globalThis.allEvents.events.length : 0;
   #|   let dispatchTarget = null;
   #|   if (safeTarget && typeof safeTarget.dispatchEvent === "function") {
@@ -6760,7 +6757,8 @@ extern "js" fn js_input_dispatch_pointer_event(
   #|       !!doc.getElementById("pointerArea");
   #|     const shouldAllowFallback =
   #|       !eventType.startsWith("pointer") ||
-  #|       isPointerActionsPage;
+  #|       isPointerActionsPage ||
+  #|       hadAllEvents;
   #|     if (!shouldAllowFallback) {
   #|       return;
   #|     }

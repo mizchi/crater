@@ -1681,6 +1681,32 @@ test "bidi input keyUp without keyDown does not dispatch keyboard events" {
 }
 
 ///|
+test "bidi interaction key command mapping uses shared command names" {
+  let down = @interaction.command_name(
+    bidi_key_interaction_command("keyDown", "Enter"),
+  )
+  let up = @interaction.command_name(bidi_key_interaction_command("keyUp", "a"))
+  assert_eq(down, "KeyDown(Enter)")
+  assert_eq(up, "KeyUp(a)")
+}
+
+///|
+test "bidi interaction pointer command mapping preserves coords and button" {
+  let move_name = @interaction.command_name(
+    bidi_pointer_interaction_command("pointerMove", 10.0, 20.0, 0),
+  )
+  let down = @interaction.command_name(
+    bidi_pointer_interaction_command("pointerDown", 11.0, 21.0, 2),
+  )
+  let up = @interaction.command_name(
+    bidi_pointer_interaction_command("pointerUp", 12.0, 22.0, 1),
+  )
+  assert_eq(move_name, "PointerMove(10,20)")
+  assert_eq(down, "PointerButtonDown(11,21,2)")
+  assert_eq(up, "PointerButtonUp(12,22,1)")
+}
+
+///|
 test "bidi input special right key resolves code and key" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(

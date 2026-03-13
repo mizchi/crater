@@ -31,6 +31,14 @@ pub fn pointer_button_down_command(Int, Int, Int) -> InteractionCommand
 
 pub fn pointer_button_up_command(Int, Int, Int) -> InteractionCommand
 
+pub fn pointer_click_command(Int, Int) -> InteractionCommand
+
+pub fn pointer_down_command(Int, Int) -> InteractionCommand
+
+pub fn pointer_move_command(Int, Int) -> InteractionCommand
+
+pub fn pointer_up_command(Int, Int) -> InteractionCommand
+
 pub fn text_input_command(String) -> InteractionCommand
 
 // Errors

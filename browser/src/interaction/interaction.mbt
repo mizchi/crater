@@ -58,6 +58,26 @@ pub fn key_up_command(key : String) -> InteractionCommand {
 }
 
 ///|
+pub fn pointer_move_command(col : Int, row : Int) -> InteractionCommand {
+  PointerMove(col, row)
+}
+
+///|
+pub fn pointer_down_command(col : Int, row : Int) -> InteractionCommand {
+  PointerDown(col, row)
+}
+
+///|
+pub fn pointer_up_command(col : Int, row : Int) -> InteractionCommand {
+  PointerUp(col, row)
+}
+
+///|
+pub fn pointer_click_command(col : Int, row : Int) -> InteractionCommand {
+  PointerClick(col, row)
+}
+
+///|
 pub fn pointer_button_down_command(
   col : Int,
   row : Int,
@@ -402,7 +422,7 @@ pub fn dispatch_cdp_command(
       )
     KeyDown(key) => input.dispatch_key_event("keyDown", key, key, None)
     KeyUp(key) => input.dispatch_key_event("keyUp", key, key, None)
-    TextInput(text) => session.type_text(text)
+    TextInput(text) => input.insert_text(text)
     FocusedKey(key) =>
       if key == "Enter" || key == "Tab" || key == "Escape" {
         input.dispatch_key_event("keyDown", key, key, None)

@@ -9720,8 +9720,13 @@ fn BidiProtocol::handle_input_perform_actions(
             normalized_key,
             action_type == "keyDown",
           )
-          input_dispatch_key_action(
-            action_type, key_value, ctrl, alt, shift, meta,
+          self.dispatch_interaction_key_command(
+            bidi_key_interaction_command(action_type, normalized_key),
+            key_value,
+            ctrl,
+            alt,
+            shift,
+            meta,
           )
           if action_type == "keyDown" {
             if self.handle_inline_attribute_navigation(ctx_id, "onkeydown") {
@@ -10381,7 +10386,14 @@ fn BidiProtocol::handle_input_release_actions(
     let (ctrl, alt, shift, meta) = self.resolve_input_modifiers(
       ctx_id, "", false,
     )
-    input_dispatch_key_action("keyUp", dispatch_key, ctrl, alt, shift, meta)
+    self.dispatch_interaction_key_command(
+      bidi_key_interaction_command("keyUp", key),
+      dispatch_key,
+      ctrl,
+      alt,
+      shift,
+      meta,
+    )
     self.remove_pressed_key(ctx_id, key)
   }
   self.input_pressed_keys.remove(ctx_id)
@@ -10391,12 +10403,11 @@ fn BidiProtocol::handle_input_release_actions(
   let target_shared = self.input_pointer_target_shared.get(ctx_id).unwrap_or("")
   let current_buttons = self.input_pointer_buttons.get(ctx_id).unwrap_or(0)
   if button_state_contains(current_buttons, button_to_mask(2)) {
-    input_dispatch_pointer_event(
+    self.dispatch_interaction_pointer_command(
+      bidi_pointer_interaction_command("pointerUp", current_x, current_y, 2),
       target_shared,
-      "pointerup",
       current_x,
       current_y,
-      2,
       button_state_remove(current_buttons, 2),
       pointer_type,
       false,
@@ -10419,12 +10430,11 @@ fn BidiProtocol::handle_input_release_actions(
     )
   }
   if button_state_contains(current_buttons, button_to_mask(1)) {
-    input_dispatch_pointer_event(
+    self.dispatch_interaction_pointer_command(
+      bidi_pointer_interaction_command("pointerUp", current_x, current_y, 1),
       target_shared,
-      "pointerup",
       current_x,
       current_y,
-      1,
       button_state_remove(current_buttons, 1),
       pointer_type,
       false,
@@ -10447,12 +10457,11 @@ fn BidiProtocol::handle_input_release_actions(
     )
   }
   if button_state_contains(current_buttons, button_to_mask(0)) {
-    input_dispatch_pointer_event(
+    self.dispatch_interaction_pointer_command(
+      bidi_pointer_interaction_command("pointerUp", current_x, current_y, 0),
       target_shared,
-      "pointerup",
       current_x,
       current_y,
-      0,
       button_state_remove(current_buttons, 0),
       pointer_type,
       false,
