@@ -1720,6 +1720,50 @@ fn Browser::dispatch_drag_event_to_source_id(
 }
 
 ///|
+fn is_drop_effect_compatible(effect_allowed : String, drop_effect : String) -> Bool {
+  let allowed = effect_allowed.to_lower()
+  let effect = drop_effect.to_lower()
+  if effect == "none" {
+    return false
+  }
+  match allowed {
+    "all" => true
+    "uninitialized" => true
+    "copy" => effect == "copy"
+    "copylink" => effect == "copy" || effect == "link"
+    "copymove" => effect == "copy" || effect == "move"
+    "link" => effect == "link"
+    "linkmove" => effect == "link" || effect == "move"
+    "move" => effect == "move"
+    _ => false
+  }
+}
+
+///|
+fn Browser::is_current_drop_allowed(self : Browser) -> Bool {
+  match self.execute_inline_js(
+    "(function(){const dt=globalThis.__craterDragDataTransfer||null;if(!dt){return 'none/none';}const allowed=String(dt.effectAllowed||'all').toLowerCase();let drop=String(dt.dropEffect||'none').toLowerCase();function fallbackDropEffect(v){switch(v){case 'copy':case 'copylink':case 'copymove':return 'copy';case 'link':case 'linkmove':return 'link';case 'move':return 'move';case 'all':case 'uninitialized':return 'copy';default:return 'none';}}if(drop==='none'){const fallback=fallbackDropEffect(allowed);if(fallback!=='none'){dt.dropEffect=fallback;drop=fallback;}}return allowed + '/' + drop;})()",
+  ) {
+    Some("none/none") => false
+    Some(state) => {
+      let slash = state.find("/")
+      match slash {
+        Some(idx) => {
+          let effect_allowed = state.unsafe_substring(start=0, end=idx).to_lower()
+          let drop_effect = state.unsafe_substring(
+            start=idx + 1,
+            end=state.length(),
+          ).to_lower()
+          is_drop_effect_compatible(effect_allowed, drop_effect)
+        }
+        None => false
+      }
+    }
+    None => false
+  }
+}
+
+///|
 fn Browser::dispatch_hover_transition(
   self : Browser,
   previous_source_id : String?,
@@ -2081,7 +2125,8 @@ pub async fn Browser::pointer_up_at(
       match drag_over_source_id {
         Some(target_id) if
           target_id != drag_id &&
-          drop_allowed_source_id == Some(target_id) =>
+          drop_allowed_source_id == Some(target_id) &&
+          self.is_current_drop_allowed() =>
           if self.dispatch_drag_event_to_source_id(
               target_id,
               "drop",
