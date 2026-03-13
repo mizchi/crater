@@ -10,10 +10,24 @@ interface BidiResponse {
   message?: string;
 }
 
+const SPECIAL_KEYS: Record<string, string> = {
+  Enter: "\uE006",
+  Tab: "\uE004",
+  Backspace: "\uE003",
+  Delete: "\uE017",
+  ArrowLeft: "\uE012",
+  ArrowRight: "\uE014",
+  ArrowUp: "\uE013",
+  ArrowDown: "\uE015",
+  Space: " ",
+};
+
 type PendingCommand = {
   resolve: (value: BidiResponse) => void;
   reject: (error: Error) => void;
 };
+
+const keyValue = (key: string): string => SPECIAL_KEYS[key] ?? key;
 
 export class CraterBidiPage {
   private ws: WebSocket | null = null;
@@ -81,25 +95,86 @@ export class CraterBidiPage {
   }
 
   async click(selector: string): Promise<void> {
-    await this.evaluate(`__click(${JSON.stringify(selector)})`);
+    const sharedId = await this.elementSharedId(selector);
+    await this.performPointer([
+      {
+        type: "pointerMove",
+        origin: { type: "element", element: { sharedId } },
+        x: 0,
+        y: 0,
+      },
+      { type: "pointerDown", button: 0 },
+      { type: "pointerUp", button: 0 },
+    ]);
   }
 
   async type(selector: string, text: string): Promise<void> {
-    await this.evaluate(`__type(${JSON.stringify(selector)}, ${JSON.stringify(text)})`, {
-      awaitPromise: true,
+    await this.click(selector);
+    const actions = [...text].flatMap((char) => {
+      const value = keyValue(char);
+      return [
+        { type: "keyDown", value },
+        { type: "keyUp", value },
+      ];
     });
+    await this.performKey(actions);
   }
 
   async check(selector: string): Promise<void> {
-    await this.evaluate(`__check(${JSON.stringify(selector)})`);
+    const checked = await this.evaluate<boolean>(`(() => {
+      const el = document.querySelector(${JSON.stringify(selector)});
+      return !!(el && el.checked);
+    })()`);
+    if (!checked) {
+      await this.click(selector);
+    }
   }
 
   async uncheck(selector: string): Promise<void> {
-    await this.evaluate(`__uncheck(${JSON.stringify(selector)})`);
+    const checked = await this.evaluate<boolean>(`(() => {
+      const el = document.querySelector(${JSON.stringify(selector)});
+      return !!(el && el.checked);
+    })()`);
+    if (checked) {
+      await this.click(selector);
+    }
   }
 
   async select(selector: string, value: string): Promise<void> {
-    await this.evaluate(`__select(${JSON.stringify(selector)}, ${JSON.stringify(value)})`);
+    const rawState = await this.evaluate<string | null>(`(() => {
+      const el = document.querySelector(${JSON.stringify(selector)});
+      if (!el) return null;
+      const options = Array.from(el.options || el.children || el._children || []).filter((option) => {
+        const tag = String(option?.tagName || option?.nodeName || "").toLowerCase();
+        return tag === "option";
+      });
+      return JSON.stringify({
+        selectedIndex: typeof el.selectedIndex === "number" ? el.selectedIndex : -1,
+        values: options.map((option) =>
+          String(option.value ?? option.getAttribute?.("value") ?? option.textContent ?? ""),
+        ),
+      });
+    })()`);
+    if (!rawState) {
+      throw new Error(`Element not found: ${selector}`);
+    }
+    const state = JSON.parse(rawState) as { selectedIndex: number; values: string[] };
+    const targetIndex = state.values.indexOf(value);
+    if (targetIndex < 0) {
+      throw new Error(`Option not found: ${value}`);
+    }
+    if (state.selectedIndex === targetIndex) {
+      return;
+    }
+    await this.click(selector);
+    const delta = targetIndex - state.selectedIndex;
+    const key = delta >= 0 ? "ArrowDown" : "ArrowUp";
+    const steps = Math.abs(delta);
+    const actions = Array.from({ length: steps }, () => [
+      { type: "keyDown", value: keyValue(key) },
+      { type: "keyUp", value: keyValue(key) },
+    ]).flat();
+    await this.performKey(actions);
   }
 
   async textContent(selector: string): Promise<string | null> {
@@ -137,6 +212,52 @@ export class CraterBidiPage {
       await new Promise((resolve) => setTimeout(resolve, 30));
     }
     throw new Error(`Timeout waiting for condition: ${expression}`);
+  }
+
+  private async elementSharedId(selector: string): Promise<string> {
+    const resp = await this.sendBidi("script.evaluate", {
+      expression: `document.querySelector(${JSON.stringify(selector)})`,
+      target: { context: this.requireContextId() },
+      awaitPromise: false,
+    });
+    if (resp.type === "error") {
+      throw new Error(resp.message || resp.error || `Failed to resolve ${selector}`);
+    }
+    const result = resp.result as {
+      result?: { type?: string; sharedId?: string; value?: unknown };
+    };
+    const sharedId = result.result?.sharedId;
+    if (!sharedId) {
+      throw new Error(`Element not found: ${selector}`);
+    }
+    return sharedId;
+  }
+
+  private async performPointer(actions: Array<Record<string, unknown>>): Promise<void> {
+    await this.sendBidi("input.performActions", {
+      context: this.requireContextId(),
+      actions: [
+        {
+          type: "pointer",
+          id: "mouse-0",
+          parameters: { pointerType: "mouse" },
+          actions,
+        },
+      ],
+    });
+  }
+
+  private async performKey(actions: Array<Record<string, string>>): Promise<void> {
+    await this.sendBidi("input.performActions", {
+      context: this.requireContextId(),
+      actions: [
+        {
+          type: "key",
+          id: "keyboard-0",
+          actions,
+        },
+      ],
+    });
   }
 
   private requireContextId(): string {

@@ -6375,6 +6375,70 @@ extern "js" fn js_input_dispatch_key_action(
   #|     const caret = start + String(insertText ?? "").length;
   #|     setSelection(caret, caret);
   #|   };
+  #|   const dispatchInputLike = (type, inputType, data) => {
+  #|     const event = globalThis.__bidiCreateEvent(type, {
+  #|       bubbles: true,
+  #|       cancelable: type === "beforeinput",
+  #|     });
+  #|     event.inputType = String(inputType || "");
+  #|     event.data = data == null ? null : String(data);
+  #|     return element.dispatchEvent(event);
+  #|   };
+  #|   const replaceSelectionWithEvents = (insertText, inputType) => {
+  #|     const textValue = String(insertText ?? "");
+  #|     if (!dispatchInputLike("beforeinput", inputType, textValue)) {
+  #|       return false;
+  #|     }
+  #|     replaceSelection(textValue);
+  #|     dispatchInputLike("input", inputType, textValue);
+  #|     return true;
+  #|   };
+  #|   const deleteSelectionWithEvents = (inputType, start, end) => {
+  #|     if (!dispatchInputLike("beforeinput", inputType, null)) {
+  #|       return false;
+  #|     }
+  #|     setSelection(start, end);
+  #|     replaceSelection("");
+  #|     dispatchInputLike("input", inputType, null);
+  #|     return true;
+  #|   };
+  #|   const tagName = String(element.tagName || element.nodeName || "").toLowerCase();
+  #|   const dispatchSimpleEvent = (type) => {
+  #|     const event = globalThis.__bidiCreateEvent(type, { bubbles: true, cancelable: false });
+  #|     return element.dispatchEvent(event);
+  #|   };
+  #|   const optionList = () => {
+  #|     if (Array.isArray(element.options)) return element.options;
+  #|     if (Array.isArray(element._children)) {
+  #|       return element._children.filter((child) => {
+  #|         const childTag = String(child && (child.tagName || child.nodeName) || "").toLowerCase();
+  #|         return childTag === "option";
+  #|       });
+  #|     }
+  #|     return [];
+  #|   };
+  #|   const syncSelectChoice = (nextIndex) => {
+  #|     const options = optionList();
+  #|     if (!options.length) return false;
+  #|     const safeIndex = Math.max(0, Math.min(options.length - 1, Number(nextIndex)));
+  #|     const currentIndex =
+  #|       typeof element.selectedIndex === "number"
+  #|         ? Number(element.selectedIndex)
+  #|         : options.findIndex((option) => !!option.selected);
+  #|     if (currentIndex === safeIndex) return false;
+  #|     options.forEach((option, index) => {
+  #|       option.selected = index === safeIndex;
+  #|     });
+  #|     element.selectedIndex = safeIndex;
+  #|     const selected = options[safeIndex];
+  #|     element.value =
+  #|       selected && selected.value != null && selected.value !== ""
+  #|         ? String(selected.value)
+  #|         : String((selected && selected.textContent) || "");
+  #|     dispatchSimpleEvent("input");
+  #|     dispatchSimpleEvent("change");
+  #|     return true;
+  #|   };
   #|
   #|   if (actionType === "keyDown") {
   #|     dispatchWithFallback("keydown");
@@ -6395,12 +6459,12 @@ extern "js" fn js_input_dispatch_key_action(
   #|     if (usesShortcut && lowerKey === "x") {
   #|       const { start, end, value } = getSelection();
   #|       globalThis.__bidiClipboardText = value.slice(start, end);
-  #|       replaceSelection("");
+  #|       deleteSelectionWithEvents("deleteByCut", start, end);
   #|       return;
   #|     }
   #|     if (usesShortcut && lowerKey === "v") {
   #|       const clip = typeof globalThis.__bidiClipboardText === "string" ? globalThis.__bidiClipboardText : "";
-  #|       replaceSelection(clip);
+  #|       replaceSelectionWithEvents(clip, "insertFromPaste");
   #|       return;
   #|     }
   #|     if (key === "ArrowRight") {
@@ -6413,23 +6477,41 @@ extern "js" fn js_input_dispatch_key_action(
   #|       }
   #|       return;
   #|     }
+  #|     if (tagName === "select" && (key === "ArrowDown" || key === "ArrowUp")) {
+  #|       const options = optionList();
+  #|       if (options.length > 0) {
+  #|         const currentIndex =
+  #|           typeof element.selectedIndex === "number"
+  #|             ? Number(element.selectedIndex)
+  #|             : options.findIndex((option) => !!option.selected);
+  #|         const baseIndex = currentIndex >= 0 ? currentIndex : -1;
+  #|         const delta = key === "ArrowDown" ? 1 : -1;
+  #|         syncSelectChoice(baseIndex + delta);
+  #|       }
+  #|       return;
+  #|     }
   #|     if (key === "Backspace") {
   #|       const { start, end, value } = getSelection();
   #|       if (start !== end) {
-  #|         replaceSelection("");
+  #|         deleteSelectionWithEvents("deleteContentBackward", start, end);
   #|       } else if (value.length > 0 && start > 0) {
-  #|         setSelection(start - 1, start);
-  #|         replaceSelection("");
+  #|         deleteSelectionWithEvents("deleteContentBackward", start - 1, start);
   #|       } else if (value.length > 0 && start === value.length) {
-  #|         setSelection(value.length - 1, value.length);
-  #|         replaceSelection("");
+  #|         deleteSelectionWithEvents("deleteContentBackward", value.length - 1, value.length);
+  #|       }
+  #|     } else if (key === "Delete") {
+  #|       const { start, end, value } = getSelection();
+  #|       if (start !== end) {
+  #|         deleteSelectionWithEvents("deleteContentForward", start, end);
+  #|       } else if (start < value.length) {
+  #|         deleteSelectionWithEvents("deleteContentForward", start, start + 1);
   #|       }
   #|     } else if (printable && text.length > 0 && !usesShortcut && !alt) {
   #|       let insertText = text;
   #|       if (shift && insertText.length === 1 && /^[a-z]$/.test(insertText)) {
   #|         insertText = insertText.toUpperCase();
   #|       }
-  #|       replaceSelection(insertText);
+  #|       replaceSelectionWithEvents(insertText, "insertText");
   #|       dispatchWithFallback("keypress");
   #|     }
   #|     return;
@@ -6563,10 +6645,88 @@ extern "js" fn js_input_dispatch_pointer_event(
   #|     try { target = doc.elementFromPoint(Number(x), Number(y)); } catch (_e) {}
   #|   }
   #|   const safeTarget = target || doc.body || doc.documentElement || doc;
+  #|   const isFocusable = (node) => {
+  #|     if (!node || typeof node !== "object") return false;
+  #|     const tag = String(node.tagName || node.nodeName || "").toLowerCase();
+  #|     if (["input", "textarea", "select", "button"].includes(tag)) return true;
+  #|     if (tag === "a") {
+  #|       try {
+  #|         return !!(typeof node.getAttribute === "function" ? node.getAttribute("href") : null);
+  #|       } catch (_e) {
+  #|         return false;
+  #|       }
+  #|     }
+  #|     try {
+  #|       if (Number(node.tabIndex) >= 0) return true;
+  #|     } catch (_e) {}
+  #|     return !!node.isContentEditable;
+  #|   };
+  #|   const focusTarget = () => {
+  #|     if (!isFocusable(safeTarget) || typeof safeTarget.focus !== "function") return;
+  #|     try { safeTarget.focus(); } catch (_e) {}
+  #|     try { globalThis.__bidiFocusedElement = safeTarget; } catch (_e) {}
+  #|   };
+  #|   const safeTagName = String(safeTarget.tagName || safeTarget.nodeName || "").toLowerCase();
+  #|   const safeInputType = () => {
+  #|     let raw = "";
+  #|     try {
+  #|       raw =
+  #|         safeTarget.type ||
+  #|         (typeof safeTarget.getAttribute === "function" ? safeTarget.getAttribute("type") : "") ||
+  #|         (safeTarget._attrs && safeTarget._attrs.type) ||
+  #|         "";
+  #|     } catch (_e) {}
+  #|     return String(raw || "").toLowerCase();
+  #|   };
+  #|   const dispatchSimpleTargetEvent = (type) => {
+  #|     if (!safeTarget || typeof safeTarget.dispatchEvent !== "function") return true;
+  #|     const event = globalThis.__bidiCreateEvent(type, { bubbles: true, cancelable: false });
+  #|     return safeTarget.dispatchEvent(event);
+  #|   };
+  #|   const applyClickDefaultAction = () => {
+  #|     if (safeTagName !== "input") return;
+  #|     const inputType = safeInputType();
+  #|     if (inputType === "checkbox") {
+  #|       safeTarget.checked = !safeTarget.checked;
+  #|       dispatchSimpleTargetEvent("input");
+  #|       dispatchSimpleTargetEvent("change");
+  #|       return;
+  #|     }
+  #|     if (inputType === "radio") {
+  #|       if (safeTarget.checked) return;
+  #|       const name =
+  #|         (typeof safeTarget.getAttribute === "function" ? safeTarget.getAttribute("name") : null) ||
+  #|         safeTarget.name ||
+  #|         "";
+  #|       if (name && doc && typeof doc.querySelectorAll === "function") {
+  #|         try {
+  #|           for (const radio of Array.from(doc.querySelectorAll('input[type=\"radio\"]'))) {
+  #|             const radioName =
+  #|               (typeof radio.getAttribute === "function" ? radio.getAttribute("name") : null) ||
+  #|               radio.name ||
+  #|               "";
+  #|             if (radioName === name) {
+  #|               radio.checked = false;
+  #|             }
+  #|           }
+  #|         } catch (_e) {}
+  #|       }
+  #|       safeTarget.checked = true;
+  #|       dispatchSimpleTargetEvent("input");
+  #|       dispatchSimpleTargetEvent("change");
+  #|     }
+  #|   };
   #|   if (doc && typeof doc.getSelection !== "function") {
   #|     doc.getSelection = () => ({
   #|       toString: () => String(globalThis.__bidiSelectionText || ""),
   #|     });
+  #|   }
+  #|   if (
+  #|     eventType === "pointerdown" ||
+  #|     eventType === "mousedown" ||
+  #|     eventType === "click"
+  #|   ) {
+  #|     focusTarget();
   #|   }
   #|   if (eventType === "click") {
   #|     const now = Date.now();
@@ -6767,9 +6927,13 @@ extern "js" fn js_input_dispatch_pointer_event(
   #|   } else if (globalThis.window && typeof globalThis.window.dispatchEvent === "function") {
   #|     dispatchTarget = globalThis.window;
   #|   }
+  #|   let dispatchAllowed = true;
   #|   if (dispatchTarget) {
   #|     const event = createSyntheticEvent(dispatchTarget);
-  #|     dispatchTarget.dispatchEvent(event);
+  #|     dispatchAllowed = dispatchTarget.dispatchEvent(event) !== false;
+  #|   }
+  #|   if (eventType === "click" && dispatchAllowed) {
+  #|     applyClickDefaultAction();
   #|   }
   #|   if (
   #|     hadAllEvents &&
