@@ -530,7 +530,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       return target._listeners;
   #|     }
   #|     const _persistedListenerAttrPrefix = 'data-crater-listeners-';
-  #|     const _persistedListenerTypes = ['click', 'input', 'change', 'submit', 'keydown', 'keypress', 'keyup', 'focus', 'blur', 'focusin', 'focusout'];
+  #|     const _persistedListenerTypes = ['click', 'input', 'change', 'submit', 'keydown', 'keypress', 'keyup', 'focus', 'blur', 'focusin', 'focusout', 'pointerdown', 'pointermove', 'pointerup', 'compositionstart', 'compositionupdate', 'compositionend'];
   #|     function _shouldPersistListener(target, eventType, listener) {
   #|       return _persistedListenerTypes.includes(eventType) &&
   #|         target &&
@@ -6218,6 +6218,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           'messageevent': MessageEvent,
   #|           'mouseevent': MouseEvent,
   #|           'mouseevents': MouseEvent,
+  #|           'pointerevent': PointerEvent,
   #|           'storageevent': StorageEvent,
   #|           'svgevents': Event,
   #|           'textevent': TextEvent,
@@ -6641,7 +6642,27 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|     }
   #|     class FocusEvent extends UIEvent {}
   #|     class KeyboardEvent extends UIEvent {}
-  #|     class CompositionEvent extends UIEvent {}
+  #|     class PointerEvent extends MouseEvent {
+  #|       constructor(type, options) {
+  #|         options = options || {};
+  #|         super(type, options);
+  #|         this.pointerId = options.pointerId || 0;
+  #|         this.width = options.width || 1;
+  #|         this.height = options.height || 1;
+  #|         this.pressure = options.pressure || 0;
+  #|         this.tiltX = options.tiltX || 0;
+  #|         this.tiltY = options.tiltY || 0;
+  #|         this.pointerType = options.pointerType || '';
+  #|         this.isPrimary = options.isPrimary !== undefined ? !!options.isPrimary : true;
+  #|       }
+  #|     }
+  #|     class CompositionEvent extends UIEvent {
+  #|       constructor(type, options) {
+  #|         options = options || {};
+  #|         super(type, options);
+  #|         this.data = options.data || '';
+  #|       }
+  #|     }
   #|     class CustomEvent extends Event {
   #|       constructor(type, options) {
   #|         options = options || {};
@@ -6710,6 +6731,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       Event: Event,
   #|       UIEvent: UIEvent,
   #|       MouseEvent: MouseEvent,
+  #|       PointerEvent: PointerEvent,
   #|       FocusEvent: FocusEvent,
   #|       KeyboardEvent: KeyboardEvent,
   #|       CompositionEvent: CompositionEvent,

@@ -3321,6 +3321,86 @@ test "persisted focus-family listeners survive later execution" {
 }
 
 ///|
+test "persisted composition listeners survive later execution" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let setup =
+    #|const field = document.createElement('input');
+    #|field.id = 'field';
+    #|document.body.appendChild(field);
+    #|for (const type of ['compositionstart', 'compositionupdate', 'compositionend']) {
+    #|  field.addEventListener(type, function (event) {
+    #|    const current = document.body.getAttribute('data-status') || '';
+    #|    const suffix = type + ':' + String(event.data || '');
+    #|    document.body.setAttribute('data-status', current ? current + '|' + suffix : suffix);
+    #|  });
+    #|}
+    #|'ok'
+  let setup_result = ctx.execute(setup)
+  inspect(setup_result.success, content="true")
+
+  let run =
+    #|(function () {
+    #|  const field = document.getElementById('field');
+    #|  field.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true, data: 'a' }));
+    #|  field.dispatchEvent(new CompositionEvent('compositionupdate', { bubbles: true, data: 'ab' }));
+    #|  field.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: 'ab' }));
+    #|  return document.body.getAttribute('data-status');
+    #|})()
+  let run_result = ctx.execute(run)
+  inspect(run_result.success, content="true")
+  inspect(
+    run_result.value,
+    content="compositionstart:a|compositionupdate:ab|compositionend:ab",
+  )
+}
+
+///|
+test "persisted pointer listeners survive later execution" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let setup =
+    #|const btn = document.createElement('button');
+    #|btn.id = 'btn';
+    #|document.body.appendChild(btn);
+    #|for (const type of ['pointerdown', 'pointermove', 'pointerup']) {
+    #|  btn.addEventListener(type, function (event) {
+    #|    const current = document.body.getAttribute('data-status') || '';
+    #|    const suffix = type + ':' + String(event.pointerId) + ':' + String(event.clientX);
+    #|    document.body.setAttribute('data-status', current ? current + '|' + suffix : suffix);
+    #|  });
+    #|}
+    #|'ok'
+  let setup_result = ctx.execute(setup)
+  inspect(setup_result.success, content="true")
+
+  let run =
+    #|(function () {
+    #|  const btn = document.getElementById('btn');
+    #|  btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 7, clientX: 10 }));
+    #|  btn.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerId: 7, clientX: 11 }));
+    #|  btn.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 7, clientX: 12 }));
+    #|  return document.body.getAttribute('data-status');
+    #|})()
+  let run_result = ctx.execute(run)
+  inspect(run_result.success, content="true")
+  inspect(
+    run_result.value,
+    content="pointerdown:7:10|pointermove:7:11|pointerup:7:12",
+  )
+}
+
+///|
 test "fetch: Response has required methods" {
   let dom = @dom.DomTree::new()
   let ctx = JsContext::new(dom)
