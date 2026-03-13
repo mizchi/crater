@@ -205,6 +205,62 @@ test.describe("Browser user scenarios", () => {
     await page.waitForText("#status", "Saved newsletter:on theme:dark");
   });
 
+  test("hover flow: move pointer in and out of a card", async () => {
+    await page.setContentWithScripts(`
+      <html>
+        <body>
+          <div id="card-a" style="width: 120px; height: 40px;">Alpha</div>
+          <div id="outside" style="width: 120px; height: 40px; margin-top: 16px;">Outside</div>
+          <div id="preview">hidden</div>
+          <script>
+            const card = document.getElementById('card-a');
+            const preview = document.getElementById('preview');
+            card.addEventListener('pointerenter', () => {
+              preview.textContent = 'preview:Alpha';
+            });
+            card.addEventListener('pointerleave', () => {
+              preview.textContent = 'hidden';
+            });
+          </script>
+        </body>
+      </html>
+    `);
+
+    await page.hover("#card-a");
+    await page.waitForText("#preview", "preview:Alpha");
+
+    await page.hover("#outside");
+    await page.waitForText("#preview", "hidden");
+  });
+
+  test("guarded input flow: beforeinput blocks digits and spaces", async () => {
+    await page.setContentWithScripts(`
+      <html>
+        <body>
+          <input id="username" type="text" />
+          <div id="preview"></div>
+          <script>
+            const input = document.getElementById('username');
+            const preview = document.getElementById('preview');
+            const render = () => {
+              preview.textContent = input.value || 'empty';
+            };
+            input.addEventListener('beforeinput', (event) => {
+              if (/\\d|\\s/.test(event.data || '')) {
+                event.preventDefault();
+              }
+            });
+            input.addEventListener('input', render);
+            render();
+          </script>
+        </body>
+      </html>
+    `);
+
+    await page.type("#username", "ab1 c");
+    await page.waitForText("#preview", "abc");
+  });
+
   test("editor flow: selection replacement and deletion update preview", async () => {
     await page.setContentWithScripts(`
       <html>

@@ -108,6 +108,18 @@ export class CraterBidiPage {
     ]);
   }
 
+  async hover(selector: string): Promise<void> {
+    const sharedId = await this.elementSharedId(selector);
+    await this.performPointer([
+      {
+        type: "pointerMove",
+        origin: { type: "element", element: { sharedId } },
+        x: 0,
+        y: 0,
+      },
+    ]);
+  }
+
   async type(selector: string, text: string): Promise<void> {
     await this.click(selector);
     const actions = [...text].flatMap((char) => {

@@ -9882,6 +9882,9 @@ fn BidiProtocol::handle_input_perform_actions(
               ) {
               return false
             }
+            let previous_target_shared = self.input_pointer_target_shared
+              .get(ctx_id)
+              .unwrap_or("")
             self.input_pointer_x[ctx_id] = final_x
             self.input_pointer_y[ctx_id] = final_y
             self.input_pointer_target_shared[ctx_id] = target_shared
@@ -9953,8 +9956,16 @@ fn BidiProtocol::handle_input_perform_actions(
             let should_emit_move = pointer_type == "mouse" ||
               button_state_contains(buttons, button_to_mask(0))
             if should_emit_move {
-              self.dispatch_interaction_pointer_sequence(
-                @interaction.pointer_move_event_sequence(pointer_type),
+              self.dispatch_interaction_hover_sequence(
+                @interaction.pointer_hover_event_sequence(
+                  pointer_type,
+                  previous_target_shared != "" &&
+                  previous_target_shared != target_shared,
+                  target_shared != "" &&
+                  previous_target_shared != target_shared,
+                  target_shared != "",
+                ),
+                previous_target_shared,
                 target_shared,
                 final_x,
                 final_y,

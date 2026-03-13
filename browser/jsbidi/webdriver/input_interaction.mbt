@@ -120,3 +120,43 @@ fn BidiProtocol::dispatch_interaction_pointer_sequence(
     )
   }
 }
+
+///|
+fn BidiProtocol::dispatch_interaction_hover_sequence(
+  self : BidiProtocol,
+  events : Array[@interaction.HoverDispatchEvent],
+  previous_target_shared : String,
+  current_target_shared : String,
+  x : Double,
+  y : Double,
+  buttons : Int,
+  pointer_type : String,
+  ctrl : Bool,
+  alt : Bool,
+  shift : Bool,
+  meta : Bool,
+) -> Unit {
+  let _ = self
+  for event in events {
+    let target_shared = match event.target {
+      @interaction.HoverPreviousTarget => previous_target_shared
+      @interaction.HoverCurrentTarget => current_target_shared
+    }
+    if target_shared == "" {
+      continue
+    }
+    input_dispatch_pointer_event(
+      target_shared,
+      event.event_type,
+      x,
+      y,
+      event.button,
+      buttons,
+      pointer_type,
+      ctrl,
+      alt,
+      shift,
+      meta,
+    )
+  }
+}

@@ -1763,7 +1763,7 @@ test "bidi input pointer actions record click event" {
   let json = msgs[0].to_json()
   assert_true(
     json.contains(
-      "\"value\":\"[\\\"pointermove\\\",\\\"mousemove\\\",\\\"pointerdown\\\",\\\"mousedown\\\",\\\"pointerup\\\",\\\"mouseup\\\",\\\"click\\\"]\"",
+      "\"value\":\"[\\\"pointerover\\\",\\\"mouseover\\\",\\\"pointerenter\\\",\\\"mouseenter\\\",\\\"pointermove\\\",\\\"mousemove\\\",\\\"pointerdown\\\",\\\"mousedown\\\",\\\"pointerup\\\",\\\"mouseup\\\",\\\"click\\\"]\"",
     ),
   )
 }

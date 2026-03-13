@@ -160,6 +160,9 @@ test "pointer event sequence helpers preserve browser-style ordering" {
   inspect(
     (
       pointer_dispatch_event_names(pointer_move_event_sequence("mouse")),
+      hover_dispatch_event_labels(
+        pointer_hover_event_sequence("mouse", true, true, true),
+      ),
       pointer_dispatch_event_names(pointer_press_event_sequence("touch", 0)),
       pointer_dispatch_event_names(pointer_release_event_sequence("mouse", 0)),
       pointer_dispatch_event_names(
@@ -169,8 +172,23 @@ test "pointer event sequence helpers preserve browser-style ordering" {
         pointer_post_release_mouse_event_sequence(2, true, false, false),
       ),
     ),
-    content="([\"pointermove\", \"mousemove\"], [\"pointerover\", \"pointerenter\", \"pointerdown\", \"mousedown\"], [\"pointerup\"], [\"mouseup\", \"click\", \"dblclick\"], [\"contextmenu\", \"mouseup\"])",
+    content="([\"pointermove\", \"mousemove\"], [\"PreviousTarget:pointerout\", \"PreviousTarget:mouseout\", \"PreviousTarget:pointerleave\", \"PreviousTarget:mouseleave\", \"CurrentTarget:pointerover\", \"CurrentTarget:mouseover\", \"CurrentTarget:pointerenter\", \"CurrentTarget:mouseenter\", \"CurrentTarget:pointermove\", \"CurrentTarget:mousemove\"], [\"pointerover\", \"pointerenter\", \"pointerdown\", \"mousedown\"], [\"pointerup\"], [\"mouseup\", \"click\", \"dblclick\"], [\"contextmenu\", \"mouseup\"])",
   )
+}
+
+///|
+fn hover_dispatch_event_labels(
+  events : Array[HoverDispatchEvent],
+) -> Array[String] {
+  let labels : Array[String] = []
+  for event in events {
+    let prefix = match event.target {
+      HoverPreviousTarget => "PreviousTarget"
+      HoverCurrentTarget => "CurrentTarget"
+    }
+    labels.push(prefix + ":" + event.event_type)
+  }
+  labels
 }
 
 ///|
