@@ -267,10 +267,20 @@ async test "fixture Tab blur/focus dispatches change blur and focus repaint" {
     #|      const current = status.textContent || '';
     #|      status.textContent = current === 'before' ? 'blur' : current + '|blur';
     #|    });
+    #|    document.getElementById('field').addEventListener('focusout', function () {
+    #|      const status = document.getElementById('status');
+    #|      const current = status.textContent || '';
+    #|      status.textContent = current === 'before' ? 'focusout' : current + '|focusout';
+    #|    });
     #|    document.getElementById('btn').addEventListener('focus', function () {
     #|      const status = document.getElementById('status');
     #|      const current = status.textContent || '';
     #|      status.textContent = current === 'before' ? 'focus' : current + '|focus';
+    #|    });
+    #|    document.getElementById('btn').addEventListener('focusin', function () {
+    #|      const status = document.getElementById('status');
+    #|      const current = status.textContent || '';
+    #|      status.textContent = current === 'before' ? 'focusin' : current + '|focusin';
     #|    });
     #|  </script>
     #|</body>
@@ -279,11 +289,15 @@ async test "fixture Tab blur/focus dispatches change blur and focus repaint" {
   browser.set_enable_js(true)
   let _ = browser.execute_scripts()
   let _ = browser.render_output(Text)
+  let persisted = browser.execute_inline_js(
+    "(function(){ const field=document.getElementById('field'); const btn=document.getElementById('btn'); return [String(!!(field&&field.getAttribute('data-crater-listeners-blur'))), String(!!(field&&field.getAttribute('data-crater-listeners-focusout'))), String(!!(btn&&btn.getAttribute('data-crater-listeners-focus'))), String(!!(btn&&btn.getAttribute('data-crater-listeners-focusin')))].join('|'); })()",
+  )
+  inspect(persisted, content="Some(\"true|true|true|true\")")
   browser.next_link()
   let _ = browser.handle_focused_key("x") catch { _ => false }
   browser.next_link()
   let rendered = browser.render_output(Text)
-  assert_true(rendered.contains("change:x|blur|focus"))
+  assert_true(rendered.contains("change:x|blur|focusout|focus|focusin"))
 }
 
 ///|

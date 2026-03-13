@@ -1668,10 +1668,20 @@ async test "Browser focus transition dispatches change blur and focus" {
     #|      const current = log.textContent || '';
     #|      log.textContent = current ? current + '|blur' : 'blur';
     #|    });
+    #|    field.addEventListener('focusout', function () {
+    #|      const log = document.getElementById('log');
+    #|      const current = log.textContent || '';
+    #|      log.textContent = current ? current + '|focusout' : 'focusout';
+    #|    });
     #|    btn.addEventListener('focus', function () {
     #|      const log = document.getElementById('log');
     #|      const current = log.textContent || '';
     #|      log.textContent = current ? current + '|focus' : 'focus';
+    #|    });
+    #|    btn.addEventListener('focusin', function () {
+    #|      const log = document.getElementById('log');
+    #|      const current = log.textContent || '';
+    #|      log.textContent = current ? current + '|focusin' : 'focusin';
     #|    });
     #|  </script>
     #|</body>
@@ -1693,9 +1703,9 @@ async test "Browser focus transition dispatches change blur and focus" {
     },
   )
   let persisted = browser.execute_inline_js(
-    "(function(){ const field=document.getElementById('field'); const btn=document.getElementById('btn'); return [String(!!(field&&field.getAttribute('data-crater-listeners-change'))), String(!!(field&&field.getAttribute('data-crater-listeners-blur'))), String(!!(btn&&btn.getAttribute('data-crater-listeners-focus')))].join('|'); })()",
+    "(function(){ const field=document.getElementById('field'); const btn=document.getElementById('btn'); return [String(!!(field&&field.getAttribute('data-crater-listeners-change'))), String(!!(field&&field.getAttribute('data-crater-listeners-blur'))), String(!!(field&&field.getAttribute('data-crater-listeners-focusout'))), String(!!(btn&&btn.getAttribute('data-crater-listeners-focus'))), String(!!(btn&&btn.getAttribute('data-crater-listeners-focusin')))].join('|'); })()",
   )
-  inspect(persisted, content="Some(\"true|true|true\")")
+  inspect(persisted, content="Some(\"true|true|true|true|true\")")
   browser.next_link()
   let after_focus = browser.get_focused_source_id()
   assert_true(
@@ -1709,7 +1719,7 @@ async test "Browser focus transition dispatches change blur and focus" {
   let log = browser.execute_inline_js(
     "(function(){ return document.getElementById('log').textContent; })()",
   )
-  inspect(log, content="Some(\"change:x|blur|focus\")")
+  inspect(log, content="Some(\"change:x|blur|focusout|focus|focusin\")")
 }
 
 ///|

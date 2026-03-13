@@ -3274,6 +3274,53 @@ test "persisted keyup listener survives later execution" {
 }
 
 ///|
+test "persisted focus-family listeners survive later execution" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let setup =
+    #|const field = document.createElement('input');
+    #|field.id = 'field';
+    #|const btn = document.createElement('button');
+    #|btn.id = 'btn';
+    #|document.body.appendChild(field);
+    #|document.body.appendChild(btn);
+    #|field.addEventListener('blur', function () {
+    #|  document.body.setAttribute('data-status', (document.body.getAttribute('data-status') || '') + '|blur');
+    #|});
+    #|field.addEventListener('focusout', function () {
+    #|  document.body.setAttribute('data-status', (document.body.getAttribute('data-status') || '') + '|focusout');
+    #|});
+    #|btn.addEventListener('focus', function () {
+    #|  document.body.setAttribute('data-status', (document.body.getAttribute('data-status') || '') + '|focus');
+    #|});
+    #|btn.addEventListener('focusin', function () {
+    #|  document.body.setAttribute('data-status', (document.body.getAttribute('data-status') || '') + '|focusin');
+    #|});
+    #|'ok'
+  let setup_result = ctx.execute(setup)
+  inspect(setup_result.success, content="true")
+
+  let run =
+    #|(function () {
+    #|  const field = document.getElementById('field');
+    #|  const btn = document.getElementById('btn');
+    #|  field.dispatchEvent(new Event('blur'));
+    #|  field.dispatchEvent(new Event('focusout', { bubbles: true }));
+    #|  btn.dispatchEvent(new Event('focus'));
+    #|  btn.dispatchEvent(new Event('focusin', { bubbles: true }));
+    #|  return document.body.getAttribute('data-status');
+    #|})()
+  let run_result = ctx.execute(run)
+  inspect(run_result.success, content="true")
+  inspect(run_result.value, content="|blur|focusout|focus|focusin")
+}
+
+///|
 test "fetch: Response has required methods" {
   let dom = @dom.DomTree::new()
   let ctx = JsContext::new(dom)

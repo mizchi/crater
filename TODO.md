@@ -509,7 +509,7 @@
   - `MutationObserver-*` は WPT green
 - event/listener:
   - `onclick` attribute
-  - `addEventListener("click" | "input" | "change" | "submit" | "keydown" | "keypress" | "keyup", ...)`
+  - `addEventListener("click" | "input" | "change" | "submit" | "keydown" | "keypress" | "keyup" | "focus" | "blur" | "focusin" | "focusout", ...)`
   - listener は DOM 再実行を跨いで persisted restore
 - browser shell default action:
   - `Tab` focus 移動
@@ -537,7 +537,8 @@
     `fixture requestAnimationFrame advances across browser ticks`
     で `click -> tick -> tick` の段階描画を固定
 - [ ] event persistence の一般化
-  - 今は `click/input/change/submit/keydown/keypress/keyup` に限定
+  - 今は `click/input/change/submit/keydown/keypress/keyup/focus/blur/focusin/focusout` まで
+  - `pointer*` / `composition*` / drag 系は未対応
 - [ ] visual hit-test の厳密化
   - `pointer-events` は `none` のみ
   - complex transform / shape / clip-path / pixel-perfect hit-test は未対応
