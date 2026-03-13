@@ -21,6 +21,16 @@ pub async fn dispatch_command(@shell.Browser, InteractionCommand) -> DispatchEff
 
 pub async fn dispatch_key(@shell.Browser, String) -> DispatchEffect raise @http.HttpError
 
+pub fn drag_accept_target(String, String, Bool) -> String
+
+pub fn drag_dispatch_event_labels(Array[DragDispatchEvent]) -> Array[String]
+
+pub fn drag_drop_target(String, String, String) -> String
+
+pub fn drag_move_event_sequence(emit_dragstart? : Bool, emit_dragleave? : Bool, emit_dragenter? : Bool, emit_dragover? : Bool) -> Array[DragDispatchEvent]
+
+pub fn drag_release_event_sequence(emit_drop? : Bool) -> Array[DragDispatchEvent]
+
 pub fn key_down_command(String) -> InteractionCommand
 
 pub fn key_up_command(String) -> InteractionCommand
@@ -60,6 +70,17 @@ pub enum DispatchEffect {
   Quit
   PromptUrl
   SelectionModeChanged(Bool)
+}
+
+pub struct DragDispatchEvent {
+  event_type : String
+  target : DragDispatchTarget
+}
+
+pub enum DragDispatchTarget {
+  Source
+  PreviousTarget
+  CurrentTarget
 }
 
 pub enum InteractionCommand {

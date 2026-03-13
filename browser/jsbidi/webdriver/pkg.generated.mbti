@@ -35,6 +35,8 @@ pub fn get_runtime_inline_navigation_url(String) -> String?
 
 pub fn get_runtime_last_click_href() -> String?
 
+pub fn get_runtime_shared_node_at_point(Double, Double) -> String?
+
 pub fn get_runtime_shared_node_center_json(String) -> String
 
 pub fn get_runtime_shared_node_href(String) -> String?
@@ -67,7 +69,11 @@ pub fn has_runtime_shared_node(String) -> Bool
 
 pub fn init_quickjs() -> @core.Any
 
+pub fn input_clear_drag_transfer(String) -> Unit
+
 pub fn input_clear_pointer_event_properties() -> Unit
+
+pub fn input_dispatch_drag_event(String, String, Double, Double, Int, Int, String, Bool, Bool, Bool, Bool, String, String) -> Bool
 
 pub fn input_dispatch_key_action(String, String, Bool, Bool, Bool, Bool) -> Unit
 

@@ -14,6 +14,19 @@ pub struct PointerDispatchEvent {
 }
 
 ///|
+pub enum DragDispatchTarget {
+  Source
+  PreviousTarget
+  CurrentTarget
+}
+
+///|
+pub struct DragDispatchEvent {
+  event_type : String
+  target : DragDispatchTarget
+}
+
+///|
 pub enum InteractionCommand {
   IdleTick
   FocusedKey(String)
@@ -154,6 +167,86 @@ pub fn pointer_dispatch_event_names(
     names.push(event.event_type)
   }
   names
+}
+
+///|
+pub fn drag_move_event_sequence(
+  emit_dragstart? : Bool = false,
+  emit_dragleave? : Bool = false,
+  emit_dragenter? : Bool = false,
+  emit_dragover? : Bool = false,
+) -> Array[DragDispatchEvent] {
+  let events : Array[DragDispatchEvent] = []
+  if emit_dragstart {
+    events.push({ event_type: "dragstart", target: Source })
+  }
+  events.push({ event_type: "drag", target: Source })
+  if emit_dragleave {
+    events.push({ event_type: "dragleave", target: PreviousTarget })
+  }
+  if emit_dragenter {
+    events.push({ event_type: "dragenter", target: CurrentTarget })
+  }
+  if emit_dragover {
+    events.push({ event_type: "dragover", target: CurrentTarget })
+  }
+  events
+}
+
+///|
+pub fn drag_release_event_sequence(
+  emit_drop? : Bool = false,
+) -> Array[DragDispatchEvent] {
+  let events : Array[DragDispatchEvent] = []
+  if emit_drop {
+    events.push({ event_type: "drop", target: CurrentTarget })
+  }
+  events.push({ event_type: "dragend", target: Source })
+  events
+}
+
+///|
+pub fn drag_accept_target(
+  drag_source : String,
+  drag_target : String,
+  dragover_prevented : Bool,
+) -> String {
+  if dragover_prevented && drag_target != "" && drag_target != drag_source {
+    drag_target
+  } else {
+    ""
+  }
+}
+
+///|
+pub fn drag_drop_target(
+  drag_source : String,
+  drag_over_target : String,
+  accepted_target : String,
+) -> String {
+  if drag_over_target != "" &&
+    accepted_target == drag_over_target &&
+    drag_over_target != drag_source {
+    drag_over_target
+  } else {
+    ""
+  }
+}
+
+///|
+pub fn drag_dispatch_event_labels(
+  events : Array[DragDispatchEvent],
+) -> Array[String] {
+  let labels : Array[String] = []
+  for event in events {
+    let target = match event.target {
+      Source => "Source"
+      PreviousTarget => "PreviousTarget"
+      CurrentTarget => "CurrentTarget"
+    }
+    labels.push(target + ":" + event.event_type)
+  }
+  labels
 }
 
 ///|

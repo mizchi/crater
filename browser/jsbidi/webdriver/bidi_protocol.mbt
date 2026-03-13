@@ -213,6 +213,9 @@ priv struct BidiProtocol {
   input_pointer_dragged : Map[String, Bool] // context -> whether pointer moved while primary button pressed
   input_html_drag_source_shared : Map[String, String] // context -> active HTML draggable source sharedId
   input_html_drag_active : Map[String, Bool] // context -> whether dragstart has been emitted
+  input_html_drag_over_shared : Map[String, String] // context -> current dragover target sharedId
+  input_html_drag_accept_shared : Map[String, String] // context -> dragover target that accepted drop
+  input_html_drag_transfer_id : Map[String, String] // context -> shared synthetic DataTransfer key
   input_last_click_time : Map[String, Double] // context -> timestamp of last primary click release
   input_last_click_x : Map[String, Double] // context -> x of last primary click release
   input_last_click_y : Map[String, Double] // context -> y of last primary click release
@@ -387,6 +390,9 @@ fn BidiProtocol::new() -> BidiProtocol {
     input_pointer_dragged: {},
     input_html_drag_source_shared: {},
     input_html_drag_active: {},
+    input_html_drag_over_shared: {},
+    input_html_drag_accept_shared: {},
+    input_html_drag_transfer_id: {},
     input_last_click_time: {},
     input_last_click_x: {},
     input_last_click_y: {},
@@ -1185,6 +1191,34 @@ fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
   }
   for key in input_html_drag_active_keys {
     self.input_html_drag_active.remove(key)
+  }
+
+  let input_html_drag_over_keys : Array[String] = []
+  for key, _ in self.input_html_drag_over_shared {
+    input_html_drag_over_keys.push(key)
+  }
+  for key in input_html_drag_over_keys {
+    self.input_html_drag_over_shared.remove(key)
+  }
+
+  let input_html_drag_accept_keys : Array[String] = []
+  for key, _ in self.input_html_drag_accept_shared {
+    input_html_drag_accept_keys.push(key)
+  }
+  for key in input_html_drag_accept_keys {
+    self.input_html_drag_accept_shared.remove(key)
+  }
+
+  let input_html_drag_transfer_keys : Array[String] = []
+  for key, _ in self.input_html_drag_transfer_id {
+    input_html_drag_transfer_keys.push(key)
+  }
+  for key in input_html_drag_transfer_keys {
+    let transfer_id = self.input_html_drag_transfer_id.get(key).unwrap_or("")
+    if transfer_id != "" {
+      input_clear_drag_transfer(transfer_id)
+    }
+    self.input_html_drag_transfer_id.remove(key)
   }
 
   let input_last_click_time_keys : Array[String] = []
@@ -9824,7 +9858,7 @@ fn BidiProtocol::handle_input_perform_actions(
               .get(ctx_id)
               .unwrap_or(0.0) +
               move_duration_ms.to_double()
-            let (final_x, final_y, target_shared) = match
+            let (final_x, final_y, origin_target_shared) = match
               self.resolve_pointer_origin(
                 request_id,
                 ctx_id,
@@ -9835,6 +9869,11 @@ fn BidiProtocol::handle_input_perform_actions(
               ) {
               Some(resolved) => resolved
               None => return false
+            }
+            let target_shared = if origin_target_shared != "" {
+              origin_target_shared
+            } else {
+              get_runtime_shared_node_at_point(final_x, final_y).unwrap_or("")
             }
             if not(
                 self.ensure_pointer_within_viewport(
@@ -9928,36 +9967,110 @@ fn BidiProtocol::handle_input_perform_actions(
               )
             }
             if button_state_contains(buttons, button_to_mask(0)) {
-              let drag_source = self.input_html_drag_source_shared
+              let drag_origin_x = self.input_pointer_down_x
                 .get(ctx_id)
-                .unwrap_or("")
+                .unwrap_or(final_x)
+              let drag_origin_y = self.input_pointer_down_y
+                .get(ctx_id)
+                .unwrap_or(final_y)
+              let drag_source = self.input_pointer_down_target_shared
+                .get(ctx_id)
+                .unwrap_or(
+                  self.input_html_drag_source_shared.get(ctx_id).unwrap_or(""),
+                )
+              let drag_source = if drag_source != "" &&
+                has_runtime_shared_node(drag_source) {
+                drag_source
+              } else {
+                get_runtime_shared_node_at_point(drag_origin_x, drag_origin_y).unwrap_or(
+                  drag_source,
+                )
+              }
               if drag_source != "" {
-                if not(self.input_html_drag_active.get(ctx_id).unwrap_or(false)) {
-                  input_dispatch_pointer_event(
-                    drag_source, "dragstart", final_x, final_y, 0, buttons, pointer_type,
-                    ctrl, alt, shift, meta,
-                  )
-                  self.input_html_drag_active[ctx_id] = true
-                }
+                self.input_html_drag_source_shared[ctx_id] = drag_source
+              }
+              if drag_source != "" {
+                let drag_active = self.input_html_drag_active
+                  .get(ctx_id)
+                  .unwrap_or(false)
+                let previous_drag_target = self.input_html_drag_over_shared
+                  .get(ctx_id)
+                  .unwrap_or("")
                 let drag_target = if target_shared != "" {
                   target_shared
                 } else {
                   drag_source
                 }
-                input_dispatch_pointer_event(
-                  drag_target, "dragenter", final_x, final_y, 0, buttons, pointer_type,
-                  ctrl, alt, shift, meta,
-                )
-                if move_duration_ms > 0 {
-                  input_dispatch_pointer_event(
-                    drag_target, "dragleave", final_x, final_y, 0, buttons, pointer_type,
-                    ctrl, alt, shift, meta,
+                let emit_dragleave = previous_drag_target != "" &&
+                  previous_drag_target != drag_target &&
+                  previous_drag_target != drag_source
+                let emit_dragenter = drag_target != "" &&
+                  drag_target != previous_drag_target &&
+                  drag_target != drag_source
+                let emit_dragover = drag_target != "" &&
+                  drag_target != drag_source
+                let drag_transfer_id = self.input_html_drag_transfer_id
+                  .get(ctx_id)
+                  .unwrap_or("")
+                let mut dragover_prevented = false
+                for
+                  event in @interaction.drag_move_event_sequence(
+                    emit_dragstart=not(drag_active),
+                    emit_dragleave~,
+                    emit_dragenter~,
+                    emit_dragover~,
+                  ) {
+                  let dispatch_target = match event.target {
+                    @interaction.Source => drag_source
+                    @interaction.PreviousTarget => previous_drag_target
+                    @interaction.CurrentTarget => drag_target
+                  }
+                  if dispatch_target == "" {
+                    continue
+                  }
+                  let related_target = match event.target {
+                    @interaction.Source => drag_target
+                    @interaction.PreviousTarget => drag_target
+                    @interaction.CurrentTarget =>
+                      if previous_drag_target != "" {
+                        previous_drag_target
+                      } else {
+                        drag_source
+                      }
+                  }
+                  let prevented = input_dispatch_drag_event(
+                    dispatch_target,
+                    event.event_type,
+                    final_x,
+                    final_y,
+                    0,
+                    buttons,
+                    pointer_type,
+                    ctrl,
+                    alt,
+                    shift,
+                    meta,
+                    related_target,
+                    drag_transfer_id,
                   )
+                  if event.event_type == "dragover" {
+                    dragover_prevented = prevented
+                  }
                 }
-                input_dispatch_pointer_event(
-                  drag_target, "dragover", final_x, final_y, 0, buttons, pointer_type,
-                  ctrl, alt, shift, meta,
+                self.input_html_drag_active[ctx_id] = true
+                if drag_target != "" {
+                  self.input_html_drag_over_shared[ctx_id] = drag_target
+                } else {
+                  self.input_html_drag_over_shared.remove(ctx_id)
+                }
+                let accepted_target = @interaction.drag_accept_target(
+                  drag_source, drag_target, dragover_prevented,
                 )
+                if accepted_target != "" {
+                  self.input_html_drag_accept_shared[ctx_id] = accepted_target
+                } else {
+                  self.input_html_drag_accept_shared.remove(ctx_id)
+                }
               }
             }
             input_clear_pointer_event_properties()
@@ -10084,9 +10197,21 @@ fn BidiProtocol::handle_input_perform_actions(
                   runtime_shared_node_is_draggable(target_shared) {
                   self.input_html_drag_source_shared[ctx_id] = target_shared
                   self.input_html_drag_active[ctx_id] = false
+                  self.input_html_drag_over_shared.remove(ctx_id)
+                  self.input_html_drag_accept_shared.remove(ctx_id)
+                  self.input_html_drag_transfer_id[ctx_id] = ctx_id
                 } else {
                   self.input_html_drag_source_shared.remove(ctx_id)
                   self.input_html_drag_active.remove(ctx_id)
+                  self.input_html_drag_over_shared.remove(ctx_id)
+                  self.input_html_drag_accept_shared.remove(ctx_id)
+                  let drag_transfer_id = self.input_html_drag_transfer_id
+                    .get(ctx_id)
+                    .unwrap_or("")
+                  if drag_transfer_id != "" {
+                    input_clear_drag_transfer(drag_transfer_id)
+                  }
+                  self.input_html_drag_transfer_id.remove(ctx_id)
                 }
                 let now = self.input_action_clock_ms.get(ctx_id).unwrap_or(0.0)
                 let pending_double_click = match
@@ -10162,28 +10287,88 @@ fn BidiProtocol::handle_input_perform_actions(
                   self.input_pointer_dragged.remove(ctx_id)
                   self.input_html_drag_source_shared.remove(ctx_id)
                   self.input_html_drag_active.remove(ctx_id)
+                  self.input_html_drag_over_shared.remove(ctx_id)
+                  self.input_html_drag_accept_shared.remove(ctx_id)
+                  let drag_transfer_id = self.input_html_drag_transfer_id
+                    .get(ctx_id)
+                    .unwrap_or("")
+                  if drag_transfer_id != "" {
+                    input_clear_drag_transfer(drag_transfer_id)
+                  }
+                  self.input_html_drag_transfer_id.remove(ctx_id)
                 }
               } else if button == 0 {
-                let drag_source = self.input_html_drag_source_shared
+                let drag_origin_x = self.input_pointer_down_x
                   .get(ctx_id)
-                  .unwrap_or("")
+                  .unwrap_or(current_x)
+                let drag_origin_y = self.input_pointer_down_y
+                  .get(ctx_id)
+                  .unwrap_or(current_y)
+                let drag_source = self.input_pointer_down_target_shared
+                  .get(ctx_id)
+                  .unwrap_or(
+                    self.input_html_drag_source_shared.get(ctx_id).unwrap_or(""),
+                  )
+                let drag_source = if drag_source != "" &&
+                  has_runtime_shared_node(drag_source) {
+                  drag_source
+                } else {
+                  get_runtime_shared_node_at_point(drag_origin_x, drag_origin_y).unwrap_or(
+                    drag_source,
+                  )
+                }
+                if drag_source != "" {
+                  self.input_html_drag_source_shared[ctx_id] = drag_source
+                }
                 let drag_active = self.input_html_drag_active
                   .get(ctx_id)
                   .unwrap_or(false)
+                let drag_over_target = self.input_html_drag_over_shared
+                  .get(ctx_id)
+                  .unwrap_or("")
+                let drag_accept_target = self.input_html_drag_accept_shared
+                  .get(ctx_id)
+                  .unwrap_or("")
+                let drag_transfer_id = self.input_html_drag_transfer_id
+                  .get(ctx_id)
+                  .unwrap_or("")
                 if drag_source != "" && drag_active {
-                  let drop_target = if target_shared != "" {
-                    target_shared
-                  } else {
-                    drag_source
+                  let drop_target = @interaction.drag_drop_target(
+                    drag_source, drag_over_target, drag_accept_target,
+                  )
+                  for
+                    event in @interaction.drag_release_event_sequence(
+                      emit_drop=drop_target != "",
+                    ) {
+                    let dispatch_target = match event.target {
+                      @interaction.Source => drag_source
+                      @interaction.PreviousTarget => ""
+                      @interaction.CurrentTarget => drop_target
+                    }
+                    if dispatch_target == "" {
+                      continue
+                    }
+                    let related_target = match event.target {
+                      @interaction.Source => drop_target
+                      @interaction.PreviousTarget => ""
+                      @interaction.CurrentTarget => drag_source
+                    }
+                    let _ = input_dispatch_drag_event(
+                      dispatch_target,
+                      event.event_type,
+                      current_x,
+                      current_y,
+                      button,
+                      next_buttons,
+                      pointer_type,
+                      ctrl,
+                      alt,
+                      shift,
+                      meta,
+                      related_target,
+                      drag_transfer_id,
+                    )
                   }
-                  input_dispatch_pointer_event(
-                    drop_target, "drop", current_x, current_y, button, next_buttons,
-                    pointer_type, ctrl, alt, shift, meta,
-                  )
-                  input_dispatch_pointer_event(
-                    drag_source, "dragend", current_x, current_y, button, next_buttons,
-                    pointer_type, ctrl, alt, shift, meta,
-                  )
                 }
                 let was_dragged = self.input_pointer_dragged
                   .get(ctx_id)
@@ -10224,6 +10409,12 @@ fn BidiProtocol::handle_input_perform_actions(
                 self.input_pointer_dragged.remove(ctx_id)
                 self.input_html_drag_source_shared.remove(ctx_id)
                 self.input_html_drag_active.remove(ctx_id)
+                self.input_html_drag_over_shared.remove(ctx_id)
+                self.input_html_drag_accept_shared.remove(ctx_id)
+                if drag_transfer_id != "" {
+                  input_clear_drag_transfer(drag_transfer_id)
+                }
+                self.input_html_drag_transfer_id.remove(ctx_id)
               } else if button == 2 {
                 self.dispatch_interaction_pointer_sequence(
                   @interaction.pointer_post_release_mouse_event_sequence(
@@ -10521,6 +10712,15 @@ fn BidiProtocol::handle_input_release_actions(
   self.input_pointer_dragged.remove(ctx_id)
   self.input_html_drag_source_shared.remove(ctx_id)
   self.input_html_drag_active.remove(ctx_id)
+  self.input_html_drag_over_shared.remove(ctx_id)
+  self.input_html_drag_accept_shared.remove(ctx_id)
+  let drag_transfer_id = self.input_html_drag_transfer_id
+    .get(ctx_id)
+    .unwrap_or("")
+  if drag_transfer_id != "" {
+    input_clear_drag_transfer(drag_transfer_id)
+  }
+  self.input_html_drag_transfer_id.remove(ctx_id)
   self.input_last_click_time.remove(ctx_id)
   self.input_last_click_x.remove(ctx_id)
   self.input_last_click_y.remove(ctx_id)
@@ -15828,6 +16028,15 @@ fn BidiProtocol::clear_input_state_for_context(
   self.input_pointer_dragged.remove(ctx_id)
   self.input_html_drag_source_shared.remove(ctx_id)
   self.input_html_drag_active.remove(ctx_id)
+  self.input_html_drag_over_shared.remove(ctx_id)
+  self.input_html_drag_accept_shared.remove(ctx_id)
+  let drag_transfer_id = self.input_html_drag_transfer_id
+    .get(ctx_id)
+    .unwrap_or("")
+  if drag_transfer_id != "" {
+    input_clear_drag_transfer(drag_transfer_id)
+  }
+  self.input_html_drag_transfer_id.remove(ctx_id)
   self.input_last_click_time.remove(ctx_id)
   self.input_last_click_x.remove(ctx_id)
   self.input_last_click_y.remove(ctx_id)

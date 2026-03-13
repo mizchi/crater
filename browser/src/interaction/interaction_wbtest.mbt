@@ -172,3 +172,37 @@ test "pointer event sequence helpers preserve browser-style ordering" {
     content="([\"pointermove\", \"mousemove\"], [\"pointerover\", \"pointerenter\", \"pointerdown\", \"mousedown\"], [\"pointerup\"], [\"mouseup\", \"click\", \"dblclick\"], [\"contextmenu\", \"mouseup\"])",
   )
 }
+
+///|
+test "drag event sequence helpers preserve browser-style ordering" {
+  inspect(
+    (
+      drag_dispatch_event_labels(
+        drag_move_event_sequence(
+          emit_dragstart=true,
+          emit_dragleave=true,
+          emit_dragenter=true,
+          emit_dragover=true,
+        ),
+      ),
+      drag_dispatch_event_labels(drag_release_event_sequence(emit_drop=true)),
+      drag_dispatch_event_labels(drag_release_event_sequence(emit_drop=false)),
+    ),
+    content="([\"Source:dragstart\", \"Source:drag\", \"PreviousTarget:dragleave\", \"CurrentTarget:dragenter\", \"CurrentTarget:dragover\"], [\"CurrentTarget:drop\", \"Source:dragend\"], [\"Source:dragend\"])",
+  )
+}
+
+///|
+test "drag acceptance helpers only drop on accepted current target" {
+  inspect(
+    (
+      drag_accept_target("source", "target", true),
+      drag_accept_target("source", "target", false),
+      drag_accept_target("source", "source", true),
+      drag_drop_target("source", "target", "target"),
+      drag_drop_target("source", "target", ""),
+      drag_drop_target("source", "other", "target"),
+    ),
+    content="(\"target\", \"\", \"\", \"target\", \"\", \"\")",
+  )
+}
