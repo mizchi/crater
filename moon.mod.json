@@ -3,7 +3,7 @@
   "version": "0.9.0",
   "description": "CSS Layout Engine that implements Box/Flex/Grid",
   "deps": {
-    "mizchi/layout": "0.1.0",
+    "mizchi/layout": "0.2.0",
     "mizchi/x": "0.1.6",
     "moonbitlang/async": "0.16.7"
   },
