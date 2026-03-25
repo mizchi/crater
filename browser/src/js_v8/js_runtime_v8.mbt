@@ -99,8 +99,12 @@ impl @js.JsRuntime for V8JsRuntime with execute(
     // Reset logs and domOps for this execution
     ignore(rt.eval_string("logs.length = 0; domOps.length = 0;"))
     // Serialize DomTree into JS DOM initialization code
-    let init_code = @js.serialize_dom_for_mock(dom)
-    ignore(rt.eval_string(init_code))
+    // Use create_dom_init_code which populates document.body with DomTree content
+    let init_code = @js.create_dom_init_code(dom)
+    match rt.eval_string(init_code) {
+      Ok(_) => ()
+      Err(e) => println("[V8 initCode error] " + e.to_string())
+    }
   }
   // Execute user code
   let flush = match async_mode {
@@ -138,7 +142,9 @@ impl @js.JsRuntime for V8JsRuntime with execute(
     Ok(result_json) => {
       if self.dom_initialized {
         let (result, dom_ops) = parse_result_with_ops(result_json)
-        apply_dom_ops(dom, dom_ops)
+        if dom_ops.length() > 0 {
+          apply_dom_ops(dom, dom_ops)
+        }
         result
       } else {
         parse_v8_result(result_json)
@@ -324,7 +330,8 @@ fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
       }
       "setTextContent" => {
         let node = @dom.NodeId::from_int(op.id)
-        ignore(dom.set_text_content(node, op.text))
+        let text = if op.value.length() > 0 { op.value } else { op.text }
+        ignore(dom.set_text_content(node, text))
       }
       _ => () // Unknown op, skip
     }

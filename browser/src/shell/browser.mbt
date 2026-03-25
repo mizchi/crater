@@ -225,6 +225,20 @@ pub fn Browser::set_request_sandbox(
 
 ///|
 /// Get current URL
+pub fn Browser::get_dom_tree(self : Browser) -> @dom.DomTree? {
+  self.dom_tree
+}
+
+///|
+/// Set HTML content directly (for testing or headless rendering).
+pub fn Browser::set_html_content(self : Browser, html : String) -> Unit {
+  self.html_content = html
+  self.parsed_doc = None
+  self.dom_tree = None
+  self.script_executor = None
+}
+
+///|
 pub fn Browser::get_current_url(self : Browser) -> String {
   self.current_url
 }

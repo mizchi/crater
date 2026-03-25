@@ -13,8 +13,8 @@ options(
     // Stubs
     "js_runtime_wasm.mbt": [ "wasm", "wasm-gc" ],
     "js_runtime_native_stub.mbt": [ "native" ],
-    "scheduler_integration_js.mbt": [ "js" ],
-    "scheduler_integration_stub.mbt": [ "wasm", "wasm-gc", "native" ],
+    "scheduler_integration_js.mbt": [ "js", "native" ],
+    "scheduler_integration_stub.mbt": [ "wasm", "wasm-gc" ],
     "scheduler_integration_test.mbt": [ "js" ],
   },
 )
