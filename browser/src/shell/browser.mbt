@@ -112,6 +112,8 @@ struct Browser {
   scheduler : @scheduler.Scheduler
   /// Script executor for JS execution
   mut script_executor : @js.ScriptExecutor?
+  /// Optional external JS runtime (e.g. V8 for native target)
+  mut js_runtime_override : (&@js.JsRuntime)?
   /// Whether JavaScript execution is enabled (requires --enable-js flag)
   mut enable_js : Bool
   /// Element scroll states (keyed by element id)
@@ -179,6 +181,7 @@ pub fn Browser::new(
     dom_tree: None,
     scheduler: @scheduler.Scheduler::new(),
     script_executor: None,
+    js_runtime_override: None,
     enable_js: false, // Disabled by default for security
     element_scroll_states: {},
     focused_scrollable: Ref::new(None),
@@ -201,6 +204,14 @@ pub fn Browser::new(
 /// Use --enable-js flag to enable it.
 pub fn Browser::set_enable_js(self : Browser, enable : Bool) -> Unit {
   self.enable_js = enable
+}
+
+///|
+/// Set a custom JS runtime for script execution (e.g. V8 for native).
+/// Must be called before any script execution (before navigate/load_html).
+pub fn Browser::set_js_runtime(self : Browser, runtime : &@js.JsRuntime) -> Unit {
+  self.js_runtime_override = Some(runtime)
+  self.enable_js = true
 }
 
 ///|
@@ -2835,7 +2846,12 @@ fn Browser::init_js_execution(self : Browser) -> Unit {
       }
   }
   self.dom_tree = Some(dom)
-  self.script_executor = Some(@js.ScriptExecutor::new_deferred(dom))
+  self.script_executor = Some(
+    match self.js_runtime_override {
+      Some(runtime) => @js.ScriptExecutor::new_with_runtime(dom, runtime)
+      None => @js.ScriptExecutor::new_deferred(dom)
+    },
+  )
 }
 
 ///|
