@@ -2516,6 +2516,10 @@ fn BidiProtocol::dispatch_browsing_context(
       self.handle_capture_paint_data(request.id, request.params)
       Ok(())
     }
+    "capturePaintTree" => {
+      self.handle_capture_paint_tree(request.id, request.params)
+      Ok(())
+    }
     "print" => {
       self.handle_print(request)
       Ok(())

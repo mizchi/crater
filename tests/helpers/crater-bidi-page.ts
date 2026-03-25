@@ -135,6 +135,21 @@ export class CraterBidiPage {
     };
   }
 
+  async capturePaintTree(): Promise<{ width: number; height: number; paintTree: string }> {
+    const resp = await this.sendBidi("browsingContext.capturePaintTree", {
+      context: this.requireContextId(),
+    });
+    if (resp.type === "error") {
+      throw new Error(resp.message || resp.error || "capturePaintTree failed");
+    }
+    const result = resp.result as { width?: number; height?: number; paintTree?: string };
+    return {
+      width: Number(result.width ?? 0),
+      height: Number(result.height ?? 0),
+      paintTree: String(result.paintTree || "{}"),
+    };
+  }
+
   async click(selector: string): Promise<void> {
     const sharedId = await this.elementSharedId(selector);
     await this.performPointer([
