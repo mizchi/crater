@@ -57,15 +57,17 @@ GPU レンダリング (kagura wgpu) or 画像出力
   - classList, NamedNodeMap, attributes collection
   - innerHTML/outerHTML パーサ
 
-- [ ] JS runtime テストの native 移植
-  `js_runtime_js_test.mbt` の 166 テストから主要なものを native V8 版でも実行可能にする。
-  優先: DOM manipulation, Event dispatch, Promise ordering, setTimeout
+- [x] JS runtime テストの native 移植
+  34 テスト PASS: basic eval (7) + minimal mock DOM (7) + full mock DOM (7) + DOM ops (13)
 
 ### P1: WPT テスト対応
 
-- [ ] `wpt/html/webappapis/scripting/event-loops/task_microtask_ordering.html` を V8 で通す
-  現在の minimal mock DOM で基本順序は正しいが、MutationObserver の microtask タイミングと
-  synthetic click の bubbling 動作を検証する必要がある。
+- [x] `task_microtask_ordering.html` Test 1: Basic task and microtask ordering
+  V8 native で PASS: script start → script end → promise1 → promise2 → setTimeout
+- [ ] `task_microtask_ordering.html` Test 2: Level 1 bossfight (synthetic click)
+  **ブロッカー**: フル mock DOM の `HTMLElement.click()` が空 stub。
+  `dispatchEvent(new MouseEvent('click', { bubbles: true }))` を呼ぶように修正が必要。
+  修正後の期待値: click → click → promise → mutate → promise → timeout → timeout
 
 - [ ] WPT DOM テストの V8 native ランナー作成
   `scripts/wpt-dom-runner.ts` は Node.js vm + mock DOM で 9296 テスト通過済み。
