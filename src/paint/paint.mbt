@@ -24,6 +24,7 @@ pub(all) struct PaintProperties {
   background_color : @types.Color // Background color (computed)
   font_size : Double // Font size in pixels (for text rendering)
   is_bold : Bool // Whether text should be rendered bold
+  font_family : String // First font family name (lowercase)
 }
 
 ///|
@@ -37,6 +38,7 @@ pub fn PaintProperties::default() -> PaintProperties {
     background_color: @types.Color::transparent(),
     font_size: 16.0,
     is_bold: false,
+    font_family: "",
   }
 }
 
@@ -51,6 +53,7 @@ pub fn PaintProperties::from_style(style : @style.Style) -> PaintProperties {
     background_color: style.background_color,
     font_size: style.font_size,
     is_bold: false, // Will be set from tag name in from_node_and_layout
+    font_family: style.font_family,
   }
 }
 

@@ -477,6 +477,7 @@ pub(all) struct Style {
   // Font properties (for baseline calculation)
   mut font_size : Double // Computed font size in pixels (default 16.0)
   mut font_weight : Double // Computed font weight (100-900, default 400)
+  mut font_family : String // Computed font family (default "")
   mut line_height : Double // Computed line height in pixels (default = font_size)
   // Text wrapping and direction
   mut text_align : TextAlign
@@ -596,6 +597,7 @@ pub fn Style::default() -> Style {
     justify_self: @types.AlignSelf::Auto,
     font_size: 16.0,
     font_weight: 400.0,
+    font_family: "",
     line_height: 16.0,
     text_align: Start,
     white_space: Normal,

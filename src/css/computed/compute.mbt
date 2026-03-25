@@ -155,6 +155,7 @@ priv struct StyleBuilder {
   // Font properties
   mut font_size : Double
   mut font_weight : Double
+  mut font_family : String
   mut line_height : Double
   // Text wrapping and direction
   mut text_align : @style.TextAlign
@@ -263,6 +264,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     grid_row_end: @types.GridPlacement::Auto,
     font_size: 16.0,
     font_weight: 400.0,
+    font_family: "",
     line_height: 16.0,
     text_align: @style.TextAlign::Start,
     white_space: @style.WhiteSpace::Normal,
@@ -362,6 +364,7 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     grid_row_end: style.grid_row.end,
     font_size: style.font_size,
     font_weight: style.font_weight,
+    font_family: style.font_family,
     line_height: style.line_height,
     text_align: style.text_align,
     white_space: style.white_space,
@@ -470,6 +473,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     justify_self: self.justify_self,
     font_size: self.font_size,
     font_weight: self.font_weight,
+    font_family: self.font_family,
     line_height: self.line_height,
     text_align: self.text_align,
     white_space: self.white_space,
@@ -1800,6 +1804,8 @@ fn apply_property(
     }
     // Font weight
     "font-weight" => builder.font_weight = parse_font_weight(value)
+    // Font family (store first family name for font matching)
+    "font-family" => builder.font_family = parse_font_family(value)
     // Transform (visual position offset)
     "transform" => builder.transform = parse_transform(value)
     // Zoom (layout scaling, inherited)
@@ -1832,6 +1838,27 @@ fn parse_font_weight(value : String) -> Double {
         400.0
       }
     }
+  }
+}
+
+///|
+/// Parse font-family, returning the first family name (lowercase, unquoted).
+fn parse_font_family(value : String) -> String {
+  let v = value.trim()
+  // Split by comma, take first
+  let first = match v.split(",").collect() {
+    [] => v
+    parts => parts[0]
+  }
+  // Remove quotes and normalize
+  let trimmed = first.trim()
+  let len = trimmed.length()
+  if len >= 2 && trimmed[0] == '"' && trimmed[len - 1] == '"' {
+    trimmed[1:len - 1].to_string().to_lower()
+  } else if len >= 2 && trimmed[0] == '\'' && trimmed[len - 1] == '\'' {
+    trimmed[1:len - 1].to_string().to_lower()
+  } else {
+    trimmed.to_string().to_lower()
   }
 }
 

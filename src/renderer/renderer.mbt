@@ -6570,18 +6570,34 @@ fn compute_element_style_indexed(
   match selector_elem.get_attribute("width") {
     Some(width_value) => {
       let tag = selector_elem.tag_name.to_lower()
-      if tag == "table" || tag == "td" || tag == "th" || tag == "col" || tag == "colgroup" {
+      if tag == "table" ||
+        tag == "td" ||
+        tag == "th" ||
+        tag == "col" ||
+        tag == "colgroup" {
         let dim = if width_value.has_suffix("%") {
           match width_value.strip_suffix("%") {
             Some(num_str) => {
-              let n = @strconv.parse_double(num_str.to_string()) catch { _ => -1.0 }
-              if n >= 0.0 { @types.Dimension::Percent(n / 100.0) } else { @types.Dimension::Auto }
+              let n = @strconv.parse_double(num_str.to_string()) catch {
+                _ => -1.0
+              }
+              if n >= 0.0 {
+                @types.Dimension::Percent(n / 100.0)
+              } else {
+                @types.Dimension::Auto
+              }
             }
             None => @types.Dimension::Auto
           }
         } else {
-          let n = @strconv.parse_double(width_value.to_string()) catch { _ => -1.0 }
-          if n >= 0.0 { @types.Dimension::Length(n) } else { @types.Dimension::Auto }
+          let n = @strconv.parse_double(width_value.to_string()) catch {
+            _ => -1.0
+          }
+          if n >= 0.0 {
+            @types.Dimension::Length(n)
+          } else {
+            @types.Dimension::Auto
+          }
         }
         if dim != @types.Dimension::Auto {
           style = { ..style, width: dim }

@@ -65,6 +65,7 @@ pub(all) struct PaintProperties {
   background_color : @types.Color
   font_size : Double
   is_bold : Bool
+  font_family : String
 }
 pub fn PaintProperties::default() -> Self
 pub fn PaintProperties::from_style(@style.Style) -> Self

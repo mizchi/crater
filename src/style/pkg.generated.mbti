@@ -187,6 +187,7 @@ pub(all) struct Style {
   mut justify_self : @types.AlignSelf
   mut font_size : Double
   mut font_weight : Double
+  mut font_family : String
   mut line_height : Double
   mut text_align : TextAlign
   mut white_space : WhiteSpace
