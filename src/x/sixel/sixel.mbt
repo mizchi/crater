@@ -1045,7 +1045,7 @@ fn render_paint_node(
           let font_size = node.paint.font_size
           let _ = draw_text_with_glyphs(
             fb, palette, provider, x, y, text_content, w, svg_color,
-            font_size, font_size,
+            font_size, font_size, node.paint.is_bold,
           )
         }
         None => {
