@@ -12,7 +12,7 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: "just build-bidi && just start-bidi",
+    command: "just build-bidi && just start-bidi-with-font",
     url: "http://127.0.0.1:9222/",
     reuseExistingServer: true,
     timeout: 120000,

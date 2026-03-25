@@ -171,6 +171,10 @@ build-bidi:
 start-bidi:
     deno run -A browser/jsbidi/_build/js/release/build/bidi_main/bidi_main.js
 
+# Start BiDi server with font metrics (for VRT)
+start-bidi-with-font:
+    deno run -A browser/jsbidi/bidi_main/start-with-font.ts
+
 # === WPT WebDriver BiDi Tests ===
 
 # List available WebDriver BiDi test modules

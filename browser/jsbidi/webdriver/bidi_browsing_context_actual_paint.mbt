@@ -20,6 +20,122 @@ fn extract_string_value_from_evaluate_result(json_str : String) -> String {
 }
 
 ///|
+/// Check if JS-side text metrics provider is available
+extern "js" fn has_paint_text_provider() -> Bool =
+  #|() => typeof globalThis.__craterMeasureTextIntrinsic === "function"
+
+///|
+/// Call JS-side text metrics provider (returns CSV: "minWidth,maxWidth,minHeight,maxHeight")
+extern "js" fn call_paint_text_provider(
+  text : String,
+  font_size : Double,
+  line_height : Double,
+  white_space : String,
+  writing_mode : String,
+  available_width : Double,
+  available_height : Double,
+) -> String =
+  #|(text, fontSize, lineHeight, whiteSpace, writingMode, availableWidth, availableHeight) => {
+  #|  const fn = globalThis.__craterMeasureTextIntrinsic;
+  #|  if (typeof fn !== "function") return "";
+  #|  try {
+  #|    const result = fn(text, fontSize, lineHeight, whiteSpace, writingMode, availableWidth, availableHeight);
+  #|    let minWidth, maxWidth, minHeight, maxHeight;
+  #|    if (Array.isArray(result) && result.length >= 4) {
+  #|      minWidth = Number(result[0]); maxWidth = Number(result[1]);
+  #|      minHeight = Number(result[2]); maxHeight = Number(result[3]);
+  #|    } else if (result && typeof result === "object") {
+  #|      minWidth = Number(result.minWidth ?? result.min_width);
+  #|      maxWidth = Number(result.maxWidth ?? result.max_width ?? minWidth);
+  #|      minHeight = Number(result.minHeight ?? result.min_height);
+  #|      maxHeight = Number(result.maxHeight ?? result.max_height ?? minHeight);
+  #|    } else { return ""; }
+  #|    if (!Number.isFinite(minWidth) || !Number.isFinite(maxWidth) || !Number.isFinite(minHeight) || !Number.isFinite(maxHeight)) return "";
+  #|    return `${minWidth},${maxWidth},${minHeight},${maxHeight}`;
+  #|  } catch { return ""; }
+  #|}
+
+///|
+fn parse_csv_quad(s : String) -> (Double, Double, Double, Double)? {
+  let parts = s.split(",").collect()
+  if parts.length() < 4 {
+    return None
+  }
+  let a = @strconv.parse_double(parts[0]) catch { _ => return None }
+  let b = @strconv.parse_double(parts[1]) catch { _ => return None }
+  let c = @strconv.parse_double(parts[2]) catch { _ => return None }
+  let d = @strconv.parse_double(parts[3]) catch { _ => return None }
+  Some((a, b, c, d))
+}
+
+///|
+fn ensure_paint_text_provider() -> Unit {
+  if has_paint_text_provider() {
+    let provider = @renderer.TextMetricsProvider::new(fn(
+      text,
+      font_size,
+      line_height,
+      white_space,
+      writing_mode,
+    ) {
+      let ws = white_space.to_string()
+      let wm = writing_mode.to_string()
+      {
+        func: fn(available_width, available_height) {
+          let payload = call_paint_text_provider(
+            text, font_size, line_height, ws, wm, available_width,
+            available_height,
+          )
+          match parse_csv_quad(payload) {
+            Some((min_w, max_w, min_h, max_h)) =>
+              { min_width: min_w, max_width: max_w, min_height: min_h, max_height: max_h }
+            None => {
+              let mut cols = 0
+              for _ in text.iter() {
+                cols = cols + 1
+              }
+              let cw = if font_size > 0.0 { font_size * 0.5 } else { 8.0 }
+              let w = cols.to_double() * cw
+              let h = if line_height > 0.0 {
+                line_height
+              } else if font_size > 0.0 {
+                font_size
+              } else {
+                16.0
+              }
+              { min_width: w, max_width: w, min_height: h, max_height: h }
+            }
+          }
+        },
+      }
+    })
+    @renderer.set_text_metrics_provider(provider)
+  }
+}
+
+///|
+let paint_provider_initialized : Ref[Bool] = { val: false }
+
+///|
+extern "js" fn js_log_stderr(msg : String) -> Unit =
+  #|(msg) => { console.error("[paint] " + msg); }
+
+///|
+/// Set up MoonBit TextMetricsProvider from JS globalThis.__craterMeasureTextIntrinsic.
+/// The JS-side provider is set up by start-with-font.ts at BiDi server startup.
+fn ensure_paint_provider_initialized() -> Unit {
+  if paint_provider_initialized.val {
+    return
+  }
+  paint_provider_initialized.val = true
+  let has_provider = has_paint_text_provider()
+  js_log_stderr(
+    "has_paint_text_provider=" + has_provider.to_string(),
+  )
+  ensure_paint_text_provider()
+}
+
+///|
 /// Test-only actual paint capture for VRT.
 fn BidiProtocol::handle_capture_paint_data(
   self : BidiProtocol,
@@ -85,6 +201,9 @@ fn BidiProtocol::resolve_capture_paint_data(
       return None
     }
   }
+
+  // Set up MoonBit-side text metrics provider if JS-side is available (lazy init)
+  ensure_paint_provider_initialized()
 
   let width = self.resolve_effective_viewport_width(ctx_id)
   let height = self.resolve_effective_viewport_height(ctx_id)
