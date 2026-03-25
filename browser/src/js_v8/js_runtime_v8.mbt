@@ -37,7 +37,12 @@ pub fn V8JsRuntime::as_js_runtime(self : V8JsRuntime) -> &@js.JsRuntime {
 }
 
 ///|
+/// Console setup for no-mock-DOM mode (basic eval only)
 let console_setup_js : String = "const __logs = [];\nconst console = {\n  log: (...args) => __logs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')),\n  warn: (...args) => __logs.push('[WARN] ' + args.map(a => String(a)).join(' ')),\n  error: (...args) => __logs.push('[ERROR] ' + args.map(a => String(a)).join(' ')),\n  info: (...args) => __logs.push(args.map(a => String(a)).join(' ')),\n  debug: (...args) => {},\n};\nfunction __getLogs() { const l = [...__logs]; __logs.length = 0; return JSON.stringify(l); }"
+
+///|
+/// Logs setup for mock-DOM mode (mock DOM defines its own console that writes to `logs`)
+let logs_bridge_js : String = "function __getLogs() { const l = [...logs]; logs.length = 0; return JSON.stringify(l); }"
 
 ///|
 impl @js.JsRuntime for V8JsRuntime with init(self : V8JsRuntime) -> Unit {
@@ -46,7 +51,12 @@ impl @js.JsRuntime for V8JsRuntime with init(self : V8JsRuntime) -> Unit {
       Ok(rt) => {
         self.runtime = Some(rt)
         self.initialized = true
-        ignore(rt.eval_string(console_setup_js))
+        // If mock DOM source is provided, it defines its own console/logs.
+        // Otherwise, set up basic console capture.
+        match self.mock_dom_source {
+          Some(_) => () // Console setup deferred to mock DOM init
+          None => ignore(rt.eval_string(console_setup_js))
+        }
       }
       Err(_) => ()
     }
@@ -70,7 +80,11 @@ impl @js.JsRuntime for V8JsRuntime with execute(
     match self.mock_dom_source {
       Some(src) => {
         match rt.eval_string(src) {
-          Ok(_) => self.dom_initialized = true
+          Ok(_) => {
+            self.dom_initialized = true
+            // Bridge: mock DOM uses `logs` array, __getLogs reads from it
+            ignore(rt.eval_string(logs_bridge_js))
+          }
           Err(e) =>
             raise @js.JsError::execution_error(
               "mock DOM init failed: " + e.to_string(),
@@ -98,10 +112,12 @@ impl @js.JsRuntime for V8JsRuntime with execute(
     code +
     "\n})();\n  globalThis.__lastSuccess = true;\n} catch(e) {\n  globalThis.__lastError = e.message || String(e);\n  globalThis.__lastSuccess = false;\n}"
   ignore(rt.eval_string(exec_code))
-  // Step 2: Flush V8 native microtasks (Promise.then etc.)
-  if flush {
-    ignore(rt.perform_microtask_checkpoint())
+  // Step 2: Flush microtasks (mock DOM's _SyncPromise + V8 native)
+  // Mock DOM replaces Promise with _SyncPromise which uses _flushMicrotasks()
+  if self.dom_initialized {
+    ignore(rt.eval_string("_flushMicrotasks()"))
   }
+  ignore(rt.perform_microtask_checkpoint())
   // Step 3: Flush mock DOM timers (setTimeout) with microtask interleaving
   if flush && self.dom_initialized {
     for i = 0; i < 100; i = i + 1 {
