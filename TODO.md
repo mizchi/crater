@@ -2,17 +2,104 @@
 
 ## Paint VRT
 
+### 完了
 - [x] actual paint ベースの VRT を Playwright から実行できるようにする
 - [x] `tests/paint-vrt.test.ts` は `just test-website` から分離して `just test-vrt` で回す
 - [x] CI では `playwright-bidi-tests` と別の `playwright-vrt-tests` job で回す
 - [x] local snapshot がある環境では `playwright-intro` / `mdn-wasm-text` も比較対象に含める
 - [x] text/content mask を入れて sparse page の diff 評価をさらに安定化する
+- [x] WPT VRT テスト基盤 + ベースライン管理 (`wpt-vrt.json`, `wpt-vrt-baseline.json`)
+- [x] 段階的テスト L1-L6 (`tests/paint-vrt-levels.test.ts`)
+- [x] pixelmatch npm 移行（`../pixelmatch` ローカル依存廃止）
+- [x] capturePaintData 修正（JS mock DOM → HTML シリアライズ）
+- [x] sixel SVG グリフレンダリング（Arial + Bold + カーニング + ベースライン）
+- [x] font_weight を Style → CSS compute → TextMetricsProvider → paint まで貫通
+- [x] native paint バックエンド統合 (`CRATER_PAINT_BACKEND=native`)
+- [x] capturePaintTree BiDi メソッド（PaintNode JSON エクスポート）
+
+### 現在の diffRatio (2026-03-26)
+| Test | sixel | native (kagura) |
+|---|---|---|
+| L1 boxes | 0.00% | 0.00% |
+| L2 text | 12.45% | 10.24% |
+| L3 flexbox | 1.97% | 1.46% |
+| L4 centered | 5.15% | 3.76% |
+| L5 absolute | 0.00% | 0.00% |
+| L6 inline | 9.29% | 6.18% |
+| example.com | 10.8% | ~9.1% |
+
+ボックスモデル・レイアウト = Chromium と完全一致。残り diff は全てテキスト。
+
+### 既知の問題
+
+#### crater 側
+- [ ] テキスト折り返し精度: paint の単語単位ワードラップ vs layout エンジンの精密ラップで位置がずれる
+  - sixel: `glyph_render.mbt` の `split_text_into_words` + `measure_word_width`
+  - native: `crater_paint/main_native.mbt` の `split_words` + `font.measure_text`
+  - layout: `scripts/text-intrinsic.ts` の `createTextIntrinsicFnFromMeasureText` (JS) / `wpt_runtime/providers_js.mbt` (MoonBit FFI)
+  - 改善策: layout と同じロジック（スペース考慮の行幅累積）を paint 側にも実装
+- [ ] `b`, `strong` タグの CSS `font-weight: bold` が compute で処理されない
+  - 現在は UA stylesheet (h1-h6) と paint の `is_bold_tag()` でタグ名ベースの推定
+  - 正しくは CSS cascade で `font-weight` を解決すべき
+- [ ] text-decoration: underline 未実装（リンクのアンダーラインが表示されない）
+- [ ] WPT VRT ベースライン更新: `just wpt-vrt-baseline-update` で native backend の結果を記録
+
+#### kagura 側 (`mizchi/kagura`)
+- [ ] テキスト色が薄い: SVG ラスタライザのアンチエイリアスで alpha が弱い
+  - `rasterize_glyph` → `@msvg.render_svg_to_image` の fill が alpha < 1.0 のピクセルを多く生成
+  - 中心ピクセルでも alpha ≈ 0.5 程度（期待: 1.0）
+  - `msvg` (mizchi/svg) の `raster_polygon_fill` の scanline アルゴリズム精度が原因
+- [ ] グリフ鏡像の per-quad UV swap が workaround
+  - `rasterize_glyph` の `scale(1, -1)` でフォント座標→SVG座標変換後のアトラスが Y 反転
+  - `push_text_with_renderer` で quad ごとに UV V を swap して修正
+  - 正しくは `rasterize_glyph` or `batch_builder` で解決すべき
+- [ ] CI での llvmpipe セットアップ（`LIBGL_ALWAYS_SOFTWARE=1` + mesa-vulkan-drivers）
+
+### 未着手
 - [ ] fixture ごとの threshold を artifact を見ながら段階的に tighten する
-- [ ] `tests/helpers/crater-vrt.ts` の mask を text / replaced / box decoration 単位に分けて false positive を減らす
-- [ ] built-in real-world snapshot を増やして、local `real-world/` なしでも CI で 3-5 ページ比較できるようにする
-- [ ] `output/playwright/vrt/**/report.json` を CI summary に集約して threshold 超過の内訳を見やすくする
-- [ ] live form state や script 後の動的 UI も actual paint 比較できるように scenario fixture を追加する
-- [ ] `github-mizchi` / `playwright-intro` / `mdn-wasm-text` の diff artifact を見ながら、page ごとに ROI と mask の parameter を固定する
+- [ ] built-in real-world snapshot を増やして CI で 3-5 ページ比較できるようにする
+- [ ] `output/playwright/vrt/**/report.json` を CI summary に集約する
+- [ ] live form state や script 後の動的 UI の actual paint 比較
+
+## kagura ↔ crater 作業分解点
+
+### 変更が crater 側で完結するもの
+- CSS プロパティ追加（font-weight compute, text-decoration 等）
+- PaintProperties / PaintNode のフィールド追加
+- UA stylesheet の拡充
+- テスト HTML の追加（`tests/paint-vrt-levels.test.ts`）
+- WPT VRT ベースライン管理
+- sixel グリフレンダリング改善（`src/x/sixel/glyph_render.mbt`）
+- BiDi の `start-with-font.ts` / `bidi_browsing_context_actual_paint.mbt`
+
+### 変更が kagura 側で完結するもの
+- `rasterize_glyph` の Y 反転修正（`src/engine/text/contracts.mbt`）
+- SVG ラスタライザの alpha 精度改善（`mizchi/svg` の `raster_polygon_fill`）
+- `batch_builder` の UV 座標修正
+- `moonbit_build_payload_wgsl` のシェーダー改善
+- wgpu blend state の調整（`wgpu_native_stub.c`）
+- CI 用 llvmpipe 設定
+
+### 両方に跨がるもの
+- **テキストメトリクス一貫性**: crater の `TextMetricsProvider` callback シグネチャ変更 → kagura の `crater_paint` の `install_font_metrics_provider` も同時更新が必要
+- **PaintNode フィールド追加**: crater で `PaintProperties` にフィールド追加 → kagura の `crater_paint/render_paint_node` でそのフィールドを参照
+- **新 CSS 機能 (例: font-weight)**: crater で Style/compute/UA追加 → kagura で描画対応
+- **`crater_paint` バイナリの I/O 規約**: 入力パス (`/tmp/crater_paint_input.html`)、config パス、出力パスの変更は crater VRT テスト (`crater-vrt.ts`) と kagura バイナリの両方に影響
+
+### 依存関係
+```
+crater (moon.mod.json)
+  └─ mizchi/layout, mizchi/x, moonbitlang/async
+
+kagura/examples/crater_paint (moon.mod.json)
+  ├─ mizchi/crater (path: ../../../crater)  ← ローカルパス依存
+  ├─ mizchi/kagura (path: ../..)
+  ├─ mizchi/font
+  └─ mizchi/image
+
+crater の Style/PaintNode 変更 → crater_paint のビルドに即反映
+kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
+```
 
 ## WebDriver BiDi の MoonBit 全面移行（2026-03-08）
 
