@@ -72,7 +72,12 @@ fn draw_text_with_glyphs(
   let mut cur_y = y.to_double()
   let mut max_y_seen = y.to_double() + effective_line_height
   // Use regular (non-bold) metrics for wrapping to match layout engine
-  let space_advance_layout = get_advance(provider, ' '.to_int(), font_size, false)
+  let space_advance_layout = get_advance(
+    provider,
+    ' '.to_int(),
+    font_size,
+    false,
+  )
   for i, word in words {
     if word == "\n" {
       cur_x = x.to_double()
@@ -105,7 +110,9 @@ fn draw_text_with_glyphs(
       let (commands, advance) = (provider.get_glyph)(cp, font_size, is_bold)
       if commands.length() > 0 {
         let translated = translate_path_commands(
-          commands, cur_x, cur_y + baseline_offset,
+          commands,
+          cur_x,
+          cur_y + baseline_offset,
         )
         @svg.raster_path(translated, Some(color), None, 0.0, setter)
       }
@@ -117,7 +124,12 @@ fn draw_text_with_glyphs(
 }
 
 ///|
-fn get_advance(provider : GlyphProvider, codepoint : Int, font_size : Double, is_bold : Bool) -> Double {
+fn get_advance(
+  provider : GlyphProvider,
+  codepoint : Int,
+  font_size : Double,
+  is_bold : Bool,
+) -> Double {
   let (_, advance) = (provider.get_glyph)(codepoint, font_size, is_bold)
   advance
 }
@@ -178,7 +190,12 @@ fn translate_path_commands(
       VerticalLineTo(y) => @svg.PathCommand::VerticalLineTo(y + dy)
       CurveTo(x1, y1, x2, y2, x, y) =>
         @svg.PathCommand::CurveTo(
-          x1 + dx, y1 + dy, x2 + dx, y2 + dy, x + dx, y + dy,
+          x1 + dx,
+          y1 + dy,
+          x2 + dx,
+          y2 + dy,
+          x + dx,
+          y + dy,
         )
       SmoothCurveTo(x2, y2, x, y) =>
         @svg.PathCommand::SmoothCurveTo(x2 + dx, y2 + dy, x + dx, y + dy)

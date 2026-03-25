@@ -1040,16 +1040,29 @@ fn render_paint_node(
       match glyph_provider_override.val {
         Some(provider) => {
           let svg_color = @svg.Color::rgb(
-            node.paint.color.r, node.paint.color.g, node.paint.color.b,
+            node.paint.color.r,
+            node.paint.color.g,
+            node.paint.color.b,
           )
           let font_size = node.paint.font_size
           let _ = draw_text_with_glyphs(
-            fb, palette, provider, x, y, text_content, w, svg_color,
-            font_size, font_size, node.paint.is_bold,
+            fb,
+            palette,
+            provider,
+            x,
+            y,
+            text_content,
+            w,
+            svg_color,
+            font_size,
+            font_size,
+            node.paint.is_bold,
           )
         }
         None => {
-          let text_idx = palette.get_or_add(types_color_to_sixel(node.paint.color))
+          let text_idx = palette.get_or_add(
+            types_color_to_sixel(node.paint.color),
+          )
           let scale = 1
           let _ = fb.draw_text(x, y, text_content, w, text_idx, scale)
         }

@@ -53,6 +53,7 @@ pub fn PaintNode::has_legacy_clip(Self) -> Bool
 pub fn PaintNode::has_vertical_scrollbar(Self) -> Bool
 pub fn PaintNode::is_scrollable(Self) -> Bool
 pub fn PaintNode::new(String, String, Double, Double, Double, Double, PaintProperties, Array[Self], text? : String?, overflow_x? : @types.Overflow, overflow_y? : @types.Overflow, scroll_width? : Double, scroll_height? : Double, clip? : @types.ClipRect) -> Self
+pub fn PaintNode::to_json_string(Self) -> String
 pub impl Show for PaintNode
 
 pub(all) struct PaintProperties {
@@ -62,6 +63,8 @@ pub(all) struct PaintProperties {
   opacity : Double
   color : @types.Color
   background_color : @types.Color
+  font_size : Double
+  is_bold : Bool
 }
 pub fn PaintProperties::default() -> Self
 pub fn PaintProperties::from_style(@style.Style) -> Self

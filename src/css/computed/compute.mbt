@@ -1826,7 +1826,11 @@ fn parse_font_weight(value : String) -> Double {
     "bolder" => 700.0
     _ => {
       let n = @strconv.parse_double(value.trim()) catch { _ => return 400.0 }
-      if n >= 1.0 && n <= 1000.0 { n } else { 400.0 }
+      if n >= 1.0 && n <= 1000.0 {
+        n
+      } else {
+        400.0
+      }
     }
   }
 }

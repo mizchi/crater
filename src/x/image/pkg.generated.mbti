@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater/x/sixel"
+package "mizchi/crater/x/image"
 
 import {
   "mizchi/crater/layout/node",
@@ -9,6 +9,8 @@ import {
 }
 
 // Values
+pub fn clear_glyph_provider() -> Unit
+
 pub fn create_svg_demo_scene() -> @svg.Scene
 
 pub let font_height : Int
@@ -53,6 +55,8 @@ pub fn render_with_styles(@node.Node, @types.Layout, Int, Int) -> String
 
 pub fn render_with_styles_scrolled(@node.Node, @types.Layout, Int, Int, Int) -> String
 
+pub fn set_glyph_provider(GlyphProvider) -> Unit
+
 pub fn to_sixel(Framebuffer) -> String
 
 pub fn to_sixel_dynamic(Framebuffer, DynamicPalette) -> String
@@ -95,6 +99,12 @@ pub fn Framebuffer::fill_rect_hatched(Self, Int, Int, Int, Int, Int, Int, Int) -
 pub fn Framebuffer::get_pixel(Self, Int, Int) -> Int
 pub fn Framebuffer::new(Int, Int) -> Self
 pub fn Framebuffer::stroke_rect(Self, Int, Int, Int, Int, Int) -> Unit
+
+pub(all) struct GlyphProvider {
+  get_glyph : (Int, Double, Bool) -> (Array[@svg.PathCommand], Double)
+  get_kern : (Int, Int, Double, Bool) -> Double
+  ascent_ratio : Double
+}
 
 // Type aliases
 

@@ -211,7 +211,7 @@ fn create_text_measure_with_provider(
   text_line_height : Double,
   white_space : @style.WhiteSpace,
   writing_mode : @style.WritingMode,
-  font_weight~ : Double = 400.0,
+  font_weight? : Double = 400.0,
 ) -> @types.MeasureFunc {
   fn white_space_collapses_edges(white_space : @style.WhiteSpace) -> Bool {
     match white_space {
@@ -1864,8 +1864,12 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
         "#text",
         text_style,
         create_text_measure_with_provider(
-          collapsed, font_size, text_line_height, white_space, writing_mode,
-          font_weight=font_weight,
+          collapsed,
+          font_size,
+          text_line_height,
+          white_space,
+          writing_mode,
+          font_weight~,
         ),
         collapsed,
       )
@@ -1876,8 +1880,12 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
       "#text",
       text_style,
       create_text_measure_with_provider(
-        normalized_text, font_size, text_line_height, white_space, writing_mode,
-        font_weight=font_weight,
+        normalized_text,
+        font_size,
+        text_line_height,
+        white_space,
+        writing_mode,
+        font_weight~,
       ),
       normalized_text,
     )

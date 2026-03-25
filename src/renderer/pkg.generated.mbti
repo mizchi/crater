@@ -82,9 +82,9 @@ pub(all) struct RenderContext {
 pub fn RenderContext::default() -> Self
 
 pub struct TextMetricsProvider {
-  func : (String, Double, Double, @style.WhiteSpace, @style.WritingMode) -> @types.MeasureFunc
+  func : (String, Double, Double, @style.WhiteSpace, @style.WritingMode, Double) -> @types.MeasureFunc
 }
-pub fn TextMetricsProvider::new((String, Double, Double, @style.WhiteSpace, @style.WritingMode) -> @types.MeasureFunc) -> Self
+pub fn TextMetricsProvider::new((String, Double, Double, @style.WhiteSpace, @style.WritingMode, Double) -> @types.MeasureFunc) -> Self
 
 // Type aliases
 

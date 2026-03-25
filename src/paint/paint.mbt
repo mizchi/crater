@@ -571,14 +571,13 @@ fn from_node_and_layout_with_viewport_inner(
         viewport_bottom,
         abs_y,
       ) {
-      Some(child) => {
+      Some(child) =>
         // Propagate bold to text children
         if paint.is_bold && not(child.paint.is_bold) {
           children.push({ ..child, paint: { ..child.paint, is_bold: true } })
         } else {
           children.push(child)
         }
-      }
       None => ()
     }
   }
