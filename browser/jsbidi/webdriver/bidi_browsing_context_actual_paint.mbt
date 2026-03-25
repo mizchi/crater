@@ -219,7 +219,7 @@ fn ensure_paint_provider_initialized() -> Unit {
     js_log_stderr("Installing glyph provider")
     let ascent_ratio = js_font_ascent_ratio()
     js_log_stderr("ascent_ratio=" + ascent_ratio.to_string())
-    let glyph_provider : @sixel.GlyphProvider = {
+    let glyph_provider : @image.GlyphProvider = {
       ascent_ratio,
       get_kern: fn(cp1, cp2, font_size, is_bold) {
         js_kern_advance(cp1, cp2, font_size, is_bold)
@@ -234,7 +234,7 @@ fn ensure_paint_provider_initialized() -> Unit {
         (commands, advance)
       },
     }
-    @sixel.set_glyph_provider(glyph_provider)
+    @image.set_glyph_provider(glyph_provider)
   }
 }
 
@@ -334,14 +334,14 @@ fn BidiProtocol::resolve_capture_paint_data(
       return None
     }
   }
-  let fb = @sixel.Framebuffer::new(width, height)
-  let palette = @sixel.DynamicPalette::new()
-  @sixel.render_paint_node_to_framebuffer(paint_node, fb, palette)
+  let fb = @image.Framebuffer::new(width, height)
+  let palette = @image.DynamicPalette::new()
+  @image.render_paint_node_to_framebuffer(paint_node, fb, palette)
   Some(
     make_object({
       "width": Json::number(width.to_double()),
       "height": Json::number(height.to_double()),
-      "data": Json::string(@sixel.framebuffer_to_rgba_base64(fb, palette)),
+      "data": Json::string(@image.framebuffer_to_rgba_base64(fb, palette)),
     }),
   )
 }

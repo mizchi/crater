@@ -1,14 +1,14 @@
 ///|
 /// Tests for Sixel renderer
 test "framebuffer creation" {
-  let fb = @sixel.Framebuffer::new(10, 10)
+  let fb = @image.Framebuffer::new(10, 10)
   inspect(fb.width, content="10")
   inspect(fb.height, content="10")
 }
 
 ///|
 test "framebuffer fill_rect" {
-  let fb = @sixel.Framebuffer::new(10, 10)
+  let fb = @image.Framebuffer::new(10, 10)
   fb.fill_rect(2, 2, 5, 5, 1)
   // Check corners of the filled rect
   inspect(fb.pixels[2 * 10 + 2], content="1")
@@ -19,9 +19,9 @@ test "framebuffer fill_rect" {
 
 ///|
 test "to_sixel basic output" {
-  let fb = @sixel.Framebuffer::new(4, 6)
+  let fb = @image.Framebuffer::new(4, 6)
   fb.fill_rect(0, 0, 4, 6, 1) // Fill with color 1 (blue)
-  let result = @sixel.to_sixel(fb)
+  let result = @image.to_sixel(fb)
   // Should start with ESC P q
   inspect(result.has_prefix("\u001bPq"), content="true")
   // Should end with ESC \
@@ -30,13 +30,13 @@ test "to_sixel basic output" {
 
 ///|
 test "to_sixel_dynamic preserves deterministic mixed color rows" {
-  let fb = @sixel.Framebuffer::new(2, 6)
-  let palette = @sixel.DynamicPalette::new()
-  palette.colors.push(@sixel.Color::blue())
-  palette.colors.push(@sixel.Color::red())
+  let fb = @image.Framebuffer::new(2, 6)
+  let palette = @image.DynamicPalette::new()
+  palette.colors.push(@image.Color::blue())
+  palette.colors.push(@image.Color::red())
   fb.fill_rect(0, 0, 1, 6, 1)
   fb.fill_rect(1, 0, 1, 6, 2)
-  let result = @sixel.to_sixel_dynamic(fb, palette)
+  let result = @image.to_sixel_dynamic(fb, palette)
   assert_eq(
     result, "\u001bPq#0;2;100;100;100#1;2;25;52;95#2;2;91;26;20#1~?$#2?~$-\u001b\\",
   )
@@ -44,11 +44,11 @@ test "to_sixel_dynamic preserves deterministic mixed color rows" {
 
 ///|
 test "to_sixel_dynamic compresses repeated columns with repeat introducer" {
-  let fb = @sixel.Framebuffer::new(4, 6)
-  let palette = @sixel.DynamicPalette::new()
-  palette.colors.push(@sixel.Color::blue())
+  let fb = @image.Framebuffer::new(4, 6)
+  let palette = @image.DynamicPalette::new()
+  palette.colors.push(@image.Color::blue())
   fb.fill_rect(0, 0, 4, 6, 1)
-  let result = @sixel.to_sixel_dynamic(fb, palette)
+  let result = @image.to_sixel_dynamic(fb, palette)
   assert_eq(result, "\u001bPq#0;2;100;100;100#1;2;25;52;95#1!4~$-\u001b\\")
 }
 
@@ -71,7 +71,7 @@ test "render_layout simple" {
     children: [],
     text: None,
   }
-  let sixel = @sixel.render_layout(layout, 100, 100)
+  let sixel = @image.render_layout(layout, 100, 100)
   // Just verify it produces valid sixel output
   inspect(sixel.has_prefix("\u001bPq"), content="true")
   inspect(sixel.has_suffix("\u001b\\"), content="true")
@@ -79,8 +79,8 @@ test "render_layout simple" {
 
 ///|
 test "color blend" {
-  let white = @sixel.Color::white()
-  let blue = @sixel.Color::blue()
+  let white = @image.Color::white()
+  let blue = @image.Color::blue()
   let blended = blue.blend(white, 128) // 50% blend
   // Should be roughly halfway between blue and white
   inspect(blended.r > 100, content="true")
@@ -102,9 +102,9 @@ test "render_paint_node_to_framebuffer does not add debug border for block" {
     @paint.PaintProperties::from_style(style),
     [],
   )
-  let fb = @sixel.Framebuffer::new(6, 6)
-  let palette = @sixel.DynamicPalette::new()
-  @sixel.render_paint_node_to_framebuffer(node, fb, palette)
+  let fb = @image.Framebuffer::new(6, 6)
+  let palette = @image.DynamicPalette::new()
+  @image.render_paint_node_to_framebuffer(node, fb, palette)
 
   inspect(fb.get_pixel(0, 0), content="1")
   inspect(fb.get_pixel(1, 1), content="1")
@@ -125,9 +125,9 @@ test "render_paint_node_to_framebuffer blends semi transparent background" {
     @paint.PaintProperties::from_style(style),
     [],
   )
-  let fb = @sixel.Framebuffer::new(4, 4)
-  let palette = @sixel.DynamicPalette::new()
-  @sixel.render_paint_node_to_framebuffer(node, fb, palette)
+  let fb = @image.Framebuffer::new(4, 4)
+  let palette = @image.DynamicPalette::new()
+  @image.render_paint_node_to_framebuffer(node, fb, palette)
 
   let color = palette.colors[fb.get_pixel(0, 0)]
   inspect(color.r, content="255")

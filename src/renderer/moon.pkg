@@ -13,7 +13,7 @@ import {
   "mizchi/crater/types",
   "mizchi/crater/layout/dispatch",
   "mizchi/crater/x/kitty",
-  "mizchi/crater/x/sixel",
+  "mizchi/crater/x/image",
 }
 
 import {

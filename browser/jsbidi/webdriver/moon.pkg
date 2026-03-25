@@ -7,7 +7,7 @@ import {
   "mizchi/crater/paint",
   "mizchi/crater/renderer",
   "mizchi/crater/svg",
-  "mizchi/crater/x/sixel",
+  "mizchi/crater/x/image",
   "mizchi/js/core",
   "mizchi/js/deno",
   "moonbitlang/core/json",

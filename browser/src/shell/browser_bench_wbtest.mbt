@@ -225,7 +225,7 @@ test "bench_browser_sixel_github_mizchi_sixel_encode" (b : @bench.T) {
   let layout = @renderer.render_with_external_css(html, ctx, [])
   let paint_node = @paint.from_node_and_layout(node, layout)
   b.bench(name="browser_sixel_github_mizchi_sixel_encode", fn() {
-    b.keep(@sixel.render_paint_node_to_sixel_scrolled(paint_node, 1440, 960, 0))
+    b.keep(@image.render_paint_node_to_sixel_scrolled(paint_node, 1440, 960, 0))
   })
 }
 

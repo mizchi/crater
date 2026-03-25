@@ -1,7 +1,7 @@
 ///|
 /// Demo: SVG rendering with Kitty Graphics Protocol (for Ghostty/Kitty/WezTerm)
 test "kitty demo svg" {
-  let scene = @sixel.create_svg_demo_scene()
+  let scene = @image.create_svg_demo_scene()
   let kitty = render_svg_to_kitty(scene, 150, 120)
   println(kitty)
 }

@@ -1,7 +1,7 @@
 import {
   "mizchi/crater/svg",
   "mizchi/crater/paint",
-  "mizchi/crater/x/sixel",
+  "mizchi/crater/x/image",
   "moonbitlang/async/io",
 }
 

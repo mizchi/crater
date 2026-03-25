@@ -7182,7 +7182,7 @@ pub fn render_to_sixel(html : String, width : Int, height : Int) -> String {
     color_scheme: @media.ColorScheme::Light,
   }
   let layout = render(html, ctx)
-  @sixel.render_layout(layout, width, height)
+  @image.render_layout(layout, width, height)
 }
 
 ///|
@@ -7224,7 +7224,7 @@ pub fn render_to_sixel_with_css(
   let (node, layout) = render_to_node_and_layout_with_external_css(
     html, ctx, external_css,
   )
-  @sixel.render_with_styles_scrolled(node, layout, width, height, scroll_y)
+  @image.render_with_styles_scrolled(node, layout, width, height, scroll_y)
 }
 
 ///|

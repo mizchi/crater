@@ -22,7 +22,7 @@ import {
   "mizchi/crater/css/media",
   "mizchi/x/pipe",
   "mizchi/crater/x/kitty",
-  "mizchi/crater/x/sixel",
+  "mizchi/crater/x/image",
 } for "wbtest"
 
 warnings = "-unused_package"

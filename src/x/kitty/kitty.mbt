@@ -28,13 +28,13 @@ fn write_base64_triplet(
 
 ///|
 fn kitty_palette_color_at(
-  palette : @sixel.DynamicPalette,
+  palette : @image.DynamicPalette,
   idx : Int,
-) -> @sixel.Color {
+) -> @image.Color {
   if idx >= 0 && idx < palette.colors.length() {
     palette.colors[idx]
   } else {
-    @sixel.Color::white()
+    @image.Color::white()
   }
 }
 
@@ -99,8 +99,8 @@ async fn[T : @io.Writer] write_kitty_chunk_header_to(
 ///|
 /// Convert Framebuffer to Kitty Graphics Protocol string
 pub fn to_kitty(
-  fb : @sixel.Framebuffer,
-  palette : @sixel.DynamicPalette,
+  fb : @image.Framebuffer,
+  palette : @image.DynamicPalette,
 ) -> String {
   let buf = StringBuilder::new()
   let mut chunk = StringBuilder::new()
@@ -131,8 +131,8 @@ pub fn to_kitty(
 ///|
 pub async fn[T : @io.Writer] write_kitty(
   writer : T,
-  fb : @sixel.Framebuffer,
-  palette : @sixel.DynamicPalette,
+  fb : @image.Framebuffer,
+  palette : @image.DynamicPalette,
 ) -> Unit {
   let mut chunk = StringBuilder::new()
   let mut chunk_len = 0
@@ -179,12 +179,12 @@ pub fn render_svg_to_kitty(
   width : Int,
   height : Int,
 ) -> String {
-  let fb = @sixel.Framebuffer::new(width, height)
-  let palette = @sixel.DynamicPalette::new()
+  let fb = @image.Framebuffer::new(width, height)
+  let palette = @image.DynamicPalette::new()
   // Fill with white background
   fb.fill_rect(0, 0, width, height, 0)
   // Render SVG
-  @sixel.render_svg_scene(scene, fb, palette)
+  @image.render_svg_scene(scene, fb, palette)
   // Convert to Kitty
   to_kitty(fb, palette)
 }
@@ -196,10 +196,10 @@ pub async fn[T : @io.Writer] write_svg_to_kitty(
   width : Int,
   height : Int,
 ) -> Unit {
-  let fb = @sixel.Framebuffer::new(width, height)
-  let palette = @sixel.DynamicPalette::new()
+  let fb = @image.Framebuffer::new(width, height)
+  let palette = @image.DynamicPalette::new()
   fb.fill_rect(0, 0, width, height, 0)
-  @sixel.render_svg_scene(scene, fb, palette)
+  @image.render_svg_scene(scene, fb, palette)
   write_kitty(writer, fb, palette)
 }
 
@@ -232,9 +232,9 @@ pub fn render_paint_node_to_kitty_scrolled(
   height : Int,
   scroll_y : Int,
 ) -> String {
-  let fb = @sixel.Framebuffer::new(width, height)
-  let palette = @sixel.DynamicPalette::new()
-  @sixel.render_paint_node_to_framebuffer_scrolled(node, fb, palette, scroll_y)
+  let fb = @image.Framebuffer::new(width, height)
+  let palette = @image.DynamicPalette::new()
+  @image.render_paint_node_to_framebuffer_scrolled(node, fb, palette, scroll_y)
   // Convert to Kitty
   to_kitty(fb, palette)
 }
@@ -247,9 +247,9 @@ pub async fn[T : @io.Writer] write_paint_node_to_kitty_scrolled(
   height : Int,
   scroll_y : Int,
 ) -> Unit {
-  let fb = @sixel.Framebuffer::new(width, height)
-  let palette = @sixel.DynamicPalette::new()
-  @sixel.render_paint_node_to_framebuffer_scrolled(node, fb, palette, scroll_y)
+  let fb = @image.Framebuffer::new(width, height)
+  let palette = @image.DynamicPalette::new()
+  @image.render_paint_node_to_framebuffer_scrolled(node, fb, palette, scroll_y)
   write_kitty(writer, fb, palette)
 }
 
@@ -259,15 +259,15 @@ pub fn render_svg_to_kitty_with_camera(
   scene : @svg.Scene,
   camera : @svg.Camera,
 ) -> String {
-  let fb = @sixel.Framebuffer::new(
+  let fb = @image.Framebuffer::new(
     camera.viewport_width,
     camera.viewport_height,
   )
-  let palette = @sixel.DynamicPalette::new()
+  let palette = @image.DynamicPalette::new()
   // Fill with white background
   fb.fill_rect(0, 0, camera.viewport_width, camera.viewport_height, 0)
   // Render SVG with camera
-  @sixel.render_svg_scene_with_camera(scene, fb, palette, camera)
+  @image.render_svg_scene_with_camera(scene, fb, palette, camera)
   // Convert to Kitty
   to_kitty(fb, palette)
 }

@@ -2,9 +2,9 @@
 fn make_blank_kitty_fixture(
   width : Int,
   height : Int,
-) -> (@sixel.Framebuffer, @sixel.DynamicPalette) {
-  let fb = @sixel.Framebuffer::new(width, height)
-  let palette = @sixel.DynamicPalette::new()
+) -> (@image.Framebuffer, @image.DynamicPalette) {
+  let fb = @image.Framebuffer::new(width, height)
+  let palette = @image.DynamicPalette::new()
   (fb, palette)
 }
 
