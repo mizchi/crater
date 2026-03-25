@@ -38,6 +38,15 @@ try {
         );
         console.error(`[font] Text metrics provider installed`);
 
+        // Set up font metrics
+        const getFontInfo = fontMod.getFontInfo ?? fontMod.default?.getFontInfo;
+        if (getFontInfo) {
+          const info = JSON.parse(getFontInfo() as string);
+          const ascentRatio = (info.ascent || 0) / (info.units_per_em || 2048);
+          (globalThis as any).__craterFontAscentRatio = () => ascentRatio;
+          console.error(`[font] Ascent ratio: ${ascentRatio.toFixed(4)}`);
+        }
+
         // Set up glyph rendering functions for SVG-based text paint
         if (glyphToSvgPath && glyphAdvance) {
           (globalThis as any).__craterGlyphToSvgPath = (cp: number, fs: number) =>

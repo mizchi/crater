@@ -4,10 +4,11 @@
 
 ///|
 /// Provides glyph outlines and advance widths for text rendering.
-/// Returns SVG path commands for a codepoint at a given font size.
 pub(all) struct GlyphProvider {
   /// Get SVG path commands for a glyph. Returns (commands, advance_width).
   get_glyph : (Int, Double) -> (Array[@svg.PathCommand], Double)
+  /// Font ascent in pixels at font_size=1. Multiply by actual font_size.
+  ascent_ratio : Double // ascent / units_per_em (e.g. 1854/2048 ≈ 0.905)
 }
 
 ///|
@@ -25,6 +26,7 @@ pub fn clear_glyph_provider() -> Unit {
 
 ///|
 /// Draw text using the glyph provider (SVG path rendering).
+/// Handles word-wrapping within max_width and baseline positioning.
 /// Returns the total height used.
 fn draw_text_with_glyphs(
   fb : Framebuffer,
@@ -52,39 +54,100 @@ fn draw_text_with_glyphs(
   } else {
     font_size
   }
-  let mut cur_x = x.to_double()
-  let mut cur_y = y.to_double()
-  let mut max_y = y.to_double() + effective_line_height
-  let max_x = if max_width > 0 {
+  // Baseline offset: glyphs have Y=0 at baseline, negative Y for ascenders
+  let baseline_offset = provider.ascent_ratio * font_size
+  let max_x_limit = if max_width > 0 {
     (x + max_width).to_double()
   } else {
     fb.width.to_double()
   }
-  for c in text {
-    if c == '\n' {
+  // Split text into words for wrapping
+  let words = split_text_into_words(text)
+  let mut cur_x = x.to_double()
+  let mut cur_y = y.to_double()
+  let mut max_y_seen = y.to_double() + effective_line_height
+  let space_advance = get_advance(provider, ' '.to_int(), font_size)
+  for i, word in words {
+    if word == "\n" {
       cur_x = x.to_double()
       cur_y = cur_y + effective_line_height
-      max_y = cur_y + effective_line_height
+      max_y_seen = cur_y + effective_line_height
       continue
     }
-    if c == '\r' {
-      continue
+    // Measure word width
+    let word_width = measure_word_width(provider, word, font_size)
+    // Wrap if this word would exceed max_width (but not if we're at line start)
+    if max_width > 0 &&
+      cur_x + word_width > max_x_limit &&
+      cur_x > x.to_double() + 0.01 {
+      cur_x = x.to_double()
+      cur_y = cur_y + effective_line_height
+      max_y_seen = cur_y + effective_line_height
     }
-    let cp = c.to_int()
-    let (commands, advance) = (provider.get_glyph)(cp, font_size)
-    // Do not wrap — text wrapping is handled by the layout engine.
-    // Paint layer just renders glyphs at their computed positions.
-    // Render glyph if we have commands
-    if commands.length() > 0 {
-      // Translate commands to current position
-      let translated = translate_path_commands(
-        commands, cur_x, cur_y,
-      )
-      @svg.raster_path(translated, Some(color), None, 0.0, setter)
+    // Add space before word (except at line start or first word)
+    if i > 0 && word != "\n" && cur_x > x.to_double() + 0.01 {
+      cur_x = cur_x + space_advance
     }
-    cur_x = cur_x + advance
+    // Render each character
+    for c in word {
+      let cp = c.to_int()
+      let (commands, advance) = (provider.get_glyph)(cp, font_size)
+      if commands.length() > 0 {
+        let translated = translate_path_commands(
+          commands, cur_x, cur_y + baseline_offset,
+        )
+        @svg.raster_path(translated, Some(color), None, 0.0, setter)
+      }
+      cur_x = cur_x + advance
+    }
   }
-  (max_y - y.to_double()).to_int()
+  (max_y_seen - y.to_double()).to_int()
+}
+
+///|
+fn get_advance(provider : GlyphProvider, codepoint : Int, font_size : Double) -> Double {
+  let (_, advance) = (provider.get_glyph)(codepoint, font_size)
+  advance
+}
+
+///|
+fn measure_word_width(
+  provider : GlyphProvider,
+  word : String,
+  font_size : Double,
+) -> Double {
+  let mut w = 0.0
+  for c in word {
+    w = w + get_advance(provider, c.to_int(), font_size)
+  }
+  w
+}
+
+///|
+/// Split text into words (by whitespace). Preserves newlines as "\n" tokens.
+fn split_text_into_words(text : String) -> Array[String] {
+  let words : Array[String] = []
+  let buf = StringBuilder::new()
+  for c in text {
+    if c == '\n' {
+      if buf.to_string().length() > 0 {
+        words.push(buf.to_string())
+        buf.reset()
+      }
+      words.push("\n")
+    } else if c == ' ' || c == '\t' || c == '\r' {
+      if buf.to_string().length() > 0 {
+        words.push(buf.to_string())
+        buf.reset()
+      }
+    } else {
+      buf.write_char(c)
+    }
+  }
+  if buf.to_string().length() > 0 {
+    words.push(buf.to_string())
+  }
+  words
 }
 
 ///|
@@ -113,7 +176,6 @@ fn translate_path_commands(
       ArcTo(rx, ry, rot, large, sweep, x, y) =>
         @svg.PathCommand::ArcTo(rx, ry, rot, large, sweep, x + dx, y + dy)
       ClosePath => @svg.PathCommand::ClosePath
-      // Relative commands don't need translation
       _ => cmd
     }
   })

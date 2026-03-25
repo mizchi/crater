@@ -79,6 +79,15 @@ extern "js" fn js_glyph_advance(codepoint : Int, font_size : Double) -> Double =
   #|}
 
 ///|
+/// Get font ascent ratio (ascent / unitsPerEm)
+extern "js" fn js_font_ascent_ratio() -> Double =
+  #|() => {
+  #|  const fn = globalThis.__craterFontAscentRatio;
+  #|  if (typeof fn === "function") { const v = Number(fn()); return Number.isFinite(v) ? v : 0.8; }
+  #|  return 0.8;
+  #|}
+
+///|
 fn parse_csv_quad(s : String) -> (Double, Double, Double, Double)? {
   let parts = s.split(",").collect()
   if parts.length() < 4 {
@@ -159,7 +168,10 @@ fn ensure_paint_provider_initialized() -> Unit {
   // Set up glyph provider for SVG-based text rendering
   if has_glyph_functions() {
     js_log_stderr("Installing glyph provider")
+    let ascent_ratio = js_font_ascent_ratio()
+    js_log_stderr("ascent_ratio=" + ascent_ratio.to_string())
     let glyph_provider : @sixel.GlyphProvider = {
+      ascent_ratio,
       get_glyph: fn(codepoint, font_size) {
         let svg_path = js_glyph_to_svg_path(codepoint, font_size)
         let advance = js_glyph_advance(codepoint, font_size)
