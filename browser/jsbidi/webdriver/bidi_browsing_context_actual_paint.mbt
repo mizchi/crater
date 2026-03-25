@@ -62,18 +62,18 @@ extern "js" fn has_glyph_functions() -> Bool =
 
 ///|
 /// Get SVG path string for a glyph
-extern "js" fn js_glyph_to_svg_path(codepoint : Int, font_size : Double) -> String =
-  #|(cp, fs) => {
-  #|  const fn = globalThis.__craterGlyphToSvgPath;
+extern "js" fn js_glyph_to_svg_path(codepoint : Int, font_size : Double, is_bold : Bool) -> String =
+  #|(cp, fs, bold) => {
+  #|  const fn = bold ? (globalThis.__craterGlyphToSvgPathBold || globalThis.__craterGlyphToSvgPath) : globalThis.__craterGlyphToSvgPath;
   #|  if (typeof fn !== "function") return "";
   #|  try { return String(fn(cp, fs) || ""); } catch { return ""; }
   #|}
 
 ///|
 /// Get advance width for a glyph
-extern "js" fn js_glyph_advance(codepoint : Int, font_size : Double) -> Double =
-  #|(cp, fs) => {
-  #|  const fn = globalThis.__craterGlyphAdvance;
+extern "js" fn js_glyph_advance(codepoint : Int, font_size : Double, is_bold : Bool) -> Double =
+  #|(cp, fs, bold) => {
+  #|  const fn = bold ? (globalThis.__craterGlyphAdvanceBold || globalThis.__craterGlyphAdvance) : globalThis.__craterGlyphAdvance;
   #|  if (typeof fn !== "function") return fs * 0.5;
   #|  try { const v = Number(fn(cp, fs)); return Number.isFinite(v) ? v : fs * 0.5; } catch { return fs * 0.5; }
   #|}
@@ -172,9 +172,9 @@ fn ensure_paint_provider_initialized() -> Unit {
     js_log_stderr("ascent_ratio=" + ascent_ratio.to_string())
     let glyph_provider : @sixel.GlyphProvider = {
       ascent_ratio,
-      get_glyph: fn(codepoint, font_size) {
-        let svg_path = js_glyph_to_svg_path(codepoint, font_size)
-        let advance = js_glyph_advance(codepoint, font_size)
+      get_glyph: fn(codepoint, font_size, is_bold) {
+        let svg_path = js_glyph_to_svg_path(codepoint, font_size, is_bold)
+        let advance = js_glyph_advance(codepoint, font_size, is_bold)
         if svg_path.length() == 0 {
           return ([], advance)
         }

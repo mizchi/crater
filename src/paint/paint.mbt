@@ -23,6 +23,7 @@ pub(all) struct PaintProperties {
   color : @types.Color // Text color (computed)
   background_color : @types.Color // Background color (computed)
   font_size : Double // Font size in pixels (for text rendering)
+  is_bold : Bool // Whether text should be rendered bold
 }
 
 ///|
@@ -35,6 +36,7 @@ pub fn PaintProperties::default() -> PaintProperties {
     color: @types.Color::black(),
     background_color: @types.Color::transparent(),
     font_size: 16.0,
+    is_bold: false,
   }
 }
 
@@ -48,6 +50,7 @@ pub fn PaintProperties::from_style(style : @style.Style) -> PaintProperties {
     color: style.color,
     background_color: style.background_color,
     font_size: style.font_size,
+    is_bold: false, // Will be set from tag name in from_node_and_layout
   }
 }
 
@@ -393,6 +396,14 @@ pub fn flatten_for_rendering(node : PaintNode) -> Array[PaintNode] {
 ///|
 /// Extract tag name from node ID
 /// Node IDs have format: "tag#id", "tag.class", or "tag"
+fn is_bold_tag(tag : String) -> Bool {
+  match tag {
+    "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "b" | "strong" | "th" => true
+    _ => false
+  }
+}
+
+///|
 fn extract_tag_from_id(id : String) -> String {
   // "#text" is a special case for text nodes
   if id == "#text" {
@@ -419,7 +430,11 @@ pub fn from_node_and_layout(
   node : @node.Node,
   layout : @types.Layout,
 ) -> PaintNode {
-  let paint = PaintProperties::from_style(node.style)
+  let mut paint = PaintProperties::from_style(node.style)
+  let tag = extract_tag_from_id(node.id)
+  if is_bold_tag(tag) {
+    paint = { ..paint, is_bold: true }
+  }
   let children : Array[PaintNode] = []
 
   // Match children by index (assumes same order)
@@ -429,16 +444,18 @@ pub fn from_node_and_layout(
     layout.children.length()
   }
   for i = 0; i < child_count; i = i + 1 {
-    children.push(from_node_and_layout(node.children[i], layout.children[i]))
+    let mut child = from_node_and_layout(node.children[i], layout.children[i])
+    // Propagate bold to text children
+    if paint.is_bold && not(child.paint.is_bold) {
+      child = { ..child, paint: { ..child.paint, is_bold: true } }
+    }
+    children.push(child)
   }
 
   // Apply CSS transform (translate) to visual position
   let transform = node.style.transform
   let translate_x = transform.compute_translate_x(layout.width)
   let translate_y = transform.compute_translate_y(layout.height)
-
-  // Extract tag name from node ID
-  let tag = extract_tag_from_id(node.id)
   PaintNode::new(
     node.id,
     tag,
@@ -524,7 +541,11 @@ fn from_node_and_layout_with_viewport_inner(
   if effective_bottom < viewport_top || abs_y > viewport_bottom {
     return None
   }
-  let paint = PaintProperties::from_style(node.style)
+  let mut paint = PaintProperties::from_style(node.style)
+  let tag = extract_tag_from_id(node.id)
+  if is_bold_tag(tag) {
+    paint = { ..paint, is_bold: true }
+  }
   let children : Array[PaintNode] = []
 
   // Match children by index (assumes same order)
@@ -550,7 +571,14 @@ fn from_node_and_layout_with_viewport_inner(
         viewport_bottom,
         abs_y,
       ) {
-      Some(child) => children.push(child)
+      Some(child) => {
+        // Propagate bold to text children
+        if paint.is_bold && not(child.paint.is_bold) {
+          children.push({ ..child, paint: { ..child.paint, is_bold: true } })
+        } else {
+          children.push(child)
+        }
+      }
       None => ()
     }
   }
@@ -559,9 +587,6 @@ fn from_node_and_layout_with_viewport_inner(
   let transform = node.style.transform
   let translate_x = transform.compute_translate_x(layout.width)
   let translate_y = transform.compute_translate_y(layout.height)
-
-  // Extract tag name from node ID
-  let tag = extract_tag_from_id(node.id)
   Some(
     PaintNode::new(
       node.id,

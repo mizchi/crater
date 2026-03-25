@@ -5,8 +5,9 @@
 ///|
 /// Provides glyph outlines and advance widths for text rendering.
 pub(all) struct GlyphProvider {
-  /// Get SVG path commands for a glyph. Returns (commands, advance_width).
-  get_glyph : (Int, Double) -> (Array[@svg.PathCommand], Double)
+  /// Get SVG path commands for a glyph. Args: (codepoint, font_size, is_bold).
+  /// Returns (commands, advance_width).
+  get_glyph : (Int, Double, Bool) -> (Array[@svg.PathCommand], Double)
   /// Font ascent in pixels at font_size=1. Multiply by actual font_size.
   ascent_ratio : Double // ascent / units_per_em (e.g. 1854/2048 ≈ 0.905)
 }
@@ -39,6 +40,7 @@ fn draw_text_with_glyphs(
   color : @svg.Color,
   font_size : Double,
   line_height : Double,
+  is_bold : Bool,
 ) -> Int {
   let setter : @svg.PixelSetter = {
     set: fn(px, py, c) {
@@ -61,12 +63,14 @@ fn draw_text_with_glyphs(
   } else {
     fb.width.to_double()
   }
-  // Split text into words for wrapping
+  // Word-wrap using Regular font metrics (matching layout engine),
+  // then render glyphs with the actual weight (bold or regular).
   let words = split_text_into_words(text)
   let mut cur_x = x.to_double()
   let mut cur_y = y.to_double()
   let mut max_y_seen = y.to_double() + effective_line_height
-  let space_advance = get_advance(provider, ' '.to_int(), font_size)
+  // Use regular (non-bold) metrics for wrapping to match layout engine
+  let space_advance_layout = get_advance(provider, ' '.to_int(), font_size, false)
   for i, word in words {
     if word == "\n" {
       cur_x = x.to_double()
@@ -74,9 +78,9 @@ fn draw_text_with_glyphs(
       max_y_seen = cur_y + effective_line_height
       continue
     }
-    // Measure word width
-    let word_width = measure_word_width(provider, word, font_size)
-    // Wrap if this word would exceed max_width (but not if we're at line start)
+    // Measure word with Regular font (matching layout)
+    let word_width = measure_word_width(provider, word, font_size, false)
+    // Wrap if needed
     if max_width > 0 &&
       cur_x + word_width > max_x_limit &&
       cur_x > x.to_double() + 0.01 {
@@ -84,14 +88,14 @@ fn draw_text_with_glyphs(
       cur_y = cur_y + effective_line_height
       max_y_seen = cur_y + effective_line_height
     }
-    // Add space before word (except at line start or first word)
+    // Space before word (except at line start)
     if i > 0 && word != "\n" && cur_x > x.to_double() + 0.01 {
-      cur_x = cur_x + space_advance
+      cur_x = cur_x + space_advance_layout
     }
-    // Render each character
+    // Render each character with actual weight
     for c in word {
       let cp = c.to_int()
-      let (commands, advance) = (provider.get_glyph)(cp, font_size)
+      let (commands, advance) = (provider.get_glyph)(cp, font_size, is_bold)
       if commands.length() > 0 {
         let translated = translate_path_commands(
           commands, cur_x, cur_y + baseline_offset,
@@ -105,8 +109,8 @@ fn draw_text_with_glyphs(
 }
 
 ///|
-fn get_advance(provider : GlyphProvider, codepoint : Int, font_size : Double) -> Double {
-  let (_, advance) = (provider.get_glyph)(codepoint, font_size)
+fn get_advance(provider : GlyphProvider, codepoint : Int, font_size : Double, is_bold : Bool) -> Double {
+  let (_, advance) = (provider.get_glyph)(codepoint, font_size, is_bold)
   advance
 }
 
@@ -115,10 +119,11 @@ fn measure_word_width(
   provider : GlyphProvider,
   word : String,
   font_size : Double,
+  is_bold : Bool,
 ) -> Double {
   let mut w = 0.0
   for c in word {
-    w = w + get_advance(provider, c.to_int(), font_size)
+    w = w + get_advance(provider, c.to_int(), font_size, is_bold)
   }
   w
 }
