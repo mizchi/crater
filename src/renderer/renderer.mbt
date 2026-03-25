@@ -6555,6 +6555,52 @@ fn compute_element_style_indexed(
     style = { ..style, line_height: style.font_size * normal_line_height_ratio }
   }
 
+  // Apply presentational HTML attributes (bgcolor, width, align, etc.)
+  // These act as low-priority CSS and are overridden by stylesheets.
+  match selector_elem.get_attribute("bgcolor") {
+    Some(bg_value) => {
+      let parsed = @computed.parse_color(bg_value)
+      match parsed.get_color() {
+        Some(color) => style = { ..style, background_color: color }
+        None => ()
+      }
+    }
+    None => ()
+  }
+  match selector_elem.get_attribute("width") {
+    Some(width_value) => {
+      let tag = selector_elem.tag_name.to_lower()
+      if tag == "table" || tag == "td" || tag == "th" || tag == "col" || tag == "colgroup" {
+        let dim = if width_value.has_suffix("%") {
+          match width_value.strip_suffix("%") {
+            Some(num_str) => {
+              let n = @strconv.parse_double(num_str.to_string()) catch { _ => -1.0 }
+              if n >= 0.0 { @types.Dimension::Percent(n / 100.0) } else { @types.Dimension::Auto }
+            }
+            None => @types.Dimension::Auto
+          }
+        } else {
+          let n = @strconv.parse_double(width_value.to_string()) catch { _ => -1.0 }
+          if n >= 0.0 { @types.Dimension::Length(n) } else { @types.Dimension::Auto }
+        }
+        if dim != @types.Dimension::Auto {
+          style = { ..style, width: dim }
+        }
+      }
+    }
+    None => ()
+  }
+  match selector_elem.get_attribute("align") {
+    Some(align_value) =>
+      match align_value.to_lower() {
+        "center" => style = { ..style, text_align: @style.TextAlign::Center }
+        "right" => style = { ..style, text_align: @style.TextAlign::Right }
+        "left" => style = { ..style, text_align: @style.TextAlign::Left }
+        _ => ()
+      }
+    None => ()
+  }
+
   // Apply font metrics first so em/ch/ex units in later properties
   // (width/height/gap/etc.) resolve against the element's own font.
   match cascaded {
