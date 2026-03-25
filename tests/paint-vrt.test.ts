@@ -191,6 +191,36 @@ test.describe("Paint VRT", () => {
     });
   });
 
+  test("real-world snapshot: example-com visual parity", async ({ browser }) => {
+    const snapshot = loadRealWorldSnapshot("example-com");
+    const chromiumPage = await chromiumPageForVrt(browser, snapshot.viewport);
+    const craterPage = new CraterBidiPage();
+    await craterPage.connect();
+    try {
+      await chromiumPage.setContent(snapshot.html, { waitUntil: "load" });
+      const chromiumPng = await chromiumPage.screenshot({ type: "png" });
+      const craterImage = await renderCraterHtml(craterPage, snapshot.html, snapshot.viewport);
+
+      const result = await compareChromiumPngToImage(chromiumPage, chromiumPng, craterImage, {
+        outputDir: path.join(OUTPUT_ROOT, "example-com"),
+        threshold: 0.3,
+        maxDiffRatio: 1.0,
+        cropToContent: true,
+        contentPadding: 12,
+        backgroundTolerance: 18,
+        maskToVisibleContent: true,
+        maskPadding: 2,
+      });
+
+      console.log(`example-com diffRatio: ${result.diffRatio.toFixed(6)} (${result.diffPixels}/${result.totalPixels} pixels)`);
+      // Goal: bring this to 0
+      expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+    } finally {
+      await craterPage.close();
+      await chromiumPage.close();
+    }
+  });
+
   for (const snapshotName of ["playwright-intro", "mdn-wasm-text"]) {
     test(`real-world snapshot: ${snapshotName} stays within loose visual diff budget`, async ({
       browser,

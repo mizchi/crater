@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-03-25T07:40:41.406Z",
+  "config": {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pixelmatchThreshold": 0.3,
+    "defaultMaxDiffRatio": 0.15
+  },
+  "summary": {
+    "total": 20,
+    "passed": 14,
+    "failed": 6
+  },
+  "tests": {
+    "css-flexbox/align-baseline.html": {
+      "diffRatio": 0.01860294117647059,
+      "status": "pass"
+    },
+    "css-flexbox/align-content-wrap-004.html": {
+      "diffRatio": 0.15382296106459084,
+      "status": "fail"
+    },
+    "css-flexbox/align-content_center.html": {
+      "diffRatio": 0.08465501792114695,
+      "status": "pass"
+    },
+    "css-flexbox/align-content_flex-end.html": {
+      "diffRatio": 0.08452060931899641,
+      "status": "pass"
+    },
+    "css-flexbox/align-content_flex-start.html": {
+      "diffRatio": 0.08448028673835126,
+      "status": "pass"
+    },
+    "css-display/display-change-iframe.html": {
+      "diffRatio": 0.0732495511669659,
+      "status": "pass"
+    },
+    "css-display/display-change-object-iframe.html": {
+      "diffRatio": 0.0732495511669659,
+      "status": "pass"
+    },
+    "css-display/display-contents-001-crash.html": {
+      "diffRatio": 0,
+      "status": "pass"
+    },
+    "css-display/display-contents-alignment-001.html": {
+      "diffRatio": 0.05900312985713373,
+      "status": "pass"
+    },
+    "css-display/display-contents-alignment-002.html": {
+      "diffRatio": 0.05760364842454395,
+      "status": "pass"
+    },
+    "css-box/margin-trim/flex-block-end-trimmed-only.html": {
+      "diffRatio": 0,
+      "status": "pass"
+    },
+    "css-box/margin-trim/flex-block-start-trimmed-only.html": {
+      "diffRatio": 0,
+      "status": "pass"
+    },
+    "css-box/margin-trim/flex-block-trimmed-only.html": {
+      "diffRatio": 0,
+      "status": "pass"
+    },
+    "css-box/margin-trim/flex-column-block-multiline.html": {
+      "diffRatio": 0.23045224448813956,
+      "status": "fail"
+    },
+    "css-box/margin-trim/flex-column-grow.html": {
+      "diffRatio": 0.12586286240220892,
+      "status": "pass"
+    },
+    "css-position/fixed-z-index-blend.html": {
+      "diffRatio": 0.0006166666666666666,
+      "status": "pass"
+    },
+    "css-position/position-absolute-center-001.html": {
+      "diffRatio": 0.15382296106459084,
+      "status": "fail"
+    },
+    "css-position/position-absolute-center-002.html": {
+      "diffRatio": 0.15382296106459084,
+      "status": "fail"
+    },
+    "css-position/position-absolute-center-003.html": {
+      "diffRatio": 0.15382296106459084,
+      "status": "fail"
+    },
+    "css-position/position-absolute-center-004.html": {
+      "diffRatio": 0.15382296106459084,
+      "status": "fail"
+    }
+  }
+}

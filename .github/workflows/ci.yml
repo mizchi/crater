@@ -500,7 +500,10 @@ jobs:
       - name: Run paint VRT
         run: just test-vrt
 
-      - name: Upload paint VRT artifacts
+      - name: Run WPT VRT
+        run: just test-wpt-vrt
+
+      - name: Upload VRT artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:

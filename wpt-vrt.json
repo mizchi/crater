@@ -1,0 +1,7 @@
+{
+  "modules": ["css-flexbox", "css-display", "css-box", "css-position"],
+  "limitPerModule": 30,
+  "viewport": { "width": 800, "height": 600 },
+  "pixelmatchThreshold": 0.3,
+  "defaultMaxDiffRatio": 0.15
+}

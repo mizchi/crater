@@ -371,12 +371,13 @@ export class CraterBidiPage {
     return await new Promise<BidiResponse>((resolve, reject) => {
       this.pendingCommands.set(id, { resolve, reject });
       this.ws!.send(payload);
+      const timeoutMs = method === "browsingContext.capturePaintData" ? 60000 : 10000;
       setTimeout(() => {
         if (this.pendingCommands.has(id)) {
           this.pendingCommands.delete(id);
           reject(new Error(`Timeout waiting for response to ${method}`));
         }
-      }, 10000);
+      }, timeoutMs);
     });
   }
 }

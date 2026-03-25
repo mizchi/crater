@@ -1,8 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { spawn } from "node:child_process";
-import { pathToFileURL } from "node:url";
 import type { Browser, Page } from "@playwright/test";
+import pixelmatchFn from "pixelmatch";
 import { CraterBidiPage } from "./crater-bidi-page";
 
 export interface DecodedImage {
@@ -41,30 +40,27 @@ export interface VisualDiffResult {
   reportPath: string;
 }
 
-type PixelmatchExports = {
-  pixelmatch: (
-    img1: Uint8Array,
-    img2: Uint8Array,
-    width: number,
-    height: number,
-    includeOutput: boolean,
-    threshold: number,
-    includeAA: boolean,
-    alpha: number,
-    diffMask: boolean,
-  ) => { diffCount: number; output?: Uint8Array };
-};
+interface PixelmatchResult {
+  diffCount: number;
+  output: Uint8Array;
+}
 
-const PIXELMATCH_REPO = path.resolve(process.cwd(), "..", "pixelmatch");
-const PIXELMATCH_COMPONENT_DIR = path.join(PIXELMATCH_REPO, "component");
-const PIXELMATCH_GEN_ENTRY = path.join(
-  PIXELMATCH_COMPONENT_DIR,
-  "test",
-  "gen",
-  "pixelmatch-component.js",
-);
-
-let pixelmatchPromise: Promise<PixelmatchExports> | null = null;
+function runPixelmatch(
+  img1: Uint8Array,
+  img2: Uint8Array,
+  width: number,
+  height: number,
+  options: { threshold: number; includeAA: boolean; alpha: number; diffMask: boolean },
+): PixelmatchResult {
+  const output = new Uint8Array(width * height * 4);
+  const diffCount = pixelmatchFn(img1, img2, output, width, height, {
+    threshold: options.threshold,
+    includeAA: options.includeAA,
+    alpha: options.alpha,
+    diffMask: options.diffMask,
+  });
+  return { diffCount, output };
+}
 
 type RoiRect = {
   x: number;
@@ -80,54 +76,6 @@ type FloatRect = {
   height: number;
 };
 
-async function runCommand(command: string, args: string[], cwd: string): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
-    const child = spawn(command, args, {
-      cwd,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    let stderr = "";
-    let stdout = "";
-    child.stdout.on("data", (chunk) => {
-      stdout += String(chunk);
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += String(chunk);
-    });
-    child.once("error", reject);
-    child.once("exit", (code) => {
-      if (code === 0) {
-        resolve();
-        return;
-      }
-      reject(
-        new Error(
-          `${command} ${args.join(" ")} failed (${code})\n${stdout}\n${stderr}`.trim(),
-        ),
-      );
-    });
-  });
-}
-
-async function ensurePixelmatchComponent(): Promise<void> {
-  try {
-    await fs.access(PIXELMATCH_GEN_ENTRY);
-  } catch {
-    await runCommand("just", ["transpile"], PIXELMATCH_COMPONENT_DIR);
-  }
-}
-
-async function loadPixelmatch(): Promise<PixelmatchExports> {
-  if (!pixelmatchPromise) {
-    pixelmatchPromise = (async () => {
-      await ensurePixelmatchComponent();
-      const moduleUrl = `${pathToFileURL(PIXELMATCH_GEN_ENTRY).href}?cacheBust=${Date.now()}`;
-      const mod = (await import(moduleUrl)) as { pixelmatch: PixelmatchExports };
-      return mod.pixelmatch;
-    })();
-  }
-  return pixelmatchPromise;
-}
 
 export async function chromiumPageForVrt(
   browser: Browser,
@@ -406,17 +354,17 @@ export async function comparePngs(
     );
   }
 
-  const pixelmatch = await loadPixelmatch();
-  const result = pixelmatch.pixelmatch(
+  const result = runPixelmatch(
     chromiumImage.data,
     craterImage.data,
     chromiumImage.width,
     chromiumImage.height,
-    true,
-    options.threshold,
-    options.includeAA ?? false,
-    options.alpha ?? 0.1,
-    options.diffMask ?? false,
+    {
+      threshold: options.threshold,
+      includeAA: options.includeAA ?? false,
+      alpha: options.alpha ?? 0.1,
+      diffMask: options.diffMask ?? false,
+    },
   );
 
   const diffPixels = result.diffCount;
@@ -425,7 +373,7 @@ export async function comparePngs(
   const diffImage: DecodedImage = {
     width: chromiumImage.width,
     height: chromiumImage.height,
-    data: result.output ? Uint8Array.from(result.output) : chromiumImage.data,
+    data: result.output,
   };
 
   await fs.mkdir(options.outputDir, { recursive: true });
@@ -447,7 +395,6 @@ export async function comparePngs(
         diffRatio,
         threshold: options.threshold,
         maxDiffRatio: options.maxDiffRatio,
-        note: "Crater screenshot is currently browsingContext.captureScreenshotData output.",
       },
       null,
       2,
@@ -509,17 +456,17 @@ export async function compareChromiumPngToImage(
     ? applyMask(chromiumCompareImage, craterCompareImage, compareMask)
     : craterCompareImage;
 
-  const pixelmatch = await loadPixelmatch();
-  const result = pixelmatch.pixelmatch(
+  const result = runPixelmatch(
     chromiumCompareImage.data,
     maskedCraterImage.data,
     chromiumCompareImage.width,
     chromiumCompareImage.height,
-    true,
-    options.threshold,
-    options.includeAA ?? false,
-    options.alpha ?? 0.1,
-    options.diffMask ?? false,
+    {
+      threshold: options.threshold,
+      includeAA: options.includeAA ?? false,
+      alpha: options.alpha ?? 0.1,
+      diffMask: options.diffMask ?? false,
+    },
   );
 
   const diffPixels = result.diffCount;
@@ -530,7 +477,7 @@ export async function compareChromiumPngToImage(
   const diffImage: DecodedImage = {
     width: chromiumCompareImage.width,
     height: chromiumCompareImage.height,
-    data: result.output ? Uint8Array.from(result.output) : chromiumCompareImage.data,
+    data: result.output,
   };
 
   await fs.mkdir(options.outputDir, { recursive: true });
@@ -554,7 +501,6 @@ export async function compareChromiumPngToImage(
         maskPixels: compareMask ? maskPixelCount(compareMask) : undefined,
         threshold: options.threshold,
         maxDiffRatio: options.maxDiffRatio,
-        note: "Crater image is actual paint output from browsingContext.capturePaintData.",
       },
       null,
       2,

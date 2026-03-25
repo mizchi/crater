@@ -215,6 +215,14 @@ test-website:
 test-vrt:
     pnpm test:vrt
 
+# Run WPT visual regression tests against Chromium screenshots
+test-wpt-vrt:
+    pnpm test:wpt-vrt
+
+# Update WPT VRT baseline
+wpt-vrt-baseline-update:
+    WPT_VRT_UPDATE_BASELINE=1 pnpm test:wpt-vrt
+
 # Run Playwright benchmark
 bench-playwright:
     pnpm bench:playwright
