@@ -51,7 +51,7 @@ pub struct JsResult {
 }
 
 ///|
-pub enum AsyncExecutionMode {
+pub(all) enum AsyncExecutionMode {
   ImmediateFlush
   DeferredFlush
 }
