@@ -529,7 +529,99 @@ export async function renderCraterHtml(
   html: string,
   viewport: { width: number; height: number },
 ): Promise<DecodedImage> {
+  if (process.env.CRATER_PAINT_BACKEND === "native") {
+    return renderCraterHtmlNative(html, viewport);
+  }
   await page.setViewport(viewport.width, viewport.height);
   await page.setContentWithScripts(html);
   return page.capturePaintData();
+}
+
+function getCraterPaintBinCandidates(): string[] {
+  const home = process.env.HOME ?? "";
+  return [
+    process.env.CRATER_PAINT_BIN ?? "",
+    `${home}/ghq/github.com/mizchi/kagura/examples/crater_paint/_build/native/debug/build/crater_paint.exe`,
+    `${home}/ghq/github.com/mizchi/kagura/examples/crater_paint/_build/native/release/build/crater_paint.exe`,
+  ].filter(Boolean);
+}
+
+async function renderCraterHtmlNative(
+  html: string,
+  viewport: { width: number; height: number },
+): Promise<DecodedImage> {
+  const { writeFileSync, readFileSync } = await import("node:fs");
+  const { execFileSync } = await import("node:child_process");
+
+  // Write input files
+  writeFileSync("/tmp/crater_paint_input.html", html);
+  writeFileSync("/tmp/crater_paint_config.txt", `${viewport.width} ${viewport.height}`);
+
+  // Find binary
+  let bin: string | null = null;
+  for (const candidate of getCraterPaintBinCandidates()) {
+    try {
+      const { accessSync } = await import("node:fs");
+      accessSync(candidate);
+      bin = candidate;
+      break;
+    } catch {
+      continue;
+    }
+  }
+  if (!bin) {
+    throw new Error("crater_paint binary not found. Build it with: cd ~/ghq/github.com/mizchi/kagura/examples/crater_paint && moon build --target native");
+  }
+
+  // Run renderer
+  const cwd = `${process.env.HOME}/ghq/github.com/mizchi/kagura/examples/crater_paint`;
+  const result = execFileSync(bin, [], {
+    cwd,
+    timeout: 30_000,
+    maxBuffer: 10 * 1024 * 1024,
+  });
+  const stdout = result.toString();
+  if (!stdout.includes("OK")) {
+    throw new Error(`crater_paint failed: ${stdout}`);
+  }
+
+  // Read BMP output
+  const bmpData = readFileSync("/tmp/crater_paint_output.bmp");
+  return decodeBmp(bmpData, viewport.width, viewport.height);
+}
+
+function decodeBmp(data: Buffer, expectedWidth: number, expectedHeight: number): DecodedImage {
+  // BMP header: 14 bytes file header + DIB header
+  // Pixel data offset at bytes 10-13 (little-endian uint32)
+  const pixelOffset = data.readUInt32LE(10);
+  const width = data.readInt32LE(18);
+  const height = Math.abs(data.readInt32LE(22));
+  const bitsPerPixel = data.readUInt16LE(28);
+  const topDown = data.readInt32LE(22) < 0;
+
+  if (width !== expectedWidth || height !== expectedHeight) {
+    throw new Error(`BMP size mismatch: ${width}x${height} vs expected ${expectedWidth}x${expectedHeight}`);
+  }
+
+  const bytesPerPixel = bitsPerPixel / 8;
+  const rowStride = Math.ceil((width * bytesPerPixel) / 4) * 4; // BMP rows are 4-byte aligned
+  const rgba = new Uint8Array(width * height * 4);
+
+  for (let y = 0; y < height; y++) {
+    const srcRow = topDown ? y : (height - 1 - y);
+    const srcOffset = pixelOffset + srcRow * rowStride;
+    for (let x = 0; x < width; x++) {
+      const srcIdx = srcOffset + x * bytesPerPixel;
+      const dstIdx = (y * width + x) * 4;
+      if (bytesPerPixel >= 3) {
+        // BMP is BGR(A)
+        rgba[dstIdx] = data[srcIdx + 2];     // R
+        rgba[dstIdx + 1] = data[srcIdx + 1]; // G
+        rgba[dstIdx + 2] = data[srcIdx];     // B
+        rgba[dstIdx + 3] = bytesPerPixel >= 4 ? data[srcIdx + 3] : 255; // A
+      }
+    }
+  }
+
+  return { width, height, data: rgba };
 }
