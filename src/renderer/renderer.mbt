@@ -137,12 +137,12 @@ pub fn RenderContext::default() -> RenderContext {
 ///|
 /// Text metrics provider hook for integrating external font engines.
 pub struct TextMetricsProvider {
-  func : (String, Double, Double, @style.WhiteSpace, @style.WritingMode) -> @types.MeasureFunc
+  func : (String, Double, Double, @style.WhiteSpace, @style.WritingMode, Double) -> @types.MeasureFunc
 }
 
 ///|
 pub fn TextMetricsProvider::new(
-  func : (String, Double, Double, @style.WhiteSpace, @style.WritingMode) -> @types.MeasureFunc,
+  func : (String, Double, Double, @style.WhiteSpace, @style.WritingMode, Double) -> @types.MeasureFunc,
 ) -> TextMetricsProvider {
   { func, }
 }
@@ -211,6 +211,7 @@ fn create_text_measure_with_provider(
   text_line_height : Double,
   white_space : @style.WhiteSpace,
   writing_mode : @style.WritingMode,
+  font_weight~ : Double = 400.0,
 ) -> @types.MeasureFunc {
   fn white_space_collapses_edges(white_space : @style.WhiteSpace) -> Bool {
     match white_space {
@@ -291,7 +292,7 @@ fn create_text_measure_with_provider(
         )
       } else {
         (provider.func)(
-          text, font_size, text_line_height, white_space, writing_mode,
+          text, font_size, text_line_height, white_space, writing_mode, font_weight,
         )
       }
     None =>
@@ -1821,6 +1822,7 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
   }
   let trimmed = trim_collapsible_whitespace_edges(normalized_text)
   let font_size = parent_style.font_size
+  let font_weight = parent_style.font_weight
   let text_line_height = parent_style.line_height
   let white_space = parent_style.white_space
   let writing_mode = parent_style.writing_mode
@@ -1830,6 +1832,7 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
     ..@style.Style::default(),
     display: @types.Inline,
     font_size,
+    font_weight,
     line_height: text_line_height,
     white_space,
     writing_mode,
@@ -1862,6 +1865,7 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
         text_style,
         create_text_measure_with_provider(
           collapsed, font_size, text_line_height, white_space, writing_mode,
+          font_weight=font_weight,
         ),
         collapsed,
       )
@@ -1873,6 +1877,7 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
       text_style,
       create_text_measure_with_provider(
         normalized_text, font_size, text_line_height, white_space, writing_mode,
+        font_weight=font_weight,
       ),
       normalized_text,
     )
@@ -6109,6 +6114,7 @@ fn get_ua_default_style(tag : String) -> @style.Style {
         // h1 UA defaults: bold 2em heading with block margins.
         ..default_style,
         font_size: 32.0,
+        font_weight: 700.0,
         line_height: 38.4,
         margin: {
           left: @types.Length(0.0),
@@ -6121,6 +6127,7 @@ fn get_ua_default_style(tag : String) -> @style.Style {
       {
         // h2 has 0.83em margin
         ..default_style,
+        font_weight: 700.0,
         margin: @types.Rect::new(
           @types.Length(13.3),
           @types.Auto,
@@ -6132,6 +6139,7 @@ fn get_ua_default_style(tag : String) -> @style.Style {
       {
         // h3 has 1em margin
         ..default_style,
+        font_weight: 700.0,
         margin: @types.Rect::new(
           @types.Length(16.0),
           @types.Auto,
@@ -6143,6 +6151,7 @@ fn get_ua_default_style(tag : String) -> @style.Style {
       {
         // h4-h6 have 1.33em margin
         ..default_style,
+        font_weight: 700.0,
         margin: @types.Rect::new(
           @types.Length(21.3),
           @types.Auto,
@@ -6512,6 +6521,9 @@ fn compute_element_style_indexed(
       font_size: ua_style.font_size,
       line_height: ua_style.line_height,
     }
+  }
+  if ua_style.font_weight != 400.0 {
+    style = { ..style, font_weight: ua_style.font_weight }
   }
   style = {
     ..style,

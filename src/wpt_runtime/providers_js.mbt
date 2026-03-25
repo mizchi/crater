@@ -111,6 +111,7 @@ fn create_external_text_metrics_provider() -> @renderer.TextMetricsProvider {
     line_height,
     white_space,
     writing_mode,
+    _font_weight,
   ) {
     let white_space_name = white_space.to_string()
     let writing_mode_name = writing_mode.to_string()

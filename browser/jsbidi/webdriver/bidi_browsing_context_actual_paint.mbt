@@ -97,6 +97,37 @@ extern "js" fn js_font_ascent_ratio() -> Double =
   #|}
 
 ///|
+extern "js" fn has_bold_text_provider() -> Bool =
+  #|() => typeof globalThis.__craterMeasureTextIntrinsicBold === "function"
+
+///|
+extern "js" fn call_bold_text_provider(
+  text : String,
+  font_size : Double,
+  line_height : Double,
+  white_space : String,
+  writing_mode : String,
+  available_width : Double,
+  available_height : Double,
+) -> String =
+  #|(text, fontSize, lineHeight, whiteSpace, writingMode, availableWidth, availableHeight) => {
+  #|  const fn = globalThis.__craterMeasureTextIntrinsicBold;
+  #|  if (typeof fn !== "function") return "";
+  #|  try {
+  #|    const result = fn(text, fontSize, lineHeight, whiteSpace, writingMode, availableWidth, availableHeight);
+  #|    let minWidth, maxWidth, minHeight, maxHeight;
+  #|    if (result && typeof result === "object") {
+  #|      minWidth = Number(result.minWidth ?? result.min_width);
+  #|      maxWidth = Number(result.maxWidth ?? result.max_width ?? minWidth);
+  #|      minHeight = Number(result.minHeight ?? result.min_height);
+  #|      maxHeight = Number(result.maxHeight ?? result.max_height ?? minHeight);
+  #|    } else { return ""; }
+  #|    if (!Number.isFinite(minWidth) || !Number.isFinite(maxWidth) || !Number.isFinite(minHeight) || !Number.isFinite(maxHeight)) return "";
+  #|    return `${minWidth},${maxWidth},${minHeight},${maxHeight}`;
+  #|  } catch { return ""; }
+  #|}
+
+///|
 fn parse_csv_quad(s : String) -> (Double, Double, Double, Double)? {
   let parts = s.split(",").collect()
   if parts.length() < 4 {
@@ -118,15 +149,24 @@ fn ensure_paint_text_provider() -> Unit {
       line_height,
       white_space,
       writing_mode,
+      font_weight,
     ) {
       let ws = white_space.to_string()
       let wm = writing_mode.to_string()
+      let is_bold = font_weight >= 700.0
       {
         func: fn(available_width, available_height) {
-          let payload = call_paint_text_provider(
-            text, font_size, line_height, ws, wm, available_width,
-            available_height,
-          )
+          let payload = if is_bold && has_bold_text_provider() {
+            call_bold_text_provider(
+              text, font_size, line_height, ws, wm, available_width,
+              available_height,
+            )
+          } else {
+            call_paint_text_provider(
+              text, font_size, line_height, ws, wm, available_width,
+              available_height,
+            )
+          }
           match parse_csv_quad(payload) {
             Some((min_w, max_w, min_h, max_h)) =>
               { min_width: min_w, max_width: max_w, min_height: min_h, max_height: max_h }

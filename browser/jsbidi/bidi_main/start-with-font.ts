@@ -109,6 +109,14 @@ try {
             (globalThis as any).__craterKernAdvanceBold = (cp1: number, cp2: number, fs: number) =>
               boldKernAdvance(cp1, cp2, fs);
           }
+          // Bold text metrics for layout
+          const boldMeasureText = boldMod.measureText ?? boldMod.default?.measureText;
+          if (boldMeasureText) {
+            (globalThis as any).__craterMeasureTextIntrinsicBold = createTextIntrinsicFnFromMeasureText(
+              (text: string, fontSize: number) => boldMeasureText(text, fontSize) as number,
+            );
+            console.error(`[font] Bold text metrics provider installed`);
+          }
           console.error(`[font] Bold glyph provider installed (kern=${!!boldKernAdvance})`);
           break;
         }

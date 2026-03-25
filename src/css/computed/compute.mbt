@@ -154,6 +154,7 @@ priv struct StyleBuilder {
   mut grid_row_end : @types.GridPlacement
   // Font properties
   mut font_size : Double
+  mut font_weight : Double
   mut line_height : Double
   // Text wrapping and direction
   mut text_align : @style.TextAlign
@@ -261,6 +262,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     grid_row_start: @types.GridPlacement::Auto,
     grid_row_end: @types.GridPlacement::Auto,
     font_size: 16.0,
+    font_weight: 400.0,
     line_height: 16.0,
     text_align: @style.TextAlign::Start,
     white_space: @style.WhiteSpace::Normal,
@@ -359,6 +361,7 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     grid_row_start: style.grid_row.start,
     grid_row_end: style.grid_row.end,
     font_size: style.font_size,
+    font_weight: style.font_weight,
     line_height: style.line_height,
     text_align: style.text_align,
     white_space: style.white_space,
@@ -466,6 +469,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     justify_items: self.justify_items,
     justify_self: self.justify_self,
     font_size: self.font_size,
+    font_weight: self.font_weight,
     line_height: self.line_height,
     text_align: self.text_align,
     white_space: self.white_space,
@@ -1794,6 +1798,8 @@ fn apply_property(
           }
       }
     }
+    // Font weight
+    "font-weight" => builder.font_weight = parse_font_weight(value)
     // Transform (visual position offset)
     "transform" => builder.transform = parse_transform(value)
     // Zoom (layout scaling, inherited)
@@ -1808,6 +1814,20 @@ fn apply_property(
     "table-layout" => builder.table_layout = parse_table_layout(value)
     "caption-side" => builder.caption_side = parse_caption_side(value)
     _ => ()
+  }
+}
+
+///|
+fn parse_font_weight(value : String) -> Double {
+  match value.trim().to_lower() {
+    "normal" => 400.0
+    "bold" => 700.0
+    "lighter" => 100.0
+    "bolder" => 700.0
+    _ => {
+      let n = @strconv.parse_double(value.trim()) catch { _ => return 400.0 }
+      if n >= 1.0 && n <= 1000.0 { n } else { 400.0 }
+    }
   }
 }
 
