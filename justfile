@@ -215,6 +215,14 @@ test-playwright-adapter:
 test-website:
     pnpm test:website
 
+# Compare a URL between Chromium and Crater (one-command VRT)
+vrt-url *args:
+    npx tsx scripts/vrt-url.ts {{args}}
+
+# Compare a URL using native paint backend
+vrt-url-native *args:
+    npx tsx scripts/vrt-url.ts {{args}} --backend native
+
 # Run relaxed paint visual regression tests against Chromium screenshots
 test-vrt:
     pnpm test:vrt
