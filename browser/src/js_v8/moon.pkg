@@ -1,0 +1,9 @@
+import {
+  "mizchi/crater/dom",
+  "mizchi/crater-browser/js" @js,
+  "mizchi/v8" @v8,
+}
+
+options(
+  "supported-targets": [ "native" ],
+)

@@ -1,8 +1,10 @@
 ///|
-/// JavaScript Runtime - Native stub (not supported)
+/// JavaScript Runtime - Native target
+///
+/// Default is stub (NotSupported). To enable V8, use JsContext::new_with_runtime()
+/// with the V8JsRuntime from mizchi/crater-browser/js_v8.
 
 ///|
-/// Native stub runtime implementation
 priv struct NativeStubRuntime {
   _unused : Int
 }
@@ -23,7 +25,6 @@ fn default_js_runtime() -> &JsRuntime {
 ///|
 impl JsRuntime for NativeStubRuntime with init(self : NativeStubRuntime) -> Unit {
   let _ = self
-  // Not supported on Native
 }
 
 ///|
@@ -34,11 +35,7 @@ impl JsRuntime for NativeStubRuntime with execute(
   code : String,
   async_mode : AsyncExecutionMode,
 ) -> JsResult raise JsError {
-  let _ = self
-  let _ = context_id
-  let _ = dom
-  let _ = code
-  let _ = async_mode
+  let _ = (self, context_id, dom, code, async_mode)
   raise NotSupported
 }
 
@@ -48,14 +45,11 @@ impl JsRuntime for NativeStubRuntime with tick(
   context_id : Int,
   dom : @dom.DomTree,
 ) -> JsResult raise JsError {
-  let _ = self
-  let _ = context_id
-  let _ = dom
+  let _ = (self, context_id, dom)
   JsResult::new("false", [], true)
 }
 
 ///|
-/// Initialize JS runtime (no-op on Native)
 pub fn init_js_runtime() -> Unit {
   native_stub_runtime.init()
 }

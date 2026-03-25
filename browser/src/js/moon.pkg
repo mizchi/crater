@@ -6,11 +6,13 @@ import {
 
 options(
   targets: {
-    // QuickJS implementation
+    // QuickJS implementation (JS target)
     "js_runtime_js_test.mbt": [ "js" ],
-    "js_runtime_native.mbt": [ "native" ],
     "js_runtime_quickjs.mbt": [ "js" ],
+    // V8 implementation (native target) - moved to js_v8 package
+    // Stubs
     "js_runtime_wasm.mbt": [ "wasm", "wasm-gc" ],
+    "js_runtime_native_stub.mbt": [ "native" ],
     "scheduler_integration_js.mbt": [ "js" ],
     "scheduler_integration_stub.mbt": [ "wasm", "wasm-gc", "native" ],
     "scheduler_integration_test.mbt": [ "js" ],

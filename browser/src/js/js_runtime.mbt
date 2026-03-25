@@ -67,6 +67,12 @@ pub fn JsResult::new(
 }
 
 ///|
+/// Create an ExecutionError (for use by external JsRuntime implementations).
+pub fn JsError::execution_error(msg : String) -> JsError {
+  ExecutionError(msg)
+}
+
+///|
 /// JavaScript runtime abstraction
 pub(open) trait JsRuntime {
   /// Initialize runtime if needed (idempotent)
