@@ -6,6 +6,7 @@ import {
   "mizchi/crater/dom",
   "mizchi/crater/paint",
   "mizchi/crater/renderer",
+  "mizchi/crater/svg",
   "mizchi/crater/x/sixel",
   "mizchi/js/core",
   "mizchi/js/deno",

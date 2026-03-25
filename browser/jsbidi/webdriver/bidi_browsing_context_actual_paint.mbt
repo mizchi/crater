@@ -56,6 +56,29 @@ extern "js" fn call_paint_text_provider(
   #|}
 
 ///|
+/// Check if JS-side glyph functions are available (mizchi/font loaded)
+extern "js" fn has_glyph_functions() -> Bool =
+  #|() => typeof globalThis.__craterGlyphToSvgPath === "function"
+
+///|
+/// Get SVG path string for a glyph
+extern "js" fn js_glyph_to_svg_path(codepoint : Int, font_size : Double) -> String =
+  #|(cp, fs) => {
+  #|  const fn = globalThis.__craterGlyphToSvgPath;
+  #|  if (typeof fn !== "function") return "";
+  #|  try { return String(fn(cp, fs) || ""); } catch { return ""; }
+  #|}
+
+///|
+/// Get advance width for a glyph
+extern "js" fn js_glyph_advance(codepoint : Int, font_size : Double) -> Double =
+  #|(cp, fs) => {
+  #|  const fn = globalThis.__craterGlyphAdvance;
+  #|  if (typeof fn !== "function") return fs * 0.5;
+  #|  try { const v = Number(fn(cp, fs)); return Number.isFinite(v) ? v : fs * 0.5; } catch { return fs * 0.5; }
+  #|}
+
+///|
 fn parse_csv_quad(s : String) -> (Double, Double, Double, Double)? {
   let parts = s.split(",").collect()
   if parts.length() < 4 {
@@ -133,6 +156,22 @@ fn ensure_paint_provider_initialized() -> Unit {
     "has_paint_text_provider=" + has_provider.to_string(),
   )
   ensure_paint_text_provider()
+  // Set up glyph provider for SVG-based text rendering
+  if has_glyph_functions() {
+    js_log_stderr("Installing glyph provider")
+    let glyph_provider : @sixel.GlyphProvider = {
+      get_glyph: fn(codepoint, font_size) {
+        let svg_path = js_glyph_to_svg_path(codepoint, font_size)
+        let advance = js_glyph_advance(codepoint, font_size)
+        if svg_path.length() == 0 {
+          return ([], advance)
+        }
+        let commands = @svg.parse_path(svg_path)
+        (commands, advance)
+      },
+    }
+    @sixel.set_glyph_provider(glyph_provider)
+  }
 }
 
 ///|

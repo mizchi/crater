@@ -1036,11 +1036,24 @@ fn render_paint_node(
 
   // Draw text if this is a text node
   match node.text {
-    Some(text_content) => {
-      let text_idx = palette.get_or_add(types_color_to_sixel(node.paint.color))
-      let scale = 1
-      let _ = fb.draw_text(x, y, text_content, w, text_idx, scale)
-    }
+    Some(text_content) =>
+      match glyph_provider_override.val {
+        Some(provider) => {
+          let svg_color = @svg.Color::rgb(
+            node.paint.color.r, node.paint.color.g, node.paint.color.b,
+          )
+          let font_size = node.paint.font_size
+          let _ = draw_text_with_glyphs(
+            fb, palette, provider, x, y, text_content, w, svg_color,
+            font_size, font_size,
+          )
+        }
+        None => {
+          let text_idx = palette.get_or_add(types_color_to_sixel(node.paint.color))
+          let scale = 1
+          let _ = fb.draw_text(x, y, text_content, w, text_idx, scale)
+        }
+      }
     None => ()
   }
 

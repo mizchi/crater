@@ -22,6 +22,7 @@ pub(all) struct PaintProperties {
   opacity : Double // 0.0 = transparent, 1.0 = opaque
   color : @types.Color // Text color (computed)
   background_color : @types.Color // Background color (computed)
+  font_size : Double // Font size in pixels (for text rendering)
 }
 
 ///|
@@ -33,6 +34,7 @@ pub fn PaintProperties::default() -> PaintProperties {
     opacity: 1.0,
     color: @types.Color::black(),
     background_color: @types.Color::transparent(),
+    font_size: 16.0,
   }
 }
 
@@ -45,6 +47,7 @@ pub fn PaintProperties::from_style(style : @style.Style) -> PaintProperties {
     opacity: style.opacity,
     color: style.color,
     background_color: style.background_color,
+    font_size: style.font_size,
   }
 }
 
