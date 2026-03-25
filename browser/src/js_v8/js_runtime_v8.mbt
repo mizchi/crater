@@ -93,27 +93,32 @@ impl @js.JsRuntime for V8JsRuntime with execute(
     @js.ImmediateFlush => true
     @js.DeferredFlush => false
   }
-  let flush_code = if flush && self.dom_initialized {
-    "\n_flushMicrotasks();\nfor(let __i=0;__i<100;__i++){if(!_runOneTimeout())break;_flushMicrotasks();}"
-  } else if flush {
-    ""
-  } else {
-    ""
-  }
-  let wrapped = if self.dom_initialized {
-    // With mock DOM: collect domOps in result
-    "try {\n  const __result = (function() { " +
+  // Step 1: Execute user code and capture result
+  let exec_code = "try {\n  globalThis.__lastResult = (function() { " +
     code +
-    "\n})();" +
-    flush_code +
-    "\n  const __logsResult = __getLogs();\n  JSON.stringify({ success: true, value: __result === undefined ? 'undefined' : String(__result), logs: JSON.parse(__logsResult), domOps: domOps || [] });\n} catch(e) {\n  const __logsResult = __getLogs();\n  JSON.stringify({ success: false, error: e.message || String(e), logs: JSON.parse(__logsResult), domOps: domOps || [] });\n}"
-  } else {
-    // Without mock DOM: simple eval
-    "try {\n  const __result = (function() { " +
-    code +
-    "\n})();\n  const __logsResult = __getLogs();\n  JSON.stringify({ success: true, value: __result === undefined ? 'undefined' : String(__result), logs: JSON.parse(__logsResult) });\n} catch(e) {\n  const __logsResult = __getLogs();\n  JSON.stringify({ success: false, error: e.message || String(e), logs: JSON.parse(__logsResult) });\n}"
+    "\n})();\n  globalThis.__lastSuccess = true;\n} catch(e) {\n  globalThis.__lastError = e.message || String(e);\n  globalThis.__lastSuccess = false;\n}"
+  ignore(rt.eval_string(exec_code))
+  // Step 2: Flush V8 native microtasks (Promise.then etc.)
+  if flush {
+    ignore(rt.perform_microtask_checkpoint())
   }
-  match rt.eval_string(wrapped) {
+  // Step 3: Flush mock DOM timers (setTimeout) with microtask interleaving
+  if flush && self.dom_initialized {
+    for i = 0; i < 100; i = i + 1 {
+      match rt.eval_string("_runOneTimeout()") {
+        Ok(v) => if v != "true" { break }
+        Err(_) => break
+      }
+      ignore(rt.perform_microtask_checkpoint())
+    }
+  }
+  // Step 4: Collect results
+  let collect_code = if self.dom_initialized {
+    "(function() {\n  const __logsResult = __getLogs();\n  const v = globalThis.__lastSuccess\n    ? JSON.stringify({ success: true, value: globalThis.__lastResult === undefined ? 'undefined' : String(globalThis.__lastResult), logs: JSON.parse(__logsResult), domOps: domOps || [] })\n    : JSON.stringify({ success: false, error: globalThis.__lastError || 'unknown', logs: JSON.parse(__logsResult), domOps: domOps || [] });\n  return v;\n})()"
+  } else {
+    "(function() {\n  const __logsResult = __getLogs();\n  const v = globalThis.__lastSuccess\n    ? JSON.stringify({ success: true, value: globalThis.__lastResult === undefined ? 'undefined' : String(globalThis.__lastResult), logs: JSON.parse(__logsResult) })\n    : JSON.stringify({ success: false, error: globalThis.__lastError || 'unknown', logs: JSON.parse(__logsResult) });\n  return v;\n})()"
+  }
+  match rt.eval_string(collect_code) {
     Ok(result_json) => {
       if self.dom_initialized {
         let (result, dom_ops) = parse_result_with_ops(result_json)

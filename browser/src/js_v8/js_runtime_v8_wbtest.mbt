@@ -65,6 +65,130 @@ test "V8: JsContext integration" {
   assert_eq(result.value, "hello from v8")
 }
 
+// ============================================================
+// Mock DOM tests
+// ============================================================
+
+///|
+test "V8+DOM: document.createElement" {
+  let rt = V8JsRuntime::new_with_mock_dom(minimal_mock_dom_js())
+  rt.init()
+  let dom = @dom.DomTree::new()
+  let result = rt.execute(
+    0,
+    dom,
+    "const div = document.createElement('div'); return div.tagName",
+    @js.ImmediateFlush,
+  )
+  assert_true(result.success)
+  assert_eq(result.value, "DIV")
+}
+
+///|
+test "V8+DOM: setAttribute and getAttribute" {
+  let rt = V8JsRuntime::new_with_mock_dom(minimal_mock_dom_js())
+  rt.init()
+  let dom = @dom.DomTree::new()
+  let result = rt.execute(
+    0,
+    dom,
+    "const el = document.createElement('span'); el.setAttribute('class', 'test'); return el.getAttribute('class')",
+    @js.ImmediateFlush,
+  )
+  assert_true(result.success)
+  assert_eq(result.value, "test")
+}
+
+///|
+test "V8+DOM: appendChild and getElementById" {
+  let rt = V8JsRuntime::new_with_mock_dom(minimal_mock_dom_js())
+  rt.init()
+  let dom = @dom.DomTree::new()
+  let result = rt.execute(
+    0,
+    dom,
+    "const div = document.createElement('div'); div.id = 'myDiv'; document.body.appendChild(div); return document.getElementById('myDiv').tagName",
+    @js.ImmediateFlush,
+  )
+  assert_true(result.success)
+  assert_eq(result.value, "DIV")
+}
+
+///|
+test "V8+DOM: textContent" {
+  let rt = V8JsRuntime::new_with_mock_dom(minimal_mock_dom_js())
+  rt.init()
+  let dom = @dom.DomTree::new()
+  let result = rt.execute(
+    0,
+    dom,
+    "const p = document.createElement('p'); p.textContent = 'Hello'; document.body.appendChild(p); return document.body.textContent",
+    @js.ImmediateFlush,
+  )
+  assert_true(result.success)
+  assert_eq(result.value, "Hello")
+}
+
+///|
+test "V8+DOM: addEventListener and click" {
+  let rt = V8JsRuntime::new_with_mock_dom(minimal_mock_dom_js())
+  rt.init()
+  let dom = @dom.DomTree::new()
+  let result = rt.execute(
+    0,
+    dom,
+    "let clicked = false; const btn = document.createElement('button'); btn.addEventListener('click', () => { clicked = true; }); btn.click(); return clicked",
+    @js.ImmediateFlush,
+  )
+  assert_true(result.success)
+  assert_eq(result.value, "true")
+}
+
+///|
+test "V8+DOM: Promise ordering" {
+  let rt = V8JsRuntime::new_with_mock_dom(minimal_mock_dom_js())
+  rt.init()
+  let dom = @dom.DomTree::new()
+  // Use globalThis to capture async results since return is synchronous
+  let result = rt.execute(
+    0,
+    dom,
+    "globalThis.__order = []; globalThis.__order.push('sync'); Promise.resolve().then(() => globalThis.__order.push('promise')); globalThis.__order.push('end');",
+    @js.ImmediateFlush,
+  )
+  assert_true(result.success)
+  // Now read the final order after microtask checkpoint
+  let check = rt.execute(
+    0, dom, "return globalThis.__order.join(',')", @js.DeferredFlush,
+  )
+  assert_true(check.success)
+  assert_eq(check.value, "sync,end,promise")
+}
+
+///|
+test "V8+DOM: setTimeout ordering" {
+  let rt = V8JsRuntime::new_with_mock_dom(minimal_mock_dom_js())
+  rt.init()
+  let dom = @dom.DomTree::new()
+  let result = rt.execute(
+    0,
+    dom,
+    "globalThis.__order2 = []; globalThis.__order2.push('sync'); setTimeout(() => globalThis.__order2.push('timeout'), 0); Promise.resolve().then(() => globalThis.__order2.push('promise')); globalThis.__order2.push('end');",
+    @js.ImmediateFlush,
+  )
+  assert_true(result.success)
+  let check = rt.execute(
+    0, dom, "return globalThis.__order2.join(',')", @js.DeferredFlush,
+  )
+  assert_true(check.success)
+  // sync → end → promise (microtask) → timeout (task)
+  assert_eq(check.value, "sync,end,promise,timeout")
+}
+
+// ============================================================
+// Basic tests (no mock DOM)
+// ============================================================
+
 ///|
 test "V8: multiple console.log" {
   let rt = V8JsRuntime::new()

@@ -11,5 +11,6 @@
     "moonbitlang/x": "0.4.40"
   },
   "source": "src",
-  "preferred-target": "js"
+  "preferred-target": "js",
+  "--moonbit-unstable-prebuild": "scripts/mizchi-v8-consumer-prebuild.mjs"
 }

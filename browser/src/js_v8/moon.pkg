@@ -6,4 +6,9 @@ import {
 
 options(
   "supported-targets": [ "native" ],
+  link: {
+    "native": {
+      "cc-link-flags": "${build.MIZCHI_V8_CC_LINK_FLAGS}",
+    },
+  },
 )
