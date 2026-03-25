@@ -42,6 +42,7 @@ try {
   const measureText = regularMod.measureText ?? regularMod.default?.measureText;
   const glyphToSvgPath = regularMod.glyphToSvgPath ?? regularMod.default?.glyphToSvgPath;
   const glyphAdvance = regularMod.glyphAdvance ?? regularMod.default?.glyphAdvance;
+  const kernAdvance = regularMod.kernAdvance ?? regularMod.default?.kernAdvance;
   const getFontInfo = regularMod.getFontInfo ?? regularMod.default?.getFontInfo;
 
   if (loadFont && measureText) {
@@ -72,7 +73,11 @@ try {
           glyphToSvgPath(cp, fs);
         (globalThis as any).__craterGlyphAdvance = (cp: number, fs: number) =>
           glyphAdvance(cp, fs);
-        console.error(`[font] Glyph provider installed`);
+        if (kernAdvance) {
+          (globalThis as any).__craterKernAdvance = (cp1: number, cp2: number, fs: number) =>
+            kernAdvance(cp1, cp2, fs);
+        }
+        console.error(`[font] Glyph provider installed (kern=${!!kernAdvance})`);
       }
 
       break;
@@ -86,6 +91,7 @@ try {
       const loadBold = boldMod.loadFont ?? boldMod.default?.loadFont;
       const boldGlyphToSvgPath = boldMod.glyphToSvgPath ?? boldMod.default?.glyphToSvgPath;
       const boldGlyphAdvance = boldMod.glyphAdvance ?? boldMod.default?.glyphAdvance;
+      const boldKernAdvance = boldMod.kernAdvance ?? boldMod.default?.kernAdvance;
 
       if (loadBold && boldGlyphToSvgPath && boldGlyphAdvance) {
         for (const fontPath of boldCandidates) {
@@ -99,7 +105,11 @@ try {
             boldGlyphToSvgPath(cp, fs);
           (globalThis as any).__craterGlyphAdvanceBold = (cp: number, fs: number) =>
             boldGlyphAdvance(cp, fs);
-          console.error(`[font] Bold glyph provider installed`);
+          if (boldKernAdvance) {
+            (globalThis as any).__craterKernAdvanceBold = (cp1: number, cp2: number, fs: number) =>
+              boldKernAdvance(cp1, cp2, fs);
+          }
+          console.error(`[font] Bold glyph provider installed (kern=${!!boldKernAdvance})`);
           break;
         }
       }

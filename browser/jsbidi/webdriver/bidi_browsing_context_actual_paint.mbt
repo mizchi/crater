@@ -79,6 +79,15 @@ extern "js" fn js_glyph_advance(codepoint : Int, font_size : Double, is_bold : B
   #|}
 
 ///|
+/// Get kerning between two codepoints
+extern "js" fn js_kern_advance(cp1 : Int, cp2 : Int, font_size : Double, is_bold : Bool) -> Double =
+  #|(cp1, cp2, fs, bold) => {
+  #|  const fn = bold ? (globalThis.__craterKernAdvanceBold || globalThis.__craterKernAdvance) : globalThis.__craterKernAdvance;
+  #|  if (typeof fn !== "function") return 0;
+  #|  try { const v = Number(fn(cp1, cp2, fs)); return Number.isFinite(v) ? v : 0; } catch { return 0; }
+  #|}
+
+///|
 /// Get font ascent ratio (ascent / unitsPerEm)
 extern "js" fn js_font_ascent_ratio() -> Double =
   #|() => {
@@ -172,6 +181,9 @@ fn ensure_paint_provider_initialized() -> Unit {
     js_log_stderr("ascent_ratio=" + ascent_ratio.to_string())
     let glyph_provider : @sixel.GlyphProvider = {
       ascent_ratio,
+      get_kern: fn(cp1, cp2, font_size, is_bold) {
+        js_kern_advance(cp1, cp2, font_size, is_bold)
+      },
       get_glyph: fn(codepoint, font_size, is_bold) {
         let svg_path = js_glyph_to_svg_path(codepoint, font_size, is_bold)
         let advance = js_glyph_advance(codepoint, font_size, is_bold)

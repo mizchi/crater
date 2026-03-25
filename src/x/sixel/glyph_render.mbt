@@ -8,6 +8,8 @@ pub(all) struct GlyphProvider {
   /// Get SVG path commands for a glyph. Args: (codepoint, font_size, is_bold).
   /// Returns (commands, advance_width).
   get_glyph : (Int, Double, Bool) -> (Array[@svg.PathCommand], Double)
+  /// Get kerning adjustment between two codepoints. Args: (cp1, cp2, font_size, is_bold).
+  get_kern : (Int, Int, Double, Bool) -> Double
   /// Font ascent in pixels at font_size=1. Multiply by actual font_size.
   ascent_ratio : Double // ascent / units_per_em (e.g. 1854/2048 ≈ 0.905)
 }
@@ -92,9 +94,14 @@ fn draw_text_with_glyphs(
     if i > 0 && word != "\n" && cur_x > x.to_double() + 0.01 {
       cur_x = cur_x + space_advance_layout
     }
-    // Render each character with actual weight
+    // Render each character with actual weight and kerning
+    let mut prev_cp = 0
     for c in word {
       let cp = c.to_int()
+      // Apply kerning between consecutive characters
+      if prev_cp != 0 {
+        cur_x = cur_x + (provider.get_kern)(prev_cp, cp, font_size, is_bold)
+      }
       let (commands, advance) = (provider.get_glyph)(cp, font_size, is_bold)
       if commands.length() > 0 {
         let translated = translate_path_commands(
@@ -103,6 +110,7 @@ fn draw_text_with_glyphs(
         @svg.raster_path(translated, Some(color), None, 0.0, setter)
       }
       cur_x = cur_x + advance
+      prev_cp = cp
     }
   }
   (max_y_seen - y.to_double()).to_int()
