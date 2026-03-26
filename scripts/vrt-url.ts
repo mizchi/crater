@@ -121,7 +121,7 @@ if (backend === "native") {
   }
 
   const cwd = `${process.env.HOME}/ghq/github.com/mizchi/kagura/examples/crater_paint`;
-  const result = execFileSync(bin, [], { cwd, timeout: 30000, maxBuffer: 10 * 1024 * 1024 });
+  const result = execFileSync(bin, [], { cwd, timeout: 120000, maxBuffer: 10 * 1024 * 1024 });
   if (!result.toString().includes("OK")) {
     console.error("Error: crater_paint failed:", result.toString());
     process.exit(1);
