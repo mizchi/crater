@@ -69,7 +69,7 @@ Pixel-level comparison between Chromium and Crater rendering using [kagura](http
 | info.cern.ch | 3.30% | PASS |
 | www.google.com | 3.80% | PASS |
 | news.ycombinator.com | 12.4% | WARN |
-| en.wikipedia.org | - | (timeout) |
+| en.wikipedia.org | 7.65% | WARN |
 
 ```bash
 just vrt-url-native https://example.com        # Compare any URL
