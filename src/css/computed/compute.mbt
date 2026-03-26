@@ -1225,20 +1225,24 @@ fn apply_property(
       builder.border_style_left = bs
     }
     "border-top" => {
-      builder.border_top = resolve_border_width(value, ctx)
-      builder.border_style_top = extract_border_style_from_shorthand(value)
+      let bs = extract_border_style_from_shorthand(value)
+      builder.border_style_top = bs
+      builder.border_top = if is_none_border_style_enum(bs) { @types.Length(0.0) } else { resolve_border_width(value, ctx) }
     }
     "border-right" => {
-      builder.border_right = resolve_border_width(value, ctx)
-      builder.border_style_right = extract_border_style_from_shorthand(value)
+      let bs = extract_border_style_from_shorthand(value)
+      builder.border_style_right = bs
+      builder.border_right = if is_none_border_style_enum(bs) { @types.Length(0.0) } else { resolve_border_width(value, ctx) }
     }
     "border-bottom" => {
-      builder.border_bottom = resolve_border_width(value, ctx)
-      builder.border_style_bottom = extract_border_style_from_shorthand(value)
+      let bs = extract_border_style_from_shorthand(value)
+      builder.border_style_bottom = bs
+      builder.border_bottom = if is_none_border_style_enum(bs) { @types.Length(0.0) } else { resolve_border_width(value, ctx) }
     }
     "border-left" => {
-      builder.border_left = resolve_border_width(value, ctx)
-      builder.border_style_left = extract_border_style_from_shorthand(value)
+      let bs = extract_border_style_from_shorthand(value)
+      builder.border_style_left = bs
+      builder.border_left = if is_none_border_style_enum(bs) { @types.Length(0.0) } else { resolve_border_width(value, ctx) }
     }
     "border-top-width" => builder.border_top = resolve_dimension(value, ctx)
     "border-right-width" => builder.border_right = resolve_dimension(value, ctx)
@@ -1906,6 +1910,11 @@ fn parse_border_collapse(value : String) -> @style.BorderCollapse {
 
 ///|
 /// Border style keywords that suppress used border width.
+fn is_none_border_style_enum(style : @style.BorderStyle) -> Bool {
+  style == @style.BorderStyle::None || style == @style.BorderStyle::Hidden
+}
+
+///|
 fn is_none_border_style(value : String) -> Bool {
   let v = value.trim().to_lower()
   v == "none" || v == "hidden"
@@ -1914,13 +1923,24 @@ fn is_none_border_style(value : String) -> Bool {
 ///|
 fn extract_border_style_from_shorthand(value : String) -> @style.BorderStyle {
   let parts = split_whitespace(value)
+  let mut found_style = false
+  let mut result = @style.BorderStyle::None
   for part in parts {
-    let s = parse_border_style_value(part)
-    if s != @style.BorderStyle::None {
-      return s
+    let lower = part.to_lower()
+    match lower {
+      "none" | "hidden" | "dotted" | "dashed" | "solid" | "double" | "groove" |
+      "ridge" | "inset" | "outset" => {
+        found_style = true
+        result = parse_border_style_value(part)
+      }
+      _ => ()
     }
   }
-  @style.BorderStyle::Solid // Default for border shorthand with width
+  if found_style {
+    result
+  } else {
+    @style.BorderStyle::Solid // Default when only width/color specified
+  }
 }
 
 ///|
