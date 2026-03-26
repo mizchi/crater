@@ -242,6 +242,251 @@ test "viewport_culling_basic" {
 }
 
 ///|
+/// Test list marker generation for ul > li
+test "list_marker_disc_for_ul" {
+  let style = @style.Style::default()
+  let text_node = @node.Node::leaf("#text", style)
+  let li1 = @node.Node::new("li", style, [text_node])
+  let li2 = @node.Node::new("li", style, [text_node])
+  let ul = @node.Node::new("ul", style, [li1, li2])
+  let zero_rect : @types.Rect[Double] = {
+    left: 0.0,
+    right: 0.0,
+    top: 0.0,
+    bottom: 0.0,
+  }
+  let text_layout : @types.Layout = {
+    id: "#text",
+    x: 0.0,
+    y: 0.0,
+    width: 200.0,
+    height: 16.0,
+    margin: zero_rect,
+    padding: zero_rect,
+    border: zero_rect,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
+    children: [],
+    text: Some("Item text"),
+  }
+  let li1_layout : @types.Layout = {
+    id: "li",
+    x: 40.0,
+    y: 0.0,
+    width: 200.0,
+    height: 19.2,
+    margin: zero_rect,
+    padding: zero_rect,
+    border: zero_rect,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
+    children: [text_layout],
+    text: None,
+  }
+  let li2_layout : @types.Layout = {
+    id: "li",
+    x: 40.0,
+    y: 19.2,
+    width: 200.0,
+    height: 19.2,
+    margin: zero_rect,
+    padding: zero_rect,
+    border: zero_rect,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
+    children: [text_layout],
+    text: None,
+  }
+  let ul_layout : @types.Layout = {
+    id: "ul",
+    x: 0.0,
+    y: 0.0,
+    width: 240.0,
+    height: 38.4,
+    margin: zero_rect,
+    padding: zero_rect,
+    border: zero_rect,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
+    children: [li1_layout, li2_layout],
+    text: None,
+  }
+  let paint = from_node_and_layout(ul, ul_layout)
+  // ul should have 2 li children
+  inspect(paint.children.length(), content="2")
+  let li1_paint = paint.children[0]
+  // li should have original text child + marker child = 2 children
+  inspect(li1_paint.children.length(), content="2")
+  // The marker child (last child) should be a text node with bullet
+  let marker = li1_paint.children[1]
+  inspect(marker.tag, content="#text")
+  inspect(marker.id, content="#list-marker")
+  inspect(
+    marker.text,
+    content=(
+      #|Some("●")
+    ),
+  )
+  let li2_paint = paint.children[1]
+  inspect(li2_paint.children.length(), content="2")
+  let marker2 = li2_paint.children[1]
+  inspect(
+    marker2.text,
+    content=(
+      #|Some("●")
+    ),
+  )
+}
+
+///|
+/// Test list marker generation for ol > li (decimal numbers)
+test "list_marker_decimal_for_ol" {
+  let style = @style.Style::default()
+  let text_node = @node.Node::leaf("#text", style)
+  let li1 = @node.Node::new("li", style, [text_node])
+  let li2 = @node.Node::new("li", style, [text_node])
+  let li3 = @node.Node::new("li", style, [text_node])
+  let ol = @node.Node::new("ol", style, [li1, li2, li3])
+  let zero_rect : @types.Rect[Double] = {
+    left: 0.0,
+    right: 0.0,
+    top: 0.0,
+    bottom: 0.0,
+  }
+  let text_layout : @types.Layout = {
+    id: "#text",
+    x: 0.0,
+    y: 0.0,
+    width: 200.0,
+    height: 16.0,
+    margin: zero_rect,
+    padding: zero_rect,
+    border: zero_rect,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
+    children: [],
+    text: Some("text"),
+  }
+  let li_layouts : Array[@types.Layout] = []
+  for i = 0; i < 3; i = i + 1 {
+    li_layouts.push({
+      id: "li",
+      x: 40.0,
+      y: i.to_double() * 19.2,
+      width: 200.0,
+      height: 19.2,
+      margin: zero_rect,
+      padding: zero_rect,
+      border: zero_rect,
+      overflow_x: @types.Visible,
+      overflow_y: @types.Visible,
+      scroll_width: 0.0,
+      scroll_height: 0.0,
+      children: [text_layout],
+      text: None,
+    })
+  }
+  let ol_layout : @types.Layout = {
+    id: "ol",
+    x: 0.0,
+    y: 0.0,
+    width: 240.0,
+    height: 57.6,
+    margin: zero_rect,
+    padding: zero_rect,
+    border: zero_rect,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
+    children: li_layouts,
+    text: None,
+  }
+  let paint = from_node_and_layout(ol, ol_layout)
+  // Check markers have correct decimal text
+  let marker1 = paint.children[0].children[1]
+  inspect(
+    marker1.text,
+    content=(
+      #|Some("1.")
+    ),
+  )
+  let marker2 = paint.children[1].children[1]
+  inspect(
+    marker2.text,
+    content=(
+      #|Some("2.")
+    ),
+  )
+  let marker3 = paint.children[2].children[1]
+  inspect(
+    marker3.text,
+    content=(
+      #|Some("3.")
+    ),
+  )
+}
+
+///|
+/// Test that non-list elements don't get markers
+test "no_marker_for_div" {
+  let style = @style.Style::default()
+  let child = @node.Node::leaf("span", style)
+  let div = @node.Node::new("div", style, [child])
+  let zero_rect : @types.Rect[Double] = {
+    left: 0.0,
+    right: 0.0,
+    top: 0.0,
+    bottom: 0.0,
+  }
+  let child_layout : @types.Layout = {
+    id: "span",
+    x: 0.0,
+    y: 0.0,
+    width: 100.0,
+    height: 16.0,
+    margin: zero_rect,
+    padding: zero_rect,
+    border: zero_rect,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
+    children: [],
+    text: None,
+  }
+  let div_layout : @types.Layout = {
+    id: "div",
+    x: 0.0,
+    y: 0.0,
+    width: 100.0,
+    height: 16.0,
+    margin: zero_rect,
+    padding: zero_rect,
+    border: zero_rect,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
+    children: [child_layout],
+    text: None,
+  }
+  let paint = from_node_and_layout(div, div_layout)
+  // div should only have the span child, no marker
+  inspect(paint.children.length(), content="1")
+}
+
+///|
 /// Test viewport culling with zero-height container (like body with height: 100%)
 /// This was the root cause of addyosmani.com scrolling issue
 test "viewport_culling_zero_height_container" {

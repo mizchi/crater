@@ -20,6 +20,9 @@ pub fn parse_stylesheet(css : String) -> @cascade.Stylesheet {
         if name.to_lower() == "media" {
           // Parse @media rule
           pos = parse_media_rule(stylesheet, tokens, pos)
+        } else if name.to_lower() == "supports" {
+          // Parse @supports rule (treat condition as always true)
+          pos = parse_supports_rule(stylesheet, tokens, pos)
         } else {
           // Skip other @-rules (e.g., @import, @keyframes)
           pos = skip_at_rule(tokens, pos)
@@ -103,9 +106,16 @@ fn parse_media_rule(
         pos = pos + 1
       }
       @token.Token::EOF => break
-      @token.Token::AtKeyword(_) =>
-        // Skip nested @-rules inside @media
-        pos = skip_at_rule(tokens, pos)
+      @token.Token::AtKeyword(at_name) =>
+        if at_name.to_lower() == "supports" {
+          // Parse @supports inside @media — rules get the media query
+          pos = parse_supports_rule_with_media(
+            stylesheet, tokens, pos, media_query,
+          )
+        } else {
+          // Skip other nested @-rules inside @media
+          pos = skip_at_rule(tokens, pos)
+        }
       _ =>
         // Try to parse a style rule
         match parse_style_rule(tokens, pos) {
@@ -119,6 +129,164 @@ fn parse_media_rule(
                 selector,
                 declarations.copy(),
                 media_query,
+              )
+            }
+            pos = new_pos
+          }
+          None => pos = pos + 1
+        }
+    }
+  }
+  pos
+}
+
+///|
+/// Parse an @supports rule inside @media, attaching the media query to rules.
+fn parse_supports_rule_with_media(
+  stylesheet : @cascade.Stylesheet,
+  tokens : Array[@token.Token],
+  start : Int,
+  media_query : @media.MediaQueryList,
+) -> Int {
+  let mut pos = start + 1 // Skip @supports token
+
+  // Skip condition tokens until '{' (handling nested parens)
+  let mut paren_depth = 0
+  while pos < tokens.length() {
+    match tokens[pos] {
+      @token.Token::LeftParen => {
+        paren_depth += 1
+        pos = pos + 1
+      }
+      @token.Token::RightParen => {
+        paren_depth -= 1
+        pos = pos + 1
+      }
+      @token.Token::LeftBrace if paren_depth == 0 => break
+      @token.Token::EOF => return pos
+      _ => pos = pos + 1
+    }
+  }
+  if pos >= tokens.length() {
+    return pos
+  }
+
+  // Skip '{'
+  pos = pos + 1
+
+  // Parse rules inside @supports block until '}'
+  let mut brace_depth = 1
+  while pos < tokens.length() && brace_depth > 0 {
+    pos = skip_ws(tokens, pos)
+    if pos >= tokens.length() {
+      break
+    }
+    match tokens[pos] {
+      @token.Token::RightBrace => {
+        brace_depth -= 1
+        pos = pos + 1
+        if brace_depth <= 0 {
+          break
+        }
+      }
+      @token.Token::EOF => break
+      @token.Token::AtKeyword(_) => pos = skip_at_rule(tokens, pos)
+      _ =>
+        match parse_style_rule(tokens, pos) {
+          Some((selectors, declarations, new_pos)) => {
+            for item in selectors {
+              let selector_text = item.0
+              let selector = item.1
+              stylesheet.add_rule_with_media(
+                selector_text,
+                selector,
+                declarations.copy(),
+                media_query,
+              )
+            }
+            pos = new_pos
+          }
+          None => pos = pos + 1
+        }
+    }
+  }
+  pos
+}
+
+///|
+/// Parse an @supports rule and add its rules to the stylesheet.
+/// The condition is treated as always true (minimal implementation).
+fn parse_supports_rule(
+  stylesheet : @cascade.Stylesheet,
+  tokens : Array[@token.Token],
+  start : Int,
+) -> Int {
+  let mut pos = start + 1 // Skip @supports token
+
+  // Skip condition tokens until '{' (handling nested parens)
+  let mut paren_depth = 0
+  while pos < tokens.length() {
+    match tokens[pos] {
+      @token.Token::LeftParen => {
+        paren_depth += 1
+        pos = pos + 1
+      }
+      @token.Token::RightParen => {
+        paren_depth -= 1
+        pos = pos + 1
+      }
+      @token.Token::LeftBrace if paren_depth == 0 => break
+      @token.Token::EOF => return pos
+      _ => pos = pos + 1
+    }
+  }
+  if pos >= tokens.length() {
+    return pos
+  }
+
+  // Skip '{'
+  pos = pos + 1
+
+  // Parse rules inside @supports block until '}'
+  let mut brace_depth = 1
+  while pos < tokens.length() && brace_depth > 0 {
+    pos = skip_ws(tokens, pos)
+    if pos >= tokens.length() {
+      break
+    }
+    match tokens[pos] {
+      @token.Token::RightBrace => {
+        brace_depth -= 1
+        pos = pos + 1
+        if brace_depth <= 0 {
+          break
+        }
+      }
+      @token.Token::EOF => break
+      @token.Token::AtKeyword(name) =>
+        if name.to_lower() == "media" {
+          pos = parse_media_rule(stylesheet, tokens, pos)
+        } else if name.to_lower() == "supports" {
+          pos = parse_supports_rule(stylesheet, tokens, pos)
+        } else {
+          pos = skip_at_rule(tokens, pos)
+        }
+      _ =>
+        match parse_style_rule(tokens, pos) {
+          Some((selectors, declarations, new_pos)) => {
+            for item in selectors {
+              let selector_text = item.0
+              let selector = item.1
+              stylesheet.add_rule(selector_text, selector, declarations.copy())
+            }
+            let nested_rules = extract_ampersand_nested_rules(
+              tokens, pos, new_pos, selectors,
+            )
+            for nested_rule in nested_rules {
+              stylesheet.add_rule(
+                nested_rule.0,
+                nested_rule.1,
+                nested_rule.2.copy(),
               )
             }
             pos = new_pos
@@ -705,6 +873,11 @@ pub fn parse_stylesheet_with_diagnostics(css : String) -> ParseResult {
           pos = parse_media_rule_with_diagnostics(
             stylesheet, diagnostics, tokens, pos,
           )
+        } else if name.to_lower() == "supports" {
+          // Parse @supports rule (treat condition as always true)
+          pos = parse_supports_rule_with_diagnostics(
+            stylesheet, diagnostics, tokens, pos,
+          )
         } else {
           // Skip other @-rules (e.g., @import, @keyframes)
           pos = skip_at_rule(tokens, pos)
@@ -778,9 +951,15 @@ fn parse_media_rule_with_diagnostics(
         pos = pos + 1
       }
       @token.Token::EOF => break
-      @token.Token::AtKeyword(_) =>
-        // Skip nested @-rules inside @media
-        pos = skip_at_rule(tokens, pos)
+      @token.Token::AtKeyword(at_name) =>
+        if at_name.to_lower() == "supports" {
+          pos = parse_supports_rule_with_media(
+            stylesheet, tokens, pos, media_query,
+          )
+        } else {
+          // Skip other nested @-rules inside @media
+          pos = skip_at_rule(tokens, pos)
+        }
       _ =>
         // Try to parse a style rule
         match parse_style_rule_with_diagnostics(tokens, pos, diagnostics) {
@@ -795,6 +974,86 @@ fn parse_media_rule_with_diagnostics(
                 declarations.copy(),
                 media_query,
               )
+            }
+            pos = new_pos
+          }
+          None => pos = pos + 1
+        }
+    }
+  }
+  pos
+}
+
+///|
+/// Parse an @supports rule with diagnostics.
+/// The condition is treated as always true (minimal implementation).
+fn parse_supports_rule_with_diagnostics(
+  stylesheet : @cascade.Stylesheet,
+  diagnostics : @diagnostics.DiagnosticsCollector,
+  tokens : Array[@token.Token],
+  start : Int,
+) -> Int {
+  let mut pos = start + 1 // Skip @supports token
+
+  // Skip condition tokens until '{' (handling nested parens)
+  let mut paren_depth = 0
+  while pos < tokens.length() {
+    match tokens[pos] {
+      @token.Token::LeftParen => {
+        paren_depth += 1
+        pos = pos + 1
+      }
+      @token.Token::RightParen => {
+        paren_depth -= 1
+        pos = pos + 1
+      }
+      @token.Token::LeftBrace if paren_depth == 0 => break
+      @token.Token::EOF => return pos
+      _ => pos = pos + 1
+    }
+  }
+  if pos >= tokens.length() {
+    return pos
+  }
+
+  // Skip '{'
+  pos = pos + 1
+
+  // Parse rules inside @supports block until '}'
+  let mut brace_depth = 1
+  while pos < tokens.length() && brace_depth > 0 {
+    pos = skip_ws(tokens, pos)
+    if pos >= tokens.length() {
+      break
+    }
+    match tokens[pos] {
+      @token.Token::RightBrace => {
+        brace_depth -= 1
+        pos = pos + 1
+        if brace_depth <= 0 {
+          break
+        }
+      }
+      @token.Token::EOF => break
+      @token.Token::AtKeyword(name) =>
+        if name.to_lower() == "media" {
+          pos = parse_media_rule_with_diagnostics(
+            stylesheet, diagnostics, tokens, pos,
+          )
+        } else if name.to_lower() == "supports" {
+          pos = parse_supports_rule_with_diagnostics(
+            stylesheet, diagnostics, tokens, pos,
+          )
+        } else {
+          pos = skip_at_rule(tokens, pos)
+        }
+      _ =>
+        match parse_style_rule_with_diagnostics(tokens, pos, diagnostics) {
+          Some((selectors, declarations, new_pos)) => {
+            for item in selectors {
+              let selector_text = item.0
+              let selector = item.1
+              stylesheet.add_rule(selector_text, selector, declarations.copy())
             }
             pos = new_pos
           }

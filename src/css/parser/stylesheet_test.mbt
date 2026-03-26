@@ -770,6 +770,112 @@ test "parse one-level ampersand nested selector rule" {
 }
 
 ///|
+test "parse @supports rule" {
+  let css =
+    #|@supports (display: flex) {
+    #|  .flex { display: flex; }
+    #|}
+  let stylesheet = @parser.parse_stylesheet(css)
+  inspect(stylesheet.rules.length(), content="1")
+  inspect(stylesheet.rules[0].selector_text, content=".flex")
+}
+
+///|
+test "parse @supports rule with multiple rules" {
+  let css =
+    #|@supports (display: grid) {
+    #|  .grid { display: grid; }
+    #|  .item { grid-column: 1; }
+    #|}
+  let stylesheet = @parser.parse_stylesheet(css)
+  inspect(stylesheet.rules.length(), content="2")
+  inspect(stylesheet.rules[0].selector_text, content=".grid")
+  inspect(stylesheet.rules[1].selector_text, content=".item")
+}
+
+///|
+test "parse @supports with and/or conditions" {
+  let css =
+    #|@supports (display: flex) and (gap: 10px) {
+    #|  .modern { gap: 10px; }
+    #|}
+  let stylesheet = @parser.parse_stylesheet(css)
+  inspect(stylesheet.rules.length(), content="1")
+  inspect(stylesheet.rules[0].selector_text, content=".modern")
+}
+
+///|
+test "parse @supports with not condition" {
+  let css =
+    #|@supports not (display: grid) {
+    #|  .fallback { display: flex; }
+    #|}
+  let stylesheet = @parser.parse_stylesheet(css)
+  inspect(stylesheet.rules.length(), content="1")
+  inspect(stylesheet.rules[0].selector_text, content=".fallback")
+}
+
+///|
+test "parse @supports followed by normal rule" {
+  let css =
+    #|@supports (display: flex) {
+    #|  .inside { display: flex; }
+    #|}
+    #|.outside { display: block; }
+  let stylesheet = @parser.parse_stylesheet(css)
+  inspect(stylesheet.rules.length(), content="2")
+  inspect(stylesheet.rules[0].selector_text, content=".inside")
+  inspect(stylesheet.rules[1].selector_text, content=".outside")
+}
+
+///|
+test "parse nested @supports inside @media" {
+  let css =
+    #|@media screen {
+    #|  @supports (display: flex) {
+    #|    .flex { display: flex; }
+    #|  }
+    #|}
+  let stylesheet = @parser.parse_stylesheet(css)
+  inspect(stylesheet.rules.length(), content="1")
+  inspect(stylesheet.rules[0].selector_text, content=".flex")
+  match stylesheet.rules[0].media_query {
+    Some(mq) => inspect(mq.queries[0].media_type, content="Some(Screen)")
+    None => inspect("should have media query", content="has media query")
+  }
+}
+
+///|
+test "parse url with svg data uri" {
+  let css =
+    #|.icon { background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><rect/></svg>"); }
+  let stylesheet = @parser.parse_stylesheet(css)
+  inspect(stylesheet.rules.length(), content="1")
+  let decl = stylesheet.rules[0].declarations[0]
+  match decl.value {
+    @cascade.Value(v) =>
+      inspect(
+        v,
+        content="url(\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><rect/></svg>\")",
+      )
+    _ => ()
+  }
+}
+
+///|
+test "parse url with encoded svg data uri" {
+  let css = ".bg { background: url(\"data:image/svg+xml,%3Csvg%3E%3C/svg%3E\"); }"
+  let stylesheet = @parser.parse_stylesheet(css)
+  inspect(stylesheet.rules.length(), content="1")
+  let decl = stylesheet.rules[0].declarations[0]
+  match decl.value {
+    @cascade.Value(v) =>
+      inspect(v, content="url(\"data:image/svg+xml,%3Csvg%3E%3C/svg%3E\")")
+    _ => ()
+  }
+}
+
+///|
 test "parse declarations after ampersand nested block" {
   let css =
     #|.box {

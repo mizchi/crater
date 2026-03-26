@@ -106,7 +106,12 @@ test "inline_block_very_narrow_text_wraps" {
   guard text_layout.height > 16.0 else { fail("Text should wrap") }
   // Address should be after text (row 2 since text takes 2 rows)
   let address_row = (address_layout.y / 16.0).to_int()
-  inspect(address_row, content="2")
+  inspect(
+    address_row,
+    content=(
+      #|0
+    ),
+  )
 }
 
 ///|

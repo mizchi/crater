@@ -6167,7 +6167,7 @@ fn get_ua_default_style(tag : String) -> @style.Style {
           @types.Auto,
         ),
       }
-    "ul" | "ol" =>
+    "ul" | "ol" | "menu" | "dir" =>
       // Lists: margin-block 1em; padding-inline-start 40px.
       // Use named fields because Rect::new ordering is (left, right, top, bottom).
       {
@@ -6483,13 +6483,16 @@ fn compute_element_style_indexed(
   // Start with default style
   let mut style = @style.Style::default()
 
-  // Inherit properties from parent first
+  // Inherit properties from parent first.
+  // Browsers use line-height:normal (~1.2) as the initial value, so
+  // the root element (parent_style == None) starts with that ratio.
+  // Children inherit the parent's computed ratio unchanged.
   match parent_style {
     Some(ps) => {
       let lh_ratio = if ps.font_size > 0.0 {
         ps.line_height / ps.font_size
       } else {
-        1.2
+        normal_line_height_ratio
       }
       style = {
         ..style,
@@ -6502,7 +6505,12 @@ fn compute_element_style_indexed(
         pointer_events: ps.pointer_events,
       }
     }
-    None => ()
+    None =>
+      // Root element: apply normal line-height ratio (line-height:normal)
+      style = {
+        ..style,
+        line_height: style.font_size * normal_line_height_ratio,
+      }
   }
 
   // Apply user-agent default style

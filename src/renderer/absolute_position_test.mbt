@@ -57,7 +57,12 @@ test "edit_this_page_style" {
   inspect(edit_link.x, content="253")
   inspect(edit_link.y, content="10")
   inspect(edit_link.width, content="112")
-  inspect(edit_link.height, content="16")
+  inspect(
+    edit_link.height,
+    content=(
+      #|19.2
+    ),
+  )
 }
 
 ///|

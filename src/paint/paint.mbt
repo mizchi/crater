@@ -393,6 +393,74 @@ pub fn flatten_for_rendering(node : PaintNode) -> Array[PaintNode] {
 }
 
 // =============================================================================
+// List Marker Generation
+// =============================================================================
+
+///|
+/// List style type for bullet/number markers (paint-layer only)
+priv enum ListStyleType {
+  NoMarker // No marker
+  Disc // Filled circle (default for ul)
+  Circle // Open circle
+  Square // Filled square
+  Decimal // 1, 2, 3, ... (default for ol)
+} derive(Eq)
+
+///|
+/// Get the marker text string for a given list-style-type
+fn get_list_marker_text(
+  list_style_type : ListStyleType,
+  index : Int,
+) -> String? {
+  match list_style_type {
+    NoMarker => None
+    Disc => Some("\u25CF") // filled circle
+    Circle => Some("\u25CB") // open circle
+    Square => Some("\u25A0") // filled square
+    Decimal => Some(index.to_string() + ".")
+  }
+}
+
+///|
+/// Create a marker PaintNode for a list item.
+/// The marker is positioned to the left of the list item content area.
+fn create_list_marker_node(
+  marker_text : String,
+  x : Double,
+  y : Double,
+  font_size : Double,
+  color : @types.Color,
+) -> PaintNode {
+  // Position the marker in the left padding area
+  // Typical marker width is about 1em, placed to the left of content
+  let marker_width = font_size
+  let marker_x = x - marker_width - font_size * 0.25
+  let marker_y = y
+  let paint = PaintProperties::{
+    z_index: @style.ZIndex::Auto,
+    visibility: @style.Visibility::Visible,
+    pointer_events: @style.PointerEvents::Auto,
+    opacity: 1.0,
+    color,
+    background_color: @types.Color::transparent(),
+    font_size,
+    is_bold: false,
+    font_family: "",
+  }
+  PaintNode::new(
+    "#list-marker",
+    "#text",
+    marker_x,
+    marker_y,
+    marker_width,
+    font_size,
+    paint,
+    [],
+    text=Some(marker_text),
+  )
+}
+
+// =============================================================================
 // Node + Layout → PaintNode Conversion
 // =============================================================================
 
@@ -427,11 +495,31 @@ fn extract_tag_from_id(id : String) -> String {
 }
 
 ///|
+/// Determine the default list-style-type for a given list container tag
+fn default_list_style_for_tag(tag : String) -> ListStyleType {
+  match tag {
+    "ul" => Disc
+    "ol" => Decimal
+    _ => ListStyleType::NoMarker
+  }
+}
+
+///|
 /// Convert a Node and its Layout to a PaintNode tree
 /// This combines style information from Node with position from Layout
 pub fn from_node_and_layout(
   node : @node.Node,
   layout : @types.Layout,
+) -> PaintNode {
+  from_node_and_layout_inner(node, layout, ListStyleType::NoMarker, 0)
+}
+
+///|
+fn from_node_and_layout_inner(
+  node : @node.Node,
+  layout : @types.Layout,
+  parent_list_style : ListStyleType,
+  li_index : Int,
 ) -> PaintNode {
   let mut paint = PaintProperties::from_style(node.style)
   let tag = extract_tag_from_id(node.id)
@@ -440,19 +528,50 @@ pub fn from_node_and_layout(
   }
   let children : Array[PaintNode] = []
 
+  // Determine list style for children if this is a list container
+  let child_list_style = default_list_style_for_tag(tag)
+
   // Match children by index (assumes same order)
   let child_count = if node.children.length() < layout.children.length() {
     node.children.length()
   } else {
     layout.children.length()
   }
+  let mut li_counter = 0
   for i = 0; i < child_count; i = i + 1 {
-    let mut child = from_node_and_layout(node.children[i], layout.children[i])
+    let child_tag = extract_tag_from_id(node.children[i].id)
+    if child_tag == "li" {
+      li_counter = li_counter + 1
+    }
+    let mut child = from_node_and_layout_inner(
+      node.children[i],
+      layout.children[i],
+      child_list_style,
+      li_counter,
+    )
     // Propagate bold to text children
     if paint.is_bold && not(child.paint.is_bold) {
       child = { ..child, paint: { ..child.paint, is_bold: true } }
     }
     children.push(child)
+  }
+
+  // Generate list marker for li elements when parent is ul/ol
+  if tag == "li" && parent_list_style != ListStyleType::NoMarker {
+    // Use explicitly set style if present, otherwise use parent's style
+    match get_list_marker_text(parent_list_style, li_index) {
+      Some(marker_text) => {
+        let marker = create_list_marker_node(
+          marker_text,
+          layout.x,
+          layout.y,
+          paint.font_size,
+          paint.color,
+        )
+        children.push(marker)
+      }
+      None => ()
+    }
   }
 
   // Apply CSS transform (translate) to visual position
@@ -521,7 +640,14 @@ pub fn from_node_and_layout_with_viewport(
   // Pre-compute extent tree in O(n) for the entire tree
   let extent_tree = precompute_extent_tree(layout)
   from_node_and_layout_with_viewport_inner(
-    node, layout, extent_tree, viewport_top, viewport_bottom, parent_y,
+    node,
+    layout,
+    extent_tree,
+    viewport_top,
+    viewport_bottom,
+    parent_y,
+    ListStyleType::NoMarker,
+    0,
   )
 }
 
@@ -533,6 +659,8 @@ fn from_node_and_layout_with_viewport_inner(
   viewport_top : Double,
   viewport_bottom : Double,
   parent_y : Double,
+  parent_list_style : ListStyleType,
+  li_index : Int,
 ) -> PaintNode? {
   // Compute absolute Y position
   let abs_y = parent_y + layout.y
@@ -551,6 +679,9 @@ fn from_node_and_layout_with_viewport_inner(
   }
   let children : Array[PaintNode] = []
 
+  // Determine list style for children if this is a list container
+  let child_list_style = default_list_style_for_tag(tag)
+
   // Match children by index (assumes same order)
   let child_count = if node.children.length() < layout.children.length() {
     node.children.length()
@@ -558,7 +689,12 @@ fn from_node_and_layout_with_viewport_inner(
     layout.children.length()
   }
   let extent_count = extent.children.length()
+  let mut li_counter = 0
   for i = 0; i < child_count; i = i + 1 {
+    let child_tag = extract_tag_from_id(node.children[i].id)
+    if child_tag == "li" {
+      li_counter = li_counter + 1
+    }
     // Use extent child if available, otherwise create a fallback
     let child_extent = if i < extent_count {
       extent.children[i]
@@ -573,6 +709,8 @@ fn from_node_and_layout_with_viewport_inner(
         viewport_top,
         viewport_bottom,
         abs_y,
+        child_list_style,
+        li_counter,
       ) {
       Some(child) =>
         // Propagate bold to text children
@@ -581,6 +719,23 @@ fn from_node_and_layout_with_viewport_inner(
         } else {
           children.push(child)
         }
+      None => ()
+    }
+  }
+
+  // Generate list marker for li elements when parent is ul/ol
+  if tag == "li" && parent_list_style != ListStyleType::NoMarker {
+    match get_list_marker_text(parent_list_style, li_index) {
+      Some(marker_text) => {
+        let marker = create_list_marker_node(
+          marker_text,
+          layout.x,
+          layout.y,
+          paint.font_size,
+          paint.color,
+        )
+        children.push(marker)
+      }
       None => ()
     }
   }

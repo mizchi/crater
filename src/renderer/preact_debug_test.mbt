@@ -30,7 +30,12 @@ test "preact_page_structure" {
     inspect(edit_link.x, content="263")
     inspect(edit_link.y, content="10")
     inspect(edit_link.width, content="112")
-    inspect(edit_link.height, content="16")
+    inspect(
+      edit_link.height,
+      content=(
+        #|19.2
+      ),
+    )
   }
 
   // blog_meta should be positioned AFTER wrapper (even though wrapper has 0 height)
@@ -39,7 +44,7 @@ test "preact_page_structure" {
   inspect(
     blog_meta.height,
     content=(
-      #|16
+      #|19.2
     ),
   )
 
@@ -48,7 +53,7 @@ test "preact_page_structure" {
   inspect(
     h1.y,
     content=(
-      #|46.7
+      #|60.64
     ),
   )
 }

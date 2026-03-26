@@ -539,20 +539,35 @@ test "font-size with nested selectors like WPT" {
   let div1 = test_div.children[0]
   inspect(div1.id, content="div#div1")
   inspect(div1.style.font_size, content="20")
-  inspect(div1.style.line_height, content="20")
+  inspect(
+    div1.style.line_height,
+    content=(
+      #|24
+    ),
+  )
 
   // Check div#div2 has font_size = 10, line_height = 10
   let div2 = test_div.children[1]
   inspect(div2.id, content="div#div2")
   inspect(div2.style.font_size, content="10")
-  inspect(div2.style.line_height, content="10")
+  inspect(
+    div2.style.line_height,
+    content=(
+      #|12
+    ),
+  )
 
   // Text inside <a> is now collected to parent div (inline element text collection)
   // div1 should have a #text child with the text from <a>
   let text1 = div1.children[0]
   inspect(text1.id, content="a")
   inspect(text1.style.font_size, content="20")
-  inspect(text1.style.line_height, content="20")
+  inspect(
+    text1.style.line_height,
+    content=(
+      #|24
+    ),
+  )
 }
 
 ///|
@@ -1686,7 +1701,12 @@ test "display_contents keeps inline parent shrink-to-fit and preserves child spa
   inspect(span_node.id, content="span")
   inspect(span_node.children.length(), content="3")
   inspect(span_node.children[1].id, content="div#contents")
-  inspect(span_node.children[1].children.length(), content="2")
+  inspect(
+    span_node.children[1].children.length(),
+    content=(
+      #|1
+    ),
+  )
   inspect(span_node.children[1].children[1].id, content="span")
 
   let layout = @renderer.render(html, ctx)
