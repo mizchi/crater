@@ -697,18 +697,37 @@ fn is_in_flow_intrinsic_child(child : @node.Node) -> Bool {
 
 ///|
 /// Measure intrinsic width of a cell's content
-fn measure_cell_content_width(cell : @node.Node) -> Double {
+fn measure_cell_content_width(
+  cell : @node.Node,
+  border_collapse~ : Bool = false,
+) -> Double {
   let style = cell.style
   let box_extra = if style.display == @types.Contents {
     0.0
   } else {
     let padding = @types.resolve_rect_intrinsic(style.padding)
     let border = @types.resolve_rect_intrinsic(style.border)
-    padding.horizontal_sum() + border.horizontal_sum()
+    // In border-collapse mode, adjust_for_box_sizing already added full border
+    // to explicit width. We only want half, so subtract the excess.
+    let border_extra = if border_collapse {
+      // Don't add border to box_extra — it's already in explicit_width
+      0.0
+    } else {
+      border.horizontal_sum()
+    }
+    padding.horizontal_sum() + border_extra
   }
 
   let explicit_width = match style.width {
-    @types.Length(w) => Some(w)
+    @types.Length(w) =>
+      if border_collapse {
+        // adjust_for_box_sizing added full border, but collapsed border
+        // only uses half on each side. Subtract the excess half.
+        let border_rect = @types.resolve_rect_intrinsic(style.border)
+        Some(w - border_rect.horizontal_sum() / 2.0)
+      } else {
+        Some(w)
+      }
     _ => None
   }
 
@@ -1060,6 +1079,7 @@ fn calculate_intrinsic_column_widths(
   border_spacing : Double,
   grid : Map[String, CellOccupancy],
   collapsed_columns : Array[Bool],
+  border_collapse~ : Bool = false,
 ) -> Array[Double] {
   let widths : Array[Double] = []
   if num_columns == 0 {
@@ -1129,7 +1149,7 @@ fn calculate_intrinsic_column_widths(
         continue
       }
 
-      let cell_width = measure_cell_content_width(cell)
+      let cell_width = measure_cell_content_width(cell, border_collapse=border_collapse)
       let mut current_span_width = 0.0
       for i = 0; i < active_columns.length(); i = i + 1 {
         let idx = active_columns[i]
@@ -1325,6 +1345,7 @@ fn calculate_column_widths(
   col_widths : Array[Double?],
   grid : Map[String, CellOccupancy],
   collapsed_columns : Array[Bool],
+  border_collapse~ : Bool = false,
 ) -> Array[Double] {
   let widths : Array[Double] = []
   if num_columns == 0 {
@@ -1334,6 +1355,7 @@ fn calculate_column_widths(
   // Use the same colspan/rowspan-aware intrinsic contribution model.
   let col_min_widths = calculate_intrinsic_column_widths(
     rows, num_columns, border_spacing, grid, collapsed_columns,
+    border_collapse=border_collapse,
   )
   let col_percentages = calculate_intrinsic_column_percentages(
     rows, num_columns, grid, collapsed_columns,
@@ -1766,18 +1788,17 @@ fn layout_row(
       ctx.available_width,
     )
     if border_collapse {
-      cell_width = cell_width - cell_border.horizontal_sum()
-      // Track first cell's left border
+      // In border-collapse mode, column widths already include border halves
+      // from measure_cell_content_width. Add table edge offset for first cell.
       if col_index == 0 {
         first_cell_left_border = cell_border.left
+        x_offset = x_offset + cell_border.left / 2.0
       }
-      // Track this cell's right border (will be updated for last cell)
       last_cell_right_border = cell_border.right
-      // Add shared border between cells (one per pair)
       if col_index > 0 {
-        // Middle border is shared - use max of adjacent borders
         let shared = max(prev_cell_right_border, cell_border.left)
         collapsed_border_width = collapsed_border_width + shared
+        // No extra gap — border halves are included in cell widths
       }
       prev_cell_right_border = cell_border.right
     }
@@ -1935,6 +1956,7 @@ pub fn compute_intrinsic_size(
     // Compute intrinsic width
     let intrinsic_col_widths = calculate_intrinsic_column_widths(
       rows, num_columns, border_spacing_x, grid, collapsed_columns,
+      border_collapse=is_border_collapse,
     )
     let intrinsic_content_width = if num_columns > 0 {
       let mut total = 0.0
@@ -2511,6 +2533,7 @@ pub fn compute(
   // Calculate intrinsic column widths first (for shrink-to-fit)
   let intrinsic_col_widths = calculate_intrinsic_column_widths(
     rows, num_columns, border_spacing_x, grid, collapsed_columns,
+    border_collapse=is_border_collapse,
   )
 
   // Calculate intrinsic table width (content width based on columns)
@@ -2691,6 +2714,7 @@ pub fn compute(
     // Auto layout: use content-based distribution
     calculate_column_widths(
       rows, num_columns, row_content_width, border_spacing_x, col_widths, grid, collapsed_columns,
+      border_collapse=is_border_collapse,
     )
   }
 
