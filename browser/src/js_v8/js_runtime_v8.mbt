@@ -8,6 +8,7 @@
 pub struct V8JsRuntime {
   mut initialized : Bool
   mut dom_initialized : Bool
+  mut dom_synced : Bool
   mut runtime : @v8.Runtime?
   mock_dom_source : String?
   id_map : Map[Int, @dom.NodeId]
@@ -19,6 +20,7 @@ pub fn V8JsRuntime::new() -> V8JsRuntime {
   {
     initialized: false,
     dom_initialized: false,
+    dom_synced: false,
     runtime: None,
     mock_dom_source: None,
     id_map: {},
@@ -32,6 +34,7 @@ pub fn V8JsRuntime::new_with_mock_dom(mock_dom_js : String) -> V8JsRuntime {
   {
     initialized: false,
     dom_initialized: false,
+    dom_synced: false,
     runtime: None,
     mock_dom_source: Some(mock_dom_js),
     id_map: {},
@@ -101,19 +104,20 @@ impl @js.JsRuntime for V8JsRuntime with execute(
       None => ()
     }
   }
-  // If mock DOM is loaded, serialize current DomTree and inject
+  // If mock DOM is loaded, initialize DOM on first call only
   if self.dom_initialized {
     // Reset logs and domOps for this execution
     ignore(rt.eval_string("logs.length = 0; domOps.length = 0;"))
-    // Serialize DomTree into JS DOM initialization code
-    // Use create_dom_init_code which populates document.body with DomTree content
-    let init_code = @js.create_dom_init_code(dom)
-    match rt.eval_string(init_code) {
-      Ok(_) => ()
-      Err(e) => println("[V8 initCode error] " + e.to_string())
+    // Serialize DomTree into JS DOM only on first execute (avoid duplicating nodes)
+    if not(self.dom_synced) {
+      let init_code = @js.create_dom_init_code(dom)
+      match rt.eval_string(init_code) {
+        Ok(_) => ()
+        Err(e) => println("[V8 initCode error] " + e.to_string())
+      }
+      populate_id_map(dom, self.id_map)
+      self.dom_synced = true
     }
-    // Pre-populate id_map with identity mappings for all existing DomTree nodes
-    populate_id_map(dom, self.id_map)
   }
   // Execute user code
   let flush = match async_mode {

@@ -299,3 +299,207 @@ test "E2E: Preact click → setState → re-render" {
   assert_true(check2.success)
   assert_eq(check2.value, "2")
 }
+
+///|
+/// Helper: create a V8 context with Preact loaded
+fn make_preact_ctx() -> (@js.JsContext, @dom.DomTree) {
+  let v8 = @js_v8.V8JsRuntime::new_with_mock_dom(@js_v8.full_mock_dom_js())
+  let dom = @dom.DomTree::new()
+  let html_el = dom.create_element("html")
+  let body = dom.create_element("body")
+  let app = dom.create_element("div")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html_el)
+  let _ = dom.append_child(html_el, body)
+  let _ = dom.append_child(body, app)
+  let _ = dom.set_attribute(app, "id", "app")
+  let ctx = @js.JsContext::new_with_runtime(dom, v8.as_js_runtime())
+  let _ = try { ctx.execute(preact_bundle_js()) } catch { _ => @js.JsResult::new("", [], false) }
+  (ctx, dom)
+}
+
+///|
+test "E2E: Preact useEffect fires on mount" {
+  let (ctx, _dom) = make_preact_ctx()
+  let result = ctx.execute(
+    (
+      #|const { h, render } = globalThis.preact;
+      #|const { useState, useEffect } = globalThis.preactHooks;
+      #|globalThis.__effectLog = [];
+      #|function App() {
+      #|  const [count] = useState(0);
+      #|  useEffect(() => {
+      #|    globalThis.__effectLog.push('mount:' + count);
+      #|    return () => { globalThis.__effectLog.push('cleanup:' + count); };
+      #|  }, [count]);
+      #|  return h('div', { id: 'app-inner' }, String(count));
+      #|}
+      #|render(h(App), document.getElementById('app'));
+    ),
+  )
+  assert_true(result.success)
+  let check = ctx.execute("return globalThis.__effectLog.join(',');")
+  assert_true(check.success)
+  assert_eq(check.value, "mount:0")
+}
+
+///|
+test "E2E: Preact useEffect cleanup on re-render" {
+  let (ctx, _dom) = make_preact_ctx()
+  let result = ctx.execute(
+    (
+      #|const { h, render } = globalThis.preact;
+      #|const { useState, useEffect } = globalThis.preactHooks;
+      #|globalThis.__effectLog2 = [];
+      #|globalThis.__setCount2 = null;
+      #|function App() {
+      #|  const [count, setCount] = useState(0);
+      #|  globalThis.__setCount2 = setCount;
+      #|  useEffect(() => {
+      #|    globalThis.__effectLog2.push('mount:' + count);
+      #|    return () => { globalThis.__effectLog2.push('cleanup:' + count); };
+      #|  }, [count]);
+      #|  return h('div', { id: 'val' }, String(count));
+      #|}
+      #|render(h(App), document.getElementById('app'));
+    ),
+  )
+  assert_true(result.success)
+  // Trigger re-render
+  let r2 = ctx.execute("globalThis.__setCount2(1);")
+  assert_true(r2.success)
+  let check = ctx.execute("return globalThis.__effectLog2.join(',');")
+  assert_true(check.success)
+  assert_eq(check.value, "mount:0,cleanup:0,mount:1")
+}
+
+///|
+test "E2E: Preact list rendering with keys" {
+  let (ctx, _dom) = make_preact_ctx()
+  let result = ctx.execute(
+    (
+      #|const { h, render } = globalThis.preact;
+      #|const { useState } = globalThis.preactHooks;
+      #|globalThis.__setItems = null;
+      #|function App() {
+      #|  const [items, setItems] = useState(['A', 'B', 'C']);
+      #|  globalThis.__setItems = setItems;
+      #|  return h('ul', { id: 'list' },
+      #|    items.map(item => h('li', { key: item }, item))
+      #|  );
+      #|}
+      #|render(h(App), document.getElementById('app'));
+    ),
+  )
+  assert_true(result.success)
+  let check = ctx.execute(
+    "return Array.from(document.getElementById('list').children).map(li => li.textContent).join(',');",
+  )
+  assert_true(check.success)
+  assert_eq(check.value, "A,B,C")
+  // Remove middle item
+  let r2 = ctx.execute("globalThis.__setItems(['A', 'C']);")
+  assert_true(r2.success)
+  let check2 = ctx.execute(
+    "return Array.from(document.getElementById('list').children).map(li => li.textContent).join(',');",
+  )
+  assert_true(check2.success)
+  assert_eq(check2.value, "A,C")
+  // Add item at beginning
+  let r3 = ctx.execute("globalThis.__setItems(['Z', 'A', 'C']);")
+  assert_true(r3.success)
+  let check3 = ctx.execute(
+    "return Array.from(document.getElementById('list').children).map(li => li.textContent).join(',');",
+  )
+  assert_true(check3.success)
+  assert_eq(check3.value, "Z,A,C")
+}
+
+///|
+test "E2E: Preact controlled input" {
+  let (ctx, _dom) = make_preact_ctx()
+  let result = ctx.execute(
+    (
+      #|const { h, render } = globalThis.preact;
+      #|const { useState } = globalThis.preactHooks;
+      #|globalThis.__inputSetValue = null;
+      #|function App() {
+      #|  const [value, setValue] = useState('hello');
+      #|  globalThis.__inputSetValue = setValue;
+      #|  return h('div', { id: 'form' },
+      #|    h('input', { id: 'inp', type: 'text', value: value,
+      #|      oninput: (e) => setValue(e.target.value) }),
+      #|    h('span', { id: 'mirror' }, value)
+      #|  );
+      #|}
+      #|render(h(App), document.getElementById('app'));
+    ),
+  )
+  assert_true(result.success)
+  // Check initial value
+  let check = ctx.execute("return document.getElementById('mirror').textContent;")
+  assert_true(check.success)
+  assert_eq(check.value, "hello")
+  // Check input value attribute
+  let check_input = ctx.execute(
+    "return document.getElementById('inp').getAttribute('value') || document.getElementById('inp').value || '';",
+  )
+  assert_true(check_input.success)
+  assert_eq(check_input.value, "hello")
+  // Simulate typing by calling setValue directly
+  let r2 = ctx.execute("globalThis.__inputSetValue('world');")
+  assert_true(r2.success)
+  let check2 = ctx.execute("return document.getElementById('mirror').textContent;")
+  assert_true(check2.success)
+  assert_eq(check2.value, "world")
+}
+
+///|
+test "E2E: Preact conditional rendering" {
+  let (ctx, _dom) = make_preact_ctx()
+  let result = ctx.execute(
+    (
+      #|const { h, render } = globalThis.preact;
+      #|const { useState } = globalThis.preactHooks;
+      #|globalThis.__setShow = null;
+      #|function App() {
+      #|  const [show, setShow] = useState(true);
+      #|  globalThis.__setShow = setShow;
+      #|  return h('div', { id: 'container' },
+      #|    show ? h('p', { id: 'content' }, 'visible') : null,
+      #|    h('span', { id: 'always' }, 'always here')
+      #|  );
+      #|}
+      #|render(h(App), document.getElementById('app'));
+    ),
+  )
+  assert_true(result.success)
+  // Initially visible
+  let check = ctx.execute(
+    "return document.getElementById('content') ? 'found' : 'not found';",
+  )
+  assert_true(check.success)
+  assert_eq(check.value, "found")
+  // Hide
+  let r2 = ctx.execute("globalThis.__setShow(false);")
+  assert_true(r2.success)
+  let check2 = ctx.execute(
+    "return document.getElementById('content') ? 'found' : 'not found';",
+  )
+  assert_true(check2.success)
+  assert_eq(check2.value, "not found")
+  // always-visible element should still be there
+  let check3 = ctx.execute(
+    "return document.getElementById('always').textContent;",
+  )
+  assert_true(check3.success)
+  assert_eq(check3.value, "always here")
+  // Show again
+  let r3 = ctx.execute("globalThis.__setShow(true);")
+  assert_true(r3.success)
+  let check4 = ctx.execute(
+    "return document.getElementById('content') ? document.getElementById('content').textContent : 'gone';",
+  )
+  assert_true(check4.success)
+  assert_eq(check4.value, "visible")
+}
