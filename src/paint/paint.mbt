@@ -481,7 +481,36 @@ pub fn from_node_and_layout(
     }
     children.push(child)
   }
-
+  // Apply placeholder styling for <img> elements
+  if tag == "img" {
+    if paint.background_color.is_transparent() {
+      paint = { ..paint, background_color: @types.Color::rgb(240, 240, 240) }
+    }
+    match layout.text {
+      Some(alt) =>
+        if children.is_empty() && alt.length() > 0 {
+          let alt_paint = {
+            ..PaintProperties::default(),
+            color: @types.Color::rgb(128, 128, 128),
+            font_size: paint.font_size,
+          }
+          children.push(
+            PaintNode::new(
+              "#text",
+              "#text",
+              0.0,
+              0.0,
+              layout.width,
+              layout.height,
+              alt_paint,
+              [],
+              text=Some(alt),
+            ),
+          )
+        }
+      None => ()
+    }
+  }
   // Apply CSS transform (translate) to visual position
   let transform = node.style.transform
   let translate_x = transform.compute_translate_x(layout.width)
@@ -611,7 +640,36 @@ fn from_node_and_layout_with_viewport_inner(
       None => ()
     }
   }
-
+  // Apply placeholder styling for <img> elements
+  if tag == "img" {
+    if paint.background_color.is_transparent() {
+      paint = { ..paint, background_color: @types.Color::rgb(240, 240, 240) }
+    }
+    match layout.text {
+      Some(alt) =>
+        if children.is_empty() && alt.length() > 0 {
+          let alt_paint = {
+            ..PaintProperties::default(),
+            color: @types.Color::rgb(128, 128, 128),
+            font_size: paint.font_size,
+          }
+          children.push(
+            PaintNode::new(
+              "#text",
+              "#text",
+              0.0,
+              0.0,
+              layout.width,
+              layout.height,
+              alt_paint,
+              [],
+              text=Some(alt),
+            ),
+          )
+        }
+      None => ()
+    }
+  }
   // Apply CSS transform (translate) to visual position
   let transform = node.style.transform
   let translate_x = transform.compute_translate_x(layout.width)

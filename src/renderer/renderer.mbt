@@ -6167,7 +6167,7 @@ fn get_ua_default_style(tag : String) -> @style.Style {
           @types.Auto,
         ),
       }
-    "ul" | "ol" | "menu" | "dir" =>
+    "ul" | "ol" =>
       // Lists: margin-block 1em; padding-inline-start 40px.
       // Use named fields because Rect::new ordering is (left, right, top, bottom).
       {
@@ -6354,7 +6354,12 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     // Table elements
     "table" => { ..default_style, display: @types.Table, border_spacing: 2.0 }
     "tr" => { ..default_style, display: @types.TableRow }
-    "td" | "th" => { ..default_style, display: @types.TableCell }
+    "td" | "th" =>
+      {
+        ..default_style,
+        display: @types.TableCell,
+        vertical_align: @style.Middle,
+      }
     "thead" => { ..default_style, display: @types.TableHeaderGroup }
     "tbody" => { ..default_style, display: @types.TableRowGroup }
     "tfoot" => { ..default_style, display: @types.TableFooterGroup }
@@ -6483,16 +6488,13 @@ fn compute_element_style_indexed(
   // Start with default style
   let mut style = @style.Style::default()
 
-  // Inherit properties from parent first.
-  // Browsers use line-height:normal (~1.2) as the initial value, so
-  // the root element (parent_style == None) starts with that ratio.
-  // Children inherit the parent's computed ratio unchanged.
+  // Inherit properties from parent first
   match parent_style {
     Some(ps) => {
       let lh_ratio = if ps.font_size > 0.0 {
         ps.line_height / ps.font_size
       } else {
-        normal_line_height_ratio
+        1.2
       }
       style = {
         ..style,
@@ -6505,12 +6507,7 @@ fn compute_element_style_indexed(
         pointer_events: ps.pointer_events,
       }
     }
-    None =>
-      // Root element: apply normal line-height ratio (line-height:normal)
-      style = {
-        ..style,
-        line_height: style.font_size * normal_line_height_ratio,
-      }
+    None => ()
   }
 
   // Apply user-agent default style

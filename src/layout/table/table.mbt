@@ -1792,6 +1792,8 @@ fn layout_row(
     stretch_height: false,
   }
   let cell_layouts : Array[@types.Layout] = []
+  let cell_vertical_aligns : Array[@style.VerticalAlign] = []
+  let cell_content_heights : Array[Double] = []
   let mut x_offset = padding.left + border.left
   let mut max_height = 0.0
   let mut col_index = 0
@@ -1887,6 +1889,8 @@ fn layout_row(
     // Keep anonymous cells until row height normalization is done.
     // Flattening too early makes descendants inherit row height incorrectly.
     cell_layouts.push(positioned_cell)
+    cell_vertical_aligns.push(child.style.vertical_align)
+    cell_content_heights.push(cell_layout.height)
   }
 
   // Calculate row width
@@ -1936,10 +1940,44 @@ fn layout_row(
     row_content_height_raw
   }
 
-  // Update cell heights to match row height (for vertical alignment)
+  // Update cell heights to match row height and apply vertical alignment
   let final_cell_layouts : Array[@types.Layout] = []
-  for layout in cell_layouts {
-    final_cell_layouts.push({ ..layout, height: row_content_height })
+  for i, layout in cell_layouts {
+    // Calculate vertical alignment offset for cell content
+    let content_h = if i < cell_content_heights.length() {
+      cell_content_heights[i]
+    } else {
+      layout.height
+    }
+    let valign = if i < cell_vertical_aligns.length() {
+      cell_vertical_aligns[i]
+    } else {
+      @style.VerticalAlign::Middle
+    }
+    let free_space = row_content_height - content_h
+    let valign_offset = if free_space > 0.0 {
+      match valign {
+        Top | TextTop => 0.0
+        Middle => free_space / 2.0
+        Bottom | TextBottom => free_space
+        Baseline | Sub | Super => 0.0 // Simplified: treat baseline/sub/super as top
+      }
+    } else {
+      0.0
+    }
+    // Shift children down by valign_offset
+    let shifted_children : Array[@types.Layout] = []
+    for child_layout in layout.children {
+      shifted_children.push({
+        ..child_layout,
+        y: child_layout.y + valign_offset,
+      })
+    }
+    final_cell_layouts.push({
+      ..layout,
+      height: row_content_height,
+      children: shifted_children,
+    })
   }
   let row_children : Array[@types.Layout] = []
   for layout in final_cell_layouts {
