@@ -1840,28 +1840,18 @@ fn layout_row(
     // Empty row - use available width from context
     ctx.available_width
   } else if border_collapse {
-    // In border-collapse mode:
-    // - x_offset tracks actual placed cells with their correct widths
-    // - For rows with all cells, use x_offset-based calculation
-    // - Add collapsed borders
-    let total_border = first_cell_left_border * 0.5 +
-      collapsed_border_width +
-      last_cell_right_border * 0.5
-    // If row has all columns, use x_offset; otherwise extend to full width
+    // In border-collapse mode, row width = sum of cell widths (border halves included).
+    // x_offset includes the first cell's left border offset, so subtract it.
+    let cells_total_width = x_offset - first_cell_left_border / 2.0
     if col_index >= column_widths.length() {
-      x_offset - border_spacing + padding.right + border.right + total_border
+      cells_total_width
     } else {
       // Row has fewer cells - add remaining column widths
       let mut remaining_width = 0.0
       for i = col_index; i < column_widths.length(); i = i + 1 {
-        remaining_width = remaining_width + column_widths[i] + border_spacing
+        remaining_width = remaining_width + column_widths[i]
       }
-      x_offset +
-      remaining_width -
-      border_spacing +
-      padding.right +
-      border.right +
-      total_border
+      cells_total_width + remaining_width
     }
   } else {
     // Row with cells - use full content width (all columns)
