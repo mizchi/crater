@@ -42,12 +42,12 @@ CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt):
 |--------|--------|-------|------|
 | css-flexbox | 289 | 289 | 100.0% |
 | css-grid | 33 | 33 | 100.0% |
-| css-tables | 32 | 32 | 100.0% |
+| css-tables | 30 | 32 | 93.8% |
 | css-display | 79 | 79 | 100.0% |
 | css-box | 30 | 30 | 100.0% |
 | css-sizing | 94 | 94 | 100.0% |
 | css-align | 44 | 44 | 100.0% |
-| css-position | 84 | 84 | 100.0% |
+| css-position | 81 | 84 | 96.4% |
 | css-overflow | 243 | 243 | 100.0% |
 | css-contain | 303 | 303 | 100.0% |
 | css-variables | 107 | 107 | 100.0% |
@@ -57,7 +57,23 @@ CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt):
 | css-content | 2 | 2 | 100.0% |
 | css-multicol | 4 | 4 | 100.0% |
 | css-break | 27 | 27 | 100.0% |
-| **Total** | **1477** | **1484** | **99.5%** |
+| **Total** | **1472** | **1484** | **99.2%** |
+
+### Visual Regression Testing (VRT)
+
+Pixel-level comparison between Chromium and Crater rendering using [kagura](https://github.com/mizchi/kagura) native paint backend:
+
+| Site | Diff | Status |
+|------|------|--------|
+| example.com | 1.16% | PASS |
+| info.cern.ch | 3.30% | PASS |
+| news.ycombinator.com | 12.6% | WARN |
+
+```bash
+just vrt-url-native https://example.com        # Compare any URL
+just test-wpt-vrt                                # WPT visual regression
+CRATER_PAINT_BACKEND=native just test-vrt        # Full VRT suite
+```
 
 Browser behavior tests:
 
