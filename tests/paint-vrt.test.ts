@@ -242,6 +242,7 @@ test.describe("Paint VRT", () => {
 
   const urlSnapshots: { name: string; maxDiffRatio: number }[] = [
     { name: "info-cern-ch", maxDiffRatio: 0.10 },
+    { name: "google", maxDiffRatio: 0.10 },
     { name: "hackernews", maxDiffRatio: 0.20 },
     { name: "wikipedia", maxDiffRatio: 0.25 },
   ];

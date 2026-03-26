@@ -240,6 +240,7 @@ vrt-capture-all:
     npx tsx scripts/capture-real-world-snapshot.ts "https://example.com" --name example-com --width 800 --height 600
     npx tsx scripts/capture-real-world-snapshot.ts "https://info.cern.ch" --name info-cern-ch --width 800 --height 600
     npx tsx scripts/capture-real-world-snapshot.ts "https://news.ycombinator.com/" --name hackernews --width 800 --height 600
+    npx tsx scripts/capture-real-world-snapshot.ts "https://www.google.com" --name google --width 800 --height 600
     npx tsx scripts/capture-real-world-snapshot.ts "https://en.wikipedia.org/wiki/Main_Page" --name wikipedia --width 800 --height 600
 
 # Update WPT VRT baseline
