@@ -161,6 +161,21 @@ pub fn clear_text_metrics_provider() -> Unit {
 }
 
 ///|
+/// Force monospace text metrics regardless of TextMetricsProvider.
+/// Use this for TUI/terminal rendering where proportional metrics are meaningless.
+let force_monospace_metrics_flag : Ref[Bool] = { val: false }
+
+///|
+pub fn set_force_monospace_metrics(enabled : Bool) -> Unit {
+  force_monospace_metrics_flag.val = enabled
+}
+
+///|
+pub fn get_force_monospace_metrics() -> Bool {
+  force_monospace_metrics_flag.val
+}
+
+///|
 #cfg(target="js")
 extern "js" fn get_builtin_text_advance_ratio_override() -> Double =
   #|() => {
@@ -284,6 +299,11 @@ fn create_text_measure_with_provider(
       has_non_collapsible_space_glyph(text) ||
       is_ahem_like_measure_target(text, font_size, text_line_height)
     )
+  if force_monospace_metrics_flag.val {
+    return create_text_measure(
+      text, font_size, text_line_height, white_space, writing_mode,
+    )
+  }
   match text_metrics_provider_override.val {
     Some(provider) =>
       if force_builtin_measure {
@@ -2790,7 +2810,21 @@ fn create_zero_layout_from_node(node : @node.Node) -> @types.Layout {
 }
 
 ///|
-priv struct PreparedRenderDocument {
+let active_before_rules : Ref[Array[PseudoRule]] = { val: [] }
+
+///|
+let active_after_rules : Ref[Array[PseudoRule]] = { val: [] }
+
+///|
+pub struct PseudoRule {
+  base_selector : @selector.ComplexSelector?
+  base_selector_text : String
+  declarations : Array[@cascade.Declaration]
+  media_query : @media.MediaQueryList?
+}
+
+///|
+pub struct PreparedRenderDocument {
   stylesheets : Array[@cascade.Stylesheet]
   indexed_stylesheets : Array[@cascade.IndexedStylesheet]
   css_vars : Map[String, String]
@@ -2799,10 +2833,12 @@ priv struct PreparedRenderDocument {
   render_root : @html.Element
   render_root_tag : String
   body_uses_document_root_style : Bool
+  before_rules : Array[PseudoRule]
+  after_rules : Array[PseudoRule]
 }
 
 ///|
-fn prepare_render_document(
+pub fn prepare_render_document(
   doc : @html.Document,
   ctx : RenderContext,
   external_css : Array[String],
@@ -2839,6 +2875,41 @@ fn prepare_render_document(
   )
   let render_root = select_render_root(doc.root, doc_root_style)
   let render_root_tag = render_root.tag.to_lower()
+  let before_rules : Array[PseudoRule] = []
+  let after_rules : Array[PseudoRule] = []
+  for stylesheet in stylesheets {
+    for rule in stylesheet.rules {
+      let sel = rule.selector_text
+      if sel.contains("before") {
+        match selector_text_without_pseudo(sel, Before) {
+          Some(base_text) => {
+            let base_sel = @selector.parse_selector_text(base_text)
+            before_rules.push({
+              base_selector: base_sel,
+              base_selector_text: base_text,
+              declarations: rule.declarations,
+              media_query: rule.media_query,
+            })
+          }
+          None => ()
+        }
+      }
+      if sel.contains("after") {
+        match selector_text_without_pseudo(sel, After) {
+          Some(base_text) => {
+            let base_sel = @selector.parse_selector_text(base_text)
+            after_rules.push({
+              base_selector: base_sel,
+              base_selector_text: base_text,
+              declarations: rule.declarations,
+              media_query: rule.media_query,
+            })
+          }
+          None => ()
+        }
+      }
+    }
+  }
   {
     stylesheets,
     indexed_stylesheets,
@@ -2849,15 +2920,19 @@ fn prepare_render_document(
     render_root_tag,
     body_uses_document_root_style: render_root_tag == "body" &&
     doc.root.tag.to_lower() != "body",
+    before_rules,
+    after_rules,
   }
 }
 
 ///|
-fn build_render_root_node(
+pub fn build_render_root_node(
   doc : @html.Document,
   ctx : RenderContext,
   prepared : PreparedRenderDocument,
 ) -> @node.Node {
+  active_before_rules.val = prepared.before_rules
+  active_after_rules.val = prepared.after_rules
   let root = if prepared.body_uses_document_root_style {
     let body_selector = if prepared.indexed_stylesheets.length() == 0 {
       html_to_selector_element_minimal(
@@ -2919,7 +2994,7 @@ fn build_render_root_node(
 }
 
 ///|
-fn compute_layout_from_render_root(
+pub fn compute_layout_from_render_root(
   root : @node.Node,
   prepared : PreparedRenderDocument,
   ctx : RenderContext,
@@ -3909,6 +3984,103 @@ fn resolve_pseudo_spec(
 }
 
 ///|
+fn resolve_pseudo_spec_fast(
+  selector_elem : @selector.Element,
+  host_style : @style.Style,
+  ctx : RenderContext,
+  pseudo_kind : PseudoKind,
+  counters : Map[String, CounterEntry],
+  css_vars : Map[String, String],
+  element_attributes : Map[String, String],
+) -> AfterPseudoSpec? {
+  let media_env = @media.MediaEnvironment::with_color_scheme(
+    ctx.viewport_width,
+    ctx.viewport_height,
+    ctx.color_scheme,
+  )
+  let mut content_parts : Array[ContentPart]? = None
+  let mut content_specified = false
+  let mut content_disabled = false
+  let mut position_relative = false
+  let mut out_of_flow = false
+  let mut left_offset = 0.0
+  let pseudo_css_vars = clone_string_map(css_vars)
+  let mut generated_style = { ..host_style, display: @types.Inline }
+  let rules = match pseudo_kind {
+    Before => active_before_rules.val
+    After => active_after_rules.val
+  }
+  for rule in rules {
+    let media_matches = match rule.media_query {
+      Some(mq) => mq.evaluate(media_env)
+      None => true
+    }
+    if not(media_matches) {
+      continue
+    }
+    let matches_selector = match rule.base_selector {
+      Some(base_selector) =>
+        @selector.matches_complex(selector_elem, base_selector) ||
+        selector_text_fallback_matches(rule.base_selector_text, selector_elem)
+      None =>
+        selector_text_fallback_matches(rule.base_selector_text, selector_elem)
+    }
+    if matches_selector {
+      for decl in rule.declarations {
+        match decl.value {
+          @cascade.PropertyValue::Value(v) => {
+            let prop = decl.property.to_lower()
+            if prop.has_prefix("--") {
+              pseudo_css_vars[prop] = v
+            } else if prop == "content" {
+              content_specified = true
+              let resolved_value = resolve_pseudo_content_value(
+                v, pseudo_css_vars, element_attributes,
+              )
+              let normalized = resolved_value.trim().to_lower().to_string()
+              if normalized == "none" || normalized == "normal" {
+                content_parts = None
+                content_disabled = true
+              } else {
+                content_parts = parse_content_parts(resolved_value)
+                content_disabled = false
+              }
+            } else if prop == "position" {
+              let pos = v.trim().to_lower()
+              if pos == "relative" {
+                position_relative = true
+              } else if pos == "absolute" || pos == "fixed" {
+                out_of_flow = true
+              }
+            } else if prop == "left" {
+              left_offset = parse_relative_left_offset(v, host_style)
+            }
+            if prop != "content" && not(prop.has_prefix("--")) {
+              generated_style = apply_css_property(generated_style, prop, v)
+            }
+          }
+          _ => ()
+        }
+      }
+    }
+  }
+  if content_disabled || not(content_specified) {
+    return None
+  }
+  let text = match content_parts {
+    Some(parts) => evaluate_content_parts(parts, counters)
+    None => ""
+  }
+  Some({
+    content: text,
+    position_relative,
+    out_of_flow,
+    left_offset,
+    generated_style,
+  })
+}
+
+///|
 fn get_counter_directives(
   selector_elem : @selector.Element,
   stylesheets : Array[@cascade.Stylesheet],
@@ -4614,10 +4786,9 @@ fn element_to_node_with_styles(
   let before_pseudo = if stylesheets.length() == 0 {
     None
   } else {
-    resolve_pseudo_spec(
+    resolve_pseudo_spec_fast(
       selector_elem,
       style,
-      stylesheets,
       ctx,
       Before,
       own_counters,
@@ -4628,10 +4799,9 @@ fn element_to_node_with_styles(
   let after_pseudo = if stylesheets.length() == 0 {
     None
   } else {
-    resolve_pseudo_spec(
+    resolve_pseudo_spec_fast(
       selector_elem,
       style,
-      stylesheets,
       ctx,
       After,
       own_counters,
@@ -4969,10 +5139,9 @@ fn element_to_node_with_styles_internal(
   let before_pseudo = if stylesheets.length() == 0 {
     None
   } else {
-    resolve_pseudo_spec(
+    resolve_pseudo_spec_fast(
       selector_elem,
       style,
-      stylesheets,
       ctx,
       Before,
       own_counters,
@@ -4983,10 +5152,9 @@ fn element_to_node_with_styles_internal(
   let after_pseudo = if stylesheets.length() == 0 {
     None
   } else {
-    resolve_pseudo_spec(
+    resolve_pseudo_spec_fast(
       selector_elem,
       style,
-      stylesheets,
       ctx,
       After,
       own_counters,

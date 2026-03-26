@@ -4109,8 +4109,17 @@ fn compute_with_collapse(
         None => ()
       }
     }
-    if ifc_descendant_extent > content_height {
-      content_height = ifc_descendant_extent
+    // Subtract content offset (padding+border top) since IFC child positions
+    // include this offset but content_height should be relative to content area.
+    let ifc_content_offset = padding.top + border.top
+    let adjusted_ifc_descendant_extent = if ifc_descendant_extent >
+      ifc_content_offset {
+      ifc_descendant_extent - ifc_content_offset
+    } else {
+      ifc_descendant_extent
+    }
+    if adjusted_ifc_descendant_extent > content_height {
+      content_height = adjusted_ifc_descendant_extent
     }
     if style.writing_mode.is_vertical() {
       let content_left = padding.left + border.left
@@ -5672,11 +5681,32 @@ fn compute_with_collapse(
     let should_offset_for_containment = parent_containment_abs_cb &&
       not(establishes_abs_cb) &&
       (positioned_x != 0.0 || legend_border_overlay_y != 0.0)
+    let parent_is_abs_cb = establishes_abs_containing_block(
+      style,
+      style.display,
+    )
+    let should_offset_no_principal_abs = no_principal &&
+      parent_is_abs_cb &&
+      not(establishes_abs_cb) &&
+      (positioned_x != 0.0 || legend_border_overlay_y != 0.0)
     let adjusted_for_no_principal = if is_display_contents {
       // display: contents descendants are already laid out in the local flow
       // coordinate space; additional subtree shifting double-counts offsets.
       adjusted_layout
     } else if should_offset_for_containment {
+      shift_out_of_flow_descendants(
+        adjusted_layout,
+        child_node,
+        -positioned_x,
+        -legend_border_overlay_y,
+        true,
+        false,
+      )
+    } else if should_offset_no_principal_abs {
+      // No-principal table-internal elements (e.g. table-row-group) don't generate
+      // a principal box. Their absolute descendants should be positioned relative to
+      // the actual containing block (this parent), not the no-principal element.
+      // Shift by the negative of the no-principal element's flow position.
       shift_out_of_flow_descendants(
         adjusted_layout,
         child_node,

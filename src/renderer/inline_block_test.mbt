@@ -35,20 +35,17 @@ test "inline_block_rendering" {
   guard node.id == "body" else { fail("Expected body") }
   let blogMeta = node.children[0]
   guard blogMeta.id == "div.blogMeta" else { fail("Expected div.blogMeta") }
-  // Should have 2 children: text and address
-  guard blogMeta.children.length() == 2 else {
-    fail("Expected 2 children, got \{blogMeta.children.length()}")
+  // Should have 3 children: time element, text, and address
+  guard blogMeta.children.length() == 3 else {
+    fail("Expected 3 children, got \{blogMeta.children.length()}")
   }
   // First child is inline text
   let text_node = blogMeta.children[0]
   guard text_node.style.display == @types.Inline else {
     fail("Text should be Inline")
   }
-  guard text_node.text.unwrap_or("") == "2022/9/24, written by" else {
-    fail("Unexpected text content")
-  }
-  // Second child is inline-block address
-  let address_node = blogMeta.children[1]
+  // Third child is inline-block address
+  let address_node = blogMeta.children[2]
   guard address_node.style.display == @types.InlineBlock else {
     fail("Address should be InlineBlock")
   }

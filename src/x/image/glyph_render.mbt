@@ -28,6 +28,62 @@ pub fn clear_glyph_provider() -> Unit {
 }
 
 ///|
+/// Convert mizchi/svg PathCommand to crater's svg PathCommand.
+fn convert_msvg_path_command(cmd : @msvg.PathCommand) -> @svg.PathCommand {
+  match cmd {
+    MoveTo(x, y) => @svg.PathCommand::MoveTo(x, y)
+    LineTo(x, y) => @svg.PathCommand::LineTo(x, y)
+    QuadraticCurveTo(cx, cy, x, y) =>
+      @svg.PathCommand::QuadraticCurveTo(cx, cy, x, y)
+    CurveTo(cx1, cy1, cx2, cy2, x, y) =>
+      @svg.PathCommand::CurveTo(cx1, cy1, cx2, cy2, x, y)
+    ClosePath => @svg.PathCommand::ClosePath
+    _ => @svg.PathCommand::ClosePath
+  }
+}
+
+///|
+/// Create a GlyphProvider from a parsed TTFont.
+/// This allows native text rendering without JS FFI.
+pub fn glyph_provider_from_font(font : @font.TTFont) -> GlyphProvider {
+  let units_per_em = font.units_per_em.to_double()
+  let ascent_ratio = font.ascent.to_double() / units_per_em
+  {
+    get_glyph: fn(codepoint, font_size, _is_bold) {
+      let outline = font.scaled_outline(codepoint, font_size)
+      let commands : Array[@svg.PathCommand] = outline.map(
+        convert_msvg_path_command,
+      )
+      let glyph_id = font.glyph_index(codepoint)
+      let advance = if glyph_id != 0 {
+        let metrics = font.glyph_metrics(glyph_id)
+        metrics.advance_width.to_double() / units_per_em * font_size
+      } else {
+        0.0
+      }
+      (commands, advance)
+    },
+    get_kern: fn(cp1, cp2, font_size, _is_bold) {
+      let gid1 = font.glyph_index(cp1)
+      let gid2 = font.glyph_index(cp2)
+      let kern = font.kern_pair(gid1, gid2)
+      kern.to_double() * font_size / units_per_em
+    },
+    ascent_ratio,
+  }
+}
+
+///|
+/// Parse font bytes and create a GlyphProvider.
+/// Returns None if font parsing fails.
+pub fn glyph_provider_from_bytes(data : Bytes) -> GlyphProvider? {
+  match @font.parse_font(data) {
+    Some(font) => Some(glyph_provider_from_font(font))
+    None => None
+  }
+}
+
+///|
 /// Draw text using the glyph provider (SVG path rendering).
 /// Handles word-wrapping within max_width and baseline positioning.
 /// Returns the total height used.

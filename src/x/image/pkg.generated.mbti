@@ -6,6 +6,7 @@ import {
   "mizchi/crater/paint",
   "mizchi/crater/svg",
   "mizchi/crater/types",
+  "mizchi/font",
 }
 
 // Values
@@ -22,6 +23,10 @@ pub fn framebuffer_to_rgba_base64(Framebuffer, DynamicPalette) -> String
 pub fn get_char_bitmap(Char) -> Array[Int]?
 
 pub fn get_depth_color(Int) -> Color
+
+pub fn glyph_provider_from_bytes(Bytes) -> GlyphProvider?
+
+pub fn glyph_provider_from_font(@font.TTFont) -> GlyphProvider
 
 pub fn is_font_supported(Char) -> Bool
 

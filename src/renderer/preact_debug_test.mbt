@@ -30,20 +30,20 @@ test "preact_page_structure" {
     inspect(
       edit_link.x,
       content=(
-        #|258.52
+        #|263
       ),
     )
     inspect(edit_link.y, content="10")
     inspect(
       edit_link.width,
       content=(
-        #|116.48
+        #|112
       ),
     )
     inspect(
       edit_link.height,
       content=(
-        #|19.2
+        #|16
       ),
     )
   }
@@ -54,7 +54,7 @@ test "preact_page_structure" {
   inspect(
     blog_meta.height,
     content=(
-      #|19.2
+      #|16
     ),
   )
 
@@ -63,7 +63,7 @@ test "preact_page_structure" {
   inspect(
     h1.y,
     content=(
-      #|60.64
+      #|57.44
     ),
   )
 }

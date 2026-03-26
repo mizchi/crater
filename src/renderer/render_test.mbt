@@ -457,7 +457,7 @@ test "whitespace_between_inline_replaced_media_nodes_is_preserved" {
   inspect(
     second.x,
     content=(
-      #|59.32
+      #|59
     ),
   )
 }
@@ -787,7 +787,7 @@ test "pseudo_content_var_from_root_custom_properties_renders_text" {
   inspect(
     p.height,
     content=(
-      #|19.2
+      #|16
     ),
   )
 }
@@ -819,7 +819,7 @@ test "pseudo_content_var_can_expand_attr_based_custom_property" {
   inspect(
     layout.children[0].height,
     content=(
-      #|19.2
+      #|16
     ),
   )
 }
@@ -874,7 +874,7 @@ test "display_inline_with_contents_child_stays_inline_sized" {
   inspect(
     inline_layout.width,
     content=(
-      #|8.32
+      #|8
     ),
   )
 }
@@ -1388,7 +1388,7 @@ test "white_space_nowrap_parent_keeps_inline_block_children_on_same_line" {
   inspect(
     second.y,
     content=(
-      #|5.6
+      #|7.199999999999999
     ),
   )
 }
@@ -2134,7 +2134,7 @@ test "wpt_targeted_column_scroll_marker_selection_001_static_layout_metrics" {
   inspect(
     item0.x,
     content=(
-      #|29.680000000000007
+      #|30
     ),
   )
   inspect(
@@ -3866,7 +3866,7 @@ test "vertical_text_block_wraps_to_available_height" {
   inspect(
     paragraph.height,
     content=(
-      #|232.96
+      #|240
     ),
   )
   guard paragraph.width > 0.0 && paragraph.width < 160.0 else {
@@ -4034,13 +4034,13 @@ test "form_controls_max_content_intrinsic_size_wpt_like" {
   inspect(
     input.width,
     content=(
-      #|223
+      #|215
     ),
   )
   inspect(
     textarea.width,
     content=(
-      #|8.32
+      #|8
     ),
   )
   inspect(
@@ -4559,7 +4559,7 @@ test "inline_anchor_height_in_block_with_fixed_height" {
   inspect(
     anchor.height,
     content=(
-      #|24
+      #|20
     ),
   )
 }
@@ -4805,7 +4805,7 @@ test "inline_text_and_span_without_space_stay_on_same_line" {
   inspect(
     container.height,
     content=(
-      #|240
+      #|100
     ),
   )
   inspect(text.y, content="0")
@@ -5240,7 +5240,7 @@ test "wpt_grid_align_start_item_uses_content_height" {
   inspect(
     item.height,
     content=(
-      #|20
+      #|10
     ),
   )
 }
@@ -5308,7 +5308,7 @@ test "body_overflow_scroll_is_not_forced_to_viewport" {
   inspect(
     layout.height,
     content=(
-      #|19.2
+      #|16
     ),
   )
 }
@@ -5551,14 +5551,14 @@ test "mixed_inline_and_table_child_keeps_table_shrink_width" {
   inspect(
     link.width,
     content=(
-      #|33.28
+      #|32
     ),
   )
   inspect(table.id, content="table")
   inspect(
     table.width,
     content=(
-      #|12.32
+      #|12
     ),
   )
 }

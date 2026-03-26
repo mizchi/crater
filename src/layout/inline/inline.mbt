@@ -1356,6 +1356,31 @@ pub fn compute_ifc(
         }
       }
       if keep_same_line {
+        // When an inline abs-containing block overflows the current line,
+        // recompute its layout with the remaining available width so that
+        // text content wraps correctly and the multiline height is accurate.
+        let remaining_width = available_width - current_line.width
+        let child_layout = if remaining_width > 0.0 &&
+          remaining_width < child_layout.width &&
+          inline_establishes_abs_containing_block(child.style) {
+          let narrower = compute_inline_child(
+            child,
+            remaining_width,
+            available_height,
+            dispatch,
+            inline_carry_offset=current_line.width,
+          )
+          // Use the recalculated height but keep the original width so that
+          // the bounding box still reflects the full content span.
+          {
+            ..child_layout,
+            height: narrower.height,
+            children: narrower.children,
+          }
+        } else {
+          child_layout
+        }
+        let line_metrics_height = child_layout.height
         current_line.add_item(
           i,
           child_layout,
@@ -1650,6 +1675,7 @@ fn compute_inline_child(
   available_width : Double,
   available_height : Double?,
   dispatch : @node.DispatchFn,
+  inline_carry_offset? : Double = 0.0,
 ) -> @types.Layout {
   let style = node.style
   let is_contents_display = style.display == @types.Contents
@@ -2342,7 +2368,21 @@ fn compute_inline_child(
   let text_glyph_height = max_text_glyph_height_in_node(node)
   if text_glyph_height > 0.0 {
     let has_forced_line_break = inline_cursor_y > 0.0
-    if not(has_forced_line_break) && final_height > own_inline_line_height {
+    // Check if any text child actually wraps to multiple lines.
+    // A taller non-text child (e.g. larger font span) does NOT count as text wrap.
+    let mut has_text_wrap = false
+    for child_layout in children {
+      if child_layout.id.has_prefix("#text") {
+        let text_single_line = line_height_from_style(style)
+        if child_layout.height > text_single_line + 0.01 {
+          has_text_wrap = true
+          break
+        }
+      }
+    }
+    if not(has_forced_line_break) &&
+      not(has_text_wrap) &&
+      final_height > own_inline_line_height {
       final_height = own_inline_line_height
     }
   }
@@ -2429,7 +2469,7 @@ fn compute_inline_child(
     inline_establishes_abs_containing_block(style) {
     node_has_inflow_block_desc = has_inflow_block_descendant(node)
     node_has_inflow_block_desc_computed = true
-    let area_left = padding.left + border.left
+    let area_left = padding.left + border.left + inline_carry_offset
     let area_top_adjust = if node_has_inflow_block_desc {
       -line_height_from_style(style)
     } else {

@@ -18,3 +18,10 @@ import {
 
 import {
 } for "wbtest"
+
+options(
+  targets: {
+    "perf_js.mbt": [ "js", "wasm", "wasm-gc" ],
+    "perf_native.mbt": [ "native" ],
+  },
+)

@@ -2,20 +2,27 @@
 package "mizchi/crater/renderer"
 
 import {
+  "mizchi/crater/css/cascade",
   "mizchi/crater/css/media",
+  "mizchi/crater/css/selector",
   "mizchi/crater/html",
   "mizchi/crater/layout/node",
   "mizchi/crater/style",
   "mizchi/crater/types",
   "moonbitlang/async/io",
+  "moonbitlang/core/ref",
 }
 
 // Values
 pub fn apply_css_property_debug(@style.Style, String, String) -> @style.Style
 
+pub fn build_render_root_node(@html.Document, RenderContext, PreparedRenderDocument) -> @node.Node
+
 pub fn clear_image_intrinsic_size_provider() -> Unit
 
 pub fn clear_text_metrics_provider() -> Unit
+
+pub fn compute_layout_from_render_root(@node.Node, PreparedRenderDocument, RenderContext) -> @types.Layout
 
 pub fn element_to_node(@html.Element, @style.Style?) -> @node.Node
 
@@ -25,7 +32,23 @@ pub fn get_content_height_with_css(String, Int, Int, Array[String]) -> Int
 
 pub fn get_content_height_with_document(@html.Document, Int, Int, Array[String]) -> Int
 
+pub fn get_force_monospace_metrics() -> Bool
+
 pub fn layout_to_json(@types.Layout) -> String
+
+pub let perf_child_loop_us : @ref.Ref[Int64]
+
+pub fn perf_clock_us() -> Int64
+
+pub let perf_node_build_us : @ref.Ref[Int64]
+
+pub let perf_pre_checks_us : @ref.Ref[Int64]
+
+pub let perf_pseudo_us : @ref.Ref[Int64]
+
+pub let perf_selector_build_us : @ref.Ref[Int64]
+
+pub fn prepare_render_document(@html.Document, RenderContext, Array[String]) -> PreparedRenderDocument
 
 pub fn print_layout_tree(@types.Layout, Int) -> Unit
 
@@ -59,6 +82,8 @@ pub fn render_to_sixel_with_styles(String, Int, Int) -> String
 
 pub fn render_with_external_css(String, RenderContext, Array[String]) -> @types.Layout
 
+pub fn set_force_monospace_metrics(Bool) -> Unit
+
 pub fn set_image_intrinsic_size_provider(ImageIntrinsicSizeProvider) -> Unit
 
 pub fn set_text_metrics_provider(TextMetricsProvider) -> Unit
@@ -72,6 +97,26 @@ pub struct ImageIntrinsicSizeProvider {
   func : (String) -> (Double, Double)?
 }
 pub fn ImageIntrinsicSizeProvider::new((String) -> (Double, Double)?) -> Self
+
+pub struct PreparedRenderDocument {
+  stylesheets : Array[@cascade.Stylesheet]
+  indexed_stylesheets : Array[@cascade.IndexedStylesheet]
+  css_vars : Map[String, String]
+  doc_root_selector : @selector.Element
+  doc_root_style : @style.Style
+  render_root : @html.Element
+  render_root_tag : String
+  body_uses_document_root_style : Bool
+  before_rules : Array[PseudoRule]
+  after_rules : Array[PseudoRule]
+}
+
+pub struct PseudoRule {
+  base_selector : @selector.ComplexSelector?
+  base_selector_text : String
+  declarations : Array[@cascade.Declaration]
+  media_query : @media.MediaQueryList?
+}
 
 pub(all) struct RenderContext {
   viewport_width : Double

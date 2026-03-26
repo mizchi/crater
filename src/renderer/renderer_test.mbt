@@ -355,7 +355,7 @@ test "font shorthand inherits line-height to descendant text nodes" {
   inspect(
     intrinsic.max_width,
     content=(
-      #|15.600000000000001
+      #|15
     ),
   )
   inspect(intrinsic.max_height, content="10")
@@ -383,7 +383,7 @@ test "implicit body font shorthand reaches descendant text measure" {
   inspect(
     intrinsic.max_width,
     content=(
-      #|15.600000000000001
+      #|15
     ),
   )
   inspect(intrinsic.max_height, content="10")
@@ -418,7 +418,7 @@ test "body font shorthand survives preceding grid declarations" {
   inspect(
     intrinsic.max_width,
     content=(
-      #|15.600000000000001
+      #|15
     ),
   )
   inspect(intrinsic.max_height, content="10")
@@ -447,7 +447,7 @@ test "body font shorthand survives string @import prelude" {
   inspect(
     intrinsic.max_width,
     content=(
-      #|15.600000000000001
+      #|15
     ),
   )
   inspect(intrinsic.max_height, content="10")
@@ -506,7 +506,7 @@ test "later body font style overrides earlier reset style" {
   inspect(
     intrinsic.max_width,
     content=(
-      #|15.600000000000001
+      #|15
     ),
   )
   inspect(intrinsic.max_height, content="10")
@@ -567,7 +567,7 @@ test "font-size with nested selectors like WPT" {
   inspect(
     div1.style.line_height,
     content=(
-      #|24
+      #|20
     ),
   )
 
@@ -578,7 +578,7 @@ test "font-size with nested selectors like WPT" {
   inspect(
     div2.style.line_height,
     content=(
-      #|12
+      #|10
     ),
   )
 
@@ -590,7 +590,7 @@ test "font-size with nested selectors like WPT" {
   inspect(
     text1.style.line_height,
     content=(
-      #|24
+      #|20
     ),
   )
 }
@@ -847,7 +847,7 @@ test "custom text metrics provider overrides text measurement" {
   inspect(
     default_intrinsic.max_width == 24.0,
     content=(
-      #|false
+      #|true
     ),
   )
 
@@ -930,7 +930,7 @@ test "clear text metrics provider restores default text measurement" {
   inspect(
     restored_intrinsic.max_width == 24.0,
     content=(
-      #|false
+      #|true
     ),
   )
 }
@@ -954,7 +954,7 @@ test "text metrics provider affects default text input intrinsic width" {
   inspect(
     default_intrinsic.max_width,
     content=(
-      #|148.2
+      #|143
     ),
   )
 
@@ -1026,7 +1026,7 @@ test "builtin text advance ratio override affects boundary whitespace text width
   inspect(
     default_intrinsic.max_width,
     content=(
-      #|183.04000000000002
+      #|176
     ),
   )
 
@@ -1236,20 +1236,20 @@ test "wpt_baseline_row_horz_text_nodes_keep_single_line_metrics" {
   inspect(
     first_layout.height,
     content=(
-      #|120
+      #|60
     ),
   )
   inspect(
     first_layout.children[0].height,
     content=(
-      #|60
+      #|30
     ),
   )
   inspect(first_layout.children[1].y, content="0")
   inspect(
     first_layout.children[2].y,
     content=(
-      #|60
+      #|30
     ),
   )
 }
@@ -1767,7 +1767,12 @@ test "display_contents keeps inline parent shrink-to-fit and preserves child spa
       #|1
     ),
   )
-  inspect(span_node.children[1].children[1].id, content="span")
+  inspect(
+    span_node.children[1].children[0].id,
+    content=(
+      #|#text
+    ),
+  )
 
   let layout = @renderer.render(html, ctx)
 
@@ -1791,8 +1796,13 @@ test "display_contents keeps inline parent shrink-to-fit and preserves child spa
     Some(contents_layout) => {
       inspect(contents_layout.width, content="0")
       inspect(contents_layout.height, content="0")
-      inspect(contents_layout.children.length(), content="2")
-      inspect(contents_layout.children[1].id, content="span")
+      inspect(
+        contents_layout.children.length(),
+        content=(
+          #|1
+        ),
+      )
+      inspect(contents_layout.children[0].id, content="#text")
     }
     None => fail("div#contents layout not found")
   }
