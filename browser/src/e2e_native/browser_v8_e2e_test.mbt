@@ -259,3 +259,43 @@ test "E2E: Preact useState counter" {
     None => assert_true(false)
   }
 }
+
+///|
+test "E2E: Preact click → setState → re-render" {
+  // Use raw V8 + DomTree for click simulation (Browser.script_executor is private)
+  let preact_js = preact_bundle_js()
+  let v8 = @js_v8.V8JsRuntime::new_with_mock_dom(@js_v8.full_mock_dom_js())
+  let dom = @dom.DomTree::new()
+  let html_el = dom.create_element("html")
+  let body = dom.create_element("body")
+  let app = dom.create_element("div")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html_el)
+  let _ = dom.append_child(html_el, body)
+  let _ = dom.append_child(body, app)
+  let _ = dom.set_attribute(app, "id", "app")
+  let ctx = @js.JsContext::new_with_runtime(dom, v8.as_js_runtime())
+  // Load Preact and render counter component
+  let init_code = preact_js +
+    "\nconst { h, render } = globalThis.preact;\nconst { useState } = globalThis.preactHooks;\nfunction Counter() {\n  const [count, setCount] = useState(0);\n  return h('div', { id: 'counter' },\n    h('span', { id: 'display' }, String(count)),\n    h('button', { id: 'btn', onclick: () => setCount(c => c + 1) }, '+'));\n}\nrender(h(Counter), document.getElementById('app'));"
+  let result = ctx.execute(init_code)
+  assert_true(result.success)
+  // Check initial render: count = 0
+  let check0 = ctx.execute("return document.getElementById('display').textContent;")
+  assert_true(check0.success)
+  assert_eq(check0.value, "0")
+  // Click the button
+  let click_result = ctx.execute(
+    "document.getElementById('btn').click();",
+  )
+  assert_true(click_result.success)
+  // Check after click: count = 1
+  let check1 = ctx.execute("return document.getElementById('display').textContent;")
+  assert_true(check1.success)
+  assert_eq(check1.value, "1")
+  // Click again
+  let _ = ctx.execute("document.getElementById('btn').click();")
+  let check2 = ctx.execute("return document.getElementById('display').textContent;")
+  assert_true(check2.success)
+  assert_eq(check2.value, "2")
+}

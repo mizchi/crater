@@ -568,16 +568,9 @@ pub fn full_mock_dom_js() -> String {
     #|   if (index >= 0) list.splice(index, 1);
     #|   _removePersistedEventListener(target, eventType, listener);
     #| }
-    #| function dispatchEventImpl(target, event) {
-    #|   if (!event || typeof event !== 'object') {
-    #|     throw new TypeError('Failed to execute dispatchEvent: parameter 1 is not of type Event');
-    #|   }
-    #|   const eventType = String(event.type || event._type || '');
-    #|   event._type = eventType;
-    #|   event._target = target;
-    #|   event.target = target;
-    #|   event._currentTarget = target;
+    #| function _fireListenersOnTarget(target, event, eventType) {
     #|   event.currentTarget = target;
+    #|   event._currentTarget = target;
     #|   const propName = 'on' + eventType;
     #|   const inlineHandler = target.getAttribute ? target.getAttribute(propName) : null;
     #|   if (inlineHandler !== null && inlineHandler !== undefined) {
@@ -590,10 +583,32 @@ pub fn full_mock_dom_js() -> String {
     #|   }
     #|   const listeners = target._listeners && target._listeners[eventType] ? target._listeners[eventType].slice() : [];
     #|   for (const listener of listeners) {
+    #|     if (event._stopImmediate) break;
     #|     if (typeof listener === 'function') {
     #|       listener.call(target, event);
     #|     } else if (listener && typeof listener.handleEvent === 'function') {
     #|       listener.handleEvent(event);
+    #|     }
+    #|   }
+    #| }
+    #| function dispatchEventImpl(target, event) {
+    #|   if (!event || typeof event !== 'object') {
+    #|     throw new TypeError('Failed to execute dispatchEvent: parameter 1 is not of type Event');
+    #|   }
+    #|   const eventType = String(event.type || event._type || '');
+    #|   event._type = eventType;
+    #|   event._target = target;
+    #|   event.target = target;
+    #|   event._stopProp = false;
+    #|   event._stopImmediate = false;
+    #|   event.stopPropagation = function() { event._stopProp = true; };
+    #|   event.stopImmediatePropagation = function() { event._stopProp = true; event._stopImmediate = true; };
+    #|   _fireListenersOnTarget(target, event, eventType);
+    #|   if (event.bubbles && !event._stopProp) {
+    #|     let cur = target.parentNode || target._parent;
+    #|     while (cur && !event._stopProp) {
+    #|       _fireListenersOnTarget(cur, event, eventType);
+    #|       cur = cur.parentNode || cur._parent;
     #|     }
     #|   }
     #|   return !event.defaultPrevented;
@@ -4372,7 +4387,7 @@ pub fn full_mock_dom_js() -> String {
     #|     },
     #|     focus() {},
     #|     blur() {},
-    #|     click() {},
+    #|     click() { this.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })); },
     #|     dispatchEvent(event) { return dispatchEventImpl(this, event); },
     #|     addEventListener(type, listener, options) { addEventListenerImpl(this, type, listener); },
     #|     removeEventListener(type, listener, options) { removeEventListenerImpl(this, type, listener); },

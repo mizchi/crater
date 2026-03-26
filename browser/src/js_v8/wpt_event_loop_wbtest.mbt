@@ -86,11 +86,10 @@ test "WPT: Level 1 bossfight (synthetic click)" {
     @js.ImmediateFlush,
   )
   assert_true(check.success)
-  // Known limitation: full mock DOM's HTMLElement.click() is a stub (empty).
-  // It doesn't dispatch a click event with bubbling, so click handlers don't fire.
-  // The MutationObserver fires because setAttribute triggers it directly.
-  // TODO: Fix mock DOM's click() to dispatch a MouseEvent with bubbles:true
-  // Expected (WPT): "click,click,promise,mutate,promise,timeout,timeout"
-  // Actual: "mutate" (only MutationObserver fires)
-  assert_eq(check.value, "mutate")
+  // With click() dispatching MouseEvent with bubbles:true, both click handlers fire.
+  // Synthetic .click() fires both handlers synchronously before microtasks.
+  // WPT spec: "click,click,promise,mutate,promise,timeout,timeout"
+  // Our mock DOM fires MutationObserver synchronously in setAttribute,
+  // so mutate appears before promise. This is a known ordering difference.
+  assert_eq(check.value, "click,click,mutate,promise,promise,timeout,timeout")
 }
