@@ -14,7 +14,10 @@ test "V8: console.log capture" {
   rt.init()
   let dom = @dom.DomTree::new()
   let result = rt.execute(
-    0, dom, "console.log('hello'); return 42", @js.ImmediateFlush,
+    0,
+    dom,
+    "console.log('hello'); return 42",
+    @js.ImmediateFlush,
   )
   assert_true(result.success)
   assert_eq(result.value, "42")
@@ -49,7 +52,10 @@ test "V8: multiple executions share state" {
   let dom = @dom.DomTree::new()
   let _ = rt.execute(0, dom, "globalThis.__counter = 1;", @js.ImmediateFlush)
   let result = rt.execute(
-    0, dom, "return globalThis.__counter + 1", @js.ImmediateFlush,
+    0,
+    dom,
+    "return globalThis.__counter + 1",
+    @js.ImmediateFlush,
   )
   assert_true(result.success)
   assert_eq(result.value, "2")
@@ -159,7 +165,10 @@ test "V8+DOM: Promise ordering" {
   assert_true(result.success)
   // Now read the final order after microtask checkpoint
   let check = rt.execute(
-    0, dom, "return globalThis.__order.join(',')", @js.DeferredFlush,
+    0,
+    dom,
+    "return globalThis.__order.join(',')",
+    @js.DeferredFlush,
   )
   assert_true(check.success)
   assert_eq(check.value, "sync,end,promise")
@@ -178,7 +187,10 @@ test "V8+DOM: setTimeout ordering" {
   )
   assert_true(result.success)
   let check = rt.execute(
-    0, dom, "return globalThis.__order2.join(',')", @js.DeferredFlush,
+    0,
+    dom,
+    "return globalThis.__order2.join(',')",
+    @js.DeferredFlush,
   )
   assert_true(check.success)
   // sync → end → promise (microtask) → timeout (task)
@@ -195,7 +207,8 @@ test "V8+FullDOM: document.createElement with full mock" {
   rt.init()
   let dom = @dom.DomTree::new()
   let result = rt.execute(
-    0, dom,
+    0,
+    dom,
     "const div = document.createElement('div'); div.setAttribute('id', 'test'); document.body.appendChild(div); return document.getElementById('test').tagName",
     @js.ImmediateFlush,
   )
@@ -209,7 +222,8 @@ test "V8+FullDOM: innerHTML and outerHTML" {
   rt.init()
   let dom = @dom.DomTree::new()
   let result = rt.execute(
-    0, dom,
+    0,
+    dom,
     "const div = document.createElement('div'); div.textContent = 'hello'; return div.outerHTML",
     @js.ImmediateFlush,
   )
@@ -223,7 +237,8 @@ test "V8+FullDOM: classList manipulation" {
   rt.init()
   let dom = @dom.DomTree::new()
   let result = rt.execute(
-    0, dom,
+    0,
+    dom,
     "const el = document.createElement('div'); el.classList.add('a', 'b'); el.classList.remove('a'); return el.classList.contains('b') + ',' + el.classList.contains('a')",
     @js.ImmediateFlush,
   )
@@ -237,7 +252,8 @@ test "V8+FullDOM: querySelector and querySelectorAll" {
   rt.init()
   let dom = @dom.DomTree::new()
   let result = rt.execute(
-    0, dom,
+    0,
+    dom,
     "const d1 = document.createElement('div'); d1.classList.add('item'); const d2 = document.createElement('div'); d2.classList.add('item'); document.body.appendChild(d1); document.body.appendChild(d2); return document.querySelectorAll('.item').length",
     @js.ImmediateFlush,
   )
@@ -252,13 +268,17 @@ test "V8+FullDOM: Event dispatch" {
   let dom = @dom.DomTree::new()
   // Test basic addEventListener + dispatchEvent (not click bubbling which depends on full impl)
   let result = rt.execute(
-    0, dom,
+    0,
+    dom,
     "globalThis.__clicked = false; const btn = document.createElement('button'); btn.addEventListener('click', () => { globalThis.__clicked = true; }); btn.dispatchEvent(new Event('click'));",
     @js.ImmediateFlush,
   )
   assert_true(result.success)
   let check = rt.execute(
-    0, dom, "return String(globalThis.__clicked)", @js.DeferredFlush,
+    0,
+    dom,
+    "return String(globalThis.__clicked)",
+    @js.DeferredFlush,
   )
   assert_true(check.success)
   assert_eq(check.value, "true")
@@ -271,7 +291,8 @@ test "V8+FullDOM: Promise.resolve chain" {
   let dom = @dom.DomTree::new()
   // V8 native Promises: test in single execute with globalThis capture
   let result = rt.execute(
-    0, dom,
+    0,
+    dom,
     "globalThis.__pResult2 = 'pending'; Promise.resolve('a').then(v => v + 'b').then(v => { globalThis.__pResult2 = v; });",
     @js.ImmediateFlush,
   )
@@ -279,7 +300,10 @@ test "V8+FullDOM: Promise.resolve chain" {
   // After ImmediateFlush, microtask checkpoint has run, so __pResult2 should be set
   // Read it back in a separate eval to confirm
   let check = rt.execute(
-    0, dom, "return globalThis.__pResult2", @js.ImmediateFlush,
+    0,
+    dom,
+    "return globalThis.__pResult2",
+    @js.ImmediateFlush,
   )
   assert_true(check.success)
   assert_eq(check.value, "ab")
@@ -291,13 +315,17 @@ test "V8+FullDOM: setTimeout with nested setTimeout" {
   rt.init()
   let dom = @dom.DomTree::new()
   let result = rt.execute(
-    0, dom,
+    0,
+    dom,
     "globalThis.__timerOrder = []; setTimeout(() => { globalThis.__timerOrder.push('first'); setTimeout(() => globalThis.__timerOrder.push('nested'), 0); }, 0);",
     @js.ImmediateFlush,
   )
   assert_true(result.success)
   let check = rt.execute(
-    0, dom, "return globalThis.__timerOrder.join(',')", @js.DeferredFlush,
+    0,
+    dom,
+    "return globalThis.__timerOrder.join(',')",
+    @js.DeferredFlush,
   )
   assert_true(check.success)
   assert_eq(check.value, "first,nested")

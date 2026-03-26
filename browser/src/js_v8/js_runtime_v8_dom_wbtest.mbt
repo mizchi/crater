@@ -8,7 +8,8 @@ test "V8+FullDOM: insertBefore" {
   rt.init()
   let dom = @dom.DomTree::new()
   let result = rt.execute(
-    0, dom,
+    0,
+    dom,
     "const a = document.createElement('div'); a.id = 'a'; const b = document.createElement('div'); b.id = 'b'; document.body.appendChild(a); document.body.appendChild(b); const c = document.createElement('div'); c.id = 'c'; document.body.insertBefore(c, b); return Array.from(document.body.children).map(e => e.id).join(',')",
     @js.ImmediateFlush,
   )
@@ -22,7 +23,8 @@ test "V8+FullDOM: replaceChild" {
   rt.init()
   let dom = @dom.DomTree::new()
   let result = rt.execute(
-    0, dom,
+    0,
+    dom,
     "const old = document.createElement('div'); old.id = 'old'; document.body.appendChild(old); const replacement = document.createElement('span'); replacement.id = 'new'; document.body.replaceChild(replacement, old); return document.body.children[0].id + ',' + document.body.children[0].tagName",
     @js.ImmediateFlush,
   )
@@ -36,7 +38,8 @@ test "V8+FullDOM: cloneNode shallow" {
   rt.init()
   let dom = @dom.DomTree::new()
   let result = rt.execute(
-    0, dom,
+    0,
+    dom,
     "const el = document.createElement('div'); el.setAttribute('class', 'test'); el.appendChild(document.createElement('span')); const clone = el.cloneNode(false); return clone.getAttribute('class') + ',' + clone.children.length",
     @js.ImmediateFlush,
   )
@@ -50,7 +53,8 @@ test "V8+FullDOM: cloneNode deep" {
   rt.init()
   let dom = @dom.DomTree::new()
   let result = rt.execute(
-    0, dom,
+    0,
+    dom,
     "const el = document.createElement('div'); el.appendChild(document.createElement('span')); el.appendChild(document.createElement('p')); const clone = el.cloneNode(true); return clone.children.length + ',' + clone.children[0].tagName",
     @js.ImmediateFlush,
   )
@@ -64,7 +68,8 @@ test "V8+FullDOM: getElementsByTagName" {
   rt.init()
   let dom = @dom.DomTree::new()
   let result = rt.execute(
-    0, dom,
+    0,
+    dom,
     "document.body.appendChild(document.createElement('p')); document.body.appendChild(document.createElement('p')); document.body.appendChild(document.createElement('div')); return document.getElementsByTagName('p').length",
     @js.ImmediateFlush,
   )
@@ -78,7 +83,8 @@ test "V8+FullDOM: nodeType constants" {
   rt.init()
   let dom = @dom.DomTree::new()
   let result = rt.execute(
-    0, dom,
+    0,
+    dom,
     "return document.createElement('div').nodeType + ',' + document.createTextNode('hi').nodeType + ',' + document.createComment('c').nodeType",
     @js.ImmediateFlush,
   )
@@ -92,7 +98,8 @@ test "V8+FullDOM: contains" {
   rt.init()
   let dom = @dom.DomTree::new()
   let result = rt.execute(
-    0, dom,
+    0,
+    dom,
     "const parent = document.createElement('div'); const child = document.createElement('span'); parent.appendChild(child); return parent.contains(child) + ',' + child.contains(parent)",
     @js.ImmediateFlush,
   )
@@ -106,7 +113,8 @@ test "V8+FullDOM: previousSibling and lastChild" {
   rt.init()
   let dom = @dom.DomTree::new()
   let result = rt.execute(
-    0, dom,
+    0,
+    dom,
     "const a = document.createElement('div'); a.id = 'a'; const b = document.createElement('div'); b.id = 'b'; document.body.appendChild(a); document.body.appendChild(b); return document.body.lastChild.id + ',' + b.previousSibling.id",
     @js.ImmediateFlush,
   )
@@ -120,7 +128,8 @@ test "V8+FullDOM: createDocumentFragment" {
   rt.init()
   let dom = @dom.DomTree::new()
   let result = rt.execute(
-    0, dom,
+    0,
+    dom,
     "const frag = document.createDocumentFragment(); frag.appendChild(document.createElement('div')); frag.appendChild(document.createElement('span')); document.body.appendChild(frag); return document.body.children.length",
     @js.ImmediateFlush,
   )
@@ -135,7 +144,8 @@ test "V8+FullDOM: Event preventDefault" {
   rt.init()
   let dom = @dom.DomTree::new()
   let result = rt.execute(
-    0, dom,
+    0,
+    dom,
     "const e = new Event('click', { cancelable: true }); e.preventDefault(); return e.defaultPrevented",
     @js.ImmediateFlush,
   )
@@ -149,13 +159,17 @@ test "V8+FullDOM: setTimeout and clearTimeout" {
   rt.init()
   let dom = @dom.DomTree::new()
   let result = rt.execute(
-    0, dom,
+    0,
+    dom,
     "globalThis.__cancelled = 'not called'; const id = setTimeout(() => { globalThis.__cancelled = 'called'; }, 0); clearTimeout(id);",
     @js.ImmediateFlush,
   )
   assert_true(result.success)
   let check = rt.execute(
-    0, dom, "return globalThis.__cancelled", @js.ImmediateFlush,
+    0,
+    dom,
+    "return globalThis.__cancelled",
+    @js.ImmediateFlush,
   )
   assert_true(check.success)
   assert_eq(check.value, "not called")
@@ -167,7 +181,8 @@ test "V8+FullDOM: fetch mock returns Promise" {
   rt.init()
   let dom = @dom.DomTree::new()
   let result = rt.execute(
-    0, dom,
+    0,
+    dom,
     "return typeof fetch === 'function'",
     @js.ImmediateFlush,
   )
@@ -181,7 +196,8 @@ test "V8+FullDOM: window and document exist" {
   rt.init()
   let dom = @dom.DomTree::new()
   let result = rt.execute(
-    0, dom,
+    0,
+    dom,
     "return (typeof window !== 'undefined') + ',' + (typeof document !== 'undefined') + ',' + document.body.tagName",
     @js.ImmediateFlush,
   )

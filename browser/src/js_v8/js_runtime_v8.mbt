@@ -10,12 +10,19 @@ pub struct V8JsRuntime {
   mut dom_initialized : Bool
   mut runtime : @v8.Runtime?
   mock_dom_source : String?
+  id_map : Map[Int, @dom.NodeId]
 }
 
 ///|
 /// Create a V8JsRuntime without mock DOM (basic eval only).
 pub fn V8JsRuntime::new() -> V8JsRuntime {
-  { initialized: false, dom_initialized: false, runtime: None, mock_dom_source: None }
+  {
+    initialized: false,
+    dom_initialized: false,
+    runtime: None,
+    mock_dom_source: None,
+    id_map: {},
+  }
 }
 
 ///|
@@ -27,6 +34,7 @@ pub fn V8JsRuntime::new_with_mock_dom(mock_dom_js : String) -> V8JsRuntime {
     dom_initialized: false,
     runtime: None,
     mock_dom_source: Some(mock_dom_js),
+    id_map: {},
   }
 }
 
@@ -78,7 +86,7 @@ impl @js.JsRuntime for V8JsRuntime with execute(
   // Initialize mock DOM on first execute if source is available
   if not(self.dom_initialized) {
     match self.mock_dom_source {
-      Some(src) => {
+      Some(src) =>
         match rt.eval_string(src) {
           Ok(_) => {
             self.dom_initialized = true
@@ -90,7 +98,6 @@ impl @js.JsRuntime for V8JsRuntime with execute(
               "mock DOM init failed: " + e.to_string(),
             )
         }
-      }
       None => ()
     }
   }
@@ -105,6 +112,8 @@ impl @js.JsRuntime for V8JsRuntime with execute(
       Ok(_) => ()
       Err(e) => println("[V8 initCode error] " + e.to_string())
     }
+    // Pre-populate id_map with identity mappings for all existing DomTree nodes
+    populate_id_map(dom, self.id_map)
   }
   // Execute user code
   let flush = match async_mode {
@@ -139,17 +148,16 @@ impl @js.JsRuntime for V8JsRuntime with execute(
     "(function() {\n  const __logsResult = __getLogs();\n  const v = globalThis.__lastSuccess\n    ? JSON.stringify({ success: true, value: globalThis.__lastResult === undefined ? 'undefined' : String(globalThis.__lastResult), logs: JSON.parse(__logsResult) })\n    : JSON.stringify({ success: false, error: globalThis.__lastError || 'unknown', logs: JSON.parse(__logsResult) });\n  return v;\n})()"
   }
   match rt.eval_string(collect_code) {
-    Ok(result_json) => {
+    Ok(result_json) =>
       if self.dom_initialized {
         let (result, dom_ops) = parse_result_with_ops(result_json)
         if dom_ops.length() > 0 {
-          apply_dom_ops(dom, dom_ops)
+          apply_dom_ops(dom, dom_ops, self.id_map)
         }
         result
       } else {
         parse_v8_result(result_json)
       }
-    }
     Err(v8_err) => {
       let logs = collect_logs(rt)
       @js.JsResult::new(v8_err.to_string(), logs, false)
@@ -172,7 +180,7 @@ impl @js.JsRuntime for V8JsRuntime with tick(
         match rt.eval_string(tick_code) {
           Ok(json) => {
             let (result, dom_ops) = parse_result_with_ops(json)
-            apply_dom_ops(dom, dom_ops)
+            apply_dom_ops(dom, dom_ops, self.id_map)
             result
           }
           Err(_) => @js.JsResult::new("false", [], true)
@@ -183,6 +191,38 @@ impl @js.JsRuntime for V8JsRuntime with tick(
       }
     }
     None => @js.JsResult::new("false", [], true)
+  }
+}
+
+// ============================================================
+// ID map management
+// ============================================================
+
+///|
+/// Populate id_map with identity mappings for all existing DomTree nodes.
+/// The mock DOM's `create_dom_init_code` sets `_mockId = domtree_id` for
+/// serialized elements, so existing nodes have mock_id == domtree_id.
+fn populate_id_map(dom : @dom.DomTree, id_map : Map[Int, @dom.NodeId]) -> Unit {
+  // Clear previous mappings
+  id_map.clear()
+  // Traverse all existing nodes by walking the tree from document root
+  populate_id_map_recursive(dom, dom.get_document(), id_map)
+}
+
+///|
+fn populate_id_map_recursive(
+  dom : @dom.DomTree,
+  node_id : @dom.NodeId,
+  id_map : Map[Int, @dom.NodeId],
+) -> Unit {
+  let id_int = node_id.to_int()
+  id_map[id_int] = node_id
+  match dom.get_children(node_id) {
+    Ok(children) =>
+      for child in children {
+        populate_id_map_recursive(dom, child, id_map)
+      }
+    Err(_) => ()
   }
 }
 
@@ -291,48 +331,90 @@ fn parse_json_int(json : String, field : String) -> Int {
         result = result * 10 + (chars[i].to_int() - '0'.to_int())
         i += 1
       }
-      if neg { -result } else { result }
+      if neg {
+        -result
+      } else {
+        result
+      }
     }
     None => 0
   }
 }
 
 ///|
-fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
+fn apply_dom_ops(
+  dom : @dom.DomTree,
+  ops : Array[DomOp],
+  id_map : Map[Int, @dom.NodeId],
+) -> Unit {
   for op in ops {
     match op.op {
       "createElement" => {
         let node_id = dom.create_element(op.tag_name)
         // Map mock DOM id to actual DomTree id
-        ignore(node_id)
+        id_map[op.id] = node_id
       }
       "createTextNode" => {
         let node_id = dom.create_text(op.text)
-        ignore(node_id)
+        id_map[op.id] = node_id
       }
       "appendChild" => {
-        let parent = @dom.NodeId::from_int(op.parent_id)
-        let child = @dom.NodeId::from_int(op.child_id)
-        ignore(dom.append_child(parent, child))
+        let parent = id_map.get(op.parent_id)
+        let child = id_map.get(op.child_id)
+        match (parent, child) {
+          (Some(p), Some(c)) => ignore(dom.append_child(p, c))
+          _ => ()
+        }
       }
       "removeChild" => {
-        let parent = @dom.NodeId::from_int(op.parent_id)
-        let child = @dom.NodeId::from_int(op.child_id)
-        ignore(dom.remove_child(parent, child))
+        let parent = id_map.get(op.parent_id)
+        let child = id_map.get(op.child_id)
+        match (parent, child) {
+          (Some(p), Some(c)) => ignore(dom.remove_child(p, c))
+          _ => ()
+        }
       }
-      "setAttribute" => {
-        let node = @dom.NodeId::from_int(op.id)
-        ignore(dom.set_attribute(node, op.name, op.value))
+      "insertBefore" => {
+        let parent = id_map.get(op.parent_id)
+        let child = id_map.get(op.child_id)
+        let ref_node = if op.ref_id != 0 { id_map.get(op.ref_id) } else { None }
+        match (parent, child) {
+          (Some(p), Some(c)) => ignore(dom.insert_before(p, c, ref_node))
+          _ => ()
+        }
       }
-      "removeAttribute" => {
-        let node = @dom.NodeId::from_int(op.id)
-        ignore(dom.remove_attribute(node, op.name))
+      "replaceChild" => {
+        // replaceChild: parentId, childId (new), refId (old)
+        let parent = id_map.get(op.parent_id)
+        let new_child = id_map.get(op.child_id)
+        let old_child = id_map.get(op.ref_id)
+        match (parent, new_child, old_child) {
+          (Some(p), Some(nc), Some(oc)) => {
+            // Insert new before old, then remove old
+            ignore(dom.insert_before(p, nc, Some(oc)))
+            ignore(dom.remove_child(p, oc))
+          }
+          _ => ()
+        }
       }
-      "setTextContent" => {
-        let node = @dom.NodeId::from_int(op.id)
-        let text = if op.value.length() > 0 { op.value } else { op.text }
-        ignore(dom.set_text_content(node, text))
-      }
+      "setAttribute" =>
+        match id_map.get(op.id) {
+          Some(node) => ignore(dom.set_attribute(node, op.name, op.value))
+          None => ()
+        }
+      "removeAttribute" =>
+        match id_map.get(op.id) {
+          Some(node) => ignore(dom.remove_attribute(node, op.name))
+          None => ()
+        }
+      "setTextContent" =>
+        match id_map.get(op.id) {
+          Some(node) => {
+            let text = if op.value.length() > 0 { op.value } else { op.text }
+            ignore(dom.set_text_content(node, text))
+          }
+          None => ()
+        }
       _ => () // Unknown op, skip
     }
   }

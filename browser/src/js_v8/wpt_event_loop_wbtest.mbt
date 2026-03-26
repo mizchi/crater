@@ -29,7 +29,10 @@ test "WPT: Basic task and microtask ordering" {
   let result = rt.execute(0, dom, code, @js.ImmediateFlush)
   assert_true(result.success)
   let check = rt.execute(
-    0, dom, "return globalThis.__actual.join(',')", @js.ImmediateFlush,
+    0,
+    dom,
+    "return globalThis.__actual.join(',')",
+    @js.ImmediateFlush,
   )
   assert_true(check.success)
   assert_eq(check.value, "script start,script end,promise1,promise2,setTimeout")
@@ -77,7 +80,10 @@ test "WPT: Level 1 bossfight (synthetic click)" {
   let result = rt.execute(0, dom, code, @js.ImmediateFlush)
   assert_true(result.success)
   let check = rt.execute(
-    0, dom, "return globalThis.__actual2.join(',')", @js.ImmediateFlush,
+    0,
+    dom,
+    "return globalThis.__actual2.join(',')",
+    @js.ImmediateFlush,
   )
   assert_true(check.success)
   // Known limitation: full mock DOM's HTMLElement.click() is a stub (empty).
