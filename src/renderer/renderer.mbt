@@ -6354,17 +6354,7 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     // Table elements
     "table" => { ..default_style, display: @types.Table, border_spacing: 2.0 }
     "tr" => { ..default_style, display: @types.TableRow }
-    "td" | "th" =>
-      {
-        ..default_style,
-        display: @types.TableCell,
-        padding: {
-          left: @types.Length(1.0),
-          right: @types.Length(1.0),
-          top: @types.Length(1.0),
-          bottom: @types.Length(1.0),
-        },
-      }
+    "td" | "th" => { ..default_style, display: @types.TableCell }
     "thead" => { ..default_style, display: @types.TableHeaderGroup }
     "tbody" => { ..default_style, display: @types.TableRowGroup }
     "tfoot" => { ..default_style, display: @types.TableFooterGroup }
