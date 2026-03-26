@@ -2602,15 +2602,15 @@ pub fn compute(
       @types.Percent(p) => parent_width * p
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
         intrinsic_table_width
-      @types.Auto =>
-        // CSS 2.1: display:table with auto width fills available width
-        // (like a block-level element), not shrink-to-fit.
-        // Use the larger of intrinsic width and available parent width.
-        if parent_width > intrinsic_table_width {
+      @types.Auto => {
+        // Shrink-to-fit: use intrinsic width, capped by parent width.
+        let min_width = intrinsic_table_width
+        if min_width > parent_width {
           parent_width
         } else {
-          intrinsic_table_width
+          min_width
         }
+      }
     }
   }
   // Apply width constraints only when width wasn't forced by parent stretch.
