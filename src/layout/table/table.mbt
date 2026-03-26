@@ -1455,13 +1455,37 @@ fn calculate_column_widths(
           }
         }
       } else {
-        let extra_per_col = if num_columns > 0 {
-          remaining / num_columns.to_double()
-        } else {
-          0.0
+        // Distribute remaining width to the widest column(s).
+        // Small columns (rank, vote) keep their min-width,
+        // large columns (title, content) absorb the remaining space.
+        // This matches browser behavior where text-heavy columns expand.
+        let mut max_min_w = 0.0
+        let mut max_count = 0
+        for i = 0; i < num_columns; i = i + 1 {
+          if is_collapsed_column(collapsed_columns, i) {
+            continue
+          }
+          if col_min_widths[i] > max_min_w {
+            max_min_w = col_min_widths[i]
+            max_count = 1
+          } else if col_min_widths[i] == max_min_w {
+            max_count += 1
+          }
         }
-        for w in col_min_widths {
-          widths.push(w + extra_per_col)
+        if remaining > 0.0 && max_count > 0 {
+          let extra_per_wide = remaining / max_count.to_double()
+          for i = 0; i < num_columns; i = i + 1 {
+            let w = col_min_widths[i]
+            if w == max_min_w {
+              widths.push(w + extra_per_wide)
+            } else {
+              widths.push(w)
+            }
+          }
+        } else {
+          for w in col_min_widths {
+            widths.push(w)
+          }
         }
       }
     } else {
@@ -2578,17 +2602,15 @@ pub fn compute(
       @types.Percent(p) => parent_width * p
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
         intrinsic_table_width
-      @types.Auto => {
-        // Normal flow: shrink-to-fit behavior
-        // Table width = content width + padding + border
-        let min_width = intrinsic_table_width
-        // Don't exceed available width
-        if min_width > parent_width {
+      @types.Auto =>
+        // CSS 2.1: display:table with auto width fills available width
+        // (like a block-level element), not shrink-to-fit.
+        // Use the larger of intrinsic width and available parent width.
+        if parent_width > intrinsic_table_width {
           parent_width
         } else {
-          min_width
+          intrinsic_table_width
         }
-      }
     }
   }
   // Apply width constraints only when width wasn't forced by parent stretch.
