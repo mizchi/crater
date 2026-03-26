@@ -231,6 +231,17 @@ test-vrt:
 test-wpt-vrt:
     pnpm test:wpt-vrt
 
+# Capture a real-world snapshot for VRT testing
+vrt-capture *args:
+    npx tsx scripts/capture-real-world-snapshot.ts {{args}}
+
+# Re-capture all URL snapshots
+vrt-capture-all:
+    npx tsx scripts/capture-real-world-snapshot.ts "https://example.com" --name example-com --width 800 --height 600
+    npx tsx scripts/capture-real-world-snapshot.ts "https://info.cern.ch" --name info-cern-ch --width 800 --height 600
+    npx tsx scripts/capture-real-world-snapshot.ts "https://news.ycombinator.com/" --name hackernews --width 800 --height 600
+    npx tsx scripts/capture-real-world-snapshot.ts "https://en.wikipedia.org/wiki/Main_Page" --name wikipedia --width 800 --height 600
+
 # Update WPT VRT baseline
 wpt-vrt-baseline-update:
     WPT_VRT_UPDATE_BASELINE=1 pnpm test:wpt-vrt
