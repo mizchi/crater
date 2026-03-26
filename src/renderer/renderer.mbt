@@ -17,7 +17,7 @@ let large_ahem_like_char_width_ratio : Double = 0.722
 
 ///|
 /// UA default "normal" line-height approximation used for table internals.
-let normal_line_height_ratio : Double = 1.045
+let normal_line_height_ratio : Double = 1.2
 
 ///|
 fn view_to_string(v : StringView) -> String {
