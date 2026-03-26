@@ -17,6 +17,22 @@ pub(all) enum BorderCollapse {
 pub impl Eq for BorderCollapse
 pub impl Show for BorderCollapse
 
+pub(all) enum BorderStyle {
+  None
+  Inset
+  Groove
+  Outset
+  Ridge
+  Dotted
+  Dashed
+  Solid
+  Double
+  Hidden
+}
+pub fn BorderStyle::priority(Self) -> Int
+pub impl Eq for BorderStyle
+pub impl Show for BorderStyle
+
 pub(all) enum BreakBefore {
   Auto
   Column
@@ -153,6 +169,7 @@ pub(all) struct Style {
   mut margin : @types.Rect[@types.Dimension]
   mut padding : @types.Rect[@types.Dimension]
   mut border : @types.Rect[@types.Dimension]
+  mut border_style : @types.Rect[BorderStyle]
   mut margin_trim : MarginTrim
   mut flex_direction : @types.FlexDirection
   mut flex_wrap : @types.FlexWrap

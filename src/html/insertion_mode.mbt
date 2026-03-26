@@ -88,12 +88,14 @@ fn TreeBuilder::handle_in_head(self : TreeBuilder, token : Token) -> Unit {
         "title" => {
           let elem = create_element(tag, attrs)
           self.insert_element(elem)
+          self.tokenizer.enter_raw_text_mode(tag)
           self.original_insertion_mode = Some(self.insertion_mode)
           self.insertion_mode = InsertionMode::Text
         }
         "style" | "script" => {
           let elem = create_element(tag, attrs)
           self.insert_element(elem)
+          self.tokenizer.enter_raw_text_mode(tag)
           self.original_insertion_mode = Some(self.insertion_mode)
           self.insertion_mode = InsertionMode::Text
         }
@@ -101,6 +103,7 @@ fn TreeBuilder::handle_in_head(self : TreeBuilder, token : Token) -> Unit {
           // Template requires special handling - for now, create element and skip its content
           let elem = create_element(tag, attrs)
           self.insert_element(elem)
+          self.tokenizer.enter_raw_text_mode(tag)
           // Switch to RCDATA-like mode to skip content until </template>
           self.original_insertion_mode = Some(self.insertion_mode)
           self.insertion_mode = InsertionMode::Text
@@ -204,6 +207,7 @@ fn TreeBuilder::handle_in_body_start_tag(
         "noframes" | "script" | "style" | "template" | "title" => {
           let elem = create_element(tag, attrs)
           self.insert_into_head(elem, true)
+          self.tokenizer.enter_raw_text_mode(tag)
           self.original_insertion_mode = Some(InsertionMode::InBody)
           self.insertion_mode = InsertionMode::Text
         }

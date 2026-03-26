@@ -1227,22 +1227,38 @@ fn apply_property(
     "border-top" => {
       let bs = extract_border_style_from_shorthand(value)
       builder.border_style_top = bs
-      builder.border_top = if is_none_border_style_enum(bs) { @types.Length(0.0) } else { resolve_border_width(value, ctx) }
+      builder.border_top = if is_none_border_style_enum(bs) {
+        @types.Length(0.0)
+      } else {
+        resolve_border_width(value, ctx)
+      }
     }
     "border-right" => {
       let bs = extract_border_style_from_shorthand(value)
       builder.border_style_right = bs
-      builder.border_right = if is_none_border_style_enum(bs) { @types.Length(0.0) } else { resolve_border_width(value, ctx) }
+      builder.border_right = if is_none_border_style_enum(bs) {
+        @types.Length(0.0)
+      } else {
+        resolve_border_width(value, ctx)
+      }
     }
     "border-bottom" => {
       let bs = extract_border_style_from_shorthand(value)
       builder.border_style_bottom = bs
-      builder.border_bottom = if is_none_border_style_enum(bs) { @types.Length(0.0) } else { resolve_border_width(value, ctx) }
+      builder.border_bottom = if is_none_border_style_enum(bs) {
+        @types.Length(0.0)
+      } else {
+        resolve_border_width(value, ctx)
+      }
     }
     "border-left" => {
       let bs = extract_border_style_from_shorthand(value)
       builder.border_style_left = bs
-      builder.border_left = if is_none_border_style_enum(bs) { @types.Length(0.0) } else { resolve_border_width(value, ctx) }
+      builder.border_left = if is_none_border_style_enum(bs) {
+        @types.Length(0.0)
+      } else {
+        resolve_border_width(value, ctx)
+      }
     }
     "border-top-width" => builder.border_top = resolve_dimension(value, ctx)
     "border-right-width" => builder.border_right = resolve_dimension(value, ctx)
@@ -1290,27 +1306,43 @@ fn apply_property(
         builder.border_style_right = parse_border_style_value(parts[1])
         builder.border_style_bottom = parse_border_style_value(parts[2])
         builder.border_style_left = parse_border_style_value(parts[3])
-        if is_none_border_style(parts[0]) { builder.border_top = @types.Length(0.0) }
-        if is_none_border_style(parts[1]) { builder.border_right = @types.Length(0.0) }
-        if is_none_border_style(parts[2]) { builder.border_bottom = @types.Length(0.0) }
-        if is_none_border_style(parts[3]) { builder.border_left = @types.Length(0.0) }
+        if is_none_border_style(parts[0]) {
+          builder.border_top = @types.Length(0.0)
+        }
+        if is_none_border_style(parts[1]) {
+          builder.border_right = @types.Length(0.0)
+        }
+        if is_none_border_style(parts[2]) {
+          builder.border_bottom = @types.Length(0.0)
+        }
+        if is_none_border_style(parts[3]) {
+          builder.border_left = @types.Length(0.0)
+        }
       }
     }
     "border-top-style" => {
       builder.border_style_top = parse_border_style_value(value)
-      if is_none_border_style(value) { builder.border_top = @types.Length(0.0) }
+      if is_none_border_style(value) {
+        builder.border_top = @types.Length(0.0)
+      }
     }
     "border-right-style" => {
       builder.border_style_right = parse_border_style_value(value)
-      if is_none_border_style(value) { builder.border_right = @types.Length(0.0) }
+      if is_none_border_style(value) {
+        builder.border_right = @types.Length(0.0)
+      }
     }
     "border-bottom-style" => {
       builder.border_style_bottom = parse_border_style_value(value)
-      if is_none_border_style(value) { builder.border_bottom = @types.Length(0.0) }
+      if is_none_border_style(value) {
+        builder.border_bottom = @types.Length(0.0)
+      }
     }
     "border-left-style" => {
       builder.border_style_left = parse_border_style_value(value)
-      if is_none_border_style(value) { builder.border_left = @types.Length(0.0) }
+      if is_none_border_style(value) {
+        builder.border_left = @types.Length(0.0)
+      }
     }
     // Logical border properties (block/inline)
     "border-block" | "border-block-width" => {
@@ -1928,8 +1960,16 @@ fn extract_border_style_from_shorthand(value : String) -> @style.BorderStyle {
   for part in parts {
     let lower = part.to_lower()
     match lower {
-      "none" | "hidden" | "dotted" | "dashed" | "solid" | "double" | "groove" |
-      "ridge" | "inset" | "outset" => {
+      "none"
+      | "hidden"
+      | "dotted"
+      | "dashed"
+      | "solid"
+      | "double"
+      | "groove"
+      | "ridge"
+      | "inset"
+      | "outset" => {
         found_style = true
         result = parse_border_style_value(part)
       }

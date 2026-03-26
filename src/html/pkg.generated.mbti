@@ -116,8 +116,11 @@ pub(all) struct Tokenizer {
   input : String
   mut pos : Int
   len : Int
+  mut raw_text_end_tag : String?
+  mut pending_end_tag : String?
 }
 pub fn Tokenizer::collect_all(Self) -> Array[Token]
+pub fn Tokenizer::enter_raw_text_mode(Self, String) -> Unit
 pub fn Tokenizer::new(String) -> Self
 pub fn Tokenizer::next_token(Self) -> Token
 

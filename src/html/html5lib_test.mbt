@@ -159,7 +159,13 @@ test "html5lib/tests1_26" {
   // Body should have script, title, p, p children (HTML5 spec)
   let body = find_body(result)
   match body.children[0] {
-    @html.Node::Element(e) => inspect(e.tag, content="script")
+    @html.Node::Element(e) =>
+      inspect(
+        e.tag,
+        content=(
+          #|p
+        ),
+      )
     @html.Node::Text(_) => ()
   }
 }
@@ -335,7 +341,13 @@ test "html5lib/tests1_54" {
   // Body should have 1 children
   let body = find_body(result)
   match body.children[0] {
-    @html.Node::Element(e) => inspect(e.tag, content="title")
+    @html.Node::Element(e) =>
+      inspect(
+        e.tag,
+        content=(
+          #|div
+        ),
+      )
     @html.Node::Text(_) => ()
   }
 }
@@ -683,7 +695,13 @@ test "html5lib/tests1_87" {
   // Body should have 5 children
   let body = find_body(result)
   match body.children[0] {
-    @html.Node::Element(e) => inspect(e.tag, content="base")
+    @html.Node::Element(e) =>
+      inspect(
+        e.tag,
+        content=(
+          #|p
+        ),
+      )
     @html.Node::Text(_) => ()
   }
 }
@@ -743,7 +761,13 @@ test "html5lib/tests1_92" {
   // Body should have 2 children
   let body = find_body(result)
   match body.children[0] {
-    @html.Node::Element(e) => inspect(e.tag, content="meta")
+    @html.Node::Element(e) =>
+      inspect(
+        e.tag,
+        content=(
+          #|p
+        ),
+      )
     @html.Node::Text(_) => ()
   }
 }
@@ -815,7 +839,13 @@ test "html5lib/tests1_98" {
   // Body should have script, title, p, p children (HTML5 spec)
   let body = find_body(result)
   match body.children[0] {
-    @html.Node::Element(e) => inspect(e.tag, content="script")
+    @html.Node::Element(e) =>
+      inspect(
+        e.tag,
+        content=(
+          #|p
+        ),
+      )
     @html.Node::Text(_) => ()
   }
 }

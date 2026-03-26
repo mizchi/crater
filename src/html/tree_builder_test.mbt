@@ -229,3 +229,58 @@ test "tree_builder/document parsing moves metadata elements out of body flow" {
   inspect(tags, content="[\"p\"]")
   inspect(texts, content="[]")
 }
+
+///|
+test "tree_builder/style raw text mode" {
+  // CSS content with < character should not be parsed as HTML tags
+  let html = "<html><head><style>div > p { color: red; }</style></head><body><p>Hello</p></body></html>"
+  let result = @html.parse_fragment_v2(html)
+  let body = find_body_v2(result)
+  // Body should have p element, not CSS text
+  match body.children[0] {
+    @html.Node::Element(e) => inspect(e.tag, content="p")
+    @html.Node::Text(_) => inspect("unexpected text", content="element")
+  }
+  // Head should have style element with CSS text content
+  let head = match result.children[0] {
+    @html.Node::Element(e) if e.tag == "head" => e
+    _ => panic()
+  }
+  let style = match head.children[0] {
+    @html.Node::Element(e) if e.tag == "style" => e
+    _ => panic()
+  }
+  // Style should contain the CSS as text
+  match style.children[0] {
+    @html.Node::Text(t) => inspect(t, content="div > p { color: red; }")
+    _ => inspect("no text", content="expected text child")
+  }
+}
+
+///|
+test "tree_builder/style with svg in data uri" {
+  // This is the Wikipedia case: CSS contains SVG data URIs with < characters
+  let html = "<html><head><style>background: url(\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'/>\");</style></head><body><p>Content</p></body></html>"
+  let result = @html.parse_fragment_v2(html)
+  let body = find_body_v2(result)
+  match body.children[0] {
+    @html.Node::Element(e) => inspect(e.tag, content="p")
+    @html.Node::Text(_) => inspect("unexpected text", content="element")
+  }
+}
+
+///|
+test "tree_builder/script raw text mode" {
+  let html = "<script>if (a < b && c > d) { alert('test'); }</script><p>After</p>"
+  let result = @html.parse_fragment_v2(html)
+  let body = find_body_v2(result)
+  // Should have script and p as children (script may be in head)
+  let mut found_p = false
+  for child in body.children {
+    match child {
+      @html.Node::Element(e) if e.tag == "p" => found_p = true
+      _ => ()
+    }
+  }
+  inspect(found_p, content="true")
+}

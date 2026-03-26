@@ -21,11 +21,86 @@ pub(all) struct Tokenizer {
   input : String
   mut pos : Int
   len : Int
+  // When set, tokenizer is in raw text mode and only emits text until
+  // the matching end tag (e.g., "</style>") is found.
+  mut raw_text_end_tag : String?
+  // Deferred end tag to emit after raw text content
+  mut pending_end_tag : String?
 }
 
 ///|
 pub fn Tokenizer::new(input : String) -> Tokenizer {
-  { input, pos: 0, len: input.length() }
+  {
+    input,
+    pos: 0,
+    len: input.length(),
+    raw_text_end_tag: None,
+    pending_end_tag: None,
+  }
+}
+
+///|
+/// Enter raw text mode: all content until </tag> is emitted as text.
+pub fn Tokenizer::enter_raw_text_mode(self : Tokenizer, tag : String) -> Unit {
+  self.raw_text_end_tag = Some(tag.to_lower())
+}
+
+///|
+/// Consume raw text content until matching </end_tag> is found.
+/// Returns Characters token with accumulated text, or EndTag if no text.
+/// When text is found, the end tag position is saved and will be emitted
+/// on the next call (raw_text_end_tag is cleared but pending_end_tag is set).
+fn Tokenizer::consume_raw_text_token(
+  self : Tokenizer,
+  end_tag : String,
+) -> Token {
+  // If we already have a pending end tag from previous call, emit it now
+  match self.pending_end_tag {
+    Some(tag) => {
+      self.pending_end_tag = None
+      return Token::EndTag(tag)
+    }
+    None => ()
+  }
+  let buf = StringBuilder::new()
+  while not(self.is_eof()) {
+    // Check for closing tag
+    if self.peek() is Some('<') && self.peek_at(1) is Some('/') {
+      let saved_pos = self.pos
+      let _ = self.consume() // <
+      let _ = self.consume() // /
+      self.skip_whitespace()
+      let name = self.consume_name().to_lower()
+      self.skip_whitespace()
+      if name == end_tag {
+        // Found end tag — consume '>' and exit raw text mode
+        if self.peek() is Some('>') {
+          let _ = self.consume()
+        }
+        self.raw_text_end_tag = None
+        let text = buf.to_string()
+        if text.length() > 0 {
+          // Return text first, save end tag for next call
+          self.pending_end_tag = Some(end_tag)
+          return Token::Characters(text)
+        }
+        return Token::EndTag(end_tag)
+      }
+      // Not our end tag — restore position and add '<' to buffer
+      self.pos = saved_pos
+    }
+    match self.consume() {
+      Some(c) => buf.write_char(c)
+      None => break
+    }
+  }
+  self.raw_text_end_tag = None
+  let text = buf.to_string()
+  if text.length() > 0 {
+    Token::Characters(text)
+  } else {
+    Token::EOF
+  }
 }
 
 ///|
@@ -354,8 +429,21 @@ fn Tokenizer::parse_end_tag(self : Tokenizer) -> Token {
 ///|
 /// Get the next token
 pub fn Tokenizer::next_token(self : Tokenizer) -> Token {
+  // Check for pending end tag from raw text mode
+  match self.pending_end_tag {
+    Some(tag) => {
+      self.pending_end_tag = None
+      return Token::EndTag(tag)
+    }
+    None => ()
+  }
   if self.is_eof() {
     return Token::EOF
+  }
+  // Raw text mode: emit text until matching end tag
+  match self.raw_text_end_tag {
+    Some(end_tag) => return self.consume_raw_text_token(end_tag)
+    None => ()
   }
   match self.peek() {
     Some('<') =>
