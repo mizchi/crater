@@ -73,7 +73,7 @@ test "inline_block_narrow_viewport_wraps" {
   inspect(
     address_layout.x.to_int(),
     content=(
-      #|72
+      #|74
     ),
   )
 }

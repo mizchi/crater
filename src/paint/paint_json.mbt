@@ -68,6 +68,20 @@ fn write_paint_props_json(buf : StringBuilder, p : PaintProperties) -> Unit {
     buf.write_string(",\"vis\":")
     write_json_string(buf, vis)
   }
+  if p.border_top_left_radius != 0.0 ||
+    p.border_top_right_radius != 0.0 ||
+    p.border_bottom_right_radius != 0.0 ||
+    p.border_bottom_left_radius != 0.0 {
+    buf.write_string(",\"br\":[")
+    write_json_double(buf, p.border_top_left_radius)
+    buf.write_char(',')
+    write_json_double(buf, p.border_top_right_radius)
+    buf.write_char(',')
+    write_json_double(buf, p.border_bottom_right_radius)
+    buf.write_char(',')
+    write_json_double(buf, p.border_bottom_left_radius)
+    buf.write_char(']')
+  }
   buf.write_char('}')
 }
 

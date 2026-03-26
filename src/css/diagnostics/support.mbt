@@ -236,7 +236,7 @@ pub fn get_support_level(property : String) -> SupportLevel {
     | "border-top-left-radius"
     | "border-top-right-radius"
     | "border-bottom-left-radius"
-    | "border-bottom-right-radius" => UnsupportedVisual
+    | "border-bottom-right-radius" => Supported
     // Box Shadow
     "box-shadow" => UnsupportedVisual
     // Text Decoration

@@ -66,7 +66,14 @@ pub(all) struct PaintProperties {
   font_size : Double
   is_bold : Bool
   font_family : String
+  border_top_left_radius : Double
+  border_top_right_radius : Double
+  border_bottom_right_radius : Double
+  border_bottom_left_radius : Double
+  overflow_x : @types.Overflow
+  overflow_y : @types.Overflow
 }
+pub fn PaintProperties::clips_overflow(Self) -> Bool
 pub fn PaintProperties::default() -> Self
 pub fn PaintProperties::from_style(@style.Style) -> Self
 pub fn PaintProperties::should_render(Self) -> Bool

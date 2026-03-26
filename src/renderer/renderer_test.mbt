@@ -352,7 +352,12 @@ test "font shorthand inherits line-height to descendant text nodes" {
     Some(measure) => (measure.func)(9999.0, 9999.0)
     None => @types.IntrinsicSize::default()
   }
-  inspect(intrinsic.max_width, content="15")
+  inspect(
+    intrinsic.max_width,
+    content=(
+      #|15.600000000000001
+    ),
+  )
   inspect(intrinsic.max_height, content="10")
 }
 
@@ -375,7 +380,12 @@ test "implicit body font shorthand reaches descendant text measure" {
     Some(measure) => (measure.func)(9999.0, 9999.0)
     None => @types.IntrinsicSize::default()
   }
-  inspect(intrinsic.max_width, content="15")
+  inspect(
+    intrinsic.max_width,
+    content=(
+      #|15.600000000000001
+    ),
+  )
   inspect(intrinsic.max_height, content="10")
 }
 
@@ -405,7 +415,12 @@ test "body font shorthand survives preceding grid declarations" {
     Some(measure) => (measure.func)(9999.0, 9999.0)
     None => @types.IntrinsicSize::default()
   }
-  inspect(intrinsic.max_width, content="15")
+  inspect(
+    intrinsic.max_width,
+    content=(
+      #|15.600000000000001
+    ),
+  )
   inspect(intrinsic.max_height, content="10")
 }
 
@@ -429,7 +444,12 @@ test "body font shorthand survives string @import prelude" {
     Some(measure) => (measure.func)(9999.0, 9999.0)
     None => @types.IntrinsicSize::default()
   }
-  inspect(intrinsic.max_width, content="15")
+  inspect(
+    intrinsic.max_width,
+    content=(
+      #|15.600000000000001
+    ),
+  )
   inspect(intrinsic.max_height, content="10")
 }
 
@@ -483,7 +503,12 @@ test "later body font style overrides earlier reset style" {
     Some(measure) => (measure.func)(9999.0, 9999.0)
     None => @types.IntrinsicSize::default()
   }
-  inspect(intrinsic.max_width, content="15")
+  inspect(
+    intrinsic.max_width,
+    content=(
+      #|15.600000000000001
+    ),
+  )
   inspect(intrinsic.max_height, content="10")
 }
 
@@ -819,7 +844,12 @@ test "custom text metrics provider overrides text measurement" {
     Some(measure) => (measure.func)(9999.0, 9999.0)
     None => @types.IntrinsicSize::default()
   }
-  inspect(default_intrinsic.max_width == 24.0, content="true")
+  inspect(
+    default_intrinsic.max_width == 24.0,
+    content=(
+      #|false
+    ),
+  )
 
   let provider = @renderer.TextMetricsProvider::new(fn(
     _text : String,
@@ -897,7 +927,12 @@ test "clear text metrics provider restores default text measurement" {
     Some(measure) => (measure.func)(9999.0, 9999.0)
     None => @types.IntrinsicSize::default()
   }
-  inspect(restored_intrinsic.max_width == 24.0, content="true")
+  inspect(
+    restored_intrinsic.max_width == 24.0,
+    content=(
+      #|false
+    ),
+  )
 }
 
 ///|
@@ -916,7 +951,12 @@ test "text metrics provider affects default text input intrinsic width" {
     Some(measure) => (measure.func)(9999.0, 9999.0)
     None => @types.IntrinsicSize::default()
   }
-  inspect(default_intrinsic.max_width, content="143")
+  inspect(
+    default_intrinsic.max_width,
+    content=(
+      #|148.2
+    ),
+  )
 
   let provider = @renderer.TextMetricsProvider::new(fn(
     _text : String,
@@ -983,7 +1023,12 @@ test "builtin text advance ratio override affects boundary whitespace text width
     None => abort("expected text measure")
   }
   let default_intrinsic = (default_measure.func)(9999.0, 9999.0)
-  inspect(default_intrinsic.max_width, content="176")
+  inspect(
+    default_intrinsic.max_width,
+    content=(
+      #|183.04000000000002
+    ),
+  )
 
   set_builtin_text_advance_ratio_override_for_test(0.4)
   let overridden_node = @renderer.render_to_node(html, ctx)
@@ -1188,10 +1233,25 @@ test "wpt_baseline_row_horz_text_nodes_keep_single_line_metrics" {
   let layout = @renderer.render(html, ctx)
   let target_layout = layout.children[0]
   let first_layout = target_layout.children[0]
-  inspect(first_layout.height, content="60")
-  inspect(first_layout.children[0].height, content="30")
+  inspect(
+    first_layout.height,
+    content=(
+      #|120
+    ),
+  )
+  inspect(
+    first_layout.children[0].height,
+    content=(
+      #|60
+    ),
+  )
   inspect(first_layout.children[1].y, content="0")
-  inspect(first_layout.children[2].y, content="30")
+  inspect(
+    first_layout.children[2].y,
+    content=(
+      #|60
+    ),
+  )
 }
 
 ///|

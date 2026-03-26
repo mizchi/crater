@@ -234,6 +234,10 @@ pub(all) struct Style {
   mut caption_side : CaptionSide
   mut rowspan : Int
   mut colspan : Int
+  mut border_top_left_radius : Double
+  mut border_top_right_radius : Double
+  mut border_bottom_right_radius : Double
+  mut border_bottom_left_radius : Double
 }
 pub fn Style::contained_intrinsic_height_fallback(Self) -> Double
 pub fn Style::contained_intrinsic_width_fallback(Self) -> Double

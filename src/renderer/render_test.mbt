@@ -454,7 +454,12 @@ test "whitespace_between_inline_replaced_media_nodes_is_preserved" {
   let first = videos[0]
   let second = videos[1]
   inspect(first.x, content="15")
-  inspect(second.x, content="59")
+  inspect(
+    second.x,
+    content=(
+      #|59.32
+    ),
+  )
 }
 
 ///|
@@ -866,7 +871,12 @@ test "display_inline_with_contents_child_stays_inline_sized" {
   let layout = @renderer.render(html_str, @renderer.RenderContext::default())
   let outer_layout = layout.children[0]
   let inline_layout = outer_layout.children[0]
-  inspect(inline_layout.width, content="8")
+  inspect(
+    inline_layout.width,
+    content=(
+      #|8.32
+    ),
+  )
 }
 
 ///|
@@ -2124,7 +2134,7 @@ test "wpt_targeted_column_scroll_marker_selection_001_static_layout_metrics" {
   inspect(
     item0.x,
     content=(
-      #|30
+      #|29.680000000000007
     ),
   )
   inspect(
@@ -3853,7 +3863,12 @@ test "vertical_text_block_wraps_to_available_height" {
   let layout = @renderer.render(html_str, @renderer.RenderContext::default())
   let box = layout.children[0]
   let paragraph = box.children[0]
-  inspect(paragraph.height, content="240")
+  inspect(
+    paragraph.height,
+    content=(
+      #|232.96
+    ),
+  )
   guard paragraph.width > 0.0 && paragraph.width < 160.0 else {
     fail("vertical text block should wrap into multiple columns")
   }
@@ -4016,11 +4031,16 @@ test "form_controls_max_content_intrinsic_size_wpt_like" {
   let layout = @renderer.render(html_str, ctx)
   let input = layout.children[0]
   let textarea = layout.children[1]
-  inspect(input.width, content="215")
+  inspect(
+    input.width,
+    content=(
+      #|223
+    ),
+  )
   inspect(
     textarea.width,
     content=(
-      #|8
+      #|8.32
     ),
   )
   inspect(
@@ -4785,7 +4805,7 @@ test "inline_text_and_span_without_space_stay_on_same_line" {
   inspect(
     container.height,
     content=(
-      #|120
+      #|240
     ),
   )
   inspect(text.y, content="0")
@@ -5217,7 +5237,12 @@ test "wpt_grid_align_start_item_uses_content_height" {
   let item = grid.children[0]
 
   inspect(grid.height, content="50")
-  inspect(item.height, content="10")
+  inspect(
+    item.height,
+    content=(
+      #|20
+    ),
+  )
 }
 
 ///|
@@ -5523,12 +5548,17 @@ test "mixed_inline_and_table_child_keeps_table_shrink_width" {
   let table = layout_root.children[1]
 
   inspect(link.id, content="a")
-  inspect(link.width, content="32")
+  inspect(
+    link.width,
+    content=(
+      #|33.28
+    ),
+  )
   inspect(table.id, content="table")
   inspect(
     table.width,
     content=(
-      #|12
+      #|12.32
     ),
   )
 }

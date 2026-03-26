@@ -551,6 +551,11 @@ pub(all) struct Style {
   // Table cell properties (from HTML attributes)
   mut rowspan : Int // rowspan attribute (default 1)
   mut colspan : Int // colspan attribute (default 1)
+  // Border radius (computed px values for rounded corners)
+  mut border_top_left_radius : Double
+  mut border_top_right_radius : Double
+  mut border_bottom_right_radius : Double
+  mut border_bottom_left_radius : Double
 }
 
 ///|
@@ -660,5 +665,9 @@ pub fn Style::default() -> Style {
     caption_side: Top,
     rowspan: 1,
     colspan: 1,
+    border_top_left_radius: 0.0,
+    border_top_right_radius: 0.0,
+    border_bottom_right_radius: 0.0,
+    border_bottom_left_radius: 0.0,
   }
 }

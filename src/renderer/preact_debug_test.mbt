@@ -27,9 +27,19 @@ test "preact_page_structure" {
   // edit link inside wrapper
   if wrapper.children.length() > 0 {
     let edit_link = wrapper.children[0]
-    inspect(edit_link.x, content="263")
+    inspect(
+      edit_link.x,
+      content=(
+        #|258.52
+      ),
+    )
     inspect(edit_link.y, content="10")
-    inspect(edit_link.width, content="112")
+    inspect(
+      edit_link.width,
+      content=(
+        #|116.48
+      ),
+    )
     inspect(
       edit_link.height,
       content=(

@@ -200,6 +200,11 @@ priv struct StyleBuilder {
   // Table cell properties (not mutable via CSS, set from HTML attributes)
   rowspan : Int
   colspan : Int
+  // Border radius
+  mut border_top_left_radius : Double
+  mut border_top_right_radius : Double
+  mut border_bottom_right_radius : Double
+  mut border_bottom_left_radius : Double
 }
 
 ///|
@@ -302,6 +307,10 @@ fn StyleBuilder::new() -> StyleBuilder {
     caption_side: @style.CaptionSide::Top,
     rowspan: 1,
     colspan: 1,
+    border_top_left_radius: 0.0,
+    border_top_right_radius: 0.0,
+    border_bottom_right_radius: 0.0,
+    border_bottom_left_radius: 0.0,
   }
 }
 
@@ -406,6 +415,10 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     caption_side: style.caption_side,
     rowspan: style.rowspan,
     colspan: style.colspan,
+    border_top_left_radius: style.border_top_left_radius,
+    border_top_right_radius: style.border_top_right_radius,
+    border_bottom_right_radius: style.border_bottom_right_radius,
+    border_bottom_left_radius: style.border_bottom_left_radius,
   }
 }
 
@@ -521,6 +534,10 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     caption_side: self.caption_side,
     rowspan: self.rowspan,
     colspan: self.colspan,
+    border_top_left_radius: self.border_top_left_radius,
+    border_top_right_radius: self.border_top_right_radius,
+    border_bottom_right_radius: self.border_bottom_right_radius,
+    border_bottom_left_radius: self.border_bottom_left_radius,
   }
 }
 
@@ -1887,6 +1904,30 @@ fn apply_property(
     "border-collapse" => builder.border_collapse = parse_border_collapse(value)
     "table-layout" => builder.table_layout = parse_table_layout(value)
     "caption-side" => builder.caption_side = parse_caption_side(value)
+    // Border radius
+    "border-radius" => {
+      let r = resolve_border_radius(value, ctx)
+      builder.border_top_left_radius = r.0
+      builder.border_top_right_radius = r.1
+      builder.border_bottom_right_radius = r.2
+      builder.border_bottom_left_radius = r.3
+    }
+    "border-top-left-radius" =>
+      builder.border_top_left_radius = resolve_dimension_to_px(
+        resolve_dimension(value, ctx),
+      )
+    "border-top-right-radius" =>
+      builder.border_top_right_radius = resolve_dimension_to_px(
+        resolve_dimension(value, ctx),
+      )
+    "border-bottom-right-radius" =>
+      builder.border_bottom_right_radius = resolve_dimension_to_px(
+        resolve_dimension(value, ctx),
+      )
+    "border-bottom-left-radius" =>
+      builder.border_bottom_left_radius = resolve_dimension_to_px(
+        resolve_dimension(value, ctx),
+      )
     _ => ()
   }
 }
@@ -2123,6 +2164,39 @@ fn parse_border_spacing(
     horizontal
   }
   (horizontal, vertical)
+}
+
+///|
+/// Parse border-radius shorthand (1-4 values)
+/// Returns (top-left, top-right, bottom-right, bottom-left) in px
+fn resolve_border_radius(
+  value : String,
+  ctx : ComputeContext,
+) -> (Double, Double, Double, Double) {
+  let v = value.trim()
+  // Handle slash syntax (horizontal / vertical) - take only horizontal for now
+  let effective = if v.contains("/") {
+    let slash_parts : Array[StringView] = v.split("/").collect()
+    slash_parts[0].to_string().trim()
+  } else {
+    v
+  }
+  let parts : Array[StringView] = effective
+    .split(" ")
+    .filter(fn(s) { not(s.is_empty()) })
+    .collect()
+  if parts.length() == 0 {
+    return (0.0, 0.0, 0.0, 0.0)
+  }
+  let values : Array[Double] = parts.map(fn(p) {
+    resolve_dimension_to_px(resolve_dimension(p.to_string(), ctx))
+  })
+  match values.length() {
+    1 => (values[0], values[0], values[0], values[0])
+    2 => (values[0], values[1], values[0], values[1])
+    3 => (values[0], values[1], values[2], values[1])
+    _ => (values[0], values[1], values[2], values[3])
+  }
 }
 
 ///|

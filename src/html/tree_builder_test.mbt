@@ -284,3 +284,29 @@ test "tree_builder/script raw text mode" {
   }
   inspect(found_p, content="true")
 }
+
+///|
+test "tree_builder/wikipedia style with nested svg and @supports" {
+  // Simulates Wikipedia CSS: url() with SVG data URIs + @supports blocks
+  let html = "<html><head><style>.a{background:url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\"><path d=\"M19 3H1v14h18z\"/></svg>')}.b{color:red}@supports((mask-image:none)){.c{mask-image:url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M1 1\"/></svg>')}}</style></head><body><p>Content</p></body></html>"
+  let result = @html.parse_fragment_v2(html)
+  let body = find_body_v2(result)
+  // Body should NOT have CSS text as children
+  let mut css_leaked = false
+  for child in body.children {
+    match child {
+      @html.Node::Text(t) =>
+        if t.contains("background") ||
+          t.contains("@supports") ||
+          t.contains("mask-image") {
+          css_leaked = true
+        }
+      _ => ()
+    }
+  }
+  inspect(css_leaked, content="false")
+  match body.children[0] {
+    @html.Node::Element(e) => inspect(e.tag, content="p")
+    _ => inspect("not element", content="p")
+  }
+}
