@@ -1,4 +1,35 @@
 ///|
+/// CSS border-style values, ordered by conflict resolution priority (higher wins).
+pub(all) enum BorderStyle {
+  None // 0 - lowest priority
+  Inset // 1
+  Groove // 2
+  Outset // 3
+  Ridge // 4
+  Dotted // 5
+  Dashed // 6
+  Solid // 7
+  Double // 8
+  Hidden // 9 - highest priority (suppresses border)
+} derive(Show, Eq)
+
+///|
+pub fn BorderStyle::priority(self : BorderStyle) -> Int {
+  match self {
+    None => 0
+    Inset => 1
+    Groove => 2
+    Outset => 3
+    Ridge => 4
+    Dotted => 5
+    Dashed => 6
+    Solid => 7
+    Double => 8
+    Hidden => 9
+  }
+}
+
+///|
 /// CSS border-collapse property (for tables)
 pub(all) enum BorderCollapse {
   Separate // Default - borders have spacing
@@ -430,6 +461,7 @@ pub(all) struct Style {
   mut margin : @types.Rect[@types.Dimension]
   mut padding : @types.Rect[@types.Dimension]
   mut border : @types.Rect[@types.Dimension]
+  mut border_style : @types.Rect[BorderStyle]
   mut margin_trim : MarginTrim
   // Flexbox
   mut flex_direction : @types.FlexDirection
@@ -546,6 +578,7 @@ pub fn Style::default() -> Style {
       top: @types.Length(0.0),
       bottom: @types.Length(0.0),
     },
+    border_style: { left: None, right: None, top: None, bottom: None },
     padding: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),

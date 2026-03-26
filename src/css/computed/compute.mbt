@@ -119,6 +119,10 @@ priv struct StyleBuilder {
   mut border_right : @types.Dimension
   mut border_bottom : @types.Dimension
   mut border_left : @types.Dimension
+  mut border_style_top : @style.BorderStyle
+  mut border_style_right : @style.BorderStyle
+  mut border_style_bottom : @style.BorderStyle
+  mut border_style_left : @style.BorderStyle
   mut flex_direction : @types.FlexDirection
   mut flex_wrap : @types.FlexWrap
   mut justify_content : @types.Alignment
@@ -230,6 +234,10 @@ fn StyleBuilder::new() -> StyleBuilder {
     border_right: @types.Dimension::Length(0.0),
     border_bottom: @types.Dimension::Length(0.0),
     border_left: @types.Dimension::Length(0.0),
+    border_style_top: @style.BorderStyle::None,
+    border_style_right: @style.BorderStyle::None,
+    border_style_bottom: @style.BorderStyle::None,
+    border_style_left: @style.BorderStyle::None,
     flex_direction: @types.FlexDirection::Row,
     flex_wrap: @types.FlexWrap::NoWrap,
     justify_content: @types.Alignment::FlexStart,
@@ -330,6 +338,10 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     border_right: style.border.right,
     border_bottom: style.border.bottom,
     border_left: style.border.left,
+    border_style_top: style.border_style.top,
+    border_style_right: style.border_style.right,
+    border_style_bottom: style.border_style.bottom,
+    border_style_left: style.border_style.left,
     flex_direction: style.flex_direction,
     flex_wrap: style.flex_wrap,
     justify_content: style.justify_content,
@@ -434,6 +446,12 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
       right: self.border_right,
       bottom: self.border_bottom,
       left: self.border_left,
+    },
+    border_style: {
+      top: self.border_style_top,
+      right: self.border_style_right,
+      bottom: self.border_style_bottom,
+      left: self.border_style_left,
     },
     flex_direction: self.flex_direction,
     flex_wrap: self.flex_wrap,
@@ -1194,17 +1212,34 @@ fn apply_property(
     }
     "border" => {
       // Shorthand: border: [width] [style] [color]
-      // Resolve width value from shorthand (e.g., "solid 3px", "1em solid red").
       let width = resolve_border_width(value, ctx)
       builder.border_top = width
       builder.border_right = width
       builder.border_bottom = width
       builder.border_left = width
+      // Extract border-style from shorthand
+      let bs = extract_border_style_from_shorthand(value)
+      builder.border_style_top = bs
+      builder.border_style_right = bs
+      builder.border_style_bottom = bs
+      builder.border_style_left = bs
     }
-    "border-top" => builder.border_top = resolve_border_width(value, ctx)
-    "border-right" => builder.border_right = resolve_border_width(value, ctx)
-    "border-bottom" => builder.border_bottom = resolve_border_width(value, ctx)
-    "border-left" => builder.border_left = resolve_border_width(value, ctx)
+    "border-top" => {
+      builder.border_top = resolve_border_width(value, ctx)
+      builder.border_style_top = extract_border_style_from_shorthand(value)
+    }
+    "border-right" => {
+      builder.border_right = resolve_border_width(value, ctx)
+      builder.border_style_right = extract_border_style_from_shorthand(value)
+    }
+    "border-bottom" => {
+      builder.border_bottom = resolve_border_width(value, ctx)
+      builder.border_style_bottom = extract_border_style_from_shorthand(value)
+    }
+    "border-left" => {
+      builder.border_left = resolve_border_width(value, ctx)
+      builder.border_style_left = extract_border_style_from_shorthand(value)
+    }
     "border-top-width" => builder.border_top = resolve_dimension(value, ctx)
     "border-right-width" => builder.border_right = resolve_dimension(value, ctx)
     "border-bottom-width" =>
@@ -1219,63 +1254,60 @@ fn apply_property(
           parts.push(p)
         }
       }
-      let mut top_none = false
-      let mut right_none = false
-      let mut bottom_none = false
-      let mut left_none = false
       if parts.length() == 1 {
-        let is_none = is_none_border_style(parts[0])
-        top_none = is_none
-        right_none = is_none
-        bottom_none = is_none
-        left_none = is_none
+        let s = parse_border_style_value(parts[0])
+        builder.border_style_top = s
+        builder.border_style_right = s
+        builder.border_style_bottom = s
+        builder.border_style_left = s
+        if is_none_border_style(parts[0]) {
+          builder.border_top = @types.Length(0.0)
+          builder.border_right = @types.Length(0.0)
+          builder.border_bottom = @types.Length(0.0)
+          builder.border_left = @types.Length(0.0)
+        }
       } else if parts.length() == 2 {
-        let v = is_none_border_style(parts[0])
-        let h = is_none_border_style(parts[1])
-        top_none = v
-        bottom_none = v
-        right_none = h
-        left_none = h
-      } else if parts.length() == 3 {
-        top_none = is_none_border_style(parts[0])
-        right_none = is_none_border_style(parts[1])
-        left_none = is_none_border_style(parts[1])
-        bottom_none = is_none_border_style(parts[2])
+        let v = parse_border_style_value(parts[0])
+        let h = parse_border_style_value(parts[1])
+        builder.border_style_top = v
+        builder.border_style_bottom = v
+        builder.border_style_right = h
+        builder.border_style_left = h
+        if is_none_border_style(parts[0]) {
+          builder.border_top = @types.Length(0.0)
+          builder.border_bottom = @types.Length(0.0)
+        }
+        if is_none_border_style(parts[1]) {
+          builder.border_right = @types.Length(0.0)
+          builder.border_left = @types.Length(0.0)
+        }
       } else if parts.length() >= 4 {
-        top_none = is_none_border_style(parts[0])
-        right_none = is_none_border_style(parts[1])
-        bottom_none = is_none_border_style(parts[2])
-        left_none = is_none_border_style(parts[3])
-      }
-      if top_none {
-        builder.border_top = @types.Length(0.0)
-      }
-      if right_none {
-        builder.border_right = @types.Length(0.0)
-      }
-      if bottom_none {
-        builder.border_bottom = @types.Length(0.0)
-      }
-      if left_none {
-        builder.border_left = @types.Length(0.0)
+        builder.border_style_top = parse_border_style_value(parts[0])
+        builder.border_style_right = parse_border_style_value(parts[1])
+        builder.border_style_bottom = parse_border_style_value(parts[2])
+        builder.border_style_left = parse_border_style_value(parts[3])
+        if is_none_border_style(parts[0]) { builder.border_top = @types.Length(0.0) }
+        if is_none_border_style(parts[1]) { builder.border_right = @types.Length(0.0) }
+        if is_none_border_style(parts[2]) { builder.border_bottom = @types.Length(0.0) }
+        if is_none_border_style(parts[3]) { builder.border_left = @types.Length(0.0) }
       }
     }
-    "border-top-style" =>
-      if is_none_border_style(value) {
-        builder.border_top = @types.Length(0.0)
-      }
-    "border-right-style" =>
-      if is_none_border_style(value) {
-        builder.border_right = @types.Length(0.0)
-      }
-    "border-bottom-style" =>
-      if is_none_border_style(value) {
-        builder.border_bottom = @types.Length(0.0)
-      }
-    "border-left-style" =>
-      if is_none_border_style(value) {
-        builder.border_left = @types.Length(0.0)
-      }
+    "border-top-style" => {
+      builder.border_style_top = parse_border_style_value(value)
+      if is_none_border_style(value) { builder.border_top = @types.Length(0.0) }
+    }
+    "border-right-style" => {
+      builder.border_style_right = parse_border_style_value(value)
+      if is_none_border_style(value) { builder.border_right = @types.Length(0.0) }
+    }
+    "border-bottom-style" => {
+      builder.border_style_bottom = parse_border_style_value(value)
+      if is_none_border_style(value) { builder.border_bottom = @types.Length(0.0) }
+    }
+    "border-left-style" => {
+      builder.border_style_left = parse_border_style_value(value)
+      if is_none_border_style(value) { builder.border_left = @types.Length(0.0) }
+    }
     // Logical border properties (block/inline)
     "border-block" | "border-block-width" => {
       let width = resolve_border_width(value, ctx)
@@ -1877,6 +1909,35 @@ fn parse_border_collapse(value : String) -> @style.BorderCollapse {
 fn is_none_border_style(value : String) -> Bool {
   let v = value.trim().to_lower()
   v == "none" || v == "hidden"
+}
+
+///|
+fn extract_border_style_from_shorthand(value : String) -> @style.BorderStyle {
+  let parts = split_whitespace(value)
+  for part in parts {
+    let s = parse_border_style_value(part)
+    if s != @style.BorderStyle::None {
+      return s
+    }
+  }
+  @style.BorderStyle::Solid // Default for border shorthand with width
+}
+
+///|
+fn parse_border_style_value(value : String) -> @style.BorderStyle {
+  match value.trim().to_lower() {
+    "none" => @style.BorderStyle::None
+    "hidden" => @style.BorderStyle::Hidden
+    "dotted" => @style.BorderStyle::Dotted
+    "dashed" => @style.BorderStyle::Dashed
+    "solid" => @style.BorderStyle::Solid
+    "double" => @style.BorderStyle::Double
+    "groove" => @style.BorderStyle::Groove
+    "ridge" => @style.BorderStyle::Ridge
+    "inset" => @style.BorderStyle::Inset
+    "outset" => @style.BorderStyle::Outset
+    _ => @style.BorderStyle::None
+  }
 }
 
 ///|

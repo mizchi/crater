@@ -3,6 +3,59 @@
 // =============================================================================
 // This implementation supports:
 // - Content-based column width distribution
+
+///|
+/// CSS 2.1 17.6.2.1: Resolve conflicting borders in collapsed border model.
+/// Returns (winning_width, winning_style) for the border at a shared edge.
+fn resolve_border_conflict(
+  width_a : Double,
+  style_a : @style.BorderStyle,
+  width_b : Double,
+  style_b : @style.BorderStyle,
+) -> (Double, @style.BorderStyle) {
+  // 1. hidden suppresses all borders
+  if style_a == @style.BorderStyle::Hidden {
+    return (0.0, @style.BorderStyle::Hidden)
+  }
+  if style_b == @style.BorderStyle::Hidden {
+    return (0.0, @style.BorderStyle::Hidden)
+  }
+  // 2. none loses to everything
+  if style_a == @style.BorderStyle::None && style_b == @style.BorderStyle::None {
+    return (0.0, @style.BorderStyle::None)
+  }
+  if style_a == @style.BorderStyle::None {
+    return (width_b, style_b)
+  }
+  if style_b == @style.BorderStyle::None {
+    return (width_a, style_a)
+  }
+  // 3. Wider border wins
+  if width_a > width_b {
+    return (width_a, style_a)
+  }
+  if width_b > width_a {
+    return (width_b, style_b)
+  }
+  // 4. Same width: higher priority style wins
+  if style_a.priority() >= style_b.priority() {
+    (width_a, style_a)
+  } else {
+    (width_b, style_b)
+  }
+}
+
+///|
+/// Get the resolved collapsed border width for a shared edge.
+fn resolve_collapsed_border_width(
+  width_a : Double,
+  style_a : @style.BorderStyle,
+  width_b : Double,
+  style_b : @style.BorderStyle,
+) -> Double {
+  let (w, _) = resolve_border_conflict(width_a, style_a, width_b, style_b)
+  w
+}
 // - Fixed table layout (table-layout: fixed)
 // - colspan (cells spanning multiple columns)
 // - rowspan (cells spanning multiple rows)
@@ -1739,10 +1792,11 @@ fn layout_row(
   let mut max_height = 0.0
   let mut col_index = 0
   // Track collapsed border width for border-collapse mode
-  let mut collapsed_border_width = 0.0
+  let mut collapsed_border_total = 0.0
   let mut first_cell_left_border = 0.0
   let mut last_cell_right_border = 0.0
   let mut prev_cell_right_border = 0.0
+  let mut prev_cell_right_style : @style.BorderStyle = @style.BorderStyle::None
   let row_cells = get_row_cells(row)
   for cell_idx = 0; cell_idx < row_cells.length(); cell_idx = cell_idx + 1 {
     let child = row_cells[cell_idx]
@@ -1796,11 +1850,14 @@ fn layout_row(
       }
       last_cell_right_border = cell_border.right
       if col_index > 0 {
-        let shared = max(prev_cell_right_border, cell_border.left)
-        collapsed_border_width = collapsed_border_width + shared
-        // No extra gap — border halves are included in cell widths
+        let shared = resolve_collapsed_border_width(
+          prev_cell_right_border, prev_cell_right_style,
+          cell_border.left, child.style.border_style.left,
+        )
+        collapsed_border_total = collapsed_border_total + shared
       }
       prev_cell_right_border = cell_border.right
+      prev_cell_right_style = child.style.border_style.right
     }
     let cell_layout = layout_cell(
       child, cell_width, cell_ctx, border_collapse, dispatch,
