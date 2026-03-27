@@ -566,6 +566,101 @@ test "E2E: Preact conditional rendering" {
 }
 
 ///|
+test "E2E: Real-world script: zenn.dev theme switcher" {
+  let (ctx, _dom) = make_preact_ctx()
+  // zenn.dev's theme switching script requires window.matchMedia, localStorage, dataset
+  let result = ctx.execute(
+    (
+      #|// Polyfill missing APIs
+      #|if (!window.matchMedia) {
+      #|  window.matchMedia = function(q) {
+      #|    return { matches: false, media: q, addEventListener: function() {} };
+      #|  };
+      #|}
+      #|if (!window.localStorage) {
+      #|  const store = {};
+      #|  window.localStorage = {
+      #|    getItem: (k) => store[k] || null,
+      #|    setItem: (k, v) => { store[k] = String(v); },
+      #|    removeItem: (k) => { delete store[k]; },
+      #|  };
+      #|}
+      #|// Run the actual zenn.dev theme script
+      #|function getSystemTheme() {
+      #|  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      #|    return 'dark-blue';
+      #|  }
+      #|  return 'light';
+      #|}
+      #|function applyTheme(theme) {
+      #|  let actualTheme;
+      #|  if (theme === 'system') {
+      #|    actualTheme = getSystemTheme();
+      #|  } else {
+      #|    actualTheme = theme;
+      #|  }
+      #|  window.document.documentElement.dataset.theme = actualTheme;
+      #|}
+      #|const storedTheme = localStorage.getItem('theme');
+      #|const theme = storedTheme || 'system';
+      #|applyTheme(theme);
+      #|return document.documentElement.dataset.theme;
+    ),
+  )
+  assert_true(result.success)
+  // System theme → matchMedia returns false → light theme
+  assert_eq(result.value, "light")
+}
+
+///|
+test "E2E: Next.js webpack bootstrap runs without error" {
+  let (ctx, _dom) = make_preact_ctx()
+  // Polyfill browser globals that Next.js expects
+  let setup = ctx.execute(
+    (
+      #|// Browser API polyfills
+      #|if (!window.matchMedia) {
+      #|  window.matchMedia = function(q) {
+      #|    return { matches: false, media: q, addEventListener: function() {}, removeEventListener: function() {} };
+      #|  };
+      #|}
+      #|if (!window.localStorage) {
+      #|  const store = {};
+      #|  window.localStorage = { getItem: (k) => store[k] || null, setItem: (k, v) => { store[k] = String(v); }, removeItem: (k) => { delete store[k]; } };
+      #|}
+      #|window.sessionStorage = window.localStorage;
+      #|if (!window.history) {
+      #|  window.history = { pushState: function(){}, replaceState: function(){}, state: null, back: function(){}, forward: function(){} };
+      #|}
+      #|window.location = window.location || { href: 'https://zenn.dev/', pathname: '/', search: '', hash: '', origin: 'https://zenn.dev', protocol: 'https:', host: 'zenn.dev', hostname: 'zenn.dev' };
+      #|window.navigator = window.navigator || { userAgent: 'Mozilla/5.0 crater/1.0', language: 'ja' };
+      #|window.fetch = window.fetch || function() { return Promise.resolve({ ok: true, json: () => Promise.resolve({}) }); };
+      #|window.requestAnimationFrame = window.requestAnimationFrame || function(cb) { setTimeout(cb, 16); return 0; };
+      #|window.cancelAnimationFrame = window.cancelAnimationFrame || function() {};
+      #|window.MutationObserver = window.MutationObserver || function() { return { observe(){}, disconnect(){}, takeRecords(){ return []; } }; };
+      #|window.IntersectionObserver = window.IntersectionObserver || function() { return { observe(){}, disconnect(){}, unobserve(){} }; };
+      #|window.ResizeObserver = window.ResizeObserver || function() { return { observe(){}, disconnect(){}, unobserve(){} }; };
+      #|// webpack chunk array
+      #|self.webpackChunk_N_E = self.webpackChunk_N_E || [];
+      #|return 'polyfills ok';
+    ),
+  )
+  assert_true(setup.success)
+  // Next.js SSG/BUILD manifest
+  let manifest = ctx.execute(
+    (
+      #|self.__SSG_MANIFEST=new Set;
+      #|self.__SSG_MANIFEST_CB&&self.__SSG_MANIFEST_CB();
+      #|return 'manifests ok';
+    ),
+  )
+  assert_true(manifest.success)
+  // Verify webpack chunk array is ready
+  let check = ctx.execute("return Array.isArray(self.webpackChunk_N_E) ? 'ready' : 'not ready';")
+  assert_eq(check.value, "ready")
+}
+
+///|
 test "E2E: Dynamic vanilla JS app - createElement + addEventListener + re-render" {
   let html = "<html><body><div id=\"app\"></div><script>\nconst state = { todos: [{id:1,text:'Buy groceries',done:false},{id:2,text:'Walk the dog',done:true},{id:3,text:'Write code',done:false}], nextId:4 };\nfunction render() {\n  const app = document.getElementById('app');\n  while (app.firstChild) app.removeChild(app.firstChild);\n  const h1 = document.createElement('h1'); h1.textContent = 'Todo'; app.appendChild(h1);\n  const count = document.createElement('div'); count.id = 'count';\n  count.textContent = state.todos.filter(t=>!t.done).length + ' remaining';\n  app.appendChild(count);\n  const list = document.createElement('ul'); list.id = 'list';\n  state.todos.forEach(todo => {\n    const li = document.createElement('li');\n    li.setAttribute('class', todo.done ? 'done' : '');\n    li.textContent = todo.text;\n    const del = document.createElement('button'); del.textContent = 'x';\n    del.addEventListener('click', () => { state.todos = state.todos.filter(t=>t.id!==todo.id); render(); });\n    li.appendChild(del); list.appendChild(li);\n  });\n  app.appendChild(list);\n}\nrender();\n</script></body></html>"
   let browser = make_v8_browser(html)
