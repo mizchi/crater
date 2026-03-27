@@ -7419,6 +7419,29 @@ pub fn full_mock_dom_js() -> String {
     #|   disconnect() { this._targets = []; }
     #| }
     #|
+    #| // Register browser APIs on window and globalThis
+    #| window.localStorage = localStorage;
+    #| window.sessionStorage = sessionStorage;
+    #| window.IntersectionObserver = IntersectionObserver;
+    #| window.ResizeObserver = ResizeObserver;
+    #| window.Storage = Storage;
+    #| window.DOMRect = DOMRect;
+    #| if (typeof globalThis !== 'undefined') {
+    #|   globalThis.localStorage = localStorage;
+    #|   globalThis.sessionStorage = sessionStorage;
+    #|   globalThis.IntersectionObserver = IntersectionObserver;
+    #|   globalThis.ResizeObserver = ResizeObserver;
+    #|   globalThis.MutationObserver = MutationObserver;
+    #|   globalThis.Storage = Storage;
+    #|   globalThis.DOMRect = DOMRect;
+    #|   globalThis.history = window.history;
+    #|   globalThis.navigator = window.navigator;
+    #|   globalThis.requestAnimationFrame = requestAnimationFrame;
+    #|   globalThis.cancelAnimationFrame = cancelAnimationFrame;
+    #|   globalThis.getComputedStyle = window.getComputedStyle.bind(window);
+    #|   globalThis.matchMedia = window.matchMedia.bind(window);
+    #| }
+    #|
     #| // Automation helpers for CDP/BiDi compatibility
     #| // waitForSelector - polls until an element matching selector appears
     #| window.__waitForSelector = function(selector, options) {

@@ -568,23 +568,9 @@ test "E2E: Preact conditional rendering" {
 ///|
 test "E2E: Real-world script: zenn.dev theme switcher" {
   let (ctx, _dom) = make_preact_ctx()
-  // zenn.dev's theme switching script requires window.matchMedia, localStorage, dataset
+  // zenn.dev's theme switching script — no polyfills needed, mock DOM has all APIs
   let result = ctx.execute(
     (
-      #|// Polyfill missing APIs
-      #|if (!window.matchMedia) {
-      #|  window.matchMedia = function(q) {
-      #|    return { matches: false, media: q, addEventListener: function() {} };
-      #|  };
-      #|}
-      #|if (!window.localStorage) {
-      #|  const store = {};
-      #|  window.localStorage = {
-      #|    getItem: (k) => store[k] || null,
-      #|    setItem: (k, v) => { store[k] = String(v); },
-      #|    removeItem: (k) => { delete store[k]; },
-      #|  };
-      #|}
       #|// Run the actual zenn.dev theme script
       #|function getSystemTheme() {
       #|  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -615,34 +601,12 @@ test "E2E: Real-world script: zenn.dev theme switcher" {
 ///|
 test "E2E: Next.js webpack bootstrap runs without error" {
   let (ctx, _dom) = make_preact_ctx()
-  // Polyfill browser globals that Next.js expects
+  // No polyfills needed — mock DOM provides all browser APIs
   let setup = ctx.execute(
     (
-      #|// Browser API polyfills
-      #|if (!window.matchMedia) {
-      #|  window.matchMedia = function(q) {
-      #|    return { matches: false, media: q, addEventListener: function() {}, removeEventListener: function() {} };
-      #|  };
-      #|}
-      #|if (!window.localStorage) {
-      #|  const store = {};
-      #|  window.localStorage = { getItem: (k) => store[k] || null, setItem: (k, v) => { store[k] = String(v); }, removeItem: (k) => { delete store[k]; } };
-      #|}
-      #|window.sessionStorage = window.localStorage;
-      #|if (!window.history) {
-      #|  window.history = { pushState: function(){}, replaceState: function(){}, state: null, back: function(){}, forward: function(){} };
-      #|}
-      #|window.location = window.location || { href: 'https://zenn.dev/', pathname: '/', search: '', hash: '', origin: 'https://zenn.dev', protocol: 'https:', host: 'zenn.dev', hostname: 'zenn.dev' };
-      #|window.navigator = window.navigator || { userAgent: 'Mozilla/5.0 crater/1.0', language: 'ja' };
-      #|window.fetch = window.fetch || function() { return Promise.resolve({ ok: true, json: () => Promise.resolve({}) }); };
-      #|window.requestAnimationFrame = window.requestAnimationFrame || function(cb) { setTimeout(cb, 16); return 0; };
-      #|window.cancelAnimationFrame = window.cancelAnimationFrame || function() {};
-      #|window.MutationObserver = window.MutationObserver || function() { return { observe(){}, disconnect(){}, takeRecords(){ return []; } }; };
-      #|window.IntersectionObserver = window.IntersectionObserver || function() { return { observe(){}, disconnect(){}, unobserve(){} }; };
-      #|window.ResizeObserver = window.ResizeObserver || function() { return { observe(){}, disconnect(){}, unobserve(){} }; };
-      #|// webpack chunk array
+      #|// webpack chunk array (Next.js specific, not a browser API)
       #|self.webpackChunk_N_E = self.webpackChunk_N_E || [];
-      #|return 'polyfills ok';
+      #|return 'setup ok';
     ),
   )
   assert_true(setup.success)
