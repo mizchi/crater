@@ -6425,6 +6425,17 @@ fn html_to_selector_element_minimal(
   parent : @selector.Element?,
 ) -> @selector.Element {
   let mut sel_elem = @selector.Element::new(elem.tag)
+  match elem.id {
+    Some(id) => sel_elem = sel_elem.set_id(id)
+    None => ()
+  }
+  for cls in elem.classes {
+    sel_elem = sel_elem.add_class(cls)
+  }
+  // Copy presentational HTML attributes needed for UA styling
+  elem.attributes.each(fn(name, value) {
+    sel_elem = sel_elem.set_attribute(name, value)
+  })
   match parent {
     Some(p) => sel_elem = sel_elem.set_parent(p)
     None => ()
@@ -6799,6 +6810,9 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     | "title"
     | "track"
     | "param" => { ..default_style, display: @types.Display::None }
+    // <center> is deprecated but widely used (e.g., Hacker News)
+    "center" =>
+      { ..default_style, text_align: @style.TextAlign::Center }
     _ => default_style
   }
 }
