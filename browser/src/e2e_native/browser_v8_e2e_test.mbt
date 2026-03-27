@@ -564,3 +564,215 @@ test "E2E: Preact conditional rendering" {
   assert_true(check4.success)
   assert_eq(check4.value, "visible")
 }
+
+///|
+test "E2E: Preact TODO app - full CRUD" {
+  let (ctx, _dom) = make_preact_ctx()
+  let result = ctx.execute(
+    (
+      #|const { h, render } = globalThis.preact;
+      #|const { useState } = globalThis.preactHooks;
+      #|
+      #|function TodoApp() {
+      #|  const [todos, setTodos] = useState([
+      #|    { id: 1, text: 'Learn Preact', done: false },
+      #|    { id: 2, text: 'Build app', done: false }
+      #|  ]);
+      #|  const [nextId, setNextId] = useState(3);
+      #|
+      #|  globalThis.__addTodo = (text) => {
+      #|    setTodos(prev => [...prev, { id: nextId, text, done: false }]);
+      #|    setNextId(n => n + 1);
+      #|  };
+      #|  globalThis.__toggleTodo = (id) => {
+      #|    setTodos(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
+      #|  };
+      #|  globalThis.__deleteTodo = (id) => {
+      #|    setTodos(prev => prev.filter(t => t.id !== id));
+      #|  };
+      #|
+      #|  return h('div', { id: 'todo-app' },
+      #|    h('h1', null, 'TODO (' + todos.filter(t => !t.done).length + ' remaining)'),
+      #|    h('ul', { id: 'todo-list' },
+      #|      todos.map(todo =>
+      #|        h('li', { key: todo.id, class: todo.done ? 'done' : '' },
+      #|          h('span', { class: 'text' }, todo.text),
+      #|          h('button', { class: 'toggle', onclick: () => globalThis.__toggleTodo(todo.id) },
+      #|            todo.done ? '✓' : '○'),
+      #|          h('button', { class: 'delete', onclick: () => globalThis.__deleteTodo(todo.id) }, '×')
+      #|        )
+      #|      )
+      #|    )
+      #|  );
+      #|}
+      #|render(h(TodoApp), document.getElementById('app'));
+    ),
+  )
+  assert_true(result.success)
+  // Verify initial render: 2 todos
+  let check_count = ctx.execute(
+    "return document.getElementById('todo-list').children.length;",
+  )
+  assert_true(check_count.success)
+  assert_eq(check_count.value, "2")
+  // Verify header shows "2 remaining"
+  let check_header = ctx.execute(
+    "return document.querySelector('h1').textContent;",
+  )
+  assert_true(check_header.success)
+  assert_eq(check_header.value, "TODO (2 remaining)")
+  // Add a todo
+  let r_add = ctx.execute("globalThis.__addTodo('Write tests');")
+  assert_true(r_add.success)
+  let check_add = ctx.execute(
+    "return document.getElementById('todo-list').children.length;",
+  )
+  assert_true(check_add.success)
+  assert_eq(check_add.value, "3")
+  // Toggle first todo (mark as done)
+  let r_toggle = ctx.execute("globalThis.__toggleTodo(1);")
+  assert_true(r_toggle.success)
+  let check_toggle = ctx.execute(
+    "return document.querySelector('h1').textContent;",
+  )
+  assert_true(check_toggle.success)
+  assert_eq(check_toggle.value, "TODO (2 remaining)")
+  // Check the toggled item has 'done' class
+  let check_class = ctx.execute(
+    "return document.getElementById('todo-list').children[0].getAttribute('class');",
+  )
+  assert_true(check_class.success)
+  assert_eq(check_class.value, "done")
+  // Delete second todo
+  let r_delete = ctx.execute("globalThis.__deleteTodo(2);")
+  assert_true(r_delete.success)
+  let check_delete = ctx.execute(
+    "return document.getElementById('todo-list').children.length;",
+  )
+  assert_true(check_delete.success)
+  assert_eq(check_delete.value, "2")
+  // Verify remaining items text
+  let check_texts = ctx.execute(
+    "return Array.from(document.getElementById('todo-list').children).map(li => li.querySelector('.text').textContent).join(',');",
+  )
+  assert_true(check_texts.success)
+  assert_eq(check_texts.value, "Learn Preact,Write tests")
+}
+
+///|
+test "E2E: Preact parent-child component communication" {
+  let (ctx, _dom) = make_preact_ctx()
+  let result = ctx.execute(
+    (
+      #|const { h, render } = globalThis.preact;
+      #|const { useState } = globalThis.preactHooks;
+      #|
+      #|function Child({ value, onChange }) {
+      #|  return h('button', { id: 'child-btn', onclick: () => onChange(value + 1) },
+      #|    'Count: ' + value);
+      #|}
+      #|
+      #|function Parent() {
+      #|  const [count, setCount] = useState(0);
+      #|  return h('div', { id: 'parent' },
+      #|    h('span', { id: 'parent-display' }, 'Parent sees: ' + count),
+      #|    h(Child, { value: count, onChange: setCount })
+      #|  );
+      #|}
+      #|render(h(Parent), document.getElementById('app'));
+    ),
+  )
+  assert_true(result.success)
+  // Initial: count = 0
+  let c0 = ctx.execute("return document.getElementById('parent-display').textContent;")
+  assert_eq(c0.value, "Parent sees: 0")
+  let b0 = ctx.execute("return document.getElementById('child-btn').textContent;")
+  assert_eq(b0.value, "Count: 0")
+  // Click child button → triggers onChange(1) → parent re-renders
+  let _ = ctx.execute("document.getElementById('child-btn').click();")
+  let c1 = ctx.execute("return document.getElementById('parent-display').textContent;")
+  assert_eq(c1.value, "Parent sees: 1")
+  let b1 = ctx.execute("return document.getElementById('child-btn').textContent;")
+  assert_eq(b1.value, "Count: 1")
+}
+
+///|
+test "E2E: Preact useEffect async data loading pattern" {
+  let (ctx, _dom) = make_preact_ctx()
+  let result = ctx.execute(
+    (
+      #|const { h, render } = globalThis.preact;
+      #|const { useState, useEffect } = globalThis.preactHooks;
+      #|
+      #|// Simulate async data fetch
+      #|globalThis.__mockFetch = (url) => {
+      #|  return Promise.resolve({ json: () => Promise.resolve({ items: ['alpha', 'beta', 'gamma'] }) });
+      #|};
+      #|
+      #|function DataList() {
+      #|  const [items, setItems] = useState([]);
+      #|  const [loading, setLoading] = useState(true);
+      #|
+      #|  useEffect(() => {
+      #|    globalThis.__mockFetch('/api/items')
+      #|      .then(r => r.json())
+      #|      .then(data => { setItems(data.items); setLoading(false); });
+      #|  }, []);
+      #|
+      #|  if (loading) return h('div', { id: 'status' }, 'Loading...');
+      #|  return h('ul', { id: 'data-list' },
+      #|    items.map((item, i) => h('li', { key: i }, item))
+      #|  );
+      #|}
+      #|render(h(DataList), document.getElementById('app'));
+    ),
+  )
+  assert_true(result.success)
+  // useEffect runs after render, Promise needs extra microtask flush
+  for i = 0; i < 10; i = i + 1 {
+    ignore(ctx.execute("typeof _flushMicrotasks === 'function' ? _flushMicrotasks() : null; return 'ok';"))
+  }
+  let check = ctx.execute(
+    "return document.getElementById('data-list') ? Array.from(document.getElementById('data-list').children).map(li => li.textContent).join(',') : document.getElementById('status') ? document.getElementById('status').textContent : 'unknown';",
+  )
+  assert_true(check.success)
+  assert_eq(check.value, "alpha,beta,gamma")
+}
+
+///|
+test "E2E: Preact className and DOM property access" {
+  let (ctx, _dom) = make_preact_ctx()
+  let result = ctx.execute(
+    (
+      #|const { h, render } = globalThis.preact;
+      #|const { useState } = globalThis.preactHooks;
+      #|globalThis.__setActive = null;
+      #|function App() {
+      #|  const [active, setActive] = useState(false);
+      #|  globalThis.__setActive = setActive;
+      #|  return h('div', {
+      #|    id: 'target',
+      #|    class: active ? 'active highlight' : 'inactive',
+      #|    'data-state': active ? 'on' : 'off'
+      #|  }, active ? 'ON' : 'OFF');
+      #|}
+      #|render(h(App), document.getElementById('app'));
+    ),
+  )
+  assert_true(result.success)
+  // Initial: inactive
+  let c0 = ctx.execute("return document.getElementById('target').getAttribute('class');")
+  assert_eq(c0.value, "inactive")
+  let d0 = ctx.execute("return document.getElementById('target').getAttribute('data-state');")
+  assert_eq(d0.value, "off")
+  let t0 = ctx.execute("return document.getElementById('target').textContent;")
+  assert_eq(t0.value, "OFF")
+  // Toggle to active
+  let _ = ctx.execute("globalThis.__setActive(true);")
+  let c1 = ctx.execute("return document.getElementById('target').getAttribute('class');")
+  assert_eq(c1.value, "active highlight")
+  let d1 = ctx.execute("return document.getElementById('target').getAttribute('data-state');")
+  assert_eq(d1.value, "on")
+  let t1 = ctx.execute("return document.getElementById('target').textContent;")
+  assert_eq(t1.value, "ON")
+}
