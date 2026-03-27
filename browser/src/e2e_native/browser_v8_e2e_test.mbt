@@ -261,6 +261,44 @@ test "E2E: Preact useState counter" {
 }
 
 ///|
+test "E2E: Preact render → Browser DOM sync → DomTree verification" {
+  let preact_js = preact_bundle_js()
+  let browser = make_v8_browser(
+    "<html><body><div id=\"app\"></div><script>" +
+    preact_js +
+    "\nconst { h, render } = globalThis.preact;\nrender(h('div', { id: 'result' }, h('h1', null, 'Rendered by Preact')), document.getElementById('app'));\n</script></body></html>",
+  )
+  let executed = browser.execute_scripts()
+  assert_true(executed > 0)
+  // Verify DomTree contains Preact's rendered output
+  match browser.get_dom_tree() {
+    Some(dom) => {
+      let doc = dom.get_document()
+      match dom.query_selector(doc, "#result") {
+        Ok(Some(result_id)) => {
+          match dom.get_children(result_id) {
+            Ok(children) => {
+              assert_true(children.length() >= 1)
+              match dom.get_tag_name(children[0]) {
+                Ok(tag) => assert_eq(tag.to_upper(), "H1")
+                Err(_) => fail("Could not get h1 tag")
+              }
+              match dom.get_text_content(children[0]) {
+                Ok(t) => assert_eq(t, "Rendered by Preact")
+                Err(_) => fail("Could not get h1 text")
+              }
+            }
+            Err(_) => fail("Could not get result children")
+          }
+        }
+        _ => fail("Could not find #result in DomTree")
+      }
+    }
+    None => fail("No DomTree")
+  }
+}
+
+///|
 test "E2E: Preact click → setState → re-render" {
   // Use raw V8 + DomTree for click simulation (Browser.script_executor is private)
   let preact_js = preact_bundle_js()
