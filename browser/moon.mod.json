@@ -1,6 +1,6 @@
 {
   "name": "mizchi/crater-browser",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "deps": {
     "mizchi/crater": {
       "path": ".."
@@ -12,5 +12,8 @@
   },
   "source": "src",
   "preferred-target": "js",
-  "--moonbit-unstable-prebuild": "scripts/mizchi-v8-consumer-prebuild.mjs"
+  "--moonbit-unstable-prebuild": "scripts/mizchi-v8-consumer-prebuild.mjs",
+  "license": "Apache-2.0",
+  "description": "Browser engine for crater CSS layout engine",
+  "repository": "https://github.com/mizchi/crater"
 }
