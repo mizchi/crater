@@ -299,6 +299,29 @@ test "E2E: Preact render → Browser DOM sync → DomTree verification" {
 }
 
 ///|
+test "E2E: Preact style object → CSS string" {
+  let (ctx, _dom) = make_preact_ctx()
+  let result = ctx.execute(
+    (
+      #|const { h, render } = globalThis.preact;
+      #|render(h('div', {
+      #|  id: 'styled',
+      #|  style: { color: 'red', fontSize: '20px', backgroundColor: 'blue' }
+      #|}, 'hello'), document.getElementById('app'));
+    ),
+  )
+  assert_true(result.success)
+  // Preact should convert style object to CSS string on the element
+  let check = ctx.execute(
+    "const el = document.getElementById('styled'); return el.style ? el.style.cssText || el.getAttribute('style') || '' : '';",
+  )
+  assert_true(check.success)
+  // Should contain CSS properties
+  assert_true(check.value.contains("color"))
+  assert_true(check.value.contains("red"))
+}
+
+///|
 test "E2E: Preact click → setState → re-render" {
   // Use raw V8 + DomTree for click simulation (Browser.script_executor is private)
   let preact_js = preact_bundle_js()
