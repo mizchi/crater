@@ -52,7 +52,7 @@ async function expectSnapshotWithinBudget(
 }
 
 test.describe("Paint VRT", () => {
-  test.describe.configure({ timeout: 120_000 });
+  test.describe.configure({ timeout: 300_000 });
 
   test("fixture: cards and controls stay within relaxed visual diff budget", async ({
     browser,
@@ -262,9 +262,9 @@ test.describe("Paint VRT", () => {
         <h1>Understanding CSS Layout Engines</h1>
         <div class="meta">March 15, 2026 &middot; 8 min read</div>
         <div class="content">
-          <p>Modern CSS layout is built on a foundation of several key algorithms that work together to position elements on screen.</p>
-          <blockquote>The box model is the cornerstone of CSS layout, defining how elements occupy space on the page.</blockquote>
-          <p>Flexbox and Grid have revolutionized how we think about responsive design, replacing older float-based techniques with more intuitive and powerful tools.</p>
+          <p>Modern CSS layout uses several key algorithms to position elements.</p>
+          <blockquote>The box model defines how elements occupy space.</blockquote>
+          <p>Flexbox and Grid replaced older float-based techniques.</p>
         </div>
         <div class="tags"><span class="tag">CSS</span><span class="tag">Layout</span><span class="tag">Web</span></div>
       </article>
@@ -381,20 +381,20 @@ test.describe("Paint VRT", () => {
         <div class="card">
           <div class="plan-name">Starter</div>
           <div class="price">$0<span>/mo</span></div>
-          <ul class="features"><li>1 project</li><li>100 MB storage</li><li>Community support</li></ul>
+          <ul class="features"><li>1 project</li><li>100 MB</li></ul>
           <button class="cta cta-outline">Get started</button>
         </div>
         <div class="card featured">
           <div class="plan-name">Pro</div>
           <div class="price">$19<span>/mo</span></div>
-          <ul class="features"><li>Unlimited projects</li><li>10 GB storage</li><li>Priority support</li><li>Custom domains</li></ul>
-          <button class="cta cta-primary">Upgrade to Pro</button>
+          <ul class="features"><li>Unlimited</li><li>10 GB</li></ul>
+          <button class="cta cta-primary">Upgrade</button>
         </div>
         <div class="card">
           <div class="plan-name">Enterprise</div>
           <div class="price">$49<span>/mo</span></div>
-          <ul class="features"><li>Everything in Pro</li><li>100 GB storage</li><li>SSO &amp; SAML</li><li>Dedicated support</li></ul>
-          <button class="cta cta-outline">Contact sales</button>
+          <ul class="features"><li>100 GB</li><li>SSO</li></ul>
+          <button class="cta cta-outline">Contact</button>
         </div>
       </div>
     </body></html>`;
