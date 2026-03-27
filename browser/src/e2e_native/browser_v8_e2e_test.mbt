@@ -776,3 +776,80 @@ test "E2E: Preact className and DOM property access" {
   let t1 = ctx.execute("return document.getElementById('target').textContent;")
   assert_eq(t1.value, "ON")
 }
+
+///|
+/// Helper: create a V8 context with React loaded
+fn make_react_ctx() -> (@js.JsContext, @dom.DomTree) {
+  let v8 = @js_v8.V8JsRuntime::new_with_mock_dom(@js_v8.full_mock_dom_js())
+  let dom = @dom.DomTree::new()
+  let html_el = dom.create_element("html")
+  let body = dom.create_element("body")
+  let app = dom.create_element("div")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html_el)
+  let _ = dom.append_child(html_el, body)
+  let _ = dom.append_child(body, app)
+  let _ = dom.set_attribute(app, "id", "root")
+  let ctx = @js.JsContext::new_with_runtime(dom, v8.as_js_runtime())
+  let r = try { ctx.execute(react_bundle_js()) } catch { _ => @js.JsResult::new("", [], false) }
+  if not(r.success) {
+    println("[React init error] " + r.value)
+  }
+  (ctx, dom)
+}
+
+///|
+test "E2E: React basic render" {
+  let (ctx, _dom) = make_react_ctx()
+  let result = ctx.execute(
+    (
+      #|const root = globalThis.ReactDOM.createRoot(document.getElementById('root'));
+      #|root.render(globalThis.React.createElement('div', { id: 'hello' }, 'Hello from React'));
+    ),
+  )
+  assert_true(result.success)
+  // React batches updates, flush microtasks
+  for i = 0; i < 20; i = i + 1 {
+    ignore(ctx.execute("typeof _flushMicrotasks === 'function' ? _flushMicrotasks() : null;"))
+  }
+  let check = ctx.execute(
+    "return document.getElementById('hello') ? document.getElementById('hello').textContent : 'NOT FOUND';",
+  )
+  assert_true(check.success)
+  assert_eq(check.value, "Hello from React")
+}
+
+///|
+test "E2E: React useState counter" {
+  let (ctx, _dom) = make_react_ctx()
+  let result = ctx.execute(
+    (
+      #|const { createElement: h, useState } = globalThis.React;
+      #|function Counter() {
+      #|  const [count, setCount] = useState(0);
+      #|  return h('div', { id: 'counter' },
+      #|    h('span', { id: 'count' }, String(count)),
+      #|    h('button', { id: 'inc', onClick: () => setCount(c => c + 1) }, '+')
+      #|  );
+      #|}
+      #|const root = globalThis.ReactDOM.createRoot(document.getElementById('root'));
+      #|root.render(h(Counter));
+    ),
+  )
+  assert_true(result.success)
+  for i = 0; i < 20; i = i + 1 {
+    ignore(ctx.execute("typeof _flushMicrotasks === 'function' ? _flushMicrotasks() : null;"))
+  }
+  // Check initial render
+  let c0 = ctx.execute("return document.getElementById('count') ? document.getElementById('count').textContent : 'NOT FOUND';")
+  assert_true(c0.success)
+  assert_eq(c0.value, "0")
+  // Click to increment
+  let _ = ctx.execute("document.getElementById('inc').click();")
+  for i = 0; i < 20; i = i + 1 {
+    ignore(ctx.execute("typeof _flushMicrotasks === 'function' ? _flushMicrotasks() : null;"))
+  }
+  let c1 = ctx.execute("return document.getElementById('count').textContent;")
+  assert_true(c1.success)
+  assert_eq(c1.value, "1")
+}
