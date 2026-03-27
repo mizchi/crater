@@ -6,4 +6,5 @@ import {
 
 options(
   link: { "js": { "exports": [ "renderHtmlToJsonForWpt" ], "format": "esm" } },
+  "supported-targets": [ "js", "wasm", "wasm-gc" ],
 )
