@@ -897,6 +897,54 @@ pub fn parse_grid_template_shorthand(
 }
 
 ///|
+/// Parse grid-template-areas CSS property value.
+/// The value is a series of quoted strings like: "header header" "sidebar main" "footer footer"
+pub fn parse_grid_template_areas_value(value : String) -> Array[String] {
+  let result : Array[String] = []
+  let v = value.trim()
+  // Parse quoted strings - each quoted string is one row
+  let mut i = 0
+  while i < v.length() {
+    let c = v[i].unsafe_to_char()
+    if c == '"' || c == '\'' {
+      let quote = c
+      let mut end = i + 1
+      while end < v.length() && v[end].unsafe_to_char() != quote {
+        end = end + 1
+      }
+      if end > i + 1 {
+        let row_str = view_to_string(v.view(start_offset=i + 1, end_offset=end))
+        result.push(row_str.to_string())
+      }
+      i = end + 1
+    } else {
+      i = i + 1
+    }
+  }
+  result
+}
+
+///|
+/// Check if a value is a named grid area identifier (not a number, auto, or span keyword)
+pub fn is_grid_area_name(value : String) -> Bool {
+  let v = value.trim().to_lower()
+  if v == "auto" || v == "none" || v == "inherit" || v == "initial" || v ==
+    "unset" {
+    return false
+  }
+  if v.has_prefix("span") {
+    return false
+  }
+  // Check if it's a number
+  let parsed = @strconv.parse_int(v.to_string()) catch { _ => 0 }
+  if parsed != 0 {
+    return false
+  }
+  // Must be a valid custom ident
+  is_basic_custom_ident(v)
+}
+
+///|
 /// Parse aspect-ratio value
 pub fn parse_aspect_ratio(value : String) -> Double? {
   let v = value.trim()

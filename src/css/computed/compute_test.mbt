@@ -280,6 +280,38 @@ test "compute_inline grid-area custom idents place to implicit second track" {
 }
 
 ///|
+test "compute_inline grid-area named area sets grid_area field" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("grid-area: header", ctx)
+  inspect(style.grid_area, content="Some(\"header\")")
+  // Named area should not set grid line placements
+  inspect(style.grid_row.start, content="Auto")
+  inspect(style.grid_column.start, content="Auto")
+}
+
+///|
+test "compute_inline grid-template-areas parsed correctly" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "display: grid; grid-template-areas: \"header header\" \"sidebar main\" \"footer footer\"",
+    ctx,
+  )
+  inspect(style.grid_template_areas.length(), content="3")
+  inspect(style.grid_template_areas[0], content="header header")
+  inspect(style.grid_template_areas[1], content="sidebar main")
+  inspect(style.grid_template_areas[2], content="footer footer")
+}
+
+///|
+test "compute_inline grid-area with slashes still parses as line numbers" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("grid-area: 2 / 1 / 3 / 4", ctx)
+  inspect(style.grid_area, content="None")
+  inspect(style.grid_row.start, content="Line(2)")
+  inspect(style.grid_column.start, content="Line(1)")
+}
+
+///|
 test "parse_aspect_ratio" {
   inspect(@computed.parse_aspect_ratio("auto"), content="None")
   inspect(

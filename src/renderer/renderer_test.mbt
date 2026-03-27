@@ -1916,3 +1916,42 @@ test "CSS :not() does NOT hide sidebar when body has class" {
   // Should be block (not None)
   assert_true(sidebar.style.display != @types.Display::None)
 }
+
+///|
+test "CSS class on html element affects body descendants via cascade" {
+  // Wikipedia pattern: <html class="feature-disabled"> ... <body> ... <div class="sidebar">
+  let html =
+    #|<html class="feature-main-menu-pinned-disabled"><head><style>
+    #|.sidebar { display: block; }
+    #|.feature-main-menu-pinned-disabled .sidebar { display: none; }
+    #|</style></head>
+    #|<body>
+    #|<div class="sidebar" id="side">Sidebar</div>
+    #|<div id="main">Main content</div>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+  // sidebar should be display:none because html has .feature-main-menu-pinned-disabled
+  let sidebar = node.children[0]
+  inspect(sidebar.style.display, content="None")
+}
+
+///|
+test "CSS @media print rules do not apply in screen context" {
+  let html =
+    #|<html><head><style>
+    #|nav { display: block; }
+    #|@media print { nav, .toolbar { display: none !important; } }
+    #|</style></head>
+    #|<body>
+    #|<nav id="menu">Menu</nav>
+    #|<div class="toolbar" id="bar">Toolbar</div>
+    #|<div id="main">Content</div>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+  let nav = node.children[0]
+  inspect(nav.id, content="nav#menu")
+  // nav should NOT be hidden (we're in screen, not print)
+  assert_true(nav.style.display != @types.Display::None)
+}

@@ -151,11 +151,15 @@ priv struct StyleBuilder {
   mut grid_auto_flow : @types.GridAutoFlow
   mut grid_template_columns : Array[@types.TrackSizingFunction]
   mut grid_template_rows : Array[@types.TrackSizingFunction]
+  // Grid template areas (container)
+  mut grid_template_areas : Array[String]
   // Grid item placement
   mut grid_column_start : @types.GridPlacement
   mut grid_column_end : @types.GridPlacement
   mut grid_row_start : @types.GridPlacement
   mut grid_row_end : @types.GridPlacement
+  // Grid area name (item)
+  mut grid_area : String?
   // Font properties
   mut font_size : Double
   mut font_weight : Double
@@ -271,10 +275,12 @@ fn StyleBuilder::new() -> StyleBuilder {
     grid_auto_flow: @types.GridAutoFlow::Row,
     grid_template_columns: [],
     grid_template_rows: [],
+    grid_template_areas: [],
     grid_column_start: @types.GridPlacement::Auto,
     grid_column_end: @types.GridPlacement::Auto,
     grid_row_start: @types.GridPlacement::Auto,
     grid_row_end: @types.GridPlacement::Auto,
+    grid_area: None,
     font_size: 16.0,
     font_weight: 400.0,
     font_family: "",
@@ -379,10 +385,12 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     grid_auto_flow: style.grid_auto_flow,
     grid_template_columns: style.grid_template_columns,
     grid_template_rows: style.grid_template_rows,
+    grid_template_areas: style.grid_template_areas,
     grid_column_start: style.grid_column.start,
     grid_column_end: style.grid_column.end,
     grid_row_start: style.grid_row.start,
     grid_row_end: style.grid_row.end,
+    grid_area: style.grid_area,
     font_size: style.font_size,
     font_weight: style.font_weight,
     font_family: style.font_family,
@@ -496,10 +504,10 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     grid_auto_rows: [],
     grid_auto_columns: [],
     grid_auto_flow: self.grid_auto_flow,
-    grid_template_areas: [],
+    grid_template_areas: self.grid_template_areas,
     grid_row: { start: self.grid_row_start, end: self.grid_row_end },
     grid_column: { start: self.grid_column_start, end: self.grid_column_end },
-    grid_area: None,
+    grid_area: self.grid_area,
     justify_items: self.justify_items,
     justify_self: self.justify_self,
     font_size: self.font_size,
@@ -1765,6 +1773,8 @@ fn apply_property(
       builder.grid_template_columns = parse_grid_template_tracks(value)
     "grid-template-rows" =>
       builder.grid_template_rows = parse_grid_template_tracks(value)
+    "grid-template-areas" =>
+      builder.grid_template_areas = parse_grid_template_areas_value(value)
     "grid-template" =>
       match parse_grid_template_shorthand(value) {
         Some((rows, cols)) => {
@@ -1798,13 +1808,19 @@ fn apply_property(
       builder.grid_row_end = end
     }
     "grid-area" => {
-      let (row_start, column_start, row_end, column_end) = parse_grid_area_shorthand(
-        value,
-      )
-      builder.grid_row_start = row_start
-      builder.grid_column_start = column_start
-      builder.grid_row_end = row_end
-      builder.grid_column_end = column_end
+      let v = value.trim().to_string()
+      // Check if this is a single named area identifier (no slashes, not a number, not auto/span)
+      if not(v.contains("/")) && is_grid_area_name(v) {
+        builder.grid_area = Some(v)
+      } else {
+        let (row_start, column_start, row_end, column_end) = parse_grid_area_shorthand(
+          value,
+        )
+        builder.grid_row_start = row_start
+        builder.grid_column_start = column_start
+        builder.grid_row_end = row_end
+        builder.grid_column_end = column_end
+      }
     }
     // Font properties
     "font-size" => builder.font_size = parse_font_size(value, ctx)
