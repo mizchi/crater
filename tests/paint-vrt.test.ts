@@ -539,6 +539,81 @@ test.describe("Paint VRT", () => {
     }
   });
 
+  test("fixture: hackernews-style listing page", async ({ browser }) => {
+    const viewport = { width: 800, height: 600 };
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      :root { color-scheme: light; }
+      body { margin: 0; background: #f6f6ef; font-family: Verdana, Geneva, sans-serif; font-size: 10pt; }
+      #header { background: #ff6600; padding: 2px; display: flex; align-items: center; }
+      #header .logo { font-weight: bold; font-size: 13pt; color: #000; margin: 0 5px; }
+      #header nav { display: flex; gap: 6px; font-size: 10pt; }
+      #header nav a { color: #000; text-decoration: none; }
+      #header nav .sep { color: #000; }
+      #header .login { margin-left: auto; color: #000; font-size: 10pt; padding-right: 4px; }
+      .items { padding: 0; margin: 0; }
+      .item { display: flex; padding: 2px 0; }
+      .rank { color: #828282; min-width: 30px; text-align: right; padding-right: 6px; font-size: 10pt; }
+      .vote { min-width: 14px; }
+      .vote .arrow { width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 10px solid #828282; display: inline-block; }
+      .title-line { font-size: 10pt; }
+      .title-line a { color: #000; text-decoration: none; }
+      .title-line .site { color: #828282; font-size: 8pt; margin-left: 4px; }
+      .subtext { font-size: 8pt; color: #828282; padding-left: 50px; }
+      .subtext a { color: #828282; text-decoration: none; }
+      .spacer { height: 5px; }
+      .more { padding: 10px 0 0 50px; }
+      .more a { color: #000; text-decoration: none; font-size: 10pt; }
+    </style></head><body>
+      <div id="header">
+        <span class="logo">Y</span>
+        <nav>
+          <a href="#"><b>Hacker News</b></a>
+          <span class="sep">|</span><a href="#">new</a>
+          <span class="sep">|</span><a href="#">past</a>
+          <span class="sep">|</span><a href="#">ask</a>
+          <span class="sep">|</span><a href="#">show</a>
+        </nav>
+        <span class="login">login</span>
+      </div>
+      <div class="items">
+        <div class="item"><span class="rank">1.</span><span class="vote"><span class="arrow"></span></span><span class="title-line"><a href="#">Show HN: A CSS layout engine in MoonBit</a><span class="site">(github.com/mizchi)</span></span></div>
+        <div class="subtext">342 points by user1 3 hours ago | <a href="#">187 comments</a></div>
+        <div class="spacer"></div>
+        <div class="item"><span class="rank">2.</span><span class="vote"><span class="arrow"></span></span><span class="title-line"><a href="#">The Browser Rendering Pipeline</a><span class="site">(developer.chrome.com)</span></span></div>
+        <div class="subtext">198 points by user2 5 hours ago | <a href="#">94 comments</a></div>
+        <div class="spacer"></div>
+        <div class="item"><span class="rank">3.</span><span class="vote"><span class="arrow"></span></span><span class="title-line"><a href="#">WebAssembly is Now Turing Complete</a><span class="site">(arxiv.org)</span></span></div>
+        <div class="subtext">156 points by user3 4 hours ago | <a href="#">72 comments</a></div>
+        <div class="spacer"></div>
+      </div>
+      <div class="more"><a href="#">More</a></div>
+    </body></html>`;
+
+    const chromiumPage = await chromiumPageForVrt(browser, viewport);
+    const craterPage = new CraterBidiPage();
+    await craterPage.connect();
+    try {
+      await chromiumPage.setContent(html, { waitUntil: "load" });
+      const chromiumPng = await chromiumPage.screenshot({ type: "png" });
+      const craterImage = await renderCraterHtml(craterPage, html, viewport);
+      const result = await compareChromiumPngToImage(chromiumPage, chromiumPng, craterImage, {
+        outputDir: path.join(OUTPUT_ROOT, "fixture-hackernews"),
+        threshold: 0.3,
+        maxDiffRatio: 0.20,
+        cropToContent: true,
+        contentPadding: 12,
+        backgroundTolerance: 18,
+        maskToVisibleContent: true,
+        maskPadding: 2,
+      });
+      console.log(`hackernews diffRatio: ${result.diffRatio.toFixed(4)} (${result.diffPixels}/${result.totalPixels} pixels)`);
+      expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+    } finally {
+      await craterPage.close();
+      await chromiumPage.close();
+    }
+  });
+
   // --- URL VRT snapshots: real websites captured with capture-real-world-snapshot.ts ---
 
   const urlSnapshots: { name: string; maxDiffRatio: number }[] = [
