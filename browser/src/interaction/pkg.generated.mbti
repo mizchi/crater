@@ -53,6 +53,8 @@ pub fn pointer_dispatch_event_names(Array[PointerDispatchEvent]) -> Array[String
 
 pub fn pointer_down_command(Int, Int) -> InteractionCommand
 
+pub fn pointer_hover_event_sequence(String, Bool, Bool, Bool) -> Array[HoverDispatchEvent]
+
 pub fn pointer_move_command(Int, Int) -> InteractionCommand
 
 pub fn pointer_move_event_sequence(String) -> Array[PointerDispatchEvent]
@@ -94,6 +96,17 @@ pub struct DragMoveTargetPlan {
   emit_dragleave : Bool
   emit_dragenter : Bool
   emit_dragover : Bool
+}
+
+pub struct HoverDispatchEvent {
+  event_type : String
+  target : HoverDispatchTarget
+  button : Int
+}
+
+pub enum HoverDispatchTarget {
+  HoverPreviousTarget
+  HoverCurrentTarget
 }
 
 pub enum InteractionCommand {

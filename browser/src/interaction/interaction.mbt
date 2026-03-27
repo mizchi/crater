@@ -199,29 +199,69 @@ pub fn pointer_hover_event_sequence(
 ) -> Array[HoverDispatchEvent] {
   let events : Array[HoverDispatchEvent] = []
   if emit_leave {
-    events.push({ event_type: "pointerout", target: HoverPreviousTarget, button: 0 })
+    events.push({
+      event_type: "pointerout",
+      target: HoverPreviousTarget,
+      button: 0,
+    })
     if pointer_type == "mouse" {
-      events.push({ event_type: "mouseout", target: HoverPreviousTarget, button: 0 })
+      events.push({
+        event_type: "mouseout",
+        target: HoverPreviousTarget,
+        button: 0,
+      })
     }
-    events.push({ event_type: "pointerleave", target: HoverPreviousTarget, button: 0 })
+    events.push({
+      event_type: "pointerleave",
+      target: HoverPreviousTarget,
+      button: 0,
+    })
     if pointer_type == "mouse" {
-      events.push({ event_type: "mouseleave", target: HoverPreviousTarget, button: 0 })
+      events.push({
+        event_type: "mouseleave",
+        target: HoverPreviousTarget,
+        button: 0,
+      })
     }
   }
   if emit_enter {
-    events.push({ event_type: "pointerover", target: HoverCurrentTarget, button: 0 })
+    events.push({
+      event_type: "pointerover",
+      target: HoverCurrentTarget,
+      button: 0,
+    })
     if pointer_type == "mouse" {
-      events.push({ event_type: "mouseover", target: HoverCurrentTarget, button: 0 })
+      events.push({
+        event_type: "mouseover",
+        target: HoverCurrentTarget,
+        button: 0,
+      })
     }
-    events.push({ event_type: "pointerenter", target: HoverCurrentTarget, button: 0 })
+    events.push({
+      event_type: "pointerenter",
+      target: HoverCurrentTarget,
+      button: 0,
+    })
     if pointer_type == "mouse" {
-      events.push({ event_type: "mouseenter", target: HoverCurrentTarget, button: 0 })
+      events.push({
+        event_type: "mouseenter",
+        target: HoverCurrentTarget,
+        button: 0,
+      })
     }
   }
   if emit_move {
-    events.push({ event_type: "pointermove", target: HoverCurrentTarget, button: 0 })
+    events.push({
+      event_type: "pointermove",
+      target: HoverCurrentTarget,
+      button: 0,
+    })
     if pointer_type == "mouse" {
-      events.push({ event_type: "mousemove", target: HoverCurrentTarget, button: 0 })
+      events.push({
+        event_type: "mousemove",
+        target: HoverCurrentTarget,
+        button: 0,
+      })
     }
   }
   events

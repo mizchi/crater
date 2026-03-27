@@ -29,7 +29,10 @@ pub fn ScriptExecutor::new_with_runtime(
   dom : @dom.DomTree,
   runtime : &JsRuntime,
 ) -> ScriptExecutor {
-  { dom, ctx: JsContext::new_with_runtime_and_mode(dom, runtime, DeferredFlush) }
+  {
+    dom,
+    ctx: JsContext::new_with_runtime_and_mode(dom, runtime, DeferredFlush),
+  }
 }
 
 ///|

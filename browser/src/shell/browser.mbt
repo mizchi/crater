@@ -113,7 +113,7 @@ struct Browser {
   /// Script executor for JS execution
   mut script_executor : @js.ScriptExecutor?
   /// Optional external JS runtime (e.g. V8 for native target)
-  mut js_runtime_override : (&@js.JsRuntime)?
+  mut js_runtime_override : &@js.JsRuntime?
   /// Whether JavaScript execution is enabled (requires --enable-js flag)
   mut enable_js : Bool
   /// Element scroll states (keyed by element id)
@@ -209,7 +209,10 @@ pub fn Browser::set_enable_js(self : Browser, enable : Bool) -> Unit {
 ///|
 /// Set a custom JS runtime for script execution (e.g. V8 for native).
 /// Must be called before any script execution (before navigate/load_html).
-pub fn Browser::set_js_runtime(self : Browser, runtime : &@js.JsRuntime) -> Unit {
+pub fn Browser::set_js_runtime(
+  self : Browser,
+  runtime : &@js.JsRuntime,
+) -> Unit {
   self.js_runtime_override = Some(runtime)
   self.enable_js = true
 }
@@ -2277,7 +2280,8 @@ pub async fn Browser::pointer_up_at(
         drop_allowed_source_id.unwrap_or(""),
       )
       match drag_over_source_id {
-        Some(target_id) if drop_target == target_id && self.is_current_drop_allowed() =>
+        Some(target_id) if drop_target == target_id &&
+          self.is_current_drop_allowed() =>
           if self.dispatch_drag_event_to_source_id(
               target_id,
               "drop",

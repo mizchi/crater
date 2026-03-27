@@ -30,10 +30,11 @@ pub suberror JsError {
   SyntaxError(String)
   ReferenceError(String)
 }
+pub fn JsError::execution_error(String) -> Self
 pub impl Show for JsError
 
 // Types and methods
-pub enum AsyncExecutionMode {
+pub(all) enum AsyncExecutionMode {
   ImmediateFlush
   DeferredFlush
 }
@@ -72,6 +73,7 @@ pub fn ScriptExecutor::execute_source(Self, String) -> JsResult raise JsError
 pub fn ScriptExecutor::get_logs(Self) -> Array[String]
 pub fn ScriptExecutor::new(@dom.DomTree) -> Self
 pub fn ScriptExecutor::new_deferred(@dom.DomTree) -> Self
+pub fn ScriptExecutor::new_with_runtime(@dom.DomTree, &JsRuntime) -> Self
 pub fn ScriptExecutor::tick(Self) -> Bool raise JsError
 
 // Type aliases
