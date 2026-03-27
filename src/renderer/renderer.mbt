@@ -2810,17 +2810,139 @@ fn create_zero_layout_from_node(node : @node.Node) -> @types.Layout {
 }
 
 ///|
-let active_before_rules : Ref[Array[PseudoRule]] = { val: [] }
-
-///|
-let active_after_rules : Ref[Array[PseudoRule]] = { val: [] }
-
-///|
 pub struct PseudoRule {
   base_selector : @selector.ComplexSelector?
   base_selector_text : String
   declarations : Array[@cascade.Declaration]
   media_query : @media.MediaQueryList?
+}
+
+///|
+/// Indexed pseudo rules for fast lookup (same strategy as SelectorIndex)
+pub struct PseudoRuleIndex {
+  rules : Array[PseudoRule]
+  by_id : Map[String, Array[Int]]
+  by_class : Map[String, Array[Int]]
+  by_tag : Map[String, Array[Int]]
+  universal : Array[Int]
+}
+
+///|
+fn PseudoRuleIndex::build(rules : Array[PseudoRule]) -> PseudoRuleIndex {
+  let idx : PseudoRuleIndex = {
+    rules,
+    by_id: {},
+    by_class: {},
+    by_tag: {},
+    universal: [],
+  }
+  for i, rule in rules {
+    match rule.base_selector {
+      Some(sel) => {
+        // Index by head compound selector's most selective key
+        let mut indexed = false
+        // Check ID
+        for sub in sel.head.subclasses {
+          if not(indexed) {
+            match sub {
+              @selector.Id(name) => {
+                match idx.by_id.get(name) {
+                  Some(arr) => arr.push(i)
+                  None => idx.by_id.set(name, [i])
+                }
+                indexed = true
+              }
+              _ => ()
+            }
+          }
+        }
+        // Check class
+        if not(indexed) {
+          for sub in sel.head.subclasses {
+            if not(indexed) {
+              match sub {
+                @selector.Class(name) => {
+                  match idx.by_class.get(name) {
+                    Some(arr) => arr.push(i)
+                    None => idx.by_class.set(name, [i])
+                  }
+                  indexed = true
+                }
+                _ => ()
+              }
+            }
+          }
+        }
+        // Check tag
+        if not(indexed) {
+          match sel.head.type_selector {
+            Some(@selector.Type(name)) => {
+              let tag = name.to_lower()
+              match idx.by_tag.get(tag) {
+                Some(arr) => arr.push(i)
+                None => idx.by_tag.set(tag, [i])
+              }
+              indexed = true
+            }
+            _ => ()
+          }
+        }
+        if not(indexed) {
+          idx.universal.push(i)
+        }
+      }
+      None => idx.universal.push(i)
+    }
+  }
+  idx
+}
+
+///|
+fn PseudoRuleIndex::get_candidates(
+  self : PseudoRuleIndex,
+  element : @selector.Element,
+) -> Array[Int] {
+  let candidates : Array[Int] = []
+  match element.id {
+    Some(id) =>
+      match self.by_id.get(id) {
+        Some(arr) =>
+          for i in arr {
+            candidates.push(i)
+          }
+        None => ()
+      }
+    None => ()
+  }
+  for cls in element.classes {
+    match self.by_class.get(cls) {
+      Some(arr) =>
+        for i in arr {
+          candidates.push(i)
+        }
+      None => ()
+    }
+  }
+  let tag = element.tag_name.to_lower()
+  match self.by_tag.get(tag) {
+    Some(arr) =>
+      for i in arr {
+        candidates.push(i)
+      }
+    None => ()
+  }
+  for i in self.universal {
+    candidates.push(i)
+  }
+  candidates
+}
+
+///|
+let active_before_index : Ref[PseudoRuleIndex] = {
+  val: { rules: [], by_id: {}, by_class: {}, by_tag: {}, universal: [] },
+}
+let active_after_index : Ref[PseudoRuleIndex] = {
+  val: { rules: [], by_id: {}, by_class: {}, by_tag: {}, universal: [] },
 }
 
 ///|
@@ -2833,8 +2955,8 @@ pub struct PreparedRenderDocument {
   render_root : @html.Element
   render_root_tag : String
   body_uses_document_root_style : Bool
-  before_rules : Array[PseudoRule]
-  after_rules : Array[PseudoRule]
+  before_index : PseudoRuleIndex
+  after_index : PseudoRuleIndex
 }
 
 ///|
@@ -2926,8 +3048,8 @@ pub fn prepare_render_document(
     render_root_tag,
     body_uses_document_root_style: render_root_tag == "body" &&
     doc.root.tag.to_lower() != "body",
-    before_rules,
-    after_rules,
+    before_index: PseudoRuleIndex::build(before_rules),
+    after_index: PseudoRuleIndex::build(after_rules),
   }
   println(
     "[perf] css_parse=" + ((_t1 - _t0) / 1000L).to_string() +
@@ -2945,8 +3067,8 @@ pub fn build_render_root_node(
   ctx : RenderContext,
   prepared : PreparedRenderDocument,
 ) -> @node.Node {
-  active_before_rules.val = prepared.before_rules
-  active_after_rules.val = prepared.after_rules
+  active_before_index.val = prepared.before_index
+  active_after_index.val = prepared.after_index
   let root = if prepared.body_uses_document_root_style {
     let body_selector = if prepared.indexed_stylesheets.length() == 0 {
       html_to_selector_element_minimal(
@@ -4020,11 +4142,17 @@ fn resolve_pseudo_spec_fast(
   let mut left_offset = 0.0
   let pseudo_css_vars = clone_string_map(css_vars)
   let mut generated_style = { ..host_style, display: @types.Inline }
-  let rules = match pseudo_kind {
-    Before => active_before_rules.val
-    After => active_after_rules.val
+  let index = match pseudo_kind {
+    Before => active_before_index.val
+    After => active_after_index.val
   }
-  for rule in rules {
+  if index.rules.is_empty() {
+    return None
+  }
+  // Use index to get candidates (much faster than scanning all rules)
+  let candidates = index.get_candidates(selector_elem)
+  for rule_idx in candidates {
+    let rule = index.rules[rule_idx]
     let media_matches = match rule.media_query {
       Some(mq) => mq.evaluate(media_env)
       None => true
