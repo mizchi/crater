@@ -5151,24 +5151,22 @@ fn element_to_node_with_styles_internal(
   if elem.attributes.contains("hidden") {
     computed_style.display = @types.Display::None
   }
+  // Cache tag name lowercase (avoid repeated to_lower() calls)
+  let tag_lower = elem.tag.to_lower()
   // <dialog> without open attribute → display: none
-  let tag_check = elem.tag.to_lower()
-  if tag_check == "dialog" && not(elem.attributes.contains("open")) {
+  if tag_lower == "dialog" && not(elem.attributes.contains("open")) {
     computed_style.display = @types.Display::None
   }
-  // <details> without open: hide all children except <summary>
-  // (handled by treating non-summary children as display:none in child loop)
   // Early return for display:none - skip all child processing
   if computed_style.display == @types.Display::None {
     return @node.Node::leaf(make_node_id(elem), computed_style)
   }
-  let tag_lower = elem.tag.to_lower()
   // Keep contain flags on <rt> so ruby-specific fallback logic can distinguish
   // contain:size/paint test fixtures. Other inline elements still strip contain.
   let preserve_inline_contain = tag_lower == "rt"
   let computed_style = if computed_style.display == @types.Inline &&
     not(preserve_inline_contain) &&
-    not(is_replaced_element(elem.tag.to_lower())) &&
+    not(is_replaced_element(tag_lower)) &&
     (
       computed_style.contain.layout ||
       computed_style.contain.paint ||
@@ -5220,15 +5218,15 @@ fn element_to_node_with_styles_internal(
     // This handles cases like <code><span class="line" style="display:block">
     { ..computed_style, display: @types.Block }
   } else if computed_style.display == @types.Inline &&
-    elem.tag.to_lower() != "picture" &&
+    tag_lower != "picture" &&
     contains_replaced_element(elem) {
     { ..computed_style, display: @types.InlineBlock }
   } else {
     computed_style
   }
 
-  let cell_tag = elem.tag.to_lower()
   // Handle table attributes that affect table formatting context.
+  let cell_tag = tag_lower
   let style = if cell_tag == "table" {
     let border_spacing = match elem.attributes.get("cellspacing") {
       Some(val) => {
