@@ -187,4 +187,214 @@ test.describe("VRT Levels", () => {
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
+
+  // Level 7: Table layout
+  test("L7: basic table layout", async ({ browser }) => {
+    const html = `<!DOCTYPE html><html><head><style>
+      body { margin: 20px; background: #fff; font-family: Arial, sans-serif; }
+      table { width: 600px; border-collapse: collapse; }
+      th, td { padding: 10px 14px; border: 1px solid #ddd; text-align: left; font-size: 14px; }
+      th { background: #f8f9fa; font-weight: bold; color: #333; }
+      tr:nth-child(even) td { background: #fafafa; }
+      .num { text-align: right; font-variant-numeric: tabular-nums; }
+    </style></head><body>
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Role</th><th class="num">Score</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Alice</td><td>Engineer</td><td class="num">95</td></tr>
+          <tr><td>Bob</td><td>Designer</td><td class="num">88</td></tr>
+          <tr><td>Carol</td><td>Manager</td><td class="num">72</td></tr>
+          <tr><td>Dave</td><td>Analyst</td><td class="num">91</td></tr>
+        </tbody>
+      </table>
+    </body></html>`;
+
+    const result = await compareFixture(browser, "L7-table", html, {
+      maxDiffRatio: 0.15,
+    });
+    expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+  });
+
+  // Level 8: Lists (ordered + unordered)
+  test("L8: ordered and unordered lists", async ({ browser }) => {
+    const html = `<!DOCTYPE html><html><head><style>
+      body { margin: 20px; background: #fff; font-family: Arial, sans-serif; font-size: 14px; color: #333; }
+      h2 { font-size: 18px; margin: 0 0 8px; }
+      ul, ol { margin: 0 0 16px; padding-left: 24px; }
+      li { margin-bottom: 4px; line-height: 1.5; }
+      .two-col { display: flex; gap: 40px; }
+      .two-col > div { flex: 1; }
+    </style></head><body>
+      <div class="two-col">
+        <div>
+          <h2>Features</h2>
+          <ul>
+            <li>Fast rendering engine</li>
+            <li>CSS Flexbox support</li>
+            <li>Text shaping</li>
+            <li>Color management</li>
+          </ul>
+        </div>
+        <div>
+          <h2>Steps</h2>
+          <ol>
+            <li>Install dependencies</li>
+            <li>Configure project</li>
+            <li>Run tests</li>
+            <li>Deploy to production</li>
+          </ol>
+        </div>
+      </div>
+    </body></html>`;
+
+    const result = await compareFixture(browser, "L8-lists", html, {
+      maxDiffRatio: 0.20,
+    });
+    expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+  });
+
+  // Level 9: Form elements
+  test("L9: form elements", async ({ browser }) => {
+    const html = `<!DOCTYPE html><html><head><style>
+      body { margin: 0; background: #f5f5f5; font-family: Arial, sans-serif; }
+      .form-container { width: 400px; margin: 24px auto; background: #fff; padding: 24px; border: 1px solid #ddd; border-radius: 8px; }
+      h2 { margin: 0 0 16px; font-size: 20px; color: #222; }
+      label { display: block; font-size: 13px; color: #555; margin-bottom: 4px; }
+      input[type="text"], input[type="email"], select, textarea {
+        display: block; width: 100%; padding: 8px 10px; margin-bottom: 12px;
+        border: 1px solid #ccc; border-radius: 4px; font-size: 14px;
+        box-sizing: border-box; background: #fff;
+      }
+      textarea { height: 60px; resize: vertical; }
+      .btn-row { display: flex; gap: 8px; margin-top: 8px; }
+      button { padding: 8px 20px; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; }
+      .primary { background: #2563eb; color: #fff; }
+      .secondary { background: #e5e7eb; color: #333; }
+    </style></head><body>
+      <div class="form-container">
+        <h2>Contact</h2>
+        <label>Name</label>
+        <input type="text" value="John Doe" />
+        <label>Email</label>
+        <input type="email" value="john@example.com" />
+        <label>Category</label>
+        <select><option>General</option></select>
+        <label>Message</label>
+        <textarea>Hello there</textarea>
+        <div class="btn-row">
+          <button class="primary">Submit</button>
+          <button class="secondary">Cancel</button>
+        </div>
+      </div>
+    </body></html>`;
+
+    const result = await compareFixture(browser, "L9-forms", html, {
+      maxDiffRatio: 0.20,
+    });
+    expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+  });
+
+  // Level 10: CSS Grid layout
+  test("L10: CSS Grid layout", async ({ browser }) => {
+    const html = `<!DOCTYPE html><html><head><style>
+      body { margin: 20px; background: #f0f2f5; font-family: Arial, sans-serif; }
+      .grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: auto auto; gap: 12px; }
+      .grid-item { background: #fff; padding: 16px; border-radius: 6px; border: 1px solid #e0e0e0; }
+      .span-2 { grid-column: span 2; }
+      .span-row { grid-row: span 2; }
+      .label { font-size: 12px; color: #888; text-transform: uppercase; }
+      .value { font-size: 24px; font-weight: bold; color: #222; margin-top: 4px; }
+    </style></head><body>
+      <div class="grid">
+        <div class="grid-item span-2">
+          <div class="label">Total Revenue</div>
+          <div class="value">$124,500</div>
+        </div>
+        <div class="grid-item span-row">
+          <div class="label">Active Users</div>
+          <div class="value">3,421</div>
+        </div>
+        <div class="grid-item">
+          <div class="label">Orders</div>
+          <div class="value">892</div>
+        </div>
+        <div class="grid-item">
+          <div class="label">Returns</div>
+          <div class="value">23</div>
+        </div>
+      </div>
+    </body></html>`;
+
+    const result = await compareFixture(browser, "L10-grid", html, {
+      maxDiffRatio: 0.15,
+    });
+    expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+  });
+
+  // Level 11: Overflow and clipping
+  test("L11: overflow hidden and scroll containers", async ({ browser }) => {
+    const html = `<!DOCTYPE html><html><head><style>
+      body { margin: 20px; background: #fff; font-family: Arial, sans-serif; }
+      .container { display: flex; gap: 16px; }
+      .box { width: 200px; height: 120px; border: 2px solid #333; padding: 8px; }
+      .hidden { overflow: hidden; }
+      .scroll { overflow: auto; }
+      .inner { width: 300px; height: 200px; background: linear-gradient(135deg, #667eea, #764ba2); }
+      .text-clip { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; width: 180px; padding: 8px; border: 1px solid #ccc; font-size: 14px; margin-top: 16px; }
+    </style></head><body>
+      <div class="container">
+        <div>
+          <div style="font-size:13px;color:#666;margin-bottom:4px;">overflow: hidden</div>
+          <div class="box hidden"><div class="inner"></div></div>
+        </div>
+        <div>
+          <div style="font-size:13px;color:#666;margin-bottom:4px;">overflow: auto</div>
+          <div class="box scroll"><div class="inner"></div></div>
+        </div>
+      </div>
+      <div class="text-clip">This is a very long text that should be clipped with an ellipsis at the end of the line.</div>
+    </body></html>`;
+
+    const result = await compareFixture(browser, "L11-overflow", html, {
+      maxDiffRatio: 0.15,
+    });
+    expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+  });
+
+  // Level 12: Float layout
+  test("L12: float-based layout", async ({ browser }) => {
+    const html = `<!DOCTYPE html><html><head><style>
+      body { margin: 20px; background: #fff; font-family: Arial, sans-serif; font-size: 14px; color: #333; }
+      .clearfix::after { content: ""; display: table; clear: both; }
+      .img-placeholder { float: left; width: 120px; height: 90px; background: #3498db; margin: 0 16px 8px 0; border-radius: 4px; }
+      .article { max-width: 500px; line-height: 1.6; }
+      h3 { margin: 0 0 8px; font-size: 18px; }
+      .sidebar { float: right; width: 160px; padding: 12px; background: #f8f9fa; border: 1px solid #e0e0e0; margin-left: 16px; }
+      .sidebar h4 { margin: 0 0 8px; font-size: 14px; }
+      .sidebar ul { margin: 0; padding-left: 18px; font-size: 13px; }
+    </style></head><body>
+      <div class="clearfix">
+        <div class="sidebar">
+          <h4>Related</h4>
+          <ul>
+            <li>Layout engines</li>
+            <li>CSS specs</li>
+            <li>Rendering</li>
+          </ul>
+        </div>
+        <div class="article clearfix">
+          <h3>Float Layout Example</h3>
+          <div class="img-placeholder"></div>
+          <p>This paragraph wraps around a floated element on the left. The float creates a classic magazine-style text wrap that was common before flexbox.</p>
+        </div>
+      </div>
+    </body></html>`;
+
+    const result = await compareFixture(browser, "L12-float", html, {
+      maxDiffRatio: 0.20,
+    });
+    expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+  });
 });

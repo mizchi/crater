@@ -242,6 +242,10 @@ vrt-capture-all:
     npx tsx scripts/capture-real-world-snapshot.ts "https://news.ycombinator.com/" --name hackernews --width 800 --height 600
     npx tsx scripts/capture-real-world-snapshot.ts "https://www.google.com" --name google --width 800 --height 600
     npx tsx scripts/capture-real-world-snapshot.ts "https://en.wikipedia.org/wiki/Main_Page" --name wikipedia --width 800 --height 600
+    npx tsx scripts/capture-real-world-snapshot.ts "https://craigslist.org" --name craigslist --width 800 --height 600
+    npx tsx scripts/capture-real-world-snapshot.ts "https://lobste.rs" --name lobsters --width 800 --height 600
+    npx tsx scripts/capture-real-world-snapshot.ts "https://lite.cnn.com" --name lite-cnn --width 800 --height 600
+    npx tsx scripts/capture-real-world-snapshot.ts "https://www.npmjs.com/package/express" --name npmjs-express --width 800 --height 600
 
 # Update WPT VRT baseline
 wpt-vrt-baseline-update:
