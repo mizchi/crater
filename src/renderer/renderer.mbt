@@ -2843,6 +2843,7 @@ pub fn prepare_render_document(
   ctx : RenderContext,
   external_css : Array[String],
 ) -> PreparedRenderDocument {
+  let _t0 = perf_clock_us()
   let stylesheets : Array[@cascade.Stylesheet] = []
   for css in external_css {
     let stylesheet = @parser.parse_stylesheet(css)
@@ -2852,12 +2853,17 @@ pub fn prepare_render_document(
     let stylesheet = @parser.parse_stylesheet(css)
     stylesheets.push(stylesheet)
   }
+  let _t1 = perf_clock_us()
 
   let indexed_stylesheets : Array[@cascade.IndexedStylesheet] = []
   for stylesheet in stylesheets {
     indexed_stylesheets.push(@cascade.IndexedStylesheet::new(stylesheet))
   }
-
+  let _t2 = perf_clock_us()
+  let mut total_rules = 0
+  for s in stylesheets {
+    total_rules += s.rules.length()
+  }
   let css_vars = collect_root_css_variables(stylesheets, ctx)
   let doc_root_selector = if indexed_stylesheets.length() == 0 {
     html_to_selector_element_minimal(doc.root, None)
@@ -2910,7 +2916,7 @@ pub fn prepare_render_document(
       }
     }
   }
-  {
+  let prepared : PreparedRenderDocument = {
     stylesheets,
     indexed_stylesheets,
     css_vars,
@@ -2923,6 +2929,14 @@ pub fn prepare_render_document(
     before_rules,
     after_rules,
   }
+  println(
+    "[perf] css_parse=" + ((_t1 - _t0) / 1000L).to_string() +
+    "ms index=" + ((_t2 - _t1) / 1000L).to_string() +
+    "ms rules=" + total_rules.to_string() +
+    " pseudo_before=" + before_rules.length().to_string() +
+    " pseudo_after=" + after_rules.length().to_string(),
+  )
+  prepared
 }
 
 ///|
