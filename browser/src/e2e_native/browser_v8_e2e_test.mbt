@@ -566,6 +566,140 @@ test "E2E: Preact conditional rendering" {
 }
 
 ///|
+test "E2E: Dynamic vanilla JS app - createElement + addEventListener + re-render" {
+  let html = "<html><body><div id=\"app\"></div><script>\nconst state = { todos: [{id:1,text:'Buy groceries',done:false},{id:2,text:'Walk the dog',done:true},{id:3,text:'Write code',done:false}], nextId:4 };\nfunction render() {\n  const app = document.getElementById('app');\n  while (app.firstChild) app.removeChild(app.firstChild);\n  const h1 = document.createElement('h1'); h1.textContent = 'Todo'; app.appendChild(h1);\n  const count = document.createElement('div'); count.id = 'count';\n  count.textContent = state.todos.filter(t=>!t.done).length + ' remaining';\n  app.appendChild(count);\n  const list = document.createElement('ul'); list.id = 'list';\n  state.todos.forEach(todo => {\n    const li = document.createElement('li');\n    li.setAttribute('class', todo.done ? 'done' : '');\n    li.textContent = todo.text;\n    const del = document.createElement('button'); del.textContent = 'x';\n    del.addEventListener('click', () => { state.todos = state.todos.filter(t=>t.id!==todo.id); render(); });\n    li.appendChild(del); list.appendChild(li);\n  });\n  app.appendChild(list);\n}\nrender();\n</script></body></html>"
+  let browser = make_v8_browser(html)
+  let executed = browser.execute_scripts()
+  assert_true(executed > 0)
+  match browser.get_dom_tree() {
+    Some(dom) => {
+      let doc = dom.get_document()
+      match dom.query_selector(doc, "#list") {
+        Ok(Some(list_id)) =>
+          match dom.get_children(list_id) {
+            Ok(children) => assert_eq(children.length(), 3)
+            Err(_) => fail("Could not get list children")
+          }
+        _ => fail("Could not find #list")
+      }
+      match dom.query_selector(doc, "#count") {
+        Ok(Some(count_id)) =>
+          match dom.get_text_content(count_id) {
+            Ok(t) => assert_eq(t, "2 remaining")
+            Err(_) => fail("Could not get count text")
+          }
+        _ => fail("Could not find #count")
+      }
+    }
+    None => fail("No DomTree")
+  }
+}
+
+///|
+test "E2E: SPA router simulation (history + DOM swap)" {
+  let (ctx, _dom) = make_preact_ctx()
+  let result = ctx.execute(
+    (
+      #|const { h, render } = globalThis.preact;
+      #|const { useState } = globalThis.preactHooks;
+      #|
+      #|const routes = {
+      #|  '/': () => h('div', { id: 'page' }, h('h1', null, 'Home'), h('p', null, 'Welcome')),
+      #|  '/about': () => h('div', { id: 'page' }, h('h1', null, 'About'), h('p', null, 'About us')),
+      #|  '/contact': () => h('div', { id: 'page' }, h('h1', null, 'Contact'), h('p', null, 'Contact form')),
+      #|};
+      #|
+      #|globalThis.__navigate = null;
+      #|function App() {
+      #|  const [path, setPath] = useState('/');
+      #|  globalThis.__navigate = setPath;
+      #|  const Page = routes[path] || routes['/'];
+      #|  return h('div', { id: 'app-root' },
+      #|    h('nav', { id: 'nav' },
+      #|      h('a', { href: '#', onclick: (e) => { e.preventDefault && e.preventDefault(); setPath('/'); } }, 'Home'),
+      #|      h('a', { href: '#', onclick: (e) => { e.preventDefault && e.preventDefault(); setPath('/about'); } }, 'About'),
+      #|      h('a', { href: '#', onclick: (e) => { e.preventDefault && e.preventDefault(); setPath('/contact'); } }, 'Contact')
+      #|    ),
+      #|    h(Page)
+      #|  );
+      #|}
+      #|render(h(App), document.getElementById('app'));
+    ),
+  )
+  assert_true(result.success)
+  // Home page
+  let h1 = ctx.execute("return document.querySelector('h1').textContent;")
+  assert_eq(h1.value, "Home")
+  // Navigate to About
+  let _ = ctx.execute("globalThis.__navigate('/about');")
+  let h2 = ctx.execute("return document.querySelector('h1').textContent;")
+  assert_eq(h2.value, "About")
+  let p2 = ctx.execute("return document.querySelector('p').textContent;")
+  assert_eq(p2.value, "About us")
+  // Navigate to Contact
+  let _ = ctx.execute("globalThis.__navigate('/contact');")
+  let h3 = ctx.execute("return document.querySelector('h1').textContent;")
+  assert_eq(h3.value, "Contact")
+  // Back to Home
+  let _ = ctx.execute("globalThis.__navigate('/');")
+  let h4 = ctx.execute("return document.querySelector('h1').textContent;")
+  assert_eq(h4.value, "Home")
+}
+
+///|
+test "E2E: Complex nested component tree with dynamic updates" {
+  let (ctx, _dom) = make_preact_ctx()
+  let result = ctx.execute(
+    (
+      #|const { h, render } = globalThis.preact;
+      #|const { useState } = globalThis.preactHooks;
+      #|
+      #|function Badge({ count }) { return h('span', { class: 'badge' }, '(' + count + ')'); }
+      #|function Tab({ label, count, active, onClick }) {
+      #|  return h('button', { class: active ? 'tab active' : 'tab', onclick: onClick },
+      #|    label, ' ', h(Badge, { count }));
+      #|}
+      #|function TabPanel({ children }) { return h('div', { class: 'panel', id: 'panel' }, children); }
+      #|
+      #|const tabData = {
+      #|  inbox: ['Message 1', 'Message 2', 'Message 3'],
+      #|  sent: ['Sent A'],
+      #|  drafts: ['Draft X', 'Draft Y'],
+      #|};
+      #|
+      #|function MailApp() {
+      #|  const [tab, setTab] = useState('inbox');
+      #|  globalThis.__setTab = setTab;
+      #|  const items = tabData[tab] || [];
+      #|  return h('div', { id: 'mail' },
+      #|    h('div', { id: 'tabs' },
+      #|      h(Tab, { label: 'Inbox', count: tabData.inbox.length, active: tab === 'inbox', onClick: () => setTab('inbox') }),
+      #|      h(Tab, { label: 'Sent', count: tabData.sent.length, active: tab === 'sent', onClick: () => setTab('sent') }),
+      #|      h(Tab, { label: 'Drafts', count: tabData.drafts.length, active: tab === 'drafts', onClick: () => setTab('drafts') })
+      #|    ),
+      #|    h(TabPanel, null, items.map((m, i) => h('div', { key: i, class: 'mail-item' }, m)))
+      #|  );
+      #|}
+      #|render(h(MailApp), document.getElementById('app'));
+    ),
+  )
+  assert_true(result.success)
+  // Inbox: 3 messages
+  let panel = ctx.execute("return document.getElementById('panel').children.length;")
+  assert_eq(panel.value, "3")
+  // Switch to Sent: 1 message
+  let _ = ctx.execute("globalThis.__setTab('sent');")
+  let sent = ctx.execute("return document.getElementById('panel').children.length;")
+  assert_eq(sent.value, "1")
+  let msg = ctx.execute("return document.getElementById('panel').children[0].textContent;")
+  assert_eq(msg.value, "Sent A")
+  // Switch to Drafts: 2 messages
+  let _ = ctx.execute("globalThis.__setTab('drafts');")
+  let drafts = ctx.execute("return document.getElementById('panel').children.length;")
+  assert_eq(drafts.value, "2")
+}
+
+///|
 test "E2E: Preact TODO app - full CRUD" {
   let (ctx, _dom) = make_preact_ctx()
   let result = ctx.execute(
