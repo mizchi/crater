@@ -137,12 +137,12 @@ pub fn RenderContext::default() -> RenderContext {
 ///|
 /// Text metrics provider hook for integrating external font engines.
 pub struct TextMetricsProvider {
-  func : (String, Double, Double, @style.WhiteSpace, @style.WritingMode, Double) -> @types.MeasureFunc
+  func : (String, Double, Double, @style.WhiteSpace, @style.WritingMode, Double, String) -> @types.MeasureFunc
 }
 
 ///|
 pub fn TextMetricsProvider::new(
-  func : (String, Double, Double, @style.WhiteSpace, @style.WritingMode, Double) -> @types.MeasureFunc,
+  func : (String, Double, Double, @style.WhiteSpace, @style.WritingMode, Double, String) -> @types.MeasureFunc,
 ) -> TextMetricsProvider {
   { func, }
 }
@@ -227,6 +227,7 @@ fn create_text_measure_with_provider(
   white_space : @style.WhiteSpace,
   writing_mode : @style.WritingMode,
   font_weight? : Double = 400.0,
+  font_family? : String = "",
 ) -> @types.MeasureFunc {
   fn white_space_collapses_edges(white_space : @style.WhiteSpace) -> Bool {
     match white_space {
@@ -312,7 +313,7 @@ fn create_text_measure_with_provider(
         )
       } else {
         (provider.func)(
-          text, font_size, text_line_height, white_space, writing_mode, font_weight,
+          text, font_size, text_line_height, white_space, writing_mode, font_weight, font_family,
         )
       }
     None =>
@@ -1843,6 +1844,7 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
   let trimmed = trim_collapsible_whitespace_edges(normalized_text)
   let font_size = parent_style.font_size
   let font_weight = parent_style.font_weight
+  let font_family = parent_style.font_family
   let text_line_height = parent_style.line_height
   let white_space = parent_style.white_space
   let writing_mode = parent_style.writing_mode
@@ -1890,6 +1892,7 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
           white_space,
           writing_mode,
           font_weight~,
+          font_family~,
         ),
         collapsed,
       )
@@ -1906,6 +1909,7 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
         white_space,
         writing_mode,
         font_weight~,
+        font_family~,
       ),
       normalized_text,
     )

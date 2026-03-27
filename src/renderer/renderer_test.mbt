@@ -858,6 +858,7 @@ test "custom text metrics provider overrides text measurement" {
     _white_space : @style.WhiteSpace,
     _writing_mode : @style.WritingMode,
     _font_weight : Double,
+    _font_family : String,
   ) -> @types.MeasureFunc {
     {
       func: fn(
@@ -903,6 +904,7 @@ test "clear text metrics provider restores default text measurement" {
     _white_space : @style.WhiteSpace,
     _writing_mode : @style.WritingMode,
     _font_weight : Double,
+    _font_family : String,
   ) -> @types.MeasureFunc {
     {
       func: fn(
@@ -965,6 +967,7 @@ test "text metrics provider affects default text input intrinsic width" {
     _white_space : @style.WhiteSpace,
     _writing_mode : @style.WritingMode,
     _font_weight : Double,
+    _font_family : String,
   ) -> @types.MeasureFunc {
     {
       func: fn(

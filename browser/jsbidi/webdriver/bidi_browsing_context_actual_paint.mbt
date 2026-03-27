@@ -150,6 +150,7 @@ fn ensure_paint_text_provider() -> Unit {
       white_space,
       writing_mode,
       font_weight,
+      _font_family,
     ) {
       let ws = white_space.to_string()
       let wm = writing_mode.to_string()
