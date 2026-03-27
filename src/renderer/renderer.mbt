@@ -2938,6 +2938,16 @@ fn PseudoRuleIndex::get_candidates(
 }
 
 ///|
+/// Viewport culling: estimated cumulative Y position during build_node.
+/// Elements estimated below viewport_cutoff use skeleton mode (fast path).
+let viewport_estimated_y : Ref[Double] = { val: 0.0 }
+let viewport_cutoff : Ref[Double] = { val: 1.0e10 }
+let viewport_skeleton_count : Ref[Int] = { val: 0 }
+let empty_indexed_stylesheets : Ref[Array[@cascade.IndexedStylesheet]] = {
+  val: [],
+}
+
+///|
 let active_before_index : Ref[PseudoRuleIndex] = {
   val: { rules: [], by_id: {}, by_class: {}, by_tag: {}, universal: [] },
 }
@@ -3069,6 +3079,10 @@ pub fn build_render_root_node(
 ) -> @node.Node {
   active_before_index.val = prepared.before_index
   active_after_index.val = prepared.after_index
+  // Viewport culling: skip expensive processing for below-fold elements
+  viewport_estimated_y.val = 0.0
+  viewport_cutoff.val = ctx.viewport_height * 1.5
+  viewport_skeleton_count.val = 0
   let root = if prepared.body_uses_document_root_style {
     let body_selector = if prepared.indexed_stylesheets.length() == 0 {
       html_to_selector_element_minimal(
@@ -3126,6 +3140,14 @@ pub fn build_render_root_node(
       root.style.zoom = root.style.zoom * root_zoom
     }
   }
+  println(
+    "[perf] viewport_culling: estimated_y=" +
+    viewport_estimated_y.val.to_int().to_string() +
+    " cutoff=" +
+    viewport_cutoff.val.to_int().to_string() +
+    " skeleton=" +
+    viewport_skeleton_count.val.to_string(),
+  )
   root
 }
 
@@ -4848,18 +4870,24 @@ fn element_to_node_with_styles(
   incoming_counters : Map[String, CounterEntry],
   owner_id : String,
 ) -> @node.Node {
+  let below_viewport = viewport_estimated_y.val > viewport_cutoff.val
   // Convert HTML element to selector element for matching
-  let selector_elem = if indexed_stylesheets.length() == 0 {
+  let effective_sheets = if below_viewport {
+    empty_indexed_stylesheets.val
+  } else {
+    indexed_stylesheets
+  }
+  let selector_elem = if effective_sheets.length() == 0 {
     html_to_selector_element_minimal(elem, parent)
   } else {
     html_to_selector_element(elem, parent)
   }
 
-  // Get style from stylesheet matching + inline style (using indexed for performance)
+  // Get style - skip full cascade for below-viewport elements
   let computed_style = compute_element_style_indexed(
     selector_elem,
     elem.style,
-    indexed_stylesheets,
+    effective_sheets,
     parent is None,
     ctx,
     None, // Root element has no parent style
@@ -4925,7 +4953,8 @@ fn element_to_node_with_styles(
       incoming_counters, selector_elem, style, stylesheets, ctx, owner_id,
     )
   }
-  let before_pseudo = if stylesheets.length() == 0 {
+  // Skip pseudo resolution for below-viewport elements (major perf win)
+  let before_pseudo = if below_viewport || stylesheets.length() == 0 {
     None
   } else {
     resolve_pseudo_spec_fast(
@@ -4938,7 +4967,7 @@ fn element_to_node_with_styles(
       elem.attributes,
     )
   }
-  let after_pseudo = if stylesheets.length() == 0 {
+  let after_pseudo = if below_viewport || stylesheets.length() == 0 {
     None
   } else {
     resolve_pseudo_spec_fast(
@@ -5137,7 +5166,70 @@ fn element_to_node_with_styles_internal(
   incoming_counters : Map[String, CounterEntry],
   owner_id : String,
 ) -> @node.Node {
-  // Get style from stylesheet matching + inline style (using indexed for performance)
+  // Viewport culling: skeleton mode for below-fold elements
+  let below_viewport = viewport_estimated_y.val > viewport_cutoff.val
+  if below_viewport {
+    viewport_skeleton_count.val += 1
+    // Fast path: create minimal skeleton node with inherited style
+    let skeleton_style = match parent_style {
+      Some(ps) => {
+        let s = @style.Style::default()
+        s.font_size = ps.font_size
+        s.line_height = ps.line_height
+        s.color = ps.color
+        s
+      }
+      None => @style.Style::default()
+    }
+    // Check hidden/dialog (important for correct scroll height)
+    if elem.attributes.contains("hidden") {
+      skeleton_style.display = @types.Display::None
+    }
+    let tag_lower = elem.tag.to_lower()
+    if tag_lower == "dialog" && not(elem.attributes.contains("open")) {
+      skeleton_style.display = @types.Display::None
+    }
+    // Check inline style display override
+    match elem.style {
+      Some(inline_css) => {
+        let lower = inline_css.to_lower()
+        if lower.contains("display:none") || lower.contains("display: none") {
+          skeleton_style.display = @types.Display::None
+        }
+      }
+      None => ()
+    }
+    if skeleton_style.display == @types.Display::None {
+      return @node.Node::leaf(make_node_id(elem), skeleton_style)
+    }
+    // Estimate height for scroll
+    viewport_estimated_y.val += skeleton_style.line_height
+    // Process children in skeleton mode (recursive)
+    let children : Array[@node.Node] = []
+    for child in elem.children {
+      match child {
+        @html.Node::Element(child_elem) => {
+          if should_skip_element(child_elem.tag) {
+            continue
+          }
+          let child_selector = html_to_selector_element_minimal(
+            child_elem, Some(selector_elem),
+          )
+          let child_node = element_to_node_with_styles_internal(
+            child_elem, child_selector, ctx, stylesheets, indexed_stylesheets,
+            Some(skeleton_style), css_vars, incoming_counters, owner_id,
+          )
+          children.push(child_node)
+        }
+        @html.Node::Text(text) =>
+          if not(text.is_empty()) {
+            children.push(create_text_node(text, skeleton_style))
+          }
+      }
+    }
+    return @node.Node::new(make_node_id(elem), skeleton_style, children)
+  }
+  // Full path: below viewport check passed
   let computed_style = compute_element_style_indexed(
     selector_elem,
     elem.style,
@@ -5160,6 +5252,12 @@ fn element_to_node_with_styles_internal(
   // Early return for display:none - skip all child processing
   if computed_style.display == @types.Display::None {
     return @node.Node::leaf(make_node_id(elem), computed_style)
+  }
+  // Viewport culling: estimate Y position for block elements
+  match computed_style.display {
+    @types.Block | @types.Flex | @types.Grid | @types.Table =>
+      viewport_estimated_y.val += computed_style.line_height
+    _ => ()
   }
   // Keep contain flags on <rt> so ruby-specific fallback logic can distinguish
   // contain:size/paint test fixtures. Other inline elements still strip contain.
@@ -5198,7 +5296,11 @@ fn element_to_node_with_styles_internal(
     tag_lower == "rtc" ||
     tag_lower == "rp"
 
-  let inline_has_block_child = computed_style.display == @types.Inline &&
+  // Skip expensive pre-checks for below-viewport elements
+  let inline_has_block_child = if below_viewport {
+    false
+  } else {
+    computed_style.display == @types.Inline &&
     not(is_ruby_internal) &&
     computed_style.position == @types.Static &&
     contains_block_child(elem, stylesheets, ctx) &&
@@ -5208,6 +5310,7 @@ fn element_to_node_with_styles_internal(
       ) ||
       has_direct_contents_class_child(elem),
     )
+  }
 
   // If this is an inline element containing replaced elements (like <a><img></a>),
   // treat it as inline-block so it gets proper sizing from its content
@@ -5287,7 +5390,8 @@ fn element_to_node_with_styles_internal(
       incoming_counters, selector_elem, style, stylesheets, ctx, owner_id,
     )
   }
-  let before_pseudo = if stylesheets.length() == 0 {
+  // Skip pseudo resolution for below-viewport elements (major perf win)
+  let before_pseudo = if below_viewport || stylesheets.length() == 0 {
     None
   } else {
     resolve_pseudo_spec_fast(
@@ -5300,7 +5404,7 @@ fn element_to_node_with_styles_internal(
       elem.attributes,
     )
   }
-  let after_pseudo = if stylesheets.length() == 0 {
+  let after_pseudo = if below_viewport || stylesheets.length() == 0 {
     None
   } else {
     resolve_pseudo_spec_fast(
