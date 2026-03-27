@@ -1955,3 +1955,51 @@ test "CSS @media print rules do not apply in screen context" {
   // nav should NOT be hidden (we're in screen, not print)
   assert_true(nav.style.display != @types.Display::None)
 }
+
+///|
+test "CSS descendant selector from html class hides nested element" {
+  let html =
+    #|<html class="feature-pinned-disabled"><head><style>
+    #|.menu-landmark { display: block; }
+    #|.feature-pinned-disabled .menu-container .menu-landmark { display: none; }
+    #|</style></head>
+    #|<body>
+    #|<div class="menu-container">
+    #|<nav class="menu-landmark" id="menu">Menu</nav>
+    #|</div>
+    #|<div id="main">Content</div>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+  // menu-container is first child
+  let container = node.children[0]
+  // menu-landmark inside container should be display:none
+  let menu = container.children[0]
+  inspect(menu.id, content="nav#menu")
+  inspect(menu.style.display, content="None")
+}
+
+///|
+test "CSS 3-level descendant from html class - Wikipedia sidebar pattern" {
+  let html =
+    #|<html class="vector-feature-main-menu-pinned-disabled"><head><style>
+    #|.vector-main-menu-landmark { display: block; }
+    #|.vector-feature-main-menu-pinned-disabled .vector-main-menu-container .vector-main-menu-landmark { display: none; }
+    #|</style></head>
+    #|<body>
+    #|<div class="vector-column-start">
+    #|<div class="vector-main-menu-container">
+    #|<nav class="vector-main-menu-landmark" id="mw-panel">Menu</nav>
+    #|</div>
+    #|</div>
+    #|<div id="main">Content</div>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+  let column = node.children[0]
+  let container = column.children[0]
+  let nav = container.children[0]
+  inspect(nav.id, content="nav#mw-panel")
+  // Should be display:none due to .vector-feature-main-menu-pinned-disabled ancestor
+  inspect(nav.style.display, content="None")
+}
