@@ -1877,3 +1877,42 @@ test "shared node_and_layout render matches separate passes" {
   )
   inspect(shared_layout.children[0].children[1].x, content="92")
 }
+
+///|
+test "CSS :not() hides sidebar when body lacks class" {
+  let html =
+    #|<html><head><style>
+    #|.sidebar { display: block; }
+    #|body:not(.sidebar-pinned) .sidebar { display: none; }
+    #|</style></head>
+    #|<body class="skin-vector">
+    #|<div class="sidebar" id="side">Sidebar</div>
+    #|<div id="main">Main content</div>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+  // sidebar should be display:none because body doesn't have .sidebar-pinned
+  let sidebar = node.children[0] // first child is sidebar div
+  inspect(sidebar.id, content="div#side")
+  inspect(sidebar.style.display, content="None")
+}
+
+///|
+test "CSS :not() does NOT hide sidebar when body has class" {
+  let html =
+    #|<html><head><style>
+    #|.sidebar { display: block; }
+    #|body:not(.sidebar-pinned) .sidebar { display: none; }
+    #|</style></head>
+    #|<body class="skin-vector sidebar-pinned">
+    #|<div class="sidebar" id="side">Sidebar</div>
+    #|<div id="main">Main content</div>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+  // sidebar should NOT be display:none because body HAS .sidebar-pinned
+  let sidebar = node.children[0]
+  inspect(sidebar.id, content="div#side")
+  // Should be block (not None)
+  assert_true(sidebar.style.display != @types.Display::None)
+}

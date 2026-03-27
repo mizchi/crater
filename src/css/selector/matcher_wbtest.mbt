@@ -202,3 +202,45 @@ test "match :not pseudo-class" {
   inspect(matches_selector_text(div, ":not(span)"), content="true")
   inspect(matches_selector_text(span, ":not(span)"), content="false")
 }
+
+///|
+test "match :not with class - .foo:not(.bar) matches element with foo but not bar" {
+  let elem_foo = Element::new("div").add_class("foo")
+  inspect(matches_selector_text(elem_foo, ".foo:not(.bar)"), content="true")
+}
+
+///|
+test "match :not with class - .foo:not(.bar) does NOT match element with foo and bar" {
+  let elem_foo_bar = Element::new("div").add_class("foo").add_class("bar")
+  inspect(matches_selector_text(elem_foo_bar, ".foo:not(.bar)"), content="false")
+}
+
+///|
+test "match :not with class - body:not(.hidden) div matches div under body without hidden class" {
+  let body = Element::new("body")
+  let div = Element::new("div").set_parent(body)
+  inspect(matches_selector_text(div, "body:not(.hidden) div"), content="true")
+}
+
+///|
+test "match :not with class - body:not(.hidden) div does NOT match when body has hidden class" {
+  let body = Element::new("body").add_class("hidden")
+  let div = Element::new("div").set_parent(body)
+  inspect(matches_selector_text(div, "body:not(.hidden) div"), content="false")
+}
+
+///|
+test "match :not with class - Wikipedia-style body:not(.vector-sticky-header-visible)" {
+  let body_without = Element::new("body")
+  let div1 = Element::new("div").add_class("vector-column-start").set_parent(body_without)
+  inspect(
+    matches_selector_text(div1, "body:not(.vector-sticky-header-visible) .vector-column-start"),
+    content="true",
+  )
+  let body_with = Element::new("body").add_class("vector-sticky-header-visible")
+  let div2 = Element::new("div").add_class("vector-column-start").set_parent(body_with)
+  inspect(
+    matches_selector_text(div2, "body:not(.vector-sticky-header-visible) .vector-column-start"),
+    content="false",
+  )
+}
