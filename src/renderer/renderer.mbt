@@ -6788,11 +6788,20 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     // Table elements
     "table" => { ..default_style, display: @types.Table, border_spacing: 2.0 }
     "tr" => { ..default_style, display: @types.TableRow }
-    "td" | "th" =>
+    "td" =>
       {
         ..default_style,
         display: @types.TableCell,
         vertical_align: @style.Middle,
+        text_align: @style.TextAlign::Left, // UA default: start (left for LTR)
+      }
+    "th" =>
+      {
+        ..default_style,
+        display: @types.TableCell,
+        vertical_align: @style.Middle,
+        text_align: @style.TextAlign::Center, // th defaults to center
+        font_weight: 700.0,
       }
     "thead" => { ..default_style, display: @types.TableHeaderGroup }
     "tbody" => { ..default_style, display: @types.TableRowGroup }
