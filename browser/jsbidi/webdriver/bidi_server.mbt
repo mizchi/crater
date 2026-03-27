@@ -2916,6 +2916,22 @@ extern "js" fn js_evaluate_expression(
   #|         }
   #|         attachChildren(body, bodyChildren);
   #|       }
+  #|       // Ensure <html> attributes are on documentElement (parser may miss for large HTML)
+  #|       const docEl = globalThis.document.documentElement;
+  #|       if (docEl && (!docEl._attrs || !docEl._attrs.class)) {
+  #|         const htmlMatch = html.match(/<html\s+([^>]*)>/i);
+  #|         if (htmlMatch) {
+  #|           const attrStr = htmlMatch[1];
+  #|           const attrRegex = /([a-z][a-z0-9-]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|(\S+)))?/gi;
+  #|           let m;
+  #|           while ((m = attrRegex.exec(attrStr)) !== null) {
+  #|             const name = m[1].toLowerCase();
+  #|             const value = m[2] || m[3] || m[4] || name;
+  #|             if (typeof docEl.setAttribute === 'function') docEl.setAttribute(name, value);
+  #|             else if (docEl._attrs) docEl._attrs[name] = value;
+  #|           }
+  #|         }
+  #|       }
   #|       globalThis.__lastHTML = html;
   #|       globalThis.__lastParsed = { headNodes: headCache, bodyNodes: bodyCache };
   #|
