@@ -1,137 +1,260 @@
 /**
- * BiDi server launcher with font module pre-loaded.
- * Used for VRT to get accurate text metrics instead of monospace fallback.
+ * BiDi server launcher with system font resolution.
+ * Loads multiple fonts (Arial, Verdana, etc.) and resolves CSS font-family
+ * at runtime for accurate text metrics.
  *
  * Usage: deno run -A browser/jsbidi/bidi_main/start-with-font.ts
  */
 import { createTextIntrinsicFnFromMeasureText } from "../../../scripts/text-intrinsic.ts";
 
-const fontModulePath = `${Deno.env.get("HOME")}/ghq/github.com/mizchi/font/_build/js/release/build/js/js.js`;
+const HOME = Deno.env.get("HOME") || "/tmp";
+const fontModulePath = `${HOME}/ghq/github.com/mizchi/font/_build/js/release/build/js/js.js`;
 
-// Regular font candidates
-const regularCandidates = [
-  Deno.env.get("CRATER_TEXT_FONT_PATH"),
-  "/System/Library/Fonts/Supplemental/Arial.ttf",
-  "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-  "/usr/share/fonts/liberation-sans/LiberationSans-Regular.ttf",
-  `${Deno.env.get("HOME")}/ghq/github.com/mizchi/font/fixtures/NotoSansMono-Regular.ttf`,
-].filter((p): p is string => !!p);
+// ============================================================
+// System font resolution (inline, no external deps)
+// ============================================================
+const MAC_FONT_DIRS = [
+  "/System/Library/Fonts/Supplemental",
+  "/System/Library/Fonts",
+  "/Library/Fonts",
+  `${HOME}/Library/Fonts`,
+];
+const LINUX_FONT_DIRS = [
+  "/usr/share/fonts/truetype",
+  "/usr/share/fonts",
+  "/usr/local/share/fonts",
+  `${HOME}/.fonts`,
+];
+const FONT_DIRS = Deno.build.os === "darwin" ? MAC_FONT_DIRS : LINUX_FONT_DIRS;
 
-// Bold font candidates
-const boldCandidates = [
-  Deno.env.get("CRATER_TEXT_FONT_BOLD_PATH"),
-  "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
-  "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-  "/usr/share/fonts/liberation-sans/LiberationSans-Bold.ttf",
-  `${Deno.env.get("HOME")}/ghq/github.com/mizchi/font/fixtures/NotoSansMono-Bold.ttf`,
-].filter((p): p is string => !!p);
+const FONT_FILE_MAP: Record<string, { regular: string[]; bold: string[] }> = {
+  arial: {
+    regular: ["Arial.ttf", "LiberationSans-Regular.ttf", "DejaVuSans.ttf"],
+    bold: ["Arial Bold.ttf", "LiberationSans-Bold.ttf", "DejaVuSans-Bold.ttf"],
+  },
+  verdana: {
+    regular: ["Verdana.ttf"],
+    bold: ["Verdana Bold.ttf"],
+  },
+  georgia: {
+    regular: ["Georgia.ttf"],
+    bold: ["Georgia Bold.ttf"],
+  },
+  "times new roman": {
+    regular: ["Times New Roman.ttf", "LiberationSerif-Regular.ttf"],
+    bold: ["Times New Roman Bold.ttf", "LiberationSerif-Bold.ttf"],
+  },
+  "courier new": {
+    regular: ["Courier New.ttf", "LiberationMono-Regular.ttf", "DejaVuSansMono.ttf"],
+    bold: ["Courier New Bold.ttf", "LiberationMono-Bold.ttf"],
+  },
+  "sans-serif": {
+    regular: ["Arial.ttf", "LiberationSans-Regular.ttf", "DejaVuSans.ttf"],
+    bold: ["Arial Bold.ttf", "LiberationSans-Bold.ttf", "DejaVuSans-Bold.ttf"],
+  },
+};
+const ALIASES: Record<string, string> = {
+  helvetica: "arial",
+  "helvetica neue": "arial",
+  courier: "courier new",
+  times: "times new roman",
+  monospace: "courier new",
+  serif: "times new roman",
+};
 
-function tryLoadFont(fontPath: string): Uint8Array | null {
+function findFont(fileName: string): string | null {
+  for (const dir of FONT_DIRS) {
+    try {
+      const p = `${dir}/${fileName}`;
+      Deno.statSync(p);
+      return p;
+    } catch {}
+    // One level deep
+    try {
+      for (const entry of Deno.readDirSync(dir)) {
+        if (entry.isDirectory) {
+          const p = `${dir}/${entry.name}/${fileName}`;
+          try { Deno.statSync(p); return p; } catch {}
+        }
+      }
+    } catch {}
+  }
+  return null;
+}
+
+function resolveFont(family: string, weight: "regular" | "bold"): string | null {
+  const families = family.split(",").map((f) => f.trim().replace(/['"]/g, "").toLowerCase());
+  for (const f of families) {
+    const norm = ALIASES[f] || f;
+    const map = FONT_FILE_MAP[norm];
+    if (!map) continue;
+    const candidates = weight === "bold" ? map.bold : map.regular;
+    for (const fileName of candidates) {
+      const found = findFont(fileName);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+// ============================================================
+// Font module loading with multi-font support
+// ============================================================
+interface FontInstance {
+  measureText: (text: string, fontSize: number) => number;
+  glyphToSvgPath?: (cp: number, fs: number) => string;
+  glyphAdvance?: (cp: number, fs: number) => number;
+  kernAdvance?: (cp1: number, cp2: number, fs: number) => number;
+  ascentRatio: number;
+}
+
+// Cache of loaded font instances: family -> { regular, bold }
+const fontCache = new Map<string, { regular?: FontInstance; bold?: FontInstance }>();
+
+async function loadFontInstance(fontPath: string): Promise<FontInstance | null> {
   try {
-    return Deno.readFileSync(fontPath);
+    const cacheBuster = `?f=${encodeURIComponent(fontPath)}`;
+    const mod = await import(`${fontModulePath}${cacheBuster}`);
+    const loadFont = mod.loadFont ?? mod.default?.loadFont;
+    const measureText = mod.measureText ?? mod.default?.measureText;
+    const glyphToSvgPath = mod.glyphToSvgPath ?? mod.default?.glyphToSvgPath;
+    const glyphAdvance = mod.glyphAdvance ?? mod.default?.glyphAdvance;
+    const kernAdvance = mod.kernAdvance ?? mod.default?.kernAdvance;
+    const getFontInfo = mod.getFontInfo ?? mod.default?.getFontInfo;
+
+    if (!loadFont || !measureText) return null;
+
+    const bytes = Deno.readFileSync(fontPath);
+    loadFont(bytes);
+
+    let ascentRatio = 0.8;
+    if (getFontInfo) {
+      try {
+        const info = JSON.parse(getFontInfo() as string);
+        ascentRatio = (info.ascent || 0) / (info.units_per_em || 2048);
+      } catch {}
+    }
+
+    return {
+      measureText: (text, fontSize) => measureText(text, fontSize) as number,
+      glyphToSvgPath: glyphToSvgPath ? (cp, fs) => glyphToSvgPath(cp, fs) as string : undefined,
+      glyphAdvance: glyphAdvance ? (cp, fs) => glyphAdvance(cp, fs) as number : undefined,
+      kernAdvance: kernAdvance ? (cp1, cp2, fs) => kernAdvance(cp1, cp2, fs) as number : undefined,
+      ascentRatio,
+    };
   } catch {
     return null;
   }
 }
 
-let fontLoaded = false;
-try {
-  // Load regular font module instance
-  const regularMod = await import(fontModulePath);
-  const loadFont = regularMod.loadFont ?? regularMod.default?.loadFont;
-  const measureText = regularMod.measureText ?? regularMod.default?.measureText;
-  const glyphToSvgPath = regularMod.glyphToSvgPath ?? regularMod.default?.glyphToSvgPath;
-  const glyphAdvance = regularMod.glyphAdvance ?? regularMod.default?.glyphAdvance;
-  const kernAdvance = regularMod.kernAdvance ?? regularMod.default?.kernAdvance;
-  const getFontInfo = regularMod.getFontInfo ?? regularMod.default?.getFontInfo;
+// Pre-load common fonts
+const PRELOAD_FAMILIES = ["arial", "verdana", "georgia", "times new roman", "courier new"];
 
-  if (loadFont && measureText) {
-    for (const fontPath of regularCandidates) {
-      const bytes = tryLoadFont(fontPath);
-      if (!bytes) continue;
+async function preloadFonts() {
+  for (const family of PRELOAD_FAMILIES) {
+    const regularPath = resolveFont(family, "regular");
+    const boldPath = resolveFont(family, "bold");
+    if (!regularPath) continue;
 
-      loadFont(bytes);
-      console.error(`[font] Regular loaded: ${fontPath}`);
-      fontLoaded = true;
+    const regular = await loadFontInstance(regularPath);
+    if (!regular) continue;
+    console.error(`[font] ${family}: ${regularPath}`);
 
-      // Text metrics provider (for layout)
-      (globalThis as any).__craterMeasureTextIntrinsic = createTextIntrinsicFnFromMeasureText(
-        (text: string, fontSize: number) => measureText(text, fontSize) as number,
-      );
-
-      // Ascent ratio
-      if (getFontInfo) {
-        const info = JSON.parse(getFontInfo() as string);
-        const ascentRatio = (info.ascent || 0) / (info.units_per_em || 2048);
-        (globalThis as any).__craterFontAscentRatio = () => ascentRatio;
-        console.error(`[font] Ascent ratio: ${ascentRatio.toFixed(4)}`);
-      }
-
-      // Glyph provider (regular)
-      if (glyphToSvgPath && glyphAdvance) {
-        (globalThis as any).__craterGlyphToSvgPath = (cp: number, fs: number) =>
-          glyphToSvgPath(cp, fs);
-        (globalThis as any).__craterGlyphAdvance = (cp: number, fs: number) =>
-          glyphAdvance(cp, fs);
-        if (kernAdvance) {
-          (globalThis as any).__craterKernAdvance = (cp1: number, cp2: number, fs: number) =>
-            kernAdvance(cp1, cp2, fs);
-        }
-        console.error(`[font] Glyph provider installed (kern=${!!kernAdvance})`);
-      }
-
-      break;
+    let bold: FontInstance | null = null;
+    if (boldPath) {
+      bold = await loadFontInstance(boldPath);
+      if (bold) console.error(`[font] ${family} bold: ${boldPath}`);
     }
+
+    fontCache.set(family, { regular: regular || undefined, bold: bold || undefined });
   }
-
-  // Load bold font in a separate module instance (cache-busted import)
-  if (fontLoaded && glyphToSvgPath && glyphAdvance) {
-    try {
-      const boldMod = await import(`${fontModulePath}?weight=bold`);
-      const loadBold = boldMod.loadFont ?? boldMod.default?.loadFont;
-      const boldGlyphToSvgPath = boldMod.glyphToSvgPath ?? boldMod.default?.glyphToSvgPath;
-      const boldGlyphAdvance = boldMod.glyphAdvance ?? boldMod.default?.glyphAdvance;
-      const boldKernAdvance = boldMod.kernAdvance ?? boldMod.default?.kernAdvance;
-
-      if (loadBold && boldGlyphToSvgPath && boldGlyphAdvance) {
-        for (const fontPath of boldCandidates) {
-          const bytes = tryLoadFont(fontPath);
-          if (!bytes) continue;
-
-          loadBold(bytes);
-          console.error(`[font] Bold loaded: ${fontPath}`);
-
-          (globalThis as any).__craterGlyphToSvgPathBold = (cp: number, fs: number) =>
-            boldGlyphToSvgPath(cp, fs);
-          (globalThis as any).__craterGlyphAdvanceBold = (cp: number, fs: number) =>
-            boldGlyphAdvance(cp, fs);
-          if (boldKernAdvance) {
-            (globalThis as any).__craterKernAdvanceBold = (cp1: number, cp2: number, fs: number) =>
-              boldKernAdvance(cp1, cp2, fs);
-          }
-          // Bold text metrics for layout
-          const boldMeasureText = boldMod.measureText ?? boldMod.default?.measureText;
-          if (boldMeasureText) {
-            (globalThis as any).__craterMeasureTextIntrinsicBold = createTextIntrinsicFnFromMeasureText(
-              (text: string, fontSize: number) => boldMeasureText(text, fontSize) as number,
-            );
-            console.error(`[font] Bold text metrics provider installed`);
-          }
-          console.error(`[font] Bold glyph provider installed (kern=${!!boldKernAdvance})`);
-          break;
-        }
-      }
-    } catch (err) {
-      console.error(`[font] Bold font module failed: ${err}`);
-    }
+  // Set sans-serif = arial
+  if (fontCache.has("arial")) {
+    fontCache.set("sans-serif", fontCache.get("arial")!);
+    fontCache.set("helvetica", fontCache.get("arial")!);
   }
-} catch (err) {
-  console.error(`[font] Module not available: ${err}`);
+  if (fontCache.has("times new roman")) {
+    fontCache.set("serif", fontCache.get("times new roman")!);
+  }
+  if (fontCache.has("courier new")) {
+    fontCache.set("monospace", fontCache.get("courier new")!);
+  }
 }
 
-if (!fontLoaded) {
-  console.error(`[font] No font loaded, using monospace fallback`);
+function getFontInstance(fontFamily: string, isBold: boolean): FontInstance | null {
+  const families = fontFamily.split(",").map((f) => f.trim().replace(/['"]/g, "").toLowerCase());
+  for (const f of families) {
+    const norm = ALIASES[f] || f;
+    const entry = fontCache.get(norm);
+    if (entry) {
+      if (isBold && entry.bold) return entry.bold;
+      if (entry.regular) return entry.regular;
+    }
+  }
+  // Fallback to first loaded font
+  const fallback = fontCache.get("arial") || fontCache.values().next().value;
+  if (!fallback) return null;
+  return isBold && fallback.bold ? fallback.bold : fallback.regular || null;
 }
+
+// ============================================================
+// Install global providers
+// ============================================================
+await preloadFonts();
+
+const defaultFont = getFontInstance("arial, sans-serif", false);
+if (!defaultFont) {
+  console.error("[font] No font loaded, using monospace fallback");
+} else {
+  // Regular text metrics (uses font_family to select font)
+  (globalThis as any).__craterMeasureTextIntrinsic = createTextIntrinsicFnFromMeasureText(
+    (text: string, fontSize: number) => defaultFont.measureText(text, fontSize),
+  );
+
+  // Multi-font text metrics: resolve font by family name
+  (globalThis as any).__craterMeasureTextIntrinsicMulti = (
+    text: string,
+    fontSize: number,
+    fontFamily: string,
+    isBold: boolean,
+  ): { minWidth: number; maxWidth: number; minHeight: number; maxHeight: number } | null => {
+    const font = getFontInstance(fontFamily || "sans-serif", isBold);
+    if (!font) return null;
+    const width = font.measureText(text, fontSize);
+    const lineHeight = fontSize * 1.2;
+    return { minWidth: width, maxWidth: width, minHeight: lineHeight, maxHeight: lineHeight };
+  };
+
+  // Ascent ratio (default font)
+  (globalThis as any).__craterFontAscentRatio = () => defaultFont.ascentRatio;
+  console.error(`[font] Ascent ratio: ${defaultFont.ascentRatio.toFixed(4)}`);
+
+  // Glyph providers (default font for SVG rendering)
+  if (defaultFont.glyphToSvgPath && defaultFont.glyphAdvance) {
+    (globalThis as any).__craterGlyphToSvgPath = defaultFont.glyphToSvgPath;
+    (globalThis as any).__craterGlyphAdvance = defaultFont.glyphAdvance;
+    if (defaultFont.kernAdvance) {
+      (globalThis as any).__craterKernAdvance = defaultFont.kernAdvance;
+    }
+    console.error(`[font] Glyph provider installed (kern=${!!defaultFont.kernAdvance})`);
+  }
+
+  // Bold glyph providers
+  const boldFont = getFontInstance("arial, sans-serif", true);
+  if (boldFont && boldFont.glyphToSvgPath && boldFont.glyphAdvance) {
+    (globalThis as any).__craterGlyphToSvgPathBold = boldFont.glyphToSvgPath;
+    (globalThis as any).__craterGlyphAdvanceBold = boldFont.glyphAdvance;
+    if (boldFont.kernAdvance) {
+      (globalThis as any).__craterKernAdvanceBold = boldFont.kernAdvance;
+    }
+    (globalThis as any).__craterMeasureTextIntrinsicBold = createTextIntrinsicFnFromMeasureText(
+      (text: string, fontSize: number) => boldFont.measureText(text, fontSize),
+    );
+    console.error(`[font] Bold glyph provider installed`);
+  }
+}
+
+console.error(`[font] ${fontCache.size} font families loaded`);
 
 // Start the BiDi server
 await import("../_build/js/release/build/bidi_main/bidi_main.js");
