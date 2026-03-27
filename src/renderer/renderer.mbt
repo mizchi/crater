@@ -5005,6 +5005,17 @@ fn element_to_node_with_styles_internal(
     parent_style,
     css_vars,
   )
+  // HTML hidden attribute → display: none (UA default per spec)
+  if elem.attributes.contains("hidden") {
+    computed_style.display = @types.Display::None
+  }
+  // <dialog> without open attribute → display: none
+  let tag_check = elem.tag.to_lower()
+  if tag_check == "dialog" && not(elem.attributes.contains("open")) {
+    computed_style.display = @types.Display::None
+  }
+  // <details> without open: hide all children except <summary>
+  // (handled by treating non-summary children as display:none in child loop)
   // Early return for display:none - skip all child processing
   if computed_style.display == @types.Display::None {
     return @node.Node::leaf(make_node_id(elem), computed_style)
