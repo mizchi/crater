@@ -2865,6 +2865,14 @@ extern "js" fn js_evaluate_expression(
   #|
   #|       // If we have an html element, extract head and body from it
   #|       if (htmlEl) {
+  #|         // Copy <html> attributes to document.documentElement
+  #|         const docEl = globalThis.document.documentElement;
+  #|         if (docEl && htmlEl._attrs) {
+  #|           for (const [k, v] of Object.entries(htmlEl._attrs)) {
+  #|             if (typeof docEl.setAttribute === 'function') docEl.setAttribute(k, v);
+  #|             else docEl._attrs[k] = v;
+  #|           }
+  #|         }
   #|         for (const child of Array.from(htmlEl.childNodes)) {
   #|           if (child.tagName === 'HEAD') headEl = child;
   #|           else if (child.tagName === 'BODY') bodyEl = child;
