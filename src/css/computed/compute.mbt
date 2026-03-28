@@ -2221,7 +2221,11 @@ fn resolve_border_radius(
     return (0.0, 0.0, 0.0, 0.0)
   }
   let values : Array[Double] = parts.map(fn(p) {
-    resolve_dimension_to_px(resolve_dimension(p.to_string(), ctx))
+    let dim = resolve_dimension(p.to_string(), ctx)
+    match dim {
+      @types.Percent(pct) => -pct // Negative encodes percentage (fraction) for render-time resolution
+      _ => resolve_dimension_to_px(dim)
+    }
   })
   match values.length() {
     1 => (values[0], values[0], values[0], values[0])

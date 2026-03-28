@@ -1071,12 +1071,33 @@ test "compute_inline caption-side bottom" {
 test "compute_inline background linear-gradient" {
   let ctx = @computed.ComputeContext::new()
   let style = @computed.compute_inline(
-    "background: linear-gradient(to right, #ff0000, #0000ff)",
-    ctx,
+    "background: linear-gradient(to right, #ff0000, #0000ff)", ctx,
   )
-  inspect(style.background_image, content=(
-    #|Gradient({angle_deg: 90, stops: [{color: rgb(255, 0, 0), position: 0}, {color: rgb(0, 0, 255), position: 1}]})
-  ))
+  inspect(
+    style.background_image,
+    content=(
+      #|Gradient({angle_deg: 90, stops: [{color: rgb(255, 0, 0), position: 0}, {color: rgb(0, 0, 255), position: 1}]})
+    ),
+  )
+}
+
+///|
+test "compute_inline border-radius percentage" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("border-radius: 50%", ctx)
+  // Negative encodes percentage for render-time resolution
+  inspect(
+    style.border_top_left_radius,
+    content=(
+      #|-0.5
+    ),
+  )
+  inspect(
+    style.border_top_right_radius,
+    content=(
+      #|-0.5
+    ),
+  )
 }
 
 ///|
@@ -1084,7 +1105,10 @@ test "parse_linear_gradient basic" {
   let result = @computed.parse_linear_gradient(
     "linear-gradient(135deg, #667eea, #764ba2)",
   )
-  inspect(result, content=(
-    #|Gradient({angle_deg: 135, stops: [{color: rgb(102, 126, 234), position: 0}, {color: rgb(118, 75, 162), position: 1}]})
-  ))
+  inspect(
+    result,
+    content=(
+      #|Gradient({angle_deg: 135, stops: [{color: rgb(102, 126, 234), position: 0}, {color: rgb(118, 75, 162), position: 1}]})
+    ),
+  )
 }

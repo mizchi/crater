@@ -996,6 +996,18 @@ fn color_hash(c : Color) -> Int {
 }
 
 ///|
+/// Quantize a color channel to reduce palette entries
+/// Rounds to nearest multiple of step (e.g., step=4 gives 64 levels per channel)
+fn quantize_channel(v : Int, step : Int) -> Int {
+  let q = (v + step / 2) / step * step
+  if q > 255 {
+    255
+  } else {
+    q
+  }
+}
+
+///|
 /// Get or add a color to the palette, returns palette index
 fn DynamicPalette::get_or_add(self : DynamicPalette, c : Color) -> Int {
   let hash = color_hash(c)
@@ -1003,14 +1015,22 @@ fn DynamicPalette::get_or_add(self : DynamicPalette, c : Color) -> Int {
     Some(idx) => idx
     None => {
       let idx = self.colors.length()
-      // Sixel supports up to 256 colors
-      if idx < 256 {
+      if idx < 4096 {
         self.colors.push(c)
         self.color_map.set(hash, idx)
         idx
       } else {
-        // Fallback: find closest color (simple approach: return last)
-        idx - 1
+        // Palette full — quantize and find nearest existing entry
+        let qc : Color = {
+          r: quantize_channel(c.r, 8),
+          g: quantize_channel(c.g, 8),
+          b: quantize_channel(c.b, 8),
+        }
+        let qhash = color_hash(qc)
+        match self.color_map.get(qhash) {
+          Some(qi) => qi
+          None => idx - 1
+        }
       }
     }
   }
@@ -1330,6 +1350,18 @@ fn fill_linear_gradient_clipped(
 }
 
 ///|
+/// Resolve border-radius value: negative means percentage of reference dimension
+fn resolve_radius(val : Double, ref_dim : Int) -> Int {
+  if val < 0.0 {
+    // Negative encodes percentage: -0.5 means 50%
+    let frac = -val
+    (frac * ref_dim.to_double()).to_int()
+  } else {
+    val.to_int()
+  }
+}
+
+///|
 /// Render a PaintNode tree to framebuffer
 fn render_paint_node(
   fb : Framebuffer,
@@ -1393,11 +1425,12 @@ fn render_paint_node_clipped(
     None => ()
   }
 
-  // Compute border-radius values
-  let tl_r = node.paint.border_top_left_radius.to_int()
-  let tr_r = node.paint.border_top_right_radius.to_int()
-  let br_r = node.paint.border_bottom_right_radius.to_int()
-  let bl_r = node.paint.border_bottom_left_radius.to_int()
+  // Compute border-radius values (negative means percentage)
+  let min_dim = @cmp.minimum(w, h)
+  let tl_r = resolve_radius(node.paint.border_top_left_radius, min_dim)
+  let tr_r = resolve_radius(node.paint.border_top_right_radius, min_dim)
+  let br_r = resolve_radius(node.paint.border_bottom_right_radius, min_dim)
+  let bl_r = resolve_radius(node.paint.border_bottom_left_radius, min_dim)
   let has_radius = tl_r > 0 || tr_r > 0 || br_r > 0 || bl_r > 0
 
   // Draw background: gradient or solid color
