@@ -25,6 +25,73 @@ extern "js" fn has_paint_text_provider() -> Bool =
   #|() => typeof globalThis.__craterMeasureTextIntrinsic === "function"
 
 ///|
+/// Call multi-font text metrics provider (resolves font by family name)
+extern "js" fn call_multi_font_provider(
+  text : String,
+  font_size : Double,
+  font_family : String,
+  is_bold : Bool,
+) -> String =
+  #|(text, fontSize, fontFamily, isBold) => {
+  #|  const fn = globalThis.__craterMeasureTextIntrinsicMulti;
+  #|  if (typeof fn !== "function") return "";
+  #|  try {
+  #|    const result = fn(text, fontSize, fontFamily, isBold);
+  #|    if (!result) return "";
+  #|    const mw = Number(result.minWidth), xw = Number(result.maxWidth);
+  #|    const mh = Number(result.minHeight), xh = Number(result.maxHeight);
+  #|    if (!Number.isFinite(mw) || !Number.isFinite(xw)) return "";
+  #|    return `${mw},${xw},${mh},${xh}`;
+  #|  } catch { return ""; }
+  #|}
+
+///|
+/// Call font-family-aware text metrics provider
+extern "js" fn call_font_aware_text_provider(
+  text : String,
+  font_size : Double,
+  line_height : Double,
+  white_space : String,
+  writing_mode : String,
+  available_width : Double,
+  available_height : Double,
+  font_family : String,
+  is_bold : Bool,
+) -> String =
+  #|(text, fontSize, lineHeight, whiteSpace, writingMode, availableWidth, availableHeight, fontFamily, isBold) => {
+  #|  // Try multi-font provider first
+  #|  const multiFn = globalThis.__craterMeasureTextIntrinsicMultiFull;
+  #|  if (typeof multiFn === "function") {
+  #|    try {
+  #|      const result = multiFn(text, fontSize, lineHeight, whiteSpace, writingMode, availableWidth, availableHeight, fontFamily, isBold);
+  #|      if (result) {
+  #|        const mw = Number(result.minWidth ?? result.min_width);
+  #|        const xw = Number(result.maxWidth ?? result.max_width);
+  #|        const mh = Number(result.minHeight ?? result.min_height);
+  #|        const xh = Number(result.maxHeight ?? result.max_height);
+  #|        if (Number.isFinite(mw) && Number.isFinite(xw) && Number.isFinite(mh) && Number.isFinite(xh))
+  #|          return `${mw},${xw},${mh},${xh}`;
+  #|      }
+  #|    } catch {}
+  #|  }
+  #|  // Fallback to default provider
+  #|  const fn = isBold ? (globalThis.__craterMeasureTextIntrinsicBold || globalThis.__craterMeasureTextIntrinsic) : globalThis.__craterMeasureTextIntrinsic;
+  #|  if (typeof fn !== "function") return "";
+  #|  try {
+  #|    const result = fn(text, fontSize, lineHeight, whiteSpace, writingMode, availableWidth, availableHeight);
+  #|    let minWidth, maxWidth, minHeight, maxHeight;
+  #|    if (result && typeof result === "object") {
+  #|      minWidth = Number(result.minWidth ?? result.min_width);
+  #|      maxWidth = Number(result.maxWidth ?? result.max_width);
+  #|      minHeight = Number(result.minHeight ?? result.min_height);
+  #|      maxHeight = Number(result.maxHeight ?? result.max_height);
+  #|    } else return "";
+  #|    if (!Number.isFinite(minWidth) || !Number.isFinite(maxWidth)) return "";
+  #|    return `${minWidth},${maxWidth},${minHeight},${maxHeight}`;
+  #|  } catch { return ""; }
+  #|}
+
+///|
 /// Call JS-side text metrics provider (returns CSV: "minWidth,maxWidth,minHeight,maxHeight")
 extern "js" fn call_paint_text_provider(
   text : String,
@@ -150,23 +217,45 @@ fn ensure_paint_text_provider() -> Unit {
       white_space,
       writing_mode,
       font_weight,
-      _font_family,
+      font_family,
     ) {
       let ws = white_space.to_string()
       let wm = writing_mode.to_string()
       let is_bold = font_weight >= 700.0
+      let ff = font_family
       {
         func: fn(available_width, available_height) {
-          let payload = if is_bold && has_bold_text_provider() {
-            call_bold_text_provider(
+          // Use font-family-aware provider if available, else fall back
+          let payload = if ff.length() > 0 {
+            let multi = call_font_aware_text_provider(
               text, font_size, line_height, ws, wm, available_width,
-              available_height,
+              available_height, ff, is_bold,
             )
+            if multi.length() > 0 { multi } else {
+              if is_bold && has_bold_text_provider() {
+                call_bold_text_provider(
+                  text, font_size, line_height, ws, wm, available_width,
+                  available_height,
+                )
+              } else {
+                call_paint_text_provider(
+                  text, font_size, line_height, ws, wm, available_width,
+                  available_height,
+                )
+              }
+            }
           } else {
-            call_paint_text_provider(
-              text, font_size, line_height, ws, wm, available_width,
-              available_height,
-            )
+            if is_bold && has_bold_text_provider() {
+              call_bold_text_provider(
+                text, font_size, line_height, ws, wm, available_width,
+                available_height,
+              )
+            } else {
+              call_paint_text_provider(
+                text, font_size, line_height, ws, wm, available_width,
+                available_height,
+              )
+            }
           }
           match parse_csv_quad(payload) {
             Some((min_w, max_w, min_h, max_h)) =>

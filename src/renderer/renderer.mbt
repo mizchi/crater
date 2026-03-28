@@ -6987,6 +6987,7 @@ fn compute_element_style_indexed(
         ..style,
         color: ps.color,
         font_size: ps.font_size,
+        font_family: ps.font_family,
         line_height: ps.font_size * lh_ratio,
         white_space: ps.white_space,
         writing_mode: ps.writing_mode,

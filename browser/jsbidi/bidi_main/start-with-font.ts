@@ -217,7 +217,38 @@ if (!defaultFont) {
     (text: string, fontSize: number) => defaultFont.measureText(text, fontSize),
   );
 
-  // Multi-font text metrics: resolve font by family name
+  // Multi-font text intrinsic functions (cached per font instance)
+  const intrinsicCache = new Map<FontInstance, ReturnType<typeof createTextIntrinsicFnFromMeasureText>>();
+  function getIntrinsicFn(font: FontInstance) {
+    let fn = intrinsicCache.get(font);
+    if (!fn) {
+      fn = createTextIntrinsicFnFromMeasureText(
+        (text: string, fontSize: number) => font.measureText(text, fontSize),
+      );
+      intrinsicCache.set(font, fn);
+    }
+    return fn;
+  }
+
+  // Full multi-font text intrinsic (with available_width for word-wrap)
+  (globalThis as any).__craterMeasureTextIntrinsicMultiFull = (
+    text: string,
+    fontSize: number,
+    lineHeight: number,
+    whiteSpace: string,
+    writingMode: string,
+    availableWidth: number,
+    availableHeight: number,
+    fontFamily: string,
+    isBold: boolean,
+  ) => {
+    const font = getFontInstance(fontFamily || "sans-serif", isBold);
+    if (!font) return null;
+    const fn = getIntrinsicFn(font);
+    return fn(text, fontSize, lineHeight, whiteSpace, writingMode, availableWidth, availableHeight);
+  };
+
+  // Simple multi-font text metrics (backward compat)
   (globalThis as any).__craterMeasureTextIntrinsicMulti = (
     text: string,
     fontSize: number,
@@ -226,9 +257,10 @@ if (!defaultFont) {
   ): { minWidth: number; maxWidth: number; minHeight: number; maxHeight: number } | null => {
     const font = getFontInstance(fontFamily || "sans-serif", isBold);
     if (!font) return null;
-    const width = font.measureText(text, fontSize);
-    const lineHeight = fontSize * 1.2;
-    return { minWidth: width, maxWidth: width, minHeight: lineHeight, maxHeight: lineHeight };
+    // Use full intrinsic measurement (with word-wrap calculation)
+    const fn = getIntrinsicFn(font);
+    const lineHeight = fontSize > 0 ? fontSize * 1.2 : 16;
+    return fn(text, fontSize, lineHeight, "normal", "horizontal-tb", 9999, 9999);
   };
 
   // Ascent ratio (default font)
