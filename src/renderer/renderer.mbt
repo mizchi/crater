@@ -20,6 +20,11 @@ let large_ahem_like_char_width_ratio : Double = 0.722
 let normal_line_height_ratio : Double = 1.2
 
 ///|
+/// Current cellpadding value from the nearest ancestor <table>.
+/// -1.0 means not set. Updated when entering/leaving table elements.
+let current_cellpadding : Ref[Double] = { val: -1.0 }
+
+///|
 fn view_to_string(v : StringView) -> String {
   let sb = StringBuilder::new()
   sb.write_stringview(v)
@@ -4948,11 +4953,26 @@ fn element_to_node_with_styles(
       }
       None => computed_style.border_spacing
     }
-    { ..computed_style, border_spacing, }
+    // Track cellpadding for descendant <td>/<th> elements
+    match elem.attributes.get("cellpadding") {
+      Some(val) => {
+        let n = @strconv.parse_double(val) catch { _ => -1.0 }
+        if n >= 0.0 {
+          current_cellpadding.val = n
+        }
+      }
+      None => ()
+    }
+    // cellspacing sets both horizontal and vertical border-spacing
+    let border_spacing_vertical = match elem.attributes.get("cellspacing") {
+      Some(_) => border_spacing
+      None => computed_style.border_spacing_vertical
+    }
+    { ..computed_style, border_spacing, border_spacing_vertical }
   } else {
     computed_style
   }
-  // Handle table cell rowspan/colspan attributes
+  // Handle table cell rowspan/colspan attributes + cellpadding
   let style = if cell_tag == "td" || cell_tag == "th" {
     let rowspan = match elem.attributes.get("rowspan") {
       Some(val) => {
@@ -4976,7 +4996,26 @@ fn element_to_node_with_styles(
       }
       None => 1
     }
-    { ..style, rowspan, colspan }
+    // Apply cellpadding from ancestor table (only if CSS didn't set padding)
+    let mut s = { ..style, rowspan, colspan }
+    let cp = current_cellpadding.val
+    if cp >= 0.0 {
+      let default_pad = @types.Dimension::Length(0.0)
+      let has_css_padding = s.padding.top != @types.Dimension::Auto &&
+        s.padding.top != default_pad
+      if not(has_css_padding) {
+        s = {
+          ..s,
+          padding: {
+            top: @types.Dimension::Length(cp),
+            right: @types.Dimension::Length(cp),
+            bottom: @types.Dimension::Length(cp),
+            left: @types.Dimension::Length(cp),
+          },
+        }
+      }
+    }
+    s
   } else {
     style
   }
@@ -5384,11 +5423,26 @@ fn element_to_node_with_styles_internal(
       }
       None => style.border_spacing
     }
-    { ..style, border_spacing, }
+    // Track cellpadding for descendant <td>/<th> elements
+    match elem.attributes.get("cellpadding") {
+      Some(val) => {
+        let n = @strconv.parse_double(val) catch { _ => -1.0 }
+        if n >= 0.0 {
+          current_cellpadding.val = n
+        }
+      }
+      None => ()
+    }
+    // cellspacing sets both horizontal and vertical border-spacing
+    let border_spacing_vertical = match elem.attributes.get("cellspacing") {
+      Some(_) => border_spacing
+      None => style.border_spacing_vertical
+    }
+    { ..style, border_spacing, border_spacing_vertical }
   } else {
     style
   }
-  // Handle table cell rowspan/colspan attributes
+  // Handle table cell rowspan/colspan attributes + cellpadding
   let style = if cell_tag == "td" || cell_tag == "th" {
     let rowspan = match elem.attributes.get("rowspan") {
       Some(val) => {
@@ -5412,7 +5466,26 @@ fn element_to_node_with_styles_internal(
       }
       None => 1
     }
-    { ..style, rowspan, colspan }
+    // Apply cellpadding from ancestor table (only if CSS didn't set padding)
+    let mut s = { ..style, rowspan, colspan }
+    let cp = current_cellpadding.val
+    if cp >= 0.0 {
+      let default_pad = @types.Dimension::Length(0.0)
+      let has_css_padding = s.padding.top != @types.Dimension::Auto &&
+        s.padding.top != default_pad
+      if not(has_css_padding) {
+        s = {
+          ..s,
+          padding: {
+            top: @types.Dimension::Length(cp),
+            right: @types.Dimension::Length(cp),
+            bottom: @types.Dimension::Length(cp),
+            left: @types.Dimension::Length(cp),
+          },
+        }
+      }
+    }
+    s
   } else {
     style
   }
@@ -6834,7 +6907,7 @@ fn get_ua_default_style(tag : String) -> @style.Style {
       {
         ..default_style,
         display: @types.TableCell,
-        vertical_align: @style.Middle,
+        vertical_align: @style.Baseline,
         text_align: @style.TextAlign::Left, // UA default: start (left for LTR)
       }
     "th" =>
@@ -7095,6 +7168,18 @@ fn compute_element_style_indexed(
         "center" => style = { ..style, text_align: @style.TextAlign::Center }
         "right" => style = { ..style, text_align: @style.TextAlign::Right }
         "left" => style = { ..style, text_align: @style.TextAlign::Left }
+        _ => ()
+      }
+    None => ()
+  }
+  // HTML valign attribute → vertical-align CSS
+  match selector_elem.get_attribute("valign") {
+    Some(valign_value) =>
+      match valign_value.to_lower() {
+        "top" => style = { ..style, vertical_align: @style.Top }
+        "middle" => style = { ..style, vertical_align: @style.Middle }
+        "bottom" => style = { ..style, vertical_align: @style.Bottom }
+        "baseline" => style = { ..style, vertical_align: @style.Baseline }
         _ => ()
       }
     None => ()
