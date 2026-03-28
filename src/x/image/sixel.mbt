@@ -393,6 +393,66 @@ pub fn Framebuffer::draw_text(
 }
 
 ///|
+/// Draw text with clipping support (bitmap font fallback)
+fn draw_text_clipped(
+  fb : Framebuffer,
+  x : Int,
+  y : Int,
+  text : String,
+  max_width : Int,
+  color : Int,
+  scale : Int,
+  clip : ClipRect?,
+) -> Int {
+  match clip {
+    None => fb.draw_text(x, y, text, max_width, color, scale)
+    Some(_) => {
+      // For bitmap font, we draw normally but use set_pixel which bounds-checks.
+      // To clip, we temporarily render to the framebuffer but only write pixels in clip.
+      let char_h = font_height * scale
+      let mut cur_x = x
+      let mut cur_y = y
+      let mut max_y = y + char_h
+      for c in text {
+        if c == '\n' {
+          cur_x = x
+          cur_y = cur_y + char_h
+          max_y = cur_y + char_h
+          continue
+        }
+        if c == '\r' {
+          continue
+        }
+        let char_w = if is_wide_char(c) {
+          font_width * 2 * scale
+        } else {
+          font_width * scale
+        }
+        if max_width > 0 && cur_x + char_w > x + max_width {
+          cur_x = x
+          cur_y = cur_y + char_h
+          max_y = cur_y + char_h
+        }
+        // Only draw if any part might be visible
+        if pixel_in_clip(clip, cur_x, cur_y) ||
+          pixel_in_clip(clip, cur_x + char_w - 1, cur_y + char_h - 1) {
+          let drawn_w = fb.draw_char(cur_x, cur_y, c, color, scale)
+          cur_x = cur_x + drawn_w
+        } else {
+          let char_w2 = if is_wide_char(c) {
+            font_width * 2 * scale
+          } else {
+            font_width * scale
+          }
+          cur_x = cur_x + char_w2
+        }
+      }
+      max_y - y
+    }
+  }
+}
+
+///|
 /// Color palette for Sixel output
 priv struct Palette {
   colors : Array[Color]
@@ -936,6 +996,18 @@ fn color_hash(c : Color) -> Int {
 }
 
 ///|
+/// Quantize a color channel to reduce palette entries
+/// Rounds to nearest multiple of step (e.g., step=4 gives 64 levels per channel)
+fn quantize_channel(v : Int, step : Int) -> Int {
+  let q = (v + step / 2) / step * step
+  if q > 255 {
+    255
+  } else {
+    q
+  }
+}
+
+///|
 /// Get or add a color to the palette, returns palette index
 fn DynamicPalette::get_or_add(self : DynamicPalette, c : Color) -> Int {
   let hash = color_hash(c)
@@ -943,14 +1015,22 @@ fn DynamicPalette::get_or_add(self : DynamicPalette, c : Color) -> Int {
     Some(idx) => idx
     None => {
       let idx = self.colors.length()
-      // Sixel supports up to 256 colors
-      if idx < 256 {
+      if idx < 4096 {
         self.colors.push(c)
         self.color_map.set(hash, idx)
         idx
       } else {
-        // Fallback: find closest color (simple approach: return last)
-        idx - 1
+        // Palette full — quantize and find nearest existing entry
+        let qc : Color = {
+          r: quantize_channel(c.r, 8),
+          g: quantize_channel(c.g, 8),
+          b: quantize_channel(c.b, 8),
+        }
+        let qhash = color_hash(qc)
+        match self.color_map.get(qhash) {
+          Some(qi) => qi
+          None => idx - 1
+        }
       }
     }
   }
@@ -975,6 +1055,313 @@ fn collect_colors(palette : DynamicPalette, node : @paint.PaintNode) -> Unit {
 }
 
 ///|
+/// Clip rectangle for overflow clipping.
+/// None means no clipping (full framebuffer).
+pub(all) struct ClipRect {
+  x : Int
+  y : Int
+  w : Int
+  h : Int
+}
+
+///|
+/// Intersect two clip rectangles. Returns None if they don't overlap.
+fn clip_intersect(a : ClipRect, b : ClipRect) -> ClipRect? {
+  let x1 = @cmp.maximum(a.x, b.x)
+  let y1 = @cmp.maximum(a.y, b.y)
+  let x2 = @cmp.minimum(a.x + a.w, b.x + b.w)
+  let y2 = @cmp.minimum(a.y + a.h, b.y + b.h)
+  if x2 > x1 && y2 > y1 {
+    Some({ x: x1, y: y1, w: x2 - x1, h: y2 - y1 })
+  } else {
+    None
+  }
+}
+
+///|
+/// Check if a pixel is inside the clip rect
+fn pixel_in_clip(clip : ClipRect?, px : Int, py : Int) -> Bool {
+  match clip {
+    None => true
+    Some(c) => px >= c.x && px < c.x + c.w && py >= c.y && py < c.y + c.h
+  }
+}
+
+///|
+/// Fill a rect clipped to the given clip rectangle
+fn fill_rect_clipped(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  x : Int,
+  y : Int,
+  w : Int,
+  h : Int,
+  color : @types.Color,
+  opacity : Double,
+  clip : ClipRect?,
+) -> Unit {
+  match clip {
+    None => fill_rect_with_types_color(fb, palette, x, y, w, h, color, opacity)
+    Some(c) => {
+      let cx1 = @cmp.maximum(x, c.x)
+      let cy1 = @cmp.maximum(y, c.y)
+      let cx2 = @cmp.minimum(x + w, c.x + c.w)
+      let cy2 = @cmp.minimum(y + h, c.y + c.h)
+      if cx2 > cx1 && cy2 > cy1 {
+        fill_rect_with_types_color(
+          fb,
+          palette,
+          cx1,
+          cy1,
+          cx2 - cx1,
+          cy2 - cy1,
+          color,
+          opacity,
+        )
+      }
+    }
+  }
+}
+
+///|
+/// Check if a pixel is outside a rounded corner.
+/// Returns true if the pixel should be skipped (is in corner cutout).
+fn is_in_rounded_corner(
+  px : Int,
+  py : Int,
+  rect_x : Int,
+  rect_y : Int,
+  rect_w : Int,
+  rect_h : Int,
+  tl : Int,
+  tr : Int,
+  br : Int,
+  bl : Int,
+) -> Bool {
+  let lx = px - rect_x // local x within rect
+  let ly = py - rect_y // local y within rect
+  // Top-left corner
+  if tl > 0 && lx < tl && ly < tl {
+    let dx = tl - lx
+    let dy = tl - ly
+    if dx * dx + dy * dy > tl * tl {
+      return true
+    }
+  }
+  // Top-right corner
+  if tr > 0 && lx >= rect_w - tr && ly < tr {
+    let dx = lx - (rect_w - tr - 1)
+    let dy = tr - ly
+    if dx * dx + dy * dy > tr * tr {
+      return true
+    }
+  }
+  // Bottom-right corner
+  if br > 0 && lx >= rect_w - br && ly >= rect_h - br {
+    let dx = lx - (rect_w - br - 1)
+    let dy = ly - (rect_h - br - 1)
+    if dx * dx + dy * dy > br * br {
+      return true
+    }
+  }
+  // Bottom-left corner
+  if bl > 0 && lx < bl && ly >= rect_h - bl {
+    let dx = bl - lx
+    let dy = ly - (rect_h - bl - 1)
+    if dx * dx + dy * dy > bl * bl {
+      return true
+    }
+  }
+  false
+}
+
+///|
+/// Fill a rounded rect (with optional clip)
+fn fill_rounded_rect_clipped(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  x : Int,
+  y : Int,
+  w : Int,
+  h : Int,
+  color : @types.Color,
+  opacity : Double,
+  clip : ClipRect?,
+  tl : Int,
+  tr : Int,
+  br : Int,
+  bl : Int,
+) -> Unit {
+  let alpha = effective_alpha_byte(color, opacity)
+  if alpha <= 0 {
+    return
+  }
+  let src = types_color_to_sixel(color)
+  // Determine draw bounds (intersect with clip)
+  let x1 = match clip {
+    Some(c) => @cmp.maximum(x, c.x)
+    None => x
+  }
+  let y1 = match clip {
+    Some(c) => @cmp.maximum(y, c.y)
+    None => y
+  }
+  let x2 = match clip {
+    Some(c) => @cmp.minimum(x + w, c.x + c.w)
+    None => x + w
+  }
+  let y2 = match clip {
+    Some(c) => @cmp.minimum(y + h, c.y + c.h)
+    None => y + h
+  }
+  if x2 <= x1 || y2 <= y1 {
+    return
+  }
+  if alpha >= 255 {
+    let idx = palette.get_or_add(src)
+    for py = y1; py < y2; py = py + 1 {
+      for px = x1; px < x2; px = px + 1 {
+        if not(is_in_rounded_corner(px, py, x, y, w, h, tl, tr, br, bl)) {
+          fb.set_pixel(px, py, idx)
+        }
+      }
+    }
+  } else {
+    for py = y1; py < y2; py = py + 1 {
+      for px = x1; px < x2; px = px + 1 {
+        if not(is_in_rounded_corner(px, py, x, y, w, h, tl, tr, br, bl)) {
+          blend_types_color_over_pixel(fb, palette, px, py, color, opacity)
+        }
+      }
+    }
+  }
+}
+
+///|
+/// Interpolate between two colors at position t (0.0-1.0)
+fn lerp_color(a : @types.Color, b : @types.Color, t : Double) -> @types.Color {
+  let r = (a.r.to_double() * (1.0 - t) + b.r.to_double() * t).to_int()
+  let g = (a.g.to_double() * (1.0 - t) + b.g.to_double() * t).to_int()
+  let b_val = (a.b.to_double() * (1.0 - t) + b.b.to_double() * t).to_int()
+  let alpha = a.a * (1.0 - t) + b.a * t
+  @types.Color::rgba(clamp_byte(r), clamp_byte(g), clamp_byte(b_val), alpha)
+}
+
+///|
+/// Sample a gradient at position t (0.0-1.0)
+fn sample_gradient(grad : @types.LinearGradient, t : Double) -> @types.Color {
+  let stops = grad.stops
+  if stops.length() == 0 {
+    return @types.Color::transparent()
+  }
+  if t <= stops[0].position {
+    return stops[0].color
+  }
+  let last = stops.length() - 1
+  if t >= stops[last].position {
+    return stops[last].color
+  }
+  // Find the two stops that bracket t
+  for i = 0; i < last; i = i + 1 {
+    if t >= stops[i].position && t <= stops[i + 1].position {
+      let range = stops[i + 1].position - stops[i].position
+      let local_t = if range > 0.0 {
+        (t - stops[i].position) / range
+      } else {
+        0.0
+      }
+      return lerp_color(stops[i].color, stops[i + 1].color, local_t)
+    }
+  }
+  stops[last].color
+}
+
+///|
+/// Fill a rect with a linear gradient (with optional clip and border-radius)
+fn fill_linear_gradient_clipped(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  x : Int,
+  y : Int,
+  w : Int,
+  h : Int,
+  grad : @types.LinearGradient,
+  opacity : Double,
+  clip : ClipRect?,
+  tl : Int,
+  tr : Int,
+  br : Int,
+  bl : Int,
+) -> Unit {
+  // Determine draw bounds
+  let x1 = match clip {
+    Some(c) => @cmp.maximum(x, c.x)
+    None => x
+  }
+  let y1 = match clip {
+    Some(c) => @cmp.maximum(y, c.y)
+    None => y
+  }
+  let x2 = match clip {
+    Some(c) => @cmp.minimum(x + w, c.x + c.w)
+    None => x + w
+  }
+  let y2 = match clip {
+    Some(c) => @cmp.minimum(y + h, c.y + c.h)
+    None => y + h
+  }
+  if x2 <= x1 || y2 <= y1 {
+    return
+  }
+  let has_radius = tl > 0 || tr > 0 || br > 0 || bl > 0
+  // Convert angle to direction vector
+  // CSS gradient angles: 0deg = to top, 90deg = to right, 180deg = to bottom
+  let pi = 3.14159265358979
+  let rad = (grad.angle_deg - 90.0) * pi / 180.0
+  let dx = @math.cos(rad)
+  let dy = @math.sin(rad)
+  // Project rect corners onto gradient line to find the extent
+  let cx = w.to_double() / 2.0
+  let cy = h.to_double() / 2.0
+  let half_len = (cx * dx.abs() + cy * dy.abs()).abs()
+  let inv_len = if half_len > 0.001 { 1.0 / (2.0 * half_len) } else { 0.0 }
+  for py = y1; py < y2; py = py + 1 {
+    let fy = (py - y).to_double() - cy
+    for px = x1; px < x2; px = px + 1 {
+      if has_radius && is_in_rounded_corner(px, py, x, y, w, h, tl, tr, br, bl) {
+        continue
+      }
+      let fx = (px - x).to_double() - cx
+      let proj = fx * dx + fy * dy
+      let t = (proj + half_len) * inv_len
+      // Clamp t
+      let tc = if t < 0.0 { 0.0 } else if t > 1.0 { 1.0 } else { t }
+      let color = sample_gradient(grad, tc)
+      if color.a > 0.0 {
+        if opacity >= 1.0 && color.a >= 1.0 {
+          let idx = palette.get_or_add(types_color_to_sixel(color))
+          fb.set_pixel(px, py, idx)
+        } else {
+          blend_types_color_over_pixel(fb, palette, px, py, color, opacity)
+        }
+      }
+    }
+  }
+}
+
+///|
+/// Resolve border-radius value: negative means percentage of reference dimension
+fn resolve_radius(val : Double, ref_dim : Int) -> Int {
+  if val < 0.0 {
+    // Negative encodes percentage: -0.5 means 50%
+    let frac = -val
+    (frac * ref_dim.to_double()).to_int()
+  } else {
+    val.to_int()
+  }
+}
+
+///|
 /// Render a PaintNode tree to framebuffer
 fn render_paint_node(
   fb : Framebuffer,
@@ -982,6 +1369,19 @@ fn render_paint_node(
   node : @paint.PaintNode,
   parent_x : Double,
   parent_y : Double,
+) -> Unit {
+  render_paint_node_clipped(fb, palette, node, parent_x, parent_y, None)
+}
+
+///|
+/// Render a PaintNode tree to framebuffer with optional clip rect
+fn render_paint_node_clipped(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  node : @paint.PaintNode,
+  parent_x : Double,
+  parent_y : Double,
+  clip : ClipRect?,
 ) -> Unit {
   // Skip invisible nodes
   if not(node.paint.should_render()) {
@@ -997,22 +1397,18 @@ fn render_paint_node(
   // Skip zero-sized nodes
   if w <= 0 || h <= 0 {
     for child in node.children {
-      render_paint_node(fb, palette, child, abs_x, abs_y)
+      render_paint_node_clipped(fb, palette, child, abs_x, abs_y, clip)
     }
     return
   }
 
   // Skip "visually hidden" accessibility pattern:
   // Elements with clip/overflow clipping and very small size (1px x 1px)
-  // This is commonly used to hide content visually while keeping it for screen readers
   if node.clips_content() && w <= 1 && h <= 1 {
     return
   }
 
-  // WORKAROUND: Skip very small elements that are likely visually hidden
-  // TODO: Properly implement clip rect rendering and overflow clipping
-  // - 1x1 or smaller elements (common visually hidden pattern)
-  // - Text nodes with width <= 1 (text inside visually hidden containers)
+  // Skip very small elements that are likely visually hidden
   if w <= 1 && h <= 1 {
     return
   }
@@ -1020,18 +1416,73 @@ fn render_paint_node(
     return
   }
 
-  // Draw background with alpha-aware compositing.
-  if not(node.paint.background_color.is_transparent()) {
-    fill_rect_with_types_color(
-      fb,
-      palette,
-      x,
-      y,
-      w,
-      h,
-      node.paint.background_color,
-      node.paint.opacity,
-    )
+  // If there's a clip rect, check if this node is fully outside it
+  match clip {
+    Some(c) =>
+      if x >= c.x + c.w || y >= c.y + c.h || x + w <= c.x || y + h <= c.y {
+        return
+      }
+    None => ()
+  }
+
+  // Compute border-radius values (negative means percentage)
+  let min_dim = @cmp.minimum(w, h)
+  let tl_r = resolve_radius(node.paint.border_top_left_radius, min_dim)
+  let tr_r = resolve_radius(node.paint.border_top_right_radius, min_dim)
+  let br_r = resolve_radius(node.paint.border_bottom_right_radius, min_dim)
+  let bl_r = resolve_radius(node.paint.border_bottom_left_radius, min_dim)
+  let has_radius = tl_r > 0 || tr_r > 0 || br_r > 0 || bl_r > 0
+
+  // Draw background: gradient or solid color
+  match node.paint.background_image {
+    @types.Gradient(grad) =>
+      fill_linear_gradient_clipped(
+        fb,
+        palette,
+        x,
+        y,
+        w,
+        h,
+        grad,
+        node.paint.opacity,
+        clip,
+        tl_r,
+        tr_r,
+        br_r,
+        bl_r,
+      )
+    @types.None =>
+      if not(node.paint.background_color.is_transparent()) {
+        if has_radius {
+          fill_rounded_rect_clipped(
+            fb,
+            palette,
+            x,
+            y,
+            w,
+            h,
+            node.paint.background_color,
+            node.paint.opacity,
+            clip,
+            tl_r,
+            tr_r,
+            br_r,
+            bl_r,
+          )
+        } else {
+          fill_rect_clipped(
+            fb,
+            palette,
+            x,
+            y,
+            w,
+            h,
+            node.paint.background_color,
+            node.paint.opacity,
+            clip,
+          )
+        }
+      }
   }
 
   // Draw text if this is a text node
@@ -1045,7 +1496,7 @@ fn render_paint_node(
             node.paint.color.b,
           )
           let font_size = node.paint.font_size
-          let _ = draw_text_with_glyphs(
+          let _ = draw_text_with_glyphs_clipped(
             fb,
             palette,
             provider,
@@ -1057,6 +1508,7 @@ fn render_paint_node(
             font_size,
             font_size,
             node.paint.is_bold,
+            clip,
           )
         }
         None => {
@@ -1064,15 +1516,34 @@ fn render_paint_node(
             types_color_to_sixel(node.paint.color),
           )
           let scale = 1
-          let _ = fb.draw_text(x, y, text_content, w, text_idx, scale)
+          let _ = draw_text_clipped(
+            fb, x, y, text_content, w, text_idx, scale, clip,
+          )
         }
       }
     None => ()
   }
 
-  // Render children
+  // Compute child clip: if this node clips content, intersect with current clip
+  let child_clip = if node.clips_content() {
+    let node_clip : ClipRect = { x, y, w, h }
+    match clip {
+      None => Some(node_clip)
+      Some(parent_clip) => clip_intersect(parent_clip, node_clip)
+    }
+  } else {
+    clip
+  }
+
+  // If clip intersection is empty, skip all children
+  match (node.clips_content(), child_clip) {
+    (true, None) => return
+    _ => ()
+  }
+
+  // Render children with (possibly narrowed) clip
   for child in node.children {
-    render_paint_node(fb, palette, child, abs_x, abs_y)
+    render_paint_node_clipped(fb, palette, child, abs_x, abs_y, child_clip)
   }
 }
 

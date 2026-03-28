@@ -218,6 +218,7 @@ pub(all) struct Style {
   mut opacity : Double
   mut color : @types.Color
   mut background_color : @types.Color
+  mut background_image : @types.BackgroundImage
   mut contain : Contain
   mut break_before : BreakBefore
   mut break_after : BreakBefore

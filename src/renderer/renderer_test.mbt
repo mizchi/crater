@@ -2030,7 +2030,9 @@ test "Wikipedia CSS: @media print rules have media_query" {
 ///|
 test "Wikipedia actual @media print block does not leak to screen" {
   let css = "nav { display: block; } @media print{.toc,body{padding:10px;font-family:'Linux Libertine','Georgia','Times','Source Serif 4',serif}.printfooter,.mw-footer,.thumb,figure,table,ol,dl,ul,.mw-heading3,h3,.mw-heading4,h4,.mw-heading5,h5,.mw-heading6,h6{font-family:sans-serif}img{font-family:'Linux Libertine','Georgia','Times','Source Serif 4',serif}.mw-body a:not(.image){border-bottom:1px solid #aaa}.firstHeading{font-size:25pt;line-height:28pt;margin-bottom:20px;padding-bottom:5px}.firstHeading,.mw-heading2,:not(.mw-heading2) h2{overflow:hidden;border-bottom:2px solid var(--color-emphasized,#101418)}.mw-heading3,h3,.mw-heading4,h4,.mw-heading5,h5,.mw-heading6,h6{margin:30px 0 0}.mw-heading2,h2,.mw-heading3,h3,.mw-heading4,h4,.mw-heading5,h5,.mw-heading6,h6{padding:0;position:relative}.mw-heading2,h2{font-size:18pt;line-height:24pt;margin-bottom:0.25em}.mw-heading3,h3{font-size:14pt;line-height:20pt}.mw-heading4,h4,.mw-heading5,h5,.mw-heading6,h6{font-size:12pt;line-height:16pt}p{font-size:12pt;line-height:16pt;margin-top:5px;text-align:justify}p::before{content:'';display:block;width:120pt;overflow:hidden;page-break-after:avoid}blockquote{border-left:2px solid var(--color-emphasized,#101418);padding-left:20px}ol,ul{margin:10px 0 0 1.6em;padding:0}ol li,ul li{padding:2px 0;font-size:12pt}table ol li,table ul li{font-size:inherit}.toc{page-break-before:avoid;page-break-after:avoid;background:none;border:0;display:table}.toc a{border:0;font-weight:normal}.toc > ul > li{margin-bottom:4px;font-weight:bold}.toc ul{margin:0;list-style:none}.toc ul ul{padding-left:30px}.toc li.toclevel-1 > a{font-size:12pt;font-weight:bold}#mw-navigation,.noprint,.mw-jump-link,.mw-portlet-lang,.toc .tocnumber{display:none}.printfooter{margin-top:10px;border-top:3px solid var(--color-emphasized,#101418);padding-top:10px;font-size:10pt;clear:both}.mw-footer{margin-top:12px;border-top:1px solid #eee;padding-top:5px}#footer-info{margin:0;padding:0}#footer-info li{color:#999;list-style:none;display:block;padding-bottom:10px;font-size:10pt}#footer-info li a{color:#999 !important}#footer-info-lastmod{color:var(--color-emphasized,#101418);font-size:12pt;font-weight:bold}.vector-page-toolbar,.vector-header-start > *:not(.mw-logo),.vector-header-end,#mw-panel-toc,#vector-sticky-header,#p-lang-btn,.vector-menu-checkbox,nav,#vector-page-titlebar-toc,#footer{display:none !important}}"
-  let html = "<html><head><style>" + css + "</style></head><body><nav id=\"menu\">Menu</nav></body></html>"
+  let html = "<html><head><style>" +
+    css +
+    "</style></head><body><nav id=\"menu\">Menu</nav></body></html>"
   let ctx = @renderer.RenderContext::default()
   let node = @renderer.render_to_node(html, ctx)
   let nav = node.children[0]
@@ -2069,15 +2071,19 @@ test "table width=85% constrains content within 85% of viewport" {
   // The table inside center
   let table_node = center_node.children[0]
   inspect(table_node.style.display, content="Table")
-  inspect(table_node.style.width, content=(
-    #|Percent(0.85)
-
-  ))
+  inspect(
+    table_node.style.width,
+    content=(
+      #|Percent(0.85)
+    ),
+  )
   // Layout: table should be ~680px (85% of 800)
   let center_layout = layout.children[0]
   let table_layout = center_layout.children[0]
-  inspect(table_layout.width, content=(
-    #|680
-
-  ))
+  inspect(
+    table_layout.width,
+    content=(
+      #|680
+    ),
+  )
 }

@@ -1,4 +1,6 @@
 import {
+  "moonbitlang/core/cmp",
+  "moonbitlang/core/math",
   "mizchi/crater/layout/node",
   "mizchi/crater/paint",
   "mizchi/crater/types",

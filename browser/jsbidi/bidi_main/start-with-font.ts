@@ -33,33 +33,39 @@ const FONT_FILE_MAP: Record<string, { regular: string[]; bold: string[] }> = {
     bold: ["Arial Bold.ttf", "LiberationSans-Bold.ttf", "DejaVuSans-Bold.ttf"],
   },
   verdana: {
-    regular: ["Verdana.ttf"],
-    bold: ["Verdana Bold.ttf"],
+    regular: ["Verdana.ttf", "DejaVuSans.ttf", "LiberationSans-Regular.ttf"],
+    bold: ["Verdana Bold.ttf", "DejaVuSans-Bold.ttf", "LiberationSans-Bold.ttf"],
   },
   georgia: {
-    regular: ["Georgia.ttf"],
-    bold: ["Georgia Bold.ttf"],
+    regular: ["Georgia.ttf", "DejaVuSerif.ttf", "LiberationSerif-Regular.ttf", "FreeSerif.ttf"],
+    bold: ["Georgia Bold.ttf", "DejaVuSerif-Bold.ttf", "LiberationSerif-Bold.ttf", "FreeSerifBold.ttf"],
   },
   "times new roman": {
-    regular: ["Times New Roman.ttf", "LiberationSerif-Regular.ttf"],
-    bold: ["Times New Roman Bold.ttf", "LiberationSerif-Bold.ttf"],
+    regular: ["Times New Roman.ttf", "LiberationSerif-Regular.ttf", "DejaVuSerif.ttf"],
+    bold: ["Times New Roman Bold.ttf", "LiberationSerif-Bold.ttf", "DejaVuSerif-Bold.ttf"],
   },
   "courier new": {
     regular: ["Courier New.ttf", "LiberationMono-Regular.ttf", "DejaVuSansMono.ttf"],
-    bold: ["Courier New Bold.ttf", "LiberationMono-Bold.ttf"],
+    bold: ["Courier New Bold.ttf", "LiberationMono-Bold.ttf", "DejaVuSansMono-Bold.ttf"],
   },
   "sans-serif": {
-    regular: ["Arial.ttf", "LiberationSans-Regular.ttf", "DejaVuSans.ttf"],
-    bold: ["Arial Bold.ttf", "LiberationSans-Bold.ttf", "DejaVuSans-Bold.ttf"],
+    regular: ["Arial.ttf", "LiberationSans-Regular.ttf", "DejaVuSans.ttf", "FreeSans.ttf"],
+    bold: ["Arial Bold.ttf", "LiberationSans-Bold.ttf", "DejaVuSans-Bold.ttf", "FreeSansBold.ttf"],
   },
 };
 const ALIASES: Record<string, string> = {
   helvetica: "arial",
   "helvetica neue": "arial",
+  geneva: "verdana",
+  "trebuchet ms": "verdana",
+  tahoma: "verdana",
   courier: "courier new",
   times: "times new roman",
   monospace: "courier new",
   serif: "times new roman",
+  "palatino linotype": "georgia",
+  palatino: "georgia",
+  "book antiqua": "georgia",
 };
 
 function findFont(fileName: string): string | null {

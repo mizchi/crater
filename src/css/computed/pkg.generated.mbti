@@ -26,6 +26,8 @@ pub fn extract_border_width(String) -> @types.Dimension
 
 pub fn initial_value(String) -> String
 
+pub fn is_grid_area_name(String) -> Bool
+
 pub fn is_inherited(String) -> Bool
 
 pub fn parse_align_self(String) -> @types.AlignSelf
@@ -68,11 +70,15 @@ pub fn parse_grid_line_shorthand(String) -> (@types.GridPlacement, @types.GridPl
 
 pub fn parse_grid_placement(String) -> @types.GridPlacement
 
+pub fn parse_grid_template_areas_value(String) -> Array[String]
+
 pub fn parse_grid_template_shorthand(String) -> (Array[@types.TrackSizingFunction], Array[@types.TrackSizingFunction])?
 
 pub fn parse_grid_template_tracks(String) -> Array[@types.TrackSizingFunction]
 
 pub fn parse_integer(String) -> Int
+
+pub fn parse_linear_gradient(String) -> @types.BackgroundImage
 
 pub fn parse_number(String) -> Double
 

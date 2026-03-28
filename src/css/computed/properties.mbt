@@ -928,8 +928,11 @@ pub fn parse_grid_template_areas_value(value : String) -> Array[String] {
 /// Check if a value is a named grid area identifier (not a number, auto, or span keyword)
 pub fn is_grid_area_name(value : String) -> Bool {
   let v = value.trim().to_lower()
-  if v == "auto" || v == "none" || v == "inherit" || v == "initial" || v ==
-    "unset" {
+  if v == "auto" ||
+    v == "none" ||
+    v == "inherit" ||
+    v == "initial" ||
+    v == "unset" {
     return false
   }
   if v.has_prefix("span") {
