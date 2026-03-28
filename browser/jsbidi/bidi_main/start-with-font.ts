@@ -290,6 +290,27 @@ if (!defaultFont) {
     );
     console.error(`[font] Bold glyph provider installed`);
   }
+
+  // Multi-font glyph providers for sixel rendering
+  (globalThis as any).__craterGlyphForFamily = (cp: number, fs: number, isBold: boolean, ff: string) => {
+    const font = getFontInstance(ff || "sans-serif", isBold);
+    if (!font || !font.glyphToSvgPath) return "";
+    return font.glyphToSvgPath(cp, fs);
+  };
+  (globalThis as any).__craterAdvanceForFamily = (cp: number, fs: number, isBold: boolean, ff: string) => {
+    const font = getFontInstance(ff || "sans-serif", isBold);
+    if (!font || !font.glyphAdvance) return fs * 0.5;
+    return font.glyphAdvance(cp, fs);
+  };
+  (globalThis as any).__craterKernForFamily = (cp1: number, cp2: number, fs: number, isBold: boolean, ff: string) => {
+    const font = getFontInstance(ff || "sans-serif", isBold);
+    if (!font || !font.kernAdvance) return 0;
+    return font.kernAdvance(cp1, cp2, fs);
+  };
+  (globalThis as any).__craterAscentForFamily = (ff: string) => {
+    const font = getFontInstance(ff || "sans-serif", false);
+    return font ? font.ascentRatio : 0.8;
+  };
 }
 
 console.error(`[font] ${fontCache.size} font families loaded`);

@@ -1509,6 +1509,7 @@ fn render_paint_node_clipped(
             font_size,
             node.paint.is_bold,
             clip,
+            font_family=node.paint.font_family,
           )
         }
         None => {

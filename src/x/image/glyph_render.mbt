@@ -12,6 +12,13 @@ pub(all) struct GlyphProvider {
   get_kern : (Int, Int, Double, Bool) -> Double
   /// Font ascent in pixels at font_size=1. Multiply by actual font_size.
   ascent_ratio : Double // ascent / units_per_em (e.g. 1854/2048 ≈ 0.905)
+  /// Multi-font glyph provider. Args: (codepoint, font_size, is_bold, font_family).
+  /// Returns (commands, advance_width) or None to fall back to get_glyph.
+  get_glyph_for_family : ((Int, Double, Bool, String) -> (Array[@svg.PathCommand], Double)?)?
+  /// Multi-font kerning. Args: (cp1, cp2, font_size, is_bold, font_family).
+  get_kern_for_family : ((Int, Int, Double, Bool, String) -> Double)?
+  /// Multi-font ascent ratio. Args: (font_family) -> ratio.
+  get_ascent_for_family : ((String) -> Double)?
 }
 
 ///|
@@ -70,6 +77,9 @@ pub fn glyph_provider_from_font(font : @font.TTFont) -> GlyphProvider {
       kern.to_double() * font_size / units_per_em
     },
     ascent_ratio,
+    get_glyph_for_family: None,
+    get_kern_for_family: None,
+    get_ascent_for_family: None,
   }
 }
 
@@ -99,6 +109,7 @@ fn draw_text_with_glyphs(
   font_size : Double,
   line_height : Double,
   is_bold : Bool,
+  font_family? : String = "",
 ) -> Int {
   let setter : @svg.PixelSetter = {
     set: fn(px, py, c) {
@@ -115,7 +126,10 @@ fn draw_text_with_glyphs(
     font_size
   }
   // Baseline offset: glyphs have Y=0 at baseline, negative Y for ascenders
-  let baseline_offset = provider.ascent_ratio * font_size
+  let baseline_offset = match provider.get_ascent_for_family {
+    Some(get_ascent) if font_family.length() > 0 => get_ascent(font_family) * font_size
+    _ => provider.ascent_ratio * font_size
+  }
   let max_x_limit = if max_width > 0 {
     (x + max_width).to_double()
   } else {
@@ -161,9 +175,21 @@ fn draw_text_with_glyphs(
       let cp = c.to_int()
       // Apply kerning between consecutive characters
       if prev_cp != 0 {
-        cur_x = cur_x + (provider.get_kern)(prev_cp, cp, font_size, is_bold)
+        let kern = match provider.get_kern_for_family {
+          Some(kern_fn) if font_family.length() > 0 =>
+            kern_fn(prev_cp, cp, font_size, is_bold, font_family)
+          _ => (provider.get_kern)(prev_cp, cp, font_size, is_bold)
+        }
+        cur_x = cur_x + kern
       }
-      let (commands, advance) = (provider.get_glyph)(cp, font_size, is_bold)
+      let (commands, advance) = match provider.get_glyph_for_family {
+        Some(glyph_fn) if font_family.length() > 0 =>
+          match glyph_fn(cp, font_size, is_bold, font_family) {
+            Some(result) => result
+            None => (provider.get_glyph)(cp, font_size, is_bold)
+          }
+        _ => (provider.get_glyph)(cp, font_size, is_bold)
+      }
       if commands.length() > 0 {
         let translated = translate_path_commands(
           commands,
@@ -282,6 +308,7 @@ fn draw_text_with_glyphs_clipped(
   line_height : Double,
   is_bold : Bool,
   clip : ClipRect?,
+  font_family? : String = "",
 ) -> Int {
   let setter : @svg.PixelSetter = {
     set: fn(px, py, c) {
@@ -301,7 +328,10 @@ fn draw_text_with_glyphs_clipped(
   } else {
     font_size
   }
-  let baseline_offset = provider.ascent_ratio * font_size
+  let baseline_offset = match provider.get_ascent_for_family {
+    Some(get_ascent) if font_family.length() > 0 => get_ascent(font_family) * font_size
+    _ => provider.ascent_ratio * font_size
+  }
   let max_x_limit = if max_width > 0 {
     (x + max_width).to_double()
   } else {
@@ -339,9 +369,21 @@ fn draw_text_with_glyphs_clipped(
     for c in word {
       let cp = c.to_int()
       if prev_cp != 0 {
-        cur_x = cur_x + (provider.get_kern)(prev_cp, cp, font_size, is_bold)
+        let kern = match provider.get_kern_for_family {
+          Some(kern_fn) if font_family.length() > 0 =>
+            kern_fn(prev_cp, cp, font_size, is_bold, font_family)
+          _ => (provider.get_kern)(prev_cp, cp, font_size, is_bold)
+        }
+        cur_x = cur_x + kern
       }
-      let (commands, advance) = (provider.get_glyph)(cp, font_size, is_bold)
+      let (commands, advance) = match provider.get_glyph_for_family {
+        Some(glyph_fn) if font_family.length() > 0 =>
+          match glyph_fn(cp, font_size, is_bold, font_family) {
+            Some(result) => result
+            None => (provider.get_glyph)(cp, font_size, is_bold)
+          }
+        _ => (provider.get_glyph)(cp, font_size, is_bold)
+      }
       if commands.length() > 0 {
         let translated = translate_path_commands(
           commands,

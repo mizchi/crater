@@ -164,6 +164,39 @@ extern "js" fn js_font_ascent_ratio() -> Double =
   #|}
 
 ///|
+/// Multi-font glyph: get SVG path for a codepoint using font_family
+extern "js" fn js_glyph_for_family(codepoint : Int, font_size : Double, is_bold : Bool, font_family : String) -> String =
+  #|(cp, fs, bold, ff) => {
+  #|  const fn = globalThis.__craterGlyphForFamily;
+  #|  if (typeof fn !== "function") return "";
+  #|  try { return String(fn(cp, fs, bold, ff) || ""); } catch { return ""; }
+  #|}
+
+///|
+extern "js" fn js_advance_for_family(codepoint : Int, font_size : Double, is_bold : Bool, font_family : String) -> Double =
+  #|(cp, fs, bold, ff) => {
+  #|  const fn = globalThis.__craterAdvanceForFamily;
+  #|  if (typeof fn !== "function") return fs * 0.5;
+  #|  try { const v = Number(fn(cp, fs, bold, ff)); return Number.isFinite(v) ? v : fs * 0.5; } catch { return fs * 0.5; }
+  #|}
+
+///|
+extern "js" fn js_kern_for_family(cp1 : Int, cp2 : Int, font_size : Double, is_bold : Bool, font_family : String) -> Double =
+  #|(cp1, cp2, fs, bold, ff) => {
+  #|  const fn = globalThis.__craterKernForFamily;
+  #|  if (typeof fn !== "function") return 0;
+  #|  try { const v = Number(fn(cp1, cp2, fs, bold, ff)); return Number.isFinite(v) ? v : 0; } catch { return 0; }
+  #|}
+
+///|
+extern "js" fn js_ascent_for_family(font_family : String) -> Double =
+  #|(ff) => {
+  #|  const fn = globalThis.__craterAscentForFamily;
+  #|  if (typeof fn !== "function") return 0.8;
+  #|  try { const v = Number(fn(ff)); return Number.isFinite(v) ? v : 0.8; } catch { return 0.8; }
+  #|}
+
+///|
 extern "js" fn has_bold_text_provider() -> Bool =
   #|() => typeof globalThis.__craterMeasureTextIntrinsicBold === "function"
 
@@ -225,11 +258,16 @@ fn ensure_paint_text_provider() -> Unit {
       let ff = font_family
       {
         func: fn(available_width, available_height) {
-          // Multi-font metrics are disabled for now because glyph rendering
-          // (SVG path drawing) only supports the default font (Arial).
-          // Using different fonts for metrics vs rendering causes MORE diff.
-          // TODO: Enable when glyph rendering supports multi-font.
-          let use_multi = false
+          // Use multi-font metrics when a specific font family is set
+          // and it's not a default/generic family (Arial handles those).
+          let ff_lower = ff.to_lower()
+          let use_multi = ff_lower.length() > 0 &&
+            not(ff_lower.has_prefix("arial")) &&
+            not(ff_lower.has_prefix("sans-serif")) &&
+            not(ff_lower.has_prefix("serif")) &&
+            not(ff_lower.has_prefix("monospace")) &&
+            not(ff_lower.has_prefix("inherit")) &&
+            not(ff_lower.has_prefix("\"arial"))
           let payload = if use_multi {
             let multi = call_font_aware_text_provider(
               text, font_size, line_height, ws, wm, available_width,
@@ -325,6 +363,21 @@ fn ensure_paint_provider_initialized() -> Unit {
         let commands = @svg.parse_path(svg_path)
         (commands, advance)
       },
+      get_glyph_for_family: Some(fn(codepoint, font_size, is_bold, font_family) {
+        let svg_path = js_glyph_for_family(codepoint, font_size, is_bold, font_family)
+        if svg_path.length() == 0 {
+          return None
+        }
+        let advance = js_advance_for_family(codepoint, font_size, is_bold, font_family)
+        let commands = @svg.parse_path(svg_path)
+        Some((commands, advance))
+      }),
+      get_kern_for_family: Some(fn(cp1, cp2, font_size, is_bold, font_family) {
+        js_kern_for_family(cp1, cp2, font_size, is_bold, font_family)
+      }),
+      get_ascent_for_family: Some(fn(font_family) {
+        js_ascent_for_family(font_family)
+      }),
     }
     @image.set_glyph_provider(glyph_provider)
   }
