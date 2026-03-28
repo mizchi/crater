@@ -137,12 +137,28 @@ pub fn RenderContext::default() -> RenderContext {
 ///|
 /// Text metrics provider hook for integrating external font engines.
 pub struct TextMetricsProvider {
-  func : (String, Double, Double, @style.WhiteSpace, @style.WritingMode, Double, String) -> @types.MeasureFunc
+  func : (
+    String,
+    Double,
+    Double,
+    @style.WhiteSpace,
+    @style.WritingMode,
+    Double,
+    String,
+  ) -> @types.MeasureFunc
 }
 
 ///|
 pub fn TextMetricsProvider::new(
-  func : (String, Double, Double, @style.WhiteSpace, @style.WritingMode, Double, String) -> @types.MeasureFunc,
+  func : (
+    String,
+    Double,
+    Double,
+    @style.WhiteSpace,
+    @style.WritingMode,
+    Double,
+    String,
+  ) -> @types.MeasureFunc,
 ) -> TextMetricsProvider {
   { func, }
 }
@@ -313,7 +329,8 @@ fn create_text_measure_with_provider(
         )
       } else {
         (provider.func)(
-          text, font_size, text_line_height, white_space, writing_mode, font_weight, font_family,
+          text, font_size, text_line_height, white_space, writing_mode, font_weight,
+          font_family,
         )
       }
     None =>
@@ -2945,8 +2962,14 @@ fn PseudoRuleIndex::get_candidates(
 /// Viewport culling: estimated cumulative Y position during build_node.
 /// Elements estimated below viewport_cutoff use skeleton mode (fast path).
 let viewport_estimated_y : Ref[Double] = { val: 0.0 }
+
+///|
 let viewport_cutoff : Ref[Double] = { val: 1.0e10 }
+
+///|
 let viewport_skeleton_count : Ref[Int] = { val: 0 }
+
+///|
 let empty_indexed_stylesheets : Ref[Array[@cascade.IndexedStylesheet]] = {
   val: [],
 }
@@ -2955,6 +2978,8 @@ let empty_indexed_stylesheets : Ref[Array[@cascade.IndexedStylesheet]] = {
 let active_before_index : Ref[PseudoRuleIndex] = {
   val: { rules: [], by_id: {}, by_class: {}, by_tag: {}, universal: [] },
 }
+
+///|
 let active_after_index : Ref[PseudoRuleIndex] = {
   val: { rules: [], by_id: {}, by_class: {}, by_tag: {}, universal: [] },
 }
@@ -3066,11 +3091,16 @@ pub fn prepare_render_document(
     after_index: PseudoRuleIndex::build(after_rules),
   }
   println(
-    "[perf] css_parse=" + ((_t1 - _t0) / 1000L).to_string() +
-    "ms index=" + ((_t2 - _t1) / 1000L).to_string() +
-    "ms rules=" + total_rules.to_string() +
-    " pseudo_before=" + before_rules.length().to_string() +
-    " pseudo_after=" + after_rules.length().to_string(),
+    "[perf] css_parse=" +
+    ((_t1 - _t0) / 1000L).to_string() +
+    "ms index=" +
+    ((_t2 - _t1) / 1000L).to_string() +
+    "ms rules=" +
+    total_rules.to_string() +
+    " pseudo_before=" +
+    before_rules.length().to_string() +
+    " pseudo_after=" +
+    after_rules.length().to_string(),
   )
   prepared
 }
@@ -5217,11 +5247,19 @@ fn element_to_node_with_styles_internal(
             continue
           }
           let child_selector = html_to_selector_element_minimal(
-            child_elem, Some(selector_elem),
+            child_elem,
+            Some(selector_elem),
           )
           let child_node = element_to_node_with_styles_internal(
-            child_elem, child_selector, ctx, stylesheets, indexed_stylesheets,
-            Some(skeleton_style), css_vars, incoming_counters, owner_id,
+            child_elem,
+            child_selector,
+            ctx,
+            stylesheets,
+            indexed_stylesheets,
+            Some(skeleton_style),
+            css_vars,
+            incoming_counters,
+            owner_id,
           )
           children.push(child_node)
         }
@@ -6824,8 +6862,7 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     | "track"
     | "param" => { ..default_style, display: @types.Display::None }
     // <center> is deprecated but widely used (e.g., Hacker News)
-    "center" =>
-      { ..default_style, text_align: @style.TextAlign::Center }
+    "center" => { ..default_style, text_align: @style.TextAlign::Center }
     _ => default_style
   }
 }

@@ -107,8 +107,8 @@ pub struct PreparedRenderDocument {
   render_root : @html.Element
   render_root_tag : String
   body_uses_document_root_style : Bool
-  before_rules : Array[PseudoRule]
-  after_rules : Array[PseudoRule]
+  before_index : PseudoRuleIndex
+  after_index : PseudoRuleIndex
 }
 
 pub struct PseudoRule {
@@ -116,6 +116,14 @@ pub struct PseudoRule {
   base_selector_text : String
   declarations : Array[@cascade.Declaration]
   media_query : @media.MediaQueryList?
+}
+
+pub struct PseudoRuleIndex {
+  rules : Array[PseudoRule]
+  by_id : Map[String, Array[Int]]
+  by_class : Map[String, Array[Int]]
+  by_tag : Map[String, Array[Int]]
+  universal : Array[Int]
 }
 
 pub(all) struct RenderContext {
@@ -127,9 +135,9 @@ pub(all) struct RenderContext {
 pub fn RenderContext::default() -> Self
 
 pub struct TextMetricsProvider {
-  func : (String, Double, Double, @style.WhiteSpace, @style.WritingMode, Double) -> @types.MeasureFunc
+  func : (String, Double, Double, @style.WhiteSpace, @style.WritingMode, Double, String) -> @types.MeasureFunc
 }
-pub fn TextMetricsProvider::new((String, Double, Double, @style.WhiteSpace, @style.WritingMode, Double) -> @types.MeasureFunc) -> Self
+pub fn TextMetricsProvider::new((String, Double, Double, @style.WhiteSpace, @style.WritingMode, Double, String) -> @types.MeasureFunc) -> Self
 
 // Type aliases
 
