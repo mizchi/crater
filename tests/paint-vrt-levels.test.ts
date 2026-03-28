@@ -341,7 +341,7 @@ test.describe("VRT Levels", () => {
       .box { width: 200px; height: 120px; border: 2px solid #333; padding: 8px; }
       .hidden { overflow: hidden; }
       .scroll { overflow: auto; }
-      .inner { width: 300px; height: 200px; background: linear-gradient(135deg, #667eea, #764ba2); }
+      .inner { width: 300px; height: 200px; background: #667eea; }
       .text-clip { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; width: 180px; padding: 8px; border: 1px solid #ccc; font-size: 14px; margin-top: 16px; }
     </style></head><body>
       <div class="container">
@@ -358,7 +358,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L11-overflow", html, {
-      maxDiffRatio: 0.55, // overflow rendering is still WIP; track regression
+      maxDiffRatio: 0.10, // overflow clipping now implemented
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });

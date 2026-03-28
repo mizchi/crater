@@ -71,6 +71,13 @@ pub fn to_sixel_extended(Framebuffer) -> String
 // Errors
 
 // Types and methods
+pub(all) struct ClipRect {
+  x : Int
+  y : Int
+  w : Int
+  h : Int
+}
+
 pub(all) struct Color {
   r : Int
   g : Int

@@ -393,6 +393,66 @@ pub fn Framebuffer::draw_text(
 }
 
 ///|
+/// Draw text with clipping support (bitmap font fallback)
+fn draw_text_clipped(
+  fb : Framebuffer,
+  x : Int,
+  y : Int,
+  text : String,
+  max_width : Int,
+  color : Int,
+  scale : Int,
+  clip : ClipRect?,
+) -> Int {
+  match clip {
+    None => fb.draw_text(x, y, text, max_width, color, scale)
+    Some(_) => {
+      // For bitmap font, we draw normally but use set_pixel which bounds-checks.
+      // To clip, we temporarily render to the framebuffer but only write pixels in clip.
+      let char_h = font_height * scale
+      let mut cur_x = x
+      let mut cur_y = y
+      let mut max_y = y + char_h
+      for c in text {
+        if c == '\n' {
+          cur_x = x
+          cur_y = cur_y + char_h
+          max_y = cur_y + char_h
+          continue
+        }
+        if c == '\r' {
+          continue
+        }
+        let char_w = if is_wide_char(c) {
+          font_width * 2 * scale
+        } else {
+          font_width * scale
+        }
+        if max_width > 0 && cur_x + char_w > x + max_width {
+          cur_x = x
+          cur_y = cur_y + char_h
+          max_y = cur_y + char_h
+        }
+        // Only draw if any part might be visible
+        if pixel_in_clip(clip, cur_x, cur_y) ||
+          pixel_in_clip(clip, cur_x + char_w - 1, cur_y + char_h - 1) {
+          let drawn_w = fb.draw_char(cur_x, cur_y, c, color, scale)
+          cur_x = cur_x + drawn_w
+        } else {
+          let char_w2 = if is_wide_char(c) {
+            font_width * 2 * scale
+          } else {
+            font_width * scale
+          }
+          cur_x = cur_x + char_w2
+        }
+      }
+      max_y - y
+    }
+  }
+}
+
+///|
 /// Color palette for Sixel output
 priv struct Palette {
   colors : Array[Color]
@@ -975,6 +1035,75 @@ fn collect_colors(palette : DynamicPalette, node : @paint.PaintNode) -> Unit {
 }
 
 ///|
+/// Clip rectangle for overflow clipping.
+/// None means no clipping (full framebuffer).
+pub(all) struct ClipRect {
+  x : Int
+  y : Int
+  w : Int
+  h : Int
+}
+
+///|
+/// Intersect two clip rectangles. Returns None if they don't overlap.
+fn clip_intersect(a : ClipRect, b : ClipRect) -> ClipRect? {
+  let x1 = @cmp.maximum(a.x, b.x)
+  let y1 = @cmp.maximum(a.y, b.y)
+  let x2 = @cmp.minimum(a.x + a.w, b.x + b.w)
+  let y2 = @cmp.minimum(a.y + a.h, b.y + b.h)
+  if x2 > x1 && y2 > y1 {
+    Some({ x: x1, y: y1, w: x2 - x1, h: y2 - y1 })
+  } else {
+    None
+  }
+}
+
+///|
+/// Check if a pixel is inside the clip rect
+fn pixel_in_clip(clip : ClipRect?, px : Int, py : Int) -> Bool {
+  match clip {
+    None => true
+    Some(c) => px >= c.x && px < c.x + c.w && py >= c.y && py < c.y + c.h
+  }
+}
+
+///|
+/// Fill a rect clipped to the given clip rectangle
+fn fill_rect_clipped(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  x : Int,
+  y : Int,
+  w : Int,
+  h : Int,
+  color : @types.Color,
+  opacity : Double,
+  clip : ClipRect?,
+) -> Unit {
+  match clip {
+    None => fill_rect_with_types_color(fb, palette, x, y, w, h, color, opacity)
+    Some(c) => {
+      let cx1 = @cmp.maximum(x, c.x)
+      let cy1 = @cmp.maximum(y, c.y)
+      let cx2 = @cmp.minimum(x + w, c.x + c.w)
+      let cy2 = @cmp.minimum(y + h, c.y + c.h)
+      if cx2 > cx1 && cy2 > cy1 {
+        fill_rect_with_types_color(
+          fb,
+          palette,
+          cx1,
+          cy1,
+          cx2 - cx1,
+          cy2 - cy1,
+          color,
+          opacity,
+        )
+      }
+    }
+  }
+}
+
+///|
 /// Render a PaintNode tree to framebuffer
 fn render_paint_node(
   fb : Framebuffer,
@@ -982,6 +1111,19 @@ fn render_paint_node(
   node : @paint.PaintNode,
   parent_x : Double,
   parent_y : Double,
+) -> Unit {
+  render_paint_node_clipped(fb, palette, node, parent_x, parent_y, None)
+}
+
+///|
+/// Render a PaintNode tree to framebuffer with optional clip rect
+fn render_paint_node_clipped(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  node : @paint.PaintNode,
+  parent_x : Double,
+  parent_y : Double,
+  clip : ClipRect?,
 ) -> Unit {
   // Skip invisible nodes
   if not(node.paint.should_render()) {
@@ -997,22 +1139,18 @@ fn render_paint_node(
   // Skip zero-sized nodes
   if w <= 0 || h <= 0 {
     for child in node.children {
-      render_paint_node(fb, palette, child, abs_x, abs_y)
+      render_paint_node_clipped(fb, palette, child, abs_x, abs_y, clip)
     }
     return
   }
 
   // Skip "visually hidden" accessibility pattern:
   // Elements with clip/overflow clipping and very small size (1px x 1px)
-  // This is commonly used to hide content visually while keeping it for screen readers
   if node.clips_content() && w <= 1 && h <= 1 {
     return
   }
 
-  // WORKAROUND: Skip very small elements that are likely visually hidden
-  // TODO: Properly implement clip rect rendering and overflow clipping
-  // - 1x1 or smaller elements (common visually hidden pattern)
-  // - Text nodes with width <= 1 (text inside visually hidden containers)
+  // Skip very small elements that are likely visually hidden
   if w <= 1 && h <= 1 {
     return
   }
@@ -1020,9 +1158,18 @@ fn render_paint_node(
     return
   }
 
+  // If there's a clip rect, check if this node is fully outside it
+  match clip {
+    Some(c) =>
+      if x >= c.x + c.w || y >= c.y + c.h || x + w <= c.x || y + h <= c.y {
+        return
+      }
+    None => ()
+  }
+
   // Draw background with alpha-aware compositing.
   if not(node.paint.background_color.is_transparent()) {
-    fill_rect_with_types_color(
+    fill_rect_clipped(
       fb,
       palette,
       x,
@@ -1031,6 +1178,7 @@ fn render_paint_node(
       h,
       node.paint.background_color,
       node.paint.opacity,
+      clip,
     )
   }
 
@@ -1045,7 +1193,7 @@ fn render_paint_node(
             node.paint.color.b,
           )
           let font_size = node.paint.font_size
-          let _ = draw_text_with_glyphs(
+          let _ = draw_text_with_glyphs_clipped(
             fb,
             palette,
             provider,
@@ -1057,6 +1205,7 @@ fn render_paint_node(
             font_size,
             font_size,
             node.paint.is_bold,
+            clip,
           )
         }
         None => {
@@ -1064,15 +1213,34 @@ fn render_paint_node(
             types_color_to_sixel(node.paint.color),
           )
           let scale = 1
-          let _ = fb.draw_text(x, y, text_content, w, text_idx, scale)
+          let _ = draw_text_clipped(
+            fb, x, y, text_content, w, text_idx, scale, clip,
+          )
         }
       }
     None => ()
   }
 
-  // Render children
+  // Compute child clip: if this node clips content, intersect with current clip
+  let child_clip = if node.clips_content() {
+    let node_clip : ClipRect = { x, y, w, h }
+    match clip {
+      None => Some(node_clip)
+      Some(parent_clip) => clip_intersect(parent_clip, node_clip)
+    }
+  } else {
+    clip
+  }
+
+  // If clip intersection is empty, skip all children
+  match (node.clips_content(), child_clip) {
+    (true, None) => return
+    _ => ()
+  }
+
+  // Render children with (possibly narrowed) clip
   for child in node.children {
-    render_paint_node(fb, palette, child, abs_x, abs_y)
+    render_paint_node_clipped(fb, palette, child, abs_x, abs_y, child_clip)
   }
 }
 

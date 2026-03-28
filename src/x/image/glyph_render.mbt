@@ -266,3 +266,93 @@ fn translate_path_commands(
     }
   })
 }
+
+///|
+/// Draw text using the glyph provider with clip rect support.
+fn draw_text_with_glyphs_clipped(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  provider : GlyphProvider,
+  x : Int,
+  y : Int,
+  text : String,
+  max_width : Int,
+  color : @svg.Color,
+  font_size : Double,
+  line_height : Double,
+  is_bold : Bool,
+  clip : ClipRect?,
+) -> Int {
+  let setter : @svg.PixelSetter = {
+    set: fn(px, py, c) {
+      if px >= 0 &&
+        px < fb.width &&
+        py >= 0 &&
+        py < fb.height &&
+        pixel_in_clip(clip, px, py) {
+        let sixel_color = { r: c.r, g: c.g, b: c.b }
+        let idx = palette.get_or_add(sixel_color)
+        fb.set_pixel(px, py, idx)
+      }
+    },
+  }
+  let effective_line_height = if line_height > 0.0 {
+    line_height
+  } else {
+    font_size
+  }
+  let baseline_offset = provider.ascent_ratio * font_size
+  let max_x_limit = if max_width > 0 {
+    (x + max_width).to_double()
+  } else {
+    fb.width.to_double()
+  }
+  let words = split_text_into_words(text)
+  let mut cur_x = x.to_double()
+  let mut cur_y = y.to_double()
+  let mut max_y_seen = y.to_double() + effective_line_height
+  let space_advance_layout = get_advance(
+    provider,
+    ' '.to_int(),
+    font_size,
+    false,
+  )
+  for i, word in words {
+    if word == "\n" {
+      cur_x = x.to_double()
+      cur_y = cur_y + effective_line_height
+      max_y_seen = cur_y + effective_line_height
+      continue
+    }
+    let word_width = measure_word_width(provider, word, font_size, false)
+    if max_width > 0 &&
+      cur_x + word_width > max_x_limit &&
+      cur_x > x.to_double() + 0.01 {
+      cur_x = x.to_double()
+      cur_y = cur_y + effective_line_height
+      max_y_seen = cur_y + effective_line_height
+    }
+    if i > 0 && word != "\n" && cur_x > x.to_double() + 0.01 {
+      cur_x = cur_x + space_advance_layout
+    }
+    let mut prev_cp = 0
+    for c in word {
+      let cp = c.to_int()
+      if prev_cp != 0 {
+        cur_x = cur_x + (provider.get_kern)(prev_cp, cp, font_size, is_bold)
+      }
+      let (commands, advance) = (provider.get_glyph)(cp, font_size, is_bold)
+      if commands.length() > 0 {
+        let translated = translate_path_commands(
+          commands,
+          cur_x,
+          cur_y + baseline_offset,
+        )
+        @svg.raster_path(translated, Some(color), None, 0.0, setter)
+      }
+      cur_x = cur_x + advance
+      prev_cp = cp
+    }
+  }
+  (max_y_seen - y.to_double()).to_int()
+}
