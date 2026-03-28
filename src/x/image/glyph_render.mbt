@@ -14,7 +14,10 @@ pub(all) struct GlyphProvider {
   ascent_ratio : Double // ascent / units_per_em (e.g. 1854/2048 ≈ 0.905)
   /// Multi-font glyph provider. Args: (codepoint, font_size, is_bold, font_family).
   /// Returns (commands, advance_width) or None to fall back to get_glyph.
-  get_glyph_for_family : ((Int, Double, Bool, String) -> (Array[@svg.PathCommand], Double)?)?
+  get_glyph_for_family : ((Int, Double, Bool, String) -> (
+    Array[@svg.PathCommand],
+    Double,
+  )?)?
   /// Multi-font kerning. Args: (cp1, cp2, font_size, is_bold, font_family).
   get_kern_for_family : ((Int, Int, Double, Bool, String) -> Double)?
   /// Multi-font ascent ratio. Args: (font_family) -> ratio.
@@ -127,7 +130,8 @@ fn draw_text_with_glyphs(
   }
   // Baseline offset: glyphs have Y=0 at baseline, negative Y for ascenders
   let baseline_offset = match provider.get_ascent_for_family {
-    Some(get_ascent) if font_family.length() > 0 => get_ascent(font_family) * font_size
+    Some(get_ascent) if font_family.length() > 0 =>
+      get_ascent(font_family) * font_size
     _ => provider.ascent_ratio * font_size
   }
   let max_x_limit = if max_width > 0 {
@@ -329,7 +333,8 @@ fn draw_text_with_glyphs_clipped(
     font_size
   }
   let baseline_offset = match provider.get_ascent_for_family {
-    Some(get_ascent) if font_family.length() > 0 => get_ascent(font_family) * font_size
+    Some(get_ascent) if font_family.length() > 0 =>
+      get_ascent(font_family) * font_size
     _ => provider.ascent_ratio * font_size
   }
   let max_x_limit = if max_width > 0 {

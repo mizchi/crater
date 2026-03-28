@@ -116,6 +116,9 @@ pub(all) struct GlyphProvider {
   get_glyph : (Int, Double, Bool) -> (Array[@svg.PathCommand], Double)
   get_kern : (Int, Int, Double, Bool) -> Double
   ascent_ratio : Double
+  get_glyph_for_family : ((Int, Double, Bool, String) -> (Array[@svg.PathCommand], Double)?)?
+  get_kern_for_family : ((Int, Int, Double, Bool, String) -> Double)?
+  get_ascent_for_family : ((String) -> Double)?
 }
 
 // Type aliases
