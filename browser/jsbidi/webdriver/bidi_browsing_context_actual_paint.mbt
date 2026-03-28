@@ -225,27 +225,19 @@ fn ensure_paint_text_provider() -> Unit {
       let ff = font_family
       {
         func: fn(available_width, available_height) {
-          // Use font-family-aware provider if available, else fall back
-          let payload = if ff.length() > 0 {
+          // Multi-font metrics are disabled for now because glyph rendering
+          // (SVG path drawing) only supports the default font (Arial).
+          // Using different fonts for metrics vs rendering causes MORE diff.
+          // TODO: Enable when glyph rendering supports multi-font.
+          let use_multi = false
+          let payload = if use_multi {
             let multi = call_font_aware_text_provider(
               text, font_size, line_height, ws, wm, available_width,
               available_height, ff, is_bold,
             )
-            if multi.length() > 0 { multi } else {
-              if is_bold && has_bold_text_provider() {
-                call_bold_text_provider(
-                  text, font_size, line_height, ws, wm, available_width,
-                  available_height,
-                )
-              } else {
-                call_paint_text_provider(
-                  text, font_size, line_height, ws, wm, available_width,
-                  available_height,
-                )
-              }
-            }
-          } else {
-            if is_bold && has_bold_text_provider() {
+            if multi.length() > 0 {
+              multi
+            } else if is_bold && has_bold_text_provider() {
               call_bold_text_provider(
                 text, font_size, line_height, ws, wm, available_width,
                 available_height,
@@ -256,6 +248,16 @@ fn ensure_paint_text_provider() -> Unit {
                 available_height,
               )
             }
+          } else if is_bold && has_bold_text_provider() {
+            call_bold_text_provider(
+              text, font_size, line_height, ws, wm, available_width,
+              available_height,
+            )
+          } else {
+            call_paint_text_provider(
+              text, font_size, line_height, ws, wm, available_width,
+              available_height,
+            )
           }
           match parse_csv_quad(payload) {
             Some((min_w, max_w, min_h, max_h)) =>
