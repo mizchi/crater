@@ -78,6 +78,8 @@ pub fn parse_grid_template_tracks(String) -> Array[@types.TrackSizingFunction]
 
 pub fn parse_integer(String) -> Int
 
+pub fn parse_linear_gradient(String) -> @types.BackgroundImage
+
 pub fn parse_number(String) -> Double
 
 pub fn parse_overflow(String) -> @types.Overflow

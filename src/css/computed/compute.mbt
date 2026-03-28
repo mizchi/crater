@@ -182,6 +182,7 @@ priv struct StyleBuilder {
   // Color properties
   mut color : @types.Color
   mut background_color : @types.Color
+  mut background_image : @types.BackgroundImage
   // Containment
   mut contain : @style.Contain
   // Fragmentation
@@ -297,6 +298,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     opacity: 1.0,
     color: @types.Color::black(),
     background_color: @types.Color::transparent(),
+    background_image: @types.None,
     contain: @style.Contain::none(),
     break_before: @style.BreakBefore::Auto,
     break_after: @style.BreakBefore::Auto,
@@ -407,6 +409,7 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     opacity: style.opacity,
     color: style.color,
     background_color: style.background_color,
+    background_image: style.background_image,
     contain: style.contain,
     break_before: style.break_before,
     break_after: style.break_after,
@@ -526,6 +529,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     opacity: self.opacity,
     color: self.color,
     background_color: self.background_color,
+    background_image: self.background_image,
     contain: self.contain,
     break_before: self.break_before,
     break_after: self.break_after,
@@ -1889,18 +1893,30 @@ fn apply_property(
       }
     }
     "background-color" | "background" => {
-      // For background shorthand, we only extract the color part
-      let parsed = parse_color_with_ctx(value, ctx)
-      match parsed {
-        Resolved(c) => builder.background_color = c
-        CurrentColor =>
-          // currentColor uses the element's computed color
-          builder.background_color = builder.color
-        Inherit =>
-          match ctx.parent_style {
-            Some(parent) => builder.background_color = parent.background_color
-            None => ()
-          }
+      // Check for linear-gradient first
+      let v_lower = value.trim().to_lower()
+      if v_lower.contains("linear-gradient") {
+        let grad = parse_linear_gradient(value)
+        builder.background_image = grad
+      } else {
+        let parsed = parse_color_with_ctx(value, ctx)
+        match parsed {
+          Resolved(c) => builder.background_color = c
+          CurrentColor =>
+            // currentColor uses the element's computed color
+            builder.background_color = builder.color
+          Inherit =>
+            match ctx.parent_style {
+              Some(parent) => builder.background_color = parent.background_color
+              None => ()
+            }
+        }
+      }
+    }
+    "background-image" => {
+      let v_lower = value.trim().to_lower()
+      if v_lower.contains("linear-gradient") {
+        builder.background_image = parse_linear_gradient(value)
       }
     }
     // Font weight

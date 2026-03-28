@@ -528,6 +528,7 @@ pub(all) struct Style {
   // Color properties (resolved RGBA values)
   mut color : @types.Color // Text color (inherited)
   mut background_color : @types.Color // Background color (not inherited)
+  mut background_image : @types.BackgroundImage // Background image (gradient etc.)
   // Containment (for layout optimization)
   mut contain : Contain
   // Fragmentation
@@ -649,6 +650,7 @@ pub fn Style::default() -> Style {
     opacity: 1.0,
     color: @types.Color::black(),
     background_color: @types.Color::transparent(),
+    background_image: @types.None,
     contain: Contain::none(),
     break_before: BreakBefore::Auto,
     break_after: BreakBefore::Auto,

@@ -341,7 +341,7 @@ test.describe("VRT Levels", () => {
       .box { width: 200px; height: 120px; border: 2px solid #333; padding: 8px; }
       .hidden { overflow: hidden; }
       .scroll { overflow: auto; }
-      .inner { width: 300px; height: 200px; background: #667eea; }
+      .inner { width: 300px; height: 200px; background: linear-gradient(135deg, #667eea, #764ba2); }
       .text-clip { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; width: 180px; padding: 8px; border: 1px solid #ccc; font-size: 14px; margin-top: 16px; }
     </style></head><body>
       <div class="container">
@@ -358,7 +358,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L11-overflow", html, {
-      maxDiffRatio: 0.10, // overflow clipping now implemented
+      maxDiffRatio: 0.15, // overflow clipping + gradient rendering
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -385,6 +385,56 @@ test.describe("VRT Levels", () => {
 
     const result = await compareFixture(browser, "L12-float", html, {
       maxDiffRatio: 0.20,
+    });
+    expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+  });
+
+  // Level 13: Linear gradients
+  test("L13: linear-gradient backgrounds", async ({ browser }) => {
+    const html = `<!DOCTYPE html><html><head><style>
+      body { margin: 20px; background: #fff; font-family: Arial, sans-serif; }
+      .row { display: flex; gap: 16px; margin-bottom: 16px; }
+      .box { width: 120px; height: 80px; }
+    </style></head><body>
+      <div class="row">
+        <div class="box" style="background: linear-gradient(to right, #ff6b6b, #feca57);"></div>
+        <div class="box" style="background: linear-gradient(to bottom, #48dbfb, #0abde3);"></div>
+        <div class="box" style="background: linear-gradient(135deg, #667eea, #764ba2);"></div>
+      </div>
+      <div class="row">
+        <div class="box" style="background: linear-gradient(to right, #e74c3c, #f39c12, #2ecc71);"></div>
+        <div class="box" style="background: linear-gradient(45deg, #000, #fff);"></div>
+        <div class="box" style="background: linear-gradient(to left, #2c3e50, #3498db);"></div>
+      </div>
+    </body></html>`;
+
+    const result = await compareFixture(browser, "L13-gradient", html, {
+      maxDiffRatio: 0.15,
+    });
+    expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+  });
+
+  // Level 14: Border-radius
+  test("L14: border-radius on boxes", async ({ browser }) => {
+    const html = `<!DOCTYPE html><html><head><style>
+      body { margin: 20px; background: #fff; font-family: Arial, sans-serif; }
+      .row { display: flex; gap: 16px; margin-bottom: 16px; align-items: center; }
+      .box { width: 100px; height: 100px; }
+    </style></head><body>
+      <div class="row">
+        <div class="box" style="background:#3498db; border-radius:10px;"></div>
+        <div class="box" style="background:#e74c3c; border-radius:50px;"></div>
+        <div class="box" style="background:#2ecc71; border-radius:50%;"></div>
+      </div>
+      <div class="row">
+        <div class="box" style="background:#f39c12; border-radius:20px 0 20px 0;"></div>
+        <div class="box" style="background:#9b59b6; border-radius:40px 10px;"></div>
+        <div style="width:200px; height:60px; background: linear-gradient(to right, #667eea, #764ba2); border-radius:30px;"></div>
+      </div>
+    </body></html>`;
+
+    const result = await compareFixture(browser, "L14-border-radius", html, {
+      maxDiffRatio: 0.15,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });

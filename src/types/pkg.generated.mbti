@@ -49,6 +49,11 @@ pub(all) enum Alignment {
 pub impl Eq for Alignment
 pub impl Show for Alignment
 
+pub(all) enum BackgroundImage {
+  None
+  Gradient(LinearGradient)
+}
+
 pub(all) struct BoundingRect {
   x : Double
   y : Double
@@ -173,6 +178,11 @@ pub(all) enum Float {
 pub impl Eq for Float
 pub impl Show for Float
 
+pub(all) struct GradientStop {
+  color : Color
+  position : Double
+}
+
 pub(all) enum GridAutoFlow {
   Row
   Column
@@ -252,6 +262,11 @@ pub struct Line[T] {
 }
 pub fn[T] Line::new(T, T) -> Self[T]
 pub impl[T : Show] Show for Line[T]
+
+pub(all) struct LinearGradient {
+  angle_deg : Double
+  stops : Array[GradientStop]
+}
 
 pub(all) enum MaxTrackSizing {
   Length(Double)

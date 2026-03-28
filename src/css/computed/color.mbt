@@ -584,3 +584,173 @@ pub fn default_color() -> @types.Color {
 pub fn default_background_color() -> @types.Color {
   @types.Color::transparent()
 }
+
+///|
+/// Parse a linear-gradient() value into a LinearGradient
+pub fn parse_linear_gradient(value : String) -> @types.BackgroundImage {
+  let v = value.trim().to_lower().to_string()
+  // Must start with "linear-gradient("
+  if not(v.has_prefix("linear-gradient(")) {
+    return @types.None
+  }
+  // Extract content between parens
+  let start = 16 // "linear-gradient(".length()
+  let end = v.length() - 1
+  if end <= start || v[end] != ')' {
+    return @types.None
+  }
+  let inner = v.unsafe_substring(start~, end~).to_string()
+  // Split by commas, respecting parentheses
+  let parts = split_gradient_args(inner)
+  if parts.length() < 2 {
+    return @types.None
+  }
+  // Parse direction (first argument, if it's not a color)
+  let mut angle = 180.0 // default: to bottom
+  let mut color_start = 0
+  let first = parts[0].trim().to_string()
+  if first.has_prefix("to ") {
+    angle = parse_direction_keyword(first)
+    color_start = 1
+  } else if first.has_suffix("deg") {
+    let deg_str = first
+      .unsafe_substring(start=0, end=first.length() - 3)
+      .to_string()
+    let d = @strconv.parse_double(deg_str) catch { _ => -999.0 }
+    if d != -999.0 {
+      angle = d
+      color_start = 1
+    }
+  } else if first.has_suffix("turn") {
+    let turn_str = first
+      .unsafe_substring(start=0, end=first.length() - 4)
+      .to_string()
+    let t = @strconv.parse_double(turn_str) catch { _ => -999.0 }
+    if t != -999.0 {
+      angle = t * 360.0
+      color_start = 1
+    }
+  }
+  // Parse color stops
+  let stops : Array[@types.GradientStop] = []
+  let num_colors = parts.length() - color_start
+  for i = color_start; i < parts.length(); i = i + 1 {
+    let part = parts[i].trim().to_string()
+    let (color, pos) = parse_gradient_stop(part, i - color_start, num_colors)
+    stops.push({ color, position: pos })
+  }
+  if stops.length() < 2 {
+    return @types.None
+  }
+  @types.Gradient({ angle_deg: angle, stops })
+}
+
+///|
+fn parse_direction_keyword(dir : String) -> Double {
+  let d = dir.trim().to_lower()
+  if d == "to top" {
+    0.0
+  } else if d == "to right" {
+    90.0
+  } else if d == "to bottom" {
+    180.0
+  } else if d == "to left" {
+    270.0
+  } else if d == "to top right" || d == "to right top" {
+    45.0
+  } else if d == "to bottom right" || d == "to right bottom" {
+    135.0
+  } else if d == "to bottom left" || d == "to left bottom" {
+    225.0
+  } else if d == "to top left" || d == "to left top" {
+    315.0
+  } else {
+    180.0
+  }
+}
+
+///|
+fn parse_gradient_stop(
+  part : String,
+  index : Int,
+  total : Int,
+) -> (@types.Color, Double) {
+  // A stop can be "color" or "color position%"
+  // Try to find a percentage at the end
+  let trimmed = part.trim().to_string()
+  // Check if last token is a percentage
+  let last_space = find_last_space(trimmed)
+  if last_space > 0 {
+    let color_part = trimmed
+      .unsafe_substring(start=0, end=last_space)
+      .trim()
+      .to_string()
+    let pos_part = trimmed
+      .unsafe_substring(start=last_space + 1, end=trimmed.length())
+      .trim()
+      .to_string()
+    if pos_part.has_suffix("%") {
+      let pct_str = pos_part
+        .unsafe_substring(start=0, end=pos_part.length() - 1)
+        .to_string()
+      let pct = @strconv.parse_double(pct_str) catch { _ => -999.0 }
+      if pct != -999.0 {
+        let color = resolve_gradient_color(color_part)
+        return (color, pct / 100.0)
+      }
+    }
+  }
+  // No explicit position - distribute evenly
+  let color = resolve_gradient_color(trimmed)
+  let pos = if total <= 1 {
+    0.0
+  } else {
+    index.to_double() / (total - 1).to_double()
+  }
+  (color, pos)
+}
+
+///|
+fn resolve_gradient_color(s : String) -> @types.Color {
+  match parse_color_value(s) {
+    Resolved(c) => c
+    _ => @types.Color::transparent()
+  }
+}
+
+///|
+fn find_last_space(s : String) -> Int {
+  let mut last = -1
+  let mut depth = 0
+  for i = 0; i < s.length(); i = i + 1 {
+    if s[i] == '(' {
+      depth = depth + 1
+    } else if s[i] == ')' {
+      depth = depth - 1
+    } else if s[i] == ' ' && depth == 0 {
+      last = i
+    }
+  }
+  last
+}
+
+///|
+fn split_gradient_args(s : String) -> Array[String] {
+  let result : Array[String] = []
+  let mut depth = 0
+  let mut start = 0
+  for i = 0; i < s.length(); i = i + 1 {
+    if s[i] == '(' {
+      depth = depth + 1
+    } else if s[i] == ')' {
+      depth = depth - 1
+    } else if s[i] == ',' && depth == 0 {
+      result.push(s.unsafe_substring(start~, end=i).to_string())
+      start = i + 1
+    }
+  }
+  if start < s.length() {
+    result.push(s.unsafe_substring(start~, end=s.length()).to_string())
+  }
+  result
+}

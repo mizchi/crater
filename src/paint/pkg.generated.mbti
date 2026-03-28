@@ -63,6 +63,7 @@ pub(all) struct PaintProperties {
   opacity : Double
   color : @types.Color
   background_color : @types.Color
+  background_image : @types.BackgroundImage
   font_size : Double
   is_bold : Bool
   font_family : String
