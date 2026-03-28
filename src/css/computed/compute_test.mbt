@@ -1066,3 +1066,25 @@ test "compute_inline caption-side bottom" {
   let style = @computed.compute_inline("caption-side: bottom", ctx)
   inspect(style.caption_side, content="Bottom")
 }
+
+///|
+test "compute_inline background linear-gradient" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "background: linear-gradient(to right, #ff0000, #0000ff)",
+    ctx,
+  )
+  inspect(style.background_image, content=(
+    #|Gradient({angle_deg: 90, stops: [{color: rgb(255, 0, 0), position: 0}, {color: rgb(0, 0, 255), position: 1}]})
+  ))
+}
+
+///|
+test "parse_linear_gradient basic" {
+  let result = @computed.parse_linear_gradient(
+    "linear-gradient(135deg, #667eea, #764ba2)",
+  )
+  inspect(result, content=(
+    #|Gradient({angle_deg: 135, stops: [{color: rgb(102, 126, 234), position: 0}, {color: rgb(118, 75, 162), position: 1}]})
+  ))
+}

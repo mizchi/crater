@@ -113,18 +113,18 @@ pub impl Eq for Color with equal(self, other) {
 pub(all) struct GradientStop {
   color : Color
   position : Double // 0.0-1.0
-}
+} derive(Show)
 
 ///|
 /// Linear gradient with angle and color stops
 pub(all) struct LinearGradient {
   angle_deg : Double // Angle in degrees (0 = to top, 90 = to right, 180 = to bottom)
   stops : Array[GradientStop]
-}
+} derive(Show)
 
 ///|
 /// Background image (currently only linear-gradient)
 pub(all) enum BackgroundImage {
   None
   Gradient(LinearGradient)
-}
+} derive(Show)

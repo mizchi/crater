@@ -53,6 +53,7 @@ pub(all) enum BackgroundImage {
   None
   Gradient(LinearGradient)
 }
+pub impl Show for BackgroundImage
 
 pub(all) struct BoundingRect {
   x : Double
@@ -182,6 +183,7 @@ pub(all) struct GradientStop {
   color : Color
   position : Double
 }
+pub impl Show for GradientStop
 
 pub(all) enum GridAutoFlow {
   Row
@@ -267,6 +269,7 @@ pub(all) struct LinearGradient {
   angle_deg : Double
   stops : Array[GradientStop]
 }
+pub impl Show for LinearGradient
 
 pub(all) enum MaxTrackSizing {
   Length(Double)

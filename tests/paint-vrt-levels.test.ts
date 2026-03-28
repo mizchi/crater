@@ -358,7 +358,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L11-overflow", html, {
-      maxDiffRatio: 0.15, // overflow clipping + gradient rendering
+      maxDiffRatio: 0.10, // overflow clipping + gradient rendering
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
