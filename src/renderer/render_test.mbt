@@ -6488,3 +6488,42 @@ test "wpt_overflow_top_left_keeps_stretched_item_inside_column_cross_size" {
   inspect(second.x, content="-202")
   inspect(second.width, content="500")
 }
+
+///|
+test "cellpadding_attribute_sets_cell_padding" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<table cellpadding="10"><tr><td>test</td></tr></table>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+  fn find_td(n : @node.Node) -> @node.Node? {
+    if n.id.has_prefix("td") {
+      return Some(n)
+    }
+    for child in n.children {
+      match find_td(child) {
+        Some(found) => return Some(found)
+        None => ()
+      }
+    }
+    None
+  }
+  match find_td(node) {
+    Some(td) => {
+      inspect(
+        td.style.padding.top,
+        content=(
+          #|Length(10)
+        ),
+      )
+      inspect(
+        td.style.padding.left,
+        content=(
+          #|Length(10)
+        ),
+      )
+    }
+    None => inspect(false, content="td not found")
+  }
+}

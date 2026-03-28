@@ -614,6 +614,148 @@ test.describe("Paint VRT", () => {
     }
   });
 
+  // --- Canvas background propagation (CSS 2.1 §14.2) ---
+
+  test("fixture: canvas background propagates from body to viewport", async ({ browser }) => {
+    const viewport = { width: 800, height: 400 };
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      html { /* transparent background */ }
+      body { margin: 0; background-color: #ececec; font-family: Arial, sans-serif; }
+      .content { max-width: 600px; margin: 40px auto; padding: 20px; }
+      h1 { font-size: 24px; color: #333; }
+      p { font-size: 14px; color: #666; line-height: 1.6; }
+    </style></head><body>
+      <div class="content">
+        <h1>Canvas Background Test</h1>
+        <p>The viewport background should be #ececec, propagated from body when html has no background.</p>
+      </div>
+    </body></html>`;
+
+    const chromiumPage = await chromiumPageForVrt(browser, viewport);
+    const craterPage = new CraterBidiPage();
+    await craterPage.connect();
+    try {
+      await chromiumPage.setContent(html, { waitUntil: "load" });
+      const chromiumPng = await chromiumPage.screenshot({ type: "png" });
+      const craterImage = await renderCraterHtml(craterPage, html, viewport);
+      const result = await compareChromiumPngToImage(chromiumPage, chromiumPng, craterImage, {
+        outputDir: path.join(OUTPUT_ROOT, "fixture-canvas-background"),
+        threshold: 0.3,
+        maxDiffRatio: 0.10,
+        cropToContent: true,
+        contentPadding: 12,
+        backgroundTolerance: 18,
+        maskToVisibleContent: true,
+        maskPadding: 2,
+      });
+      expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+    } finally {
+      await craterPage.close();
+      await chromiumPage.close();
+    }
+  });
+
+  // --- Table attributes: cellpadding, cellspacing, valign ---
+
+  test("fixture: table with cellpadding and cellspacing attributes", async ({ browser }) => {
+    const viewport = { width: 800, height: 400 };
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      body { margin: 0; background: #fff; font-family: Verdana, Geneva, sans-serif; font-size: 10pt; }
+      td { font-size: 10pt; }
+      .sub td { font-size: 7pt; color: #828282; }
+      a { color: #000; text-decoration: none; }
+    </style></head><body>
+      <center>
+      <table border="0" cellpadding="0" cellspacing="0" width="85%" bgcolor="#f6f6ef">
+        <tr><td bgcolor="#ff6600" style="padding:2px">
+          <b style="color:#fff; font-size:10pt;">Header Bar</b>
+        </td></tr>
+        <tr style="height:10px"><td></td></tr>
+        <tr><td>
+          <table border="0" cellpadding="0" cellspacing="0">
+            <tr>
+              <td align="right" valign="top" style="width:30px">1.</td>
+              <td><a href="#">First item title goes here</a></td>
+            </tr>
+            <tr class="sub"><td></td><td>100 points by user 2 hours ago | 50 comments</td></tr>
+            <tr style="height:5px"><td colspan="2"></td></tr>
+            <tr>
+              <td align="right" valign="top" style="width:30px">2.</td>
+              <td><a href="#">Second item with a longer title</a></td>
+            </tr>
+            <tr class="sub"><td></td><td>200 points by user2 3 hours ago | 30 comments</td></tr>
+            <tr style="height:5px"><td colspan="2"></td></tr>
+            <tr>
+              <td align="right" valign="top" style="width:30px">3.</td>
+              <td><a href="#">Third item here</a></td>
+            </tr>
+            <tr class="sub"><td></td><td>50 points by user3 1 hour ago | 10 comments</td></tr>
+          </table>
+        </td></tr>
+      </table>
+      </center>
+    </body></html>`;
+
+    const chromiumPage = await chromiumPageForVrt(browser, viewport);
+    const craterPage = new CraterBidiPage();
+    await craterPage.connect();
+    try {
+      await chromiumPage.setContent(html, { waitUntil: "load" });
+      const chromiumPng = await chromiumPage.screenshot({ type: "png" });
+      const craterImage = await renderCraterHtml(craterPage, html, viewport);
+      const result = await compareChromiumPngToImage(chromiumPage, chromiumPng, craterImage, {
+        outputDir: path.join(OUTPUT_ROOT, "fixture-table-hn-like"),
+        threshold: 0.3,
+        maxDiffRatio: 0.15,
+        cropToContent: true,
+        contentPadding: 12,
+        backgroundTolerance: 18,
+        maskToVisibleContent: true,
+        maskPadding: 2,
+      });
+      expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+    } finally {
+      await craterPage.close();
+      await chromiumPage.close();
+    }
+  });
+
+  test("fixture: table with cellpadding=10 adds visible padding", async ({ browser }) => {
+    const viewport = { width: 600, height: 300 };
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      body { margin: 8px; font-family: Arial, sans-serif; font-size: 14px; }
+      td { background: #f0f0f0; }
+    </style></head><body>
+      <table cellpadding="10" cellspacing="2" bgcolor="#ffffff">
+        <tr><td>Cell A1</td><td>Cell B1</td><td>Cell C1</td></tr>
+        <tr><td>Cell A2</td><td>Cell B2</td><td>Cell C2</td></tr>
+      </table>
+    </body></html>`;
+
+    const chromiumPage = await chromiumPageForVrt(browser, viewport);
+    const craterPage = new CraterBidiPage();
+    await craterPage.connect();
+    try {
+      await chromiumPage.setContent(html, { waitUntil: "load" });
+      const chromiumPng = await chromiumPage.screenshot({ type: "png" });
+      const craterImage = await renderCraterHtml(craterPage, html, viewport);
+      const result = await compareChromiumPngToImage(chromiumPage, chromiumPng, craterImage, {
+        outputDir: path.join(OUTPUT_ROOT, "fixture-table-cellpadding"),
+        threshold: 0.3,
+        maxDiffRatio: 0.20,
+        cropToContent: true,
+        contentPadding: 12,
+        backgroundTolerance: 18,
+        maskToVisibleContent: true,
+        maskPadding: 2,
+      });
+      expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+    } finally {
+      await craterPage.close();
+      await chromiumPage.close();
+    }
+  });
+
   // --- URL VRT snapshots: real websites captured with capture-real-world-snapshot.ts ---
 
   const urlSnapshots: { name: string; maxDiffRatio: number }[] = [

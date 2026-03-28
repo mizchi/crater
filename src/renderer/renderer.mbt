@@ -3118,6 +3118,7 @@ pub fn build_render_root_node(
 ) -> @node.Node {
   active_before_index.val = prepared.before_index
   active_after_index.val = prepared.after_index
+  current_cellpadding.val = -1.0 // Reset cellpadding for new render
   // Viewport culling: skip expensive processing for below-fold elements
   viewport_estimated_y.val = 0.0
   viewport_cutoff.val = ctx.viewport_height * 1.5
