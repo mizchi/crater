@@ -13,9 +13,9 @@
 - [ ] **font-weight mapping** — Map font-weight values (300, 500, 700 etc.) to correct system fonts. Mainly `start-with-font.ts` changes.
 
 ### Medium effort / High impact
-- [ ] **text-overflow: ellipsis** — Truncate overflowing text with "…". Changes in glyph_render.mbt, needs width measurement.
+- [x] **text-overflow: ellipsis** — Truncate overflowing text with "…". Changes in glyph_render.mbt, needs width measurement.
 - [x] **border rendering** — Draw actual border pixels (border-width/border-color) in framebuffer. Similar approach to border-radius masking.
-- [ ] **box-shadow rendering** — Implement box-shadow with blur, spread, offset in framebuffer.
+- [x] **box-shadow rendering** — Implement box-shadow with blur, spread, offset in framebuffer.
 - [ ] **Real URL snapshot comparison** — VRT tests comparing actual web pages (example.com etc.) between Chromium and Crater.
 
 ### Medium effort / Medium impact

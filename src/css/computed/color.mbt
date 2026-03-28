@@ -754,3 +754,130 @@ fn split_gradient_args(s : String) -> Array[String] {
   }
   result
 }
+
+///|
+/// Parse CSS box-shadow property.
+/// Syntax: [inset] <offset-x> <offset-y> [blur] [spread] <color> [, ...]
+/// Supports multiple comma-separated shadow layers.
+pub fn parse_box_shadow(
+  value : String,
+  ctx : ComputeContext,
+) -> Array[@types.BoxShadowLayer] {
+  let v = value.trim().to_string()
+  if v.to_lower() == "none" || v.is_empty() {
+    return []
+  }
+  // Split by comma for multiple shadows
+  let layers : Array[@types.BoxShadowLayer] = []
+  let shadow_strs = split_box_shadow_layers(v)
+  for shadow_str in shadow_strs {
+    match parse_single_box_shadow(shadow_str.trim().to_string(), ctx) {
+      Some(layer) => layers.push(layer)
+      None => ()
+    }
+  }
+  layers
+}
+
+///|
+/// Split box-shadow value by commas, respecting parentheses (for rgb() etc.)
+fn split_box_shadow_layers(s : String) -> Array[String] {
+  let result : Array[String] = []
+  let buf = StringBuilder::new()
+  let mut depth = 0
+  for c in s {
+    if c == '(' {
+      depth = depth + 1
+      buf.write_char(c)
+    } else if c == ')' {
+      depth = depth - 1
+      buf.write_char(c)
+    } else if c == ',' && depth == 0 {
+      let part = buf.to_string().trim().to_string()
+      if not(part.is_empty()) {
+        result.push(part)
+      }
+      buf.reset()
+    } else {
+      buf.write_char(c)
+    }
+  }
+  let last = buf.to_string().trim().to_string()
+  if not(last.is_empty()) {
+    result.push(last)
+  }
+  result
+}
+
+///|
+/// Parse a single box-shadow layer.
+fn parse_single_box_shadow(
+  value : String,
+  ctx : ComputeContext,
+) -> @types.BoxShadowLayer? {
+  let parts = split_whitespace_respecting_parens(value)
+  if parts.length() < 2 {
+    return None
+  }
+  let mut inset = false
+  let lengths : Array[Double] = []
+  let mut color = @types.Color::rgba(0, 0, 0, 0.5) // default shadow color
+  for part in parts {
+    let lower = part.to_lower()
+    if lower == "inset" {
+      inset = true
+      continue
+    }
+    // Try to parse as length
+    match resolve_dimension(part, ctx) {
+      @types.Length(px) => {
+        lengths.push(px)
+        continue
+      }
+      _ => ()
+    }
+    // Try to parse as color
+    match parse_color_with_ctx(part, ctx) {
+      Resolved(c) => color = c
+      _ => ()
+    }
+  }
+  if lengths.length() < 2 {
+    return None
+  }
+  let offset_x = lengths[0]
+  let offset_y = lengths[1]
+  let blur_radius = if lengths.length() >= 3 { lengths[2] } else { 0.0 }
+  let spread_radius = if lengths.length() >= 4 { lengths[3] } else { 0.0 }
+  Some({ offset_x, offset_y, blur_radius, spread_radius, color, inset })
+}
+
+///|
+/// Split by whitespace but respect parentheses (for rgb()/rgba())
+fn split_whitespace_respecting_parens(s : String) -> Array[String] {
+  let result : Array[String] = []
+  let buf = StringBuilder::new()
+  let mut depth = 0
+  for c in s {
+    if c == '(' {
+      depth = depth + 1
+      buf.write_char(c)
+    } else if c == ')' {
+      depth = depth - 1
+      buf.write_char(c)
+    } else if (c == ' ' || c == '\t') && depth == 0 {
+      let part = buf.to_string()
+      if not(part.is_empty()) {
+        result.push(part)
+      }
+      buf.reset()
+    } else {
+      buf.write_char(c)
+    }
+  }
+  let last = buf.to_string()
+  if not(last.is_empty()) {
+    result.push(last)
+  }
+  result
+}

@@ -1362,6 +1362,136 @@ fn resolve_radius(val : Double, ref_dim : Int) -> Int {
 }
 
 ///|
+/// Draw an outer box-shadow layer.
+/// Renders a filled rectangle offset and expanded by shadow parameters.
+/// Approximates blur with concentric semi-transparent rectangles.
+fn draw_box_shadow(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  x : Int,
+  y : Int,
+  w : Int,
+  h : Int,
+  shadow : @types.BoxShadowLayer,
+  opacity : Double,
+  clip : ClipRect?,
+) -> Unit {
+  let ox = shadow.offset_x.to_int()
+  let oy = shadow.offset_y.to_int()
+  let spread = shadow.spread_radius.to_int()
+  let blur = shadow.blur_radius.to_int()
+  if blur <= 0 {
+    // Sharp shadow: single filled rect
+    let sx = x + ox - spread
+    let sy = y + oy - spread
+    let sw = w + spread * 2
+    let sh = h + spread * 2
+    fill_rect_clipped(fb, palette, sx, sy, sw, sh, shadow.color, opacity, clip)
+  } else {
+    // Approximate blur with concentric layers of decreasing opacity
+    let steps = @cmp.minimum(blur, 8)
+    for i = steps; i >= 0; i = i - 1 {
+      let expand = spread + i
+      let sx = x + ox - expand
+      let sy = y + oy - expand
+      let sw = w + expand * 2
+      let sh = h + expand * 2
+      // Alpha fades from full to 0 as i goes from 0 to steps
+      let t = (steps - i).to_double() / (steps + 1).to_double()
+      let layer_alpha = shadow.color.a * t * t // quadratic falloff
+      let layer_color = @types.Color::rgba(
+        shadow.color.r,
+        shadow.color.g,
+        shadow.color.b,
+        layer_alpha,
+      )
+      fill_rect_clipped(fb, palette, sx, sy, sw, sh, layer_color, opacity, clip)
+    }
+  }
+}
+
+///|
+/// Truncate text and append "…" if it would exceed max_width (glyph provider).
+fn truncate_text_with_ellipsis_glyph(
+  provider : GlyphProvider,
+  text : String,
+  max_width : Int,
+  font_size : Double,
+  is_bold : Bool,
+) -> String {
+  if max_width <= 0 {
+    return text
+  }
+  let max_w = max_width.to_double()
+  // Measure full text width
+  let mut total_w = 0.0
+  let mut fits = true
+  for c in text {
+    total_w = total_w + get_advance(provider, c.to_int(), font_size, is_bold)
+    if total_w > max_w {
+      fits = false
+      break
+    }
+  }
+  if fits {
+    return text
+  }
+  // Measure ellipsis width
+  let ellipsis_w = get_advance(
+    provider, 0x2026, // "…" character
+     font_size, is_bold,
+  )
+  // Find how many characters fit before ellipsis
+  let buf = StringBuilder::new()
+  let mut cur_w = 0.0
+  for c in text {
+    let advance = get_advance(provider, c.to_int(), font_size, is_bold)
+    if cur_w + advance + ellipsis_w > max_w {
+      break
+    }
+    buf.write_char(c)
+    cur_w = cur_w + advance
+  }
+  buf.write_string("\u{2026}")
+  buf.to_string()
+}
+
+///|
+/// Truncate text and append "…" if it would exceed max_width (bitmap font).
+fn truncate_text_with_ellipsis_bitmap(text : String, max_width : Int) -> String {
+  if max_width <= 0 {
+    return text
+  }
+  let char_w = font_width // bitmap font character width
+  let ellipsis_w = char_w // "…" is one character wide
+  let mut cur_w = 0
+  let mut fits = true
+  for c in text {
+    let w = if is_wide_char(c) { char_w * 2 } else { char_w }
+    cur_w = cur_w + w
+    if cur_w > max_width {
+      fits = false
+      break
+    }
+  }
+  if fits {
+    return text
+  }
+  let buf = StringBuilder::new()
+  cur_w = 0
+  for c in text {
+    let w = if is_wide_char(c) { char_w * 2 } else { char_w }
+    if cur_w + w + ellipsis_w > max_width {
+      break
+    }
+    buf.write_char(c)
+    cur_w = cur_w + w
+  }
+  buf.write_string("\u{2026}")
+  buf.to_string()
+}
+
+///|
 /// Draw solid borders for a paint node.
 /// Draws 4 edges as filled rectangles, with proper corner overlap handling.
 fn draw_borders(
@@ -1525,6 +1655,28 @@ fn render_paint_node_clipped(
   let bl_r = resolve_radius(node.paint.border_bottom_left_radius, min_dim)
   let has_radius = tl_r > 0 || tr_r > 0 || br_r > 0 || bl_r > 0
 
+  // Draw box-shadow (outer shadows are rendered behind the element)
+  if node.paint.box_shadow.length() > 0 {
+    // Render shadows in reverse order (first shadow on top)
+    let shadows = node.paint.box_shadow
+    for i = shadows.length() - 1; i >= 0; i = i - 1 {
+      let shadow = shadows[i]
+      if not(shadow.inset) {
+        draw_box_shadow(
+          fb,
+          palette,
+          x,
+          y,
+          w,
+          h,
+          shadow,
+          node.paint.opacity,
+          clip,
+        )
+      }
+    }
+  }
+
   // Draw background: gradient or solid color
   match node.paint.background_image {
     @types.Gradient(grad) =>
@@ -1588,7 +1740,23 @@ fn render_paint_node_clipped(
 
   // Draw text if this is a text node
   match node.text {
-    Some(text_content) =>
+    Some(text_content) => {
+      // Apply text-overflow: ellipsis truncation
+      let render_text = match node.paint.text_overflow {
+        @style.TextOverflow::Ellipsis =>
+          match glyph_provider_override.val {
+            Some(provider) =>
+              truncate_text_with_ellipsis_glyph(
+                provider,
+                text_content,
+                w,
+                node.paint.font_size,
+                node.paint.is_bold,
+              )
+            None => truncate_text_with_ellipsis_bitmap(text_content, w)
+          }
+        _ => text_content
+      }
       match glyph_provider_override.val {
         Some(provider) => {
           let svg_color = @svg.Color::rgb(
@@ -1603,7 +1771,7 @@ fn render_paint_node_clipped(
             provider,
             x,
             y,
-            text_content,
+            render_text,
             w,
             svg_color,
             font_size,
@@ -1618,10 +1786,11 @@ fn render_paint_node_clipped(
           )
           let scale = 1
           let _ = draw_text_clipped(
-            fb, x, y, text_content, w, text_idx, scale, clip,
+            fb, x, y, render_text, w, text_idx, scale, clip,
           )
         }
       }
+    }
     None => ()
   }
 

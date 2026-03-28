@@ -209,6 +209,7 @@ pub(all) struct Style {
   mut line_height : Double
   mut text_align : TextAlign
   mut white_space : WhiteSpace
+  mut text_overflow : TextOverflow
   mut writing_mode : WritingMode
   mut direction : Direction
   mut vertical_align : VerticalAlign
@@ -220,6 +221,7 @@ pub(all) struct Style {
   mut color : @types.Color
   mut background_color : @types.Color
   mut background_image : @types.BackgroundImage
+  mut box_shadow : Array[@types.BoxShadowLayer]
   mut contain : Contain
   mut break_before : BreakBefore
   mut break_after : BreakBefore
@@ -265,6 +267,13 @@ pub(all) enum TextAlign {
 }
 pub impl Eq for TextAlign
 pub impl Show for TextAlign
+
+pub(all) enum TextOverflow {
+  Clip
+  Ellipsis
+}
+pub impl Eq for TextOverflow
+pub impl Show for TextOverflow
 
 pub(all) struct Transform {
   translate_x : TranslateValue

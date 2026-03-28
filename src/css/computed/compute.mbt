@@ -172,6 +172,7 @@ priv struct StyleBuilder {
   // Text wrapping and direction
   mut text_align : @style.TextAlign
   mut white_space : @style.WhiteSpace
+  mut text_overflow : @style.TextOverflow
   mut writing_mode : @style.WritingMode
   mut direction : @style.Direction
   // Vertical alignment for inline elements
@@ -187,6 +188,7 @@ priv struct StyleBuilder {
   mut color : @types.Color
   mut background_color : @types.Color
   mut background_image : @types.BackgroundImage
+  mut box_shadow : Array[@types.BoxShadowLayer]
   // Containment
   mut contain : @style.Contain
   // Fragmentation
@@ -296,6 +298,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     line_height: 16.0,
     text_align: @style.TextAlign::Start,
     white_space: @style.WhiteSpace::Normal,
+    text_overflow: @style.TextOverflow::Clip,
     writing_mode: @style.WritingMode::HorizontalTb,
     direction: @style.Direction::Ltr,
     vertical_align: @style.VerticalAlign::Baseline,
@@ -307,6 +310,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     color: @types.Color::black(),
     background_color: @types.Color::transparent(),
     background_image: @types.None,
+    box_shadow: [],
     contain: @style.Contain::none(),
     break_before: @style.BreakBefore::Auto,
     break_after: @style.BreakBefore::Auto,
@@ -411,6 +415,7 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     line_height: style.line_height,
     text_align: style.text_align,
     white_space: style.white_space,
+    text_overflow: style.text_overflow,
     writing_mode: style.writing_mode,
     direction: style.direction,
     vertical_align: style.vertical_align,
@@ -422,6 +427,7 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     color: style.color,
     background_color: style.background_color,
     background_image: style.background_image,
+    box_shadow: style.box_shadow,
     contain: style.contain,
     break_before: style.break_before,
     break_after: style.break_after,
@@ -537,6 +543,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     line_height: self.line_height,
     text_align: self.text_align,
     white_space: self.white_space,
+    text_overflow: self.text_overflow,
     writing_mode: self.writing_mode,
     direction: self.direction,
     vertical_align: self.vertical_align,
@@ -548,6 +555,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     color: self.color,
     background_color: self.background_color,
     background_image: self.background_image,
+    box_shadow: self.box_shadow,
     contain: self.contain,
     break_before: self.break_before,
     break_after: self.break_after,
@@ -1958,6 +1966,11 @@ fn apply_property(
       builder.line_height = parse_line_height(value, builder.font_size)
     "text-align" => builder.text_align = parse_text_align(value)
     "white-space" => builder.white_space = parse_white_space(value)
+    "text-overflow" =>
+      builder.text_overflow = match value.trim().to_lower() {
+        "ellipsis" => @style.TextOverflow::Ellipsis
+        _ => @style.TextOverflow::Clip
+      }
     "writing-mode" => builder.writing_mode = parse_writing_mode(value)
     "direction" => builder.direction = parse_direction(value)
     "vertical-align" => builder.vertical_align = parse_vertical_align(value)
@@ -2045,6 +2058,8 @@ fn apply_property(
         builder.background_image = parse_linear_gradient(value)
       }
     }
+    // Box shadow
+    "box-shadow" => builder.box_shadow = parse_box_shadow(value, ctx)
     // Font weight
     "font-weight" => builder.font_weight = parse_font_weight(value)
     // Font family (store first family name for font matching)

@@ -61,6 +61,13 @@ pub(all) enum WhiteSpace {
 } derive(Show, Eq)
 
 ///|
+/// CSS text-overflow property (for truncated text)
+pub(all) enum TextOverflow {
+  Clip // Default - clip overflowing text
+  Ellipsis // Show "…" when text overflows
+} derive(Show, Eq)
+
+///|
 /// CSS writing-mode property (for text direction and flow)
 pub(all) enum WritingMode {
   HorizontalTb // Default - left-to-right, top-to-bottom
@@ -515,6 +522,7 @@ pub(all) struct Style {
   // Text wrapping and direction
   mut text_align : TextAlign
   mut white_space : WhiteSpace // white-space: normal | nowrap | pre | pre-wrap | pre-line
+  mut text_overflow : TextOverflow // text-overflow: clip | ellipsis
   mut writing_mode : WritingMode // writing-mode: horizontal-tb | vertical-rl | vertical-lr
   mut direction : Direction // direction: ltr | rtl (inline text direction)
   // Vertical alignment for inline elements
@@ -530,6 +538,7 @@ pub(all) struct Style {
   mut color : @types.Color // Text color (inherited)
   mut background_color : @types.Color // Background color (not inherited)
   mut background_image : @types.BackgroundImage // Background image (gradient etc.)
+  mut box_shadow : Array[@types.BoxShadowLayer] // box-shadow layers
   // Containment (for layout optimization)
   mut contain : Contain
   // Fragmentation
@@ -647,6 +656,7 @@ pub fn Style::default() -> Style {
     line_height: 16.0,
     text_align: Start,
     white_space: Normal,
+    text_overflow: Clip,
     writing_mode: HorizontalTb,
     direction: Ltr,
     vertical_align: Baseline,
@@ -658,6 +668,7 @@ pub fn Style::default() -> Style {
     color: @types.Color::black(),
     background_color: @types.Color::transparent(),
     background_image: @types.None,
+    box_shadow: [],
     contain: Contain::none(),
     break_before: BreakBefore::Auto,
     break_after: BreakBefore::Auto,

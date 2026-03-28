@@ -128,3 +128,14 @@ pub(all) enum BackgroundImage {
   None
   Gradient(LinearGradient)
 } derive(Show)
+
+///|
+/// A single box-shadow layer
+pub(all) struct BoxShadowLayer {
+  offset_x : Double // Horizontal offset in px
+  offset_y : Double // Vertical offset in px
+  blur_radius : Double // Blur radius in px (0 = sharp)
+  spread_radius : Double // Spread radius in px (expands/shrinks shadow)
+  color : Color
+  inset : Bool // true = inner shadow
+} derive(Show)

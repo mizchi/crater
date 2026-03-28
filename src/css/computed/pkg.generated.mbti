@@ -38,6 +38,8 @@ pub fn parse_alignment_with_overflow(String) -> (@types.Alignment, Bool)
 
 pub fn parse_aspect_ratio(String) -> Double?
 
+pub fn parse_box_shadow(String, ComputeContext) -> Array[@types.BoxShadowLayer]
+
 pub fn parse_clear(String) -> @types.Clear
 
 pub fn parse_clear_with_direction(String, @style.Direction) -> @types.Clear

@@ -69,6 +69,16 @@ pub fn BoundingRect::union(Self, Self) -> Self
 pub fn BoundingRect::zero() -> Self
 pub impl Show for BoundingRect
 
+pub(all) struct BoxShadowLayer {
+  offset_x : Double
+  offset_y : Double
+  blur_radius : Double
+  spread_radius : Double
+  color : Color
+  inset : Bool
+}
+pub impl Show for BoxShadowLayer
+
 pub(all) enum BoxSizing {
   ContentBox
   BorderBox

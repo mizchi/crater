@@ -462,4 +462,50 @@ test.describe("VRT Levels", () => {
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
+
+  test("L16: text-overflow ellipsis", async ({ browser }) => {
+    const html = `<!DOCTYPE html><html><head><style>
+      body { margin: 20px; background: #fff; font-family: Arial, sans-serif; }
+      .row { display: flex; gap: 16px; margin-bottom: 16px; }
+      .box { width: 150px; padding: 8px; border: 1px solid #ccc; }
+    </style></head><body>
+      <div class="row">
+        <div class="box" style="overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">This is a very long text that should be truncated with an ellipsis</div>
+        <div class="box" style="overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">Short text</div>
+      </div>
+      <div class="row">
+        <div class="box" style="overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">Another long piece of text for ellipsis testing purposes</div>
+        <div class="box" style="overflow:hidden; white-space:nowrap; text-overflow:clip;">This should be clipped not ellipsis</div>
+      </div>
+    </body></html>`;
+
+    const result = await compareFixture(browser, "L16-ellipsis", html, {
+      maxDiffRatio: 0.15,
+    });
+    expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+  });
+
+  test("L17: box-shadow rendering", async ({ browser }) => {
+    const html = `<!DOCTYPE html><html><head><style>
+      body { margin: 30px; background: #fff; font-family: Arial, sans-serif; }
+      .row { display: flex; gap: 30px; margin-bottom: 30px; align-items: center; }
+      .box { width: 100px; height: 80px; background: #fff; }
+    </style></head><body>
+      <div class="row">
+        <div class="box" style="box-shadow: 3px 3px 0 #999;"></div>
+        <div class="box" style="box-shadow: 5px 5px 10px rgba(0,0,0,0.3);"></div>
+        <div class="box" style="box-shadow: 0 2px 8px rgba(0,0,0,0.2);"></div>
+      </div>
+      <div class="row">
+        <div class="box" style="box-shadow: 3px 3px 0 5px rgba(0,0,0,0.15);"></div>
+        <div class="box" style="box-shadow: -3px -3px 8px rgba(0,0,0,0.2);"></div>
+        <div class="box" style="background:#3498db; box-shadow: 5px 5px 15px rgba(0,0,0,0.4);"></div>
+      </div>
+    </body></html>`;
+
+    const result = await compareFixture(browser, "L17-box-shadow", html, {
+      maxDiffRatio: 0.15,
+    });
+    expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+  });
 });

@@ -35,9 +35,12 @@ pub(all) struct PaintProperties {
   color : @types.Color // Text color (computed)
   background_color : @types.Color // Background color (computed)
   background_image : @types.BackgroundImage // Gradient etc.
+  box_shadow : Array[@types.BoxShadowLayer] // box-shadow layers
   font_size : Double // Font size in pixels (for text rendering)
   is_bold : Bool // Whether text should be rendered bold
   font_family : String // First font family name (lowercase)
+  text_overflow : @style.TextOverflow // text-overflow: clip | ellipsis
+  white_space : @style.WhiteSpace // white-space (for nowrap detection)
   border_top_left_radius : Double
   border_top_right_radius : Double
   border_bottom_right_radius : Double
@@ -68,9 +71,12 @@ pub fn PaintProperties::default() -> PaintProperties {
     color: @types.Color::black(),
     background_color: @types.Color::transparent(),
     background_image: @types.None,
+    box_shadow: [],
     font_size: 16.0,
     is_bold: false,
     font_family: "",
+    text_overflow: @style.TextOverflow::Clip,
+    white_space: @style.WhiteSpace::Normal,
     border_top_left_radius: 0.0,
     border_top_right_radius: 0.0,
     border_bottom_right_radius: 0.0,
@@ -102,9 +108,12 @@ pub fn PaintProperties::from_style(style : @style.Style) -> PaintProperties {
     color: style.color,
     background_color: style.background_color,
     background_image: style.background_image,
+    box_shadow: style.box_shadow,
     font_size: style.font_size,
     is_bold: false, // Will be set from tag name in from_node_and_layout
     font_family: style.font_family,
+    text_overflow: style.text_overflow,
+    white_space: style.white_space,
     border_top_left_radius: style.border_top_left_radius,
     border_top_right_radius: style.border_top_right_radius,
     border_bottom_right_radius: style.border_bottom_right_radius,
