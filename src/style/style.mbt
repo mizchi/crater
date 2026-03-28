@@ -462,6 +462,7 @@ pub(all) struct Style {
   mut padding : @types.Rect[@types.Dimension]
   mut border : @types.Rect[@types.Dimension]
   mut border_style : @types.Rect[BorderStyle]
+  mut border_color : @types.Rect[@types.Color]
   mut margin_trim : MarginTrim
   // Flexbox
   mut flex_direction : @types.FlexDirection
@@ -585,6 +586,12 @@ pub fn Style::default() -> Style {
       bottom: @types.Length(0.0),
     },
     border_style: { left: None, right: None, top: None, bottom: None },
+    border_color: {
+      left: @types.Color::black(),
+      right: @types.Color::black(),
+      top: @types.Color::black(),
+      bottom: @types.Color::black(),
+    },
     padding: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),

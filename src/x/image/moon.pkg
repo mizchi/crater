@@ -3,15 +3,12 @@ import {
   "moonbitlang/core/math",
   "mizchi/crater/layout/node",
   "mizchi/crater/paint",
+  "mizchi/crater/style",
   "mizchi/crater/types",
   "mizchi/crater/svg",
   "mizchi/font" @font,
   "mizchi/svg" @msvg,
 }
-
-import {
-  "mizchi/crater/style",
-} for "test"
 
 import {
 } for "wbtest"

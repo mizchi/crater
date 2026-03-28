@@ -438,4 +438,28 @@ test.describe("VRT Levels", () => {
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
+
+  test("L15: border rendering", async ({ browser }) => {
+    const html = `<!DOCTYPE html><html><head><style>
+      body { margin: 20px; background: #fff; font-family: Arial, sans-serif; }
+      .row { display: flex; gap: 16px; margin-bottom: 16px; align-items: center; }
+      .box { width: 100px; height: 80px; }
+    </style></head><body>
+      <div class="row">
+        <div class="box" style="border: 3px solid #333;"></div>
+        <div class="box" style="border: 5px solid #e74c3c;"></div>
+        <div class="box" style="border: 2px solid #3498db; background: #ecf0f1;"></div>
+      </div>
+      <div class="row">
+        <div class="box" style="border-top: 4px solid #e74c3c; border-bottom: 4px solid #3498db; border-left: 4px solid #2ecc71; border-right: 4px solid #f39c12;"></div>
+        <div class="box" style="border: 8px solid #9b59b6; background: #f1c40f;"></div>
+        <div class="box" style="border: 1px solid #ccc; border-left: 5px solid #e74c3c;"></div>
+      </div>
+    </body></html>`;
+
+    const result = await compareFixture(browser, "L15-borders", html, {
+      maxDiffRatio: 0.12,
+    });
+    expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+  });
 });

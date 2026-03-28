@@ -1362,6 +1362,98 @@ fn resolve_radius(val : Double, ref_dim : Int) -> Int {
 }
 
 ///|
+/// Draw solid borders for a paint node.
+/// Draws 4 edges as filled rectangles, with proper corner overlap handling.
+fn draw_borders(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  x : Int,
+  y : Int,
+  w : Int,
+  h : Int,
+  paint : @paint.PaintProperties,
+  opacity : Double,
+  clip : ClipRect?,
+) -> Unit {
+  let bt = paint.border_top_width.to_int()
+  let br = paint.border_right_width.to_int()
+  let bb = paint.border_bottom_width.to_int()
+  let bl = paint.border_left_width.to_int()
+  // Top border (full width)
+  if bt > 0 {
+    match paint.border_top_style {
+      @style.BorderStyle::None | @style.BorderStyle::Hidden => ()
+      _ =>
+        fill_rect_clipped(
+          fb,
+          palette,
+          x,
+          y,
+          w,
+          bt,
+          paint.border_top_color,
+          opacity,
+          clip,
+        )
+    }
+  }
+  // Bottom border (full width)
+  if bb > 0 {
+    match paint.border_bottom_style {
+      @style.BorderStyle::None | @style.BorderStyle::Hidden => ()
+      _ =>
+        fill_rect_clipped(
+          fb,
+          palette,
+          x,
+          y + h - bb,
+          w,
+          bb,
+          paint.border_bottom_color,
+          opacity,
+          clip,
+        )
+    }
+  }
+  // Left border (between top and bottom)
+  if bl > 0 {
+    match paint.border_left_style {
+      @style.BorderStyle::None | @style.BorderStyle::Hidden => ()
+      _ =>
+        fill_rect_clipped(
+          fb,
+          palette,
+          x,
+          y + bt,
+          bl,
+          h - bt - bb,
+          paint.border_left_color,
+          opacity,
+          clip,
+        )
+    }
+  }
+  // Right border (between top and bottom)
+  if br > 0 {
+    match paint.border_right_style {
+      @style.BorderStyle::None | @style.BorderStyle::Hidden => ()
+      _ =>
+        fill_rect_clipped(
+          fb,
+          palette,
+          x + w - br,
+          y + bt,
+          br,
+          h - bt - bb,
+          paint.border_right_color,
+          opacity,
+          clip,
+        )
+    }
+  }
+}
+
+///|
 /// Render a PaintNode tree to framebuffer
 fn render_paint_node(
   fb : Framebuffer,
@@ -1483,6 +1575,15 @@ fn render_paint_node_clipped(
           )
         }
       }
+  }
+
+  // Draw borders (after background, before text/children)
+  let has_border = node.paint.border_top_width > 0.0 ||
+    node.paint.border_right_width > 0.0 ||
+    node.paint.border_bottom_width > 0.0 ||
+    node.paint.border_left_width > 0.0
+  if has_border {
+    draw_borders(fb, palette, x, y, w, h, node.paint, node.paint.opacity, clip)
   }
 
   // Draw text if this is a text node

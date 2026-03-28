@@ -123,6 +123,10 @@ priv struct StyleBuilder {
   mut border_style_right : @style.BorderStyle
   mut border_style_bottom : @style.BorderStyle
   mut border_style_left : @style.BorderStyle
+  mut border_color_top : @types.Color
+  mut border_color_right : @types.Color
+  mut border_color_bottom : @types.Color
+  mut border_color_left : @types.Color
   mut flex_direction : @types.FlexDirection
   mut flex_wrap : @types.FlexWrap
   mut justify_content : @types.Alignment
@@ -248,6 +252,10 @@ fn StyleBuilder::new() -> StyleBuilder {
     border_style_right: @style.BorderStyle::None,
     border_style_bottom: @style.BorderStyle::None,
     border_style_left: @style.BorderStyle::None,
+    border_color_top: @types.Color::black(),
+    border_color_right: @types.Color::black(),
+    border_color_bottom: @types.Color::black(),
+    border_color_left: @types.Color::black(),
     flex_direction: @types.FlexDirection::Row,
     flex_wrap: @types.FlexWrap::NoWrap,
     justify_content: @types.Alignment::FlexStart,
@@ -359,6 +367,10 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     border_style_right: style.border_style.right,
     border_style_bottom: style.border_style.bottom,
     border_style_left: style.border_style.left,
+    border_color_top: style.border_color.top,
+    border_color_right: style.border_color.right,
+    border_color_bottom: style.border_color.bottom,
+    border_color_left: style.border_color.left,
     flex_direction: style.flex_direction,
     flex_wrap: style.flex_wrap,
     justify_content: style.justify_content,
@@ -476,6 +488,12 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
       right: self.border_style_right,
       bottom: self.border_style_bottom,
       left: self.border_style_left,
+    },
+    border_color: {
+      top: self.border_color_top,
+      right: self.border_color_right,
+      bottom: self.border_color_bottom,
+      left: self.border_color_left,
     },
     flex_direction: self.flex_direction,
     flex_wrap: self.flex_wrap,
@@ -1252,6 +1270,16 @@ fn apply_property(
       builder.border_style_right = bs
       builder.border_style_bottom = bs
       builder.border_style_left = bs
+      // Extract border-color from shorthand
+      match extract_border_color_from_shorthand(value, ctx) {
+        Some(c) => {
+          builder.border_color_top = c
+          builder.border_color_right = c
+          builder.border_color_bottom = c
+          builder.border_color_left = c
+        }
+        None => ()
+      }
     }
     "border-top" => {
       let bs = extract_border_style_from_shorthand(value)
@@ -1260,6 +1288,10 @@ fn apply_property(
         @types.Length(0.0)
       } else {
         resolve_border_width(value, ctx)
+      }
+      match extract_border_color_from_shorthand(value, ctx) {
+        Some(c) => builder.border_color_top = c
+        None => ()
       }
     }
     "border-right" => {
@@ -1270,6 +1302,10 @@ fn apply_property(
       } else {
         resolve_border_width(value, ctx)
       }
+      match extract_border_color_from_shorthand(value, ctx) {
+        Some(c) => builder.border_color_right = c
+        None => ()
+      }
     }
     "border-bottom" => {
       let bs = extract_border_style_from_shorthand(value)
@@ -1279,6 +1315,10 @@ fn apply_property(
       } else {
         resolve_border_width(value, ctx)
       }
+      match extract_border_color_from_shorthand(value, ctx) {
+        Some(c) => builder.border_color_bottom = c
+        None => ()
+      }
     }
     "border-left" => {
       let bs = extract_border_style_from_shorthand(value)
@@ -1287,6 +1327,10 @@ fn apply_property(
         @types.Length(0.0)
       } else {
         resolve_border_width(value, ctx)
+      }
+      match extract_border_color_from_shorthand(value, ctx) {
+        Some(c) => builder.border_color_left = c
+        None => ()
       }
     }
     "border-top-width" => builder.border_top = resolve_dimension(value, ctx)
@@ -1373,6 +1417,88 @@ fn apply_property(
         builder.border_left = @types.Length(0.0)
       }
     }
+    "border-color" => {
+      let parts = split_whitespace(value)
+      if parts.length() == 1 {
+        match parse_color_with_ctx(parts[0], ctx) {
+          Resolved(c) => {
+            builder.border_color_top = c
+            builder.border_color_right = c
+            builder.border_color_bottom = c
+            builder.border_color_left = c
+          }
+          _ => ()
+        }
+      } else if parts.length() == 2 {
+        match parse_color_with_ctx(parts[0], ctx) {
+          Resolved(c) => {
+            builder.border_color_top = c
+            builder.border_color_bottom = c
+          }
+          _ => ()
+        }
+        match parse_color_with_ctx(parts[1], ctx) {
+          Resolved(c) => {
+            builder.border_color_right = c
+            builder.border_color_left = c
+          }
+          _ => ()
+        }
+      } else if parts.length() == 3 {
+        match parse_color_with_ctx(parts[0], ctx) {
+          Resolved(c) => builder.border_color_top = c
+          _ => ()
+        }
+        match parse_color_with_ctx(parts[1], ctx) {
+          Resolved(c) => {
+            builder.border_color_right = c
+            builder.border_color_left = c
+          }
+          _ => ()
+        }
+        match parse_color_with_ctx(parts[2], ctx) {
+          Resolved(c) => builder.border_color_bottom = c
+          _ => ()
+        }
+      } else if parts.length() >= 4 {
+        match parse_color_with_ctx(parts[0], ctx) {
+          Resolved(c) => builder.border_color_top = c
+          _ => ()
+        }
+        match parse_color_with_ctx(parts[1], ctx) {
+          Resolved(c) => builder.border_color_right = c
+          _ => ()
+        }
+        match parse_color_with_ctx(parts[2], ctx) {
+          Resolved(c) => builder.border_color_bottom = c
+          _ => ()
+        }
+        match parse_color_with_ctx(parts[3], ctx) {
+          Resolved(c) => builder.border_color_left = c
+          _ => ()
+        }
+      }
+    }
+    "border-top-color" =>
+      match parse_color_with_ctx(value, ctx) {
+        Resolved(c) => builder.border_color_top = c
+        _ => ()
+      }
+    "border-right-color" =>
+      match parse_color_with_ctx(value, ctx) {
+        Resolved(c) => builder.border_color_right = c
+        _ => ()
+      }
+    "border-bottom-color" =>
+      match parse_color_with_ctx(value, ctx) {
+        Resolved(c) => builder.border_color_bottom = c
+        _ => ()
+      }
+    "border-left-color" =>
+      match parse_color_with_ctx(value, ctx) {
+        Resolved(c) => builder.border_color_left = c
+        _ => ()
+      }
     // Logical border properties (block/inline)
     "border-block" | "border-block-width" => {
       let width = resolve_border_width(value, ctx)
@@ -2071,6 +2197,48 @@ fn parse_border_style_value(value : String) -> @style.BorderStyle {
     "outset" => @style.BorderStyle::Outset
     _ => @style.BorderStyle::None
   }
+}
+
+///|
+/// Extract border color from a border shorthand value like "2px solid red".
+/// Returns None if no color token is found (caller should use currentColor/black).
+fn extract_border_color_from_shorthand(
+  value : String,
+  ctx : ComputeContext,
+) -> @types.Color? {
+  let parts = split_whitespace(value)
+  for part in parts {
+    let lower = part.to_lower()
+    // Skip style keywords
+    match lower {
+      "none"
+      | "hidden"
+      | "dotted"
+      | "dashed"
+      | "solid"
+      | "double"
+      | "groove"
+      | "ridge"
+      | "inset"
+      | "outset" => continue
+      // Skip width keywords
+      "thin" | "medium" | "thick" => continue
+      _ => ()
+    }
+    // Skip numeric values (widths like "2px", "1em")
+    if lower.length() > 0 {
+      let first = lower[0]
+      if (first >= '0' && first <= '9') || first == '.' {
+        continue
+      }
+    }
+    // Try to parse as color
+    match parse_color_with_ctx(part, ctx) {
+      Resolved(c) => return Some(c)
+      _ => ()
+    }
+  }
+  None
 }
 
 ///|

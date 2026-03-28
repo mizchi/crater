@@ -11,6 +11,18 @@
 // Types Visibility, ZIndex are defined in style/ module.
 
 // =============================================================================
+// Helpers
+// =============================================================================
+
+///|
+fn dim_to_px(dim : @types.Dimension) -> Double {
+  match dim {
+    @types.Length(px) => px
+    _ => 0.0
+  }
+}
+
+// =============================================================================
 // Paint Properties (visual properties not affecting layout)
 // =============================================================================
 
@@ -30,6 +42,18 @@ pub(all) struct PaintProperties {
   border_top_right_radius : Double
   border_bottom_right_radius : Double
   border_bottom_left_radius : Double
+  border_top_width : Double
+  border_right_width : Double
+  border_bottom_width : Double
+  border_left_width : Double
+  border_top_style : @style.BorderStyle
+  border_right_style : @style.BorderStyle
+  border_bottom_style : @style.BorderStyle
+  border_left_style : @style.BorderStyle
+  border_top_color : @types.Color
+  border_right_color : @types.Color
+  border_bottom_color : @types.Color
+  border_left_color : @types.Color
   overflow_x : @types.Overflow
   overflow_y : @types.Overflow
 }
@@ -51,6 +75,18 @@ pub fn PaintProperties::default() -> PaintProperties {
     border_top_right_radius: 0.0,
     border_bottom_right_radius: 0.0,
     border_bottom_left_radius: 0.0,
+    border_top_width: 0.0,
+    border_right_width: 0.0,
+    border_bottom_width: 0.0,
+    border_left_width: 0.0,
+    border_top_style: @style.BorderStyle::None,
+    border_right_style: @style.BorderStyle::None,
+    border_bottom_style: @style.BorderStyle::None,
+    border_left_style: @style.BorderStyle::None,
+    border_top_color: @types.Color::black(),
+    border_right_color: @types.Color::black(),
+    border_bottom_color: @types.Color::black(),
+    border_left_color: @types.Color::black(),
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
   }
@@ -73,6 +109,18 @@ pub fn PaintProperties::from_style(style : @style.Style) -> PaintProperties {
     border_top_right_radius: style.border_top_right_radius,
     border_bottom_right_radius: style.border_bottom_right_radius,
     border_bottom_left_radius: style.border_bottom_left_radius,
+    border_top_width: dim_to_px(style.border.top),
+    border_right_width: dim_to_px(style.border.right),
+    border_bottom_width: dim_to_px(style.border.bottom),
+    border_left_width: dim_to_px(style.border.left),
+    border_top_style: style.border_style.top,
+    border_right_style: style.border_style.right,
+    border_bottom_style: style.border_style.bottom,
+    border_left_style: style.border_style.left,
+    border_top_color: style.border_color.top,
+    border_right_color: style.border_color.right,
+    border_bottom_color: style.border_color.bottom,
+    border_left_color: style.border_color.left,
     overflow_x: style.overflow_x,
     overflow_y: style.overflow_y,
   }

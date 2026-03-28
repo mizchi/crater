@@ -71,6 +71,18 @@ pub(all) struct PaintProperties {
   border_top_right_radius : Double
   border_bottom_right_radius : Double
   border_bottom_left_radius : Double
+  border_top_width : Double
+  border_right_width : Double
+  border_bottom_width : Double
+  border_left_width : Double
+  border_top_style : @style.BorderStyle
+  border_right_style : @style.BorderStyle
+  border_bottom_style : @style.BorderStyle
+  border_left_style : @style.BorderStyle
+  border_top_color : @types.Color
+  border_right_color : @types.Color
+  border_bottom_color : @types.Color
+  border_left_color : @types.Color
   overflow_x : @types.Overflow
   overflow_y : @types.Overflow
 }
