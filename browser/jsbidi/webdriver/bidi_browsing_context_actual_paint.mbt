@@ -123,6 +123,84 @@ extern "js" fn call_paint_text_provider(
   #|}
 
 ///|
+/// Check if JS-side outline commands provider is available (avoids SVG string roundtrip)
+extern "js" fn has_outline_commands() -> Bool =
+  #|() => typeof globalThis.__craterGlyphOutlineCommands === "function"
+
+///|
+/// Get glyph outline commands as JSON string: [[type, ...args], ...]
+extern "js" fn js_glyph_outline_commands(codepoint : Int, font_size : Double, is_bold : Bool) -> String =
+  #|(cp, fs, bold) => {
+  #|  const fn = bold ? (globalThis.__craterGlyphOutlineCommandsBold || globalThis.__craterGlyphOutlineCommands) : globalThis.__craterGlyphOutlineCommands;
+  #|  if (typeof fn !== "function") return "";
+  #|  try { return String(fn(cp, fs) || ""); } catch { return ""; }
+  #|}
+
+///|
+/// Get glyph outline commands for a specific font family as JSON string
+extern "js" fn js_outline_commands_for_family(codepoint : Int, font_size : Double, is_bold : Bool, font_family : String) -> String =
+  #|(cp, fs, bold, ff) => {
+  #|  const fn = globalThis.__craterOutlineCommandsForFamily;
+  #|  if (typeof fn !== "function") return "";
+  #|  try { return String(fn(cp, fs, bold, ff) || ""); } catch { return ""; }
+  #|}
+
+///|
+/// Parse JSON array of outline commands into Array[@svg.PathCommand]
+/// Format: [["M",x,y], ["L",x,y], ["Q",cx,cy,x,y], ["C",cx1,cy1,cx2,cy2,x,y], ["Z"]]
+fn parse_outline_commands_json(json_str : String) -> Array[@svg.PathCommand] {
+  let result : Array[@svg.PathCommand] = []
+  let parsed = try {
+    @json.parse(json_str)
+  } catch {
+    _ => return result
+  }
+  guard parsed is Array(cmds) else { return result }
+  for cmd in cmds {
+    guard cmd is Array(parts) else { continue }
+    if parts.length() == 0 {
+      continue
+    }
+    guard parts[0] is String(typ) else { continue }
+    match typ {
+      "M" =>
+        if parts.length() >= 3 {
+          guard parts[1] is Number(x) else { continue }
+          guard parts[2] is Number(y) else { continue }
+          result.push(@svg.MoveTo(x, y))
+        }
+      "L" =>
+        if parts.length() >= 3 {
+          guard parts[1] is Number(x) else { continue }
+          guard parts[2] is Number(y) else { continue }
+          result.push(@svg.LineTo(x, y))
+        }
+      "Q" =>
+        if parts.length() >= 5 {
+          guard parts[1] is Number(cx) else { continue }
+          guard parts[2] is Number(cy) else { continue }
+          guard parts[3] is Number(x) else { continue }
+          guard parts[4] is Number(y) else { continue }
+          result.push(@svg.QuadraticCurveTo(cx, cy, x, y))
+        }
+      "C" =>
+        if parts.length() >= 7 {
+          guard parts[1] is Number(cx1) else { continue }
+          guard parts[2] is Number(cy1) else { continue }
+          guard parts[3] is Number(cx2) else { continue }
+          guard parts[4] is Number(cy2) else { continue }
+          guard parts[5] is Number(x) else { continue }
+          guard parts[6] is Number(y) else { continue }
+          result.push(@svg.CurveTo(cx1, cy1, cx2, cy2, x, y))
+        }
+      "Z" => result.push(@svg.ClosePath)
+      _ => ()
+    }
+  }
+  result
+}
+
+///|
 /// Check if JS-side glyph functions are available (mizchi/font loaded)
 extern "js" fn has_glyph_functions() -> Bool =
   #|() => typeof globalThis.__craterGlyphToSvgPath === "function"
@@ -357,9 +435,15 @@ fn ensure_paint_provider_initialized() -> Unit {
     "has_paint_text_provider=" + has_provider.to_string(),
   )
   ensure_paint_text_provider()
-  // Set up glyph provider for SVG-based text rendering
-  if has_glyph_functions() {
-    js_log_stderr("Installing glyph provider")
+  // Set up glyph provider for text rendering
+  // Prefer outline commands (JSON array) over SVG string to avoid parse_path roundtrip
+  let use_outline_commands = has_outline_commands()
+  if use_outline_commands || has_glyph_functions() {
+    if use_outline_commands {
+      js_log_stderr("Installing glyph provider (outline commands, no SVG roundtrip)")
+    } else {
+      js_log_stderr("Installing glyph provider (SVG string fallback)")
+    }
     let ascent_ratio = js_font_ascent_ratio()
     js_log_stderr("ascent_ratio=" + ascent_ratio.to_string())
     let glyph_provider : @image.GlyphProvider = {
@@ -368,22 +452,49 @@ fn ensure_paint_provider_initialized() -> Unit {
         js_kern_advance(cp1, cp2, font_size, is_bold)
       },
       get_glyph: fn(codepoint, font_size, is_bold) {
-        let svg_path = js_glyph_to_svg_path(codepoint, font_size, is_bold)
         let advance = js_glyph_advance(codepoint, font_size, is_bold)
-        if svg_path.length() == 0 {
-          return ([], advance)
+        if use_outline_commands {
+          let json = js_glyph_outline_commands(codepoint, font_size, is_bold)
+          if json.length() == 0 || json == "[]" {
+            return ([], advance)
+          }
+          let commands = parse_outline_commands_json(json)
+          (commands, advance)
+        } else {
+          let svg_path = js_glyph_to_svg_path(codepoint, font_size, is_bold)
+          if svg_path.length() == 0 {
+            return ([], advance)
+          }
+          let commands = @svg.parse_path(svg_path)
+          (commands, advance)
         }
-        let commands = @svg.parse_path(svg_path)
-        (commands, advance)
       },
       get_glyph_for_family: Some(fn(codepoint, font_size, is_bold, font_family) {
-        let svg_path = js_glyph_for_family(codepoint, font_size, is_bold, font_family)
-        if svg_path.length() == 0 {
-          return None
+        if use_outline_commands {
+          let json = js_outline_commands_for_family(
+            codepoint, font_size, is_bold, font_family,
+          )
+          if json.length() == 0 || json == "[]" {
+            return None
+          }
+          let advance = js_advance_for_family(
+            codepoint, font_size, is_bold, font_family,
+          )
+          let commands = parse_outline_commands_json(json)
+          Some((commands, advance))
+        } else {
+          let svg_path = js_glyph_for_family(
+            codepoint, font_size, is_bold, font_family,
+          )
+          if svg_path.length() == 0 {
+            return None
+          }
+          let advance = js_advance_for_family(
+            codepoint, font_size, is_bold, font_family,
+          )
+          let commands = @svg.parse_path(svg_path)
+          Some((commands, advance))
         }
-        let advance = js_advance_for_family(codepoint, font_size, is_bold, font_family)
-        let commands = @svg.parse_path(svg_path)
-        Some((commands, advance))
       }),
       get_kern_for_family: Some(fn(cp1, cp2, font_size, is_bold, font_family) {
         js_kern_for_family(cp1, cp2, font_size, is_bold, font_family)

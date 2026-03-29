@@ -201,14 +201,14 @@ fn glyph_cache_key(
 pub fn set_glyph_provider(provider : GlyphProvider) -> Unit {
   glyph_provider_override.val = Some(provider)
   glyph_cache.val = {}
-  glyph_bitmap_cache.val = {}
+  // Keep bitmap cache — same fonts produce same bitmaps across provider resets
 }
 
 ///|
 pub fn clear_glyph_provider() -> Unit {
   glyph_provider_override.val = None
   glyph_cache.val = {}
-  glyph_bitmap_cache.val = {}
+  // Keep bitmap cache — same font produces same bitmaps across sessions
 }
 
 ///|
@@ -538,6 +538,8 @@ fn draw_text_with_glyphs_clipped(
       Some(cr) => line_bottom >= cr.y && line_top < cr.y + cr.h
       None => line_bottom >= 0 && line_top < fb.height
     }
+    // Pre-compute palette index for this word's color (constant per word)
+    let color_idx = palette.get_or_add({ r: color.r, g: color.g, b: color.b })
     let mut prev_cp = 0
     for c in word {
       let cp = c.to_int()
@@ -574,11 +576,6 @@ fn draw_text_with_glyphs_clipped(
       if in_clip_v && bitmap.width > 0 {
         let dx = cur_x.to_int() + bitmap.offset_x
         let dy = cur_y.to_int() + bitmap.offset_y
-        let color_idx = palette.get_or_add({
-          r: color.r,
-          g: color.g,
-          b: color.b,
-        })
         for by = 0; by < bitmap.height; by = by + 1 {
           let py = dy + by
           if py < 0 || py >= fb.height {

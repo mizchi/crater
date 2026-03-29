@@ -919,21 +919,56 @@ fn palette_color_at(palette : DynamicPalette, idx : Int) -> Color {
 }
 
 ///|
+#cfg(target="js")
+extern "js" fn framebuffer_to_rgba_base64_js(
+  pixels : Array[Int],
+  palette_r : Array[Int],
+  palette_g : Array[Int],
+  palette_b : Array[Int],
+) -> String =
+  #|(pixels, pr, pg, pb) => {
+  #|  const n = pixels.length;
+  #|  const buf = new Uint8Array(n * 4);
+  #|  for (let i = 0; i < n; i++) {
+  #|    const idx = pixels[i];
+  #|    const o = i * 4;
+  #|    buf[o] = pr[idx] | 0;
+  #|    buf[o + 1] = pg[idx] | 0;
+  #|    buf[o + 2] = pb[idx] | 0;
+  #|    buf[o + 3] = 255;
+  #|  }
+  #|  let s = '';
+  #|  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  #|  const len = buf.length;
+  #|  let i = 0;
+  #|  for (; i + 2 < len; i += 3) {
+  #|    const b0 = buf[i], b1 = buf[i+1], b2 = buf[i+2];
+  #|    s += chars[b0 >> 2] + chars[((b0 & 3) << 4) | (b1 >> 4)] + chars[((b1 & 15) << 2) | (b2 >> 6)] + chars[b2 & 63];
+  #|  }
+  #|  if (i + 1 === len) {
+  #|    const b0 = buf[i];
+  #|    s += chars[b0 >> 2] + chars[(b0 & 3) << 4] + '==';
+  #|  } else if (i + 2 === len) {
+  #|    const b0 = buf[i], b1 = buf[i+1];
+  #|    s += chars[b0 >> 2] + chars[((b0 & 3) << 4) | (b1 >> 4)] + chars[(b1 & 15) << 2] + '=';
+  #|  }
+  #|  return s;
+  #|}
+
+///|
 pub fn framebuffer_to_rgba_base64(
   fb : Framebuffer,
   palette : DynamicPalette,
 ) -> String {
-  let total_pixels = fb.width * fb.height
-  let bytes = Array::make(total_pixels * 4, 0)
-  for pixel_index in 0..<total_pixels {
-    let color = palette_color_at(palette, fb.pixels[pixel_index])
-    let base = pixel_index * 4
-    bytes[base] = color.r
-    bytes[base + 1] = color.g
-    bytes[base + 2] = color.b
-    bytes[base + 3] = 255
+  let palette_r : Array[Int] = []
+  let palette_g : Array[Int] = []
+  let palette_b : Array[Int] = []
+  for color in palette.colors {
+    palette_r.push(color.r)
+    palette_g.push(color.g)
+    palette_b.push(color.b)
   }
-  encode_bytes_base64(bytes)
+  framebuffer_to_rgba_base64_js(fb.pixels, palette_r, palette_g, palette_b)
 }
 
 ///|

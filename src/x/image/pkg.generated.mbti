@@ -112,8 +112,6 @@ pub fn Framebuffer::get_pixel(Self, Int, Int) -> Int
 pub fn Framebuffer::new(Int, Int) -> Self
 pub fn Framebuffer::stroke_rect(Self, Int, Int, Int, Int, Int) -> Unit
 
-type GlyphBitmap
-
 pub(all) struct GlyphProvider {
   get_glyph : (Int, Double, Bool) -> (Array[@svg.PathCommand], Double)
   get_kern : (Int, Int, Double, Bool) -> Double

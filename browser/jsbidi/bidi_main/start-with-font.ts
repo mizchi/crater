@@ -109,6 +109,7 @@ function resolveFont(family: string, weight: "regular" | "bold"): string | null 
 interface FontInstance {
   measureText: (text: string, fontSize: number) => number;
   glyphToSvgPath?: (cp: number, fs: number) => string;
+  glyphOutlineCommands?: (cp: number, fs: number) => string;
   glyphAdvance?: (cp: number, fs: number) => number;
   kernAdvance?: (cp1: number, cp2: number, fs: number) => number;
   ascentRatio: number;
@@ -124,6 +125,7 @@ async function loadFontInstance(fontPath: string): Promise<FontInstance | null> 
     const loadFont = mod.loadFont ?? mod.default?.loadFont;
     const measureText = mod.measureText ?? mod.default?.measureText;
     const glyphToSvgPath = mod.glyphToSvgPath ?? mod.default?.glyphToSvgPath;
+    const glyphOutlineCommands = mod.glyphOutlineCommands ?? mod.default?.glyphOutlineCommands;
     const glyphAdvance = mod.glyphAdvance ?? mod.default?.glyphAdvance;
     const kernAdvance = mod.kernAdvance ?? mod.default?.kernAdvance;
     const getFontInfo = mod.getFontInfo ?? mod.default?.getFontInfo;
@@ -144,6 +146,7 @@ async function loadFontInstance(fontPath: string): Promise<FontInstance | null> 
     return {
       measureText: (text, fontSize) => measureText(text, fontSize) as number,
       glyphToSvgPath: glyphToSvgPath ? (cp, fs) => glyphToSvgPath(cp, fs) as string : undefined,
+      glyphOutlineCommands: glyphOutlineCommands ? (cp, fs) => glyphOutlineCommands(cp, fs) as string : undefined,
       glyphAdvance: glyphAdvance ? (cp, fs) => glyphAdvance(cp, fs) as number : undefined,
       kernAdvance: kernAdvance ? (cp1, cp2, fs) => kernAdvance(cp1, cp2, fs) as number : undefined,
       ascentRatio,
@@ -277,6 +280,12 @@ if (!defaultFont) {
     console.error(`[font] Glyph provider installed (kern=${!!defaultFont.kernAdvance})`);
   }
 
+  // Outline commands provider (returns JSON array, avoids SVG string roundtrip)
+  if (defaultFont.glyphOutlineCommands) {
+    (globalThis as any).__craterGlyphOutlineCommands = defaultFont.glyphOutlineCommands;
+    console.error(`[font] Outline commands provider installed`);
+  }
+
   // Bold glyph providers
   const boldFont = getFontInstance("arial, sans-serif", true);
   if (boldFont && boldFont.glyphToSvgPath && boldFont.glyphAdvance) {
@@ -285,11 +294,21 @@ if (!defaultFont) {
     if (boldFont.kernAdvance) {
       (globalThis as any).__craterKernAdvanceBold = boldFont.kernAdvance;
     }
+    if (boldFont.glyphOutlineCommands) {
+      (globalThis as any).__craterGlyphOutlineCommandsBold = boldFont.glyphOutlineCommands;
+    }
     (globalThis as any).__craterMeasureTextIntrinsicBold = createTextIntrinsicFnFromMeasureText(
       (text: string, fontSize: number) => boldFont.measureText(text, fontSize),
     );
     console.error(`[font] Bold glyph provider installed`);
   }
+
+  // Multi-font outline commands provider (returns JSON array, avoids SVG string roundtrip)
+  (globalThis as any).__craterOutlineCommandsForFamily = (cp: number, fs: number, isBold: boolean, ff: string) => {
+    const font = getFontInstance(ff || "sans-serif", isBold);
+    if (!font || !font.glyphOutlineCommands) return "";
+    return font.glyphOutlineCommands(cp, fs);
+  };
 
   // Multi-font glyph providers for sixel rendering
   (globalThis as any).__craterGlyphForFamily = (cp: number, fs: number, isBold: boolean, ff: string) => {
