@@ -1393,3 +1393,68 @@ test "table percent column consumes remaining width after fixed sibling" {
   inspect(second_layout.x, content="94")
   inspect(second_layout.width, content="6")
 }
+
+///|
+test "table row group visibility collapse collapses all child rows" {
+  let cell_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+    width: @types.Length(100.0),
+    height: @types.Length(30.0),
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRow,
+  }
+  let collapsed_tbody_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRowGroup,
+    visibility: @style.Collapse,
+  }
+  let tbody_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRowGroup,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+    border_spacing: 0.0,
+  }
+  // Row 1 in collapsed tbody
+  let td1 = @node.Node::new("td1", cell_style, [])
+  let row1 = @node.Node::new("row1", row_style, [td1])
+  // Row 2 in collapsed tbody
+  let td2 = @node.Node::new("td2", cell_style, [])
+  let row2 = @node.Node::new("row2", row_style, [td2])
+  let collapsed_tbody = @node.Node::new(
+    "collapsed_tbody",
+    collapsed_tbody_style,
+    [row1, row2],
+  )
+  // Row 3 in visible tbody
+  let td3 = @node.Node::new("td3", cell_style, [])
+  let row3 = @node.Node::new("row3", row_style, [td3])
+  let visible_tbody = @node.Node::new("visible_tbody", tbody_style, [row3])
+  let table = @node.Node::new("table", table_style, [
+    collapsed_tbody, visible_tbody,
+  ])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute_layout(table, ctx)
+  // Collapsed tbody should have height 0
+  let collapsed_layout = layout.children[0]
+  inspect(collapsed_layout.height, content="0")
+  // Visible tbody with one 30px row
+  let visible_layout = layout.children[1]
+  inspect(visible_layout.height, content="30")
+  // Table height should only include the visible row
+  inspect(layout.height, content="30")
+}

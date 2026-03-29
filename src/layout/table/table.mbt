@@ -2110,12 +2110,19 @@ pub fn compute_intrinsic_size(
 
     let mut row_intrinsic_height = 0.0
     if rows.length() > 0 {
+      let collapsed_rows = collect_collapsed_row_flags_with_groups(node)
       // Row area includes edge spacing and between-row spacing.
       row_intrinsic_height = border_spacing_y
-      for row in rows {
-        row_intrinsic_height = row_intrinsic_height +
-          compute_row_intrinsic_height(row) +
-          border_spacing_y
+      for row_idx, row in rows {
+        let is_collapsed = (
+            row_idx < collapsed_rows.length() && collapsed_rows[row_idx]
+          ) ||
+          row.style.visibility == @style.Collapse
+        if not(is_collapsed) {
+          row_intrinsic_height = row_intrinsic_height +
+            compute_row_intrinsic_height(row) +
+            border_spacing_y
+        }
       }
     }
 
@@ -2187,13 +2194,17 @@ fn compute_base_row_heights(
   rows : Array[@node.Node],
   grid : Map[String, CellOccupancy],
   border_collapse : Bool,
+  collapsed_rows? : Array[Bool] = [],
 ) -> Array[Double] {
   let heights : Array[Double] = []
   for row_idx = 0; row_idx < rows.length(); row_idx = row_idx + 1 {
     let row = rows[row_idx]
     let row_style = row.style
 
-    if row_style.visibility == @style.Collapse {
+    // Check both direct row collapse and group-inherited collapse
+    let is_collapsed = row_style.visibility == @style.Collapse ||
+      (row_idx < collapsed_rows.length() && collapsed_rows[row_idx])
+    if is_collapsed {
       heights.push(0.0)
       continue
     }
@@ -2343,10 +2354,42 @@ fn collect_rowspan_cells(rows : Array[@node.Node]) -> Array[RowspanCellInfo] {
 }
 
 ///|
-fn collect_collapsed_row_flags(rows : Array[@node.Node]) -> Array[Bool] {
+
+///|
+/// Collect collapsed row flags considering row group visibility.
+/// When a row group (thead/tbody/tfoot) has visibility:collapse,
+/// all its child rows are treated as collapsed per CSS 2.1 §17.5.5.
+fn collect_collapsed_row_flags_with_groups(
+  table_node : @node.Node,
+) -> Array[Bool] {
   let flags : Array[Bool] = []
-  for row in rows {
-    flags.push(row.style.visibility == @style.Collapse)
+  let mut pending_cell_count = 0
+  for child in collect_table_effective_children(table_node) {
+    if is_ignorable_table_text_node(child) {
+      continue
+    }
+    if is_table_row(child.style.display) {
+      // Flush any pending direct cells as an anonymous row first
+      if pending_cell_count > 0 {
+        flags.push(false) // Anonymous rows are never collapsed
+        pending_cell_count = 0
+      }
+      flags.push(child.style.visibility == @style.Collapse)
+    } else if is_table_cell(child.style.display) {
+      pending_cell_count = pending_cell_count + 1
+    } else if is_table_row_group(child.style.display) {
+      if pending_cell_count > 0 {
+        flags.push(false)
+        pending_cell_count = 0
+      }
+      let group_collapsed = child.style.visibility == @style.Collapse
+      for row in normalize_row_group_rows(child) {
+        flags.push(group_collapsed || row.style.visibility == @style.Collapse)
+      }
+    }
+  }
+  if pending_cell_count > 0 {
+    flags.push(false)
   }
   flags
 }
@@ -2925,12 +2968,19 @@ pub fn compute(
   // Calculate row heights with rowspan distribution
   let row_count = rows.length()
   let row_heights : Array[Double] = if row_count > 0 {
+    // Collect collapsed row flags (including row group inheritance)
+    let collapsed_rows = collect_collapsed_row_flags_with_groups(node)
+
     // Step 1: Calculate base row heights (excluding rowspan cells)
-    let base_heights = compute_base_row_heights(rows, grid, is_border_collapse)
+    let base_heights = compute_base_row_heights(
+      rows,
+      grid,
+      is_border_collapse,
+      collapsed_rows~,
+    )
 
     // Step 2: Collect all rowspan cells
     let rowspan_cells = collect_rowspan_cells(rows)
-    let collapsed_rows = collect_collapsed_row_flags(rows)
 
     // Step 3: Distribute rowspan cell heights across spanned rows
     distribute_rowspan_heights(
@@ -3322,8 +3372,13 @@ pub fn compute(
         )
         let group_border = @types.resolve_rect(group_style.border, parent_width)
         let group_rows = normalize_row_group_rows(child)
+        // When the row group itself has visibility:collapse,
+        // all its child rows are treated as collapsed (CSS 2.1 §17.5.5).
+        let group_collapsed = group_style.visibility == @style.Collapse
         for row_idx = 0; row_idx < group_rows.length(); row_idx = row_idx + 1 {
           let row = group_rows[row_idx]
+          let row_is_collapsed = group_collapsed ||
+            row.style.visibility == @style.Collapse
           // Use pre-calculated row height for rows in row groups
           let row_height = if global_row_idx < row_heights.length() {
             Some(row_heights[global_row_idx])
@@ -3353,18 +3408,19 @@ pub fn compute(
           for next_idx = row_idx + 1
               next_idx < group_rows.length()
               next_idx = next_idx + 1 {
-            if group_rows[next_idx].style.visibility != @style.Collapse {
+            if not(group_collapsed) &&
+              group_rows[next_idx].style.visibility != @style.Collapse {
               has_visible_next_row = true
               break
             }
           }
-          let spacing_after_row = if row.style.visibility == @style.Collapse ||
+          let spacing_after_row = if row_is_collapsed ||
             not(has_visible_next_row) {
             0.0
           } else {
             border_spacing_y
           }
-          let row_advance = if row.style.visibility == @style.Collapse {
+          let row_advance = if row_is_collapsed {
             0.0
           } else {
             row_layout.height + spacing_after_row
@@ -3385,9 +3441,11 @@ pub fn compute(
           }
           global_row_idx = global_row_idx + 1
         }
-        let group_height = group_y +
-          group_padding.vertical_sum() +
-          group_border.vertical_sum()
+        let group_height = if group_collapsed {
+          0.0
+        } else {
+          group_y + group_padding.vertical_sum() + group_border.vertical_sum()
+        }
         // In border-collapse mode, use actual row width; otherwise use row_content_width
         let group_width = if is_border_collapse && max_row_width > 0.0 {
           max_row_width +
@@ -3428,8 +3486,9 @@ pub fn compute(
           _ => 1
         }
         let indices : Array[Int] = [idx]
-        let advance = group_height + border_spacing_y
-        y_offset = y_offset + group_height + border_spacing_y
+        let group_spacing = if group_collapsed { 0.0 } else { border_spacing_y }
+        let advance = group_height + group_spacing
+        y_offset = y_offset + group_height + group_spacing
         layout_map[idx] = wrap_layout_with_contents_wrappers(
           group_layout,
           entry.wrappers,
