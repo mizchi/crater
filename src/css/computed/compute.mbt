@@ -210,6 +210,7 @@ priv struct StyleBuilder {
   mut border_top_right_radius : Double
   mut border_bottom_right_radius : Double
   mut border_bottom_left_radius : Double
+  mut text_decoration_underline : Bool
 }
 
 ///|
@@ -319,6 +320,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     border_top_right_radius: 0.0,
     border_bottom_right_radius: 0.0,
     border_bottom_left_radius: 0.0,
+    text_decoration_underline: false,
   }
 }
 
@@ -430,6 +432,7 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     border_top_right_radius: style.border_top_right_radius,
     border_bottom_right_radius: style.border_bottom_right_radius,
     border_bottom_left_radius: style.border_bottom_left_radius,
+    text_decoration_underline: style.text_decoration_underline,
   }
 }
 
@@ -550,6 +553,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     border_top_right_radius: self.border_top_right_radius,
     border_bottom_right_radius: self.border_bottom_right_radius,
     border_bottom_left_radius: self.border_bottom_left_radius,
+    text_decoration_underline: self.text_decoration_underline,
   }
 }
 
@@ -1960,6 +1964,10 @@ fn apply_property(
       builder.border_bottom_left_radius = resolve_dimension_to_px(
         resolve_dimension(value, ctx),
       )
+    "text-decoration" | "text-decoration-line" => {
+      let v = value.trim().to_lower()
+      builder.text_decoration_underline = v.contains("underline")
+    }
     _ => ()
   }
 }

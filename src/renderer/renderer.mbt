@@ -6811,6 +6811,14 @@ fn get_ua_default_style(tag : String) -> @style.Style {
         display: @types.Inline,
         // Standard link blue: #0000EE (rgb(0, 0, 238))
         color: @types.Color::rgb(0, 0, 238),
+        text_decoration_underline: true,
+      }
+    // Underline elements
+    "u" | "ins" =>
+      {
+        ..default_style,
+        display: @types.Inline,
+        text_decoration_underline: true,
       }
     // Inline elements - HTML default display: inline
     "span"
@@ -6818,7 +6826,6 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     | "strong"
     | "i"
     | "b"
-    | "u"
     | "s"
     | "code"
     | "abbr"
@@ -6832,7 +6839,6 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     | "small"
     | "mark"
     | "del"
-    | "ins"
     | "q"
     | "time"
     | "data"
@@ -6901,6 +6907,23 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     "label" => { ..default_style, display: @types.Inline }
     // br is inline with no width
     "br" => { ..default_style, display: @types.Inline }
+    // hr: horizontal rule (1px top border + margin)
+    "hr" =>
+      {
+        ..default_style,
+        margin: {
+          top: @types.Dimension::Length(8.0),
+          bottom: @types.Dimension::Length(8.0),
+          left: @types.Dimension::Auto,
+          right: @types.Dimension::Auto,
+        },
+        border: {
+          top: @types.Dimension::Length(1.0),
+          right: @types.Dimension::Length(0.0),
+          bottom: @types.Dimension::Length(0.0),
+          left: @types.Dimension::Length(0.0),
+        },
+      }
     // Table elements
     "table" => { ..default_style, display: @types.Table, border_spacing: 2.0 }
     "tr" => { ..default_style, display: @types.TableRow }
@@ -7184,6 +7207,30 @@ fn compute_element_style_indexed(
         _ => ()
       }
     None => ()
+  }
+  // HTML border attribute on table → border on all sides
+  if selector_elem.tag_name.to_lower() == "table" {
+    match selector_elem.get_attribute("border") {
+      Some(border_value) => {
+        let n = @strconv.parse_double(border_value.to_string()) catch {
+          _ => 0.0
+        }
+        if n > 0.0 {
+          let bw = @types.Dimension::Length(n)
+          style = {
+            ..style,
+            border: { top: bw, right: bw, bottom: bw, left: bw },
+            border_style: {
+              top: @style.BorderStyle::Solid,
+              right: @style.BorderStyle::Solid,
+              bottom: @style.BorderStyle::Solid,
+              left: @style.BorderStyle::Solid,
+            },
+          }
+        }
+      }
+      None => ()
+    }
   }
 
   // Apply font metrics first so em/ch/ex units in later properties

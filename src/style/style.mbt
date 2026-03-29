@@ -557,6 +557,8 @@ pub(all) struct Style {
   mut border_top_right_radius : Double
   mut border_bottom_right_radius : Double
   mut border_bottom_left_radius : Double
+  // Text decoration
+  mut text_decoration_underline : Bool
 }
 
 ///|
@@ -671,5 +673,6 @@ pub fn Style::default() -> Style {
     border_top_right_radius: 0.0,
     border_bottom_right_radius: 0.0,
     border_bottom_left_radius: 0.0,
+    text_decoration_underline: false,
   }
 }

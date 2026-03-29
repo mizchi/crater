@@ -32,6 +32,7 @@ pub(all) struct PaintProperties {
   border_bottom_left_radius : Double
   overflow_x : @types.Overflow
   overflow_y : @types.Overflow
+  text_decoration_underline : Bool
 }
 
 ///|
@@ -53,6 +54,7 @@ pub fn PaintProperties::default() -> PaintProperties {
     border_bottom_left_radius: 0.0,
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
+    text_decoration_underline: false,
   }
 }
 
@@ -75,6 +77,7 @@ pub fn PaintProperties::from_style(style : @style.Style) -> PaintProperties {
     border_bottom_left_radius: style.border_bottom_left_radius,
     overflow_x: style.overflow_x,
     overflow_y: style.overflow_y,
+    text_decoration_underline: style.text_decoration_underline,
   }
 }
 

@@ -73,6 +73,7 @@ pub(all) struct PaintProperties {
   border_bottom_left_radius : Double
   overflow_x : @types.Overflow
   overflow_y : @types.Overflow
+  text_decoration_underline : Bool
 }
 pub fn PaintProperties::clips_overflow(Self) -> Bool
 pub fn PaintProperties::default() -> Self

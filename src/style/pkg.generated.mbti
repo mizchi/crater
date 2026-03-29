@@ -239,6 +239,7 @@ pub(all) struct Style {
   mut border_top_right_radius : Double
   mut border_bottom_right_radius : Double
   mut border_bottom_left_radius : Double
+  mut text_decoration_underline : Bool
 }
 pub fn Style::contained_intrinsic_height_fallback(Self) -> Double
 pub fn Style::contained_intrinsic_width_fallback(Self) -> Double
