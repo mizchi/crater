@@ -2935,7 +2935,7 @@ fn compute_with_collapse(
         box_width = max_box_w
       }
     }
-    @types.MaxContent | @types.FitContent(_) => {
+    @types.MaxContent => {
       // Calculate intrinsic width for max-width constraint
       // For elements with aspect-ratio, use the larger of:
       // 1. Children's max-content width
@@ -2969,6 +2969,28 @@ fn compute_with_collapse(
       let intrinsic_width = @types.max(children_width, aspect_width)
       if box_width > intrinsic_width {
         box_width = intrinsic_width
+      }
+    }
+    @types.FitContent(_) => {
+      // fit-content = min(max-content, max(min-content, available-width))
+      let max_content_w = calculate_children_max_content_width(
+          node, parent_width,
+        ) +
+        padding.horizontal_sum() +
+        border.horizontal_sum()
+      let min_content_w = calculate_children_min_content_width(
+          node,
+          parent_width,
+          None,
+        ) +
+        padding.horizontal_sum() +
+        border.horizontal_sum()
+      let fit_content_w = @types.min(
+        max_content_w,
+        @types.max(min_content_w, parent_width),
+      )
+      if box_width > fit_content_w {
+        box_width = fit_content_w
       }
     }
     @types.MinContent => {
@@ -3018,8 +3040,7 @@ fn compute_with_collapse(
         box_width = intrinsic_width
       }
     }
-    @types.MinContent | @types.FitContent(_) => {
-      // fit-content/min-content minimum should not exceed min-content contribution.
+    @types.MinContent => {
       let intrinsic_width = calculate_children_min_content_width(
           node,
           parent_width,
@@ -3029,6 +3050,28 @@ fn compute_with_collapse(
         border.horizontal_sum()
       if box_width < intrinsic_width {
         box_width = intrinsic_width
+      }
+    }
+    @types.FitContent(_) => {
+      // fit-content = min(max-content, max(min-content, available-width))
+      let max_content_w = calculate_children_max_content_width(
+          node, parent_width,
+        ) +
+        padding.horizontal_sum() +
+        border.horizontal_sum()
+      let min_content_w = calculate_children_min_content_width(
+          node,
+          parent_width,
+          None,
+        ) +
+        padding.horizontal_sum() +
+        border.horizontal_sum()
+      let fit_content_w = @types.min(
+        max_content_w,
+        @types.max(min_content_w, parent_width),
+      )
+      if box_width < fit_content_w {
+        box_width = fit_content_w
       }
     }
     @types.Auto => ()

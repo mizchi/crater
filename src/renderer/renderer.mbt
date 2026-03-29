@@ -6955,7 +6955,13 @@ fn get_ua_default_style(tag : String) -> @style.Style {
         },
       }
     // Table elements
-    "table" => { ..default_style, display: @types.Table, border_spacing: 2.0 }
+    "table" =>
+      {
+        ..default_style,
+        display: @types.Table,
+        border_spacing: 2.0,
+        box_sizing: @types.BorderBox,
+      }
     "tr" => { ..default_style, display: @types.TableRow }
     "td" =>
       {
