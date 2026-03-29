@@ -3154,3 +3154,48 @@ test "multicol_single_display_contents_child_uses_descendant_flow_items" {
   inspect(layout.children[0].children[2].x, content="408")
   inspect(layout.children[0].children[2].y, content="0")
 }
+
+///|
+test "min_width_fit_content_uses_fit_content_formula" {
+  // Two inline-block children each 50px wide
+  // min-width: fit-content should use fit-content = min(max-content, max(min-content, available))
+  // max-content = 100px (both inline-blocks on one line)
+  // min-content = 50px (each can wrap)
+  // With available width > 100px, fit-content = min(100, max(50, 200)) = 100
+  let default_style = @style.Style::default()
+  let inline_block_style = {
+    ..default_style,
+    display: @types.InlineBlock,
+    width: @types.Length(50.0),
+    height: @types.Length(10.0),
+  }
+  let span1 = @node.Node::leaf("span1", inline_block_style)
+  let span2 = @node.Node::leaf("span2", inline_block_style)
+  let inner_style = {
+    ..default_style,
+    width: @types.Length(10.0),
+    min_width: @types.FitContent(1.0e10),
+  }
+  let inner = @node.Node::new("inner", inner_style, [span1, span2])
+  let outer_style = {
+    ..default_style,
+    width: @types.FitContent(1.0e10),
+    height: @types.Length(100.0),
+  }
+  let outer = @node.Node::new("outer", outer_style, [inner])
+  let ctx : @types.LayoutContext = {
+    available_width: 200.0,
+    available_height: Some(200.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute_layout(outer, ctx)
+  // Inner div should have min-width: fit-content = 100px
+  inspect(layout.children[0].width, content="100")
+  // Outer div should shrink to fit content = 100px
+  inspect(layout.width, content="100")
+}
