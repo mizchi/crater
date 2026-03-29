@@ -249,6 +249,8 @@ fn create_text_measure_with_provider(
   writing_mode : @style.WritingMode,
   font_weight? : Double = 400.0,
   font_family? : String = "",
+  letter_spacing? : Double = 0.0,
+  word_spacing? : Double = 0.0,
 ) -> @types.MeasureFunc {
   fn white_space_collapses_edges(white_space : @style.WhiteSpace) -> Bool {
     match white_space {
@@ -326,7 +328,7 @@ fn create_text_measure_with_provider(
       text, font_size, text_line_height, white_space, writing_mode,
     )
   }
-  match text_metrics_provider_override.val {
+  let base_measure = match text_metrics_provider_override.val {
     Some(provider) =>
       if force_builtin_measure {
         create_text_measure(
@@ -342,6 +344,28 @@ fn create_text_measure_with_provider(
       create_text_measure(
         text, font_size, text_line_height, white_space, writing_mode,
       )
+  }
+  // Apply letter-spacing and word-spacing adjustments
+  if letter_spacing != 0.0 || word_spacing != 0.0 {
+    let char_count = text.iter().count()
+    let space_count = text
+      .iter()
+      .fold(init=0, fn(acc, c) { if c == ' ' { acc + 1 } else { acc } })
+    let extra_width = letter_spacing * (char_count - 1).to_double() +
+      word_spacing * space_count.to_double()
+    let base_fn = base_measure.func
+    {
+      func: fn(available_width, available_height) {
+        let result = base_fn(available_width, available_height)
+        {
+          ..result,
+          min_width: result.min_width + extra_width,
+          max_width: result.max_width + extra_width,
+        }
+      },
+    }
+  } else {
+    base_measure
   }
 }
 
@@ -1870,6 +1894,8 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
   let text_line_height = parent_style.line_height
   let white_space = parent_style.white_space
   let writing_mode = parent_style.writing_mode
+  let ls = parent_style.letter_spacing
+  let ws = parent_style.word_spacing
   // Create text style with inherited font properties and color for rendering
   // Text nodes should be inline-level to flow with other inline content
   let text_style : @style.Style = {
@@ -1915,6 +1941,8 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
           writing_mode,
           font_weight~,
           font_family~,
+          letter_spacing=ls,
+          word_spacing=ws,
         ),
         collapsed,
       )
@@ -1932,6 +1960,8 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
         writing_mode,
         font_weight~,
         font_family~,
+        letter_spacing=ls,
+        word_spacing=ws,
       ),
       normalized_text,
     )

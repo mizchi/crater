@@ -6766,3 +6766,95 @@ test "empty_td_cellpadding_does_not_inflate_row" {
     ),
   )
 }
+
+///|
+test "text_decoration_none_overrides_ua_underline" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|a { text-decoration: none; }
+    #|</style>
+    #|<a href="#">no underline</a>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+  fn find_a(n : @node.Node) -> @node.Node? {
+    if n.id.has_prefix("a") {
+      return Some(n)
+    }
+    for child in n.children {
+      match find_a(child) {
+        Some(found) => return Some(found)
+        None => ()
+      }
+    }
+    None
+  }
+  match find_a(node) {
+    Some(a) => inspect(a.style.text_decoration_underline, content="false")
+    None => inspect(false, content="a not found")
+  }
+}
+
+///|
+test "link_color_overridden_by_css" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|a:link { color: #000000; }
+    #|</style>
+    #|<a href="#">black link</a>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+  fn find_a(n : @node.Node) -> @node.Node? {
+    if n.id.has_prefix("a") {
+      return Some(n)
+    }
+    for child in n.children {
+      match find_a(child) {
+        Some(found) => return Some(found)
+        None => ()
+      }
+    }
+    None
+  }
+  match find_a(node) {
+    Some(a) => {
+      // CSS a:link { color: #000 } should override UA blue (#0000ee)
+      inspect(a.style.color.r, content="0")
+      inspect(a.style.color.g, content="0")
+      inspect(a.style.color.b, content="0")
+    }
+    None => inspect(false, content="a not found")
+  }
+}
+
+///|
+test "letter_spacing_applied_to_text_measure" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|p { letter-spacing: 2px; font-size: 16px; }
+    #|</style>
+    #|<p>hello</p>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+  fn find_p(n : @node.Node) -> @node.Node? {
+    if n.id.has_prefix("p") {
+      return Some(n)
+    }
+    for child in n.children {
+      match find_p(child) {
+        Some(found) => return Some(found)
+        None => ()
+      }
+    }
+    None
+  }
+  match find_p(node) {
+    Some(p) => inspect(p.style.letter_spacing, content="2")
+    None => inspect(false, content="p not found")
+  }
+}
