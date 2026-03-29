@@ -1524,6 +1524,25 @@ fn render_paint_node_clipped(
       }
     None => ()
   }
+  // Draw underline decoration if set
+  match node.text {
+    Some(_) =>
+      if node.paint.text_decoration_underline {
+        let font_size = node.paint.font_size
+        let underline_y = y + (font_size * 1.1).to_int()
+        let underline_color = palette.get_or_add(
+          types_color_to_sixel(node.paint.color),
+        )
+        if underline_y >= 0 && underline_y < fb.height {
+          for px = x; px < x + w && px < fb.width; px = px + 1 {
+            if px >= 0 && pixel_in_clip(clip, px, underline_y) {
+              fb.set_pixel(px, underline_y, underline_color)
+            }
+          }
+        }
+      }
+    None => ()
+  }
 
   // Compute child clip: if this node clips content, intersect with current clip
   let child_clip = if node.clips_content() {
