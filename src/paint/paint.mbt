@@ -460,6 +460,16 @@ fn extract_tag_from_id(id : String) -> String {
 }
 
 ///|
+/// Generate list marker text for a <li> element based on parent list type.
+fn generate_list_marker(parent_tag : String, child_index : Int) -> String? {
+  match parent_tag {
+    "ul" => Some("●")
+    "ol" => Some((child_index + 1).to_string() + ".")
+    _ => None
+  }
+}
+
+///|
 /// Convert a Node and its Layout to a PaintNode tree
 /// This combines style information from Node with position from Layout
 pub fn from_node_and_layout(
@@ -484,6 +494,35 @@ pub fn from_node_and_layout(
     // Propagate bold to text children
     if paint.is_bold && not(child.paint.is_bold) {
       child = { ..child, paint: { ..child.paint, is_bold: true } }
+    }
+    // Generate list marker for <li> children of <ul>/<ol>
+    let child_tag = extract_tag_from_id(node.children[i].id)
+    if child_tag == "li" {
+      match generate_list_marker(tag, i) {
+        Some(marker_text) => {
+          let marker_paint = { ..child.paint, font_size: child.paint.font_size }
+          let marker_node = PaintNode::new(
+            "#list-marker",
+            "#text",
+            -child.paint.font_size * 1.2,
+            0.0,
+            child.paint.font_size * 1.2,
+            child.paint.font_size,
+            marker_paint,
+            [],
+            text=Some(marker_text),
+          )
+          child = {
+            ..child,
+            children: {
+              let new_children = child.children.copy()
+              new_children.push(marker_node)
+              new_children
+            },
+          }
+        }
+        None => ()
+      }
     }
     children.push(child)
   }
@@ -636,13 +675,44 @@ fn from_node_and_layout_with_viewport_inner(
         viewport_bottom,
         abs_y,
       ) {
-      Some(child) =>
+      Some(child) => {
         // Propagate bold to text children
-        if paint.is_bold && not(child.paint.is_bold) {
-          children.push({ ..child, paint: { ..child.paint, is_bold: true } })
+        let mut c = if paint.is_bold && not(child.paint.is_bold) {
+          { ..child, paint: { ..child.paint, is_bold: true } }
         } else {
-          children.push(child)
+          child
         }
+        // Generate list marker for <li> children of <ul>/<ol>
+        let child_tag = extract_tag_from_id(node.children[i].id)
+        if child_tag == "li" {
+          match generate_list_marker(tag, i) {
+            Some(marker_text) => {
+              let marker_paint = { ..c.paint, font_size: c.paint.font_size }
+              let marker_node = PaintNode::new(
+                "#list-marker",
+                "#text",
+                -c.paint.font_size * 1.2,
+                0.0,
+                c.paint.font_size * 1.2,
+                c.paint.font_size,
+                marker_paint,
+                [],
+                text=Some(marker_text),
+              )
+              c = {
+                ..c,
+                children: {
+                  let new_children = c.children.copy()
+                  new_children.push(marker_node)
+                  new_children
+                },
+              }
+            }
+            None => ()
+          }
+        }
+        children.push(c)
+      }
       None => ()
     }
   }

@@ -7090,6 +7090,8 @@ fn compute_element_style_indexed(
         writing_mode: ps.writing_mode,
         direction: ps.direction,
         pointer_events: ps.pointer_events,
+        letter_spacing: ps.letter_spacing,
+        word_spacing: ps.word_spacing,
       }
     }
     None => ()

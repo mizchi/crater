@@ -211,6 +211,8 @@ priv struct StyleBuilder {
   mut border_bottom_right_radius : Double
   mut border_bottom_left_radius : Double
   mut text_decoration_underline : Bool
+  mut letter_spacing : Double
+  mut word_spacing : Double
 }
 
 ///|
@@ -321,6 +323,8 @@ fn StyleBuilder::new() -> StyleBuilder {
     border_bottom_right_radius: 0.0,
     border_bottom_left_radius: 0.0,
     text_decoration_underline: false,
+    letter_spacing: 0.0,
+    word_spacing: 0.0,
   }
 }
 
@@ -433,6 +437,8 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     border_bottom_right_radius: style.border_bottom_right_radius,
     border_bottom_left_radius: style.border_bottom_left_radius,
     text_decoration_underline: style.text_decoration_underline,
+    letter_spacing: style.letter_spacing,
+    word_spacing: style.word_spacing,
   }
 }
 
@@ -554,6 +560,8 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     border_bottom_right_radius: self.border_bottom_right_radius,
     border_bottom_left_radius: self.border_bottom_left_radius,
     text_decoration_underline: self.text_decoration_underline,
+    letter_spacing: self.letter_spacing,
+    word_spacing: self.word_spacing,
   }
 }
 
@@ -1967,6 +1975,26 @@ fn apply_property(
     "text-decoration" | "text-decoration-line" => {
       let v = value.trim().to_lower()
       builder.text_decoration_underline = v.contains("underline")
+    }
+    "letter-spacing" => {
+      let v = value.trim().to_lower()
+      if v == "normal" {
+        builder.letter_spacing = 0.0
+      } else {
+        builder.letter_spacing = resolve_dimension_to_px(
+          resolve_dimension(value, ctx),
+        )
+      }
+    }
+    "word-spacing" => {
+      let v = value.trim().to_lower()
+      if v == "normal" {
+        builder.word_spacing = 0.0
+      } else {
+        builder.word_spacing = resolve_dimension_to_px(
+          resolve_dimension(value, ctx),
+        )
+      }
     }
     _ => ()
   }

@@ -369,7 +369,7 @@ pub fn get_support_level(property : String) -> SupportLevel {
     // Marker
     "marker" | "marker-start" | "marker-mid" | "marker-end" => UnsupportedVisual
     // Word/Letter Spacing
-    "word-spacing" | "letter-spacing" => UnsupportedVisual
+    "word-spacing" | "letter-spacing" => Supported
     // Text properties
     "text-transform"
     | "text-indent"

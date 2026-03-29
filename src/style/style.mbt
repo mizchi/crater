@@ -559,6 +559,9 @@ pub(all) struct Style {
   mut border_bottom_left_radius : Double
   // Text decoration
   mut text_decoration_underline : Bool
+  // Letter/word spacing
+  mut letter_spacing : Double // in pixels, 0 = normal
+  mut word_spacing : Double // in pixels, 0 = normal
 }
 
 ///|
@@ -674,5 +677,7 @@ pub fn Style::default() -> Style {
     border_bottom_right_radius: 0.0,
     border_bottom_left_radius: 0.0,
     text_decoration_underline: false,
+    letter_spacing: 0.0,
+    word_spacing: 0.0,
   }
 }
