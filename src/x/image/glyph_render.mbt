@@ -28,13 +28,187 @@ pub(all) struct GlyphProvider {
 let glyph_provider_override : Ref[GlyphProvider?] = { val: None }
 
 ///|
+/// Cached rasterized glyph bitmap.
+priv struct GlyphBitmap {
+  width : Int
+  height : Int
+  pixels : Array[Bool] // true = has pixel
+  advance : Double
+  offset_x : Int // bounding box x offset from origin
+  offset_y : Int // bounding box y offset from origin
+}
+
+///|
+/// Bitmap cache for rasterized glyphs.
+/// Key: "cp:fs_int:bold:family" → GlyphBitmap
+let glyph_bitmap_cache : Ref[Map[String, GlyphBitmap]] = { val: {} }
+
+///|
+/// Cache for parsed glyph path commands (still used for advance width).
+/// Key: "cp:fs_int:bold" → (commands, advance)
+let glyph_cache : Ref[Map[String, (Array[@svg.PathCommand], Double)]] = {
+  val: {},
+}
+
+///|
+/// Rasterize a glyph to a bitmap. Called once per unique glyph.
+fn rasterize_glyph_to_bitmap(
+  commands : Array[@svg.PathCommand],
+  advance : Double,
+) -> GlyphBitmap {
+  if commands.length() == 0 {
+    return {
+      width: 0,
+      height: 0,
+      pixels: [],
+      advance,
+      offset_x: 0,
+      offset_y: 0,
+    }
+  }
+  // Find bounding box
+  let mut min_x = 99999.0
+  let mut min_y = 99999.0
+  let mut max_x = -99999.0
+  let mut max_y = -99999.0
+  for cmd in commands {
+    match cmd {
+      MoveTo(x, y) | LineTo(x, y) | SmoothQuadraticCurveTo(x, y) => {
+        if x < min_x {
+          min_x = x
+        }
+        if y < min_y {
+          min_y = y
+        }
+        if x > max_x {
+          max_x = x
+        }
+        if y > max_y {
+          max_y = y
+        }
+      }
+      QuadraticCurveTo(cx, cy, x, y) => {
+        for px in [cx, x] {
+          if px < min_x {
+            min_x = px
+          }
+          if px > max_x {
+            max_x = px
+          }
+        }
+        for py in [cy, y] {
+          if py < min_y {
+            min_y = py
+          }
+          if py > max_y {
+            max_y = py
+          }
+        }
+      }
+      CurveTo(cx1, cy1, cx2, cy2, x, y) => {
+        for px in [cx1, cx2, x] {
+          if px < min_x {
+            min_x = px
+          }
+          if px > max_x {
+            max_x = px
+          }
+        }
+        for py in [cy1, cy2, y] {
+          if py < min_y {
+            min_y = py
+          }
+          if py > max_y {
+            max_y = py
+          }
+        }
+      }
+      ArcTo(_, _, _, _, _, x, y) => {
+        if x < min_x {
+          min_x = x
+        }
+        if y < min_y {
+          min_y = y
+        }
+        if x > max_x {
+          max_x = x
+        }
+        if y > max_y {
+          max_y = y
+        }
+      }
+      _ => ()
+    }
+  }
+  if min_x >= max_x || min_y >= max_y {
+    return {
+      width: 0,
+      height: 0,
+      pixels: [],
+      advance,
+      offset_x: 0,
+      offset_y: 0,
+    }
+  }
+  let offset_x = min_x.to_int() - 1
+  let offset_y = min_y.to_int() - 1
+  let width = (max_x - min_x).to_int() + 3
+  let height = (max_y - min_y).to_int() + 3
+  if width <= 0 || height <= 0 || width > 200 || height > 200 {
+    return {
+      width: 0,
+      height: 0,
+      pixels: [],
+      advance,
+      offset_x: 0,
+      offset_y: 0,
+    }
+  }
+  let pixels = Array::make(width * height, false)
+  let setter : @svg.PixelSetter = {
+    set: fn(px, py, _c) {
+      let lx = px - offset_x
+      let ly = py - offset_y
+      if lx >= 0 && lx < width && ly >= 0 && ly < height {
+        pixels[ly * width + lx] = true
+      }
+    },
+  }
+  let white = @svg.Color::rgb(255, 255, 255)
+  @svg.raster_path(commands, Some(white), None, 0.0, setter)
+  { width, height, pixels, advance, offset_x, offset_y }
+}
+
+///|
+fn glyph_cache_key(
+  cp : Int,
+  font_size : Double,
+  is_bold : Bool,
+  font_family : String,
+) -> String {
+  let bold_flag = if is_bold { 1 } else { 0 }
+  let fs_key = (font_size * 10.0).to_int()
+  cp.to_string() +
+  ":" +
+  fs_key.to_string() +
+  ":" +
+  bold_flag.to_string() +
+  ":" +
+  font_family
+}
+
+///|
 pub fn set_glyph_provider(provider : GlyphProvider) -> Unit {
   glyph_provider_override.val = Some(provider)
+  glyph_cache.val = {}
+  glyph_bitmap_cache.val = {}
 }
 
 ///|
 pub fn clear_glyph_provider() -> Unit {
   glyph_provider_override.val = None
+  glyph_cache.val = {}
+  glyph_bitmap_cache.val = {}
 }
 
 ///|
@@ -314,19 +488,6 @@ fn draw_text_with_glyphs_clipped(
   clip : ClipRect?,
   font_family? : String = "",
 ) -> Int {
-  let setter : @svg.PixelSetter = {
-    set: fn(px, py, c) {
-      if px >= 0 &&
-        px < fb.width &&
-        py >= 0 &&
-        py < fb.height &&
-        pixel_in_clip(clip, px, py) {
-        let sixel_color = { r: c.r, g: c.g, b: c.b }
-        let idx = palette.get_or_add(sixel_color)
-        fb.set_pixel(px, py, idx)
-      }
-    },
-  }
   let effective_line_height = if line_height > 0.0 {
     line_height
   } else {
@@ -370,6 +531,13 @@ fn draw_text_with_glyphs_clipped(
     if i > 0 && word != "\n" && cur_x > x.to_double() + 0.01 {
       cur_x = cur_x + space_advance_layout
     }
+    // Skip rendering if entire line is outside clip vertically
+    let line_top = cur_y.to_int()
+    let line_bottom = (cur_y + effective_line_height).to_int()
+    let in_clip_v = match clip {
+      Some(cr) => line_bottom >= cr.y && line_top < cr.y + cr.h
+      None => line_bottom >= 0 && line_top < fb.height
+    }
     let mut prev_cp = 0
     for c in word {
       let cp = c.to_int()
@@ -381,23 +549,52 @@ fn draw_text_with_glyphs_clipped(
         }
         cur_x = cur_x + kern
       }
-      let (commands, advance) = match provider.get_glyph_for_family {
-        Some(glyph_fn) if font_family.length() > 0 =>
-          match glyph_fn(cp, font_size, is_bold, font_family) {
-            Some(result) => result
-            None => (provider.get_glyph)(cp, font_size, is_bold)
+      // Use bitmap cache: rasterize each glyph once, then blit
+      let cache_key = glyph_cache_key(cp, font_size, is_bold, font_family)
+      let bitmap = match glyph_bitmap_cache.val.get(cache_key) {
+        Some(bm) => bm
+        None => {
+          let (commands, advance) = match provider.get_glyph_for_family {
+            Some(glyph_fn) if font_family.length() > 0 =>
+              match glyph_fn(cp, font_size, is_bold, font_family) {
+                Some(r) => r
+                None => (provider.get_glyph)(cp, font_size, is_bold)
+              }
+            _ => (provider.get_glyph)(cp, font_size, is_bold)
           }
-        _ => (provider.get_glyph)(cp, font_size, is_bold)
+          let translated = translate_path_commands(
+            commands, 0.0, baseline_offset,
+          )
+          let bm = rasterize_glyph_to_bitmap(translated, advance)
+          glyph_bitmap_cache.val.set(cache_key, bm)
+          bm
+        }
       }
-      if commands.length() > 0 {
-        let translated = translate_path_commands(
-          commands,
-          cur_x,
-          cur_y + baseline_offset,
-        )
-        @svg.raster_path(translated, Some(color), None, 0.0, setter)
+      // Blit cached bitmap to framebuffer
+      if in_clip_v && bitmap.width > 0 {
+        let dx = cur_x.to_int() + bitmap.offset_x
+        let dy = cur_y.to_int() + bitmap.offset_y
+        let color_idx = palette.get_or_add({
+          r: color.r,
+          g: color.g,
+          b: color.b,
+        })
+        for by = 0; by < bitmap.height; by = by + 1 {
+          let py = dy + by
+          if py < 0 || py >= fb.height {
+            continue
+          }
+          for bx = 0; bx < bitmap.width; bx = bx + 1 {
+            if bitmap.pixels[by * bitmap.width + bx] {
+              let px = dx + bx
+              if px >= 0 && px < fb.width && pixel_in_clip(clip, px, py) {
+                fb.set_pixel(px, py, color_idx)
+              }
+            }
+          }
+        }
       }
-      cur_x = cur_x + advance
+      cur_x = cur_x + bitmap.advance
       prev_cp = cp
     }
   }
