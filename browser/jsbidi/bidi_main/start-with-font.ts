@@ -334,5 +334,5 @@ if (!defaultFont) {
 
 console.error(`[font] ${fontCache.size} font families loaded`);
 
-// Start the BiDi server
+// Start the BiDi server (warmup_glyph_cache is called in main() before server.start())
 await import("../_build/js/release/build/bidi_main/bidi_main.js");

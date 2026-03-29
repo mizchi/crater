@@ -30,6 +30,8 @@ pub fn glyph_provider_from_font(@font.TTFont) -> GlyphProvider
 
 pub fn is_font_supported(Char) -> Bool
 
+pub fn pre_rasterize_glyphs(Array[Double], font_family? : String) -> Int
+
 pub fn print_layout(@types.Layout, Int, Int) -> Unit
 
 pub fn render_layout(@types.Layout, Int, Int) -> String

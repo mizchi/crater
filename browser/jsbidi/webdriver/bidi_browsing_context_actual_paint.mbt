@@ -508,6 +508,26 @@ fn ensure_paint_provider_initialized() -> Unit {
 }
 
 ///|
+/// Pre-rasterize common ASCII glyphs. Initializes providers if needed.
+pub fn warmup_glyph_cache() -> Unit {
+  ensure_paint_provider_initialized()
+  let t_pre = js_now_ms()
+  let common_sizes : Array[Double] = [
+    13.33, // 10pt (most common body text)
+    16.0, // 16px (browser default)
+  ]
+  let n = @image.pre_rasterize_glyphs(common_sizes)
+  let t_pre_done = js_now_ms()
+  js_log_stderr(
+    "Pre-rasterized " +
+    n.to_string() +
+    " glyphs in " +
+    (t_pre_done - t_pre).to_string() +
+    "ms",
+  )
+}
+
+///|
 /// Test-only actual paint capture for VRT.
 fn BidiProtocol::handle_capture_paint_data(
   self : BidiProtocol,

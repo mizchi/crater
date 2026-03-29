@@ -205,6 +205,48 @@ pub fn set_glyph_provider(provider : GlyphProvider) -> Unit {
 }
 
 ///|
+
+///|
+/// Pre-rasterize common ASCII glyphs at given font sizes.
+/// Call after set_glyph_provider to warm the bitmap cache.
+pub fn pre_rasterize_glyphs(
+  font_sizes : Array[Double],
+  font_family? : String = "",
+) -> Int {
+  let provider = match glyph_provider_override.val {
+    Some(p) => p
+    None => return 0
+  }
+  let mut count = 0
+  // ASCII printable range: space (32) to tilde (126)
+  for fs in font_sizes {
+    let baseline_offset = match provider.get_ascent_for_family {
+      Some(get_ascent) if font_family.length() > 0 =>
+        get_ascent(font_family) * fs
+      _ => provider.ascent_ratio * fs
+    }
+    for cp = 32; cp <= 126; cp = cp + 1 {
+      let key = glyph_cache_key(cp, fs, false, font_family)
+      if glyph_bitmap_cache.val.get(key) is None {
+        let (commands, advance) = match provider.get_glyph_for_family {
+          Some(glyph_fn) if font_family.length() > 0 =>
+            match glyph_fn(cp, fs, false, font_family) {
+              Some(r) => r
+              None => (provider.get_glyph)(cp, fs, false)
+            }
+          _ => (provider.get_glyph)(cp, fs, false)
+        }
+        let translated = translate_path_commands(commands, 0.0, baseline_offset)
+        let bm = rasterize_glyph_to_bitmap(translated, advance)
+        glyph_bitmap_cache.val.set(key, bm)
+        count = count + 1
+      }
+    }
+  }
+  count
+}
+
+///|
 pub fn clear_glyph_provider() -> Unit {
   glyph_provider_override.val = None
   glyph_cache.val = {}
