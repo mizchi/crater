@@ -386,7 +386,7 @@ export class CraterBidiPage {
     return await new Promise<BidiResponse>((resolve, reject) => {
       this.pendingCommands.set(id, { resolve, reject });
       this.ws!.send(payload);
-      const timeoutMs = method === "browsingContext.capturePaintData" ? 180000 : 10000;
+      const timeoutMs = method === "browsingContext.capturePaintData" ? 300000 : 10000;
       setTimeout(() => {
         if (this.pendingCommands.has(id)) {
           this.pendingCommands.delete(id);
