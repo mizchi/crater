@@ -1416,6 +1416,10 @@ fn render_paint_node_clipped(
     return
   }
 
+  // Skip nodes entirely outside the framebuffer
+  if x >= fb.width || y >= fb.height || x + w <= 0 || y + h <= 0 {
+    return
+  }
   // If there's a clip rect, check if this node is fully outside it
   match clip {
     Some(c) =>

@@ -337,6 +337,10 @@ pub fn reset_paint_provider() -> Unit {
 }
 
 ///|
+extern "js" fn js_now_ms() -> Int =
+  #|() => Date.now()
+
+///|
 extern "js" fn js_log_stderr(msg : String) -> Unit =
   #|(msg) => { console.error("[paint] " + msg); }
 
@@ -469,7 +473,9 @@ fn BidiProtocol::resolve_capture_paint_data(
   let html_json = evaluate_js("globalThis.__lastHTML || ''")
   let html = extract_string_value_from_evaluate_result(html_json)
   let ctx = @browser_contract.create_render_context(width, height, false)
+  let t0 = js_now_ms()
   let (node, layout) = @renderer.render_to_node_and_layout(html, ctx)
+  let t1 = js_now_ms()
   let paint_node = match
     @paint.from_node_and_layout_with_viewport(
       node,
@@ -486,9 +492,22 @@ fn BidiProtocol::resolve_capture_paint_data(
       return None
     }
   }
+  let t2 = js_now_ms()
   let fb = @image.Framebuffer::new(width, height)
   let palette = @image.DynamicPalette::new()
   @image.render_paint_node_to_framebuffer(paint_node, fb, palette)
+  let t3 = js_now_ms()
+  js_log_stderr(
+    "capturePaintData: render=" +
+    (t1 - t0).to_string() +
+    "ms paint=" +
+    (t2 - t1).to_string() +
+    "ms fb=" +
+    (t3 - t2).to_string() +
+    "ms total=" +
+    (t3 - t0).to_string() +
+    "ms",
+  )
   Some(
     make_object({
       "width": Json::number(width.to_double()),
