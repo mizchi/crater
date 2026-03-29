@@ -217,6 +217,20 @@ pub fn compute_node_baseline(node : @node.Node, node_height : Double) -> Double 
     return node_height
   }
 
+  // CSS 2.1 §10.8.1: When overflow is not visible, the baseline is
+  // synthesized from the bottom margin edge (i.e., use node_height).
+  // This applies to block-level elements that establish a BFC due to overflow.
+  if style.overflow_x != @types.Visible || style.overflow_y != @types.Visible {
+    // Exception: inline-level boxes and flex/grid items still use their
+    // content baseline when they are the flex item being aligned.
+    // But for the element's own baseline contribution, overflow suppresses it.
+    match style.display {
+      @types.Block | @types.FlowRoot | @types.Flex | @types.Grid =>
+        return node_height
+      _ => ()
+    }
+  }
+
   // Leaf nodes: use font-based baseline for text, height for others
   if children.length() == 0 {
     // For text nodes, baseline is ascent + half leading.
