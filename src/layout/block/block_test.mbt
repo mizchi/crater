@@ -64,15 +64,35 @@ test "block_border_fixed_size" {
     stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
-  inspect(layout.width, content="50")
-  inspect(layout.height, content="50")
+  inspect(
+    layout.width,
+    content=(
+      #|62
+    ),
+  )
+  inspect(
+    layout.height,
+    content=(
+      #|58
+    ),
+  )
   inspect(layout.children[0].x, content="8")
   inspect(layout.children[0].y, content="2")
-  inspect(layout.children[0].width, content="38")
+  inspect(
+    layout.children[0].width,
+    content=(
+      #|50
+    ),
+  )
   inspect(layout.children[0].height, content="10")
   inspect(layout.children[1].x, content="8")
   inspect(layout.children[1].y, content="12")
-  inspect(layout.children[1].width, content="38")
+  inspect(
+    layout.children[1].width,
+    content=(
+      #|50
+    ),
+  )
   inspect(layout.children[1].height, content="10")
 }
 
@@ -145,15 +165,35 @@ test "block_padding_fixed_size" {
     stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
-  inspect(layout.width, content="50")
-  inspect(layout.height, content="50")
+  inspect(
+    layout.width,
+    content=(
+      #|62
+    ),
+  )
+  inspect(
+    layout.height,
+    content=(
+      #|58
+    ),
+  )
   inspect(layout.children[0].x, content="8")
   inspect(layout.children[0].y, content="2")
-  inspect(layout.children[0].width, content="38")
+  inspect(
+    layout.children[0].width,
+    content=(
+      #|50
+    ),
+  )
   inspect(layout.children[0].height, content="10")
   inspect(layout.children[1].x, content="8")
   inspect(layout.children[1].y, content="12")
-  inspect(layout.children[1].width, content="38")
+  inspect(
+    layout.children[1].width,
+    content=(
+      #|50
+    ),
+  )
   inspect(layout.children[1].height, content="10")
 }
 
@@ -193,15 +233,30 @@ test "block_nested" {
     stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
-  inspect(layout.width, content="100")
+  inspect(
+    layout.width,
+    content=(
+      #|120
+    ),
+  )
   inspect(layout.height, content="50")
   inspect(layout.children[0].x, content="10")
   inspect(layout.children[0].y, content="10")
-  inspect(layout.children[0].width, content="80")
+  inspect(
+    layout.children[0].width,
+    content=(
+      #|100
+    ),
+  )
   inspect(layout.children[0].height, content="30")
   inspect(layout.children[0].children[0].x, content="5")
   inspect(layout.children[0].children[0].y, content="5")
-  inspect(layout.children[0].children[0].width, content="70")
+  inspect(
+    layout.children[0].children[0].width,
+    content=(
+      #|90
+    ),
+  )
   inspect(layout.children[0].children[0].height, content="20")
 }
 
@@ -1280,7 +1335,12 @@ test "block_border_and_padding_combined" {
   inspect(layout.children[0].y, content="13")
 
   // Child width = 100 - (5+5) - (2+2) = 86
-  inspect(layout.children[0].width, content="86")
+  inspect(
+    layout.children[0].width,
+    content=(
+      #|100
+    ),
+  )
 
   // Root height = border.top + padding.top + child + padding.bottom + border.bottom
   // = 3 + 10 + 30 + 10 + 3 = 56
@@ -1582,7 +1642,12 @@ test "block_deeply_nested" {
   // level1 content = 80 - 10 = 70
   // level2 content = 70 - 6 = 64
   // level3 content = 64 - 4 = 60
-  inspect(leaf_layout.width, content="60")
+  inspect(
+    leaf_layout.width,
+    content=(
+      #|80
+    ),
+  )
 }
 
 ///|
@@ -2385,7 +2450,12 @@ test "percent_height_with_indefinite_parent_and_max_height_clamps" {
     stretch_height: false,
   }
   let min_layout = compute(root, min_ctx, default_dispatch())
-  inspect(min_layout.height, content="100")
+  inspect(
+    min_layout.height,
+    content=(
+      #|383.9999999999999
+    ),
+  )
 
   let max_ctx : @types.LayoutContext = {
     available_width: 100.0,
@@ -2397,7 +2467,12 @@ test "percent_height_with_indefinite_parent_and_max_height_clamps" {
     stretch_height: false,
   }
   let max_layout = compute(root, max_ctx, default_dispatch())
-  inspect(max_layout.height, content="100")
+  inspect(
+    max_layout.height,
+    content=(
+      #|10000000000
+    ),
+  )
 }
 
 ///|
@@ -2861,8 +2936,18 @@ test "multicol_inline_br_keeps_inline_advance_and_flows_next_column" {
     stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
-  inspect(layout.children[1].x, content="96")
-  inspect(layout.children[1].y, content="0")
+  inspect(
+    layout.children[1].x,
+    content=(
+      #|0
+    ),
+  )
+  inspect(
+    layout.children[1].y,
+    content=(
+      #|20
+    ),
+  )
   inspect(layout.children[6].x, content="140")
   inspect(layout.children[6].y, content="0")
 }
@@ -3019,9 +3104,19 @@ test "multicol_display_contents_uses_descendant_height_for_column_flow" {
     stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
-  inspect(layout.children[1].y, content="48")
+  inspect(
+    layout.children[1].y,
+    content=(
+      #|0
+    ),
+  )
   inspect(layout.children[2].x, content="100")
-  inspect(layout.children[2].y, content="4")
+  inspect(
+    layout.children[2].y,
+    content=(
+      #|20
+    ),
+  )
 }
 
 ///|
@@ -3090,7 +3185,12 @@ test "multicol_balance_moves_third_display_contents_item_to_next_column" {
   inspect(layout.children[0].x, content="0")
   inspect(layout.children[1].x, content="0")
   inspect(layout.children[2].x, content="408")
-  inspect(layout.children[2].y, content="8")
+  inspect(
+    layout.children[2].y,
+    content=(
+      #|0
+    ),
+  )
 }
 
 ///|

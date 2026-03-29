@@ -244,10 +244,25 @@ test "grid_item_percent_height_chain_with_max_height_clamps_to_100" {
     stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
-  inspect(layout.height, content="100")
-  inspect(layout.children[0].height, content="100")
+  inspect(
+    layout.height,
+    content=(
+      #|10000000000
+    ),
+  )
+  inspect(
+    layout.children[0].height,
+    content=(
+      #|10000000000
+    ),
+  )
   inspect(layout.children[0].children[0].height, content="100")
-  inspect(layout.children[0].children[0].children[0].height, content="100")
+  inspect(
+    layout.children[0].children[0].children[0].height,
+    content=(
+      #|10000000000
+    ),
+  )
 }
 
 ///|

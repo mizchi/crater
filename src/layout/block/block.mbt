@@ -6298,9 +6298,7 @@ fn compute_with_collapse(
           } else {
             0.0
           }
-          let extent = child_content_y +
-            child_block +
-            adjusted_layout.margin.bottom
+          let extent = child_content_y + child_block
           if extent > adjusted_flow_extent {
             adjusted_flow_extent = extent
           }

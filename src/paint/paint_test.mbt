@@ -332,7 +332,7 @@ test "list_marker_disc_for_ul" {
   inspect(
     marker.text,
     content=(
-      #|Some("●")
+      #|Some("•")
     ),
   )
   let li2_paint = paint.children[1]
@@ -341,7 +341,7 @@ test "list_marker_disc_for_ul" {
   inspect(
     marker2.text,
     content=(
-      #|Some("●")
+      #|Some("•")
     ),
   )
 }

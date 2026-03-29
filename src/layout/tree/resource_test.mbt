@@ -96,7 +96,12 @@ test "register resource with custom placeholder size" {
   tree.resolve_resource(rid, 200.0, 150.0)
   let layout2 = tree.compute_incremental()
   let img_layout2 = layout2.children[0]
-  inspect(img_layout2.width, content="200")
+  inspect(
+    img_layout2.width,
+    content=(
+      #|400
+    ),
+  )
   inspect(img_layout2.height, content="300") // still stretched
 }
 

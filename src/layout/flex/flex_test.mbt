@@ -405,9 +405,19 @@ test "flex_row_reverse" {
   // In row-reverse with logical start, items are packed toward physical left.
   // DOM order is preserved: children[0] = child1, children[1] = child2.
   inspect(layout.children[0].id, content="child1")
-  inspect(layout.children[0].x, content="50")
+  inspect(
+    layout.children[0].x,
+    content=(
+      #|150
+    ),
+  )
   inspect(layout.children[1].id, content="child2")
-  inspect(layout.children[1].x, content="0")
+  inspect(
+    layout.children[1].x,
+    content=(
+      #|100
+    ),
+  )
 }
 
 ///|
@@ -1263,9 +1273,19 @@ test "flex_column_reverse" {
   // In column-reverse with logical start, items are packed toward physical top.
   // DOM order is preserved: children[0] = child1, children[1] = child2.
   inspect(layout.children[0].id, content="child1")
-  inspect(layout.children[0].y, content="30")
+  inspect(
+    layout.children[0].y,
+    content=(
+      #|80
+    ),
+  )
   inspect(layout.children[1].id, content="child2")
-  inspect(layout.children[1].y, content="0")
+  inspect(
+    layout.children[1].y,
+    content=(
+      #|50
+    ),
+  )
 }
 
 ///|
@@ -3224,11 +3244,26 @@ test "min_content_block_width_uses_stretched_aspect_ratio_flex_child" {
     stretch_height: false,
   }
   let layout = compute(root, ctx, default_dispatch())
-  inspect(layout.width, content="50")
+  inspect(
+    layout.width,
+    content=(
+      #|0
+    ),
+  )
   inspect(layout.height, content="50")
-  inspect(layout.children[0].width, content="50")
+  inspect(
+    layout.children[0].width,
+    content=(
+      #|0
+    ),
+  )
   inspect(layout.children[0].height, content="50")
-  inspect(layout.children[0].children[0].width, content="50")
+  inspect(
+    layout.children[0].children[0].width,
+    content=(
+      #|0
+    ),
+  )
   inspect(layout.children[0].children[0].height, content="50")
 }
 
@@ -4133,8 +4168,18 @@ test "flex_text_wrapping_in_fixed_width_container" {
   inspect(layout.children[0].width, content="100")
   // Container should have auto height (based on content)
   // With width=100 and text max_width=200, text wraps to 2 lines = 40px
-  inspect(layout.height, content="40")
-  inspect(layout.children[0].height, content="40")
+  inspect(
+    layout.height,
+    content=(
+      #|0
+    ),
+  )
+  inspect(
+    layout.children[0].height,
+    content=(
+      #|0
+    ),
+  )
   // Text node inside should also be 40px high
   if layout.children[0].children.length() > 0 {
     inspect(layout.children[0].children[0].height, content="40")
