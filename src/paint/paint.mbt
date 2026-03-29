@@ -463,7 +463,7 @@ fn extract_tag_from_id(id : String) -> String {
 /// Generate list marker text for a <li> element based on parent list type.
 fn generate_list_marker(parent_tag : String, child_index : Int) -> String? {
   match parent_tag {
-    "ul" => Some("●")
+    "ul" => Some("\u{2022}")
     "ol" => Some((child_index + 1).to_string() + ".")
     _ => None
   }

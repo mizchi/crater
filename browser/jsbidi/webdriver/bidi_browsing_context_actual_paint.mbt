@@ -328,6 +328,15 @@ fn ensure_paint_text_provider() -> Unit {
 let paint_provider_initialized : Ref[Bool] = { val: false }
 
 ///|
+/// Reset paint provider state on new WebSocket session.
+/// Must be called when JS runtime is reset to avoid stale glyph provider.
+pub fn reset_paint_provider() -> Unit {
+  paint_provider_initialized.val = false
+  @image.clear_glyph_provider()
+  @renderer.clear_text_metrics_provider()
+}
+
+///|
 extern "js" fn js_log_stderr(msg : String) -> Unit =
   #|(msg) => { console.error("[paint] " + msg); }
 

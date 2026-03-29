@@ -376,6 +376,7 @@ fn BidiServer::handle_message(
 /// Setup WebSocket event handlers with async support
 fn BidiServer::setup_websocket(self : BidiServer, socket : @core.Any) -> Unit {
   reset_runtime_js_state()
+  reset_paint_provider()
   bidi_server_trace("setup_websocket: begin reset")
   self.protocol.reset_session_runtime_state()
   bidi_server_trace("setup_websocket: reset done")
