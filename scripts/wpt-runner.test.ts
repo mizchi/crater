@@ -8,6 +8,7 @@ import {
   resolveBuiltinTextAdvanceRatioOverride,
   resolveFocusedComparisonNodeId,
   resolveTextIntrinsicFn,
+  shouldKeepHtmlRootForComparison,
 } from "./wpt-runner.ts";
 
 describe("createTextIntrinsicFnFromMeasureText", () => {
@@ -374,6 +375,39 @@ describe("resolveFocusedComparisonNodeId", () => {
         "wpt/css/css-overflow/column-scroll-marker-001.html",
       ),
     ).toBeNull();
+  });
+});
+
+describe("shouldKeepHtmlRootForComparison", () => {
+  it("keeps html as the comparison root for positioned root-element flex/grid tests", () => {
+    expect(
+      shouldKeepHtmlRootForComparison(
+        "wpt/css/css-position/position-absolute-root-element-flex.html",
+      ),
+    ).toBe(true);
+    expect(
+      shouldKeepHtmlRootForComparison(
+        "wpt/css/css-position/position-fixed-root-element-flex.html",
+      ),
+    ).toBe(true);
+    expect(
+      shouldKeepHtmlRootForComparison(
+        "wpt/css/css-position/position-fixed-root-element-grid.html",
+      ),
+    ).toBe(true);
+  });
+
+  it("does not keep html root for unrelated position fixtures", () => {
+    expect(
+      shouldKeepHtmlRootForComparison(
+        "wpt/css/css-position/position-absolute-in-inline-004.html",
+      ),
+    ).toBe(false);
+    expect(
+      shouldKeepHtmlRootForComparison(
+        "wpt/css/css-position/position-relative-001.html",
+      ),
+    ).toBe(false);
   });
 });
 

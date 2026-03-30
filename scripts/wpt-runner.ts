@@ -597,6 +597,7 @@ async function getBrowserLayout(browser: puppeteer.Browser, htmlPath: string): P
   page.on('pageerror', () => {});
   page.setDefaultTimeout(5000);
   const focusedNodeId = resolveFocusedComparisonNodeId(htmlPath);
+  const keepHtmlRoot = shouldKeepHtmlRootForComparison(htmlPath);
 
   const htmlContent = prepareHtmlContent(htmlPath);
   await page.setContent(htmlContent, { waitUntil: 'domcontentloaded', timeout: 5000 });
@@ -666,6 +667,9 @@ async function getBrowserLayout(browser: puppeteer.Browser, htmlPath: string): P
     const body = document.body;
     function normalizeRoot(layout) {
       return Object.assign({}, layout, { x: 0, y: 0 });
+    }
+    if (${JSON.stringify(keepHtmlRoot)}) {
+      return normalizeRoot(extractLayout(document.documentElement));
     }
 
     const testElement = document.getElementById('test') ||
@@ -790,6 +794,9 @@ function getCraterLayout(htmlPath: string): LayoutNode {
 
   if (layout.id === 'body' && layout.children.length === 1 && layout.children[0].id === 'body') {
     layout = layout.children[0];
+  }
+  if (shouldKeepHtmlRootForComparison(htmlPath) && layout.id === 'html') {
+    return finalizeRoot(layout);
   }
 
   const testElement = findNodeById(layout, 'div#test') || findNodeById(layout, '#test') ||
@@ -1551,6 +1558,12 @@ export function resolveFocusedComparisonNodeId(htmlPath: string): string | null 
     return 'div';
   }
   return null;
+}
+
+export function shouldKeepHtmlRootForComparison(htmlPath: string): boolean {
+  return /position-(absolute|fixed)-root-element-(flex|grid)\.html$/.test(
+    path.basename(htmlPath).toLowerCase(),
+  );
 }
 
 export function resolveBuiltinTextAdvanceRatioOverride(htmlPath: string): number | null {
