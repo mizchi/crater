@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyKnownScriptDrivenFixtureTransforms,
   applySimpleScriptDrivenClassMutations,
+  createHtmlRootComparisonLayout,
   createFocusedComparisonRoot,
   createTextIntrinsicFnFromMeasureText,
   isScriptMutationDependentTest,
@@ -448,6 +449,40 @@ describe("normalizeComparisonRootToContentBox", () => {
     ).toMatchObject({
       width: 0,
       height: 0,
+    });
+  });
+});
+
+describe("createHtmlRootComparisonLayout", () => {
+  it("compares only the normalized html root box", () => {
+    expect(
+      createHtmlRootComparisonLayout({
+        id: "html",
+        x: 0,
+        y: 0,
+        width: 770,
+        height: 530,
+        margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        padding: { top: 0, right: 0, bottom: 0, left: 0 },
+        border: { top: 5, right: 5, bottom: 5, left: 5 },
+        children: [
+          {
+            id: "body",
+            x: 0,
+            y: 0,
+            width: 696,
+            height: 520,
+            margin: { top: 0, right: 0, bottom: 0, left: 0 },
+            padding: { top: 0, right: 0, bottom: 0, left: 0 },
+            border: { top: 0, right: 0, bottom: 0, left: 0 },
+            children: [],
+          },
+        ],
+      }),
+    ).toMatchObject({
+      width: 760,
+      height: 520,
+      children: [],
     });
   });
 });

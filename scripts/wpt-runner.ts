@@ -732,7 +732,7 @@ async function getBrowserLayout(browser: puppeteer.Browser, htmlPath: string): P
   await page.close();
   let normalizedLayout = normalizeZeroSizedRootChildren(layout as LayoutNode);
   if (keepHtmlRoot && normalizedLayout.id === 'html') {
-    normalizedLayout = normalizeComparisonRootToContentBox(normalizedLayout);
+    normalizedLayout = createHtmlRootComparisonLayout(normalizedLayout);
   }
   return normalizedLayout;
 }
@@ -785,6 +785,13 @@ export function normalizeComparisonRootToContentBox(node: LayoutNode): LayoutNod
   };
 }
 
+export function createHtmlRootComparisonLayout(node: LayoutNode): LayoutNode {
+  return {
+    ...normalizeComparisonRootToContentBox(node),
+    children: [],
+  };
+}
+
 function getCraterLayout(htmlPath: string): LayoutNode {
   if (!renderHtmlToJsonImpl) {
     throw new Error('Crater renderer is not initialized');
@@ -812,7 +819,7 @@ function getCraterLayout(htmlPath: string): LayoutNode {
     layout = layout.children[0];
   }
   if (shouldKeepHtmlRootForComparison(htmlPath) && layout.id === 'html') {
-    return normalizeComparisonRootToContentBox(finalizeRoot(layout));
+    return createHtmlRootComparisonLayout(finalizeRoot(layout));
   }
 
   const testElement = findNodeById(layout, 'div#test') || findNodeById(layout, '#test') ||
