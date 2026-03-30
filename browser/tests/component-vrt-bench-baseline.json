@@ -1,0 +1,502 @@
+{
+  "schemaVersion": 2,
+  "updatedAt": "2026-03-30T04:02:35.490Z",
+  "command": [
+    "moon",
+    "bench",
+    "-p",
+    "mizchi/crater-browser/shell",
+    "-f",
+    "component_vrt_bench_wbtest.mbt",
+    "--target",
+    "js",
+    "--frozen"
+  ],
+  "warmupRuns": 1,
+  "measuredRuns": 5,
+  "metrics": {
+    "component_landmarks_xs": {
+      "meanMs": 0.0459,
+      "p50Ms": 0.047020000000000006,
+      "p95Ms": 0.057159999999999996,
+      "bestMs": 0.03474,
+      "worstMs": 0.06673,
+      "meanStddevMs": 0.004166,
+      "suiteRuns": 5,
+      "sampleRuns": [
+        1845,
+        2820,
+        1874,
+        1996,
+        2814
+      ],
+      "perRunMeanMs": [
+        0.05113,
+        0.03541,
+        0.057159999999999996,
+        0.047020000000000006,
+        0.03878
+      ]
+    },
+    "component_landmarks_s": {
+      "meanMs": 0.10446,
+      "p50Ms": 0.10443000000000001,
+      "p95Ms": 0.12271,
+      "bestMs": 0.0848,
+      "worstMs": 0.14018,
+      "meanStddevMs": 0.008012,
+      "suiteRuns": 5,
+      "sampleRuns": [
+        859,
+        1122,
+        665,
+        1063,
+        928
+      ],
+      "perRunMeanMs": [
+        0.10499,
+        0.08729,
+        0.12271,
+        0.10443000000000001,
+        0.10288
+      ]
+    },
+    "component_landmarks_m": {
+      "meanMs": 0.392304,
+      "p50Ms": 0.3927,
+      "p95Ms": 0.48744,
+      "bestMs": 0.30421,
+      "worstMs": 0.6604,
+      "meanStddevMs": 0.045455999999999996,
+      "suiteRuns": 5,
+      "sampleRuns": [
+        188,
+        298,
+        233,
+        266,
+        307
+      ],
+      "perRunMeanMs": [
+        0.3927,
+        0.31722,
+        0.48744,
+        0.41997,
+        0.34419
+      ]
+    },
+    "component_landmarks_l": {
+      "meanMs": 0.619602,
+      "p50Ms": 0.5791799999999999,
+      "p95Ms": 0.77739,
+      "bestMs": 0.47062,
+      "worstMs": 0.98073,
+      "meanStddevMs": 0.061188,
+      "suiteRuns": 5,
+      "sampleRuns": [
+        132,
+        205,
+        165,
+        188,
+        198
+      ],
+      "perRunMeanMs": [
+        0.72423,
+        0.48894,
+        0.77739,
+        0.5791799999999999,
+        0.52827
+      ]
+    },
+    "component_layout_xs": {
+      "meanMs": 1.8039999999999998,
+      "p50Ms": 1.58,
+      "p95Ms": 2.53,
+      "bestMs": 1.07,
+      "worstMs": 3.32,
+      "meanStddevMs": 0.28916,
+      "suiteRuns": 5,
+      "sampleRuns": [
+        32,
+        77,
+        49,
+        55,
+        57
+      ],
+      "perRunMeanMs": [
+        2.53,
+        1.14,
+        1.58,
+        2.34,
+        1.43
+      ]
+    },
+    "component_layout_s": {
+      "meanMs": 4.812,
+      "p50Ms": 4.34,
+      "p95Ms": 6.98,
+      "bestMs": 3.1,
+      "worstMs": 11.28,
+      "meanStddevMs": 0.721646,
+      "suiteRuns": 5,
+      "sampleRuns": [
+        9,
+        25,
+        19,
+        15,
+        16
+      ],
+      "perRunMeanMs": [
+        5.46,
+        3.18,
+        4.34,
+        6.98,
+        4.1
+      ]
+    },
+    "component_layout_m": {
+      "meanMs": 24.868000000000002,
+      "p50Ms": 24.94,
+      "p95Ms": 32.82,
+      "bestMs": 16.28,
+      "worstMs": 75.69,
+      "meanStddevMs": 5.63453,
+      "suiteRuns": 5,
+      "sampleRuns": [
+        3,
+        6,
+        5,
+        3,
+        4
+      ],
+      "perRunMeanMs": [
+        28.4,
+        16.9,
+        21.28,
+        24.94,
+        32.82
+      ]
+    },
+    "component_layout_l": {
+      "meanMs": 33.694,
+      "p50Ms": 33.72,
+      "p95Ms": 47.91,
+      "bestMs": 22.41,
+      "worstMs": 67.46,
+      "meanStddevMs": 4.201484,
+      "suiteRuns": 5,
+      "sampleRuns": [
+        3,
+        5,
+        4,
+        4,
+        2
+      ],
+      "perRunMeanMs": [
+        33.72,
+        23.05,
+        26.31,
+        37.48,
+        47.91
+      ]
+    },
+    "component_image_xs": {
+      "meanMs": 2.566,
+      "p50Ms": 2.74,
+      "p95Ms": 3.27,
+      "bestMs": 1.78,
+      "worstMs": 3.82,
+      "meanStddevMs": 0.23210000000000003,
+      "suiteRuns": 5,
+      "sampleRuns": [
+        36,
+        49,
+        47,
+        40,
+        38
+      ],
+      "perRunMeanMs": [
+        3.27,
+        1.86,
+        2.13,
+        2.83,
+        2.74
+      ]
+    },
+    "component_image_s": {
+      "meanMs": 8.212,
+      "p50Ms": 7.86,
+      "p95Ms": 9.6,
+      "bestMs": 6.34,
+      "worstMs": 12.67,
+      "meanStddevMs": 1.2165339999999998,
+      "suiteRuns": 5,
+      "sampleRuns": [
+        13,
+        17,
+        14,
+        7,
+        11
+      ],
+      "perRunMeanMs": [
+        9.6,
+        7.78,
+        7.56,
+        8.26,
+        7.86
+      ]
+    },
+    "component_image_m": {
+      "meanMs": 35.31999999999999,
+      "p50Ms": 36.26,
+      "p95Ms": 43.8,
+      "bestMs": 25.7,
+      "worstMs": 49.05,
+      "meanStddevMs": 3.6260000000000003,
+      "suiteRuns": 5,
+      "sampleRuns": [
+        2,
+        4,
+        3,
+        2,
+        3
+      ],
+      "perRunMeanMs": [
+        43.8,
+        27.46,
+        36.26,
+        30.6,
+        38.48
+      ]
+    },
+    "component_image_l": {
+      "meanMs": 50.940000000000005,
+      "p50Ms": 49.3,
+      "p95Ms": 63.44,
+      "bestMs": 41.3,
+      "worstMs": 82.36,
+      "meanStddevMs": 6.456,
+      "suiteRuns": 5,
+      "sampleRuns": [
+        2,
+        3,
+        3,
+        3,
+        2
+      ],
+      "perRunMeanMs": [
+        63.44,
+        45.29,
+        45.9,
+        49.3,
+        50.77
+      ]
+    },
+    "component_phase_node_layout_m": {
+      "meanMs": 20.879999999999995,
+      "p50Ms": 22.04,
+      "p95Ms": 22.83,
+      "bestMs": 16.23,
+      "worstMs": 38.74,
+      "meanStddevMs": 4.088,
+      "suiteRuns": 5,
+      "sampleRuns": [
+        5,
+        6,
+        6,
+        6,
+        4
+      ],
+      "perRunMeanMs": [
+        22.04,
+        19.39,
+        22.83,
+        17.54,
+        22.6
+      ]
+    },
+    "component_phase_extract_m": {
+      "meanMs": 0.00015800000000000002,
+      "p50Ms": 0.00014000000000000001,
+      "p95Ms": 0.0002,
+      "bestMs": 0.00011999999999999999,
+      "worstMs": 0.00026000000000000003,
+      "meanStddevMs": 0.000016000000000000003,
+      "suiteRuns": 5,
+      "sampleRuns": [
+        100000,
+        100000,
+        100000,
+        100000,
+        100000
+      ],
+      "perRunMeanMs": [
+        0.00014000000000000001,
+        0.00014000000000000001,
+        0.0002,
+        0.00011999999999999999,
+        0.00019
+      ]
+    },
+    "component_phase_layout_serialize_m": {
+      "meanMs": 0.080122,
+      "p50Ms": 0.07525,
+      "p95Ms": 0.09654,
+      "bestMs": 0.05963,
+      "worstMs": 0.14331,
+      "meanStddevMs": 0.01365,
+      "suiteRuns": 5,
+      "sampleRuns": [
+        1653,
+        1372,
+        929,
+        1399,
+        1119
+      ],
+      "perRunMeanMs": [
+        0.06566,
+        0.0884,
+        0.09654,
+        0.07525,
+        0.07476000000000001
+      ]
+    },
+    "component_phase_aom_build_m": {
+      "meanMs": 0.27505199999999996,
+      "p50Ms": 0.24568,
+      "p95Ms": 0.38929,
+      "bestMs": 0.20354,
+      "worstMs": 0.62773,
+      "meanStddevMs": 0.046422,
+      "suiteRuns": 5,
+      "sampleRuns": [
+        442,
+        381,
+        349,
+        470,
+        381
+      ],
+      "perRunMeanMs": [
+        0.22374000000000002,
+        0.24568,
+        0.29289,
+        0.22366,
+        0.38929
+      ]
+    },
+    "component_phase_landmark_extract_m": {
+      "meanMs": 0.001208,
+      "p50Ms": 0.00108,
+      "p95Ms": 0.00161,
+      "bestMs": 0.0009699999999999999,
+      "worstMs": 0.00225,
+      "meanStddevMs": 0.000142,
+      "suiteRuns": 5,
+      "sampleRuns": [
+        95631,
+        91487,
+        91036,
+        91807,
+        72888
+      ],
+      "perRunMeanMs": [
+        0.00107,
+        0.00108,
+        0.00108,
+        0.0012,
+        0.00161
+      ]
+    },
+    "component_phase_landmark_serialize_m": {
+      "meanMs": 0.000208,
+      "p50Ms": 0.00019,
+      "p95Ms": 0.00025,
+      "bestMs": 0.00017,
+      "worstMs": 0.00047,
+      "meanStddevMs": 0.000024,
+      "suiteRuns": 5,
+      "sampleRuns": [
+        100000,
+        100000,
+        100000,
+        100000,
+        100000
+      ],
+      "perRunMeanMs": [
+        0.00017999999999999998,
+        0.00017999999999999998,
+        0.00023999999999999998,
+        0.00019,
+        0.00025
+      ]
+    },
+    "component_phase_paint_m": {
+      "meanMs": 0.020489999999999998,
+      "p50Ms": 0.01839,
+      "p95Ms": 0.029769999999999998,
+      "bestMs": 0.015380000000000001,
+      "worstMs": 0.05969,
+      "meanStddevMs": 0.0037700000000000003,
+      "suiteRuns": 5,
+      "sampleRuns": [
+        6226,
+        5721,
+        4083,
+        5840,
+        5051
+      ],
+      "perRunMeanMs": [
+        0.01611,
+        0.01622,
+        0.029769999999999998,
+        0.01839,
+        0.02196
+      ]
+    },
+    "component_phase_raster_m": {
+      "meanMs": 9.886,
+      "p50Ms": 9.01,
+      "p95Ms": 12.26,
+      "bestMs": 7.55,
+      "worstMs": 17.35,
+      "meanStddevMs": 1.121536,
+      "suiteRuns": 5,
+      "sampleRuns": [
+        13,
+        13,
+        8,
+        13,
+        9
+      ],
+      "perRunMeanMs": [
+        8.07,
+        9.01,
+        12.24,
+        7.85,
+        12.26
+      ]
+    },
+    "component_phase_encode_m": {
+      "meanMs": 3.1519999999999997,
+      "p50Ms": 3.06,
+      "p95Ms": 3.68,
+      "bestMs": 2.58,
+      "worstMs": 4.68,
+      "meanStddevMs": 0.297956,
+      "suiteRuns": 5,
+      "sampleRuns": [
+        36,
+        34,
+        31,
+        33,
+        24
+      ],
+      "perRunMeanMs": [
+        2.79,
+        3.06,
+        3.68,
+        2.71,
+        3.52
+      ]
+    }
+  }
+}

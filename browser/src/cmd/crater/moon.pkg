@@ -1,0 +1,17 @@
+import {
+  "mizchi/crater/html",
+  "mizchi/crater/renderer",
+  "mizchi/crater/layout/node",
+  "mizchi/crater/types",
+  "mizchi/crater/css/media",
+  "mizchi/crater/css/selector",
+  "mizchi/crater/paint",
+  "mizchi/crater/x/image",
+  "mizchi/crater/aom",
+  "mizchi/crater-browser/tui",
+}
+
+options(
+  "is-main": true,
+  "supported-targets": [ "js" ],
+)

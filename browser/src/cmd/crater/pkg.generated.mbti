@@ -1,0 +1,23 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser/cmd/crater"
+
+// Values
+
+// Errors
+
+// Types and methods
+type ArtifactMode
+pub impl Show for ArtifactMode
+
+type LandmarkTree
+
+type Options
+
+type RenderRequest
+
+type ResolvedTarget
+
+// Type aliases
+
+// Traits
+

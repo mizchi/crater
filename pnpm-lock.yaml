@@ -49,6 +49,12 @@ importers:
         specifier: ^0.31.0
         version: 0.31.0
     devDependencies:
+      pixelmatch:
+        specifier: ^7.1.0
+        version: 7.1.0
+      pngjs:
+        specifier: ^7.0.0
+        version: 7.0.0
       puppeteer-core:
         specifier: ^24.8.0
         version: 24.36.0
