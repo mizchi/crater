@@ -1,126 +1,155 @@
 # Crater Browser Milestones
 
-## Current Implementation Status
+## Current Snapshot
 
-```
-✅ DOM API (createElement, querySelector, classList, etc.)
-✅ CSS parsing & Flexbox layout (taffy)
-✅ JS execution via QuickJS
-✅ Promise / setTimeout / queueMicrotask
-✅ fetch API (mock only)
-✅ Paint tree & TUI rendering
+```text
+Implemented
+  - terminal browser CLI with text / kitty / sixel output
+  - structured outputs: JSON, AOM, Arc90, ExtractMain, Grounding
+  - keyboard + mouse interaction, hint mode, dark mode, selection mode
+  - browser shell with DOM/CSS/layout/AOM orchestration
+
+Substantial progress
+  - Preact-oriented DOM / event / state update scenarios
+  - WebDriver BiDi protocol and WPT-focused synthetic behavior
+
+Partial
+  - CDP bridge for Puppeteer smoke tests
+  - full-page headless rendering
+  - real-world site parity for dynamic pages
 ```
 
 ---
 
-## Milestones
+## Milestone Status
 
-### M1: Static HTML Rendering (Mostly Complete)
+### M1: Terminal Browser And Extraction
 
-```
-✅ HTML parsing → DOM tree
-✅ CSS parsing → Style computation
-✅ Layout calculation
-✅ Painting
-```
+**Status**: Implemented
 
-### M2: Real fetch Implementation
-
-```
-□ HTTP requests using Node.js native fetch
-□ Response streaming
-□ CORS header handling
-□ Cookie management
+```text
+✓ ANSI text rendering
+✓ Kitty graphics output
+✓ Sixel output
+✓ Interactive navigation and history
+✓ Hit-a-hint
+✓ Dark mode
+✓ Selection mode for copy
+✓ AOM / JSON / Arc90 / ExtractMain / Grounding outputs
 ```
 
-**Goal**: `fetch('https://example.com')` sends actual HTTP requests
+This is the most stable user-facing surface in the repository today.
 
-### M3: Dynamic Content Display
+### M2: Browser Shell As Shared Runtime
 
-```
-□ MutationObserver (DOM change detection)
-□ requestAnimationFrame
-□ CSS recalculation & re-layout
-□ Incremental repaint
-```
+**Status**: Implemented
 
-**Goal**: JS modifies DOM → changes reflect on screen
-
-### M4: Preact Compatibility
-
-```
-□ Event delegation (bubbling/capturing)
-□ input/change/submit events
-□ Focus management
-□ Full className / style manipulation
-□ dangerouslySetInnerHTML
+```text
+✓ Central browser shell in src/shell/browser.mbt
+✓ DOM / layout / paint / accessibility orchestration
+✓ Scheduler and JS runtime hooks for tests and automation
+✓ Shared state for history, focus, scroll, drag, and pointer input
 ```
 
-**Goal**: Simple Preact applications run correctly
+This milestone matters because both the CLI and automation stacks reuse the same browser abstraction.
 
-### M5: Form Input
+### M3: Preact-Oriented Compatibility
 
-```
-□ input[type=text] value management
-□ checkbox / radio state
-□ select / option
-□ Keyboard events
-□ IME support (CJK input)
-```
+**Status**: Substantial progress
 
-**Goal**: Login forms work correctly
-
-### M6: Real Website Rendering
-
-```
-□ External CSS loading
-□ External JS loading & execution
-□ Image loading (size detection)
-□ Web fonts (or fallback)
-□ localStorage / sessionStorage
-□ History API (pushState, popstate)
+```text
+✓ render() / h() basics
+✓ useState re-render flow
+✓ click -> state update -> re-render
+✓ useEffect and cleanup
+✓ keyed list rendering
+✓ controlled input
+✓ conditional rendering
+✓ className and style object behavior
+✓ larger TODO-style CRUD scenario
 ```
 
-**Goal**: Display zenn.dev article pages
+The goal is no longer "can a trivial Preact app mount at all?".
+The current question is how far the runtime can be pushed before broader web-platform gaps show up.
 
-### M7: Playwright Integration
+### M4: WebDriver BiDi Automation
 
+**Status**: Substantial progress
+
+```text
+✓ browsingContext lifecycle and navigation flows
+✓ screenshot and print paths
+✓ script evaluate / callFunction / preload scripts
+✓ keyboard, pointer, drag-and-drop, setFiles
+✓ network interception and synthetic fetch handling
+✓ storage and cookie behavior
+✓ emulation overrides (user agent, locale, geolocation, network, screen)
+✓ WPT-oriented synthetic modules for prompts, downloads, bluetooth, web extensions
 ```
-□ WebDriver BiDi protocol
-□ page.goto / page.click / page.fill
-□ Screenshots
-□ Network interception
+
+This is the primary automation milestone for the project.
+Most current compatibility work should be framed as "expand BiDi/WPT coverage" rather than "introduce BiDi".
+
+### M5: CDP Bridge For Puppeteer
+
+**Status**: Partial
+
+```text
+✓ Target / DOM / Page / Input foundations in MoonBit
+✓ Node-side bridge for HTTP fetch and lifecycle events
+✓ puppeteer-core smoke tests
+□ richer Runtime coverage
+□ stronger hit testing and element interaction fidelity
+□ broader DevTools protocol parity
 ```
 
-**Goal**: Playwright tests can run on Crater
+CDP remains useful, but it is no longer the lead architecture.
+
+### M6: Real-World Browser Experience
+
+**Status**: Ongoing
+
+```text
+□ expose a clear public story for JS-enabled browsing from the CLI
+□ true full-page headless rendering
+□ deeper dynamic-site compatibility
+□ tighter resource / storage / security parity with real browsers
+□ better automation behavior on non-synthetic pages
+```
+
+This milestone is now more about productizing the existing runtime than inventing the core pieces.
 
 ---
 
 ## Recommended Next Steps
 
-**M2 (Real fetch)** provides the highest value:
+### 1. BiDi/WPT hardening
 
-1. Call Node.js fetch via FFI
-2. Proper async/await support (currently using synchronous Promise polyfill)
-3. Fetch external JSON APIs and render
+Keep expanding the WPT-driven BiDi clusters, especially around edge-case navigation, script realms, input, and network interception.
 
-This enables the SPA pattern: fetching data from APIs and displaying it dynamically.
+### 2. CDP bridge stabilization
+
+Fill the remaining fidelity gaps that block Puppeteer smoke tests from becoming less synthetic.
+
+### 3. CLI/product parity
+
+Decide how far the public CLI should go toward JS-enabled browsing versus remaining a safer read-oriented renderer and extractor.
 
 ---
 
-## Dependencies Between Milestones
+## Dependency View
 
-```
-M1 ──→ M2 ──→ M3 ──→ M6
-              ↓
-              M4 ──→ M5
-                     ↓
-                     M7
+```text
+Browser shell
+  ├─> Terminal CLI features
+  ├─> Preact-oriented compatibility work
+  ├─> WebDriver BiDi behavior
+  └─> CDP compatibility bridge
 ```
 
-- M2 (fetch) is a prerequisite for loading external resources
-- M3 (dynamic content) is required for any interactive application
-- M4 (Preact) requires M3 for reactivity
-- M5 (forms) requires M4 for event handling
-- M6 (real sites) requires M2, M3, and partial M4
-- M7 (Playwright) requires M5 for form automation
+In other words:
+
+- the shell/runtime is the base platform
+- BiDi is the primary automation contract
+- CDP is compatibility work on top
+- better real-world browsing depends on hardening all three

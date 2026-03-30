@@ -1,240 +1,152 @@
-# Crater Browser CDP Architecture
+# Crater Browser Architecture
 
 ## Overview
 
-Crater Browser implements Chrome DevTools Protocol (CDP) for Puppeteer compatibility.
-The implementation references lightpanda-browser's architecture while optimizing for Crater's DOM types.
+Crater Browser is no longer just a terminal renderer with a thin CDP layer.
+The current codebase has three distinct integration surfaces:
 
-## Current Architecture
+| Surface | Entry Point | Purpose | Status |
+| --- | --- | --- | --- |
+| Terminal CLI | `src/main/main.mbt` | Interactive browsing and structured extraction | Primary user-facing surface |
+| WebDriver BiDi | `jsbidi/bidi_main/main.mbt`, `jsbidi/webdriver/*` | Automation, WPT-oriented behavior, future Playwright/WebDriver work | Primary automation surface |
+| CDP bridge | `tools/cdp-server.ts`, `src/cdp/*` | `puppeteer-core` smoke tests and legacy compatibility | Secondary and partial |
 
-```
-crater/           Root module
-└── dom/          Core DOM primitives (shared across modules)
-    ├── dom.mbt   DomTree implementation
-    └── types.mbt NodeId, Rect, Point, NodeType, etc.
+The center of gravity is now BiDi-first. CDP still exists, but mainly as a compatibility bridge.
 
-browser/          Browser module (crater-browser)
-└── src/
-    ├── cdp/      CDP domain implementations
-    │   ├── types.mbt   CdpNode, CdpError, CdpBoxModel
-    │   ├── session.mbt CdpSession (combines all domains)
-    │   ├── dom.mbt     DomDomain
-    │   ├── page.mbt    PageDomain
-    │   └── input.mbt   InputDomain
-    │
-    └── webdriver/  WebDriver BiDi (primary) + legacy WebDriver HTTP (uses CDP internally)
-```
+## Core Runtime Layers
 
-**Note**: `dom/` is at crater root (not browser/src/dom) because:
-- Layout engine (`compute/`) writes coordinates to DOM
-- Shared with other modules (aom, html, style)
-- Clear dependency: dom ← cdp ← webdriver
+| Layer | Main Files | Responsibility |
+| --- | --- | --- |
+| CLI entry | `src/main/main.mbt` | Parses flags, chooses output mode, runs interactive loop or headless render |
+| Browser shell | `src/shell/browser.mbt` | Owns URL/history state, DOM/AOM/render caches, scheduler, hint mode, selection mode, output generation |
+| Interaction | `src/interaction/interaction.mbt`, `src/tui/*` | Maps keyboard and mouse input to browser actions |
+| CDP domains | `src/cdp/*` | MoonBit-side `Target`, `DOM`, `Page`, `Input`, and related protocol handling |
+| BiDi protocol | `jsbidi/webdriver/bidi_protocol.mbt` | Session state, browsing contexts, subscriptions, script/input/network/storage/emulation modules |
+| BiDi transport | `jsbidi/webdriver/bidi_server.mbt` | Deno WebSocket server and JS runtime bootstrap |
+| Test bridges | `tools/cdp-server.ts`, `tools/webdriver-server.ts` | Node-side harnesses used by Puppeteer/WebDriver smoke tests |
 
-## Design Principles
+## Terminal Browser Path
 
-### 1. Zero-Copy DOM Access
+The CLI path is centered on `src/shell/browser.mbt`.
 
-CDP domains directly reference `@dom.DomTree` and `@dom.NodeId` without conversion overhead:
+It currently supports:
 
-```moonbit
-// Good: Direct reference
-pub struct DomDomain {
-  tree : @dom.DomTree
-}
+- `Text`, `Kitty`, and `Sixel` rendering
+- lightweight navigation for `--json` and `--aom`
+- full render path for `--text`, `--kitty`, `--sixel`, `--arc90`, `--grounding`, and `--extract-main`
+- keyboard and mouse input, including hit-a-hint, dark mode, and selection mode
 
-// Avoid: Unnecessary wrapper
-pub struct DomDomain {
-  tree : SomeWrapper  // Extra indirection
-}
-```
+The shell keeps the following state in one place:
 
-### 2. Lazy CdpNode Conversion
+- current URL and history stacks
+- parsed HTML, external CSS, DOM tree, accessibility tree, and render/layout caches
+- focus and scroll state
+- pointer/drag state
+- scheduler and optional JS runtime hooks
 
-`CdpNode` is only created when serializing to JSON for protocol responses.
-Internal operations use `@dom.NodeId` directly:
+This shell is the shared browser abstraction used by both user-facing rendering and automation-oriented tests.
 
-```moonbit
-// Internal operation - uses NodeId
-pub fn DomDomain::query_selector(
-  self : DomDomain,
-  node_id : Int,       // CDP uses Int for node IDs
-  selector : String,
-) -> Result[Int?, CdpError]
+## WebDriver BiDi Stack
 
-// Protocol response - converts to CdpNode
-pub fn DomDomain::get_document(
-  self : DomDomain,
-  depth : Int?,
-) -> Result[CdpNode, CdpError]  // Only here we create CdpNode
-```
+`jsbidi/` is the primary automation implementation.
 
-### 3. Session-Based State Management
+### Entry Points
 
-Following lightpanda-browser's pattern:
+- `jsbidi/bidi_main/main.mbt`: minimal server entry point
+- `jsbidi/bidi_main/start-with-font.ts`: Deno launcher with font loading and text metrics setup
+- `jsbidi/webdriver/bidi_server.mbt`: WebSocket transport and JS runtime bootstrap
+- `jsbidi/webdriver/bidi_protocol.mbt`: main protocol state machine
 
-```
-CdpProtocol (message dispatch)
-    │
-    └─► CdpContext (= BrowserContext)
-            │
-            ├── session_id : String
-            ├── target_id : String
-            ├── tree : @dom.DomTree
-            └── domains
-                  ├── dom : DomDomain
-                  ├── page : PageDomain
-                  └── input : InputDomain
-```
+### Current Coverage
 
-## CDP Protocol Format
+The BiDi stack already contains substantial WPT-oriented coverage for:
 
-### Request
-```json
-{
-  "id": 1,
-  "method": "DOM.querySelector",
-  "params": { "nodeId": 1, "selector": "div" },
-  "sessionId": "SID1"
-}
-```
+- `session.*` and `browser.*`
+- `browsingContext.*`, including context lifecycle, tree queries, viewport overrides, navigation, screenshot, print, and locate-nodes flows
+- `script.*`, including evaluate/callFunction, realms, preload scripts, prompt handling, and file-dialog shims
+- `input.*`, including keyboard, pointer, drag-and-drop, and `setFiles`
+- `network.*`, including synthetic request lifecycle, interception, provide/continue/fail flows, and request data collection
+- storage and cookie behavior
+- emulation features such as user agent, locale, geolocation, network conditions, and screen settings
+- WPT-oriented synthetic modules for permissions, downloads, Bluetooth, and web extensions
 
-### Response
-```json
-{
-  "id": 1,
-  "result": { "nodeId": 5 },
-  "sessionId": "SID1"
-}
-```
+The BiDi implementation keeps significant protocol state in MoonBit:
 
-### Event (no id)
-```json
-{
-  "method": "DOM.setChildNodes",
-  "params": { "parentId": 1, "nodes": [...] },
-  "sessionId": "SID1"
-}
-```
+- browsing contexts and parent/child trees
+- per-context realms and sandbox realms
+- subscriptions at global, context, and user-context scope
+- local storage and synthetic cookie stores
+- navigation, prompt, and download state
+- emulation overrides
+- input and drag session state
 
-## Domain Methods
+BiDi responses are emitted directly from this state machine, with CDP-style session objects reused only where that is convenient.
 
-### Target Domain (Required for Puppeteer)
+## CDP Bridge
 
-| Method | Description |
-|--------|-------------|
-| `createBrowserContext` | Create isolated context |
-| `disposeBrowserContext` | Destroy context |
-| `createTarget` | Create new page/tab |
-| `closeTarget` | Close page |
-| `attachToTarget` | Attach to get sessionId |
-| `detachFromTarget` | Detach from target |
-| `setAutoAttach` | Auto-attach to new targets |
-| `getTargets` | List all targets |
-| `getTargetInfo` | Get target details |
+The CDP path remains useful, but it is intentionally smaller than the BiDi path.
 
-### DOM Domain
+### MoonBit Side
 
-| Method | Status | Notes |
-|--------|--------|-------|
-| `getDocument` | ✅ | Returns root node |
-| `querySelector` | ✅ | CSS selector query |
-| `querySelectorAll` | ✅ | Returns all matches |
-| `getAttributes` | ✅ | Returns [name, value, ...] |
-| `setAttributeValue` | ✅ | Sets attribute |
-| `removeAttribute` | ✅ | Removes attribute |
-| `getBoxModel` | ✅ | Returns box model |
-| `getOuterHTML` | ✅ | Returns HTML string |
-| `setNodeValue` | ✅ | Sets text content |
-| `removeNode` | ✅ | Removes from tree |
-| `requestChildNodes` | ✅ | Returns children |
-| `describeNode` | TODO | Node description |
-| `performSearch` | TODO | Search by XPath/CSS |
-| `resolveNode` | TODO | objectId → nodeId |
+`src/cdp/` currently provides:
 
-### Page Domain
+- `Target` domain session/context plumbing
+- `DOM` domain document, query, attribute, and box-model helpers
+- `Page` domain navigation/history/frame helpers
+- `Input` domain mouse/key/text primitives
+- protocol routing for additional compatibility domains
 
-| Method | Status | Notes |
-|--------|--------|-------|
-| `navigate` | ✅ | Navigate to URL |
-| `getFrameTree` | TODO | Frame hierarchy |
-| `setLifecycleEventsEnabled` | TODO | Enable lifecycle events |
-| `reload` | ✅ | Reload page |
+### Node Side
 
-### Input Domain
+`tools/cdp-server.ts` is the outer bridge used by `puppeteer-core` tests.
+It does the parts that are currently simpler in Node:
 
-| Method | Status | Notes |
-|--------|--------|-------|
-| `dispatchMouseEvent` | ✅ | Mouse events |
-| `dispatchKeyEvent` | ✅ | Keyboard events |
-| `insertText` | ✅ | Insert text at focus |
+- fetch the target URL
+- translate responses into CDP network/lifecycle events
+- load HTML into the MoonBit session
+- expose `/json/*` discovery endpoints required by Puppeteer
 
-### Runtime Domain (Stub)
+### Practical Status
 
-| Method | Status | Notes |
-|--------|--------|-------|
-| `enable` | TODO | Enable domain |
-| `evaluate` | TODO | Execute JS (stub) |
-| `callFunctionOn` | TODO | Call function (stub) |
+The CDP bridge is good enough for smoke tests and basic page automation flows.
+It is not the authoritative architecture for the project anymore, and some areas remain partial:
 
-## Implementation Plan
+- hit testing in `src/cdp/input.mbt`
+- richer `Runtime.*` behavior
+- broader DevTools parity across domains
 
-### Phase 1: Testing Infrastructure
+## Data Flow Snapshot
 
-1. Create test helpers for CDP message handling
-2. Port lightpanda-browser test patterns
-3. Test DOM domain methods
+### CLI / Rendering
 
-### Phase 2: Target Domain
-
-1. Implement `CdpContext` (browser context)
-2. Add `createBrowserContext`, `disposeBrowserContext`
-3. Add `createTarget`, `closeTarget`
-4. Add `attachToTarget`, `detachFromTarget`
-
-### Phase 3: Protocol Layer
-
-1. JSON-RPC message parsing
-2. Domain/method dispatch
-3. Event emission
-
-### Phase 4: Puppeteer Integration
-
-1. WebSocket server (separate module)
-2. Connection handling
-3. Integration tests with Puppeteer
-
-## Type Mappings
-
-| CDP Type | Crater Type |
-|----------|-------------|
-| `NodeId` (int) | `@dom.NodeId` |
-| `BackendNodeId` | `@dom.NodeId` (same) |
-| `Node` | `CdpNode` (serialization only) |
-| `BoxModel` | `CdpBoxModel` |
-| `Quad` | `Array[Double]` (8 elements) |
-
-## File Structure (Target)
-
-```
-src/cdp/
-├── protocol.mbt      # JSON-RPC message handling
-├── context.mbt       # CdpContext (browser context)
-├── session.mbt       # CdpSession (existing)
-├── types.mbt         # CDP types
-├── testing.mbt       # Test utilities
-│
-├── domains/
-│   ├── target.mbt    # Target domain
-│   ├── dom.mbt       # DOM domain (move existing)
-│   ├── page.mbt      # Page domain (move existing)
-│   ├── input.mbt     # Input domain (move existing)
-│   └── runtime.mbt   # Runtime domain (stub)
-│
-└── *_test.mbt        # Tests
+```text
+URL
+  -> Browser shell
+  -> HTML/CSS parse
+  -> layout / paint / AOM
+  -> Text | Kitty | Sixel | JSON | AOM | Arc90 | ExtractMain | Grounding
 ```
 
-## References
+### Automation
 
-- [lightpanda-browser CDP](../lightpanda-browser/src/cdp/)
-- [Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/)
-- [Puppeteer CDP Usage](https://pptr.dev/)
+```text
+BiDi request
+  -> BidiProtocol
+  -> context / storage / emulation / input / script state
+  -> browser shell and runtime helpers as needed
+  -> BiDi response + events
+```
+
+```text
+Puppeteer CDP request
+  -> tools/cdp-server.ts
+  -> src/cdp/*
+  -> CDP response + compatibility events
+```
+
+## Guidance For Future Changes
+
+- Treat WebDriver BiDi as the primary automation contract.
+- Treat the terminal shell as the primary browser abstraction.
+- Keep CDP working, but optimize it for compatibility value rather than full Chrome parity.
+- Prefer documenting current entry points and actual ownership boundaries rather than aspirational directory layouts.

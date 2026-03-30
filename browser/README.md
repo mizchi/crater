@@ -1,96 +1,155 @@
-# Crater Browser (Experimental)
+# Crater Browser
 
-An highly experimental TUI browser implemented in MoonBit from scratch.
+Experimental browser/runtime work implemented in MoonBit.
 
-**Warning: This is an experimental implementation and is not intended for production use.**
+Crater Browser currently has two main faces:
 
-## Features
+- a terminal browser CLI for text and graphics rendering
+- a browser automation stack centered on WebDriver BiDi, with a smaller CDP bridge for compatibility tests
 
-- HTML parsing and rendering
-- External CSS fetching and application
-- [ ] Sixel graphics output (with `--sixel` flag)
-- TUI text mode rendering (with `--text` flag)
-  - Image placeholders with alt text display
-  - Gray background with borders for image areas
-- Basic keyboard navigation
-- [ ] Link navigation with Tab/Shift+Tab
+## Current Scope
 
-## Installation
+- Terminal rendering in `--text` (default), `--kitty`, and `--sixel`
+- Structured outputs for tooling: `--json`, `--aom`, `--extract-main`, `--arc90`, `--grounding`
+- Interactive navigation with keyboard, mouse, hit-a-hint, dark mode, and selection mode
+- Browser core with DOM, CSS, layout, accessibility tree, scheduler, and JS-backed test/automation paths
+- WebDriver BiDi-first automation stack under `jsbidi/`
+- Partial CDP bridge used for `puppeteer-core` smoke tests
+
+The project is still experimental and should not be treated as a production browser.
+
+## Requirements
+
+- Node.js 24+
+- pnpm
+- MoonBit toolchain
+- Deno, if you want to run the WebDriver BiDi server
+
+Optional:
+
+- a sixel-capable terminal for `--sixel`
+- Kitty terminal for `--kitty`
+
+## Install The CLI
 
 ```bash
-npm install -g @mizchi/crater-browser
+pnpm add -g @mizchi/crater-browser
 ```
 
-## Usage
+or without a global install:
 
 ```bash
-npx @mizchi/crater-browser <URL> [--sixel] [--debug]
+pnpm dlx @mizchi/crater-browser https://example.com
 ```
 
-### Usage Example
+## CLI Usage
 
 ```bash
-npx @mizchi/crater-browser https://www.cnn.co.jp/fringe/35129835.html
+crater-browser [OPTIONS] <URL>
 ```
 
-### Options
-
-- `--text`: TUI text mode (default)
-- `--sixel`: Sixel graphics mode (requires sixel-capable terminal)
-- `--debug`: Print layout tree for debugging
-
-### Development
+Examples:
 
 ```bash
-cd browser
+crater-browser https://example.com
+crater-browser --aom https://example.com
+crater-browser --headless=viewport https://example.com
+crater-browser --dark --no-color https://example.com
+```
+
+### Output Modes
+
+- `--text`: render ANSI text output (default)
+- `--sixel`: render Sixel graphics
+- `--kitty`: render Kitty graphics protocol output
+- `--json`: output the accessibility tree as JSON
+- `--aom`: output the accessibility tree as Playwright-style YAML
+- `--arc90`: run Arc90 content extraction
+- `--grounding`: run the visual grounding demo
+- `--extract-main`: extract main content text only
+- `--debug`: print the layout tree
+
+### Headless And Display Options
+
+- `--headless=viewport`: render once and exit
+- `--headless=full`: intended for full-page rendering, currently prints the initial viewport
+- `--dark`: start with `prefers-color-scheme: dark`
+- `--no-color`: disable ANSI color output
+- `--width=N`: override viewport width in terminal columns
+
+## Interactive Key Bindings
+
+- `j` / `ArrowDown`: scroll down
+- `k` / `ArrowUp`: scroll up
+- `Ctrl-D` / `PageDown` / `Space`: page down
+- `Ctrl-U` / `PageUp` / `Shift-Space`: page up
+- `Tab` / `n`: focus next link
+- `Shift-Tab` / `N` / `p`: focus previous link
+- `Enter`: activate the focused link
+- `f`: enter hit-a-hint mode
+- `g`: prompt for a URL
+- `r`: reload
+- `H` / `Backspace` / `Delete`: go back
+- `L`: go forward
+- `d`: toggle dark mode
+- `v`: toggle selection mode for text copy
+- `q`: quit
+
+Mouse tracking is enabled in interactive mode for scrolling, hover, click, and text-selection flows.
+
+## Development
+
+Install dependencies:
+
+```bash
+pnpm install
+```
+
+Build the CLI target:
+
+```bash
+moon build --target js --release
+```
+
+Run the terminal browser from the source tree:
+
+```bash
 moon run src/main --target js -- https://example.com
-moon run src/main --target js -- --sixel https://example.com
-moon run src/main --target js -- --debug https://example.com
+moon run src/main --target js -- --aom https://example.com
+moon run src/main --target js -- --headless=viewport https://example.com
 ```
 
-## Key Bindings
+Run the test helpers exposed through `package.json`:
 
-### Navigation
+```bash
+pnpm test
+pnpm test:cdp
+pnpm test:cdp:navigate
+pnpm test:webdriver
+```
 
-- `j` / `Down`: Scroll down
-- `k` / `Up`: Scroll up
-- `Ctrl-D` / `PageDown`: Page down (scroll by one screen)
-- `PageUp`: Page up (scroll by one screen)
-- `H` / `Backspace` / `Delete`: Go back to previous page
-- `L`: Go forward to next page
+Run the WebDriver BiDi server:
 
-### Links
-- `Tab` / `n`: Next link
-- `Shift+Tab` / `N` / `p`: Previous link
-- `Enter`: Activate focused link
-- `f`: Hit-a-hint mode (shows labels on links, type to navigate)
+```bash
+cd jsbidi
+moon build --target js --release
+cd ..
+deno run -A jsbidi/bidi_main/start-with-font.ts
+```
 
-### General
-- `g`: Go to URL (opens prompt)
-- `r`: Reload current page
-- `q`: Quit
-- `Escape`: Exit hint mode
+## Architecture Notes
 
-### Hit-a-Hint Mode
+- `src/main/main.mbt`: terminal CLI entry point
+- `src/shell/browser.mbt`: browser shell, rendering orchestration, output modes, history, hint mode, selection mode
+- `src/interaction/interaction.mbt`: keyboard and mouse dispatch
+- `src/cdp/`: partial MoonBit CDP domains
+- `jsbidi/webdriver/`: WebDriver BiDi protocol, server, synthetic WPT helpers
+- `tools/cdp-server.ts`: Node-side CDP bridge used by Puppeteer tests
 
-Press `f` to enter hint mode. All visible links will be labeled with characters (a-z). Type the label to navigate to that link. Press `Escape` to cancel.
+## Limits And Known Gaps
 
-For pages with more than 26 links, two-character labels (aa, ab, etc.) are used.
-
-## Limitations
-
-- JavaScript is not executed
-- Only a subset of CSS properties are supported
-- Images shown as placeholders (not actual image rendering in TUI mode)
-- Some CSS layout features (grid, advanced flexbox) are partial
-
-## TODO
-
-- [ ] Static asset cache
-- [ ] Show visited/unvisited link colors
-- [ ] Tab text focus and preview
-- [ ] Fix j/k scroll layout
-- [ ] Access and scroll to content by AOM (Accessibility Object Model)
-- [ ] Text search (Ctrl+F)
-- [x] Hit-a-hint (implemented)
-- [ ] Mouse click link navigation (WIP - hit testing not working correctly)
+- The browser core has JS-backed test and automation paths, but the public CLI remains read-oriented and does not expose a general JS execution switch.
+- `--headless=full` is not yet a true full-page renderer.
+- The CDP bridge is intentionally partial and mostly exists for compatibility smoke tests.
+- WebDriver BiDi coverage is WPT-driven and still expanding.
+- Real-world site compatibility is improving, but dynamic sites and edge-case browser APIs are incomplete.

@@ -8,10 +8,10 @@ import {
 options(
   link: {
     "native": {
-      "cc-link-flags": "${build.MIZCHI_V8_CC_LINK_FLAGS}",
       "cc-flags": "-I.",
+      "cc-link-flags": "${build.MIZCHI_V8_CC_LINK_FLAGS}",
     },
   },
-  "supported-targets": [ "native" ],
   "native-stub": [ "file_io.c" ],
+  "supported-targets": [ "native" ],
 )

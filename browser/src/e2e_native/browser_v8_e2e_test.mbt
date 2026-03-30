@@ -275,7 +275,7 @@ test "E2E: Preact render → Browser DOM sync → DomTree verification" {
     Some(dom) => {
       let doc = dom.get_document()
       match dom.query_selector(doc, "#result") {
-        Ok(Some(result_id)) => {
+        Ok(Some(result_id)) =>
           match dom.get_children(result_id) {
             Ok(children) => {
               assert_true(children.length() >= 1)
@@ -290,7 +290,6 @@ test "E2E: Preact render → Browser DOM sync → DomTree verification" {
             }
             Err(_) => fail("Could not get result children")
           }
-        }
         _ => fail("Could not find #result in DomTree")
       }
     }
@@ -342,21 +341,25 @@ test "E2E: Preact click → setState → re-render" {
   let result = ctx.execute(init_code)
   assert_true(result.success)
   // Check initial render: count = 0
-  let check0 = ctx.execute("return document.getElementById('display').textContent;")
+  let check0 = ctx.execute(
+    "return document.getElementById('display').textContent;",
+  )
   assert_true(check0.success)
   assert_eq(check0.value, "0")
   // Click the button
-  let click_result = ctx.execute(
-    "document.getElementById('btn').click();",
-  )
+  let click_result = ctx.execute("document.getElementById('btn').click();")
   assert_true(click_result.success)
   // Check after click: count = 1
-  let check1 = ctx.execute("return document.getElementById('display').textContent;")
+  let check1 = ctx.execute(
+    "return document.getElementById('display').textContent;",
+  )
   assert_true(check1.success)
   assert_eq(check1.value, "1")
   // Click again
   let _ = ctx.execute("document.getElementById('btn').click();")
-  let check2 = ctx.execute("return document.getElementById('display').textContent;")
+  let check2 = ctx.execute(
+    "return document.getElementById('display').textContent;",
+  )
   assert_true(check2.success)
   assert_eq(check2.value, "2")
 }
@@ -375,7 +378,9 @@ fn make_preact_ctx() -> (@js.JsContext, @dom.DomTree) {
   let _ = dom.append_child(body, app)
   let _ = dom.set_attribute(app, "id", "app")
   let ctx = @js.JsContext::new_with_runtime(dom, v8.as_js_runtime())
-  let _ = try { ctx.execute(preact_bundle_js()) } catch { _ => @js.JsResult::new("", [], false) }
+  let _ = ctx.execute(preact_bundle_js()) catch {
+    _ => @js.JsResult::new("", [], false)
+  }
   (ctx, dom)
 }
 
@@ -498,7 +503,9 @@ test "E2E: Preact controlled input" {
   )
   assert_true(result.success)
   // Check initial value
-  let check = ctx.execute("return document.getElementById('mirror').textContent;")
+  let check = ctx.execute(
+    "return document.getElementById('mirror').textContent;",
+  )
   assert_true(check.success)
   assert_eq(check.value, "hello")
   // Check input value attribute
@@ -510,7 +517,9 @@ test "E2E: Preact controlled input" {
   // Simulate typing by calling setValue directly
   let r2 = ctx.execute("globalThis.__inputSetValue('world');")
   assert_true(r2.success)
-  let check2 = ctx.execute("return document.getElementById('mirror').textContent;")
+  let check2 = ctx.execute(
+    "return document.getElementById('mirror').textContent;",
+  )
   assert_true(check2.success)
   assert_eq(check2.value, "world")
 }
@@ -620,7 +629,9 @@ test "E2E: Next.js webpack bootstrap runs without error" {
   )
   assert_true(manifest.success)
   // Verify webpack chunk array is ready
-  let check = ctx.execute("return Array.isArray(self.webpackChunk_N_E) ? 'ready' : 'not ready';")
+  let check = ctx.execute(
+    "return Array.isArray(self.webpackChunk_N_E) ? 'ready' : 'not ready';",
+  )
   assert_eq(check.value, "ready")
 }
 
@@ -744,17 +755,25 @@ test "E2E: Complex nested component tree with dynamic updates" {
   )
   assert_true(result.success)
   // Inbox: 3 messages
-  let panel = ctx.execute("return document.getElementById('panel').children.length;")
+  let panel = ctx.execute(
+    "return document.getElementById('panel').children.length;",
+  )
   assert_eq(panel.value, "3")
   // Switch to Sent: 1 message
   let _ = ctx.execute("globalThis.__setTab('sent');")
-  let sent = ctx.execute("return document.getElementById('panel').children.length;")
+  let sent = ctx.execute(
+    "return document.getElementById('panel').children.length;",
+  )
   assert_eq(sent.value, "1")
-  let msg = ctx.execute("return document.getElementById('panel').children[0].textContent;")
+  let msg = ctx.execute(
+    "return document.getElementById('panel').children[0].textContent;",
+  )
   assert_eq(msg.value, "Sent A")
   // Switch to Drafts: 2 messages
   let _ = ctx.execute("globalThis.__setTab('drafts');")
-  let drafts = ctx.execute("return document.getElementById('panel').children.length;")
+  let drafts = ctx.execute(
+    "return document.getElementById('panel').children.length;",
+  )
   assert_eq(drafts.value, "2")
 }
 
@@ -877,15 +896,23 @@ test "E2E: Preact parent-child component communication" {
   )
   assert_true(result.success)
   // Initial: count = 0
-  let c0 = ctx.execute("return document.getElementById('parent-display').textContent;")
+  let c0 = ctx.execute(
+    "return document.getElementById('parent-display').textContent;",
+  )
   assert_eq(c0.value, "Parent sees: 0")
-  let b0 = ctx.execute("return document.getElementById('child-btn').textContent;")
+  let b0 = ctx.execute(
+    "return document.getElementById('child-btn').textContent;",
+  )
   assert_eq(b0.value, "Count: 0")
   // Click child button → triggers onChange(1) → parent re-renders
   let _ = ctx.execute("document.getElementById('child-btn').click();")
-  let c1 = ctx.execute("return document.getElementById('parent-display').textContent;")
+  let c1 = ctx.execute(
+    "return document.getElementById('parent-display').textContent;",
+  )
   assert_eq(c1.value, "Parent sees: 1")
-  let b1 = ctx.execute("return document.getElementById('child-btn').textContent;")
+  let b1 = ctx.execute(
+    "return document.getElementById('child-btn').textContent;",
+  )
   assert_eq(b1.value, "Count: 1")
 }
 
@@ -923,7 +950,11 @@ test "E2E: Preact useEffect async data loading pattern" {
   assert_true(result.success)
   // useEffect runs after render, Promise needs extra microtask flush
   for i = 0; i < 10; i = i + 1 {
-    ignore(ctx.execute("typeof _flushMicrotasks === 'function' ? _flushMicrotasks() : null; return 'ok';"))
+    ignore(
+      ctx.execute(
+        "typeof _flushMicrotasks === 'function' ? _flushMicrotasks() : null; return 'ok';",
+      ),
+    )
   }
   let check = ctx.execute(
     "return document.getElementById('data-list') ? Array.from(document.getElementById('data-list').children).map(li => li.textContent).join(',') : document.getElementById('status') ? document.getElementById('status').textContent : 'unknown';",
@@ -954,17 +985,25 @@ test "E2E: Preact className and DOM property access" {
   )
   assert_true(result.success)
   // Initial: inactive
-  let c0 = ctx.execute("return document.getElementById('target').getAttribute('class');")
+  let c0 = ctx.execute(
+    "return document.getElementById('target').getAttribute('class');",
+  )
   assert_eq(c0.value, "inactive")
-  let d0 = ctx.execute("return document.getElementById('target').getAttribute('data-state');")
+  let d0 = ctx.execute(
+    "return document.getElementById('target').getAttribute('data-state');",
+  )
   assert_eq(d0.value, "off")
   let t0 = ctx.execute("return document.getElementById('target').textContent;")
   assert_eq(t0.value, "OFF")
   // Toggle to active
   let _ = ctx.execute("globalThis.__setActive(true);")
-  let c1 = ctx.execute("return document.getElementById('target').getAttribute('class');")
+  let c1 = ctx.execute(
+    "return document.getElementById('target').getAttribute('class');",
+  )
   assert_eq(c1.value, "active highlight")
-  let d1 = ctx.execute("return document.getElementById('target').getAttribute('data-state');")
+  let d1 = ctx.execute(
+    "return document.getElementById('target').getAttribute('data-state');",
+  )
   assert_eq(d1.value, "on")
   let t1 = ctx.execute("return document.getElementById('target').textContent;")
   assert_eq(t1.value, "ON")
@@ -984,7 +1023,9 @@ fn make_react_ctx() -> (@js.JsContext, @dom.DomTree) {
   let _ = dom.append_child(body, app)
   let _ = dom.set_attribute(app, "id", "root")
   let ctx = @js.JsContext::new_with_runtime(dom, v8.as_js_runtime())
-  let r = try { ctx.execute(react_bundle_js()) } catch { _ => @js.JsResult::new("", [], false) }
+  let r = ctx.execute(react_bundle_js()) catch {
+    _ => @js.JsResult::new("", [], false)
+  }
   if not(r.success) {
     println("[React init error] " + r.value)
   }
@@ -1003,7 +1044,11 @@ test "E2E: React basic render" {
   assert_true(result.success)
   // React batches updates, flush microtasks
   for i = 0; i < 20; i = i + 1 {
-    ignore(ctx.execute("typeof _flushMicrotasks === 'function' ? _flushMicrotasks() : null;"))
+    ignore(
+      ctx.execute(
+        "typeof _flushMicrotasks === 'function' ? _flushMicrotasks() : null;",
+      ),
+    )
   }
   let check = ctx.execute(
     "return document.getElementById('hello') ? document.getElementById('hello').textContent : 'NOT FOUND';",
@@ -1031,16 +1076,26 @@ test "E2E: React useState counter" {
   )
   assert_true(result.success)
   for i = 0; i < 20; i = i + 1 {
-    ignore(ctx.execute("typeof _flushMicrotasks === 'function' ? _flushMicrotasks() : null;"))
+    ignore(
+      ctx.execute(
+        "typeof _flushMicrotasks === 'function' ? _flushMicrotasks() : null;",
+      ),
+    )
   }
   // Check initial render
-  let c0 = ctx.execute("return document.getElementById('count') ? document.getElementById('count').textContent : 'NOT FOUND';")
+  let c0 = ctx.execute(
+    "return document.getElementById('count') ? document.getElementById('count').textContent : 'NOT FOUND';",
+  )
   assert_true(c0.success)
   assert_eq(c0.value, "0")
   // Click to increment
   let _ = ctx.execute("document.getElementById('inc').click();")
   for i = 0; i < 20; i = i + 1 {
-    ignore(ctx.execute("typeof _flushMicrotasks === 'function' ? _flushMicrotasks() : null;"))
+    ignore(
+      ctx.execute(
+        "typeof _flushMicrotasks === 'function' ? _flushMicrotasks() : null;",
+      ),
+    )
   }
   let c1 = ctx.execute("return document.getElementById('count').textContent;")
   assert_true(c1.success)
