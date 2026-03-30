@@ -32,7 +32,7 @@ test("resolve_v8_module_root prefers a local path dependency", (t) => {
   assert.equal(resolve_v8_module_root(module_root), vendor_v8_root)
 })
 
-test("resolve_v8_module_root falls back to search roots mooncakes", (t) => {
+test("resolve_v8_module_root falls back to nested consumer mooncakes", (t) => {
   const temp_root = fs.mkdtempSync(path.join(os.tmpdir(), "mizchi-v8-prebuild-"))
   t.after(() => fs.rmSync(temp_root, { recursive: true, force: true }))
 
@@ -51,5 +51,5 @@ test("resolve_v8_module_root falls back to search roots mooncakes", (t) => {
     name: "mizchi/v8",
   })
 
-  assert.equal(resolve_v8_module_root(browser_root, [jsbidi_root]), v8_root)
+  assert.equal(resolve_v8_module_root(browser_root), v8_root)
 })

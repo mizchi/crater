@@ -37,6 +37,17 @@ function collect_search_roots(module_root, search_roots) {
   return roots
 }
 
+function candidate_mooncakes_roots(root) {
+  const candidates = [path.join(root, ".mooncakes", "mizchi", "v8")]
+  for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+    if (!entry.isDirectory() || entry.name.startsWith(".")) {
+      continue
+    }
+    candidates.push(path.join(root, entry.name, ".mooncakes", "mizchi", "v8"))
+  }
+  return candidates
+}
+
 export function resolve_v8_module_root(module_root, search_roots = []) {
   const roots = collect_search_roots(module_root, search_roots)
   for (const root of roots) {
@@ -52,9 +63,10 @@ export function resolve_v8_module_root(module_root, search_roots = []) {
   }
 
   for (const root of roots) {
-    const mooncakes_root = path.join(root, ".mooncakes", "mizchi", "v8")
-    if (fs.existsSync(path.join(mooncakes_root, "moon.mod.json"))) {
-      return mooncakes_root
+    for (const mooncakes_root of candidate_mooncakes_roots(root)) {
+      if (fs.existsSync(path.join(mooncakes_root, "moon.mod.json"))) {
+        return mooncakes_root
+      }
     }
   }
 
