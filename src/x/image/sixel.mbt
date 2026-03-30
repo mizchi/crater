@@ -937,6 +937,9 @@ extern "js" fn framebuffer_to_rgba_base64_js(
   #|    buf[o + 2] = pb[idx] | 0;
   #|    buf[o + 3] = 255;
   #|  }
+  #|  if (typeof Buffer === "function") {
+  #|    return Buffer.from(buf.buffer, buf.byteOffset, buf.byteLength).toString("base64");
+  #|  }
   #|  let s = '';
   #|  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
   #|  const len = buf.length;
@@ -1159,9 +1162,11 @@ fn fill_rect_clipped(
 }
 
 ///|
-/// Check if a pixel is outside a rounded corner.
-/// Returns true if the pixel should be skipped (is in corner cutout).
-fn is_in_rounded_corner(
+
+///|
+/// Compute coverage (0.0-1.0) for a pixel near a rounded corner boundary.
+/// Returns 1.0 if fully inside, 0.0 if fully outside, fractional at the edge.
+fn rounded_corner_coverage(
   px : Int,
   py : Int,
   rect_x : Int,
@@ -1172,42 +1177,67 @@ fn is_in_rounded_corner(
   tr : Int,
   br : Int,
   bl : Int,
-) -> Bool {
-  let lx = px - rect_x // local x within rect
-  let ly = py - rect_y // local y within rect
+) -> Double {
+  let lx = px - rect_x
+  let ly = py - rect_y
+  // Check each corner; if pixel is not in any corner zone, fully inside
   // Top-left corner
   if tl > 0 && lx < tl && ly < tl {
-    let dx = tl - lx
-    let dy = tl - ly
-    if dx * dx + dy * dy > tl * tl {
-      return true
+    let dx = (tl - lx).to_double() - 0.5
+    let dy = (tl - ly).to_double() - 0.5
+    let dist = (dx * dx + dy * dy).sqrt()
+    let r = tl.to_double()
+    if dist >= r + 0.5 {
+      return 0.0
     }
+    if dist <= r - 0.5 {
+      return 1.0
+    }
+    return r + 0.5 - dist
   }
   // Top-right corner
   if tr > 0 && lx >= rect_w - tr && ly < tr {
-    let dx = lx - (rect_w - tr - 1)
-    let dy = tr - ly
-    if dx * dx + dy * dy > tr * tr {
-      return true
+    let dx = (lx - (rect_w - tr - 1)).to_double() - 0.5
+    let dy = (tr - ly).to_double() - 0.5
+    let dist = (dx * dx + dy * dy).sqrt()
+    let r = tr.to_double()
+    if dist >= r + 0.5 {
+      return 0.0
     }
+    if dist <= r - 0.5 {
+      return 1.0
+    }
+    return r + 0.5 - dist
   }
   // Bottom-right corner
   if br > 0 && lx >= rect_w - br && ly >= rect_h - br {
-    let dx = lx - (rect_w - br - 1)
-    let dy = ly - (rect_h - br - 1)
-    if dx * dx + dy * dy > br * br {
-      return true
+    let dx = (lx - (rect_w - br - 1)).to_double() - 0.5
+    let dy = (ly - (rect_h - br - 1)).to_double() - 0.5
+    let dist = (dx * dx + dy * dy).sqrt()
+    let r = br.to_double()
+    if dist >= r + 0.5 {
+      return 0.0
     }
+    if dist <= r - 0.5 {
+      return 1.0
+    }
+    return r + 0.5 - dist
   }
   // Bottom-left corner
   if bl > 0 && lx < bl && ly >= rect_h - bl {
-    let dx = bl - lx
-    let dy = ly - (rect_h - bl - 1)
-    if dx * dx + dy * dy > bl * bl {
-      return true
+    let dx = (bl - lx).to_double() - 0.5
+    let dy = (ly - (rect_h - bl - 1)).to_double() - 0.5
+    let dist = (dx * dx + dy * dy).sqrt()
+    let r = bl.to_double()
+    if dist >= r + 0.5 {
+      return 0.0
     }
+    if dist <= r - 0.5 {
+      return 1.0
+    }
+    return r + 0.5 - dist
   }
-  false
+  1.0
 }
 
 ///|
@@ -1252,21 +1282,41 @@ fn fill_rounded_rect_clipped(
   if x2 <= x1 || y2 <= y1 {
     return
   }
-  if alpha >= 255 {
+  let has_radius = tl > 0 || tr > 0 || br > 0 || bl > 0
+  if has_radius {
+    // Antialiased rounded corners: use coverage-based blending
     let idx = palette.get_or_add(src)
     for py = y1; py < y2; py = py + 1 {
       for px = x1; px < x2; px = px + 1 {
-        if not(is_in_rounded_corner(px, py, x, y, w, h, tl, tr, br, bl)) {
-          fb.set_pixel(px, py, idx)
+        let cov = rounded_corner_coverage(px, py, x, y, w, h, tl, tr, br, bl)
+        if cov <= 0.0 {
+          continue
         }
+        let effective_alpha = cov * opacity
+        if effective_alpha >= 1.0 {
+          fb.set_pixel(px, py, idx)
+        } else if effective_alpha > 0.0 {
+          // Blend foreground with background using coverage
+          let dst_idx = fb.get_pixel(px, py)
+          let dst = palette_color_at(palette, dst_idx)
+          let a_byte = (effective_alpha * 255.0).to_int()
+          let blended = src.blend(dst, a_byte)
+          let blended_idx = palette.get_or_add(blended)
+          fb.set_pixel(px, py, blended_idx)
+        }
+      }
+    }
+  } else if alpha >= 255 {
+    let idx = palette.get_or_add(src)
+    for py = y1; py < y2; py = py + 1 {
+      for px = x1; px < x2; px = px + 1 {
+        fb.set_pixel(px, py, idx)
       }
     }
   } else {
     for py = y1; py < y2; py = py + 1 {
       for px = x1; px < x2; px = px + 1 {
-        if not(is_in_rounded_corner(px, py, x, y, w, h, tl, tr, br, bl)) {
-          blend_types_color_over_pixel(fb, palette, px, py, color, opacity)
-        }
+        blend_types_color_over_pixel(fb, palette, px, py, color, opacity)
       }
     }
   }
@@ -1363,7 +1413,12 @@ fn fill_linear_gradient_clipped(
   for py = y1; py < y2; py = py + 1 {
     let fy = (py - y).to_double() - cy
     for px = x1; px < x2; px = px + 1 {
-      if has_radius && is_in_rounded_corner(px, py, x, y, w, h, tl, tr, br, bl) {
+      let cov = if has_radius {
+        rounded_corner_coverage(px, py, x, y, w, h, tl, tr, br, bl)
+      } else {
+        1.0
+      }
+      if cov <= 0.0 {
         continue
       }
       let fx = (px - x).to_double() - cx
@@ -1373,11 +1428,14 @@ fn fill_linear_gradient_clipped(
       let tc = if t < 0.0 { 0.0 } else if t > 1.0 { 1.0 } else { t }
       let color = sample_gradient(grad, tc)
       if color.a > 0.0 {
-        if opacity >= 1.0 && color.a >= 1.0 {
+        let effective_opacity = opacity * cov
+        if effective_opacity >= 1.0 && color.a >= 1.0 {
           let idx = palette.get_or_add(types_color_to_sixel(color))
           fb.set_pixel(px, py, idx)
         } else {
-          blend_types_color_over_pixel(fb, palette, px, py, color, opacity)
+          blend_types_color_over_pixel(
+            fb, palette, px, py, color, effective_opacity,
+          )
         }
       }
     }
@@ -1465,11 +1523,21 @@ fn render_paint_node_clipped(
   }
 
   // Compute border-radius values (negative means percentage)
+  // Clamp to half of element dimensions per CSS spec
   let min_dim = @cmp.minimum(w, h)
-  let tl_r = resolve_radius(node.paint.border_top_left_radius, min_dim)
-  let tr_r = resolve_radius(node.paint.border_top_right_radius, min_dim)
-  let br_r = resolve_radius(node.paint.border_bottom_right_radius, min_dim)
-  let bl_r = resolve_radius(node.paint.border_bottom_left_radius, min_dim)
+  let max_r = min_dim / 2
+  let tl_r = resolve_radius(node.paint.border_top_left_radius, min_dim).min(
+    max_r,
+  )
+  let tr_r = resolve_radius(node.paint.border_top_right_radius, min_dim).min(
+    max_r,
+  )
+  let br_r = resolve_radius(node.paint.border_bottom_right_radius, min_dim).min(
+    max_r,
+  )
+  let bl_r = resolve_radius(node.paint.border_bottom_left_radius, min_dim).min(
+    max_r,
+  )
   let has_radius = tl_r > 0 || tr_r > 0 || br_r > 0 || bl_r > 0
 
   // Draw background: gradient or solid color
@@ -1524,6 +1592,78 @@ fn render_paint_node_clipped(
       }
   }
 
+  // Draw borders
+  let bt = node.paint.border_top_width.to_int()
+  let br = node.paint.border_right_width.to_int()
+  let bb = node.paint.border_bottom_width.to_int()
+  let bl = node.paint.border_left_width.to_int()
+  let opacity = node.paint.opacity
+  if bt > 0 && not(node.paint.border_top_color.is_transparent()) {
+    fill_rect_clipped(
+      fb,
+      palette,
+      x,
+      y,
+      w,
+      bt,
+      node.paint.border_top_color,
+      opacity,
+      clip,
+    )
+  }
+  if bb > 0 && not(node.paint.border_bottom_color.is_transparent()) {
+    fill_rect_clipped(
+      fb,
+      palette,
+      x,
+      y + h - bb,
+      w,
+      bb,
+      node.paint.border_bottom_color,
+      opacity,
+      clip,
+    )
+  }
+  if bl > 0 && not(node.paint.border_left_color.is_transparent()) {
+    fill_rect_clipped(
+      fb,
+      palette,
+      x,
+      y + bt,
+      bl,
+      h - bt - bb,
+      node.paint.border_left_color,
+      opacity,
+      clip,
+    )
+  }
+  if br > 0 && not(node.paint.border_right_color.is_transparent()) {
+    fill_rect_clipped(
+      fb,
+      palette,
+      x + w - br,
+      y + bt,
+      br,
+      h - bt - bb,
+      node.paint.border_right_color,
+      opacity,
+      clip,
+    )
+  }
+
+  // Draw inline SVG image if this is an <img> with SVG data URI src
+  if node.tag == "img" && w > 0 && h > 0 {
+    match node.src {
+      Some(src) =>
+        if src.has_prefix("data:image/svg+xml") {
+          let svg_text = decode_svg_data_uri(src)
+          if svg_text.length() > 0 {
+            render_svg_into_region(fb, palette, svg_text, x, y, w, h, clip)
+          }
+        }
+      None => ()
+    }
+  }
   // Draw text if this is a text node
   match node.text {
     Some(text_content) =>
@@ -1601,8 +1741,142 @@ fn render_paint_node_clipped(
   }
 
   // Render children with (possibly narrowed) clip
-  for child in node.children {
-    render_paint_node_clipped(fb, palette, child, abs_x, abs_y, child_clip)
+  // Propagate opacity to children (CSS opacity affects entire subtree)
+  if node.paint.opacity < 1.0 {
+    for child in node.children {
+      let child_with_opacity = {
+        ..child,
+        paint: {
+          ..child.paint,
+          opacity: child.paint.opacity * node.paint.opacity,
+        },
+      }
+      render_paint_node_clipped(
+        fb, palette, child_with_opacity, abs_x, abs_y, child_clip,
+      )
+    }
+  } else {
+    for child in node.children {
+      render_paint_node_clipped(fb, palette, child, abs_x, abs_y, child_clip)
+    }
+  }
+}
+
+///|
+/// Decode SVG data URI to SVG text
+fn decode_svg_data_uri(src : String) -> String {
+  // Handle data:image/svg+xml,<svg>...</svg> (URL-encoded)
+  // and data:image/svg+xml;utf8,<svg>...</svg>
+  let prefixes = [
+    "data:image/svg+xml,", "data:image/svg+xml;utf8,", "data:image/svg+xml;charset=utf-8,",
+  ]
+  for prefix in prefixes {
+    if src.has_prefix(prefix) {
+      let encoded = src.unsafe_substring(
+        start=prefix.length(),
+        end=src.length(),
+      )
+      return url_decode_simple(encoded)
+    }
+  }
+  // data:image/svg+xml;base64,... not handled yet
+  ""
+}
+
+///|
+/// Simple URL decode (%XX → char)
+fn url_decode_simple(s : String) -> String {
+  let buf = StringBuilder::new()
+  let chars = s.to_array()
+  let len = chars.length()
+  let mut i = 0
+  while i < len {
+    if chars[i] == '%' && i + 2 < len {
+      let hi = hex_digit(chars[i + 1])
+      let lo = hex_digit(chars[i + 2])
+      if hi >= 0 && lo >= 0 {
+        buf.write_char((hi * 16 + lo).unsafe_to_char())
+        i = i + 3
+        continue
+      }
+    }
+    buf.write_char(chars[i])
+    i = i + 1
+  }
+  buf.to_string()
+}
+
+///|
+fn hex_digit(c : Char) -> Int {
+  if c >= '0' && c <= '9' {
+    c.to_int() - '0'.to_int()
+  } else if c >= 'a' && c <= 'f' {
+    c.to_int() - 'a'.to_int() + 10
+  } else if c >= 'A' && c <= 'F' {
+    c.to_int() - 'A'.to_int() + 10
+  } else {
+    -1
+  }
+}
+
+///|
+/// Render SVG into a region of the framebuffer
+fn render_svg_into_region(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  svg_text : String,
+  x : Int,
+  y : Int,
+  w : Int,
+  h : Int,
+  clip : ClipRect?,
+) -> Unit {
+  let svg_node = match @svg.parse_svg(svg_text) {
+    Some(n) => n
+    None => return
+  }
+  let scene = @svg.Scene::new(svg_node)
+  let bounds = scene.get_bounds()
+  let vw = bounds.width()
+  let vh = bounds.height()
+  if vw <= 0.0 || vh <= 0.0 {
+    return
+  }
+  // Render SVG to temporary framebuffer at target size
+  let tmp_fb = Framebuffer::new(w, h)
+  let tmp_palette = DynamicPalette::new()
+  tmp_fb.fill_rect(0, 0, w, h, 0)
+  let camera = @svg.Camera::new(w, h)
+  camera.set_position(vw / 2.0, vh / 2.0)
+  let zoom = (w.to_double() / vw).min(h.to_double() / vh)
+  camera.set_zoom(zoom)
+  render_svg_scene_with_camera(scene, tmp_fb, tmp_palette, camera)
+  // Blit temporary framebuffer into main framebuffer
+  for py = 0; py < h; py = py + 1 {
+    let dst_y = y + py
+    if dst_y < 0 || dst_y >= fb.height {
+      continue
+    }
+    for px = 0; px < w; px = px + 1 {
+      let dst_x = x + px
+      if dst_x < 0 || dst_x >= fb.width {
+        continue
+      }
+      if not(pixel_in_clip(clip, dst_x, dst_y)) {
+        continue
+      }
+      let tmp_idx = tmp_fb.pixels[py * w + px]
+      if tmp_idx > 0 {
+        // Non-white pixel: map from tmp palette to main palette
+        let color = if tmp_idx < tmp_palette.colors.length() {
+          tmp_palette.colors[tmp_idx]
+        } else {
+          Color::white()
+        }
+        let main_idx = palette.get_or_add(color)
+        fb.set_pixel(dst_x, dst_y, main_idx)
+      }
+    }
   }
 }
 

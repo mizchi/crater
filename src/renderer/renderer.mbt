@@ -198,6 +198,33 @@ pub fn get_force_monospace_metrics() -> Bool {
 
 ///|
 #cfg(target="js")
+extern "js" fn is_perf_logging_enabled() -> Bool =
+  #|() => {
+  #|  try {
+  #|    return typeof process !== "undefined" &&
+  #|      process != null &&
+  #|      process.env != null &&
+  #|      process.env.CRATER_RENDERER_PERF_LOG === "1";
+  #|  } catch {
+  #|    return false;
+  #|  }
+  #|}
+
+///|
+#cfg(not(target="js"))
+fn is_perf_logging_enabled() -> Bool {
+  false
+}
+
+///|
+fn maybe_log_perf(message : String) -> Unit {
+  if is_perf_logging_enabled() {
+    println(message)
+  }
+}
+
+///|
+#cfg(target="js")
 extern "js" fn get_builtin_text_advance_ratio_override() -> Double =
   #|() => {
   #|  const ratio = Number(globalThis.__craterBuiltinTextAdvanceRatio);
@@ -3020,6 +3047,134 @@ let active_after_index : Ref[PseudoRuleIndex] = {
 }
 
 ///|
+priv struct ExternalCssBundle {
+  stylesheets : Array[@cascade.Stylesheet]
+  indexed_stylesheets : Array[@cascade.IndexedStylesheet]
+  before_rules : Array[PseudoRule]
+  after_rules : Array[PseudoRule]
+  before_index : PseudoRuleIndex
+  after_index : PseudoRuleIndex
+  total_rules : Int
+}
+
+///|
+let external_css_bundle_cache : Ref[Map[String, ExternalCssBundle]] = {
+  val: {},
+}
+
+///|
+fn external_css_cache_key(external_css : Array[String]) -> String {
+  let mut total_len = 0
+  for css in external_css {
+    total_len = total_len + css.length() + 16
+  }
+  let buf = StringBuilder::new(size_hint=total_len)
+  for css in external_css {
+    buf.write_string(css.length().to_string())
+    buf.write_string(":")
+    buf.write_string(css)
+  }
+  buf.to_string()
+}
+
+///|
+fn collect_pseudo_rules_from_stylesheet(
+  stylesheet : @cascade.Stylesheet,
+  before_rules : Array[PseudoRule],
+  after_rules : Array[PseudoRule],
+) -> Unit {
+  for rule in stylesheet.rules {
+    let sel = rule.selector_text
+    if sel.contains("before") {
+      match selector_text_without_pseudo(sel, Before) {
+        Some(base_text) => {
+          let base_sel = @selector.parse_selector_text(base_text)
+          before_rules.push({
+            base_selector: base_sel,
+            base_selector_text: base_text,
+            declarations: rule.declarations,
+            media_query: rule.media_query,
+          })
+        }
+        None => ()
+      }
+    }
+    if sel.contains("after") {
+      match selector_text_without_pseudo(sel, After) {
+        Some(base_text) => {
+          let base_sel = @selector.parse_selector_text(base_text)
+          after_rules.push({
+            base_selector: base_sel,
+            base_selector_text: base_text,
+            declarations: rule.declarations,
+            media_query: rule.media_query,
+          })
+        }
+        None => ()
+      }
+    }
+  }
+}
+
+///|
+fn get_external_css_bundle(external_css : Array[String]) -> ExternalCssBundle {
+  if external_css.is_empty() {
+    return {
+      stylesheets: [],
+      indexed_stylesheets: [],
+      before_rules: [],
+      after_rules: [],
+      before_index: {
+        rules: [],
+        by_id: {},
+        by_class: {},
+        by_tag: {},
+        universal: [],
+      },
+      after_index: {
+        rules: [],
+        by_id: {},
+        by_class: {},
+        by_tag: {},
+        universal: [],
+      },
+      total_rules: 0,
+    }
+  }
+  let key = external_css_cache_key(external_css)
+  match external_css_bundle_cache.val.get(key) {
+    Some(bundle) => bundle
+    None => {
+      let stylesheets : Array[@cascade.Stylesheet] = []
+      let indexed_stylesheets : Array[@cascade.IndexedStylesheet] = []
+      let before_rules : Array[PseudoRule] = []
+      let after_rules : Array[PseudoRule] = []
+      let mut total_rules = 0
+      for css in external_css {
+        let stylesheet = @parser.parse_stylesheet(css)
+        total_rules += stylesheet.rules.length()
+        collect_pseudo_rules_from_stylesheet(
+          stylesheet, before_rules, after_rules,
+        )
+        stylesheets.push(stylesheet)
+        indexed_stylesheets.push(@cascade.IndexedStylesheet::new(stylesheet))
+      }
+      let bundle : ExternalCssBundle = {
+        stylesheets,
+        indexed_stylesheets,
+        before_rules,
+        after_rules,
+        before_index: PseudoRuleIndex::build(before_rules),
+        after_index: PseudoRuleIndex::build(after_rules),
+        total_rules,
+      }
+      external_css_bundle_cache.val.set(key, bundle)
+      bundle
+    }
+  }
+}
+
+///|
 pub struct PreparedRenderDocument {
   stylesheets : Array[@cascade.Stylesheet]
   indexed_stylesheets : Array[@cascade.IndexedStylesheet]
@@ -3040,26 +3195,27 @@ pub fn prepare_render_document(
   external_css : Array[String],
 ) -> PreparedRenderDocument {
   let _t0 = perf_clock_us()
+  let external_bundle = get_external_css_bundle(external_css)
   let stylesheets : Array[@cascade.Stylesheet] = []
-  for css in external_css {
-    let stylesheet = @parser.parse_stylesheet(css)
+  for stylesheet in external_bundle.stylesheets {
     stylesheets.push(stylesheet)
   }
+  let indexed_stylesheets : Array[@cascade.IndexedStylesheet] = []
+  for indexed in external_bundle.indexed_stylesheets {
+    indexed_stylesheets.push(indexed)
+  }
+  let before_rules = external_bundle.before_rules.copy()
+  let after_rules = external_bundle.after_rules.copy()
+  let mut total_rules = external_bundle.total_rules
   for css in doc.stylesheets {
     let stylesheet = @parser.parse_stylesheet(css)
+    total_rules += stylesheet.rules.length()
+    collect_pseudo_rules_from_stylesheet(stylesheet, before_rules, after_rules)
     stylesheets.push(stylesheet)
-  }
-  let _t1 = perf_clock_us()
-
-  let indexed_stylesheets : Array[@cascade.IndexedStylesheet] = []
-  for stylesheet in stylesheets {
     indexed_stylesheets.push(@cascade.IndexedStylesheet::new(stylesheet))
   }
+  let _t1 = perf_clock_us()
   let _t2 = perf_clock_us()
-  let mut total_rules = 0
-  for s in stylesheets {
-    total_rules += s.rules.length()
-  }
   let css_vars = collect_root_css_variables(stylesheets, ctx)
   let doc_root_selector = if indexed_stylesheets.length() == 0 {
     html_to_selector_element_minimal(doc.root, None)
@@ -3077,41 +3233,6 @@ pub fn prepare_render_document(
   )
   let render_root = select_render_root(doc.root, doc_root_style)
   let render_root_tag = render_root.tag.to_lower()
-  let before_rules : Array[PseudoRule] = []
-  let after_rules : Array[PseudoRule] = []
-  for stylesheet in stylesheets {
-    for rule in stylesheet.rules {
-      let sel = rule.selector_text
-      if sel.contains("before") {
-        match selector_text_without_pseudo(sel, Before) {
-          Some(base_text) => {
-            let base_sel = @selector.parse_selector_text(base_text)
-            before_rules.push({
-              base_selector: base_sel,
-              base_selector_text: base_text,
-              declarations: rule.declarations,
-              media_query: rule.media_query,
-            })
-          }
-          None => ()
-        }
-      }
-      if sel.contains("after") {
-        match selector_text_without_pseudo(sel, After) {
-          Some(base_text) => {
-            let base_sel = @selector.parse_selector_text(base_text)
-            after_rules.push({
-              base_selector: base_sel,
-              base_selector_text: base_text,
-              declarations: rule.declarations,
-              media_query: rule.media_query,
-            })
-          }
-          None => ()
-        }
-      }
-    }
-  }
   let prepared : PreparedRenderDocument = {
     stylesheets,
     indexed_stylesheets,
@@ -3122,10 +3243,18 @@ pub fn prepare_render_document(
     render_root_tag,
     body_uses_document_root_style: render_root_tag == "body" &&
     doc.root.tag.to_lower() != "body",
-    before_index: PseudoRuleIndex::build(before_rules),
-    after_index: PseudoRuleIndex::build(after_rules),
+    before_index: if doc.stylesheets.is_empty() {
+      external_bundle.before_index
+    } else {
+      PseudoRuleIndex::build(before_rules)
+    },
+    after_index: if doc.stylesheets.is_empty() {
+      external_bundle.after_index
+    } else {
+      PseudoRuleIndex::build(after_rules)
+    },
   }
-  println(
+  maybe_log_perf(
     "[perf] css_parse=" +
     ((_t1 - _t0) / 1000L).to_string() +
     "ms index=" +
@@ -3210,7 +3339,7 @@ pub fn build_render_root_node(
       root.style.zoom = root.style.zoom * root_zoom
     }
   }
-  println(
+  maybe_log_perf(
     "[perf] viewport_culling: estimated_y=" +
     viewport_estimated_y.val.to_int().to_string() +
     " cutoff=" +
@@ -6275,6 +6404,7 @@ fn element_to_node_with_styles_internal(
         None => if keep_intrinsic_ratio { intrinsic_aspect_ratio } else { None }
       },
     }
+    let src_attr = elem.attributes.get("src")
     return match alt_text {
       Some(alt) =>
         if uses_alt_text_overflow_box {
@@ -6282,9 +6412,16 @@ fn element_to_node_with_styles_internal(
             create_text_node(alt, img_style),
           ])
         } else {
-          @node.Node::with_measure(node_id, img_style, measure, text=alt)
+          @node.Node::with_measure(
+            node_id,
+            img_style,
+            measure,
+            text=alt,
+            src=src_attr,
+          )
         }
-      None => @node.Node::with_measure(node_id, img_style, measure)
+      None =>
+        @node.Node::with_measure(node_id, img_style, measure, src=src_attr)
     }
   }
   // Handle canvas element with intrinsic sizing
@@ -8592,25 +8729,40 @@ fn number_to_json(n : Double) -> String {
 }
 
 ///|
-/// Convert Rect to JSON string
-fn rect_to_json(rect : @types.Rect[Double]) -> String {
-  "{\"top\":" +
-  number_to_json(rect.top) +
-  ",\"right\":" +
-  number_to_json(rect.right) +
-  ",\"bottom\":" +
-  number_to_json(rect.bottom) +
-  ",\"left\":" +
-  number_to_json(rect.left) +
-  "}"
+/// Write a number to the JSON buffer safely.
+fn write_number_json(buf : StringBuilder, n : Double) -> Unit {
+  buf.write_string(number_to_json(n))
+}
+
+///|
+/// Write Rect JSON directly to the output buffer to avoid temporary strings.
+fn write_rect_json(buf : StringBuilder, rect : @types.Rect[Double]) -> Unit {
+  buf.write_string("{\"top\":")
+  write_number_json(buf, rect.top)
+  buf.write_string(",\"right\":")
+  write_number_json(buf, rect.right)
+  buf.write_string(",\"bottom\":")
+  write_number_json(buf, rect.bottom)
+  buf.write_string(",\"left\":")
+  write_number_json(buf, rect.left)
+  buf.write_string("}")
 }
 
 ///|
 /// Convert layout to JSON string (with Box Model)
 pub fn layout_to_json(layout : @types.Layout) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::new(size_hint=estimate_layout_json_size(layout))
   layout_to_json_impl(layout, buf)
   buf.to_string()
+}
+
+///|
+fn estimate_layout_json_size(layout : @types.Layout) -> Int {
+  let mut estimated = 120 + layout.id.length() * 2
+  for child in layout.children {
+    estimated = estimated + estimate_layout_json_size(child) + 2
+  }
+  estimated
 }
 
 ///|
@@ -8618,19 +8770,19 @@ fn layout_to_json_impl(layout : @types.Layout, buf : StringBuilder) -> Unit {
   buf.write_string("{\"id\":\"")
   buf.write_string(escape_json_string(layout.id))
   buf.write_string("\",\"x\":")
-  buf.write_string(number_to_json(layout.x))
+  write_number_json(buf, layout.x)
   buf.write_string(",\"y\":")
-  buf.write_string(number_to_json(layout.y))
+  write_number_json(buf, layout.y)
   buf.write_string(",\"width\":")
-  buf.write_string(number_to_json(layout.width))
+  write_number_json(buf, layout.width)
   buf.write_string(",\"height\":")
-  buf.write_string(number_to_json(layout.height))
+  write_number_json(buf, layout.height)
   buf.write_string(",\"margin\":")
-  buf.write_string(rect_to_json(layout.margin))
+  write_rect_json(buf, layout.margin)
   buf.write_string(",\"padding\":")
-  buf.write_string(rect_to_json(layout.padding))
+  write_rect_json(buf, layout.padding)
   buf.write_string(",\"border\":")
-  buf.write_string(rect_to_json(layout.border))
+  write_rect_json(buf, layout.border)
   buf.write_string(",\"children\":[")
   for i, child in layout.children {
     if i > 0 {

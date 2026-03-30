@@ -19,6 +19,7 @@ pub struct Node {
   children : Array[Node]
   measure : @types.MeasureFunc?
   text : String? // Text content for text nodes
+  src : String? // Image src attribute for <img> elements
 }
 
 ///|
@@ -27,7 +28,7 @@ pub fn Node::new(
   style : @style.Style,
   children : Array[Node],
 ) -> Node {
-  { id, uid: next_uid(), style, children, measure: None, text: None }
+  { id, uid: next_uid(), style, children, measure: None, text: None, src: None }
 }
 
 ///|
@@ -38,7 +39,7 @@ pub fn Node::with_uid(
   style : @style.Style,
   children : Array[Node],
 ) -> Node {
-  { id, uid, style, children, measure: None, text: None }
+  { id, uid, style, children, measure: None, text: None, src: None }
 }
 
 ///|
@@ -50,13 +51,22 @@ pub fn Node::with_uid_and_measure(
   children : Array[Node],
   measure : @types.MeasureFunc?,
   text : String?,
+  src? : String? = None,
 ) -> Node {
-  { id, uid, style, children, measure, text }
+  { id, uid, style, children, measure, text, src }
 }
 
 ///|
 pub fn Node::leaf(id : String, style : @style.Style) -> Node {
-  { id, uid: next_uid(), style, children: [], measure: None, text: None }
+  {
+    id,
+    uid: next_uid(),
+    style,
+    children: [],
+    measure: None,
+    text: None,
+    src: None,
+  }
 }
 
 ///|
@@ -67,8 +77,17 @@ pub fn Node::with_measure(
   style : @style.Style,
   measure : @types.MeasureFunc,
   text? : String,
+  src? : String? = None,
 ) -> Node {
-  { id, uid: next_uid(), style, children: [], measure: Some(measure), text }
+  {
+    id,
+    uid: next_uid(),
+    style,
+    children: [],
+    measure: Some(measure),
+    text,
+    src,
+  }
 }
 
 ///|
@@ -86,6 +105,7 @@ pub fn Node::text(
     children: [],
     measure: Some(measure),
     text: Some(content),
+    src: None,
   }
 }
 

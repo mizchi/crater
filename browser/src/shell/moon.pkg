@@ -13,6 +13,9 @@ import {
   "mizchi/crater-browser/interaction_policy",
   "mizchi/crater-browser/tui",
   "mizchi/crater-browser/js",
+  "mizchi/crater/svg",
+  "mizchi/crater/x/image",
+  "mizchi/crater/x/kitty",
 }
 
 import {
@@ -20,6 +23,7 @@ import {
   "moonbitlang/core/bench",
   "mizchi/crater/benchmarks",
   "mizchi/crater/css/media",
+  "mizchi/crater/types",
   "mizchi/x/pipe",
   "mizchi/crater/x/kitty",
   "mizchi/crater/x/image",
@@ -32,6 +36,7 @@ options(
     "browser_bench_wbtest.mbt": [ "js" ],
     "browser_fixture_wbtest.mbt": [ "js" ],
     "browser_js_wbtest.mbt": [ "js" ],
+    "component_vrt_bench_wbtest.mbt": [ "js" ],
     "perf_js.mbt": [ "js" ],
     "perf_native.mbt": [ "native" ],
   },

@@ -269,6 +269,7 @@ pub struct TuiContext {
   viewport_height : Int // Visible height in character rows
   link_regions : Array[LinkRegion] // Collected link regions
   hit_regions : Array[HitRegion] // Paint-order hit regions
+  image_regions : Array[ImageRegion] // Collected image regions for graphics protocol
   focused_element_name : String? // Name of currently focused element (for :focus styling)
   dark_mode : Bool // Dark mode enabled
   element_scroll_positions : Map[String, ElementScrollPos] // Element-level scroll positions
@@ -382,76 +383,93 @@ fn render_paint_node(
   }
   // Handle image placeholder (check BEFORE text to ensure background is drawn)
   if node.tag == "img" && w > 0 && h > 0 {
-    // Use a more visible background color for image placeholder
-    let img_bg = @types.Color::rgb(200, 200, 210)
-    let border_color = @types.Color::rgb(150, 150, 160)
     let draw_row = row.max(0)
     let draw_h = (row + h).min(ctx.viewport_height) - draw_row
-    if draw_h > 0 {
-      // Fill background
-      ctx.buffer.fill_bg(col, draw_row, w, draw_h, img_bg)
-      // Draw top and bottom borders with darker color
-      let border_style : TextStyle = {
-        fg: border_color,
-        bg: img_bg,
-        bold: false,
-        underline: false,
-      }
-      // Top border
-      if draw_row >= 0 && draw_row < ctx.viewport_height {
-        let border_line = String::make(w, '-')
-        let _ = ctx.buffer.write_text(
-          col, draw_row, border_line, border_style, w,
-        )
-      }
-      // Bottom border
-      let bottom_row = draw_row + draw_h - 1
-      if bottom_row >= 0 &&
-        bottom_row < ctx.viewport_height &&
-        bottom_row > draw_row {
-        let border_line = String::make(w, '-')
-        let _ = ctx.buffer.write_text(
-          col, bottom_row, border_line, border_style, w,
-        )
-      }
-    }
-    // Draw alt text (or "[IMG]" if no alt) centered in the image area
-    if draw_row >= 0 && draw_row < ctx.viewport_height && draw_h > 0 {
-      let label = match node.text {
-        Some(alt) => if alt.length() > 0 { alt } else { "[IMG]" }
-        None => "[IMG]"
-      }
-      let label_style : TextStyle = {
-        fg: @types.Color::rgb(60, 60, 70),
-        bg: img_bg,
-        bold: false,
-        underline: false,
-      }
-      // Center vertically (middle row of the image area)
-      let center_row = draw_row + draw_h / 2
-      if center_row >= 0 && center_row < ctx.viewport_height {
-        // Calculate visible label width (truncate if needed)
-        let max_label_width = w - 2 // Leave 1 char margin on each side
-        let visible_label = if label.to_array().length() > max_label_width &&
-          max_label_width > 3 {
-          // Truncate with "..."
-          let chars = label.to_array()
-          let truncated_chars = chars[:max_label_width - 3]
-          truncated_chars.to_string() + "..."
-        } else {
-          label
+    // If image has src, record for graphics protocol rendering
+    match node.src {
+      Some(src) => {
+        if draw_h > 0 {
+          // Fill background color (from CSS) so it shows even without graphics
+          if not(node.paint.background_color.is_transparent()) {
+            ctx.buffer.fill_bg(
+              col, draw_row, w, draw_h, node.paint.background_color,
+            )
+          }
+          // Record image region for kitty/sixel rendering
+          ctx.image_regions.push({
+            col,
+            row: draw_row,
+            width: w,
+            height: draw_h,
+            pixel_width: node.width,
+            pixel_height: node.height,
+            src,
+          })
         }
-        let label_len = visible_label.to_array().length()
-        // Center horizontally
-        let label_col = col + (w - label_len) / 2
-        if label_col >= 0 {
-          let _ = ctx.buffer.write_text(
-            label_col.max(col),
-            center_row,
-            visible_label,
-            label_style,
-            w,
-          )
+      }
+      None => {
+        // No src: show placeholder
+        let img_bg = @types.Color::rgb(200, 200, 210)
+        let border_color = @types.Color::rgb(150, 150, 160)
+        if draw_h > 0 {
+          ctx.buffer.fill_bg(col, draw_row, w, draw_h, img_bg)
+          let border_style : TextStyle = {
+            fg: border_color,
+            bg: img_bg,
+            bold: false,
+            underline: false,
+          }
+          if draw_row >= 0 && draw_row < ctx.viewport_height {
+            let border_line = String::make(w, '-')
+            let _ = ctx.buffer.write_text(
+              col, draw_row, border_line, border_style, w,
+            )
+          }
+          let bottom_row = draw_row + draw_h - 1
+          if bottom_row >= 0 &&
+            bottom_row < ctx.viewport_height &&
+            bottom_row > draw_row {
+            let border_line = String::make(w, '-')
+            let _ = ctx.buffer.write_text(
+              col, bottom_row, border_line, border_style, w,
+            )
+          }
+        }
+        // Draw alt text (or "[IMG]" if no alt) centered
+        if draw_row >= 0 && draw_row < ctx.viewport_height && draw_h > 0 {
+          let label = match node.text {
+            Some(alt) => if alt.length() > 0 { alt } else { "[IMG]" }
+            None => "[IMG]"
+          }
+          let label_style : TextStyle = {
+            fg: @types.Color::rgb(60, 60, 70),
+            bg: img_bg,
+            bold: false,
+            underline: false,
+          }
+          let center_row = draw_row + draw_h / 2
+          if center_row >= 0 && center_row < ctx.viewport_height {
+            let max_label_width = w - 2
+            let visible_label = if label.to_array().length() > max_label_width &&
+              max_label_width > 3 {
+              let chars = label.to_array()
+              let truncated_chars = chars[:max_label_width - 3]
+              truncated_chars.to_string() + "..."
+            } else {
+              label
+            }
+            let label_len = visible_label.to_array().length()
+            let label_col = col + (w - label_len) / 2
+            if label_col >= 0 {
+              let _ = ctx.buffer.write_text(
+                label_col.max(col),
+                center_row,
+                visible_label,
+                label_style,
+                w,
+              )
+            }
+          }
         }
       }
     }
@@ -618,11 +636,25 @@ pub(all) struct RenderResult {
 
 ///|
 /// Render result with raw buffer (for diff rendering)
+///|
+/// Region where an image should be rendered via graphics protocol
+pub(all) struct ImageRegion {
+  col : Int // Start column in character grid
+  row : Int // Start row in character grid
+  width : Int // Width in characters
+  height : Int // Height in characters
+  pixel_width : Double // Original pixel width
+  pixel_height : Double // Original pixel height
+  src : String // Image source URL
+}
+
+///|
 pub(all) struct BufferRenderResult {
   buffer : CharBuffer
   link_regions : Array[LinkRegion]
   hit_regions : Array[HitRegion]
   scrollable_elements : Array[@paint.ScrollableElement]
+  image_regions : Array[ImageRegion]
 }
 
 ///|
@@ -686,11 +718,13 @@ pub fn render_to_buffer(
         link_regions: [],
         hit_regions: [],
         scrollable_elements: [],
+        image_regions: [],
       }
   }
   let sorted = @paint.sort_tree_by_stacking_order(paint_node)
   let link_regions : Array[LinkRegion] = []
   let hit_regions : Array[HitRegion] = []
+  let image_regions : Array[ImageRegion] = []
   let scrollable_elements = @paint.collect_scrollable_elements(sorted)
   let ctx : TuiContext = {
     buffer: buf,
@@ -698,12 +732,13 @@ pub fn render_to_buffer(
     viewport_height: height,
     link_regions,
     hit_regions,
+    image_regions,
     focused_element_name,
     dark_mode: false,
     element_scroll_positions: {},
   }
   render_paint_node(ctx, sorted, 0.0, 0.0, false)
-  { buffer: buf, link_regions, hit_regions, scrollable_elements }
+  { buffer: buf, link_regions, hit_regions, scrollable_elements, image_regions }
 }
 
 ///|
@@ -808,6 +843,7 @@ pub fn render_to_buffer_with_status(
         link_regions: [],
         hit_regions: [],
         scrollable_elements: [],
+        image_regions: [],
       }
     }
   }
@@ -819,12 +855,14 @@ pub fn render_to_buffer_with_status(
   // Content is drawn with a 1-row offset via parent_y
   let link_regions : Array[LinkRegion] = []
   let hit_regions : Array[HitRegion] = []
+  let image_regions : Array[ImageRegion] = []
   let ctx : TuiContext = {
     buffer: buf,
     scroll_y,
     viewport_height: content_height,
     link_regions,
     hit_regions,
+    image_regions,
     focused_element_name,
     dark_mode,
     element_scroll_positions,
@@ -862,7 +900,7 @@ pub fn render_to_buffer_with_status(
     )
   }
   // Return buffer, link regions, and scrollable elements
-  { buffer: buf, link_regions, hit_regions, scrollable_elements }
+  { buffer: buf, link_regions, hit_regions, scrollable_elements, image_regions }
 }
 
 ///|
@@ -1012,6 +1050,7 @@ pub fn render_to_buffer_with_hints(
         link_regions: [],
         hit_regions: [],
         scrollable_elements: [],
+        image_regions: [],
       }
     }
   }
@@ -1022,12 +1061,14 @@ pub fn render_to_buffer_with_hints(
   // Create context with link regions array
   let link_regions : Array[LinkRegion] = []
   let hit_regions : Array[HitRegion] = []
+  let image_regions : Array[ImageRegion] = []
   let ctx : TuiContext = {
     buffer: buf,
     scroll_y,
     viewport_height: content_height,
     link_regions,
     hit_regions,
+    image_regions,
     focused_element_name,
     dark_mode: false, // TODO: Add dark_mode support for hints
     element_scroll_positions: {},
@@ -1039,7 +1080,7 @@ pub fn render_to_buffer_with_hints(
   // Draw status bar with hint list
   draw_hint_mode_status_bar(buf, content_height, hint_input, hints)
   // Return buffer, link regions, and scrollable elements
-  { buffer: buf, link_regions, hit_regions, scrollable_elements }
+  { buffer: buf, link_regions, hit_regions, scrollable_elements, image_regions }
 }
 
 ///|

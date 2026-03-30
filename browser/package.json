@@ -4,20 +4,34 @@
   "description": "Experimental TUI browser in MoonBit - renders web pages in the terminal",
   "type": "commonjs",
   "bin": {
-    "crater-browser": "./dist/crater-browser.js"
+    "crater-browser": "./dist/crater-browser.js",
+    "crater": "./dist/crater.js"
   },
   "files": [
     "dist"
   ],
   "scripts": {
     "build:moon": "moon build --target js --release",
-    "build:minify": "rolldown _build/js/release/build/main/main.js --platform=node --format=cjs --minify --file=dist/crater-browser.js --banner='#!/usr/bin/env node'",
+    "build:minify:browser": "rolldown _build/js/release/build/main/main.js --platform=node --format=cjs --minify --file=dist/crater-browser.js --banner='#!/usr/bin/env node'",
+    "build:minify:crater": "rolldown _build/js/release/build/cmd/crater/crater.js --platform=node --format=cjs --minify --file=dist/crater.js --banner='#!/usr/bin/env node'",
+    "build:minify": "npm run build:minify:browser && npm run build:minify:crater",
     "build": "npm run build:moon && npm run build:minify",
     "prepublishOnly": "npm run build",
+    "bench:component-vrt": "moon bench -p mizchi/crater-browser/shell -f component_vrt_bench_wbtest.mbt --target js",
+    "bench:component-vrt:update-baseline": "node scripts/component-vrt-bench-baseline.mjs update",
+    "bench:component-vrt:check-baseline": "node scripts/component-vrt-bench-baseline.mjs check",
+    "bench:crater-cli": "node scripts/crater-cli-bench-baseline.mjs print",
+    "bench:crater-cli:update-baseline": "node scripts/crater-cli-bench-baseline.mjs update",
+    "bench:crater-cli:check-baseline": "node scripts/crater-cli-bench-baseline.mjs check",
+    "test:component-vrt:baseline": "node --test tests/component-vrt-bench-baseline.test.mjs",
+    "test:crater-cli:baseline": "node --test tests/crater-cli-bench-baseline.test.mjs",
+    "test:crater-cli": "node --test tests/crater-cli.test.mjs",
     "test:webdriver": "tsx tests/webdriver-e2e-test.ts",
     "cdp:server": "tsx tools/cdp-server.ts",
     "test:cdp": "tsx tests/cdp-e2e-test.ts",
     "test:cdp:navigate": "tsx tests/cdp-e2e-test-navigate.ts",
+    "test:luna-vrt": "node tests/luna-vrt/run-vrt.mjs",
+    "test:luna-vrt:update": "node tests/luna-vrt/run-vrt.mjs --update-baseline",
     "test": "vitest run tests/cdp.test.ts"
   },
   "keywords": [
@@ -38,6 +52,8 @@
     "node": ">=24"
   },
   "devDependencies": {
+    "pixelmatch": "^7.1.0",
+    "pngjs": "^7.0.0",
     "puppeteer-core": "^24.8.0",
     "rolldown": "^1.0.0-beta.58",
     "tsx": "^4.19.0",

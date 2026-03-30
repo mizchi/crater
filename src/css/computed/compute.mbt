@@ -123,6 +123,10 @@ priv struct StyleBuilder {
   mut border_style_right : @style.BorderStyle
   mut border_style_bottom : @style.BorderStyle
   mut border_style_left : @style.BorderStyle
+  mut border_color_top : @types.Color
+  mut border_color_right : @types.Color
+  mut border_color_bottom : @types.Color
+  mut border_color_left : @types.Color
   mut flex_direction : @types.FlexDirection
   mut flex_wrap : @types.FlexWrap
   mut justify_content : @types.Alignment
@@ -251,6 +255,10 @@ fn StyleBuilder::new() -> StyleBuilder {
     border_style_right: @style.BorderStyle::None,
     border_style_bottom: @style.BorderStyle::None,
     border_style_left: @style.BorderStyle::None,
+    border_color_top: @types.Color::transparent(),
+    border_color_right: @types.Color::transparent(),
+    border_color_bottom: @types.Color::transparent(),
+    border_color_left: @types.Color::transparent(),
     flex_direction: @types.FlexDirection::Row,
     flex_wrap: @types.FlexWrap::NoWrap,
     justify_content: @types.Alignment::FlexStart,
@@ -365,6 +373,10 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     border_style_right: style.border_style.right,
     border_style_bottom: style.border_style.bottom,
     border_style_left: style.border_style.left,
+    border_color_top: style.border_color.top,
+    border_color_right: style.border_color.right,
+    border_color_bottom: style.border_color.bottom,
+    border_color_left: style.border_color.left,
     flex_direction: style.flex_direction,
     flex_wrap: style.flex_wrap,
     justify_content: style.justify_content,
@@ -485,6 +497,12 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
       right: self.border_style_right,
       bottom: self.border_style_bottom,
       left: self.border_style_left,
+    },
+    border_color: {
+      top: self.border_color_top,
+      right: self.border_color_right,
+      bottom: self.border_color_bottom,
+      left: self.border_color_left,
     },
     flex_direction: self.flex_direction,
     flex_wrap: self.flex_wrap,
@@ -928,7 +946,7 @@ fn seed_font_metrics(
   ctx : ComputeContext,
 ) -> ComputeContext {
   let mut seeded_font_size = ctx.font_size
-  let mut seeded_line_height = ctx.font_size
+  let mut seeded_line_height = ctx.font_size * 1.2 // CSS initial: normal ≈ 1.2
   let mut font_decl : @cascade.Declaration? = None
   let mut font_size_decl : @cascade.Declaration? = None
   let mut line_height_decl : @cascade.Declaration? = None
@@ -1258,12 +1276,16 @@ fn apply_property(
       builder.border_right = width
       builder.border_bottom = width
       builder.border_left = width
-      // Extract border-style from shorthand
       let bs = extract_border_style_from_shorthand(value)
       builder.border_style_top = bs
       builder.border_style_right = bs
       builder.border_style_bottom = bs
       builder.border_style_left = bs
+      let bc = extract_border_color_from_shorthand(value, ctx)
+      builder.border_color_top = bc
+      builder.border_color_right = bc
+      builder.border_color_bottom = bc
+      builder.border_color_left = bc
     }
     "border-top" => {
       let bs = extract_border_style_from_shorthand(value)
@@ -1273,6 +1295,7 @@ fn apply_property(
       } else {
         resolve_border_width(value, ctx)
       }
+      builder.border_color_top = extract_border_color_from_shorthand(value, ctx)
     }
     "border-right" => {
       let bs = extract_border_style_from_shorthand(value)
@@ -1282,6 +1305,9 @@ fn apply_property(
       } else {
         resolve_border_width(value, ctx)
       }
+      builder.border_color_right = extract_border_color_from_shorthand(
+        value, ctx,
+      )
     }
     "border-bottom" => {
       let bs = extract_border_style_from_shorthand(value)
@@ -1291,6 +1317,9 @@ fn apply_property(
       } else {
         resolve_border_width(value, ctx)
       }
+      builder.border_color_bottom = extract_border_color_from_shorthand(
+        value, ctx,
+      )
     }
     "border-left" => {
       let bs = extract_border_style_from_shorthand(value)
@@ -1300,6 +1329,9 @@ fn apply_property(
       } else {
         resolve_border_width(value, ctx)
       }
+      builder.border_color_left = extract_border_color_from_shorthand(
+        value, ctx,
+      )
     }
     "border-top-width" => builder.border_top = resolve_dimension(value, ctx)
     "border-right-width" => builder.border_right = resolve_dimension(value, ctx)
@@ -1385,6 +1417,29 @@ fn apply_property(
         builder.border_left = @types.Length(0.0)
       }
     }
+    "border-color" => {
+      let c = parse_color_with_ctx(value, ctx).or_default(@types.Color::black())
+      builder.border_color_top = c
+      builder.border_color_right = c
+      builder.border_color_bottom = c
+      builder.border_color_left = c
+    }
+    "border-top-color" =>
+      builder.border_color_top = parse_color_with_ctx(value, ctx).or_default(
+        @types.Color::black(),
+      )
+    "border-right-color" =>
+      builder.border_color_right = parse_color_with_ctx(value, ctx).or_default(
+        @types.Color::black(),
+      )
+    "border-bottom-color" =>
+      builder.border_color_bottom = parse_color_with_ctx(value, ctx).or_default(
+        @types.Color::black(),
+      )
+    "border-left-color" =>
+      builder.border_color_left = parse_color_with_ctx(value, ctx).or_default(
+        @types.Color::black(),
+      )
     // Logical border properties (block/inline)
     "border-block" | "border-block-width" => {
       let width = resolve_border_width(value, ctx)
@@ -2059,6 +2114,48 @@ fn is_none_border_style_enum(style : @style.BorderStyle) -> Bool {
 fn is_none_border_style(value : String) -> Bool {
   let v = value.trim().to_lower()
   v == "none" || v == "hidden"
+}
+
+///|
+fn extract_border_color_from_shorthand(
+  value : String,
+  ctx : ComputeContext,
+) -> @types.Color {
+  let parts = split_whitespace(value)
+  for part in parts {
+    let lower = part.to_lower()
+    // Skip border-style keywords and width keywords/values
+    match lower {
+      "none"
+      | "hidden"
+      | "dotted"
+      | "dashed"
+      | "solid"
+      | "double"
+      | "groove"
+      | "ridge"
+      | "inset"
+      | "outset"
+      | "thin"
+      | "medium"
+      | "thick" => continue
+      _ => ()
+    }
+    // Skip numeric values (border width)
+    if lower.length() > 0 && lower[0] >= '0' && lower[0] <= '9' {
+      continue
+    }
+    if lower == "0" {
+      continue
+    }
+    // Try to parse as color
+    let color_val = parse_color_with_ctx(part, ctx)
+    match color_val.get_color() {
+      Some(c) => return c
+      None => ()
+    }
+  }
+  @types.Color::black() // CSS default: currentColor → approximate as black
 }
 
 ///|

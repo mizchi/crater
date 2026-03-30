@@ -141,6 +141,10 @@ struct Browser {
   mut no_color : Bool
   /// Terminal columns (for pixel-to-column scaling)
   terminal_cols : Int
+  /// Image regions from last render (for kitty/sixel overlay)
+  mut image_regions : Array[@tui.ImageRegion]
+  /// Cached rendered image data (src URL -> kitty graphics commands)
+  image_cache : Map[String, String]
 }
 
 ///|
@@ -195,6 +199,8 @@ pub fn Browser::new(
     drop_allowed_source_id: None,
     no_color: false,
     terminal_cols,
+    image_regions: [],
+    image_cache: {},
   }
 }
 
@@ -448,8 +454,11 @@ async fn Browser::load_url(
   // to avoid a duplicate full layout pass here.
   self.a11y_tree = None
   self.focus_manager = None
+  // Prefetch images for kitty graphics rendering
+  self.prefetch_images() catch { _ => () }
+  let t5 = perf_now()
   perf_log(
-    "[perf] fetch=\{(t1 - t0).to_int()}ms css=\{(t2 - t1).to_int()}ms parse=\{(t3 - t2).to_int()}ms scripts=\{(t4 - t3).to_int()}ms total=\{(t4 - t0).to_int()}ms",
+    "[perf] fetch=\{(t1 - t0).to_int()}ms css=\{(t2 - t1).to_int()}ms parse=\{(t3 - t2).to_int()}ms scripts=\{(t4 - t3).to_int()}ms images=\{(t5 - t4).to_int()}ms total=\{(t5 - t0).to_int()}ms",
   )
   // Render to Sixel
   self.render()
@@ -762,6 +771,7 @@ fn Browser::render_text(self : Browser) -> String {
   // Store link regions for click hit testing
   self.link_regions = buffer_result.link_regions
   self.hit_regions = buffer_result.hit_regions
+  self.image_regions = buffer_result.image_regions
   // Initialize scroll states for scrollable elements
   self.init_scrollable_elements(buffer_result.scrollable_elements)
   // Build plain links array for no_color mode with clickable hyperlinks
@@ -834,6 +844,15 @@ fn Browser::render_text(self : Browser) -> String {
         @tui.buffer_to_ansi(buffer_result.buffer, max_cols~)
       }
   }
+  // Append kitty graphics commands for image regions
+  let kitty_overlay = build_kitty_image_overlay(
+    self.image_regions, self.image_cache,
+  )
+  let final_output = if kitty_overlay.length() > 0 {
+    ansi + kitty_overlay
+  } else {
+    ansi
+  }
   let rt4 = perf_now()
   self.prev_buffer = Some(buffer_result.buffer)
   self.last_render_key = render_key
@@ -841,7 +860,406 @@ fn Browser::render_text(self : Browser) -> String {
   perf_log(
     "[perf:render] node+layout_build=\{(rt1 - rt0).to_int()}ms layout_compute=\{(rt2 - rt1).to_int()}ms tui_buffer=\{(rt3 - rt2).to_int()}ms ansi=\{(rt4 - rt3).to_int()}ms total=\{(rt4 - rt0).to_int()}ms",
   )
-  ansi
+  final_output
+}
+
+///|
+/// Build kitty graphics overlay commands for image regions
+fn build_kitty_image_overlay(
+  image_regions : Array[@tui.ImageRegion],
+  image_cache : Map[String, String],
+) -> String {
+  if image_regions.is_empty() {
+    return ""
+  }
+  let buf = StringBuilder::new()
+  for region in image_regions {
+    match image_cache.get(region.src) {
+      Some(cached_data) => {
+        let kitty_data = if cached_data.has_prefix("svg:") {
+          let svg_text = cached_data.unsafe_substring(
+            start=4, end=cached_data.length(),
+          )
+          let render_w = region.width * 16
+          let render_h = region.height * 32
+          render_svg_to_kitty_with_cells(
+            svg_text, render_w, render_h, region.width, region.height,
+          )
+        } else if cached_data.has_prefix("img:") {
+          // Raster image: decode base64 and send via kitty with cell sizing
+          let b64_data = cached_data.unsafe_substring(
+            start=4, end=cached_data.length(),
+          )
+          render_raster_to_kitty_with_cells(
+            b64_data, region.width, region.height,
+          )
+        } else {
+          ""
+        }
+        if kitty_data.length() > 0 {
+          buf.write_string(
+            "\u001b[" + (region.row + 1).to_string() + ";" +
+            (region.col + 1).to_string() + "H",
+          )
+          buf.write_string(kitty_data)
+        }
+      }
+      None => ()
+    }
+  }
+  buf.to_string()
+}
+
+///|
+/// Prefetch images from HTML and cache rendered kitty graphics data
+pub async fn Browser::prefetch_images(self : Browser) -> Unit {
+  if self.html_content.length() == 0 {
+    return
+  }
+  let srcs = extract_img_srcs(self.html_content)
+  for src in srcs {
+    if src.has_prefix("data:") || self.image_cache.contains(src) {
+      continue
+    }
+    let abs_url = resolve_url(self.current_url, src)
+    if abs_url.length() == 0 {
+      continue
+    }
+    let body = try {
+      let options = {
+        ..@http.FetchOptions::default(),
+        sandbox: self.request_sandbox,
+      }
+      let response = @http.fetch(abs_url, options~)
+      response.body
+    } catch {
+      _ => continue
+    }
+    if body.length() == 0 {
+      continue
+    }
+    let is_svg = abs_url.to_lower().has_suffix(".svg") ||
+      abs_url.to_lower().contains(".svg?")
+    if is_svg {
+      self.image_cache.set(src, "svg:" + body)
+    } else if body.has_prefix("base64:") {
+      let b64 = body.unsafe_substring(start=7, end=body.length())
+      self.image_cache.set(src, "img:" + b64)
+    }
+  }
+}
+
+///|
+/// Extract img src attributes from HTML (lightweight, no full parsing)
+fn extract_img_srcs(html : String) -> Array[String] {
+  let srcs : Array[String] = []
+  let chars = html.to_array()
+  let len = chars.length()
+  for i = 0; i < len - 10; i = i + 1 {
+    // Look for <img
+    if chars[i] == '<' &&
+      (chars[i + 1] == 'i' || chars[i + 1] == 'I') &&
+      (chars[i + 2] == 'm' || chars[i + 2] == 'M') &&
+      (chars[i + 3] == 'g' || chars[i + 3] == 'G') &&
+      (chars[i + 4] == ' ' || chars[i + 4] == '\t') {
+      // Find src="..." within this tag
+      for j = i + 4; j < len - 5; j = j + 1 {
+        if chars[j] == '>' {
+          break
+        }
+        if chars[j] == 's' &&
+          chars[j + 1] == 'r' &&
+          chars[j + 2] == 'c' &&
+          chars[j + 3] == '=' {
+          let quote = chars[j + 4]
+          if quote == '"' || quote == '\'' {
+            let start = j + 5
+            for k = start; k < len; k = k + 1 {
+              if chars[k] == quote {
+                let buf = StringBuilder::new()
+                for ci = start; ci < k; ci = ci + 1 {
+                  buf.write_char(chars[ci])
+                }
+                srcs.push(buf.to_string())
+                break
+              }
+            }
+          }
+          break
+        }
+      }
+    }
+  }
+  srcs
+}
+
+///|
+/// Render SVG to kitty graphics with cell-size display parameters (c=cols, r=rows)
+fn render_svg_to_kitty_with_cells(
+  svg_text : String,
+  render_width : Int,
+  render_height : Int,
+  display_cols : Int,
+  display_rows : Int,
+) -> String {
+  let svg_node = match @svg.parse_svg(svg_text) {
+    Some(n) => n
+    None => return ""
+  }
+  let scene = @svg.Scene::new(svg_node)
+  let fb = @image.Framebuffer::new(render_width, render_height)
+  let palette = @image.DynamicPalette::new()
+  fb.fill_rect(0, 0, render_width, render_height, 0)
+  let viewbox = extract_svg_viewbox(svg_text)
+  let (vx, vy, vw, vh) = match viewbox {
+    Some(v) => v
+    None => {
+      let bounds = scene.get_bounds()
+      (0.0, 0.0, bounds.width(), bounds.height())
+    }
+  }
+  if vw <= 0.0 || vh <= 0.0 {
+    return ""
+  }
+  let camera = @svg.Camera::new(render_width, render_height)
+  camera.set_position(vx + vw / 2.0, vy + vh / 2.0)
+  let zoom = (render_width.to_double() / vw).min(
+    render_height.to_double() / vh,
+  )
+  camera.set_zoom(zoom)
+  @image.render_svg_scene_with_camera(scene, fb, palette, camera)
+  to_kitty_with_cells(fb, palette, display_cols, display_rows)
+}
+
+///|
+/// Encode framebuffer to kitty graphics with c (columns) and r (rows) display size
+fn to_kitty_with_cells(
+  fb : @image.Framebuffer,
+  palette : @image.DynamicPalette,
+  cols : Int,
+  rows : Int,
+) -> String {
+  let buf = StringBuilder::new()
+  let mut chunk = StringBuilder::new()
+  let mut chunk_len = 0
+  let mut first_chunk = true
+  let pixel_count = fb.width * fb.height
+  let chunk_size = 4096
+  for pixel_index in 0..<pixel_count {
+    if chunk_len + 4 > chunk_size {
+      // Write chunk header
+      if first_chunk {
+        buf.write_string("\u001b_Ga=T,f=24,q=2,c=")
+        buf.write_string(cols.to_string())
+        buf.write_string(",r=")
+        buf.write_string(rows.to_string())
+        buf.write_string(",s=")
+        buf.write_string(fb.width.to_string())
+        buf.write_string(",v=")
+        buf.write_string(fb.height.to_string())
+        buf.write_string(",m=1;")
+      } else {
+        buf.write_string("\u001b_Gm=1;")
+      }
+      buf.write_string(chunk.to_string())
+      buf.write_string("\u001b\\")
+      chunk = StringBuilder::new()
+      chunk_len = 0
+      first_chunk = false
+    }
+    let color_idx = fb.pixels[pixel_index]
+    let color = if color_idx >= 0 && color_idx < palette.colors.length() {
+      palette.colors[color_idx]
+    } else {
+      @image.Color::white()
+    }
+    // Base64 encode RGB triplet
+    let b0 = color.r
+    let b1 = color.g
+    let b2 = color.b
+    let base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    let c0 = (b0 >> 2) & 0x3F
+    let c1 = ((b0 << 4) | (b1 >> 4)) & 0x3F
+    let c2 = ((b1 << 2) | (b2 >> 6)) & 0x3F
+    let c3 = b2 & 0x3F
+    chunk.write_char(base64_chars[c0].unsafe_to_char())
+    chunk.write_char(base64_chars[c1].unsafe_to_char())
+    chunk.write_char(base64_chars[c2].unsafe_to_char())
+    chunk.write_char(base64_chars[c3].unsafe_to_char())
+    chunk_len = chunk_len + 4
+  }
+  // Final chunk
+  if chunk_len > 0 {
+    if first_chunk {
+      buf.write_string("\u001b_Ga=T,f=24,q=2,c=")
+      buf.write_string(cols.to_string())
+      buf.write_string(",r=")
+      buf.write_string(rows.to_string())
+      buf.write_string(",s=")
+      buf.write_string(fb.width.to_string())
+      buf.write_string(",v=")
+      buf.write_string(fb.height.to_string())
+      buf.write_string(",m=0;")
+    } else {
+      buf.write_string("\u001b_Gm=0;")
+    }
+    buf.write_string(chunk.to_string())
+    buf.write_string("\u001b\\")
+  }
+  buf.to_string()
+}
+
+///|
+/// Render base64-encoded raster image to kitty graphics with cell sizing
+/// Kitty supports f=100 (PNG) for direct image data transmission
+fn render_raster_to_kitty_with_cells(
+  b64_data : String,
+  display_cols : Int,
+  display_rows : Int,
+) -> String {
+  if b64_data.length() == 0 {
+    return ""
+  }
+  // Send base64 image data directly to kitty with f=100 (auto-detect format)
+  let buf = StringBuilder::new()
+  let chunk_size = 4096
+  let total_len = b64_data.length()
+  let b64_chars = b64_data.to_array()
+  for offset = 0; offset < total_len; offset = offset + chunk_size {
+    let end = (offset + chunk_size).min(total_len)
+    let is_first = offset == 0
+    let is_last = end >= total_len
+    let m_val = if is_last { 0 } else { 1 }
+    if is_first {
+      buf.write_string("\u001b_Ga=T,f=100,q=2,c=")
+      buf.write_string(display_cols.to_string())
+      buf.write_string(",r=")
+      buf.write_string(display_rows.to_string())
+      buf.write_string(",m=")
+      buf.write_string(m_val.to_string())
+      buf.write_string(";")
+    } else {
+      buf.write_string("\u001b_Gm=")
+      buf.write_string(m_val.to_string())
+      buf.write_string(";")
+    }
+    // Write chunk
+    for i = offset; i < end; i = i + 1 {
+      buf.write_char(b64_chars[i])
+    }
+    buf.write_string("\u001b\\")
+  }
+  buf.to_string()
+}
+
+///|
+/// Build a String from a slice of a Char array
+fn chars_to_string(chars : Array[Char], start : Int, end : Int) -> String {
+  let buf = StringBuilder::new()
+  for i = start; i < end; i = i + 1 {
+    buf.write_char(chars[i])
+  }
+  buf.to_string()
+}
+
+
+///|
+/// Extract viewBox from SVG root element
+fn extract_svg_viewbox(svg_text : String) -> (Double, Double, Double, Double)? {
+  let search = "viewBox=\""
+  let chars = svg_text.to_array()
+  let search_chars = search.to_array()
+  let len = chars.length()
+  let slen = search_chars.length()
+  for i = 0; i < len - slen; i = i + 1 {
+    let mut found = true
+    for j = 0; j < slen; j = j + 1 {
+      if chars[i + j] != search_chars[j] {
+        found = false
+        break
+      }
+    }
+    if found {
+      let start = i + slen
+      let mut end = start
+      while end < len && chars[end] != '"' {
+        end = end + 1
+      }
+      let vb_str = chars_to_string(chars, start, end)
+      // Parse "minX minY width height"
+      let parts = split_whitespace(vb_str)
+      if parts.length() == 4 {
+        let vx = parse_double(parts[0])
+        let vy = parse_double(parts[1])
+        let vw = parse_double(parts[2])
+        let vh = parse_double(parts[3])
+        return Some((vx, vy, vw, vh))
+      }
+    }
+  }
+  None
+}
+
+///|
+fn split_whitespace(s : String) -> Array[String] {
+  let result : Array[String] = []
+  let chars = s.to_array()
+  let len = chars.length()
+  let mut start = 0
+  let mut in_word = false
+  for i = 0; i < len; i = i + 1 {
+    if chars[i] == ' ' || chars[i] == '\t' || chars[i] == '\n' {
+      if in_word {
+        result.push(chars_to_string(chars, start, i))
+        in_word = false
+      }
+    } else {
+      if not(in_word) {
+        start = i
+        in_word = true
+      }
+    }
+  }
+  if in_word {
+    result.push(chars_to_string(chars, start, len))
+  }
+  result
+}
+
+///|
+fn parse_double(s : String) -> Double {
+  // Simple double parser for SVG attributes
+  let chars = s.to_array()
+  let len = chars.length()
+  let mut result = 0.0
+  let mut frac = 0.0
+  let mut frac_div = 1.0
+  let mut in_frac = false
+  let mut negative = false
+  let mut start = 0
+  if len > 0 && chars[0] == '-' {
+    negative = true
+    start = 1
+  }
+  for i = start; i < len; i = i + 1 {
+    if chars[i] == '.' {
+      in_frac = true
+    } else if chars[i] >= '0' && chars[i] <= '9' {
+      let digit = (chars[i].to_int() - '0'.to_int()).to_double()
+      if in_frac {
+        frac_div = frac_div * 10.0
+        frac = frac + digit / frac_div
+      } else {
+        result = result * 10.0 + digit
+      }
+    }
+  }
+  result = result + frac
+  if negative {
+    -result
+  } else {
+    result
+  }
 }
 
 ///|

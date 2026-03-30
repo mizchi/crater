@@ -32,10 +32,12 @@ let glyph_provider_override : Ref[GlyphProvider?] = { val: None }
 priv struct GlyphBitmap {
   width : Int
   height : Int
-  pixels : Array[Bool] // true = has pixel
+  pixels : Array[Bool] // true = has pixel (any coverage > 0)
   advance : Double
   offset_x : Int // bounding box x offset from origin
   offset_y : Int // bounding box y offset from origin
+  coverage : Array[Int] // 0..ss*ss coverage from supersampling (0=transparent, ss*ss=full)
+  ss_factor : Int // supersample factor (e.g. 4 means 4x4 grid, coverage 0..16)
 }
 
 ///|
@@ -64,6 +66,8 @@ fn rasterize_glyph_to_bitmap(
       advance,
       offset_x: 0,
       offset_y: 0,
+      coverage: [],
+      ss_factor: 1,
     }
   }
   // Find bounding box
@@ -148,6 +152,8 @@ fn rasterize_glyph_to_bitmap(
       advance,
       offset_x: 0,
       offset_y: 0,
+      coverage: [],
+      ss_factor: 1,
     }
   }
   let offset_x = min_x.to_int() - 1
@@ -162,21 +168,97 @@ fn rasterize_glyph_to_bitmap(
       advance,
       offset_x: 0,
       offset_y: 0,
+      coverage: [],
+      ss_factor: 1,
     }
   }
-  let pixels = Array::make(width * height, false)
+  // 4x supersampling for antialiasing (16 coverage levels)
+  let ss = 4 // supersample factor
+  let ss_width = width * ss
+  let ss_height = height * ss
+  let ss_pixels = Array::make(ss_width * ss_height, false)
+  // Scale path commands by supersample factor
+  let ss_commands : Array[@svg.PathCommand] = []
+  for cmd in commands {
+    let scaled = match cmd {
+      MoveTo(x, y) =>
+        @svg.PathCommand::MoveTo(
+          x * ss.to_double() - offset_x.to_double() * (ss - 1).to_double(),
+          y * ss.to_double() - offset_y.to_double() * (ss - 1).to_double(),
+        )
+      LineTo(x, y) =>
+        @svg.PathCommand::LineTo(
+          x * ss.to_double() - offset_x.to_double() * (ss - 1).to_double(),
+          y * ss.to_double() - offset_y.to_double() * (ss - 1).to_double(),
+        )
+      CurveTo(cx1, cy1, cx2, cy2, x, y) =>
+        @svg.PathCommand::CurveTo(
+          cx1 * ss.to_double() - offset_x.to_double() * (ss - 1).to_double(),
+          cy1 * ss.to_double() - offset_y.to_double() * (ss - 1).to_double(),
+          cx2 * ss.to_double() - offset_x.to_double() * (ss - 1).to_double(),
+          cy2 * ss.to_double() - offset_y.to_double() * (ss - 1).to_double(),
+          x * ss.to_double() - offset_x.to_double() * (ss - 1).to_double(),
+          y * ss.to_double() - offset_y.to_double() * (ss - 1).to_double(),
+        )
+      QuadraticCurveTo(cx, cy, x, y) =>
+        @svg.PathCommand::QuadraticCurveTo(
+          cx * ss.to_double() - offset_x.to_double() * (ss - 1).to_double(),
+          cy * ss.to_double() - offset_y.to_double() * (ss - 1).to_double(),
+          x * ss.to_double() - offset_x.to_double() * (ss - 1).to_double(),
+          y * ss.to_double() - offset_y.to_double() * (ss - 1).to_double(),
+        )
+      ClosePath => @svg.PathCommand::ClosePath
+      _ => cmd // Pass through other commands
+    }
+    ss_commands.push(scaled)
+  }
+  let ss_offset_x = offset_x * ss
+  let ss_offset_y = offset_y * ss
   let setter : @svg.PixelSetter = {
     set: fn(px, py, _c) {
-      let lx = px - offset_x
-      let ly = py - offset_y
-      if lx >= 0 && lx < width && ly >= 0 && ly < height {
-        pixels[ly * width + lx] = true
+      let lx = px - ss_offset_x
+      let ly = py - ss_offset_y
+      if lx >= 0 && lx < ss_width && ly >= 0 && ly < ss_height {
+        ss_pixels[ly * ss_width + lx] = true
       }
     },
   }
   let white = @svg.Color::rgb(255, 255, 255)
-  @svg.raster_path(commands, Some(white), None, 0.0, setter)
-  { width, height, pixels, advance, offset_x, offset_y }
+  @svg.raster_path(ss_commands, Some(white), None, 0.0, setter)
+  // Downsample: count coverage in each ss×ss block → 0..ss*ss levels
+  // Store as coverage (0=transparent, 1-3=partial, 4=full) in pixels array
+  // We encode coverage as: false=0, true=4 for backward compat,
+  // but also store coverage values for antialiased blitting
+  let pixels = Array::make(width * height, false)
+  let coverage = Array::make(width * height, 0)
+  for y in 0..<height {
+    for x in 0..<width {
+      let mut count = 0
+      for dy in 0..<ss {
+        for dx in 0..<ss {
+          let sx = x * ss + dx
+          let sy = y * ss + dy
+          if sx < ss_width && sy < ss_height && ss_pixels[sy * ss_width + sx] {
+            count = count + 1
+          }
+        }
+      }
+      coverage[y * width + x] = count
+      if count > 0 {
+        pixels[y * width + x] = true
+      }
+    }
+  }
+  {
+    width,
+    height,
+    pixels,
+    advance,
+    offset_x,
+    offset_y,
+    coverage,
+    ss_factor: ss,
+  }
 }
 
 ///|
@@ -614,20 +696,50 @@ fn draw_text_with_glyphs_clipped(
           bm
         }
       }
-      // Blit cached bitmap to framebuffer
+      // Blit cached bitmap to framebuffer with antialiasing
       if in_clip_v && bitmap.width > 0 {
         let dx = cur_x.to_int() + bitmap.offset_x
         let dy = cur_y.to_int() + bitmap.offset_y
+        let has_coverage = bitmap.coverage.length() ==
+          bitmap.width * bitmap.height
         for by = 0; by < bitmap.height; by = by + 1 {
           let py = dy + by
           if py < 0 || py >= fb.height {
             continue
           }
           for bx = 0; bx < bitmap.width; bx = bx + 1 {
-            if bitmap.pixels[by * bitmap.width + bx] {
+            let bi = by * bitmap.width + bx
+            if bitmap.pixels[bi] {
               let px = dx + bx
               if px >= 0 && px < fb.width && pixel_in_clip(clip, px, py) {
-                fb.set_pixel(px, py, color_idx)
+                if has_coverage {
+                  let cov = bitmap.coverage[bi]
+                  let max_cov = bitmap.ss_factor * bitmap.ss_factor
+                  if cov >= max_cov {
+                    // Full coverage: solid pixel
+                    fb.set_pixel(px, py, color_idx)
+                  } else {
+                    // Partial coverage: blend with background
+                    let alpha = cov.to_double() / max_cov.to_double()
+                    let bg_idx = fb.pixels[py * fb.width + px]
+                    let bg_color = palette_color_at(palette, bg_idx)
+                    let fg_color = palette_color_at(palette, color_idx)
+                    let blended_r = (fg_color.r.to_double() * alpha +
+                    bg_color.r.to_double() * (1.0 - alpha)).to_int()
+                    let blended_g = (fg_color.g.to_double() * alpha +
+                    bg_color.g.to_double() * (1.0 - alpha)).to_int()
+                    let blended_b = (fg_color.b.to_double() * alpha +
+                    bg_color.b.to_double() * (1.0 - alpha)).to_int()
+                    let blended_idx = palette.get_or_add({
+                      r: blended_r,
+                      g: blended_g,
+                      b: blended_b,
+                    })
+                    fb.set_pixel(px, py, blended_idx)
+                  }
+                } else {
+                  fb.set_pixel(px, py, color_idx)
+                }
               }
             }
           }

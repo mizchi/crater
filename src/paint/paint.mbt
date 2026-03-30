@@ -33,6 +33,14 @@ pub(all) struct PaintProperties {
   overflow_x : @types.Overflow
   overflow_y : @types.Overflow
   text_decoration_underline : Bool
+  border_top_width : Double
+  border_right_width : Double
+  border_bottom_width : Double
+  border_left_width : Double
+  border_top_color : @types.Color
+  border_right_color : @types.Color
+  border_bottom_color : @types.Color
+  border_left_color : @types.Color
 }
 
 ///|
@@ -55,6 +63,14 @@ pub fn PaintProperties::default() -> PaintProperties {
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
     text_decoration_underline: false,
+    border_top_width: 0.0,
+    border_right_width: 0.0,
+    border_bottom_width: 0.0,
+    border_left_width: 0.0,
+    border_top_color: @types.Color::transparent(),
+    border_right_color: @types.Color::transparent(),
+    border_bottom_color: @types.Color::transparent(),
+    border_left_color: @types.Color::transparent(),
   }
 }
 
@@ -78,6 +94,14 @@ pub fn PaintProperties::from_style(style : @style.Style) -> PaintProperties {
     overflow_x: style.overflow_x,
     overflow_y: style.overflow_y,
     text_decoration_underline: style.text_decoration_underline,
+    border_top_width: 0.0, // Resolved from Layout in from_node_and_layout
+    border_right_width: 0.0,
+    border_bottom_width: 0.0,
+    border_left_width: 0.0,
+    border_top_color: style.border_color.top,
+    border_right_color: style.border_color.right,
+    border_bottom_color: style.border_color.bottom,
+    border_left_color: style.border_color.left,
   }
 }
 
@@ -154,6 +178,8 @@ pub(all) struct PaintNode {
   stacking_order : Int
   // Text content (for text nodes)
   text : String?
+  // Image src attribute (for <img> elements)
+  src : String?
   // Children
   children : Array[PaintNode]
   // TODO: Add href field for proper link hit testing
@@ -171,6 +197,7 @@ pub fn PaintNode::new(
   paint : PaintProperties,
   children : Array[PaintNode],
   text? : String? = None,
+  src? : String? = None,
   overflow_x? : @types.Overflow = @types.Visible,
   overflow_y? : @types.Overflow = @types.Visible,
   scroll_width? : Double = 0.0,
@@ -200,6 +227,7 @@ pub fn PaintNode::new(
     paint,
     stacking_order: paint.z_index_value(),
     text,
+    src,
     children,
   }
 }
@@ -477,6 +505,13 @@ pub fn from_node_and_layout(
   layout : @types.Layout,
 ) -> PaintNode {
   let mut paint = PaintProperties::from_style(node.style)
+  paint = {
+    ..paint,
+    border_top_width: layout.border.top,
+    border_right_width: layout.border.right,
+    border_bottom_width: layout.border.bottom,
+    border_left_width: layout.border.left,
+  }
   let tag = extract_tag_from_id(node.id)
   if is_bold_tag(tag) {
     paint = { ..paint, is_bold: true }
@@ -570,6 +605,7 @@ pub fn from_node_and_layout(
     paint,
     children,
     text=layout.text,
+    src=node.src,
     overflow_x=layout.overflow_x,
     overflow_y=layout.overflow_y,
     clip=node.style.clip,
@@ -646,6 +682,13 @@ fn from_node_and_layout_with_viewport_inner(
     return None
   }
   let mut paint = PaintProperties::from_style(node.style)
+  paint = {
+    ..paint,
+    border_top_width: layout.border.top,
+    border_right_width: layout.border.right,
+    border_bottom_width: layout.border.bottom,
+    border_left_width: layout.border.left,
+  }
   let tag = extract_tag_from_id(node.id)
   if is_bold_tag(tag) {
     paint = { ..paint, is_bold: true }
@@ -761,6 +804,7 @@ fn from_node_and_layout_with_viewport_inner(
       paint,
       children,
       text=layout.text,
+      src=node.src,
       overflow_x=layout.overflow_x,
       overflow_y=layout.overflow_y,
       clip=node.style.clip,

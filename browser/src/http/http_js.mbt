@@ -18,6 +18,7 @@ fn init {
 
 ///|
 /// Internal: fetch response as JSON string
+/// Binary content types (image/*) are returned with base64-encoded body
 extern "js" fn js_fetch_internal(
   url : String,
   http_method : String,
@@ -31,9 +32,19 @@ extern "js" fn js_fetch_internal(
   #|   try {
   #|     const res = await fetch(url, { method, headers, signal: controller.signal });
   #|     clearTimeout(timeoutId);
-  #|     const body = await res.text();
   #|     const resHeaders = {};
   #|     res.headers.forEach((v, k) => { resHeaders[k] = v; });
+  #|     const ct = (resHeaders['content-type'] || '').toLowerCase();
+  #|     let body;
+  #|     if (ct.startsWith('image/') && !ct.includes('svg')) {
+  #|       const buf = await res.arrayBuffer();
+  #|       const bytes = new Uint8Array(buf);
+  #|       let binary = '';
+  #|       for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  #|       body = 'base64:' + btoa(binary);
+  #|     } else {
+  #|       body = await res.text();
+  #|     }
   #|     return JSON.stringify({ status: res.status, headers: resHeaders, body });
   #|   } catch (e) {
   #|     clearTimeout(timeoutId);

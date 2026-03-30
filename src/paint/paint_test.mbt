@@ -650,3 +650,44 @@ test "viewport_culling_scroll_simulation" {
   // Root ends at 300, viewport starts at 320 -> no overlap
   inspect(paint4 is None, content="true")
 }
+
+///|
+test "PaintNode src propagation from Node" {
+  let style = @style.Style::default()
+  let measure : @types.MeasureFunc = {
+    func: fn(_w, _h) { @types.IntrinsicSize::default() },
+  }
+  let node = @node.Node::with_measure(
+    "img#test",
+    style,
+    measure,
+    text="alt",
+    src=Some("data:test"),
+  )
+  inspect(node.src, content="Some(\"data:test\")")
+  let zero_rect : @types.Rect[Double] = {
+    top: 0.0,
+    right: 0.0,
+    bottom: 0.0,
+    left: 0.0,
+  }
+  let layout : @types.Layout = {
+    id: "img#test",
+    x: 0.0,
+    y: 0.0,
+    width: 50.0,
+    height: 50.0,
+    children: [],
+    text: Some("alt"),
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
+    margin: zero_rect,
+    padding: zero_rect,
+    border: zero_rect,
+    scroll_width: 50.0,
+    scroll_height: 50.0,
+  }
+  let paint_node = from_node_and_layout(node, layout)
+  inspect(paint_node.tag, content="img")
+  inspect(paint_node.src, content="Some(\"data:test\")")
+}

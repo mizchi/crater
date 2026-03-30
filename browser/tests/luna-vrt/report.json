@@ -1,0 +1,35 @@
+[
+  {
+    "name": "alert",
+    "width": 400,
+    "height": 292,
+    "diffPixels": 4409,
+    "totalPixels": 116800,
+    "diffRatio": 0.03774828767123287,
+    "diffPercent": "3.77%",
+    "craterSize": "400x292",
+    "chromeSize": "400x288"
+  },
+  {
+    "name": "checkbox",
+    "width": 300,
+    "height": 88,
+    "diffPixels": 722,
+    "totalPixels": 26400,
+    "diffRatio": 0.027348484848484848,
+    "diffPercent": "2.73%",
+    "craterSize": "300x88",
+    "chromeSize": "300x88"
+  },
+  {
+    "name": "switch",
+    "width": 300,
+    "height": 96,
+    "diffPixels": 1500,
+    "totalPixels": 28800,
+    "diffRatio": 0.052083333333333336,
+    "diffPercent": "5.21%",
+    "craterSize": "300x96",
+    "chromeSize": "300x96"
+  }
+]

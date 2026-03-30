@@ -462,6 +462,7 @@ pub(all) struct Style {
   mut padding : @types.Rect[@types.Dimension]
   mut border : @types.Rect[@types.Dimension]
   mut border_style : @types.Rect[BorderStyle]
+  mut border_color : @types.Rect[@types.Color]
   mut margin_trim : MarginTrim
   // Flexbox
   mut flex_direction : @types.FlexDirection
@@ -590,6 +591,12 @@ pub fn Style::default() -> Style {
       bottom: @types.Length(0.0),
     },
     border_style: { left: None, right: None, top: None, bottom: None },
+    border_color: {
+      left: @types.Color::transparent(),
+      right: @types.Color::transparent(),
+      top: @types.Color::transparent(),
+      bottom: @types.Color::transparent(),
+    },
     padding: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -642,7 +649,7 @@ pub fn Style::default() -> Style {
     font_size: 16.0,
     font_weight: 400.0,
     font_family: "",
-    line_height: 16.0,
+    line_height: 19.2, // 16.0 * 1.2 (CSS initial: normal)
     text_align: Start,
     white_space: Normal,
     writing_mode: HorizontalTb,

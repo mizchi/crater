@@ -47,7 +47,7 @@ fn write_kitty_chunk_header(
   has_more : Bool,
 ) -> Unit {
   if is_first {
-    buf.write_string("\u001b_Ga=T,f=24,s=")
+    buf.write_string("\u001b_Ga=T,f=24,q=2,s=")
     buf.write_string(width.to_string())
     buf.write_string(",v=")
     buf.write_string(height.to_string())
@@ -68,7 +68,7 @@ async fn[T : @io.Writer] write_kitty_chunk_header_to(
   has_more : Bool,
 ) -> Unit {
   if is_first {
-    writer.write("\u001b_Ga=T,f=24,s=") catch {
+    writer.write("\u001b_Ga=T,f=24,q=2,s=") catch {
       _ => return
     }
     writer.write(width.to_string()) catch {
