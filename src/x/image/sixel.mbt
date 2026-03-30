@@ -959,6 +959,24 @@ extern "js" fn framebuffer_to_rgba_base64_js(
   #|}
 
 ///|
+#cfg(not(target="js"))
+fn framebuffer_to_rgba_base64_js(
+  pixels : Array[Int],
+  palette_r : Array[Int],
+  palette_g : Array[Int],
+  palette_b : Array[Int],
+) -> String {
+  let rgba : Array[Int] = []
+  for idx in pixels {
+    rgba.push(palette_r[idx])
+    rgba.push(palette_g[idx])
+    rgba.push(palette_b[idx])
+    rgba.push(255)
+  }
+  encode_bytes_base64(rgba)
+}
+
+///|
 pub fn framebuffer_to_rgba_base64(
   fb : Framebuffer,
   palette : DynamicPalette,
