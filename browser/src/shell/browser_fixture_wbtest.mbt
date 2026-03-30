@@ -42,7 +42,7 @@ test "builtin github snapshot fixture renders kitty graphics output" {
   let html = builtin_github_snapshot_fixture()
   load_fixture(browser, html)
   let rendered = browser.render_output(Kitty)
-  assert_true(rendered.has_prefix("\u001b_Ga=T,f=24,s="))
+  assert_true(rendered.has_prefix("\u001b_Ga=T,f=24,q=2,s="))
   assert_true(rendered.length() > 64)
 }
 
@@ -51,8 +51,186 @@ test "fixed article fixture renders kitty graphics output" {
   let browser = Browser::new(1440, 960)
   load_fixture(browser, docs_article_fixture())
   let rendered = browser.render_output(Kitty)
-  assert_true(rendered.has_prefix("\u001b_Ga=T,f=24,s="))
+  assert_true(rendered.has_prefix("\u001b_Ga=T,f=24,q=2,s="))
   assert_true(rendered.length() > 64)
+}
+
+///|
+let tiny_png_base64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIW2NgYGD4DwABBAEAwS2OUAAAAABJRU5ErkJggg=="
+
+///|
+let tiny_jpeg_base64 = "/9j/4AAQSkZJRgABAQAASABIAAD/4QBMRXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAAD/7QA4UGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAAA4QklNBCUAAAAAABDUHYzZjwCyBOmACZjs+EJ+/8AAEQgAAQABAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/bAEMAAgICAgICAwICAwUDAwMFBgUFBQUGCAYGBgYGCAoICAgICAgKCgoKCgoKCgwMDAwMDA4ODg4ODw8PDw8PDw8PD//bAEMBAgICBAQEBwQEBxALCQsQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEP/dAAQAAf/aAAwDAQACEQMRAD8A/n/ooooA/9k="
+
+///|
+let tiny_gif_base64 = "R0lGODdhAQABAJEAAAAAAP///wAAAAAAACH5BAkAAAIALAAAAAABAAEAAAICRAEAOw=="
+
+///|
+fn tiny_image_region(
+  src : String,
+  row? : Int = 0,
+  source_id? : String = "img-1",
+) -> @tui.ImageRegion {
+  {
+    col: 0,
+    row,
+    width: 1,
+    height: 1,
+    pixel_width: 1.0,
+    pixel_height: 1.0,
+    src,
+    source_id,
+  }
+}
+
+///|
+fn extract_single_chunk_kitty_payload(output : String) -> String {
+  let marker = ",m=0;"
+  match output.find(marker) {
+    Some(idx) => {
+      let start = idx + marker.length()
+      let tail = output.unsafe_substring(start~, end=output.length())
+      match tail.find("\u001b\\") {
+        Some(end_idx) => tail.unsafe_substring(start=0, end=end_idx)
+        None => tail
+      }
+    }
+    None => ""
+  }
+}
+
+///|
+fn extract_kitty_param(output : String, key : String) -> String {
+  let marker = key + "="
+  match output.find(marker) {
+    Some(idx) => {
+      let start = idx + marker.length()
+      let tail = output.unsafe_substring(start~, end=output.length())
+      let end_idx = match tail.find(",") {
+        Some(i) => i
+        None =>
+          match tail.find(";") {
+            Some(i) => i
+            None => tail.length()
+          }
+      }
+      tail.unsafe_substring(start=0, end=end_idx)
+    }
+    None => ""
+  }
+}
+
+///|
+test "kitty image overlay keeps png payload as direct image data" {
+  let browser = Browser::new(320, 240)
+  browser.image_cache["/tiny.png"] = prepare_raster_image_for_kitty_cache(
+    tiny_png_base64,
+  )
+  browser.image_regions = [tiny_image_region("/tiny.png", source_id="tiny-png")]
+  let overlay = browser.build_kitty_image_overlay()
+  assert_true(overlay.contains("\u001b[1;1H"))
+  assert_true(overlay.contains("\u001b_Ga=T,f=100,q=2,c=1,r=1,"))
+  assert_true(overlay.contains(",p="))
+  assert_true(overlay.contains(",m=0;"))
+  assert_eq(extract_single_chunk_kitty_payload(overlay), tiny_png_base64)
+}
+
+///|
+test "kitty image overlay uses rgba pixel path for jpeg payload" {
+  let browser = Browser::new(320, 240)
+  browser.image_cache["/tiny.jpg"] = prepare_raster_image_for_kitty_cache(
+    tiny_jpeg_base64,
+  )
+  browser.image_regions = [
+    tiny_image_region("/tiny.jpg", source_id="tiny-jpeg"),
+  ]
+  let overlay = browser.build_kitty_image_overlay()
+  let payload = extract_single_chunk_kitty_payload(overlay)
+  assert_true(overlay.contains("\u001b_Ga=T,f=32,q=2,c=1,r=1,"))
+  assert_true(overlay.contains(",p="))
+  assert_true(overlay.contains(",s=1,v=1,m=0;"))
+  assert_eq(payload.length(), 8)
+  assert_true(not(payload.has_prefix("/9j/")))
+  assert_true(not(payload.has_prefix("iVBORw0KGgo")))
+}
+
+///|
+test "kitty image overlay uses rgba pixel path for gif payload" {
+  let browser = Browser::new(320, 240)
+  browser.image_cache["/tiny.gif"] = prepare_raster_image_for_kitty_cache(
+    tiny_gif_base64,
+  )
+  browser.image_regions = [tiny_image_region("/tiny.gif", source_id="tiny-gif")]
+  let overlay = browser.build_kitty_image_overlay()
+  let payload = extract_single_chunk_kitty_payload(overlay)
+  assert_true(overlay.contains("\u001b_Ga=T,f=32,q=2,c=1,r=1,"))
+  assert_true(overlay.contains(",p="))
+  assert_true(overlay.contains(",s=1,v=1,m=0;"))
+  assert_eq(payload.length(), 8)
+  assert_true(not(payload.has_prefix("R0lG")))
+  assert_true(not(payload.has_prefix("iVBORw0KGgo")))
+}
+
+///|
+test "kitty image overlay reuses placement when image scrolls and deletes when hidden" {
+  let browser = Browser::new(320, 240)
+  browser.image_cache["/tiny.png"] = prepare_raster_image_for_kitty_cache(
+    tiny_png_base64,
+  )
+  browser.image_regions = [
+    tiny_image_region("/tiny.png", row=0, source_id="hero"),
+  ]
+  let first = browser.build_kitty_image_overlay()
+  let image_id = extract_kitty_param(first, "i")
+  let placement_id = extract_kitty_param(first, "p")
+  assert_true(first.contains(tiny_png_base64))
+  browser.image_regions = [
+    tiny_image_region("/tiny.png", row=2, source_id="hero"),
+  ]
+  let second = browser.build_kitty_image_overlay()
+  assert_true(second.contains("\u001b[3;1H"))
+  assert_true(
+    second.contains(
+      "\u001b_Ga=p,q=2,i=" +
+      image_id +
+      ",p=" +
+      placement_id +
+      ",c=1,r=1;\u001b\\",
+    ),
+  )
+  assert_true(not(second.contains("a=T")))
+  assert_true(not(second.contains(tiny_png_base64)))
+  browser.image_regions = []
+  let third = browser.build_kitty_image_overlay()
+  assert_true(
+    third.contains(
+      "\u001b_Ga=d,q=2,d=i,i=" + image_id + ",p=" + placement_id + ";\u001b\\",
+    ),
+  )
+}
+
+///|
+test "image cache evicts oldest entries when byte budget is exceeded" {
+  let browser = Browser::new(320, 240)
+  browser.set_image_cache_max_bytes(14)
+  browser.cache_image_data("/a.png", "img:123456")
+  browser.cache_image_data("/b.png", "img:abcdef")
+  inspect(browser.image_cache.contains("/a.png"), content="false")
+  inspect(browser.image_cache.contains("/b.png"), content="true")
+  inspect(browser.image_cache_total_bytes, content="10")
+}
+
+///|
+test "image cache refreshes insertion order when replacing the same src" {
+  let browser = Browser::new(320, 240)
+  browser.set_image_cache_max_bytes(22)
+  browser.cache_image_data("/a.png", "img:111111")
+  browser.cache_image_data("/b.png", "img:222222")
+  browser.cache_image_data("/a.png", "img:333333")
+  browser.cache_image_data("/c.png", "img:444444")
+  inspect(browser.image_cache.contains("/a.png"), content="true")
+  inspect(browser.image_cache.contains("/b.png"), content="false")
+  inspect(browser.image_cache.contains("/c.png"), content="true")
+  inspect(browser.image_cache_order.join(","), content="/a.png,/c.png")
 }
 
 ///|
@@ -661,6 +839,28 @@ async test "fixture focused checkbox Space toggles and repaints" {
   inspect(handled, content="true")
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("checked"))
+}
+
+///|
+test "fixture inline-flex label keeps trailing text after clipped absolute input" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0;font:16px/1.2 sans-serif">
+    #|  <label id="root" style="display:inline-flex;align-items:center;gap:8px">
+    #|    <input
+    #|      id="check"
+    #|      type="checkbox"
+    #|      style="position:absolute;clip:rect(1px,1px,1px,1px);width:1px;height:1px;overflow:hidden"
+    #|    />
+    #|    <span id="control" style="display:inline-flex;width:20px;height:20px;background:#999"></span>
+    #|    <span id="label">Accept terms</span>
+    #|  </label>
+    #|</body>
+    #|</html>
+  load_fixture(browser, html)
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("Accept terms"))
 }
 
 ///|

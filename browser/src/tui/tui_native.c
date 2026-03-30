@@ -2,6 +2,7 @@
 // Raw mode and tty probing are handled here; higher-level line I/O stays in MoonBit via mizchi/x/stdio.
 
 #include <fcntl.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
@@ -24,6 +25,31 @@ static int get_tty_fd(void) {
     if (tty_fd >= 0) tty_fd_opened = 1;
   }
   return tty_fd;
+}
+
+static int contains_ignore_case(const char* haystack, const char* needle) {
+  if (!haystack || !needle) return 0;
+  if (!*needle) return 1;
+  for (const char* h = haystack; *h; h++) {
+    const char* hp = h;
+    const char* np = needle;
+    while (*hp && *np && tolower((unsigned char)*hp) == tolower((unsigned char)*np)) {
+      hp++;
+      np++;
+    }
+    if (!*np) return 1;
+  }
+  return 0;
+}
+
+static int equals_ignore_case(const char* a, const char* b) {
+  if (!a || !b) return 0;
+  while (*a && *b) {
+    if (tolower((unsigned char)*a) != tolower((unsigned char)*b)) return 0;
+    a++;
+    b++;
+  }
+  return *a == '\0' && *b == '\0';
 }
 
 int tui_enable_raw_mode(void) {
@@ -103,4 +129,25 @@ int tui_is_tty(void) {
 
 void tui_sleep_ms(int ms) {
   usleep(ms * 1000);
+}
+
+int tui_supports_kitty_graphics(void) {
+  const char* kitty_window_id = getenv("KITTY_WINDOW_ID");
+  const char* term = getenv("TERM");
+  const char* term_program = getenv("TERM_PROGRAM");
+  if (kitty_window_id && *kitty_window_id) return 1;
+  if (contains_ignore_case(term, "xterm-kitty")) return 1;
+  if (equals_ignore_case(term_program, "ghostty")) return 1;
+  if (equals_ignore_case(term_program, "wezterm")) return 1;
+  return 0;
+}
+
+int tui_supports_sixel_graphics(void) {
+  const char* xterm_sixel = getenv("XTERM_SIXEL");
+  const char* term = getenv("TERM");
+  const char* term_program = getenv("TERM_PROGRAM");
+  if (xterm_sixel && xterm_sixel[0] == '1' && xterm_sixel[1] == '\0') return 1;
+  if (contains_ignore_case(term, "sixel")) return 1;
+  if (equals_ignore_case(term_program, "mlterm")) return 1;
+  return 0;
 }

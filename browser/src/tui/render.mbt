@@ -387,12 +387,20 @@ fn render_paint_node(
     let draw_h = (row + h).min(ctx.viewport_height) - draw_row
     // If image has src, record for graphics protocol rendering
     match node.src {
-      Some(src) => {
+      Some(src) =>
         if draw_h > 0 {
+          let source_id = match extract_source_id(node.id) {
+            Some(id) => id
+            None => node.id
+          }
           // Fill background color (from CSS) so it shows even without graphics
           if not(node.paint.background_color.is_transparent()) {
             ctx.buffer.fill_bg(
-              col, draw_row, w, draw_h, node.paint.background_color,
+              col,
+              draw_row,
+              w,
+              draw_h,
+              node.paint.background_color,
             )
           }
           // Record image region for kitty/sixel rendering
@@ -404,9 +412,9 @@ fn render_paint_node(
             pixel_width: node.width,
             pixel_height: node.height,
             src,
+            source_id,
           })
         }
-      }
       None => {
         // No src: show placeholder
         let img_bg = @types.Color::rgb(200, 200, 210)
@@ -636,6 +644,7 @@ pub(all) struct RenderResult {
 
 ///|
 /// Render result with raw buffer (for diff rendering)
+
 ///|
 /// Region where an image should be rendered via graphics protocol
 pub(all) struct ImageRegion {
@@ -646,6 +655,7 @@ pub(all) struct ImageRegion {
   pixel_width : Double // Original pixel width
   pixel_height : Double // Original pixel height
   src : String // Image source URL
+  source_id : String // Source element id for stable placement reuse
 }
 
 ///|

@@ -2,6 +2,9 @@
 /// Browser Shell - TUI browser application layer
 
 ///|
+let default_image_cache_max_bytes : Int = 8 * 1024 * 1024
+
+///|
 /// Link found in the page
 priv struct Link {
   href : String
@@ -34,6 +37,23 @@ priv enum FocusedKeyDispatchResult {
 priv struct HitTarget {
   source_id : String
   area : Double
+}
+
+///|
+priv struct KittyPlacement {
+  image_id : Int
+  placement_id : Int
+  col : Int
+  row : Int
+  width : Int
+  height : Int
+}
+
+///|
+priv struct KittyRenderSpec {
+  region : @tui.ImageRegion
+  cached_data : String
+  placement : KittyPlacement
 }
 
 ///|
@@ -145,6 +165,16 @@ struct Browser {
   mut image_regions : Array[@tui.ImageRegion]
   /// Cached rendered image data (src URL -> kitty graphics commands)
   image_cache : Map[String, String]
+  /// Image cache insertion order for oldest-first eviction
+  image_cache_order : Array[String]
+  /// Total cached image payload size in bytes (approximated by String length)
+  mut image_cache_total_bytes : Int
+  /// Max cached image payload size before eviction
+  mut image_cache_max_bytes : Int
+  /// Uploaded kitty image ids that can be re-placed without re-sending payloads
+  kitty_uploaded_image_ids : Map[Int, Bool]
+  /// Visible kitty placements from the previous text render
+  mut kitty_visible_placements : Map[String, KittyPlacement]
 }
 
 ///|
@@ -201,6 +231,11 @@ pub fn Browser::new(
     terminal_cols,
     image_regions: [],
     image_cache: {},
+    image_cache_order: [],
+    image_cache_total_bytes: 0,
+    image_cache_max_bytes: default_image_cache_max_bytes,
+    kitty_uploaded_image_ids: {},
+    kitty_visible_placements: {},
   }
 }
 
@@ -210,6 +245,15 @@ pub fn Browser::new(
 /// Use --enable-js flag to enable it.
 pub fn Browser::set_enable_js(self : Browser, enable : Bool) -> Unit {
   self.enable_js = enable
+}
+
+///|
+pub fn Browser::set_image_cache_max_bytes(
+  self : Browser,
+  max_bytes : Int,
+) -> Unit {
+  self.image_cache_max_bytes = max_bytes.max(0)
+  self.evict_image_cache_if_needed()
 }
 
 ///|
@@ -455,7 +499,9 @@ async fn Browser::load_url(
   self.a11y_tree = None
   self.focus_manager = None
   // Prefetch images for kitty graphics rendering
-  self.prefetch_images() catch { _ => () }
+  self.prefetch_images() catch {
+    _ => ()
+  }
   let t5 = perf_now()
   perf_log(
     "[perf] fetch=\{(t1 - t0).to_int()}ms css=\{(t2 - t1).to_int()}ms parse=\{(t3 - t2).to_int()}ms scripts=\{(t4 - t3).to_int()}ms images=\{(t5 - t4).to_int()}ms total=\{(t5 - t0).to_int()}ms",
@@ -845,9 +891,7 @@ fn Browser::render_text(self : Browser) -> String {
       }
   }
   // Append kitty graphics commands for image regions
-  let kitty_overlay = build_kitty_image_overlay(
-    self.image_regions, self.image_cache,
-  )
+  let kitty_overlay = self.build_kitty_image_overlay()
   let final_output = if kitty_overlay.length() > 0 {
     ansi + kitty_overlay
   } else {
@@ -864,55 +908,179 @@ fn Browser::render_text(self : Browser) -> String {
 }
 
 ///|
-/// Build kitty graphics overlay commands for image regions
-fn build_kitty_image_overlay(
-  image_regions : Array[@tui.ImageRegion],
-  image_cache : Map[String, String],
-) -> String {
-  if image_regions.is_empty() {
-    return ""
+fn stable_kitty_id(seed : String) -> Int {
+  let mut hash = 5381
+  let modulus = 16777213
+  for c in seed {
+    hash = (hash * 131 + c.to_int()) % modulus
   }
-  let buf = StringBuilder::new()
-  for region in image_regions {
-    match image_cache.get(region.src) {
+  (hash + 1).max(1)
+}
+
+///|
+fn kitty_image_id_for_src(src : String) -> Int {
+  stable_kitty_id("image:" + src)
+}
+
+///|
+fn kitty_placement_id_for_source(source_id : String) -> Int {
+  stable_kitty_id("placement:" + source_id)
+}
+
+///|
+fn current_kitty_placement(region : @tui.ImageRegion) -> KittyPlacement {
+  let image_id = kitty_image_id_for_src(region.src)
+  let placement_id = kitty_placement_id_for_source(region.source_id)
+  {
+    image_id,
+    placement_id,
+    col: region.col,
+    row: region.row,
+    width: region.width,
+    height: region.height,
+  }
+}
+
+///|
+fn same_kitty_placement(lhs : KittyPlacement, rhs : KittyPlacement) -> Bool {
+  lhs.image_id == rhs.image_id &&
+  lhs.placement_id == rhs.placement_id &&
+  lhs.col == rhs.col &&
+  lhs.row == rhs.row &&
+  lhs.width == rhs.width &&
+  lhs.height == rhs.height
+}
+
+///|
+/// Build kitty graphics overlay commands for image regions
+fn Browser::build_kitty_image_overlay(self : Browser) -> String {
+  let next_visible : Map[String, KittyPlacement] = {}
+  let render_specs : Array[KittyRenderSpec] = []
+  for region in self.image_regions {
+    match self.image_cache.get(region.src) {
       Some(cached_data) => {
-        let kitty_data = if cached_data.has_prefix("svg:") {
-          let svg_text = cached_data.unsafe_substring(
-            start=4, end=cached_data.length(),
-          )
-          let render_w = region.width * 16
-          let render_h = region.height * 32
-          render_svg_to_kitty_with_cells(
-            svg_text, render_w, render_h, region.width, region.height,
-          )
-        } else if cached_data.has_prefix("img:") {
-          // Raster image: decode base64 and send via kitty with cell sizing
-          let b64_data = cached_data.unsafe_substring(
-            start=4, end=cached_data.length(),
-          )
-          render_raster_to_kitty_with_cells(
-            b64_data, region.width, region.height,
-          )
-        } else {
-          ""
-        }
-        if kitty_data.length() > 0 {
-          buf.write_string(
-            "\u001b[" + (region.row + 1).to_string() + ";" +
-            (region.col + 1).to_string() + "H",
-          )
-          buf.write_string(kitty_data)
-        }
+        let placement = current_kitty_placement(region)
+        next_visible.set(region.source_id, placement)
+        render_specs.push({ region, cached_data, placement })
       }
       None => ()
     }
   }
+  if next_visible.is_empty() && self.kitty_visible_placements.is_empty() {
+    return ""
+  }
+  let buf = StringBuilder::new()
+  for source_id, previous in self.kitty_visible_placements {
+    match next_visible.get(source_id) {
+      Some(current) if current.image_id == previous.image_id => ()
+      _ =>
+        buf.write_string(
+          write_kitty_delete_placement(previous.image_id, previous.placement_id),
+        )
+    }
+  }
+  for spec in render_specs {
+    let placement_key = spec.region.source_id
+    let uploaded = self.kitty_uploaded_image_ids.contains(
+      spec.placement.image_id,
+    )
+    let previous = self.kitty_visible_placements.get(placement_key)
+    let unchanged = match previous {
+      Some(prev) => same_kitty_placement(prev, spec.placement)
+      None => false
+    }
+    if uploaded && unchanged {
+      continue
+    }
+    buf.write_string(
+      "\u001b[" +
+      (spec.region.row + 1).to_string() +
+      ";" +
+      (spec.region.col + 1).to_string() +
+      "H",
+    )
+    let kitty_data = if uploaded {
+      write_kitty_put_placement(
+        spec.placement.image_id,
+        spec.placement.placement_id,
+        spec.placement.width,
+        spec.placement.height,
+      )
+    } else {
+      render_cached_kitty_image_with_placement(
+        spec.cached_data,
+        spec.region,
+        spec.placement.image_id,
+        spec.placement.placement_id,
+      )
+    }
+    if kitty_data.length() > 0 {
+      buf.write_string(kitty_data)
+      self.kitty_uploaded_image_ids.set(spec.placement.image_id, true)
+    }
+  }
+  self.kitty_visible_placements = next_visible
   buf.to_string()
 }
 
 ///|
+fn remove_image_cache_order_key(order : Array[String], src : String) -> Unit {
+  let mut found_idx : Int? = None
+  for i, key in order {
+    if key == src {
+      found_idx = Some(i)
+      break
+    }
+  }
+  match found_idx {
+    Some(idx) => {
+      let _ = order.remove(idx)
+    }
+    None => ()
+  }
+}
+
+///|
+fn Browser::evict_image_cache_if_needed(self : Browser) -> Unit {
+  while self.image_cache_total_bytes > self.image_cache_max_bytes &&
+        not(self.image_cache_order.is_empty()) {
+    let evicted_src = self.image_cache_order.remove(0)
+    match self.image_cache.get(evicted_src) {
+      Some(cached_data) => {
+        self.image_cache.remove(evicted_src)
+        self.image_cache_total_bytes = (self.image_cache_total_bytes -
+        cached_data.length()).max(0)
+      }
+      None => ()
+    }
+  }
+}
+
+///|
+fn Browser::cache_image_data(
+  self : Browser,
+  src : String,
+  data : String,
+) -> Unit {
+  if self.image_cache.contains(src) {
+    match self.image_cache.get(src) {
+      Some(existing) =>
+        self.image_cache_total_bytes = (self.image_cache_total_bytes -
+        existing.length()).max(0)
+      None => ()
+    }
+    self.image_cache.remove(src)
+    remove_image_cache_order_key(self.image_cache_order, src)
+  }
+  self.image_cache.set(src, data)
+  self.image_cache_order.push(src)
+  self.image_cache_total_bytes += data.length()
+  self.evict_image_cache_if_needed()
+}
+
+///|
 /// Prefetch images from HTML and cache rendered kitty graphics data
-pub async fn Browser::prefetch_images(self : Browser) -> Unit {
+async fn Browser::prefetch_images(self : Browser) -> Unit {
   if self.html_content.length() == 0 {
     return
   }
@@ -941,10 +1109,10 @@ pub async fn Browser::prefetch_images(self : Browser) -> Unit {
     let is_svg = abs_url.to_lower().has_suffix(".svg") ||
       abs_url.to_lower().contains(".svg?")
     if is_svg {
-      self.image_cache.set(src, "svg:" + body)
+      self.cache_image_data(src, "svg:" + body)
     } else if body.has_prefix("base64:") {
       let b64 = body.unsafe_substring(start=7, end=body.length())
-      self.image_cache.set(src, "img:" + b64)
+      self.cache_image_data(src, prepare_raster_image_for_kitty_cache(b64))
     }
   }
 }
@@ -1001,6 +1169,8 @@ fn render_svg_to_kitty_with_cells(
   render_height : Int,
   display_cols : Int,
   display_rows : Int,
+  image_id? : Int = 0,
+  placement_id? : Int = 0,
 ) -> String {
   let svg_node = match @svg.parse_svg(svg_text) {
     Some(n) => n
@@ -1023,12 +1193,17 @@ fn render_svg_to_kitty_with_cells(
   }
   let camera = @svg.Camera::new(render_width, render_height)
   camera.set_position(vx + vw / 2.0, vy + vh / 2.0)
-  let zoom = (render_width.to_double() / vw).min(
-    render_height.to_double() / vh,
-  )
+  let zoom = (render_width.to_double() / vw).min(render_height.to_double() / vh)
   camera.set_zoom(zoom)
   @image.render_svg_scene_with_camera(scene, fb, palette, camera)
-  to_kitty_with_cells(fb, palette, display_cols, display_rows)
+  to_kitty_with_cells(
+    fb,
+    palette,
+    display_cols,
+    display_rows,
+    image_id~,
+    placement_id~,
+  )
 }
 
 ///|
@@ -1038,6 +1213,8 @@ fn to_kitty_with_cells(
   palette : @image.DynamicPalette,
   cols : Int,
   rows : Int,
+  image_id? : Int = 0,
+  placement_id? : Int = 0,
 ) -> String {
   let buf = StringBuilder::new()
   let mut chunk = StringBuilder::new()
@@ -1053,6 +1230,14 @@ fn to_kitty_with_cells(
         buf.write_string(cols.to_string())
         buf.write_string(",r=")
         buf.write_string(rows.to_string())
+        if image_id > 0 {
+          buf.write_string(",i=")
+          buf.write_string(image_id.to_string())
+          if placement_id > 0 {
+            buf.write_string(",p=")
+            buf.write_string(placement_id.to_string())
+          }
+        }
         buf.write_string(",s=")
         buf.write_string(fb.width.to_string())
         buf.write_string(",v=")
@@ -1095,6 +1280,14 @@ fn to_kitty_with_cells(
       buf.write_string(cols.to_string())
       buf.write_string(",r=")
       buf.write_string(rows.to_string())
+      if image_id > 0 {
+        buf.write_string(",i=")
+        buf.write_string(image_id.to_string())
+        if placement_id > 0 {
+          buf.write_string(",p=")
+          buf.write_string(placement_id.to_string())
+        }
+      }
       buf.write_string(",s=")
       buf.write_string(fb.width.to_string())
       buf.write_string(",v=")
@@ -1110,17 +1303,238 @@ fn to_kitty_with_cells(
 }
 
 ///|
-/// Render base64-encoded raster image to kitty graphics with cell sizing
-/// Kitty supports f=100 (PNG) for direct image data transmission
-fn render_raster_to_kitty_with_cells(
+fn detect_raster_image_format_from_base64(b64_data : String) -> String {
+  if b64_data.has_prefix("iVBORw0KGgo") {
+    "png"
+  } else if b64_data.has_prefix("/9j/") {
+    "jpeg"
+  } else if b64_data.has_prefix("R0lGOD") {
+    "gif"
+  } else {
+    "unknown"
+  }
+}
+
+///|
+#cfg(target="js")
+extern "js" fn js_decode_raster_image_to_rgba_base64(
+  image_format : String,
+  b64_data : String,
+) -> String =
+  #| (imageFormat, b64Data) => {
+  #|   try {
+  #|     if (typeof process === 'undefined' || process.platform !== 'darwin') {
+  #|       return '';
+  #|     }
+  #|     const format = String(imageFormat || '').toLowerCase();
+  #|     if (format !== 'jpeg' && format !== 'gif') {
+  #|       return '';
+  #|     }
+  #|     const fs = require('node:fs');
+  #|     const os = require('node:os');
+  #|     const path = require('node:path');
+  #|     const { execFileSync } = require('node:child_process');
+  #|     const { PNG } = require('pngjs');
+  #|     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'crater-kitty-'));
+  #|     const inputExt = format === 'jpeg' ? 'jpg' : 'gif';
+  #|     const inputPath = path.join(dir, 'input.' + inputExt);
+  #|     const outputPath = path.join(dir, 'output.png');
+  #|     try {
+  #|       fs.writeFileSync(inputPath, Buffer.from(String(b64Data || ''), 'base64'));
+  #|       execFileSync(
+  #|         'sips',
+  #|         ['-s', 'format', 'png', inputPath, '--out', outputPath],
+  #|         { stdio: 'pipe' },
+  #|       );
+  #|       const pngBuffer = fs.readFileSync(outputPath);
+  #|       const decoded = PNG.sync.read(pngBuffer);
+  #|       return (
+  #|         String(decoded.width) +
+  #|         ':' +
+  #|         String(decoded.height) +
+  #|         ':' +
+  #|         Buffer.from(decoded.data).toString('base64')
+  #|       );
+  #|     } finally {
+  #|       try {
+  #|         fs.rmSync(dir, { recursive: true, force: true });
+  #|       } catch (_) {}
+  #|     }
+  #|   } catch (_) {
+  #|     return '';
+  #|   }
+  #| }
+
+///|
+#cfg(target="js")
+fn decode_raster_image_to_rgba_base64(
+  image_format : String,
+  b64_data : String,
+) -> String? {
+  let decoded = js_decode_raster_image_to_rgba_base64(image_format, b64_data)
+  if decoded.length() > 0 {
+    Some(decoded)
+  } else {
+    None
+  }
+}
+
+///|
+#cfg(target="native")
+fn decode_raster_image_to_rgba_base64(
+  _image_format : String,
+  _b64_data : String,
+) -> String? {
+  None
+}
+
+///|
+#cfg(target="js")
+extern "js" fn js_transcode_raster_image_to_png_base64(
+  image_format : String,
+  b64_data : String,
+) -> String =
+  #| (imageFormat, b64Data) => {
+  #|   try {
+  #|     if (typeof process === 'undefined' || process.platform !== 'darwin') {
+  #|       return '';
+  #|     }
+  #|     const format = String(imageFormat || '').toLowerCase();
+  #|     if (format !== 'jpeg' && format !== 'gif') {
+  #|       return '';
+  #|     }
+  #|     const fs = require('node:fs');
+  #|     const os = require('node:os');
+  #|     const path = require('node:path');
+  #|     const { execFileSync } = require('node:child_process');
+  #|     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'crater-kitty-'));
+  #|     const inputExt = format === 'jpeg' ? 'jpg' : 'gif';
+  #|     const inputPath = path.join(dir, 'input.' + inputExt);
+  #|     const outputPath = path.join(dir, 'output.png');
+  #|     try {
+  #|       fs.writeFileSync(inputPath, Buffer.from(String(b64Data || ''), 'base64'));
+  #|       execFileSync(
+  #|         'sips',
+  #|         ['-s', 'format', 'png', inputPath, '--out', outputPath],
+  #|         { stdio: 'pipe' },
+  #|       );
+  #|       return fs.readFileSync(outputPath).toString('base64');
+  #|     } finally {
+  #|       try {
+  #|         fs.rmSync(dir, { recursive: true, force: true });
+  #|       } catch (_) {}
+  #|     }
+  #|   } catch (_) {
+  #|     return '';
+  #|   }
+  #| }
+
+///|
+#cfg(target="js")
+fn transcode_raster_image_to_png_base64(
+  image_format : String,
+  b64_data : String,
+) -> String? {
+  let transcoded = js_transcode_raster_image_to_png_base64(
+    image_format, b64_data,
+  )
+  if transcoded.length() > 0 {
+    Some(transcoded)
+  } else {
+    None
+  }
+}
+
+///|
+#cfg(target="native")
+fn transcode_raster_image_to_png_base64(
+  _image_format : String,
+  _b64_data : String,
+) -> String? {
+  None
+}
+
+///|
+fn normalize_raster_image_for_kitty(b64_data : String) -> String {
+  let image_format = detect_raster_image_format_from_base64(b64_data)
+  if image_format == "png" {
+    return b64_data
+  }
+  match transcode_raster_image_to_png_base64(image_format, b64_data) {
+    Some(transcoded) => transcoded
+    None => b64_data
+  }
+}
+
+///|
+fn parse_int_ascii(s : String) -> Int {
+  let mut result = 0
+  for c in s {
+    if c >= '0' && c <= '9' {
+      result = result * 10 + (c.to_int() - '0'.to_int())
+    }
+  }
+  result
+}
+
+///|
+fn parse_kitty_rgba_cache_entry(entry : String) -> (Int, Int, String)? {
+  match entry.find(":") {
+    Some(width_end) => {
+      let width_str = entry.unsafe_substring(start=0, end=width_end)
+      let rest = entry.unsafe_substring(start=width_end + 1, end=entry.length())
+      match rest.find(":") {
+        Some(height_end) => {
+          let height_str = rest.unsafe_substring(start=0, end=height_end)
+          let rgba_b64 = rest.unsafe_substring(
+            start=height_end + 1,
+            end=rest.length(),
+          )
+          let width = parse_int_ascii(width_str)
+          let height = parse_int_ascii(height_str)
+          if width > 0 && height > 0 && rgba_b64.length() > 0 {
+            Some((width, height, rgba_b64))
+          } else {
+            None
+          }
+        }
+        None => None
+      }
+    }
+    None => None
+  }
+}
+
+///|
+fn prepare_raster_image_for_kitty_cache(b64_data : String) -> String {
+  let image_format = detect_raster_image_format_from_base64(b64_data)
+  if image_format == "png" {
+    return "img_png:" + b64_data
+  }
+  match decode_raster_image_to_rgba_base64(image_format, b64_data) {
+    Some(decoded) => "img_rgba:" + decoded
+    None => {
+      let normalized = normalize_raster_image_for_kitty(b64_data)
+      if detect_raster_image_format_from_base64(normalized) == "png" {
+        "img_png:" + normalized
+      } else {
+        "img:" + b64_data
+      }
+    }
+  }
+}
+
+///|
+fn write_kitty_direct_image_data(
   b64_data : String,
   display_cols : Int,
   display_rows : Int,
+  image_id? : Int = 0,
+  placement_id? : Int = 0,
 ) -> String {
   if b64_data.length() == 0 {
     return ""
   }
-  // Send base64 image data directly to kitty with f=100 (auto-detect format)
   let buf = StringBuilder::new()
   let chunk_size = 4096
   let total_len = b64_data.length()
@@ -1135,6 +1549,14 @@ fn render_raster_to_kitty_with_cells(
       buf.write_string(display_cols.to_string())
       buf.write_string(",r=")
       buf.write_string(display_rows.to_string())
+      if image_id > 0 {
+        buf.write_string(",i=")
+        buf.write_string(image_id.to_string())
+        if placement_id > 0 {
+          buf.write_string(",p=")
+          buf.write_string(placement_id.to_string())
+        }
+      }
       buf.write_string(",m=")
       buf.write_string(m_val.to_string())
       buf.write_string(";")
@@ -1143,13 +1565,191 @@ fn render_raster_to_kitty_with_cells(
       buf.write_string(m_val.to_string())
       buf.write_string(";")
     }
-    // Write chunk
     for i = offset; i < end; i = i + 1 {
       buf.write_char(b64_chars[i])
     }
     buf.write_string("\u001b\\")
   }
   buf.to_string()
+}
+
+///|
+fn write_kitty_rgba_image_data(
+  b64_data : String,
+  pixel_width : Int,
+  pixel_height : Int,
+  display_cols : Int,
+  display_rows : Int,
+  image_id? : Int = 0,
+  placement_id? : Int = 0,
+) -> String {
+  if b64_data.length() == 0 || pixel_width <= 0 || pixel_height <= 0 {
+    return ""
+  }
+  let buf = StringBuilder::new()
+  let chunk_size = 4096
+  let total_len = b64_data.length()
+  let b64_chars = b64_data.to_array()
+  for offset = 0; offset < total_len; offset = offset + chunk_size {
+    let end = (offset + chunk_size).min(total_len)
+    let is_first = offset == 0
+    let is_last = end >= total_len
+    let m_val = if is_last { 0 } else { 1 }
+    if is_first {
+      buf.write_string("\u001b_Ga=T,f=32,q=2,c=")
+      buf.write_string(display_cols.to_string())
+      buf.write_string(",r=")
+      buf.write_string(display_rows.to_string())
+      if image_id > 0 {
+        buf.write_string(",i=")
+        buf.write_string(image_id.to_string())
+        if placement_id > 0 {
+          buf.write_string(",p=")
+          buf.write_string(placement_id.to_string())
+        }
+      }
+      buf.write_string(",s=")
+      buf.write_string(pixel_width.to_string())
+      buf.write_string(",v=")
+      buf.write_string(pixel_height.to_string())
+      buf.write_string(",m=")
+      buf.write_string(m_val.to_string())
+      buf.write_string(";")
+    } else {
+      buf.write_string("\u001b_Gm=")
+      buf.write_string(m_val.to_string())
+      buf.write_string(";")
+    }
+    for i = offset; i < end; i = i + 1 {
+      buf.write_char(b64_chars[i])
+    }
+    buf.write_string("\u001b\\")
+  }
+  buf.to_string()
+}
+
+///|
+fn write_kitty_put_placement(
+  image_id : Int,
+  placement_id : Int,
+  display_cols : Int,
+  display_rows : Int,
+) -> String {
+  if image_id <= 0 || placement_id <= 0 {
+    return ""
+  }
+  "\u001b_Ga=p,q=2,i=" +
+  image_id.to_string() +
+  ",p=" +
+  placement_id.to_string() +
+  ",c=" +
+  display_cols.to_string() +
+  ",r=" +
+  display_rows.to_string() +
+  ";\u001b\\"
+}
+
+///|
+fn write_kitty_delete_placement(image_id : Int, placement_id : Int) -> String {
+  if image_id <= 0 || placement_id <= 0 {
+    return ""
+  }
+  "\u001b_Ga=d,q=2,d=i,i=" +
+  image_id.to_string() +
+  ",p=" +
+  placement_id.to_string() +
+  ";\u001b\\"
+}
+
+///|
+fn render_cached_kitty_image_with_placement(
+  cached_data : String,
+  region : @tui.ImageRegion,
+  image_id : Int,
+  placement_id : Int,
+) -> String {
+  if cached_data.has_prefix("svg:") {
+    let svg_text = cached_data.unsafe_substring(
+      start=4,
+      end=cached_data.length(),
+    )
+    let render_w = region.width * 16
+    let render_h = region.height * 32
+    render_svg_to_kitty_with_cells(
+      svg_text,
+      render_w,
+      render_h,
+      region.width,
+      region.height,
+      image_id~,
+      placement_id~,
+    )
+  } else if cached_data.has_prefix("img_png:") {
+    let b64_data = cached_data.unsafe_substring(
+      start=8,
+      end=cached_data.length(),
+    )
+    write_kitty_direct_image_data(
+      b64_data,
+      region.width,
+      region.height,
+      image_id~,
+      placement_id~,
+    )
+  } else if cached_data.has_prefix("img_rgba:") {
+    let rgba_entry = cached_data.unsafe_substring(
+      start=9,
+      end=cached_data.length(),
+    )
+    match parse_kitty_rgba_cache_entry(rgba_entry) {
+      Some((pixel_width, pixel_height, rgba_b64)) =>
+        render_rgba_raster_to_kitty_with_cells(
+          pixel_width,
+          pixel_height,
+          rgba_b64,
+          region.width,
+          region.height,
+          image_id~,
+          placement_id~,
+        )
+      None => ""
+    }
+  } else if cached_data.has_prefix("img:") {
+    let b64_data = cached_data.unsafe_substring(
+      start=4,
+      end=cached_data.length(),
+    )
+    write_kitty_direct_image_data(
+      normalize_raster_image_for_kitty(b64_data),
+      region.width,
+      region.height,
+      image_id~,
+      placement_id~,
+    )
+  } else {
+    ""
+  }
+}
+
+///|
+fn render_rgba_raster_to_kitty_with_cells(
+  pixel_width : Int,
+  pixel_height : Int,
+  rgba_b64_data : String,
+  display_cols : Int,
+  display_rows : Int,
+  image_id? : Int = 0,
+  placement_id? : Int = 0,
+) -> String {
+  write_kitty_rgba_image_data(
+    rgba_b64_data,
+    pixel_width,
+    pixel_height,
+    display_cols,
+    display_rows,
+    image_id~,
+    placement_id~,
+  )
 }
 
 ///|
@@ -1161,7 +1761,6 @@ fn chars_to_string(chars : Array[Char], start : Int, end : Int) -> String {
   }
   buf.to_string()
 }
-
 
 ///|
 /// Extract viewBox from SVG root element
@@ -1213,11 +1812,9 @@ fn split_whitespace(s : String) -> Array[String] {
         result.push(chars_to_string(chars, start, i))
         in_word = false
       }
-    } else {
-      if not(in_word) {
-        start = i
-        in_word = true
-      }
+    } else if not(in_word) {
+      start = i
+      in_word = true
     }
   }
   if in_word {

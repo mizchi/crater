@@ -488,6 +488,17 @@ fn extract_tag_from_id(id : String) -> String {
 }
 
 ///|
+fn is_ignorable_whitespace_text_node(node : @node.Node) -> Bool {
+  if node.id != "#text" {
+    return false
+  }
+  match node.text {
+    Some(text) => text.trim().length() == 0
+    None => false
+  }
+}
+
+///|
 /// Generate list marker text for a <li> element based on parent list type.
 fn generate_list_marker(parent_tag : String, child_index : Int) -> String? {
   match parent_tag {
@@ -518,22 +529,27 @@ pub fn from_node_and_layout(
   }
   let children : Array[PaintNode] = []
 
-  // Match children by index (assumes same order)
-  let child_count = if node.children.length() < layout.children.length() {
-    node.children.length()
-  } else {
-    layout.children.length()
-  }
-  for i = 0; i < child_count; i = i + 1 {
-    let mut child = from_node_and_layout(node.children[i], layout.children[i])
+  // Layout omits ignorable whitespace text nodes that can still remain in the
+  // render tree, so align the two child lists while skipping those nodes.
+  let mut node_index = 0
+  let mut layout_index = 0
+  while node_index < node.children.length() &&
+        layout_index < layout.children.length() {
+    if is_ignorable_whitespace_text_node(node.children[node_index]) {
+      node_index += 1
+      continue
+    }
+    let child_node = node.children[node_index]
+    let child_layout = layout.children[layout_index]
+    let mut child = from_node_and_layout(child_node, child_layout)
     // Propagate bold to text children
     if paint.is_bold && not(child.paint.is_bold) {
       child = { ..child, paint: { ..child.paint, is_bold: true } }
     }
     // Generate list marker for <li> children of <ul>/<ol>
-    let child_tag = extract_tag_from_id(node.children[i].id)
+    let child_tag = extract_tag_from_id(child_node.id)
     if child_tag == "li" {
-      match generate_list_marker(tag, i) {
+      match generate_list_marker(tag, layout_index) {
         Some(marker_text) => {
           let marker_paint = { ..child.paint, font_size: child.paint.font_size }
           let marker_node = PaintNode::new(
@@ -560,6 +576,8 @@ pub fn from_node_and_layout(
       }
     }
     children.push(child)
+    node_index += 1
+    layout_index += 1
   }
   // Apply placeholder styling for <img> elements
   if tag == "img" {
@@ -695,28 +713,26 @@ fn from_node_and_layout_with_viewport_inner(
   }
   let children : Array[PaintNode] = []
 
-  // Match children by index (assumes same order)
-  let child_count = if node.children.length() < layout.children.length() {
-    node.children.length()
-  } else {
-    layout.children.length()
-  }
   let extent_count = extent.children.length()
-  for i = 0; i < child_count; i = i + 1 {
+  let mut node_index = 0
+  let mut layout_index = 0
+  while node_index < node.children.length() &&
+        layout_index < layout.children.length() {
+    if is_ignorable_whitespace_text_node(node.children[node_index]) {
+      node_index += 1
+      continue
+    }
+    let child_node = node.children[node_index]
+    let child_layout = layout.children[layout_index]
     // Use extent child if available, otherwise create a fallback
-    let child_extent = if i < extent_count {
-      extent.children[i]
+    let child_extent = if layout_index < extent_count {
+      extent.children[layout_index]
     } else {
-      { relative_extent: layout.children[i].height, children: [] }
+      { relative_extent: child_layout.height, children: [] }
     }
     match
       from_node_and_layout_with_viewport_inner(
-        node.children[i],
-        layout.children[i],
-        child_extent,
-        viewport_top,
-        viewport_bottom,
-        abs_y,
+        child_node, child_layout, child_extent, viewport_top, viewport_bottom, abs_y,
       ) {
       Some(child) => {
         // Propagate bold to text children
@@ -726,9 +742,9 @@ fn from_node_and_layout_with_viewport_inner(
           child
         }
         // Generate list marker for <li> children of <ul>/<ol>
-        let child_tag = extract_tag_from_id(node.children[i].id)
+        let child_tag = extract_tag_from_id(child_node.id)
         if child_tag == "li" {
-          match generate_list_marker(tag, i) {
+          match generate_list_marker(tag, layout_index) {
             Some(marker_text) => {
               let marker_paint = { ..c.paint, font_size: c.paint.font_size }
               let marker_node = PaintNode::new(
@@ -758,6 +774,8 @@ fn from_node_and_layout_with_viewport_inner(
       }
       None => ()
     }
+    node_index += 1
+    layout_index += 1
   }
   // Apply placeholder styling for <img> elements
   if tag == "img" {

@@ -171,6 +171,7 @@ pub(all) struct BufferRenderResult {
   link_regions : Array[LinkRegion]
   hit_regions : Array[HitRegion]
   scrollable_elements : Array[@paint.ScrollableElement]
+  image_regions : Array[ImageRegion]
 }
 
 pub struct CharBuffer {
@@ -232,6 +233,17 @@ pub(all) struct HitRegion {
 }
 pub fn HitRegion::contains(Self, Int, Int) -> Bool
 
+pub(all) struct ImageRegion {
+  col : Int
+  row : Int
+  width : Int
+  height : Int
+  pixel_width : Double
+  pixel_height : Double
+  src : String
+  source_id : String
+}
+
 pub(all) struct LinkRegion {
   col : Int
   row : Int
@@ -269,6 +281,7 @@ pub struct TuiContext {
   viewport_height : Int
   link_regions : Array[LinkRegion]
   hit_regions : Array[HitRegion]
+  image_regions : Array[ImageRegion]
   focused_element_name : String?
   dark_mode : Bool
   element_scroll_positions : Map[String, ElementScrollPos]

@@ -2,15 +2,15 @@
 
 ## 画像表示 (Issue #16)
 
-- [ ] JPEG/GIF の kitty graphics 表示 (ghostty で f=100 が効かない問題の調査)
+- [x] JPEG/GIF の kitty graphics 表示 (ghostty で f=100 が効かない問題の調査)
   - `f=32` (RGBA) パスで JS 側デコード → 生ピクセル送信を検討
-- [ ] sixel フォールバック (kitty 非対応ターミナル)
-- [ ] 画像キャッシュのメモリ管理 (大量画像ページ対策)
-- [ ] スクロール時の画像再配置最適化
+- [x] sixel フォールバック (kitty 非対応ターミナル)
+- [x] 画像キャッシュのメモリ管理 (大量画像ページ対策)
+- [x] スクロール時の画像再配置最適化
 
 ## CSS レンダリング精度
 
-- [ ] `inline-flex` レイアウトで hidden input (`position:absolute` + `clip:rect`) がある場合に後続要素が消える
+- [x] `inline-flex` レイアウトで hidden input (`position:absolute` + `clip:rect`) がある場合に後続要素が消える
 - [ ] サブピクセルレイアウト (rem/padding の端数処理で Chrome と 1-4px のずれ)
 - [ ] `box-shadow` 描画
 - [ ] `text-overflow: ellipsis`

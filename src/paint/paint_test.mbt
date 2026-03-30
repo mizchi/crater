@@ -242,6 +242,99 @@ test "viewport_culling_basic" {
 }
 
 ///|
+test "from_node_and_layout skips ignorable whitespace text nodes when aligning children" {
+  let style = @style.Style::default()
+  let whitespace_measure : @types.MeasureFunc = {
+    func: fn(_width, _height) { @types.IntrinsicSize::default() },
+  }
+  let zero_rect : @types.Rect[Double] = {
+    left: 0.0,
+    right: 0.0,
+    top: 0.0,
+    bottom: 0.0,
+  }
+  let ws1 = @node.Node::text("#text", style, whitespace_measure, " ")
+  let ws2 = @node.Node::text("#text", style, whitespace_measure, "\n  ")
+  let input = @node.Node::leaf("input#check", style)
+  let control = @node.Node::leaf("span#control", style)
+  let label = @node.Node::leaf("span#label", style)
+  let root = @node.Node::new("label#root", style, [
+    input, ws1, control, ws2, label,
+  ])
+  let input_layout : @types.Layout = {
+    id: "input#check",
+    x: 0.0,
+    y: 0.0,
+    width: 1.0,
+    height: 1.0,
+    margin: zero_rect,
+    padding: zero_rect,
+    border: zero_rect,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
+    children: [],
+    text: None,
+  }
+  let control_layout : @types.Layout = {
+    id: "span#control",
+    x: 8.0,
+    y: 0.0,
+    width: 20.0,
+    height: 20.0,
+    margin: zero_rect,
+    padding: zero_rect,
+    border: zero_rect,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
+    children: [],
+    text: None,
+  }
+  let label_layout : @types.Layout = {
+    id: "span#label",
+    x: 36.0,
+    y: 0.0,
+    width: 96.0,
+    height: 19.2,
+    margin: zero_rect,
+    padding: zero_rect,
+    border: zero_rect,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
+    children: [],
+    text: None,
+  }
+  let root_layout : @types.Layout = {
+    id: "label#root",
+    x: 0.0,
+    y: 0.0,
+    width: 132.0,
+    height: 20.0,
+    margin: zero_rect,
+    padding: zero_rect,
+    border: zero_rect,
+    overflow_x: @types.Visible,
+    overflow_y: @types.Visible,
+    scroll_width: 0.0,
+    scroll_height: 0.0,
+    children: [input_layout, control_layout, label_layout],
+    text: None,
+  }
+  let paint = from_node_and_layout(root, root_layout)
+  inspect(paint.children.length(), content="3")
+  inspect(paint.children[0].id, content="input#check")
+  inspect(paint.children[1].id, content="span#control")
+  inspect(paint.children[1].width, content="20")
+  inspect(paint.children[2].id, content="span#label")
+  inspect(paint.children[2].width, content="96")
+}
+
+///|
 /// Test list marker generation for ul > li
 test "list_marker_disc_for_ul" {
   let style = @style.Style::default()
@@ -332,7 +425,7 @@ test "list_marker_disc_for_ul" {
   inspect(
     marker.text,
     content=(
-      #|Some("●")
+      #|Some("•")
     ),
   )
   let li2_paint = paint.children[1]
@@ -341,7 +434,7 @@ test "list_marker_disc_for_ul" {
   inspect(
     marker2.text,
     content=(
-      #|Some("●")
+      #|Some("•")
     ),
   )
 }

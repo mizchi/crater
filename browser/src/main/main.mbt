@@ -11,6 +11,134 @@ let char_height : Int = 16 // Height of one character in pixels
 let default_viewport_height : Int = 384 // 24 rows * 16px
 
 ///|
+priv struct GraphicsSupport {
+  kitty : Bool
+  sixel : Bool
+}
+
+///|
+fn env_get_or_empty(env : Map[String, String], key : String) -> String {
+  match env.get(key) {
+    Some(value) => value
+    None => ""
+  }
+}
+
+///|
+fn detect_terminal_graphics_support_from_env(
+  env : Map[String, String],
+) -> GraphicsSupport {
+  let term = env_get_or_empty(env, "TERM").to_lower()
+  let term_program = env_get_or_empty(env, "TERM_PROGRAM").to_lower()
+  let kitty_window_id = env_get_or_empty(env, "KITTY_WINDOW_ID")
+  let xterm_sixel = env_get_or_empty(env, "XTERM_SIXEL")
+  let kitty = kitty_window_id.length() > 0 ||
+    term.contains("xterm-kitty") ||
+    term_program == "ghostty" ||
+    term_program == "wezterm"
+  let sixel = xterm_sixel == "1" ||
+    term.contains("sixel") ||
+    term_program == "mlterm"
+  { kitty, sixel }
+}
+
+///|
+#cfg(target="js")
+extern "js" fn js_get_env(name : String) -> String =
+  #| (name) => {
+  #|   if (typeof process === 'undefined' || !process.env) return '';
+  #|   const value = process.env[String(name)];
+  #|   return typeof value === 'string' ? value : '';
+  #| }
+
+///|
+#cfg(target="native")
+extern "C" fn tui_supports_kitty_graphics() -> Int = "tui_supports_kitty_graphics"
+
+///|
+#cfg(target="native")
+extern "C" fn tui_supports_sixel_graphics() -> Int = "tui_supports_sixel_graphics"
+
+///|
+#cfg(target="js")
+fn detect_terminal_graphics_support() -> GraphicsSupport {
+  let env : Map[String, String] = {}
+  env["TERM"] = js_get_env("TERM")
+  env["TERM_PROGRAM"] = js_get_env("TERM_PROGRAM")
+  env["KITTY_WINDOW_ID"] = js_get_env("KITTY_WINDOW_ID")
+  env["XTERM_SIXEL"] = js_get_env("XTERM_SIXEL")
+  detect_terminal_graphics_support_from_env(env)
+}
+
+///|
+#cfg(target="native")
+fn detect_terminal_graphics_support() -> GraphicsSupport {
+  {
+    kitty: tui_supports_kitty_graphics() != 0,
+    sixel: tui_supports_sixel_graphics() != 0,
+  }
+}
+
+///|
+fn resolve_requested_output_mode(
+  options : Options,
+  support : GraphicsSupport,
+) -> @shell.OutputMode {
+  if options.kitty {
+    if support.kitty {
+      @shell.OutputMode::Kitty
+    } else if support.sixel {
+      @shell.OutputMode::Sixel
+    } else {
+      @shell.OutputMode::Text
+    }
+  } else if options.sixel {
+    if support.sixel {
+      @shell.OutputMode::Sixel
+    } else {
+      @shell.OutputMode::Text
+    }
+  } else {
+    @shell.OutputMode::Text
+  }
+}
+
+///|
+fn is_text_output_mode(mode : @shell.OutputMode) -> Bool {
+  match mode {
+    @shell.OutputMode::Text => true
+    _ => false
+  }
+}
+
+///|
+fn fallback_output_notice(
+  options : Options,
+  resolved_mode : @shell.OutputMode,
+) -> String? {
+  if options.kitty {
+    match resolved_mode {
+      @shell.OutputMode::Kitty => None
+      @shell.OutputMode::Sixel =>
+        Some(
+          "Kitty graphics unsupported in this terminal; falling back to sixel.",
+        )
+      _ =>
+        Some(
+          "Kitty graphics unsupported in this terminal; falling back to text.",
+        )
+    }
+  } else if options.sixel {
+    match resolved_mode {
+      @shell.OutputMode::Sixel => None
+      _ => Some("Sixel unsupported in this terminal; falling back to text.")
+    }
+  } else {
+    None
+  }
+}
+
+///|
 /// Parse a simple integer from string (returns 0 on failure)
 fn parse_int_simple(s : String) -> Int {
   let mut result = 0
@@ -86,8 +214,19 @@ async fn write_stdout_io(s : String) -> Unit {
 }
 
 ///|
+async fn write_stderr_io(s : String) -> Unit {
+  @stdio.stderr.write(s) catch {
+    _ => ()
+  }
+}
+
+///|
 /// Render and display the current page
-async fn render_page(browser : @shell.Browser, options : Options) -> Unit {
+async fn render_page(
+  browser : @shell.Browser,
+  options : Options,
+  resolved_output_mode : @shell.OutputMode,
+) -> Unit {
   if options.json {
     // AOM JSON output for AI scraping
     let json_output = browser.render_output(@shell.OutputMode::Json)
@@ -108,33 +247,42 @@ async fn render_page(browser : @shell.Browser, options : Options) -> Unit {
     // Visual grounding demo
     let grounding_output = browser.render_output(@shell.OutputMode::Grounding)
     println(grounding_output)
-  } else if options.sixel {
-    let sixel = browser.render_output(@shell.OutputMode::Sixel)
-    @tui.print_raw(@tui.clear_screen())
-    @tui.print_raw(sixel)
-    println("")
-    println(
-      @tui.format_status_bar(
-        browser.get_current_url(),
-        browser.get_link_count(),
-        browser.get_focused_link_index(),
-      ),
-    )
-  } else if options.kitty {
-    write_stdout_io(@tui.clear_screen())
-    browser.write_output(@shell.OutputMode::Kitty, @stdio.stdout)
-    println("")
-    println(
-      @tui.format_status_bar(
-        browser.get_current_url(),
-        browser.get_link_count(),
-        browser.get_focused_link_index(),
-      ),
-    )
-  } else if options.text {
-    // TUI text mode: character-based rendering
-    let text_output = browser.render_output(@shell.OutputMode::Text)
-    @tui.print_raw(text_output)
+  } else if options.sixel || options.kitty || options.text {
+    match fallback_output_notice(options, resolved_output_mode) {
+      Some(message) => write_stderr_io(message + "\n")
+      None => ()
+    }
+    match resolved_output_mode {
+      @shell.OutputMode::Sixel => {
+        let sixel = browser.render_output(@shell.OutputMode::Sixel)
+        @tui.print_raw(@tui.clear_screen())
+        @tui.print_raw(sixel)
+        println("")
+        println(
+          @tui.format_status_bar(
+            browser.get_current_url(),
+            browser.get_link_count(),
+            browser.get_focused_link_index(),
+          ),
+        )
+      }
+      @shell.OutputMode::Kitty => {
+        write_stdout_io(@tui.clear_screen())
+        browser.write_output(@shell.OutputMode::Kitty, @stdio.stdout)
+        println("")
+        println(
+          @tui.format_status_bar(
+            browser.get_current_url(),
+            browser.get_link_count(),
+            browser.get_focused_link_index(),
+          ),
+        )
+      }
+      _ => {
+        let text_output = browser.render_output(@shell.OutputMode::Text)
+        @tui.print_raw(text_output)
+      }
+    }
   } else if options.debug {
     // Debug mode: print layout tree
     browser.debug_layout()
@@ -303,6 +451,10 @@ fn parse_args_list(args : Array[String]) -> Options {
 /// Entry point - async main
 async fn main {
   let options = parse_args()
+  let graphics_support = detect_terminal_graphics_support()
+  let resolved_output_mode = resolve_requested_output_mode(
+    options, graphics_support,
+  )
   // Show help if requested or no URL provided
   if options.show_help {
     print_help()
@@ -318,7 +470,7 @@ async fn main {
   }
   // Calculate viewport size based on mode (TUI uses terminal size)
   let (viewport_width, viewport_height, terminal_cols) = calculate_viewport(
-    options.text,
+    is_text_output_mode(resolved_output_mode),
     options.width,
   )
   let browser = @shell.Browser::new(
@@ -341,7 +493,7 @@ async fn main {
     } catch {
       err => println("Navigation error: \{err}")
     }
-    render_page(browser, options)
+    render_page(browser, options, resolved_output_mode)
     return
   }
   // For Arc90/Grounding/ExtractMain modes, still need full rendering for bounds info
@@ -351,7 +503,7 @@ async fn main {
     } catch {
       err => println("Navigation error: \{err}")
     }
-    render_page(browser, options)
+    render_page(browser, options, resolved_output_mode)
     return
   }
   // Headless mode: render and exit without interaction
@@ -399,7 +551,7 @@ async fn main {
   } catch {
     err => println("Navigation error: \{err}")
   }
-  render_page(browser, options)
+  render_page(browser, options, resolved_output_mode)
   // Only enter interactive mode for sixel or text mode
   if not(options.sixel) && not(options.kitty) && not(options.text) {
     return
@@ -420,7 +572,7 @@ async fn main {
         println("Goodbye!")
         running = false
       }
-      @interaction.Render => render_page(browser, options)
+      @interaction.Render => render_page(browser, options, resolved_output_mode)
       @interaction.PromptUrl => {
         @tui.print_raw(@tui.show_cursor())
         let url = @tui.read_line("Enter URL: ")
@@ -428,7 +580,7 @@ async fn main {
         if url.length() > 0 {
           println("Navigating to: " + url)
           safe_navigate(browser, url)
-          render_page(browser, options)
+          render_page(browser, options, resolved_output_mode)
         }
       }
       @interaction.SelectionModeChanged(entering) => {
@@ -443,7 +595,7 @@ async fn main {
           @tui.print_raw(@tui.hide_cursor())
           @tui.print_raw(@tui.enable_mouse())
         }
-        render_page(browser, options)
+        render_page(browser, options, resolved_output_mode)
       }
       @interaction.None => ()
     }
