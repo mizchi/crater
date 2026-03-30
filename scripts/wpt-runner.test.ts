@@ -5,6 +5,7 @@ import {
   createFocusedComparisonRoot,
   createTextIntrinsicFnFromMeasureText,
   isScriptMutationDependentTest,
+  normalizeComparisonRootToContentBox,
   resolveBuiltinTextAdvanceRatioOverride,
   resolveFocusedComparisonNodeId,
   resolveTextIntrinsicFn,
@@ -408,6 +409,46 @@ describe("shouldKeepHtmlRootForComparison", () => {
         "wpt/css/css-position/position-relative-001.html",
       ),
     ).toBe(false);
+  });
+});
+
+describe("normalizeComparisonRootToContentBox", () => {
+  it("converts root width and height from border-box to content-box", () => {
+    expect(
+      normalizeComparisonRootToContentBox({
+        id: "html",
+        x: 0,
+        y: 0,
+        width: 770,
+        height: 540,
+        margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        padding: { top: 7, right: 11, bottom: 13, left: 17 },
+        border: { top: 2, right: 3, bottom: 5, left: 7 },
+        children: [],
+      }),
+    ).toMatchObject({
+      width: 732,
+      height: 513,
+    });
+  });
+
+  it("clamps negative sizes to zero", () => {
+    expect(
+      normalizeComparisonRootToContentBox({
+        id: "html",
+        x: 0,
+        y: 0,
+        width: 8,
+        height: 9,
+        margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        padding: { top: 3, right: 4, bottom: 5, left: 6 },
+        border: { top: 2, right: 3, bottom: 4, left: 5 },
+        children: [],
+      }),
+    ).toMatchObject({
+      width: 0,
+      height: 0,
+    });
   });
 });
 
