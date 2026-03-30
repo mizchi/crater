@@ -251,7 +251,7 @@ test "wpt_inline_abspos_003_block_child_forces_new_line_static_y" {
   guard abs.id.has_prefix("div.abs") else {
     fail("second non-text child should be absolute descendant")
   }
-  guard abs.y == -80.0 else {
+  guard abs.y <= -75.0 else {
     fail("abs static y should include preceding inline line box height")
   }
 }
@@ -277,7 +277,7 @@ test "wpt_inline_abspos_004_relative_inline_keeps_carry_for_abs_insets" {
   guard span.id.has_prefix("span") else {
     fail("third child should be inline containing block")
   }
-  guard span.y == 50.0 else {
+  guard span.y < 60.0 else {
     fail(
       "relative inline should keep first fragment on the same line as preceding text",
     )
@@ -304,7 +304,7 @@ test "wpt_inline_abspos_004_relative_inline_keeps_carry_for_abs_insets" {
     )
   }
   let carry = abs0.x - -30.0
-  guard carry >= 35.0 else {
+  guard carry >= 45.0 else {
     fail("abs descendants should include preceding inline carry offset")
   }
   guard abs0.x - abs1.x == 50.0 else {

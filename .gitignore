@@ -40,7 +40,11 @@ wpt-tests/**/support/
 .wpt-safe-subset-cache.json
 
 # Real-world site downloads (regenerate with npm run download)
-real-world/
+real-world/*
+!real-world/example-com/
+real-world/example-com/*
+!real-world/example-com/index.html
+!real-world/example-com/meta.json
 
 # WASM component transpiled output (regenerate with npm run build:wasm-component && npx jco transpile)
 wasm/dist/

@@ -57,8 +57,8 @@ priv struct WrappedTextMetrics {
 let inline_text_glyph_height_ratio : Double = 1.045
 
 ///|
-/// Browser fallback monospace metrics used by WPT in Puppeteer.
-let inline_wrap_carry_char_width_ratio : Double = 0.378
+/// Browser-calibrated carry width for wrapped inline abs-containing blocks.
+let inline_wrap_carry_char_width_ratio : Double = 0.636
 
 ///|
 fn is_wide_char(c : Char) -> Bool {
@@ -532,6 +532,57 @@ fn has_inflow_block_descendant(node : @node.Node) -> Bool {
     }
   }
   false
+}
+
+///|
+fn shift_layout_subtree(
+  layout : @types.Layout,
+  dx : Double,
+  dy : Double,
+) -> @types.Layout {
+  let shifted_children : Array[@types.Layout] = []
+  for child in layout.children {
+    shifted_children.push(shift_layout_subtree(child, dx, dy))
+  }
+  { ..layout, x: layout.x + dx, y: layout.y + dy, children: shifted_children }
+}
+
+///|
+fn shift_inline_out_of_flow_descendants(
+  layout : @types.Layout,
+  node : @node.Node,
+  dx : Double,
+  dy : Double,
+) -> @types.Layout {
+  if layout.children.length() == 0 || node.children.length() == 0 {
+    return layout
+  }
+  let shifted_children : Array[@types.Layout] = []
+  let min_len = if layout.children.length() < node.children.length() {
+    layout.children.length()
+  } else {
+    node.children.length()
+  }
+  for i = 0; i < min_len; i = i + 1 {
+    let child_layout = layout.children[i]
+    let child_node = node.children[i]
+    let child_establishes_abs_cb = inline_establishes_abs_containing_block(
+      child_node.style,
+    )
+    let shifted = if child_node.style.position == @types.Absolute ||
+      child_node.style.position == @types.Fixed {
+      shift_layout_subtree(child_layout, dx, dy)
+    } else if child_establishes_abs_cb {
+      child_layout
+    } else {
+      shift_inline_out_of_flow_descendants(child_layout, child_node, dx, dy)
+    }
+    shifted_children.push(shifted)
+  }
+  for i = min_len; i < layout.children.length(); i = i + 1 {
+    shifted_children.push(layout.children[i])
+  }
+  { ..layout, children: shifted_children }
 }
 
 ///|
@@ -1280,6 +1331,21 @@ pub fn compute_ifc(
       @style.VerticalAlign::Top | @style.VerticalAlign::TextTop => 0.0
       _ => baseline
     }
+    let child_establishes_abs_cb = inline_establishes_abs_containing_block(
+      child.style,
+    )
+    let child_has_abs_desc = if child_establishes_abs_cb {
+      match child_has_abs_desc_cache.get(i) {
+        Some(v) => v
+        None => {
+          let v = has_absolute_descendant(child)
+          child_has_abs_desc_cache[i] = v
+          v
+        }
+      }
+    } else {
+      false
+    }
 
     if current_line.items.length() > 0 && child_has_inflow_block_desc {
       current_line.ensure_line_strut(children)
@@ -1331,21 +1397,6 @@ pub fn compute_ifc(
           prev_child, child,
         )
         keep_same_line = not(has_break_opportunity)
-        let child_establishes_abs_cb = inline_establishes_abs_containing_block(
-          child.style,
-        )
-        let child_has_abs_desc = if child_establishes_abs_cb {
-          match child_has_abs_desc_cache.get(i) {
-            Some(v) => v
-            None => {
-              let v = has_absolute_descendant(child)
-              child_has_abs_desc_cache[i] = v
-              v
-            }
-          }
-        } else {
-          false
-        }
         if has_break_opportunity &&
           child_establishes_abs_cb &&
           child_has_abs_desc &&
@@ -1525,6 +1576,31 @@ pub fn compute_ifc(
           }
         }
       }
+      let mut effective_layout = item.layout
+      if not(is_rtl_inline) &&
+        item_index > 0 &&
+        child.style.display == @types.Inline &&
+        inline_establishes_abs_containing_block(child.style) &&
+        not(child_has_inflow_block_desc) {
+        let prev_item = line.items[item_index - 1]
+        let prev_child = children[prev_item.index]
+        let line_carry = current_x - content_offset_x - line_offset
+        let remaining_width = available_width - line_carry
+        if remaining_width > 0.0 && remaining_width < item.layout.width {
+          match estimate_inline_wrap_carry_width(prev_child, child) {
+            Some(carry_width) => {
+              let shift_delta = carry_width - line_carry
+              if shift_delta != 0.0 {
+                effective_layout = shift_inline_out_of_flow_descendants(
+                  effective_layout, child, shift_delta, 0.0,
+                )
+              }
+              positioned_x = content_offset_x + line_offset + child_margin.left
+            }
+            None => ()
+          }
+        }
+      }
       if item_index == 0 &&
         line_index > 0 &&
         inline_establishes_abs_containing_block(child.style) &&
@@ -1549,9 +1625,15 @@ pub fn compute_ifc(
                   carry_width
                 }
                 if bounded_carry > 0.0 {
-                  positioned_x = content_offset_x +
-                    child_margin.left +
-                    bounded_carry
+                  if child.style.display == @types.Inline {
+                    effective_layout = shift_inline_out_of_flow_descendants(
+                      effective_layout, child, bounded_carry, 0.0,
+                    )
+                  } else {
+                    positioned_x = content_offset_x +
+                      child_margin.left +
+                      bounded_carry
+                  }
                 }
               }
               None => ()
@@ -1610,7 +1692,6 @@ pub fn compute_ifc(
         positioned_x = positioned_x + x_offset
         positioned_y = positioned_y + y_offset
       }
-      let effective_layout = item.layout
       let is_contents_child = child.style.display == @types.Contents
       let positioned : @types.Layout = {
         id: effective_layout.id,

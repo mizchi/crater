@@ -612,6 +612,9 @@ fn get_child_descendant_flow_extent_for_auto_height(
   if id_matches_tag(child_node.id, "ruby") {
     return 0.0
   }
+  if is_table_principal_display(child_node.style.display) {
+    return 0.0
+  }
   if child_node.style.suppresses_intrinsic_height() {
     return 0.0
   }
