@@ -20,14 +20,19 @@ import {
 
 const UPDATE_BASELINE = process.env.WPT_VRT_UPDATE_BASELINE === "1";
 const SHARD_MODULES = process.env.WPT_VRT_SHARD?.split(",").map(s => s.trim()).filter(Boolean) ?? [];
+const SHARD_OFFSET = Number(process.env.WPT_VRT_OFFSET) || 0;
+const SHARD_LIMIT = Number(process.env.WPT_VRT_LIMIT) || 0;
 const OUTPUT_ROOT = path.join(process.cwd(), "output", "playwright", "vrt", "wpt");
 const REGRESSION_EPSILON = 0.01;
 const BATCH_SIZE = 10;
 const config = loadWptVrtConfig();
 const allEntries = collectWptVrtTests(config);
-const entries = SHARD_MODULES.length > 0
+const moduleFiltered = SHARD_MODULES.length > 0
   ? allEntries.filter(e => SHARD_MODULES.includes(e.moduleName))
   : allEntries;
+const entries = SHARD_LIMIT > 0
+  ? moduleFiltered.slice(SHARD_OFFSET, SHARD_OFFSET + SHARD_LIMIT)
+  : moduleFiltered.slice(SHARD_OFFSET);
 const baseline = loadWptVrtBaseline();
 const batches = createWptVrtBatches(entries, BATCH_SIZE);
 

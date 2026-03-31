@@ -523,8 +523,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: flexbox
+          - name: flexbox-1
             modules: css-flexbox
+            offset: 0
+            limit: 21
+          - name: flexbox-2
+            modules: css-flexbox
+            offset: 21
+            limit: 21
           - name: display
             modules: css-display
           - name: box
@@ -577,6 +583,8 @@ jobs:
         run: just test-wpt-vrt
         env:
           WPT_VRT_SHARD: ${{ matrix.modules }}
+          WPT_VRT_OFFSET: ${{ matrix.offset || '0' }}
+          WPT_VRT_LIMIT: ${{ matrix.limit || '0' }}
 
       - name: Upload WPT VRT artifacts
         if: always()
