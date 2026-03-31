@@ -17,6 +17,10 @@ import {
 }
 
 import {
+  "mizchi/crater/layout/inline",
+} for "test"
+
+import {
 } for "wbtest"
 
 options(

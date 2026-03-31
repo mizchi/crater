@@ -61,6 +61,33 @@ let inline_text_glyph_height_ratio : Double = 1.045
 let inline_wrap_carry_char_width_ratio : Double = 0.636
 
 ///|
+#cfg(target="js")
+extern "js" fn get_builtin_text_advance_ratio_override() -> Double =
+  #|() => {
+  #|  const ratio = Number(globalThis.__craterBuiltinTextAdvanceRatio);
+  #|  return Number.isFinite(ratio) ? ratio : -1;
+  #|}
+
+///|
+let builtin_text_advance_ratio_override : Ref[Double] = { val: -1.0 }
+
+///|
+pub fn set_builtin_text_advance_ratio(ratio : Double) -> Unit {
+  builtin_text_advance_ratio_override.val = ratio
+}
+
+///|
+pub fn clear_builtin_text_advance_ratio() -> Unit {
+  builtin_text_advance_ratio_override.val = -1.0
+}
+
+///|
+#cfg(not(target="js"))
+fn get_builtin_text_advance_ratio_override() -> Double {
+  builtin_text_advance_ratio_override.val
+}
+
+///|
 fn is_wide_char(c : Char) -> Bool {
   let cp = c.to_int()
   (cp >= 0x4E00 && cp <= 0x9FFF) ||
@@ -208,7 +235,17 @@ fn estimate_wrapped_text_metrics(
         return None
       }
       let font_size = node.style.font_size
-      let char_width = if font_size > 0.0 { font_size * 0.5 } else { 0.0 }
+      let override_ratio = get_builtin_text_advance_ratio_override()
+      let effective_ratio = if override_ratio > 0.0 {
+        override_ratio
+      } else {
+        0.5
+      }
+      let char_width = if font_size > 0.0 {
+        font_size * effective_ratio
+      } else {
+        0.0
+      }
       if char_width <= 0.0 {
         return None
       }
@@ -325,7 +362,7 @@ fn estimate_wrapped_text_metrics(
 ///|
 fn estimate_inline_wrap_carry_width(
   prev : @node.Node,
-  next : @node.Node,
+  _next : @node.Node,
 ) -> Double? {
   match prev.text {
     Some(raw_text) => {
@@ -340,18 +377,21 @@ fn estimate_inline_wrap_carry_width(
       if font_size <= 0.0 {
         return None
       }
-      let char_width = font_size * inline_wrap_carry_char_width_ratio
+      let override_ratio = get_builtin_text_advance_ratio_override()
+      let effective_ratio = if override_ratio > 0.0 {
+        override_ratio
+      } else {
+        inline_wrap_carry_char_width_ratio
+      }
+      let char_width = font_size * effective_ratio
       if char_width <= 0.0 {
         return None
       }
 
-      let mut seen_non_ws = false
       let mut in_word = false
       let mut current_word_cols = 0
       let mut last_word_cols = 0
       let mut word_count = 0
-      let mut trailing_boundary_space = false
-
       for c in raw_text.iter() {
         if is_inline_whitespace_char(c) {
           if in_word {
@@ -361,17 +401,12 @@ fn estimate_inline_wrap_carry_width(
             current_word_cols = 0
             in_word = false
           }
-          if seen_non_ws {
-            trailing_boundary_space = true
-          }
         } else {
-          seen_non_ws = true
           if not(in_word) {
             word_count = word_count + 1
           }
           in_word = true
           current_word_cols = current_word_cols + char_display_width(c)
-          trailing_boundary_space = false
         }
       }
       if in_word && current_word_cols > 0 {
@@ -381,15 +416,8 @@ fn estimate_inline_wrap_carry_width(
         return None
       }
 
-      match first_text_char(next) {
-        Some(c) =>
-          if is_inline_whitespace_char(c) {
-            trailing_boundary_space = true
-          }
-        None => ()
-      }
       let mut carry_cols = last_word_cols
-      if word_count > 1 || trailing_boundary_space {
+      if word_count > 1 {
         carry_cols = carry_cols + 1
       }
       if carry_cols <= 0 {
@@ -1400,9 +1428,12 @@ pub fn compute_ifc(
         if has_break_opportunity &&
           child_establishes_abs_cb &&
           child_has_abs_desc &&
-          not(child_has_inflow_block_desc) {
+          not(child_has_inflow_block_desc) &&
+          child.style.display != @types.Inline {
           // Inline abs-containing wrappers may keep their first fragment on the
           // current line even when the overall bounding box exceeds line width.
+          // Plain inline wrappers should wrap to the next line and only keep
+          // the carry offset for their out-of-flow descendants.
           keep_same_line = true
         }
       }
@@ -1422,9 +1453,10 @@ pub fn compute_ifc(
             inline_carry_offset=current_line.width,
           )
           // Use the recalculated height but keep the original width so that
-          // the bounding box still reflects the full content span.
+          // the bounding box matches the actual wrapped fragment width.
           {
             ..child_layout,
+            width: narrower.width,
             height: narrower.height,
             children: narrower.children,
           }

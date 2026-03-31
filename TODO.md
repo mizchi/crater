@@ -43,6 +43,11 @@
   - 正しくは CSS cascade で `font-weight` を解決すべき
 - [ ] text-decoration: underline 未実装（リンクのアンダーラインが表示されない）
 - [ ] WPT VRT ベースライン更新: `just wpt-vrt-baseline-update` で native backend の結果を記録
+- [ ] Inline abspos テキスト幅推定: Ahem フォント (ratio=1.0) でもブラウザ値と不一致
+  - `position-absolute-in-inline-003.html`: span.width browser=40 vs crater=48
+  - `position-absolute-in-inline-004.html`: span.width browser=80 vs crater=100
+  - `wpt.json` の `knownFailures` で一時的にスキップ中
+  - 原因: inline layout の whitespace 折り返し推定がブラウザと異なる
 
 #### kagura 側 (`mizchi/kagura`)
 - [ ] テキスト色が薄い: SVG ラスタライザのアンチエイリアスで alpha が弱い

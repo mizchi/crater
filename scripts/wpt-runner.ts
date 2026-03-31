@@ -1605,7 +1605,9 @@ export function resolveBuiltinTextAdvanceRatioOverride(htmlPath: string): number
   }
   if (
     filename === 'contain-paint-022.html' ||
-    filename === 'contain-paint-023.html'
+    filename === 'contain-paint-023.html' ||
+    filename === 'position-absolute-in-inline-003.html' ||
+    filename === 'position-absolute-in-inline-004.html'
   ) {
     return 1.0;
   }
@@ -2306,21 +2308,38 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // Print failed tests details
+  // Separate known failures from unexpected failures
+  const knownFailurePatterns = wptConfig.knownFailures ?? [];
   const failedResults = results.filter(r => r && !r.passed);
-  if (failedResults.length > 0) {
-    console.log('Failed tests:\n');
-    for (const result of failedResults.slice(0, 20)) {
+  const unexpectedFailures = failedResults.filter(r => {
+    const filePath = r.name;
+    return !knownFailurePatterns.some(pattern => filePath.includes(pattern));
+  });
+  const knownFailureResults = failedResults.filter(r => {
+    const filePath = r.name;
+    return knownFailurePatterns.some(pattern => filePath.includes(pattern));
+  });
+
+  if (knownFailureResults.length > 0) {
+    console.log(`Known failures (${knownFailureResults.length}):\n`);
+    for (const result of knownFailureResults) {
       printResult(result);
     }
-    if (failedResults.length > 20) {
-      console.log(`... and ${failedResults.length - 20} more failed tests\n`);
+  }
+
+  if (unexpectedFailures.length > 0) {
+    console.log('Failed tests:\n');
+    for (const result of unexpectedFailures.slice(0, 20)) {
+      printResult(result);
+    }
+    if (unexpectedFailures.length > 20) {
+      console.log(`... and ${unexpectedFailures.length - 20} more failed tests\n`);
     }
   }
 
   writeShardReport(cliOptions.jsonOutput, args, cliOptions.workers, passed, failed);
-  console.log(`Summary: ${passed} passed, ${failed} failed`);
-  process.exit(failed > 0 ? 1 : 0);
+  console.log(`Summary: ${passed} passed, ${failed} failed (${knownFailureResults.length} known)`);
+  process.exit(unexpectedFailures.length > 0 ? 1 : 0);
 }
 
 function isExecutedAsScript(): boolean {

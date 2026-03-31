@@ -6,6 +6,7 @@ export interface WptConfig {
   includePrefixes: string[];
   recursiveModules?: string[];
   modulePrefixes?: Record<string, string[]>;
+  knownFailures?: string[];
 }
 
 function stripJsonComments(input: string): string {

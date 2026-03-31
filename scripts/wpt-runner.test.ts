@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   applyKnownScriptDrivenFixtureTransforms,
   applySimpleScriptDrivenClassMutations,
+} from "./wpt-html-utils.ts";
+import {
   createHtmlRootComparisonLayout,
   createFocusedComparisonRoot,
   createTextIntrinsicFnFromMeasureText,
@@ -507,6 +509,16 @@ describe("resolveBuiltinTextAdvanceRatioOverride", () => {
     expect(
       resolveBuiltinTextAdvanceRatioOverride(
         "wpt/css/css-contain/contain-paint-023.html",
+      ),
+    ).toBe(1.0);
+    expect(
+      resolveBuiltinTextAdvanceRatioOverride(
+        "wpt/css/css-position/position-absolute-in-inline-003.html",
+      ),
+    ).toBe(1.0);
+    expect(
+      resolveBuiltinTextAdvanceRatioOverride(
+        "wpt/css/css-position/position-absolute-in-inline-004.html",
       ),
     ).toBe(1.0);
   });

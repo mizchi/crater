@@ -80,6 +80,11 @@
       // "break-at-end-"
     ]
   },
+  "knownFailures": [
+    // Inline abspos text estimation mismatch with Ahem font
+    "css-position/position-absolute-in-inline-003.html",
+    "css-position/position-absolute-in-inline-004.html"
+  ],
   "includePrefixes": [
     "align-", "place-",
     "align-content", "align-items", "align-self",

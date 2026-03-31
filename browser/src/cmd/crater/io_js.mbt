@@ -69,11 +69,9 @@ fn load_system_font() -> Bytes {
   // macOS system font paths (in preference order)
   let font_paths = [
     // macOS: SF Pro (closest to -apple-system)
-    "/System/Library/Fonts/SFNS.ttf",
-    "/System/Library/Fonts/Supplemental/Arial.ttf",
+    "/System/Library/Fonts/SFNS.ttf", "/System/Library/Fonts/Supplemental/Arial.ttf",
     // Linux fallbacks
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    "/usr/share/fonts/TTF/DejaVuSans.ttf",
+     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/TTF/DejaVuSans.ttf",
   ]
   for path in font_paths {
     let data = js_read_binary_file(path)

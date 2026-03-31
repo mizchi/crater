@@ -232,9 +232,12 @@ extern "js" fn get_builtin_text_advance_ratio_override() -> Double =
   #|}
 
 ///|
+let builtin_text_advance_ratio_override : Ref[Double] = { val: -1.0 }
+
+///|
 #cfg(not(target="js"))
 fn get_builtin_text_advance_ratio_override() -> Double {
-  -1.0
+  builtin_text_advance_ratio_override.val
 }
 
 ///|

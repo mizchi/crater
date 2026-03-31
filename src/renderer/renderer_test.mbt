@@ -9,8 +9,8 @@ extern "js" fn set_builtin_text_advance_ratio_override_for_test(
 
 ///|
 #cfg(not(target="js"))
-fn set_builtin_text_advance_ratio_override_for_test(_ratio : Double) -> Unit {
-  ()
+fn set_builtin_text_advance_ratio_override_for_test(ratio : Double) -> Unit {
+  builtin_text_advance_ratio_override.val = ratio
 }
 
 ///|
@@ -23,7 +23,7 @@ extern "js" fn clear_builtin_text_advance_ratio_override_for_test() -> Unit =
 ///|
 #cfg(not(target="js"))
 fn clear_builtin_text_advance_ratio_override_for_test() -> Unit {
-  ()
+  builtin_text_advance_ratio_override.val = -1.0
 }
 
 ///|
