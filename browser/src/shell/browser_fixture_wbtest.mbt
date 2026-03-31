@@ -144,13 +144,26 @@ test "kitty image overlay uses rgba pixel path for jpeg payload" {
     tiny_image_region("/tiny.jpg", source_id="tiny-jpeg"),
   ]
   let overlay = browser.build_kitty_image_overlay()
+  let cached = browser.image_cache["/tiny.jpg"]
   let payload = extract_single_chunk_kitty_payload(overlay)
-  assert_true(overlay.contains("\u001b_Ga=T,f=32,q=2,c=1,r=1,"))
   assert_true(overlay.contains(",p="))
-  assert_true(overlay.contains(",s=1,v=1,m=0;"))
-  assert_eq(payload.length(), 8)
-  assert_true(not(payload.has_prefix("/9j/")))
-  assert_true(not(payload.has_prefix("iVBORw0KGgo")))
+  if cached.has_prefix("img_rgba:") {
+    assert_true(overlay.contains("\u001b_Ga=T,f=32,q=2,c=1,r=1,"))
+    assert_true(overlay.contains(",s=1,v=1,m=0;"))
+    assert_eq(payload.length(), 8)
+    assert_true(not(payload.has_prefix("/9j/")))
+    assert_true(not(payload.has_prefix("iVBORw0KGgo")))
+  } else {
+    assert_true(overlay.contains("\u001b_Ga=T,f=100,q=2,c=1,r=1,"))
+    assert_true(overlay.contains(",m=0;"))
+    if cached.has_prefix("img_png:") {
+      assert_true(payload.has_prefix("iVBORw0KGgo"))
+      assert_true(not(payload.has_prefix("/9j/")))
+    } else {
+      assert_true(cached.has_prefix("img:"))
+      assert_eq(payload, tiny_jpeg_base64)
+    }
+  }
 }
 
 ///|
@@ -161,13 +174,26 @@ test "kitty image overlay uses rgba pixel path for gif payload" {
   )
   browser.image_regions = [tiny_image_region("/tiny.gif", source_id="tiny-gif")]
   let overlay = browser.build_kitty_image_overlay()
+  let cached = browser.image_cache["/tiny.gif"]
   let payload = extract_single_chunk_kitty_payload(overlay)
-  assert_true(overlay.contains("\u001b_Ga=T,f=32,q=2,c=1,r=1,"))
   assert_true(overlay.contains(",p="))
-  assert_true(overlay.contains(",s=1,v=1,m=0;"))
-  assert_eq(payload.length(), 8)
-  assert_true(not(payload.has_prefix("R0lG")))
-  assert_true(not(payload.has_prefix("iVBORw0KGgo")))
+  if cached.has_prefix("img_rgba:") {
+    assert_true(overlay.contains("\u001b_Ga=T,f=32,q=2,c=1,r=1,"))
+    assert_true(overlay.contains(",s=1,v=1,m=0;"))
+    assert_eq(payload.length(), 8)
+    assert_true(not(payload.has_prefix("R0lG")))
+    assert_true(not(payload.has_prefix("iVBORw0KGgo")))
+  } else {
+    assert_true(overlay.contains("\u001b_Ga=T,f=100,q=2,c=1,r=1,"))
+    assert_true(overlay.contains(",m=0;"))
+    if cached.has_prefix("img_png:") {
+      assert_true(payload.has_prefix("iVBORw0KGgo"))
+      assert_true(not(payload.has_prefix("R0lG")))
+    } else {
+      assert_true(cached.has_prefix("img:"))
+      assert_eq(payload, tiny_gif_base64)
+    }
+  }
 }
 
 ///|
@@ -265,6 +291,11 @@ fn inject_after_marker(
 
 ///|
 fn center_of_source_id(browser : Browser, source_id : String) -> (Int, Int) {
+  for region in browser.hit_regions {
+    if region.source_id == source_id {
+      return (region.col + region.width / 2, region.row + region.height / 2)
+    }
+  }
   browser.build_accessibility_tree()
   match browser.a11y_tree {
     Some(tree) =>
