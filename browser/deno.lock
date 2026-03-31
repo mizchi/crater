@@ -7,6 +7,8 @@
   "workspace": {
     "packageJson": {
       "dependencies": [
+        "npm:pixelmatch@^7.1.0",
+        "npm:pngjs@7",
         "npm:puppeteer-core@^24.8.0",
         "npm:quickjs-emscripten@0.31",
         "npm:rolldown@^1.0.0-beta.58",

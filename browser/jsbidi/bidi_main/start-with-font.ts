@@ -6,6 +6,10 @@
  * Usage: deno run -A browser/jsbidi/bidi_main/start-with-font.ts
  */
 import { createTextIntrinsicFnFromMeasureText } from "../../../scripts/text-intrinsic.ts";
+import {
+  listBundledWptFonts,
+  resolveBundledWptFontUrl,
+} from "../../../scripts/wpt-font-utils.ts";
 
 const HOME = Deno.env.get("HOME") || "/tmp";
 const fontModulePath = `${HOME}/ghq/github.com/mizchi/font/_build/js/release/build/js/js.js`;
@@ -118,9 +122,13 @@ interface FontInstance {
 // Cache of loaded font instances: family -> { regular, bold }
 const fontCache = new Map<string, { regular?: FontInstance; bold?: FontInstance }>();
 
-async function loadFontInstance(fontPath: string): Promise<FontInstance | null> {
+function fontPathLabel(fontPath: string | URL): string {
+  return fontPath instanceof URL ? fontPath.pathname : fontPath;
+}
+
+async function loadFontInstance(fontPath: string | URL): Promise<FontInstance | null> {
   try {
-    const cacheBuster = `?f=${encodeURIComponent(fontPath)}`;
+    const cacheBuster = `?f=${encodeURIComponent(String(fontPath))}`;
     const mod = await import(`${fontModulePath}${cacheBuster}`);
     const loadFont = mod.loadFont ?? mod.default?.loadFont;
     const measureText = mod.measureText ?? mod.default?.measureText;
@@ -190,6 +198,27 @@ async function preloadFonts() {
   }
 }
 
+async function preloadBundledWptFonts() {
+  for (const font of listBundledWptFonts()) {
+    const fontUrl = resolveBundledWptFontUrl(font.fileName);
+    try {
+      Deno.statSync(fontUrl);
+    } catch {
+      continue;
+    }
+
+    const regular = await loadFontInstance(fontUrl);
+    if (!regular) continue;
+
+    const entry = { regular };
+    fontCache.set(font.family, entry);
+    for (const alias of font.aliases ?? []) {
+      fontCache.set(alias.toLowerCase(), entry);
+    }
+    console.error(`[font] ${font.family}: ${fontPathLabel(fontUrl)}`);
+  }
+}
+
 function getFontInstance(fontFamily: string, isBold: boolean): FontInstance | null {
   const families = fontFamily.split(",").map((f) => f.trim().replace(/['"]/g, "").toLowerCase());
   for (const f of families) {
@@ -210,6 +239,7 @@ function getFontInstance(fontFamily: string, isBold: boolean): FontInstance | nu
 // Install global providers
 // ============================================================
 await preloadFonts();
+await preloadBundledWptFonts();
 
 const defaultFont = getFontInstance("arial, sans-serif", false);
 if (!defaultFont) {

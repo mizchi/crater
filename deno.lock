@@ -1653,6 +1653,7 @@
         "npm:@bytecodealliance/jco@^1.15.4",
         "npm:@playwright/test@^1.58.0",
         "npm:@types/ws@^8.18.1",
+        "npm:pixelmatch@^7.1.0",
         "npm:playwright@^1.58.0",
         "npm:preact@^10.28.2",
         "npm:puppeteer@23",

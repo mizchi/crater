@@ -122,19 +122,52 @@ function mimeTypeFromPath(filePath: string): string {
   }
 }
 
-function inlineCssAssetUrls(cssContent: string, cssPath: string): string {
-  const cssDir = path.dirname(cssPath);
+function inlineCssImports(
+  cssContent: string,
+  basePath: string,
+  seenPaths: Set<string>,
+): string {
+  const baseDir = path.dirname(basePath);
+  const importRegex =
+    /@import\s+(?:url\(\s*(?:"([^"]+)"|'([^']+)'|([^'")\s]+))\s*\)|"([^"]+)"|'([^']+)')\s*;/gi;
+  return cssContent.replace(importRegex, (match, g1, g2, g3, g4, g5) => {
+    const importRef = (g1 || g2 || g3 || g4 || g5 || '').trim();
+    if (!importRef || isExternalResourceUrl(importRef)) return match;
+
+    const importPath = resolveLocalResourcePath(baseDir, importRef);
+    if (!importPath || !fs.existsSync(importPath)) return match;
+    const normalizedImportPath = path.resolve(importPath);
+    if (seenPaths.has(normalizedImportPath)) {
+      return match;
+    }
+
+    try {
+      const importedCss = fs.readFileSync(importPath, 'utf-8');
+      return `/* Inlined import from ${importRef} */\n${inlineCssDependencies(
+        importedCss,
+        importPath,
+        new Set([...seenPaths, normalizedImportPath]),
+      )}`;
+    } catch {
+      return match;
+    }
+  });
+}
+
+function inlineCssDependencies(
+  cssContent: string,
+  basePath: string,
+  seenPaths: Set<string> = new Set([path.resolve(basePath)]),
+): string {
+  const baseDir = path.dirname(basePath);
   const cssUrlRegex = /url\(\s*(?:"([^"]+)"|'([^']+)'|([^'")\s]+))\s*\)/gi;
-  return cssContent.replace(cssUrlRegex, (match, g1, g2, g3) => {
+  const cssWithImportsInlined = inlineCssImports(cssContent, basePath, seenPaths);
+  return cssWithImportsInlined.replace(cssUrlRegex, (match, g1, g2, g3) => {
     const assetRef = (g1 || g2 || g3 || '').trim();
     if (!assetRef || isExternalResourceUrl(assetRef)) return match;
 
-    const assetPath = resolveLocalResourcePath(cssDir, assetRef);
+    const assetPath = resolveLocalResourcePath(baseDir, assetRef);
     if (!assetPath || !fs.existsSync(assetPath)) return match;
-    const ext = path.extname(assetPath).toLowerCase();
-    if (ext === '.ttf' || ext === '.otf' || ext === '.woff' || ext === '.woff2') {
-      return match;
-    }
 
     try {
       const bytes = fs.readFileSync(assetPath);
@@ -165,12 +198,19 @@ function inlineExternalCSS(html: string, htmlPath: string): string {
     try {
       if (fs.existsSync(cssPath)) {
         const cssContent = fs.readFileSync(cssPath, 'utf-8');
-        const inlinedCss = inlineCssAssetUrls(cssContent, cssPath);
+        const inlinedCss = inlineCssDependencies(cssContent, cssPath);
         return `<style>/* Inlined from ${href} */\n${inlinedCss}</style>`;
       }
     } catch {}
     return `<!-- CSS not found: ${href} -->`;
   });
+}
+
+function inlineStyleTagCss(html: string, htmlPath: string): string {
+  const styleRegex = /<style(\b[^>]*)>([\s\S]*?)<\/style>/gi;
+  return html.replace(styleRegex, (_match, attrs, cssContent) => (
+    `<style${attrs}>${inlineCssDependencies(cssContent, htmlPath)}</style>`
+  ));
 }
 
 // --- Script-driven class mutations ---
@@ -362,6 +402,7 @@ export function applyKnownScriptDrivenFixtureTransforms(
 export function prepareHtmlContent(htmlPath: string): string {
   let htmlContent = fs.readFileSync(htmlPath, 'utf-8');
   htmlContent = inlineExternalCSS(htmlContent, htmlPath);
+  htmlContent = inlineStyleTagCss(htmlContent, htmlPath);
   htmlContent = applySimpleScriptDrivenClassMutations(htmlContent);
   htmlContent = applyKnownScriptDrivenFixtureTransforms(htmlContent, htmlPath);
   htmlContent = htmlContent.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');

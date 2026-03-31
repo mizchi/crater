@@ -510,6 +510,51 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
   - image: `set_image_intrinsic_size_provider`（`CRATER_IMAGE_MODULE` または `mizchi/image`）
   - 画像ローカル寸法解決フォールバックは `CRATER_IMAGE_FILE_RESOLVE=1` のときのみ有効
 
+### WPT 候補メモ（2026-03-31）
+
+- 対象変更:
+  - `src/paint/paint.mbt` で whitespace-only text node を paint tree の child 対応から除外
+  - `browser/src/shell/browser_fixture_wbtest.mbt` で hidden input を含む `inline-flex` label の回帰を追加
+- 検証方針:
+  - Chromium と Crater の viewport paint を ROI crop + `pixelmatch(threshold=0.3)` で比較
+  - 目安は現行 `wpt-vrt.json` の `defaultMaxDiffRatio = 0.15`
+- 反映:
+  - `tests/helpers/wpt-vrt-utils.ts` に `explicitTests` 対応を追加
+  - `wpt-vrt.json` に下記候補を個別追加して、先頭 `limitPerModule` に依存せず収集できるようにした
+- そのまま払い出してよさそうな候補:
+  - `wpt/css/css-flexbox/anonymous-flex-item-004.html` (`diffRatio: 0.0717`)
+  - `wpt/css/css-flexbox/anonymous-flex-item-005.html` (`diffRatio: 0.0717`)
+  - `wpt/css/css-flexbox/anonymous-flex-item-006.html` (`diffRatio: 0.0717`)
+  - `wpt/css/css-flexbox/align-items-006.html` (`diffRatio: 0.1064`, manual batch / mask off)
+  - `wpt/css/css-flexbox/align-items-baseline-overflow-non-visible.html` (`diffRatio: 0.0044`, manual batch / mask off)
+  - `wpt/css/css-flexbox/flexbox-whitespace-handling-001a.xhtml` (`diffRatio: 0.1028`)
+  - `wpt/css/css-flexbox/flexbox-whitespace-handling-001b.xhtml` (`diffRatio: 0.1337`)
+  - `wpt/css/css-display/display-contents-flex-001.html` (`diffRatio: 0.0672`)
+  - `wpt/css/css-display/display-contents-flex-002.html` (`diffRatio: 0.1280`)
+  - `wpt/css/css-display/display-contents-flex-003.html` (`diffRatio: 0.1345`)
+  - `wpt/css/css-display/display-contents-dynamic-flex-001-none.html` (`diffRatio: 0.0672`)
+  - `wpt/css/css-display/display-contents-dynamic-flex-001-inline.html` (`diffRatio: 0.0672`)
+  - `wpt/css/css-display/display-contents-line-height.html` (`diffRatio: 0.0742`)
+  - `wpt/css/css-display/display-contents-shadow-host-whitespace.html` (`diffRatio: 0.0906`)
+  - `wpt/css/css-display/display-contents-text-only-001.html` (`diffRatio: 0.0933`)
+  - `wpt/css/css-display/display-contents-whitespace-inside-inline.html` (`diffRatio: 0.0884`)
+  - `wpt/css/css-display/display-contents-inline-flex-001.html` (`diffRatio: 0.0745`)
+  - `wpt/css/css-display/display-contents-dynamic-inline-flex-001-none.html` (`diffRatio: 0.0745`)
+  - `wpt/css/css-display/display-contents-dynamic-inline-flex-001-inline.html` (`diffRatio: 0.0745`)
+  - `wpt/css/css-display/display-contents-slot-attach-whitespace.html` (`diffRatio: 0.0915`)
+  - `wpt/css/css-flexbox/flexbox-whitespace-handling-002.xhtml` (`diffRatio: 0.0105`, Ahem preload 後に再計測)
+  - `wpt/css/css-flexbox/flex-container-max-content-001.html` (`diffRatio: 0.1003`, manual batch / mask off)
+  - `wpt/css/css-flexbox/flex-container-min-content-001.html` (`diffRatio: 0.0870`, manual batch / mask off)
+  - `wpt/css/css-flexbox/flex-item-content-is-min-width-max-content.html` (`diffRatio: 0.0030`, manual batch / mask off)
+  - `wpt/css/css-flexbox/table-item-flex-percentage-min-width.html` (`diffRatio: 0.0807`, manual batch / mask off)
+  - `wpt/css/css-flexbox/table-item-flex-percentage-width.html` (`diffRatio: 0.0764`, manual batch / mask off)
+  - `wpt/css/css-position/position-absolute-in-inline-003.html` (`diffRatio: 0.0241`, manual batch / mask off)
+  - `wpt/css/css-position/position-absolute-in-inline-004.html` (`diffRatio: 0.0808`, manual batch / mask off)
+- 境界値なので spot-check 後に出す候補:
+  - `wpt/css/css-flexbox/remove-wrapped-002.html` (`diffRatio: 0.1471`)
+- 今回は保留:
+  - `wpt/css/css-flexbox/align-items-009.html` (`diffRatio: 0.1661`, manual batch / mask off)
+
 ## Browser 挙動確認 WPT（2026-03-12）
 
 - 目的:
