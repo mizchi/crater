@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-03-30T18:14:00.000Z",
+  "updatedAt": "2026-03-31T00:00:00.000Z",
   "config": {
     "viewport": {
       "width": 800,
@@ -36,11 +36,11 @@
       "status": "pass"
     },
     "css-display/display-change-iframe.html": {
-      "diffRatio": 0.0732495511669659,
+      "diffRatio": 0.10514661879114302,
       "status": "pass"
     },
     "css-display/display-change-object-iframe.html": {
-      "diffRatio": 0.0732495511669659,
+      "diffRatio": 0.10514661879114302,
       "status": "pass"
     },
     "css-display/display-contents-001-crash.html": {
