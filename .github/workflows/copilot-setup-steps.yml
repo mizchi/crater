@@ -27,7 +27,7 @@ jobs:
     # If you do not check out your code, Copilot will do this for you.
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up MoonBit
         run: |
@@ -35,7 +35,7 @@ jobs:
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 

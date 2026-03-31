@@ -6,13 +6,16 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -65,7 +68,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -75,12 +78,12 @@ jobs:
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
 
       - name: Install dependencies
         run: pnpm install
@@ -107,7 +110,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -127,12 +130,12 @@ jobs:
           wasm-tools --version
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
 
       - name: Install dependencies
         run: pnpm install
@@ -178,7 +181,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -198,12 +201,12 @@ jobs:
           wasm-tools --version
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
 
       - name: Install dependencies
         run: pnpm install
@@ -222,7 +225,7 @@ jobs:
 
       - name: Upload WPT CSS shard report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: wpt-css-report-${{ matrix.name }}
           path: wpt-reports/wpt-css-${{ matrix.name }}.json
@@ -234,7 +237,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -247,12 +250,12 @@ jobs:
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
 
       - name: Install dependencies
         run: pnpm install
@@ -273,7 +276,7 @@ jobs:
 
       - name: Upload WPT DOM shard report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: wpt-dom-report-all
           path: wpt-reports/wpt-dom-*.json
@@ -289,23 +292,23 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
 
       - name: Install dependencies
         run: pnpm install
 
       - name: Download WPT shard reports
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: wpt-*-report-*
           path: wpt-reports
@@ -323,7 +326,7 @@ jobs:
         run: cat wpt-summary/wpt-compat-summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload WPT compatibility summary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: wpt-compat-summary
           path: wpt-summary/*
@@ -335,7 +338,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -348,12 +351,12 @@ jobs:
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
 
       - name: Install Deno
         uses: denoland/setup-deno@v2
@@ -395,7 +398,7 @@ jobs:
 
       - name: Upload WPT WebDriver shard report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: wpt-webdriver-report-all
           path: wpt-reports/wpt-webdriver-*.json
@@ -406,7 +409,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -419,12 +422,12 @@ jobs:
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
 
       - name: Install Deno
         uses: denoland/setup-deno@v2
@@ -461,7 +464,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -474,12 +477,12 @@ jobs:
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
 
       - name: Install Deno
         uses: denoland/setup-deno@v2
@@ -508,7 +511,7 @@ jobs:
 
       - name: Upload VRT artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: playwright-vrt-artifacts
           path: |
@@ -535,21 +538,21 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
 
       - name: Install dependencies
         run: pnpm install
 
       - name: Collect CI job timings
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require("node:fs");
@@ -578,7 +581,7 @@ jobs:
         run: cat ci-timing/summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload CI timing summary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ci-timing-summary
           path: ci-timing/*
