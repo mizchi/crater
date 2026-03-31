@@ -459,7 +459,7 @@ jobs:
       - name: Run website loading tests
         run: just test-website
 
-  playwright-vrt-tests:
+  playwright-paint-vrt:
     runs-on: ubuntu-latest
 
     steps:
@@ -506,14 +506,83 @@ jobs:
       - name: Run paint VRT
         run: just test-vrt
 
-      - name: Run WPT VRT
-        run: just test-wpt-vrt
-
-      - name: Upload VRT artifacts
+      - name: Upload paint VRT artifacts
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: playwright-vrt-artifacts
+          name: paint-vrt-artifacts
+          path: |
+            output/playwright/vrt/**
+            test-results/**
+          if-no-files-found: warn
+
+  playwright-wpt-vrt:
+    name: wpt-vrt (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: flexbox
+            modules: css-flexbox
+          - name: display
+            modules: css-display
+          - name: box
+            modules: css-box
+          - name: position
+            modules: css-position
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Install just
+        uses: extractions/setup-just@v3
+
+      - name: Set up MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install Playwright browsers for VRT
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Update MoonBit dependencies
+        run: |
+          moon update
+          moon update --manifest-path browser/moon.mod.json
+
+      - name: Build BiDi server
+        run: just build-bidi
+
+      - name: Run WPT VRT shard
+        run: just test-wpt-vrt
+        env:
+          WPT_VRT_SHARD: ${{ matrix.modules }}
+
+      - name: Upload WPT VRT artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: wpt-vrt-artifacts-${{ matrix.name }}
           path: |
             output/playwright/vrt/**
             test-results/**
@@ -531,7 +600,8 @@ jobs:
       - wpt-webdriver-tests
       - wpt-compat-summary
       - playwright-bidi-tests
-      - playwright-vrt-tests
+      - playwright-paint-vrt
+      - playwright-wpt-vrt
     permissions:
       contents: read
       actions: read

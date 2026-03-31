@@ -19,11 +19,15 @@ import {
 } from "./helpers/wpt-vrt-utils";
 
 const UPDATE_BASELINE = process.env.WPT_VRT_UPDATE_BASELINE === "1";
+const SHARD_MODULES = process.env.WPT_VRT_SHARD?.split(",").map(s => s.trim()).filter(Boolean) ?? [];
 const OUTPUT_ROOT = path.join(process.cwd(), "output", "playwright", "vrt", "wpt");
 const REGRESSION_EPSILON = 0.01;
 const BATCH_SIZE = 10;
 const config = loadWptVrtConfig();
-const entries = collectWptVrtTests(config);
+const allEntries = collectWptVrtTests(config);
+const entries = SHARD_MODULES.length > 0
+  ? allEntries.filter(e => SHARD_MODULES.includes(e.moduleName))
+  : allEntries;
 const baseline = loadWptVrtBaseline();
 const batches = createWptVrtBatches(entries, BATCH_SIZE);
 
