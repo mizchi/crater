@@ -478,6 +478,22 @@ jobs:
           path: playwright-report.json
           if-no-files-found: warn
 
+      - name: Build Playwright report summary
+        if: always()
+        run: just playwright-report-summary playwright-report.json playwright-bidi playwright-summary
+
+      - name: Publish Playwright report summary
+        if: always()
+        run: cat playwright-summary/playwright-bidi.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Playwright report summary
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-summary
+          path: playwright-summary/*
+          if-no-files-found: warn
+
   flaker-config:
     runs-on: ubuntu-latest
 
@@ -501,8 +517,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Validate flaker config tests
-        run: pnpm exec vitest run scripts/flaker-config.test.ts
+      - name: Validate flaker/report tool tests
+        run: pnpm exec vitest run scripts/flaker-config.test.ts scripts/playwright-report-summary.test.ts
 
       - name: Build flaker config summary
         run: just flaker-report flaker-report
@@ -630,6 +646,22 @@ jobs:
         with:
           name: paint-vrt-report
           path: paint-vrt-report.json
+          if-no-files-found: warn
+
+      - name: Build paint VRT report summary
+        if: always()
+        run: just playwright-report-summary paint-vrt-report.json paint-vrt paint-vrt-summary
+
+      - name: Publish paint VRT report summary
+        if: always()
+        run: cat paint-vrt-summary/paint-vrt.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload paint VRT report summary
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: paint-vrt-summary
+          path: paint-vrt-summary/*
           if-no-files-found: warn
 
       - name: Upload paint VRT artifacts
