@@ -13,9 +13,7 @@ import {
 pub(all) enum BorderCollapse {
   Separate
   Collapse
-}
-pub impl Eq for BorderCollapse
-pub impl Show for BorderCollapse
+} derive(Eq, Show)
 
 pub(all) enum BorderStyle {
   None
@@ -28,46 +26,34 @@ pub(all) enum BorderStyle {
   Solid
   Double
   Hidden
-}
+} derive(Eq, Show)
 pub fn BorderStyle::priority(Self) -> Int
-pub impl Eq for BorderStyle
-pub impl Show for BorderStyle
 
 pub(all) enum BreakBefore {
   Auto
   Column
   Avoid
-}
-pub impl Eq for BreakBefore
-pub impl Show for BreakBefore
+} derive(Eq, Show)
 
 pub(all) enum BreakInside {
   Auto
   Avoid
-}
-pub impl Eq for BreakInside
-pub impl Show for BreakInside
+} derive(Eq, Show)
 
 pub(all) enum CaptionSide {
   Top
   Bottom
-}
-pub impl Eq for CaptionSide
-pub impl Show for CaptionSide
+} derive(Eq, Show)
 
 pub(all) enum ColumnFill {
   Balance
   Auto
-}
-pub impl Eq for ColumnFill
-pub impl Show for ColumnFill
+} derive(Eq, Show)
 
 pub(all) enum ColumnSpan {
   None
   All
-}
-pub impl Eq for ColumnSpan
-pub impl Show for ColumnSpan
+} derive(Eq, Show)
 
 pub(all) struct Contain {
   size : Bool
@@ -75,21 +61,17 @@ pub(all) struct Contain {
   layout : Bool
   paint : Bool
   style : Bool
-}
+} derive(Eq, Show)
 pub fn Contain::content() -> Self
 pub fn Contain::has_containment(Self) -> Bool
 pub fn Contain::none() -> Self
 pub fn Contain::strict() -> Self
-pub impl Eq for Contain
-pub impl Show for Contain
 
 pub(all) enum Direction {
   Ltr
   Rtl
-}
+} derive(Eq, Show)
 pub fn Direction::is_rtl(Self) -> Bool
-pub impl Eq for Direction
-pub impl Show for Direction
 
 pub(all) enum MarginTrim {
   None
@@ -99,55 +81,43 @@ pub(all) enum MarginTrim {
   InlineStart
   InlineEnd
   Inline
-}
+} derive(Eq, Show)
 pub fn MarginTrim::trim_block_end(Self) -> Bool
 pub fn MarginTrim::trim_block_start(Self) -> Bool
-pub impl Eq for MarginTrim
-pub impl Show for MarginTrim
 
 pub(all) enum PointerEvents {
   Auto
   None
-}
-pub impl Eq for PointerEvents
-pub impl Show for PointerEvents
+} derive(Eq, Show)
 
 pub(all) enum ScrollSnapAlign {
   None
   Start
   End
   Center
-}
-pub impl Eq for ScrollSnapAlign
-pub impl Show for ScrollSnapAlign
+} derive(Eq, Show)
 
 pub(all) enum ScrollSnapAxis {
   None
   X
   Y
   Both
-}
-pub impl Eq for ScrollSnapAxis
-pub impl Show for ScrollSnapAxis
+} derive(Eq, Show)
 
 pub(all) enum ScrollSnapStrictness {
   None
   Mandatory
   Proximity
-}
-pub impl Eq for ScrollSnapStrictness
-pub impl Show for ScrollSnapStrictness
+} derive(Eq, Show)
 
 pub(all) struct ScrollSnapType {
   axis : ScrollSnapAxis
   strictness : ScrollSnapStrictness
-}
+} derive(Eq, Show)
 pub fn ScrollSnapType::is_mandatory(Self) -> Bool
 pub fn ScrollSnapType::none() -> Self
 pub fn ScrollSnapType::snaps_x(Self) -> Bool
 pub fn ScrollSnapType::snaps_y(Self) -> Bool
-pub impl Eq for ScrollSnapType
-pub impl Show for ScrollSnapType
 
 pub(all) struct Style {
   mut display : @types.Display
@@ -241,6 +211,8 @@ pub(all) struct Style {
   mut border_bottom_right_radius : Double
   mut border_bottom_left_radius : Double
   mut text_decoration_underline : Bool
+  mut text_decoration_line_through : Bool
+  mut text_decoration_overline : Bool
   mut letter_spacing : Double
   mut word_spacing : Double
 }
@@ -254,9 +226,7 @@ pub fn Style::suppresses_intrinsic_width(Self) -> Bool
 pub(all) enum TableLayout {
   Auto
   Fixed
-}
-pub impl Eq for TableLayout
-pub impl Show for TableLayout
+} derive(Eq, Show)
 
 pub(all) enum TextAlign {
   Start
@@ -265,30 +235,24 @@ pub(all) enum TextAlign {
   Right
   Center
   Justify
-}
-pub impl Eq for TextAlign
-pub impl Show for TextAlign
+} derive(Eq, Show)
 
 pub(all) struct Transform {
   translate_x : TranslateValue
   translate_y : TranslateValue
   scale_x : Double
   scale_y : Double
-}
+} derive(Eq, Show)
 pub fn Transform::compute_translate_x(Self, Double) -> Double
 pub fn Transform::compute_translate_y(Self, Double) -> Double
 pub fn Transform::has_scale(Self) -> Bool
 pub fn Transform::is_none(Self) -> Bool
 pub fn Transform::none() -> Self
-pub impl Eq for Transform
-pub impl Show for Transform
 
 pub(all) enum TranslateValue {
   Length(Double)
   Percent(Double)
-}
-pub impl Eq for TranslateValue
-pub impl Show for TranslateValue
+} derive(Eq, Show)
 
 pub(all) enum VerticalAlign {
   Baseline
@@ -299,17 +263,13 @@ pub(all) enum VerticalAlign {
   TextBottom
   Sub
   Super
-}
-pub impl Eq for VerticalAlign
-pub impl Show for VerticalAlign
+} derive(Eq, Show)
 
 pub(all) enum Visibility {
   Visible
   Hidden
   Collapse
-}
-pub impl Eq for Visibility
-pub impl Show for Visibility
+} derive(Eq, Show)
 
 pub(all) enum WhiteSpace {
   Normal
@@ -317,26 +277,20 @@ pub(all) enum WhiteSpace {
   Pre
   PreWrap
   PreLine
-}
-pub impl Eq for WhiteSpace
-pub impl Show for WhiteSpace
+} derive(Eq, Show)
 
 pub(all) enum WritingMode {
   HorizontalTb
   VerticalRl
   VerticalLr
-}
+} derive(Eq, Show)
 pub fn WritingMode::is_block_rtl(Self) -> Bool
 pub fn WritingMode::is_vertical(Self) -> Bool
-pub impl Eq for WritingMode
-pub impl Show for WritingMode
 
 pub(all) enum ZIndex {
   Auto
   Value(Int)
-}
-pub impl Eq for ZIndex
-pub impl Show for ZIndex
+} derive(Eq, Show)
 
 // Type aliases
 

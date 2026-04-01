@@ -1,5 +1,6 @@
 import {
   "moonbitlang/core/bench",
+  "mizchi/crater",
   "mizchi/crater/html",
   "mizchi/crater/renderer",
   "mizchi/crater/layout/node",

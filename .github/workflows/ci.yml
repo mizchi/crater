@@ -478,6 +478,98 @@ jobs:
           path: playwright-report.json
           if-no-files-found: warn
 
+  flaker-config:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Install just
+        uses: extractions/setup-just@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Validate flaker config tests
+        run: pnpm exec vitest run scripts/flaker-config.test.ts
+
+      - name: Build flaker config summary
+        run: just flaker-report flaker-report
+
+      - name: Publish flaker config summary
+        run: cat flaker-report/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload flaker config summary
+        uses: actions/upload-artifact@v6
+        with:
+          name: flaker-config-summary
+          path: flaker-report/*
+          if-no-files-found: error
+
+  vrt-bench:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Install just
+        uses: extractions/setup-just@v3
+
+      - name: Set up MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Update MoonBit dependencies
+        run: moon update
+
+      - name: Validate VRT bench parser tests
+        run: pnpm exec vitest run scripts/vrt-bench.test.ts
+
+      - name: Run VRT API benchmarks
+        run: just bench-vrt-report api vrt-bench
+
+      - name: Run VRT phase benchmarks
+        run: just bench-vrt-report phases vrt-bench
+
+      - name: Publish VRT bench summary
+        run: |
+          cat vrt-bench/api.md >> "$GITHUB_STEP_SUMMARY"
+          printf '\n\n' >> "$GITHUB_STEP_SUMMARY"
+          cat vrt-bench/phases.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload VRT bench summary
+        uses: actions/upload-artifact@v6
+        with:
+          name: vrt-bench-summary
+          path: vrt-bench/*
+          if-no-files-found: error
+
   playwright-paint-vrt:
     runs-on: ubuntu-latest
 
@@ -642,6 +734,8 @@ jobs:
       - wpt-webdriver-tests
       - wpt-compat-summary
       - playwright-bidi-tests
+      - flaker-config
+      - vrt-bench
       - playwright-paint-vrt
       - playwright-wpt-vrt
     permissions:

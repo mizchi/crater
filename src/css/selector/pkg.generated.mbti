@@ -173,12 +173,10 @@ pub(all) struct Specificity {
   a : Int
   b : Int
   c : Int
-}
+} derive(Compare, Eq)
 pub fn Specificity::add(Self, Self) -> Self
 pub fn Specificity::compare_to(Self, Self) -> Int
 pub fn Specificity::zero() -> Self
-pub impl Compare for Specificity
-pub impl Eq for Specificity
 pub impl Show for Specificity
 
 // Type aliases

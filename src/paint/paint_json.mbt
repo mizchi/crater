@@ -59,6 +59,19 @@ fn write_paint_props_json(buf : StringBuilder, p : PaintProperties) -> Unit {
   if p.is_bold {
     buf.write_string(",\"b\":true")
   }
+  if p.font_family != "" {
+    buf.write_string(",\"ff\":")
+    write_json_string(buf, p.font_family)
+  }
+  if p.text_decoration_underline {
+    buf.write_string(",\"u\":true")
+  }
+  if p.text_decoration_line_through {
+    buf.write_string(",\"lt\":true")
+  }
+  if p.text_decoration_overline {
+    buf.write_string(",\"ov\":true")
+  }
   let vis = match p.visibility {
     @style.Visibility::Visible => "visible"
     @style.Visibility::Hidden => "hidden"
@@ -80,6 +93,34 @@ fn write_paint_props_json(buf : StringBuilder, p : PaintProperties) -> Unit {
     write_json_double(buf, p.border_bottom_right_radius)
     buf.write_char(',')
     write_json_double(buf, p.border_bottom_left_radius)
+    buf.write_char(']')
+  }
+  if p.border_top_width != 0.0 ||
+    p.border_right_width != 0.0 ||
+    p.border_bottom_width != 0.0 ||
+    p.border_left_width != 0.0 {
+    buf.write_string(",\"bw\":[")
+    write_json_double(buf, p.border_top_width)
+    buf.write_char(',')
+    write_json_double(buf, p.border_right_width)
+    buf.write_char(',')
+    write_json_double(buf, p.border_bottom_width)
+    buf.write_char(',')
+    write_json_double(buf, p.border_left_width)
+    buf.write_char(']')
+  }
+  if p.border_top_color != @types.Color::transparent() ||
+    p.border_right_color != @types.Color::transparent() ||
+    p.border_bottom_color != @types.Color::transparent() ||
+    p.border_left_color != @types.Color::transparent() {
+    buf.write_string(",\"bc\":[")
+    write_color_json(buf, p.border_top_color)
+    buf.write_char(',')
+    write_color_json(buf, p.border_right_color)
+    buf.write_char(',')
+    write_color_json(buf, p.border_bottom_color)
+    buf.write_char(',')
+    write_color_json(buf, p.border_left_color)
     buf.write_char(']')
   }
   buf.write_char('}')

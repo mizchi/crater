@@ -102,7 +102,9 @@ pub fn initial_value(property : String) -> String {
     "direction" => "ltr"
     "writing-mode" => "horizontal-tb"
     "text-align" => "start"
+    "font-weight" => "400"
     "white-space" => "normal"
+    "text-decoration" | "text-decoration-line" => "none"
     // Containment
     "contain" => "none"
     "contain-intrinsic-size"

@@ -94,8 +94,7 @@ pub(all) enum FetchResult {
   Success(response~ : NetworkResponse)
   Redirect(location~ : String, status~ : Int)
   Failure(error~ : String)
-}
-pub impl Show for FetchResult
+} derive(Show)
 
 pub(all) enum HttpMethod {
   GET
@@ -105,11 +104,9 @@ pub(all) enum HttpMethod {
   HEAD
   OPTIONS
   PATCH
-}
+} derive(Eq, Show)
 pub fn HttpMethod::from_string(String) -> Self
 pub fn HttpMethod::to_string(Self) -> String
-pub impl Eq for HttpMethod
-pub impl Show for HttpMethod
 
 pub(all) struct ImageRegistration {
   resource_id : @tree.ResourceId
@@ -126,8 +123,7 @@ pub(all) enum InputEvent {
   Mouse(MouseEvent)
   Keyboard(KeyboardEvent)
   Text(String)
-}
-pub impl Show for InputEvent
+} derive(Show)
 
 pub struct InputManager {
   pending_events : Array[InputEvent]
@@ -144,9 +140,7 @@ pub(all) enum KeyEventType {
   KeyUp
   RawKeyDown
   Char
-}
-pub impl Eq for KeyEventType
-pub impl Show for KeyEventType
+} derive(Eq, Show)
 
 pub(all) struct KeyboardEvent {
   event_type : KeyEventType
@@ -155,12 +149,11 @@ pub(all) struct KeyboardEvent {
   modifiers : Int
   text : String?
   timestamp : Double
-}
+} derive(Show)
 pub fn KeyboardEvent::new(KeyEventType, String) -> Self
 pub fn KeyboardEvent::with_code(Self, String) -> Self
 pub fn KeyboardEvent::with_modifiers(Self, Int) -> Self
 pub fn KeyboardEvent::with_text(Self, String) -> Self
-pub impl Show for KeyboardEvent
 
 pub(all) struct LayoutComputeResult {
   layout : @types.Layout
@@ -209,9 +202,7 @@ pub(all) enum MouseButton {
   Right
   Back
   Forward
-}
-pub impl Eq for MouseButton
-pub impl Show for MouseButton
+} derive(Eq, Show)
 
 pub(all) struct MouseEvent {
   event_type : MouseEventType
@@ -222,29 +213,25 @@ pub(all) struct MouseEvent {
   click_count : Int
   modifiers : Int
   timestamp : Double
-}
+} derive(Show)
 pub fn MouseEvent::new(MouseEventType, Double, Double) -> Self
 pub fn MouseEvent::with_button(Self, MouseButton) -> Self
 pub fn MouseEvent::with_modifiers(Self, Int) -> Self
-pub impl Show for MouseEvent
 
 pub(all) enum MouseEventType {
   MousePressed
   MouseReleased
   MouseMoved
   MouseWheel
-}
-pub impl Eq for MouseEventType
-pub impl Show for MouseEventType
+} derive(Eq, Show)
 
 pub(all) enum NetworkEvent {
   RequestWillBeSent(NetworkRequest)
   ResponseReceived(NetworkResponse)
   LoadingFinished(request_id~ : RequestId, encoded_data_length~ : Int)
   LoadingFailed(request_id~ : RequestId, error~ : String)
-}
+} derive(Show)
 pub fn NetworkEvent::request_id(Self) -> RequestId
-pub impl Show for NetworkEvent
 
 pub struct NetworkManager {
   pending_requests : Map[Int, NetworkRequest]
@@ -272,12 +259,11 @@ pub(all) struct NetworkRequest {
   frame_id : String
   loader_id : String
   timestamp : Double
-}
+} derive(Show)
 pub fn NetworkRequest::new(String, ResourceType, document_url? : String, frame_id? : String, http_method? : HttpMethod) -> Self
 pub fn NetworkRequest::with_headers(Self, Map[String, String]) -> Self
 pub fn NetworkRequest::with_loader_id(Self, String) -> Self
 pub fn NetworkRequest::with_timestamp(Self, Double) -> Self
-pub impl Show for NetworkRequest
 
 pub(all) struct NetworkResponse {
   request_id : RequestId
@@ -290,14 +276,13 @@ pub(all) struct NetworkResponse {
   content_length : Int
   timestamp : Double
   loader_id : String
-}
+} derive(Show)
 pub fn NetworkResponse::new(RequestId, String, Int) -> Self
 pub fn NetworkResponse::with_body(Self, String) -> Self
 pub fn NetworkResponse::with_headers(Self, Map[String, String]) -> Self
 pub fn NetworkResponse::with_loader_id(Self, String) -> Self
 pub fn NetworkResponse::with_mime_type(Self, String) -> Self
 pub fn NetworkResponse::with_timestamp(Self, Double) -> Self
-pub impl Show for NetworkResponse
 
 pub(all) struct ParseCompleteResult {
   root : @html.Element
@@ -316,13 +301,10 @@ pub(all) struct RenderPipelineResult {
   image_decode_tasks : Array[TaskId]
 }
 
-pub(all) struct RequestId(Int)
+pub(all) struct RequestId(Int) derive(Eq, Hash, Show)
 #deprecated
 pub fn RequestId::inner(Self) -> Int
 pub fn RequestId::next() -> Self
-pub impl Eq for RequestId
-pub impl Hash for RequestId
-pub impl Show for RequestId
 
 pub(all) struct ResizeResult {
   resized : Bool
@@ -346,9 +328,7 @@ pub(all) enum ResourceType {
   Image
   Font
   Other
-}
-pub impl Eq for ResourceType
-pub impl Show for ResourceType
+} derive(Eq, Show)
 
 pub struct Scheduler {
   tasks : Map[Int, Task]
@@ -436,26 +416,21 @@ pub(all) enum TaskAction {
   FetchResource(url~ : String, resource_type~ : ResourceType)
   DecodeImage(resource_id~ : Int)
   ExecuteScript(source~ : String)
-}
+} derive(Show)
 pub fn TaskAction::is_internal(Self) -> Bool
 pub fn TaskAction::source(Self) -> TaskSource
-pub impl Show for TaskAction
 
 pub(all) enum TaskConstraint {
   MainThreadOnly
   Parallel
   Blocking(Array[TaskSource])
-}
+} derive(Show)
 pub fn TaskConstraint::blocks(Self, TaskSource) -> Bool
 pub fn TaskConstraint::is_parallel(Self) -> Bool
-pub impl Show for TaskConstraint
 
-pub(all) struct TaskId(Int)
+pub(all) struct TaskId(Int) derive(Eq, Hash, Show)
 #deprecated
 pub fn TaskId::inner(Self) -> Int
-pub impl Eq for TaskId
-pub impl Hash for TaskId
-pub impl Show for TaskId
 
 pub struct TaskQueue {
   tasks : Array[Task]
@@ -477,8 +452,7 @@ pub(all) enum TaskResult {
   Success(new_tasks~ : Array[TaskAction])
   Failure(error~ : String)
   Cancelled
-}
-pub impl Show for TaskResult
+} derive(Show)
 
 pub(all) enum TaskSource {
   DOM
@@ -487,10 +461,7 @@ pub(all) enum TaskSource {
   Networking
   Scripting
   ImageDecode
-}
-pub impl Eq for TaskSource
-pub impl Hash for TaskSource
-pub impl Show for TaskSource
+} derive(Eq, Hash, Show)
 
 pub(all) enum TaskState {
   Pending
@@ -499,10 +470,9 @@ pub(all) enum TaskState {
   Completed
   Cancelled
   Failed(String)
-}
+} derive(Show)
 pub fn TaskState::is_runnable(Self) -> Bool
 pub fn TaskState::is_terminal(Self) -> Bool
-pub impl Show for TaskState
 
 // Type aliases
 

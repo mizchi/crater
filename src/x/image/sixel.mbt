@@ -1096,7 +1096,7 @@ fn DynamicPalette::get_or_add(self : DynamicPalette, c : Color) -> Int {
 /// Collect all colors from PaintNode tree
 fn collect_colors(palette : DynamicPalette, node : @paint.PaintNode) -> Unit {
   // Add background color if not transparent
-  if not(node.paint.background_color.is_transparent()) {
+  if !node.paint.background_color.is_transparent() {
     let _ = palette.get_or_add(
       types_color_to_sixel(node.paint.background_color),
     )
@@ -1140,6 +1140,27 @@ fn pixel_in_clip(clip : ClipRect?, px : Int, py : Int) -> Bool {
   match clip {
     None => true
     Some(c) => px >= c.x && px < c.x + c.w && py >= c.y && py < c.y + c.h
+  }
+}
+
+///|
+fn draw_text_decoration_line(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  x : Int,
+  y : Int,
+  w : Int,
+  color : @types.Color,
+  clip : ClipRect?,
+) -> Unit {
+  if y < 0 || y >= fb.height {
+    return
+  }
+  let line_color = palette.get_or_add(types_color_to_sixel(color))
+  for px = x; px < x + w && px < fb.width; px = px + 1 {
+    if px >= 0 && pixel_in_clip(clip, px, y) {
+      fb.set_pixel(px, y, line_color)
+    }
   }
 }
 
@@ -1495,7 +1516,7 @@ fn render_paint_node_clipped(
   clip : ClipRect?,
 ) -> Unit {
   // Skip invisible nodes
-  if not(node.paint.should_render()) {
+  if !node.paint.should_render() {
     return
   }
   let abs_x = parent_x + node.x
@@ -1577,7 +1598,7 @@ fn render_paint_node_clipped(
         bl_r,
       )
     @types.None =>
-      if not(node.paint.background_color.is_transparent()) {
+      if !node.paint.background_color.is_transparent() {
         if has_radius {
           fill_rounded_rect_clipped(
             fb,
@@ -1616,7 +1637,7 @@ fn render_paint_node_clipped(
   let bb = node.paint.border_bottom_width.to_int()
   let bl = node.paint.border_left_width.to_int()
   let opacity = node.paint.opacity
-  if bt > 0 && not(node.paint.border_top_color.is_transparent()) {
+  if bt > 0 && !node.paint.border_top_color.is_transparent() {
     fill_rect_clipped(
       fb,
       palette,
@@ -1629,7 +1650,7 @@ fn render_paint_node_clipped(
       clip,
     )
   }
-  if bb > 0 && not(node.paint.border_bottom_color.is_transparent()) {
+  if bb > 0 && !node.paint.border_bottom_color.is_transparent() {
     fill_rect_clipped(
       fb,
       palette,
@@ -1642,7 +1663,7 @@ fn render_paint_node_clipped(
       clip,
     )
   }
-  if bl > 0 && not(node.paint.border_left_color.is_transparent()) {
+  if bl > 0 && !node.paint.border_left_color.is_transparent() {
     fill_rect_clipped(
       fb,
       palette,
@@ -1655,7 +1676,7 @@ fn render_paint_node_clipped(
       clip,
     )
   }
-  if br > 0 && not(node.paint.border_right_color.is_transparent()) {
+  if br > 0 && !node.paint.border_right_color.is_transparent() {
     fill_rect_clipped(
       fb,
       palette,
@@ -1721,23 +1742,44 @@ fn render_paint_node_clipped(
       }
     None => ()
   }
-  // Draw underline decoration if set
+  // Draw text decorations
   match node.text {
-    Some(_) =>
-      if node.paint.text_decoration_underline {
-        let font_size = node.paint.font_size
-        let underline_y = y + (font_size * 1.1).to_int()
-        let underline_color = palette.get_or_add(
-          types_color_to_sixel(node.paint.color),
+    Some(_) => {
+      let font_size = node.paint.font_size
+      if node.paint.text_decoration_overline {
+        draw_text_decoration_line(
+          fb,
+          palette,
+          x,
+          y + (font_size * 0.15).to_int(),
+          w,
+          node.paint.color,
+          clip,
         )
-        if underline_y >= 0 && underline_y < fb.height {
-          for px = x; px < x + w && px < fb.width; px = px + 1 {
-            if px >= 0 && pixel_in_clip(clip, px, underline_y) {
-              fb.set_pixel(px, underline_y, underline_color)
-            }
-          }
-        }
       }
+      if node.paint.text_decoration_line_through {
+        draw_text_decoration_line(
+          fb,
+          palette,
+          x,
+          y + (font_size * 0.6).to_int(),
+          w,
+          node.paint.color,
+          clip,
+        )
+      }
+      if node.paint.text_decoration_underline {
+        draw_text_decoration_line(
+          fb,
+          palette,
+          x,
+          y + (font_size * 1.1).to_int(),
+          w,
+          node.paint.color,
+          clip,
+        )
+      }
+    }
     None => ()
   }
 
@@ -1880,7 +1922,7 @@ fn render_svg_into_region(
       if dst_x < 0 || dst_x >= fb.width {
         continue
       }
-      if not(pixel_in_clip(clip, dst_x, dst_y)) {
+      if !pixel_in_clip(clip, dst_x, dst_y) {
         continue
       }
       let tmp_idx = tmp_fb.pixels[py * w + px]
@@ -1940,7 +1982,7 @@ pub fn to_sixel_dynamic(fb : Framebuffer, palette : DynamicPalette) -> String {
       }
     }
     for color_idx = 0; color_idx < palette_len; color_idx = color_idx + 1 {
-      if not(active_colors[color_idx]) {
+      if !active_colors[color_idx] {
         continue
       }
       buf.write_string("#")
@@ -2027,14 +2069,13 @@ pub fn render_paint_node_to_framebuffer_scrolled(
   let mut canvas_bg = sorted_node.paint.background_color
   if canvas_bg.is_transparent() {
     for child in sorted_node.children {
-      if child.tag == "body" &&
-        not(child.paint.background_color.is_transparent()) {
+      if child.tag == "body" && !child.paint.background_color.is_transparent() {
         canvas_bg = child.paint.background_color
         break
       }
     }
   }
-  if not(canvas_bg.is_transparent()) {
+  if !canvas_bg.is_transparent() {
     let bg_sixel = { r: canvas_bg.r, g: canvas_bg.g, b: canvas_bg.b }
     let bg_idx = palette.get_or_add(bg_sixel)
     fb.fill_rect(0, 0, fb.width, fb.height, bg_idx)
@@ -2073,14 +2114,13 @@ pub fn render_paint_node_to_framebuffer(
   if canvas_bg.is_transparent() {
     // Look for body element among root's children
     for child in sorted_node.children {
-      if child.tag == "body" &&
-        not(child.paint.background_color.is_transparent()) {
+      if child.tag == "body" && !child.paint.background_color.is_transparent() {
         canvas_bg = child.paint.background_color
         break
       }
     }
   }
-  if not(canvas_bg.is_transparent()) {
+  if !canvas_bg.is_transparent() {
     let bg_sixel = { r: canvas_bg.r, g: canvas_bg.g, b: canvas_bg.b }
     let bg_idx = palette.get_or_add(bg_sixel)
     fb.fill_rect(0, 0, fb.width, fb.height, bg_idx)

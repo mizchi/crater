@@ -33,6 +33,8 @@ pub(all) struct PaintProperties {
   overflow_x : @types.Overflow
   overflow_y : @types.Overflow
   text_decoration_underline : Bool
+  text_decoration_line_through : Bool
+  text_decoration_overline : Bool
   border_top_width : Double
   border_right_width : Double
   border_bottom_width : Double
@@ -63,6 +65,8 @@ pub fn PaintProperties::default() -> PaintProperties {
     overflow_x: @types.Visible,
     overflow_y: @types.Visible,
     text_decoration_underline: false,
+    text_decoration_line_through: false,
+    text_decoration_overline: false,
     border_top_width: 0.0,
     border_right_width: 0.0,
     border_bottom_width: 0.0,
@@ -85,7 +89,7 @@ pub fn PaintProperties::from_style(style : @style.Style) -> PaintProperties {
     background_color: style.background_color,
     background_image: style.background_image,
     font_size: style.font_size,
-    is_bold: false, // Will be set from tag name in from_node_and_layout
+    is_bold: is_bold_weight(style.font_weight),
     font_family: style.font_family,
     border_top_left_radius: style.border_top_left_radius,
     border_top_right_radius: style.border_top_right_radius,
@@ -94,6 +98,8 @@ pub fn PaintProperties::from_style(style : @style.Style) -> PaintProperties {
     overflow_x: style.overflow_x,
     overflow_y: style.overflow_y,
     text_decoration_underline: style.text_decoration_underline,
+    text_decoration_line_through: style.text_decoration_line_through,
+    text_decoration_overline: style.text_decoration_overline,
     border_top_width: 0.0, // Resolved from Layout in from_node_and_layout
     border_right_width: 0.0,
     border_bottom_width: 0.0,
@@ -147,6 +153,11 @@ pub fn PaintProperties::z_index_value(self : PaintProperties) -> Int {
     @style.ZIndex::Auto => 0
     @style.ZIndex::Value(v) => v
   }
+}
+
+///|
+fn is_bold_weight(weight : Double) -> Bool {
+  weight >= 600.0
 }
 
 // =============================================================================
@@ -247,7 +258,7 @@ pub impl Show for PaintNode with output(self, logger) {
     logger.write_string(" z:")
     self.stacking_order.output(logger)
   }
-  if not(self.paint.should_render()) {
+  if !self.paint.should_render() {
     logger.write_string(" [hidden]")
   }
   if self.paint.opacity < 1.0 {
@@ -395,7 +406,7 @@ pub fn sort_by_stacking_order(nodes : Array[PaintNode]) -> Array[PaintNode] {
       break
     }
   }
-  if not(needs_sort) {
+  if !needs_sort {
     return nodes
   }
   // Create a copy to sort
@@ -438,7 +449,7 @@ pub fn flatten_for_rendering(node : PaintNode) -> Array[PaintNode] {
   let result : Array[PaintNode] = []
   fn collect(n : PaintNode, arr : Array[PaintNode]) -> Unit {
     // Skip invisible nodes
-    if not(n.paint.should_render()) {
+    if !n.paint.should_render() {
       return
     }
     // Add this node
@@ -464,6 +475,23 @@ fn is_bold_tag(tag : String) -> Bool {
   match tag {
     "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "b" | "strong" | "th" => true
     _ => false
+  }
+}
+
+///|
+fn inherit_text_paint(
+  parent : PaintProperties,
+  child : PaintProperties,
+) -> PaintProperties {
+  {
+    ..child,
+    is_bold: child.is_bold || parent.is_bold,
+    text_decoration_underline: child.text_decoration_underline ||
+    parent.text_decoration_underline,
+    text_decoration_line_through: child.text_decoration_line_through ||
+    parent.text_decoration_line_through,
+    text_decoration_overline: child.text_decoration_overline ||
+    parent.text_decoration_overline,
   }
 }
 
@@ -542,10 +570,7 @@ pub fn from_node_and_layout(
     let child_node = node.children[node_index]
     let child_layout = layout.children[layout_index]
     let mut child = from_node_and_layout(child_node, child_layout)
-    // Propagate bold to text children
-    if paint.is_bold && not(child.paint.is_bold) {
-      child = { ..child, paint: { ..child.paint, is_bold: true } }
-    }
+    child = { ..child, paint: inherit_text_paint(paint, child.paint) }
     // Generate list marker for <li> children of <ul>/<ol>
     let child_tag = extract_tag_from_id(child_node.id)
     if child_tag == "li" {
@@ -735,12 +760,7 @@ fn from_node_and_layout_with_viewport_inner(
         child_node, child_layout, child_extent, viewport_top, viewport_bottom, abs_y,
       ) {
       Some(child) => {
-        // Propagate bold to text children
-        let mut c = if paint.is_bold && not(child.paint.is_bold) {
-          { ..child, paint: { ..child.paint, is_bold: true } }
-        } else {
-          child
-        }
+        let mut c = { ..child, paint: inherit_text_paint(paint, child.paint) }
         // Generate list marker for <li> children of <ul>/<ol>
         let child_tag = extract_tag_from_id(child_node.id)
         if child_tag == "li" {

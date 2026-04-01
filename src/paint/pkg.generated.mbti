@@ -10,6 +10,8 @@ import {
 // Values
 pub fn collect_scrollable_elements(PaintNode) -> Array[ScrollableElement]
 
+pub fn diff_trees(PaintNode, PaintNode) -> PaintTreeDiff
+
 pub fn find_scrollable_at(PaintNode, Double, Double, Double, Double) -> ScrollableHitResult?
 
 pub fn flatten_for_rendering(PaintNode) -> Array[PaintNode]
@@ -27,6 +29,15 @@ pub fn sort_tree_by_stacking_order(PaintNode) -> PaintNode
 // Errors
 
 // Types and methods
+pub(all) struct PaintLayoutShift {
+  node_path : String
+  node_id : String
+  dx : Double
+  dy : Double
+  dw : Double
+  dh : Double
+}
+
 pub(all) struct PaintNode {
   id : String
   tag : String
@@ -75,6 +86,8 @@ pub(all) struct PaintProperties {
   overflow_x : @types.Overflow
   overflow_y : @types.Overflow
   text_decoration_underline : Bool
+  text_decoration_line_through : Bool
+  text_decoration_overline : Bool
   border_top_width : Double
   border_right_width : Double
   border_bottom_width : Double
@@ -90,6 +103,19 @@ pub fn PaintProperties::from_style(@style.Style) -> Self
 pub fn PaintProperties::should_render(Self) -> Bool
 pub fn PaintProperties::z_index_value(Self) -> Int
 pub impl Show for PaintProperties
+
+pub(all) struct PaintPropertyChange {
+  node_path : String
+  node_id : String
+  property : String
+  before : String?
+  after : String?
+}
+
+pub(all) struct PaintTreeDiff {
+  changes : Array[PaintPropertyChange]
+  layout_shifts : Array[PaintLayoutShift]
+}
 
 pub(all) struct ScrollableElement {
   id : String

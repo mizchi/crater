@@ -50,9 +50,7 @@ pub(all) enum LCPElementType {
   BackgroundImage(url~ : String)
   Video(poster~ : String?)
   TextBlock
-}
-pub impl Eq for LCPElementType
-pub impl Show for LCPElementType
+} derive(Eq, Show)
 
 pub(all) struct LCPTracker {
   candidates : Array[LCPCandidate]

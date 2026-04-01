@@ -3,18 +3,18 @@ owner = "mizchi"
 name = "crater"
 
 [storage]
-path = ".metrici/data.duckdb"
+path = ".flaker/data.duckdb"
 
 [adapter]
 type = "playwright"
 
 [runner]
-default = "direct"
+type = "playwright"
 command = "pnpm exec playwright test"
 
 [affected]
-resolver = "simple"
-config = ""
+resolver = "bitflow"
+config = "flaker.star"
 
 [quarantine]
 auto = true

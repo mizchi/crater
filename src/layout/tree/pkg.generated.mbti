@@ -43,10 +43,9 @@ pub struct ConstraintKey {
   available_width : Double
   available_height : Double?
   sizing_mode : @types.SizingMode
-}
+} derive(Eq)
 pub fn ConstraintKey::approx_eq(Self, Self) -> Bool
 pub fn ConstraintKey::new(Double, Double?, @types.SizingMode) -> Self
-pub impl Eq for ConstraintKey
 
 pub struct ConstraintSpace {
   available_width : Double
@@ -68,10 +67,8 @@ pub(all) enum DependencyKind {
   ParentBoth
   Intrinsic
   Viewport
-}
+} derive(Eq, Show)
 pub fn DependencyKind::merge(Self, Self) -> Self
-pub impl Eq for DependencyKind
-pub impl Show for DependencyKind
 
 pub struct Document {
   dom : @dom.DomTree
@@ -239,12 +236,9 @@ pub fn LayoutTree::resize_viewport(Self, Double, Double) -> Unit
 pub fn LayoutTree::resolve_resource(Self, ResourceId, Double, Double) -> Unit
 pub fn LayoutTree::update_node_style(Self, String, @cascade.CascadedValues) -> Bool
 
-pub(all) struct ResourceId(Int)
+pub(all) struct ResourceId(Int) derive(Eq, Hash, Show)
 #deprecated
 pub fn ResourceId::inner(Self) -> Int
-pub impl Eq for ResourceId
-pub impl Hash for ResourceId
-pub impl Show for ResourceId
 
 pub struct ResourceRegistry {
   mut next_id : Int
