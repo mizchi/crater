@@ -142,9 +142,7 @@ pub(all) enum Align {
   XMinYMax
   XMidYMax
   XMaxYMax
-}
-pub impl Eq for Align
-pub impl Show for Align
+} derive(Eq, Show)
 
 pub(all) enum AnimProperty {
   TranslateX(Double)
@@ -208,9 +206,7 @@ pub(all) enum BlendMode {
   Saturation
   ColorMode
   Luminosity
-}
-pub impl Eq for BlendMode
-pub impl Show for BlendMode
+} derive(Eq, Show)
 
 pub(all) struct BoundingBox {
   min_x : Double
@@ -305,10 +301,8 @@ pub(all) enum Easing {
   EaseInCubic
   EaseOutCubic
   EaseInOutCubic
-}
+} derive(Eq, Show)
 pub fn Easing::apply(Self, Double) -> Double
-pub impl Eq for Easing
-pub impl Show for Easing
 
 pub(all) struct EmitterConfig {
   emit_rate : Double
@@ -361,16 +355,12 @@ pub(all) enum EventType {
   DragStart
   DragMove
   DragEnd
-}
-pub impl Eq for EventType
-pub impl Show for EventType
+} derive(Eq, Show)
 
 pub(all) enum FillRule {
   NonZero
   EvenOdd
-}
-pub impl Eq for FillRule
-pub impl Show for FillRule
+} derive(Eq, Show)
 
 pub(all) enum Filter {
   Blur(Double)
@@ -435,25 +425,19 @@ pub fn Image::sub_image(Self, Int, Int, Int, Int) -> Self
 pub(all) enum Isolation {
   Auto
   Isolate
-}
-pub impl Eq for Isolation
-pub impl Show for Isolation
+} derive(Eq, Show)
 
 pub(all) enum LineCap {
   Butt
   Round
   Square
-}
-pub impl Eq for LineCap
-pub impl Show for LineCap
+} derive(Eq, Show)
 
 pub(all) enum LineJoin {
   Miter
   Round
   Bevel
-}
-pub impl Eq for LineJoin
-pub impl Show for LineJoin
+} derive(Eq, Show)
 
 pub(all) struct LinearGradient {
   x1 : Double
@@ -537,23 +521,17 @@ pub fn MaskRegistry::new() -> Self
 pub(all) enum MaskType {
   Luminance
   Alpha
-}
-pub impl Eq for MaskType
-pub impl Show for MaskType
+} derive(Eq, Show)
 
 pub(all) enum MaskUnits {
   UserSpaceOnUse
   ObjectBoundingBox
-}
-pub impl Eq for MaskUnits
-pub impl Show for MaskUnits
+} derive(Eq, Show)
 
 pub(all) enum MeetOrSlice {
   Meet
   Slice
-}
-pub impl Eq for MeetOrSlice
-pub impl Show for MeetOrSlice
+} derive(Eq, Show)
 
 pub(all) struct ObjectPool[T] {
   available : Array[T]
@@ -577,9 +555,7 @@ pub(all) enum PaintOrder {
   StrokeFirst
   FillOnly
   StrokeOnly
-}
-pub impl Eq for PaintOrder
-pub impl Show for PaintOrder
+} derive(Eq, Show)
 
 pub(all) struct Particle {
   mut x : Double
@@ -626,8 +602,7 @@ pub(all) enum PathCommand {
   QuadraticCurveToRel(Double, Double, Double, Double)
   SmoothQuadraticCurveToRel(Double, Double)
   ArcToRel(Double, Double, Double, Bool, Bool, Double, Double)
-}
-pub impl Show for PathCommand
+} derive(Show)
 
 pub(all) struct PathFollower {
   path : Array[PathCommand]
@@ -780,8 +755,7 @@ pub(all) enum Shape {
   Path(commands~ : Array[PathCommand])
   Text(x~ : Double, y~ : Double, text~ : String, font_size~ : Double)
   Group
-}
-pub impl Show for Shape
+} derive(Show)
 
 pub(all) struct SimpleRNG {
   mut state : Int
@@ -794,9 +768,7 @@ pub(all) enum SpreadMethod {
   Pad
   Repeat
   Reflect
-}
-pub impl Eq for SpreadMethod
-pub impl Show for SpreadMethod
+} derive(Eq, Show)
 
 pub(all) struct Sprite {
   image : Image
@@ -880,9 +852,7 @@ pub(all) enum TextDecoration {
   Underline
   Overline
   LineThrough
-}
-pub impl Eq for TextDecoration
-pub impl Show for TextDecoration
+} derive(Eq, Show)
 
 pub(all) struct TextDecorationFull {
   line : TextDecoration
@@ -898,25 +868,19 @@ pub(all) enum TextDecorationStyle {
   Dotted
   Dashed
   Wavy
-}
-pub impl Eq for TextDecorationStyle
-pub impl Show for TextDecorationStyle
+} derive(Eq, Show)
 
 pub(all) enum TextOrientation {
   Mixed
   Upright
   Sideways
-}
-pub impl Eq for TextOrientation
-pub impl Show for TextOrientation
+} derive(Eq, Show)
 
 pub(all) enum TextOverflow {
   Clip
   Ellipsis
   Custom(String)
-}
-pub impl Eq for TextOverflow
-pub impl Show for TextOverflow
+} derive(Eq, Show)
 
 pub(all) struct TextSpan {
   text : String
@@ -1018,17 +982,13 @@ pub(all) enum WhiteSpace {
   PreWrap
   PreLine
   BreakSpaces
-}
-pub impl Eq for WhiteSpace
-pub impl Show for WhiteSpace
+} derive(Eq, Show)
 
 pub(all) enum WritingMode {
   HorizontalTB
   VerticalRL
   VerticalLR
-}
-pub impl Eq for WritingMode
-pub impl Show for WritingMode
+} derive(Eq, Show)
 
 // Type aliases
 

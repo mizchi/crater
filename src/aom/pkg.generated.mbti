@@ -233,11 +233,9 @@ pub(all) enum Role {
   HtmlCanvas
   HtmlLabel
   HtmlSummary
-}
+} derive(Eq, Show)
 pub fn Role::from_string(String) -> Self?
 pub fn Role::to_string(Self) -> String
-pub impl Eq for Role
-pub impl Show for Role
 
 pub(all) struct RoleMappingContext {
   parent_tag : String?
@@ -264,10 +262,8 @@ pub(all) enum State {
   Selected
   CheckedMixed
   PressedMixed
-}
+} derive(Eq, Show)
 pub fn State::to_string(Self) -> String
-pub impl Eq for State
-pub impl Show for State
 
 // Type aliases
 

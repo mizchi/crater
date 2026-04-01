@@ -10,9 +10,7 @@ pub fn parse_media_query_list(String) -> MediaQueryList
 pub(all) enum ColorScheme {
   Light
   Dark
-}
-pub impl Eq for ColorScheme
-pub impl Show for ColorScheme
+} derive(Eq, Show)
 
 pub(all) struct MediaEnvironment {
   viewport_width : Double
@@ -52,48 +50,38 @@ pub enum MediaFeature {
   PrefersColorScheme(String)
   PrefersReducedMotion(String)
   Custom(String, MediaValue?)
-}
-pub impl Eq for MediaFeature
-pub impl Show for MediaFeature
+} derive(Eq, Show)
 
 pub struct MediaQuery {
   negated : Bool
   only : Bool
   media_type : MediaType?
   conditions : Array[MediaFeature]
-}
+} derive(Eq, Show)
 pub fn MediaQuery::default() -> Self
 pub fn MediaQuery::evaluate(Self, MediaEnvironment) -> Bool
-pub impl Eq for MediaQuery
-pub impl Show for MediaQuery
 
 pub struct MediaQueryList {
   queries : Array[MediaQuery]
-}
+} derive(Eq, Show)
 pub fn MediaQueryList::evaluate(Self, MediaEnvironment) -> Bool
 pub fn MediaQueryList::is_empty(Self) -> Bool
 pub fn MediaQueryList::length(Self) -> Int
 pub fn MediaQueryList::new() -> Self
-pub impl Eq for MediaQueryList
-pub impl Show for MediaQueryList
 
 pub enum MediaType {
   All
   Screen
   Print
   Speech
-}
-pub impl Eq for MediaType
-pub impl Show for MediaType
+} derive(Eq, Show)
 
 pub enum MediaValue {
   Number(Double)
   Dimension(Double, String)
   Ratio(Int, Int)
   Ident(String)
-}
-pub impl Eq for MediaValue
-pub impl Show for MediaValue
+} derive(Eq, Show)
 
 pub enum RangeOp {
   Eq
@@ -101,9 +89,7 @@ pub enum RangeOp {
   Le
   Gt
   Ge
-}
-pub impl Eq for RangeOp
-pub impl Show for RangeOp
+} derive(Eq, Show)
 
 // Type aliases
 

@@ -8,6 +8,8 @@ import {
   "mizchi/crater/layout/table",
   "mizchi/crater/x/webvitals",
   "mizchi/crater/layout/dispatch",
+  "mizchi/crater/paint",
+  "mizchi/crater/renderer",
 }
 
 import {

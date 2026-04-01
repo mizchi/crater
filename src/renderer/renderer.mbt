@@ -6990,13 +6990,18 @@ fn get_ua_default_style(tag : String) -> @style.Style {
         display: @types.Inline,
         text_decoration_underline: true,
       }
+    "s" | "strike" | "del" =>
+      {
+        ..default_style,
+        display: @types.Inline,
+        text_decoration_line_through: true,
+      }
     // Inline elements - HTML default display: inline
     "span"
     | "em"
     | "strong"
     | "i"
     | "b"
-    | "s"
     | "code"
     | "abbr"
     | "cite"

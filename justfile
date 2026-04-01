@@ -255,6 +255,40 @@ wpt-vrt-baseline-update:
 bench-playwright:
     pnpm bench:playwright
 
+# Run VRT API end-to-end benchmarks
+bench-vrt:
+    npx tsx scripts/vrt-bench.ts --group api
+
+# Run VRT phase benchmarks (parse / node+layout / paint / json / diff)
+bench-vrt-phases:
+    npx tsx scripts/vrt-bench.ts --group phases
+
+# Run all VRT API benchmarks
+bench-vrt-all:
+    npx tsx scripts/vrt-bench.ts --group all
+
+# List resolved VRT benchmark indices
+bench-vrt-list group="all":
+    npx tsx scripts/vrt-bench.ts --group {{group}} --list
+
+# Run VRT benchmarks and write parsed reports
+bench-vrt-report group output_dir="vrt-bench":
+    mkdir -p {{output_dir}}
+    npx tsx scripts/vrt-bench.ts --group {{group}} --json {{output_dir}}/{{group}}.json --markdown {{output_dir}}/{{group}}.md | tee {{output_dir}}/{{group}}.log
+
+# List flaker-managed Playwright tasks
+flaker-list:
+    npx tsx scripts/flaker-config.ts --list
+
+# Validate flaker config against tracked Playwright specs
+flaker-check:
+    npx tsx scripts/flaker-config.ts --check
+
+# Render flaker config summary for CI or local inspection
+flaker-report output_dir=".flaker/report":
+    mkdir -p {{output_dir}}
+    npx tsx scripts/flaker-config.ts --check --json {{output_dir}}/summary.json --markdown {{output_dir}}/summary.md | tee {{output_dir}}/summary.log
+
 # Capture a live site into real-world/ (gitignored)
 capture-realworld *args:
     pnpm capture:realworld -- {{args}}

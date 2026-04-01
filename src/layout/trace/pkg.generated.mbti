@@ -22,14 +22,12 @@ pub(all) struct ComputeOutput {
   node_uid : Int
   width : Double
   height : Double
-}
-pub impl Show for ComputeOutput
+} derive(Show)
 
 pub(all) struct Dependency {
   node_uid : Int
   kind : DependencyKind
-}
-pub impl Show for Dependency
+} derive(Show)
 
 pub(all) enum DependencyKind {
   ParentWidth
@@ -38,9 +36,7 @@ pub(all) enum DependencyKind {
   ChildIntrinsicCross(Int)
   SiblingSize(Int)
   OwnStyle
-}
-pub impl Eq for DependencyKind
-pub impl Show for DependencyKind
+} derive(Eq, Show)
 
 pub struct LayoutTracer {
   traces : Map[Int, NodeTrace]

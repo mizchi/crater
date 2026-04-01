@@ -215,6 +215,8 @@ priv struct StyleBuilder {
   mut border_bottom_right_radius : Double
   mut border_bottom_left_radius : Double
   mut text_decoration_underline : Bool
+  mut text_decoration_line_through : Bool
+  mut text_decoration_overline : Bool
   mut letter_spacing : Double
   mut word_spacing : Double
 }
@@ -331,6 +333,8 @@ fn StyleBuilder::new() -> StyleBuilder {
     border_bottom_right_radius: 0.0,
     border_bottom_left_radius: 0.0,
     text_decoration_underline: false,
+    text_decoration_line_through: false,
+    text_decoration_overline: false,
     letter_spacing: 0.0,
     word_spacing: 0.0,
   }
@@ -449,6 +453,8 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     border_bottom_right_radius: style.border_bottom_right_radius,
     border_bottom_left_radius: style.border_bottom_left_radius,
     text_decoration_underline: style.text_decoration_underline,
+    text_decoration_line_through: style.text_decoration_line_through,
+    text_decoration_overline: style.text_decoration_overline,
     letter_spacing: style.letter_spacing,
     word_spacing: style.word_spacing,
   }
@@ -578,6 +584,8 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     border_bottom_right_radius: self.border_bottom_right_radius,
     border_bottom_left_radius: self.border_bottom_left_radius,
     text_decoration_underline: self.text_decoration_underline,
+    text_decoration_line_through: self.text_decoration_line_through,
+    text_decoration_overline: self.text_decoration_overline,
     letter_spacing: self.letter_spacing,
     word_spacing: self.word_spacing,
   }
@@ -762,7 +770,14 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
         @style.Direction::Rtl => "rtl"
       }
     "font-size" => style.font_size.to_string() + "px"
+    "font-weight" => style.font_weight.to_string()
     "line-height" => style.line_height.to_string() + "px"
+    "text-decoration" | "text-decoration-line" =>
+      text_decoration_to_string(
+        style.text_decoration_underline,
+        style.text_decoration_line_through,
+        style.text_decoration_overline,
+      )
     "text-align" =>
       match style.text_align {
         @style.TextAlign::Start => "start"
@@ -814,6 +829,36 @@ fn dimension_to_string(dim : @types.Dimension) -> String {
     @types.Dimension::MinContent => "min-content"
     @types.Dimension::MaxContent => "max-content"
     @types.Dimension::FitContent(n) => "fit-content(" + n.to_string() + "px)"
+  }
+}
+
+///|
+fn text_decoration_to_string(
+  underline : Bool,
+  line_through : Bool,
+  overline : Bool,
+) -> String {
+  let values : Array[String] = []
+  if underline {
+    values.push("underline")
+  }
+  if line_through {
+    values.push("line-through")
+  }
+  if overline {
+    values.push("overline")
+  }
+  if values.is_empty() {
+    "none"
+  } else {
+    let buf = StringBuilder::new()
+    for i, value in values {
+      if i > 0 {
+        buf.write_string(" ")
+      }
+      buf.write_string(value)
+    }
+    buf.to_string()
   }
 }
 
@@ -2030,6 +2075,8 @@ fn apply_property(
     "text-decoration" | "text-decoration-line" => {
       let v = value.trim().to_lower()
       builder.text_decoration_underline = v.contains("underline")
+      builder.text_decoration_line_through = v.contains("line-through")
+      builder.text_decoration_overline = v.contains("overline")
     }
     "letter-spacing" => {
       let v = value.trim().to_lower()

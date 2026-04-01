@@ -28,9 +28,7 @@ pub(all) enum AlignSelf {
   Center
   Stretch
   Baseline
-}
-pub impl Eq for AlignSelf
-pub impl Show for AlignSelf
+} derive(Eq, Show)
 
 pub(all) enum Alignment {
   Start
@@ -45,15 +43,12 @@ pub(all) enum Alignment {
   SpaceEvenly
   Stretch
   Baseline
-}
-pub impl Eq for Alignment
-pub impl Show for Alignment
+} derive(Eq, Show)
 
 pub(all) enum BackgroundImage {
   None
   Gradient(LinearGradient)
-}
-pub impl Show for BackgroundImage
+} derive(Show)
 
 pub(all) struct BoundingRect {
   x : Double
@@ -72,25 +67,20 @@ pub impl Show for BoundingRect
 pub(all) enum BoxSizing {
   ContentBox
   BorderBox
-}
-pub impl Eq for BoxSizing
-pub impl Show for BoxSizing
+} derive(Eq, Show)
 
 pub(all) enum Clear {
   None
   Left
   Right
   Both
-}
-pub impl Eq for Clear
-pub impl Show for Clear
+} derive(Eq, Show)
 
 pub(all) enum ClipRect {
   Auto
   Rect(top~ : Double, right~ : Double, bottom~ : Double, left~ : Double)
-}
+} derive(Eq)
 pub fn ClipRect::default() -> Self
-pub impl Eq for ClipRect
 pub impl Show for ClipRect
 
 pub(all) struct Color {
@@ -118,7 +108,7 @@ pub(all) enum Dimension {
   MinContent
   MaxContent
   FitContent(Double)
-}
+} derive(Eq)
 pub fn Dimension::eq_length(Self, Double) -> Bool
 pub fn Dimension::eq_percent(Self, Double) -> Bool
 pub fn Dimension::is_definite(Self) -> Bool
@@ -126,7 +116,6 @@ pub fn Dimension::is_intrinsic(Self) -> Bool
 pub fn Dimension::resolve(Self, Double) -> Double?
 pub fn Dimension::resolve_or(Self, Double, Double) -> Double
 pub fn Dimension::resolve_or_intrinsic(Self, Double, Double) -> Double
-pub impl Eq for Dimension
 pub impl Show for Dimension
 
 pub(all) enum Display {
@@ -150,65 +139,50 @@ pub(all) enum Display {
   None
   Contents
   FlowRoot
-}
-pub impl Eq for Display
-pub impl Show for Display
+} derive(Eq, Show)
 
 pub(all) enum FlexDirection {
   Row
   RowReverse
   Column
   ColumnReverse
-}
-pub impl Eq for FlexDirection
-pub impl Show for FlexDirection
+} derive(Eq, Show)
 
 pub(all) enum FlexWrap {
   NoWrap
   Wrap
   WrapReverse
-}
-pub impl Eq for FlexWrap
-pub impl Show for FlexWrap
+} derive(Eq, Show)
 
 pub(all) enum Float {
   None
   Left
   Right
-}
-pub impl Eq for Float
-pub impl Show for Float
+} derive(Eq, Show)
 
 pub(all) struct GradientStop {
   color : Color
   position : Double
-}
-pub impl Show for GradientStop
+} derive(Show)
 
 pub(all) enum GridAutoFlow {
   Row
   Column
   RowDense
   ColumnDense
-}
-pub impl Eq for GridAutoFlow
-pub impl Show for GridAutoFlow
+} derive(Eq, Show)
 
 pub(all) struct GridLine {
   start : GridPlacement
   end : GridPlacement
-}
+} derive(Eq, Show)
 pub fn GridLine::auto() -> Self
-pub impl Eq for GridLine
-pub impl Show for GridLine
 
 pub(all) enum GridPlacement {
   Auto
   Line(Int)
   Span(Int)
-}
-pub impl Eq for GridPlacement
-pub impl Show for GridPlacement
+} derive(Eq, Show)
 
 pub(all) struct IntrinsicSize {
   min_width : Double
@@ -255,8 +229,7 @@ pub(all) enum LayoutWarning {
   UnsupportedFloat(String)
   UnsupportedPosition(String)
   UnsupportedDisplay(String)
-}
-pub impl Show for LayoutWarning
+} derive(Show)
 
 pub struct Line[T] {
   start : T
@@ -268,8 +241,7 @@ pub impl[T : Show] Show for Line[T]
 pub(all) struct LinearGradient {
   angle_deg : Double
   stops : Array[GradientStop]
-}
-pub impl Show for LinearGradient
+} derive(Show)
 
 pub(all) enum MaxTrackSizing {
   Length(Double)
@@ -278,9 +250,7 @@ pub(all) enum MaxTrackSizing {
   Auto
   MinContent
   MaxContent
-}
-pub impl Eq for MaxTrackSizing
-pub impl Show for MaxTrackSizing
+} derive(Eq, Show)
 
 pub(all) struct MeasureFunc {
   func : (Double, Double) -> IntrinsicSize
@@ -292,9 +262,7 @@ pub(all) enum MinTrackSizing {
   Auto
   MinContent
   MaxContent
-}
-pub impl Eq for MinTrackSizing
-pub impl Show for MinTrackSizing
+} derive(Eq, Show)
 
 pub(all) enum Overflow {
   Visible
@@ -302,9 +270,7 @@ pub(all) enum Overflow {
   Clip
   Scroll
   Auto
-}
-pub impl Eq for Overflow
-pub impl Show for Overflow
+} derive(Eq, Show)
 
 pub struct Point[T] {
   x : T
@@ -320,9 +286,7 @@ pub(all) enum Position {
   Relative
   Absolute
   Fixed
-}
-pub impl Eq for Position
-pub impl Show for Position
+} derive(Eq, Show)
 
 pub(all) struct Rect[T] {
   left : T
@@ -342,9 +306,7 @@ pub(all) enum RepeatCount {
   Count(Int)
   AutoFill
   AutoFit
-}
-pub impl Eq for RepeatCount
-pub impl Show for RepeatCount
+} derive(Eq, Show)
 
 pub(all) enum SingleTrackSizing {
   Length(Double)
@@ -356,9 +318,7 @@ pub(all) enum SingleTrackSizing {
   MinMax(MinTrackSizing, MaxTrackSizing)
   FitContentLength(Double)
   FitContentPercent(Double)
-}
-pub impl Eq for SingleTrackSizing
-pub impl Show for SingleTrackSizing
+} derive(Eq, Show)
 
 pub struct Size[T] {
   width : T
@@ -372,8 +332,7 @@ pub impl[T : Show] Show for Size[T]
 pub(all) enum SizingMode {
   Definite
   MaxContent
-}
-pub impl Eq for SizingMode
+} derive(Eq)
 
 pub(all) enum TrackSizingFunction {
   Length(Double)
@@ -386,9 +345,7 @@ pub(all) enum TrackSizingFunction {
   Repeat(RepeatCount, Array[SingleTrackSizing])
   FitContentLength(Double)
   FitContentPercent(Double)
-}
-pub impl Eq for TrackSizingFunction
-pub impl Show for TrackSizingFunction
+} derive(Eq, Show)
 
 // Type aliases
 

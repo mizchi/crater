@@ -16,11 +16,9 @@ pub fn compute_layout(@node.Node, Double, Double) -> @types.Layout
 // Errors
 
 // Types and methods
-type BaselineInfo
-pub impl Show for BaselineInfo
+type BaselineInfo derive(Show)
 
-type GridAreaBounds
-pub impl Show for GridAreaBounds
+type GridAreaBounds derive(Show)
 
 // Type aliases
 
