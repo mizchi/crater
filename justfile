@@ -289,6 +289,11 @@ flaker-report output_dir=".flaker/report":
     mkdir -p {{output_dir}}
     npx tsx scripts/flaker-config.ts --check --json {{output_dir}}/summary.json --markdown {{output_dir}}/summary.md | tee {{output_dir}}/summary.log
 
+# Normalize a Playwright JSON report into JSON/Markdown summary
+playwright-report-summary input label output_dir=".playwright-report":
+    mkdir -p {{output_dir}}
+    npx tsx scripts/playwright-report-summary.ts --input {{input}} --label {{label}} --json {{output_dir}}/{{label}}.json --markdown {{output_dir}}/{{label}}.md | tee {{output_dir}}/{{label}}.log
+
 # Capture a live site into real-world/ (gitignored)
 capture-realworld *args:
     pnpm capture:realworld -- {{args}}
