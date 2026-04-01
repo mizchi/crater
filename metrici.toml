@@ -1,0 +1,26 @@
+[repo]
+owner = "mizchi"
+name = "crater"
+
+[storage]
+path = ".metrici/data.duckdb"
+
+[adapter]
+type = "playwright"
+
+[runner]
+default = "direct"
+command = "pnpm exec playwright test"
+
+[affected]
+resolver = "simple"
+config = ""
+
+[quarantine]
+auto = true
+flaky_rate_threshold = 30.0
+min_runs = 5
+
+[flaky]
+window_days = 14
+detection_threshold = 2.0

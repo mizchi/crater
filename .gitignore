@@ -64,3 +64,4 @@ tmp/**/*.json
 tmp/wpt-modules/
 tmp/ws-video-test.html
 .claude/
+.metrici/
