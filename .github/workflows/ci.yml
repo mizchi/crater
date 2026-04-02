@@ -645,18 +645,20 @@ jobs:
 
       - name: Checkout metric-ci source fallback
         if: steps.metric_ci_package.outcome == 'failure'
+        id: metric_ci_source
+        continue-on-error: true
         uses: actions/checkout@v6
         with:
           repository: mizchi/metric-ci
           path: metric-ci
 
       - name: Install metric-ci source dependencies
-        if: steps.metric_ci_package.outcome == 'failure'
+        if: steps.metric_ci_source.outcome == 'success'
         run: pnpm install
         working-directory: metric-ci
 
       - name: Build metric-ci source CLI
-        if: steps.metric_ci_package.outcome == 'failure'
+        if: steps.metric_ci_source.outcome == 'success'
         run: pnpm run build
         working-directory: metric-ci
 
@@ -673,8 +675,13 @@ jobs:
 
       - name: Run paint VRT with flaker record
         id: paint_vrt_record
+        if: steps.metric_ci_package.outcome == 'success' || steps.metric_ci_source.outcome == 'success'
         continue-on-error: true
         run: just flaker-task-record paint-vrt paint-vrt-report.json paint-vrt-summary
+
+      - name: Run paint VRT without metric-ci fallback
+        if: steps.metric_ci_package.outcome != 'success' && steps.metric_ci_source.outcome != 'success'
+        run: just test-vrt
 
       - name: Upload paint VRT JSON report
         if: always()
@@ -696,7 +703,7 @@ jobs:
           fi
 
       - name: Build paint VRT flaker task summary
-        if: always()
+        if: always() && (steps.metric_ci_package.outcome == 'success' || steps.metric_ci_source.outcome == 'success')
         continue-on-error: true
         run: just flaker-task-summary paint-vrt paint-vrt-flaker-summary
 

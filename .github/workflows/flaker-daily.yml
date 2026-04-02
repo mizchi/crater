@@ -125,18 +125,20 @@ jobs:
 
       - name: Checkout metric-ci source fallback
         if: steps.metric_ci_package.outcome == 'failure'
+        id: metric_ci_source
+        continue-on-error: true
         uses: actions/checkout@v6
         with:
           repository: mizchi/metric-ci
           path: metric-ci
 
       - name: Install metric-ci source dependencies
-        if: steps.metric_ci_package.outcome == 'failure'
+        if: steps.metric_ci_source.outcome == 'success'
         run: pnpm install
         working-directory: metric-ci
 
       - name: Build metric-ci source CLI
-        if: steps.metric_ci_package.outcome == 'failure'
+        if: steps.metric_ci_source.outcome == 'success'
         run: pnpm run build
         working-directory: metric-ci
 
@@ -153,12 +155,13 @@ jobs:
 
       - name: Record flaker nightly task
         id: record
+        if: steps.metric_ci_package.outcome == 'success' || steps.metric_ci_source.outcome == 'success'
         continue-on-error: true
         run: |
           just flaker-task-record "${{ matrix.task_id }}" "flaker-daily/${{ matrix.task_id }}/playwright-report.json" "flaker-daily/${{ matrix.task_id }}/playwright-summary"
 
       - name: Build flaker task summary
-        if: always()
+        if: always() && (steps.metric_ci_package.outcome == 'success' || steps.metric_ci_source.outcome == 'success')
         continue-on-error: true
         run: |
           just flaker-task-summary "${{ matrix.task_id }}" "flaker-daily/${{ matrix.task_id }}/flaker-summary"
