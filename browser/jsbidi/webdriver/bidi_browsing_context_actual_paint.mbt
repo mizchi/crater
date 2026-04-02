@@ -700,9 +700,7 @@ fn BidiProtocol::resolve_capture_paint_tree(
   }
   let width = self.resolve_effective_viewport_width(ctx_id)
   let height = self.resolve_effective_viewport_height(ctx_id)
-  let serialize_expr =
-    #|(() => { const doc = globalThis.document; if (!doc) return ''; const serNode = (n) => { if (!n) return ''; if (n.nodeType === 3) return (n._textContent || n.textContent || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); if (n.nodeType === 8) return '<!--'+(n._textContent||'')+'-->'; if (n.nodeType !== 1) return ''; const tag = (n.tagName || n._tagName || '').toLowerCase(); let h = '<'+tag; const attrs = n._attrs || {}; for (const [k,v] of Object.entries(attrs)) h+=' '+k+'="'+String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'"'; h+='>'; const voids = new Set(['area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr']); if (voids.has(tag)) return h; const children = n._children || []; for (const c of children) h += serNode(c); h += '</'+tag+'>'; return h; }; const head = doc.head; const body = doc.body; let r = '<html'; const htmlEl = doc.documentElement; if (htmlEl && htmlEl._attrs) for (const [k,v] of Object.entries(htmlEl._attrs)) r += ' '+k+'="'+String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'"'; r += '><head>'; if (head) for (const c of (head._children||[])) r += serNode(c); r += '</head><body'; if (body && body._attrs) for (const [k,v] of Object.entries(body._attrs)) r += ' '+k+'="'+v+'"'; r += '>'; if (body) for (const c of (body._children||[])) r += serNode(c); r += '</body></html>'; return r; })()
-  let html_json = evaluate_js(serialize_expr)
+  let html_json = evaluate_js(serialize_live_document_html_expr())
   let html = extract_string_value_from_evaluate_result(html_json)
   let ctx = @browser_contract.create_render_context(width, height, false)
   let (node, layout) = @renderer.render_to_node_and_layout(html, ctx)
