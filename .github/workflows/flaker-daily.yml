@@ -159,6 +159,7 @@ jobs:
 
       - name: Build flaker task summary
         if: always()
+        continue-on-error: true
         run: |
           just flaker-task-summary "${{ matrix.task_id }}" "flaker-daily/${{ matrix.task_id }}/flaker-summary"
 

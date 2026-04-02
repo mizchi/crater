@@ -687,16 +687,27 @@ jobs:
       - name: Publish paint VRT report summary
         if: always()
         run: |
-          cat paint-vrt-summary/paint-vrt.md >> "$GITHUB_STEP_SUMMARY"
-          printf '\n\n' >> "$GITHUB_STEP_SUMMARY"
+          if [ -f paint-vrt-summary/paint-vrt.md ]; then
+            cat paint-vrt-summary/paint-vrt.md >> "$GITHUB_STEP_SUMMARY"
+            printf '\n\n' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "_paint-vrt report summary was not generated._" >> "$GITHUB_STEP_SUMMARY"
+            printf '\n\n' >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Build paint VRT flaker task summary
         if: always()
+        continue-on-error: true
         run: just flaker-task-summary paint-vrt paint-vrt-flaker-summary
 
       - name: Publish paint VRT flaker task summary
         if: always()
-        run: cat paint-vrt-flaker-summary/paint-vrt.md >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          if [ -f paint-vrt-flaker-summary/paint-vrt.md ]; then
+            cat paint-vrt-flaker-summary/paint-vrt.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "_paint-vrt flaker summary was not generated._" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload paint VRT report summary
         if: always()
