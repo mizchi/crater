@@ -1,0 +1,211 @@
+name: Flaker Daily
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+    inputs:
+      tasks:
+        description: Comma-separated flaker task ids to run
+        required: false
+        type: string
+      nodes:
+        description: Comma-separated flaker node ids to run
+        required: false
+        type: string
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  batch-plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Build nightly flaker task matrix
+        id: plan
+        env:
+          INPUT_TASKS: ${{ github.event.inputs.tasks || '' }}
+          INPUT_NODES: ${{ github.event.inputs.nodes || '' }}
+        run: |
+          if [ -n "$INPUT_TASKS" ] && [ -n "$INPUT_NODES" ]; then
+            matrix=$(node scripts/flaker-batch-plan.ts --tasks "$INPUT_TASKS" --nodes "$INPUT_NODES" --github-matrix)
+          elif [ -n "$INPUT_TASKS" ]; then
+            matrix=$(node scripts/flaker-batch-plan.ts --tasks "$INPUT_TASKS" --github-matrix)
+          elif [ -n "$INPUT_NODES" ]; then
+            matrix=$(node scripts/flaker-batch-plan.ts --nodes "$INPUT_NODES" --github-matrix)
+          else
+            matrix=$(node scripts/flaker-batch-plan.ts --github-matrix)
+          fi
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+      - name: Persist nightly plan
+        env:
+          INPUT_TASKS: ${{ github.event.inputs.tasks || '' }}
+          INPUT_NODES: ${{ github.event.inputs.nodes || '' }}
+        run: |
+          if [ -n "$INPUT_TASKS" ] && [ -n "$INPUT_NODES" ]; then
+            just flaker-batch-plan flaker-daily-plan "$INPUT_TASKS" "$INPUT_NODES"
+          elif [ -n "$INPUT_TASKS" ]; then
+            just flaker-batch-plan flaker-daily-plan "$INPUT_TASKS"
+          elif [ -n "$INPUT_NODES" ]; then
+            just flaker-batch-plan flaker-daily-plan "" "$INPUT_NODES"
+          else
+            just flaker-batch-plan flaker-daily-plan
+          fi
+
+      - name: Publish nightly plan
+        run: cat flaker-daily-plan/plan.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload nightly plan
+        uses: actions/upload-artifact@v6
+        with:
+          name: flaker-daily-plan
+          path: flaker-daily-plan/*
+          if-no-files-found: error
+
+  playwright-full-batch:
+    needs: batch-plan
+    if: ${{ fromJson(needs.batch-plan.outputs.matrix).include[0] != null }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.batch-plan.outputs.matrix) }}
+    env:
+      METRIC_CI_ROOT: ${{ github.workspace }}/metric-ci
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Install just
+        uses: extractions/setup-just@v3
+
+      - name: Set up MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Install crater dependencies
+        run: pnpm install
+
+      - name: Install metric-ci CLI package
+        id: metric_ci_package
+        continue-on-error: true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: pnpm add --no-save @mizchi/flaker@latest
+
+      - name: Checkout metric-ci source fallback
+        if: steps.metric_ci_package.outcome == 'failure'
+        uses: actions/checkout@v6
+        with:
+          repository: mizchi/metric-ci
+          path: metric-ci
+
+      - name: Install metric-ci source dependencies
+        if: steps.metric_ci_package.outcome == 'failure'
+        run: pnpm install
+        working-directory: metric-ci
+
+      - name: Build metric-ci source CLI
+        if: steps.metric_ci_package.outcome == 'failure'
+        run: pnpm run build
+        working-directory: metric-ci
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Update MoonBit dependencies
+        run: |
+          moon update
+          moon update --manifest-path browser/moon.mod.json
+
+      - name: Build BiDi server
+        run: just build-bidi
+
+      - name: Record flaker nightly task
+        id: record
+        continue-on-error: true
+        run: |
+          just flaker-task-record "${{ matrix.task_id }}" "flaker-daily/${{ matrix.task_id }}/playwright-report.json" "flaker-daily/${{ matrix.task_id }}/playwright-summary"
+
+      - name: Build flaker task summary
+        if: always()
+        run: |
+          just flaker-task-summary "${{ matrix.task_id }}" "flaker-daily/${{ matrix.task_id }}/flaker-summary"
+
+      - name: Upload flaker nightly task artifact
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: flaker-daily-${{ matrix.task_id }}
+          path: flaker-daily/${{ matrix.task_id }}
+          if-no-files-found: warn
+
+      - name: Fail job when task failed
+        if: steps.record.outcome == 'failure'
+        run: exit 1
+
+  flaker-daily-summary:
+    if: always()
+    needs:
+      - batch-plan
+      - playwright-full-batch
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Download nightly task artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: flaker-daily-*
+          path: flaker-daily-artifacts
+          merge-multiple: true
+
+      - name: Build daily batch summary
+        run: just flaker-batch-summary flaker-daily-artifacts flaker-daily-summary
+
+      - name: Publish daily batch summary
+        run: cat flaker-daily-summary/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload daily batch summary
+        uses: actions/upload-artifact@v6
+        with:
+          name: flaker-daily-summary
+          path: flaker-daily-summary/*
+          if-no-files-found: error

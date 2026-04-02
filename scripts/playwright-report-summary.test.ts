@@ -3,7 +3,7 @@ import {
   buildPlaywrightSummary,
   renderPlaywrightMarkdown,
   type PlaywrightJsonReport,
-} from "./playwright-report-summary.ts";
+} from "./playwright-report-summary-core.ts";
 
 function makeReport(): PlaywrightJsonReport {
   return {
@@ -138,7 +138,7 @@ function makeReport(): PlaywrightJsonReport {
 }
 
 describe("buildPlaywrightSummary", () => {
-  it("normalizes rows, counts flaky tests, and groups by file", () => {
+  it("normalizes rows, emits stable identities, and groups by file", () => {
     const summary = buildPlaywrightSummary(makeReport(), "playwright-bidi");
 
     expect(summary.totals.total).toBe(4);
@@ -155,6 +155,14 @@ describe("buildPlaywrightSummary", () => {
     expect(flakyRow?.outcome).toBe("flaky");
     expect(flakyRow?.attempts).toEqual(["failed", "passed"]);
     expect(flakyRow?.retryCount).toBe(1);
+    expect(flakyRow?.identityKey).toBe(flakyRow?.identity?.key);
+    expect(flakyRow?.identity).toMatchObject({
+      suite: "Playwright Adapter Tests",
+      testName: "locator count",
+      spec: "tests/playwright-adapter.test.ts",
+      titlePath: ["locator count"],
+      variant: { project: "chromium" },
+    });
   });
 });
 

@@ -17,6 +17,19 @@ setup:
 test:
     moon test
 
+# Run all repository Vitest suites with an explicit include/exclude boundary
+test-vitest:
+    pnpm test:vitest
+
+# Run node:test-based JS/WASM/browser contract tests
+test-node:
+    pnpm test:node
+
+# Run the crater self-contained JS/TS test suites end-to-end
+test-all:
+    just test-vitest
+    just test-node
+
 # Run tests with native target
 test-native:
     moon test --target native
@@ -36,6 +49,10 @@ test-taffy:
 # Verify moon test result does not regress from recorded baseline
 test-baseline:
     scripts/test-baseline.sh
+
+# Run the current MoonBit suite against the recorded failure baseline
+test-moon-baseline:
+    just test-baseline
 
 # Update moon test baseline summary file
 test-baseline-update:
@@ -276,23 +293,104 @@ bench-vrt-report group output_dir="vrt-bench":
     mkdir -p {{output_dir}}
     npx tsx scripts/vrt-bench.ts --group {{group}} --json {{output_dir}}/{{group}}.json --markdown {{output_dir}}/{{group}}.md | tee {{output_dir}}/{{group}}.log
 
+# Compact flaker entrypoint
+flaker *args:
+    node scripts/flaker-entry.ts {{args}}
+
 # List flaker-managed Playwright tasks
 flaker-list:
-    npx tsx scripts/flaker-config.ts --list
+    node scripts/flaker-entry.ts config list
 
 # Validate flaker config against tracked Playwright specs
 flaker-check:
-    npx tsx scripts/flaker-config.ts --check
+    node scripts/flaker-entry.ts config check
+
+# Resolve affected Playwright tasks from changed repo paths
+flaker-affected *paths:
+    node scripts/flaker-entry.ts config affected {{paths}}
+
+# Generate a task-scoped flaker.toml from flaker.star
+flaker-task-config task_id output="":
+    if [ -n "{{output}}" ]; then node scripts/flaker-task-config.ts --task {{task_id}} --write {{output}}; else node scripts/flaker-task-config.ts --task {{task_id}}; fi
+
+# Run flaker with a task-scoped generated config
+flaker-task task_id *args:
+    node scripts/flaker-task-run.ts --task {{task_id}} -- {{args}}
+
+# Sample tests using flaker for a single task
+flaker-task-sample task_id *args:
+    node scripts/flaker-entry.ts task sample {{task_id}} {{args}}
+
+# Import a Playwright JSON report into the shared flaker store for a task
+flaker-task-import task_id report_path *args:
+    node scripts/flaker-entry.ts task import {{task_id}} {{report_path}} {{args}}
+
+# Run a Playwright task, persist its JSON report, and import it into flaker
+flaker-task-record task_id report_path="" summary_dir="" *args:
+    if [ -n "{{report_path}}" ] && [ -n "{{summary_dir}}" ]; then node scripts/flaker-task-record.ts --task {{task_id}} --report-path {{report_path}} --summary-dir {{summary_dir}} -- {{args}}; elif [ -n "{{report_path}}" ]; then node scripts/flaker-task-record.ts --task {{task_id}} --report-path {{report_path}} -- {{args}}; elif [ -n "{{summary_dir}}" ]; then node scripts/flaker-task-record.ts --task {{task_id}} --summary-dir {{summary_dir}} -- {{args}}; else node scripts/flaker-task-record.ts --task {{task_id}} -- {{args}}; fi
+
+# Run tests using flaker for a single task
+flaker-task-run task_id *args:
+    node scripts/flaker-entry.ts task run {{task_id}} {{args}}
+
+# Render task-scoped flaker eval/reason summary
+flaker-task-summary task_id output_dir=".flaker/task-summary":
+    mkdir -p {{output_dir}}
+    node scripts/flaker-task-summary.ts --task {{task_id}} --json {{output_dir}}/{{task_id}}.json --markdown {{output_dir}}/{{task_id}}.md | tee {{output_dir}}/{{task_id}}.log
+
+# Render full-batch plan for scheduled flaker runs
+flaker-batch-plan output_dir=".flaker/batch-plan" tasks="" nodes="":
+    mkdir -p {{output_dir}}
+    if [ -n "{{tasks}}" ] && [ -n "{{nodes}}" ]; then node scripts/flaker-batch-plan.ts --tasks {{tasks}} --nodes {{nodes}} --json {{output_dir}}/plan.json --markdown {{output_dir}}/plan.md | tee {{output_dir}}/plan.log; elif [ -n "{{tasks}}" ]; then node scripts/flaker-batch-plan.ts --tasks {{tasks}} --json {{output_dir}}/plan.json --markdown {{output_dir}}/plan.md | tee {{output_dir}}/plan.log; elif [ -n "{{nodes}}" ]; then node scripts/flaker-batch-plan.ts --nodes {{nodes}} --json {{output_dir}}/plan.json --markdown {{output_dir}}/plan.md | tee {{output_dir}}/plan.log; else node scripts/flaker-batch-plan.ts --json {{output_dir}}/plan.json --markdown {{output_dir}}/plan.md | tee {{output_dir}}/plan.log; fi
+
+# Aggregate full-batch flaker artifacts
+flaker-batch-summary input_dir output_dir=".flaker/batch-summary":
+    mkdir -p {{output_dir}}
+    node scripts/flaker-batch-summary.ts --input {{input_dir}} --json {{output_dir}}/summary.json --markdown {{output_dir}}/summary.md | tee {{output_dir}}/summary.log
 
 # Render flaker config summary for CI or local inspection
 flaker-report output_dir=".flaker/report":
     mkdir -p {{output_dir}}
-    npx tsx scripts/flaker-config.ts --check --json {{output_dir}}/summary.json --markdown {{output_dir}}/summary.md | tee {{output_dir}}/summary.log
+    node scripts/flaker-entry.ts config report {{output_dir}} | tee {{output_dir}}/summary.log
+
+# Validate tracked flaker quarantine entries
+flaker-quarantine-check:
+    node scripts/flaker-entry.ts quarantine check
+
+# Render flaker quarantine summary for CI or local inspection
+flaker-quarantine-report output_dir=".flaker/quarantine":
+    mkdir -p {{output_dir}}
+    node scripts/flaker-entry.ts quarantine report {{output_dir}} | tee {{output_dir}}/quarantine.log
+
+# Render upstream ownership inventory for flaker/crater boundaries
+flaker-upstream-inventory output_dir=".flaker/upstream":
+    mkdir -p {{output_dir}}
+    node scripts/flaker-entry.ts upstream inventory {{output_dir}} | tee {{output_dir}}/inventory.log
+
+# Stage one ready-to-upstream group into an export directory
+flaker-upstream-export group output_dir=".flaker/upstream-export":
+    mkdir -p {{output_dir}}
+    node scripts/flaker-entry.ts upstream export {{group}} {{output_dir}} | tee {{output_dir}}/{{group}}.log
 
 # Normalize a Playwright JSON report into JSON/Markdown summary
 playwright-report-summary input label output_dir=".playwright-report":
     mkdir -p {{output_dir}}
     npx tsx scripts/playwright-report-summary.ts --input {{input}} --label {{label}} --json {{output_dir}}/{{label}}.json --markdown {{output_dir}}/{{label}}.md | tee {{output_dir}}/{{label}}.log
+
+# Compare normalized Playwright summaries against a baseline
+playwright-report-diff base_input head_input label output_dir=".playwright-report":
+    mkdir -p {{output_dir}}
+    npx tsx scripts/playwright-report-diff.ts --base {{base_input}} --head {{head_input}} --label {{label}} --json {{output_dir}}/{{label}}-diff.json --markdown {{output_dir}}/{{label}}-diff.md | tee {{output_dir}}/{{label}}-diff.log
+
+# Summarize a WPT VRT shard result JSON
+wpt-vrt-report input label output_dir="wpt-vrt-summary":
+    mkdir -p {{output_dir}}
+    npx tsx scripts/wpt-vrt-summary.ts --input {{input}} --label {{label}} --json {{output_dir}}/{{label}}.json --markdown {{output_dir}}/{{label}}.md | tee {{output_dir}}/{{label}}.log
+
+# Aggregate WPT VRT shard summaries
+wpt-vrt-report-aggregate input_dir output_dir="wpt-vrt-summary":
+    mkdir -p {{output_dir}}
+    npx tsx scripts/wpt-vrt-summary.ts --aggregate {{input_dir}} --json {{output_dir}}/wpt-vrt-summary.json --markdown {{output_dir}}/wpt-vrt-summary.md | tee {{output_dir}}/wpt-vrt-summary.log
 
 # Capture a live site into real-world/ (gitignored)
 capture-realworld *args:

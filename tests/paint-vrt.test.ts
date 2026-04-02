@@ -10,8 +10,10 @@ import {
   compareChromiumPngToImage,
   renderCraterHtml,
 } from "./helpers/crater-vrt";
+import { formatQuarantineSkipMessage } from "./helpers/flaker-quarantine";
 
 const OUTPUT_ROOT = path.join(process.cwd(), "output", "playwright", "vrt");
+const PAINT_VRT_SPEC = "tests/paint-vrt.test.ts";
 const AVAILABLE_REAL_WORLD_SNAPSHOTS = new Set(listRealWorldSnapshotNames());
 
 async function expectSnapshotWithinBudget(
@@ -229,7 +231,14 @@ test.describe("Paint VRT", () => {
       test.slow();
       test.skip(
         !AVAILABLE_REAL_WORLD_SNAPSHOTS.has(snapshotName),
-        `${snapshotName} snapshot is not available locally`,
+        formatQuarantineSkipMessage(
+          {
+            taskId: "paint-vrt",
+            spec: PAINT_VRT_SPEC,
+            title: `real-world snapshot: ${snapshotName} stays within loose visual diff budget`,
+          },
+          `${snapshotName} snapshot is not available locally`,
+        ),
       );
       await expectSnapshotWithinBudget(browser, snapshotName, {
         threshold: 0.35,
@@ -776,7 +785,14 @@ test.describe("Paint VRT", () => {
       test.slow();
       test.skip(
         !AVAILABLE_REAL_WORLD_SNAPSHOTS.has(snapshotName),
-        `${snapshotName} snapshot is not available locally`,
+        formatQuarantineSkipMessage(
+          {
+            taskId: "paint-vrt",
+            spec: PAINT_VRT_SPEC,
+            title: `url snapshot: ${snapshotName} visual diff within budget`,
+          },
+          `${snapshotName} snapshot is not available locally`,
+        ),
       );
       await expectSnapshotWithinBudget(browser, snapshotName, {
         threshold: 0.3,

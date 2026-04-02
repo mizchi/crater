@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "id": "paint-vrt-real-world-local-assets",
+      "taskId": "paint-vrt",
+      "spec": "tests/paint-vrt.test.ts",
+      "titlePattern": "^real-world snapshot:",
+      "mode": "skip",
+      "scope": "environment",
+      "owner": "mizchi",
+      "reason": "Optional real-world fixtures are not guaranteed to exist in every local checkout.",
+      "condition": "Skip only when the named real-world snapshot is missing from disk.",
+      "introducedAt": "2026-04-01",
+      "expiresAt": "2026-06-30"
+    },
+    {
+      "id": "paint-vrt-url-local-assets",
+      "taskId": "paint-vrt",
+      "spec": "tests/paint-vrt.test.ts",
+      "titlePattern": "^url snapshot:",
+      "mode": "skip",
+      "scope": "environment",
+      "owner": "mizchi",
+      "reason": "Optional captured URL snapshots are not guaranteed to exist in every local checkout.",
+      "condition": "Skip only when the named URL snapshot is missing from disk.",
+      "introducedAt": "2026-04-01",
+      "expiresAt": "2026-06-30"
+    }
+  ]
+}
