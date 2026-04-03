@@ -1,6 +1,8 @@
 import {
+  "mizchi/crater",
   "mizchi/crater/browser_contract",
   "mizchi/crater/css/responsive",
+  "mizchi/crater/types",
   "mizchi/crater-browser/cdp",
   "mizchi/crater-browser/js",
   "mizchi/crater-browser/interaction",

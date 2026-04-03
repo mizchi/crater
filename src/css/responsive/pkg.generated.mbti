@@ -2,6 +2,10 @@
 package "mizchi/crater/css/responsive"
 
 // Values
+pub fn discover_css_rule_viewport_map(String, Array[Int]) -> CssRuleViewportMap
+
+pub fn discover_required_test_viewports(String) -> RequiredTestViewportsResult
+
 pub fn discover_responsive_breakpoints(String) -> BreakpointDiscoveryResult
 
 // Errors
@@ -18,6 +22,27 @@ pub struct BreakpointDiscoveryDiagnostics {
 pub struct BreakpointDiscoveryResult {
   breakpoints : Array[ResponsiveBreakpoint]
   diagnostics : BreakpointDiscoveryDiagnostics
+} derive(Eq, Show)
+
+pub struct CssRuleViewportEntry {
+  selector : String
+  properties : Array[String]
+  media_condition : String
+  active_at_widths : Array[Int]
+  inactive_at_widths : Array[Int]
+} derive(Eq, Show)
+
+pub struct CssRuleViewportMap {
+  rules : Array[CssRuleViewportEntry]
+} derive(Eq, Show)
+
+pub struct RequiredTestViewport {
+  width : Int
+  reason : String
+} derive(Eq, Show)
+
+pub struct RequiredTestViewportsResult {
+  viewports : Array[RequiredTestViewport]
 } derive(Eq, Show)
 
 pub struct ResponsiveBreakpoint {

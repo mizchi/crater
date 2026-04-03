@@ -2524,6 +2524,18 @@ fn BidiProtocol::dispatch_browsing_context(
       self.handle_get_responsive_breakpoints(request.id, request.params)
       Ok(())
     }
+    "getCssRuleViewportMap" => {
+      self.handle_get_css_rule_viewport_map(request.id, request.params)
+      Ok(())
+    }
+    "getRequiredTestViewports" => {
+      self.handle_get_required_test_viewports(request.id, request.params)
+      Ok(())
+    }
+    "batchRender" => {
+      self.handle_batch_render(request.id, request.params)
+      Ok(())
+    }
     "print" => {
       self.handle_print(request)
       Ok(())
