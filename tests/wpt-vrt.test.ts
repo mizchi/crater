@@ -19,6 +19,7 @@ import {
 } from "./helpers/wpt-vrt-utils";
 
 const UPDATE_BASELINE = process.env.WPT_VRT_UPDATE_BASELINE === "1";
+const SHARD_NAME = process.env.WPT_VRT_SHARD_NAME?.trim() || "wpt-vrt";
 const SHARD_MODULES = process.env.WPT_VRT_SHARD?.split(",").map(s => s.trim()).filter(Boolean) ?? [];
 const SHARD_OFFSET = Number(process.env.WPT_VRT_OFFSET) || 0;
 const SHARD_LIMIT = Number(process.env.WPT_VRT_LIMIT) || 0;
@@ -130,7 +131,15 @@ test.describe("WPT VRT", () => {
 
     fs.mkdirSync(OUTPUT_ROOT, { recursive: true });
     const resultsJson = {
+      schemaVersion: 1,
+      suite: "wpt-vrt",
       generatedAt: new Date().toISOString(),
+      shard: {
+        name: SHARD_NAME,
+        modules: SHARD_MODULES,
+        offset: SHARD_OFFSET,
+        limit: SHARD_LIMIT,
+      },
       config: {
         viewport: config.viewport,
         pixelmatchThreshold: config.pixelmatchThreshold,

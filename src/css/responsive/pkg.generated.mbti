@@ -1,0 +1,36 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/css/responsive"
+
+// Values
+pub fn discover_responsive_breakpoints(String) -> BreakpointDiscoveryResult
+
+// Errors
+
+// Types and methods
+pub struct BreakpointDiscoveryDiagnostics {
+  stylesheet_count : Int
+  rule_count : Int
+  external_stylesheet_links : Array[String]
+  ignored_queries : Array[String]
+  unsupported_queries : Array[String]
+} derive(Eq, Show)
+
+pub struct BreakpointDiscoveryResult {
+  breakpoints : Array[ResponsiveBreakpoint]
+  diagnostics : BreakpointDiscoveryDiagnostics
+} derive(Eq, Show)
+
+pub struct ResponsiveBreakpoint {
+  axis : String
+  op : String
+  value_px : Int
+  raw : String
+  normalized : String
+  guards : Array[String]
+  rule_count : Int
+} derive(Eq, Show)
+
+// Type aliases
+
+// Traits
+

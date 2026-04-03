@@ -1,5 +1,152 @@
 # TODO
 
+## Long-term Roadmap (2026-04-02)
+
+- 再現用の入口と API 境界: `docs/flaker-runbook.md`
+
+### 方針
+- `metric-ci` (`flaker`) は `crater` から見ると source repo ではなく external CLI として扱う
+- local/CI ともに `METRIC_CI_*` env または install 済み package を優先し、legacy な `flaker` source path 依存は減らす
+- `metric-ci` に寄せる generic logic は、「crater から切り出した source 群」だと inventory/runbook に明記する
+- `metric-ci` (`flaker`) に寄せる: 汎用の test management
+  - stable test identity
+  - affected selection / explain
+  - config validation / drift detection
+  - quarantine manifest / runtime apply
+  - CI summary / diff / shard aggregation
+- `crater` に残す: renderer と VRT 実装のドメイン固有部分
+  - public rendering API
+  - paint/layout/text compatibility
+  - VRT adapter と判定メトリクス (`diffRatio`, threshold, backend 差分)
+  - WPT / real-world / browser integration
+- `mizchi/vrt-harness` は `crater` の利用者として扱う
+  - markup 中心の scenario 定義
+  - baseline / fixture / harness UX
+  - `crater` の公開 API と report schema を消費する
+
+### Ownership Snapshot
+- `metric-ci` (`flaker`) に寄せる: `crater` を知らなくても成立する schema / algorithm / history 管理
+  - `flaker.star` parser と config schema
+  - quarantine manifest の schema / match / expiry / runtime apply
+  - normalized test report summary / base-head diff
+  - matrix / shard aggregate summary
+  - stable test identity と、その identity を使う selection / reason / flaky 判定
+- `crater` に残す: repo 固有の task graph と VRT / renderer ドメイン
+  - repo 上の spec discovery と ownership 解決
+  - task-scoped `flaker.toml` 生成、`flaker run/import/eval` への bridge
+  - VRT / WPT / paint diff / backend 差分のような domain metadata と判定
+  - MoonBit / Playwright / WPT を横断する crater 固有 workflow
+- `vrt-harness` は consumer として `crater` の契約に乗る
+  - markup scenario / baseline UX は `vrt-harness`
+  - rendering / diff / identity / report schema は `crater` と共有
+  - test management core は `flaker` を使う
+
+### 直近の棚卸し
+- `flaker` へ寄せる候補
+  - `scripts/flaker-quarantine-parser.ts`
+  - `scripts/flaker-quarantine-match.ts`
+  - `scripts/flaker-quarantine-expiry.ts`
+  - `scripts/flaker-quarantine-summary-core.ts`
+  - `scripts/flaker-quarantine-report.ts`
+  - `scripts/flaker-config-parser.ts`
+  - `scripts/flaker-config-contract.ts`
+  - `scripts/flaker-config-task.ts`
+  - `scripts/flaker-config-summary-core.ts`
+  - `scripts/flaker-config-selection-core.ts`
+  - `scripts/flaker-config-report.ts`
+  - `scripts/playwright-report-contract.ts`
+  - `scripts/playwright-report-summary-core.ts`
+  - `scripts/playwright-report-diff-core.ts`
+  - `scripts/flaker-task-summary-contract.ts`
+  - `scripts/flaker-task-summary-core.ts`
+  - `scripts/flaker-batch-plan-core.ts`
+  - `scripts/flaker-batch-summary-core.ts`
+- `crater` の adapter として維持するもの
+  - `scripts/flaker-config-selection.ts`
+  - `scripts/flaker-config-summary.ts`
+  - `scripts/flaker-task-config.ts`
+  - `scripts/flaker-task-record.ts`
+  - `scripts/flaker-batch-plan.ts`
+- `crater` に残す domain layer
+  - VRT report の domain metadata (`diffRatio`, `threshold`, `backend`, `viewport`, `snapshotKind`)
+  - WPT / Playwright / MoonBit renderer に依存する task 分解と fixture 意味づけ
+
+### 先に固定する契約
+- [ ] stable test identity を 3 者で共有する
+  - 候補: `taskId + spec + filter + variant + optional shard`
+  - `flaker` issue: `mizchi/flaker#8`
+- [ ] VRT report schema を固定する
+  - 共通: `status`, `title`, `identity`, `duration`, `artifacts`
+  - domain metadata: `diffRatio`, `threshold`, `backend`, `viewport`, `snapshotKind`
+- [ ] quarantine contract を固定する
+  - `taskId`, `spec`, `titlePattern`, `mode`, `scope`, `owner`, `reason`, `condition`, `expiresAt`
+  - `flaker` issue: `mizchi/flaker#5`, `mizchi/flaker#9`
+- [ ] `flaker core` と domain metadata の境界を決める
+  - core は selection / quarantine / summary / diff
+  - `crater` / `vrt-harness` は VRT 固有メトリクスを extension metadata として持つ
+
+### フェーズ
+
+#### Phase 1: flaker の基盤を育てる
+- [ ] stable test identity を導入する (`mizchi/flaker#8`)
+- [ ] repo-tracked quarantine manifest を一級サポートする (`mizchi/flaker#5`)
+- [ ] quarantine を runner runtime へ適用する (`mizchi/flaker#9`)
+- [ ] affected selection の inspect/explain を追加する (`mizchi/flaker#3`)
+- [ ] config validation / ownership report を追加する (`mizchi/flaker#4`)
+- [ ] normalized CI summary / base-head diff を追加する (`mizchi/flaker#6`)
+- [ ] matrix/shard aggregate summary を追加する (`mizchi/flaker#7`)
+
+#### Phase 2: crater 側の glue を薄くする
+- [ ] `crater` の公開 VRT API を入口として固定する
+- [ ] repo 内の一時スクリプトを、`flaker` に移せるものと残すものへ棚卸しする
+- [x] `core` / `contract` / `loader` / `CLI wrapper` の境界を script 群で揃える
+- [x] `flaker` へ返す候補を inventory (`scripts/flaker-upstream-inventory.ts`) で明示する
+- [x] `ready-to-upstream` group を staging export (`scripts/flaker-upstream-export.ts`) できるようにする
+- [x] `flaker.star` の task から task-scoped `flaker.toml` を生成できるようにする
+- [x] task-scoped config で `flaker sample/run` を呼ぶ wrapper を追加する
+- [x] task-scoped config から shared `.flaker/data` を使って local history を共有する
+- [x] Playwright task の実行 -> report 保存 -> flaker import を 1 コマンドにまとめる
+- [x] task-scoped `flaker eval/reason` summary を local/CI から出せるようにする
+- [x] daily batch 用の full task plan / aggregate summary / scheduled workflow を追加する
+- [ ] daily batch artifact を run 間で `flaker collect` できる契約へ寄せる
+- [ ] `flaker` に移した機能に合わせて `scripts/flaker-*` の自前実装を順次削る
+- [ ] VRT 判定は `crater` 側に残しつつ、summary / identity / quarantine 連携だけ共通契約へ寄せる
+
+#### 現在の upstream 単位
+- export 導線
+  - `just flaker-upstream-export <group>` で group ごとに staging directory を作れる
+  - `just flaker upstream export all /tmp/flaker-playwright-report-core/from-crater` で `metric-ci` 側の `from-crater/` を source + reference tests 付きで再生成できる
+- `ready-to-upstream`
+  - `flaker-config-parser.ts`, `flaker-config-contract.ts`, `flaker-config-task.ts`, `flaker-config-summary-core.ts`, `flaker-config-selection-core.ts`, `flaker-config-report.ts`
+  - `playwright-report-contract.ts`, `playwright-report-summary-core.ts`, `playwright-report-diff-core.ts`
+  - `flaker-task-summary-contract.ts`, `flaker-task-summary-core.ts`
+  - `flaker-batch-plan-core.ts`
+  - `flaker-batch-summary-core.ts`
+  - `flaker-quarantine-contract.ts`, `flaker-quarantine-parser.ts`, `flaker-quarantine-match.ts`, `flaker-quarantine-expiry.ts`, `flaker-quarantine-summary-core.ts`, `flaker-quarantine-report.ts`
+  - 2026-04-02 時点で reporting / quarantine / config parser/core / batch plan core と task resolver は `metric-ci` worktree に反映済み。いずれも `crater` から切り出した source 群として扱い、`crater` 側は wrapper と adapter を薄くして追従する
+- `keep-in-crater`
+  - `flaker-config-*` の repo adapter 層
+  - `flaker-task-*`, `flaker-batch-plan.ts` の task/workspace bridge
+  - `wpt-vrt-summary-core.ts` の VRT domain 層
+  - `script-cli.ts`, `script-runtime.ts`, `script-boundary.test.ts` の repo tooling
+
+#### Phase 3: vrt-harness を consumer として接続する
+- [ ] `vrt-harness` は `crater` の公開 API だけを使う
+- [ ] markup scenario から stable identity / normalized report を生成できるようにする
+- [ ] baseline 管理と fixture UX は `vrt-harness` に残し、selection / summary / quarantine は `flaker` に寄せる
+- [ ] `crater` と `vrt-harness` の両方で同じ report schema を使う
+
+#### Phase 4: cleanup と収束
+- [ ] `crater` に残った汎用 test management code を削る
+- [ ] `flaker` の issue と `crater` / `vrt-harness` の TODO を相互参照して drift を防ぐ
+- [ ] CI summary を `selection + quarantine + summary/diff + VRT metrics` の4点セットで統一する
+
+### 当面の優先順
+1. `mizchi/flaker#8` を進めて stable identity を決める
+2. `mizchi/flaker#5` と `mizchi/flaker#9` で quarantine を契約化して runtime へ通す
+3. `crater` では current glue を最小限に保ち、`flaker` に移せる責務を増やす
+4. `vrt-harness` は `crater` の consumer として report schema に乗せる
+
 ## Paint VRT
 
 ### 完了

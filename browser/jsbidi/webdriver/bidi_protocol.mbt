@@ -2520,6 +2520,10 @@ fn BidiProtocol::dispatch_browsing_context(
       self.handle_capture_paint_tree(request.id, request.params)
       Ok(())
     }
+    "getResponsiveBreakpoints" => {
+      self.handle_get_responsive_breakpoints(request.id, request.params)
+      Ok(())
+    }
     "print" => {
       self.handle_print(request)
       Ok(())

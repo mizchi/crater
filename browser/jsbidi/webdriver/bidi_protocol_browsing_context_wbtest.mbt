@@ -248,6 +248,70 @@ test "bidi capturePaintData returns actual viewport rgba payload" {
 }
 
 ///|
+test "bidi getResponsiveBreakpoints returns canonical breakpoint metadata" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+  let html = "<!DOCTYPE html><html><head><style>@media (min-width: 768px) and (orientation: landscape) { .card { display: block; } }</style></head><body><div class='card'>foo</div></body></html>"
+  let navigate_message = "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"" +
+    js_test_build_html_data_url(html) +
+    "\",\"wait\":\"complete\"}}"
+  ignore(proto.process_message(navigate_message))
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":3,\"method\":\"browsingContext.getResponsiveBreakpoints\",\"params\":{\"context\":\"session-1\",\"includeDiagnostics\":true}}",
+    ),
+  )
+  let result = extract_success_result(proto.take_messages())
+  let breakpoints = match result.get("breakpoints") {
+    Some(Array(items)) => items
+    _ => []
+  }
+  assert_eq(breakpoints.length(), 1)
+  let breakpoint = match breakpoints[0] {
+    Object(map) => map
+    _ => {}
+  }
+  match breakpoint.get("axis") {
+    Some(String(value)) => assert_eq(value, "width")
+    _ => assert_true(false)
+  }
+  match breakpoint.get("op") {
+    Some(String(value)) => assert_eq(value, "ge")
+    _ => assert_true(false)
+  }
+  match breakpoint.get("valuePx") {
+    Some(Number(value, ..)) => assert_eq(value.to_int(), 768)
+    _ => assert_true(false)
+  }
+  match breakpoint.get("guards") {
+    Some(Array(values)) => {
+      assert_eq(values.length(), 1)
+      match values[0] {
+        String(value) => assert_eq(value, "orientation:landscape")
+        _ => assert_true(false)
+      }
+    }
+    _ => assert_true(false)
+  }
+  let diagnostics = match result.get("diagnostics") {
+    Some(Object(map)) => map
+    _ => {}
+  }
+  match diagnostics.get("stylesheetCount") {
+    Some(Number(value, ..)) => assert_eq(value.to_int(), 1)
+    _ => assert_true(false)
+  }
+  match diagnostics.get("ruleCount") {
+    Some(Number(value, ..)) => assert_eq(value.to_int(), 1)
+    _ => assert_true(false)
+  }
+}
+
+///|
 test "bidi print embeds synthetic pdf metadata" {
   let proto = BidiProtocol::new()
   ignore(
