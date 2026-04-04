@@ -8,13 +8,43 @@
 pub(all) struct BidiServerConfig {
   host : String
   port : Int
+  /// Optional auth token. If set, clients must connect to /session/<token>.
+  /// If empty, authentication is disabled (legacy behavior).
+  auth_token : String
 }
 
 ///|
-/// Default configuration
+/// Default configuration (generates a random auth token)
 pub fn BidiServerConfig::default() -> BidiServerConfig {
-  { host: "127.0.0.1", port: 9222 }
+  { host: "127.0.0.1", port: 9222, auth_token: generate_auth_token() }
 }
+
+///|
+/// Generate a random auth token using crypto.randomUUID
+extern "js" fn js_generate_auth_token() -> String =
+  #| () => {
+  #|   try {
+  #|     return crypto.randomUUID().replace(/-/g, "");
+  #|   } catch (_e) {
+  #|     return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  #|   }
+  #| }
+
+///|
+pub fn generate_auth_token() -> String {
+  js_generate_auth_token()
+}
+
+///|
+/// Extract URL pathname from a request
+extern "js" fn js_get_request_pathname(request : @core.Any) -> String =
+  #| (req) => {
+  #|   try {
+  #|     return new URL(req.url).pathname;
+  #|   } catch (_e) {
+  #|     return "/";
+  #|   }
+  #| }
 
 ///|
 /// BiDi server state
@@ -30,6 +60,18 @@ pub fn BidiServer::new(
   config? : BidiServerConfig = BidiServerConfig::default(),
 ) -> BidiServer {
   { config, protocol: BidiProtocol::new(), server: None }
+}
+
+///|
+/// Validate auth token from request path.
+/// Expected path: /session/<token> when auth is enabled.
+fn BidiServer::validate_auth(self : BidiServer, request : @core.Any) -> Bool {
+  let token = self.config.auth_token
+  if token.is_empty() {
+    return true // Auth disabled
+  }
+  let path = js_get_request_pathname(request)
+  path == "/session/" + token
 }
 
 ///|
@@ -449,6 +491,11 @@ pub fn BidiServer::start(self : BidiServer) -> Unit {
   // Create request handler
   let handler = @core.from_fn1(fn(request : @core.Any) -> @core.Any {
     if is_websocket_request(request) {
+      // Security: validate auth token before upgrading
+      if not(self.validate_auth(request)) {
+        let body = "{\"error\":\"unauthorized\",\"message\":\"Invalid or missing auth token\"}"
+        return create_response(body, 403)
+      }
       // Upgrade to WebSocket
       let upgrade_result = upgrade_websocket(request)
       let socket : @core.Any = upgrade_result._get("socket")
@@ -2073,9 +2120,9 @@ extern "js" fn js_evaluate_expression(
   #|     globalThis.__networkIdleCallbacks = [];
   #|     globalThis.__lastNetworkActivity = Date.now();
   #|
-  #|     // Request sandbox configuration
+  #|     // Request sandbox configuration (default: same-origin for security)
   #|     globalThis.__requestSandbox = {
-  #|       mode: 'open', // open | same-origin | allowlist
+  #|       mode: 'same-origin', // same-origin | open | allowlist
   #|       allowlist: []
   #|     };
   #|     globalThis.__setRequestSandbox = function(options) {
@@ -5950,12 +5997,32 @@ extern "js" fn js_runtime_write_text_file(
   #|   try {
   #|     const deno = globalThis.Deno;
   #|     if (!deno || typeof deno.writeTextFileSync !== "function") return;
-  #|     const sep = filePath.lastIndexOf("/");
-  #|     if (sep > 0 && typeof deno.mkdirSync === "function") {
+  #|     // Security: resolve to absolute path and reject path traversal
+  #|     const resolved = deno.realPathSync ? (() => {
+  #|       // Resolve parent directory to detect traversal
+  #|       const sep = filePath.lastIndexOf("/");
+  #|       if (sep <= 0) return filePath;
   #|       const dir = filePath.slice(0, sep);
+  #|       const base = filePath.slice(sep + 1);
+  #|       // Reject filenames with path separators or traversal
+  #|       if (base.includes("/") || base.includes("\\") || base === ".." || base === ".") {
+  #|         console.error("[security] rejected filename: " + base);
+  #|         return null;
+  #|       }
+  #|       // Reject if directory contains traversal sequences
+  #|       if (dir.includes("..")) {
+  #|         console.error("[security] rejected path traversal in directory: " + dir);
+  #|         return null;
+  #|       }
+  #|       return filePath;
+  #|     })() : filePath;
+  #|     if (!resolved) return;
+  #|     const sep = resolved.lastIndexOf("/");
+  #|     if (sep > 0 && typeof deno.mkdirSync === "function") {
+  #|       const dir = resolved.slice(0, sep);
   #|       try { deno.mkdirSync(dir, { recursive: true }); } catch (_e) {}
   #|     }
-  #|     deno.writeTextFileSync(filePath, String(content ?? ""));
+  #|     deno.writeTextFileSync(resolved, String(content ?? ""));
   #|   } catch (_e) {}
   #| }
 

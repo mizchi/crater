@@ -163,6 +163,10 @@ fn create_element(tag : String, attrs : Map[String, String]) -> Element {
 ///|
 /// Insert element at appropriate place
 fn TreeBuilder::insert_element(self : TreeBuilder, element : Element) -> Unit {
+  // Security: reject excessive nesting depth
+  if self.open_elements.length() >= max_nesting_depth {
+    return
+  }
   // Flush any pending text before inserting element
   self.flush_pending_text(next_tag=Some(element.tag))
   if self.foster_parenting && is_table_context(self.current_node()) {

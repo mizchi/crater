@@ -175,6 +175,8 @@ struct Browser {
   kitty_uploaded_image_ids : Map[Int, Bool]
   /// Visible kitty placements from the previous text render
   mut kitty_visible_placements : Map[String, KittyPlacement]
+  /// HTTP cache for static assets (CSS, images, scripts, fonts)
+  http_cache : @http.MemoryCacheBackend
 }
 
 ///|
@@ -236,6 +238,7 @@ pub fn Browser::new(
     image_cache_max_bytes: default_image_cache_max_bytes,
     kitty_uploaded_image_ids: {},
     kitty_visible_placements: {},
+    http_cache: @http.MemoryCacheBackend::new(max_entries=1000),
   }
 }
 
@@ -378,11 +381,22 @@ fn resolve_url(base_url : String, href : String) -> String {
 }
 
 ///|
+/// Wrapper to adapt @http.fetch (which has optional params) to the
+/// async fetcher signature expected by cached_fetch_async.
+async fn http_fetch_adapter(
+  url : String,
+  options : @http.FetchOptions,
+) -> @http.HttpResponse raise @http.HttpError {
+  @http.fetch(url, options~)
+}
+
+///|
 /// Fetch external stylesheets and return CSS array
 async fn fetch_external_css(
   html : String,
   base_url : String,
   sandbox : @http.RequestSandbox,
+  cache : @http.MemoryCacheBackend,
 ) -> Array[String] {
   // Use lightweight extraction instead of full DOM parsing
   let stylesheet_links = @html.extract_stylesheet_links(html)
@@ -396,7 +410,7 @@ async fn fetch_external_css(
   for link in stylesheet_links {
     let css_url = resolve_url(base_url, link)
     println("Fetching CSS: " + css_url)
-    // Try to fetch CSS, ignore errors
+    // Try to fetch CSS with cache, ignore errors
     try {
       let options = {
         ..@http.FetchOptions::default(),
@@ -404,7 +418,12 @@ async fn fetch_external_css(
         origin: base_url,
         sandbox,
       }
-      let response = @http.fetch(css_url, options~)
+      let response = @http.cached_fetch_async(
+        url=css_url,
+        options~,
+        cache=cache,
+        fetcher=http_fetch_adapter,
+      )
       css_contents.push(response.body)
       println("  -> OK (" + response.body.length().to_string() + " bytes)")
     } catch {
@@ -465,6 +484,7 @@ async fn Browser::load_url(
     self.html_content,
     url,
     self.request_sandbox,
+    self.http_cache,
   ) catch {
     _ => [] // Fallback to no external CSS on error
   }
@@ -1098,7 +1118,12 @@ async fn Browser::prefetch_images(self : Browser) -> Unit {
         ..@http.FetchOptions::default(),
         sandbox: self.request_sandbox,
       }
-      let response = @http.fetch(abs_url, options~)
+      let response = @http.cached_fetch_async(
+        url=abs_url,
+        options~,
+        cache=self.http_cache,
+        fetcher=http_fetch_adapter,
+      )
       response.body
     } catch {
       _ => continue
@@ -3976,7 +4001,12 @@ async fn Browser::execute_scripts_async(self : Browser) -> Int {
           origin: self.current_url,
           sandbox: self.request_sandbox,
         }
-        let response = @http.fetch(script_url, options=script_options)
+        let response = @http.cached_fetch_async(
+          url=script_url,
+          options=script_options,
+          cache=self.http_cache,
+          fetcher=http_fetch_adapter,
+        )
         println("    -> OK (" + response.body.length().to_string() + " bytes)")
         source = response.body
         script_kind = "External"

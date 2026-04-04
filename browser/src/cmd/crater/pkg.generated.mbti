@@ -6,8 +6,7 @@ package "mizchi/crater-browser/cmd/crater"
 // Errors
 
 // Types and methods
-type ArtifactMode
-pub impl Show for ArtifactMode
+type ArtifactMode derive(Show)
 
 type LandmarkTree
 
