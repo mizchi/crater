@@ -928,3 +928,228 @@ test "sandbox: protocol-relative URL uses caller scheme for origin check" {
     _ => assert_true(false)
   }
 }
+
+// ============================================================
+// BOUNDARY CONDITIONS: Origin parsing edge cases
+// ============================================================
+
+///|
+test "extract_origin: data URL returns empty (no scheme://)" {
+  // data: URLs don't contain "://" → returns ""
+  inspect(extract_origin("data:text/html,<h1>hi</h1>"), content="")
+}
+
+///|
+test "extract_origin: blob URL extracts inner origin" {
+  // blob:https://example.com/uuid → "://" found → origin = "blob:https://example.com"
+  inspect(
+    extract_origin("blob:https://example.com/uuid-1234"),
+    content="blob:https://example.com",
+  )
+}
+
+///|
+test "extract_origin: javascript URL has no meaningful origin" {
+  inspect(extract_origin("javascript:alert(1)"), content="")
+}
+
+///|
+test "extract_origin: file URL" {
+  inspect(extract_origin("file:///etc/passwd"), content="file://")
+}
+
+///|
+test "resolve_request_origin: relative URL uses caller" {
+  inspect(
+    resolve_request_origin("/api/data", "https://example.test"),
+    content="https://example.test",
+  )
+}
+
+///|
+test "resolve_request_origin: protocol-relative with no caller scheme" {
+  // Caller has no scheme → empty result
+  inspect(resolve_request_origin("//evil.test/x", "localhost"), content="")
+}
+
+///|
+test "is_cross_origin: both empty is not cross-origin" {
+  inspect(is_cross_origin("", ""), content="false")
+}
+
+///|
+test "is_cross_origin: one empty is not cross-origin" {
+  inspect(is_cross_origin("https://a.test", ""), content="false")
+  inspect(is_cross_origin("", "https://a.test"), content="false")
+}
+
+///|
+test "is_cross_origin: same origin" {
+  inspect(
+    is_cross_origin("https://a.test", "https://a.test"),
+    content="false",
+  )
+}
+
+///|
+test "is_cross_origin: different origin" {
+  inspect(
+    is_cross_origin("https://a.test", "https://b.test"),
+    content="true",
+  )
+}
+
+// ============================================================
+// BOUNDARY CONDITIONS: CORS header filtering edge cases
+// ============================================================
+
+///|
+test "CORS filter: empty expose-headers value" {
+  let headers : Map[String, String] = {}
+  headers["access-control-allow-origin"] = "*"
+  headers["access-control-expose-headers"] = ""
+  headers["x-custom"] = "val"
+  headers["content-type"] = "text/html"
+  let result = enforce_cors_response(
+    "https://other.test/api",
+    {
+      ..FetchOptions::default(),
+      mode: Cors,
+      origin: "https://example.test",
+      sandbox: Open,
+    },
+    { status: 200, headers, body: "" },
+  )
+  // Empty expose → only safelisted headers
+  inspect(result.headers.contains("content-type"), content="true")
+  inspect(result.headers.contains("x-custom"), content="false")
+}
+
+///|
+test "CORS filter: expose-headers with extra commas" {
+  let headers : Map[String, String] = {}
+  headers["access-control-allow-origin"] = "*"
+  headers["access-control-expose-headers"] = ",,x-custom,,,"
+  headers["x-custom"] = "val"
+  headers["x-other"] = "hidden"
+  let result = enforce_cors_response(
+    "https://other.test/api",
+    {
+      ..FetchOptions::default(),
+      mode: Cors,
+      origin: "https://example.test",
+      sandbox: Open,
+    },
+    { status: 200, headers, body: "" },
+  )
+  inspect(result.headers.contains("x-custom"), content="true")
+  inspect(result.headers.contains("x-other"), content="false")
+}
+
+///|
+test "CORS filter: response with no headers at all" {
+  let headers : Map[String, String] = {}
+  headers["access-control-allow-origin"] = "*"
+  let result = enforce_cors_response(
+    "https://other.test/api",
+    {
+      ..FetchOptions::default(),
+      mode: Cors,
+      origin: "https://example.test",
+      sandbox: Open,
+    },
+    { status: 200, headers, body: "" },
+  )
+  inspect(result.status, content="200")
+}
+
+///|
+/// Edge case: CORS check on non-2xx response
+test "CORS: non-2xx response still requires valid ACAO" {
+  let headers : Map[String, String] = {}
+  // No ACAO on 403 → should still be blocked by CORS
+  let err = capture_error(fn() raise HttpError {
+    let _ = enforce_cors_response(
+      "https://other.test/forbidden",
+      {
+        ..FetchOptions::default(),
+        mode: Cors,
+        origin: "https://example.test",
+        sandbox: Open,
+      },
+      { status: 403, headers, body: "Forbidden" },
+    )
+  })
+  match err {
+    Some(CorsError(_)) => ()
+    _ => assert_true(false)
+  }
+}
+
+///|
+/// Edge case: CORS check on redirect response (3xx)
+test "CORS: 301 response without ACAO is blocked" {
+  let headers : Map[String, String] = {}
+  headers["location"] = "https://other.test/new-path"
+  let err = capture_error(fn() raise HttpError {
+    let _ = enforce_cors_response(
+      "https://other.test/old",
+      {
+        ..FetchOptions::default(),
+        mode: Cors,
+        origin: "https://example.test",
+        sandbox: Open,
+      },
+      { status: 301, headers, body: "" },
+    )
+  })
+  match err {
+    Some(CorsError(_)) => ()
+    _ => assert_true(false)
+  }
+}
+
+///|
+/// Sandbox: empty allowlist blocks everything
+test "sandbox: empty allowlist blocks all cross-origin" {
+  let err = capture_error(fn() raise HttpError {
+    let _ = prepare_fetch_options("https://other.test/api", {
+      ..FetchOptions::default(),
+      mode: Cors,
+      origin: "https://example.test",
+      sandbox: Allowlist([]),
+    })
+  })
+  match err {
+    Some(SandboxError(_)) => ()
+    _ => assert_true(false)
+  }
+}
+
+///|
+/// Sandbox: allowlist with same-origin URL allows it
+test "sandbox: allowlist same-origin request always allowed" {
+  let opts = {
+    ..FetchOptions::default(),
+    mode: Cors,
+    origin: "https://example.test",
+    sandbox: Allowlist([]), // Empty allowlist
+  }
+  // Same-origin request is always allowed
+  let prepared = prepare_fetch_options("https://example.test/api", opts)
+  inspect(prepared.http_method, content="GET")
+}
+
+///|
+/// headers_to_json: empty headers
+test "headers_to_json: empty map" {
+  inspect(headers_to_json({}), content="{}")
+}
+
+///|
+/// headers_to_json: single header
+test "headers_to_json: single header" {
+  let headers : Map[String, String] = {}
+  headers["a"] = "b"
+  inspect(headers_to_json(headers), content="{\"a\":\"b\"}")
+}

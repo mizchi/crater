@@ -1155,3 +1155,409 @@ test "eviction attack: flooding evicts oldest entries" {
     content="true",
   )
 }
+
+// ============================================================
+// BOUNDARY CONDITIONS & EDGE CASES
+// ============================================================
+
+///|
+/// Boundary: max_entries=1 cache
+test "boundary: max_entries=1 only keeps latest entry" {
+  let cache = MemoryCacheBackend::new(max_entries=1)
+  let e1 : CacheEntry = {
+    url: "https://a.test/1",
+    status: 200,
+    headers: {},
+    body: "first",
+    etag: None,
+    last_modified: None,
+    directives: CacheDirectives::default(),
+    stored_at: 100.0,
+  }
+  let e2 : CacheEntry = { ..e1, url: "https://a.test/2", stored_at: 200.0 }
+  cache.store(e1)
+  cache.store(e2)
+  inspect(cache.lookup("https://a.test/1").is_empty(), content="true")
+  inspect(cache.lookup("https://a.test/2").is_empty(), content="false")
+}
+
+///|
+/// Boundary: updating existing entry does not trigger eviction
+test "boundary: update same URL does not evict" {
+  let cache = MemoryCacheBackend::new(max_entries=2)
+  let e1 : CacheEntry = {
+    url: "https://a.test/1",
+    status: 200,
+    headers: {},
+    body: "v1",
+    etag: None,
+    last_modified: None,
+    directives: CacheDirectives::default(),
+    stored_at: 100.0,
+  }
+  let e2 : CacheEntry = { ..e1, url: "https://a.test/2", stored_at: 200.0 }
+  cache.store(e1)
+  cache.store(e2)
+  // Update existing entry — should NOT evict the other
+  let e1_updated : CacheEntry = { ..e1, body: "v2", stored_at: 300.0 }
+  cache.store(e1_updated)
+  inspect(cache.lookup("https://a.test/1").is_empty(), content="false")
+  inspect(cache.lookup("https://a.test/2").is_empty(), content="false")
+  match cache.lookup("https://a.test/1") {
+    Some(e) => inspect(e.body, content="v2")
+    None => assert_true(false)
+  }
+}
+
+///|
+/// Boundary: remove on empty cache does not panic
+test "boundary: remove from empty cache is safe" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  cache.remove("https://nonexistent.test/x")
+  // No panic
+  inspect(cache.lookup("https://nonexistent.test/x").is_empty(), content="true")
+}
+
+///|
+/// Boundary: clear on empty cache does not panic
+test "boundary: clear empty cache is safe" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  cache.clear()
+  inspect(cache.lookup("https://any.test").is_empty(), content="true")
+}
+
+///|
+/// Boundary: store then remove then lookup
+test "boundary: store-remove-lookup returns None" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let e : CacheEntry = {
+    url: "https://a.test/1",
+    status: 200,
+    headers: {},
+    body: "x",
+    etag: None,
+    last_modified: None,
+    directives: CacheDirectives::default(),
+    stored_at: 100.0,
+  }
+  cache.store(e)
+  cache.remove("https://a.test/1")
+  inspect(cache.lookup("https://a.test/1").is_empty(), content="true")
+}
+
+///|
+/// Boundary: is_fresh with stored_at in the future (clock skew)
+test "boundary: is_fresh with future stored_at" {
+  let entry = make_entry(
+    directives=parse_cache_control("max-age=300"),
+    stored_at=2000.0,
+  )
+  // now=1000 < stored_at=2000 → elapsed is negative → fresh
+  inspect(is_fresh(entry, 1000.0), content="true")
+}
+
+///|
+/// Boundary: is_fresh with stored_at=0 and now=0
+test "boundary: is_fresh at time zero" {
+  let entry = make_entry(
+    directives=parse_cache_control("max-age=300"),
+    stored_at=0.0,
+  )
+  inspect(is_fresh(entry, 0.0), content="true")
+}
+
+///|
+/// Boundary: is_fresh with max-age=0 (always stale)
+test "boundary: max-age=0 is immediately stale" {
+  let entry = make_entry(
+    directives=parse_cache_control("max-age=0"),
+    stored_at=1000.0,
+  )
+  // Even at exact same time, 0 < 0 is false → stale
+  inspect(is_fresh(entry, 1000.0), content="false")
+}
+
+///|
+/// Boundary: empty URL as cache key
+test "boundary: empty URL as cache key" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let e : CacheEntry = {
+    url: "",
+    status: 200,
+    headers: {},
+    body: "empty-url",
+    etag: None,
+    last_modified: None,
+    directives: CacheDirectives::default(),
+    stored_at: 100.0,
+  }
+  cache.store(e)
+  match cache.lookup("") {
+    Some(entry) => inspect(entry.body, content="empty-url")
+    None => assert_true(false)
+  }
+}
+
+///|
+/// Boundary: very long URL as cache key
+test "boundary: very long URL as cache key" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let mut long_url = "https://example.com/"
+  for i = 0; i < 100; i = i + 1 {
+    long_url = long_url + "segment" + i.to_string() + "/"
+  }
+  let e : CacheEntry = {
+    url: long_url,
+    status: 200,
+    headers: {},
+    body: "deep",
+    etag: None,
+    last_modified: None,
+    directives: parse_cache_control("max-age=300"),
+    stored_at: 100.0,
+  }
+  cache.store(e)
+  inspect(cache.lookup(long_url).is_empty(), content="false")
+}
+
+///|
+/// Boundary: URL with special characters
+test "boundary: URL with unicode in path" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let url = "https://example.com/日本語/パス"
+  let e : CacheEntry = {
+    url,
+    status: 200,
+    headers: {},
+    body: "日本語コンテンツ",
+    etag: None,
+    last_modified: None,
+    directives: parse_cache_control("max-age=300"),
+    stored_at: 100.0,
+  }
+  cache.store(e)
+  match cache.lookup(url) {
+    Some(entry) => inspect(entry.body, content="日本語コンテンツ")
+    None => assert_true(false)
+  }
+}
+
+///|
+/// Boundary: headers_to_json with special characters in values
+test "boundary: headers_to_json preserves values" {
+  let headers : Map[String, String] = {}
+  headers["x-test"] = "value with spaces"
+  let json = headers_to_json(headers)
+  inspect(json.contains("value with spaces"), content="true")
+}
+
+///|
+/// Boundary: parse_cache_control with only whitespace
+test "boundary: parse_cache_control whitespace-only string" {
+  let d = parse_cache_control("   ")
+  inspect(d.max_age, content="None")
+  inspect(d.no_cache, content="false")
+}
+
+///|
+/// Boundary: parse_cache_control with only commas
+test "boundary: parse_cache_control comma-only string" {
+  let d = parse_cache_control(",,,")
+  inspect(d.max_age, content="None")
+  inspect(d.no_store, content="false")
+}
+
+///|
+/// Boundary: parse_cache_control with semicolons (wrong separator)
+test "boundary: parse_cache_control semicolons are not valid separators" {
+  // RFC says comma-separated; semicolons should not split
+  let d = parse_cache_control("max-age=300; no-store")
+  // "max-age=300; no-store" is one token → value_str = "300; no-store" → invalid int
+  inspect(d.max_age, content="None")
+  inspect(d.no_store, content="false")
+}
+
+///|
+/// Boundary: cached_fetch with fetcher that raises error
+test "boundary: fetcher error propagates through cached_fetch" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    raise NetworkError("connection refused")
+  }
+  let err = try {
+    let _ = cached_fetch(
+      url="https://down.test/api",
+      options=FetchOptions::default(),
+      cache~,
+      fetcher~,
+    )
+    None
+  } catch {
+    e => Some(e)
+  }
+  match err {
+    Some(NetworkError(_)) => ()
+    _ => assert_true(false)
+  }
+  // Error should NOT be cached
+  inspect(cache.lookup("https://down.test/api").is_empty(), content="true")
+}
+
+///|
+/// Boundary: fetcher error during revalidation preserves stale entry
+test "boundary: revalidation error preserves stale cache" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let stale_entry : CacheEntry = {
+    url: "https://example.com/stale",
+    status: 200,
+    headers: { "cache-control": "max-age=0" },
+    body: "stale-but-valid",
+    etag: Some("\"v1\""),
+    last_modified: None,
+    directives: parse_cache_control("max-age=0"),
+    stored_at: 0.0,
+  }
+  cache.store(stale_entry)
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    raise NetworkError("timeout")
+  }
+  let err = try {
+    let _ = cached_fetch(
+      url="https://example.com/stale",
+      options=FetchOptions::default(),
+      cache~,
+      fetcher~,
+    )
+    None
+  } catch {
+    e => Some(e)
+  }
+  // Error propagated
+  match err {
+    Some(NetworkError(_)) => ()
+    _ => assert_true(false)
+  }
+  // But stale entry is still in cache (not removed by failed revalidation)
+  match cache.lookup("https://example.com/stale") {
+    Some(e) => inspect(e.body, content="stale-but-valid")
+    None => assert_true(false)
+  }
+}
+
+///|
+/// Cache-Control: all directives at once
+test "parse_cache_control: all directives combined" {
+  let d = parse_cache_control(
+    "public, private, no-cache, no-store, must-revalidate, immutable, max-age=42",
+  )
+  inspect(d.public_, content="true")
+  inspect(d.private_, content="true")
+  inspect(d.no_cache, content="true")
+  inspect(d.no_store, content="true")
+  inspect(d.must_revalidate, content="true")
+  inspect(d.immutable, content="true")
+  inspect(d.max_age, content="Some(42)")
+}
+
+///|
+/// Cache key: double-encoded percent sequences
+test "cache key: double encoding %252F is distinct from %2F" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let call_count = [0]
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    call_count[0] = call_count[0] + 1
+    {
+      status: 200,
+      headers: { "cache-control": "max-age=300" },
+      body: "r" + call_count[0].to_string(),
+    }
+  }
+  let opts = FetchOptions::default()
+  let _ = cached_fetch(
+    url="https://example.com/a%2Fb",
+    options=opts,
+    cache~,
+    fetcher~,
+  )
+  let _ = cached_fetch(
+    url="https://example.com/a%252Fb",
+    options=opts,
+    cache~,
+    fetcher~,
+  )
+  inspect(call_count[0], content="2")
+}
+
+///|
+/// Cache key: trailing slash distinction
+test "cache key: trailing slash is distinct" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let call_count = [0]
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    call_count[0] = call_count[0] + 1
+    {
+      status: 200,
+      headers: { "cache-control": "max-age=300" },
+      body: "r" + call_count[0].to_string(),
+    }
+  }
+  let opts = FetchOptions::default()
+  let _ = cached_fetch(
+    url="https://example.com/dir",
+    options=opts,
+    cache~,
+    fetcher~,
+  )
+  let _ = cached_fetch(
+    url="https://example.com/dir/",
+    options=opts,
+    cache~,
+    fetcher~,
+  )
+  inspect(call_count[0], content="2")
+}
+
+///|
+/// Cache: 304 with changed Cache-Control headers
+/// If server sends 304 with new Cache-Control, the cached directives should be updated
+test "304 revalidation: original body preserved after 304" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let entry : CacheEntry = {
+    url: "https://example.com/r",
+    status: 200,
+    headers: { "cache-control": "max-age=0" },
+    body: "original-body-content",
+    etag: Some("\"etag1\""),
+    last_modified: None,
+    directives: parse_cache_control("max-age=0"),
+    stored_at: 0.0,
+  }
+  cache.store(entry)
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    { status: 304, headers: {}, body: "" }
+  }
+  let r = cached_fetch(
+    url="https://example.com/r",
+    options=FetchOptions::default(),
+    cache~,
+    fetcher~,
+  )
+  // Body from cache, not from 304 response (which has empty body)
+  inspect(r.body, content="original-body-content")
+  inspect(r.status, content="200")
+}
