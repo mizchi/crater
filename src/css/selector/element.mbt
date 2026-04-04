@@ -4,7 +4,7 @@
 
 ///|
 /// Attribute value on an element
-pub struct Attribute {
+pub(all) struct Attribute {
   name : String
   value : String
 }

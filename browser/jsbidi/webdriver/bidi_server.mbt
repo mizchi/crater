@@ -3547,8 +3547,9 @@ extern "js" fn js_evaluate_expression_fast(
   expression : String,
   user_activation : Bool,
   realm_id : String,
+  ctx_id : String,
 ) -> String =
-  #| (id, expression, userActivation, realmId) => {
+  #| (id, expression, userActivation, realmId, ctxId) => {
   #|   const isActive = !!userActivation;
   #|   globalThis.__bidiUserActivation = isActive;
   #|   globalThis.__bidiCurrentContext = ctxId;
@@ -3865,8 +3866,9 @@ pub fn evaluate_js(expression : String) -> String {
 extern "js" fn js_evaluate_expression_async(
   expression : String,
   user_activation : Bool,
+  ctx_id : String,
 ) -> @core.Any =
-  #| async (expression, userActivation) => {
+  #| async (expression, userActivation, ctxId) => {
   #|   const consoleEntries = [];
   #|   const captureConsole = true;
   #|   const originalConsole = {
@@ -4315,7 +4317,7 @@ extern "js" fn js_await_promise(promise : @core.Any) -> String =
 /// Evaluate JavaScript expression asynchronously (awaits Promise if awaitPromise=true)
 /// Returns a Promise (@core.Any) that resolves to JSON string
 pub fn evaluate_js_async(expression : String) -> @core.Any {
-  js_evaluate_expression_async(expression, false)
+  js_evaluate_expression_async(expression, false, "")
 }
 
 ///|

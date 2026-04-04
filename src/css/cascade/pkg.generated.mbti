@@ -13,6 +13,8 @@ pub fn cascade_element(@selector.Element, Array[Stylesheet], Array[Declaration])
 
 pub fn cascade_element_indexed(@selector.Element, Array[IndexedStylesheet], Array[Declaration], @media.MediaEnvironment?) -> CascadedValues
 
+pub fn cascade_element_with_forced_states(@selector.Element, Array[Stylesheet], Array[Declaration], @media.MediaEnvironment?, @selector.ForcedPseudoStates) -> CascadedValues
+
 pub fn cascade_element_with_media(@selector.Element, Array[Stylesheet], Array[Declaration], @media.MediaEnvironment?) -> CascadedValues
 
 // Errors

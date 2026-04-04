@@ -25,6 +25,8 @@ pub fn compute_total_cls(Array[@types.BoundingRect], Array[@types.BoundingRect],
 
 pub fn diff_rendered_paint_trees(String, String, @types.Size[Double]) -> @paint.PaintTreeDiff
 
+pub fn render_html_batch_variants(String, @types.Size[Double], Array[RenderVariant]) -> Array[RenderVariantResult]
+
 pub fn render_html_to_paint_tree(String, @types.Size[Double]) -> @paint.PaintNode
 
 pub fn render_html_to_paint_tree_json(String, @types.Size[Double]) -> String
@@ -46,6 +48,27 @@ pub(all) struct CoreIssue {
   property : String
   detail : String
 }
+
+pub(all) struct CssMutation {
+  selector : String
+  property : String
+  action : CssMutationAction
+} derive(Eq, Show)
+
+pub(all) enum CssMutationAction {
+  Remove
+  Override(String)
+} derive(Eq, Show)
+
+pub(all) struct RenderVariant {
+  id : String
+  mutations : Array[CssMutation]
+} derive(Eq, Show)
+
+pub(all) struct RenderVariantResult {
+  id : String
+  paint_tree : @paint.PaintNode
+} derive(Show)
 
 // Type aliases
 

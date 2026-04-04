@@ -1,7 +1,19 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/css/responsive"
 
+import {
+  "mizchi/crater/css/selector",
+}
+
 // Values
+pub fn discover_computed_styles_with_state(String, String, @selector.ForcedPseudoStates, Array[String]) -> ComputedStylesWithStateResult
+
+pub fn discover_computed_styles_with_state_names(String, String, Array[String], Array[String]) -> ComputedStylesWithStateResult
+
+pub fn discover_css_rule_viewport_map(String, Array[Int]) -> CssRuleViewportMap
+
+pub fn discover_required_test_viewports(String) -> RequiredTestViewportsResult
+
 pub fn discover_responsive_breakpoints(String) -> BreakpointDiscoveryResult
 
 // Errors
@@ -20,6 +32,33 @@ pub struct BreakpointDiscoveryResult {
   diagnostics : BreakpointDiscoveryDiagnostics
 } derive(Eq, Show)
 
+pub struct ComputedStylesWithStateResult {
+  normal : Map[String, String]
+  forced : Map[String, String]
+  diff : Array[StylePropertyDiff]
+} derive(Show)
+
+pub struct CssRuleViewportEntry {
+  selector : String
+  properties : Array[String]
+  media_condition : String
+  active_at_widths : Array[Int]
+  inactive_at_widths : Array[Int]
+} derive(Eq, Show)
+
+pub struct CssRuleViewportMap {
+  rules : Array[CssRuleViewportEntry]
+} derive(Eq, Show)
+
+pub struct RequiredTestViewport {
+  width : Int
+  reason : String
+} derive(Eq, Show)
+
+pub struct RequiredTestViewportsResult {
+  viewports : Array[RequiredTestViewport]
+} derive(Eq, Show)
+
 pub struct ResponsiveBreakpoint {
   axis : String
   op : String
@@ -28,6 +67,12 @@ pub struct ResponsiveBreakpoint {
   normalized : String
   guards : Array[String]
   rule_count : Int
+} derive(Eq, Show)
+
+pub struct StylePropertyDiff {
+  property : String
+  normal : String
+  forced : String
 } derive(Eq, Show)
 
 // Type aliases
