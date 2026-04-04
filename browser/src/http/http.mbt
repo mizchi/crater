@@ -229,6 +229,57 @@ fn get_header(headers : Map[String, String], name : String) -> String? {
 }
 
 ///|
+/// CORS-safelisted response headers (always exposed to JavaScript)
+/// Per Fetch spec § 3.2.5
+fn is_cors_safelisted_response_header(name : String) -> Bool {
+  let lower = name.to_lower()
+  lower == "cache-control" ||
+  lower == "content-language" ||
+  lower == "content-length" ||
+  lower == "content-type" ||
+  lower == "expires" ||
+  lower == "last-modified" ||
+  lower == "pragma"
+}
+
+///|
+/// Filter response headers based on Access-Control-Expose-Headers.
+/// For CORS responses, only safelisted headers + explicitly exposed headers
+/// are visible to JavaScript.
+fn filter_cors_headers(
+  headers : Map[String, String],
+  credentials_mode : CredentialsMode,
+) -> Map[String, String] {
+  let expose = get_header(headers, "access-control-expose-headers")
+  let exposed_names : Array[String] = match expose {
+    Some(value) => {
+      let names : Array[String] = []
+      let parts = value.split(",")
+      for part in parts {
+        let name = part.trim(chars=" ").to_string().to_lower()
+        if name.length() > 0 {
+          names.push(name)
+        }
+      }
+      names
+    }
+    None => []
+  }
+  // Wildcard in expose-headers (only if credentials mode is NOT Include)
+  let wildcard = exposed_names.contains("*") && credentials_mode != Include
+  let filtered : Map[String, String] = {}
+  for k, v in headers {
+    let lower_k = k.to_lower()
+    if is_cors_safelisted_response_header(lower_k) ||
+      exposed_names.contains(lower_k) ||
+      wildcard {
+      filtered[k] = v
+    }
+  }
+  filtered
+}
+
+///|
 /// Enforce CORS based on response headers
 fn enforce_cors_response(
   url : String,
@@ -268,6 +319,12 @@ fn enforce_cors_response(
         }
       }
     }
+    // Filter response headers based on Access-Control-Expose-Headers
+    let filtered_headers = filter_cors_headers(
+      response.headers,
+      options.credentials,
+    )
+    return { ..response, headers: filtered_headers }
   }
   response
 }

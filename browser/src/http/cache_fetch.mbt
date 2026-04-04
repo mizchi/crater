@@ -80,7 +80,7 @@ pub async fn cached_fetch_async(
       println("[cache] MISS: " + url)
       let response = fetcher(url, options)
       let entry = build_cache_entry(url, response)
-      if !entry.directives.no_store {
+      if !entry.directives.no_store && is_cacheable_status(response.status) {
         cache.store(entry)
       }
       return response
@@ -140,7 +140,7 @@ pub fn cached_fetch(
     None => {
       let response = fetcher(url, options)
       let entry = build_cache_entry(url, response)
-      if !entry.directives.no_store {
+      if !entry.directives.no_store && is_cacheable_status(response.status) {
         cache.store(entry)
       }
       return response

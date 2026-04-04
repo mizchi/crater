@@ -107,9 +107,17 @@ pub fn is_fresh(entry : CacheEntry, now : Double) -> Bool {
   match d.max_age {
     Some(max_age) => {
       let elapsed = now - entry.stored_at
-      return elapsed < max_age.to_double()
+      let fresh = elapsed < max_age.to_double()
+      // must-revalidate: stale entries must NOT be served without revalidation
+      // (When fresh, serve normally. When stale, force revalidation — which
+      // is the default behavior, so must-revalidate is enforced by returning false.)
+      return fresh
     }
     None => ()
+  }
+  // must-revalidate without max-age: always stale (must revalidate)
+  if d.must_revalidate {
+    return false
   }
   // Heuristic freshness based on last_modified
   match entry.last_modified {
@@ -125,6 +133,19 @@ pub fn is_fresh(entry : CacheEntry, now : Double) -> Bool {
     }
     None => false
   }
+}
+
+///|
+/// Check if an HTTP status code is cacheable.
+/// Only 200, 203, 204, 206, 300, 301, 308 are cacheable by default (RFC 9111 §4.2.2).
+pub fn is_cacheable_status(status : Int) -> Bool {
+  status == 200 ||
+  status == 203 ||
+  status == 204 ||
+  status == 206 ||
+  status == 300 ||
+  status == 301 ||
+  status == 308
 }
 
 ///|

@@ -311,3 +311,226 @@ test "cached_fetch: non-GET bypasses cache" {
   )
   inspect(cache.lookup("https://example.com/api").is_empty(), content="true")
 }
+
+// ============================================================
+// RFC 9111: must-revalidate, error caching, status code tests
+// ============================================================
+
+///|
+test "is_fresh: must-revalidate without max-age is always stale" {
+  let entry = make_entry(
+    directives=parse_cache_control("must-revalidate"),
+    stored_at=1000.0,
+  )
+  // must-revalidate without max-age → always stale
+  inspect(is_fresh(entry, 1001.0), content="false")
+}
+
+///|
+test "is_fresh: must-revalidate with max-age=300, not expired" {
+  let entry = make_entry(
+    directives=parse_cache_control("max-age=300, must-revalidate"),
+    stored_at=1000.0,
+  )
+  // elapsed=100 < 300 → still fresh even with must-revalidate
+  inspect(is_fresh(entry, 1100.0), content="true")
+}
+
+///|
+test "is_fresh: must-revalidate with max-age=300, expired" {
+  let entry = make_entry(
+    directives=parse_cache_control("max-age=300, must-revalidate"),
+    stored_at=1000.0,
+  )
+  // elapsed=400 > 300 → stale, must-revalidate prevents serving stale
+  inspect(is_fresh(entry, 1400.0), content="false")
+}
+
+///|
+test "is_cacheable_status: 200 OK" {
+  inspect(is_cacheable_status(200), content="true")
+}
+
+///|
+test "is_cacheable_status: 301 Moved Permanently" {
+  inspect(is_cacheable_status(301), content="true")
+}
+
+///|
+test "is_cacheable_status: 404 Not Found" {
+  inspect(is_cacheable_status(404), content="false")
+}
+
+///|
+test "is_cacheable_status: 500 Internal Server Error" {
+  inspect(is_cacheable_status(500), content="false")
+}
+
+///|
+test "is_cacheable_status: 204 No Content" {
+  inspect(is_cacheable_status(204), content="true")
+}
+
+///|
+test "cached_fetch: 404 response is not cached" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    {
+      status: 404,
+      headers: { "cache-control": "max-age=300" },
+      body: "not found",
+    }
+  }
+  let _ = cached_fetch(
+    url="https://example.com/missing",
+    options=FetchOptions::default(),
+    cache~,
+    fetcher~,
+  )
+  inspect(
+    cache.lookup("https://example.com/missing").is_empty(),
+    content="true",
+  )
+}
+
+///|
+test "cached_fetch: 500 response is not cached" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    { status: 500, headers: {}, body: "error" }
+  }
+  let _ = cached_fetch(
+    url="https://example.com/err",
+    options=FetchOptions::default(),
+    cache~,
+    fetcher~,
+  )
+  inspect(cache.lookup("https://example.com/err").is_empty(), content="true")
+}
+
+///|
+test "cached_fetch: 301 response is cached" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    {
+      status: 301,
+      headers: {
+        "cache-control": "max-age=3600",
+        "location": "https://example.com/new",
+      },
+      body: "",
+    }
+  }
+  let _ = cached_fetch(
+    url="https://example.com/old",
+    options=FetchOptions::default(),
+    cache~,
+    fetcher~,
+  )
+  inspect(cache.lookup("https://example.com/old").is_empty(), content="false")
+}
+
+///|
+test "cached_fetch: no-cache forces revalidation even when entry exists" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  // Pre-populate with entry that has no-cache
+  let entry : CacheEntry = {
+    url: "https://example.com/nc.css",
+    status: 200,
+    headers: { "cache-control": "no-cache" },
+    body: "cached-body",
+    etag: Some("\"v1\""),
+    last_modified: None,
+    directives: parse_cache_control("no-cache"),
+    stored_at: 1000.0,
+  }
+  cache.store(entry)
+  let log : Array[String] = []
+  let fetcher = fn(
+    url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    log.push(url)
+    { status: 304, headers: {}, body: "" }
+  }
+  let r = cached_fetch(
+    url="https://example.com/nc.css",
+    options=FetchOptions::default(),
+    cache~,
+    fetcher~,
+  )
+  // Should have called fetcher (revalidation) even though entry exists
+  inspect(log.length(), content="1")
+  // Should return cached body after 304
+  inspect(r.body, content="cached-body")
+}
+
+// ============================================================
+// parse_cache_control edge cases
+// ============================================================
+
+///|
+test "parse_cache_control: mixed case" {
+  let d = parse_cache_control("Max-Age=600, No-Cache, Must-Revalidate")
+  inspect(d.max_age, content="Some(600)")
+  inspect(d.no_cache, content="true")
+  inspect(d.must_revalidate, content="true")
+}
+
+///|
+test "parse_cache_control: extra whitespace" {
+  let d = parse_cache_control("  max-age=120  ,  no-store  ,  public  ")
+  inspect(d.max_age, content="Some(120)")
+  inspect(d.no_store, content="true")
+  inspect(d.public_, content="true")
+}
+
+///|
+test "parse_cache_control: invalid max-age value" {
+  let d = parse_cache_control("max-age=abc")
+  inspect(d.max_age, content="None")
+}
+
+///|
+test "parse_cache_control: max-age=0" {
+  let d = parse_cache_control("max-age=0")
+  inspect(d.max_age, content="Some(0)")
+}
+
+///|
+test "parse_cache_control: unknown directives ignored" {
+  let d = parse_cache_control(
+    "max-age=300, stale-while-revalidate=60, s-maxage=600",
+  )
+  inspect(d.max_age, content="Some(300)")
+  // Unknown directives are silently ignored
+  inspect(d.no_cache, content="false")
+  inspect(d.no_store, content="false")
+}
+
+///|
+test "parse_cache_control: duplicate directives" {
+  // Last one wins for max-age
+  let d = parse_cache_control("max-age=100, max-age=200")
+  inspect(d.max_age, content="Some(200)")
+}
+
+///|
+test "parse_cache_control: no-store and max-age combined" {
+  // RFC 9111: no-store takes precedence
+  let d = parse_cache_control("max-age=3600, no-store")
+  inspect(d.max_age, content="Some(3600)")
+  inspect(d.no_store, content="true")
+  // is_fresh should return false because no_store
+  let entry = make_entry(directives=d, stored_at=1000.0)
+  inspect(is_fresh(entry, 1001.0), content="false")
+}

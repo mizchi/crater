@@ -8,9 +8,13 @@ import {
 // Values
 pub fn cached_fetch(url~ : String, options~ : FetchOptions, cache~ : MemoryCacheBackend, fetcher~ : (String, FetchOptions) -> HttpResponse raise HttpError) -> HttpResponse raise HttpError
 
+pub async fn cached_fetch_async(url~ : String, options~ : FetchOptions, cache~ : MemoryCacheBackend, fetcher~ : async (String, FetchOptions) -> HttpResponse raise HttpError) -> HttpResponse raise HttpError
+
 pub async fn fetch(String, options? : FetchOptions) -> HttpResponse raise HttpError
 
 pub fn headers_to_json(Map[String, String]) -> String
+
+pub fn is_cacheable_status(Int) -> Bool
 
 pub fn is_fresh(CacheEntry, Double) -> Bool
 

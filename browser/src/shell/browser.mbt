@@ -421,7 +421,7 @@ async fn fetch_external_css(
       let response = @http.cached_fetch_async(
         url=css_url,
         options~,
-        cache=cache,
+        cache~,
         fetcher=http_fetch_adapter,
       )
       css_contents.push(response.body)
