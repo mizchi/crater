@@ -491,3 +491,229 @@ test "get_header: missing header" {
   let headers : Map[String, String] = {}
   inspect(get_header(headers, "x-missing"), content="None")
 }
+
+// ============================================================
+// ATTACKER PERSPECTIVE: CORS Bypass Attempts
+// ============================================================
+
+///|
+/// Attack: ACAO with leading/trailing whitespace to bypass origin check
+test "CORS attack: ACAO with whitespace should still match wildcard" {
+  let headers : Map[String, String] = {}
+  headers["access-control-allow-origin"] = "  *  "
+  let result = enforce_cors_response(
+    "https://evil.test/steal",
+    {
+      ..FetchOptions::default(),
+      mode: Cors,
+      origin: "https://victim.test",
+      sandbox: Open,
+    },
+    { status: 200, headers, body: "data" },
+  )
+  // Trimmed " * " → "*" → should pass
+  inspect(result.status, content="200")
+}
+
+///|
+/// Attack: ACAO with whitespace around specific origin
+test "CORS attack: ACAO with whitespace around origin" {
+  let headers : Map[String, String] = {}
+  headers["access-control-allow-origin"] = "  https://victim.test  "
+  let result = enforce_cors_response(
+    "https://other.test/api",
+    {
+      ..FetchOptions::default(),
+      mode: Cors,
+      origin: "https://victim.test",
+      sandbox: Open,
+    },
+    { status: 200, headers, body: "ok" },
+  )
+  inspect(result.status, content="200")
+}
+
+///|
+/// Attack: ACAO set to "null" (e.g. from sandboxed iframe) — should NOT match
+test "CORS attack: ACAO null string should not match real origin" {
+  let headers : Map[String, String] = {}
+  headers["access-control-allow-origin"] = "null"
+  let err = capture_error(fn() raise HttpError {
+    let _ = enforce_cors_response(
+      "https://other.test/api",
+      {
+        ..FetchOptions::default(),
+        mode: Cors,
+        origin: "https://victim.test",
+        sandbox: Open,
+      },
+      { status: 200, headers, body: "" },
+    )
+  })
+  match err {
+    Some(CorsError(_)) => () // Correctly blocked
+    _ => assert_true(false)
+  }
+}
+
+///|
+/// Attack: ACAO with subdomain prefix trying to match parent domain
+test "CORS attack: subdomain in ACAO should not match parent domain" {
+  let headers : Map[String, String] = {}
+  headers["access-control-allow-origin"] = "https://evil.victim.test"
+  let err = capture_error(fn() raise HttpError {
+    let _ = enforce_cors_response(
+      "https://other.test/api",
+      {
+        ..FetchOptions::default(),
+        mode: Cors,
+        origin: "https://victim.test",
+        sandbox: Open,
+      },
+      { status: 200, headers, body: "" },
+    )
+  })
+  match err {
+    Some(CorsError(_)) => ()
+    _ => assert_true(false)
+  }
+}
+
+///|
+/// Attack: ACAO with http:// when caller is https:// (protocol downgrade)
+test "CORS attack: http ACAO should not match https origin" {
+  let headers : Map[String, String] = {}
+  headers["access-control-allow-origin"] = "http://victim.test"
+  let err = capture_error(fn() raise HttpError {
+    let _ = enforce_cors_response(
+      "https://other.test/api",
+      {
+        ..FetchOptions::default(),
+        mode: Cors,
+        origin: "https://victim.test",
+        sandbox: Open,
+      },
+      { status: 200, headers, body: "" },
+    )
+  })
+  match err {
+    Some(CorsError(_)) => ()
+    _ => assert_true(false)
+  }
+}
+
+///|
+/// Attack: Try to exfiltrate Set-Cookie via CORS response
+test "CORS attack: Set-Cookie header must be filtered" {
+  let headers : Map[String, String] = {}
+  headers["access-control-allow-origin"] = "*"
+  headers["set-cookie"] = "session=stolen123"
+  headers["content-type"] = "application/json"
+  let result = enforce_cors_response(
+    "https://other.test/api",
+    {
+      ..FetchOptions::default(),
+      mode: Cors,
+      origin: "https://victim.test",
+      sandbox: Open,
+    },
+    { status: 200, headers, body: "{}" },
+  )
+  // Set-Cookie must be filtered out
+  inspect(result.headers.contains("set-cookie"), content="false")
+  // But content-type (safelisted) is visible
+  inspect(result.headers.contains("content-type"), content="true")
+}
+
+///|
+/// Attack: Try to read Authorization header via CORS response
+test "CORS attack: Authorization response header must be filtered" {
+  let headers : Map[String, String] = {}
+  headers["access-control-allow-origin"] = "*"
+  headers["authorization"] = "Bearer stolen-token"
+  headers["x-internal-id"] = "secret-123"
+  let result = enforce_cors_response(
+    "https://other.test/api",
+    {
+      ..FetchOptions::default(),
+      mode: Cors,
+      origin: "https://victim.test",
+      sandbox: Open,
+    },
+    { status: 200, headers, body: "" },
+  )
+  inspect(result.headers.contains("authorization"), content="false")
+  inspect(result.headers.contains("x-internal-id"), content="false")
+}
+
+///|
+/// Attack: Expose-Headers with credentials tries to use wildcard
+test "CORS attack: wildcard expose-headers with credentials is blocked" {
+  let headers : Map[String, String] = {}
+  headers["access-control-allow-origin"] = "https://victim.test"
+  headers["access-control-allow-credentials"] = "true"
+  headers["access-control-expose-headers"] = "*"
+  headers["x-secret"] = "sensitive-data"
+  headers["set-cookie"] = "session=abc"
+  let result = enforce_cors_response(
+    "https://other.test/api",
+    {
+      ..FetchOptions::default(),
+      mode: Cors,
+      credentials: Include,
+      origin: "https://victim.test",
+      sandbox: Open,
+    },
+    { status: 200, headers, body: "" },
+  )
+  // Wildcard is ignored with credentials → non-safelisted headers filtered
+  inspect(result.headers.contains("x-secret"), content="false")
+  inspect(result.headers.contains("set-cookie"), content="false")
+}
+
+///|
+/// Attack: Multiple ACAO values (spec says single value only)
+test "CORS attack: multiple origins in ACAO should fail" {
+  let headers : Map[String, String] = {}
+  headers["access-control-allow-origin"] = "https://victim.test https://evil.test"
+  let err = capture_error(fn() raise HttpError {
+    let _ = enforce_cors_response(
+      "https://other.test/api",
+      {
+        ..FetchOptions::default(),
+        mode: Cors,
+        origin: "https://victim.test",
+        sandbox: Open,
+      },
+      { status: 200, headers, body: "" },
+    )
+  })
+  // "https://victim.test https://evil.test" != "https://victim.test"
+  match err {
+    Some(CorsError(_)) => ()
+    _ => assert_true(false)
+  }
+}
+
+///|
+/// Attack: ACAO with trailing path (should not match origin-only)
+test "CORS attack: ACAO with path should not match origin" {
+  let headers : Map[String, String] = {}
+  headers["access-control-allow-origin"] = "https://victim.test/evil"
+  let err = capture_error(fn() raise HttpError {
+    let _ = enforce_cors_response(
+      "https://other.test/api",
+      {
+        ..FetchOptions::default(),
+        mode: Cors,
+        origin: "https://victim.test",
+        sandbox: Open,
+      },
+      { status: 200, headers, body: "" },
+    )
+  })
+  match err {
+    Some(CorsError(_)) => ()
+    _ => assert_true(false)
+  }
+}

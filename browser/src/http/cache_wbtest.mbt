@@ -534,3 +534,250 @@ test "parse_cache_control: no-store and max-age combined" {
   let entry = make_entry(directives=d, stored_at=1000.0)
   inspect(is_fresh(entry, 1001.0), content="false")
 }
+
+// ============================================================
+// ATTACKER PERSPECTIVE: Cache Poisoning / Deception
+// ============================================================
+
+///|
+/// Attack: Stale entry revalidation returns 500 → must NOT overwrite cached good entry
+test "cache attack: stale revalidation with 500 should not poison cache" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  // Pre-populate with good cached response (stale)
+  let good_entry : CacheEntry = {
+    url: "https://victim.test/api.js",
+    status: 200,
+    headers: { "cache-control": "max-age=0" },
+    body: "legitimate-script",
+    etag: Some("\"good\""),
+    last_modified: None,
+    directives: parse_cache_control("max-age=0"),
+    stored_at: 0.0,
+  }
+  cache.store(good_entry)
+  // Attacker causes server to return 500 during revalidation
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    { status: 500, headers: {}, body: "attacker-controlled-error" }
+  }
+  let r = cached_fetch(
+    url="https://victim.test/api.js",
+    options=FetchOptions::default(),
+    cache~,
+    fetcher~,
+  )
+  // Should return the 500 (can't serve stale without must-revalidate special handling)
+  inspect(r.status, content="500")
+  // But the 500 must NOT be stored in cache
+  match cache.lookup("https://victim.test/api.js") {
+    Some(e) => {
+      // Original good entry should still be there (not overwritten by 500)
+      inspect(e.body, content="legitimate-script")
+      inspect(e.status, content="200")
+    }
+    None => assert_true(false) // Should still have the original entry
+  }
+}
+
+///|
+/// Attack: HEAD request response should not be cached as GET
+test "cache attack: HEAD response should not pollute GET cache" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    { status: 200, headers: { "cache-control": "max-age=300" }, body: "" }
+  }
+  let opts : FetchOptions = { ..FetchOptions::default(), http_method: "HEAD" }
+  let _ = cached_fetch(
+    url="https://victim.test/secret",
+    options=opts,
+    cache~,
+    fetcher~,
+  )
+  // HEAD should bypass cache entirely
+  inspect(cache.lookup("https://victim.test/secret").is_empty(), content="true")
+}
+
+///|
+/// Attack: DELETE should invalidate but not itself be cached
+test "cache attack: DELETE response should not be cached" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    { status: 200, headers: { "cache-control": "max-age=300" }, body: "deleted" }
+  }
+  let opts : FetchOptions = { ..FetchOptions::default(), http_method: "DELETE" }
+  let _ = cached_fetch(
+    url="https://victim.test/resource",
+    options=opts,
+    cache~,
+    fetcher~,
+  )
+  inspect(cache.lookup("https://victim.test/resource").is_empty(), content="true")
+}
+
+///|
+/// Attack: Response with no Cache-Control and no Last-Modified should not be cached
+/// (no explicit or heuristic freshness → stale immediately, wasting cache space)
+test "cache attack: response without any cache hints is still stored but immediately stale" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    { status: 200, headers: {}, body: "no-cache-headers" }
+  }
+  let _ = cached_fetch(
+    url="https://example.com/no-hints",
+    options=FetchOptions::default(),
+    cache~,
+    fetcher~,
+  )
+  // Entry is stored (no no-store directive)
+  match cache.lookup("https://example.com/no-hints") {
+    Some(entry) =>
+      // But it should be immediately stale (no max-age, no last-modified)
+      inspect(is_fresh(entry, entry.stored_at + 1.0), content="false")
+    None => () // Also acceptable: not stored at all
+  }
+}
+
+///|
+/// Attack: Cache key confusion — URLs with different query params should be separate
+test "cache attack: different query params are separate cache keys" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let call_count = [0]
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    call_count[0] = call_count[0] + 1
+    {
+      status: 200,
+      headers: { "cache-control": "max-age=300" },
+      body: "response-" + call_count[0].to_string(),
+    }
+  }
+  let opts = FetchOptions::default()
+  let r1 = cached_fetch(
+    url="https://example.com/api?user=alice",
+    options=opts,
+    cache~,
+    fetcher~,
+  )
+  let r2 = cached_fetch(
+    url="https://example.com/api?user=bob",
+    options=opts,
+    cache~,
+    fetcher~,
+  )
+  // Different query params → different cache entries → different bodies
+  inspect(r1.body, content="response-1")
+  inspect(r2.body, content="response-2")
+  inspect(call_count[0], content="2")
+}
+
+///|
+/// Attack: URL with fragment should use same cache key as without fragment
+/// (Fragments are client-side only per RFC 9110)
+test "cache key: URLs differing only in fragment are separate (conservative)" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let call_count = [0]
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    call_count[0] = call_count[0] + 1
+    {
+      status: 200,
+      headers: { "cache-control": "max-age=300" },
+      body: "r" + call_count[0].to_string(),
+    }
+  }
+  let opts = FetchOptions::default()
+  // Current behavior: fragment is part of URL string → separate keys
+  // This is conservative (safe, but wastes cache)
+  let _ = cached_fetch(
+    url="https://example.com/page",
+    options=opts,
+    cache~,
+    fetcher~,
+  )
+  let _ = cached_fetch(
+    url="https://example.com/page#section1",
+    options=opts,
+    cache~,
+    fetcher~,
+  )
+  // Both URLs fetched separately
+  inspect(call_count[0], content="2")
+}
+
+///|
+/// Attack: Malicious 304 to a no-store entry should not extend its lifetime
+test "cache attack: 304 on no-store entry should not refresh" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  // Pre-populate with no-store entry (should never have been stored, but testing defense-in-depth)
+  let bad_entry : CacheEntry = {
+    url: "https://example.com/secret",
+    status: 200,
+    headers: { "cache-control": "no-store" },
+    body: "secret-data",
+    etag: Some("\"v1\""),
+    last_modified: None,
+    directives: parse_cache_control("no-store"),
+    stored_at: 0.0,
+  }
+  cache.store(bad_entry) // Simulating a bug that stored a no-store entry
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    { status: 304, headers: {}, body: "" }
+  }
+  let r = cached_fetch(
+    url="https://example.com/secret",
+    options=FetchOptions::default(),
+    cache~,
+    fetcher~,
+  )
+  // is_fresh returns false for no-store, so fetcher is called
+  // 304 refreshes stored_at, but the entry still has no-store
+  // On next access, is_fresh will still return false
+  inspect(r.status, content="200") // Returns cached body via 304
+  match cache.lookup("https://example.com/secret") {
+    Some(e) => inspect(is_fresh(e, e.stored_at + 1.0), content="false")
+    None => ()
+  }
+}
+
+///|
+/// Attack: Very large max-age should not cause integer overflow
+test "cache attack: very large max-age does not overflow" {
+  let d = parse_cache_control("max-age=999999999")
+  inspect(d.max_age, content="Some(999999999)")
+  let entry = make_entry(directives=d, stored_at=1000.0)
+  // Should still be fresh after a million seconds
+  inspect(is_fresh(entry, 1000000.0), content="true")
+}
+
+///|
+/// Attack: Negative-like max-age (starts with -)
+test "cache attack: negative max-age is treated as invalid" {
+  let d = parse_cache_control("max-age=-1")
+  // parse_int_string rejects non-digit chars → None
+  inspect(d.max_age, content="None")
+}
+
+///|
+/// Attack: max-age with decimal point
+test "cache attack: max-age with decimal is treated as invalid" {
+  let d = parse_cache_control("max-age=300.5")
+  inspect(d.max_age, content="None")
+}

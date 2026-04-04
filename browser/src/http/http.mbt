@@ -299,7 +299,8 @@ fn enforce_cors_response(
     )
     match allow_origin {
       None => raise CorsError("CORS header missing")
-      Some(value) => {
+      Some(raw_value) => {
+        let value = raw_value.trim().to_string()
         let ok = value == "*" || value == caller_origin
         if not(ok) {
           raise CorsError("CORS origin mismatch: " + value)
