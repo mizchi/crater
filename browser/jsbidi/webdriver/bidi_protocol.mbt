@@ -9041,6 +9041,7 @@ fn BidiProtocol::handle_script_evaluate(
       expr,
       user_activation,
       realm_id,
+      ctx_id,
     )
     self.send_raw(raw)
     return
@@ -17140,7 +17141,7 @@ fn BidiProtocol::build_context_entry(
         None => false
       }
       let children_json = if truncate_children {
-        Json::null()
+        Json::array([])
       } else {
         let children : Array[Json] = []
         for child_ctx_id in self.context_children.get(ctx_id).unwrap_or([]) {
