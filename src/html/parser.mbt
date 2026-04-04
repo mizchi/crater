@@ -29,11 +29,20 @@ pub(all) enum Node {
 }
 
 ///|
+/// Maximum allowed input size (10 MB)
+let max_input_size : Int = 10 * 1024 * 1024
+
+///|
+/// Maximum nesting depth for HTML elements
+let max_nesting_depth : Int = 512
+
+///|
 /// Parser state
 priv struct Parser {
   input : String
   mut pos : Int
   len : Int
+  mut depth : Int
 }
 
 ///|
@@ -135,7 +144,7 @@ fn is_plaintext_element(tag : String) -> Bool {
 
 ///|
 fn Parser::new(input : String) -> Parser {
-  { input, pos: 0, len: input.length() }
+  { input, pos: 0, len: input.length(), depth: 0 }
 }
 
 ///|
@@ -396,6 +405,18 @@ fn Parser::consume_raw_text(self : Parser, tag : String) -> String {
 
 ///|
 fn Parser::parse_element(self : Parser) -> Element? {
+  // Security: reject excessive nesting depth
+  if self.depth >= max_nesting_depth {
+    return None
+  }
+  self.depth += 1
+  let result = self.parse_element_inner()
+  self.depth -= 1
+  result
+}
+
+///|
+fn Parser::parse_element_inner(self : Parser) -> Element? {
   self.skip_whitespace()
 
   // Expect '<'
@@ -793,6 +814,10 @@ fn Parser::parse_text(self : Parser) -> String {
 ///|
 /// Parse HTML string into a document
 pub fn parse(html : String) -> Element? {
+  // Security: reject excessively large inputs
+  if html.length() > max_input_size {
+    return None
+  }
   let parser = Parser::new(html)
   parser.skip_whitespace()
   // Skip DOCTYPE declaration if present
@@ -804,6 +829,17 @@ pub fn parse(html : String) -> Element? {
 ///|
 /// Parse full HTML document using document parsing mode
 pub fn parse_document_v2(html : String) -> Element {
+  // Security: reject excessively large inputs
+  if html.length() > max_input_size {
+    return {
+      tag: "html",
+      id: None,
+      classes: [],
+      style: None,
+      attributes: {},
+      children: [],
+    }
+  }
   let tokenizer = Tokenizer::new(html)
   let builder = TreeBuilder::new(tokenizer)
   builder.build_document()

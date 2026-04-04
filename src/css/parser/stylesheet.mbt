@@ -3,8 +3,16 @@
 /// Parses full stylesheets with selectors and declaration blocks
 
 ///|
+/// Maximum allowed CSS input size (10 MB)
+let css_max_input_size : Int = 10 * 1024 * 1024
+
+///|
 /// Parse a full stylesheet from CSS text
 pub fn parse_stylesheet(css : String) -> @cascade.Stylesheet {
+  // Security: reject excessively large CSS inputs
+  if css.length() > css_max_input_size {
+    return @cascade.Stylesheet::new(@cascade.Author)
+  }
   let stylesheet = @cascade.Stylesheet::new(@cascade.Author)
   let tokens = @token.tokenize(css)
   let mut pos = 0
