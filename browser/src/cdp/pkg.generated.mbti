@@ -19,8 +19,7 @@ pub struct CdpBoxModel {
   margin : Array[Double]
   width : Int
   height : Int
-}
-pub impl Show for CdpBoxModel
+} derive(Show)
 
 pub struct CdpContext {
   id : String
@@ -48,17 +47,15 @@ pub fn CdpContext::set_title(Self, String) -> Unit
 pub struct CdpError {
   code : Int
   message : String
-}
+} derive(Show)
 pub fn CdpError::from_code(CdpErrorCode, String) -> Self
-pub impl Show for CdpError
 
 pub enum CdpErrorCode {
   InvalidParams
   InternalError
   NodeNotFound
   NoSuchElement
-}
-pub impl Show for CdpErrorCode
+} derive(Show)
 
 pub struct CdpEvent {
   event_method : String
@@ -75,29 +72,25 @@ pub struct CdpFrameInfo {
   url : String
   security_origin : String
   mime_type : String
-}
-pub impl Show for CdpFrameInfo
+} derive(Show)
 
 pub struct CdpNavigateResult {
   frame_id : String
   loader_id : String
   error_text : String?
-}
-pub impl Show for CdpNavigateResult
+} derive(Show)
 
 pub struct CdpNavigationEntry {
   id : Int
   url : String
   title : String
   transition_type : String
-}
-pub impl Show for CdpNavigationEntry
+} derive(Show)
 
 pub struct CdpNavigationHistory {
   current_index : Int
   entries : Array[CdpNavigationEntry]
-}
-pub impl Show for CdpNavigationHistory
+} derive(Show)
 
 pub struct CdpNode {
   node_id : Int
@@ -109,8 +102,7 @@ pub struct CdpNode {
   child_node_count : Int?
   children : Array[CdpNode]?
   attributes : Array[String]?
-}
-pub impl Show for CdpNode
+} derive(Show)
 
 pub enum CdpOutMessage {
   Response(CdpResponse)
@@ -266,8 +258,7 @@ pub struct TargetInfo {
   url : String
   attached : Bool
   browser_context_id : String?
-}
-pub impl Show for TargetInfo
+} derive(Show)
 
 pub struct TestContext {
   session : CdpSession

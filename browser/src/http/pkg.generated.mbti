@@ -1,10 +1,22 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater-browser/http"
 
+import {
+  "mizchi/sqlite",
+}
+
 // Values
+pub fn cached_fetch(url~ : String, options~ : FetchOptions, cache~ : MemoryCacheBackend, fetcher~ : (String, FetchOptions) -> HttpResponse raise HttpError) -> HttpResponse raise HttpError
+
 pub async fn fetch(String, options? : FetchOptions) -> HttpResponse raise HttpError
 
 pub fn headers_to_json(Map[String, String]) -> String
+
+pub fn is_fresh(CacheEntry, Double) -> Bool
+
+pub fn now_seconds() -> Double
+
+pub fn parse_cache_control(String) -> CacheDirectives
 
 // Errors
 pub suberror HttpError {
@@ -17,13 +29,33 @@ pub suberror HttpError {
 pub impl Show for HttpError
 
 // Types and methods
+pub(all) struct CacheDirectives {
+  max_age : Int?
+  no_cache : Bool
+  no_store : Bool
+  must_revalidate : Bool
+  public_ : Bool
+  private_ : Bool
+  immutable : Bool
+} derive(Show)
+pub fn CacheDirectives::default() -> Self
+
+pub(all) struct CacheEntry {
+  url : String
+  status : Int
+  headers : Map[String, String]
+  body : String
+  etag : String?
+  last_modified : String?
+  directives : CacheDirectives
+  stored_at : Double
+} derive(Show)
+
 pub(all) enum CredentialsMode {
   Omit
   SameOrigin
   Include
-}
-pub impl Eq for CredentialsMode
-pub impl Show for CredentialsMode
+} derive(Eq, Show)
 
 pub(all) struct FetchOptions {
   http_method : String
@@ -42,21 +74,37 @@ pub(all) struct HttpResponse {
   body : String
 }
 
+pub(all) struct MemoryCacheBackend {
+  entries : Map[String, CacheEntry]
+  max_entries : Int
+}
+pub fn MemoryCacheBackend::clear(Self) -> Unit
+pub fn MemoryCacheBackend::lookup(Self, String) -> CacheEntry?
+pub fn MemoryCacheBackend::new(max_entries? : Int) -> Self
+pub fn MemoryCacheBackend::remove(Self, String) -> Unit
+pub fn MemoryCacheBackend::store(Self, CacheEntry) -> Unit
+
 pub(all) enum RequestMode {
   Navigate
   SameOrigin
   NoCors
   Cors
-}
-pub impl Eq for RequestMode
-pub impl Show for RequestMode
+} derive(Eq, Show)
 
 pub(all) enum RequestSandbox {
   Open
   SameOrigin
   Allowlist(Array[String])
+} derive(Show)
+
+pub struct SqliteCacheBackend {
+  db : @sqlite.Database
 }
-pub impl Show for RequestSandbox
+pub fn SqliteCacheBackend::clear(Self) -> Unit
+pub fn SqliteCacheBackend::lookup(Self, String) -> CacheEntry?
+pub fn SqliteCacheBackend::new(String) -> Self
+pub fn SqliteCacheBackend::remove(Self, String) -> Unit
+pub fn SqliteCacheBackend::store(Self, CacheEntry) -> Unit
 
 // Type aliases
 

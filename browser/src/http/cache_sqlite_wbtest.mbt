@@ -12,9 +12,12 @@ test "SqliteCacheBackend: store and lookup" {
     Some(e) => {
       inspect(e.status, content="200")
       inspect(e.body, content="")
-      inspect(e.directives.max_age, content=(
-        #|None
-      ))
+      inspect(
+        e.directives.max_age,
+        content=(
+          #|None
+        ),
+      )
     }
     None => ()
   }
@@ -29,7 +32,9 @@ test "SqliteCacheBackend: lookup miss" {
 ///|
 test "SqliteCacheBackend: remove" {
   let cache = SqliteCacheBackend::new(":memory:")
-  cache.store(make_entry(directives=CacheDirectives::default(), stored_at=1000.0))
+  cache.store(
+    make_entry(directives=CacheDirectives::default(), stored_at=1000.0),
+  )
   cache.remove("https://example.test/resource")
   inspect(
     cache.lookup("https://example.test/resource").is_empty(),
@@ -40,7 +45,9 @@ test "SqliteCacheBackend: remove" {
 ///|
 test "SqliteCacheBackend: clear" {
   let cache = SqliteCacheBackend::new(":memory:")
-  cache.store(make_entry(directives=CacheDirectives::default(), stored_at=1000.0))
+  cache.store(
+    make_entry(directives=CacheDirectives::default(), stored_at=1000.0),
+  )
   cache.clear()
   inspect(
     cache.lookup("https://example.test/resource").is_empty(),

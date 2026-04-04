@@ -34,11 +34,11 @@ pub fn cached_fetch(
   url~ : String,
   options~ : FetchOptions,
   cache~ : MemoryCacheBackend,
-  fetcher~ : (String, FetchOptions) -> HttpResponse!HttpError,
-) -> HttpResponse!HttpError {
+  fetcher~ : (String, FetchOptions) -> HttpResponse raise HttpError,
+) -> HttpResponse raise HttpError {
   // Only cache GET
   if options.http_method != "GET" {
-    return fetcher!(url, options)
+    return fetcher(url, options)
   }
   let now = now_seconds()
   match cache.lookup(url) {
@@ -63,7 +63,7 @@ pub fn cached_fetch(
           ..options,
           headers: modified_headers,
         }
-        let response = fetcher!(url, modified_options)
+        let response = fetcher(url, modified_options)
         if response.status == 304 {
           let refreshed : CacheEntry = { ..entry, stored_at: now }
           cache.store(refreshed)
@@ -76,7 +76,7 @@ pub fn cached_fetch(
         return response
       }
     None => {
-      let response = fetcher!(url, options)
+      let response = fetcher(url, options)
       let entry = build_cache_entry(url, response)
       if !entry.directives.no_store {
         cache.store(entry)

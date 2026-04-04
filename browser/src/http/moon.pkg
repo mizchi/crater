@@ -13,9 +13,9 @@ options(
   targets: {
     "cache_js.mbt": [ "js" ],
     "cache_native.mbt": [ "native" ],
-    "cache_wasm.mbt": [ "wasm", "wasm-gc" ],
     "cache_sqlite_js.mbt": [ "js" ],
     "cache_sqlite_wbtest.mbt": [ "js" ],
+    "cache_wasm.mbt": [ "wasm", "wasm-gc" ],
     "http_js.mbt": [ "js" ],
     "http_native.mbt": [ "native" ],
     "http_wasm.mbt": [ "wasm", "wasm-gc" ],

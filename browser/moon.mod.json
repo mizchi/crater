@@ -8,7 +8,8 @@
     "mizchi/v8": "0.2.0",
     "mizchi/x": "0.1.6",
     "moonbitlang/async": "0.16.6",
-    "moonbitlang/x": "0.4.40"
+    "moonbitlang/x": "0.4.40",
+    "mizchi/sqlite": "0.2.3"
   },
   "source": "src",
   "preferred-target": "js",

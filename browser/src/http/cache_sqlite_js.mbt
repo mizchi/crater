@@ -22,9 +22,10 @@ pub fn SqliteCacheBackend::lookup(
   self : SqliteCacheBackend,
   url : String,
 ) -> CacheEntry? {
-  let stmt = match self.db.prepare(
-    "SELECT url, status, headers, body, etag, last_modified, cache_control, stored_at FROM http_cache WHERE url = ?",
-  ) {
+  let stmt = match
+    self.db.prepare(
+      "SELECT url, status, headers, body, etag, last_modified, cache_control, stored_at FROM http_cache WHERE url = ?",
+    ) {
     Some(s) => s
     None => return None
   }
@@ -45,18 +46,16 @@ pub fn SqliteCacheBackend::lookup(
     stmt.finalize()
     let headers = sqlite_parse_headers(headers_json)
     let directives = parse_cache_control(cache_control)
-    Some(
-      {
-        url: entry_url,
-        status,
-        headers,
-        body,
-        etag,
-        last_modified,
-        directives,
-        stored_at,
-      },
-    )
+    Some({
+      url: entry_url,
+      status,
+      headers,
+      body,
+      etag,
+      last_modified,
+      directives,
+      stored_at,
+    })
   } else {
     stmt.finalize()
     None
@@ -68,9 +67,10 @@ pub fn SqliteCacheBackend::store(
   self : SqliteCacheBackend,
   entry : CacheEntry,
 ) -> Unit {
-  let stmt = match self.db.prepare(
-    "INSERT OR REPLACE INTO http_cache (url, status, headers, body, etag, last_modified, cache_control, stored_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-  ) {
+  let stmt = match
+    self.db.prepare(
+      "INSERT OR REPLACE INTO http_cache (url, status, headers, body, etag, last_modified, cache_control, stored_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    ) {
     Some(s) => s
     None => return
   }
@@ -149,9 +149,7 @@ fn sqlite_parse_headers(json_str : String) -> Map[String, String] {
   if json_str.is_empty() || json_str == "{}" {
     return headers
   }
-  let json = @json.parse(json_str) catch {
-    _ => return headers
-  }
+  let json = @json.parse(json_str) catch { _ => return headers }
   match json {
     Object(map) =>
       map.each(fn(k, v) {

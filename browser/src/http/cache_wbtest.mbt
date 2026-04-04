@@ -210,15 +210,32 @@ test "MemoryCacheBackend: eviction at max_entries" {
 test "cached_fetch: miss then hit" {
   let cache = MemoryCacheBackend::new(max_entries=10)
   let log : Array[String] = []
-  let fetcher = fn(url : String, _options : FetchOptions) -> HttpResponse!HttpError {
+  let fetcher = fn(
+    url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
     log.push(url)
-    { status: 200, headers: { "cache-control": "max-age=300" }, body: ".h1{color:red}" }
+    {
+      status: 200,
+      headers: { "cache-control": "max-age=300" },
+      body: ".h1{color:red}",
+    }
   }
   let opts = FetchOptions::default()
-  let r1 = cached_fetch!(url="https://example.com/style.css", options=opts, cache=cache, fetcher=fetcher)
+  let r1 = cached_fetch(
+    url="https://example.com/style.css",
+    options=opts,
+    cache~,
+    fetcher~,
+  )
   inspect(r1.status, content="200")
   inspect(log.length(), content="1")
-  let r2 = cached_fetch!(url="https://example.com/style.css", options=opts, cache=cache, fetcher=fetcher)
+  let r2 = cached_fetch(
+    url="https://example.com/style.css",
+    options=opts,
+    cache~,
+    fetcher~,
+  )
   inspect(r2.body, content=".h1{color:red}")
   inspect(log.length(), content="1")
 }
@@ -226,11 +243,19 @@ test "cached_fetch: miss then hit" {
 ///|
 test "cached_fetch: no-store skips cache" {
   let cache = MemoryCacheBackend::new(max_entries=10)
-  let fetcher = fn(url : String, _options : FetchOptions) -> HttpResponse!HttpError {
+  let fetcher = fn(
+    url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
     let _ = url
     { status: 200, headers: { "cache-control": "no-store" }, body: "body" }
   }
-  let _ = cached_fetch!(url="https://example.com/ns.css", options=FetchOptions::default(), cache=cache, fetcher=fetcher)
+  let _ = cached_fetch(
+    url="https://example.com/ns.css",
+    options=FetchOptions::default(),
+    cache~,
+    fetcher~,
+  )
   inspect(cache.lookup("https://example.com/ns.css").is_empty(), content="true")
 }
 
@@ -238,16 +263,28 @@ test "cached_fetch: no-store skips cache" {
 test "cached_fetch: stale with etag sends conditional request" {
   let cache = MemoryCacheBackend::new(max_entries=10)
   let stale : CacheEntry = {
-    url: "https://example.com/old.css", status: 200,
-    headers: { "cache-control": "max-age=0" }, body: "old-body",
-    etag: Some("\"abc123\""), last_modified: None,
-    directives: parse_cache_control("max-age=0"), stored_at: 0.0,
+    url: "https://example.com/old.css",
+    status: 200,
+    headers: { "cache-control": "max-age=0" },
+    body: "old-body",
+    etag: Some("\"abc123\""),
+    last_modified: None,
+    directives: parse_cache_control("max-age=0"),
+    stored_at: 0.0,
   }
   cache.store(stale)
-  let fetcher = fn(_url : String, _options : FetchOptions) -> HttpResponse!HttpError {
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
     { status: 304, headers: {}, body: "" }
   }
-  let r = cached_fetch!(url="https://example.com/old.css", options=FetchOptions::default(), cache=cache, fetcher=fetcher)
+  let r = cached_fetch(
+    url="https://example.com/old.css",
+    options=FetchOptions::default(),
+    cache~,
+    fetcher~,
+  )
   inspect(r.body, content="old-body")
   inspect(r.status, content="200")
 }
@@ -255,10 +292,22 @@ test "cached_fetch: stale with etag sends conditional request" {
 ///|
 test "cached_fetch: non-GET bypasses cache" {
   let cache = MemoryCacheBackend::new(max_entries=10)
-  let fetcher = fn(_url : String, _options : FetchOptions) -> HttpResponse!HttpError {
-    { status: 200, headers: { "cache-control": "max-age=3600" }, body: "response" }
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    {
+      status: 200,
+      headers: { "cache-control": "max-age=3600" },
+      body: "response",
+    }
   }
   let opts : FetchOptions = { ..FetchOptions::default(), http_method: "POST" }
-  let _ = cached_fetch!(url="https://example.com/api", options=opts, cache=cache, fetcher=fetcher)
+  let _ = cached_fetch(
+    url="https://example.com/api",
+    options=opts,
+    cache~,
+    fetcher~,
+  )
   inspect(cache.lookup("https://example.com/api").is_empty(), content="true")
 }
