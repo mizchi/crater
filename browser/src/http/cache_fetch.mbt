@@ -27,7 +27,69 @@ fn entry_to_response(entry : CacheEntry) -> HttpResponse {
 }
 
 ///|
-/// Fetch with transparent HTTP caching.
+/// Fetch with transparent HTTP caching (async version).
+/// Wraps an async fetcher (e.g. @http.fetch) with cache lookup/store.
+/// Only GET requests are cached.
+pub async fn cached_fetch_async(
+  url~ : String,
+  options~ : FetchOptions,
+  cache~ : MemoryCacheBackend,
+  fetcher~ : async (String, FetchOptions) -> HttpResponse raise HttpError,
+) -> HttpResponse raise HttpError {
+  if options.http_method != "GET" {
+    return fetcher(url, options)
+  }
+  let now = now_seconds()
+  match cache.lookup(url) {
+    Some(entry) =>
+      if is_fresh(entry, now) {
+        println("[cache] HIT (fresh): " + url)
+        return entry_to_response(entry)
+      } else {
+        println("[cache] STALE (revalidating): " + url)
+        let modified_headers : Map[String, String] = {}
+        for k, v in options.headers {
+          modified_headers[k] = v
+        }
+        match entry.etag {
+          Some(etag) => modified_headers["If-None-Match"] = etag
+          None => ()
+        }
+        match entry.last_modified {
+          Some(lm) => modified_headers["If-Modified-Since"] = lm
+          None => ()
+        }
+        let modified_options : FetchOptions = {
+          ..options,
+          headers: modified_headers,
+        }
+        let response = fetcher(url, modified_options)
+        if response.status == 304 {
+          println("[cache] 304 Not Modified: " + url)
+          let refreshed : CacheEntry = { ..entry, stored_at: now }
+          cache.store(refreshed)
+          return entry_to_response(entry)
+        }
+        let new_entry = build_cache_entry(url, response)
+        if !new_entry.directives.no_store {
+          cache.store(new_entry)
+        }
+        return response
+      }
+    None => {
+      println("[cache] MISS: " + url)
+      let response = fetcher(url, options)
+      let entry = build_cache_entry(url, response)
+      if !entry.directives.no_store {
+        cache.store(entry)
+      }
+      return response
+    }
+  }
+}
+
+///|
+/// Fetch with transparent HTTP caching (sync version for testing).
 /// Only GET requests are cached. The fetcher parameter allows callers to
 /// inject any transport function.
 pub fn cached_fetch(
