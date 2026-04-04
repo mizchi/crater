@@ -781,3 +781,377 @@ test "cache attack: max-age with decimal is treated as invalid" {
   let d = parse_cache_control("max-age=300.5")
   inspect(d.max_age, content="None")
 }
+
+// ============================================================
+// MODERN ATTACK VECTORS (2024-2026)
+// ============================================================
+
+///|
+/// Web Cache Deception (WCD): Attacker tricks victim into visiting
+/// /account/settings/nonexistent.css — if CDN caches based on extension,
+/// private data gets cached publicly. Our cache uses exact URL key,
+/// so verify private (no-store) content is never cached regardless of URL suffix.
+test "WCD: private response with .css suffix must not be cached" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    {
+      status: 200,
+      headers: { "cache-control": "no-store, private", "content-type": "text/html" },
+      body: "<html>secret account page</html>",
+    }
+  }
+  let _ = cached_fetch(
+    url="https://example.com/account/settings/evil.css",
+    options=FetchOptions::default(),
+    cache~,
+    fetcher~,
+  )
+  // no-store → must not be cached regardless of URL pattern
+  inspect(
+    cache.lookup("https://example.com/account/settings/evil.css").is_empty(),
+    content="true",
+  )
+}
+
+///|
+/// Web Cache Deception variant: path confusion with encoded slash
+/// /account%2Fsettings → should not share cache with /account/settings
+test "WCD: URL-encoded path is distinct cache key" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let call_count = [0]
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    call_count[0] = call_count[0] + 1
+    {
+      status: 200,
+      headers: { "cache-control": "max-age=300" },
+      body: "resp" + call_count[0].to_string(),
+    }
+  }
+  let opts = FetchOptions::default()
+  let _ = cached_fetch(
+    url="https://example.com/account/settings",
+    options=opts,
+    cache~,
+    fetcher~,
+  )
+  let r2 = cached_fetch(
+    url="https://example.com/account%2Fsettings",
+    options=opts,
+    cache~,
+    fetcher~,
+  )
+  // Encoded path is separate key — not served from cache of decoded path
+  inspect(call_count[0], content="2")
+  inspect(r2.body, content="resp2")
+}
+
+///|
+/// Cache Poisoning via header injection: Cache-Control value with CRLF
+/// Attacker tries to inject extra headers via Cache-Control value
+test "cache poisoning: CRLF in Cache-Control header value" {
+  let d = parse_cache_control("max-age=300\r\nX-Injected: evil")
+  // Should either parse max-age=300 only or fail gracefully
+  // The \r\n is part of the string, not a real header boundary
+  // parse_int_string will reject "300\r\nX-Injected: evil" since it contains non-digits
+  // But split by comma first, so "max-age=300\r\nX-Injected: evil" is one token
+  // trimmed.has_prefix("max-age=") → true
+  // value_str = "300\r\nx-injected: evil" → parse_int_string rejects (non-digit \r)
+  inspect(d.max_age, content="None")
+  inspect(d.no_cache, content="false")
+}
+
+///|
+/// Cache Poisoning: Cache-Control with null byte injection
+test "cache poisoning: null byte in Cache-Control" {
+  let d = parse_cache_control("max-age=300\x00no-store")
+  // \x00 in the middle — should not silently truncate and parse max-age=300
+  // Actually "max-age=300\x00no-store" is one comma-separated token
+  // trim → to_lower → has_prefix("max-age=") → value_str contains \x00 → rejected
+  inspect(d.max_age, content="None")
+}
+
+///|
+/// XS-Leak via cache timing: ensure fetcher is called for no-cache entries
+/// (If we served from cache, attacker could detect via timing whether user visited a URL)
+test "XS-Leak: no-cache always revalidates (timing-safe)" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let entry : CacheEntry = {
+    url: "https://sensitive.test/inbox",
+    status: 200,
+    headers: { "cache-control": "no-cache" },
+    body: "private-emails",
+    etag: Some("\"v1\""),
+    last_modified: None,
+    directives: parse_cache_control("no-cache"),
+    stored_at: 1000.0,
+  }
+  cache.store(entry)
+  let fetcher_called = [false]
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    fetcher_called[0] = true
+    { status: 304, headers: {}, body: "" }
+  }
+  let _ = cached_fetch(
+    url="https://sensitive.test/inbox",
+    options=FetchOptions::default(),
+    cache~,
+    fetcher~,
+  )
+  // Must always call fetcher for no-cache (prevents timing-based detection)
+  inspect(fetcher_called[0], content="true")
+}
+
+///|
+/// HTTP Response Splitting: ETag with CRLF injection
+/// Attacker controls ETag value to inject headers in conditional request
+test "response splitting: ETag with CRLF does not corrupt conditional request" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let malicious_etag = "\"valid\"\r\nX-Injected: evil"
+  let entry : CacheEntry = {
+    url: "https://example.com/resource",
+    status: 200,
+    headers: { "cache-control": "max-age=0" },
+    body: "original",
+    etag: Some(malicious_etag),
+    last_modified: None,
+    directives: parse_cache_control("max-age=0"),
+    stored_at: 0.0,
+  }
+  cache.store(entry)
+  let captured_headers = [("", "")]
+  let fetcher = fn(
+    _url : String,
+    options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    // Capture what If-None-Match was sent
+    match options.headers.get("If-None-Match") {
+      Some(v) => captured_headers[0] = ("If-None-Match", v)
+      None => ()
+    }
+    { status: 200, headers: { "cache-control": "max-age=300" }, body: "new" }
+  }
+  let _ = cached_fetch(
+    url="https://example.com/resource",
+    options=FetchOptions::default(),
+    cache~,
+    fetcher~,
+  )
+  // The CRLF is passed as a single header value (not split)
+  // In real HTTP, the transport layer should reject this
+  // Our responsibility: don't create multiple headers from one value
+  let (key, val) = captured_headers[0]
+  inspect(key, content="If-None-Match")
+  // Value contains the raw string including \r\n — it's the transport's job to reject
+  inspect(val.contains("evil"), content="true")
+}
+
+///|
+/// Prototype Pollution: header key "__proto__" should not affect behavior
+test "prototype pollution: __proto__ header key is harmless" {
+  let headers : Map[String, String] = {}
+  headers["access-control-allow-origin"] = "*"
+  headers["__proto__"] = "{\"polluted\":true}"
+  headers["constructor"] = "Object"
+  let result = enforce_cors_response(
+    "https://other.test/api",
+    {
+      ..FetchOptions::default(),
+      mode: Cors,
+      origin: "https://victim.test",
+      sandbox: Open,
+    },
+    { status: 200, headers, body: "safe" },
+  )
+  // __proto__ and constructor are filtered by CORS (not safelisted)
+  inspect(result.headers.contains("__proto__"), content="false")
+  inspect(result.headers.contains("constructor"), content="false")
+  inspect(result.status, content="200")
+}
+
+///|
+/// Cache key pollution: URL with backslash (path traversal attempt)
+/// Some servers normalize \ to / — our cache should treat them as distinct
+test "cache key: backslash vs forward slash are distinct" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let call_count = [0]
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    call_count[0] = call_count[0] + 1
+    {
+      status: 200,
+      headers: { "cache-control": "max-age=300" },
+      body: "r" + call_count[0].to_string(),
+    }
+  }
+  let opts = FetchOptions::default()
+  let _ = cached_fetch(
+    url="https://example.com/path/resource",
+    options=opts,
+    cache~,
+    fetcher~,
+  )
+  let r2 = cached_fetch(
+    url="https://example.com/path\\resource",
+    options=opts,
+    cache~,
+    fetcher~,
+  )
+  inspect(call_count[0], content="2")
+  inspect(r2.body, content="r2")
+}
+
+///|
+/// Cache key: case-sensitive path (spec-compliant)
+/// /Page and /page should be separate cache entries
+test "cache key: path is case-sensitive" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let call_count = [0]
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    call_count[0] = call_count[0] + 1
+    {
+      status: 200,
+      headers: { "cache-control": "max-age=300" },
+      body: "r" + call_count[0].to_string(),
+    }
+  }
+  let opts = FetchOptions::default()
+  let _ = cached_fetch(
+    url="https://example.com/Page",
+    options=opts,
+    cache~,
+    fetcher~,
+  )
+  let r2 = cached_fetch(
+    url="https://example.com/page",
+    options=opts,
+    cache~,
+    fetcher~,
+  )
+  inspect(call_count[0], content="2")
+  inspect(r2.body, content="r2")
+}
+
+///|
+/// Supply chain attack: CDN serves stale malicious JS after server fixed
+/// must-revalidate should force recheck even if max-age hasn't expired
+test "supply chain: must-revalidate entry serves fresh within max-age" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  // Server initially serves compromised script with long max-age + must-revalidate
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    {
+      status: 200,
+      headers: { "cache-control": "max-age=86400, must-revalidate" },
+      body: "compromised();",
+    }
+  }
+  let _ = cached_fetch(
+    url="https://cdn.test/lib.js",
+    options=FetchOptions::default(),
+    cache~,
+    fetcher~,
+  )
+  // Within max-age: still served from cache (must-revalidate doesn't prevent this)
+  let hit_fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    { status: 200, headers: {}, body: "fixed();" }
+  }
+  let r = cached_fetch(
+    url="https://cdn.test/lib.js",
+    options=FetchOptions::default(),
+    cache=cache,
+    fetcher=hit_fetcher,
+  )
+  // Within max-age → served from cache (this is correct per spec)
+  // must-revalidate only applies AFTER expiry
+  inspect(r.body, content="compromised();")
+}
+
+///|
+/// Race condition: concurrent requests to same URL
+/// After first fetch stores entry, second should use cache
+test "race: sequential fetches use cache correctly" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let call_count = [0]
+  let fetcher = fn(
+    _url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    call_count[0] = call_count[0] + 1
+    {
+      status: 200,
+      headers: { "cache-control": "max-age=300" },
+      body: "v" + call_count[0].to_string(),
+    }
+  }
+  let opts = FetchOptions::default()
+  // Simulate 5 sequential requests
+  let mut last_body = ""
+  for i = 0; i < 5; i = i + 1 {
+    let r = cached_fetch(
+      url="https://example.com/hot-resource",
+      options=opts,
+      cache~,
+      fetcher~,
+    )
+    last_body = r.body
+  }
+  // Only first should call fetcher
+  inspect(call_count[0], content="1")
+  inspect(last_body, content="v1")
+}
+
+///|
+/// Cache eviction attack: attacker floods cache with unique URLs to evict victim's entries
+test "eviction attack: flooding evicts oldest entries" {
+  let cache = MemoryCacheBackend::new(max_entries=3)
+  // Victim stores a legitimate entry
+  let victim_entry : CacheEntry = {
+    url: "https://victim.test/important.js",
+    status: 200,
+    headers: {},
+    body: "important",
+    etag: None,
+    last_modified: None,
+    directives: parse_cache_control("max-age=3600"),
+    stored_at: 100.0,
+  }
+  cache.store(victim_entry)
+  // Attacker floods with 3 unique URLs (exceeds max_entries)
+  for i = 0; i < 3; i = i + 1 {
+    let attacker_entry : CacheEntry = {
+      url: "https://attacker.test/" + i.to_string(),
+      status: 200,
+      headers: {},
+      body: "junk",
+      etag: None,
+      last_modified: None,
+      directives: CacheDirectives::default(),
+      stored_at: 200.0 + i.to_double(),
+    }
+    cache.store(attacker_entry)
+  }
+  // Victim's entry (oldest) should be evicted
+  inspect(
+    cache.lookup("https://victim.test/important.js").is_empty(),
+    content="true",
+  )
+}

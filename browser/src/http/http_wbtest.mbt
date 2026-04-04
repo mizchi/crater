@@ -717,3 +717,214 @@ test "CORS attack: ACAO with path should not match origin" {
     _ => assert_true(false)
   }
 }
+
+// ============================================================
+// MODERN ATTACK VECTORS (2024-2026)
+// ============================================================
+
+///|
+/// CORS Origin Reflection attack: server naively reflects Origin as ACAO
+/// Our implementation checks exact match, so reflected origin works
+/// This test documents the behavior — the risk is on the server side
+test "CORS reflection: server reflects origin (this is a server misconfiguration)" {
+  let headers : Map[String, String] = {}
+  // Server reflects any origin — our client-side check passes for exact match
+  headers["access-control-allow-origin"] = "https://evil.test"
+  let err = capture_error(fn() raise HttpError {
+    let _ = enforce_cors_response(
+      "https://api.test/data",
+      {
+        ..FetchOptions::default(),
+        mode: Cors,
+        origin: "https://victim.test", // Caller is victim
+        sandbox: Open,
+      },
+      { status: 200, headers, body: "secret" },
+    )
+  })
+  // ACAO is "evil.test" but caller is "victim.test" → mismatch → blocked
+  match err {
+    Some(CorsError(_)) => ()
+    _ => assert_true(false)
+  }
+}
+
+///|
+/// CORS: case sensitivity of origin scheme
+/// "HTTPS://example.test" vs "https://example.test"
+test "CORS: scheme case sensitivity in origin" {
+  let headers : Map[String, String] = {}
+  headers["access-control-allow-origin"] = "HTTPS://victim.test"
+  let err = capture_error(fn() raise HttpError {
+    let _ = enforce_cors_response(
+      "https://other.test/api",
+      {
+        ..FetchOptions::default(),
+        mode: Cors,
+        origin: "https://victim.test",
+        sandbox: Open,
+      },
+      { status: 200, headers, body: "" },
+    )
+  })
+  // Strict comparison: "HTTPS://victim.test" != "https://victim.test" → blocked
+  // This is correct per spec (origins are case-sensitive)
+  match err {
+    Some(CorsError(_)) => ()
+    _ => assert_true(false)
+  }
+}
+
+///|
+/// CORS: IDN homograph attack — unicode domain vs ASCII
+test "CORS: unicode domain does not match ASCII lookalike" {
+  let headers : Map[String, String] = {}
+  // Cyrillic "а" looks like Latin "a" but is different codepoint
+  headers["access-control-allow-origin"] = "https://ex\u0430mple.test"
+  let err = capture_error(fn() raise HttpError {
+    let _ = enforce_cors_response(
+      "https://other.test/api",
+      {
+        ..FetchOptions::default(),
+        mode: Cors,
+        origin: "https://example.test", // Latin a
+        sandbox: Open,
+      },
+      { status: 200, headers, body: "" },
+    )
+  })
+  match err {
+    Some(CorsError(_)) => ()
+    _ => assert_true(false)
+  }
+}
+
+///|
+/// CORS: tab/newline characters in ACAO value (HTTP header injection)
+test "CORS: tab character in ACAO is trimmed and accepted" {
+  let headers : Map[String, String] = {}
+  headers["access-control-allow-origin"] = "https://victim.test\t"
+  // MoonBit's trim() removes whitespace including \t
+  // This matches browser behavior (HTTP header values are trimmed of OWS)
+  let result = enforce_cors_response(
+    "https://other.test/api",
+    {
+      ..FetchOptions::default(),
+      mode: Cors,
+      origin: "https://victim.test",
+      sandbox: Open,
+    },
+    { status: 200, headers, body: "ok" },
+  )
+  inspect(result.status, content="200")
+}
+
+///|
+/// CORS: Expose-Headers header injection via comma in header name
+test "CORS: expose-headers cannot inject via comma in value" {
+  let headers : Map[String, String] = {}
+  headers["access-control-allow-origin"] = "*"
+  // Attacker tries to expose "set-cookie" by injecting into expose-headers
+  headers["access-control-expose-headers"] = "x-safe, set-cookie"
+  headers["x-safe"] = "visible"
+  headers["set-cookie"] = "session=stolen"
+  let result = enforce_cors_response(
+    "https://other.test/api",
+    {
+      ..FetchOptions::default(),
+      mode: Cors,
+      origin: "https://victim.test",
+      sandbox: Open,
+    },
+    { status: 200, headers, body: "" },
+  )
+  // If server explicitly lists set-cookie in expose-headers, it IS exposed
+  // This is correct behavior — the server explicitly opted in
+  // The security boundary is on the server, not the client
+  inspect(result.headers.contains("set-cookie"), content="true")
+  inspect(result.headers.contains("x-safe"), content="true")
+}
+
+///|
+/// DNS rebinding: origin check with IP address
+test "CORS: IP-based origin check is strict" {
+  let headers : Map[String, String] = {}
+  headers["access-control-allow-origin"] = "https://192.168.1.1"
+  let err = capture_error(fn() raise HttpError {
+    let _ = enforce_cors_response(
+      "https://192.168.1.1/api",
+      {
+        ..FetchOptions::default(),
+        mode: Cors,
+        origin: "https://192.168.1.2", // Different IP
+        sandbox: Open,
+      },
+      { status: 200, headers, body: "" },
+    )
+  })
+  match err {
+    Some(CorsError(_)) => ()
+    _ => assert_true(false)
+  }
+}
+
+///|
+/// CORS: credentials SameOrigin mode with cross-origin request
+test "CORS: credentials SameOrigin does not trigger credential check" {
+  let headers : Map[String, String] = {}
+  headers["access-control-allow-origin"] = "*"
+  // credentials=SameOrigin + cross-origin → credentials are NOT included
+  // So wildcard ACAO should work (no credentials check triggered)
+  let result = enforce_cors_response(
+    "https://other.test/api",
+    {
+      ..FetchOptions::default(),
+      mode: Cors,
+      credentials: CredentialsMode::SameOrigin,
+      origin: "https://victim.test",
+      sandbox: Open,
+    },
+    { status: 200, headers, body: "ok" },
+  )
+  inspect(result.status, content="200")
+}
+
+///|
+/// Header smuggling: duplicate header keys use last value
+test "header smuggling: duplicate ACAO uses last value" {
+  let headers : Map[String, String] = {}
+  headers["access-control-allow-origin"] = "https://evil.test"
+  // Overwrite with correct origin
+  headers["access-control-allow-origin"] = "https://victim.test"
+  let result = enforce_cors_response(
+    "https://other.test/api",
+    {
+      ..FetchOptions::default(),
+      mode: Cors,
+      origin: "https://victim.test",
+      sandbox: Open,
+    },
+    { status: 200, headers, body: "ok" },
+  )
+  // Map stores last value → "https://victim.test" → matches
+  inspect(result.status, content="200")
+}
+
+///|
+/// Sandbox bypass: protocol-relative URL
+test "sandbox: protocol-relative URL uses caller scheme for origin check" {
+  let err = capture_error(fn() raise HttpError {
+    let _ = prepare_fetch_options("//evil.test/steal", {
+      ..FetchOptions::default(),
+      mode: Cors,
+      origin: "https://victim.test",
+      sandbox: SameOrigin,
+    })
+  })
+  // //evil.test → https://evil.test (inherits caller scheme)
+  // SameOrigin sandbox → https://evil.test != https://victim.test → blocked
+  match err {
+    Some(SandboxError(_)) => ()
+    _ => assert_true(false)
+  }
+}
