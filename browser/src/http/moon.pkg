@@ -10,6 +10,9 @@ warnings = "-unused_package"
 
 options(
   targets: {
+    "cache_js.mbt": [ "js" ],
+    "cache_native.mbt": [ "native" ],
+    "cache_wasm.mbt": [ "wasm", "wasm-gc" ],
     "http_js.mbt": [ "js" ],
     "http_native.mbt": [ "native" ],
     "http_wasm.mbt": [ "wasm", "wasm-gc" ],
