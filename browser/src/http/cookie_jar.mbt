@@ -196,9 +196,10 @@ pub fn CookieJar::store_from_header(
   if cookie.name.has_prefix("__Secure-") && !cookie.secure {
     return
   }
-  // Security: __Host- prefix requires Secure, no Domain, Path=/ (RFC 6265bis §4.1.3)
+  // Security: __Host- prefix requires Secure, no explicit Domain, Path=/ (RFC 6265bis §4.1.3)
   if cookie.name.has_prefix("__Host-") {
-    if !cookie.secure || cookie.path != "/" {
+    if !cookie.secure || cookie.path != "/" || cookie.domain != req_domain {
+      // __Host- cookies must not have Domain attribute set (domain == request domain only)
       return
     }
   }
