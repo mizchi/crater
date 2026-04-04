@@ -1088,3 +1088,319 @@ test "cookie order: longer path cookies first" {
     None => assert_true(false)
   }
 }
+
+// ============================================================
+// SAMESITE ENFORCEMENT (RFC 6265bis)
+// ============================================================
+
+///|
+test "samesite: Strict cookie blocked on cross-site request" {
+  let jar = CookieJar::new(enabled=true)
+  jar.store_from_header(
+    "csrf=token123; SameSite=Strict; Secure",
+    "https://bank.com/",
+    true,
+  )
+  // Same-site request → sent
+  inspect(
+    jar.get_cookie_header(
+      "https://bank.com/api",
+      true,
+      true,
+      site_origin="https://bank.com",
+    ),
+    content="Some(\"csrf=token123\")",
+  )
+  // Cross-site request → blocked
+  inspect(
+    jar.get_cookie_header(
+      "https://bank.com/api",
+      true,
+      true,
+      site_origin="https://evil.com",
+    ),
+    content="None",
+  )
+}
+
+///|
+test "samesite: Lax cookie sent on top-level navigation cross-site" {
+  let jar = CookieJar::new(enabled=true)
+  jar.store_from_header(
+    "session=abc; SameSite=Lax; Secure",
+    "https://example.com/",
+    true,
+  )
+  // Cross-site + top-level navigation → sent (Lax allows this)
+  inspect(
+    jar.get_cookie_header(
+      "https://example.com/page",
+      true,
+      true,
+      site_origin="https://other.com",
+      is_top_level_navigation=true,
+    ),
+    content="Some(\"session=abc\")",
+  )
+  // Cross-site + subresource (not top-level) → blocked
+  inspect(
+    jar.get_cookie_header(
+      "https://example.com/api",
+      true,
+      true,
+      site_origin="https://other.com",
+      is_top_level_navigation=false,
+    ),
+    content="None",
+  )
+}
+
+///|
+test "samesite: None+Secure sent cross-site" {
+  let jar = CookieJar::new(enabled=true)
+  jar.store_from_header(
+    "tracking=xyz; SameSite=None; Secure",
+    "https://tracker.com/",
+    true,
+  )
+  // Cross-site → sent (SameSite=None + Secure)
+  inspect(
+    jar.get_cookie_header(
+      "https://tracker.com/pixel",
+      true,
+      true,
+      site_origin="https://victim.com",
+    ),
+    content="Some(\"tracking=xyz\")",
+  )
+}
+
+///|
+test "samesite: None without Secure rejected at store time" {
+  let jar = CookieJar::new(enabled=true)
+  jar.store_from_header(
+    "x=1; SameSite=None",
+    "https://example.com/",
+    true,
+  )
+  // SameSite=None without Secure → rejected
+  inspect(jar.size(), content="0")
+}
+
+///|
+test "samesite: None without Secure blocked at send time" {
+  let jar = CookieJar::new(enabled=true)
+  // Manually store a cookie with SameSite=None but no Secure
+  // (simulating a bug or pre-existing cookie)
+  jar.cookies.push({
+    name: "bad",
+    value: "cookie",
+    domain: "example.com",
+    path: "/",
+    secure: false,
+    http_only: false,
+    same_site: "none",
+    max_age: None,
+    expires: None,
+  })
+  // Cross-site: SameSite=None but not Secure → blocked
+  inspect(
+    jar.get_cookie_header(
+      "https://example.com/",
+      true,
+      true,
+      site_origin="https://other.com",
+    ),
+    content="None",
+  )
+}
+
+///|
+test "samesite: default (no attribute) treated as Lax" {
+  let jar = CookieJar::new(enabled=true)
+  jar.store_from_header(
+    "session=abc",
+    "https://example.com/",
+    true,
+  )
+  // No SameSite attribute → default Lax
+  // Cross-site subresource → blocked
+  inspect(
+    jar.get_cookie_header(
+      "https://example.com/api",
+      true,
+      true,
+      site_origin="https://evil.com",
+      is_top_level_navigation=false,
+    ),
+    content="None",
+  )
+  // Cross-site top-level → allowed (Lax)
+  inspect(
+    jar.get_cookie_header(
+      "https://example.com/page",
+      true,
+      true,
+      site_origin="https://evil.com",
+      is_top_level_navigation=true,
+    ),
+    content="Some(\"session=abc\")",
+  )
+}
+
+///|
+test "samesite: unknown value treated as Strict (safe default)" {
+  let jar = CookieJar::new(enabled=true)
+  jar.store_from_header(
+    "x=1; SameSite=bogus",
+    "https://example.com/",
+    true,
+  )
+  // Cross-site → blocked (unknown value → Strict)
+  inspect(
+    jar.get_cookie_header(
+      "https://example.com/",
+      true,
+      true,
+      site_origin="https://other.com",
+    ),
+    content="None",
+  )
+  // Same-site → sent
+  inspect(
+    jar.get_cookie_header(
+      "https://example.com/",
+      true,
+      true,
+      site_origin="https://example.com",
+    ),
+    content="Some(\"x=1\")",
+  )
+}
+
+///|
+test "samesite: subdomain is same-site" {
+  let jar = CookieJar::new(enabled=true)
+  jar.store_from_header(
+    "x=1; SameSite=Strict; Domain=example.com; Secure",
+    "https://example.com/",
+    true,
+  )
+  // Subdomain of same registrable domain → same-site
+  inspect(
+    jar.get_cookie_header(
+      "https://sub.example.com/",
+      true,
+      true,
+      site_origin="https://other.example.com",
+    ),
+    content="Some(\"x=1\")",
+  )
+}
+
+///|
+test "samesite: no site_origin means same-site (backward compat)" {
+  let jar = CookieJar::new(enabled=true)
+  jar.store_from_header(
+    "x=1; SameSite=Strict; Secure",
+    "https://example.com/",
+    true,
+  )
+  // No site_origin → same-site assumed → Strict cookie sent
+  inspect(
+    jar.get_cookie_header("https://example.com/", true, true),
+    content="Some(\"x=1\")",
+  )
+}
+
+///|
+test "samesite: mixed cookies with different SameSite values" {
+  let jar = CookieJar::new(enabled=true)
+  jar.store_from_header(
+    "strict_c=1; SameSite=Strict; Secure",
+    "https://example.com/",
+    true,
+  )
+  jar.store_from_header(
+    "lax_c=2; SameSite=Lax; Secure",
+    "https://example.com/",
+    true,
+  )
+  jar.store_from_header(
+    "none_c=3; SameSite=None; Secure",
+    "https://example.com/",
+    true,
+  )
+  // Cross-site subresource: only None+Secure sent
+  inspect(
+    jar.get_cookie_header(
+      "https://example.com/",
+      true,
+      true,
+      site_origin="https://evil.com",
+      is_top_level_navigation=false,
+    ),
+    content="Some(\"none_c=3\")",
+  )
+  // Cross-site top-level: Lax + None sent
+  let header = jar.get_cookie_header(
+    "https://example.com/",
+    true,
+    true,
+    site_origin="https://evil.com",
+    is_top_level_navigation=true,
+  )
+  match header {
+    Some(h) => {
+      inspect(h.contains("lax_c=2"), content="true")
+      inspect(h.contains("none_c=3"), content="true")
+      inspect(h.contains("strict_c=1"), content="false")
+    }
+    None => assert_true(false)
+  }
+}
+
+// ============================================================
+// SAMESITE HELPER TESTS
+// ============================================================
+
+///|
+test "cookie_same_site: same domain" {
+  inspect(cookie_same_site("example.com", "example.com"), content="true")
+}
+
+///|
+test "cookie_same_site: subdomain is same-site" {
+  inspect(
+    cookie_same_site("sub.example.com", "example.com"),
+    content="true",
+  )
+}
+
+///|
+test "cookie_same_site: different registrable domains" {
+  inspect(cookie_same_site("example.com", "evil.com"), content="false")
+}
+
+///|
+test "cookie_same_site: localhost is same-site with localhost" {
+  inspect(cookie_same_site("localhost", "localhost"), content="true")
+}
+
+///|
+test "cookie_registrable_domain: two labels" {
+  inspect(cookie_registrable_domain("example.com"), content="example.com")
+}
+
+///|
+test "cookie_registrable_domain: three labels" {
+  inspect(
+    cookie_registrable_domain("sub.example.com"),
+    content="example.com",
+  )
+}
+
+///|
+test "cookie_registrable_domain: single label" {
+  inspect(cookie_registrable_domain("localhost"), content="localhost")
+}

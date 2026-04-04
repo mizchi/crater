@@ -203,6 +203,10 @@ pub fn CookieJar::store_from_header(
       return
     }
   }
+  // Security: SameSite=None requires Secure flag (RFC 6265bis)
+  if cookie.same_site == "none" && !cookie.secure {
+    return
+  }
   // max-age=0 or negative: delete cookie
   match cookie.max_age {
     Some(age) if age <= 0 => {
@@ -218,18 +222,30 @@ pub fn CookieJar::store_from_header(
 
 ///|
 /// Get cookies for a request URL as "Cookie: name=value; name2=value2" pairs.
-/// Enforces: domain matching, path matching, secure flag, httpOnly.
+/// Enforces: domain matching, path matching, secure flag, httpOnly, SameSite.
+///
+/// `site_origin`: the origin of the page making the request (for SameSite checks).
+///   Empty string means "same-site" (no cross-site enforcement).
+/// `is_top_level_navigation`: true for top-level navigations (SameSite=Lax allows these).
 pub fn CookieJar::get_cookie_header(
   self : CookieJar,
   request_url : String,
   is_secure : Bool,
   is_http_api : Bool,
+  site_origin? : String = "",
+  is_top_level_navigation? : Bool = false,
 ) -> String? {
   if !self.enabled {
     return None
   }
   let req_domain = cookie_extract_domain(request_url)
   let req_path = cookie_extract_path(request_url)
+  let cross_site = if site_origin.is_empty() {
+    false
+  } else {
+    let site_domain = cookie_extract_domain(site_origin)
+    !cookie_same_site(site_domain, req_domain)
+  }
   let buf = StringBuilder::new()
   let mut first = true
   for cookie in self.cookies {
@@ -249,8 +265,28 @@ pub fn CookieJar::get_cookie_header(
     if cookie.http_only && !is_http_api {
       continue
     }
-    // SameSite enforcement (simplified)
-    // For now we send all matching cookies in HTTP API context
+    // SameSite enforcement (RFC 6265bis)
+    if cross_site {
+      let effective_same_site = if cookie.same_site.is_empty() {
+        "lax" // Default is Lax per modern browsers
+      } else {
+        cookie.same_site
+      }
+      match effective_same_site {
+        "strict" => continue // Never sent cross-site
+        "lax" =>
+          // Lax: only sent on top-level navigation (GET)
+          if !is_top_level_navigation {
+            continue
+          }
+        "none" =>
+          // SameSite=None requires Secure flag
+          if !cookie.secure {
+            continue
+          }
+        _ => continue // Unknown value → treat as Strict (safe default)
+      }
+    }
     if !first {
       buf.write_string("; ")
     }
@@ -261,6 +297,45 @@ pub fn CookieJar::get_cookie_header(
   }
   let result = buf.to_string()
   if result.is_empty() { None } else { Some(result) }
+}
+
+///|
+/// Check if two domains are "same-site" (share the same registrable domain).
+/// Simplified: compares the last two domain labels (no public suffix list).
+fn cookie_same_site(domain_a : String, domain_b : String) -> Bool {
+  let a = domain_a.to_lower()
+  let b = domain_b.to_lower()
+  if a == b {
+    return true
+  }
+  // Extract registrable domain (last 2 labels) — simplified, no PSL
+  let reg_a = cookie_registrable_domain(a)
+  let reg_b = cookie_registrable_domain(b)
+  reg_a == reg_b && reg_a.length() > 0
+}
+
+///|
+/// Extract registrable domain (last 2 labels). Simplified, no PSL.
+/// "sub.example.com" → "example.com", "example.com" → "example.com"
+fn cookie_registrable_domain(domain : String) -> String {
+  let mut last_dot = -1
+  let mut second_last_dot = -1
+  for i = 0; i < domain.length(); i = i + 1 {
+    if domain[i] == '.' {
+      second_last_dot = last_dot
+      last_dot = i
+    }
+  }
+  if last_dot < 0 {
+    // No dots (e.g. "localhost") → domain itself
+    return domain
+  }
+  if second_last_dot < 0 {
+    // One dot (e.g. "example.com") → whole domain
+    return domain
+  }
+  // Two+ dots → take from second_last_dot+1
+  domain.substring(start=second_last_dot + 1)
 }
 
 ///|

@@ -177,6 +177,8 @@ struct Browser {
   mut kitty_visible_placements : Map[String, KittyPlacement]
   /// HTTP cache for static assets (CSS, images, scripts, fonts)
   http_cache : @http.MemoryCacheBackend
+  /// Cookie jar (disabled by default for security)
+  cookie_jar : @http.CookieJar
 }
 
 ///|
@@ -239,6 +241,7 @@ pub fn Browser::new(
     kitty_uploaded_image_ids: {},
     kitty_visible_placements: {},
     http_cache: @http.MemoryCacheBackend::new(max_entries=1000),
+    cookie_jar: @http.CookieJar::new(), // disabled by default
   }
 }
 
@@ -248,6 +251,13 @@ pub fn Browser::new(
 /// Use --enable-js flag to enable it.
 pub fn Browser::set_enable_js(self : Browser, enable : Bool) -> Unit {
   self.enable_js = enable
+}
+
+///|
+/// Enable or disable cookie jar.
+/// Cookies are disabled by default for security.
+pub fn Browser::set_enable_cookies(self : Browser, enable : Bool) -> Unit {
+  self.cookie_jar = @http.CookieJar::new(enabled=enable)
 }
 
 ///|
@@ -470,13 +480,32 @@ async fn Browser::load_url(
   self.current_url = url
   let t0 = perf_now()
   // Fetch the page
+  let page_headers : Map[String, String] = {}
+  let is_secure = url.has_prefix("https://")
+  match
+    self.cookie_jar.get_cookie_header(
+      url,
+      is_secure,
+      true,
+      site_origin=self.current_url,
+      is_top_level_navigation=true,
+    ) {
+    Some(cookie_header) => page_headers["Cookie"] = cookie_header
+    None => ()
+  }
   let page_options = {
     ..@http.FetchOptions::default(),
+    headers: page_headers,
     mode: @http.RequestMode::Navigate,
     origin: url,
     sandbox: self.request_sandbox,
   }
   let response = @http.fetch(url, options=page_options)
+  // Process Set-Cookie from response
+  match response.headers.get("set-cookie") {
+    Some(sc) => self.cookie_jar.store_from_header(sc, url, is_secure)
+    None => ()
+  }
   self.html_content = response.body
   let t1 = perf_now()
   // Fetch external CSS using lightweight extraction (no full parsing)
