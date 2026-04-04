@@ -17145,7 +17145,7 @@ fn BidiProtocol::build_context_entry(
         None => false
       }
       let children_json = if truncate_children {
-        Json::array([])
+        Json::null()
       } else {
         let children : Array[Json] = []
         for child_ctx_id in self.context_children.get(ctx_id).unwrap_or([]) {
