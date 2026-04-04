@@ -2,6 +2,7 @@ import {
   "mizchi/crater/css/cascade",
   "mizchi/crater/css/media",
   "mizchi/crater/css/parser",
+  "mizchi/crater/css/selector",
   "mizchi/crater/html",
 }
 

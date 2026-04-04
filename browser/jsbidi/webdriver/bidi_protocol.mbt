@@ -2536,6 +2536,10 @@ fn BidiProtocol::dispatch_browsing_context(
       self.handle_batch_render(request.id, request.params)
       Ok(())
     }
+    "getComputedStylesWithState" => {
+      self.handle_get_computed_styles_with_state(request.id, request.params)
+      Ok(())
+    }
     "print" => {
       self.handle_print(request)
       Ok(())

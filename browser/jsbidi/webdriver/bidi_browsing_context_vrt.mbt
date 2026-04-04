@@ -300,3 +300,128 @@ fn BidiProtocol::resolve_batch_render(
   out["results"] = Json::array(results_json)
   Some(make_object(out))
 }
+
+///|
+/// BiDi handler for browsingContext.getComputedStylesWithState
+fn BidiProtocol::handle_get_computed_styles_with_state(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match self.resolve_get_computed_styles_with_state(request_id, params) {
+    Some(result) => self.send_success(request_id, Some(result))
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::resolve_get_computed_styles_with_state(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Json? {
+  let params = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id,
+        "invalid argument",
+        "params must be an object",
+      )
+      return None
+    }
+  }
+  let ctx_id = match params.get("context") {
+    Some(String(id)) => id
+    _ => {
+      self.send_error(request_id, "invalid argument", "Missing context")
+      return None
+    }
+  }
+  let _session = match self.manager.get_session(ctx_id) {
+    Some(session) => session
+    None => {
+      self.send_error(
+        request_id,
+        "no such frame",
+        "Unknown context: " + ctx_id,
+      )
+      return None
+    }
+  }
+  let selector = match params.get("selector") {
+    Some(String(s)) => s
+    _ => {
+      self.send_error(
+        request_id,
+        "invalid argument",
+        "selector must be a string",
+      )
+      return None
+    }
+  }
+  // Parse forced states
+  let mut hover = false
+  let mut focus = false
+  let mut active = false
+  let mut focus_visible = false
+  let mut focus_within = false
+  match params.get("forcedStates") {
+    Some(Array(states)) =>
+      for state in states {
+        match state {
+          String("hover") => hover = true
+          String("focus") => focus = true
+          String("active") => active = true
+          String("focus-visible") => focus_visible = true
+          String("focus-within") => focus_within = true
+          _ => ()
+        }
+      }
+    _ => ()
+  }
+  let forced_state_names : Array[String] = []
+  if hover { forced_state_names.push("hover") }
+  if focus { forced_state_names.push("focus") }
+  if active { forced_state_names.push("active") }
+  if focus_visible { forced_state_names.push("focus-visible") }
+  if focus_within { forced_state_names.push("focus-within") }
+  // Parse properties to check
+  let properties : Array[String] = []
+  match params.get("properties") {
+    Some(Array(props)) =>
+      for prop in props {
+        match prop {
+          String(s) => properties.push(s)
+          _ => ()
+        }
+      }
+    _ => ()
+  }
+  let html = responsive_breakpoint_source_html("live-inline")
+  let result = @responsive.discover_computed_styles_with_state_names(
+    html, selector, forced_state_names, properties,
+  )
+  // Build JSON response
+  let normal_json : Map[String, Json] = {}
+  result.normal.each(fn(prop, val) {
+    normal_json.set(prop, Json::string(val))
+  })
+  let forced_json : Map[String, Json] = {}
+  result.forced.each(fn(prop, val) {
+    forced_json.set(prop, Json::string(val))
+  })
+  let diff_json : Array[Json] = []
+  for d in result.diff {
+    diff_json.push(make_object({
+      "property": Json::string(d.property),
+      "normal": Json::string(d.normal),
+      "forced": Json::string(d.forced),
+    }))
+  }
+  let out : Map[String, Json] = {}
+  out["normal"] = make_object(normal_json)
+  out["forced"] = make_object(forced_json)
+  out["diff"] = Json::array(diff_json)
+  Some(make_object(out))
+}

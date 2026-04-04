@@ -6,6 +6,10 @@ pub fn complex_specificity(ComplexSelector) -> Specificity
 
 pub fn matches_complex(Element, ComplexSelector) -> Bool
 
+pub fn matches_complex_with_forced_states(Element, ComplexSelector, ForcedPseudoStates) -> Bool
+
+pub fn matches_pseudo_class_with_forced_states(Element, PseudoClass, ForcedPseudoStates) -> Bool
+
 pub fn matches_selector_list(Element, SelectorList) -> Bool
 
 pub fn parse_selector_list_text(String) -> SelectorList?
@@ -15,7 +19,7 @@ pub fn parse_selector_text(String) -> ComplexSelector?
 // Errors
 
 // Types and methods
-pub struct Attribute {
+pub(all) struct Attribute {
   name : String
   value : String
 }
@@ -92,6 +96,16 @@ pub fn Element::set_parent(Self, Self) -> Self
 pub fn Element::set_sibling_info(Self, Int, Int) -> Self
 pub fn Element::with_classes(String, Array[String]) -> Self
 pub fn Element::with_id(String, String) -> Self
+
+pub(all) struct ForcedPseudoStates {
+  hover : Bool
+  focus : Bool
+  active : Bool
+  focus_visible : Bool
+  focus_within : Bool
+} derive(Eq, Show)
+pub fn ForcedPseudoStates::is_empty(Self) -> Bool
+pub fn ForcedPseudoStates::none() -> Self
 
 pub struct NthExpr {
   a : Int
