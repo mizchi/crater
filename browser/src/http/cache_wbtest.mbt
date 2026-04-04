@@ -138,3 +138,70 @@ test "is_fresh: heuristic stale (elapsed > 10% of age)" {
   let entry = make_entry(stored_at=1000.0, last_modified="500")
   inspect(is_fresh(entry, 1060.0), content="false")
 }
+
+///|
+test "MemoryCacheBackend: store and lookup" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  let entry = make_entry(
+    directives=CacheDirectives::default(),
+    stored_at=1000.0,
+  )
+  cache.store(entry)
+  let found = cache.lookup("https://example.test/resource")
+  inspect(!found.is_empty(), content="true")
+}
+
+///|
+test "MemoryCacheBackend: lookup miss" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  inspect(cache.lookup("https://missing.com").is_empty(), content="true")
+}
+
+///|
+test "MemoryCacheBackend: remove" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  cache.store(
+    make_entry(directives=CacheDirectives::default(), stored_at=1000.0),
+  )
+  cache.remove("https://example.test/resource")
+  inspect(
+    cache.lookup("https://example.test/resource").is_empty(),
+    content="true",
+  )
+}
+
+///|
+test "MemoryCacheBackend: clear" {
+  let cache = MemoryCacheBackend::new(max_entries=10)
+  cache.store(
+    make_entry(directives=CacheDirectives::default(), stored_at=1000.0),
+  )
+  cache.clear()
+  inspect(
+    cache.lookup("https://example.test/resource").is_empty(),
+    content="true",
+  )
+}
+
+///|
+test "MemoryCacheBackend: eviction at max_entries" {
+  let cache = MemoryCacheBackend::new(max_entries=2)
+  let e1 : CacheEntry = {
+    url: "https://a.com/1",
+    status: 200,
+    headers: {},
+    body: "1",
+    etag: None,
+    last_modified: None,
+    directives: CacheDirectives::default(),
+    stored_at: 100.0,
+  }
+  let e2 : CacheEntry = { ..e1, url: "https://a.com/2", stored_at: 200.0 }
+  let e3 : CacheEntry = { ..e1, url: "https://a.com/3", stored_at: 300.0 }
+  cache.store(e1)
+  cache.store(e2)
+  cache.store(e3) // should evict e1 (oldest)
+  inspect(cache.lookup("https://a.com/1").is_empty(), content="true")
+  inspect(!cache.lookup("https://a.com/2").is_empty(), content="true")
+  inspect(!cache.lookup("https://a.com/3").is_empty(), content="true")
+}
