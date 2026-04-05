@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-04-05T10:37:07.842Z",
+  "updatedAt": "2026-04-05T13:19:02.012Z",
   "config": {
     "viewport": {
       "width": 800,
@@ -10,9 +10,9 @@
     "defaultMaxDiffRatio": 0.15
   },
   "summary": {
-    "total": 300,
-    "passed": 276,
-    "failed": 24
+    "total": 288,
+    "passed": 285,
+    "failed": 3
   },
   "tests": {
     "css-flexbox/align-baseline.html": {
@@ -20,27 +20,27 @@
       "status": "pass"
     },
     "css-flexbox/align-content-wrap-004.html": {
-      "diffRatio": 0.021968835226883386,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-flexbox/align-content_center.html": {
-      "diffRatio": 0.05290770609318996,
+      "diffRatio": 0.0006497524752475248,
       "status": "pass"
     },
     "css-flexbox/align-content_flex-end.html": {
-      "diffRatio": 0.048427419354838706,
+      "diffRatio": 0.0006497524752475248,
       "status": "pass"
     },
     "css-flexbox/align-content_flex-start.html": {
-      "diffRatio": 0.04814068100358423,
+      "diffRatio": 0.0006497524752475248,
       "status": "pass"
     },
     "css-flexbox/align-content_space-around.html": {
-      "diffRatio": 0.039765616111047904,
+      "diffRatio": 0.0006191037735849056,
       "status": "pass"
     },
     "css-flexbox/align-content_space-between.html": {
-      "diffRatio": 0.07065631568809722,
+      "diffRatio": 0.0006497524752475248,
       "status": "pass"
     },
     "css-flexbox/align-content_stretch.html": {
@@ -48,99 +48,99 @@
       "status": "pass"
     },
     "css-flexbox/align-items-006.html": {
-      "diffRatio": 0.03298400078846217,
+      "diffRatio": 0.007892156862745098,
       "status": "pass"
     },
     "css-flexbox/align-items-007.html": {
-      "diffRatio": 0.021968835226883386,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-flexbox/align-items-008.html": {
-      "diffRatio": 0.012458516946847287,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-flexbox/align-items-009.html": {
-      "diffRatio": 0.16717726511061085,
-      "status": "fail"
+      "diffRatio": 0.01785,
+      "status": "pass"
     },
     "css-flexbox/align-items-baseline-overflow-non-visible.html": {
       "diffRatio": 0.05557692307692308,
       "status": "pass"
     },
     "css-flexbox/align-self-001.html": {
-      "diffRatio": 0.023589487005915767,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-flexbox/align-self-002.html": {
-      "diffRatio": 0.03546146358729316,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-flexbox/align-self-003.html": {
-      "diffRatio": 0.023589487005915767,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-flexbox/align-self-004.html": {
-      "diffRatio": 0.023589487005915767,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-flexbox/align-self-005.html": {
-      "diffRatio": 0.021968835226883386,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-flexbox/align-self-006.html": {
-      "diffRatio": 0.059222027972027975,
+      "diffRatio": 0.01078125,
       "status": "pass"
     },
     "css-flexbox/align-self-007.html": {
-      "diffRatio": 0.023589487005915767,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-flexbox/align-self-008.html": {
-      "diffRatio": 0.03546146358729316,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-flexbox/align-self-009.html": {
-      "diffRatio": 0.023589487005915767,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-flexbox/align-self-010.html": {
-      "diffRatio": 0.059222027972027975,
+      "diffRatio": 0.01078125,
       "status": "pass"
     },
     "css-flexbox/align-self-011.html": {
-      "diffRatio": 0.023589487005915767,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-flexbox/align-self-012.html": {
-      "diffRatio": 0.023589487005915767,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-flexbox/align-self-013.html": {
-      "diffRatio": 0.023589487005915767,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-flexbox/align-self-015.html": {
-      "diffRatio": 0.12340747702589808,
+      "diffRatio": 0.10414828431372548,
       "status": "pass"
     },
     "css-flexbox/align-self-016.html": {
-      "diffRatio": 0.16789852876028818,
-      "status": "fail"
+      "diffRatio": 0,
+      "status": "pass"
     },
     "css-flexbox/aspect-ratio-intrinsic-size-001.html": {
-      "diffRatio": 0.022156023086948428,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-flexbox/aspect-ratio-intrinsic-size-002.html": {
-      "diffRatio": 0.0358325805480277,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-display/display-change-iframe.html": {
-      "diffRatio": 0.09593058049072412,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-display/display-change-object-iframe.html": {
-      "diffRatio": 0.09593058049072412,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-display/display-contents-001-crash.html": {
@@ -148,11 +148,11 @@
       "status": "pass"
     },
     "css-display/display-contents-alignment-001.html": {
-      "diffRatio": 0.008069495603295932,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-display/display-contents-alignment-002.html": {
-      "diffRatio": 0.008076285240464345,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-display/display-contents-before-after-001.html": {
@@ -195,16 +195,12 @@
       "diffRatio": 0.07023722775483766,
       "status": "pass"
     },
-    "css-display/display-contents-dynamic-fieldset-legend-001.html": {
-      "diffRatio": 0.1701232993197279,
-      "status": "fail"
-    },
     "css-display/display-contents-dynamic-flex-001-inline.html": {
-      "diffRatio": 0.04582651391162029,
+      "diffRatio": 0.0891304347826087,
       "status": "pass"
     },
     "css-display/display-contents-dynamic-flex-001-none.html": {
-      "diffRatio": 0.04582651391162029,
+      "diffRatio": 0.0891304347826087,
       "status": "pass"
     },
     "css-display/display-contents-dynamic-flex-002-inline.html": {
@@ -224,7 +220,7 @@
       "status": "pass"
     },
     "css-display/display-contents-dynamic-generated-content-fieldset-001.html": {
-      "diffRatio": 0.06276785714285714,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-display/display-contents-dynamic-inline-flex-001-inline.html": {
@@ -268,11 +264,11 @@
       "status": "pass"
     },
     "css-box/margin-trim/flex-column-block-multiline.html": {
-      "diffRatio": 0.02738150023009664,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-box/margin-trim/flex-column-grow.html": {
-      "diffRatio": 0.02738150023009664,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-box/margin-trim/flex-column-inline-multiline.html": {
@@ -280,11 +276,11 @@
       "status": "pass"
     },
     "css-box/margin-trim/flex-column-orthogonal-item.html": {
-      "diffRatio": 0.06461606202135523,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-box/margin-trim/flex-column-shrink.html": {
-      "diffRatio": 0.02738150023009664,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-box/margin-trim/flex-column-style-change-triggers-layout-block-end.html": {
@@ -316,19 +312,19 @@
       "status": "pass"
     },
     "css-box/margin-trim/flex-row-grow.html": {
-      "diffRatio": 0.02379048380647741,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-box/margin-trim/flex-row-inline-multiline.html": {
-      "diffRatio": 0.013074049659415513,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-box/margin-trim/flex-row-orthogonal-item.html": {
-      "diffRatio": 0.06013958053142379,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-box/margin-trim/flex-row-shrink.html": {
-      "diffRatio": 0.02379048380647741,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-box/margin-trim/flex-row-style-change-triggers-layout-inline-end.html": {
@@ -356,7 +352,7 @@
       "status": "pass"
     },
     "css-box/margin-trim/grid-block.html": {
-      "diffRatio": 0.020584673931845703,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-box/margin-trim/grid-inline-end.html": {
@@ -368,11 +364,11 @@
       "status": "pass"
     },
     "css-box/margin-trim/grid-inline.html": {
-      "diffRatio": 0.02379048380647741,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-box/margin-trim/grid-trim-ignores-collapsed-tracks.html": {
-      "diffRatio": 0.016397960589775388,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/fixed-z-index-blend.html": {
@@ -380,107 +376,103 @@
       "status": "pass"
     },
     "css-position/position-absolute-center-001.html": {
-      "diffRatio": 0.03567366069593104,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-center-002.html": {
-      "diffRatio": 0.03567366069593104,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-center-003.html": {
-      "diffRatio": 0.021968835226883386,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-center-004.html": {
-      "diffRatio": 0.021968835226883386,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-center-006.html": {
-      "diffRatio": 0.021968835226883386,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-center-007.html": {
-      "diffRatio": 0.021968835226883386,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-dynamic-auto-overflow.html": {
-      "diffRatio": 0.09593058049072412,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-dynamic-list-marker.html": {
-      "diffRatio": 0.016035574720388086,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-dynamic-overflow-001.html": {
-      "diffRatio": 0.022156023086948428,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-dynamic-overflow-002.html": {
-      "diffRatio": 0.022156023086948428,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-dynamic-relayout-001.html": {
-      "diffRatio": 0.022156023086948428,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-dynamic-relayout-002.html": {
-      "diffRatio": 0.02715016428982758,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-dynamic-relayout-003.html": {
-      "diffRatio": 0.1590170899173599,
-      "status": "fail"
+      "diffRatio": 0,
+      "status": "pass"
     },
     "css-position/position-absolute-dynamic-relayout-004.html": {
-      "diffRatio": 0.03567366069593104,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-dynamic-static-position-flex.html": {
-      "diffRatio": 0.0028270833333333334,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-dynamic-static-position-floats-001.html": {
-      "diffRatio": 0.02892638919449569,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-dynamic-static-position-floats-002.html": {
-      "diffRatio": 0.02892638919449569,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-dynamic-static-position-floats-003.html": {
-      "diffRatio": 0.022156023086948428,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-dynamic-static-position-floats-004.html": {
-      "diffRatio": 0.02892638919449569,
+      "diffRatio": 0,
       "status": "pass"
     },
-    "css-position/position-absolute-dynamic-static-position-inline.html": {
-      "diffRatio": 0.20555144945388848,
-      "status": "fail"
-    },
     "css-position/position-absolute-dynamic-static-position-margin-001.html": {
-      "diffRatio": 0.022156023086948428,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-dynamic-static-position-margin-002.html": {
-      "diffRatio": 0.022156023086948428,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-dynamic-static-position-table-cell.html": {
-      "diffRatio": 0.016433333333333335,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-dynamic-static-position.html": {
-      "diffRatio": 0.022156023086948428,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-fieldset.html": {
-      "diffRatio": 0.021968835226883386,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-fit-content.html": {
-      "diffRatio": 0.021968835226883386,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-position/position-absolute-iframe-print-001.sub.html": {
@@ -492,7 +484,7 @@
       "status": "pass"
     },
     "css-position/position-absolute-in-inline-003.html": {
-      "diffRatio": 0.02333931777378815,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-sizing/block-size-with-min-or-max-content-1a.html": {
@@ -504,27 +496,27 @@
       "status": "pass"
     },
     "css-sizing/block-size-with-min-or-max-content-2.html": {
-      "diffRatio": 0.022156023086948428,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-sizing/block-size-with-min-or-max-content-3.html": {
-      "diffRatio": 0.022156023086948428,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-sizing/block-size-with-min-or-max-content-4.html": {
-      "diffRatio": 0.022156023086948428,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-sizing/block-size-with-min-or-max-content-5.html": {
-      "diffRatio": 0.022156023086948428,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-sizing/block-size-with-min-or-max-content-6.html": {
-      "diffRatio": 0.022156023086948428,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-sizing/block-size-with-min-or-max-content-7.html": {
-      "diffRatio": 0.022156023086948428,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-sizing/block-size-with-min-or-max-content-table-1a.html": {
@@ -556,63 +548,51 @@
       "status": "pass"
     },
     "css-sizing/fit-content-contribution-001.html": {
-      "diffRatio": 0.1590170899173599,
-      "status": "fail"
-    },
-    "css-sizing/fit-content-length-percentage-001.html": {
-      "diffRatio": 0.6565171755725191,
-      "status": "fail"
-    },
-    "css-sizing/fit-content-length-percentage-002.html": {
-      "diffRatio": 0.5801812977099237,
-      "status": "fail"
-    },
-    "css-sizing/fit-content-length-percentage-003.html": {
-      "diffRatio": 0.6832347328244275,
-      "status": "fail"
+      "diffRatio": 0,
+      "status": "pass"
     },
     "css-sizing/fit-content-length-percentage-004.html": {
-      "diffRatio": 0.12064357860402648,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-sizing/fit-content-length-percentage-005.html": {
-      "diffRatio": 0.03293269560212151,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-sizing/fit-content-length-percentage-006.html": {
-      "diffRatio": 0.1590170899173599,
-      "status": "fail"
+      "diffRatio": 0,
+      "status": "pass"
     },
     "css-sizing/fit-content-length-percentage-007.html": {
-      "diffRatio": 0.09049296257212164,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-sizing/fit-content-length-percentage-008.html": {
-      "diffRatio": 0.09049296257212164,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-sizing/fit-content-length-percentage-009.html": {
-      "diffRatio": 0.12064357860402648,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-sizing/fit-content-length-percentage-010.html": {
-      "diffRatio": 0.12064357860402648,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-sizing/fit-content-length-percentage-011.html": {
-      "diffRatio": 0.021968835226883386,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-sizing/fit-content-length-percentage-012.html": {
-      "diffRatio": 0.06308331163402633,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-sizing/fit-content-length-percentage-013.html": {
-      "diffRatio": 0.1398303342606932,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-sizing/fit-content-length-percentage-014.html": {
-      "diffRatio": 0.02333931777378815,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-overflow/clip-001.html": {
@@ -636,15 +616,15 @@
       "status": "pass"
     },
     "css-overflow/clip-006.html": {
-      "diffRatio": 0.022156023086948428,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-overflow/clip-007.html": {
-      "diffRatio": 0.022156023086948428,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-overflow/clip-008.html": {
-      "diffRatio": 0.021968835226883386,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-overflow/margin-block-end-scroll-area-001.html": {
@@ -678,10 +658,6 @@
     "css-overflow/overflow-body-propagation-004.html": {
       "diffRatio": 0.12065439672801637,
       "status": "pass"
-    },
-    "css-overflow/overflow-body-propagation-005.html": {
-      "diffRatio": 1,
-      "status": "fail"
     },
     "css-overflow/overflow-body-propagation-006.html": {
       "diffRatio": 0.12753299869864287,
@@ -762,10 +738,6 @@
     "css-tables/border-collapse-rowspan-cell.html": {
       "diffRatio": 0.0014479166666666666,
       "status": "pass"
-    },
-    "css-tables/border-conflict-resolution.html": {
-      "diffRatio": 0.17045693093555384,
-      "status": "fail"
     },
     "css-tables/table-as-item-cell-percentage-001.html": {
       "diffRatio": 0.022156023086948428,
@@ -851,10 +823,6 @@
       "diffRatio": 0.012458516946847287,
       "status": "pass"
     },
-    "css-tables/visibility-collapse-colspan-003.html": {
-      "diffRatio": 0.19222360657279203,
-      "status": "fail"
-    },
     "css-grid/grid-calc-margin.html": {
       "diffRatio": 0,
       "status": "pass"
@@ -874,22 +842,6 @@
     "css-grid/grid-container-as-flex-item-003.html": {
       "diffRatio": 0.036550769525950086,
       "status": "pass"
-    },
-    "css-grid/grid-container-baseline-synthesized-001.html": {
-      "diffRatio": 0.5370160116448326,
-      "status": "fail"
-    },
-    "css-grid/grid-container-baseline-synthesized-002.html": {
-      "diffRatio": 0.42195934959349596,
-      "status": "fail"
-    },
-    "css-grid/grid-container-baseline-synthesized-003.html": {
-      "diffRatio": 0.5370160116448326,
-      "status": "fail"
-    },
-    "css-grid/grid-container-baseline-synthesized-004.html": {
-      "diffRatio": 0.42195934959349596,
-      "status": "fail"
     },
     "css-grid/grid-flex-spanning-items-001.html": {
       "diffRatio": 0,
@@ -995,14 +947,6 @@
       "diffRatio": 0.0022708333333333335,
       "status": "pass"
     },
-    "css-align/blocks/align-content-block-overflow-000.html": {
-      "diffRatio": 0.24688125,
-      "status": "fail"
-    },
-    "css-align/blocks/justify-items-anonymous.html": {
-      "diffRatio": 0.2960653446078364,
-      "status": "fail"
-    },
     "css-align/blocks/justify-self-auto-margins-1.html": {
       "diffRatio": 0.021968835226883386,
       "status": "pass"
@@ -1022,14 +966,6 @@
     "css-align/blocks/justify-self-widgets.html": {
       "diffRatio": 0.07406970456668141,
       "status": "pass"
-    },
-    "css-align/baseline-rules/grid-item-input-type-number.html": {
-      "diffRatio": 0.17479894046720124,
-      "status": "fail"
-    },
-    "css-align/baseline-rules/grid-item-input-type-text.html": {
-      "diffRatio": 0.17479894046720124,
-      "status": "fail"
     },
     "css-align/abspos/align-items-static-position-001-ref.tentative.html": {
       "diffRatio": 0,
@@ -1140,7 +1076,7 @@
       "status": "pass"
     },
     "css-display/display-contents-flex-001.html": {
-      "diffRatio": 0.04582651391162029,
+      "diffRatio": 0.0891304347826087,
       "status": "pass"
     },
     "css-display/display-contents-flex-002.html": {
@@ -1160,7 +1096,7 @@
       "status": "pass"
     },
     "css-display/display-contents-text-only-001.html": {
-      "diffRatio": 0.14726426076833526,
+      "diffRatio": 0.12073170731707317,
       "status": "pass"
     },
     "css-display/display-contents-whitespace-inside-inline.html": {
@@ -1176,7 +1112,7 @@
       "status": "pass"
     },
     "css-position/position-absolute-in-inline-004.html": {
-      "diffRatio": 0.13704825469047652,
+      "diffRatio": 0.017754166666666668,
       "status": "pass"
     },
     "css-sizing/block-fit-content-as-initial.html": {
@@ -1184,7 +1120,7 @@
       "status": "pass"
     },
     "css-sizing/abspos-auto-sizing-fit-content-percentage-001.html": {
-      "diffRatio": 0.022156023086948428,
+      "diffRatio": 0,
       "status": "pass"
     },
     "css-grid/anonymous-grid-items-001.html": {
@@ -1212,6 +1148,22 @@
       "status": "pass"
     },
     "css-tables/absolute-tables-002.html": {
+      "diffRatio": 0,
+      "status": "pass"
+    },
+    "css-display/display-contents-dynamic-table-001-inline.html": {
+      "diffRatio": 0.04284317320620951,
+      "status": "pass"
+    },
+    "css-sizing/fit-content-length-percentage-015.html": {
+      "diffRatio": 0,
+      "status": "pass"
+    },
+    "css-sizing/fit-content-length-percentage-016.html": {
+      "diffRatio": 0,
+      "status": "pass"
+    },
+    "css-sizing/fit-content-max-inline-size.tentative.html": {
       "diffRatio": 0,
       "status": "pass"
     }

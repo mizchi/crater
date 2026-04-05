@@ -272,6 +272,54 @@ function applyClassListMutationById(
   ));
 }
 
+// --- Script-driven inline style mutations ---
+
+interface StyleMutation {
+  targetId: string;
+  property: string;
+  value: string;
+}
+
+function collectScriptDrivenStyleMutations(scriptContent: string): StyleMutation[] {
+  const mutations: StyleMutation[] = [];
+  const byElementIdRegex =
+    /document\.getElementById\(\s*["']([^"']+)["']\s*\)\.style\.(\w+)\s*=\s*["']([^"']+)["']/g;
+
+  let match: RegExpExecArray | null;
+  while ((match = byElementIdRegex.exec(scriptContent)) !== null) {
+    const [, targetId, property, value] = match;
+    mutations.push({ targetId, property, value });
+  }
+  return mutations;
+}
+
+function cssPropertyName(jsName: string): string {
+  return jsName.replace(/([A-Z])/g, '-$1').toLowerCase();
+}
+
+function applyStyleMutationById(html: string, mutation: StyleMutation): string {
+  const idPattern = escapeRegExp(mutation.targetId);
+  const openTagRegex = new RegExp(
+    `<[^>]*\\bid\\s*=\\s*["']${idPattern}["'][^>]*>`,
+    'i',
+  );
+  const cssProp = cssPropertyName(mutation.property);
+  return html.replace(openTagRegex, (tagHtml) => {
+    const styleAttrRegex = /\bstyle\s*=\s*"([^"]*)"/i;
+    const styleMatch = tagHtml.match(styleAttrRegex);
+    if (styleMatch) {
+      const existing = styleMatch[1].replace(/;\s*$/, '');
+      const propRegex = new RegExp(`${escapeRegExp(cssProp)}\\s*:[^;]*`, 'i');
+      const newDecl = `${cssProp}: ${mutation.value}`;
+      const updated = propRegex.test(existing)
+        ? existing.replace(propRegex, newDecl)
+        : `${existing}; ${newDecl}`;
+      return tagHtml.replace(styleAttrRegex, `style="${updated}"`);
+    }
+    return tagHtml.replace(/>$/, ` style="${cssProp}: ${mutation.value};">`);
+  });
+}
+
 function collectScriptDrivenClassListMutations(scriptContent: string): ClassListMutation[] {
   const mutations: ClassListMutation[] = [];
   const byElementIdRegex =
@@ -307,6 +355,12 @@ export function applySimpleScriptDrivenClassMutations(html: string): string {
 
   while ((match = scriptRegex.exec(html)) !== null) {
     const scriptContent = match[1];
+    // Apply style mutations from any script block
+    const styleMutations = collectScriptDrivenStyleMutations(scriptContent);
+    for (const mutation of styleMutations) {
+      transformed = applyStyleMutationById(transformed, mutation);
+    }
+    // Apply class mutations only from screenshot-related scripts
     if (
       !scriptContent.includes('takeScreenshot') &&
       !scriptContent.includes('waitForAtLeastOneFrame')
@@ -397,6 +451,17 @@ export function applyKnownScriptDrivenFixtureTransforms(
   return html;
 }
 
+// --- Remove WPT test description paragraphs ---
+
+function removeTestDescriptionParagraphs(html: string): string {
+  // Remove <p> elements that contain "Test passes if" or "Test fails if" descriptions.
+  // These are not part of the layout test and cause text rendering diff noise.
+  return html.replace(
+    /<p\b[^>]*>(?:[^<]*(?:<(?!\/p>)[^<]*)*?)Test (?:passes|fails) if[\s\S]*?<\/p>/gi,
+    '',
+  );
+}
+
 // --- Main HTML preparation ---
 
 function removeReftestWaitClass(html: string): string {
@@ -423,6 +488,7 @@ export function prepareHtmlContent(htmlPath: string): string {
   htmlContent = applySimpleScriptDrivenClassMutations(htmlContent);
   htmlContent = applyKnownScriptDrivenFixtureTransforms(htmlContent, htmlPath);
   htmlContent = removeReftestWaitClass(htmlContent);
+  htmlContent = removeTestDescriptionParagraphs(htmlContent);
   htmlContent = htmlContent.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
 
   const headOpenTag = /<head\b[^>]*>/i;

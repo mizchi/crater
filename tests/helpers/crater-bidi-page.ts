@@ -46,19 +46,47 @@ export class CraterBidiPage {
   private pendingCommands = new Map<number, PendingCommand>();
   private contextId: string | null = null;
 
-  async connect(): Promise<void> {
+  async connect(options?: { timeout?: number; retries?: number }): Promise<void> {
+    const timeout = options?.timeout ?? 15000;
+    const retries = options?.retries ?? 2;
+    let lastError: Error | undefined;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      if (attempt > 0) {
+        await new Promise(r => setTimeout(r, 1000 * attempt));
+      }
+      try {
+        await this.connectOnce(timeout);
+        return;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        this.ws?.close();
+        this.ws = null;
+      }
+    }
+    throw lastError ?? new Error("connect failed");
+  }
+
+  private async connectOnce(timeout: number): Promise<void> {
     await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error(`BiDi connect timeout after ${timeout}ms`));
+      }, timeout);
       this.ws = new WebSocket(BIDI_URL);
       this.ws.on("open", async () => {
         try {
           const resp = await this.sendBidi("browsingContext.create", { type: "tab" });
           this.contextId = (resp.result as { context: string }).context;
+          clearTimeout(timer);
           resolve();
         } catch (error) {
+          clearTimeout(timer);
           reject(error);
         }
       });
-      this.ws.on("error", (error) => reject(error));
+      this.ws.on("error", (error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
       this.ws.on("message", (data) => this.handleMessage(data.toString()));
     });
   }

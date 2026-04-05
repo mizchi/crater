@@ -25,7 +25,7 @@ const SHARD_OFFSET = Number(process.env.WPT_VRT_OFFSET) || 0;
 const SHARD_LIMIT = Number(process.env.WPT_VRT_LIMIT) || 0;
 const OUTPUT_ROOT = path.join(process.cwd(), "output", "playwright", "vrt", "wpt");
 const REGRESSION_EPSILON = 0.01;
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 5;
 const config = loadWptVrtConfig();
 const allEntries = collectWptVrtTests(config);
 const moduleFiltered = SHARD_MODULES.length > 0
@@ -44,17 +44,21 @@ interface TestResult {
   error?: string;
 }
 
+const INTER_TEST_DELAY_MS = 300;
+
 async function runVrtTest(
   browser: Browser,
   entry: WptVrtTestEntry,
   config: { viewport: { width: number; height: number }; pixelmatchThreshold: number; defaultMaxDiffRatio: number },
 ): Promise<TestResult> {
-  const htmlContent = prepareHtmlContent(entry.testPath);
-  const chromiumPage = await chromiumPageForVrt(browser, config.viewport);
-  const craterPage = new CraterBidiPage();
-  await craterPage.connect();
-
+  let chromiumPage = null as Awaited<ReturnType<typeof chromiumPageForVrt>> | null;
+  let craterPage = null as CraterBidiPage | null;
   try {
+    const htmlContent = prepareHtmlContent(entry.testPath);
+    chromiumPage = await chromiumPageForVrt(browser, config.viewport);
+    craterPage = new CraterBidiPage();
+    await craterPage.connect();
+
     await chromiumPage.setContent(htmlContent, { waitUntil: "load" });
     const chromiumPng = await chromiumPage.screenshot({ type: "png" });
     const craterImage = await renderCraterHtml(craterPage, htmlContent, config.viewport);
@@ -83,8 +87,10 @@ async function runVrtTest(
       error: String(error),
     };
   } finally {
-    await craterPage.close();
-    await chromiumPage.close();
+    await craterPage?.close().catch(() => {});
+    await chromiumPage?.close().catch(() => {});
+    // Brief pause to let BiDi server settle between tests
+    await new Promise(r => setTimeout(r, INTER_TEST_DELAY_MS));
   }
 }
 
@@ -164,6 +170,23 @@ test.describe("WPT VRT", () => {
       return;
     }
 
+    // Merge with existing baseline so shard runs don't overwrite other modules
+    const existingBaseline = loadWptVrtBaseline();
+    const mergedTests: Record<string, { diffRatio: number; status: "pass" | "fail" }> = {
+      ...(existingBaseline?.tests ?? {}),
+    };
+    for (const r of results) {
+      mergedTests[r.relativePath] = { diffRatio: r.diffRatio, status: r.status };
+    }
+    // Remove tests that are no longer in the test set
+    const allTestPaths = new Set(allEntries.map(e => e.relativePath));
+    for (const key of Object.keys(mergedTests)) {
+      if (!allTestPaths.has(key)) {
+        delete mergedTests[key];
+      }
+    }
+    const mergedPassed = Object.values(mergedTests).filter(t => t.status === "pass").length;
+    const mergedFailed = Object.values(mergedTests).filter(t => t.status === "fail").length;
     const newBaseline: WptVrtBaseline = {
       schemaVersion: 1,
       updatedAt: new Date().toISOString(),
@@ -172,12 +195,10 @@ test.describe("WPT VRT", () => {
         pixelmatchThreshold: config.pixelmatchThreshold,
         defaultMaxDiffRatio: config.defaultMaxDiffRatio,
       },
-      summary: { total: results.length, passed, failed },
-      tests: Object.fromEntries(
-        results.map((r) => [r.relativePath, { diffRatio: r.diffRatio, status: r.status }]),
-      ),
+      summary: { total: mergedPassed + mergedFailed, passed: mergedPassed, failed: mergedFailed },
+      tests: mergedTests,
     };
     saveWptVrtBaseline(newBaseline);
-    console.log("Baseline updated: tests/wpt-vrt-baseline.json");
+    console.log(`Baseline updated: tests/wpt-vrt-baseline.json (${mergedPassed + mergedFailed} total, ${mergedPassed} pass, ${mergedFailed} fail)`);
   });
 });
