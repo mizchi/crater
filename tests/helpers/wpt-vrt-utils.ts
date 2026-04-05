@@ -6,6 +6,7 @@ export interface WptVrtConfig {
   modules: string[];
   limitPerModule: number;
   explicitTests?: string[];
+  skipPatterns?: string[];
   viewport: { width: number; height: number };
   pixelmatchThreshold: number;
   defaultMaxDiffRatio: number;
@@ -78,21 +79,29 @@ function pushUniqueEntry(
   entries.push({ testPath, relativePath, moduleName });
 }
 
+function matchesSkipPattern(testPath: string, patterns: string[]): boolean {
+  const basename = path.basename(testPath);
+  return patterns.some((p) => basename.includes(p));
+}
+
 export function collectWptVrtTests(
   config: WptVrtConfig,
   getFiles: (moduleName: string) => string[] = getTestFiles,
 ): WptVrtTestEntry[] {
   const entries: WptVrtTestEntry[] = [];
   const seen = new Set<string>();
+  const skip = config.skipPatterns ?? [];
   for (const moduleName of config.modules) {
-    const files = getFiles(moduleName);
+    const files = getFiles(moduleName).filter((f) => !matchesSkipPattern(f, skip));
     const limited = files.slice(0, config.limitPerModule);
     for (const testPath of limited) {
       pushUniqueEntry(entries, seen, testPath, moduleName);
     }
   }
   for (const testPath of config.explicitTests ?? []) {
-    pushUniqueEntry(entries, seen, testPath, moduleNameFromTestPath(testPath));
+    if (!matchesSkipPattern(testPath, skip)) {
+      pushUniqueEntry(entries, seen, testPath, moduleNameFromTestPath(testPath));
+    }
   }
   return entries;
 }

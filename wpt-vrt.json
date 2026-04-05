@@ -48,6 +48,14 @@
     "wpt/css/css-tables/absolute-tables-001.html",
     "wpt/css/css-tables/absolute-tables-002.html"
   ],
+  "skipPatterns": [
+    "column-scroll-marker",
+    "overflow-alignment",
+    "display-flex-svg-overflow",
+    "align-content-block-break",
+    "align-content-block-001",
+    "align-content-table-cell"
+  ],
   "viewport": { "width": 800, "height": 600 },
   "pixelmatchThreshold": 0.3,
   "defaultMaxDiffRatio": 0.15

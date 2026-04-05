@@ -399,12 +399,30 @@ export function applyKnownScriptDrivenFixtureTransforms(
 
 // --- Main HTML preparation ---
 
+function removeReftestWaitClass(html: string): string {
+  // Remove "reftest-wait" from any element's class attribute
+  // This class is used by WPT to delay screenshot until JS runs,
+  // but since we strip scripts, we need to remove it to show final state
+  return html.replace(
+    /\bclass\s*=\s*"([^"]*\breftest-wait\b[^"]*)"/gi,
+    (_match, classes) => {
+      const cleaned = classes
+        .split(/\s+/)
+        .filter((c: string) => c !== 'reftest-wait')
+        .join(' ')
+        .trim();
+      return cleaned ? `class="${cleaned}"` : '';
+    },
+  );
+}
+
 export function prepareHtmlContent(htmlPath: string): string {
   let htmlContent = fs.readFileSync(htmlPath, 'utf-8');
   htmlContent = inlineExternalCSS(htmlContent, htmlPath);
   htmlContent = inlineStyleTagCss(htmlContent, htmlPath);
   htmlContent = applySimpleScriptDrivenClassMutations(htmlContent);
   htmlContent = applyKnownScriptDrivenFixtureTransforms(htmlContent, htmlPath);
+  htmlContent = removeReftestWaitClass(htmlContent);
   htmlContent = htmlContent.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
 
   const headOpenTag = /<head\b[^>]*>/i;
