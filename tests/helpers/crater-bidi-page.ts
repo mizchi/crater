@@ -1,6 +1,17 @@
+import fs from "node:fs";
+import path from "node:path";
 import WebSocket from "ws";
 
-const BIDI_URL = "ws://127.0.0.1:9222";
+function getBidiUrl(): string {
+  const urlFile = path.join(process.cwd(), ".bidi-ws-url");
+  try {
+    return fs.readFileSync(urlFile, "utf-8").trim();
+  } catch {
+    return "ws://127.0.0.1:9222";
+  }
+}
+
+const BIDI_URL = getBidiUrl();
 
 interface BidiResponse {
   id: number;

@@ -1,5 +1,5 @@
 {
-  "modules": ["css-flexbox", "css-display", "css-box", "css-position"],
+  "modules": ["css-flexbox", "css-display", "css-box", "css-position", "css-sizing", "css-overflow", "css-tables", "css-grid", "css-align"],
   "limitPerModule": 30,
   "explicitTests": [
     "wpt/css/css-flexbox/anonymous-flex-item-004.html",
@@ -29,7 +29,24 @@
     "wpt/css/css-display/display-contents-dynamic-inline-flex-001-inline.html",
     "wpt/css/css-display/display-contents-slot-attach-whitespace.html",
     "wpt/css/css-position/position-absolute-in-inline-003.html",
-    "wpt/css/css-position/position-absolute-in-inline-004.html"
+    "wpt/css/css-position/position-absolute-in-inline-004.html",
+    "wpt/css/css-sizing/block-size-with-min-or-max-content-1a.html",
+    "wpt/css/css-sizing/block-size-with-min-or-max-content-2.html",
+    "wpt/css/css-sizing/block-fit-content-as-initial.html",
+    "wpt/css/css-sizing/abspos-auto-sizing-fit-content-percentage-001.html",
+    "wpt/css/css-overflow/clip-001.html",
+    "wpt/css/css-overflow/clip-002.html",
+    "wpt/css/css-overflow/clip-003.html",
+    "wpt/css/css-overflow/clip-004.html",
+    "wpt/css/css-overflow/clip-005.html",
+    "wpt/css/css-grid/anonymous-grid-items-001.html",
+    "wpt/css/css-grid/anonymous-grid-items-002.html",
+    "wpt/css/css-grid/grid-calc-margin.html",
+    "wpt/css/css-grid/child-border-box-and-max-content-001.html",
+    "wpt/css/css-grid/dynamic-grid-within-flexbox.html",
+    "wpt/css/css-grid/empty-grid-within-flexbox.html",
+    "wpt/css/css-tables/absolute-tables-001.html",
+    "wpt/css/css-tables/absolute-tables-002.html"
   ],
   "viewport": { "width": 800, "height": 600 },
   "pixelmatchThreshold": 0.3,

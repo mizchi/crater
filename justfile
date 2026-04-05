@@ -248,6 +248,14 @@ test-vrt:
 test-wpt-vrt:
     pnpm test:wpt-vrt
 
+# Run responsive VRT tests at multiple viewports
+test-vrt-responsive:
+    pnpm exec playwright test tests/paint-vrt-responsive.test.ts
+
+# Run VRT levels tests
+test-vrt-levels:
+    pnpm exec playwright test tests/paint-vrt-levels.test.ts
+
 # Capture a real-world snapshot for VRT testing
 vrt-capture *args:
     npx tsx scripts/capture-real-world-snapshot.ts {{args}}

@@ -364,5 +364,26 @@ if (!defaultFont) {
 
 console.error(`[font] ${fontCache.size} font families loaded`);
 
+// Intercept stdout to capture WebSocket URL and write it to a file for test clients
+const originalWrite = Deno.stdout.writeSync.bind(Deno.stdout);
+const decoder = new TextDecoder();
+const WS_URL_FILE = `${Deno.cwd()}/.bidi-ws-url`;
+
+const origLog = console.log;
+console.log = (...args: unknown[]) => {
+  const msg = args.map(String).join(" ");
+  origLog(...args);
+  const match = msg.match(/Starting WebDriver BiDi server on (ws:\/\/\S+)/);
+  if (match) {
+    Deno.writeTextFileSync(WS_URL_FILE, match[1]);
+    console.error(`[bidi] WS URL written to ${WS_URL_FILE}`);
+  }
+};
+
+// Clean up URL file on exit
+globalThis.addEventListener("unload", () => {
+  try { Deno.removeSync(WS_URL_FILE); } catch {}
+});
+
 // Start the BiDi server (warmup_glyph_cache is called in main() before server.start())
 await import("../_build/js/release/build/bidi_main/bidi_main.js");

@@ -178,7 +178,7 @@ struct Browser {
   /// HTTP cache for static assets (CSS, images, scripts, fonts)
   http_cache : @http.MemoryCacheBackend
   /// Cookie jar (disabled by default for security)
-  cookie_jar : @http.CookieJar
+  mut cookie_jar : @http.CookieJar
 }
 
 ///|

@@ -438,4 +438,221 @@ test.describe("VRT Levels", () => {
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
+
+  // Level 15: Flexbox column + wrap
+  test("L15: flexbox column and wrap", async ({ browser }) => {
+    const html = `<!DOCTYPE html><html><head><style>
+      body { margin: 20px; background: #f5f5f5; font-family: Arial, sans-serif; }
+      .col { display: flex; flex-direction: column; gap: 8px; width: 200px; background: #fff; padding: 12px; border: 1px solid #ddd; margin-bottom: 16px; }
+      .item { height: 40px; border-radius: 4px; }
+      .wrap { display: flex; flex-wrap: wrap; gap: 8px; width: 300px; background: #fff; padding: 12px; border: 1px solid #ddd; }
+      .wrap-item { width: 80px; height: 50px; border-radius: 4px; }
+    </style></head><body>
+      <div class="col">
+        <div class="item" style="background:#e74c3c;"></div>
+        <div class="item" style="background:#3498db;"></div>
+        <div class="item" style="background:#2ecc71;"></div>
+      </div>
+      <div class="wrap">
+        <div class="wrap-item" style="background:#e74c3c;"></div>
+        <div class="wrap-item" style="background:#f39c12;"></div>
+        <div class="wrap-item" style="background:#3498db;"></div>
+        <div class="wrap-item" style="background:#2ecc71;"></div>
+        <div class="wrap-item" style="background:#9b59b6;"></div>
+        <div class="wrap-item" style="background:#1abc9c;"></div>
+      </div>
+    </body></html>`;
+
+    const result = await compareFixture(browser, "L15-flex-column-wrap", html, {
+      maxDiffRatio: 0.05,
+    });
+    expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+  });
+
+  // Level 16: Min/max width and height
+  test("L16: min-width, max-width, min-height, max-height", async ({ browser }) => {
+    const html = `<!DOCTYPE html><html><head><style>
+      body { margin: 20px; background: #fff; font-family: Arial, sans-serif; }
+      .row { display: flex; gap: 12px; margin-bottom: 16px; align-items: flex-start; }
+      .box { background: #3498db; padding: 8px; color: #fff; font-size: 12px; }
+    </style></head><body>
+      <div class="row">
+        <div class="box" style="min-width:150px; width:50px;">min-w:150</div>
+        <div class="box" style="max-width:80px; width:200px;">max-w:80</div>
+        <div class="box" style="width:100px; min-height:100px;">min-h:100</div>
+        <div class="box" style="width:100px; height:200px; max-height:60px;">max-h:60</div>
+      </div>
+      <div class="row">
+        <div class="box" style="min-width:100px; max-width:200px; width:50%;">50% clamped</div>
+      </div>
+    </body></html>`;
+
+    const result = await compareFixture(browser, "L16-min-max-sizing", html, {
+      maxDiffRatio: 0.15,
+    });
+    expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+  });
+
+  // Level 17: Z-index stacking
+  test("L17: z-index stacking order", async ({ browser }) => {
+    const html = `<!DOCTYPE html><html><head><style>
+      body { margin: 20px; background: #f5f5f5; }
+      .stack { position: relative; width: 300px; height: 200px; }
+      .layer { position: absolute; width: 120px; height: 120px; }
+    </style></head><body>
+      <div class="stack">
+        <div class="layer" style="top:0;left:0;background:#e74c3c;z-index:1;"></div>
+        <div class="layer" style="top:30px;left:30px;background:#3498db;z-index:3;"></div>
+        <div class="layer" style="top:60px;left:60px;background:#2ecc71;z-index:2;"></div>
+        <div class="layer" style="top:90px;left:90px;background:#f39c12;z-index:4;"></div>
+      </div>
+    </body></html>`;
+
+    const result = await compareFixture(browser, "L17-z-index", html, {
+      maxDiffRatio: 0.02,
+    });
+    expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+  });
+
+  // Level 18: Box shadow
+  test("L18: box-shadow", async ({ browser }) => {
+    const html = `<!DOCTYPE html><html><head><style>
+      body { margin: 30px; background: #f0f0f0; }
+      .row { display: flex; gap: 24px; margin-bottom: 24px; }
+      .box { width: 100px; height: 80px; background: #fff; border-radius: 8px; }
+    </style></head><body>
+      <div class="row">
+        <div class="box" style="box-shadow: 2px 2px 8px rgba(0,0,0,0.2);"></div>
+        <div class="box" style="box-shadow: 0 4px 16px rgba(0,0,0,0.3);"></div>
+        <div class="box" style="box-shadow: inset 0 2px 6px rgba(0,0,0,0.15);"></div>
+      </div>
+      <div class="row">
+        <div class="box" style="box-shadow: 4px 4px 0 #e74c3c;"></div>
+        <div class="box" style="box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 8px 16px rgba(0,0,0,0.1);"></div>
+      </div>
+    </body></html>`;
+
+    const result = await compareFixture(browser, "L18-box-shadow", html, {
+      maxDiffRatio: 0.15,
+    });
+    expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+  });
+
+  // Level 19: Inline-block layout
+  test("L19: inline-block layout", async ({ browser }) => {
+    const html = `<!DOCTYPE html><html><head><style>
+      body { margin: 20px; background: #fff; font-family: Arial, sans-serif; }
+      .tag { display: inline-block; padding: 4px 12px; margin: 4px; border-radius: 12px; font-size: 13px; }
+      .blue { background: #e3f2fd; color: #1565c0; }
+      .green { background: #e8f5e9; color: #2e7d32; }
+      .red { background: #fce4ec; color: #c62828; }
+      .gray { background: #f5f5f5; color: #616161; }
+    </style></head><body>
+      <div style="width:400px;">
+        <span class="tag blue">JavaScript</span>
+        <span class="tag green">TypeScript</span>
+        <span class="tag red">Rust</span>
+        <span class="tag gray">Python</span>
+        <span class="tag blue">Go</span>
+        <span class="tag green">MoonBit</span>
+        <span class="tag red">C++</span>
+        <span class="tag gray">Ruby</span>
+        <span class="tag blue">Swift</span>
+        <span class="tag green">Kotlin</span>
+      </div>
+    </body></html>`;
+
+    const result = await compareFixture(browser, "L19-inline-block", html, {
+      maxDiffRatio: 0.20,
+    });
+    expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+  });
+
+  // Level 20: Percentage-based sizing (no text to avoid font rendering diff)
+  test("L20: percentage-based sizing", async ({ browser }) => {
+    const html = `<!DOCTYPE html><html><head><style>
+      body { margin: 0; background: #f5f5f5; }
+      .container { width: 600px; margin: 20px auto; background: #fff; padding: 16px; border: 1px solid #ddd; }
+      .bar-row { margin-bottom: 8px; display: flex; align-items: center; }
+      .bar-track { flex: 1; height: 20px; background: #eee; border-radius: 4px; overflow: hidden; }
+      .bar-fill { height: 100%; border-radius: 4px; }
+    </style></head><body>
+      <div class="container">
+        <div class="bar-row"><div class="bar-track"><div class="bar-fill" style="width:85%;background:#e74c3c;"></div></div></div>
+        <div class="bar-row"><div class="bar-track"><div class="bar-fill" style="width:70%;background:#3498db;"></div></div></div>
+        <div class="bar-row"><div class="bar-track"><div class="bar-fill" style="width:95%;background:#f39c12;"></div></div></div>
+        <div class="bar-row"><div class="bar-track"><div class="bar-fill" style="width:45%;background:#2ecc71;"></div></div></div>
+        <div class="bar-row"><div class="bar-track"><div class="bar-fill" style="width:60%;background:#9b59b6;"></div></div></div>
+      </div>
+    </body></html>`;
+
+    const result = await compareFixture(browser, "L20-percentage-sizing", html, {
+      maxDiffRatio: 0.10,
+    });
+    expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+  });
+
+  // Level 21: Nested flexbox
+  test("L21: nested flexbox layout", async ({ browser }) => {
+    const html = `<!DOCTYPE html><html><head><style>
+      body { margin: 0; background: #f0f2f5; font-family: Arial, sans-serif; }
+      .outer { display: flex; gap: 12px; padding: 16px; }
+      .sidebar { width: 160px; display: flex; flex-direction: column; gap: 8px; }
+      .nav-item { background: #fff; padding: 10px 14px; border-radius: 6px; font-size: 13px; color: #333; border: 1px solid #e0e0e0; }
+      .nav-item.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+      .main { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+      .card-row { display: flex; gap: 12px; }
+      .card { flex: 1; background: #fff; padding: 16px; border-radius: 8px; border: 1px solid #e0e0e0; }
+      .card-title { font-size: 12px; color: #888; margin-bottom: 4px; }
+      .card-value { font-size: 22px; font-weight: bold; color: #222; }
+    </style></head><body>
+      <div class="outer">
+        <div class="sidebar">
+          <div class="nav-item active">Dashboard</div>
+          <div class="nav-item">Users</div>
+          <div class="nav-item">Settings</div>
+          <div class="nav-item">Reports</div>
+        </div>
+        <div class="main">
+          <div class="card-row">
+            <div class="card"><div class="card-title">Revenue</div><div class="card-value">$12.4k</div></div>
+            <div class="card"><div class="card-title">Users</div><div class="card-value">3,421</div></div>
+            <div class="card"><div class="card-title">Orders</div><div class="card-value">892</div></div>
+          </div>
+          <div class="card" style="flex:1; min-height:80px;">
+            <div class="card-title">Activity</div>
+          </div>
+        </div>
+      </div>
+    </body></html>`;
+
+    const result = await compareFixture(browser, "L21-nested-flexbox", html, {
+      maxDiffRatio: 0.15,
+    });
+    expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+  });
+
+  // Level 22: Fixed positioning
+  test("L22: fixed and sticky positioning", async ({ browser }) => {
+    const html = `<!DOCTYPE html><html><head><style>
+      body { margin: 0; background: #f5f5f5; font-family: Arial, sans-serif; }
+      .header { position: fixed; top: 0; left: 0; right: 0; height: 48px; background: #2c3e50; display: flex; align-items: center; padding: 0 16px; z-index: 10; }
+      .header-title { color: #fff; font-size: 16px; font-weight: bold; }
+      .content { padding-top: 64px; padding-left: 16px; padding-right: 16px; }
+      .block { background: #fff; padding: 16px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 6px; }
+      .block-title { font-size: 14px; color: #333; }
+    </style></head><body>
+      <div class="header"><span class="header-title">Fixed Header</span></div>
+      <div class="content">
+        <div class="block"><div class="block-title">Content Block 1</div></div>
+        <div class="block"><div class="block-title">Content Block 2</div></div>
+        <div class="block"><div class="block-title">Content Block 3</div></div>
+      </div>
+    </body></html>`;
+
+    const result = await compareFixture(browser, "L22-fixed-position", html, {
+      maxDiffRatio: 0.15,
+    });
+    expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+  });
 });
