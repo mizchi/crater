@@ -41,6 +41,23 @@ task(
 )
 
 task(
+  id="paint-vrt-responsive",
+  node="layout",
+  cmd=["pnpm", "exec", "playwright", "test", "tests/paint-vrt-responsive.test.ts"],
+  srcs=[
+    "src/layout/**",
+    "src/paint/**",
+    "src/renderer/**",
+    "src/css/**",
+    "src/style/**",
+    "src/types/**",
+    "tests/helpers/**",
+  ],
+  needs=["paint-vrt"],
+  trigger="auto",
+)
+
+task(
   id="wpt-vrt",
   node="layout",
   cmd=["pnpm", "exec", "playwright", "test", "tests/wpt-vrt.test.ts"],

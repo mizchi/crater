@@ -6996,12 +6996,13 @@ fn get_ua_default_style(tag : String) -> @style.Style {
         display: @types.Inline,
         text_decoration_line_through: true,
       }
+    // Bold inline elements
+    "strong" | "b" =>
+      { ..default_style, display: @types.Inline, font_weight: 700.0 }
     // Inline elements - HTML default display: inline
     "span"
     | "em"
-    | "strong"
     | "i"
-    | "b"
     | "code"
     | "abbr"
     | "cite"

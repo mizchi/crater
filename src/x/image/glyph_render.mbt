@@ -459,18 +459,24 @@ fn draw_text_with_glyphs(
     }
     // Measure word with Regular font (matching layout)
     let word_width = measure_word_width(provider, word, font_size, false)
-    // Wrap if needed
-    if max_width > 0 &&
-      cur_x + word_width > max_x_limit &&
-      cur_x > x.to_double() + 0.01 {
-      cur_x = x.to_double()
-      cur_y = cur_y + effective_line_height
-      max_y_seen = cur_y + effective_line_height
-    }
-    // Space before word (except at line start)
+    // Calculate space before word (except at line start)
+    let mut space_width = 0.0
     if i > 0 && word != "\n" && cur_x > x.to_double() + 0.01 {
-      cur_x = cur_x + space_advance_layout
+      space_width = space_advance_layout
     }
+    // Wrap if needed (considering space + word width)
+    if max_width > 0 {
+      let total_width = space_width + word_width
+      if cur_x + total_width > max_x_limit && cur_x > x.to_double() + 0.01 {
+        cur_x = x.to_double()
+        cur_y = cur_y + effective_line_height
+        max_y_seen = cur_y + effective_line_height
+        // After line break, no space before word
+        space_width = 0.0
+      }
+    }
+    // Add space before word (except at line start)
+    cur_x = cur_x + space_width
     // Render each character with actual weight and kerning
     let mut prev_cp = 0
     for c in word {
@@ -645,16 +651,20 @@ fn draw_text_with_glyphs_clipped(
       continue
     }
     let word_width = measure_word_width(provider, word, font_size, false)
-    if max_width > 0 &&
-      cur_x + word_width > max_x_limit &&
-      cur_x > x.to_double() + 0.01 {
-      cur_x = x.to_double()
-      cur_y = cur_y + effective_line_height
-      max_y_seen = cur_y + effective_line_height
-    }
+    let mut space_width = 0.0
     if i > 0 && word != "\n" && cur_x > x.to_double() + 0.01 {
-      cur_x = cur_x + space_advance_layout
+      space_width = space_advance_layout
     }
+    if max_width > 0 {
+      let total_width = space_width + word_width
+      if cur_x + total_width > max_x_limit && cur_x > x.to_double() + 0.01 {
+        cur_x = x.to_double()
+        cur_y = cur_y + effective_line_height
+        max_y_seen = cur_y + effective_line_height
+        space_width = 0.0
+      }
+    }
+    cur_x = cur_x + space_width
     // Skip rendering if entire line is outside clip vertically
     let line_top = cur_y.to_int()
     let line_bottom = (cur_y + effective_line_height).to_int()
