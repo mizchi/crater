@@ -552,9 +552,6 @@ pub fn from_node_and_layout(
     border_left_width: layout.border.left,
   }
   let tag = extract_tag_from_id(node.id)
-  if is_bold_tag(tag) {
-    paint = { ..paint, is_bold: true }
-  }
   let children : Array[PaintNode] = []
 
   // Layout omits ignorable whitespace text nodes that can still remain in the
@@ -733,9 +730,6 @@ fn from_node_and_layout_with_viewport_inner(
     border_left_width: layout.border.left,
   }
   let tag = extract_tag_from_id(node.id)
-  if is_bold_tag(tag) {
-    paint = { ..paint, is_bold: true }
-  }
   let children : Array[PaintNode] = []
 
   let extent_count = extent.children.length()
