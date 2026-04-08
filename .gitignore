@@ -63,6 +63,7 @@ tmp/**/*.txt
 tmp/**/*.json
 tmp/wpt-modules/
 tmp/ws-video-test.html
+.playwright-mcp/
 .claude/
 .flaker/
 .bidi-ws-url
