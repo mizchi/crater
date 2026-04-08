@@ -1933,9 +1933,13 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
     display: @types.Inline,
     font_size,
     font_weight,
+    font_family,
     line_height: text_line_height,
     white_space,
     writing_mode,
+    direction: parent_style.direction,
+    letter_spacing: ls,
+    word_spacing: ws,
     color: parent_style.color,
   }
   if trimmed.is_empty() {
@@ -6820,6 +6824,13 @@ fn get_ua_default_style(tag : String) -> @style.Style {
   // Default margins for block elements (based on typical browser defaults)
   // Values are in em units, converted to px assuming 16px base font
   match tag.to_lower() {
+    "html" => { ..default_style, font_family: "serif" }
+    "body" =>
+      {
+        ..default_style,
+        font_family: "serif",
+        margin: @types.Rect::all(@types.Length(8.0)),
+      }
     "frameset" =>
       {
         ..default_style,
@@ -7286,6 +7297,9 @@ fn compute_element_style_indexed(
       font_size: ua_style.font_size,
       line_height: ua_style.line_height,
     }
+  }
+  if ua_style.font_family != "" {
+    style = { ..style, font_family: ua_style.font_family }
   }
   if ua_style.font_weight != 400.0 {
     style = { ..style, font_weight: ua_style.font_weight }
