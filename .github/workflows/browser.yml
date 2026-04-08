@@ -40,6 +40,11 @@ jobs:
         working-directory: browser
         run: moon update
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
       - name: Check code
         working-directory: browser
         run: moon check --target js
@@ -47,11 +52,6 @@ jobs:
       - name: Run tests
         working-directory: browser
         run: moon test --target js
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v5

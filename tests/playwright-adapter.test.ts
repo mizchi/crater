@@ -7,8 +7,7 @@
 
 import { test, expect } from "@playwright/test";
 import WebSocket from "ws";
-
-const BIDI_URL = "ws://127.0.0.1:9222";
+import { resolveBidiUrl } from "../scripts/bidi-url.ts";
 
 interface BidiResponse {
   id: number;
@@ -576,8 +575,9 @@ class CraterPage {
   private navigationResolve: (() => void) | null = null;
 
   async connect(): Promise<void> {
+    const bidiUrl = await resolveBidiUrl();
     return new Promise((resolve, reject) => {
-      this.ws = new WebSocket(BIDI_URL);
+      this.ws = new WebSocket(bidiUrl);
       this.ws.on("open", async () => {
         // Create a browsing context
         const resp = await this.sendBidi("browsingContext.create", { type: "tab" });
