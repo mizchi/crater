@@ -15,6 +15,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { execFileSync } from "node:child_process";
 import pixelmatchFn from "pixelmatch";
+import { resolveBidiUrl } from "./bidi-url.ts";
 
 // --- Args ---
 const args = process.argv.slice(2);
@@ -152,7 +153,7 @@ if (backend === "native") {
 } else {
   // Sixel: use BiDi server (must be running)
   const WebSocket = (await import("ws")).default;
-  const ws = new WebSocket("ws://127.0.0.1:9222");
+  const ws = new WebSocket(await resolveBidiUrl());
   let cmdId = 0;
   const pending = new Map<number, { resolve: (v: any) => void }>();
 

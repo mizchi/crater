@@ -20,6 +20,15 @@ pub fn BidiServerConfig::default() -> BidiServerConfig {
 }
 
 ///|
+pub fn BidiServerConfig::web_socket_url(self : BidiServerConfig) -> String {
+  if self.auth_token.is_empty() {
+    "ws://\{self.host}:\{self.port}"
+  } else {
+    "ws://\{self.host}:\{self.port}/session/\{self.auth_token}"
+  }
+}
+
+///|
 /// Generate a random auth token using crypto.randomUUID
 extern "js" fn js_generate_auth_token() -> String =
   #| () => {
@@ -484,6 +493,17 @@ extern "js" fn create_response(body : String, status : Int) -> @core.Any =
   #| (body, status) => new Response(body, { status, headers: { "Content-Type": "application/json" } })
 
 ///|
+fn bidi_status_response_body(config : BidiServerConfig) -> String {
+  let auth_enabled = if config.auth_token.is_empty() { "false" } else { "true" }
+  let web_socket_url = escape_json_string(config.web_socket_url())
+  "{\"ready\":true,\"message\":\"Crater WebDriver BiDi Server\",\"webSocketUrl\":\"" +
+  web_socket_url +
+  "\",\"authEnabled\":" +
+  auth_enabled +
+  "}"
+}
+
+///|
 /// Start the BiDi server using Deno.serve
 pub fn BidiServer::start(self : BidiServer) -> Unit {
   let d = @deno.deno()
@@ -504,7 +524,7 @@ pub fn BidiServer::start(self : BidiServer) -> Unit {
       response
     } else {
       // Return status response for HTTP requests
-      let body = "{\"ready\":true,\"message\":\"Crater WebDriver BiDi Server\"}"
+      let body = bidi_status_response_body(self.config)
       create_response(body, 200)
     }
   })

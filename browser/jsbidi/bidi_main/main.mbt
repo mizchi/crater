@@ -11,11 +11,7 @@ fn main {
     auth_token: @webdriver.generate_auth_token(),
   }
   let server = @webdriver.BidiServer::new(config~)
-  let ws_url = if config.auth_token.is_empty() {
-    "ws://\{config.host}:\{config.port}"
-  } else {
-    "ws://\{config.host}:\{config.port}/session/\{config.auth_token}"
-  }
+  let ws_url = config.web_socket_url()
   println("Starting WebDriver BiDi server on \{ws_url}")
   server.start()
 }

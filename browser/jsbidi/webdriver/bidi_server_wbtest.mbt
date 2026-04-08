@@ -141,3 +141,30 @@ async test "bidi module import blocked by same-origin sandbox" {
   let json = @js_async.Promise::wait(promise)
   assert_true(json.contains("Blocked by request sandbox"))
 }
+
+///|
+test "bidi status response includes tokenized websocket url when auth is enabled" {
+  let config : BidiServerConfig = {
+    host: "127.0.0.1",
+    port: 9222,
+    auth_token: "token-123",
+  }
+  let body = bidi_status_response_body(config)
+  assert_true(body.contains("\"ready\":true"))
+  assert_true(body.contains("\"authEnabled\":true"))
+  assert_true(
+    body.contains("\"webSocketUrl\":\"ws://127.0.0.1:9222/session/token-123\""),
+  )
+}
+
+///|
+test "bidi status response uses bare websocket url when auth is disabled" {
+  let config : BidiServerConfig = {
+    host: "127.0.0.1",
+    port: 9222,
+    auth_token: "",
+  }
+  let body = bidi_status_response_body(config)
+  assert_true(body.contains("\"authEnabled\":false"))
+  assert_true(body.contains("\"webSocketUrl\":\"ws://127.0.0.1:9222\""))
+}

@@ -1,17 +1,5 @@
-import fs from "node:fs";
-import path from "node:path";
 import WebSocket from "ws";
-
-function getBidiUrl(): string {
-  const urlFile = path.join(process.cwd(), ".bidi-ws-url");
-  try {
-    return fs.readFileSync(urlFile, "utf-8").trim();
-  } catch {
-    return "ws://127.0.0.1:9222";
-  }
-}
-
-const BIDI_URL = getBidiUrl();
+import { resolveBidiUrl } from "../../scripts/bidi-url.ts";
 
 interface BidiResponse {
   id: number;
@@ -71,23 +59,30 @@ export class CraterBidiPage {
       const timer = setTimeout(() => {
         reject(new Error(`BiDi connect timeout after ${timeout}ms`));
       }, timeout);
-      this.ws = new WebSocket(BIDI_URL);
-      this.ws.on("open", async () => {
-        try {
-          const resp = await this.sendBidi("browsingContext.create", { type: "tab" });
-          this.contextId = (resp.result as { context: string }).context;
-          clearTimeout(timer);
-          resolve();
-        } catch (error) {
+      void resolveBidiUrl()
+        .then((bidiUrl) => {
+          this.ws = new WebSocket(bidiUrl);
+          this.ws.on("open", async () => {
+            try {
+              const resp = await this.sendBidi("browsingContext.create", { type: "tab" });
+              this.contextId = (resp.result as { context: string }).context;
+              clearTimeout(timer);
+              resolve();
+            } catch (error) {
+              clearTimeout(timer);
+              reject(error);
+            }
+          });
+          this.ws.on("error", (error) => {
+            clearTimeout(timer);
+            reject(error);
+          });
+          this.ws.on("message", (data) => this.handleMessage(data.toString()));
+        })
+        .catch((error) => {
           clearTimeout(timer);
           reject(error);
-        }
-      });
-      this.ws.on("error", (error) => {
-        clearTimeout(timer);
-        reject(error);
-      });
-      this.ws.on("message", (data) => this.handleMessage(data.toString()));
+        });
     });
   }
 
