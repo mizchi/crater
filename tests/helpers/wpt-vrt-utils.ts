@@ -28,6 +28,62 @@ export interface WptVrtBaseline {
   tests: Record<string, { diffRatio: number; status: "pass" | "fail" }>;
 }
 
+export interface WptVrtTestResult {
+  relativePath: string;
+  diffRatio: number;
+  status: "pass" | "fail";
+  error?: string;
+}
+
+export interface WptVrtShardInfo {
+  name: string;
+  modules: string[];
+  offset: number;
+  limit: number;
+}
+
+export interface WptVrtResultsTestRecord {
+  diffRatio: number;
+  status: "pass" | "fail";
+  error?: string;
+  baselineDiffRatio?: number;
+  regressionLimit?: number;
+  headroom?: number;
+}
+
+export interface WptVrtResultsReport {
+  schemaVersion: 1;
+  suite: "wpt-vrt";
+  generatedAt: string;
+  shard: WptVrtShardInfo;
+  config: WptVrtBaseline["config"];
+  summary: {
+    total: number;
+    expectedTotal: number;
+    passed: number;
+    failed: number;
+    regressions: number;
+  };
+  closestToThreshold: Array<{
+    relativePath: string;
+    diffRatio: number;
+    baselineDiffRatio?: number;
+    regressionLimit: number;
+    headroom: number;
+    status: "pass" | "fail";
+  }>;
+  regressions: Array<{
+    relativePath: string;
+    diffRatio: number;
+    baselineDiffRatio?: number;
+    regressionLimit: number;
+    headroom: number;
+    status: "pass" | "fail";
+    error?: string;
+  }>;
+  tests: Record<string, WptVrtResultsTestRecord>;
+}
+
 export interface WptVrtTestEntry {
   testPath: string;
   relativePath: string;
@@ -53,6 +109,107 @@ export function loadWptVrtBaseline(): WptVrtBaseline | null {
 
 export function saveWptVrtBaseline(baseline: WptVrtBaseline): void {
   fs.writeFileSync(BASELINE_PATH, JSON.stringify(baseline, null, 2) + "\n");
+}
+
+export function buildWptVrtResultsReport(params: {
+  results: WptVrtTestResult[];
+  expectedTotal: number;
+  shard: WptVrtShardInfo;
+  config: WptVrtConfig;
+  baseline?: WptVrtBaseline | null;
+  regressionEpsilon?: number;
+  generatedAt?: string;
+  closestLimit?: number;
+}): WptVrtResultsReport {
+  const {
+    results,
+    expectedTotal,
+    shard,
+    config,
+    baseline = null,
+    regressionEpsilon = 0.01,
+    generatedAt = new Date().toISOString(),
+    closestLimit = 10,
+  } = params;
+  const tests: Record<string, WptVrtResultsTestRecord> = {};
+  const thresholdRows: WptVrtResultsReport["closestToThreshold"] = [];
+  const regressions: WptVrtResultsReport["regressions"] = [];
+
+  for (const result of results) {
+    const baselineEntry = baseline?.tests[result.relativePath];
+    const regressionLimit = baselineEntry
+      ? baselineEntry.diffRatio + regressionEpsilon
+      : config.defaultMaxDiffRatio;
+    const headroom = regressionLimit - result.diffRatio;
+    tests[result.relativePath] = {
+      diffRatio: result.diffRatio,
+      status: result.status,
+      ...(result.error ? { error: result.error } : {}),
+      ...(baselineEntry
+        ? {
+            baselineDiffRatio: baselineEntry.diffRatio,
+            regressionLimit,
+            headroom,
+          }
+        : {}),
+    };
+    thresholdRows.push({
+      relativePath: result.relativePath,
+      diffRatio: result.diffRatio,
+      baselineDiffRatio: baselineEntry?.diffRatio,
+      regressionLimit,
+      headroom,
+      status: result.status,
+    });
+    if (result.diffRatio > regressionLimit) {
+      regressions.push({
+        relativePath: result.relativePath,
+        diffRatio: result.diffRatio,
+        baselineDiffRatio: baselineEntry?.diffRatio,
+        regressionLimit,
+        headroom,
+        status: result.status,
+        ...(result.error ? { error: result.error } : {}),
+      });
+    }
+  }
+
+  thresholdRows.sort((a, b) => a.headroom - b.headroom);
+  const passed = results.filter((r) => r.status === "pass").length;
+  const failed = results.filter((r) => r.status === "fail").length;
+
+  return {
+    schemaVersion: 1,
+    suite: "wpt-vrt",
+    generatedAt,
+    shard,
+    config: {
+      viewport: config.viewport,
+      pixelmatchThreshold: config.pixelmatchThreshold,
+      defaultMaxDiffRatio: config.defaultMaxDiffRatio,
+    },
+    summary: {
+      total: results.length,
+      expectedTotal,
+      passed,
+      failed,
+      regressions: regressions.length,
+    },
+    closestToThreshold: thresholdRows.slice(0, closestLimit),
+    regressions,
+    tests,
+  };
+}
+
+export function writeWptVrtResultsReport(
+  outputRoot: string,
+  report: WptVrtResultsReport,
+): void {
+  fs.mkdirSync(outputRoot, { recursive: true });
+  fs.writeFileSync(
+    path.join(outputRoot, "wpt-vrt-results.json"),
+    JSON.stringify(report, null, 2) + "\n",
+  );
 }
 
 function toRelativePath(testPath: string): string {
