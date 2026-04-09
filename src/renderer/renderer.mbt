@@ -1258,6 +1258,12 @@ fn should_preserve_inline_element(
     tag_lower == "rp" {
     return true
   }
+  let ua_style = get_ua_default_style(tag_lower)
+  if ua_style.text_decoration_underline ||
+    ua_style.text_decoration_line_through ||
+    ua_style.text_decoration_overline {
+    return true
+  }
 
   // Check inline style first
   match elem.style {
@@ -1306,6 +1312,17 @@ fn should_preserve_inline_element(
       let has_display = style_lower.contains("display:") ||
         style_lower.contains("display :")
       if has_display && style_lower.contains("ruby") {
+        return true
+      }
+      let has_text_decoration = style_lower.contains("text-decoration:") ||
+        style_lower.contains("text-decoration :") ||
+        style_lower.contains("text-decoration-line:") ||
+        style_lower.contains("text-decoration-line :")
+      let text_decoration_none = style_lower.contains("text-decoration: none") ||
+        style_lower.contains("text-decoration : none") ||
+        style_lower.contains("text-decoration-line: none") ||
+        style_lower.contains("text-decoration-line : none")
+      if has_text_decoration && not(text_decoration_none) {
         return true
       }
       let affects_inline_typography = style_lower.contains("font-size:") ||
@@ -1371,6 +1388,24 @@ fn should_preserve_inline_element(
     }
     match cascaded.get_value("display") {
       Some(value) => if value.to_lower().contains("ruby") { return true }
+      None => ()
+    }
+    match cascaded.get_value("text-decoration") {
+      Some(value) => {
+        let lowered = value.to_lower().trim()
+        if lowered != "" && lowered != "none" {
+          return true
+        }
+      }
+      None => ()
+    }
+    match cascaded.get_value("text-decoration-line") {
+      Some(value) => {
+        let lowered = value.to_lower().trim()
+        if lowered != "" && lowered != "none" {
+          return true
+        }
+      }
       None => ()
     }
     match cascaded.get_value("filter") {
@@ -1941,6 +1976,9 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
     letter_spacing: ls,
     word_spacing: ws,
     color: parent_style.color,
+    text_decoration_underline: parent_style.text_decoration_underline,
+    text_decoration_line_through: parent_style.text_decoration_line_through,
+    text_decoration_overline: parent_style.text_decoration_overline,
   }
   if trimmed.is_empty() {
     // Preserve collapsible whitespace as a single space so inline-block gaps match browser layout.
@@ -7309,6 +7347,9 @@ fn compute_element_style_indexed(
     ..style,
     border_spacing: ua_style.border_spacing,
     border_collapse: ua_style.border_collapse,
+    text_decoration_underline: ua_style.text_decoration_underline,
+    text_decoration_line_through: ua_style.text_decoration_line_through,
+    text_decoration_overline: ua_style.text_decoration_overline,
   }
   style = { ..style, min_height: ua_style.min_height }
   if selector_elem.tag_name.to_lower() == "rt" {

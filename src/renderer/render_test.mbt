@@ -6699,6 +6699,42 @@ test "empty_td_with_colspan_has_zero_height" {
 }
 
 ///|
+fn node_id_matches_tag(node_id : String, tag : String) -> Bool {
+  node_id == tag ||
+  node_id.has_prefix(tag + "#") ||
+  node_id.has_prefix(tag + ".")
+}
+
+///|
+fn find_node_by_tag_id(node : @node.Node, tag : String) -> @node.Node? {
+  if node_id_matches_tag(node.id, tag) {
+    return Some(node)
+  }
+  for child in node.children {
+    match find_node_by_tag_id(child, tag) {
+      Some(found) => return Some(found)
+      None => ()
+    }
+  }
+  None
+}
+
+///|
+fn find_text_node_by_content(node : @node.Node, text : String) -> @node.Node? {
+  match node.text {
+    Some(content) if content == text => return Some(node)
+    _ => ()
+  }
+  for child in node.children {
+    match find_text_node_by_content(child, text) {
+      Some(found) => return Some(found)
+      None => ()
+    }
+  }
+  None
+}
+
+///|
 test "empty_td_with_line_height_has_zero_content_height" {
   // Test that an empty td does not get inflated by line-height
   let html_str =
@@ -6835,6 +6871,34 @@ test "empty_td_cellpadding_does_not_inflate_row" {
 }
 
 ///|
+test "ua_text_decoration_applies_to_semantic_inline_tags" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<body>
+    #|  <a href="#">link</a>
+    #|  <u>underline</u>
+    #|  <s>strike</s>
+    #|</body>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+  match find_node_by_tag_id(node, "a") {
+    Some(a) => inspect(a.style.text_decoration_underline, content="true")
+    None => inspect(false, content="a not found")
+  }
+  match find_text_node_by_content(node, "underline") {
+    Some(u_text) =>
+      inspect(u_text.style.text_decoration_underline, content="true")
+    None => inspect(false, content="u text not found")
+  }
+  match find_text_node_by_content(node, "strike") {
+    Some(s_text) =>
+      inspect(s_text.style.text_decoration_line_through, content="true")
+    None => inspect(false, content="s text not found")
+  }
+}
+
+///|
 test "text_decoration_none_overrides_ua_underline" {
   let html =
     #|<!DOCTYPE html>
@@ -6845,19 +6909,7 @@ test "text_decoration_none_overrides_ua_underline" {
     #|<a href="#">no underline</a>
   let ctx = @renderer.RenderContext::default()
   let node = @renderer.render_to_node(html, ctx)
-  fn find_a(n : @node.Node) -> @node.Node? {
-    if n.id.has_prefix("a") {
-      return Some(n)
-    }
-    for child in n.children {
-      match find_a(child) {
-        Some(found) => return Some(found)
-        None => ()
-      }
-    }
-    None
-  }
-  match find_a(node) {
+  match find_node_by_tag_id(node, "a") {
     Some(a) => inspect(a.style.text_decoration_underline, content="false")
     None => inspect(false, content="a not found")
   }

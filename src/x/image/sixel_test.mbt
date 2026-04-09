@@ -1,5 +1,28 @@
 ///|
 /// Tests for Sixel renderer
+fn render_text_probe(build : (@style.Style) -> Unit) -> @image.Framebuffer {
+  let style = @style.Style::default()
+  style.color = @types.Color::rgb(20, 20, 20)
+  style.font_size = 12.0
+  build(style)
+  let node = @paint.PaintNode::new(
+    "text",
+    "#text",
+    2.0,
+    2.0,
+    40.0,
+    24.0,
+    @paint.PaintProperties::from_style(style),
+    [],
+    text=Some("Hi"),
+  )
+  let fb = @image.Framebuffer::new(48, 32)
+  let palette = @image.DynamicPalette::new()
+  @image.render_paint_node_to_framebuffer(node, fb, palette)
+  fb
+}
+
+///|
 test "framebuffer creation" {
   let fb = @image.Framebuffer::new(10, 10)
   inspect(fb.width, content="10")
@@ -182,4 +205,27 @@ test "canvas background propagates from body when html is transparent" {
   inspect(color.r, content="236")
   inspect(color.g, content="236")
   inspect(color.b, content="236")
+}
+
+///|
+test "render_paint_node_to_framebuffer draws underline beyond glyph bounds" {
+  let baseline = render_text_probe(fn(_paint) {  })
+  let underlined = render_text_probe(fn(paint) {
+    paint.text_decoration_underline = true
+  })
+  inspect(baseline.get_pixel(35, 15), content="0")
+  inspect(underlined.get_pixel(35, 15) > 0, content="true")
+}
+
+///|
+test "render_paint_node_to_framebuffer draws overline and line_through beyond glyph bounds" {
+  let baseline = render_text_probe(fn(_paint) {  })
+  let decorated = render_text_probe(fn(paint) {
+    paint.text_decoration_overline = true
+    paint.text_decoration_line_through = true
+  })
+  inspect(baseline.get_pixel(35, 3), content="0")
+  inspect(baseline.get_pixel(35, 9), content="0")
+  inspect(decorated.get_pixel(35, 3) > 0, content="true")
+  inspect(decorated.get_pixel(35, 9) > 0, content="true")
 }
