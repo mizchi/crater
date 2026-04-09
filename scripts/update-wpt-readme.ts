@@ -5,6 +5,7 @@
 
 import { execSync } from 'child_process';
 import * as fs from 'fs';
+import * as path from 'path';
 import { loadWptConfig } from './wpt-config.ts';
 
 // Load config from wpt.json

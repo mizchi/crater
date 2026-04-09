@@ -23,19 +23,19 @@
     "test:website": "playwright test tests/website-loading.test.ts tests/browser-user-scenarios.test.ts"
   },
   "dependencies": {
-    "puppeteer": "^23.0.0"
+    "puppeteer": "^24.40.0"
   },
   "devDependencies": {
-    "@bytecodealliance/jco": "^1.15.4",
-    "@playwright/test": "^1.58.0",
+    "@bytecodealliance/jco": "^1.17.6",
+    "@playwright/test": "^1.59.1",
     "@types/ws": "^8.18.1",
     "pixelmatch": "^7.1.0",
-    "playwright": "^1.58.0",
-    "preact": "^10.28.2",
+    "playwright": "^1.59.1",
+    "preact": "^10.29.1",
     "tsx": "^4.21.0",
-    "vitest": "^3.0.0",
+    "vitest": "^4.1.4",
     "webidl2": "^24.5.0",
-    "ws": "^8.19.0"
+    "ws": "^8.20.0"
   },
   "packageManager": "pnpm@10.25.0+sha512.5e82639027af37cf832061bcc6d639c219634488e0f2baebe785028a793de7b525ffcd3f7ff574f5e9860654e098fe852ba8ac5dd5cefe1767d23a020a92f501"
 }

@@ -40,24 +40,26 @@ CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt):
 
 | Module | Passed | Total | Rate |
 |--------|--------|-------|------|
-| css-flexbox | 289 | 289 | 100.0% |
-| css-grid | 33 | 33 | 100.0% |
+| css-flexbox | 282 | 289 | 97.6% |
+| css-grid | 32 | 33 | 97.0% |
 | css-tables | 30 | 32 | 93.8% |
 | css-display | 79 | 79 | 100.0% |
 | css-box | 30 | 30 | 100.0% |
-| css-sizing | 94 | 94 | 100.0% |
-| css-align | 44 | 44 | 100.0% |
-| css-position | 81 | 84 | 96.4% |
-| css-overflow | 243 | 243 | 100.0% |
-| css-contain | 303 | 303 | 100.0% |
+| css-sizing | 83 | 94 | 88.3% |
+| css-align | 37 | 44 | 84.1% |
+| css-position | 83 | 84 | 98.8% |
+| css-overflow | 214 | 243 | 88.1% |
+| css-contain | 283 | 303 | 93.4% |
 | css-variables | 107 | 107 | 100.0% |
-| filter-effects | 99 | 106 | 93.4% |
+| filter-effects | 98 | 106 | 92.5% |
 | compositing | 2 | 2 | 100.0% |
 | css-logical | 5 | 5 | 100.0% |
-| css-content | 2 | 2 | 100.0% |
+| css-content | 1 | 2 | 50.0% |
 | css-multicol | 4 | 4 | 100.0% |
-| css-break | 27 | 27 | 100.0% |
-| **Total** | **1472** | **1484** | **99.2%** |
+| css-break | 26 | 27 | 96.3% |
+| **Total** | **1396** | **1484** | **94.1%** |
+
+Detailed KPI snapshot and module breakdown: [docs/browser-support-kpi.md](docs/browser-support-kpi.md)
 
 ### Visual Regression Testing (VRT)
 
