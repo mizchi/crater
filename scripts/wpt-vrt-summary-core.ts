@@ -4,6 +4,19 @@ export interface WptVrtRawTestResult {
   diffRatio: number;
   status: WptVrtStatus;
   error?: string;
+  baselineDiffRatio?: number;
+  regressionLimit?: number;
+  headroom?: number;
+}
+
+export interface WptVrtRawThresholdRow {
+  relativePath: string;
+  diffRatio: number;
+  baselineDiffRatio?: number;
+  regressionLimit: number;
+  headroom: number;
+  status: WptVrtStatus;
+  error?: string;
 }
 
 export interface WptVrtRawReport {
@@ -23,9 +36,13 @@ export interface WptVrtRawReport {
   };
   summary?: {
     total?: number;
+    expectedTotal?: number;
     passed?: number;
     failed?: number;
+    regressions?: number;
   };
+  closestToThreshold?: WptVrtRawThresholdRow[];
+  regressions?: WptVrtRawThresholdRow[];
   tests?: Record<string, WptVrtRawTestResult>;
 }
 
@@ -45,6 +62,17 @@ export interface WptVrtFailureRow {
   error?: string;
 }
 
+export interface WptVrtThresholdSummaryRow {
+  relativePath: string;
+  module: string;
+  diffRatio: number;
+  baselineDiffRatio?: number;
+  regressionLimit: number;
+  headroom: number;
+  status: WptVrtStatus;
+  error?: string;
+}
+
 export interface WptVrtShardSummary {
   schemaVersion: 1;
   suite: "wpt-vrt";
@@ -55,18 +83,23 @@ export interface WptVrtShardSummary {
   offset: number;
   limit: number;
   total: number;
+  expectedTotal: number;
   passed: number;
   failed: number;
+  regressionCount: number;
   passRate: number;
   maxDiffRatio: number;
   moduleTotals: WptVrtModuleSummary[];
   failures: WptVrtFailureRow[];
+  closestToThreshold: WptVrtThresholdSummaryRow[];
+  regressions: WptVrtThresholdSummaryRow[];
 }
 
 export interface WptVrtAggregateTotals {
   total: number;
   passed: number;
   failed: number;
+  regressions: number;
   passRate: number;
   shards: number;
 }
@@ -79,6 +112,7 @@ export interface WptVrtAggregateSummary {
   total: WptVrtAggregateTotals;
   byModule: WptVrtModuleSummary[];
   topFailures: Array<WptVrtFailureRow & { label: string }>;
+  topRegressions: Array<WptVrtThresholdSummaryRow & { label: string }>;
 }
 
 function moduleNameFromRelativePath(relativePath: string): string {
@@ -108,6 +142,49 @@ function compareFailure(
   return a.relativePath.localeCompare(b.relativePath);
 }
 
+function compareThresholdRow(
+  a: WptVrtThresholdSummaryRow | (WptVrtThresholdSummaryRow & { label: string }),
+  b: WptVrtThresholdSummaryRow | (WptVrtThresholdSummaryRow & { label: string }),
+): number {
+  if (a.headroom !== b.headroom) return a.headroom - b.headroom;
+  if (b.diffRatio !== a.diffRatio) return b.diffRatio - a.diffRatio;
+  return a.relativePath.localeCompare(b.relativePath);
+}
+
+function withModule(
+  row: WptVrtRawThresholdRow,
+): WptVrtThresholdSummaryRow {
+  return {
+    ...row,
+    module: moduleNameFromRelativePath(row.relativePath),
+  };
+}
+
+function normalizeThresholdRows(
+  rows: Array<WptVrtRawThresholdRow | WptVrtThresholdSummaryRow>,
+): WptVrtThresholdSummaryRow[] {
+  return rows.map((row) => ("module" in row ? row : withModule(row)));
+}
+
+function deriveThresholdRows(
+  tests: Record<string, WptVrtRawTestResult>,
+): WptVrtThresholdSummaryRow[] {
+  return Object.entries(tests)
+    .filter(([, result]) =>
+      typeof result.regressionLimit === "number" && typeof result.headroom === "number")
+    .map(([relativePath, result]) => ({
+      relativePath,
+      module: moduleNameFromRelativePath(relativePath),
+      diffRatio: result.diffRatio,
+      baselineDiffRatio: result.baselineDiffRatio,
+      regressionLimit: result.regressionLimit!,
+      headroom: result.headroom!,
+      status: result.status,
+      ...(result.error ? { error: result.error } : {}),
+    }))
+    .sort(compareThresholdRow);
+}
+
 export function asWptVrtShardSummary(value: unknown): WptVrtShardSummary | null {
   if (typeof value !== "object" || value === null) return null;
   const row = value as Record<string, unknown>;
@@ -123,7 +200,17 @@ export function asWptVrtShardSummary(value: unknown): WptVrtShardSummary | null 
   if (!Array.isArray(row.modules) || !Array.isArray(row.moduleTotals) || !Array.isArray(row.failures)) {
     return null;
   }
-  return value as WptVrtShardSummary;
+  return {
+    ...(value as WptVrtShardSummary),
+    expectedTotal: typeof row.expectedTotal === "number" ? row.expectedTotal : row.total as number,
+    regressionCount: typeof row.regressionCount === "number" ? row.regressionCount : 0,
+    closestToThreshold: Array.isArray(row.closestToThreshold)
+      ? row.closestToThreshold as WptVrtThresholdSummaryRow[]
+      : [],
+    regressions: Array.isArray(row.regressions)
+      ? row.regressions as WptVrtThresholdSummaryRow[]
+      : [],
+  };
 }
 
 export function buildWptVrtShardSummary(
@@ -162,8 +249,17 @@ export function buildWptVrtShardSummary(
   }
 
   const total = entries.length;
+  const expectedTotal = report.summary?.expectedTotal ?? report.summary?.total ?? total;
   const summaryPassed = report.summary?.passed ?? passed;
   const summaryFailed = report.summary?.failed ?? failed;
+  const derivedThresholdRows = deriveThresholdRows(report.tests ?? {});
+  const closestToThreshold = normalizeThresholdRows(report.closestToThreshold ?? derivedThresholdRows)
+    .sort(compareThresholdRow);
+  const regressions = normalizeThresholdRows(
+    report.regressions ?? closestToThreshold.filter((row) => row.headroom < 0),
+  )
+    .sort(compareThresholdRow);
+  const regressionCount = report.summary?.regressions ?? regressions.length;
   const shardName = report.shard?.name ?? label ?? "wpt-vrt";
   const shardModules = report.shard?.modules ?? [];
   const moduleTotals = [...moduleMap.entries()]
@@ -186,12 +282,16 @@ export function buildWptVrtShardSummary(
     offset: report.shard?.offset ?? 0,
     limit: report.shard?.limit ?? 0,
     total: report.summary?.total ?? total,
+    expectedTotal,
     passed: summaryPassed,
     failed: summaryFailed,
+    regressionCount,
     passRate: total > 0 ? summaryPassed / total : 0,
     maxDiffRatio,
     moduleTotals,
     failures: failures.sort(compareFailure),
+    closestToThreshold,
+    regressions,
   };
 }
 
@@ -201,14 +301,17 @@ export function aggregateWptVrtSummaries(
   const sortedRows = [...rows].sort((a, b) => a.label.localeCompare(b.label));
   const byModule = new Map<string, { total: number; passed: number; failed: number }>();
   const topFailures: Array<WptVrtFailureRow & { label: string }> = [];
+  const topRegressions: Array<WptVrtThresholdSummaryRow & { label: string }> = [];
   let total = 0;
   let passed = 0;
   let failed = 0;
+  let regressions = 0;
 
   for (const row of sortedRows) {
     total += row.total;
     passed += row.passed;
     failed += row.failed;
+    regressions += row.regressionCount;
     for (const moduleRow of row.moduleTotals) {
       const current = byModule.get(moduleRow.module) ?? { total: 0, passed: 0, failed: 0 };
       current.total += moduleRow.total;
@@ -218,6 +321,9 @@ export function aggregateWptVrtSummaries(
     }
     for (const failure of row.failures) {
       topFailures.push({ ...failure, label: row.label });
+    }
+    for (const regression of row.regressions) {
+      topRegressions.push({ ...regression, label: row.label });
     }
   }
 
@@ -230,6 +336,7 @@ export function aggregateWptVrtSummaries(
       total,
       passed,
       failed,
+      regressions,
       passRate: total > 0 ? passed / total : 0,
       shards: sortedRows.length,
     },
@@ -243,6 +350,7 @@ export function aggregateWptVrtSummaries(
       }))
       .sort(compareModule),
     topFailures: topFailures.sort(compareFailure),
+    topRegressions: topRegressions.sort(compareThresholdRow),
   };
 }
 
@@ -257,7 +365,9 @@ export function renderWptVrtShardMarkdown(summary: WptVrtShardSummary): string {
   lines.push(`| Modules | ${summary.modules.join(", ") || "-"} |`);
   lines.push(`| Passed | ${summary.passed} |`);
   lines.push(`| Failed | ${summary.failed} |`);
+  lines.push(`| Regressions | ${summary.regressionCount} |`);
   lines.push(`| Total | ${summary.total} |`);
+  lines.push(`| Expected Total | ${summary.expectedTotal} |`);
   lines.push(`| Pass Rate | ${formatPercent(summary.passRate)} |`);
   lines.push(`| Max Diff | ${formatRatio(summary.maxDiffRatio)} |`);
 
@@ -272,6 +382,19 @@ export function renderWptVrtShardMarkdown(summary: WptVrtShardSummary): string {
     );
   }
 
+  if (summary.closestToThreshold.length > 0) {
+    lines.push("");
+    lines.push("## Closest To Threshold");
+    lines.push("");
+    lines.push("| Test | Module | Diff Ratio | Baseline | Limit | Headroom | Status |");
+    lines.push("| --- | --- | ---: | ---: | ---: | ---: | --- |");
+    for (const row of summary.closestToThreshold) {
+      lines.push(
+        `| ${row.relativePath} | ${row.module} | ${formatRatio(row.diffRatio)} | ${row.baselineDiffRatio === undefined ? "" : formatRatio(row.baselineDiffRatio)} | ${formatRatio(row.regressionLimit)} | ${formatRatio(row.headroom)} | ${row.status} |`,
+      );
+    }
+  }
+
   if (summary.failures.length > 0) {
     lines.push("");
     lines.push("## Failures");
@@ -281,6 +404,19 @@ export function renderWptVrtShardMarkdown(summary: WptVrtShardSummary): string {
     for (const failure of summary.failures) {
       lines.push(
         `| ${failure.relativePath} | ${failure.module} | ${formatRatio(failure.diffRatio)} | ${failure.error ?? ""} |`,
+      );
+    }
+  }
+
+  if (summary.regressions.length > 0) {
+    lines.push("");
+    lines.push("## Regressions");
+    lines.push("");
+    lines.push("| Test | Module | Diff Ratio | Baseline | Limit | Headroom | Status | Error |");
+    lines.push("| --- | --- | ---: | ---: | ---: | ---: | --- | --- |");
+    for (const row of summary.regressions) {
+      lines.push(
+        `| ${row.relativePath} | ${row.module} | ${formatRatio(row.diffRatio)} | ${row.baselineDiffRatio === undefined ? "" : formatRatio(row.baselineDiffRatio)} | ${formatRatio(row.regressionLimit)} | ${formatRatio(row.headroom)} | ${row.status} | ${row.error ?? ""} |`,
       );
     }
   }
@@ -297,17 +433,18 @@ export function renderWptVrtAggregateMarkdown(summary: WptVrtAggregateSummary): 
   lines.push(`| Shards | ${summary.total.shards} |`);
   lines.push(`| Passed | ${summary.total.passed} |`);
   lines.push(`| Failed | ${summary.total.failed} |`);
+  lines.push(`| Regressions | ${summary.total.regressions} |`);
   lines.push(`| Total | ${summary.total.total} |`);
   lines.push(`| Pass Rate | ${formatPercent(summary.total.passRate)} |`);
 
   lines.push("");
   lines.push("## Shards");
   lines.push("");
-  lines.push("| Shard | Modules | Passed | Failed | Total | Pass Rate | Max Diff |");
-  lines.push("| --- | --- | ---: | ---: | ---: | ---: | ---: |");
+  lines.push("| Shard | Modules | Passed | Failed | Regressions | Total | Pass Rate | Max Diff |");
+  lines.push("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |");
   for (const row of summary.rows) {
     lines.push(
-      `| ${row.label} | ${row.modules.join(", ") || "-"} | ${row.passed} | ${row.failed} | ${row.total} | ${formatPercent(row.passRate)} | ${formatRatio(row.maxDiffRatio)} |`,
+      `| ${row.label} | ${row.modules.join(", ") || "-"} | ${row.passed} | ${row.failed} | ${row.regressionCount} | ${row.total} | ${formatPercent(row.passRate)} | ${formatRatio(row.maxDiffRatio)} |`,
     );
   }
 
@@ -331,6 +468,19 @@ export function renderWptVrtAggregateMarkdown(summary: WptVrtAggregateSummary): 
     for (const failure of summary.topFailures.slice(0, 20)) {
       lines.push(
         `| ${failure.label} | ${failure.relativePath} | ${failure.module} | ${formatRatio(failure.diffRatio)} | ${failure.error ?? ""} |`,
+      );
+    }
+  }
+
+  if (summary.topRegressions.length > 0) {
+    lines.push("");
+    lines.push("## Top Regressions");
+    lines.push("");
+    lines.push("| Shard | Test | Module | Diff Ratio | Baseline | Limit | Headroom | Status | Error |");
+    lines.push("| --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- |");
+    for (const row of summary.topRegressions.slice(0, 20)) {
+      lines.push(
+        `| ${row.label} | ${row.relativePath} | ${row.module} | ${formatRatio(row.diffRatio)} | ${row.baselineDiffRatio === undefined ? "" : formatRatio(row.baselineDiffRatio)} | ${formatRatio(row.regressionLimit)} | ${formatRatio(row.headroom)} | ${row.status} | ${row.error ?? ""} |`,
       );
     }
   }

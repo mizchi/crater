@@ -73,6 +73,102 @@ describe("buildWptVrtShardSummary", () => {
       },
     ]);
   });
+
+  it("preserves baseline regressions even when raw test statuses are all pass", () => {
+    const summary = buildWptVrtShardSummary(makeRawReport({
+      shard: {
+        name: "display",
+        modules: ["css-display"],
+        offset: 35,
+        limit: 4,
+      },
+      summary: {
+        total: 2,
+        expectedTotal: 39,
+        passed: 2,
+        failed: 0,
+        regressions: 1,
+      },
+      tests: {
+        "css-display/display-contents-text-only-001.html": {
+          diffRatio: 0.021,
+          status: "pass",
+          baselineDiffRatio: 0.009,
+          regressionLimit: 0.019,
+          headroom: -0.002,
+        },
+        "css-display/display-contents-dynamic-multicol-001-inline.html": {
+          diffRatio: 0.0183,
+          status: "pass",
+          baselineDiffRatio: 0.009,
+          regressionLimit: 0.019,
+          headroom: 0.0007,
+        },
+      },
+      regressions: [
+        {
+          relativePath: "css-display/display-contents-text-only-001.html",
+          diffRatio: 0.021,
+          baselineDiffRatio: 0.009,
+          regressionLimit: 0.019,
+          headroom: -0.002,
+          status: "pass",
+        },
+      ],
+      closestToThreshold: [
+        {
+          relativePath: "css-display/display-contents-text-only-001.html",
+          diffRatio: 0.021,
+          baselineDiffRatio: 0.009,
+          regressionLimit: 0.019,
+          headroom: -0.002,
+          status: "pass",
+        },
+        {
+          relativePath: "css-display/display-contents-dynamic-multicol-001-inline.html",
+          diffRatio: 0.0183,
+          baselineDiffRatio: 0.009,
+          regressionLimit: 0.019,
+          headroom: 0.0007,
+          status: "pass",
+        },
+      ],
+    }), "display");
+
+    expect(summary.expectedTotal).toBe(39);
+    expect(summary.regressionCount).toBe(1);
+    expect(summary.regressions).toEqual([
+      {
+        relativePath: "css-display/display-contents-text-only-001.html",
+        module: "css-display",
+        diffRatio: 0.021,
+        baselineDiffRatio: 0.009,
+        regressionLimit: 0.019,
+        headroom: -0.002,
+        status: "pass",
+      },
+    ]);
+    expect(summary.closestToThreshold).toEqual([
+      {
+        relativePath: "css-display/display-contents-text-only-001.html",
+        module: "css-display",
+        diffRatio: 0.021,
+        baselineDiffRatio: 0.009,
+        regressionLimit: 0.019,
+        headroom: -0.002,
+        status: "pass",
+      },
+      {
+        relativePath: "css-display/display-contents-dynamic-multicol-001-inline.html",
+        module: "css-display",
+        diffRatio: 0.0183,
+        baselineDiffRatio: 0.009,
+        regressionLimit: 0.019,
+        headroom: 0.0007,
+        status: "pass",
+      },
+    ]);
+  });
 });
 
 describe("aggregateWptVrtSummaries", () => {
@@ -107,6 +203,7 @@ describe("aggregateWptVrtSummaries", () => {
     expect(summary.total.total).toBe(5);
     expect(summary.total.passed).toBe(3);
     expect(summary.total.failed).toBe(2);
+    expect(summary.total.regressions).toBe(0);
     expect(summary.byModule.map((row) => `${row.module}:${row.failed}`)).toEqual([
       "css-display:1",
       "css-flexbox:1",
@@ -115,6 +212,53 @@ describe("aggregateWptVrtSummaries", () => {
     expect(summary.topFailures.map((row) => row.relativePath)).toEqual([
       "css-display/run-in-001.html",
       "css-flexbox/gap-002.html",
+    ]);
+  });
+
+  it("aggregates shard regressions separately from raw failures", () => {
+    const summary = aggregateWptVrtSummaries([
+      makeShardSummary({
+        label: "display",
+        shardName: "display",
+        modules: ["css-display"],
+        total: 2,
+        expectedTotal: 39,
+        passed: 2,
+        failed: 0,
+        regressionCount: 1,
+        passRate: 1,
+        maxDiffRatio: 0.021,
+        moduleTotals: [
+          { module: "css-display", total: 2, passed: 2, failed: 0, passRate: 1 },
+        ],
+        failures: [],
+        regressions: [
+          {
+            relativePath: "css-display/display-contents-text-only-001.html",
+            module: "css-display",
+            diffRatio: 0.021,
+            baselineDiffRatio: 0.009,
+            regressionLimit: 0.019,
+            headroom: -0.002,
+            status: "pass",
+          },
+        ],
+        closestToThreshold: [],
+      }),
+    ]);
+
+    expect(summary.total.regressions).toBe(1);
+    expect(summary.topRegressions).toEqual([
+      {
+        label: "display",
+        relativePath: "css-display/display-contents-text-only-001.html",
+        module: "css-display",
+        diffRatio: 0.021,
+        baselineDiffRatio: 0.009,
+        regressionLimit: 0.019,
+        headroom: -0.002,
+        status: "pass",
+      },
     ]);
   });
 });
@@ -155,10 +299,92 @@ describe("render markdown", () => {
     expect(shardMarkdown).toContain("# WPT VRT Shard Summary");
     expect(shardMarkdown).toContain("| Label | flexbox-1 |");
     expect(shardMarkdown).toContain("## Failures");
+    expect(shardMarkdown).toContain("| Regressions | 0 |");
     expect(aggregateMarkdown).toContain("# WPT VRT Aggregate Summary");
-    expect(aggregateMarkdown).toContain("| Shard | Modules | Passed | Failed | Total | Pass Rate | Max Diff |");
-    expect(aggregateMarkdown).toContain("| display | css-display | 1 | 1 | 2 | 50.00% | 0.0810 |");
+    expect(aggregateMarkdown).toContain("| Shard | Modules | Passed | Failed | Regressions | Total | Pass Rate | Max Diff |");
+    expect(aggregateMarkdown).toContain("| display | css-display | 1 | 1 | 0 | 2 | 50.00% | 0.0810 |");
     expect(aggregateMarkdown).toContain("## Top Failures");
     expect(aggregateMarkdown).toContain("css-display/run-in-001.html");
+  });
+
+  it("renders regression tables when baseline headroom is exhausted", () => {
+    const shardMarkdown = renderWptVrtShardMarkdown(
+      makeShardSummary({
+        label: "display",
+        shardName: "display",
+        modules: ["css-display"],
+        total: 2,
+        expectedTotal: 39,
+        passed: 2,
+        failed: 0,
+        regressionCount: 1,
+        passRate: 1,
+        maxDiffRatio: 0.021,
+        moduleTotals: [
+          { module: "css-display", total: 2, passed: 2, failed: 0, passRate: 1 },
+        ],
+        failures: [],
+        regressions: [
+          {
+            relativePath: "css-display/display-contents-text-only-001.html",
+            module: "css-display",
+            diffRatio: 0.021,
+            baselineDiffRatio: 0.009,
+            regressionLimit: 0.019,
+            headroom: -0.002,
+            status: "pass",
+          },
+        ],
+        closestToThreshold: [
+          {
+            relativePath: "css-display/display-contents-dynamic-multicol-001-inline.html",
+            module: "css-display",
+            diffRatio: 0.0183,
+            baselineDiffRatio: 0.009,
+            regressionLimit: 0.019,
+            headroom: 0.0007,
+            status: "pass",
+          },
+        ],
+      }),
+    );
+    const aggregateMarkdown = renderWptVrtAggregateMarkdown(
+      aggregateWptVrtSummaries([
+        makeShardSummary({
+          label: "display",
+          shardName: "display",
+          modules: ["css-display"],
+          total: 2,
+          expectedTotal: 39,
+          passed: 2,
+          failed: 0,
+          regressionCount: 1,
+          passRate: 1,
+          maxDiffRatio: 0.021,
+          moduleTotals: [
+            { module: "css-display", total: 2, passed: 2, failed: 0, passRate: 1 },
+          ],
+          failures: [],
+          regressions: [
+            {
+              relativePath: "css-display/display-contents-text-only-001.html",
+              module: "css-display",
+              diffRatio: 0.021,
+              baselineDiffRatio: 0.009,
+              regressionLimit: 0.019,
+              headroom: -0.002,
+              status: "pass",
+            },
+          ],
+          closestToThreshold: [],
+        }),
+      ]),
+    );
+
+    expect(shardMarkdown).toContain("## Closest To Threshold");
+    expect(shardMarkdown).toContain("## Regressions");
+    expect(shardMarkdown).toContain("display-contents-text-only-001.html");
+    expect(aggregateMarkdown).toContain("## Top Regressions");
+    expect(aggregateMarkdown).toContain("display-contents-text-only-001.html");
   });
 });

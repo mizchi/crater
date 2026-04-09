@@ -851,6 +851,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Install just
+        uses: extractions/setup-just@v3
+
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
