@@ -55,6 +55,7 @@ export interface WptVrtResultsReport {
   schemaVersion: 1;
   suite: "wpt-vrt";
   generatedAt: string;
+  runId?: string;
   shard: WptVrtShardInfo;
   config: WptVrtBaseline["config"];
   summary: {
@@ -120,6 +121,7 @@ export function buildWptVrtResultsReport(params: {
   regressionEpsilon?: number;
   generatedAt?: string;
   closestLimit?: number;
+  runId?: string;
 }): WptVrtResultsReport {
   const {
     results,
@@ -130,6 +132,7 @@ export function buildWptVrtResultsReport(params: {
     regressionEpsilon = 0.01,
     generatedAt = new Date().toISOString(),
     closestLimit = 10,
+    runId,
   } = params;
   const tests: Record<string, WptVrtResultsTestRecord> = {};
   const thresholdRows: WptVrtResultsReport["closestToThreshold"] = [];
@@ -182,6 +185,7 @@ export function buildWptVrtResultsReport(params: {
     schemaVersion: 1,
     suite: "wpt-vrt",
     generatedAt,
+    ...(runId ? { runId } : {}),
     shard,
     config: {
       viewport: config.viewport,
@@ -199,6 +203,78 @@ export function buildWptVrtResultsReport(params: {
     regressions,
     tests,
   };
+}
+
+export function readWptVrtResultsReport(outputRoot: string): WptVrtResultsReport | null {
+  try {
+    const raw = fs.readFileSync(path.join(outputRoot, "wpt-vrt-results.json"), "utf-8");
+    return JSON.parse(raw) as WptVrtResultsReport;
+  } catch {
+    return null;
+  }
+}
+
+function reportToWptVrtTestResults(report: WptVrtResultsReport): WptVrtTestResult[] {
+  return Object.entries(report.tests)
+    .map(([relativePath, result]) => ({
+      relativePath,
+      diffRatio: result.diffRatio,
+      status: result.status,
+      ...(result.error ? { error: result.error } : {}),
+    }))
+    .sort((a, b) => a.relativePath.localeCompare(b.relativePath));
+}
+
+function mergeWptVrtTestResults(
+  ...groups: WptVrtTestResult[][]
+): WptVrtTestResult[] {
+  const merged = new Map<string, WptVrtTestResult>();
+  for (const group of groups) {
+    for (const result of group) {
+      merged.set(result.relativePath, result);
+    }
+  }
+  return [...merged.values()].sort((a, b) => a.relativePath.localeCompare(b.relativePath));
+}
+
+export function buildMergedWptVrtResultsReport(params: {
+  currentResults: WptVrtTestResult[];
+  existingReport?: WptVrtResultsReport | null;
+  expectedTotal: number;
+  shard: WptVrtShardInfo;
+  config: WptVrtConfig;
+  baseline?: WptVrtBaseline | null;
+  regressionEpsilon?: number;
+  generatedAt?: string;
+  closestLimit?: number;
+  runId: string;
+}): WptVrtResultsReport {
+  const {
+    currentResults,
+    existingReport = null,
+    expectedTotal,
+    shard,
+    config,
+    baseline = null,
+    regressionEpsilon,
+    generatedAt,
+    closestLimit,
+    runId,
+  } = params;
+  const priorResults = existingReport?.runId === runId
+    ? reportToWptVrtTestResults(existingReport)
+    : [];
+  return buildWptVrtResultsReport({
+    results: mergeWptVrtTestResults(priorResults, currentResults),
+    expectedTotal,
+    shard,
+    config,
+    baseline,
+    regressionEpsilon,
+    generatedAt,
+    closestLimit,
+    runId,
+  });
 }
 
 export function writeWptVrtResultsReport(

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildMergedWptVrtResultsReport,
   buildWptVrtResultsReport,
   collectWptVrtTests,
   createWptVrtBatches,
@@ -211,5 +212,123 @@ describe("buildWptVrtResultsReport", () => {
       status: "pass",
     });
     expect(report.regressions).toEqual([]);
+  });
+});
+
+describe("buildMergedWptVrtResultsReport", () => {
+  const shard = {
+    name: "display",
+    modules: ["css-display"],
+    offset: 0,
+    limit: 0,
+  } as const;
+  const config: WptVrtConfig = {
+    ...baseConfig,
+    modules: ["css-display"],
+    limitPerModule: 30,
+  };
+
+  it("merges prior shard results when the run id matches", () => {
+    const existingReport = buildWptVrtResultsReport({
+      results: [
+        {
+          relativePath: "css-display/a.html",
+          diffRatio: 0.01,
+          status: "pass",
+        },
+        {
+          relativePath: "css-display/b.html",
+          diffRatio: 0.02,
+          status: "pass",
+        },
+      ],
+      expectedTotal: 3,
+      shard,
+      config,
+      generatedAt: "2026-04-09T00:00:00.000Z",
+      runId: "run-1",
+    });
+
+    const report = buildMergedWptVrtResultsReport({
+      currentResults: [
+        {
+          relativePath: "css-display/b.html",
+          diffRatio: 0.03,
+          status: "fail",
+          error: "latest batch result wins",
+        },
+        {
+          relativePath: "css-display/c.html",
+          diffRatio: 0.04,
+          status: "pass",
+        },
+      ],
+      existingReport,
+      expectedTotal: 3,
+      shard,
+      config,
+      generatedAt: "2026-04-09T00:01:00.000Z",
+      runId: "run-1",
+    });
+
+    expect(report.runId).toBe("run-1");
+    expect(report.summary).toEqual({
+      total: 3,
+      expectedTotal: 3,
+      passed: 2,
+      failed: 1,
+      regressions: 0,
+    });
+    expect(Object.keys(report.tests)).toEqual([
+      "css-display/a.html",
+      "css-display/b.html",
+      "css-display/c.html",
+    ]);
+    expect(report.tests["css-display/b.html"]).toEqual({
+      diffRatio: 0.03,
+      status: "fail",
+      error: "latest batch result wins",
+    });
+  });
+
+  it("ignores stale reports from a different run id", () => {
+    const existingReport = buildWptVrtResultsReport({
+      results: [
+        {
+          relativePath: "css-display/a.html",
+          diffRatio: 0.01,
+          status: "pass",
+        },
+      ],
+      expectedTotal: 2,
+      shard,
+      config,
+      generatedAt: "2026-04-09T00:00:00.000Z",
+      runId: "run-old",
+    });
+
+    const report = buildMergedWptVrtResultsReport({
+      currentResults: [
+        {
+          relativePath: "css-display/b.html",
+          diffRatio: 0.02,
+          status: "pass",
+        },
+      ],
+      existingReport,
+      expectedTotal: 2,
+      shard,
+      config,
+      generatedAt: "2026-04-09T00:01:00.000Z",
+      runId: "run-new",
+    });
+
+    expect(report.summary.total).toBe(1);
+    expect(report.tests).toEqual({
+      "css-display/b.html": {
+        diffRatio: 0.02,
+        status: "pass",
+      },
+    });
   });
 });

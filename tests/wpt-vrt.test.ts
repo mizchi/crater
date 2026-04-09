@@ -7,11 +7,12 @@ import {
   renderCraterHtml,
 } from "./helpers/crater-vrt";
 import {
-  buildWptVrtResultsReport,
+  buildMergedWptVrtResultsReport,
   collectWptVrtTests,
   createWptVrtBatches,
   loadWptVrtBaseline,
   loadWptVrtConfig,
+  readWptVrtResultsReport,
   prepareHtmlContent,
   saveWptVrtBaseline,
   type WptVrtBaseline,
@@ -28,6 +29,13 @@ const SHARD_LIMIT = Number(process.env.WPT_VRT_LIMIT) || 0;
 const OUTPUT_ROOT = path.join(process.cwd(), "output", "playwright", "vrt", "wpt");
 const REGRESSION_EPSILON = 0.01;
 const BATCH_SIZE = 5;
+const RUN_ID = [
+  SHARD_NAME,
+  SHARD_MODULES.join(","),
+  String(SHARD_OFFSET),
+  String(SHARD_LIMIT),
+  String(process.ppid),
+].join(":");
 const config = loadWptVrtConfig();
 const allEntries = collectWptVrtTests(config);
 const moduleFiltered = SHARD_MODULES.length > 0
@@ -94,8 +102,9 @@ test.describe("WPT VRT", () => {
   const results: WptVrtTestResult[] = [];
 
   function flushResults() {
-    const report = buildWptVrtResultsReport({
-      results,
+    const report = buildMergedWptVrtResultsReport({
+      currentResults: results,
+      existingReport: readWptVrtResultsReport(OUTPUT_ROOT),
       expectedTotal: entries.length,
       shard: {
         name: SHARD_NAME,
@@ -106,6 +115,7 @@ test.describe("WPT VRT", () => {
       config,
       baseline: baseline && !UPDATE_BASELINE ? baseline : null,
       regressionEpsilon: REGRESSION_EPSILON,
+      runId: RUN_ID,
     });
     writeWptVrtResultsReport(OUTPUT_ROOT, report);
     return report;
@@ -113,7 +123,7 @@ test.describe("WPT VRT", () => {
 
   test.beforeAll(() => {
     expect(entries.length).toBeGreaterThan(0);
-    console.log(`WPT VRT: running ${entries.length} tests in ${batches.length} batches`);
+    console.log(`WPT VRT: running ${entries.length} tests in ${batches.length} batches (run ${RUN_ID})`);
   });
 
   for (const [batchIndex, batchEntries] of batches.entries()) {
