@@ -319,6 +319,17 @@ fn parse_csv_quad(s : String) -> (Double, Double, Double, Double)? {
 }
 
 ///|
+fn should_use_font_aware_text_provider(font_family : String) -> Bool {
+  let normalized = font_family.trim().to_lower()
+  normalized.length() > 0 &&
+  normalized != "inherit" &&
+  normalized != "initial" &&
+  normalized != "unset" &&
+  normalized != "revert" &&
+  normalized != "revert-layer"
+}
+
+///|
 fn ensure_paint_text_provider() -> Unit {
   if has_paint_text_provider() {
     let provider = @renderer.TextMetricsProvider::new(fn(
@@ -336,17 +347,7 @@ fn ensure_paint_text_provider() -> Unit {
       let ff = font_family
       {
         func: fn(available_width, available_height) {
-          // Use multi-font metrics when a specific font family is set
-          // and it's not a default/generic family (Arial handles those).
-          let ff_lower = ff.to_lower()
-          let use_multi = ff_lower.length() > 0 &&
-            not(ff_lower.has_prefix("arial")) &&
-            not(ff_lower.has_prefix("sans-serif")) &&
-            not(ff_lower.has_prefix("serif")) &&
-            not(ff_lower.has_prefix("monospace")) &&
-            not(ff_lower.has_prefix("inherit")) &&
-            not(ff_lower.has_prefix("\"arial"))
-          let payload = if use_multi {
+          let payload = if should_use_font_aware_text_provider(ff) {
             let multi = call_font_aware_text_provider(
               text, font_size, line_height, ws, wm, available_width,
               available_height, ff, is_bold,

@@ -11,10 +11,10 @@ import {
   loadRealWorldSnapshot,
   type RealWorldSnapshot,
 } from "./real-world-snapshot.ts";
+import { resolveBidiUrl } from "./bidi-url.ts";
 
 const BIDI_HOST = "127.0.0.1";
 const BIDI_PORT = 9222;
-const BIDI_URL = `ws://${BIDI_HOST}:${BIDI_PORT}`;
 const OUTPUT_DIR = path.join(process.cwd(), "output", "playwright", "real-world-paint");
 const BLANK_HTML = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head><body></body></html>";
 
@@ -227,8 +227,9 @@ class CraterPage {
   }>();
 
   async connect(): Promise<void> {
+    const bidiUrl = await resolveBidiUrl();
     await new Promise<void>((resolve, reject) => {
-      this.ws = new WebSocket(BIDI_URL);
+      this.ws = new WebSocket(bidiUrl);
       this.ws.once("open", () => resolve());
       this.ws.once("error", reject);
       this.ws.on("message", (data) => this.handleMessage(data.toString()));

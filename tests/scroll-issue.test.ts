@@ -7,8 +7,7 @@
 
 import { test, expect } from "@playwright/test";
 import WebSocket from "ws";
-
-const BIDI_URL = "ws://127.0.0.1:9222";
+import { resolveBidiUrl } from "../scripts/bidi-url.ts";
 
 interface BidiResponse {
   id: number;
@@ -53,8 +52,9 @@ class BidiClient {
 }
 
 async function connectBidi(): Promise<BidiClient> {
+  const bidiUrl = await resolveBidiUrl();
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(BIDI_URL);
+    const ws = new WebSocket(bidiUrl);
     ws.on("open", () => resolve(new BidiClient(ws)));
     ws.on("error", reject);
   });

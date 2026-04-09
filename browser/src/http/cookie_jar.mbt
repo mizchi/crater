@@ -23,7 +23,7 @@ pub(all) struct ParsedCookie {
 pub struct CookieJar {
   cookies : Array[ParsedCookie]
   /// SECURITY: When false (default), all operations are no-ops
-  mut enabled : Bool
+  enabled : Bool
 }
 
 ///|

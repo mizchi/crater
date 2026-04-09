@@ -16,12 +16,13 @@ import { spawn, execSync, ChildProcess } from "child_process";
 import fs from "fs";
 import path from "path";
 import { pathToFileURL } from "url";
+import { resolveBidiUrl } from "./bidi-url.ts";
 
 const WPT_TESTS_ROOT = "wpt/webdriver/tests";
 const WPT_BIDI_TESTS = `${WPT_TESTS_ROOT}/bidi`;
 const WPT_SUPPORT_TESTS = `${WPT_TESTS_ROOT}/support`;
 const CRATER_BIDI_PORT = 9222;
-const CRATER_BIDI_URL = `ws://127.0.0.1:${CRATER_BIDI_PORT}`;
+const CRATER_BIDI_STATUS_URL = `http://127.0.0.1:${CRATER_BIDI_PORT}/`;
 const SUBSET_CONFIG = "scripts/wpt-bidi-subset.json";
 const DEFAULT_PROFILE_NAME = "strict";
 
@@ -603,10 +604,14 @@ async function runTests(
     console.log(`Skipped ${skipped.length} tests\n`);
   }
 
+  const craterBidiUrl = await resolveBidiUrl({
+    statusUrl: CRATER_BIDI_STATUS_URL,
+  });
+
   // Run pytest with our adapter
   const env = {
     ...process.env,
-    CRATER_BIDI_URL,
+    CRATER_BIDI_URL: craterBidiUrl,
     PYTHONPATH: [path.join(process.cwd(), "scripts"), tempDir, process.env.PYTHONPATH]
       .filter(Boolean)
       .join(path.delimiter),

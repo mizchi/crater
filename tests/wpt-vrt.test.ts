@@ -1,4 +1,3 @@
-import fs from "node:fs";
 import path from "node:path";
 import { expect, test, type Browser } from "@playwright/test";
 import { CraterBidiPage } from "./helpers/crater-bidi-page";
@@ -8,14 +7,18 @@ import {
   renderCraterHtml,
 } from "./helpers/crater-vrt";
 import {
+  buildMergedWptVrtResultsReport,
   collectWptVrtTests,
   createWptVrtBatches,
   loadWptVrtBaseline,
   loadWptVrtConfig,
+  readWptVrtResultsReport,
   prepareHtmlContent,
   saveWptVrtBaseline,
   type WptVrtBaseline,
   type WptVrtTestEntry,
+  type WptVrtTestResult,
+  writeWptVrtResultsReport,
 } from "./helpers/wpt-vrt-utils";
 
 const UPDATE_BASELINE = process.env.WPT_VRT_UPDATE_BASELINE === "1";
@@ -26,6 +29,13 @@ const SHARD_LIMIT = Number(process.env.WPT_VRT_LIMIT) || 0;
 const OUTPUT_ROOT = path.join(process.cwd(), "output", "playwright", "vrt", "wpt");
 const REGRESSION_EPSILON = 0.01;
 const BATCH_SIZE = 5;
+const RUN_ID = [
+  SHARD_NAME,
+  SHARD_MODULES.join(","),
+  String(SHARD_OFFSET),
+  String(SHARD_LIMIT),
+  String(process.ppid),
+].join(":");
 const config = loadWptVrtConfig();
 const allEntries = collectWptVrtTests(config);
 const moduleFiltered = SHARD_MODULES.length > 0
@@ -37,20 +47,13 @@ const entries = SHARD_LIMIT > 0
 const baseline = loadWptVrtBaseline();
 const batches = createWptVrtBatches(entries, BATCH_SIZE);
 
-interface TestResult {
-  relativePath: string;
-  diffRatio: number;
-  status: "pass" | "fail";
-  error?: string;
-}
-
 const INTER_TEST_DELAY_MS = 300;
 
 async function runVrtTest(
   browser: Browser,
   entry: WptVrtTestEntry,
   config: { viewport: { width: number; height: number }; pixelmatchThreshold: number; defaultMaxDiffRatio: number },
-): Promise<TestResult> {
+): Promise<WptVrtTestResult> {
   let chromiumPage = null as Awaited<ReturnType<typeof chromiumPageForVrt>> | null;
   let craterPage = null as CraterBidiPage | null;
   try {
@@ -96,11 +99,31 @@ async function runVrtTest(
 
 test.describe("WPT VRT", () => {
   test.describe.configure({ timeout: 600_000 });
-  const results: TestResult[] = [];
+  const results: WptVrtTestResult[] = [];
+
+  function flushResults() {
+    const report = buildMergedWptVrtResultsReport({
+      currentResults: results,
+      existingReport: readWptVrtResultsReport(OUTPUT_ROOT),
+      expectedTotal: entries.length,
+      shard: {
+        name: SHARD_NAME,
+        modules: SHARD_MODULES,
+        offset: SHARD_OFFSET,
+        limit: SHARD_LIMIT,
+      },
+      config,
+      baseline: baseline && !UPDATE_BASELINE ? baseline : null,
+      regressionEpsilon: REGRESSION_EPSILON,
+      runId: RUN_ID,
+    });
+    writeWptVrtResultsReport(OUTPUT_ROOT, report);
+    return report;
+  }
 
   test.beforeAll(() => {
     expect(entries.length).toBeGreaterThan(0);
-    console.log(`WPT VRT: running ${entries.length} tests in ${batches.length} batches`);
+    console.log(`WPT VRT: running ${entries.length} tests in ${batches.length} batches (run ${RUN_ID})`);
   });
 
   for (const [batchIndex, batchEntries] of batches.entries()) {
@@ -124,45 +147,29 @@ test.describe("WPT VRT", () => {
         }
       }
 
+      const report = flushResults();
+
       console.log(
         `  batch ${batchIndex + 1}/${batches.length}: completed ${Math.min((batchIndex + 1) * BATCH_SIZE, entries.length)}/${entries.length}`,
       );
+      if (batchIndex === batches.length - 1 && report.closestToThreshold.length > 0) {
+        const closest = report.closestToThreshold
+          .slice(0, 5)
+          .map((row) => `${row.relativePath}=${row.headroom.toFixed(4)}`)
+          .join(", ");
+        console.log(`  closest headroom: ${closest}`);
+      }
+      if (regressions.length > 0) {
+        console.error(`  regressions: ${regressions.join(" | ")}`);
+      }
       expect(regressions, `${regressions.length} regression(s) found in batch ${batchIndex + 1}`).toHaveLength(0);
     });
   }
 
   test.afterAll(() => {
-    const passed = results.filter((r) => r.status === "pass").length;
-    const failed = results.filter((r) => r.status === "fail").length;
-
-    fs.mkdirSync(OUTPUT_ROOT, { recursive: true });
-    const resultsJson = {
-      schemaVersion: 1,
-      suite: "wpt-vrt",
-      generatedAt: new Date().toISOString(),
-      shard: {
-        name: SHARD_NAME,
-        modules: SHARD_MODULES,
-        offset: SHARD_OFFSET,
-        limit: SHARD_LIMIT,
-      },
-      config: {
-        viewport: config.viewport,
-        pixelmatchThreshold: config.pixelmatchThreshold,
-        defaultMaxDiffRatio: config.defaultMaxDiffRatio,
-      },
-      summary: { total: results.length, passed, failed },
-      tests: Object.fromEntries(
-        results.map((r) => [
-          r.relativePath,
-          { diffRatio: r.diffRatio, status: r.status, ...(r.error ? { error: r.error } : {}) },
-        ]),
-      ),
-    };
-    fs.writeFileSync(
-      path.join(OUTPUT_ROOT, "wpt-vrt-results.json"),
-      JSON.stringify(resultsJson, null, 2) + "\n",
-    );
+    const report = flushResults();
+    const passed = report.summary.passed;
+    const failed = report.summary.failed;
 
     console.log(`\nWPT VRT: ${passed}/${results.length} passed (${failed} failed)`);
 

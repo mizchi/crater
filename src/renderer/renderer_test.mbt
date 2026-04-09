@@ -423,6 +423,54 @@ test "font shorthand inherits line-height to descendant text nodes" {
 }
 
 ///|
+test "font-family and spacing inherit to descendant text nodes" {
+  let html =
+    #|<!doctype html>
+    #|<html><head>
+    #|<style>body { font-family: serif; letter-spacing: 2px; word-spacing: 3px; }</style>
+    #|</head>
+    #|<body>
+    #|<div id="outer"><span id="inner">hello world</span></div>
+    #|</body></html>
+  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  let outer = node.children[0]
+  inspect(outer.id, content="div#outer")
+  inspect(outer.style.font_family, content="serif")
+  inspect(outer.style.letter_spacing, content="2")
+  inspect(outer.style.word_spacing, content="3")
+  let inner = outer.children[0]
+  inspect(inner.id, content="span#inner")
+  inspect(inner.style.font_family, content="serif")
+  inspect(inner.style.letter_spacing, content="2")
+  inspect(inner.style.word_spacing, content="3")
+  let text = inner.children[0]
+  inspect(text.id, content="#text")
+  inspect(text.style.font_family, content="serif")
+  inspect(text.style.letter_spacing, content="2")
+  inspect(text.style.word_spacing, content="3")
+}
+
+///|
+test "body defaults descendant text nodes to serif font-family" {
+  let html =
+    #|<!doctype html>
+    #|<html><body>
+    #|<div id="outer">hello world</div>
+    #|</body></html>
+  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  inspect(node.id, content="body")
+  inspect(node.style.font_family, content="serif")
+  inspect(node.style.margin.top, content="Length(8)")
+  inspect(node.style.margin.left, content="Length(8)")
+  let outer = node.children[0]
+  inspect(outer.id, content="div#outer")
+  inspect(outer.style.font_family, content="serif")
+  let text = outer.children[0]
+  inspect(text.id, content="#text")
+  inspect(text.style.font_family, content="serif")
+}
+
+///|
 test "implicit body font shorthand reaches descendant text measure" {
   let html =
     #|<!doctype html>

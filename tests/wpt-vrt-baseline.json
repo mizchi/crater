@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-04-05T13:19:02.012Z",
+  "updatedAt": "2026-04-09T10:17:16.000Z",
   "config": {
     "viewport": {
       "width": 800,
@@ -188,11 +188,11 @@
       "status": "pass"
     },
     "css-display/display-contents-dynamic-before-after-001.html": {
-      "diffRatio": 0.06930612905837584,
+      "diffRatio": 0.080301685891748,
       "status": "pass"
     },
     "css-display/display-contents-dynamic-before-after-first-letter-001.html": {
-      "diffRatio": 0.07023722775483766,
+      "diffRatio": 0.08062434459949988,
       "status": "pass"
     },
     "css-display/display-contents-dynamic-flex-001-inline.html": {
@@ -204,19 +204,19 @@
       "status": "pass"
     },
     "css-display/display-contents-dynamic-flex-002-inline.html": {
-      "diffRatio": 0.07685823754789273,
+      "diffRatio": 0.09030534351145038,
       "status": "pass"
     },
     "css-display/display-contents-dynamic-flex-002-none.html": {
-      "diffRatio": 0.07685823754789273,
+      "diffRatio": 0.09030534351145038,
       "status": "pass"
     },
     "css-display/display-contents-dynamic-flex-003-inline.html": {
-      "diffRatio": 0.07685823754789273,
+      "diffRatio": 0.09030534351145038,
       "status": "pass"
     },
     "css-display/display-contents-dynamic-flex-003-none.html": {
-      "diffRatio": 0.07685823754789273,
+      "diffRatio": 0.09030534351145038,
       "status": "pass"
     },
     "css-display/display-contents-dynamic-generated-content-fieldset-001.html": {
@@ -224,11 +224,11 @@
       "status": "pass"
     },
     "css-display/display-contents-dynamic-inline-flex-001-inline.html": {
-      "diffRatio": 0.026660280970625796,
+      "diffRatio": 0.0422826259736131,
       "status": "pass"
     },
     "css-display/display-contents-dynamic-inline-flex-001-none.html": {
-      "diffRatio": 0.026660280970625796,
+      "diffRatio": 0.0422826259736131,
       "status": "pass"
     },
     "css-display/display-contents-dynamic-list-001-inline.html": {
@@ -1080,11 +1080,11 @@
       "status": "pass"
     },
     "css-display/display-contents-flex-002.html": {
-      "diffRatio": 0.07685823754789273,
+      "diffRatio": 0.09030534351145038,
       "status": "pass"
     },
     "css-display/display-contents-flex-003.html": {
-      "diffRatio": 0.07685823754789273,
+      "diffRatio": 0.09030534351145038,
       "status": "pass"
     },
     "css-display/display-contents-line-height.html": {
@@ -1100,15 +1100,15 @@
       "status": "pass"
     },
     "css-display/display-contents-whitespace-inside-inline.html": {
-      "diffRatio": 0.07262752804388765,
+      "diffRatio": 0.0826739538298393,
       "status": "pass"
     },
     "css-display/display-contents-inline-flex-001.html": {
-      "diffRatio": 0.026660280970625796,
+      "diffRatio": 0.0422826259736131,
       "status": "pass"
     },
     "css-display/display-contents-slot-attach-whitespace.html": {
-      "diffRatio": 0.0784118909466656,
+      "diffRatio": 0.08505236432878452,
       "status": "pass"
     },
     "css-position/position-absolute-in-inline-004.html": {
@@ -1152,7 +1152,7 @@
       "status": "pass"
     },
     "css-display/display-contents-dynamic-table-001-inline.html": {
-      "diffRatio": 0.04284317320620951,
+      "diffRatio": 0.05598337611538932,
       "status": "pass"
     },
     "css-sizing/fit-content-length-percentage-015.html": {
