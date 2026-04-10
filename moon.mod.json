@@ -4,7 +4,7 @@
   "description": "CSS Layout Engine that implements Box/Flex/Grid",
   "deps": {
     "mizchi/layout": "0.2.0",
-    "mizchi/x": "0.1.6",
+    "mizchi/x": "0.2.0",
     "mizchi/font": "0.7.0",
     "mizchi/svg": "0.2.0",
     "moonbitlang/async": "0.16.7"
