@@ -97,6 +97,7 @@ type ExternalTextIntrinsicFn = (
   lineHeight: number,
   whiteSpace: string,
   writingMode: string,
+  fontFamily: string,
   availableWidth: number,
   availableHeight: number,
 ) => ExternalTextIntrinsicResult;
@@ -138,14 +139,18 @@ function resolveMeasuredAdvance(
   measured: unknown,
   text: string,
   fontSize: number,
+  fontFamily: string,
 ): number {
   if (text.length === 0) return 0;
   if (hasFiniteNumber(measured) && measured > 0) return measured;
+  if (fontFamily.toLowerCase().includes('ahem')) {
+    return text.length * (fontSize > 0 ? fontSize : 16);
+  }
   return text.length * (fontSize > 0 ? fontSize * 0.5 : 8);
 }
 
 export function createTextIntrinsicFnFromMeasureText(
-  measureText: (text: string, fontSize: number) => number,
+  measureText: (text: string, fontSize: number, fontFamily: string) => number,
 ): ExternalTextIntrinsicFn {
   return (
     text: string,
@@ -153,13 +158,14 @@ export function createTextIntrinsicFnFromMeasureText(
     lineHeight: number,
     whiteSpace: string,
     writingMode: string,
+    fontFamily: string,
     availableWidth: number,
     availableHeight: number,
   ) => {
     const effectiveLineHeight = lineHeight > 0 ? lineHeight : (fontSize > 0 ? fontSize : 16);
     const measure = (s: string): number => {
-      const measured = measureText(s, fontSize);
-      return resolveMeasuredAdvance(measured, s, fontSize);
+      const measured = measureText(s, fontSize, fontFamily);
+      return resolveMeasuredAdvance(measured, s, fontSize, fontFamily);
     };
     const whiteSpaceMode = whiteSpace.toLowerCase();
     const preserveSpaces =
@@ -510,14 +516,17 @@ async function configureExternalIntrinsicProviders(): Promise<void> {
   const fallbackAdvanceRatio = Number(process.env.CRATER_FALLBACK_ADVANCE_RATIO ?? '0.5');
   const fallbackSingleWordSlope = Number(process.env.CRATER_FALLBACK_ADVANCE_SLOPE ?? '0');
   const fallbackTextFn = createTextIntrinsicFnFromMeasureText(
-    (text: string, fontSize: number) => {
+    (text: string, fontSize: number, fontFamily: string) => {
+      const isAhem = fontFamily.toLowerCase().includes('ahem');
       const effectiveSize = fontSize > 0 ? fontSize : 16;
       const trimmed = text.trim();
       const isShortSingleToken = trimmed.length > 0 &&
         trimmed.length <= 6 &&
         !/\s/.test(trimmed);
       const isUppercaseToken = /^[A-Z0-9]+$/.test(trimmed);
-      const tokenAdvanceRatio = isUppercaseToken && trimmed.length >= 5
+      const tokenAdvanceRatio = isAhem
+        ? 1
+        : isUppercaseToken && trimmed.length >= 5
         ? Math.max(fallbackAdvanceRatio, 0.625)
         : fallbackAdvanceRatio;
       const scale = isShortSingleToken

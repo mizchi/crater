@@ -355,14 +355,24 @@ fn create_text_measure_with_provider(
     )
   if force_monospace_metrics_flag.val {
     return create_text_measure(
-      text, font_size, text_line_height, white_space, writing_mode,
+      text,
+      font_size,
+      text_line_height,
+      white_space,
+      writing_mode,
+      font_family~,
     )
   }
   let base_measure = match text_metrics_provider_override.val {
     Some(provider) =>
       if force_builtin_measure {
         create_text_measure(
-          text, font_size, text_line_height, white_space, writing_mode,
+          text,
+          font_size,
+          text_line_height,
+          white_space,
+          writing_mode,
+          font_family~,
         )
       } else {
         (provider.func)(
@@ -372,7 +382,12 @@ fn create_text_measure_with_provider(
       }
     None =>
       create_text_measure(
-        text, font_size, text_line_height, white_space, writing_mode,
+        text,
+        font_size,
+        text_line_height,
+        white_space,
+        writing_mode,
+        font_family~,
       )
   }
   // Apply letter-spacing and word-spacing adjustments
@@ -411,6 +426,7 @@ fn create_text_measure(
   text_line_height : Double,
   white_space : @style.WhiteSpace,
   writing_mode : @style.WritingMode,
+  font_family? : String = "",
 ) -> @types.MeasureFunc {
   let raw_trimmed = trim_collapsible_whitespace_edges(text)
   let mut trimmed = if raw_trimmed.is_empty() && not(text.is_empty()) {
@@ -462,6 +478,8 @@ fn create_text_measure(
   let override_ratio = get_builtin_text_advance_ratio_override()
   let mut effective_char_width_ratio = if override_ratio > 0.0 {
     override_ratio
+  } else if font_family.to_lower().contains("ahem") {
+    1.0
   } else {
     char_width_ratio
   }
@@ -1309,6 +1327,11 @@ fn should_preserve_inline_element(
       if has_background && not(transparent_background) {
         return true
       }
+      let has_visibility = style_lower.contains("visibility:") ||
+        style_lower.contains("visibility :")
+      if has_visibility {
+        return true
+      }
       let has_display = style_lower.contains("display:") ||
         style_lower.contains("display :")
       if has_display && style_lower.contains("ruby") {
@@ -1384,6 +1407,10 @@ fn should_preserve_inline_element(
     }
     match cascaded.get_value("background") {
       Some(value) => if has_nontrivial_background_value(value) { return true }
+      None => ()
+    }
+    match cascaded.get_value("visibility") {
+      Some(_) => return true
       None => ()
     }
     match cascaded.get_value("display") {
@@ -3082,6 +3109,28 @@ let empty_indexed_stylesheets : Ref[Array[@cascade.IndexedStylesheet]] = {
 }
 
 ///|
+/// Advance the viewport culling heuristic only for in-flow block containers.
+/// Counting floated descendants as vertical progress causes small tables with
+/// many float-based fixtures to enter skeleton mode too early.
+fn should_advance_viewport_estimate(style : @style.Style) -> Bool {
+  let is_in_flow = match style.position {
+    @types.Absolute | @types.Fixed => false
+    _ =>
+      match style.float {
+        @types.Float::Left | @types.Float::Right => false
+        @types.Float::None => true
+      }
+  }
+  if not(is_in_flow) {
+    return false
+  }
+  match style.display {
+    @types.Block | @types.Flex | @types.Grid | @types.Table => true
+    _ => false
+  }
+}
+
+///|
 let active_before_index : Ref[PseudoRuleIndex] = {
   val: { rules: [], by_id: {}, by_class: {}, by_tag: {}, universal: [] },
 }
@@ -3325,7 +3374,14 @@ pub fn build_render_root_node(
   current_cellpadding.val = -1.0 // Reset cellpadding for new render
   // Viewport culling: skip expensive processing for below-fold elements
   viewport_estimated_y.val = 0.0
-  viewport_cutoff.val = ctx.viewport_height * 1.5
+  // Keep viewport culling conservative. Small-to-medium fixtures with many
+  // block descendants should still receive full stylesheet cascade.
+  let conservative_cutoff = ctx.viewport_height * 8.0
+  viewport_cutoff.val = if conservative_cutoff > 8192.0 {
+    conservative_cutoff
+  } else {
+    8192.0
+  }
   viewport_skeleton_count.val = 0
   let root = if prepared.body_uses_document_root_style {
     let body_selector = if prepared.indexed_stylesheets.length() == 0 {
@@ -5481,7 +5537,9 @@ fn element_to_node_with_styles_internal(
       return @node.Node::leaf(make_node_id(elem), skeleton_style)
     }
     // Estimate height for scroll
-    viewport_estimated_y.val += skeleton_style.line_height
+    if should_advance_viewport_estimate(skeleton_style) {
+      viewport_estimated_y.val += skeleton_style.line_height
+    }
     // Process children in skeleton mode (recursive)
     let children : Array[@node.Node] = []
     for child in elem.children {
@@ -5540,10 +5598,8 @@ fn element_to_node_with_styles_internal(
     return @node.Node::leaf(make_node_id(elem), computed_style)
   }
   // Viewport culling: estimate Y position for block elements
-  match computed_style.display {
-    @types.Block | @types.Flex | @types.Grid | @types.Table =>
-      viewport_estimated_y.val += computed_style.line_height
-    _ => ()
+  if should_advance_viewport_estimate(computed_style) {
+    viewport_estimated_y.val += computed_style.line_height
   }
   // Keep contain flags on <rt> so ruby-specific fallback logic can distinguish
   // contain:size/paint test fixtures. Other inline elements still strip contain.

@@ -622,6 +622,14 @@ fn get_child_descendant_flow_extent_for_auto_height(
     @types.Length(v) => v == 0.0
     _ => false
   }
+  let clips_descendant_overflow = match
+    (child_node.style.overflow_x, child_node.style.overflow_y) {
+    (@types.Visible, @types.Visible) => false
+    _ => true
+  }
+  if clips_descendant_overflow {
+    return 0.0
+  }
   if explicit_zero_height && child_layout.height == 0.0 {
     0.0
   } else {

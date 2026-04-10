@@ -238,6 +238,8 @@ fn estimate_wrapped_text_metrics(
       let override_ratio = get_builtin_text_advance_ratio_override()
       let effective_ratio = if override_ratio > 0.0 {
         override_ratio
+      } else if node.style.font_family.to_lower().contains("ahem") {
+        1.0
       } else {
         0.5
       }
@@ -380,6 +382,8 @@ fn estimate_inline_wrap_carry_width(
       let override_ratio = get_builtin_text_advance_ratio_override()
       let effective_ratio = if override_ratio > 0.0 {
         override_ratio
+      } else if prev.style.font_family.to_lower().contains("ahem") {
+        1.0
       } else {
         inline_wrap_carry_char_width_ratio
       }
@@ -1896,20 +1900,26 @@ fn compute_inline_child(
               } else {
                 unconstrained.max_width
               }
+              let keep_nowrap_max_content = style.display == @types.Inline &&
+                style.white_space == @style.WhiteSpace::Nowrap
               let min_content = if suppress_inline_intrinsic {
                 style.contained_intrinsic_width_fallback()
               } else {
                 unconstrained.min_width
               }
-              let content_available = available_width -
-                padding.horizontal_sum() -
-                border.horizontal_sum()
-              if content_available <= 0.0 {
-                min_content
-              } else if max_content < content_available {
+              if keep_nowrap_max_content {
                 max_content
               } else {
-                content_available
+                let content_available = available_width -
+                  padding.horizontal_sum() -
+                  border.horizontal_sum()
+                if content_available <= 0.0 {
+                  min_content
+                } else if max_content < content_available {
+                  max_content
+                } else {
+                  content_available
+                }
               }
             }
           }

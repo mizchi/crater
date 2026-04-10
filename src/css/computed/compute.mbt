@@ -39,6 +39,19 @@ pub fn ComputeContext::new() -> ComputeContext {
 }
 
 ///|
+fn ch_unit_ratio(ctx : ComputeContext) -> Double {
+  match ctx.parent_style {
+    Some(style) =>
+      if style.font_family.to_lower().contains("ahem") {
+        1.0
+      } else {
+        0.5
+      }
+    None => 0.5
+  }
+}
+
+///|
 pub fn ComputeContext::with_parent(parent : @style.Style) -> ComputeContext {
   {
     parent_style: Some(parent),
@@ -3188,13 +3201,14 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
     None => ()
   }
 
-  // Handle ch units (width of "0" glyph, approximated as 0.5em)
+  // Handle ch units. Ahem is square (1ch ~= 1em); our default fallback keeps
+  // the historical 0.5em approximation for generic monospace rendering.
   match v.strip_suffix("ch") {
     Some(num_str) => {
       let n = @strconv.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
-      return @types.Dimension::Length(n * ctx.font_size * 0.5)
+      return @types.Dimension::Length(n * ctx.font_size * ch_unit_ratio(ctx))
     }
     None => ()
   }

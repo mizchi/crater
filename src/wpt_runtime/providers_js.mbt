@@ -11,14 +11,15 @@ extern "js" fn call_external_text_metrics_provider(
   line_height : Double,
   white_space : String,
   writing_mode : String,
+  font_family : String,
   available_width : Double,
   available_height : Double,
 ) -> String =
-  #|(text, fontSize, lineHeight, whiteSpace, writingMode, availableWidth, availableHeight) => {
+  #|(text, fontSize, lineHeight, whiteSpace, writingMode, fontFamily, availableWidth, availableHeight) => {
   #|  const fn = globalThis.__craterMeasureTextIntrinsic;
   #|  if (typeof fn !== "function") return "";
   #|  try {
-  #|    const result = fn(text, fontSize, lineHeight, whiteSpace, writingMode, availableWidth, availableHeight);
+  #|    const result = fn(text, fontSize, lineHeight, whiteSpace, writingMode, fontFamily, availableWidth, availableHeight);
   #|    let minWidth, maxWidth, minHeight, maxHeight;
   #|    if (Array.isArray(result) && result.length >= 4) {
   #|      minWidth = Number(result[0]);
@@ -112,15 +113,16 @@ fn create_external_text_metrics_provider() -> @renderer.TextMetricsProvider {
     white_space,
     writing_mode,
     _font_weight,
-    _font_family,
+    font_family,
   ) {
     let white_space_name = white_space.to_string()
     let writing_mode_name = writing_mode.to_string()
+    let font_family_name = font_family.to_string()
     {
       func: fn(available_width, available_height) {
         let payload = call_external_text_metrics_provider(
-          text, font_size, line_height, white_space_name, writing_mode_name, available_width,
-          available_height,
+          text, font_size, line_height, white_space_name, writing_mode_name, font_family_name,
+          available_width, available_height,
         )
         match parse_csv_quad(payload) {
           Some((min_width, max_width, min_height, max_height)) =>
@@ -130,7 +132,17 @@ fn create_external_text_metrics_provider() -> @renderer.TextMetricsProvider {
             for _ in text.iter() {
               cols = cols + 1
             }
-            let char_width = if font_size > 0.0 { font_size * 0.5 } else { 8.0 }
+            let char_width = if font_family_name.to_lower().contains("ahem") {
+              if font_size > 0.0 {
+                font_size
+              } else {
+                16.0
+              }
+            } else if font_size > 0.0 {
+              font_size * 0.5
+            } else {
+              8.0
+            }
             let width = cols.to_double() * char_width
             let height = if line_height > 0.0 {
               line_height

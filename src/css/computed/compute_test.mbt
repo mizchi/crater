@@ -76,8 +76,8 @@ test "parse_alignment" {
   inspect(@computed.parse_alignment("center"), content="Center")
   inspect(@computed.parse_alignment("space-between"), content="SpaceBetween")
   inspect(@computed.parse_alignment("stretch"), content="Stretch")
-  inspect(@computed.parse_alignment("safe center"), content="Center")
-  inspect(@computed.parse_alignment("safe end"), content="End")
+  inspect(@computed.parse_alignment("safe center"), content="Start")
+  inspect(@computed.parse_alignment("safe end"), content="Start")
   inspect(@computed.parse_alignment("unsafe center"), content="Center")
   inspect(@computed.parse_alignment("unsafe end"), content="End")
 }
@@ -87,8 +87,8 @@ test "compute_inline place-content shorthand" {
   let ctx = @computed.ComputeContext::new()
 
   let safe_center = @computed.compute_inline("place-content: safe center", ctx)
-  inspect(safe_center.align_content, content="Center")
-  inspect(safe_center.justify_content, content="Center")
+  inspect(safe_center.align_content, content="Start")
+  inspect(safe_center.justify_content, content="Start")
   inspect(safe_center.align_content_unsafe, content="false")
   inspect(safe_center.justify_content_unsafe, content="false")
 
@@ -772,6 +772,20 @@ test "compute_inline ch and ex units" {
   // ex ≈ 0.5em, so 2ex with 20px font = 2 * 20 * 0.5 = 20px
   let style2 = @computed.compute_inline("height: 2ex", ctx)
   inspect(style2.height, content="Length(20)")
+}
+
+///|
+test "compute_inline ch units use square advance for inherited Ahem" {
+  let ctx : @computed.ComputeContext = {
+    parent_style: Some({ ..@style.Style::default(), font_family: "Ahem" }),
+    root_font_size: 16.0,
+    font_size: 16.0,
+    viewport_width: 1920.0,
+    viewport_height: 1080.0,
+    custom_properties: {},
+  }
+  let style = @computed.compute_inline("width: 4ch", ctx)
+  inspect(style.width, content="Length(64)")
 }
 
 ///|

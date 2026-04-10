@@ -2677,6 +2677,40 @@ test "block_overflow_alignment_start_in_vertical_rl_rtl_shifts_both_axes" {
 }
 
 ///|
+test "auto_height_parent_ignores_clipped_descendant_overflow" {
+  let default_style = @style.Style::default()
+  let grandchild = @node.Node::leaf("grandchild", {
+    ..default_style,
+    width: @types.Length(200.0),
+    height: @types.Length(200.0),
+  })
+  let child = @node.Node::new(
+    "child",
+    {
+      ..default_style,
+      width: @types.Length(100.0),
+      height: @types.Length(100.0),
+      overflow_x: @types.Clip,
+      overflow_y: @types.Clip,
+    },
+    [grandchild],
+  )
+  let root = @node.Node::new("root", { ..default_style }, [child])
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.height, content="100")
+  inspect(layout.children[0].height, content="100")
+}
+
+///|
 test "block_overflow_alignment_center_defaults_to_safe_start_when_overflowing" {
   let default_style = @style.Style::default()
   let child = @node.Node::leaf("child", {

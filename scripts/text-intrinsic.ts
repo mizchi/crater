@@ -9,6 +9,7 @@ export type ExternalTextIntrinsicFn = (
   lineHeight: number,
   whiteSpace: string,
   writingMode: string,
+  fontFamily: string,
   availableWidth: number,
   availableHeight: number,
 ) => { minWidth: number; maxWidth: number; minHeight: number; maxHeight: number };
@@ -21,14 +22,18 @@ function resolveMeasuredAdvance(
   measured: unknown,
   text: string,
   fontSize: number,
+  fontFamily: string,
 ): number {
   if (text.length === 0) return 0;
   if (hasFiniteNumber(measured) && measured > 0) return measured;
+  if (fontFamily.toLowerCase().includes("ahem")) {
+    return text.length * (fontSize > 0 ? fontSize : 16);
+  }
   return text.length * (fontSize > 0 ? fontSize * 0.5 : 8);
 }
 
 export function createTextIntrinsicFnFromMeasureText(
-  measureText: (text: string, fontSize: number) => number,
+  measureText: (text: string, fontSize: number, fontFamily: string) => number,
 ): ExternalTextIntrinsicFn {
   return (
     text: string,
@@ -36,13 +41,14 @@ export function createTextIntrinsicFnFromMeasureText(
     lineHeight: number,
     whiteSpace: string,
     writingMode: string,
+    fontFamily: string,
     availableWidth: number,
     availableHeight: number,
   ) => {
     const effectiveLineHeight = lineHeight > 0 ? lineHeight : (fontSize > 0 ? fontSize : 16);
     const measure = (s: string): number => {
-      const measured = measureText(s, fontSize);
-      return resolveMeasuredAdvance(measured, s, fontSize);
+      const measured = measureText(s, fontSize, fontFamily);
+      return resolveMeasuredAdvance(measured, s, fontSize, fontFamily);
     };
     const whiteSpaceMode = whiteSpace.toLowerCase();
     const preserveSpaces =

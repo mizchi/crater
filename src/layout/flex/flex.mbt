@@ -6095,7 +6095,6 @@ fn compute_internal(
 
   // Calculate line positions using align-content
   let cross_free_space = effective_cross - total_lines_cross
-
   // Handle align-content: Stretch - distribute extra space to lines
   // NOTE: Stretch applies to line SIZE even in single-line containers
   let line_count = flex_lines.length()

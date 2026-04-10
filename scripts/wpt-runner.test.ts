@@ -24,6 +24,7 @@ describe("createTextIntrinsicFnFromMeasureText", () => {
       19.2,
       "normal",
       "horizontal-tb",
+      "",
       80,
       600,
     );
@@ -41,6 +42,7 @@ describe("createTextIntrinsicFnFromMeasureText", () => {
       20,
       "normal",
       "horizontal-tb",
+      "",
       1000,
       600,
     );
@@ -58,6 +60,7 @@ describe("createTextIntrinsicFnFromMeasureText", () => {
       20,
       "normal",
       "horizontal-tb",
+      "",
       1000,
       600,
     );
@@ -74,6 +77,7 @@ describe("createTextIntrinsicFnFromMeasureText", () => {
       20,
       "normal",
       "horizontal-tb",
+      "",
       1000,
       600,
     );
@@ -92,6 +96,7 @@ describe("createTextIntrinsicFnFromMeasureText", () => {
       20,
       "normal",
       "vertical-rl",
+      "",
       160,
       120,
     );
@@ -112,11 +117,29 @@ describe("createTextIntrinsicFnFromMeasureText", () => {
       19.2,
       "normal",
       "horizontal-tb",
+      "",
       80,
       600,
     );
     expect(result).not.toBeNull();
     expect((result as { maxHeight?: number }).maxHeight).toBeGreaterThan(19.2);
+  });
+
+  it("uses square fallback advances for Ahem text", () => {
+    const fn = createTextIntrinsicFnFromMeasureText(() => 0);
+    const result = fn(
+      "ABCABCABCABC",
+      16,
+      19.2,
+      "nowrap",
+      "horizontal-tb",
+      "Ahem",
+      64,
+      600,
+    );
+
+    expect(result?.maxWidth).toBe(192);
+    expect(result?.minWidth).toBe(192);
   });
 });
 
