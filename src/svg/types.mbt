@@ -77,14 +77,14 @@ pub(all) enum Align {
   XMinYMax
   XMidYMax
   XMaxYMax
-} derive(Show, Eq)
+} derive(Eq, Debug)
 
 ///|
 /// preserveAspectRatio meet/slice
 pub(all) enum MeetOrSlice {
   Meet // Scale to fit entirely (default)
   Slice // Scale to cover entirely
-} derive(Show, Eq)
+} derive(Eq, Debug)
 
 ///|
 /// Complete preserveAspectRatio setting
@@ -96,6 +96,32 @@ pub(all) struct PreserveAspectRatio {
 ///|
 pub fn PreserveAspectRatio::default() -> PreserveAspectRatio {
   { align: XMidYMid, meet_or_slice: Meet }
+}
+
+///|
+pub impl Show for Align with output(self, logger) {
+  let name = match self {
+    None => "None"
+    XMinYMin => "XMinYMin"
+    XMidYMin => "XMidYMin"
+    XMaxYMin => "XMaxYMin"
+    XMinYMid => "XMinYMid"
+    XMidYMid => "XMidYMid"
+    XMaxYMid => "XMaxYMid"
+    XMinYMax => "XMinYMax"
+    XMidYMax => "XMidYMax"
+    XMaxYMax => "XMaxYMax"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for MeetOrSlice with output(self, logger) {
+  let name = match self {
+    Meet => "Meet"
+    Slice => "Slice"
+  }
+  logger.write_string(name)
 }
 
 ///|
@@ -182,7 +208,7 @@ pub(all) enum PathCommand {
   QuadraticCurveToRel(Double, Double, Double, Double) // q dx1 dy1 dx dy
   SmoothQuadraticCurveToRel(Double, Double) // t dx dy
   ArcToRel(Double, Double, Double, Bool, Bool, Double, Double) // a rx ry rotation large-arc sweep dx dy
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// SVG shape primitives
@@ -203,7 +229,75 @@ pub(all) enum Shape {
   Path(commands~ : Array[PathCommand])
   Text(x~ : Double, y~ : Double, text~ : String, font_size~ : Double)
   Group // Container for children
-} derive(Show)
+} derive(Debug)
+
+///|
+pub impl Show for PathCommand with output(self, logger) {
+  match self {
+    MoveTo(x, y) => logger.write_string("MoveTo(\{x}, \{y})")
+    LineTo(x, y) => logger.write_string("LineTo(\{x}, \{y})")
+    HorizontalLineTo(x) => logger.write_string("HorizontalLineTo(\{x})")
+    VerticalLineTo(y) => logger.write_string("VerticalLineTo(\{y})")
+    CurveTo(x1, y1, x2, y2, x, y) =>
+      logger.write_string("CurveTo(\{x1}, \{y1}, \{x2}, \{y2}, \{x}, \{y})")
+    SmoothCurveTo(x2, y2, x, y) =>
+      logger.write_string("SmoothCurveTo(\{x2}, \{y2}, \{x}, \{y})")
+    QuadraticCurveTo(x1, y1, x, y) =>
+      logger.write_string("QuadraticCurveTo(\{x1}, \{y1}, \{x}, \{y})")
+    SmoothQuadraticCurveTo(x, y) =>
+      logger.write_string("SmoothQuadraticCurveTo(\{x}, \{y})")
+    ArcTo(rx, ry, rotation, large_arc, sweep, x, y) =>
+      logger.write_string(
+        "ArcTo(\{rx}, \{ry}, \{rotation}, \{large_arc}, \{sweep}, \{x}, \{y})",
+      )
+    ClosePath => logger.write_string("ClosePath")
+    MoveToRel(dx, dy) => logger.write_string("MoveToRel(\{dx}, \{dy})")
+    LineToRel(dx, dy) => logger.write_string("LineToRel(\{dx}, \{dy})")
+    HorizontalLineToRel(dx) => logger.write_string("HorizontalLineToRel(\{dx})")
+    VerticalLineToRel(dy) => logger.write_string("VerticalLineToRel(\{dy})")
+    CurveToRel(dx1, dy1, dx2, dy2, dx, dy) =>
+      logger.write_string(
+        "CurveToRel(\{dx1}, \{dy1}, \{dx2}, \{dy2}, \{dx}, \{dy})",
+      )
+    SmoothCurveToRel(dx2, dy2, dx, dy) =>
+      logger.write_string("SmoothCurveToRel(\{dx2}, \{dy2}, \{dx}, \{dy})")
+    QuadraticCurveToRel(dx1, dy1, dx, dy) =>
+      logger.write_string("QuadraticCurveToRel(\{dx1}, \{dy1}, \{dx}, \{dy})")
+    SmoothQuadraticCurveToRel(dx, dy) =>
+      logger.write_string("SmoothQuadraticCurveToRel(\{dx}, \{dy})")
+    ArcToRel(rx, ry, rotation, large_arc, sweep, dx, dy) =>
+      logger.write_string(
+        "ArcToRel(\{rx}, \{ry}, \{rotation}, \{large_arc}, \{sweep}, \{dx}, \{dy})",
+      )
+  }
+}
+
+///|
+pub impl Show for Shape with output(self, logger) {
+  match self {
+    Rect(x~, y~, width~, height~, rx~, ry~) =>
+      logger.write_string(
+        "Rect(x=\{x}, y=\{y}, width=\{width}, height=\{height}, rx=\{rx}, ry=\{ry})",
+      )
+    Circle(cx~, cy~, r~) =>
+      logger.write_string("Circle(cx=\{cx}, cy=\{cy}, r=\{r})")
+    Ellipse(cx~, cy~, rx~, ry~) =>
+      logger.write_string("Ellipse(cx=\{cx}, cy=\{cy}, rx=\{rx}, ry=\{ry})")
+    Line(x1~, y1~, x2~, y2~) =>
+      logger.write_string("Line(x1=\{x1}, y1=\{y1}, x2=\{x2}, y2=\{y2})")
+    Polyline(points~) => logger.write_string("Polyline(points=\{points})")
+    Polygon(points~) => logger.write_string("Polygon(points=\{points})")
+    Path(commands~) => logger.write_string("Path(commands=\{commands})")
+    Text(x~, y~, text~, font_size~) => {
+      logger.write_string("Text(x=\{x}, y=\{y}, text=")
+      logger.write_string("\"")
+      logger.write_string(text)
+      logger.write_string("\"")
+      logger.write_string(", font_size=\{font_size})")
+    }
+    Group => logger.write_string("Group")
+  }
+}
 
 ///|
 /// Gradient stop (position 0.0-1.0 and color)
@@ -337,7 +431,17 @@ pub(all) enum SpreadMethod {
   Pad // Extend with end colors (default)
   Repeat // Repeat pattern
   Reflect // Mirror pattern
-} derive(Show, Eq)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for SpreadMethod with output(self, logger) {
+  let name = match self {
+    Pad => "Pad"
+    Repeat => "Repeat"
+    Reflect => "Reflect"
+  }
+  logger.write_string(name)
+}
 
 ///|
 /// Paint style (fill or stroke)
@@ -378,21 +482,50 @@ pub(all) enum LineCap {
   Butt
   Round
   Square
-} derive(Show, Eq)
+} derive(Eq, Debug)
 
 ///|
 pub(all) enum LineJoin {
   Miter
   Round
   Bevel
-} derive(Show, Eq)
+} derive(Eq, Debug)
 
 ///|
 /// Fill rule for paths and polygons
 pub(all) enum FillRule {
   NonZero // Default
   EvenOdd
-} derive(Show, Eq)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for LineCap with output(self, logger) {
+  let name = match self {
+    Butt => "Butt"
+    Round => "Round"
+    Square => "Square"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for LineJoin with output(self, logger) {
+  let name = match self {
+    Miter => "Miter"
+    Round => "Round"
+    Bevel => "Bevel"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for FillRule with output(self, logger) {
+  let name = match self {
+    NonZero => "NonZero"
+    EvenOdd => "EvenOdd"
+  }
+  logger.write_string(name)
+}
 
 ///|
 /// SVG node (element in the scene graph)
@@ -809,7 +942,7 @@ fn hit_test_polygon(
     let (xj, yj) = points[j]
     // Ray casting: count intersections with polygon edges
     if (yi > py) != (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi {
-      inside = not(inside)
+      inside = !inside
     }
     j = i
   }
@@ -934,7 +1067,21 @@ pub(all) enum Easing {
   EaseInCubic
   EaseOutCubic
   EaseInOutCubic
-} derive(Show, Eq)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for Easing with output(self, logger) {
+  let name = match self {
+    Linear => "Linear"
+    EaseIn => "EaseIn"
+    EaseOut => "EaseOut"
+    EaseInOut => "EaseInOut"
+    EaseInCubic => "EaseInCubic"
+    EaseOutCubic => "EaseOutCubic"
+    EaseInOutCubic => "EaseInOutCubic"
+  }
+  logger.write_string(name)
+}
 
 ///|
 /// Apply easing function to a normalized time (0.0 to 1.0)
@@ -1027,7 +1174,7 @@ pub fn Tween::update(self : Tween, dt : Double, node : SVGNode) -> Bool {
     return false
   }
   // Capture start values on first update
-  if not(self.started) {
+  if !self.started {
     self.start_value = capture_property(node, self.property)
     self.started = true
   }
@@ -1221,7 +1368,23 @@ pub(all) enum EventType {
   DragStart
   DragMove
   DragEnd
-} derive(Show, Eq)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for EventType with output(self, logger) {
+  let name = match self {
+    Click => "Click"
+    MouseDown => "MouseDown"
+    MouseUp => "MouseUp"
+    MouseMove => "MouseMove"
+    MouseEnter => "MouseEnter"
+    MouseLeave => "MouseLeave"
+    DragStart => "DragStart"
+    DragMove => "DragMove"
+    DragEnd => "DragEnd"
+  }
+  logger.write_string(name)
+}
 
 ///|
 /// Event listener entry
@@ -1305,7 +1468,7 @@ pub fn EventManager::dispatch_mouse_down(
     let event = PointerEvent::new(x, y, button, node.id)
     self.dispatch_to_node(node.id, MouseDown, event)
     // Start drag
-    if not(event.propagation_stopped) {
+    if !event.propagation_stopped {
       self.dragging_node = Some(node.id)
       self.drag_start_x = x
       self.drag_start_y = y
@@ -1565,7 +1728,7 @@ pub fn SVGNode::collides_with(self : SVGNode, other : SVGNode) -> Bool {
   // Get transformed bounding boxes for quick rejection
   let bbox1 = self.transform.apply_bbox(get_shape_bbox(self.shape))
   let bbox2 = other.transform.apply_bbox(get_shape_bbox(other.shape))
-  if not(bbox1.intersects(bbox2)) {
+  if !bbox1.intersects(bbox2) {
     return false
   }
   // For now, use bounding box collision
@@ -1854,7 +2017,7 @@ pub fn ParticleEmitter::update(self : ParticleEmitter, dt : Double) -> Unit {
 fn ParticleEmitter::emit_one(self : ParticleEmitter) -> Unit {
   // Find inactive particle
   for p in self.particles {
-    if not(p.active) {
+    if !p.active {
       p.active = true
       p.x = self.x
       p.y = self.y
@@ -2081,14 +2244,46 @@ pub(all) enum BlendMode {
   Saturation
   ColorMode // 'color' in CSS
   Luminosity
-} derive(Show, Eq)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for BlendMode with output(self, logger) {
+  let name = match self {
+    Normal => "Normal"
+    Multiply => "Multiply"
+    Screen => "Screen"
+    Overlay => "Overlay"
+    Darken => "Darken"
+    Lighten => "Lighten"
+    ColorDodge => "ColorDodge"
+    ColorBurn => "ColorBurn"
+    HardLight => "HardLight"
+    SoftLight => "SoftLight"
+    Difference => "Difference"
+    Exclusion => "Exclusion"
+    Hue => "Hue"
+    Saturation => "Saturation"
+    ColorMode => "ColorMode"
+    Luminosity => "Luminosity"
+  }
+  logger.write_string(name)
+}
 
 ///|
 /// CSS isolation values
 pub(all) enum Isolation {
   Auto
   Isolate
-} derive(Show, Eq)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for Isolation with output(self, logger) {
+  let name = match self {
+    Auto => "Auto"
+    Isolate => "Isolate"
+  }
+  logger.write_string(name)
+}
 
 ///|
 /// Blend two colors using the specified blend mode
@@ -3536,7 +3731,7 @@ pub fn AnimatedSprite::from_range(
 ///|
 /// Update animation with delta time
 pub fn AnimatedSprite::update(self : AnimatedSprite, dt : Double) -> Unit {
-  if not(self.playing) || self.frames.is_empty() {
+  if !self.playing || self.frames.is_empty() {
     return
   }
   self.elapsed = self.elapsed + dt
@@ -3666,14 +3861,32 @@ pub fn ClipPathRegistry::get(self : ClipPathRegistry, id : String) -> ClipPath? 
 pub(all) enum MaskUnits {
   UserSpaceOnUse // Coordinates relative to current user space
   ObjectBoundingBox // Coordinates relative to bounding box (0-1)
-} derive(Show, Eq)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for MaskUnits with output(self, logger) {
+  let name = match self {
+    UserSpaceOnUse => "UserSpaceOnUse"
+    ObjectBoundingBox => "ObjectBoundingBox"
+  }
+  logger.write_string(name)
+}
 
 ///|
 /// Mask type - how mask values are interpreted
 pub(all) enum MaskType {
   Luminance // Use luminance (brightness) as mask value
   Alpha // Use alpha channel as mask value
-} derive(Show, Eq)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for MaskType with output(self, logger) {
+  let name = match self {
+    Luminance => "Luminance"
+    Alpha => "Alpha"
+  }
+  logger.write_string(name)
+}
 
 ///|
 /// Mask definition for transparency masking
@@ -3939,7 +4152,17 @@ pub(all) enum WritingMode {
   HorizontalTB // Left to right, top to bottom (default)
   VerticalRL // Top to bottom, right to left (Japanese, Chinese)
   VerticalLR // Top to bottom, left to right
-} derive(Show, Eq)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for WritingMode with output(self, logger) {
+  let name = match self {
+    HorizontalTB => "HorizontalTB"
+    VerticalRL => "VerticalRL"
+    VerticalLR => "VerticalLR"
+  }
+  logger.write_string(name)
+}
 
 ///|
 /// Text orientation for vertical writing (SVG 2.0)
@@ -3947,7 +4170,17 @@ pub(all) enum TextOrientation {
   Mixed // Upright for CJK, rotated for others (default)
   Upright // All characters upright
   Sideways // All characters rotated 90°
-} derive(Show, Eq)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for TextOrientation with output(self, logger) {
+  let name = match self {
+    Mixed => "Mixed"
+    Upright => "Upright"
+    Sideways => "Sideways"
+  }
+  logger.write_string(name)
+}
 
 ///|
 /// White space handling (SVG 2.0)
@@ -3958,7 +4191,20 @@ pub(all) enum WhiteSpace {
   PreWrap // Preserve whitespace, wrap at boundaries
   PreLine // Collapse spaces, preserve newlines, wrap
   BreakSpaces // Like pre-wrap but break at any space
-} derive(Show, Eq)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for WhiteSpace with output(self, logger) {
+  let name = match self {
+    Normal => "Normal"
+    Pre => "Pre"
+    NoWrap => "NoWrap"
+    PreWrap => "PreWrap"
+    PreLine => "PreLine"
+    BreakSpaces => "BreakSpaces"
+  }
+  logger.write_string(name)
+}
 
 ///|
 /// Text overflow handling (SVG 2.0)
@@ -3966,7 +4212,22 @@ pub(all) enum TextOverflow {
   Clip // Clip at boundary
   Ellipsis // Show "..." at overflow
   Custom(String) // Custom overflow indicator
-} derive(Show, Eq)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for TextOverflow with output(self, logger) {
+  match self {
+    Clip => logger.write_string("Clip")
+    Ellipsis => logger.write_string("Ellipsis")
+    Custom(value) => {
+      logger.write_string("Custom(")
+      logger.write_string("\"")
+      logger.write_string(value)
+      logger.write_string("\"")
+      logger.write_string(")")
+    }
+  }
+}
 
 ///|
 /// Text decoration style (SVG 2.0)
@@ -3976,7 +4237,19 @@ pub(all) enum TextDecorationStyle {
   Dotted
   Dashed
   Wavy
-} derive(Show, Eq)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for TextDecorationStyle with output(self, logger) {
+  let name = match self {
+    Solid => "Solid"
+    Double => "Double"
+    Dotted => "Dotted"
+    Dashed => "Dashed"
+    Wavy => "Wavy"
+  }
+  logger.write_string(name)
+}
 
 ///|
 /// Extended text decoration (SVG 2.0)
@@ -3999,7 +4272,18 @@ pub(all) enum PaintOrder {
   StrokeFirst // Stroke first, then fill
   FillOnly // Only fill, no stroke
   StrokeOnly // Only stroke, no fill
-} derive(Show, Eq)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for PaintOrder with output(self, logger) {
+  let name = match self {
+    Normal => "Normal"
+    StrokeFirst => "StrokeFirst"
+    FillOnly => "FillOnly"
+    StrokeOnly => "StrokeOnly"
+  }
+  logger.write_string(name)
+}
 
 ///|
 /// Dominant baseline (vertical alignment)
@@ -4021,7 +4305,18 @@ pub(all) enum TextDecoration {
   Underline
   Overline
   LineThrough
-} derive(Show, Eq)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for TextDecoration with output(self, logger) {
+  let name = match self {
+    NoDecoration => "NoDecoration"
+    Underline => "Underline"
+    Overline => "Overline"
+    LineThrough => "LineThrough"
+  }
+  logger.write_string(name)
+}
 
 ///|
 /// Font weight
@@ -4328,7 +4623,7 @@ pub fn process_white_space(text : String, mode : WhiteSpace) -> String {
           result = result + "\n"
           prev_space = false
         } else if c == ' ' || c == '\t' {
-          if not(prev_space) {
+          if !prev_space {
             result = result + " "
             prev_space = true
           }
@@ -4345,7 +4640,7 @@ pub fn process_white_space(text : String, mode : WhiteSpace) -> String {
       let mut prev_space = false
       for c in text {
         if c == ' ' || c == '\t' || c == '\n' {
-          if not(prev_space) {
+          if !prev_space {
             result = result + " "
             prev_space = true
           }

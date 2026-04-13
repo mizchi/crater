@@ -9,7 +9,7 @@
 ///|
 /// Set width in pixels
 pub fn LayoutNode::set_width(self : LayoutNode, value : Double) -> LayoutNode {
-  if not(self.style.width.eq_length(value)) {
+  if !self.style.width.eq_length(value) {
     self.style.width = @types.Length(value)
     self.mark_dirty()
   }
@@ -22,7 +22,7 @@ pub fn LayoutNode::set_width_percent(
   self : LayoutNode,
   value : Double,
 ) -> LayoutNode {
-  if not(self.style.width.eq_percent(value)) {
+  if !self.style.width.eq_percent(value) {
     self.style.width = @types.Percent(value)
     self.mark_dirty()
   }
@@ -45,7 +45,7 @@ pub fn LayoutNode::set_width_auto(self : LayoutNode) -> LayoutNode {
 ///|
 /// Set height in pixels
 pub fn LayoutNode::set_height(self : LayoutNode, value : Double) -> LayoutNode {
-  if not(self.style.height.eq_length(value)) {
+  if !self.style.height.eq_length(value) {
     self.style.height = @types.Length(value)
     self.mark_dirty()
   }
@@ -58,7 +58,7 @@ pub fn LayoutNode::set_height_percent(
   self : LayoutNode,
   value : Double,
 ) -> LayoutNode {
-  if not(self.style.height.eq_percent(value)) {
+  if !self.style.height.eq_percent(value) {
     self.style.height = @types.Percent(value)
     self.mark_dirty()
   }
@@ -84,7 +84,7 @@ pub fn LayoutNode::set_min_width(
   self : LayoutNode,
   value : Double,
 ) -> LayoutNode {
-  if not(self.style.min_width.eq_length(value)) {
+  if !self.style.min_width.eq_length(value) {
     self.style.min_width = @types.Length(value)
     self.mark_dirty()
   }
@@ -97,7 +97,7 @@ pub fn LayoutNode::set_max_width(
   self : LayoutNode,
   value : Double,
 ) -> LayoutNode {
-  if not(self.style.max_width.eq_length(value)) {
+  if !self.style.max_width.eq_length(value) {
     self.style.max_width = @types.Length(value)
     self.mark_dirty()
   }
@@ -110,7 +110,7 @@ pub fn LayoutNode::set_min_height(
   self : LayoutNode,
   value : Double,
 ) -> LayoutNode {
-  if not(self.style.min_height.eq_length(value)) {
+  if !self.style.min_height.eq_length(value) {
     self.style.min_height = @types.Length(value)
     self.mark_dirty()
   }
@@ -123,7 +123,7 @@ pub fn LayoutNode::set_max_height(
   self : LayoutNode,
   value : Double,
 ) -> LayoutNode {
-  if not(self.style.max_height.eq_length(value)) {
+  if !self.style.max_height.eq_length(value) {
     self.style.max_height = @types.Length(value)
     self.mark_dirty()
   }
@@ -188,7 +188,7 @@ pub fn LayoutNode::set_flex_basis(
   self : LayoutNode,
   value : Double,
 ) -> LayoutNode {
-  if not(self.style.flex_basis.eq_length(value)) {
+  if !self.style.flex_basis.eq_length(value) {
     self.style.flex_basis = @types.Length(value)
     self.mark_dirty()
   }
@@ -289,7 +289,7 @@ pub fn LayoutNode::set_position_type(
 ///|
 /// Set row gap in pixels
 pub fn LayoutNode::set_row_gap(self : LayoutNode, value : Double) -> LayoutNode {
-  if not(self.style.row_gap.eq_length(value)) {
+  if !self.style.row_gap.eq_length(value) {
     self.style.row_gap = @types.Length(value)
     self.mark_dirty()
   }
@@ -302,7 +302,7 @@ pub fn LayoutNode::set_column_gap(
   self : LayoutNode,
   value : Double,
 ) -> LayoutNode {
-  if not(self.style.column_gap.eq_length(value)) {
+  if !self.style.column_gap.eq_length(value) {
     self.style.column_gap = @types.Length(value)
     self.mark_dirty()
   }

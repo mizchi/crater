@@ -117,7 +117,7 @@ struct Browser {
   /// Dark mode for display
   mut dark_mode : Bool
   /// Cached render node (for TUI text mode)
-  mut render_node : @node.Node?
+  mut render_node : @layout.Node?
   /// Cached layout tree (for incremental layout)
   mut layout_tree : @layout.LayoutTree?
   /// Previous TUI buffer for diff rendering
@@ -903,7 +903,7 @@ fn Browser::render_text(self : Browser) -> String {
           @tui.clear_screen() +
           @tui.buffer_to_ansi(buffer_result.buffer, max_cols~)
         }
-      } else if dirty_rects.length() > 0 && not(self.no_color) {
+      } else if dirty_rects.length() > 0 && !self.no_color {
         // Diff rendering only for color mode (plain mode always does full redraw)
         let content_height = if self.hint_mode {
           char_height - 1
@@ -1092,7 +1092,7 @@ fn remove_image_cache_order_key(order : Array[String], src : String) -> Unit {
 ///|
 fn Browser::evict_image_cache_if_needed(self : Browser) -> Unit {
   while self.image_cache_total_bytes > self.image_cache_max_bytes &&
-        not(self.image_cache_order.is_empty()) {
+        !self.image_cache_order.is_empty() {
     let evicted_src = self.image_cache_order.remove(0)
     match self.image_cache.get(evicted_src) {
       Some(cached_data) => {
@@ -1866,7 +1866,7 @@ fn split_whitespace(s : String) -> Array[String] {
         result.push(chars_to_string(chars, start, i))
         in_word = false
       }
-    } else if not(in_word) {
+    } else if !in_word {
       start = i
       in_word = true
     }
@@ -1960,11 +1960,11 @@ fn Browser::clear_element_scroll_states(self : Browser) -> Unit {
 /// Called during render to set up scroll states for elements with overflow
 fn Browser::init_scrollable_elements(
   self : Browser,
-  elements : Array[@paint.ScrollableElement],
+  elements : Array[@tui_paint_runtime.ScrollableElement],
 ) -> Unit {
   for elem in elements {
     // Only initialize if not already tracked (preserve scroll position)
-    if not(self.element_scroll_states.contains(elem.id)) {
+    if !self.element_scroll_states.contains(elem.id) {
       self.init_element_scroll(
         elem.id,
         elem.scroll_width,
@@ -2286,7 +2286,7 @@ fn Browser::is_clickable_source_id(self : Browser, source_id : String) -> Bool {
   match self.get_href_for_source_id(source_id) {
     Some(href) if href.length() > 0 => true
     _ => {
-      if not(self.enable_js) {
+      if !self.enable_js {
         return false
       }
       let escaped = escape_js_string(source_id)
@@ -2452,7 +2452,7 @@ fn Browser::dispatch_focus_transition(
   previous_source_id : String?,
   next_source_id : String?,
 ) -> Unit {
-  if not(self.enable_js) {
+  if !self.enable_js {
     return
   }
   if previous_source_id == next_source_id {
@@ -2480,7 +2480,7 @@ fn Browser::dispatch_activation_default_to_source_id(
   self : Browser,
   source_id : String,
 ) -> Bool {
-  if not(self.enable_js) {
+  if !self.enable_js {
     return false
   }
   let escaped = escape_js_string(source_id)
@@ -2597,7 +2597,7 @@ fn escape_js_string(s : String) -> String {
 
 ///|
 fn Browser::execute_inline_js(self : Browser, source : String) -> String? {
-  if not(self.enable_js) {
+  if !self.enable_js {
     return None
   }
   if self.dom_tree is None {
@@ -2680,7 +2680,7 @@ fn Browser::set_text_control_selection_from_cells(
   focus_col : Int,
   focus_row : Int,
 ) -> Bool {
-  if not(self.enable_js) {
+  if !self.enable_js {
     return false
   }
   match self.get_hit_region_for_source_id(source_id) {
@@ -2846,7 +2846,7 @@ fn Browser::dispatch_click_only_to_source_id(
 
 ///|
 fn Browser::is_draggable_source_id(self : Browser, source_id : String) -> Bool {
-  if not(self.enable_js) {
+  if !self.enable_js {
     return false
   }
   let escaped = escape_js_string(source_id)
@@ -2954,7 +2954,7 @@ fn Browser::dispatch_hover_transition(
   client_x : Int,
   client_y : Int,
 ) -> Bool {
-  if not(self.enable_js) {
+  if !self.enable_js {
     return false
   }
   match (previous_source_id, next_source_id) {
@@ -2987,7 +2987,7 @@ fn Browser::dispatch_submit_to_source_id(
   self : Browser,
   source_id : String,
 ) -> SubmitDispatchResult {
-  if not(self.enable_js) {
+  if !self.enable_js {
     return NotSubmittable
   }
   let escaped = escape_js_string(source_id)
@@ -3019,7 +3019,7 @@ fn Browser::dispatch_focused_key_to_source_id(
   source_id : String,
   key : String,
 ) -> FocusedKeyDispatchResult {
-  if not(self.enable_js) {
+  if !self.enable_js {
     return NotHandled
   }
   let escaped_id = escape_js_string(source_id)
@@ -3047,7 +3047,7 @@ fn Browser::dispatch_focused_key_to_source_id(
 
 ///|
 pub fn Browser::tick_js(self : Browser) -> Bool {
-  if not(self.enable_js) {
+  if !self.enable_js {
     return false
   }
   if self.dom_tree is None {
@@ -3068,7 +3068,7 @@ pub fn Browser::tick_js(self : Browser) -> Bool {
       }
     None => false
   }
-  if not(ticked) {
+  if !ticked {
     return false
   }
   self.flush_js_logs()
@@ -3119,7 +3119,7 @@ pub async fn Browser::activate_focused_link(
         None => (0, 0)
       }
       let dispatch = self.dispatch_click_to_source_id(id, client_x~, client_y~)
-      if not(dispatch.allow_default) {
+      if !dispatch.allow_default {
         return true
       }
       if self.dispatch_activation_default_to_source_id(id) {
@@ -3380,7 +3380,7 @@ pub async fn Browser::pointer_up_at(
       let dispatch = self.dispatch_click_only_to_source_id(
         down_id, client_x, client_y,
       )
-      if not(dispatch.allow_default) {
+      if !dispatch.allow_default {
         return true
       }
       if self.dispatch_activation_default_to_source_id(down_id) {
@@ -3431,7 +3431,7 @@ pub async fn Browser::activate_at(
         client_x=cell_to_client_x(col),
         client_y=cell_to_client_y(row),
       )
-      if not(dispatch.allow_default) {
+      if !dispatch.allow_default {
         return true
       }
       if self.dispatch_activation_default_to_source_id(id) {
@@ -3691,14 +3691,14 @@ pub fn Browser::exit_hint_mode(self : Browser) -> Unit {
 /// Toggle selection mode (for text copy with mouse)
 /// Returns true if selection mode is now enabled, false if disabled
 pub fn Browser::toggle_selection_mode(self : Browser) -> Bool {
-  self.selection_mode = not(self.selection_mode)
+  self.selection_mode = !self.selection_mode
   self.selection_mode
 }
 
 ///|
 /// Toggle dark mode
 pub fn Browser::toggle_dark_mode(self : Browser) -> Unit {
-  self.dark_mode = not(self.dark_mode)
+  self.dark_mode = !self.dark_mode
 }
 
 ///|
@@ -3735,7 +3735,7 @@ pub fn Browser::process_hint_char(self : Browser, char : String) -> String? {
     }
   }
   // If no prefix matches, exit hint mode
-  if not(has_prefix_match) {
+  if !has_prefix_match {
     self.exit_hint_mode()
   }
   None
@@ -3946,7 +3946,7 @@ fn Browser::init_js_execution(self : Browser) -> Unit {
 /// Requires enable_js to be set to true (use --enable-js flag)
 pub fn Browser::execute_scripts(self : Browser) -> Int {
   // Check if JS execution is enabled
-  if not(self.enable_js) {
+  if !self.enable_js {
     return 0
   }
   // Ensure JS execution is initialized
@@ -3967,7 +3967,7 @@ pub fn Browser::execute_scripts(self : Browser) -> Int {
       continue
     }
     // Queue script for execution
-    let blocking = not(script.is_async) && not(script.is_defer)
+    let blocking = !script.is_async && !script.is_defer
     let task_id = @js.enqueue_script(self.scheduler, script.source, blocking)
     println(
       "  [QUEUED] Inline script (task " +
@@ -3992,7 +3992,7 @@ pub fn Browser::execute_scripts(self : Browser) -> Int {
 /// Requires enable_js to be set to true (use --enable-js flag)
 async fn Browser::execute_scripts_async(self : Browser) -> Int {
   // Check if JS execution is enabled
-  if not(self.enable_js) {
+  if !self.enable_js {
     return 0
   }
   // Ensure JS execution is initialized
@@ -4008,7 +4008,7 @@ async fn Browser::execute_scripts_async(self : Browser) -> Int {
   let mut executed = 0
   for script in scripts {
     // Skip non-JavaScript scripts (e.g., type="application/json")
-    if not(is_executable_script_type(script.script_type)) {
+    if !is_executable_script_type(script.script_type) {
       println("  [SKIP] Non-JS script type: " + script.script_type)
       continue
     }
@@ -4053,7 +4053,7 @@ async fn Browser::execute_scripts_async(self : Browser) -> Int {
       continue
     }
     // Queue script for execution
-    let blocking = not(script.is_async) && not(script.is_defer)
+    let blocking = !script.is_async && !script.is_defer
     let task_id = @js.enqueue_script(self.scheduler, source, blocking)
     println(
       "  [QUEUED] " +

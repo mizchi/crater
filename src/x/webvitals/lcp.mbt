@@ -18,7 +18,17 @@ pub(all) enum LCPElementType {
   BackgroundImage(url~ : String)
   Video(poster~ : String?)
   TextBlock
-} derive(Show, Eq)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for LCPElementType with output(self, logger) {
+  match self {
+    Image(src~) => logger.write_string("Image(src=\{src})")
+    BackgroundImage(url~) => logger.write_string("BackgroundImage(url=\{url})")
+    Video(poster~) => logger.write_string("Video(poster=\{poster})")
+    TextBlock => logger.write_string("TextBlock")
+  }
+}
 
 // =============================================================================
 // LCP Candidate
@@ -162,7 +172,7 @@ pub fn LCPTracker::add_candidate(
   }
 
   // Only consider elements in viewport
-  if not(self.is_in_viewport(candidate)) {
+  if !self.is_in_viewport(candidate) {
     return
   }
   self.candidates.push(candidate)
@@ -361,10 +371,10 @@ fn classify_lcp_element(node : @tree.LayoutNode) -> LCPElementType? {
   match node.intrinsic_state {
     Some(state) =>
       match state {
-        @tree.Pending(_) | @tree.Resolved(_) =>
+        @tree.IntrinsicState::Pending(_) | @tree.IntrinsicState::Resolved(_) =>
           // This is an image/resource node
           return Some(Image(src=node.uid.to_string()))
-        @tree.Error => return None
+        @tree.IntrinsicState::Error => return None
       }
     None => ()
   }

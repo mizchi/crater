@@ -8005,7 +8005,7 @@ fn default_js_runtime() -> &JsRuntime {
 ///|
 impl JsRuntime for QuickJsRuntime with init(self : QuickJsRuntime) -> Unit {
   let _ = self
-  if not(runtime_state.initialized) {
+  if !runtime_state.initialized {
     let success = quickjs_init()
     if success {
       runtime_state.initialized = true
@@ -8165,7 +8165,7 @@ fn parse_int_field(json : String, field : String) -> Int {
       }
       if end > value_start {
         let num_str = json.unsafe_substring(start=value_start, end~)
-        @strconv.parse_int(num_str) catch {
+        @string.parse_int(num_str) catch {
           _ => 0
         }
       } else {

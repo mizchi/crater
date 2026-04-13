@@ -3,6 +3,7 @@ package "mizchi/crater-browser/http"
 
 import {
   "mizchi/sqlite",
+  "moonbitlang/core/debug",
 }
 
 // Values
@@ -21,6 +22,8 @@ pub fn is_fresh(CacheEntry, Double) -> Bool
 pub fn now_seconds() -> Double
 
 pub fn parse_cache_control(String) -> CacheDirectives
+
+pub fn parse_set_cookie(String, String, String) -> ParsedCookie?
 
 // Errors
 pub suberror HttpError {
@@ -41,8 +44,9 @@ pub(all) struct CacheDirectives {
   public_ : Bool
   private_ : Bool
   immutable : Bool
-} derive(Show)
+} derive(@debug.Debug)
 pub fn CacheDirectives::default() -> Self
+pub impl Show for CacheDirectives
 
 pub(all) struct CacheEntry {
   url : String
@@ -53,13 +57,23 @@ pub(all) struct CacheEntry {
   last_modified : String?
   directives : CacheDirectives
   stored_at : Double
-} derive(Show)
+} derive(@debug.Debug)
+
+pub struct CookieJar {
+  cookies : Array[ParsedCookie]
+  enabled : Bool
+}
+pub fn CookieJar::clear(Self) -> Unit
+pub fn CookieJar::get_cookie_header(Self, String, Bool, Bool, site_origin? : String, is_top_level_navigation? : Bool) -> String?
+pub fn CookieJar::new(enabled? : Bool) -> Self
+pub fn CookieJar::size(Self) -> Int
+pub fn CookieJar::store_from_header(Self, String, String, Bool) -> Unit
 
 pub(all) enum CredentialsMode {
   Omit
   SameOrigin
   Include
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 
 pub(all) struct FetchOptions {
   http_method : String
@@ -88,18 +102,31 @@ pub fn MemoryCacheBackend::new(max_entries? : Int) -> Self
 pub fn MemoryCacheBackend::remove(Self, String) -> Unit
 pub fn MemoryCacheBackend::store(Self, CacheEntry) -> Unit
 
+pub(all) struct ParsedCookie {
+  name : String
+  value : String
+  domain : String
+  path : String
+  secure : Bool
+  http_only : Bool
+  same_site : String
+  max_age : Int?
+  expires : String?
+} derive(@debug.Debug)
+pub impl Show for ParsedCookie
+
 pub(all) enum RequestMode {
   Navigate
   SameOrigin
   NoCors
   Cors
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 
 pub(all) enum RequestSandbox {
   Open
   SameOrigin
   Allowlist(Array[String])
-} derive(Show)
+} derive(@debug.Debug)
 
 pub struct SqliteCacheBackend {
   db : @sqlite.Database

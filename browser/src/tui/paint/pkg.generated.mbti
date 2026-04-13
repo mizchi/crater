@@ -1,0 +1,31 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser/tui/paint"
+
+import {
+  "mizchi/crater-browser/tui/paint/runtime",
+  "mizchi/crater/layout/node",
+  "mizchi/crater/paint/model",
+  "mizchi/crater/paint/scroll",
+  "mizchi/crater/types",
+}
+
+// Values
+pub fn from_node_and_layout(@node.Node, @types.Layout) -> @model.PaintNode
+
+pub fn from_node_and_layout_with_viewport(@node.Node, @types.Layout, Double, Double, Double) -> @model.PaintNode?
+
+pub fn prepare_viewport_paint(@node.Node, @types.Layout, Double, Double, Double) -> @runtime.PreparedPaint?
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @model {type PaintNode}
+
+pub using @runtime {type PreparedPaint}
+
+pub using @scroll {type ScrollableElement}
+
+// Traits
+

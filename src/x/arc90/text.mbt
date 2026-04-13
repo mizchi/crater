@@ -58,7 +58,7 @@ fn collect_text(node : @aom.AccessibilityNode, buf : StringBuilder) -> Unit {
     return
   }
   match node.text {
-    Some(text) if not(text.is_empty()) => {
+    Some(text) if !text.is_empty() => {
       if should_skip_navigation_text(node, text) {
         return
       }
@@ -69,7 +69,7 @@ fn collect_text(node : @aom.AccessibilityNode, buf : StringBuilder) -> Unit {
     _ => ()
   }
   match node.name {
-    Some(name) if not(name.is_empty()) => {
+    Some(name) if !name.is_empty() => {
       if should_skip_navigation_text(node, name) {
         return
       }
@@ -108,7 +108,7 @@ fn should_skip_navigation_text(
     return false
   }
   let lower = trimmed.to_lower().to_string()
-  if not(contains_any(lower, navigation_label_patterns())) {
+  if !contains_any(lower, navigation_label_patterns()) {
     return false
   }
   match node.role {

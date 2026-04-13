@@ -1,5 +1,5 @@
 ///|
-/// DOM Bridge - Connects DomTree mutations to LayoutTree updates
+/// DOM Bridge - Connects DomTree mutations to @tree.LayoutTree updates
 ///
 /// This module provides the integration layer between the DOM and Layout systems,
 /// enabling automatic layout updates when the DOM changes.
@@ -9,15 +9,15 @@
 // =============================================================================
 
 ///|
-/// Document combines DomTree and LayoutTree with automatic synchronization
+/// Document combines DomTree and @tree.LayoutTree with automatic synchronization
 pub struct Document {
   /// The DOM tree (source of truth for structure)
   dom : @dom.DomTree
   /// The layout tree (computed layout)
-  layout : LayoutTree
-  /// Mapping from DOM NodeId to LayoutTree uid
+  layout : @tree.LayoutTree
+  /// Mapping from DOM NodeId to @tree.LayoutTree uid
   dom_to_layout : Map[Int, Int]
-  /// Mapping from LayoutTree uid to DOM NodeId
+  /// Mapping from @tree.LayoutTree uid to DOM NodeId
   layout_to_dom : Map[Int, Int]
   /// Whether layout needs recomputation
   mut needs_layout : Bool
@@ -30,11 +30,13 @@ pub fn Document::new(
   viewport_height : Double,
 ) -> Document {
   let dom = @dom.DomTree::new()
-  // Create a minimal root LayoutNode
-  let root_layout = LayoutNode::create_with_id("root")
+  // Create a minimal root @tree.LayoutNode
+  let root_layout = @tree.LayoutNode::create_with_id("root")
   root_layout.style.width = @types.Percent(1.0)
   root_layout.style.height = @types.Percent(1.0)
-  let layout = LayoutTree::new(root_layout, viewport_width, viewport_height)
+  let layout = @tree.LayoutTree::new(
+    root_layout, viewport_width, viewport_height,
+  )
   { dom, layout, dom_to_layout: {}, layout_to_dom: {}, needs_layout: false }
 }
 
@@ -45,8 +47,8 @@ pub fn Document::get_dom(self : Document) -> @dom.DomTree {
 }
 
 ///|
-/// Get the LayoutTree
-pub fn Document::get_layout(self : Document) -> LayoutTree {
+/// Get the @tree.LayoutTree
+pub fn Document::get_layout(self : Document) -> @tree.LayoutTree {
   self.layout
 }
 
@@ -130,7 +132,7 @@ fn Document::apply_child_list_mutation(
   // Handle added nodes
   for added in record.added_nodes {
     let child_dom_id = added.to_int()
-    // Create a new LayoutNode for the added DOM node
+    // Create a new @tree.LayoutNode for the added DOM node
     match self.create_layout_node_for_dom(child_dom_id) {
       Some(layout_node) =>
         // Find parent in layout tree
@@ -255,18 +257,18 @@ fn Document::apply_style_change_mutation(
 }
 
 ///|
-/// Create a LayoutNode for a DOM node
+/// Create a @tree.LayoutNode for a DOM node
 fn Document::create_layout_node_for_dom(
   self : Document,
   dom_id : Int,
-) -> LayoutNode? {
+) -> @tree.LayoutNode? {
   let node_id = @dom.NodeId::from_int(dom_id)
   match self.dom.get_node_info(node_id) {
     Ok(info) => {
       let layout_id = dom_id.to_string()
       match info.node_type {
         @dom.Element => {
-          let node = LayoutNode::create_with_id(layout_id)
+          let node = @tree.LayoutNode::create_with_id(layout_id)
           // Get tag name for element-specific styling
           match self.dom.get_tag_name(node_id) {
             Ok(tag) =>
@@ -278,7 +280,7 @@ fn Document::create_layout_node_for_dom(
         }
         @dom.Text => {
           // Text nodes get a measure function for intrinsic sizing
-          let node = LayoutNode::create_with_id(layout_id)
+          let node = @tree.LayoutNode::create_with_id(layout_id)
           // In a full implementation, would set up text measurement
           Some(node)
         }
@@ -316,7 +318,7 @@ fn Document::remove_from_maps(self : Document, uid : Int) -> Unit {
 
 ///|
 /// Apply default styles based on HTML tag
-fn apply_default_tag_styles(node : LayoutNode, tag : String) -> Unit {
+fn apply_default_tag_styles(node : @tree.LayoutNode, tag : String) -> Unit {
   match tag.to_lower() {
     "div"
     | "section"
@@ -330,9 +332,7 @@ fn apply_default_tag_styles(node : LayoutNode, tag : String) -> Unit {
       node.style.display = @types.Block // Simplified
     "img" =>
       // Images have intrinsic sizing
-      node.intrinsic_state = Some(
-        Pending(placeholder_width=300.0, placeholder_height=150.0),
-      )
+      node.set_intrinsic_pending(300.0, 150.0)
     _ => ()
   }
 }

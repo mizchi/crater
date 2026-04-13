@@ -596,7 +596,7 @@ pub fn DomTree::get_focus(self : DomTree) -> NodeId? {
 ///|
 /// Check if there are pending mutations
 pub fn DomTree::has_pending_mutations(self : DomTree) -> Bool {
-  not(self.mutations.is_empty())
+  !self.mutations.is_empty()
 }
 
 ///|

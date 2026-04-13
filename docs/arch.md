@@ -118,7 +118,9 @@ aom/
 ### Layout Integration
 
 ```moonbit
-let layout_tree = @tree.LayoutTree::from_html_document(doc, 800.0, 600.0)
+let layout_tree = @layout_html_tree.layout_tree_from_html_document(
+  doc, 800.0, 600.0,
+)
 let _ = layout_tree.calculate_layout(800.0, 600.0)
 let a11y_tree = build_accessibility_tree_with_layout(doc, layout_tree)
 

@@ -66,7 +66,7 @@ fn render_node_json(
 
   // Name
   match node.name {
-    Some(name) if not(name.is_empty()) => {
+    Some(name) if !name.is_empty() => {
       buf.write_string(",\n")
       write_indent(buf, indent + 1)
       buf.write_string("\"name\": \"")
@@ -107,7 +107,7 @@ fn render_node_json(
 
   // Source ID (for AI - reference to original HTML element)
   match node.source_id {
-    Some(source_id) if not(source_id.is_empty()) => {
+    Some(source_id) if !source_id.is_empty() => {
       buf.write_string(",\n")
       write_indent(buf, indent + 1)
       buf.write_string("\"sourceId\": \"")
@@ -119,7 +119,7 @@ fn render_node_json(
 
   // href (for AI - link URL)
   match node.href {
-    Some(href) if not(href.is_empty()) => {
+    Some(href) if !href.is_empty() => {
       buf.write_string(",\n")
       write_indent(buf, indent + 1)
       buf.write_string("\"href\": \"")
@@ -131,7 +131,7 @@ fn render_node_json(
 
   // Tag name (for AI - original HTML tag)
   match node.tag_name {
-    Some(tag) if not(tag.is_empty()) => {
+    Some(tag) if !tag.is_empty() => {
       buf.write_string(",\n")
       write_indent(buf, indent + 1)
       buf.write_string("\"tag\": \"")
@@ -143,7 +143,7 @@ fn render_node_json(
 
   // Selector (for AI - CSS selector for element targeting)
   match node.selector {
-    Some(sel) if not(sel.is_empty()) => {
+    Some(sel) if !sel.is_empty() => {
       buf.write_string(",\n")
       write_indent(buf, indent + 1)
       buf.write_string("\"selector\": \"")
@@ -154,7 +154,7 @@ fn render_node_json(
   }
 
   // Visible flag (for AI - false for style/script/meta content)
-  if not(node.visible) {
+  if !node.visible {
     buf.write_string(",\n")
     write_indent(buf, indent + 1)
     buf.write_string("\"visible\": false")
@@ -180,7 +180,7 @@ fn render_node_json(
 
   // Form input fields (for AI - form interaction)
   match node.input_type {
-    Some(input_type) if not(input_type.is_empty()) => {
+    Some(input_type) if !input_type.is_empty() => {
       buf.write_string(",\n")
       write_indent(buf, indent + 1)
       buf.write_string("\"inputType\": \"")
@@ -190,7 +190,7 @@ fn render_node_json(
     _ => ()
   }
   match node.placeholder {
-    Some(placeholder) if not(placeholder.is_empty()) => {
+    Some(placeholder) if !placeholder.is_empty() => {
       buf.write_string(",\n")
       write_indent(buf, indent + 1)
       buf.write_string("\"placeholder\": \"")
@@ -200,7 +200,7 @@ fn render_node_json(
     _ => ()
   }
   match node.input_value {
-    Some(value) if not(value.is_empty()) => {
+    Some(value) if !value.is_empty() => {
       buf.write_string(",\n")
       write_indent(buf, indent + 1)
       buf.write_string("\"value\": \"")
@@ -217,7 +217,7 @@ fn render_node_json(
 
   // Aggregated text content (for paragraphs, headings, etc.)
   match node.text {
-    Some(text) if not(text.is_empty()) => {
+    Some(text) if !text.is_empty() => {
       buf.write_string(",\n")
       write_indent(buf, indent + 1)
       buf.write_string("\"text\": \"")
@@ -228,7 +228,7 @@ fn render_node_json(
   }
 
   // Select options
-  if not(node.options.is_empty()) {
+  if !node.options.is_empty() {
     buf.write_string(",\n")
     write_indent(buf, indent + 1)
     buf.write_string("\"options\": [\n")
@@ -254,7 +254,7 @@ fn render_node_json(
 
   // Labelled by reference
   match node.labelled_by {
-    Some(labelled_by) if not(labelled_by.is_empty()) => {
+    Some(labelled_by) if !labelled_by.is_empty() => {
       buf.write_string(",\n")
       write_indent(buf, indent + 1)
       buf.write_string("\"labelledBy\": \"")
@@ -265,7 +265,7 @@ fn render_node_json(
   }
 
   // States
-  if not(node.states.is_empty()) {
+  if !node.states.is_empty() {
     buf.write_string(",\n")
     write_indent(buf, indent + 1)
     buf.write_string("\"states\": [")
@@ -281,7 +281,7 @@ fn render_node_json(
   }
 
   // Children
-  if not(node.children.is_empty()) {
+  if !node.children.is_empty() {
     buf.write_string(",\n")
     write_indent(buf, indent + 1)
     buf.write_string("\"children\": [\n")
@@ -351,7 +351,7 @@ fn render_node(
 
   // Write name if present
   match node.name {
-    Some(name) if not(name.is_empty()) => {
+    Some(name) if !name.is_empty() => {
       buf.write_string(" \"")
       buf.write_string(escape_string(name))
       buf.write_string("\"")
@@ -369,11 +369,11 @@ fn render_node(
     // Check if all children are text-like (no nested structure)
     let has_complex_children = node.children
       .iter()
-      .any(fn(child) { not(child.children.is_empty()) || child.role != Generic })
-    if not(has_complex_children) && node.children.length() == 1 {
+      .any(fn(child) { !child.children.is_empty() || child.role != Generic })
+    if !has_complex_children && node.children.length() == 1 {
       // Single simple child - render inline
       match node.children[0].name {
-        Some(text) if not(text.is_empty()) => {
+        Some(text) if !text.is_empty() => {
           buf.write_string(": ")
           buf.write_string(escape_string(text))
         }
@@ -415,7 +415,7 @@ fn render_attributes(node : AccessibilityNode, buf : StringBuilder) -> Unit {
   }
 
   // Write attributes if any
-  if not(attrs.is_empty()) {
+  if !attrs.is_empty() {
     buf.write_string(" [")
     for i, attr in attrs {
       if i > 0 {

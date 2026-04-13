@@ -1,6 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/types"
 
+import {
+  "moonbitlang/core/debug",
+}
+
 // Values
 pub fn apply_aspect_ratio_height(Double, Double?) -> Double?
 
@@ -28,7 +32,8 @@ pub(all) enum AlignSelf {
   Center
   Stretch
   Baseline
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for AlignSelf
 
 pub(all) enum Alignment {
   Start
@@ -43,12 +48,14 @@ pub(all) enum Alignment {
   SpaceEvenly
   Stretch
   Baseline
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for Alignment
 
 pub(all) enum BackgroundImage {
   None
   Gradient(LinearGradient)
-} derive(Show)
+}
+pub impl Show for BackgroundImage
 
 pub(all) struct BoundingRect {
   x : Double
@@ -67,14 +74,16 @@ pub impl Show for BoundingRect
 pub(all) enum BoxSizing {
   ContentBox
   BorderBox
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for BoxSizing
 
 pub(all) enum Clear {
   None
   Left
   Right
   Both
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for Clear
 
 pub(all) enum ClipRect {
   Auto
@@ -139,50 +148,58 @@ pub(all) enum Display {
   None
   Contents
   FlowRoot
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for Display
 
 pub(all) enum FlexDirection {
   Row
   RowReverse
   Column
   ColumnReverse
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for FlexDirection
 
 pub(all) enum FlexWrap {
   NoWrap
   Wrap
   WrapReverse
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for FlexWrap
 
 pub(all) enum Float {
   None
   Left
   Right
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for Float
 
 pub(all) struct GradientStop {
   color : Color
   position : Double
-} derive(Show)
+}
+pub impl Show for GradientStop
 
 pub(all) enum GridAutoFlow {
   Row
   Column
   RowDense
   ColumnDense
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for GridAutoFlow
 
 pub(all) struct GridLine {
   start : GridPlacement
   end : GridPlacement
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn GridLine::auto() -> Self
+pub impl Show for GridLine
 
 pub(all) enum GridPlacement {
   Auto
   Line(Int)
   Span(Int)
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for GridPlacement
 
 pub(all) struct IntrinsicSize {
   min_width : Double
@@ -229,7 +246,8 @@ pub(all) enum LayoutWarning {
   UnsupportedFloat(String)
   UnsupportedPosition(String)
   UnsupportedDisplay(String)
-} derive(Show)
+} derive(@debug.Debug)
+pub impl Show for LayoutWarning
 
 pub struct Line[T] {
   start : T
@@ -241,7 +259,8 @@ pub impl[T : Show] Show for Line[T]
 pub(all) struct LinearGradient {
   angle_deg : Double
   stops : Array[GradientStop]
-} derive(Show)
+}
+pub impl Show for LinearGradient
 
 pub(all) enum MaxTrackSizing {
   Length(Double)
@@ -250,7 +269,8 @@ pub(all) enum MaxTrackSizing {
   Auto
   MinContent
   MaxContent
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for MaxTrackSizing
 
 pub(all) struct MeasureFunc {
   func : (Double, Double) -> IntrinsicSize
@@ -262,7 +282,8 @@ pub(all) enum MinTrackSizing {
   Auto
   MinContent
   MaxContent
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for MinTrackSizing
 
 pub(all) enum Overflow {
   Visible
@@ -270,7 +291,8 @@ pub(all) enum Overflow {
   Clip
   Scroll
   Auto
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for Overflow
 
 pub struct Point[T] {
   x : T
@@ -286,7 +308,8 @@ pub(all) enum Position {
   Relative
   Absolute
   Fixed
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for Position
 
 pub(all) struct Rect[T] {
   left : T
@@ -306,7 +329,8 @@ pub(all) enum RepeatCount {
   Count(Int)
   AutoFill
   AutoFit
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for RepeatCount
 
 pub(all) enum SingleTrackSizing {
   Length(Double)
@@ -318,7 +342,8 @@ pub(all) enum SingleTrackSizing {
   MinMax(MinTrackSizing, MaxTrackSizing)
   FitContentLength(Double)
   FitContentPercent(Double)
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for SingleTrackSizing
 
 pub struct Size[T] {
   width : T
@@ -345,7 +370,8 @@ pub(all) enum TrackSizingFunction {
   Repeat(RepeatCount, Array[SingleTrackSizing])
   FitContentLength(Double)
   FitContentPercent(Double)
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for TrackSizingFunction
 
 // Type aliases
 

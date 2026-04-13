@@ -208,7 +208,7 @@ fn collect_elements(
   map : Map[String, ElementSnapshot],
 ) -> Unit {
   // Skip invisible if configured
-  if config.ignore_invisible && not(node.visible) {
+  if config.ignore_invisible && !node.visible {
     return
   }
 
@@ -317,7 +317,7 @@ fn compare_elements(
   }
 
   // States changed
-  if not(states_equal(before.states, after.states)) {
+  if !states_equal(before.states, after.states) {
     let before_str = states_to_string(before.states)
     let after_str = states_to_string(after.states)
     diffs.push({
@@ -385,7 +385,7 @@ fn states_equal(a : Array[@aom.State], b : Array[@aom.State]) -> Bool {
     return false
   }
   for state in a {
-    if not(array_contains_state(b, state)) {
+    if !array_contains_state(b, state) {
       return false
     }
   }

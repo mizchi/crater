@@ -138,10 +138,10 @@ fn should_come_after(a : FocusableItem, b : FocusableItem) -> Bool {
     } else {
       a.effective_tabindex > b.effective_tabindex
     }
-  } else if a_positive && not(b_positive) {
+  } else if a_positive && !b_positive {
     // Positive tabindex comes before zero tabindex
     false
-  } else if not(a_positive) && b_positive {
+  } else if !a_positive && b_positive {
     // Zero tabindex comes after positive tabindex
     true
   } else {

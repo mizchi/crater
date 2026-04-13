@@ -3,7 +3,11 @@ import {
   "mizchi/crater-browser/js_v8" @js_v8,
   "mizchi/crater-browser/js" @js,
   "mizchi/crater/dom" @dom,
-}
+} for "test"
+
+warnings = "-text_segment_excceed"
+
+supported_targets = "+native"
 
 options(
   link: {
@@ -13,5 +17,4 @@ options(
     },
   },
   "native-stub": [ "file_io.c" ],
-  "supported-targets": [ "native" ],
 )

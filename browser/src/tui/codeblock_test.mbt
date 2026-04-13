@@ -21,7 +21,7 @@ test "code block should not wrap text" {
     viewport_width: 640.0,
     viewport_height: 480.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let node = @renderer.render_to_node(html, ctx)
   let layout = @renderer.render(html, ctx)
@@ -48,7 +48,7 @@ test "zenn code block structure" {
     viewport_width: 400.0,
     viewport_height: 200.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let node = @renderer.render_to_node(html, ctx)
   let layout = @renderer.render(html, ctx)
@@ -70,7 +70,7 @@ test "pre tag should prevent word wrap with long content" {
     viewport_width: 400.0,
     viewport_height: 200.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let node = @renderer.render_to_node(html, ctx)
   let layout = @renderer.render(html, ctx)
@@ -102,7 +102,7 @@ test "table rendering with layout" {
     viewport_width: 320.0,
     viewport_height: 200.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let node = @renderer.render_to_node(html, ctx)
   let layout = @renderer.render(html, ctx)

@@ -3,6 +3,7 @@ package "mizchi/crater/style"
 
 import {
   "mizchi/crater/types",
+  "moonbitlang/core/debug",
 }
 
 // Values
@@ -13,7 +14,8 @@ import {
 pub(all) enum BorderCollapse {
   Separate
   Collapse
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for BorderCollapse
 
 pub(all) enum BorderStyle {
   None
@@ -26,34 +28,40 @@ pub(all) enum BorderStyle {
   Solid
   Double
   Hidden
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn BorderStyle::priority(Self) -> Int
+pub impl Show for BorderStyle
 
 pub(all) enum BreakBefore {
   Auto
   Column
   Avoid
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for BreakBefore
 
 pub(all) enum BreakInside {
   Auto
   Avoid
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for BreakInside
 
 pub(all) enum CaptionSide {
   Top
   Bottom
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for CaptionSide
 
 pub(all) enum ColumnFill {
   Balance
   Auto
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for ColumnFill
 
 pub(all) enum ColumnSpan {
   None
   All
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for ColumnSpan
 
 pub(all) struct Contain {
   size : Bool
@@ -61,17 +69,19 @@ pub(all) struct Contain {
   layout : Bool
   paint : Bool
   style : Bool
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn Contain::content() -> Self
 pub fn Contain::has_containment(Self) -> Bool
 pub fn Contain::none() -> Self
 pub fn Contain::strict() -> Self
+pub impl Show for Contain
 
 pub(all) enum Direction {
   Ltr
   Rtl
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn Direction::is_rtl(Self) -> Bool
+pub impl Show for Direction
 
 pub(all) enum MarginTrim {
   None
@@ -81,43 +91,49 @@ pub(all) enum MarginTrim {
   InlineStart
   InlineEnd
   Inline
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn MarginTrim::trim_block_end(Self) -> Bool
 pub fn MarginTrim::trim_block_start(Self) -> Bool
+pub impl Show for MarginTrim
 
 pub(all) enum PointerEvents {
   Auto
   None
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for PointerEvents
 
 pub(all) enum ScrollSnapAlign {
   None
   Start
   End
   Center
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for ScrollSnapAlign
 
 pub(all) enum ScrollSnapAxis {
   None
   X
   Y
   Both
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for ScrollSnapAxis
 
 pub(all) enum ScrollSnapStrictness {
   None
   Mandatory
   Proximity
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for ScrollSnapStrictness
 
 pub(all) struct ScrollSnapType {
   axis : ScrollSnapAxis
   strictness : ScrollSnapStrictness
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn ScrollSnapType::is_mandatory(Self) -> Bool
 pub fn ScrollSnapType::none() -> Self
 pub fn ScrollSnapType::snaps_x(Self) -> Bool
 pub fn ScrollSnapType::snaps_y(Self) -> Bool
+pub impl Show for ScrollSnapType
 
 pub(all) struct Style {
   mut display : @types.Display
@@ -226,7 +242,8 @@ pub fn Style::suppresses_intrinsic_width(Self) -> Bool
 pub(all) enum TableLayout {
   Auto
   Fixed
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for TableLayout
 
 pub(all) enum TextAlign {
   Start
@@ -235,24 +252,27 @@ pub(all) enum TextAlign {
   Right
   Center
   Justify
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for TextAlign
 
 pub(all) struct Transform {
   translate_x : TranslateValue
   translate_y : TranslateValue
   scale_x : Double
   scale_y : Double
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn Transform::compute_translate_x(Self, Double) -> Double
 pub fn Transform::compute_translate_y(Self, Double) -> Double
 pub fn Transform::has_scale(Self) -> Bool
 pub fn Transform::is_none(Self) -> Bool
 pub fn Transform::none() -> Self
+pub impl Show for Transform
 
 pub(all) enum TranslateValue {
   Length(Double)
   Percent(Double)
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for TranslateValue
 
 pub(all) enum VerticalAlign {
   Baseline
@@ -263,13 +283,15 @@ pub(all) enum VerticalAlign {
   TextBottom
   Sub
   Super
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for VerticalAlign
 
 pub(all) enum Visibility {
   Visible
   Hidden
   Collapse
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for Visibility
 
 pub(all) enum WhiteSpace {
   Normal
@@ -277,20 +299,23 @@ pub(all) enum WhiteSpace {
   Pre
   PreWrap
   PreLine
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for WhiteSpace
 
 pub(all) enum WritingMode {
   HorizontalTb
   VerticalRl
   VerticalLr
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn WritingMode::is_block_rtl(Self) -> Bool
 pub fn WritingMode::is_vertical(Self) -> Bool
+pub impl Show for WritingMode
 
 pub(all) enum ZIndex {
   Auto
   Value(Int)
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for ZIndex
 
 // Type aliases
 

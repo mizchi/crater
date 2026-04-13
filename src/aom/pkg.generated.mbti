@@ -5,6 +5,7 @@ import {
   "mizchi/crater/html",
   "mizchi/crater/layout/tree",
   "mizchi/crater/types",
+  "moonbitlang/core/debug",
 }
 
 // Values
@@ -233,9 +234,10 @@ pub(all) enum Role {
   HtmlCanvas
   HtmlLabel
   HtmlSummary
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn Role::from_string(String) -> Self?
 pub fn Role::to_string(Self) -> String
+pub impl Show for Role
 
 pub(all) struct RoleMappingContext {
   parent_tag : String?
@@ -262,8 +264,9 @@ pub(all) enum State {
   Selected
   CheckedMixed
   PressedMixed
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn State::to_string(Self) -> String
+pub impl Show for State
 
 // Type aliases
 

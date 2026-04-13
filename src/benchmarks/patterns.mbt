@@ -115,7 +115,7 @@ pub fn flex_nested(depth : Int, items_per_level : Int) -> String {
     buf.write_string(if is_row { "row" } else { "column" })
     buf.write_string("\">")
     for _i = 0; _i < items_per_level; _i = _i + 1 {
-      build(d - 1, not(is_row))
+      build(d - 1, !is_row)
     }
     buf.write_string("</div>")
   }

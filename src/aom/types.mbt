@@ -108,7 +108,7 @@ pub(all) enum Role {
   HtmlCanvas
   HtmlLabel
   HtmlSummary
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 pub fn Role::to_string(self : Role) -> String {
@@ -201,6 +201,100 @@ pub fn Role::to_string(self : Role) -> String {
     HtmlCanvas => "html-canvas"
     HtmlLabel => "html-label"
     HtmlSummary => "html-summary"
+  }
+}
+
+///|
+pub impl Show for Role with output(self, logger) {
+  match self {
+    Article => logger.write_string("Article")
+    Blockquote => logger.write_string("Blockquote")
+    Caption => logger.write_string("Caption")
+    Cell => logger.write_string("Cell")
+    Code => logger.write_string("Code")
+    ColumnHeader => logger.write_string("ColumnHeader")
+    Definition => logger.write_string("Definition")
+    Deletion => logger.write_string("Deletion")
+    Directory => logger.write_string("Directory")
+    Document => logger.write_string("Document")
+    Emphasis => logger.write_string("Emphasis")
+    Feed => logger.write_string("Feed")
+    Figure => logger.write_string("Figure")
+    Generic => logger.write_string("Generic")
+    Group => logger.write_string("Group")
+    Heading => logger.write_string("Heading")
+    Img => logger.write_string("Img")
+    Insertion => logger.write_string("Insertion")
+    List => logger.write_string("List")
+    ListItem => logger.write_string("ListItem")
+    Mark => logger.write_string("Mark")
+    Math => logger.write_string("Math")
+    Meter => logger.write_string("Meter")
+    None => logger.write_string("None")
+    Note => logger.write_string("Note")
+    Paragraph => logger.write_string("Paragraph")
+    Presentation => logger.write_string("Presentation")
+    Row => logger.write_string("Row")
+    RowGroup => logger.write_string("RowGroup")
+    RowHeader => logger.write_string("RowHeader")
+    Separator => logger.write_string("Separator")
+    Strong => logger.write_string("Strong")
+    Subscript => logger.write_string("Subscript")
+    Superscript => logger.write_string("Superscript")
+    Table => logger.write_string("Table")
+    Term => logger.write_string("Term")
+    Time => logger.write_string("Time")
+    Toolbar => logger.write_string("Toolbar")
+    Tooltip => logger.write_string("Tooltip")
+    Button => logger.write_string("Button")
+    Checkbox => logger.write_string("Checkbox")
+    Combobox => logger.write_string("Combobox")
+    GridCell => logger.write_string("GridCell")
+    Link => logger.write_string("Link")
+    Listbox => logger.write_string("Listbox")
+    Menu => logger.write_string("Menu")
+    MenuBar => logger.write_string("MenuBar")
+    MenuItem => logger.write_string("MenuItem")
+    MenuItemCheckbox => logger.write_string("MenuItemCheckbox")
+    MenuItemRadio => logger.write_string("MenuItemRadio")
+    Option => logger.write_string("Option")
+    Progressbar => logger.write_string("Progressbar")
+    Radio => logger.write_string("Radio")
+    RadioGroup => logger.write_string("RadioGroup")
+    Scrollbar => logger.write_string("Scrollbar")
+    SearchBox => logger.write_string("SearchBox")
+    Slider => logger.write_string("Slider")
+    SpinButton => logger.write_string("SpinButton")
+    Switch => logger.write_string("Switch")
+    Tab => logger.write_string("Tab")
+    TabList => logger.write_string("TabList")
+    TabPanel => logger.write_string("TabPanel")
+    Textbox => logger.write_string("Textbox")
+    Tree => logger.write_string("Tree")
+    TreeGrid => logger.write_string("TreeGrid")
+    TreeItem => logger.write_string("TreeItem")
+    Application => logger.write_string("Application")
+    Banner => logger.write_string("Banner")
+    Complementary => logger.write_string("Complementary")
+    ContentInfo => logger.write_string("ContentInfo")
+    Form => logger.write_string("Form")
+    Main => logger.write_string("Main")
+    Navigation => logger.write_string("Navigation")
+    Region => logger.write_string("Region")
+    Search => logger.write_string("Search")
+    Alert => logger.write_string("Alert")
+    AlertDialog => logger.write_string("AlertDialog")
+    Dialog => logger.write_string("Dialog")
+    Log => logger.write_string("Log")
+    Marquee => logger.write_string("Marquee")
+    Status => logger.write_string("Status")
+    Timer => logger.write_string("Timer")
+    Window => logger.write_string("Window")
+    HtmlAudio => logger.write_string("HtmlAudio")
+    HtmlVideo => logger.write_string("HtmlVideo")
+    HtmlCanvas => logger.write_string("HtmlCanvas")
+    HtmlLabel => logger.write_string("HtmlLabel")
+    HtmlSummary => logger.write_string("HtmlSummary")
   }
 }
 
@@ -315,7 +409,7 @@ pub(all) enum State {
   // Tristate
   CheckedMixed
   PressedMixed
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 pub fn State::to_string(self : State) -> String {
@@ -331,6 +425,23 @@ pub fn State::to_string(self : State) -> String {
     Selected => "selected"
     CheckedMixed => "mixed"
     PressedMixed => "mixed"
+  }
+}
+
+///|
+pub impl Show for State with output(self, logger) {
+  match self {
+    Busy => logger.write_string("Busy")
+    Checked => logger.write_string("Checked")
+    Disabled => logger.write_string("Disabled")
+    Expanded => logger.write_string("Expanded")
+    Grabbed => logger.write_string("Grabbed")
+    Hidden => logger.write_string("Hidden")
+    Invalid => logger.write_string("Invalid")
+    Pressed => logger.write_string("Pressed")
+    Selected => logger.write_string("Selected")
+    CheckedMixed => logger.write_string("CheckedMixed")
+    PressedMixed => logger.write_string("PressedMixed")
   }
 }
 

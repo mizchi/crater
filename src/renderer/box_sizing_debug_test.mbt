@@ -7,11 +7,11 @@ test "debug_box_sizing_adjustment" {
     viewport_width: 375.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
 
   // Test inline style parsing directly
-  let inline_style = @parser.parse_inline_style(
+  let inline_style = @css.parse_inline_style(
     "width: 20px; height: 20px; padding: 10px; box-sizing: content-box;",
   )
   // After adjust_for_box_sizing, width should be 40 (20 + 10 + 10)
@@ -46,7 +46,7 @@ test "debug_border_box_no_adjustment" {
     viewport_width: 375.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let layout = @renderer.render(html, ctx)
   let div = layout.children[0]

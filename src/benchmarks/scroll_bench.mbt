@@ -9,7 +9,7 @@ fn scroll_ctx() -> @renderer.RenderContext {
     viewport_width: 1200.0,
     viewport_height: 800.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
 }
 
@@ -32,12 +32,14 @@ test "bench_viewport_culling_500_top" (b : @bench.T) {
     stretch_width: false,
     stretch_height: false,
   }
-  @dispatch.setup()
-  let layout = @dispatch.compute_layout(node, layout_ctx)
+  @tree.setup()
+  let layout = @tree.compute_layout_in_context(node, layout_ctx)
   // Scroll position at top (0-800)
   b.bench(name="viewport_cull_top", fn() {
     b.keep(
-      @paint.from_node_and_layout_with_viewport(node, layout, 0.0, 800.0, 0.0),
+      @paint_render.from_node_and_layout_with_viewport(
+        node, layout, 0.0, 800.0, 0.0,
+      ),
     )
   })
 }
@@ -56,12 +58,12 @@ test "bench_viewport_culling_500_middle" (b : @bench.T) {
     stretch_width: false,
     stretch_height: false,
   }
-  @dispatch.setup()
-  let layout = @dispatch.compute_layout(node, layout_ctx)
+  @tree.setup()
+  let layout = @tree.compute_layout_in_context(node, layout_ctx)
   // Scroll position at middle (~16000 pixels down)
   b.bench(name="viewport_cull_mid", fn() {
     b.keep(
-      @paint.from_node_and_layout_with_viewport(
+      @paint_render.from_node_and_layout_with_viewport(
         node, layout, 16000.0, 16800.0, 0.0,
       ),
     )
@@ -82,12 +84,12 @@ test "bench_viewport_culling_500_bottom" (b : @bench.T) {
     stretch_width: false,
     stretch_height: false,
   }
-  @dispatch.setup()
-  let layout = @dispatch.compute_layout(node, layout_ctx)
+  @tree.setup()
+  let layout = @tree.compute_layout_in_context(node, layout_ctx)
   // Scroll position near bottom (~31200 pixels down)
   b.bench(name="viewport_cull_bot", fn() {
     b.keep(
-      @paint.from_node_and_layout_with_viewport(
+      @paint_render.from_node_and_layout_with_viewport(
         node, layout, 31200.0, 32000.0, 0.0,
       ),
     )
@@ -108,12 +110,12 @@ test "bench_viewport_culling_1000_middle" (b : @bench.T) {
     stretch_width: false,
     stretch_height: false,
   }
-  @dispatch.setup()
-  let layout = @dispatch.compute_layout(node, layout_ctx)
+  @tree.setup()
+  let layout = @tree.compute_layout_in_context(node, layout_ctx)
   // Middle of 1000 items
   b.bench(name="viewport_cull_1k", fn() {
     b.keep(
-      @paint.from_node_and_layout_with_viewport(
+      @paint_render.from_node_and_layout_with_viewport(
         node, layout, 32000.0, 32800.0, 0.0,
       ),
     )
@@ -138,10 +140,10 @@ test "bench_paint_tree_flat_100" (b : @bench.T) {
     stretch_width: false,
     stretch_height: false,
   }
-  @dispatch.setup()
-  let layout = @dispatch.compute_layout(node, layout_ctx)
+  @tree.setup()
+  let layout = @tree.compute_layout_in_context(node, layout_ctx)
   b.bench(name="paint_tree_flat", fn() {
-    b.keep(@paint.from_node_and_layout(node, layout))
+    b.keep(@paint_render.from_node_and_layout(node, layout))
   })
 }
 
@@ -159,10 +161,10 @@ test "bench_paint_tree_dashboard" (b : @bench.T) {
     stretch_width: false,
     stretch_height: false,
   }
-  @dispatch.setup()
-  let layout = @dispatch.compute_layout(node, layout_ctx)
+  @tree.setup()
+  let layout = @tree.compute_layout_in_context(node, layout_ctx)
   b.bench(name="paint_tree_dash", fn() {
-    b.keep(@paint.from_node_and_layout(node, layout))
+    b.keep(@paint_render.from_node_and_layout(node, layout))
   })
 }
 
@@ -180,10 +182,10 @@ test "bench_paint_tree_large_2k5" (b : @bench.T) {
     stretch_width: false,
     stretch_height: false,
   }
-  @dispatch.setup()
-  let layout = @dispatch.compute_layout(node, layout_ctx)
+  @tree.setup()
+  let layout = @tree.compute_layout_in_context(node, layout_ctx)
   b.bench(name="paint_tree_large", fn() {
-    b.keep(@paint.from_node_and_layout(node, layout))
+    b.keep(@paint_render.from_node_and_layout(node, layout))
   })
 }
 
@@ -205,11 +207,11 @@ test "bench_flatten_flat_100" (b : @bench.T) {
     stretch_width: false,
     stretch_height: false,
   }
-  @dispatch.setup()
-  let layout = @dispatch.compute_layout(node, layout_ctx)
-  let paint_node = @paint.from_node_and_layout(node, layout)
+  @tree.setup()
+  let layout = @tree.compute_layout_in_context(node, layout_ctx)
+  let paint_node = @paint_render.from_node_and_layout(node, layout)
   b.bench(name="flatten_flat_100", fn() {
-    b.keep(@paint.flatten_for_rendering(paint_node))
+    b.keep(@paint_traversal.flatten_for_rendering(paint_node))
   })
 }
 
@@ -227,11 +229,11 @@ test "bench_flatten_dashboard" (b : @bench.T) {
     stretch_width: false,
     stretch_height: false,
   }
-  @dispatch.setup()
-  let layout = @dispatch.compute_layout(node, layout_ctx)
-  let paint_node = @paint.from_node_and_layout(node, layout)
+  @tree.setup()
+  let layout = @tree.compute_layout_in_context(node, layout_ctx)
+  let paint_node = @paint_render.from_node_and_layout(node, layout)
   b.bench(name="flatten_dash", fn() {
-    b.keep(@paint.flatten_for_rendering(paint_node))
+    b.keep(@paint_traversal.flatten_for_rendering(paint_node))
   })
 }
 
@@ -249,11 +251,11 @@ test "bench_flatten_large_2k5" (b : @bench.T) {
     stretch_width: false,
     stretch_height: false,
   }
-  @dispatch.setup()
-  let layout = @dispatch.compute_layout(node, layout_ctx)
-  let paint_node = @paint.from_node_and_layout(node, layout)
+  @tree.setup()
+  let layout = @tree.compute_layout_in_context(node, layout_ctx)
+  let paint_node = @paint_render.from_node_and_layout(node, layout)
   b.bench(name="flatten_large", fn() {
-    b.keep(@paint.flatten_for_rendering(paint_node))
+    b.keep(@paint_traversal.flatten_for_rendering(paint_node))
   })
 }
 
@@ -276,8 +278,8 @@ test "bench_scroll_simulation_10_steps" (b : @bench.T) {
     stretch_width: false,
     stretch_height: false,
   }
-  @dispatch.setup()
-  let layout = @dispatch.compute_layout(node, layout_ctx)
+  @tree.setup()
+  let layout = @tree.compute_layout_in_context(node, layout_ctx)
   let viewport_height = 800.0
   let total_height = 500.0 * 64.0 // 32000
   let step = (total_height - viewport_height) / 10.0
@@ -286,7 +288,7 @@ test "bench_scroll_simulation_10_steps" (b : @bench.T) {
     for i = 0; i < 10; i = i + 1 {
       let scroll_y = step * i.to_double()
       b.keep(
-        @paint.from_node_and_layout_with_viewport(
+        @paint_render.from_node_and_layout_with_viewport(
           node,
           layout,
           scroll_y,
@@ -312,8 +314,8 @@ test "bench_scroll_simulation_100_steps" (b : @bench.T) {
     stretch_width: false,
     stretch_height: false,
   }
-  @dispatch.setup()
-  let layout = @dispatch.compute_layout(node, layout_ctx)
+  @tree.setup()
+  let layout = @tree.compute_layout_in_context(node, layout_ctx)
   let viewport_height = 800.0
   let total_height = 500.0 * 64.0 // 32000
   let step = (total_height - viewport_height) / 100.0
@@ -322,7 +324,7 @@ test "bench_scroll_simulation_100_steps" (b : @bench.T) {
     for i = 0; i < 100; i = i + 1 {
       let scroll_y = step * i.to_double()
       b.keep(
-        @paint.from_node_and_layout_with_viewport(
+        @paint_render.from_node_and_layout_with_viewport(
           node,
           layout,
           scroll_y,
@@ -340,7 +342,7 @@ test "bench_scroll_simulation_100_steps" (b : @bench.T) {
 
 ///|
 test "bench_incremental_layout_unchanged" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   let root = create_benchmark_tree(4, 4) // 341 nodes
   let tree = @tree.LayoutTree::new(root, 1200.0, 800.0)
   // First compute to populate cache
@@ -351,7 +353,7 @@ test "bench_incremental_layout_unchanged" (b : @bench.T) {
 
 ///|
 test "bench_incremental_layout_single_dirty" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   let root = create_benchmark_tree(4, 4) // 341 nodes
   let tree = @tree.LayoutTree::new(root, 1200.0, 800.0)
   // First compute to populate cache
@@ -366,7 +368,7 @@ test "bench_incremental_layout_single_dirty" (b : @bench.T) {
 
 ///|
 test "bench_incremental_layout_full" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   let root = create_benchmark_tree(4, 4) // 341 nodes
   let tree = @tree.LayoutTree::new(root, 1200.0, 800.0)
   b.bench(name="incr_layout_full", fn() {

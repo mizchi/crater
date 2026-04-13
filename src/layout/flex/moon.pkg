@@ -13,7 +13,7 @@ import {
 }
 
 import {
-  "mizchi/crater/css/parser",
+  "mizchi/crater/css",
 } for "test"
 
 import {

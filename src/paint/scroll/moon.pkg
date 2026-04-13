@@ -1,0 +1,10 @@
+import {
+  "mizchi/crater/paint/model" @model,
+}
+
+import {
+  "mizchi/crater/types",
+} for "test"
+
+import {
+} for "wbtest"

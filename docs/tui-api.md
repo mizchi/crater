@@ -16,8 +16,8 @@ Reference: [Programmable Grid Layout Control](https://zenn.dev/mizchi/articles/p
 ## Quick Start
 
 ```moonbit
-// Import the crater package
-// In moon.pkg.json: { "import": ["mizchi/crater", "mizchi/crater/types", "mizchi/crater/style", "mizchi/crater/layout/node"] }
+// Import the layout boundary directly
+// In moon.pkg.json: { "import": ["mizchi/crater/types", "mizchi/crater/style", "mizchi/crater/layout"] }
 
 // Build a simple flex layout
 let style = @style.Style::default()
@@ -29,13 +29,13 @@ style.height = @types.Length(24.0)
 let child_style = @style.Style::default()
 child_style.flex_grow = 1.0
 
-let root = @node.Node::new("root", style, [
-  @node.Node::leaf("header", child_style),
-  @node.Node::leaf("content", child_style),
+let root = @layout.Node::new("root", style, [
+  @layout.Node::leaf("header", child_style),
+  @layout.Node::leaf("content", child_style),
 ])
 
 // Compute layout
-let layout = @crater.compute_layout(root, @types.Size::new(80.0, 24.0))
+let layout = @layout.compute_layout(root, @types.Size::new(80.0, 24.0))
 
 // Access results
 println(layout.children[0].height)  // Header height
@@ -46,7 +46,7 @@ println(layout.children[1].height)  // Content height
 
 ## Core Entry Point
 
-### `mizchi/crater`
+### `mizchi/crater/layout`
 
 ```moonbit
 /// Compute layout from a Node tree (one-shot)
@@ -56,13 +56,23 @@ println(layout.children[1].height)  // Content height
 pub fn compute_layout(node: Node, viewport: Size[Double]) -> Layout
 ```
 
+### `mizchi/crater/core_subset`
+
+```moonbit
+/// Validate whether a Node tree stays inside the predictable TUI subset
+pub fn validate_core_subset(node: Node) -> Array[CoreIssue]
+
+/// Compute layout only when the tree stays inside the supported subset
+pub fn compute_core_layout(node: Node, viewport: Size[Double]) -> CoreComputeResult
+```
+
 ---
 
 ## Incremental Layout (LayoutTree)
 
 For TUI applications that need efficient re-layout on state changes, use `LayoutTree` instead of the one-shot `compute_layout`. The tree caches layout results and only recomputes dirty nodes.
 
-### `mizchi/crater/layout/tree`
+### `mizchi/crater/layout`
 
 ```moonbit
 /// Layout tree with caching for incremental computation
@@ -155,9 +165,9 @@ fn main {
   root_style.display = @types.Flex
   root_style.flex_direction = @types.Column
 
-  let root_node = @node.Node::new("root", root_style, [
-    @node.Node::leaf("header", header_style),
-    @node.Node::leaf("content", content_style),
+  let root_node = @layout.Node::new("root", root_style, [
+    @layout.Node::leaf("header", header_style),
+    @layout.Node::leaf("content", content_style),
   ])
 
   // Create layout tree
@@ -441,7 +451,7 @@ pub fn Style::default() -> Style
 
 ---
 
-### `mizchi/crater/layout/node`
+### `mizchi/crater/layout`
 
 #### Node Struct
 
@@ -531,13 +541,13 @@ fn main {
   let footer_style = @style.Style::default()
   footer_style.height = @types.Length(1.0)
 
-  let root = @node.Node::new("root", root_style, [
-    @node.Node::leaf("header", header_style),
-    @node.Node::leaf("content", content_style),
-    @node.Node::leaf("footer", footer_style),
+  let root = @layout.Node::new("root", root_style, [
+    @layout.Node::leaf("header", header_style),
+    @layout.Node::leaf("content", content_style),
+    @layout.Node::leaf("footer", footer_style),
   ])
 
-  let layout = @crater.compute_layout(root, @types.Size::new(80.0, 24.0))
+  let layout = @layout.compute_layout(root, @types.Size::new(80.0, 24.0))
 
   // Results:
   // header: y=0, height=3
@@ -562,12 +572,12 @@ fn main {
   let main_style = @style.Style::default()
   main_style.flex_grow = 1.0
 
-  let root = @node.Node::new("root", root_style, [
-    @node.Node::leaf("sidebar", sidebar_style),
-    @node.Node::leaf("main", main_style),
+  let root = @layout.Node::new("root", root_style, [
+    @layout.Node::leaf("sidebar", sidebar_style),
+    @layout.Node::leaf("main", main_style),
   ])
 
-  let layout = @crater.compute_layout(root, @types.Size::new(80.0, 24.0))
+  let layout = @layout.compute_layout(root, @types.Size::new(80.0, 24.0))
   // sidebar: x=0, width=20
   // main: x=20, width=60
 }
@@ -594,16 +604,16 @@ fn main {
   }
 
   // Header spans full width: (1,1) -> (4,2)
-  let header = @node.Node::leaf("header", place_at(1, 1, 4, 2))
+  let header = @layout.Node::leaf("header", place_at(1, 1, 4, 2))
 
   // Sidebar: left column (1,2) -> (2,4)
-  let sidebar = @node.Node::leaf("sidebar", place_at(1, 2, 2, 4))
+  let sidebar = @layout.Node::leaf("sidebar", place_at(1, 2, 2, 4))
 
   // Main content: right columns (2,2) -> (4,4)
-  let main = @node.Node::leaf("main", place_at(2, 2, 4, 4))
+  let main = @layout.Node::leaf("main", place_at(2, 2, 4, 4))
 
-  let root = @node.Node::new("root", grid_style, [header, sidebar, main])
-  let layout = @crater.compute_layout(root, @types.Size::new(80.0, 24.0))
+  let root = @layout.Node::new("root", grid_style, [header, sidebar, main])
+  let layout = @layout.compute_layout(root, @types.Size::new(80.0, 24.0))
 }
 ```
 
@@ -626,13 +636,13 @@ fn main {
     s
   }
 
-  let root = @node.Node::new("root", grid_style, [
-    @node.Node::leaf("header", area("header")),
-    @node.Node::leaf("sidebar", area("sidebar")),
-    @node.Node::leaf("main", area("main")),
+  let root = @layout.Node::new("root", grid_style, [
+    @layout.Node::leaf("header", area("header")),
+    @layout.Node::leaf("sidebar", area("sidebar")),
+    @layout.Node::leaf("main", area("main")),
   ])
 
-  let layout = @crater.compute_layout(root, @types.Size::new(80.0, 24.0))
+  let layout = @layout.compute_layout(root, @types.Size::new(80.0, 24.0))
 }
 ```
 
@@ -669,14 +679,14 @@ fn text_measure_func(text: String) -> @types.MeasureFunc {
 fn main {
   let text_style = @style.Style::default()
 
-  let node = @node.Node::with_measure(
+  let node = @layout.Node::with_measure(
     "greeting",
     text_style,
     text_measure_func("Hello, World!"),
     text="Hello, World!"
   )
 
-  let layout = @crater.compute_layout(node, @types.Size::new(80.0, 24.0))
+  let layout = @layout.compute_layout(node, @types.Size::new(80.0, 24.0))
   // layout.width based on text measurement
 }
 ```
@@ -698,13 +708,13 @@ fn main {
   }
 
   // Background content: full grid
-  let background = @node.Node::leaf("bg", place_at(1, 1, 5, 5))
+  let background = @layout.Node::leaf("bg", place_at(1, 1, 5, 5))
 
   // Modal dialog: centered overlay (2,2) -> (4,4)
-  let modal = @node.Node::leaf("modal", place_at(2, 2, 4, 4))
+  let modal = @layout.Node::leaf("modal", place_at(2, 2, 4, 4))
 
-  let root = @node.Node::new("root", grid_style, [background, modal])
-  let layout = @crater.compute_layout(root, @types.Size::new(80.0, 24.0))
+  let root = @layout.Node::new("root", grid_style, [background, modal])
+  let layout = @layout.compute_layout(root, @types.Size::new(80.0, 24.0))
 
   // Both elements are positioned, modal overlaps background
   // Rendering order determines visual stacking
@@ -721,8 +731,9 @@ These APIs are stable and safe to depend on:
 
 | API | Package |
 |-----|---------|
-| `compute_layout(Node, Size[Double]) -> Layout` | `mizchi/crater` |
-| `Node::new`, `Node::leaf`, `Node::with_measure` | `mizchi/crater/layout/node` |
+| `compute_layout(Node, Size[Double]) -> Layout` | `mizchi/crater/layout` |
+| `compute_core_layout(Node, Size[Double]) -> CoreComputeResult` | `mizchi/crater/core_subset` |
+| `Node::new`, `Node::leaf`, `Node::with_measure` | `mizchi/crater/layout` |
 | `Style::default()` | `mizchi/crater/style` |
 | `Size`, `Rect`, `Dimension`, `Layout` structs | `mizchi/crater/types` |
 | `Display`, `FlexDirection`, `FlexWrap`, `Alignment`, `AlignSelf` enums | `mizchi/crater/types` |
@@ -746,7 +757,7 @@ These are internal implementation details:
 | API | Reason |
 |-----|--------|
 | `DispatchFn`, `LayoutDispatchFunc` | Deprecated dispatch mechanism |
-| `layout/dispatch`, `layout/tree` modules | Internal implementation |
+| `layout/dispatch` module | Internal implementation |
 | Web Vitals APIs | Not relevant for TUI |
 
 ---
@@ -772,10 +783,10 @@ For TUI applications, add these imports to your `moon.pkg.json`:
 ```json
 {
   "import": [
-    "mizchi/crater",
     "mizchi/crater/types",
     "mizchi/crater/style",
-    "mizchi/crater/layout/node"
+    "mizchi/crater/layout",
+    "mizchi/crater/core_subset"
   ]
 }
 ```
@@ -785,7 +796,6 @@ Minimal import (if you only need types):
 ```json
 {
   "import": [
-    "mizchi/crater",
     "mizchi/crater/types"
   ]
 }

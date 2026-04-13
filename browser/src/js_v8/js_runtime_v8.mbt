@@ -57,7 +57,7 @@ let logs_bridge_js : String = "function __getLogs() { const l = [...logs]; logs.
 
 ///|
 impl @js.JsRuntime for V8JsRuntime with init(self : V8JsRuntime) -> Unit {
-  if not(self.initialized) {
+  if !self.initialized {
     match @v8.runtime_new() {
       Ok(rt) => {
         self.runtime = Some(rt)
@@ -87,7 +87,7 @@ impl @js.JsRuntime for V8JsRuntime with execute(
     None => raise @js.JsError::execution_error("V8 runtime not initialized")
   }
   // Initialize mock DOM on first execute if source is available
-  if not(self.dom_initialized) {
+  if !self.dom_initialized {
     match self.mock_dom_source {
       Some(src) =>
         match rt.eval_string(src) {
@@ -109,7 +109,7 @@ impl @js.JsRuntime for V8JsRuntime with execute(
     // Reset logs and domOps for this execution
     ignore(rt.eval_string("logs.length = 0; domOps.length = 0;"))
     // Serialize DomTree into JS DOM only on first execute (avoid duplicating nodes)
-    if not(self.dom_synced) {
+    if !self.dom_synced {
       let init_code = @js.create_dom_init_code(dom)
       match rt.eval_string(init_code) {
         Ok(_) => ()

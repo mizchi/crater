@@ -1,6 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/css/selector"
 
+import {
+  "moonbitlang/core/debug",
+}
+
 // Values
 pub fn complex_specificity(ComplexSelector) -> Specificity
 
@@ -103,9 +107,10 @@ pub(all) struct ForcedPseudoStates {
   active : Bool
   focus_visible : Bool
   focus_within : Bool
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn ForcedPseudoStates::is_empty(Self) -> Bool
 pub fn ForcedPseudoStates::none() -> Self
+pub impl Show for ForcedPseudoStates
 
 pub struct NthExpr {
   a : Int

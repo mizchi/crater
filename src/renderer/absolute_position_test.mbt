@@ -9,7 +9,7 @@ test "absolute_position_in_relative_parent" {
     viewport_width: 375.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let layout = @renderer.render(html, ctx)
   let relative_parent = layout.children[0]
@@ -39,7 +39,7 @@ test "edit_this_page_style" {
     viewport_width: 375.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let layout = @renderer.render(html, ctx)
   let wrapper = layout.children[0]
@@ -87,7 +87,7 @@ test "wrapper_with_only_absolute_child_should_have_zero_height" {
     viewport_width: 375.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let layout = @renderer.render(html, ctx)
   let wrapper = layout.children[0]
@@ -108,7 +108,7 @@ test "absolute_position_in_static_grid_parent_uses_grid_containing_block" {
     viewport_width: 375.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let layout = @renderer.render(html, ctx)
   let grid = layout.children[1]
@@ -134,7 +134,7 @@ test "absolute_position_in_inline_with_line_break_uses_multiline_static_y" {
     viewport_width: 800.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let layout = @renderer.render(html, ctx)
   let container = layout.children[0]
@@ -161,7 +161,7 @@ test "abspos_non_auto_inset_inside_static_flex_uses_outer_abs_containing_block" 
     viewport_width: 800.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let layout = @renderer.render(html, ctx)
   let container = layout.children[0]
@@ -190,7 +190,7 @@ test "abspos_non_auto_inset_inside_static_grid_uses_outer_abs_containing_block" 
     viewport_width: 800.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let layout = @renderer.render(html, ctx)
   let container = layout.children[0]
@@ -210,7 +210,7 @@ test "abspos_non_auto_inset_inside_static_grid_uses_outer_abs_containing_block" 
 ///|
 test "wpt_inline_abspos_003_block_child_forces_new_line_static_y" {
   set_builtin_text_advance_ratio_override_for_test(1.0)
-  @inline.set_builtin_text_advance_ratio(1.0)
+  @layout_test.set_builtin_text_advance_ratio(1.0)
   let html =
     #|<div id="container" style="font: 20px/1 Ahem; color: white; height: 100px; width: 100px; background: red;">
     #|  <div style="height: 60px;"></div>
@@ -240,7 +240,7 @@ test "wpt_inline_abspos_003_block_child_forces_new_line_static_y" {
   )
   let non_text_children : Array[@types.Layout] = []
   for child in span.children {
-    if not(child.id.has_prefix("#text")) {
+    if !child.id.has_prefix("#text") {
       non_text_children.push(child)
     }
   }
@@ -257,14 +257,14 @@ test "wpt_inline_abspos_003_block_child_forces_new_line_static_y" {
       #|-79.2
     ),
   )
-  @inline.clear_builtin_text_advance_ratio()
+  @layout_test.clear_builtin_text_advance_ratio()
   clear_builtin_text_advance_ratio_override_for_test()
 }
 
 ///|
 test "wpt_inline_abspos_004_relative_inline_keeps_carry_for_abs_insets" {
   set_builtin_text_advance_ratio_override_for_test(1.0)
-  @inline.set_builtin_text_advance_ratio(1.0)
+  @layout_test.set_builtin_text_advance_ratio(1.0)
   let html =
     #|<div id="container" style="height: 100px; width: 100px; font: 20px/1 Ahem; color: white; background: red;">
     #|  <div style="height: 50px;"></div>
@@ -316,6 +316,6 @@ test "wpt_inline_abspos_004_relative_inline_keeps_carry_for_abs_insets" {
       #|-80
     ),
   )
-  @inline.clear_builtin_text_advance_ratio()
+  @layout_test.clear_builtin_text_advance_ratio()
   clear_builtin_text_advance_ratio_override_for_test()
 }

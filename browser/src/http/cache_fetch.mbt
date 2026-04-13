@@ -71,7 +71,8 @@ pub async fn cached_fetch_async(
           return entry_to_response(entry)
         }
         let new_entry = build_cache_entry(url, response)
-        if !new_entry.directives.no_store && is_cacheable_status(response.status) {
+        if !new_entry.directives.no_store &&
+          is_cacheable_status(response.status) {
           cache.store(new_entry)
         }
         return response
@@ -132,7 +133,8 @@ pub fn cached_fetch(
           return entry_to_response(entry)
         }
         let new_entry = build_cache_entry(url, response)
-        if !new_entry.directives.no_store && is_cacheable_status(response.status) {
+        if !new_entry.directives.no_store &&
+          is_cacheable_status(response.status) {
           cache.store(new_entry)
         }
         return response

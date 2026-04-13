@@ -2,16 +2,16 @@
 package "mizchi/crater/x/kitty"
 
 import {
-  "mizchi/crater/paint",
+  "mizchi/crater/paint/model",
   "mizchi/crater/svg",
   "mizchi/crater/x/image",
   "moonbitlang/async/io",
 }
 
 // Values
-pub fn render_paint_node_to_kitty(@paint.PaintNode, Int, Int) -> String
+pub fn render_paint_node_to_kitty(@model.PaintNode, Int, Int) -> String
 
-pub fn render_paint_node_to_kitty_scrolled(@paint.PaintNode, Int, Int, Int) -> String
+pub fn render_paint_node_to_kitty_scrolled(@model.PaintNode, Int, Int, Int) -> String
 
 pub fn render_svg_node_to_kitty(@svg.SVGNode, Int, Int) -> String
 
@@ -23,7 +23,7 @@ pub fn to_kitty(@image.Framebuffer, @image.DynamicPalette) -> String
 
 pub async fn[T : @io.Writer] write_kitty(T, @image.Framebuffer, @image.DynamicPalette) -> Unit
 
-pub async fn[T : @io.Writer] write_paint_node_to_kitty_scrolled(T, @paint.PaintNode, Int, Int, Int) -> Unit
+pub async fn[T : @io.Writer] write_paint_node_to_kitty_scrolled(T, @model.PaintNode, Int, Int, Int) -> Unit
 
 pub async fn[T : @io.Writer] write_svg_to_kitty(T, @svg.Scene, Int, Int) -> Unit
 

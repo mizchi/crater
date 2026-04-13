@@ -10,7 +10,7 @@ fn find_best_readability_candidate(
   let mut best : @aom.AccessibilityNode? = None
   let mut best_score = 0.0
   for candidate in candidates {
-    if not(is_readability_selection_candidate(candidate)) {
+    if !is_readability_selection_candidate(candidate) {
       continue
     }
     let score = get_readability_score(scores, candidate)
@@ -153,7 +153,7 @@ fn refine_main_content(
           return Some(candidate)
         }
         if read_probably {
-          if not(main_probably) {
+          if !main_probably {
             return Some(candidate)
           }
           if main_share_penalty <= 0.4 && read_share_penalty >= 0.8 {
@@ -180,8 +180,7 @@ fn refine_main_content(
           if read_readability > main_readability * 1.6 {
             return Some(candidate)
           }
-        } else if not(main_probably) &&
-          read_readability > main_readability * 1.8 {
+        } else if !main_probably && read_readability > main_readability * 1.8 {
           return Some(candidate)
         }
       }

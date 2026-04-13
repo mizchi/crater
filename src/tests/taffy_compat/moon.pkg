@@ -1,10 +1,7 @@
 import {
   "mizchi/crater/types",
   "mizchi/crater/style",
-  "mizchi/crater/layout/node",
-  "mizchi/crater/layout/block",
-  "mizchi/crater/layout/flex",
-  "mizchi/crater/layout/grid",
+  "mizchi/crater/layout" @node,
 }
 
 import {

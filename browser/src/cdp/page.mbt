@@ -208,14 +208,14 @@ pub struct CdpNavigateResult {
   frame_id : String
   loader_id : String
   error_text : String?
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// Navigation history
 pub struct CdpNavigationHistory {
   current_index : Int
   entries : Array[CdpNavigationEntry]
-} derive(Show)
+} derive(Debug)
 
 // =============================================================================
 // Helpers

@@ -1,6 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/dom"
 
+import {
+  "moonbitlang/core/debug",
+}
+
 // Values
 pub fn create_svg_angle() -> SVGAngle
 
@@ -34,7 +38,8 @@ pub fn create_svg_transform_translate(Double, Double) -> SVGTransform
 pub enum CoreError {
   NodeNotFound(node_id~ : NodeId)
   InvalidOperation(message~ : String)
-} derive(Show)
+} derive(@debug.Debug)
+pub impl Show for CoreError
 
 type DomNode
 
@@ -85,16 +90,18 @@ pub struct FlushResult {
   processed : Int
   nodes_affected : Int
   needs_layout : Bool
-} derive(Show)
+} derive(@debug.Debug)
+pub impl Show for FlushResult
 
 pub struct GetBBoxOptions {
   fill : Bool
   stroke : Bool
   markers : Bool
   clipped : Bool
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn GetBBoxOptions::all() -> Self
 pub fn GetBBoxOptions::default() -> Self
+pub impl Show for GetBBoxOptions
 
 pub struct MutationQueue {
   mut records : Array[MutationRecord]
@@ -121,25 +128,28 @@ pub struct MutationRecord {
   old_value : String?
   new_value : String?
   changed_properties : Array[String]
-} derive(Show)
+} derive(@debug.Debug)
 pub fn MutationRecord::affects_layout(Self) -> Bool
 pub fn MutationRecord::attribute(NodeId, String, old_value? : String?, new_value? : String?) -> Self
 pub fn MutationRecord::character_data(NodeId, old_value? : String?, new_value? : String?) -> Self
 pub fn MutationRecord::child_list(NodeId, added? : Array[NodeId], removed? : Array[NodeId]) -> Self
 pub fn MutationRecord::style_change(NodeId, Array[String]) -> Self
+pub impl Show for MutationRecord
 
 pub enum MutationType {
   ChildList
   Attributes
   CharacterData
   StyleChange
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for MutationType
 
-pub struct NodeId(Int) derive(Eq, Hash, Show)
+pub struct NodeId(Int) derive(Eq, Hash, @debug.Debug)
 pub fn NodeId::from_int(Int) -> Self
 #deprecated
 pub fn NodeId::inner(Self) -> Int
 pub fn NodeId::to_int(Self) -> Int
+pub impl Show for NodeId
 
 pub struct NodeInfo {
   node_id : NodeId
@@ -147,7 +157,8 @@ pub struct NodeInfo {
   node_name : String
   node_value : String
   child_count : Int
-} derive(Show)
+} derive(@debug.Debug)
+pub impl Show for NodeInfo
 
 pub enum NodeType {
   Document
@@ -155,31 +166,35 @@ pub enum NodeType {
   Element
   Text
   Comment
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn NodeType::from_dom_constant(Int) -> Self?
+pub impl Show for NodeType
 
 pub struct Point {
   x : Double
   y : Double
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for Point
 
 pub struct Rect {
   x : Double
   y : Double
   width : Double
   height : Double
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn Rect::center(Self) -> Point
 pub fn Rect::new(Double, Double, Double, Double) -> Self
+pub impl Show for Rect
 
 pub struct SVGAngle {
   unit_type : SVGAngleType
   value : Double
   value_in_specified_units : Double
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn SVGAngle::new(Double) -> Self
 pub fn SVGAngle::to_degrees(Self) -> Double
 pub fn SVGAngle::to_radians(Self) -> Double
+pub impl Show for SVGAngle
 
 pub enum SVGAngleType {
   Unknown
@@ -188,15 +203,17 @@ pub enum SVGAngleType {
   Rad
   Grad
   Turn
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for SVGAngleType
 
 pub struct SVGLength {
   unit_type : SVGLengthType
   value : Double
   value_in_specified_units : Double
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn SVGLength::new(Double) -> Self
 pub fn SVGLength::to_user_units(Self, dpi? : Double, font_size? : Double) -> Double
+pub impl Show for SVGLength
 
 pub enum SVGLengthType {
   Unknown
@@ -210,7 +227,8 @@ pub enum SVGLengthType {
   In
   Pt
   Pc
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for SVGLengthType
 
 pub struct SVGMatrix {
   a : Double
@@ -219,7 +237,7 @@ pub struct SVGMatrix {
   d : Double
   e : Double
   f : Double
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn SVGMatrix::flip_x(Self) -> Self
 pub fn SVGMatrix::flip_y(Self) -> Self
 pub fn SVGMatrix::identity() -> Self
@@ -236,42 +254,47 @@ pub fn SVGMatrix::skew_x(Double) -> Self
 pub fn SVGMatrix::skew_y(Double) -> Self
 pub fn SVGMatrix::translate(Double, Double) -> Self
 pub fn SVGMatrix::translate_self(Self, Double, Double) -> Self
+pub impl Show for SVGMatrix
 
 pub struct SVGNumber {
   value : Double
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn SVGNumber::new(Double) -> Self
+pub impl Show for SVGNumber
 
 pub struct SVGPoint {
   x : Double
   y : Double
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn SVGPoint::matrix_transform(Self, SVGMatrix) -> Self
 pub fn SVGPoint::new(Double, Double) -> Self
 pub fn SVGPoint::origin() -> Self
+pub impl Show for SVGPoint
 
 pub struct SVGRect {
   x : Double
   y : Double
   width : Double
   height : Double
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn SVGRect::empty() -> Self
 pub fn SVGRect::from_rect(Rect) -> Self
 pub fn SVGRect::new(Double, Double, Double, Double) -> Self
 pub fn SVGRect::to_rect(Self) -> Rect
+pub impl Show for SVGRect
 
 pub struct SVGTransform {
   transform_type : SVGTransformType
   matrix : SVGMatrix
   angle : Double
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn SVGTransform::from_matrix(SVGMatrix) -> Self
 pub fn SVGTransform::rotate(Double, cx? : Double, cy? : Double) -> Self
 pub fn SVGTransform::scale(Double, Double) -> Self
 pub fn SVGTransform::skew_x(Double) -> Self
 pub fn SVGTransform::skew_y(Double) -> Self
 pub fn SVGTransform::translate(Double, Double) -> Self
+pub impl Show for SVGTransform
 
 pub enum SVGTransformType {
   Unknown
@@ -281,7 +304,8 @@ pub enum SVGTransformType {
   Rotate
   SkewX
   SkewY
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for SVGTransformType
 
 pub struct ScrollState {
   scroll_left : Double
@@ -290,7 +314,7 @@ pub struct ScrollState {
   scroll_height : Double
   client_width : Double
   client_height : Double
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn ScrollState::can_scroll_x(Self) -> Bool
 pub fn ScrollState::can_scroll_y(Self) -> Bool
 pub fn ScrollState::default() -> Self
@@ -299,6 +323,7 @@ pub fn ScrollState::max_scroll_top(Self) -> Double
 pub fn ScrollState::new(Double, Double, Double, Double) -> Self
 pub fn ScrollState::scroll_by(Self, Double, Double) -> Self
 pub fn ScrollState::scroll_to(Self, Double, Double) -> Self
+pub impl Show for ScrollState
 
 // Type aliases
 

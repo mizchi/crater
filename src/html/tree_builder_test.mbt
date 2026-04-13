@@ -220,7 +220,7 @@ test "tree_builder/document parsing moves metadata elements out of body flow" {
     match child {
       @html.Node::Element(e) => tags.push(e.tag)
       @html.Node::Text(t) =>
-        if not(t.trim().is_empty()) {
+        if !t.trim().is_empty() {
           texts.push(t.trim().to_string())
         }
     }

@@ -26,7 +26,7 @@ test "DOM.getDocument with depth" {
   let result3 = dom.get_document(Some(3))
   inspect(result3 is Ok(_), content="true")
   let doc = result3.unwrap()
-  inspect(not(doc.children is None), content="true")
+  inspect(!(doc.children is None), content="true")
 }
 
 ///|

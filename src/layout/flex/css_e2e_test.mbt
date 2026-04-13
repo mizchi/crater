@@ -4,7 +4,7 @@
 ///|
 /// Helper to create a node with CSS string
 fn node_from_css(id : String, css : String) -> @node.Node {
-  let style = @parser.parse_inline_style(css)
+  let style = @css.parse_inline_style(css)
   @node.Node::leaf(id, style)
 }
 
@@ -15,7 +15,7 @@ fn node_from_css_with_children(
   css : String,
   children : Array[@node.Node],
 ) -> @node.Node {
-  let style = @parser.parse_inline_style(css)
+  let style = @css.parse_inline_style(css)
   @node.Node::new(id, style, children)
 }
 

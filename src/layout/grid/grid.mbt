@@ -215,7 +215,7 @@ fn apply_initial_overflow_content_alignment(
     overflow_creates_scroll_container(style.overflow_y) &&
     block_content > block_available
   }
-  if not(inline_scrollable) && not(block_scrollable) {
+  if !inline_scrollable && !block_scrollable {
     return children
   }
   let inline_offset = if inline_scrollable {
@@ -985,7 +985,7 @@ fn compute_grid_layout_internal(
     | @types.FitContent(_) => true
     _ => false
   }
-  let width_is_definite_for_gap = not(width_is_auto_for_gap) ||
+  let width_is_definite_for_gap = !width_is_auto_for_gap ||
     width_is_extrinsically_definite
   let width_is_min_content_for_gap = match style.width {
     @types.MinContent => true
@@ -1108,8 +1108,7 @@ fn compute_grid_layout_internal(
     | @types.MinContent
     | @types.MaxContent
     | @types.FitContent(_) => true
-    @types.Percent(_) =>
-      is_intrinsic_sizing && not(width_is_extrinsically_definite)
+    @types.Percent(_) => is_intrinsic_sizing && !width_is_extrinsically_definite
     _ => false
   }
   // Track if width is specifically Auto (vs intrinsic keywords like min-content)
@@ -1129,7 +1128,7 @@ fn compute_grid_layout_internal(
     | @types.MaxContent
     | @types.FitContent(_) => true
     @types.Percent(_) =>
-      is_intrinsic_sizing && not(height_is_extrinsically_definite)
+      is_intrinsic_sizing && !height_is_extrinsically_definite
     _ => false
   }
   // Track if height is min-content (fr tracks should be 0)
@@ -1141,9 +1140,8 @@ fn compute_grid_layout_internal(
   // Size is definite for track sizing if:
   // 1. Style has explicit size (not Auto), OR
   // 2. Size is extrinsically definite (e.g., stretched in parent grid)
-  let width_is_definite = not(width_is_auto) || width_is_extrinsically_definite
-  let height_is_definite = not(height_is_auto) ||
-    height_is_extrinsically_definite
+  let width_is_definite = !width_is_auto || width_is_extrinsically_definite
+  let height_is_definite = !height_is_auto || height_is_extrinsically_definite
   // In vertical writing-modes, template rows map to physical x/width and
   // template columns map to physical y/height.
   let column_available_size = if is_vertical_writing {
@@ -1515,7 +1513,7 @@ fn compute_grid_layout_internal(
       let total_track_width = width_track_total
       let total_track_width_for_auto = if needs_intrinsic_gap_base &&
         gapless_total_track_width > 0.0 &&
-        not(is_vertical_writing) {
+        !is_vertical_writing {
         gapless_total_track_width
       } else {
         total_track_width
@@ -1523,7 +1521,7 @@ fn compute_grid_layout_internal(
 
       // For percent tracks in indefinite containers, use content-based sizing
       let mut content_max_width = 0.0
-      if not(suppress_width_intrinsic) {
+      if !suppress_width_intrinsic {
         if sizing_mode == @types.MaxContent && has_fit_content_percent_for_width {
           for i = 0; i < children.length(); i = i + 1 {
             let child = children[i]
@@ -1588,7 +1586,7 @@ fn compute_grid_layout_internal(
     // Check if aspect-ratio should determine height
     // CSS spec: aspect-ratio applies when one dimension is definite and other is auto
     let aspect_height : Double? = match style.aspect_ratio {
-      Some(ratio) if ratio > 0.0 && not(width_is_auto) => {
+      Some(ratio) if ratio > 0.0 && !width_is_auto => {
         // Width is definite, calculate height from content-box width
         let content_width = container_width -
           padding_left -
@@ -1626,7 +1624,7 @@ fn compute_grid_layout_internal(
 
         // For percent tracks in indefinite containers, use content-based sizing
         let mut content_max_height = 0.0
-        if not(suppress_height_intrinsic) {
+        if !suppress_height_intrinsic {
           if sizing_mode == @types.MaxContent &&
             has_fit_content_percent_for_height {
             for i = 0; i < children.length(); i = i + 1 {
@@ -2112,10 +2110,10 @@ fn compute_grid_layout_internal(
     let has_vertical_auto_margin = margin_top_auto || margin_bottom_auto
     let should_stretch_width = width_is_auto &&
       justify == @types.Stretch &&
-      not(has_horizontal_auto_margin)
+      !has_horizontal_auto_margin
     let should_stretch_height = height_is_auto &&
       align == @types.Stretch &&
-      not(has_vertical_auto_margin)
+      !has_vertical_auto_margin
 
     // Resolve fixed margins to avoid passing margin space into child layout sizing
     let fixed_margin_left = if margin_left_auto {
@@ -2172,7 +2170,7 @@ fn compute_grid_layout_internal(
     )
     // Track span resolution already produces physical coordinates for vertical writing-modes.
     // Mirroring again in vertical-rl double-applies RTL and shifts items left.
-    let positioned_x = if is_block_rtl && not(is_vertical_writing) {
+    let positioned_x = if is_block_rtl && !is_vertical_writing {
       container_width - final_x - final_width
     } else {
       final_x
@@ -4223,7 +4221,7 @@ struct GridAreaBounds {
   row_end : Int
   col_start : Int
   col_end : Int
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// Parse grid-template-areas into a 2D array of area names
@@ -4401,7 +4399,7 @@ fn place_grid_items(
 
     // Only process FULLY explicitly positioned items (both column AND row)
     // Semi-explicit items (one explicit, one auto) will be processed in Pass 3
-    if not(has_explicit_column && has_explicit_row) {
+    if !(has_explicit_column && has_explicit_row) {
       continue
     }
 
@@ -4579,7 +4577,7 @@ fn place_grid_items(
     }
 
     // Advance cursor only for fully auto-placed items
-    if not(has_explicit_column) && not(has_explicit_row) {
+    if !has_explicit_column && !has_explicit_row {
       match auto_flow {
         @types.Row | @types.RowDense => {
           next_column = col_end
@@ -4741,7 +4739,7 @@ fn adjust_block_tracks_for_measured_items(
         _ => false
       }
     }
-    if not(child_block_size_is_auto) {
+    if !child_block_size_is_auto {
       continue
     }
     let placement = placements[i]
@@ -4867,7 +4865,7 @@ fn adjust_block_tracks_for_content_items(
       @types.Auto => true
       _ => false
     }
-    if not(child_height_is_auto) {
+    if !child_height_is_auto {
       continue
     }
     let placement = placements[i]
@@ -4972,7 +4970,7 @@ fn compute_auto_fit_collapse(
       break
     }
   }
-  if not(has_auto_fit) {
+  if !has_auto_fit {
     return collapse
   }
   let has_item : Array[Bool] = []
@@ -4999,7 +4997,7 @@ fn compute_auto_fit_collapse(
   for i = 0; i < auto_fit_mask.length(); i = i + 1 {
     if auto_fit_mask[i] {
       let idx = offset + i
-      if idx >= 0 && idx < total_count && not(has_item[idx]) {
+      if idx >= 0 && idx < total_count && !has_item[idx] {
         collapse[idx] = true
       }
     }
@@ -5031,7 +5029,7 @@ fn collapse_auto_fit_tracks(
       tracks[i].stretchable
     }
     tracks[i] = { position: pos, size, stretchable }
-    if not(should_collapse) {
+    if !should_collapse {
       pos = pos + size + gap
     }
   }
@@ -5218,9 +5216,9 @@ fn compute_child_layout(
         @types.Auto => true
         _ => false
       }
-      let width_is_definite = not(width_is_auto) || width_was_constrained
-      let height_is_definite = not(height_is_auto) || height_was_constrained
-      if not(width_is_definite) && height_is_definite {
+      let width_is_definite = !width_is_auto || width_was_constrained
+      let height_is_definite = !height_is_auto || height_was_constrained
+      if !width_is_definite && height_is_definite {
         // height is definite, compute width from aspect_ratio
         width = height * ratio
         // Re-apply width constraints
@@ -5230,7 +5228,7 @@ fn compute_child_layout(
         if width > max_width_constraint {
           width = max_width_constraint
         }
-      } else if not(height_is_definite) && width_is_definite {
+      } else if !height_is_definite && width_is_definite {
         // width is definite, compute height from aspect_ratio
         height = width / ratio
         // Re-apply height constraints
@@ -5275,13 +5273,13 @@ fn compute_child_layout(
       _ => false
     }
     let width_is_extrinsic_definite = width < 1.0e9 &&
-      (not(child_width_is_auto) || stretch_width)
+      (!child_width_is_auto || stretch_width)
     let height_is_extrinsic_definite = height < 1.0e9 &&
-      (not(child_height_is_auto) || stretch_height)
+      (!child_height_is_auto || stretch_height)
     // Non-stretched auto-width grid items should keep content-based sizing
     // instead of block-level fill-available behavior.
     let nested_is_block_level = child.style.display == @types.Grid &&
-      (not(child_width_is_auto) || stretch_width)
+      (!child_width_is_auto || stretch_width)
     let nested_layout = compute_grid_layout_internal(
       child,
       width,
@@ -5309,10 +5307,10 @@ fn compute_child_layout(
       @types.Auto => true
       _ => false
     }
-    if width_is_auto && not(stretch_width) {
+    if width_is_auto && !stretch_width {
       width = nested_layout.width
     }
-    if height_is_auto && not(stretch_height) {
+    if height_is_auto && !stretch_height {
       height = nested_layout.height
     }
   } else if child.style.display == @types.Flex {
@@ -5409,7 +5407,7 @@ fn compute_child_layout(
       @types.Auto => true
       _ => false
     }
-    let child_available_height = if height_is_auto && not(stretch_height) {
+    let child_available_height = if height_is_auto && !stretch_height {
       None
     } else {
       Some(height)
@@ -5430,10 +5428,10 @@ fn compute_child_layout(
     for i = 0; i < nested_layout.children.length(); i = i + 1 {
       child_layouts.push(nested_layout.children[i])
     }
-    if width_is_auto && not(stretch_width) {
+    if width_is_auto && !stretch_width {
       width = nested_layout.width
     }
-    if height_is_auto && not(stretch_height) {
+    if height_is_auto && !stretch_height {
       height = nested_layout.height
     }
   }
@@ -5566,7 +5564,7 @@ fn apply_alignment(
   // Also respect max constraints - if max is set and smaller than available, use computed size
   let mut item_width = match child_style.width {
     @types.Auto =>
-      if has_aspect_ratio && not(height_is_auto) {
+      if has_aspect_ratio && !height_is_auto {
         // Width derived from aspect_ratio, use computed width
         child_layout.width
       } else if has_aspect_ratio &&
@@ -5575,13 +5573,11 @@ fn apply_alignment(
         // aspect_ratio with max_width constraint, width was derived from height
         child_layout.width
       } else if justify == @types.Alignment::Stretch &&
-        not(replaced_with_definite_height) &&
-        not(
-          child_layout.width <= 0.0 &&
-          margin_left_is_auto &&
-          margin_right_is_auto,
-        ) &&
-        not(is_replaced_leaf && child_layout.width <= 0.0) {
+        !replaced_with_definite_height &&
+        !(child_layout.width <= 0.0 &&
+        margin_left_is_auto &&
+        margin_right_is_auto) &&
+        !(is_replaced_leaf && child_layout.width <= 0.0) {
         // Stretch to fill available width
         available_width
       } else {
@@ -5593,7 +5589,7 @@ fn apply_alignment(
   let has_vertical_auto_margin = margin_top_is_auto || margin_bottom_is_auto
   let mut item_height = match child_style.height {
     @types.Auto =>
-      if has_aspect_ratio && not(width_is_auto) {
+      if has_aspect_ratio && !width_is_auto {
         // Height derived from aspect_ratio, use computed height
         child_layout.height
       } else if has_aspect_ratio &&
@@ -5606,8 +5602,7 @@ fn apply_alignment(
         child_layout.height < available_height {
         // aspect_ratio with max_width: width was constrained, height derived
         child_layout.height
-      } else if align == @types.Alignment::Stretch &&
-        not(has_vertical_auto_margin) {
+      } else if align == @types.Alignment::Stretch && !has_vertical_auto_margin {
         // Stretch only if no auto margins
         available_height
       } else {
@@ -5768,7 +5763,7 @@ struct BaselineInfo {
   ascent : Double // Distance from top to baseline
   descent : Double // Distance from baseline to bottom
   height : Double // Total height
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// Calculate baseline info for an item

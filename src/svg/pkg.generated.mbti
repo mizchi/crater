@@ -1,6 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater/svg"
 
+import {
+  "moonbitlang/core/debug",
+}
+
 // Values
 pub fn apply_blur(Array[Array[Color]], Int) -> Array[Array[Color]]
 
@@ -142,7 +146,8 @@ pub(all) enum Align {
   XMinYMax
   XMidYMax
   XMaxYMax
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for Align
 
 pub(all) enum AnimProperty {
   TranslateX(Double)
@@ -206,7 +211,8 @@ pub(all) enum BlendMode {
   Saturation
   ColorMode
   Luminosity
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for BlendMode
 
 pub(all) struct BoundingBox {
   min_x : Double
@@ -301,8 +307,9 @@ pub(all) enum Easing {
   EaseInCubic
   EaseOutCubic
   EaseInOutCubic
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn Easing::apply(Self, Double) -> Double
+pub impl Show for Easing
 
 pub(all) struct EmitterConfig {
   emit_rate : Double
@@ -355,12 +362,14 @@ pub(all) enum EventType {
   DragStart
   DragMove
   DragEnd
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for EventType
 
 pub(all) enum FillRule {
   NonZero
   EvenOdd
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for FillRule
 
 pub(all) enum Filter {
   Blur(Double)
@@ -425,19 +434,22 @@ pub fn Image::sub_image(Self, Int, Int, Int, Int) -> Self
 pub(all) enum Isolation {
   Auto
   Isolate
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for Isolation
 
 pub(all) enum LineCap {
   Butt
   Round
   Square
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for LineCap
 
 pub(all) enum LineJoin {
   Miter
   Round
   Bevel
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for LineJoin
 
 pub(all) struct LinearGradient {
   x1 : Double
@@ -521,17 +533,20 @@ pub fn MaskRegistry::new() -> Self
 pub(all) enum MaskType {
   Luminance
   Alpha
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for MaskType
 
 pub(all) enum MaskUnits {
   UserSpaceOnUse
   ObjectBoundingBox
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for MaskUnits
 
 pub(all) enum MeetOrSlice {
   Meet
   Slice
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for MeetOrSlice
 
 pub(all) struct ObjectPool[T] {
   available : Array[T]
@@ -555,7 +570,8 @@ pub(all) enum PaintOrder {
   StrokeFirst
   FillOnly
   StrokeOnly
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for PaintOrder
 
 pub(all) struct Particle {
   mut x : Double
@@ -602,7 +618,8 @@ pub(all) enum PathCommand {
   QuadraticCurveToRel(Double, Double, Double, Double)
   SmoothQuadraticCurveToRel(Double, Double)
   ArcToRel(Double, Double, Double, Bool, Bool, Double, Double)
-} derive(Show)
+} derive(@debug.Debug)
+pub impl Show for PathCommand
 
 pub(all) struct PathFollower {
   path : Array[PathCommand]
@@ -755,7 +772,8 @@ pub(all) enum Shape {
   Path(commands~ : Array[PathCommand])
   Text(x~ : Double, y~ : Double, text~ : String, font_size~ : Double)
   Group
-} derive(Show)
+} derive(@debug.Debug)
+pub impl Show for Shape
 
 pub(all) struct SimpleRNG {
   mut state : Int
@@ -768,7 +786,8 @@ pub(all) enum SpreadMethod {
   Pad
   Repeat
   Reflect
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for SpreadMethod
 
 pub(all) struct Sprite {
   image : Image
@@ -852,7 +871,8 @@ pub(all) enum TextDecoration {
   Underline
   Overline
   LineThrough
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for TextDecoration
 
 pub(all) struct TextDecorationFull {
   line : TextDecoration
@@ -868,19 +888,22 @@ pub(all) enum TextDecorationStyle {
   Dotted
   Dashed
   Wavy
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for TextDecorationStyle
 
 pub(all) enum TextOrientation {
   Mixed
   Upright
   Sideways
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for TextOrientation
 
 pub(all) enum TextOverflow {
   Clip
   Ellipsis
   Custom(String)
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for TextOverflow
 
 pub(all) struct TextSpan {
   text : String
@@ -982,13 +1005,15 @@ pub(all) enum WhiteSpace {
   PreWrap
   PreLine
   BreakSpaces
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for WhiteSpace
 
 pub(all) enum WritingMode {
   HorizontalTB
   VerticalRL
   VerticalLR
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for WritingMode
 
 // Type aliases
 

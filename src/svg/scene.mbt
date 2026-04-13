@@ -80,7 +80,7 @@ pub fn AnimationManager::update(
   let mut any_running = false
   // Update each tween
   for tween in self.tweens {
-    if not(tween.is_complete()) {
+    if !tween.is_complete() {
       match scene.find_node(tween.target_id) {
         Some(node) => if tween.update(dt, node) { any_running = true }
         None => () // Node not found, skip
@@ -111,7 +111,7 @@ pub fn AnimationManager::cleanup(self : AnimationManager) -> Unit {
 /// Check if any animations are running
 pub fn AnimationManager::is_animating(self : AnimationManager) -> Bool {
   for tween in self.tweens {
-    if not(tween.is_complete()) {
+    if !tween.is_complete() {
       return true
     }
   }
@@ -304,7 +304,7 @@ fn compute_dirty_region(
   // If this node is dirty, include its current and previous bounds
   if node.node_dirty {
     let current_bbox = get_shape_bounds(node.shape)
-    if not(current_bbox.is_empty()) {
+    if !current_bbox.is_empty() {
       let transformed_bbox = transform.apply_bbox(current_bbox)
       dirty_bbox = dirty_bbox.union(transformed_bbox)
     }
@@ -358,7 +358,7 @@ fn render_and_update_dirty(
   let transform = parent_transform.multiply(node.transform)
   // Update previous bounds and clear dirty
   let current_bbox = get_shape_bounds(node.shape)
-  if not(current_bbox.is_empty()) {
+  if !current_bbox.is_empty() {
     node.prev_bounds = Some(transform.apply_bbox(current_bbox))
   }
   node.node_dirty = false
@@ -482,7 +482,7 @@ fn get_min_z_index(nodes : Array[SVGNode]) -> Int {
 fn compute_bounds(node : SVGNode, parent_transform : Transform) -> BoundingBox {
   let transform = parent_transform.multiply(node.transform)
   let mut bbox = get_shape_bounds(node.shape)
-  if not(bbox.is_empty()) {
+  if !bbox.is_empty() {
     bbox = transform.apply_bbox(bbox)
   }
   for child in node.children {
@@ -626,9 +626,9 @@ fn render_node(
   let transform = parent_transform.multiply(node.transform)
   // Early culling: check if node's bounding box is visible
   let shape_bbox = get_shape_bounds(node.shape)
-  if not(shape_bbox.is_empty()) {
+  if !shape_bbox.is_empty() {
     let transformed_bbox = transform.apply_bbox(shape_bbox)
-    if not(is_visible(transformed_bbox, ctx)) {
+    if !is_visible(transformed_bbox, ctx) {
       // Node is outside visible area, but still need to check children
       // (they might have different transforms that make them visible)
       for child in node.children {

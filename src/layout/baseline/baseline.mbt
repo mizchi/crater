@@ -154,7 +154,7 @@ fn fieldset_non_legend_baseline(
   node : @node.Node,
   node_height : Double,
 ) -> Double? {
-  if not(is_fieldset_node_id(node.id)) {
+  if !is_fieldset_node_id(node.id) {
     return None
   }
   let mut block_offset = resolve_top_inset(node.style)
@@ -179,7 +179,7 @@ fn fieldset_non_legend_baseline(
     let margin_top = resolve_margin_top(child.style)
     let margin_bottom = resolve_margin_bottom(child.style)
     let child_height = infer_baseline_height(child, fallback_height)
-    if not(is_legend_node_id(child.id)) {
+    if !is_legend_node_id(child.id) {
       return Some(
         block_offset + margin_top + compute_node_baseline(child, child_height),
       )
@@ -191,13 +191,13 @@ fn fieldset_non_legend_baseline(
 
 ///|
 fn containment_layout_applies_to_baseline(node : @node.Node) -> Bool {
-  if not(node.style.contain.layout) {
+  if !node.style.contain.layout {
     return false
   }
   if is_no_principal_table_internal_display(node.style.display) {
     return false
   }
-  not(is_ruby_internal_no_principal(node.id))
+  !is_ruby_internal_no_principal(node.id)
 }
 
 ///|

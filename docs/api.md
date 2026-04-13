@@ -5,21 +5,30 @@ This document describes the public interfaces provided by Crater for external us
 ## Package Overview
 
 ```
-mizchi/crater                 # Main entry point
+mizchi/crater                 # Thin compatibility entry point
 ├── types/                    # Core types (Dimension, Rect, Size, Color)
 ├── style/                    # CSS style definitions (Style, Display, Position)
-├── node/                     # Layout nodes (Node, Layout, LayoutContext)
+├── layout/                   # Layout entry point (Node, LayoutTree, compute_layout)
+├── layout/html_tree/         # HTML -> LayoutTree builders
+├── layout/style_bridge/      # Cascaded CSS / tree mutation bridge helpers
+├── layout/html_bridge/       # Compatibility wrapper for html_tree/style_bridge
+├── layout/dom_bridge/        # DOM mutation -> LayoutTree bridge helpers
+├── core_subset/              # TUI-oriented checked layout subset
 ├── html/                     # HTML parser (parse_document, Element)
-├── css/
+├── css/                     # Unified CSS entry point
 │   ├── parser/              # CSS parser (parse_stylesheet)
 │   ├── cascade/             # Cascade algorithm (Stylesheet, CascadedValues)
 │   ├── selector/            # CSS selectors (ComplexSelector, matches_*)
 │   ├── media/               # Media queries (MediaQueryList)
+│   ├── responsive/          # Breakpoint / computed-style discovery
 │   └── diagnostics/         # CSS diagnostics (DiagnosticsCollector)
 ├── dom/                      # DOM tree (DomTree, MutationRecord)
-├── tree/                     # Layout tree (LayoutTree, LayoutNode)
 ├── renderer/                 # Rendering API (render, RenderContext)
-├── paint/                    # Paint tree (PaintNode, PaintProperties)
+├── paint/                    # Broad paint facade
+│   ├── model/               # Paint tree data model (PaintNode, PaintProperties)
+│   ├── build/               # Layout -> Paint tree conversion / traversal helpers
+│   └── diff/                # Paint tree diff helpers
+├── vrt/                      # Visual regression rendering/diff helpers
 ├── aom/                      # Accessibility (AccessibilityTree, Role)
 └── webvitals/               # Web Vitals metrics (LCPTracker, LayoutShift)
 ```
@@ -30,7 +39,7 @@ mizchi/crater                 # Main entry point
 
 ### `mizchi/crater` (Root Package)
 
-Main entry point for layout computation.
+Compatibility entry point. Prefer narrower package boundaries for new code.
 
 ```moonbit
 // Compute layout from a Node tree
@@ -41,6 +50,209 @@ pub fn compute_layout_with_warnings(Node, Size[Double]) -> LayoutResult
 
 // Compute CLS (Cumulative Layout Shift) score
 pub fn compute_total_cls(Array[BoundingRect], Array[BoundingRect], Size[Double]) -> Double
+```
+
+### `mizchi/crater/layout`
+
+Layout-specific entry point. Use this when you want the layout engine boundary
+without pulling in the root package.
+
+```moonbit
+pub fn compute_layout(Node, Size[Double]) -> Layout
+pub fn compute_layout_with_warnings(Node, Size[Double]) -> LayoutResult
+pub fn compute_layout_in_context(Node, LayoutContext) -> Layout
+pub fn compute_block_layout(Node, LayoutContext) -> Layout
+pub fn compute_block_layout_with_dispatch(Node, LayoutContext, DispatchFn) -> Layout
+pub fn compute_flex_layout(Node, LayoutContext) -> Layout
+pub fn compute_flex_layout_with_dispatch(Node, LayoutContext, DispatchFn) -> Layout
+pub fn compute_grid_layout_in_context(Node, LayoutContext, DispatchFn) -> Layout
+pub fn compute_grid_layout(Node, Double, Double) -> Layout
+pub fn setup() -> Unit
+pub fn layout_tree_from_node(Node, Double, Double) -> LayoutTree
+```
+
+### `mizchi/crater/layout/html_tree`
+
+HTML-specific bridge APIs that build `LayoutTree` values from parsed documents.
+
+```moonbit
+pub fn layout_node_from_html_element(Element, CascadedValues) -> LayoutNode
+pub fn layout_tree_from_html_document(Document, Double, Double) -> LayoutTree
+```
+
+### `mizchi/crater/layout/style_bridge`
+
+Bridge APIs that apply cascaded CSS values or mutate `LayoutTree` structure.
+
+```moonbit
+pub fn apply_css_values(LayoutNode, CascadedValues) -> Bool
+pub fn update_node_style(LayoutTree, String, CascadedValues) -> Bool
+pub fn batch_update_styles(LayoutTree, Array[(String, CascadedValues)]) -> Int
+pub fn add_node(LayoutTree, String, Int, LayoutNode) -> Bool
+pub fn remove_node(LayoutTree, String) -> Bool
+```
+
+### `mizchi/crater/layout/html_bridge`
+
+Compatibility wrapper around `mizchi/crater/layout/html_tree` and
+`mizchi/crater/layout/style_bridge`. Keep using it only when you need the old
+single import surface.
+
+### `mizchi/crater/layout/dom_bridge`
+
+DOM mutation bridge built on top of `LayoutTree`.
+
+```moonbit
+pub struct Document
+pub fn Document::new(Double, Double) -> Document
+pub fn Document::process_mutations(Document) -> Int
+pub fn Document::update(Document) -> Layout
+```
+
+### `mizchi/crater/core_subset`
+
+TUI-oriented checked subset on top of `mizchi/crater/layout`.
+
+```moonbit
+pub fn validate_core_subset(Node) -> Array[CoreIssue]
+pub fn compute_core_layout(Node, Size[Double]) -> CoreComputeResult
+```
+
+### `mizchi/crater/css`
+
+Unified CSS entry point. This package groups parser / selector / cascade /
+computed-style APIs so they can later be split into a separate package with a
+single import surface.
+
+```moonbit
+pub fn parse_stylesheet(String) -> Stylesheet
+pub fn parse_stylesheet_with_diagnostics(String) -> ParseResult
+pub fn parse_selector_list(String) -> SelectorList?
+pub fn cascade_element(Element, Array[Stylesheet], Array[Declaration]) -> CascadedValues
+pub fn compute_style(CascadedValues, ComputeContext) -> Style
+pub fn compute_inline_raw(String, ComputeContext) -> Style
+pub fn parse_color(String) -> CssColorValue
+pub fn discover_responsive_breakpoints(String) -> BreakpointDiscoveryResult
+```
+
+### `mizchi/crater/paint`
+
+Paint tree entry point. Use this boundary when you want visual tree generation,
+stacking order normalization, or VRT-oriented paint diffs without depending on
+renderer internals.
+
+```moonbit
+pub fn from_node_and_layout(Node, Layout) -> PaintNode
+pub fn from_node_and_layout_with_viewport(Node, Layout, Double, Double, Double) -> PaintNode?
+pub fn sort_tree_by_stacking_order(PaintNode) -> PaintNode
+pub fn flatten_for_rendering(PaintNode) -> Array[PaintNode]
+pub fn diff_trees(PaintNode, PaintNode) -> PaintTreeDiff
+```
+
+### `mizchi/crater/paint/model`
+
+Narrow paint-model boundary. Use this when you only need `PaintNode` /
+`PaintProperties` data and methods such as `to_json_string()`.
+
+```moonbit
+pub type PaintNode
+pub type PaintProperties
+```
+
+### `mizchi/crater/paint/build`
+
+Compatibility wrapper over `mizchi/crater/paint/traversal` and
+`mizchi/crater/paint/scroll`.
+
+```moonbit
+pub fn sort_tree_by_stacking_order(PaintNode) -> PaintNode
+pub fn flatten_for_rendering(PaintNode) -> Array[PaintNode]
+pub fn collect_scrollable_elements(PaintNode) -> Array[ScrollableElement]
+pub fn find_scrollable_at(PaintNode, Double, Double, Double, Double) -> ScrollableHitResult?
+```
+
+### `mizchi/crater/paint/traversal`
+
+Paint tree traversal helpers that operate on existing `PaintNode` values.
+
+```moonbit
+pub fn sort_tree_by_stacking_order(PaintNode) -> PaintNode
+pub fn flatten_for_rendering(PaintNode) -> Array[PaintNode]
+```
+
+### `mizchi/crater/paint/scroll`
+
+Scrollable extraction and hit-testing over `PaintNode` trees.
+
+```moonbit
+pub fn collect_scrollable_elements(PaintNode) -> Array[ScrollableElement]
+pub fn find_scrollable_at(PaintNode, Double, Double, Double, Double) -> ScrollableHitResult?
+```
+
+### `mizchi/crater/paint/node_bridge`
+
+Bridge from `layout.Node` + computed `Layout` data into `PaintNode`.
+
+```moonbit
+pub fn from_node_and_layout(Node, Layout) -> PaintNode
+```
+
+### `mizchi/crater/paint/layout_tree_bridge`
+
+Bridge from plain `Layout` trees into `PaintNode`, using default paint style.
+
+```moonbit
+pub fn from_layout(Layout) -> PaintNode
+```
+
+### `mizchi/crater/paint/render_bridge`
+
+Narrow facade for consumers that need both full paint conversion and viewport
+culling over `layout.Node` + `Layout`.
+
+```moonbit
+pub fn from_node_and_layout(Node, Layout) -> PaintNode
+pub fn from_node_and_layout_with_viewport(Node, Layout, Double, Double, Double) -> PaintNode?
+```
+
+### `mizchi/crater/paint/layout_bridge`
+
+Compatibility wrapper over `mizchi/crater/paint/node_bridge`,
+`mizchi/crater/paint/layout_tree_bridge`, and
+`mizchi/crater/paint/viewport_bridge`.
+
+```moonbit
+pub fn from_layout(Layout) -> PaintNode
+pub fn from_node_and_layout(Node, Layout) -> PaintNode
+pub fn from_node_and_layout_with_viewport(Node, Layout, Double, Double, Double) -> PaintNode?
+```
+
+### `mizchi/crater/paint/viewport_bridge`
+
+Viewport-aware paint bridge for scroll/viewport consumers.
+
+```moonbit
+pub fn from_node_and_layout_with_viewport(Node, Layout, Double, Double, Double) -> PaintNode?
+```
+
+### `mizchi/crater/paint/diff`
+
+Paint tree diff helpers.
+
+```moonbit
+pub fn diff_trees(PaintNode, PaintNode) -> PaintTreeDiff
+```
+
+### `mizchi/crater/vrt`
+
+VRT-oriented helpers built on `renderer` + `paint`.
+
+```moonbit
+pub fn render_html_to_paint_tree(String, Size[Double]) -> PaintNode
+pub fn render_html_to_paint_tree_with_external_css(String, Size[Double], Array[String]) -> PaintNode
+pub fn render_html_to_paint_tree_json(String, Size[Double]) -> String
+pub fn diff_rendered_paint_trees(String, String, Size[Double]) -> PaintTreeDiff
+pub fn render_html_batch_variants(String, Size[Double], Array[RenderVariant]) -> Array[RenderVariantResult]
 ```
 
 ### `mizchi/crater/renderer`
@@ -249,7 +461,6 @@ pub struct LayoutTree {
   // ...
 }
 pub fn LayoutTree::new(LayoutNode, Double, Double) -> Self
-pub fn LayoutTree::from_html_document(Document, Double, Double) -> Self
 pub fn LayoutTree::from_node(Node, Double, Double) -> Self
 pub fn LayoutTree::compute_incremental(Self) -> Layout
 pub fn LayoutTree::compute_full(Self) -> Layout
@@ -271,14 +482,16 @@ pub fn LayoutNode::set_height(Self, Double) -> Self
 pub fn LayoutNode::set_display(Self, Display) -> Self
 // ... many style setters
 
-// DOM + Layout unified document
-pub struct Document {
-  dom : DomTree
-  layout : LayoutTree
-  // ...
-}
+// HTML tree bridge
+pub fn layout_tree_from_html_document(Document, Double, Double) -> LayoutTree
+
+// Style bridge
+pub fn apply_css_values(LayoutNode, CascadedValues) -> Bool
+pub fn update_node_style(LayoutTree, String, CascadedValues) -> Bool
+
+// DOM bridge
+pub struct Document
 pub fn Document::new(Double, Double) -> Self
-pub fn Document::create_element(Self, String) -> NodeId
 pub fn Document::append_child(Self, NodeId, NodeId) -> Result[Unit, CoreError]
 pub fn Document::compute_layout(Self) -> Layout
 pub fn Document::update(Self) -> Layout
@@ -553,6 +766,96 @@ pub struct PaintProperties {
 pub fn PaintProperties::should_render(Self) -> Bool
 ```
 
+### `mizchi/crater/paint/model`
+
+Narrow paint data-model facade.
+
+```moonbit
+pub type PaintNode
+pub type PaintProperties
+```
+
+### `mizchi/crater/paint/build`
+
+Compatibility wrapper facade.
+
+```moonbit
+pub fn collect_scrollable_elements(PaintNode) -> Array[ScrollableElement]
+pub fn flatten_for_rendering(PaintNode) -> Array[PaintNode]
+pub fn sort_tree_by_stacking_order(PaintNode) -> PaintNode
+```
+
+### `mizchi/crater/paint/traversal`
+
+Paint traversal facade.
+
+```moonbit
+pub fn flatten_for_rendering(PaintNode) -> Array[PaintNode]
+pub fn sort_tree_by_stacking_order(PaintNode) -> PaintNode
+```
+
+### `mizchi/crater/paint/scroll`
+
+Paint scroll facade.
+
+```moonbit
+pub fn collect_scrollable_elements(PaintNode) -> Array[ScrollableElement]
+pub fn find_scrollable_at(PaintNode, Double, Double, Double, Double) -> ScrollableHitResult?
+```
+
+### `mizchi/crater/paint/node_bridge`
+
+Paint node-to-paint bridge facade.
+
+```moonbit
+pub fn from_node_and_layout(Node, Layout) -> PaintNode
+```
+
+### `mizchi/crater/paint/layout_tree_bridge`
+
+Paint layout-tree-to-paint facade.
+
+```moonbit
+pub fn from_layout(Layout) -> PaintNode
+```
+
+### `mizchi/crater/paint/render_bridge`
+
+Paint render bridge facade for packages that need both node conversion and
+viewport culling.
+
+```moonbit
+pub fn from_node_and_layout(Node, Layout) -> PaintNode
+pub fn from_node_and_layout_with_viewport(Node, Layout, Double, Double, Double) -> PaintNode?
+```
+
+### `mizchi/crater/paint/layout_bridge`
+
+Paint layout bridge compatibility facade over node/layout-tree/viewport
+bridges.
+
+```moonbit
+pub fn from_layout(Layout) -> PaintNode
+pub fn from_node_and_layout(Node, Layout) -> PaintNode
+pub fn from_node_and_layout_with_viewport(Node, Layout, Double, Double, Double) -> PaintNode?
+```
+
+### `mizchi/crater/paint/viewport_bridge`
+
+Viewport-aware paint bridge facade.
+
+```moonbit
+pub fn from_node_and_layout_with_viewport(Node, Layout, Double, Double, Double) -> PaintNode?
+```
+
+### `mizchi/crater/paint/diff`
+
+Paint diff facade.
+
+```moonbit
+pub fn diff_trees(PaintNode, PaintNode) -> PaintTreeDiff
+```
+
 ---
 
 ## Metrics
@@ -640,7 +943,7 @@ let layout = @renderer.render(html, ctx)
 ### Incremental Layout
 
 ```moonbit
-let doc = @tree.Document::new(800.0, 600.0)
+let doc = @layout_dom.Document::new(800.0, 600.0)
 let root = doc.get_document_root()
 
 let div = doc.create_element("div")

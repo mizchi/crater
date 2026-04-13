@@ -3,7 +3,7 @@ package "mizchi/crater/x/image"
 
 import {
   "mizchi/crater/layout/node",
-  "mizchi/crater/paint",
+  "mizchi/crater/paint/model",
   "mizchi/crater/svg",
   "mizchi/crater/types",
   "mizchi/font",
@@ -38,13 +38,13 @@ pub fn render_layout(@types.Layout, Int, Int) -> String
 
 pub fn render_layout_with_options(@types.Layout, Int, Int, Bool) -> String
 
-pub fn render_paint_node_to_framebuffer(@paint.PaintNode, Framebuffer, DynamicPalette) -> Unit
+pub fn render_paint_node_to_framebuffer(@model.PaintNode, Framebuffer, DynamicPalette) -> Unit
 
-pub fn render_paint_node_to_framebuffer_scrolled(@paint.PaintNode, Framebuffer, DynamicPalette, Int) -> Unit
+pub fn render_paint_node_to_framebuffer_scrolled(@model.PaintNode, Framebuffer, DynamicPalette, Int) -> Unit
 
-pub fn render_paint_node_to_sixel(@paint.PaintNode, Int, Int) -> String
+pub fn render_paint_node_to_sixel(@model.PaintNode, Int, Int) -> String
 
-pub fn render_paint_node_to_sixel_scrolled(@paint.PaintNode, Int, Int, Int) -> String
+pub fn render_paint_node_to_sixel_scrolled(@model.PaintNode, Int, Int, Int) -> String
 
 pub fn render_svg_node_to_sixel(@svg.SVGNode, Int, Int) -> String
 

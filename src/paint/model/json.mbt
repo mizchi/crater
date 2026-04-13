@@ -1,8 +1,6 @@
 ///|
 /// PaintNode JSON serialization for native paint renderer.
 /// Produces a compact JSON string without external JSON library dependency.
-
-///|
 pub fn PaintNode::to_json_string(self : PaintNode) -> String {
   let buf = StringBuilder::new()
   write_paint_node_json(buf, self)
@@ -172,7 +170,6 @@ fn write_json_double(buf : StringBuilder, v : Double) -> Unit {
     buf.write_char('0')
     return
   }
-  // Round to 2 decimal places for compact output
   let rounded = (v * 100.0 + 0.5).to_int().to_double() / 100.0
   buf.write_string(rounded.to_string())
 }

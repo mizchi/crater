@@ -30,7 +30,7 @@ test "builtin github snapshot fixture loads and renders non-empty text output" {
   let browser = Browser::new(1440, 960)
   let html = builtin_github_snapshot_fixture()
   assert_true(html.contains("GitHub"))
-  assert_true(not(html.contains("<script")))
+  assert_true(!html.contains("<script"))
   load_fixture(browser, html)
   let rendered = browser.render_output(Text)
   assert_true(rendered.length() > 0)
@@ -151,14 +151,14 @@ test "kitty image overlay uses rgba pixel path for jpeg payload" {
     assert_true(overlay.contains("\u001b_Ga=T,f=32,q=2,c=1,r=1,"))
     assert_true(overlay.contains(",s=1,v=1,m=0;"))
     assert_eq(payload.length(), 8)
-    assert_true(not(payload.has_prefix("/9j/")))
-    assert_true(not(payload.has_prefix("iVBORw0KGgo")))
+    assert_true(!payload.has_prefix("/9j/"))
+    assert_true(!payload.has_prefix("iVBORw0KGgo"))
   } else {
     assert_true(overlay.contains("\u001b_Ga=T,f=100,q=2,c=1,r=1,"))
     assert_true(overlay.contains(",m=0;"))
     if cached.has_prefix("img_png:") {
       assert_true(payload.has_prefix("iVBORw0KGgo"))
-      assert_true(not(payload.has_prefix("/9j/")))
+      assert_true(!payload.has_prefix("/9j/"))
     } else {
       assert_true(cached.has_prefix("img:"))
       assert_eq(payload, tiny_jpeg_base64)
@@ -181,14 +181,14 @@ test "kitty image overlay uses rgba pixel path for gif payload" {
     assert_true(overlay.contains("\u001b_Ga=T,f=32,q=2,c=1,r=1,"))
     assert_true(overlay.contains(",s=1,v=1,m=0;"))
     assert_eq(payload.length(), 8)
-    assert_true(not(payload.has_prefix("R0lG")))
-    assert_true(not(payload.has_prefix("iVBORw0KGgo")))
+    assert_true(!payload.has_prefix("R0lG"))
+    assert_true(!payload.has_prefix("iVBORw0KGgo"))
   } else {
     assert_true(overlay.contains("\u001b_Ga=T,f=100,q=2,c=1,r=1,"))
     assert_true(overlay.contains(",m=0;"))
     if cached.has_prefix("img_png:") {
       assert_true(payload.has_prefix("iVBORw0KGgo"))
-      assert_true(not(payload.has_prefix("R0lG")))
+      assert_true(!payload.has_prefix("R0lG"))
     } else {
       assert_true(cached.has_prefix("img:"))
       assert_eq(payload, tiny_gif_base64)
@@ -223,8 +223,8 @@ test "kitty image overlay reuses placement when image scrolls and deletes when h
       ",c=1,r=1;\u001b\\",
     ),
   )
-  assert_true(not(second.contains("a=T")))
-  assert_true(not(second.contains(tiny_png_base64)))
+  assert_true(!second.contains("a=T"))
+  assert_true(!second.contains(tiny_png_base64))
   browser.image_regions = []
   let third = browser.build_kitty_image_overlay()
   assert_true(
@@ -380,7 +380,7 @@ async test "fixture submit preventDefault repaints without navigation" {
   inspect(browser.get_current_url(), content="")
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("after"))
-  assert_true(not(rendered.contains("before")))
+  assert_true(!rendered.contains("before"))
 }
 
 ///|
@@ -440,7 +440,7 @@ async test "fixture focused text input beforeinput can prevent typing repaint" {
   inspect(handled, content="true")
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("insertText:x"))
-  assert_true(not(rendered.contains("|input")))
+  assert_true(!rendered.contains("|input"))
 }
 
 ///|
@@ -783,7 +783,7 @@ async test "fixture focused textarea Enter inserts newline without submit" {
   inspect(browser.get_current_url(), content="")
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("\"\\n\""))
-  assert_true(not(rendered.contains("done")))
+  assert_true(!rendered.contains("done"))
 }
 
 ///|
@@ -983,7 +983,7 @@ async test "fixture Tab blur/focus does not dispatch change for untouched text i
   browser.next_link()
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("blur|focus"))
-  assert_true(not(rendered.contains("change")))
+  assert_true(!rendered.contains("change"))
 }
 
 ///|
@@ -1160,7 +1160,7 @@ async test "fixture focused select ArrowDown changes selection and repaints" {
   inspect(handled, content="true")
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("b"))
-  assert_true(not(rendered.contains("before")))
+  assert_true(!rendered.contains("before"))
 }
 
 ///|
@@ -1298,7 +1298,7 @@ async test "fixture click dispatches pointer and mouse sequence before click rep
       "\")",
   )
   let rendered = browser.render_output(Text)
-  assert_true(not(rendered.contains("before")))
+  assert_true(!rendered.contains("before"))
 }
 
 ///|
@@ -1379,7 +1379,7 @@ async test "fixture hover repaint reflects pointermove coordinates" {
   )
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("pointer:" + point + "|mouse:" + point))
-  assert_true(not(rendered.contains("before")))
+  assert_true(!rendered.contains("before"))
 }
 
 ///|
@@ -1872,7 +1872,7 @@ async test "fixture select blur does not duplicate change repaint" {
   browser.next_link()
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("change:b"))
-  assert_true(not(rendered.contains("change:b|change:b")))
+  assert_true(!rendered.contains("change:b|change:b"))
 }
 
 ///|
@@ -1891,7 +1891,7 @@ async test "fixture focused summary Enter toggles details and repaints" {
   browser.set_enable_js(true)
   let _ = browser.execute_scripts()
   let before = browser.render_output(Text)
-  assert_true(not(before.contains("Body")))
+  assert_true(!before.contains("Body"))
   browser.next_link()
   let handled = browser.handle_focused_key("Enter") catch { _ => false }
   inspect(handled, content="true")
@@ -2039,7 +2039,7 @@ async test "fixture removed clickable element disappears from hit test after DOM
   inspect(removed, content="true")
   let after_remove = browser.render_output(Text)
   assert_true(after_remove.contains("removed"))
-  assert_true(not(after_remove.contains("Late")))
+  assert_true(!after_remove.contains("Late"))
   browser.build_accessibility_tree()
   match browser.a11y_tree {
     Some(tree) => assert_true(tree.find_by_source_id("late") is None)
@@ -2051,7 +2051,7 @@ async test "fixture removed clickable element disappears from hit test after DOM
       has_late_hit_region = true
     }
   }
-  assert_true(not(has_late_hit_region))
+  assert_true(!has_late_hit_region)
 
   let stale_hit = browser.activate_at(late_col, late_row) catch { _ => false }
   let _ = stale_hit
@@ -2148,7 +2148,7 @@ async test "fixture removed focused element falls forward to next focusable on n
   inspect(removed, content="true")
   let after_remove = browser.render_output(Text)
   assert_true(after_remove.contains("removed"))
-  assert_true(not(after_remove.contains("Gone")))
+  assert_true(!after_remove.contains("Gone"))
 
   browser.next_link()
   inspect(browser.get_focused_source_id(), content="Some(\"next\")")
@@ -2195,7 +2195,7 @@ async test "fixture removed focused element falls backward to previous focusable
   inspect(removed, content="true")
   let after_remove = browser.render_output(Text)
   assert_true(after_remove.contains("removed"))
-  assert_true(not(after_remove.contains("Gone")))
+  assert_true(!after_remove.contains("Gone"))
 
   browser.prev_link()
   inspect(browser.get_focused_source_id(), content="Some(\"prev\")")
@@ -2242,7 +2242,7 @@ async test "fixture mouse click falls through after focused element removal" {
 
   let after_remove = browser.render_output(Text)
   assert_true(after_remove.contains("removed"))
-  assert_true(not(after_remove.contains("Gone")))
+  assert_true(!after_remove.contains("Gone"))
 
   let (next_col, next_row) = center_of_source_id(browser, "next")
   let clicked = browser.activate_at(next_col, next_row) catch { _ => false }

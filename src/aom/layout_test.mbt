@@ -3,9 +3,9 @@
 
 ///|
 test "extract bounds from LayoutTree" {
-  @dispatch.setup()
+  @layout.setup()
   // Create a simple layout tree manually
-  let child = @tree.LayoutNode::new(
+  let child = @layout.LayoutNode::new(
     "btn1",
     @style.Style::{
       ..@style.Style::default(),
@@ -14,7 +14,7 @@ test "extract bounds from LayoutTree" {
     },
     [],
   )
-  let root = @tree.LayoutNode::new(
+  let root = @layout.LayoutNode::new(
     "container",
     @style.Style::{
       ..@style.Style::default(),
@@ -26,7 +26,7 @@ test "extract bounds from LayoutTree" {
     },
     [child],
   )
-  let layout_tree = @tree.LayoutTree::new(root, 800.0, 600.0)
+  let layout_tree = @layout.LayoutTree::new(root, 800.0, 600.0)
   // Use calculate_layout which populates computed_* fields
   let _ = layout_tree.calculate_layout(800.0, 600.0)
   // Extract bounds
@@ -108,7 +108,7 @@ test "attach bounds to AccessibilityTree" {
 
 ///|
 test "build_accessibility_tree_with_layout - full integration" {
-  @dispatch.setup()
+  @layout.setup()
   // Create HTML
   let html =
     #|<div id="nav">
@@ -116,7 +116,9 @@ test "build_accessibility_tree_with_layout - full integration" {
     #|</div>
   let doc = @html.parse_document(html)
   // Build layout tree from HTML
-  let layout_tree = @tree.LayoutTree::from_html_document(doc, 800.0, 600.0)
+  let layout_tree = @layout_html_tree.layout_tree_from_html_document(
+    doc, 800.0, 600.0,
+  )
   // Use calculate_layout which populates computed_* fields
   let _ = layout_tree.calculate_layout(800.0, 600.0)
   // Build integrated accessibility tree with bounds

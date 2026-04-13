@@ -63,7 +63,7 @@ fn Tokenizer::consume_raw_text_token(
     None => ()
   }
   let buf = StringBuilder::new()
-  while not(self.is_eof()) {
+  while !self.is_eof() {
     // Check for closing tag
     if self.peek() is Some('<') && self.peek_at(1) is Some('/') {
       let saved_pos = self.pos

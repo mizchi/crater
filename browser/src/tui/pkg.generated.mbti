@@ -3,7 +3,7 @@ package "mizchi/crater-browser/tui"
 
 import {
   "mizchi/crater/layout/node",
-  "mizchi/crater/paint",
+  "mizchi/crater/paint/scroll",
   "mizchi/crater/types",
 }
 
@@ -170,7 +170,7 @@ pub(all) struct BufferRenderResult {
   buffer : CharBuffer
   link_regions : Array[LinkRegion]
   hit_regions : Array[HitRegion]
-  scrollable_elements : Array[@paint.ScrollableElement]
+  scrollable_elements : Array[@scroll.ScrollableElement]
   image_regions : Array[ImageRegion]
 }
 

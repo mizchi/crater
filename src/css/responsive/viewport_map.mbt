@@ -8,23 +8,61 @@ pub struct CssRuleViewportEntry {
   media_condition : String
   active_at_widths : Array[Int]
   inactive_at_widths : Array[Int]
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 pub struct CssRuleViewportMap {
   rules : Array[CssRuleViewportEntry]
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 pub struct RequiredTestViewport {
   width : Int
   reason : String
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 pub struct RequiredTestViewportsResult {
   viewports : Array[RequiredTestViewport]
-} derive(Eq, Show)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for CssRuleViewportEntry with output(self, logger) {
+  logger.write_string("{selector: ")
+  logger.write_string(self.selector.to_string())
+  logger.write_string(", properties: ")
+  logger.write_string(self.properties.to_string())
+  logger.write_string(", media_condition: ")
+  logger.write_string(self.media_condition.to_string())
+  logger.write_string(", active_at_widths: ")
+  logger.write_string(self.active_at_widths.to_string())
+  logger.write_string(", inactive_at_widths: ")
+  logger.write_string(self.inactive_at_widths.to_string())
+  logger.write_string("}")
+}
+
+///|
+pub impl Show for CssRuleViewportMap with output(self, logger) {
+  logger.write_string("{rules: ")
+  logger.write_string(self.rules.to_string())
+  logger.write_string("}")
+}
+
+///|
+pub impl Show for RequiredTestViewport with output(self, logger) {
+  logger.write_string("{width: ")
+  logger.write_string(self.width.to_string())
+  logger.write_string(", reason: ")
+  logger.write_string(self.reason.to_string())
+  logger.write_string("}")
+}
+
+///|
+pub impl Show for RequiredTestViewportsResult with output(self, logger) {
+  logger.write_string("{viewports: ")
+  logger.write_string(self.viewports.to_string())
+  logger.write_string("}")
+}
 
 ///|
 /// Discover which CSS rules are active at which viewport widths.

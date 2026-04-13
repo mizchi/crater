@@ -1,17 +1,19 @@
 import {
   "mizchi/crater/types",
-  "mizchi/crater/layout/node",
-  "mizchi/crater/paint",
+  "mizchi/crater/layout" @node,
+  "mizchi/crater-browser/tui/paint/plain" @tui_paint_plain,
+  "mizchi/crater-browser/tui/paint/runtime" @tui_paint_runtime,
+  "mizchi/crater-browser/tui/paint/viewport" @tui_paint_viewport,
   "mizchi/crater/style",
   "mizchi/x/stdio",
   "mizchi/x/sys",
   "moonbitlang/async/js_async",
-  "moonbitlang/core/strconv",
+  "moonbitlang/core/string",
 }
 
 import {
   "mizchi/crater/renderer",
-  "mizchi/crater/css/media",
+  "mizchi/crater/css",
 } for "test"
 
 warnings = "-unused_package"

@@ -7,14 +7,36 @@ pub struct StylePropertyDiff {
   property : String
   normal : String
   forced : String
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 pub struct ComputedStylesWithStateResult {
   normal : Map[String, String]
   forced : Map[String, String]
   diff : Array[StylePropertyDiff]
-} derive(Show)
+} derive(Debug)
+
+///|
+pub impl Show for StylePropertyDiff with output(self, logger) {
+  logger.write_string("{property: ")
+  logger.write_string(self.property.to_string())
+  logger.write_string(", normal: ")
+  logger.write_string(self.normal.to_string())
+  logger.write_string(", forced: ")
+  logger.write_string(self.forced.to_string())
+  logger.write_string("}")
+}
+
+///|
+pub impl Show for ComputedStylesWithStateResult with output(self, logger) {
+  logger.write_string("{normal: ")
+  logger.write_string(self.normal.to_string())
+  logger.write_string(", forced: ")
+  logger.write_string(self.forced.to_string())
+  logger.write_string(", diff: ")
+  logger.write_string(self.diff.to_string())
+  logger.write_string("}")
+}
 
 ///|
 /// Discover computed style differences when forcing pseudo-class states

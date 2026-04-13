@@ -47,7 +47,7 @@ test "bench_tui_vertical_flex_10" (b : @bench.T) {
   let node = create_vertical_flex(10)
   let viewport = @layout.size(80.0, 24.0)
   b.bench(name="tui_vertical_flex_10", fn() {
-    b.keep(@crater.compute_layout(node, viewport))
+    b.keep(@layout.compute_layout(node, viewport))
   })
 }
 
@@ -56,7 +56,7 @@ test "bench_tui_vertical_flex_50" (b : @bench.T) {
   let node = create_vertical_flex(50)
   let viewport = @layout.size(80.0, 24.0)
   b.bench(name="tui_vertical_flex_50", fn() {
-    b.keep(@crater.compute_layout(node, viewport))
+    b.keep(@layout.compute_layout(node, viewport))
   })
 }
 
@@ -65,7 +65,7 @@ test "bench_tui_horizontal_flex_10" (b : @bench.T) {
   let node = create_horizontal_flex(10)
   let viewport = @layout.size(80.0, 24.0)
   b.bench(name="tui_horizontal_flex_10", fn() {
-    b.keep(@crater.compute_layout(node, viewport))
+    b.keep(@layout.compute_layout(node, viewport))
   })
 }
 
@@ -130,7 +130,7 @@ fn create_nested_tui_layout(depth : Int) -> @layout.Node {
     style.flex_direction = if is_row { @types.Row } else { @types.Column }
     let children : Array[@layout.Node] = []
     for i = 0; i < 3; i = i + 1 {
-      children.push(build(d - 1, not(is_row)))
+      children.push(build(d - 1, !is_row))
     }
     @layout.Node::new("node_d\{d}", style, children)
   }
@@ -147,7 +147,7 @@ test "bench_tui_app_layout" (b : @bench.T) {
   let node = create_tui_app_layout()
   let viewport = @layout.size(80.0, 24.0)
   b.bench(name="tui_app_layout", fn() {
-    b.keep(@crater.compute_layout(node, viewport))
+    b.keep(@layout.compute_layout(node, viewport))
   })
 }
 
@@ -156,7 +156,7 @@ test "bench_tui_nested_depth3" (b : @bench.T) {
   let node = create_nested_tui_layout(3)
   let viewport = @layout.size(80.0, 24.0)
   b.bench(name="tui_nested_d3", fn() {
-    b.keep(@crater.compute_layout(node, viewport))
+    b.keep(@layout.compute_layout(node, viewport))
   })
 }
 
@@ -165,7 +165,7 @@ test "bench_tui_nested_depth5" (b : @bench.T) {
   let node = create_nested_tui_layout(5)
   let viewport = @layout.size(80.0, 24.0)
   b.bench(name="tui_nested_d5", fn() {
-    b.keep(@crater.compute_layout(node, viewport))
+    b.keep(@layout.compute_layout(node, viewport))
   })
 }
 
@@ -237,7 +237,7 @@ test "bench_tui_grid_3x3" (b : @bench.T) {
   let node = create_tui_grid_3x3()
   let viewport = @layout.size(80.0, 24.0)
   b.bench(name="tui_grid_3x3", fn() {
-    b.keep(@crater.compute_layout(node, viewport))
+    b.keep(@layout.compute_layout(node, viewport))
   })
 }
 
@@ -246,7 +246,7 @@ test "bench_tui_grid_named_areas" (b : @bench.T) {
   let node = create_tui_grid_named_areas()
   let viewport = @layout.size(80.0, 24.0)
   b.bench(name="tui_grid_named", fn() {
-    b.keep(@crater.compute_layout(node, viewport))
+    b.keep(@layout.compute_layout(node, viewport))
   })
 }
 
@@ -290,7 +290,7 @@ test "bench_tui_text_list_10" (b : @bench.T) {
   let node = create_text_list(10)
   let viewport = @layout.size(80.0, 24.0)
   b.bench(name="tui_text_list_10", fn() {
-    b.keep(@crater.compute_layout(node, viewport))
+    b.keep(@layout.compute_layout(node, viewport))
   })
 }
 
@@ -299,7 +299,7 @@ test "bench_tui_text_list_50" (b : @bench.T) {
   let node = create_text_list(50)
   let viewport = @layout.size(80.0, 24.0)
   b.bench(name="tui_text_list_50", fn() {
-    b.keep(@crater.compute_layout(node, viewport))
+    b.keep(@layout.compute_layout(node, viewport))
   })
 }
 
@@ -479,7 +479,7 @@ test "bench_tui_file_browser_50" (b : @bench.T) {
   let node = create_file_browser_layout(50)
   let viewport = @layout.size(120.0, 40.0)
   b.bench(name="tui_file_browser_50", fn() {
-    b.keep(@crater.compute_layout(node, viewport))
+    b.keep(@layout.compute_layout(node, viewport))
   })
 }
 
@@ -488,7 +488,7 @@ test "bench_tui_file_browser_200" (b : @bench.T) {
   let node = create_file_browser_layout(200)
   let viewport = @layout.size(120.0, 40.0)
   b.bench(name="tui_file_browser_200", fn() {
-    b.keep(@crater.compute_layout(node, viewport))
+    b.keep(@layout.compute_layout(node, viewport))
   })
 }
 
@@ -497,7 +497,7 @@ test "bench_tui_dashboard" (b : @bench.T) {
   let node = create_dashboard_layout()
   let viewport = @layout.size(120.0, 40.0)
   b.bench(name="tui_dashboard", fn() {
-    b.keep(@crater.compute_layout(node, viewport))
+    b.keep(@layout.compute_layout(node, viewport))
   })
 }
 

@@ -4,6 +4,7 @@ package "mizchi/crater/layout/grid"
 import {
   "mizchi/crater/layout/node",
   "mizchi/crater/types",
+  "moonbitlang/core/debug",
 }
 
 // Values
@@ -16,9 +17,9 @@ pub fn compute_layout(@node.Node, Double, Double) -> @types.Layout
 // Errors
 
 // Types and methods
-type BaselineInfo derive(Show)
+type BaselineInfo derive(@debug.Debug)
 
-type GridAreaBounds derive(Show)
+type GridAreaBounds derive(@debug.Debug)
 
 // Type aliases
 

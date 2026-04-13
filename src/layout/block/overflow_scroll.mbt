@@ -154,13 +154,13 @@ fn compute_overflow_alignment_offset(
   let target_min = match alignment {
     @types.Alignment::Start | @types.Alignment::FlexStart => fallback_to_start()
     @types.Alignment::End | @types.Alignment::FlexEnd =>
-      if free_space < 0.0 && not(is_unsafe) {
+      if free_space < 0.0 && !is_unsafe {
         fallback_to_start()
       } else {
         align_to_end()
       }
     @types.Alignment::Center =>
-      if free_space < 0.0 && not(is_unsafe) {
+      if free_space < 0.0 && !is_unsafe {
         fallback_to_start()
       } else {
         free_space / 2.0
@@ -181,7 +181,7 @@ fn apply_initial_overflow_content_alignment(
     return layout
   }
   let style = node.style
-  if not(should_apply_overflow_content_alignment(style)) {
+  if !should_apply_overflow_content_alignment(style) {
     return layout
   }
 
@@ -195,7 +195,7 @@ fn apply_initial_overflow_content_alignment(
   } else {
     overflow_creates_scroll_container(style.overflow_y)
   }
-  if not(inline_scrollable) && not(block_scrollable) {
+  if !inline_scrollable && !block_scrollable {
     return layout
   }
 
@@ -310,7 +310,7 @@ fn apply_initial_scroll_snap(
   if layout.children.is_empty() {
     return layout
   }
-  if not(node.style.scroll_snap_type.is_mandatory()) {
+  if !node.style.scroll_snap_type.is_mandatory() {
     return layout
   }
 
@@ -318,7 +318,7 @@ fn apply_initial_scroll_snap(
     overflow_creates_scroll_container(node.style.overflow_x)
   let supports_snap_y = node.style.scroll_snap_type.snaps_y() &&
     overflow_creates_scroll_container(node.style.overflow_y)
-  if not(supports_snap_x) && not(supports_snap_y) {
+  if !supports_snap_x && !supports_snap_y {
     return layout
   }
 

@@ -83,7 +83,7 @@ fn intersect_pixel_rects(
 
 ///|
 fn get_local_clip_rect(
-  node : @paint.PaintNode,
+  node : @tui_paint_runtime.PaintNode,
   abs_x : Double,
   abs_y : Double,
 ) -> (Double, Double, Double, Double)? {
@@ -279,7 +279,7 @@ pub struct TuiContext {
 /// Render a PaintNode to the CharBuffer
 fn render_paint_node(
   ctx : TuiContext,
-  node : @paint.PaintNode,
+  node : @tui_paint_runtime.PaintNode,
   parent_x : Double,
   parent_y : Double,
   inside_link : Bool,
@@ -288,7 +288,7 @@ fn render_paint_node(
   clip_rect? : (Double, Double, Double, Double)? = None,
 ) -> Unit {
   // Skip invisible nodes
-  if not(node.paint.should_render()) {
+  if !node.paint.should_render() {
     return
   }
   // Calculate absolute position
@@ -372,7 +372,7 @@ fn render_paint_node(
     _ => ()
   }
   // Draw background if not transparent
-  if not(node.paint.background_color.is_transparent()) {
+  if !node.paint.background_color.is_transparent() {
     // Clip to viewport
     let draw_row = row.max(0)
     let draw_h = (row + h).min(ctx.viewport_height) - draw_row
@@ -394,7 +394,7 @@ fn render_paint_node(
             None => node.id
           }
           // Fill background color (from CSS) so it shows even without graphics
-          if not(node.paint.background_color.is_transparent()) {
+          if !node.paint.background_color.is_transparent() {
             ctx.buffer.fill_bg(
               col,
               draw_row,
@@ -663,8 +663,20 @@ pub(all) struct BufferRenderResult {
   buffer : CharBuffer
   link_regions : Array[LinkRegion]
   hit_regions : Array[HitRegion]
-  scrollable_elements : Array[@paint.ScrollableElement]
+  scrollable_elements : Array[@tui_paint_runtime.ScrollableElement]
   image_regions : Array[ImageRegion]
+}
+
+///|
+fn prepare_viewport_paint(
+  node : @node.Node,
+  layout : @types.Layout,
+  viewport_top : Double,
+  viewport_bottom : Double,
+) -> @tui_paint_runtime.PreparedPaint? {
+  @tui_paint_runtime.prepare_viewport_paint(
+    node, layout, viewport_top, viewport_bottom, 0.0,
+  )
 }
 
 ///|
@@ -717,11 +729,9 @@ pub fn render_to_buffer(
   // Convert to PaintNode with viewport culling
   let viewport_top = scroll_y.to_double() * font_height
   let viewport_bottom = (scroll_y + height).to_double() * font_height
-  let paint_node = match
-    @paint.from_node_and_layout_with_viewport(
-      node, layout, viewport_top, viewport_bottom, 0.0,
-    ) {
-    Some(n) => n
+  let prepared = match
+    prepare_viewport_paint(node, layout, viewport_top, viewport_bottom) {
+    Some(p) => p
     None =>
       return {
         buffer: buf,
@@ -731,11 +741,10 @@ pub fn render_to_buffer(
         image_regions: [],
       }
   }
-  let sorted = @paint.sort_tree_by_stacking_order(paint_node)
   let link_regions : Array[LinkRegion] = []
   let hit_regions : Array[HitRegion] = []
   let image_regions : Array[ImageRegion] = []
-  let scrollable_elements = @paint.collect_scrollable_elements(sorted)
+  let scrollable_elements = prepared.scrollable_elements
   let ctx : TuiContext = {
     buffer: buf,
     scroll_y,
@@ -747,7 +756,7 @@ pub fn render_to_buffer(
     dark_mode: false,
     element_scroll_positions: {},
   }
-  render_paint_node(ctx, sorted, 0.0, 0.0, false)
+  render_paint_node(ctx, prepared.tree, 0.0, 0.0, false)
   { buffer: buf, link_regions, hit_regions, scrollable_elements, image_regions }
 }
 
@@ -831,11 +840,9 @@ pub fn render_to_buffer_with_status(
   // Calculate viewport bounds in pixels (font_height = 16.0)
   let viewport_top = scroll_y.to_double() * font_height
   let viewport_bottom = (scroll_y + content_height).to_double() * font_height
-  let paint_node = match
-    @paint.from_node_and_layout_with_viewport(
-      node, layout, viewport_top, viewport_bottom, 0.0,
-    ) {
-    Some(n) => n
+  let prepared = match
+    prepare_viewport_paint(node, layout, viewport_top, viewport_bottom) {
+    Some(p) => p
     None => {
       // Content is outside viewport, draw status bar and return
       draw_status_bar(
@@ -857,10 +864,7 @@ pub fn render_to_buffer_with_status(
       }
     }
   }
-  // Sort by stacking order
-  let sorted = @paint.sort_tree_by_stacking_order(paint_node)
-  // Collect scrollable elements from the paint tree
-  let scrollable_elements = @paint.collect_scrollable_elements(sorted)
+  let scrollable_elements = prepared.scrollable_elements
   // Create context with link regions array
   // Content is drawn with a 1-row offset via parent_y
   let link_regions : Array[LinkRegion] = []
@@ -880,7 +884,7 @@ pub fn render_to_buffer_with_status(
   // Render content with offset (start with inside_link=false)
   render_paint_node(
     ctx,
-    sorted,
+    prepared.tree,
     0.0,
     content_start_row.to_double() * font_height,
     false,
@@ -1046,11 +1050,9 @@ pub fn render_to_buffer_with_hints(
   // Calculate viewport bounds in pixels (font_height = 16.0)
   let viewport_top = scroll_y.to_double() * font_height
   let viewport_bottom = (scroll_y + content_height).to_double() * font_height
-  let paint_node = match
-    @paint.from_node_and_layout_with_viewport(
-      node, layout, viewport_top, viewport_bottom, 0.0,
-    ) {
-    Some(n) => n
+  let prepared = match
+    prepare_viewport_paint(node, layout, viewport_top, viewport_bottom) {
+    Some(p) => p
     None => {
       // Content is outside viewport, just draw hints and status bar
       draw_hints(buf, hints, content_height)
@@ -1064,10 +1066,7 @@ pub fn render_to_buffer_with_hints(
       }
     }
   }
-  // Sort by stacking order
-  let sorted = @paint.sort_tree_by_stacking_order(paint_node)
-  // Collect scrollable elements from the paint tree
-  let scrollable_elements = @paint.collect_scrollable_elements(sorted)
+  let scrollable_elements = prepared.scrollable_elements
   // Create context with link regions array
   let link_regions : Array[LinkRegion] = []
   let hit_regions : Array[HitRegion] = []
@@ -1084,7 +1083,7 @@ pub fn render_to_buffer_with_hints(
     element_scroll_positions: {},
   }
   // Render content (start with inside_link=false)
-  render_paint_node(ctx, sorted, 0.0, 0.0, false)
+  render_paint_node(ctx, prepared.tree, 0.0, 0.0, false)
   // Draw hint overlays (hint positions are already screen coordinates)
   draw_hints(buf, hints, content_height)
   // Draw status bar with hint list

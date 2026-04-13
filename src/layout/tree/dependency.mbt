@@ -16,7 +16,19 @@ pub(all) enum DependencyKind {
   Intrinsic
   /// Depends on viewport (vw/vh - future extension)
   Viewport
-} derive(Show, Eq)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for DependencyKind with output(self, logger) {
+  match self {
+    Static => logger.write_string("Static")
+    ParentWidth => logger.write_string("ParentWidth")
+    ParentHeight => logger.write_string("ParentHeight")
+    ParentBoth => logger.write_string("ParentBoth")
+    Intrinsic => logger.write_string("Intrinsic")
+    Viewport => logger.write_string("Viewport")
+  }
+}
 
 ///|
 /// Merge two dependency kinds into a combined dependency

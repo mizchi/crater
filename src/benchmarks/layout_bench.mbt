@@ -5,7 +5,7 @@
 ///|
 /// Compute layout for a node tree with given viewport
 fn compute_layout(
-  node : @node.Node,
+  node : @tree.Node,
   viewport : @types.Size[Double],
 ) -> @types.Layout {
   let ctx : @types.LayoutContext = {
@@ -17,32 +17,32 @@ fn compute_layout(
     stretch_width: false,
     stretch_height: false,
   }
-  @dispatch.compute_layout(node, ctx)
+  @tree.compute_layout_in_context(node, ctx)
 }
 
 ///|
 /// Create a simple flat block layout with N children
-fn create_flat_block(n : Int) -> @node.Node {
+fn create_flat_block(n : Int) -> @tree.Node {
   let default_style = @style.Style::default()
-  let children : Array[@node.Node] = []
+  let children : Array[@tree.Node] = []
   for i = 0; i < n; i = i + 1 {
     let child_style = { ..default_style, height: @types.Length(20.0) }
-    children.push(@node.Node::leaf("child\{i}", child_style))
+    children.push(@tree.Node::leaf("child\{i}", child_style))
   }
   let root_style = { ..default_style, width: @types.Length(400.0) }
-  @node.Node::new("root", root_style, children)
+  @tree.Node::new("root", root_style, children)
 }
 
 ///|
 /// Create a nested block layout with depth D and children per level
-fn create_nested_block(depth : Int, children_per_level : Int) -> @node.Node {
+fn create_nested_block(depth : Int, children_per_level : Int) -> @tree.Node {
   let default_style = @style.Style::default()
-  fn build(d : Int) -> @node.Node {
+  fn build(d : Int) -> @tree.Node {
     if d == 0 {
       let leaf_style = { ..default_style, height: @types.Length(10.0) }
-      return @node.Node::leaf("leaf", leaf_style)
+      return @tree.Node::leaf("leaf", leaf_style)
     }
-    let children : Array[@node.Node] = []
+    let children : Array[@tree.Node] = []
     for i = 0; i < children_per_level; i = i + 1 {
       children.push(build(d - 1))
     }
@@ -55,25 +55,25 @@ fn create_nested_block(depth : Int, children_per_level : Int) -> @node.Node {
         bottom: @types.Length(5.0),
       },
     }
-    @node.Node::new("node_d\{d}", style, children)
+    @tree.Node::new("node_d\{d}", style, children)
   }
 
   let root_style = { ..default_style, width: @types.Length(800.0) }
-  @node.Node::new("root", root_style, [build(depth)])
+  @tree.Node::new("root", root_style, [build(depth)])
 }
 
 ///|
 /// Create a flex row layout with N children
-fn create_flex_row(n : Int) -> @node.Node {
+fn create_flex_row(n : Int) -> @tree.Node {
   let default_style = @style.Style::default()
-  let children : Array[@node.Node] = []
+  let children : Array[@tree.Node] = []
   for i = 0; i < n; i = i + 1 {
     let child_style = {
       ..default_style,
       flex_grow: 1.0,
       height: @types.Length(50.0),
     }
-    children.push(@node.Node::leaf("child\{i}", child_style))
+    children.push(@tree.Node::leaf("child\{i}", child_style))
   }
   let root_style = {
     ..default_style,
@@ -82,16 +82,16 @@ fn create_flex_row(n : Int) -> @node.Node {
     width: @types.Length(800.0),
     height: @types.Length(100.0),
   }
-  @node.Node::new("root", root_style, children)
+  @tree.Node::new("root", root_style, children)
 }
 
 ///|
 /// Create a complex mixed layout (flex container with nested blocks)
-fn create_complex_layout() -> @node.Node {
+fn create_complex_layout() -> @tree.Node {
   let default_style = @style.Style::default()
 
   // Create sidebar with block children
-  let sidebar_children : Array[@node.Node] = []
+  let sidebar_children : Array[@tree.Node] = []
   for i = 0; i < 10; i = i + 1 {
     let item_style = {
       ..default_style,
@@ -103,21 +103,21 @@ fn create_complex_layout() -> @node.Node {
         bottom: @types.Length(5.0),
       },
     }
-    sidebar_children.push(@node.Node::leaf("sidebar_item\{i}", item_style))
+    sidebar_children.push(@tree.Node::leaf("sidebar_item\{i}", item_style))
   }
-  let sidebar = @node.Node::new(
+  let sidebar = @tree.Node::new(
     "sidebar",
     { ..default_style, width: @types.Length(200.0) },
     sidebar_children,
   )
 
   // Create main content with nested structure
-  let content_children : Array[@node.Node] = []
+  let content_children : Array[@tree.Node] = []
   for i = 0; i < 5; i = i + 1 {
     // Each section has a header and items
-    let section_items : Array[@node.Node] = []
+    let section_items : Array[@tree.Node] = []
     let header_style = { ..default_style, height: @types.Length(40.0) }
-    section_items.push(@node.Node::leaf("header\{i}", header_style))
+    section_items.push(@tree.Node::leaf("header\{i}", header_style))
     for j = 0; j < 3; j = j + 1 {
       let item_style = {
         ..default_style,
@@ -129,7 +129,7 @@ fn create_complex_layout() -> @node.Node {
           bottom: @types.Length(10.0),
         },
       }
-      section_items.push(@node.Node::leaf("item\{i}_\{j}", item_style))
+      section_items.push(@tree.Node::leaf("item\{i}_\{j}", item_style))
     }
     let section_style = {
       ..default_style,
@@ -141,10 +141,10 @@ fn create_complex_layout() -> @node.Node {
       },
     }
     content_children.push(
-      @node.Node::new("section\{i}", section_style, section_items),
+      @tree.Node::new("section\{i}", section_style, section_items),
     )
   }
-  let content = @node.Node::new(
+  let content = @tree.Node::new(
     "content",
     { ..default_style, flex_grow: 1.0 },
     content_children,
@@ -164,25 +164,25 @@ fn create_complex_layout() -> @node.Node {
       bottom: @types.Length(20.0),
     },
   }
-  @node.Node::new("root", root_style, [sidebar, content])
+  @tree.Node::new("root", root_style, [sidebar, content])
 }
 
 ///|
 /// Create a deeply nested flex layout
-fn create_nested_flex(depth : Int) -> @node.Node {
+fn create_nested_flex(depth : Int) -> @tree.Node {
   let default_style = @style.Style::default()
-  fn build(d : Int, is_row : Bool) -> @node.Node {
+  fn build(d : Int, is_row : Bool) -> @tree.Node {
     if d == 0 {
       let leaf_style = {
         ..default_style,
         width: @types.Length(20.0),
         height: @types.Length(20.0),
       }
-      return @node.Node::leaf("leaf", leaf_style)
+      return @tree.Node::leaf("leaf", leaf_style)
     }
-    let children : Array[@node.Node] = []
+    let children : Array[@tree.Node] = []
     for i = 0; i < 3; i = i + 1 {
-      children.push(build(d - 1, not(is_row)))
+      children.push(build(d - 1, !is_row))
     }
     let style = {
       ..default_style,
@@ -193,7 +193,7 @@ fn create_nested_flex(depth : Int) -> @node.Node {
         @types.Column
       },
     }
-    @node.Node::new("flex_d\{d}", style, children)
+    @tree.Node::new("flex_d\{d}", style, children)
   }
 
   let root_style = {
@@ -203,7 +203,7 @@ fn create_nested_flex(depth : Int) -> @node.Node {
     width: @types.Length(600.0),
     height: @types.Length(400.0),
   }
-  @node.Node::new("root", root_style, [build(depth, true)])
+  @tree.Node::new("root", root_style, [build(depth, true)])
 }
 
 // =============================================================================
@@ -267,20 +267,20 @@ test "bench_nested_flex_depth4" (b : @bench.T) {
 
 ///|
 /// Create a layout that requires intrinsic sizing (auto width flex items)
-fn create_intrinsic_sizing_test() -> @node.Node {
+fn create_intrinsic_sizing_test() -> @tree.Node {
   let default_style = @style.Style::default()
 
   // Create items with explicit sizes (baseline for comparison)
-  let explicit_children : Array[@node.Node] = []
+  let explicit_children : Array[@tree.Node] = []
   for i = 0; i < 5; i = i + 1 {
     let child_style = {
       ..default_style,
       width: @types.Length(100.0),
       height: @types.Length(50.0),
     }
-    explicit_children.push(@node.Node::leaf("explicit\{i}", child_style))
+    explicit_children.push(@tree.Node::leaf("explicit\{i}", child_style))
   }
-  let explicit_container = @node.Node::new(
+  let explicit_container = @tree.Node::new(
     "explicit_container",
     {
       ..default_style,
@@ -292,7 +292,7 @@ fn create_intrinsic_sizing_test() -> @node.Node {
   )
 
   // Root
-  @node.Node::new(
+  @tree.Node::new(
     "root",
     {
       ..default_style,
@@ -307,12 +307,12 @@ fn create_intrinsic_sizing_test() -> @node.Node {
 
 ///|
 /// Create deeply nested layout (stress test for recursive intrinsic sizing)
-fn create_deep_nested_intrinsic(depth : Int) -> @node.Node {
+fn create_deep_nested_intrinsic(depth : Int) -> @tree.Node {
   let default_style = @style.Style::default()
-  fn build(d : Int) -> @node.Node {
+  fn build(d : Int) -> @tree.Node {
     if d == 0 {
       // Leaf with explicit size
-      return @node.Node::leaf("leaf", {
+      return @tree.Node::leaf("leaf", {
         ..default_style,
         width: @types.Length(50.0),
         height: @types.Length(30.0),
@@ -320,7 +320,7 @@ fn create_deep_nested_intrinsic(depth : Int) -> @node.Node {
     }
     // Container with explicit size wrapping child
     let child = build(d - 1)
-    @node.Node::new(
+    @tree.Node::new(
       "container_d\{d}",
       {
         ..default_style,
@@ -366,11 +366,11 @@ test "bench_deep_nested_d10" (b : @bench.T) {
 
 ///|
 /// Create a simple 3x3 grid layout
-fn create_grid_3x3() -> @node.Node {
+fn create_grid_3x3() -> @tree.Node {
   let default_style = @style.Style::default()
-  let children : Array[@node.Node] = []
+  let children : Array[@tree.Node] = []
   for i = 0; i < 9; i = i + 1 {
-    children.push(@node.Node::leaf("cell\{i}", default_style))
+    children.push(@tree.Node::leaf("cell\{i}", default_style))
   }
   let root_style = {
     ..default_style,
@@ -388,16 +388,16 @@ fn create_grid_3x3() -> @node.Node {
       @types.TrackSizingFunction::Length(100.0),
     ],
   }
-  @node.Node::new("grid", root_style, children)
+  @tree.Node::new("grid", root_style, children)
 }
 
 ///|
 /// Create a larger 10x10 grid layout
-fn create_grid_10x10() -> @node.Node {
+fn create_grid_10x10() -> @tree.Node {
   let default_style = @style.Style::default()
-  let children : Array[@node.Node] = []
+  let children : Array[@tree.Node] = []
   for i = 0; i < 100; i = i + 1 {
-    children.push(@node.Node::leaf("cell\{i}", default_style))
+    children.push(@tree.Node::leaf("cell\{i}", default_style))
   }
   let columns : Array[@types.TrackSizingFunction] = []
   let rows : Array[@types.TrackSizingFunction] = []
@@ -413,16 +413,16 @@ fn create_grid_10x10() -> @node.Node {
     grid_template_columns: columns,
     grid_template_rows: rows,
   }
-  @node.Node::new("grid", root_style, children)
+  @tree.Node::new("grid", root_style, children)
 }
 
 ///|
 /// Create a grid with fr units
-fn create_grid_fr() -> @node.Node {
+fn create_grid_fr() -> @tree.Node {
   let default_style = @style.Style::default()
-  let children : Array[@node.Node] = []
+  let children : Array[@tree.Node] = []
   for i = 0; i < 12; i = i + 1 {
-    children.push(@node.Node::leaf("cell\{i}", default_style))
+    children.push(@tree.Node::leaf("cell\{i}", default_style))
   }
   let root_style = {
     ..default_style,
@@ -441,21 +441,21 @@ fn create_grid_fr() -> @node.Node {
       @types.TrackSizingFunction::Fr(1.0),
     ],
   }
-  @node.Node::new("grid", root_style, children)
+  @tree.Node::new("grid", root_style, children)
 }
 
 ///|
 /// Create a grid with auto tracks
-fn create_grid_auto() -> @node.Node {
+fn create_grid_auto() -> @tree.Node {
   let default_style = @style.Style::default()
-  let children : Array[@node.Node] = []
+  let children : Array[@tree.Node] = []
   for i = 0; i < 20; i = i + 1 {
     let child_style = {
       ..default_style,
       width: @types.Length(50.0),
       height: @types.Length(30.0),
     }
-    children.push(@node.Node::leaf("cell\{i}", child_style))
+    children.push(@tree.Node::leaf("cell\{i}", child_style))
   }
   let root_style = {
     ..default_style,
@@ -469,7 +469,7 @@ fn create_grid_auto() -> @node.Node {
       @types.TrackSizingFunction::Auto,
     ],
   }
-  @node.Node::new("grid", root_style, children)
+  @tree.Node::new("grid", root_style, children)
 }
 
 ///|
@@ -506,9 +506,9 @@ test "bench_grid_auto" (b : @bench.T) {
 
 ///|
 /// Create a flex layout with wrapping (many items that wrap to multiple lines)
-fn create_flex_wrap_many() -> @node.Node {
+fn create_flex_wrap_many() -> @tree.Node {
   let default_style = @style.Style::default()
-  let children : Array[@node.Node] = []
+  let children : Array[@tree.Node] = []
   // 50 items, each 100px wide, will wrap in a 600px container
   for i = 0; i < 50; i = i + 1 {
     let child_style = {
@@ -516,7 +516,7 @@ fn create_flex_wrap_many() -> @node.Node {
       width: @types.Length(100.0),
       height: @types.Length(50.0),
     }
-    children.push(@node.Node::leaf("item\{i}", child_style))
+    children.push(@tree.Node::leaf("item\{i}", child_style))
   }
   let root_style = {
     ..default_style,
@@ -526,14 +526,14 @@ fn create_flex_wrap_many() -> @node.Node {
     width: @types.Length(600.0),
     height: @types.Length(600.0),
   }
-  @node.Node::new("root", root_style, children)
+  @tree.Node::new("root", root_style, children)
 }
 
 ///|
 /// Create flex wrap with varying item sizes (more complex wrapping)
-fn create_flex_wrap_varied() -> @node.Node {
+fn create_flex_wrap_varied() -> @tree.Node {
   let default_style = @style.Style::default()
-  let children : Array[@node.Node] = []
+  let children : Array[@tree.Node] = []
   let widths = [80.0, 120.0, 60.0, 150.0, 90.0, 100.0, 70.0, 130.0]
   for i = 0; i < 40; i = i + 1 {
     let child_style = {
@@ -541,7 +541,7 @@ fn create_flex_wrap_varied() -> @node.Node {
       width: @types.Length(widths[i % 8]),
       height: @types.Length(40.0),
     }
-    children.push(@node.Node::leaf("item\{i}", child_style))
+    children.push(@tree.Node::leaf("item\{i}", child_style))
   }
   let root_style = {
     ..default_style,
@@ -552,7 +552,7 @@ fn create_flex_wrap_varied() -> @node.Node {
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
   }
-  @node.Node::new("root", root_style, children)
+  @tree.Node::new("root", root_style, children)
 }
 
 ///|
@@ -577,9 +577,9 @@ test "bench_flex_wrap_varied" (b : @bench.T) {
 
 ///|
 /// Create a layout with min/max constraints that are active
-fn create_minmax_constraints() -> @node.Node {
+fn create_minmax_constraints() -> @tree.Node {
   let default_style = @style.Style::default()
-  let children : Array[@node.Node] = []
+  let children : Array[@tree.Node] = []
   for i = 0; i < 20; i = i + 1 {
     // Items with flex_grow but constrained by min/max
     let child_style = {
@@ -589,7 +589,7 @@ fn create_minmax_constraints() -> @node.Node {
       max_width: @types.Length(150.0),
       height: @types.Length(40.0),
     }
-    children.push(@node.Node::leaf("item\{i}", child_style))
+    children.push(@tree.Node::leaf("item\{i}", child_style))
   }
   let root_style = {
     ..default_style,
@@ -599,25 +599,25 @@ fn create_minmax_constraints() -> @node.Node {
     width: @types.Length(800.0),
     height: @types.Length(400.0),
   }
-  @node.Node::new("root", root_style, children)
+  @tree.Node::new("root", root_style, children)
 }
 
 ///|
 /// Create nested layout with percentage and min/max constraints
-fn create_nested_percent_constraints() -> @node.Node {
+fn create_nested_percent_constraints() -> @tree.Node {
   let default_style = @style.Style::default()
 
   // Create columns with percentage width and min-width constraints
-  let columns : Array[@node.Node] = []
+  let columns : Array[@tree.Node] = []
   for i = 0; i < 4; i = i + 1 {
-    let column_children : Array[@node.Node] = []
+    let column_children : Array[@tree.Node] = []
     for j = 0; j < 5; j = j + 1 {
       let item_style = {
         ..default_style,
         height: @types.Percent(0.2),
         min_height: @types.Length(30.0),
       }
-      column_children.push(@node.Node::leaf("item\{i}_\{j}", item_style))
+      column_children.push(@tree.Node::leaf("item\{i}_\{j}", item_style))
     }
     let column_style = {
       ..default_style,
@@ -625,7 +625,7 @@ fn create_nested_percent_constraints() -> @node.Node {
       min_width: @types.Length(100.0),
       max_width: @types.Length(300.0),
     }
-    columns.push(@node.Node::new("col\{i}", column_style, column_children))
+    columns.push(@tree.Node::new("col\{i}", column_style, column_children))
   }
   let root_style = {
     ..default_style,
@@ -634,7 +634,7 @@ fn create_nested_percent_constraints() -> @node.Node {
     width: @types.Length(1000.0),
     height: @types.Length(500.0),
   }
-  @node.Node::new("root", root_style, columns)
+  @tree.Node::new("root", root_style, columns)
 }
 
 ///|
@@ -659,16 +659,16 @@ test "bench_nested_percent" (b : @bench.T) {
 
 ///|
 /// Create flex layout with space-between and center alignment
-fn create_complex_alignment() -> @node.Node {
+fn create_complex_alignment() -> @tree.Node {
   let default_style = @style.Style::default()
-  let children : Array[@node.Node] = []
+  let children : Array[@tree.Node] = []
   for i = 0; i < 15; i = i + 1 {
     let child_style = {
       ..default_style,
       width: @types.Length(60.0 + (i % 3).to_double() * 20.0),
       height: @types.Length(40.0 + (i % 4).to_double() * 10.0),
     }
-    children.push(@node.Node::leaf("item\{i}", child_style))
+    children.push(@tree.Node::leaf("item\{i}", child_style))
   }
   let root_style = {
     ..default_style,
@@ -683,7 +683,7 @@ fn create_complex_alignment() -> @node.Node {
     row_gap: @types.Length(15.0),
     column_gap: @types.Length(10.0),
   }
-  @node.Node::new("root", root_style, children)
+  @tree.Node::new("root", root_style, children)
 }
 
 ///|
@@ -701,25 +701,25 @@ test "bench_complex_alignment" (b : @bench.T) {
 
 ///|
 /// Create a mixed layout: flex container with grid children and block grandchildren
-fn create_mixed_flex_grid() -> @node.Node {
+fn create_mixed_flex_grid() -> @tree.Node {
   let default_style = @style.Style::default()
 
   // Create grid sections
-  let grids : Array[@node.Node] = []
+  let grids : Array[@tree.Node] = []
   for i = 0; i < 3; i = i + 1 {
-    let grid_children : Array[@node.Node] = []
+    let grid_children : Array[@tree.Node] = []
     for j = 0; j < 9; j = j + 1 {
-      let cell_children : Array[@node.Node] = []
+      let cell_children : Array[@tree.Node] = []
       for k = 0; k < 2; k = k + 1 {
         cell_children.push(
-          @node.Node::leaf("block\{i}_\{j}_\{k}", {
+          @tree.Node::leaf("block\{i}_\{j}_\{k}", {
             ..default_style,
             height: @types.Length(15.0),
           }),
         )
       }
       grid_children.push(
-        @node.Node::new("cell\{i}_\{j}", default_style, cell_children),
+        @tree.Node::new("cell\{i}_\{j}", default_style, cell_children),
       )
     }
     let grid_style = {
@@ -739,7 +739,7 @@ fn create_mixed_flex_grid() -> @node.Node {
       row_gap: @types.Length(5.0),
       column_gap: @types.Length(5.0),
     }
-    grids.push(@node.Node::new("grid\{i}", grid_style, grid_children))
+    grids.push(@tree.Node::new("grid\{i}", grid_style, grid_children))
   }
   let root_style = {
     ..default_style,
@@ -749,7 +749,7 @@ fn create_mixed_flex_grid() -> @node.Node {
     height: @types.Length(400.0),
     column_gap: @types.Length(20.0),
   }
-  @node.Node::new("root", root_style, grids)
+  @tree.Node::new("root", root_style, grids)
 }
 
 ///|
@@ -767,14 +767,14 @@ test "bench_mixed_flex_grid" (b : @bench.T) {
 
 ///|
 /// Create a dashboard-like layout with sidebar, header, and main content grid
-fn create_dashboard_layout() -> @node.Node {
+fn create_dashboard_layout() -> @tree.Node {
   let default_style = @style.Style::default()
 
   // Sidebar with nav items
-  let nav_items : Array[@node.Node] = []
+  let nav_items : Array[@tree.Node] = []
   for i = 0; i < 12; i = i + 1 {
     nav_items.push(
-      @node.Node::leaf("nav\{i}", {
+      @tree.Node::leaf("nav\{i}", {
         ..default_style,
         height: @types.Length(40.0),
         margin: {
@@ -786,7 +786,7 @@ fn create_dashboard_layout() -> @node.Node {
       }),
     )
   }
-  let sidebar = @node.Node::new(
+  let sidebar = @tree.Node::new(
     "sidebar",
     {
       ..default_style,
@@ -802,17 +802,17 @@ fn create_dashboard_layout() -> @node.Node {
   )
 
   // Header
-  let header_items : Array[@node.Node] = []
+  let header_items : Array[@tree.Node] = []
   for i = 0; i < 5; i = i + 1 {
     header_items.push(
-      @node.Node::leaf("header_item\{i}", {
+      @tree.Node::leaf("header_item\{i}", {
         ..default_style,
         width: @types.Length(100.0),
         height: @types.Length(36.0),
       }),
     )
   }
-  let header = @node.Node::new(
+  let header = @tree.Node::new(
     "header",
     {
       ..default_style,
@@ -832,29 +832,29 @@ fn create_dashboard_layout() -> @node.Node {
   )
 
   // Main content grid (cards)
-  let cards : Array[@node.Node] = []
+  let cards : Array[@tree.Node] = []
   for i = 0; i < 12; i = i + 1 {
-    let card_content : Array[@node.Node] = []
+    let card_content : Array[@tree.Node] = []
     card_content.push(
-      @node.Node::leaf("card_title\{i}", {
+      @tree.Node::leaf("card_title\{i}", {
         ..default_style,
         height: @types.Length(24.0),
       }),
     )
     card_content.push(
-      @node.Node::leaf("card_body\{i}", {
+      @tree.Node::leaf("card_body\{i}", {
         ..default_style,
         height: @types.Length(80.0),
       }),
     )
     card_content.push(
-      @node.Node::leaf("card_footer\{i}", {
+      @tree.Node::leaf("card_footer\{i}", {
         ..default_style,
         height: @types.Length(32.0),
       }),
     )
     cards.push(
-      @node.Node::new(
+      @tree.Node::new(
         "card\{i}",
         {
           ..default_style,
@@ -869,7 +869,7 @@ fn create_dashboard_layout() -> @node.Node {
       ),
     )
   }
-  let main_grid = @node.Node::new(
+  let main_grid = @tree.Node::new(
     "main_grid",
     {
       ..default_style,
@@ -894,7 +894,7 @@ fn create_dashboard_layout() -> @node.Node {
   )
 
   // Main area (header + grid)
-  let main_area = @node.Node::new(
+  let main_area = @tree.Node::new(
     "main_area",
     {
       ..default_style,
@@ -906,7 +906,7 @@ fn create_dashboard_layout() -> @node.Node {
   )
 
   // Root
-  @node.Node::new(
+  @tree.Node::new(
     "root",
     {
       ..default_style,
@@ -921,14 +921,14 @@ fn create_dashboard_layout() -> @node.Node {
 
 ///|
 /// Create a form layout with labels, inputs, and validation messages
-fn create_form_layout() -> @node.Node {
+fn create_form_layout() -> @tree.Node {
   let default_style = @style.Style::default()
-  let form_fields : Array[@node.Node] = []
+  let form_fields : Array[@tree.Node] = []
   for i = 0; i < 10; i = i + 1 {
-    let field_children : Array[@node.Node] = []
+    let field_children : Array[@tree.Node] = []
     // Label
     field_children.push(
-      @node.Node::leaf("label\{i}", {
+      @tree.Node::leaf("label\{i}", {
         ..default_style,
         height: @types.Length(20.0),
         margin: {
@@ -940,9 +940,9 @@ fn create_form_layout() -> @node.Node {
       }),
     )
     // Input row (input + button)
-    let input_row_children : Array[@node.Node] = []
+    let input_row_children : Array[@tree.Node] = []
     input_row_children.push(
-      @node.Node::leaf("input\{i}", {
+      @tree.Node::leaf("input\{i}", {
         ..default_style,
         flex_grow: 1.0,
         height: @types.Length(36.0),
@@ -950,7 +950,7 @@ fn create_form_layout() -> @node.Node {
     )
     if i % 3 == 0 {
       input_row_children.push(
-        @node.Node::leaf("btn\{i}", {
+        @tree.Node::leaf("btn\{i}", {
           ..default_style,
           width: @types.Length(80.0),
           height: @types.Length(36.0),
@@ -963,7 +963,7 @@ fn create_form_layout() -> @node.Node {
         }),
       )
     }
-    let input_row = @node.Node::new(
+    let input_row = @tree.Node::new(
       "input_row\{i}",
       { ..default_style, display: @types.Flex, flex_direction: @types.Row },
       input_row_children,
@@ -971,7 +971,7 @@ fn create_form_layout() -> @node.Node {
     field_children.push(input_row)
     // Validation message
     field_children.push(
-      @node.Node::leaf("error\{i}", {
+      @tree.Node::leaf("error\{i}", {
         ..default_style,
         height: @types.Length(16.0),
         margin: {
@@ -983,7 +983,7 @@ fn create_form_layout() -> @node.Node {
       }),
     )
     form_fields.push(
-      @node.Node::new(
+      @tree.Node::new(
         "field\{i}",
         {
           ..default_style,
@@ -998,7 +998,7 @@ fn create_form_layout() -> @node.Node {
       ),
     )
   }
-  @node.Node::new(
+  @tree.Node::new(
     "form",
     {
       ..default_style,
@@ -1036,17 +1036,17 @@ test "bench_form_layout" (b : @bench.T) {
 
 ///|
 /// Deep nesting with mixed display types
-fn create_deep_mixed_nesting(depth : Int) -> @node.Node {
+fn create_deep_mixed_nesting(depth : Int) -> @tree.Node {
   let default_style = @style.Style::default()
-  fn build(d : Int) -> @node.Node {
+  fn build(d : Int) -> @tree.Node {
     if d == 0 {
-      return @node.Node::leaf("leaf", {
+      return @tree.Node::leaf("leaf", {
         ..default_style,
         width: @types.Length(30.0),
         height: @types.Length(20.0),
       })
     }
-    let children : Array[@node.Node] = []
+    let children : Array[@tree.Node] = []
     for i = 0; i < 3; i = i + 1 {
       children.push(build(d - 1))
     }
@@ -1058,7 +1058,7 @@ fn create_deep_mixed_nesting(depth : Int) -> @node.Node {
       _ => @types.Block
     }
     if display == @types.Grid {
-      return @node.Node::new(
+      return @tree.Node::new(
         "node_d\{d}",
         {
           ..default_style,
@@ -1072,7 +1072,7 @@ fn create_deep_mixed_nesting(depth : Int) -> @node.Node {
         children,
       )
     }
-    @node.Node::new(
+    @tree.Node::new(
       "node_d\{d}",
       {
         ..default_style,
@@ -1087,7 +1087,7 @@ fn create_deep_mixed_nesting(depth : Int) -> @node.Node {
     )
   }
 
-  @node.Node::new(
+  @tree.Node::new(
     "root",
     {
       ..default_style,
@@ -1115,21 +1115,21 @@ test "bench_deep_mixed_d6" (b : @bench.T) {
 
 ///|
 /// Deep nesting with Flex only (for comparison)
-fn create_deep_flex_nesting(depth : Int) -> @node.Node {
+fn create_deep_flex_nesting(depth : Int) -> @tree.Node {
   let default_style = @style.Style::default()
-  fn build(d : Int) -> @node.Node {
+  fn build(d : Int) -> @tree.Node {
     if d == 0 {
-      return @node.Node::leaf("leaf", {
+      return @tree.Node::leaf("leaf", {
         ..default_style,
         width: @types.Length(30.0),
         height: @types.Length(20.0),
       })
     }
-    let children : Array[@node.Node] = []
+    let children : Array[@tree.Node] = []
     for i = 0; i < 3; i = i + 1 {
       children.push(build(d - 1))
     }
-    @node.Node::new(
+    @tree.Node::new(
       "node_d\{d}",
       {
         ..default_style,
@@ -1144,7 +1144,7 @@ fn create_deep_flex_nesting(depth : Int) -> @node.Node {
     )
   }
 
-  @node.Node::new(
+  @tree.Node::new(
     "root",
     {
       ..default_style,
@@ -1172,21 +1172,21 @@ test "bench_deep_flex_d6" (b : @bench.T) {
 
 ///|
 /// Deep nesting with fixed-size intermediate nodes (baseline for optimization)
-fn create_deep_flex_fixed(depth : Int) -> @node.Node {
+fn create_deep_flex_fixed(depth : Int) -> @tree.Node {
   let default_style = @style.Style::default()
-  fn build(d : Int) -> @node.Node {
+  fn build(d : Int) -> @tree.Node {
     if d == 0 {
-      return @node.Node::leaf("leaf", {
+      return @tree.Node::leaf("leaf", {
         ..default_style,
         width: @types.Length(30.0),
         height: @types.Length(20.0),
       })
     }
-    let children : Array[@node.Node] = []
+    let children : Array[@tree.Node] = []
     for i = 0; i < 3; i = i + 1 {
       children.push(build(d - 1))
     }
-    @node.Node::new(
+    @tree.Node::new(
       "node_d\{d}",
       {
         ..default_style,
@@ -1206,7 +1206,7 @@ fn create_deep_flex_fixed(depth : Int) -> @node.Node {
     )
   }
 
-  @node.Node::new(
+  @tree.Node::new(
     "root",
     {
       ..default_style,
@@ -1233,21 +1233,21 @@ test "bench_deep_flex_fixed_d6" (b : @bench.T) {
 
 ///|
 /// Grid with auto-sized columns containing nested flex containers
-fn create_grid_auto_nested_flex(depth : Int) -> @node.Node {
+fn create_grid_auto_nested_flex(depth : Int) -> @tree.Node {
   let default_style = @style.Style::default()
-  fn create_flex_tree(d : Int) -> @node.Node {
+  fn create_flex_tree(d : Int) -> @tree.Node {
     if d == 0 {
-      return @node.Node::leaf("leaf", {
+      return @tree.Node::leaf("leaf", {
         ..default_style,
         width: @types.Length(30.0),
         height: @types.Length(20.0),
       })
     }
-    let children : Array[@node.Node] = []
+    let children : Array[@tree.Node] = []
     for i = 0; i < 2; i = i + 1 {
       children.push(create_flex_tree(d - 1))
     }
-    @node.Node::new(
+    @tree.Node::new(
       "flex_d\{d}",
       {
         ..default_style,
@@ -1263,11 +1263,11 @@ fn create_grid_auto_nested_flex(depth : Int) -> @node.Node {
   }
 
   // Create grid cells with nested flex trees
-  let children : Array[@node.Node] = []
+  let children : Array[@tree.Node] = []
   for i = 0; i < 9; i = i + 1 {
     children.push(create_flex_tree(depth))
   }
-  @node.Node::new(
+  @tree.Node::new(
     "grid_root",
     {
       ..default_style,
@@ -1316,21 +1316,21 @@ fn create_large_website_node(
   num_sidebar_items : Int,
   num_content_sections : Int,
   items_per_section : Int,
-) -> @node.Node {
+) -> @tree.Node {
   let default_style = @style.Style::default()
 
   // Header
-  let header_items : Array[@node.Node] = []
+  let header_items : Array[@tree.Node] = []
   for i = 0; i < 10; i = i + 1 {
     header_items.push(
-      @node.Node::leaf("header_item\{i}", {
+      @tree.Node::leaf("header_item\{i}", {
         ..default_style,
         width: @types.Length(80.0),
         height: @types.Length(40.0),
       }),
     )
   }
-  let header = @node.Node::new(
+  let header = @tree.Node::new(
     "header",
     {
       ..default_style,
@@ -1342,11 +1342,11 @@ fn create_large_website_node(
   )
 
   // Sidebar
-  let sidebar_groups : Array[@node.Node] = []
+  let sidebar_groups : Array[@tree.Node] = []
   for g = 0; g < 5; g = g + 1 {
-    let group_items : Array[@node.Node] = []
+    let group_items : Array[@tree.Node] = []
     for i = 0; i < num_sidebar_items / 5; i = i + 1 {
-      let item = @node.Node::new(
+      let item = @tree.Node::new(
         "sidebar_g\{g}_item\{i}",
         {
           ..default_style,
@@ -1355,12 +1355,12 @@ fn create_large_website_node(
           height: @types.Length(36.0),
         },
         [
-          @node.Node::leaf("icon_\{g}_\{i}", {
+          @tree.Node::leaf("icon_\{g}_\{i}", {
             ..default_style,
             width: @types.Length(20.0),
             height: @types.Length(20.0),
           }),
-          @node.Node::leaf("label_\{g}_\{i}", {
+          @tree.Node::leaf("label_\{g}_\{i}", {
             ..default_style,
             width: @types.Auto,
             height: @types.Length(20.0),
@@ -1371,7 +1371,7 @@ fn create_large_website_node(
       group_items.push(item)
     }
     sidebar_groups.push(
-      @node.Node::new(
+      @tree.Node::new(
         "sidebar_group\{g}",
         {
           ..default_style,
@@ -1383,7 +1383,7 @@ fn create_large_website_node(
       ),
     )
   }
-  let sidebar = @node.Node::new(
+  let sidebar = @tree.Node::new(
     "sidebar",
     {
       ..default_style,
@@ -1395,9 +1395,9 @@ fn create_large_website_node(
   )
 
   // Main content
-  let sections : Array[@node.Node] = []
+  let sections : Array[@tree.Node] = []
   for s = 0; s < num_content_sections; s = s + 1 {
-    let section_header = @node.Node::new(
+    let section_header = @tree.Node::new(
       "section_header\{s}",
       {
         ..default_style,
@@ -1406,22 +1406,22 @@ fn create_large_website_node(
         height: @types.Length(48.0),
       },
       [
-        @node.Node::leaf("section_title\{s}", {
+        @tree.Node::leaf("section_title\{s}", {
           ..default_style,
           width: @types.Auto,
           height: @types.Length(24.0),
           flex_grow: 1.0,
         }),
-        @node.Node::leaf("section_action\{s}", {
+        @tree.Node::leaf("section_action\{s}", {
           ..default_style,
           width: @types.Length(100.0),
           height: @types.Length(32.0),
         }),
       ],
     )
-    let cards : Array[@node.Node] = []
+    let cards : Array[@tree.Node] = []
     for i = 0; i < items_per_section; i = i + 1 {
-      let card = @node.Node::new(
+      let card = @tree.Node::new(
         "card\{s}_\{i}",
         {
           ..default_style,
@@ -1430,12 +1430,12 @@ fn create_large_website_node(
           width: @types.Length(280.0),
         },
         [
-          @node.Node::leaf("card_img\{s}_\{i}", {
+          @tree.Node::leaf("card_img\{s}_\{i}", {
             ..default_style,
             width: @types.Percent(1.0),
             height: @types.Length(160.0),
           }),
-          @node.Node::new(
+          @tree.Node::new(
             "card_body\{s}_\{i}",
             {
               ..default_style,
@@ -1444,17 +1444,17 @@ fn create_large_website_node(
               width: @types.Percent(1.0),
             },
             [
-              @node.Node::leaf("card_title\{s}_\{i}", {
+              @tree.Node::leaf("card_title\{s}_\{i}", {
                 ..default_style,
                 width: @types.Percent(1.0),
                 height: @types.Length(24.0),
               }),
-              @node.Node::leaf("card_desc\{s}_\{i}", {
+              @tree.Node::leaf("card_desc\{s}_\{i}", {
                 ..default_style,
                 width: @types.Percent(1.0),
                 height: @types.Length(48.0),
               }),
-              @node.Node::new(
+              @tree.Node::new(
                 "card_meta\{s}_\{i}",
                 {
                   ..default_style,
@@ -1463,13 +1463,13 @@ fn create_large_website_node(
                   height: @types.Length(20.0),
                 },
                 [
-                  @node.Node::leaf("card_date\{s}_\{i}", {
+                  @tree.Node::leaf("card_date\{s}_\{i}", {
                     ..default_style,
                     width: @types.Auto,
                     height: @types.Length(16.0),
                     flex_grow: 1.0,
                   }),
-                  @node.Node::leaf("card_author\{s}_\{i}", {
+                  @tree.Node::leaf("card_author\{s}_\{i}", {
                     ..default_style,
                     width: @types.Length(80.0),
                     height: @types.Length(16.0),
@@ -1478,7 +1478,7 @@ fn create_large_website_node(
               ),
             ],
           ),
-          @node.Node::new(
+          @tree.Node::new(
             "card_actions\{s}_\{i}",
             {
               ..default_style,
@@ -1487,12 +1487,12 @@ fn create_large_website_node(
               height: @types.Length(40.0),
             },
             [
-              @node.Node::leaf("card_btn1\{s}_\{i}", {
+              @tree.Node::leaf("card_btn1\{s}_\{i}", {
                 ..default_style,
                 width: @types.Length(80.0),
                 height: @types.Length(32.0),
               }),
-              @node.Node::leaf("card_btn2\{s}_\{i}", {
+              @tree.Node::leaf("card_btn2\{s}_\{i}", {
                 ..default_style,
                 width: @types.Length(80.0),
                 height: @types.Length(32.0),
@@ -1503,7 +1503,7 @@ fn create_large_website_node(
       )
       cards.push(card)
     }
-    let section_content = @node.Node::new(
+    let section_content = @tree.Node::new(
       "section_content\{s}",
       {
         ..default_style,
@@ -1514,7 +1514,7 @@ fn create_large_website_node(
       cards,
     )
     sections.push(
-      @node.Node::new(
+      @tree.Node::new(
         "section\{s}",
         {
           ..default_style,
@@ -1526,7 +1526,7 @@ fn create_large_website_node(
       ),
     )
   }
-  let main_content = @node.Node::new(
+  let main_content = @tree.Node::new(
     "main_content",
     {
       ..default_style,
@@ -1538,24 +1538,24 @@ fn create_large_website_node(
   )
 
   // Body
-  let body = @node.Node::new(
+  let body = @tree.Node::new(
     "body",
     { ..default_style, display: @types.Flex, flex_grow: 1.0 },
     [sidebar, main_content],
   )
 
   // Footer
-  let footer_items : Array[@node.Node] = []
+  let footer_items : Array[@tree.Node] = []
   for i = 0; i < 20; i = i + 1 {
     footer_items.push(
-      @node.Node::leaf("footer_link\{i}", {
+      @tree.Node::leaf("footer_link\{i}", {
         ..default_style,
         width: @types.Length(100.0),
         height: @types.Length(24.0),
       }),
     )
   }
-  let footer = @node.Node::new(
+  let footer = @tree.Node::new(
     "footer",
     {
       ..default_style,
@@ -1567,7 +1567,7 @@ fn create_large_website_node(
   )
 
   // Root
-  @node.Node::new(
+  @tree.Node::new(
     "root",
     {
       ..default_style,
@@ -1734,7 +1734,7 @@ fn create_large_layout_tree(
 
 ///|
 test "bench_incremental_5000_full" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   let (tree, _) = create_large_layout_tree(50, 20, 20)
   b.bench(name="incremental_5000_full", fn() {
     // Mark root dirty to force full recompute
@@ -1745,7 +1745,7 @@ test "bench_incremental_5000_full" (b : @bench.T) {
 
 ///|
 test "bench_incremental_5000_single_dirty" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   let (tree, cards) = create_large_layout_tree(50, 20, 20)
   // Initial full compute
   let _ = tree.compute_incremental()
@@ -1759,7 +1759,7 @@ test "bench_incremental_5000_single_dirty" (b : @bench.T) {
 
 ///|
 test "bench_incremental_5000_cached" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   let (tree, _) = create_large_layout_tree(50, 20, 20)
   // Initial full compute
   let _ = tree.compute_incremental()
@@ -1771,7 +1771,7 @@ test "bench_incremental_5000_cached" (b : @bench.T) {
 
 ///|
 test "bench_incremental_10000_full" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   let (tree, _) = create_large_layout_tree(100, 40, 20)
   b.bench(name="incremental_10000_full", fn() {
     tree.mark_node_dirty(tree.root.uid)
@@ -1781,7 +1781,7 @@ test "bench_incremental_10000_full" (b : @bench.T) {
 
 ///|
 test "bench_incremental_10000_single_dirty" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   let (tree, cards) = create_large_layout_tree(100, 40, 20)
   let _ = tree.compute_incremental()
   let target_card = cards[cards.length() / 2]
@@ -1793,7 +1793,7 @@ test "bench_incremental_10000_single_dirty" (b : @bench.T) {
 
 ///|
 test "bench_incremental_10000_cached" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   let (tree, _) = create_large_layout_tree(100, 40, 20)
   let _ = tree.compute_incremental()
   b.bench(name="incremental_10000_cached", fn() {
@@ -1815,15 +1815,15 @@ fn create_contained_cards(
   num_cards : Int,
   items_per_card : Int,
   use_containment : Bool,
-) -> @node.Node {
+) -> @tree.Node {
   let default_style = @style.Style::default()
-  let cards : Array[@node.Node] = []
+  let cards : Array[@tree.Node] = []
   for i = 0; i < num_cards; i = i + 1 {
     // Each card has nested items
-    let items : Array[@node.Node] = []
+    let items : Array[@tree.Node] = []
     for j = 0; j < items_per_card; j = j + 1 {
       let item_style = { ..default_style, height: @types.Length(20.0) }
-      items.push(@node.Node::leaf("item_\{i}_\{j}", item_style))
+      items.push(@tree.Node::leaf("item_\{i}_\{j}", item_style))
     }
     // Card style with optional containment
     let card_style = if use_containment {
@@ -1840,7 +1840,7 @@ fn create_contained_cards(
         height: @types.Length(300.0),
       }
     }
-    cards.push(@node.Node::new("card_\{i}", card_style, items))
+    cards.push(@tree.Node::new("card_\{i}", card_style, items))
   }
   let root_style = {
     ..default_style,
@@ -1848,7 +1848,7 @@ fn create_contained_cards(
     flex_wrap: @types.Wrap,
     width: @types.Length(1200.0),
   }
-  @node.Node::new("root", root_style, cards)
+  @tree.Node::new("root", root_style, cards)
 }
 
 ///|
@@ -1858,14 +1858,14 @@ fn create_nested_with_containment(
   children_per_level : Int,
   containment_at_depth : Int,
   use_containment : Bool,
-) -> @node.Node {
+) -> @tree.Node {
   let default_style = @style.Style::default()
-  fn build(d : Int) -> @node.Node {
+  fn build(d : Int) -> @tree.Node {
     if d == 0 {
       let leaf_style = { ..default_style, height: @types.Length(10.0) }
-      return @node.Node::leaf("leaf", leaf_style)
+      return @tree.Node::leaf("leaf", leaf_style)
     }
-    let children : Array[@node.Node] = []
+    let children : Array[@tree.Node] = []
     for i = 0; i < children_per_level; i = i + 1 {
       children.push(build(d - 1))
     }
@@ -1891,17 +1891,17 @@ fn create_nested_with_containment(
         },
       }
     }
-    @node.Node::new("node_d\{d}", style, children)
+    @tree.Node::new("node_d\{d}", style, children)
   }
 
   let root_style = { ..default_style, width: @types.Length(800.0) }
-  @node.Node::new("root", root_style, [build(depth)])
+  @tree.Node::new("root", root_style, [build(depth)])
 }
 
 ///|
 /// Benchmark: Cards WITHOUT containment (baseline)
 test "bench_contain_cards_100_no_contain" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   let node = create_contained_cards(100, 20, false)
   let viewport = @types.Size::new(1200.0, 2000.0)
   b.bench(name="cards_100_no_contain", fn() {
@@ -1912,7 +1912,7 @@ test "bench_contain_cards_100_no_contain" (b : @bench.T) {
 ///|
 /// Benchmark: Cards WITH contain: strict (should be faster when optimized)
 test "bench_contain_cards_100_with_contain" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   let node = create_contained_cards(100, 20, true)
   let viewport = @types.Size::new(1200.0, 2000.0)
   b.bench(name="cards_100_with_contain", fn() {
@@ -1923,7 +1923,7 @@ test "bench_contain_cards_100_with_contain" (b : @bench.T) {
 ///|
 /// Benchmark: Nested layout WITHOUT containment (baseline)
 test "bench_contain_nested_no_contain" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   // depth=6, 3 children per level = ~1000 nodes
   let node = create_nested_with_containment(6, 3, 3, false)
   let viewport = @types.Size::new(800.0, 2000.0)
@@ -1935,7 +1935,7 @@ test "bench_contain_nested_no_contain" (b : @bench.T) {
 ///|
 /// Benchmark: Nested layout WITH contain: content at middle level
 test "bench_contain_nested_with_contain" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   // depth=6, 3 children per level, containment at depth 3
   let node = create_nested_with_containment(6, 3, 3, true)
   let viewport = @types.Size::new(800.0, 2000.0)
@@ -1952,33 +1952,33 @@ fn create_intrinsic_dependent_layout(
   num_cards : Int,
   items_per_card : Int,
   use_containment : Bool,
-) -> @node.Node {
+) -> @tree.Node {
   let default_style = @style.Style::default()
-  let cards : Array[@node.Node] = []
+  let cards : Array[@tree.Node] = []
   for i = 0; i < num_cards; i = i + 1 {
     // Each card has nested items with complex content
-    let items : Array[@node.Node] = []
+    let items : Array[@tree.Node] = []
     for j = 0; j < items_per_card; j = j + 1 {
       // Items with nested children to create intrinsic size calculation
-      let nested : Array[@node.Node] = []
+      let nested : Array[@tree.Node] = []
       for k = 0; k < 5; k = k + 1 {
         // Deeply nested structure
-        let deep : Array[@node.Node] = []
+        let deep : Array[@tree.Node] = []
         for l = 0; l < 3; l = l + 1 {
           let leaf_style = {
             ..default_style,
             width: @types.Length(50.0),
             height: @types.Length(10.0),
           }
-          deep.push(@node.Node::leaf("leaf_\{i}_\{j}_\{k}_\{l}", leaf_style))
+          deep.push(@tree.Node::leaf("leaf_\{i}_\{j}_\{k}_\{l}", leaf_style))
         }
         let nested_style = { ..default_style }
         nested.push(
-          @node.Node::new("nested_\{i}_\{j}_\{k}", nested_style, deep),
+          @tree.Node::new("nested_\{i}_\{j}_\{k}", nested_style, deep),
         )
       }
       let item_style = { ..default_style }
-      items.push(@node.Node::new("item_\{i}_\{j}", item_style, nested))
+      items.push(@tree.Node::new("item_\{i}_\{j}", item_style, nested))
     }
     // Card: containment version has fixed size, non-containment has width: auto
     let card_style = if use_containment {
@@ -1992,17 +1992,17 @@ fn create_intrinsic_dependent_layout(
       // width: auto forces intrinsic size calculation through nested children
       { ..default_style, height: @types.Length(300.0) }
     }
-    cards.push(@node.Node::new("card_\{i}", card_style, items))
+    cards.push(@tree.Node::new("card_\{i}", card_style, items))
   }
   // Parent with AUTO width - depends on children's intrinsic sizes
   let root_style = { ..default_style, display: @types.Flex, width: @types.Auto }
-  @node.Node::new("root", root_style, cards)
+  @tree.Node::new("root", root_style, cards)
 }
 
 ///|
 /// Benchmark: Intrinsic-dependent layout WITHOUT containment
 test "bench_intrinsic_no_contain" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   let node = create_intrinsic_dependent_layout(50, 10, false)
   let viewport = @types.Size::new(2000.0, 2000.0)
   b.bench(name="intrinsic_no_contain", fn() {
@@ -2013,7 +2013,7 @@ test "bench_intrinsic_no_contain" (b : @bench.T) {
 ///|
 /// Benchmark: Intrinsic-dependent layout WITH containment (should be faster)
 test "bench_intrinsic_with_contain" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   let node = create_intrinsic_dependent_layout(50, 10, true)
   let viewport = @types.Size::new(2000.0, 2000.0)
   b.bench(name="intrinsic_with_contain", fn() {
@@ -2027,17 +2027,17 @@ fn create_pure_intrinsic_tree(
   depth : Int,
   width : Int,
   use_contain : Bool,
-) -> @node.Node {
+) -> @tree.Node {
   let default_style = @style.Style::default()
-  fn build(d : Int) -> @node.Node {
+  fn build(d : Int) -> @tree.Node {
     if d == 0 {
-      return @node.Node::leaf("leaf", {
+      return @tree.Node::leaf("leaf", {
         ..default_style,
         width: @types.Length(50.0),
         height: @types.Length(20.0),
       })
     }
-    let children : Array[@node.Node] = []
+    let children : Array[@tree.Node] = []
     for i = 0; i < width; i = i + 1 {
       children.push(build(d - 1))
     }
@@ -2052,11 +2052,11 @@ fn create_pure_intrinsic_tree(
     } else {
       default_style
     }
-    @node.Node::new("node_\{d}", style, children)
+    @tree.Node::new("node_\{d}", style, children)
   }
   // Root with width: auto triggers intrinsic calculation
   let root = build(depth)
-  @node.Node::new(
+  @tree.Node::new(
     "root",
     { ..default_style, display: @types.Flex, width: @types.Auto },
     [root],
@@ -2065,7 +2065,7 @@ fn create_pure_intrinsic_tree(
 
 ///|
 test "bench_pure_intrinsic_no_contain" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   // depth 5, width 4 = 1365 nodes
   let node = create_pure_intrinsic_tree(5, 4, false)
   let viewport = @types.Size::new(2000.0, 2000.0)
@@ -2076,7 +2076,7 @@ test "bench_pure_intrinsic_no_contain" (b : @bench.T) {
 
 ///|
 test "bench_pure_intrinsic_with_contain" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   // Same tree but with contain: size at depth 2
   let node = create_pure_intrinsic_tree(5, 4, true)
   let viewport = @types.Size::new(2000.0, 2000.0)
@@ -2186,7 +2186,7 @@ fn create_incremental_containment_tree(
 /// Benchmark: Incremental layout after marking deep item dirty - WITHOUT containment
 /// Dirty flag propagates all the way to root, so more nodes need to be checked
 test "bench_incremental_contain_dirty_no" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   // 10 sections, 10 cards each, 5 items per card = 500 items
   let (tree, items) = create_incremental_containment_tree(10, 10, 5, false)
   // Initial full compute
@@ -2204,7 +2204,7 @@ test "bench_incremental_contain_dirty_no" (b : @bench.T) {
 /// Benchmark: Incremental layout after marking deep item dirty - WITH containment
 /// Dirty flag stops at section boundary due to contain: layout
 test "bench_incremental_contain_dirty_yes" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   // Same structure but sections have contain: content (includes layout)
   let (tree, items) = create_incremental_containment_tree(10, 10, 5, true)
   // Initial full compute
@@ -2222,7 +2222,7 @@ test "bench_incremental_contain_dirty_yes" (b : @bench.T) {
 /// Benchmark: Multiple deep items marked dirty - WITHOUT containment
 /// All dirty flags propagate to root, causing wide re-layout
 test "bench_incremental_contain_multi_no" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   let (tree, items) = create_incremental_containment_tree(10, 10, 5, false)
   let _ = tree.compute_incremental()
   // Mark items in different sections dirty
@@ -2245,7 +2245,7 @@ test "bench_incremental_contain_multi_no" (b : @bench.T) {
 /// Benchmark: Multiple deep items marked dirty - WITH containment
 /// Each dirty section is isolated, only affected sections need re-layout
 test "bench_incremental_contain_multi_yes" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   let (tree, items) = create_incremental_containment_tree(10, 10, 5, true)
   let _ = tree.compute_incremental()
   let targets = [items[50], items[150], items[250], items[350], items[450]]
@@ -2260,7 +2260,7 @@ test "bench_incremental_contain_multi_yes" (b : @bench.T) {
 ///|
 /// Larger scale: 50 sections to see more dramatic difference
 test "bench_incremental_contain_large_no" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   // 50 sections, 5 cards each, 4 items per card = 1000 items
   let (tree, items) = create_incremental_containment_tree(50, 5, 4, false)
   let _ = tree.compute_incremental()
@@ -2273,7 +2273,7 @@ test "bench_incremental_contain_large_no" (b : @bench.T) {
 
 ///|
 test "bench_incremental_contain_large_yes" (b : @bench.T) {
-  @dispatch.setup()
+  @tree.setup()
   let (tree, items) = create_incremental_containment_tree(50, 5, 4, true)
   let _ = tree.compute_incremental()
   let target = items[items.length() / 2]

@@ -2,14 +2,9 @@
 /// Native file I/O for E2E tests.
 /// Uses C helper to read files as byte arrays.
 
-///|
-extern "C" fn c_read_file_size(path : Int) -> Int = "moonbit_read_file_size_ptr"
-
-///|
-extern "C" fn c_read_file_data(path : Int, buf : Int, buf_size : Int) -> Int = "moonbit_read_file_data_ptr"
-
-// Simpler approach: use V8 to read files via JS
-// Since we have V8, let's use Node.js-style file reading
+// Simpler approach: use V8 to read files via JS.
+// The native C stub remains linked for future use, but this package does not
+// call it directly today.
 
 ///|
 pub fn read_file_to_string_via_eval(path : String) -> String? {

@@ -140,7 +140,7 @@ pub fn Scheduler::resolve_dependencies(self : Scheduler) -> Int {
         let mut all_deps_completed = true
         for dep_id in task.dependencies {
           let TaskId(dep_int) = dep_id
-          if not(self.completed_ids.contains(dep_int)) {
+          if !self.completed_ids.contains(dep_int) {
             all_deps_completed = false
             break
           }
@@ -169,7 +169,7 @@ pub fn Scheduler::poll_ready(self : Scheduler) -> Array[Task] {
 
   // ブロックされているソースのタスクを除外
   let unblocked : Array[Task] = ready.filter(fn(task) {
-    not(self.blocked.is_blocked(task.source))
+    !self.blocked.is_blocked(task.source)
   })
 
   // 優先度でソート（高い順）
@@ -189,7 +189,7 @@ pub fn Scheduler::poll_parallel(self : Scheduler) -> Array[Task] {
 
   // ブロックされているソースのタスクを除外
   let unblocked : Array[Task] = parallel.filter(fn(task) {
-    not(self.blocked.is_blocked(task.source))
+    !self.blocked.is_blocked(task.source)
   })
 
   // 優先度でソート（高い順）
@@ -209,7 +209,7 @@ pub fn Scheduler::poll_main_thread(self : Scheduler) -> Task? {
 
   // ブロックされているソースのタスクを除外して、最初の1つを返す
   for task in main_tasks {
-    if not(self.blocked.is_blocked(task.source)) {
+    if !self.blocked.is_blocked(task.source) {
       task.mark_running()
       return Some(task)
     }

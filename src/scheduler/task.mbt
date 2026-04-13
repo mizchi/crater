@@ -8,7 +8,7 @@
 
 ///|
 /// Unique task identifier
-pub(all) struct TaskId(Int) derive(Eq, Hash, Show)
+pub(all) struct TaskId(Int) derive(Eq, Hash, Debug)
 
 ///|
 /// ID generator (mutable state in struct)
@@ -51,7 +51,7 @@ pub(all) enum TaskSource {
   Scripting
   /// 画像デコード（外部委譲）
   ImageDecode
-} derive(Eq, Hash, Show)
+} derive(Eq, Hash, Debug)
 
 // =============================================================================
 // Task Constraint (実行制約)
@@ -66,7 +66,7 @@ pub(all) enum TaskConstraint {
   Parallel
   /// 他のタスクソースをブロック（parser-blocking script）
   Blocking(Array[TaskSource])
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// Check if a task can run in parallel
@@ -108,7 +108,7 @@ pub(all) enum ResourceType {
   Font
   /// その他
   Other
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 // =============================================================================
 // Task State
@@ -129,7 +129,7 @@ pub(all) enum TaskState {
   Cancelled
   /// 失敗
   Failed(String)
-} derive(Show)
+} derive(Debug)
 
 ///|
 pub fn TaskState::is_terminal(self : TaskState) -> Bool {
@@ -175,7 +175,120 @@ pub(all) enum TaskAction {
   DecodeImage(resource_id~ : Int)
   /// スクリプト実行
   ExecuteScript(source~ : String)
-} derive(Show)
+} derive(Debug)
+
+///|
+pub impl Show for TaskId with output(self, logger) {
+  logger.write_string("TaskId(\{self.0})")
+}
+
+///|
+pub impl Show for TaskSource with output(self, logger) {
+  let name = match self {
+    DOM => "DOM"
+    Styling => "Styling"
+    Layout => "Layout"
+    Networking => "Networking"
+    Scripting => "Scripting"
+    ImageDecode => "ImageDecode"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for TaskConstraint with output(self, logger) {
+  match self {
+    MainThreadOnly => logger.write_string("MainThreadOnly")
+    Parallel => logger.write_string("Parallel")
+    Blocking(sources) => logger.write_string("Blocking(\{sources})")
+  }
+}
+
+///|
+pub impl Show for ResourceType with output(self, logger) {
+  let name = match self {
+    Document => "Document"
+    Stylesheet => "Stylesheet"
+    Script => "Script"
+    Image => "Image"
+    Font => "Font"
+    Other => "Other"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for TaskState with output(self, logger) {
+  match self {
+    Pending => logger.write_string("Pending")
+    Ready => logger.write_string("Ready")
+    Running => logger.write_string("Running")
+    Completed => logger.write_string("Completed")
+    Cancelled => logger.write_string("Cancelled")
+    Failed(error) => {
+      logger.write_string("Failed(")
+      logger.write_string("\"")
+      logger.write_string(error)
+      logger.write_string("\"")
+      logger.write_string(")")
+    }
+  }
+}
+
+///|
+pub impl Show for TaskAction with output(self, logger) {
+  match self {
+    ParseHTMLChunk(html~) => {
+      logger.write_string("ParseHTMLChunk(html=")
+      logger.write_string("\"")
+      logger.write_string(html)
+      logger.write_string("\"")
+      logger.write_string(")")
+    }
+    ParseCSS(source~) => {
+      logger.write_string("ParseCSS(source=")
+      logger.write_string("\"")
+      logger.write_string(source)
+      logger.write_string("\"")
+      logger.write_string(")")
+    }
+    ComputeStyle(node_ids~) =>
+      logger.write_string("ComputeStyle(node_ids=\{node_ids})")
+    ComputeLayout => logger.write_string("ComputeLayout")
+    FetchResource(url~, resource_type~) => {
+      logger.write_string("FetchResource(url=")
+      logger.write_string("\"")
+      logger.write_string(url)
+      logger.write_string("\"")
+      logger.write_string(", resource_type=\{resource_type})")
+    }
+    DecodeImage(resource_id~) =>
+      logger.write_string("DecodeImage(resource_id=\{resource_id})")
+    ExecuteScript(source~) => {
+      logger.write_string("ExecuteScript(source=")
+      logger.write_string("\"")
+      logger.write_string(source)
+      logger.write_string("\"")
+      logger.write_string(")")
+    }
+  }
+}
+
+///|
+pub impl Show for TaskResult with output(self, logger) {
+  match self {
+    Success(new_tasks~) =>
+      logger.write_string("Success(new_tasks=\{new_tasks})")
+    Failure(error~) => {
+      logger.write_string("Failure(error=")
+      logger.write_string("\"")
+      logger.write_string(error)
+      logger.write_string("\"")
+      logger.write_string(")")
+    }
+    Cancelled => logger.write_string("Cancelled")
+  }
+}
 
 ///|
 /// Check if action can be executed internally (synchronously)
@@ -213,7 +326,7 @@ pub(all) enum TaskResult {
   Failure(error~ : String)
   /// キャンセル
   Cancelled
-} derive(Show)
+} derive(Debug)
 
 // =============================================================================
 // Task

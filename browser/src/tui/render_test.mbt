@@ -14,7 +14,7 @@ test "img_placeholder_rendering" {
     viewport_width: 320.0,
     viewport_height: 200.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
 
   // Get node and layout
@@ -26,10 +26,10 @@ test "img_placeholder_rendering" {
   @renderer.print_layout_tree(layout, 0)
 
   // Convert to PaintNode
-  let paint_node = @paint.from_node_and_layout(node, layout)
+  let paint_node = @tui_paint_plain.from_node_and_layout(node, layout)
 
   // Debug: print paint tree
-  fn print_paint_tree(p : @paint.PaintNode, depth : Int) -> Unit {
+  fn print_paint_tree(p : @tui_paint_plain.PaintNode, depth : Int) -> Unit {
     let indent = String::make(depth * 2, ' ')
     println(
       indent +
@@ -57,7 +57,7 @@ test "img_placeholder_rendering" {
   print_paint_tree(paint_node, 0)
 
   // Find img in paint tree
-  fn find_img(p : @paint.PaintNode) -> @paint.PaintNode? {
+  fn find_img(p : @tui_paint_plain.PaintNode) -> @tui_paint_plain.PaintNode? {
     if p.tag == "img" {
       return Some(p)
     }
@@ -129,7 +129,7 @@ test "scroll_viewport_culling" {
     viewport_width,
     viewport_height,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
 
   // Get node and layout
@@ -195,7 +195,7 @@ test "viewport_culling_returns_content" {
     viewport_width: 320.0,
     viewport_height: 50.0, // Small viewport
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let node = @renderer.render_to_node(html, ctx)
   let layout = @renderer.render(html, ctx)
@@ -211,7 +211,7 @@ test "viewport_culling_returns_content" {
   // Scroll = 0: viewport is 0-50px, should include top section
   let viewport_top_0 = 0.0
   let viewport_bottom_0 = 50.0
-  let paint_0 = @paint.from_node_and_layout_with_viewport(
+  let paint_0 = @tui_paint_viewport.from_node_and_layout_with_viewport(
     node, layout, viewport_top_0, viewport_bottom_0, 0.0,
   )
   println("Scroll 0: paint_0 is Some? " + (paint_0 is Some(_)).to_string())
@@ -221,7 +221,7 @@ test "viewport_culling_returns_content" {
   let scroll_chars_1 = 6
   let viewport_top_1 = scroll_chars_1.to_double() * font_height // 96px
   let viewport_bottom_1 = (scroll_chars_1 + 3).to_double() * font_height // 144px
-  let paint_1 = @paint.from_node_and_layout_with_viewport(
+  let paint_1 = @tui_paint_viewport.from_node_and_layout_with_viewport(
     node, layout, viewport_top_1, viewport_bottom_1, 0.0,
   )
   println(
@@ -234,7 +234,7 @@ test "viewport_culling_returns_content" {
   let scroll_chars_2 = 12
   let viewport_top_2 = scroll_chars_2.to_double() * font_height // 192px
   let viewport_bottom_2 = (scroll_chars_2 + 3).to_double() * font_height // 240px
-  let paint_2 = @paint.from_node_and_layout_with_viewport(
+  let paint_2 = @tui_paint_viewport.from_node_and_layout_with_viewport(
     node, layout, viewport_top_2, viewport_bottom_2, 0.0,
   )
   println(
@@ -247,7 +247,7 @@ test "viewport_culling_returns_content" {
   let scroll_chars_3 = 100
   let viewport_top_3 = scroll_chars_3.to_double() * font_height // 1600px
   let viewport_bottom_3 = (scroll_chars_3 + 3).to_double() * font_height // 1648px
-  let paint_3 = @paint.from_node_and_layout_with_viewport(
+  let paint_3 = @tui_paint_viewport.from_node_and_layout_with_viewport(
     node, layout, viewport_top_3, viewport_bottom_3, 0.0,
   )
   println(
@@ -285,7 +285,7 @@ test "paint_node_none_debug" {
     viewport_width,
     viewport_height,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let node = @renderer.render_to_node(html, ctx)
   let layout = @renderer.render(html, ctx)
@@ -297,7 +297,7 @@ test "paint_node_none_debug" {
   for scroll_px in scroll_positions_px {
     let viewport_top = scroll_px.to_double()
     let viewport_bottom = viewport_top + viewport_height
-    let paint_result = @paint.from_node_and_layout_with_viewport(
+    let paint_result = @tui_paint_viewport.from_node_and_layout_with_viewport(
       node, layout, viewport_top, viewport_bottom, 0.0,
     )
     let has_paint = match paint_result {
@@ -381,7 +381,7 @@ test "scroll_issue_tall_content" {
     viewport_width,
     viewport_height,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   // Get node and layout
   let node = @renderer.render_to_node(html, ctx)
@@ -458,7 +458,7 @@ test "text_render_uses_display_width" {
     viewport_width: 320.0,
     viewport_height: 100.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let node = @renderer.render_to_node(html, ctx)
   let layout = @renderer.render(html, ctx)
@@ -493,7 +493,7 @@ test "pre_element_respects_newlines" {
     viewport_width: 320.0,
     viewport_height: 200.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let node = @renderer.render_to_node(html, ctx)
   let layout = @renderer.render(html, ctx)
@@ -554,7 +554,7 @@ test "pre_code_structure_respects_newlines" {
     viewport_width: 320.0,
     viewport_height: 200.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let node = @renderer.render_to_node(html, ctx)
   let layout = @renderer.render(html, ctx)
@@ -588,7 +588,7 @@ test "pre_code_structure_respects_newlines" {
   // If result and time are on the same row, the newline is not working
   let same_row = (has_result_row0 && has_time_row0) ||
     (has_result_row1 && has_time_row1)
-  inspect(not(same_row), content="true")
+  inspect(!same_row, content="true")
 }
 
 ///|
@@ -614,7 +614,7 @@ test "pre_code_with_span_lines_display_block" {
     viewport_width: 320.0,
     viewport_height: 200.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let node = @renderer.render_to_node(html, ctx)
   let layout = @renderer.render(html, ctx)
@@ -633,7 +633,7 @@ test "pre_code_with_span_lines_display_block" {
   // When spans have display:block, they should be on separate rows
   let same_row = (has_result_row0 && has_time_row0) ||
     (has_result_row1 && has_time_row1)
-  inspect(not(same_row), content="true")
+  inspect(!same_row, content="true")
 }
 
 ///|
@@ -659,7 +659,7 @@ test "shiki_style_code_block" {
     viewport_width: 640.0,
     viewport_height: 200.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let node = @renderer.render_to_node(html, ctx)
   let layout = @renderer.render(html, ctx)
@@ -679,7 +679,7 @@ test "shiki_style_code_block" {
 
   // "test fib benchmark" and "time (mean)" should NOT be on the same row
   let fib_and_time_same_row = row0.contains("fib") && row0.contains("time")
-  inspect(not(fib_and_time_same_row), content="true")
+  inspect(!fib_and_time_same_row, content="true")
 }
 
 ///|
@@ -702,7 +702,7 @@ test "paragraph_with_links_layout_wrap" {
     viewport_width: 400.0,
     viewport_height: 200.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let layout = @renderer.render(html, ctx)
   let p_layout = layout.children[0]
@@ -740,7 +740,7 @@ test "tui_render_cjk_paragraph_wrap" {
     viewport_width: 640.0,
     viewport_height: 480.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let node = @renderer.render_to_node(html, ctx)
   let layout = @renderer.render(html, ctx)
@@ -786,7 +786,7 @@ test "text_wrap_with_interleaved_links" {
     viewport_width: 400.0,
     viewport_height: 200.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let layout = @renderer.render(html, ctx)
   let h1 = layout.children[0]

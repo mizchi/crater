@@ -4,6 +4,7 @@ package "mizchi/crater/layout/trace"
 import {
   "mizchi/crater/layout/node",
   "mizchi/crater/types",
+  "moonbitlang/core/debug",
 }
 
 // Values
@@ -22,12 +23,14 @@ pub(all) struct ComputeOutput {
   node_uid : Int
   width : Double
   height : Double
-} derive(Show)
+} derive(@debug.Debug)
+pub impl Show for ComputeOutput
 
 pub(all) struct Dependency {
   node_uid : Int
   kind : DependencyKind
-} derive(Show)
+} derive(@debug.Debug)
+pub impl Show for Dependency
 
 pub(all) enum DependencyKind {
   ParentWidth
@@ -36,7 +39,8 @@ pub(all) enum DependencyKind {
   ChildIntrinsicCross(Int)
   SiblingSize(Int)
   OwnStyle
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for DependencyKind
 
 pub struct LayoutTracer {
   traces : Map[Int, NodeTrace]

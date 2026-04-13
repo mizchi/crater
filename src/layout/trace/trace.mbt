@@ -20,7 +20,7 @@ pub(all) enum DependencyKind {
   SiblingSize(Int) // sibling uid
   /// Read own style property
   OwnStyle
-} derive(Show, Eq)
+} derive(Eq, Debug)
 
 ///|
 /// A single dependency record
@@ -29,7 +29,7 @@ pub(all) struct Dependency {
   node_uid : Int
   /// What kind of dependency
   kind : DependencyKind
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// Input context snapshot for a node's layout computation
@@ -46,7 +46,32 @@ pub(all) struct ComputeOutput {
   node_uid : Int
   width : Double
   height : Double
-} derive(Show)
+} derive(Debug)
+
+///|
+pub impl Show for DependencyKind with output(self, logger) {
+  match self {
+    ParentWidth => logger.write_string("ParentWidth")
+    ParentHeight => logger.write_string("ParentHeight")
+    ChildIntrinsicMain(uid) => logger.write_string("ChildIntrinsicMain(\{uid})")
+    ChildIntrinsicCross(uid) =>
+      logger.write_string("ChildIntrinsicCross(\{uid})")
+    SiblingSize(uid) => logger.write_string("SiblingSize(\{uid})")
+    OwnStyle => logger.write_string("OwnStyle")
+  }
+}
+
+///|
+pub impl Show for Dependency with output(self, logger) {
+  logger.write_string("{node_uid: \{self.node_uid}, kind: \{self.kind}}")
+}
+
+///|
+pub impl Show for ComputeOutput with output(self, logger) {
+  logger.write_string(
+    "{node_uid: \{self.node_uid}, width: \{self.width}, height: \{self.height}}",
+  )
+}
 
 ///|
 /// A trace record for one node's computation
@@ -89,7 +114,7 @@ pub fn LayoutTracer::begin_compute(
   node_uid : Int,
   ctx : @types.LayoutContext,
 ) -> Unit {
-  if not(self.enabled) {
+  if !self.enabled {
     return
   }
   let input : ComputeInput = {
@@ -115,7 +140,7 @@ pub fn LayoutTracer::end_compute(
   width : Double,
   height : Double,
 ) -> Unit {
-  if not(self.enabled) {
+  if !self.enabled {
     return
   }
   match self.traces.get(node_uid) {
@@ -138,7 +163,7 @@ pub fn LayoutTracer::add_dependency(
   node_uid : Int,
   kind : DependencyKind,
 ) -> Unit {
-  if not(self.enabled) {
+  if !self.enabled {
     return
   }
   match self.traces.get(node_uid) {
@@ -214,7 +239,7 @@ pub fn LayoutTracer::collect_from_tree(
   layout : @types.Layout,
   ctx : @types.LayoutContext,
 ) -> Unit {
-  if not(self.enabled) {
+  if !self.enabled {
     return
   }
   // Record this node's trace

@@ -905,7 +905,7 @@ fn CdpProtocol::dispatch_runtime(
         "",
       )
       let result = if func_decl.contains("cssQuerySelector") &&
-        not(func_decl.contains("cssQuerySelectorAll")) {
+        !func_decl.contains("cssQuerySelectorAll") {
         // Handle puppeteer's querySelector: cssQuerySelector(element, selector)
         let selector = match request.params {
           Some(Object(map)) =>

@@ -10,7 +10,22 @@ pub(all) struct ForcedPseudoStates {
   active : Bool
   focus_visible : Bool
   focus_within : Bool
-} derive(Eq, Show)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for ForcedPseudoStates with output(self, logger) {
+  logger.write_string("{hover: ")
+  logger.write_string(self.hover.to_string())
+  logger.write_string(", focus: ")
+  logger.write_string(self.focus.to_string())
+  logger.write_string(", active: ")
+  logger.write_string(self.active.to_string())
+  logger.write_string(", focus_visible: ")
+  logger.write_string(self.focus_visible.to_string())
+  logger.write_string(", focus_within: ")
+  logger.write_string(self.focus_within.to_string())
+  logger.write_string("}")
+}
 
 ///|
 pub fn ForcedPseudoStates::none() -> ForcedPseudoStates {

@@ -26,7 +26,7 @@ pub fn MemoryCacheBackend::store(
   entry : CacheEntry,
 ) -> Unit {
   if !self.entries.contains(entry.url) &&
-    self.entries.size() >= self.max_entries {
+    self.entries.length() >= self.max_entries {
     // Find the entry with the smallest stored_at
     let mut oldest_url : String = ""
     let mut oldest_time : Double = @double.infinity

@@ -1,17 +1,18 @@
 import {
   "mizchi/crater/html",
   "mizchi/crater/renderer",
-  "mizchi/crater/layout/node",
+  "mizchi/crater/layout" @node,
   "mizchi/crater/types",
-  "mizchi/crater/css/media",
-  "mizchi/crater/css/selector",
-  "mizchi/crater/paint",
+  "mizchi/crater/css",
   "mizchi/crater/x/image",
   "mizchi/crater/aom",
   "mizchi/crater-browser/tui",
+  "mizchi/crater-browser/tui/paint/output/png" @tui_paint_png,
+  "mizchi/crater-browser/tui/paint/plain" @tui_paint_plain,
 }
+
+supported_targets = "js"
 
 options(
   "is-main": true,
-  "supported-targets": [ "js" ],
 )

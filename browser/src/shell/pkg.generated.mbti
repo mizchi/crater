@@ -46,6 +46,7 @@ pub fn Browser::render_output(Self, OutputMode) -> String
 pub fn Browser::scroll_down(Self, Int) -> Unit
 pub fn Browser::scroll_up(Self, Int) -> Unit
 pub fn Browser::set_dark_mode(Self, Bool) -> Unit
+pub fn Browser::set_enable_cookies(Self, Bool) -> Unit
 pub fn Browser::set_enable_js(Self, Bool) -> Unit
 pub fn Browser::set_html_content(Self, String) -> Unit
 pub fn Browser::set_image_cache_max_bytes(Self, Int) -> Unit

@@ -4,6 +4,7 @@ package "mizchi/crater/x/webvitals"
 import {
   "mizchi/crater/layout/tree",
   "mizchi/crater/types",
+  "moonbitlang/core/debug",
 }
 
 // Values
@@ -50,7 +51,8 @@ pub(all) enum LCPElementType {
   BackgroundImage(url~ : String)
   Video(poster~ : String?)
   TextBlock
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for LCPElementType
 
 pub(all) struct LCPTracker {
   candidates : Array[LCPCandidate]

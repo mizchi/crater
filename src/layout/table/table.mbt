@@ -295,7 +295,7 @@ fn is_table_whitespace_char(c : Char) -> Bool {
 ///|
 fn is_whitespace_only_table_text(text : String) -> Bool {
   for c in text.iter() {
-    if not(is_table_whitespace_char(c)) {
+    if !is_table_whitespace_char(c) {
       return false
     }
   }
@@ -324,7 +324,7 @@ fn has_percent_size_for_table_intrinsic(node : @node.Node) -> Bool {
 
 ///|
 fn is_whitespace_only_table_text_node(node : @node.Node) -> Bool {
-  if not(node.id.has_prefix("#text")) {
+  if !node.id.has_prefix("#text") {
     return false
   }
   match node.text {
@@ -341,7 +341,7 @@ fn is_percent_replaced_whitespace_separator(
   if index <= 0 || index >= siblings.length() - 1 {
     return false
   }
-  if not(is_whitespace_only_table_text_node(siblings[index])) {
+  if !is_whitespace_only_table_text_node(siblings[index]) {
     return false
   }
   let prev = siblings[index - 1]
@@ -582,7 +582,7 @@ fn get_first_visual_row(table_node : @node.Node) -> @node.Node? {
 ///|
 /// Table row model ignores direct whitespace text children.
 fn is_ignorable_table_text_node(node : @node.Node) -> Bool {
-  if not(node.id.has_prefix("#text")) {
+  if !node.id.has_prefix("#text") {
     return false
   }
   match node.text {
@@ -696,7 +696,7 @@ fn is_inline_intrinsic_child(node : @node.Node) -> Bool {
         @types.Float::None => ()
       }
       has_in_flow_child = true
-      if not(is_inline_intrinsic_child(child)) {
+      if !is_inline_intrinsic_child(child) {
         return false
       }
     }
@@ -722,11 +722,11 @@ fn ignore_intrinsic_max_width_constraint(style : @style.Style) -> Bool {
 fn has_vertical_inline_flow_children(children : Array[@node.Node]) -> Bool {
   let mut has_in_flow_child = false
   for child in children {
-    if not(is_in_flow_intrinsic_child(child)) {
+    if !is_in_flow_intrinsic_child(child) {
       continue
     }
     has_in_flow_child = true
-    if not(is_inline_intrinsic_child(child)) {
+    if !is_inline_intrinsic_child(child) {
       return false
     }
   }
@@ -806,11 +806,11 @@ fn measure_cell_content_width(
   let mut has_inline_flow = false
   let mut inline_only = true
   for child in cell.children {
-    if not(is_in_flow_intrinsic_child(child)) {
+    if !is_in_flow_intrinsic_child(child) {
       continue
     }
     has_inline_flow = true
-    if not(is_inline_intrinsic_child(child)) {
+    if !is_inline_intrinsic_child(child) {
       inline_only = false
       break
     }
@@ -822,7 +822,7 @@ fn measure_cell_content_width(
     let mut current_line_width = 0.0
     for i = 0; i < cell.children.length(); i = i + 1 {
       let child = cell.children[i]
-      if not(is_in_flow_intrinsic_child(child)) {
+      if !is_in_flow_intrinsic_child(child) {
         continue
       }
       if is_percent_replaced_whitespace_separator(cell.children, i) {
@@ -844,7 +844,7 @@ fn measure_cell_content_width(
   } else {
     // Non-inline content: use max child contribution as before.
     for child in cell.children {
-      if not(is_in_flow_intrinsic_child(child)) {
+      if !is_in_flow_intrinsic_child(child) {
         continue
       }
       let child_width = child_intrinsic_width(child)
@@ -936,7 +936,7 @@ fn measure_node_intrinsic_width(node : @node.Node) -> Double {
       continue
     }
     has_horizontal_inline_flow = true
-    if not(is_inline_intrinsic_child(child)) {
+    if !is_inline_intrinsic_child(child) {
       is_horizontal_inline_only = false
       break
     }
@@ -1008,11 +1008,11 @@ fn measure_node_intrinsic_min_width(node : @node.Node) -> Double {
   let mut has_inline_flow = false
   let mut inline_only = true
   for child in node.children {
-    if not(is_in_flow_intrinsic_child(child)) {
+    if !is_in_flow_intrinsic_child(child) {
       continue
     }
     has_inline_flow = true
-    if not(is_inline_intrinsic_child(child)) {
+    if !is_inline_intrinsic_child(child) {
       inline_only = false
       break
     }
@@ -1021,7 +1021,7 @@ fn measure_node_intrinsic_min_width(node : @node.Node) -> Double {
   let mut min_child_width = 0.0
   if inline_only && has_inline_flow {
     for child in node.children {
-      if not(is_in_flow_intrinsic_child(child)) || child.id == "br" {
+      if !is_in_flow_intrinsic_child(child) || child.id == "br" {
         continue
       }
       min_child_width = max(
@@ -1031,7 +1031,7 @@ fn measure_node_intrinsic_min_width(node : @node.Node) -> Double {
     }
   } else {
     for child in node.children {
-      if not(is_in_flow_intrinsic_child(child)) {
+      if !is_in_flow_intrinsic_child(child) {
         continue
       }
       min_child_width = max(
@@ -1273,8 +1273,7 @@ fn calculate_intrinsic_column_percentages(
       } else {
         1
       }
-      if raw_colspan == 1 &&
-        not(is_collapsed_column(collapsed_columns, col_index)) {
+      if raw_colspan == 1 && !is_collapsed_column(collapsed_columns, col_index) {
         match cell.style.width {
           @types.Percent(p) =>
             if p > percentages[col_index] {
@@ -1516,7 +1515,7 @@ fn calculate_column_widths(
         let mut distributed = 0.0
         let mut last_percent_col = -1
         for i = 0; i < num_columns; i = i + 1 {
-          if not(is_collapsed_column(collapsed_columns, i)) &&
+          if !is_collapsed_column(collapsed_columns, i) &&
             col_percentages[i] > 0.0 {
             last_percent_col = i
           }
@@ -1800,7 +1799,6 @@ fn layout_row(
   // Track collapsed border width for border-collapse mode
   let mut collapsed_border_total = 0.0
   let mut first_cell_left_border = 0.0
-  let mut last_cell_right_border = 0.0
   let mut prev_cell_right_border = 0.0
   let mut prev_cell_right_style : @style.BorderStyle = @style.BorderStyle::None
   let row_cells = get_row_cells(row)
@@ -1854,7 +1852,6 @@ fn layout_row(
         first_cell_left_border = cell_border.left
         x_offset = x_offset + cell_border.left / 2.0
       }
-      last_cell_right_border = cell_border.right
       if col_index > 0 {
         let shared = resolve_collapsed_border_width(
           prev_cell_right_border,
@@ -2272,11 +2269,11 @@ fn compute_cell_height_for_row(
   let mut has_inline_flow = false
   let mut inline_only = true
   for child in cell.children {
-    if not(is_in_flow_intrinsic_child(child)) {
+    if !is_in_flow_intrinsic_child(child) {
       continue
     }
     has_inline_flow = true
-    if not(is_inline_intrinsic_child(child)) {
+    if !is_inline_intrinsic_child(child) {
       inline_only = false
       break
     }
@@ -2286,7 +2283,7 @@ fn compute_cell_height_for_row(
   if inline_only && has_inline_flow {
     let mut current_line_height = 0.0
     for child in cell.children {
-      if not(is_in_flow_intrinsic_child(child)) {
+      if !is_in_flow_intrinsic_child(child) {
         continue
       }
       if child.id == "br" {
@@ -2302,7 +2299,7 @@ fn compute_cell_height_for_row(
     total_height = total_height + current_line_height
   } else {
     for child in cell.children {
-      if not(is_in_flow_intrinsic_child(child)) {
+      if !is_in_flow_intrinsic_child(child) {
         continue
       }
       total_height = total_height + child_intrinsic_height(child)
@@ -2447,11 +2444,11 @@ fn compute_cell_intrinsic_height(cell : @node.Node) -> Double {
   let mut has_inline_flow = false
   let mut inline_only = true
   for child in cell.children {
-    if not(is_in_flow_intrinsic_child(child)) {
+    if !is_in_flow_intrinsic_child(child) {
       continue
     }
     has_inline_flow = true
-    if not(is_inline_intrinsic_child(child)) {
+    if !is_inline_intrinsic_child(child) {
       inline_only = false
       break
     }
@@ -2461,7 +2458,7 @@ fn compute_cell_intrinsic_height(cell : @node.Node) -> Double {
   if inline_only && has_inline_flow {
     let mut current_line_height = 0.0
     for child in cell.children {
-      if not(is_in_flow_intrinsic_child(child)) {
+      if !is_in_flow_intrinsic_child(child) {
         continue
       }
       if child.id == "br" {
@@ -2477,7 +2474,7 @@ fn compute_cell_intrinsic_height(cell : @node.Node) -> Double {
     total_height = total_height + current_line_height
   } else {
     for child in cell.children {
-      if not(is_in_flow_intrinsic_child(child)) {
+      if !is_in_flow_intrinsic_child(child) {
         continue
       }
       total_height = total_height + child_intrinsic_height(child)
@@ -2544,7 +2541,7 @@ fn measure_node_intrinsic_height(node : @node.Node) -> Double {
       continue
     }
     has_horizontal_inline_flow = true
-    if not(is_inline_intrinsic_child(child)) {
+    if !is_inline_intrinsic_child(child) {
       inline_only = false
       break
     }
@@ -2736,7 +2733,7 @@ pub fn compute(
     }
   }
   // Apply width constraints only when width wasn't forced by parent stretch.
-  if not(ctx.stretch_width) {
+  if !ctx.stretch_width {
     // Apply max-width first, then min-width (min takes precedence over max).
     match style.max_width {
       @types.Length(max_w) => if table_width > max_w { table_width = max_w }
@@ -2747,7 +2744,7 @@ pub fn compute(
         }
       }
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
-        if not(ignore_intrinsic_max_width_constraint(style)) &&
+        if !ignore_intrinsic_max_width_constraint(style) &&
           table_width > intrinsic_table_width {
           table_width = intrinsic_table_width
         }
@@ -2772,16 +2769,16 @@ pub fn compute(
   if table_width < min_table_width {
     table_width = min_table_width
   }
-  if not(ctx.stretch_width) {
+  if !ctx.stretch_width {
     let should_enforce_intrinsic_min_width = match style.max_width {
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
-        not(ignore_intrinsic_max_width_constraint(style))
+        !ignore_intrinsic_max_width_constraint(style)
       _ => true
     }
     let is_fixed_layout = style.table_layout == @style.TableLayout::Fixed
     // Auto-layout tables cannot be narrower than their intrinsic minimum width,
     // even when max-width is tighter than the intrinsic minimum.
-    if not(is_fixed_layout) &&
+    if !is_fixed_layout &&
       should_enforce_intrinsic_min_width &&
       table_width < intrinsic_table_width {
       table_width = intrinsic_table_width
@@ -3359,7 +3356,7 @@ pub fn compute(
             }
           }
           let spacing_after_row = if row.style.visibility == @style.Collapse ||
-            not(has_visible_next_row) {
+            !has_visible_next_row {
             0.0
           } else {
             border_spacing_y
@@ -3419,7 +3416,7 @@ pub fn compute(
         let bucket = match child.style.display {
           @types.TableHeaderGroup => 0
           @types.TableFooterGroup =>
-            if not(first_footer_bucket_taken) {
+            if !first_footer_bucket_taken {
               first_footer_bucket_taken = true
               2
             } else {
@@ -3674,9 +3671,7 @@ pub fn compute(
   }
   // In vertical writing modes, physical height is inline-size.
   // Auto-layout tables should not shrink below intrinsic inline minimum size.
-  if style.writing_mode.is_vertical() &&
-    not(ctx.stretch_height) &&
-    not(is_fixed_layout) {
+  if style.writing_mode.is_vertical() && !ctx.stretch_height && !is_fixed_layout {
     let intrinsic_inline_height = compute_intrinsic_size(node, false)
     if table_height < intrinsic_inline_height {
       table_height = intrinsic_inline_height
@@ -3739,7 +3734,7 @@ pub fn compute(
       ) ||
       overflow_creates_scroll_container(layout.overflow_y)
     let propagate_inside_cell = is_cell_box &&
-      not(keeps_descendant_negative_offsets)
+      !keeps_descendant_negative_offsets
     let normalized_children : Array[@types.Layout] = []
     for child in layout.children {
       let normalized_child = normalize_cell_descendant_offsets(

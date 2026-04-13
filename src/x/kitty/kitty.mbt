@@ -217,7 +217,7 @@ pub fn render_svg_node_to_kitty(
 ///|
 /// Render PaintNode to Kitty Graphics Protocol string
 pub fn render_paint_node_to_kitty(
-  node : @paint.PaintNode,
+  node : @paint_model.PaintNode,
   width : Int,
   height : Int,
 ) -> String {
@@ -227,7 +227,7 @@ pub fn render_paint_node_to_kitty(
 ///|
 /// Render PaintNode to Kitty Graphics Protocol string with scroll offset
 pub fn render_paint_node_to_kitty_scrolled(
-  node : @paint.PaintNode,
+  node : @paint_model.PaintNode,
   width : Int,
   height : Int,
   scroll_y : Int,
@@ -242,7 +242,7 @@ pub fn render_paint_node_to_kitty_scrolled(
 ///|
 pub async fn[T : @io.Writer] write_paint_node_to_kitty_scrolled(
   writer : T,
-  node : @paint.PaintNode,
+  node : @paint_model.PaintNode,
   width : Int,
   height : Int,
   scroll_y : Int,

@@ -236,3 +236,27 @@ pub fn LayoutNode::from_node(node : @node.Node) -> LayoutNode {
     on_dirty: None,
   }
 }
+
+///|
+/// Configure a node to use a resolved intrinsic size.
+pub fn LayoutNode::set_intrinsic_resolved(
+  self : LayoutNode,
+  width : Double,
+  height : Double,
+) -> Unit {
+  self.intrinsic_state = Some(Resolved(width~, height~))
+  self.measure = Some(create_fixed_measure(width, height))
+}
+
+///|
+/// Configure a node to use a pending intrinsic placeholder size.
+pub fn LayoutNode::set_intrinsic_pending(
+  self : LayoutNode,
+  placeholder_width : Double,
+  placeholder_height : Double,
+) -> Unit {
+  self.intrinsic_state = Some(Pending(placeholder_width~, placeholder_height~))
+  self.measure = Some(
+    create_fixed_measure(placeholder_width, placeholder_height),
+  )
+}

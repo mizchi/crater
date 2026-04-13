@@ -20,6 +20,26 @@ Crater provides synchronous, pure MoonBit APIs for browser implementers. This do
 
 ---
 
+## Browser-local Paint Facades
+
+When browser packages need paint conversion helpers, prefer the browser-local
+facades under `mizchi/crater-browser/tui/paint/*` instead of importing crater
+`paint/*` packages directly.
+
+| Package | Purpose |
+|---------|---------|
+| `tui/paint/plain` | Full `Node + Layout -> PaintNode` conversion |
+| `tui/paint/viewport` | Viewport-aware paint tree conversion |
+| `tui/paint/runtime` | TUI runtime helpers (`PreparedPaint`, scrollable extraction) |
+| `tui/paint/output` | `PaintNode` export helpers (`json`, `framebuffer`, `rgba-base64`) |
+| `tui/paint/output/png` | JS-only PNG export helpers (`png-base64`) |
+| `tui/paint` | Compatibility umbrella over the narrower browser-local facades |
+
+This keeps crater-side `paint` ownership inside the browser-local boundary and
+makes later `moon work` splitting simpler.
+
+---
+
 ## A. High-level API (`renderer`)
 
 For simple use cases where you have complete HTML and just need layout results.
@@ -77,7 +97,7 @@ For dynamic applications requiring DOM manipulation and incremental layout updat
 ```moonbit
 // Create from HTML document
 let doc = @html.parse_document(html_string)
-let tree = @tree.LayoutTree::from_html_document(doc, 800.0, 600.0)
+let tree = @layout_html_tree.layout_tree_from_html_document(doc, 800.0, 600.0)
 
 // Or create from Node
 let node = @renderer.render_to_node(html_string, ctx)
@@ -98,12 +118,12 @@ let node = tree.find_node_by_id("my-element")
 let node = tree.find_node(uid)
 
 // Add/remove nodes
-tree.add_node("new-id", parent_uid, new_node)
-tree.remove_node("node-id")
+@layout_style.add_node(tree, "new-id", parent_uid, new_node)
+@layout_style.remove_node(tree, "node-id")
 
 // Update styles
-tree.update_node_style("node-id", cascaded_values)
-tree.batch_update_styles([("id1", values1), ("id2", values2)])
+@layout_style.update_node_style(tree, "node-id", cascaded_values)
+@layout_style.batch_update_styles(tree, [("id1", values1), ("id2", values2)])
 
 // Mark dirty for re-layout
 tree.mark_node_dirty(uid)
@@ -220,7 +240,7 @@ let has = cascaded.has("flex-direction")   // -> Bool
 
 ```moonbit
 let node = @tree.LayoutNode::create_with_id("my-node")
-let changed = node.apply_css_values(cascaded_values)  // returns true if style changed
+let changed = @layout_style.apply_css_values(node, cascaded_values)  // returns true if style changed
 ```
 
 ---
@@ -281,7 +301,9 @@ let doc = @html.parse_document(html_string)
 let external_css = fetch_stylesheets(doc.stylesheet_links)
 
 // Build layout tree
-let tree = @tree.LayoutTree::from_html_document(doc, viewport_w, viewport_h)
+let tree = @layout_html_tree.layout_tree_from_html_document(
+  doc, viewport_w, viewport_h,
+)
 
 // Apply external styles
 for css in external_css {
@@ -304,7 +326,7 @@ let new_node = @tree.LayoutNode::create_with_id("new-item")
   .set_width(100.0)
   .set_height(50.0)
 
-tree.add_node("new-item", parent_uid, new_node)
+@layout_style.add_node(tree, "new-item", parent_uid, new_node)
 
 // Incremental re-layout (only affected nodes recomputed)
 let layout = tree.compute_incremental()
@@ -315,7 +337,7 @@ let layout = tree.compute_incremental()
 ```moonbit
 // Update style on specific node
 let new_values = compute_hover_styles(element)
-tree.update_node_style("button-1", new_values)
+@layout_style.update_node_style(tree, "button-1", new_values)
 
 // Re-layout
 let layout = tree.compute_incremental()

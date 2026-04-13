@@ -1,0 +1,31 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/core_subset"
+
+import {
+  "mizchi/crater/layout/node",
+  "mizchi/crater/types",
+}
+
+// Values
+pub fn compute_core_layout(@node.Node, @types.Size[Double]) -> CoreComputeResult
+
+pub fn validate_core_subset(@node.Node) -> Array[CoreIssue]
+
+// Errors
+
+// Types and methods
+pub(all) struct CoreComputeResult {
+  layout : @types.Layout?
+  issues : Array[CoreIssue]
+}
+
+pub(all) struct CoreIssue {
+  node_id : String
+  property : String
+  detail : String
+}
+
+// Type aliases
+
+// Traits
+

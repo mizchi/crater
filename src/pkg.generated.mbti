@@ -2,16 +2,19 @@
 package "mizchi/crater"
 
 import {
+  "mizchi/crater/core_subset",
   "mizchi/crater/layout/node",
-  "mizchi/crater/paint",
+  "mizchi/crater/paint/diff",
+  "mizchi/crater/paint/model",
   "mizchi/crater/types",
+  "mizchi/crater/vrt",
   "mizchi/crater/x/webvitals",
 }
 
 // Values
 pub fn compute_block_layout(@node.Node, @types.LayoutContext) -> @types.Layout
 
-pub fn compute_core_layout(@node.Node, @types.Size[Double]) -> CoreComputeResult
+pub fn compute_core_layout(@node.Node, @types.Size[Double]) -> @core_subset.CoreComputeResult
 
 pub fn compute_element_shift(@types.BoundingRect, @types.BoundingRect, @types.Size[Double]) -> @webvitals.LayoutShift
 
@@ -23,54 +26,34 @@ pub fn compute_layout_with_warnings(@node.Node, @types.Size[Double]) -> @types.L
 
 pub fn compute_total_cls(Array[@types.BoundingRect], Array[@types.BoundingRect], @types.Size[Double]) -> Double
 
-pub fn diff_rendered_paint_trees(String, String, @types.Size[Double]) -> @paint.PaintTreeDiff
+pub fn diff_rendered_paint_trees(String, String, @types.Size[Double]) -> @diff.PaintTreeDiff
 
-pub fn render_html_batch_variants(String, @types.Size[Double], Array[RenderVariant]) -> Array[RenderVariantResult]
+pub fn render_html_batch_variants(String, @types.Size[Double], Array[@vrt.RenderVariant]) -> Array[@vrt.RenderVariantResult]
 
-pub fn render_html_to_paint_tree(String, @types.Size[Double]) -> @paint.PaintNode
+pub fn render_html_to_paint_tree(String, @types.Size[Double]) -> @model.PaintNode
 
 pub fn render_html_to_paint_tree_json(String, @types.Size[Double]) -> String
 
-pub fn render_html_to_paint_tree_with_external_css(String, @types.Size[Double], Array[String]) -> @paint.PaintNode
+pub fn render_html_to_paint_tree_with_external_css(String, @types.Size[Double], Array[String]) -> @model.PaintNode
 
-pub fn validate_core_subset(@node.Node) -> Array[CoreIssue]
+pub fn validate_core_subset(@node.Node) -> Array[@core_subset.CoreIssue]
 
 // Errors
 
 // Types and methods
-pub(all) struct CoreComputeResult {
-  layout : @types.Layout?
-  issues : Array[CoreIssue]
-}
-
-pub(all) struct CoreIssue {
-  node_id : String
-  property : String
-  detail : String
-}
-
-pub(all) struct CssMutation {
-  selector : String
-  property : String
-  action : CssMutationAction
-} derive(Eq, Show)
-
-pub(all) enum CssMutationAction {
-  Remove
-  Override(String)
-} derive(Eq, Show)
-
-pub(all) struct RenderVariant {
-  id : String
-  mutations : Array[CssMutation]
-} derive(Eq, Show)
-
-pub(all) struct RenderVariantResult {
-  id : String
-  paint_tree : @paint.PaintNode
-} derive(Show)
 
 // Type aliases
+pub using @core_subset {type CoreComputeResult}
+
+pub using @core_subset {type CoreIssue}
+
+pub using @vrt {type CssMutation}
+
+pub using @vrt {type CssMutationAction}
+
+pub using @vrt {type RenderVariant}
+
+pub using @vrt {type RenderVariantResult}
 
 // Traits
 

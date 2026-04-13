@@ -189,9 +189,9 @@ fn parse_mouse_event(key : String) -> String? {
   let payload = key.unsafe_substring(start=3, end=key.length() - 1)
   let parts = payload.split(";").collect()
   guard parts.length() == 3 else { return None }
-  let btn = @strconv.parse_int(parts[0].to_string()) catch { _ => return None }
-  let col = @strconv.parse_int(parts[1].to_string()) catch { _ => return None }
-  let row = @strconv.parse_int(parts[2].to_string()) catch { _ => return None }
+  let btn = @string.parse_int(parts[0].to_string()) catch { _ => return None }
+  let col = @string.parse_int(parts[1].to_string()) catch { _ => return None }
+  let row = @string.parse_int(parts[2].to_string()) catch { _ => return None }
   if btn == 0 && suffix == 'M' {
     return Some("MouseDown:\{col},\{row}")
   }
@@ -227,7 +227,7 @@ fn trim_line_endings(s : String) -> String {
 ///|
 fn env_int_or(key : String, fallback : Int) -> Int {
   match @sys.get_env_var(key) {
-    Some(value) => @strconv.parse_int(value) catch { _ => fallback }
+    Some(value) => @string.parse_int(value) catch { _ => fallback }
     None => fallback
   }
 }
@@ -275,14 +275,14 @@ pub fn read_key() -> String {
 
 ///|
 pub fn read_key_with_timeout(timeout_ms : Int) -> String {
-  if not(is_tty()) {
+  if !is_tty() {
     if timeout_ms >= 0 {
       tui_sleep_ms(timeout_ms)
       return ""
     }
     return "q"
   }
-  if not(is_raw_mode()) {
+  if !is_raw_mode() {
     enable_raw_mode()
   }
   let prefix : Array[Byte] = []

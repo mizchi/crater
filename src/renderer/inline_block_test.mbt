@@ -13,7 +13,7 @@ test "inline_block_rendering" {
     viewport_width: 640.0,
     viewport_height: 400.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   fn show_all(n : @node.Node, depth : Int) -> Unit {
@@ -67,7 +67,7 @@ test "inline_block_layout" {
     viewport_width: 640.0,
     viewport_height: 400.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let layout = render_with_external_css(html, ctx, [css])
   fn show_layout(l : @types.Layout, depth : Int) -> Unit {

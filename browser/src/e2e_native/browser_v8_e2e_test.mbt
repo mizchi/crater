@@ -1026,7 +1026,7 @@ fn make_react_ctx() -> (@js.JsContext, @dom.DomTree) {
   let r = ctx.execute(react_bundle_js()) catch {
     _ => @js.JsResult::new("", [], false)
   }
-  if not(r.success) {
+  if !r.success {
     println("[React init error] " + r.value)
   }
   (ctx, dom)

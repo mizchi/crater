@@ -68,7 +68,7 @@ fn BidiProtocol::resolve_get_css_rule_viewport_map(
     }
   }
   let html = responsive_breakpoint_source_html("live-inline")
-  let map = @responsive.discover_css_rule_viewport_map(html, viewport_widths)
+  let map = @css.discover_css_rule_viewport_map(html, viewport_widths)
   let rules_json : Array[Json] = []
   for entry in map.rules {
     let item : Map[String, Json] = {}
@@ -141,7 +141,7 @@ fn BidiProtocol::resolve_get_required_test_viewports(
     }
   }
   let html = responsive_breakpoint_source_html("live-inline")
-  let result = @responsive.discover_required_test_viewports(html)
+  let result = @css.discover_required_test_viewports(html)
   let viewports_json : Array[Json] = []
   for v in result.viewports {
     let item : Map[String, Json] = {}
@@ -241,7 +241,7 @@ fn BidiProtocol::resolve_batch_render(
       return None
     }
   }
-  let variants : Array[@crater.RenderVariant] = []
+  let variants : Array[@vrt.RenderVariant] = []
   for v in variants_json {
     match v {
       Object(obj) => {
@@ -249,7 +249,7 @@ fn BidiProtocol::resolve_batch_render(
           Some(String(s)) => s
           _ => ""
         }
-        let mutations : Array[@crater.CssMutation] = []
+        let mutations : Array[@vrt.CssMutation] = []
         match obj.get("mutations") {
           Some(Array(muts)) =>
             for m in muts {
@@ -264,14 +264,14 @@ fn BidiProtocol::resolve_batch_render(
                     _ => continue
                   }
                   let action = match mobj.get("action") {
-                    Some(String("remove")) => @crater.CssMutationAction::Remove
+                    Some(String("remove")) => @vrt.CssMutationAction::Remove
                     Some(Object(aobj)) =>
                       match aobj.get("override") {
                         Some(String(v)) =>
-                          @crater.CssMutationAction::Override(v)
-                        _ => @crater.CssMutationAction::Remove
+                          @vrt.CssMutationAction::Override(v)
+                        _ => @vrt.CssMutationAction::Remove
                       }
-                    _ => @crater.CssMutationAction::Remove
+                    _ => @vrt.CssMutationAction::Remove
                   }
                   mutations.push({ selector, property, action, })
                 }
@@ -286,7 +286,7 @@ fn BidiProtocol::resolve_batch_render(
     }
   }
   let viewport = @types.Size::new(viewport_width, viewport_height)
-  let results = @crater.render_html_batch_variants(base_html, viewport, variants)
+  let results = @vrt.render_html_batch_variants(base_html, viewport, variants)
   let results_json : Array[Json] = []
   for r in results {
     let item : Map[String, Json] = {}
@@ -399,7 +399,7 @@ fn BidiProtocol::resolve_get_computed_styles_with_state(
     _ => ()
   }
   let html = responsive_breakpoint_source_html("live-inline")
-  let result = @responsive.discover_computed_styles_with_state_names(
+  let result = @css.discover_computed_styles_with_state_names(
     html, selector, forced_state_names, properties,
   )
   // Build JSON response

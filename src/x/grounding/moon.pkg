@@ -4,8 +4,8 @@ import {
 
 import {
   "mizchi/crater/html",
-  "mizchi/crater/layout/tree",
-  "mizchi/crater/layout/dispatch",
+  "mizchi/crater/layout",
+  "mizchi/crater/layout/html_tree" @layout_html_tree,
 } for "test"
 
 import {

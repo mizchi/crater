@@ -424,13 +424,13 @@ fn TreeBuilder::handle_in_body_end_tag(
   self.flush_pending_text()
   match tag {
     "body" => {
-      if not(self.has_element_in_scope("body")) {
+      if !self.has_element_in_scope("body") {
         return // Parse error, ignore
       }
       self.insertion_mode = InsertionMode::AfterBody
     }
     "html" => {
-      if not(self.has_element_in_scope("body")) {
+      if !self.has_element_in_scope("body") {
         return // Parse error, ignore
       }
       self.insertion_mode = InsertionMode::AfterBody
@@ -462,7 +462,7 @@ fn TreeBuilder::handle_in_body_end_tag(
     | "section"
     | "summary"
     | "ul" => {
-      if not(self.has_element_in_scope(tag)) {
+      if !self.has_element_in_scope(tag) {
         return // Parse error, ignore
       }
       self.generate_implied_end_tags()
@@ -473,7 +473,7 @@ fn TreeBuilder::handle_in_body_end_tag(
       self.pop_until("form")
     }
     "p" => {
-      if not(self.has_element_in_button_scope("p")) {
+      if !self.has_element_in_button_scope("p") {
         // Create an implicit p element
         let elem = create_element("p", {})
         self.insert_element(elem)
@@ -481,26 +481,26 @@ fn TreeBuilder::handle_in_body_end_tag(
       self.close_p_element()
     }
     "li" => {
-      if not(self.has_element_in_list_scope("li")) {
+      if !self.has_element_in_list_scope("li") {
         return // Parse error, ignore
       }
       self.generate_implied_end_tags_except("li")
       self.pop_until("li")
     }
     "dd" | "dt" => {
-      if not(self.has_element_in_scope(tag)) {
+      if !self.has_element_in_scope(tag) {
         return // Parse error, ignore
       }
       self.generate_implied_end_tags_except(tag)
       self.pop_until(tag)
     }
     "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => {
-      if not(self.has_heading_in_scope()) {
+      if !self.has_heading_in_scope() {
         return // Parse error, ignore
       }
       self.generate_implied_end_tags()
       // Pop until any heading
-      while not(self.open_elements.is_empty()) {
+      while !self.open_elements.is_empty() {
         match self.current_node() {
           Some(e) if e.tag == "h1" ||
             e.tag == "h2" ||
@@ -652,7 +652,7 @@ fn TreeBuilder::handle_in_table(self : TreeBuilder, token : Token) -> Unit {
     Token::EndTag(tag) =>
       match tag {
         "table" => {
-          if not(self.has_element_in_table_scope("table")) {
+          if !self.has_element_in_table_scope("table") {
             return // Parse error, ignore
           }
           self.pop_until("table")
@@ -694,7 +694,7 @@ fn TreeBuilder::handle_in_table_text(self : TreeBuilder, token : Token) -> Unit 
       // Flush pending table characters
       let mut has_non_space = false
       for c in self.pending_table_chars {
-        if not(tok_is_whitespace(c)) {
+        if !tok_is_whitespace(c) {
           has_non_space = true
           break
         }
@@ -742,9 +742,9 @@ fn TreeBuilder::handle_in_table_body(self : TreeBuilder, token : Token) -> Unit 
           self.reprocess_token(Token::StartTag(tag, attrs, self_closing))
         }
         "caption" | "col" | "colgroup" | "tbody" | "tfoot" | "thead" => {
-          if not(self.has_element_in_table_scope("tbody")) &&
-            not(self.has_element_in_table_scope("thead")) &&
-            not(self.has_element_in_table_scope("tfoot")) {
+          if !self.has_element_in_table_scope("tbody") &&
+            !self.has_element_in_table_scope("thead") &&
+            !self.has_element_in_table_scope("tfoot") {
             return // Parse error, ignore
           }
           self.clear_stack_to_table_body_context()
@@ -757,7 +757,7 @@ fn TreeBuilder::handle_in_table_body(self : TreeBuilder, token : Token) -> Unit 
     Token::EndTag(tag) =>
       match tag {
         "tbody" | "tfoot" | "thead" => {
-          if not(self.has_element_in_table_scope(tag)) {
+          if !self.has_element_in_table_scope(tag) {
             return // Parse error, ignore
           }
           self.clear_stack_to_table_body_context()
@@ -765,9 +765,9 @@ fn TreeBuilder::handle_in_table_body(self : TreeBuilder, token : Token) -> Unit 
           self.insertion_mode = InsertionMode::InTable
         }
         "table" => {
-          if not(self.has_element_in_table_scope("tbody")) &&
-            not(self.has_element_in_table_scope("thead")) &&
-            not(self.has_element_in_table_scope("tfoot")) {
+          if !self.has_element_in_table_scope("tbody") &&
+            !self.has_element_in_table_scope("thead") &&
+            !self.has_element_in_table_scope("tfoot") {
             return // Parse error, ignore
           }
           self.clear_stack_to_table_body_context()
@@ -797,7 +797,7 @@ fn TreeBuilder::handle_in_row(self : TreeBuilder, token : Token) -> Unit {
           self.active_formatting.push(FormattingElement::Marker)
         }
         "caption" | "col" | "colgroup" | "tbody" | "tfoot" | "thead" | "tr" => {
-          if not(self.has_element_in_table_scope("tr")) {
+          if !self.has_element_in_table_scope("tr") {
             return // Parse error, ignore
           }
           self.clear_stack_to_table_row_context()
@@ -810,7 +810,7 @@ fn TreeBuilder::handle_in_row(self : TreeBuilder, token : Token) -> Unit {
     Token::EndTag(tag) =>
       match tag {
         "tr" => {
-          if not(self.has_element_in_table_scope("tr")) {
+          if !self.has_element_in_table_scope("tr") {
             return // Parse error, ignore
           }
           self.clear_stack_to_table_row_context()
@@ -818,7 +818,7 @@ fn TreeBuilder::handle_in_row(self : TreeBuilder, token : Token) -> Unit {
           self.insertion_mode = InsertionMode::InTableBody
         }
         "table" => {
-          if not(self.has_element_in_table_scope("tr")) {
+          if !self.has_element_in_table_scope("tr") {
             return // Parse error, ignore
           }
           self.clear_stack_to_table_row_context()
@@ -827,10 +827,10 @@ fn TreeBuilder::handle_in_row(self : TreeBuilder, token : Token) -> Unit {
           self.reprocess_token(Token::EndTag(tag))
         }
         "tbody" | "tfoot" | "thead" => {
-          if not(self.has_element_in_table_scope(tag)) {
+          if !self.has_element_in_table_scope(tag) {
             return // Parse error, ignore
           }
-          if not(self.has_element_in_table_scope("tr")) {
+          if !self.has_element_in_table_scope("tr") {
             return // Ignore
           }
           self.clear_stack_to_table_row_context()
@@ -882,7 +882,7 @@ fn is_cell_scope_end_tag(tag : String) -> Bool {
 fn TreeBuilder::handle_in_cell(self : TreeBuilder, token : Token) -> Unit {
   match token {
     Token::EndTag(tag) if tag == "td" || tag == "th" => {
-      if not(self.has_element_in_table_scope(tag)) {
+      if !self.has_element_in_table_scope(tag) {
         return // Parse error, ignore
       }
       self.generate_implied_end_tags()
@@ -891,8 +891,8 @@ fn TreeBuilder::handle_in_cell(self : TreeBuilder, token : Token) -> Unit {
       self.insertion_mode = InsertionMode::InRow
     }
     Token::StartTag(tag, attrs, self_closing) if is_cell_closing_start_tag(tag) => {
-      if not(self.has_element_in_table_scope("td")) &&
-        not(self.has_element_in_table_scope("th")) {
+      if !self.has_element_in_table_scope("td") &&
+        !self.has_element_in_table_scope("th") {
         return // Parse error, ignore
       }
       self.close_cell()
@@ -900,7 +900,7 @@ fn TreeBuilder::handle_in_cell(self : TreeBuilder, token : Token) -> Unit {
     }
     Token::EndTag(tag) if is_cell_ignored_end_tag(tag) => () // Parse error, ignore
     Token::EndTag(tag) if is_cell_scope_end_tag(tag) => {
-      if not(self.has_element_in_table_scope(tag)) {
+      if !self.has_element_in_table_scope(tag) {
         return // Parse error, ignore
       }
       self.close_cell()
@@ -948,7 +948,7 @@ fn is_caption_ignored_end_tag(tag : String) -> Bool {
 fn TreeBuilder::handle_in_caption(self : TreeBuilder, token : Token) -> Unit {
   match token {
     Token::EndTag(tag) if tag == "caption" => {
-      if not(self.has_element_in_table_scope("caption")) {
+      if !self.has_element_in_table_scope("caption") {
         return // Parse error, ignore
       }
       self.generate_implied_end_tags()
@@ -959,7 +959,7 @@ fn TreeBuilder::handle_in_caption(self : TreeBuilder, token : Token) -> Unit {
     Token::StartTag(tag, attrs, self_closing) if is_caption_closing_start_tag(
         tag,
       ) => {
-      if not(self.has_element_in_table_scope("caption")) {
+      if !self.has_element_in_table_scope("caption") {
         return // Parse error, ignore
       }
       self.generate_implied_end_tags()
@@ -969,7 +969,7 @@ fn TreeBuilder::handle_in_caption(self : TreeBuilder, token : Token) -> Unit {
       self.reprocess_token(Token::StartTag(tag, attrs, self_closing))
     }
     Token::EndTag(tag) if tag == "table" => {
-      if not(self.has_element_in_table_scope("caption")) {
+      if !self.has_element_in_table_scope("caption") {
         return // Parse error, ignore
       }
       self.generate_implied_end_tags()
@@ -1166,7 +1166,7 @@ fn TreeBuilder::remove_from_active_formatting(
 ///|
 /// Helper: clear stack to table context
 fn TreeBuilder::clear_stack_to_table_context(self : TreeBuilder) -> Unit {
-  while not(self.open_elements.is_empty()) {
+  while !self.open_elements.is_empty() {
     match self.current_node() {
       Some(e) if e.tag == "table" || e.tag == "template" || e.tag == "html" =>
         return
@@ -1188,7 +1188,7 @@ fn is_table_body_context(tag : String) -> Bool {
 ///|
 /// Helper: clear stack to table body context
 fn TreeBuilder::clear_stack_to_table_body_context(self : TreeBuilder) -> Unit {
-  while not(self.open_elements.is_empty()) {
+  while !self.open_elements.is_empty() {
     match self.current_node() {
       Some(e) if is_table_body_context(e.tag) => return
       _ => {
@@ -1201,7 +1201,7 @@ fn TreeBuilder::clear_stack_to_table_body_context(self : TreeBuilder) -> Unit {
 ///|
 /// Helper: clear stack to table row context
 fn TreeBuilder::clear_stack_to_table_row_context(self : TreeBuilder) -> Unit {
-  while not(self.open_elements.is_empty()) {
+  while !self.open_elements.is_empty() {
     match self.current_node() {
       Some(e) if e.tag == "tr" || e.tag == "template" || e.tag == "html" =>
         return
@@ -1215,7 +1215,7 @@ fn TreeBuilder::clear_stack_to_table_row_context(self : TreeBuilder) -> Unit {
 ///|
 /// Helper: clear active formatting to marker
 fn TreeBuilder::clear_active_formatting_to_marker(self : TreeBuilder) -> Unit {
-  while not(self.active_formatting.is_empty()) {
+  while !self.active_formatting.is_empty() {
     match self.active_formatting.pop() {
       Some(FormattingElement::Marker) => return
       _ => ()
@@ -1231,7 +1231,7 @@ fn TreeBuilder::close_cell(self : TreeBuilder) -> Unit {
   self.flush_pending_text()
   self.generate_implied_end_tags()
   // Pop until td or th
-  while not(self.open_elements.is_empty()) {
+  while !self.open_elements.is_empty() {
     match self.current_node() {
       Some(e) if e.tag == "td" || e.tag == "th" => {
         let _ = self.open_elements.pop()
@@ -1257,7 +1257,7 @@ fn TreeBuilder::reset_insertion_mode(self : TreeBuilder) -> Unit {
         self.insertion_mode = InsertionMode::InSelect
         return
       }
-      "td" | "th" if not(last) => {
+      "td" | "th" if !last => {
         self.insertion_mode = InsertionMode::InCell
         return
       }

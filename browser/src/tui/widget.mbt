@@ -320,7 +320,7 @@ pub fn draw_status_bar(
   let url_text = " " + display_url
   col = buf.write_text(col, y, url_text, url_style, buf.width - col)
   // Write the rest of the status (skip if selection mode to save space)
-  if not(selection_mode) {
+  if !selection_mode {
     let rest = " | Links: " +
       (focused_link + 1).to_string() +
       "/" +

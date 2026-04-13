@@ -1,9 +1,19 @@
 import {
-  "mizchi/crater/style",
+  "mizchi/crater/paint/build" @paint_build,
+  "mizchi/crater/paint/diff" @paint_diff,
+  "mizchi/crater/paint/layout_tree_bridge" @paint_layout_tree,
+  "mizchi/crater/paint/node_bridge" @paint_node,
+  "mizchi/crater/paint/viewport_bridge" @paint_viewport,
+  "mizchi/crater/paint/model" @paint_model,
   "mizchi/crater/types",
-  "mizchi/crater/layout/node",
+  "mizchi/crater/layout" @node,
 }
 
 import {
+  "mizchi/crater/style",
+} for "test"
+
+import {
+  "mizchi/crater/style",
   "moonbitlang/core/bench",
 } for "wbtest"

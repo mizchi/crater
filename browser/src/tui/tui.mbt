@@ -104,8 +104,8 @@ fn parse_mouse_click(key : String) -> BrowserAction? {
         start=comma_idx + 1,
         end=parts.length(),
       )
-      let col = @strconv.parse_int(col_str) catch { _ => return None }
-      let row = @strconv.parse_int(row_str) catch { _ => return None }
+      let col = @string.parse_int(col_str) catch { _ => return None }
+      let row = @string.parse_int(row_str) catch { _ => return None }
       Some(MouseClick(col, row))
     }
     None => None
@@ -122,8 +122,8 @@ fn parse_mouse_down(key : String) -> BrowserAction? {
         start=comma_idx + 1,
         end=parts.length(),
       )
-      let col = @strconv.parse_int(col_str) catch { _ => return None }
-      let row = @strconv.parse_int(row_str) catch { _ => return None }
+      let col = @string.parse_int(col_str) catch { _ => return None }
+      let row = @string.parse_int(row_str) catch { _ => return None }
       Some(MouseDown(col, row))
     }
     None => None
@@ -140,8 +140,8 @@ fn parse_mouse_up(key : String) -> BrowserAction? {
         start=comma_idx + 1,
         end=parts.length(),
       )
-      let col = @strconv.parse_int(col_str) catch { _ => return None }
-      let row = @strconv.parse_int(row_str) catch { _ => return None }
+      let col = @string.parse_int(col_str) catch { _ => return None }
+      let row = @string.parse_int(row_str) catch { _ => return None }
       Some(MouseUp(col, row))
     }
     None => None
@@ -158,8 +158,8 @@ fn parse_mouse_move(key : String) -> BrowserAction? {
         start=comma_idx + 1,
         end=parts.length(),
       )
-      let col = @strconv.parse_int(col_str) catch { _ => return None }
-      let row = @strconv.parse_int(row_str) catch { _ => return None }
+      let col = @string.parse_int(col_str) catch { _ => return None }
+      let row = @string.parse_int(row_str) catch { _ => return None }
       Some(MouseMove(col, row))
     }
     None => None
@@ -178,8 +178,8 @@ fn parse_mouse_scroll_up(key : String) -> BrowserAction? {
         start=comma_idx + 1,
         end=parts.length(),
       )
-      let col = @strconv.parse_int(col_str) catch { _ => return None }
-      let row = @strconv.parse_int(row_str) catch { _ => return None }
+      let col = @string.parse_int(col_str) catch { _ => return None }
+      let row = @string.parse_int(row_str) catch { _ => return None }
       Some(MouseScrollUp(col, row))
     }
     None => None
@@ -198,8 +198,8 @@ fn parse_mouse_scroll_down(key : String) -> BrowserAction? {
         start=comma_idx + 1,
         end=parts.length(),
       )
-      let col = @strconv.parse_int(col_str) catch { _ => return None }
-      let row = @strconv.parse_int(row_str) catch { _ => return None }
+      let col = @string.parse_int(col_str) catch { _ => return None }
+      let row = @string.parse_int(row_str) catch { _ => return None }
       Some(MouseScrollDown(col, row))
     }
     None => None

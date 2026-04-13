@@ -272,7 +272,7 @@ fn estimate_wrapped_text_metrics(
 
       let mut total_lines = 1
       let mut last_line_cols = 0
-      if use_word_wrap && not(no_wrap) {
+      if use_word_wrap && !no_wrap {
         let mut current_line_width = 0
         let mut current_word_width = 0
         let mut has_pending_space = false
@@ -372,7 +372,7 @@ fn estimate_inline_wrap_carry_width(
         @style.WhiteSpace::Normal | @style.WhiteSpace::PreLine => true
         _ => false
       }
-      if not(collapses_space) {
+      if !collapses_space {
         return None
       }
       let font_size = prev.style.font_size
@@ -406,7 +406,7 @@ fn estimate_inline_wrap_carry_width(
             in_word = false
           }
         } else {
-          if not(in_word) {
+          if !in_word {
             word_count = word_count + 1
           }
           in_word = true
@@ -501,19 +501,23 @@ fn id_matches_tag(node_id : String, tag : String) -> Bool {
 
 ///|
 fn is_whitespace_text_node(node : @node.Node) -> Bool {
-  if not(node.id.has_prefix("#text")) {
+  if !node.id.has_prefix("#text") {
     return false
   }
   match node.text {
     Some(text) => text.trim().is_empty()
-    None => true
+    None =>
+      match node.measure {
+        Some(_) => false
+        None => true
+      }
   }
 }
 
 ///|
 fn has_non_whitespace_text_descendant(node : @node.Node) -> Bool {
   match node.text {
-    Some(text) => if not(text.trim().is_empty()) { return true }
+    Some(text) => if !text.trim().is_empty() { return true }
     None => ()
   }
   for child in node.children {
@@ -556,7 +560,7 @@ fn has_inflow_block_descendant(node : @node.Node) -> Bool {
       }
       continue
     }
-    if not(is_inline_level(child.style.display)) {
+    if !is_inline_level(child.style.display) {
       return true
     }
     if has_inflow_block_descendant(child) {
@@ -635,11 +639,11 @@ fn is_generated_pseudo_text_only(node : @node.Node) -> Bool {
   if node.id.has_prefix("#text") {
     return true
   }
-  if not(node.id.has_prefix("#pseudo::")) {
+  if !node.id.has_prefix("#pseudo::") {
     return false
   }
   for child in node.children {
-    if not(is_generated_pseudo_text_only(child)) {
+    if !is_generated_pseudo_text_only(child) {
       return false
     }
   }
@@ -651,12 +655,12 @@ fn ruby_annotation_only_should_collapse(node : @node.Node) -> Bool {
   let mut has_annotation_child = false
   for child in node.children {
     if id_matches_tag(child.id, "rt") {
-      if not(child.style.contain.size) && not(child.style.contain.paint) {
+      if !child.style.contain.size && !child.style.contain.paint {
         return false
       }
       has_annotation_child = true
       for grand_child in child.children {
-        if not(is_generated_pseudo_text_only(grand_child)) {
+        if !is_generated_pseudo_text_only(grand_child) {
           return false
         }
       }
@@ -706,7 +710,7 @@ fn ruby_has_base_child(node : @node.Node) -> Bool {
 fn ruby_annotation_only(node : @node.Node) -> Bool {
   id_matches_tag(node.id, "ruby") &&
   ruby_has_rt_child(node) &&
-  not(ruby_has_base_child(node))
+  !ruby_has_base_child(node)
 }
 
 ///|
@@ -799,7 +803,7 @@ fn inline_source_children_only_contribute_floats(
     if child.id.has_prefix("#text") {
       match child.text {
         Some(text) =>
-          if not(is_whitespace_text_node(child)) && not(text.is_empty()) {
+          if !is_whitespace_text_node(child) && !text.is_empty() {
             return false
           }
         None => ()
@@ -816,7 +820,7 @@ fn inline_source_children_only_contribute_floats(
     if child.children.length() == 0 ||
       is_inline_level(child.style.display) ||
       child.style.display == @types.Contents ||
-      not(inline_source_children_only_contribute_floats(child.children)) {
+      !inline_source_children_only_contribute_floats(child.children) {
       return false
     }
     has_float_contribution = true
@@ -830,15 +834,15 @@ fn adjust_inline_float_only_wrapper(
   source_node : @node.Node,
   writing_mode : @style.WritingMode,
 ) -> @types.Layout {
-  if not(id_matches_tag(layout.id, "span")) ||
-    not(id_matches_tag(source_node.id, "span")) ||
+  if !id_matches_tag(layout.id, "span") ||
+    !id_matches_tag(source_node.id, "span") ||
     writing_mode.is_vertical() ||
     layout.height != 0.0 ||
     layout.width <= 0.0 ||
     layout.children.length() == 0 {
     return layout
   }
-  if not(inline_source_children_only_contribute_floats(source_node.children)) {
+  if !inline_source_children_only_contribute_floats(source_node.children) {
     return layout
   }
   let shifted_children : Array[@types.Layout] = []
@@ -849,7 +853,7 @@ fn adjust_inline_float_only_wrapper(
     }
     shifted_children.push({ ..child, x: child.x - layout.width })
   }
-  if not(has_visible_child) {
+  if !has_visible_child {
     return layout
   }
   {
@@ -978,10 +982,10 @@ fn LineBox::ensure_line_strut(
       replaced_like_count = replaced_like_count + 1
     }
   }
-  if has_text_item || (replaced_like_count == 0 && not(has_br_item)) {
+  if has_text_item || (replaced_like_count == 0 && !has_br_item) {
     return ()
   }
-  if replaced_like_count > 0 && not(has_br_item) {
+  if replaced_like_count > 0 && !has_br_item {
     // Browser WPT behavior: replaced-only lines size to the replaced items
     // themselves; they do not get an additional inline formatting strut band.
     return ()
@@ -1304,13 +1308,6 @@ pub fn compute_ifc(
     } else {
       child_layout
     }
-    let child_layout = if is_whitespace_text_node(child) {
-      // Keep inter-item spacing while preventing indentation whitespace from
-      // inflating line box metrics.
-      { ..child_layout, height: 0.0 }
-    } else {
-      child_layout
-    }
 
     // Calculate baseline based on font metrics
     // For text nodes, baseline is at font_size * ascender_ratio from top
@@ -1428,11 +1425,11 @@ pub fn compute_ifc(
         let has_break_opportunity = has_inline_break_opportunity_between(
           prev_child, child,
         )
-        keep_same_line = not(has_break_opportunity)
+        keep_same_line = !has_break_opportunity
         if has_break_opportunity &&
           child_establishes_abs_cb &&
           child_has_abs_desc &&
-          not(child_has_inflow_block_desc) &&
+          !child_has_inflow_block_desc &&
           child.style.display != @types.Inline {
           // Inline abs-containing wrappers may keep their first fragment on the
           // current line even when the overall bounding box exceeds line width.
@@ -1613,11 +1610,11 @@ pub fn compute_ifc(
         }
       }
       let mut effective_layout = item.layout
-      if not(is_rtl_inline) &&
+      if !is_rtl_inline &&
         item_index > 0 &&
         child.style.display == @types.Inline &&
         inline_establishes_abs_containing_block(child.style) &&
-        not(child_has_inflow_block_desc) {
+        !child_has_inflow_block_desc {
         let prev_item = line.items[item_index - 1]
         let prev_child = children[prev_item.index]
         let line_carry = current_x - content_offset_x - line_offset
@@ -1640,7 +1637,7 @@ pub fn compute_ifc(
       if item_index == 0 &&
         line_index > 0 &&
         inline_establishes_abs_containing_block(child.style) &&
-        not(child_has_inflow_block_desc) {
+        !child_has_inflow_block_desc {
         let prev_line = line_boxes[line_index - 1]
         if prev_line.items.length() > 0 {
           let prev_item = prev_line.items[prev_line.items.length() - 1]
@@ -1690,7 +1687,7 @@ pub fn compute_ifc(
         }
       }
       if ruby_annotation_only(child) &&
-        not(ruby_annotation_only_should_collapse(child)) {
+        !ruby_annotation_only_should_collapse(child) {
         let annotation_height = ruby_annotation_band_height(item.layout)
         if annotation_height > 0.0 {
           positioned_y = positioned_y + annotation_height
@@ -1818,7 +1815,7 @@ fn compute_inline_child(
       let suppress_inline_intrinsic = style.suppresses_intrinsic_width()
       let suppress_block_intrinsic = style.suppresses_intrinsic_height()
       let use_intrinsic_ratio_fallback = is_replaced_intrinsic_candidate(node) &&
-        not(style.contain.size)
+        !style.contain.size
       let intrinsic_ratio : Double? = if use_intrinsic_ratio_fallback &&
         unconstrained.max_width > 0.0 &&
         unconstrained.max_height > 0.0 {
@@ -1997,9 +1994,9 @@ fn compute_inline_child(
         Some(ratio) if ratio > 0.0 => {
           let width_changed = final_width != width
           let height_changed = final_height != height
-          if width_changed && not(height_changed) {
+          if width_changed && !height_changed {
             final_height = final_width / ratio
-          } else if height_changed && not(width_changed) {
+          } else if height_changed && !width_changed {
             final_width = final_height * ratio
           }
           final_width = @types.clamp(final_width, min_width, max_width)
@@ -2025,6 +2022,39 @@ fn compute_inline_child(
       }
     }
     None => ()
+  }
+
+  if node.children.length() == 0 {
+    let width = match style.width {
+      @types.Length(w) => w
+      @types.Percent(p) => available_width * p
+      _ => padding.horizontal_sum() + border.horizontal_sum()
+    }
+    let height = match style.height {
+      @types.Length(h) => h
+      @types.Percent(p) =>
+        match available_height {
+          Some(ah) => ah * p
+          None => padding.vertical_sum() + border.vertical_sum()
+        }
+      _ => padding.vertical_sum() + border.vertical_sum()
+    }
+    return {
+      id: node.id,
+      x: 0.0,
+      y: 0.0,
+      width,
+      height,
+      margin: @types.Rect::zero(),
+      padding,
+      border,
+      overflow_x: style.overflow_x,
+      overflow_y: style.overflow_y,
+      scroll_width: 0.0,
+      scroll_height: 0.0,
+      children: [],
+      text: node.text,
+    }
   }
 
   // For inline-block, inline-flex, inline-grid, use shrink-to-fit via layout dispatcher
@@ -2161,7 +2191,7 @@ fn compute_inline_child(
             raw_grand_layout.width +
             grand_margin.right
           if raw_grand_layout.height > contents_height &&
-            not(is_ruby_annotation_child(node, grand_child)) {
+            !is_ruby_annotation_child(node, grand_child) {
             contents_height = raw_grand_layout.height
           }
         }
@@ -2287,7 +2317,7 @@ fn compute_inline_child(
           child_margin.right
         content_width = inline_cursor_x
         if child_layout.height > inline_line_height &&
-          not(is_ruby_annotation_child(node, child)) {
+          !is_ruby_annotation_child(node, child) {
           inline_line_height = child_layout.height
         }
         let line_bottom = inline_cursor_y + inline_line_height
@@ -2295,7 +2325,7 @@ fn compute_inline_child(
           content_height = line_bottom
         }
       }
-      if not(collapse_whitespace_after_out_of_flow) {
+      if !collapse_whitespace_after_out_of_flow {
         saw_out_of_flow_child = false
       }
     } else if is_ruby_internal_container(node.id) {
@@ -2363,7 +2393,7 @@ fn compute_inline_child(
         child_margin.right
       content_width = inline_cursor_x
       if child_layout.height > content_height &&
-        not(is_ruby_annotation_child(node, child)) {
+        !is_ruby_annotation_child(node, child) {
         content_height = child_layout.height
       }
       saw_out_of_flow_child = false
@@ -2381,7 +2411,7 @@ fn compute_inline_child(
       let @node.DispatchFn(dispatch_fn) = dispatch
       let child_layout_raw = dispatch_fn(child, child_ctx, dispatch)
       let child_layout = if child_layout_raw.width <= 0.0 &&
-        not(style.writing_mode.is_vertical()) {
+        !style.writing_mode.is_vertical() {
         { ..child_layout_raw, width: available_width }
       } else {
         child_layout_raw
@@ -2503,8 +2533,8 @@ fn compute_inline_child(
         }
       }
     }
-    if not(has_forced_line_break) &&
-      not(has_text_wrap) &&
+    if !has_forced_line_break &&
+      !has_text_wrap &&
       final_height > own_inline_line_height {
       final_height = own_inline_line_height
     }
@@ -2529,15 +2559,15 @@ fn compute_inline_child(
   }
   let node_has_non_ws_text_desc = if absolute_entries.length() > 0 &&
     inline_cursor_y == 0.0 &&
-    not(style.writing_mode.is_vertical()) {
+    !style.writing_mode.is_vertical() {
     has_non_whitespace_text_descendant(node)
   } else {
     false
   }
-  if not(style.writing_mode.is_vertical()) &&
+  if !style.writing_mode.is_vertical() &&
     absolute_entries.length() > 0 &&
     inline_cursor_y == 0.0 &&
-    not(node_has_non_ws_text_desc) {
+    !node_has_non_ws_text_desc {
     let horizontal_inline_line_height = line_height_from_style(style) +
       padding.vertical_sum() +
       border.vertical_sum()
@@ -2650,7 +2680,7 @@ fn compute_inline_child(
     }
   }
   if has_zero_size_div_child {
-    if not(node_has_inflow_block_desc_computed) {
+    if !node_has_inflow_block_desc_computed {
       node_has_inflow_block_desc = has_inflow_block_descendant(node)
       node_has_inflow_block_desc_computed = true
     }
@@ -2665,7 +2695,7 @@ fn compute_inline_child(
       }
     }
   }
-  if ruby_annotation_only_box && not(ruby_collapsed) {
+  if ruby_annotation_only_box && !ruby_collapsed {
     for i = 0; i < children.length(); i = i + 1 {
       let child_layout = children[i]
       if id_matches_tag(child_layout.id, "rt") ||

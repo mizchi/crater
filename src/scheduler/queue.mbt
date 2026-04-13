@@ -51,7 +51,7 @@ pub fn TaskQueue::get_parallel_ready(self : TaskQueue) -> Array[Task] {
 ///|
 /// Get all main-thread-only ready tasks
 pub fn TaskQueue::get_main_thread_ready(self : TaskQueue) -> Array[Task] {
-  self.tasks.filter(fn(t) { t.is_ready() && not(t.is_parallel()) })
+  self.tasks.filter(fn(t) { t.is_ready() && !t.is_parallel() })
 }
 
 ///|
@@ -91,7 +91,7 @@ pub fn TaskQueue::iter(self : TaskQueue) -> Iter[Task] {
 /// Remove all completed/cancelled/failed tasks
 pub fn TaskQueue::cleanup(self : TaskQueue) -> Int {
   let initial_len = self.tasks.length()
-  let remaining : Array[Task] = self.tasks.filter(fn(t) { not(t.is_terminal()) })
+  let remaining : Array[Task] = self.tasks.filter(fn(t) { !t.is_terminal() })
   // Swap contents
   self.tasks.clear()
   for task in remaining {

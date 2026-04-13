@@ -5,14 +5,14 @@ fn render_text_probe(build : (@style.Style) -> Unit) -> @image.Framebuffer {
   style.color = @types.Color::rgb(20, 20, 20)
   style.font_size = 12.0
   build(style)
-  let node = @paint.PaintNode::new(
+  let node = @paint_model.PaintNode::new(
     "text",
     "#text",
     2.0,
     2.0,
     40.0,
     24.0,
-    @paint.PaintProperties::from_style(style),
+    @paint_model.PaintProperties::from_style(style),
     [],
     text=Some("Hi"),
   )
@@ -115,14 +115,14 @@ test "color blend" {
 test "render_paint_node_to_framebuffer does not add debug border for block" {
   let style = @style.Style::default()
   style.background_color = @types.Color::rgb(220, 30, 30)
-  let node = @paint.PaintNode::new(
+  let node = @paint_model.PaintNode::new(
     "div",
     "div",
     0.0,
     0.0,
     6.0,
     6.0,
-    @paint.PaintProperties::from_style(style),
+    @paint_model.PaintProperties::from_style(style),
     [],
   )
   let fb = @image.Framebuffer::new(6, 6)
@@ -138,14 +138,14 @@ test "render_paint_node_to_framebuffer does not add debug border for block" {
 test "render_paint_node_to_framebuffer blends semi transparent background" {
   let style = @style.Style::default()
   style.background_color = @types.Color::rgba(255, 0, 0, 0.5)
-  let node = @paint.PaintNode::new(
+  let node = @paint_model.PaintNode::new(
     "div",
     "div",
     0.0,
     0.0,
     4.0,
     4.0,
-    @paint.PaintProperties::from_style(style),
+    @paint_model.PaintProperties::from_style(style),
     [],
   )
   let fb = @image.Framebuffer::new(4, 4)
@@ -175,24 +175,24 @@ test "canvas background propagates from body when html is transparent" {
   // html has transparent background (default)
   let body_style = @style.Style::default()
   body_style.background_color = @types.Color::rgb(236, 236, 236)
-  let body_node = @paint.PaintNode::new(
+  let body_node = @paint_model.PaintNode::new(
     "body",
     "body",
     0.0,
     0.0,
     10.0,
     10.0,
-    @paint.PaintProperties::from_style(body_style),
+    @paint_model.PaintProperties::from_style(body_style),
     [],
   )
-  let html_node = @paint.PaintNode::new(
+  let html_node = @paint_model.PaintNode::new(
     "html",
     "html",
     0.0,
     0.0,
     10.0,
     10.0,
-    @paint.PaintProperties::from_style(html_style),
+    @paint_model.PaintProperties::from_style(html_style),
     [body_node],
   )
   let fb = @image.Framebuffer::new(10, 10)

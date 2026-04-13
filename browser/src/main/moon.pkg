@@ -6,6 +6,8 @@ import {
   "moonbitlang/async",
 }
 
+supported_targets = "js+native"
+
 options(
   "is-main": true,
   link: { "native": { "cc-link-flags": "src/tui/tui_native.c" } },

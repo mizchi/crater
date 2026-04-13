@@ -8,7 +8,7 @@
 
 ///|
 /// ネットワークリクエストの一意識別子
-pub(all) struct RequestId(Int) derive(Eq, Hash, Show)
+pub(all) struct RequestId(Int) derive(Eq, Hash, Debug)
 
 ///|
 /// ID generator
@@ -46,7 +46,7 @@ pub(all) enum HttpMethod {
   HEAD
   OPTIONS
   PATCH
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 pub fn HttpMethod::from_string(s : String) -> HttpMethod {
@@ -100,7 +100,7 @@ pub(all) struct NetworkRequest {
   loader_id : String
   /// タイムスタンプ（ミリ秒）
   timestamp : Double
-} derive(Show)
+} derive(Debug)
 
 ///|
 pub fn NetworkRequest::new(
@@ -175,7 +175,7 @@ pub(all) struct NetworkResponse {
   timestamp : Double
   /// ローダーID（オプショナル）
   loader_id : String
-} derive(Show)
+} derive(Debug)
 
 ///|
 pub fn NetworkResponse::new(
@@ -273,7 +273,7 @@ pub(all) enum NetworkEvent {
   LoadingFinished(request_id~ : RequestId, encoded_data_length~ : Int)
   /// ロード失敗
   LoadingFailed(request_id~ : RequestId, error~ : String)
-} derive(Show)
+} derive(Debug)
 
 ///|
 pub fn NetworkEvent::request_id(self : NetworkEvent) -> RequestId {
@@ -298,7 +298,109 @@ pub(all) enum FetchResult {
   Redirect(location~ : String, status~ : Int)
   /// 失敗
   Failure(error~ : String)
-} derive(Show)
+} derive(Debug)
+
+///|
+pub impl Show for RequestId with output(self, logger) {
+  logger.write_string("RequestId(\{self.0})")
+}
+
+///|
+pub impl Show for HttpMethod with output(self, logger) {
+  logger.write_string(self.to_string())
+}
+
+///|
+pub impl Show for NetworkRequest with output(self, logger) {
+  logger.write_string("{id: \{self.id}, url: ")
+  logger.write_string("\"")
+  logger.write_string(self.url)
+  logger.write_string("\"")
+  logger.write_string(", http_method: \{self.http_method}, ")
+  logger.write_string(
+    "resource_type: \{self.resource_type}, headers: \{self.headers}, ",
+  )
+  logger.write_string("document_url: ")
+  logger.write_string("\"")
+  logger.write_string(self.document_url)
+  logger.write_string("\"")
+  logger.write_string(", frame_id: ")
+  logger.write_string("\"")
+  logger.write_string(self.frame_id)
+  logger.write_string("\"")
+  logger.write_string(", loader_id: ")
+  logger.write_string("\"")
+  logger.write_string(self.loader_id)
+  logger.write_string("\"")
+  logger.write_string(", timestamp: \{self.timestamp}}")
+}
+
+///|
+pub impl Show for NetworkResponse with output(self, logger) {
+  logger.write_string("{request_id: \{self.request_id}, url: ")
+  logger.write_string("\"")
+  logger.write_string(self.url)
+  logger.write_string("\"")
+  logger.write_string(", status: \{self.status}, status_text: ")
+  logger.write_string("\"")
+  logger.write_string(self.status_text)
+  logger.write_string("\"")
+  logger.write_string(", mime_type: ")
+  logger.write_string("\"")
+  logger.write_string(self.mime_type)
+  logger.write_string("\"")
+  logger.write_string(", headers: \{self.headers}, body: \{self.body}, ")
+  logger.write_string(
+    "content_length: \{self.content_length}, timestamp: \{self.timestamp}, ",
+  )
+  logger.write_string("loader_id: ")
+  logger.write_string("\"")
+  logger.write_string(self.loader_id)
+  logger.write_string("\"")
+  logger.write_string("}")
+}
+
+///|
+pub impl Show for NetworkEvent with output(self, logger) {
+  match self {
+    RequestWillBeSent(request) =>
+      logger.write_string("RequestWillBeSent(\{request})")
+    ResponseReceived(response) =>
+      logger.write_string("ResponseReceived(\{response})")
+    LoadingFinished(request_id~, encoded_data_length~) =>
+      logger.write_string(
+        "LoadingFinished(request_id=\{request_id}, encoded_data_length=\{encoded_data_length})",
+      )
+    LoadingFailed(request_id~, error~) => {
+      logger.write_string("LoadingFailed(request_id=\{request_id}, error=")
+      logger.write_string("\"")
+      logger.write_string(error)
+      logger.write_string("\"")
+      logger.write_string(")")
+    }
+  }
+}
+
+///|
+pub impl Show for FetchResult with output(self, logger) {
+  match self {
+    Success(response~) => logger.write_string("Success(response=\{response})")
+    Redirect(location~, status~) => {
+      logger.write_string("Redirect(location=")
+      logger.write_string("\"")
+      logger.write_string(location)
+      logger.write_string("\"")
+      logger.write_string(", status=\{status})")
+    }
+    Failure(error~) => {
+      logger.write_string("Failure(error=")
+      logger.write_string("\"")
+      logger.write_string(error)
+      logger.write_string("\"")
+      logger.write_string(")")
+    }
+  }
+}
 
 // =============================================================================
 // Network Manager
@@ -397,7 +499,7 @@ pub fn NetworkManager::drain_events(
 ///|
 /// pending イベントがあるか
 pub fn NetworkManager::has_pending_events(self : NetworkManager) -> Bool {
-  not(self.pending_events.is_empty())
+  !self.pending_events.is_empty()
 }
 
 ///|

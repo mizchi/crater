@@ -8,7 +8,7 @@ pub(all) struct CacheDirectives {
   public_ : Bool
   private_ : Bool
   immutable : Bool
-} derive(Show)
+} derive(Debug)
 
 ///|
 pub fn CacheDirectives::default() -> CacheDirectives {
@@ -21,6 +21,25 @@ pub fn CacheDirectives::default() -> CacheDirectives {
     private_: false,
     immutable: false,
   }
+}
+
+///|
+pub impl Show for CacheDirectives with output(self, logger) {
+  logger.write_string("{max_age: ")
+  self.max_age.output(logger)
+  logger.write_string(", no_cache: ")
+  self.no_cache.output(logger)
+  logger.write_string(", no_store: ")
+  self.no_store.output(logger)
+  logger.write_string(", must_revalidate: ")
+  self.must_revalidate.output(logger)
+  logger.write_string(", public_: ")
+  self.public_.output(logger)
+  logger.write_string(", private_: ")
+  self.private_.output(logger)
+  logger.write_string(", immutable: ")
+  self.immutable.output(logger)
+  logger.write_string("}")
 }
 
 ///|
@@ -49,7 +68,7 @@ pub fn parse_cache_control(header : String) -> CacheDirectives {
     } else if trimmed == "immutable" {
       immutable = true
     } else if trimmed.has_prefix("max-age=") {
-      let value_str = trimmed.substring(start=8)
+      let value_str = trimmed[8:].to_string()
       max_age = parse_int_string(value_str)
     }
   }
@@ -85,7 +104,7 @@ pub(all) struct CacheEntry {
   last_modified : String?
   directives : CacheDirectives
   stored_at : Double
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// Check whether a cache entry is still fresh at the given time.

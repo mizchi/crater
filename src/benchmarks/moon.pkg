@@ -1,19 +1,15 @@
 import {
   "moonbitlang/core/bench",
-  "mizchi/crater",
+  "mizchi/crater/css",
   "mizchi/crater/html",
   "mizchi/crater/renderer",
-  "mizchi/crater/layout/node",
+  "mizchi/crater/layout" @tree,
   "mizchi/crater/style",
   "mizchi/crater/types",
-  "mizchi/crater/paint",
-  "mizchi/crater/layout/dispatch",
-  "mizchi/crater/layout/tree",
-  "mizchi/crater/css/media",
-  "mizchi/crater/css/cascade",
-  "mizchi/crater/css/computed",
-  "mizchi/crater/css/parser",
-  "mizchi/crater/css/selector",
+  "mizchi/crater/paint/model" @paint_model,
+  "mizchi/crater/paint/traversal" @paint_traversal,
+  "mizchi/crater/paint/render_bridge" @paint_render,
+  "mizchi/crater/paint/diff" @paint_diff,
 }
 
 import {

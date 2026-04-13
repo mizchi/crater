@@ -71,7 +71,11 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 300.0)
@@ -129,7 +133,11 @@ test "taffy/block_absolute_aspect_ratio_aspect_ratio_overrides_height_of_full_in
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -172,7 +180,11 @@ test "taffy/block_absolute_aspect_ratio_fill_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -214,7 +226,11 @@ test "taffy/block_absolute_aspect_ratio_fill_height_from_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -263,7 +279,11 @@ test "taffy/block_absolute_aspect_ratio_fill_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -312,7 +332,11 @@ test "taffy/block_absolute_aspect_ratio_fill_max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -349,7 +373,11 @@ test "taffy/block_absolute_aspect_ratio_fill_min_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -386,7 +414,11 @@ test "taffy/block_absolute_aspect_ratio_fill_min_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -429,7 +461,11 @@ test "taffy/block_absolute_aspect_ratio_fill_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -471,7 +507,11 @@ test "taffy/block_absolute_aspect_ratio_fill_width_from_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -514,7 +554,11 @@ test "taffy/block_absolute_aspect_ratio_height_overrides_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -557,7 +601,11 @@ test "taffy/block_absolute_aspect_ratio_width_overrides_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -628,7 +676,11 @@ test "taffy/block_absolute_child_with_margin_x" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -707,7 +759,11 @@ test "taffy/block_absolute_child_with_margin_y" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -767,7 +823,11 @@ test "taffy/block_absolute_child_with_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -824,7 +884,11 @@ test "taffy/block_absolute_layout_child_order" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 110.0)
@@ -867,7 +931,11 @@ test "taffy/block_absolute_layout_no_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -937,7 +1005,11 @@ test "taffy/block_absolute_layout_percentage_bottom_based_on_parent_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -988,7 +1060,11 @@ test "taffy/block_absolute_layout_percentage_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -1031,7 +1107,11 @@ test "taffy/block_absolute_layout_row_width_height_end_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1072,7 +1152,11 @@ test "taffy/block_absolute_layout_start_top_end_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1115,7 +1199,11 @@ test "taffy/block_absolute_layout_width_height_end_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1158,7 +1246,11 @@ test "taffy/block_absolute_layout_width_height_start_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1201,7 +1293,11 @@ test "taffy/block_absolute_layout_width_height_start_top_end_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1310,7 +1406,11 @@ test "taffy/block_absolute_layout_within_border" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1371,7 +1471,11 @@ test "taffy/block_absolute_margin_auto_bottom_and_top_with_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -1414,7 +1518,11 @@ test "taffy/block_absolute_margin_auto_bottom_and_top_without_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -1464,7 +1572,11 @@ test "taffy/block_absolute_margin_auto_bottom_with_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -1508,7 +1620,11 @@ test "taffy/block_absolute_margin_auto_bottom_without_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -1557,7 +1673,11 @@ test "taffy/block_absolute_margin_auto_left_and_right_with_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -1600,7 +1720,11 @@ test "taffy/block_absolute_margin_auto_left_and_right_without_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -1649,7 +1773,11 @@ test "taffy/block_absolute_margin_auto_left_child_bigger_than_parent_with_inset"
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -1692,7 +1820,11 @@ test "taffy/block_absolute_margin_auto_left_child_bigger_than_parent_without_ins
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -1741,7 +1873,11 @@ test "taffy/block_absolute_margin_auto_left_fix_right_child_bigger_than_parent_w
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -1784,7 +1920,11 @@ test "taffy/block_absolute_margin_auto_left_fix_right_child_bigger_than_parent_w
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -1833,7 +1973,11 @@ test "taffy/block_absolute_margin_auto_left_right_child_bigger_than_parent_with_
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -1876,7 +2020,11 @@ test "taffy/block_absolute_margin_auto_left_right_child_bigger_than_parent_witho
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -1925,7 +2073,11 @@ test "taffy/block_absolute_margin_auto_left_with_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -1968,7 +2120,11 @@ test "taffy/block_absolute_margin_auto_left_without_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -2039,7 +2195,11 @@ test "taffy/block_absolute_margin_auto_multiple_children_with_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -2102,7 +2262,11 @@ test "taffy/block_absolute_margin_auto_multiple_children_without_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -2156,7 +2320,11 @@ test "taffy/block_absolute_margin_auto_right_with_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -2200,7 +2368,11 @@ test "taffy/block_absolute_margin_auto_right_without_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -2250,7 +2422,11 @@ test "taffy/block_absolute_margin_auto_top_with_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -2294,7 +2470,11 @@ test "taffy/block_absolute_margin_auto_top_without_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -2343,7 +2523,11 @@ test "taffy/block_absolute_margin_bottom_left_with_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2386,7 +2570,11 @@ test "taffy/block_absolute_margin_bottom_left_without_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2431,7 +2619,11 @@ test "taffy/block_absolute_minmax_bottom_right_max" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2476,7 +2668,11 @@ test "taffy/block_absolute_minmax_bottom_right_min_max" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2523,7 +2719,11 @@ test "taffy/block_absolute_minmax_bottom_right_min_max_preferred" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2566,7 +2766,11 @@ test "taffy/block_absolute_minmax_top_left_bottom_right_max" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2611,7 +2815,11 @@ test "taffy/block_absolute_minmax_top_left_bottom_right_min_max" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2649,7 +2857,11 @@ test "taffy/block_absolute_no_styles" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -2698,7 +2910,11 @@ test "taffy/block_absolute_padding_border_overrides_max_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -2743,7 +2959,11 @@ test "taffy/block_absolute_padding_border_overrides_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -3006,7 +3226,11 @@ test "taffy/block_absolute_resolved_insets" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 600.0)
@@ -3126,7 +3350,11 @@ test "taffy/block_align_baseline_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3202,7 +3430,11 @@ test "taffy/block_align_baseline_child_margin" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3278,7 +3510,11 @@ test "taffy/block_align_baseline_child_margin_percent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3354,7 +3590,11 @@ test "taffy/block_align_baseline_child_padding" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3424,7 +3664,11 @@ test "taffy/block_align_baseline_child_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3494,7 +3738,11 @@ test "taffy/block_align_baseline_child_top2" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3568,7 +3816,11 @@ test "taffy/block_align_baseline_double_nested_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3616,7 +3868,11 @@ test "taffy/block_aspect_ratio_fill_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3664,7 +3920,11 @@ test "taffy/block_aspect_ratio_fill_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3707,7 +3967,11 @@ test "taffy/block_aspect_ratio_fill_max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3743,7 +4007,11 @@ test "taffy/block_aspect_ratio_fill_min_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3779,7 +4047,11 @@ test "taffy/block_aspect_ratio_fill_min_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3815,7 +4087,11 @@ test "taffy/block_aspect_ratio_fill_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3852,7 +4128,11 @@ test "taffy/block_basic" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -3903,7 +4183,11 @@ test "taffy/block_border_fixed_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -3953,7 +4237,11 @@ test "taffy/block_border_intrinsic_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 62.0)
@@ -3998,7 +4286,11 @@ test "taffy/block_border_percentage_fixed_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -4039,7 +4331,11 @@ test "taffy/block_border_percentage_intrinsic_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -4087,7 +4383,11 @@ test "taffy/block_display_none" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -4152,7 +4452,11 @@ test "taffy/block_display_none_with_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4212,7 +4516,11 @@ test "taffy/block_display_none_with_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4265,7 +4573,11 @@ test "taffy/block_display_none_with_margin" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4307,7 +4619,11 @@ test "taffy/block_display_none_with_position_absolute" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4368,7 +4684,11 @@ test "taffy/block_inset_fixed" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -4437,7 +4757,11 @@ test "taffy/block_inset_percentage" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -4483,7 +4807,11 @@ test "taffy/block_intrinsic_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -4530,7 +4858,11 @@ test "taffy/block_item_max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -4571,7 +4903,11 @@ test "taffy/block_item_min_width_overrides_max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4614,7 +4950,11 @@ test "taffy/block_item_text_align_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -4661,7 +5001,11 @@ test "taffy/block_item_text_align_left" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -4708,7 +5052,11 @@ test "taffy/block_item_text_align_right" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -4762,7 +5110,11 @@ test "taffy/block_margin_auto_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -4815,7 +5167,11 @@ test "taffy/block_margin_auto_bottom_and_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -4868,7 +5224,11 @@ test "taffy/block_margin_auto_left" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -4921,7 +5281,11 @@ test "taffy/block_margin_auto_left_and_right" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -4968,7 +5332,11 @@ test "taffy/block_margin_auto_left_and_right_with_auto_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -5010,7 +5378,11 @@ test "taffy/block_margin_auto_left_child_bigger_than_parent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -5052,7 +5424,11 @@ test "taffy/block_margin_auto_left_fix_right_child_bigger_than_parent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -5094,7 +5470,11 @@ test "taffy/block_margin_auto_left_right_child_bigger_than_parent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -5158,7 +5538,11 @@ test "taffy/block_margin_auto_multiple_children" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -5216,7 +5600,11 @@ test "taffy/block_margin_auto_right" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -5270,7 +5658,11 @@ test "taffy/block_margin_auto_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -5318,7 +5710,11 @@ test "taffy/block_margin_x_fixed_auto_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -5366,7 +5762,11 @@ test "taffy/block_margin_x_fixed_auto_left" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -5414,7 +5814,11 @@ test "taffy/block_margin_x_fixed_auto_left_and_right" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -5462,7 +5866,11 @@ test "taffy/block_margin_x_fixed_auto_right" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -5510,7 +5918,11 @@ test "taffy/block_margin_x_fixed_auto_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -5557,7 +5969,11 @@ test "taffy/block_margin_x_fixed_size_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -5604,7 +6020,11 @@ test "taffy/block_margin_x_fixed_size_positive" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -5651,7 +6071,11 @@ test "taffy/block_margin_x_intrinsic_size_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -5698,7 +6122,11 @@ test "taffy/block_margin_x_intrinsic_size_positive" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 15.0)
@@ -5745,7 +6173,11 @@ test "taffy/block_margin_x_percentage_fixed_size_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -5792,7 +6224,11 @@ test "taffy/block_margin_x_percentage_fixed_size_positive" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -5840,7 +6276,11 @@ test "taffy/block_margin_x_percentage_intrinsic_size_other_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -5888,7 +6328,11 @@ test "taffy/block_margin_x_percentage_intrinsic_size_other_positive" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -5930,7 +6374,11 @@ test "taffy/block_margin_x_percentage_intrinsic_size_self_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -5968,7 +6416,11 @@ test "taffy/block_margin_x_percentage_intrinsic_size_self_positive" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -6080,7 +6532,11 @@ test "taffy/block_margin_y_collapse_complex" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -6165,7 +6621,11 @@ test "taffy/block_margin_y_collapse_through_blocked_by_aspect_ratio" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -6233,7 +6693,11 @@ test "taffy/block_margin_y_collapse_through_blocked_by_border_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -6301,7 +6765,11 @@ test "taffy/block_margin_y_collapse_through_blocked_by_border_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -6370,7 +6838,11 @@ test "taffy/block_margin_y_collapse_through_blocked_by_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -6445,7 +6917,11 @@ test "taffy/block_margin_y_collapse_through_blocked_by_line_box" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -6521,7 +6997,11 @@ test "taffy/block_margin_y_collapse_through_blocked_by_line_box_with_height_zero
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -6597,7 +7077,11 @@ test "taffy/block_margin_y_collapse_through_blocked_by_line_box_with_max_height_
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -6666,7 +7150,11 @@ test "taffy/block_margin_y_collapse_through_blocked_by_min_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -6735,7 +7223,11 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_x_hidden" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -6804,7 +7296,11 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_x_scroll" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -6873,7 +7369,11 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_y_hidden" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -6942,7 +7442,11 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_y_scroll" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7016,7 +7520,11 @@ test "taffy/block_margin_y_collapse_through_blocked_by_padding_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7090,7 +7598,11 @@ test "taffy/block_margin_y_collapse_through_blocked_by_padding_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7158,7 +7670,11 @@ test "taffy/block_margin_y_collapse_through_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7226,7 +7742,11 @@ test "taffy/block_margin_y_collapse_through_positive" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7294,7 +7814,11 @@ test "taffy/block_margin_y_collapse_through_positive_and_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7378,7 +7902,11 @@ test "taffy/block_margin_y_collapse_through_with_absolute_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7451,7 +7979,11 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_border_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7521,7 +8053,11 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_x_hidden" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7591,7 +8127,11 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_x_scroll" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7661,7 +8201,11 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_y_hidden" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7731,7 +8275,11 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_y_scroll" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7806,7 +8354,11 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_padding_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7875,7 +8427,11 @@ test "taffy/block_margin_y_first_child_collapse_negative_equal" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7944,7 +8500,11 @@ test "taffy/block_margin_y_first_child_collapse_negative_parent_larger" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8013,7 +8573,11 @@ test "taffy/block_margin_y_first_child_collapse_negative_parent_smaller" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8082,7 +8646,11 @@ test "taffy/block_margin_y_first_child_collapse_not_blocked_by_border_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8157,7 +8725,11 @@ test "taffy/block_margin_y_first_child_collapse_not_blocked_by_padding_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8298,7 +8870,11 @@ test "taffy/block_margin_y_first_child_collapse_positive_and_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8391,7 +8967,11 @@ test "taffy/block_margin_y_first_child_collapse_positive_equal" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8460,7 +9040,11 @@ test "taffy/block_margin_y_first_child_collapse_positive_parent_larger" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8529,7 +9113,11 @@ test "taffy/block_margin_y_first_child_collapse_positive_parent_smaller" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8712,7 +9300,11 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_and_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8849,7 +9441,11 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_equal" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8928,7 +9524,11 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_border_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8998,7 +9598,11 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_x_hidden" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9068,7 +9672,11 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_x_scroll" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9138,7 +9746,11 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_y_hidden" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9208,7 +9820,11 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_y_scroll" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9283,7 +9899,11 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_padding_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9352,7 +9972,11 @@ test "taffy/block_margin_y_last_child_collapse_negative_equal" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9421,7 +10045,11 @@ test "taffy/block_margin_y_last_child_collapse_negative_parent_larger" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9490,7 +10118,11 @@ test "taffy/block_margin_y_last_child_collapse_negative_parent_smaller" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9559,7 +10191,11 @@ test "taffy/block_margin_y_last_child_collapse_not_blocked_by_border_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9634,7 +10270,11 @@ test "taffy/block_margin_y_last_child_collapse_not_blocked_by_padding_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9775,7 +10415,11 @@ test "taffy/block_margin_y_last_child_collapse_positive_and_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9868,7 +10512,11 @@ test "taffy/block_margin_y_last_child_collapse_positive_equal" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9937,7 +10585,11 @@ test "taffy/block_margin_y_last_child_collapse_positive_parent_larger" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10006,7 +10658,11 @@ test "taffy/block_margin_y_last_child_collapse_positive_parent_smaller" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10089,7 +10745,11 @@ test "taffy/block_margin_y_last_granchild_collapse_positive_equal" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10180,7 +10840,11 @@ test "taffy/block_margin_y_sibling_collapse_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10265,7 +10929,11 @@ test "taffy/block_margin_y_sibling_collapse_negative_percentage" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10350,7 +11018,11 @@ test "taffy/block_margin_y_sibling_collapse_positive" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10471,7 +11143,11 @@ test "taffy/block_margin_y_sibling_collapse_positive_and_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10604,7 +11280,11 @@ test "taffy/block_margin_y_sibling_collapse_positive_and_negative_percentage" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10701,7 +11381,11 @@ test "taffy/block_margin_y_sibling_collapse_positive_percentage" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10756,7 +11440,11 @@ test "taffy/block_margin_y_simple_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10804,7 +11492,11 @@ test "taffy/block_margin_y_simple_negative_percentage_other" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10852,7 +11544,11 @@ test "taffy/block_margin_y_simple_negative_percentage_self" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10899,7 +11595,11 @@ test "taffy/block_margin_y_simple_positive" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10947,7 +11647,11 @@ test "taffy/block_margin_y_simple_positive_percentage_other" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10995,7 +11699,11 @@ test "taffy/block_margin_y_simple_positive_percentage_self" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -11074,7 +11782,11 @@ test "taffy/block_margin_y_total_collapse" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -11198,7 +11910,11 @@ test "taffy/block_margin_y_total_collapse_complex" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -11273,7 +11989,11 @@ test "taffy/block_overflow_scrollbars_overridden_by_available_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 2.0)
@@ -11320,7 +12040,11 @@ test "taffy/block_overflow_scrollbars_overridden_by_max_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -11363,7 +12087,11 @@ test "taffy/block_overflow_scrollbars_overridden_by_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 2.0)
@@ -11406,7 +12134,11 @@ test "taffy/block_overflow_scrollbars_take_up_space_both_axis" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -11448,7 +12180,11 @@ test "taffy/block_overflow_scrollbars_take_up_space_cross_axis" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -11490,7 +12226,11 @@ test "taffy/block_overflow_scrollbars_take_up_space_main_axis" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -11543,7 +12283,11 @@ test "taffy/block_padding_border_fixed_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -11599,7 +12343,11 @@ test "taffy/block_padding_border_intrinsic_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 72.0)
@@ -11653,7 +12401,11 @@ test "taffy/block_padding_border_overrides_max_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 22.0)
@@ -11707,7 +12459,11 @@ test "taffy/block_padding_border_overrides_min_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 22.0)
@@ -11761,7 +12517,11 @@ test "taffy/block_padding_border_overrides_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 22.0)
@@ -11814,7 +12574,11 @@ test "taffy/block_padding_border_percentage_fixed_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -11863,7 +12627,11 @@ test "taffy/block_padding_border_percentage_intrinsic_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -11914,7 +12682,11 @@ test "taffy/block_padding_fixed_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -11964,7 +12736,11 @@ test "taffy/block_padding_intrinsic_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 62.0)
@@ -12017,7 +12793,11 @@ test "taffy/block_padding_percentage_fixed_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -12066,7 +12846,11 @@ test "taffy/block_padding_percentage_intrinsic_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @block.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_block_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)

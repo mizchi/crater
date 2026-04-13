@@ -1,0 +1,12 @@
+import {
+  "mizchi/crater/paint/model" @model,
+  "mizchi/crater/paint/scroll" @scroll,
+  "mizchi/crater/paint/traversal" @traversal,
+}
+
+import {
+  "mizchi/crater/types",
+} for "test"
+
+import {
+} for "wbtest"

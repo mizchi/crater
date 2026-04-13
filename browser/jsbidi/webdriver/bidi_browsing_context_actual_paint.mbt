@@ -609,7 +609,7 @@ fn BidiProtocol::resolve_capture_paint_data(
   let (node, layout) = @renderer.render_to_node_and_layout(html, ctx)
   let t1 = js_now_ms()
   let paint_node = match
-    @paint.from_node_and_layout_with_viewport(
+    @tui_paint_viewport.from_node_and_layout_with_viewport(
       node,
       layout,
       0.0,
@@ -625,9 +625,7 @@ fn BidiProtocol::resolve_capture_paint_data(
     }
   }
   let t2 = js_now_ms()
-  let fb = @image.Framebuffer::new(width, height)
-  let palette = @image.DynamicPalette::new()
-  @image.render_paint_node_to_framebuffer(paint_node, fb, palette)
+  let data = @tui_paint_output.raster_to_rgba_base64(paint_node, width, height)
   let t3 = js_now_ms()
   js_log_stderr(
     "capturePaintData: render=" +
@@ -644,7 +642,7 @@ fn BidiProtocol::resolve_capture_paint_data(
     make_object({
       "width": Json::number(width.to_double()),
       "height": Json::number(height.to_double()),
-      "data": Json::string(@image.framebuffer_to_rgba_base64(fb, palette)),
+      "data": Json::string(data),
     }),
   )
 }
@@ -706,7 +704,7 @@ fn BidiProtocol::resolve_capture_paint_tree(
   let ctx = @browser_contract.create_render_context(width, height, false)
   let (node, layout) = @renderer.render_to_node_and_layout(html, ctx)
   let paint_node = match
-    @paint.from_node_and_layout_with_viewport(
+    @tui_paint_viewport.from_node_and_layout_with_viewport(
       node, layout, 0.0, height.to_double(), 0.0,
     ) {
     Some(node) => node
@@ -717,7 +715,7 @@ fn BidiProtocol::resolve_capture_paint_tree(
       return None
     }
   }
-  let json_str = paint_node.to_json_string()
+  let json_str = @tui_paint_output.to_json_string(paint_node)
   Some(
     make_object({
       "width": Json::number(width.to_double()),

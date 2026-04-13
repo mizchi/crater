@@ -397,7 +397,7 @@ pub fn get_heading_level(element : @html.Element) -> Int? {
   // First check aria-level
   match element.attributes.get("aria-level") {
     Some(level_str) => {
-      let level = @strconv.parse_int(level_str) catch {
+      let level = @string.parse_int(level_str) catch {
         _ => return Option::None
       }
       if level >= 1 && level <= 6 {
