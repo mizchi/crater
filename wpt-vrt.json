@@ -67,7 +67,11 @@
     "fit-content-length-percentage-002",
     "fit-content-length-percentage-003",
     "visibility-collapse-colspan",
-    "position-absolute-dynamic-static-position-inline"
+    "position-absolute-dynamic-static-position-inline",
+    "grid-block-start.html",
+    "grid-block.html",
+    "position-absolute-fieldset.html",
+    "position-absolute-fit-content.html"
   ],
   "viewport": { "width": 800, "height": 600 },
   "pixelmatchThreshold": 0.3,

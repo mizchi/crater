@@ -26,6 +26,19 @@
       "condition": "Skip only when the named URL snapshot is missing from disk.",
       "introducedAt": "2026-04-01",
       "expiresAt": "2026-06-30"
+    },
+    {
+      "id": "paint-vrt-real-world-ci-latency",
+      "taskId": "paint-vrt",
+      "spec": "tests/paint-vrt.test.ts",
+      "titlePattern": "^real-world snapshot: (playwright-intro|mdn-wasm-text) stays within loose visual diff budget$",
+      "mode": "skip",
+      "scope": "environment",
+      "owner": "mizchi",
+      "reason": "Actual paint export for the largest real-world snapshots currently exceeds CI latency budget.",
+      "condition": "Skip only on CI until capturePaintData latency is reduced or the fixture is split.",
+      "introducedAt": "2026-04-14",
+      "expiresAt": "2026-05-31"
     }
   ]
 }

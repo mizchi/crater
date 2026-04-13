@@ -40,6 +40,11 @@ export interface VisualDiffResult {
   reportPath: string;
 }
 
+const VRT_BIDI_CONNECT_OPTIONS = {
+  timeout: 60_000,
+  retries: 0,
+} as const;
+
 interface PixelmatchResult {
   diffCount: number;
   output: Uint8Array;
@@ -87,6 +92,14 @@ export async function chromiumPageForVrt(
     colorScheme: "light",
   });
   await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+  return page;
+}
+
+export async function connectCraterPageForVrt(): Promise<CraterBidiPage> {
+  const page = new CraterBidiPage();
+  // Large visual fixtures can keep the BiDi server busy long enough that the
+  // default 15s connect budget is too short for the next context creation.
+  await page.connect(VRT_BIDI_CONNECT_OPTIONS);
   return page;
 }
 

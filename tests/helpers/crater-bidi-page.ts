@@ -420,7 +420,10 @@ export class CraterBidiPage {
     return await new Promise<BidiResponse>((resolve, reject) => {
       this.pendingCommands.set(id, { resolve, reject });
       this.ws!.send(payload);
-      const timeoutMs = method === "browsingContext.capturePaintData" ? 120000 : 10000;
+      // Real-world VRT snapshots can spend multiple minutes in paint + RGBA export
+      // on CI-sized fixtures, so keep the generic BiDi timeout but extend actual
+      // paint capture enough to avoid false negatives from helper-side timeouts.
+      const timeoutMs = method === "browsingContext.capturePaintData" ? 300000 : 10000;
       setTimeout(() => {
         if (this.pendingCommands.has(id)) {
           this.pendingCommands.delete(id);

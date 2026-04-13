@@ -16,8 +16,18 @@ extern "js" fn js_load_builtin_github_snapshot() -> String =
   #| () => {
   #|   const fs = require("node:fs");
   #|   const path = require("node:path");
-  #|   const root = path.resolve(process.cwd(), "..");
-  #|   const dir = path.join(root, "src", "benchmarks", "fixtures");
+  #|   const candidates = [
+  #|     path.join(process.cwd(), "src", "benchmarks", "fixtures"),
+  #|     path.join(process.cwd(), "..", "src", "benchmarks", "fixtures"),
+  #|   ];
+  #|   const dir = candidates.find((candidate) =>
+  #|     fs.existsSync(path.join(candidate, "github_mizchi.html"))
+  #|   );
+  #|   if (!dir) {
+  #|     throw new Error(
+  #|       `github snapshot fixture directory not found: ${candidates.join(", ")}`,
+  #|     );
+  #|   }
   #|   const html = fs.readFileSync(path.join(dir, "github_mizchi.html"), "utf8");
   #|   const cssFiles = [
   #|     "github_primer.css",
