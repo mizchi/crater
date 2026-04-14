@@ -54,7 +54,7 @@ jobs:
         run: moon check --manifest-path js/moon.mod.json
 
       - name: Check browser code
-        run: bash scripts/ci/run-moon-step.sh browser-check moon check --manifest-path browser/moon.mod.json -j 1 src
+        run: bash scripts/ci/run-moon-step.sh browser-check moon --manifest-path browser/moon.mod.json check --target js -j 1
 
       - name: Run tests
         run: moon test

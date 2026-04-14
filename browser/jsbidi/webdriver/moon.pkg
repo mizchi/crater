@@ -6,7 +6,7 @@ import {
   "mizchi/crater-browser/cdp",
   "mizchi/crater-browser/js",
   "mizchi/crater-browser/interaction",
-  "mizchi/crater-browser/tui/paint/output" @tui_paint_output,
+  "mizchi/crater-browser/tui/paint_output" @tui_paint_output,
   "mizchi/crater-browser/tui/paint/viewport" @tui_paint_viewport,
   "mizchi/crater/dom",
   "mizchi/crater/renderer",

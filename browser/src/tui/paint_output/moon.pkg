@@ -1,0 +1,10 @@
+import {
+  "mizchi/crater/x/image" @image,
+  "mizchi/crater-browser/tui/paint/plain" @paint_plain,
+}
+
+import {
+  "mizchi/crater/layout" @node,
+  "mizchi/crater/style",
+  "mizchi/crater/types",
+} for "test"

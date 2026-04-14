@@ -72,7 +72,7 @@ wpt-baseline-update:
 check:
     moon info
     moon check -j 1 src
-    moon check --manifest-path browser/moon.mod.json -j 1 src
+    moon check --manifest-path browser/moon.mod.json --target js -j 1
     moon check --manifest-path js/moon.mod.json
 
 # Format code

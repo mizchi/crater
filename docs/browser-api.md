@@ -31,8 +31,8 @@ facades under `mizchi/crater-browser/tui/paint/*` instead of importing crater
 | `tui/paint/plain` | Full `Node + Layout -> PaintNode` conversion |
 | `tui/paint/viewport` | Viewport-aware paint tree conversion |
 | `tui/paint/runtime` | TUI runtime helpers (`PreparedPaint`, scrollable extraction) |
-| `tui/paint/output` | `PaintNode` export helpers (`json`, `framebuffer`, `rgba-base64`) |
-| `tui/paint/output/png` | JS-only PNG export helpers (`png-base64`) |
+| `tui/paint_output` | `PaintNode` export helpers (`json`, `framebuffer`, `rgba-base64`) |
+| `tui/paint_png` | JS-only PNG export helpers (`png-base64`) |
 | `tui/paint` | Compatibility umbrella over the narrower browser-local facades |
 
 This keeps crater-side `paint` ownership inside the browser-local boundary and

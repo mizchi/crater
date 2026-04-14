@@ -7,7 +7,7 @@ import {
   "mizchi/crater/x/image",
   "mizchi/crater/aom",
   "mizchi/crater-browser/tui",
-  "mizchi/crater-browser/tui/paint/output/png" @tui_paint_png,
+  "mizchi/crater-browser/tui/paint_png" @tui_paint_png,
   "mizchi/crater-browser/tui/paint/plain" @tui_paint_plain,
 }
 
