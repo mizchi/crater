@@ -39,13 +39,13 @@ jobs:
         run: moon update --manifest-path browser/moon.mod.json
 
       - name: Check code
-        run: moon check -j 1 src
+        run: bash scripts/ci/run-moon-step.sh root-check moon check -j 1 src
 
       - name: Check js code
         run: moon check --manifest-path js/moon.mod.json
 
       - name: Check browser code
-        run: moon check --manifest-path browser/moon.mod.json -j 1 src
+        run: bash scripts/ci/run-moon-step.sh browser-check moon check --manifest-path browser/moon.mod.json -j 1 src
 
       - name: Run tests
         run: moon test
@@ -64,6 +64,14 @@ jobs:
           moon fmt
           git diff --exit-code || (echo "Code is not formatted. Run 'moon fmt' to fix." && exit 1)
         continue-on-error: true
+
+      - name: Upload Moon diagnostics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: moon-diagnostics-test
+          path: ci-logs/**
+          if-no-files-found: warn
 
   js-package:
     runs-on: ubuntu-latest
@@ -379,7 +387,7 @@ jobs:
           moon update --manifest-path browser/moon.mod.json
 
       - name: Build BiDi server
-        run: just build-bidi
+        run: bash scripts/ci/run-moon-step.sh bidi-build moon -C browser/jsbidi build bidi_main --target js --release -j 1
 
       - name: Run WebDriver BiDi shard
         run: |
@@ -404,6 +412,14 @@ jobs:
         with:
           name: wpt-webdriver-report-all
           path: wpt-reports/wpt-webdriver-*.json
+          if-no-files-found: warn
+
+      - name: Upload Moon diagnostics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: moon-diagnostics-wpt-webdriver
+          path: ci-logs/**
           if-no-files-found: warn
 
   playwright-bidi-tests:
@@ -445,7 +461,7 @@ jobs:
           moon update --manifest-path browser/moon.mod.json
 
       - name: Build BiDi server
-        run: just build-bidi
+        run: bash scripts/ci/run-moon-step.sh bidi-build moon -C browser/jsbidi build bidi_main --target js --release -j 1
 
       - name: Start BiDi server
         run: |
@@ -494,6 +510,14 @@ jobs:
         with:
           name: playwright-summary
           path: playwright-summary/*
+          if-no-files-found: warn
+
+      - name: Upload Moon diagnostics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: moon-diagnostics-playwright-bidi
+          path: ci-logs/**
           if-no-files-found: warn
 
   flaker-config:
@@ -673,7 +697,7 @@ jobs:
           moon update --manifest-path browser/moon.mod.json
 
       - name: Build BiDi server
-        run: just build-bidi
+        run: bash scripts/ci/run-moon-step.sh bidi-build moon -C browser/jsbidi build bidi_main --target js --release -j 1
 
       - name: Run paint VRT with flaker record
         id: paint_vrt_record
@@ -744,6 +768,14 @@ jobs:
             test-results/**
           if-no-files-found: warn
 
+      - name: Upload Moon diagnostics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: moon-diagnostics-paint-vrt
+          path: ci-logs/**
+          if-no-files-found: warn
+
       - name: Fail job when paint VRT failed
         if: steps.paint_vrt_record.outcome == 'failure'
         run: exit 1
@@ -809,7 +841,7 @@ jobs:
           moon update --manifest-path browser/moon.mod.json
 
       - name: Build BiDi server
-        run: just build-bidi
+        run: bash scripts/ci/run-moon-step.sh bidi-build moon -C browser/jsbidi build bidi_main --target js --release -j 1
 
       - name: Run WPT VRT shard
         run: just test-wpt-vrt
@@ -839,6 +871,14 @@ jobs:
         with:
           name: wpt-vrt-summary-${{ matrix.name }}
           path: wpt-vrt-summary/*
+          if-no-files-found: warn
+
+      - name: Upload Moon diagnostics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: moon-diagnostics-wpt-vrt-${{ matrix.name }}
+          path: ci-logs/**
           if-no-files-found: warn
 
   wpt-vrt-summary:
