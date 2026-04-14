@@ -71,8 +71,8 @@ wpt-baseline-update:
 # Check compilation (main + browser + js)
 check:
     moon info
-    moon check src
-    moon check --manifest-path browser/moon.mod.json src
+    moon check -j 1 src
+    moon check --manifest-path browser/moon.mod.json -j 1 src
     moon check --manifest-path js/moon.mod.json
 
 # Format code
@@ -182,7 +182,7 @@ ci-timing-summary input json markdown:
 
 # Build BiDi server
 build-bidi:
-    moon -C browser/jsbidi build bidi_main --target js --release
+    moon -C browser/jsbidi build bidi_main --target js --release -j 1
 
 # Start BiDi server (Deno)
 start-bidi:
