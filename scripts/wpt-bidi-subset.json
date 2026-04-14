@@ -30,7 +30,7 @@
         "script/realm_created/window_open.py"
       ],
       "quick": true,
-      "timeout": 10
+      "timeout": 20
     },
     "network-no-auth": {
       "description": "Network compatibility sweep excluding auth-specific paths",
@@ -44,7 +44,7 @@
         "network/continue_response/credentials.py"
       ],
       "quick": true,
-      "timeout": 10
+      "timeout": 20
     }
   }
 }

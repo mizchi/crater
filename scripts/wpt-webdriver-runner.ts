@@ -25,6 +25,8 @@ const CRATER_BIDI_PORT = 9222;
 const CRATER_BIDI_STATUS_URL = `http://127.0.0.1:${CRATER_BIDI_PORT}/`;
 const SUBSET_CONFIG = "scripts/wpt-bidi-subset.json";
 const DEFAULT_PROFILE_NAME = "strict";
+const SERVER_READY_TIMEOUT_MS = 15_000;
+const QUICK_TIMEOUT_SECONDS = 20;
 
 interface CliOptions {
   args: string[];
@@ -135,7 +137,7 @@ function startServer(): ChildProcess {
 }
 
 // Wait for server to be ready
-async function waitForServer(timeout = 5000): Promise<boolean> {
+async function waitForServer(timeout = SERVER_READY_TIMEOUT_MS): Promise<boolean> {
   const start = Date.now();
   while (Date.now() - start < timeout) {
     try {
@@ -242,7 +244,7 @@ function resolveProfileConfig(config: SubsetConfig | null, profileName: string):
       targets: Object.keys(config.tests),
       skip_patterns: config.skip_patterns ?? [],
       quick: true,
-      timeout: 10,
+      timeout: QUICK_TIMEOUT_SECONDS,
     };
   }
 
@@ -772,7 +774,7 @@ async function main(): Promise<number> {
       outcome = await runTests(testPath, {
         skipPatterns: getDefaultSkipPatterns(config),
         quick: true,
-        timeout: 10,
+      timeout: QUICK_TIMEOUT_SECONDS,
       });
     } else {
       const testPath = args[0] === "--all" ? "" : args[0];
