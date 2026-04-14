@@ -39,13 +39,13 @@ jobs:
         run: moon update --manifest-path browser/moon.mod.json
 
       - name: Check code
-        run: moon check
+        run: moon check src
 
       - name: Check js code
         run: moon check --manifest-path js/moon.mod.json
 
       - name: Check browser code
-        run: moon check --manifest-path browser/moon.mod.json
+        run: moon check --manifest-path browser/moon.mod.json src
 
       - name: Run tests
         run: moon test
