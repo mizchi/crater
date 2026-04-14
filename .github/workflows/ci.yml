@@ -32,11 +32,20 @@ jobs:
       - name: Update dependencies
         run: moon update
 
+      - name: Prefetch root dependencies
+        run: bash scripts/ci/prefetch-moon-deps.sh
+
       - name: Update js dependencies
         run: moon update --manifest-path js/moon.mod.json
 
+      - name: Prefetch js dependencies
+        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path js/moon.mod.json
+
       - name: Update browser dependencies
         run: moon update --manifest-path browser/moon.mod.json
+
+      - name: Prefetch browser dependencies
+        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path browser/moon.mod.json
 
       - name: Check code
         run: bash scripts/ci/run-moon-step.sh root-check moon check -j 1 src
@@ -385,6 +394,10 @@ jobs:
         run: |
           moon update
           moon update --manifest-path browser/moon.mod.json
+          moon update --manifest-path browser/jsbidi/moon.mod.json
+
+      - name: Prefetch BiDi dependencies
+        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path browser/jsbidi/moon.mod.json
 
       - name: Build BiDi server
         run: bash scripts/ci/run-moon-step.sh bidi-build moon -C browser/jsbidi build bidi_main --target js --release -j 1
@@ -459,6 +472,10 @@ jobs:
         run: |
           moon update
           moon update --manifest-path browser/moon.mod.json
+          moon update --manifest-path browser/jsbidi/moon.mod.json
+
+      - name: Prefetch BiDi dependencies
+        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path browser/jsbidi/moon.mod.json
 
       - name: Build BiDi server
         run: bash scripts/ci/run-moon-step.sh bidi-build moon -C browser/jsbidi build bidi_main --target js --release -j 1
@@ -695,6 +712,10 @@ jobs:
         run: |
           moon update
           moon update --manifest-path browser/moon.mod.json
+          moon update --manifest-path browser/jsbidi/moon.mod.json
+
+      - name: Prefetch BiDi dependencies
+        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path browser/jsbidi/moon.mod.json
 
       - name: Build BiDi server
         run: bash scripts/ci/run-moon-step.sh bidi-build moon -C browser/jsbidi build bidi_main --target js --release -j 1
@@ -839,6 +860,10 @@ jobs:
         run: |
           moon update
           moon update --manifest-path browser/moon.mod.json
+          moon update --manifest-path browser/jsbidi/moon.mod.json
+
+      - name: Prefetch BiDi dependencies
+        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path browser/jsbidi/moon.mod.json
 
       - name: Build BiDi server
         run: bash scripts/ci/run-moon-step.sh bidi-build moon -C browser/jsbidi build bidi_main --target js --release -j 1
