@@ -43,7 +43,7 @@ fn BidiProtocol::handle_network_perform_synthetic_fetch(
       return
     }
   }
-  if not(self.manager.has_session(context_id)) {
+  if !self.manager.has_session(context_id) {
     self.send_error(
       request_id,
       "no such frame",

@@ -666,7 +666,7 @@ fn build_node_test_page_url(
     "<div id=\"in-shadow-dom\"><input type=\"checkbox\"/></div>",
   )
   let inner_shadow_doc = resolved_shadow_doc
-  if shadow_doc_provided && not(frame_doc_provided) {
+  if shadow_doc_provided && !frame_doc_provided {
     resolved_frame_doc = ""
   }
 

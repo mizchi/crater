@@ -222,7 +222,7 @@ fn parse_element_id(element_id : String) -> Int? {
   } else {
     element_id
   }
-  Some(@strconv.parse_int(id_str)) catch {
+  Some(@string.parse_int(id_str)) catch {
     _ => None
   }
 }

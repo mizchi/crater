@@ -347,7 +347,7 @@ fn BidiProtocol::prepare_runtime_context_for_browsing_command(
     self.context_children.get(ctx_id).unwrap_or([]),
   )
   self.apply_effective_viewport_to_runtime_context(ctx_id, ctx_id)
-  if not(self.dom_initialized) {
+  if !self.dom_initialized {
     ignore(evaluate_js_with_console("undefined", false, false, false, "{}"))
     self.dom_initialized = true
   }
@@ -523,7 +523,7 @@ fn BidiProtocol::try_send_synthetic_scroll_call_fallback(
   serialization_options_json : String,
   unwrap_result : Bool,
 ) -> Bool {
-  if not(should_apply_synthetic_scroll_call_fallback(function_declaration)) {
+  if !should_apply_synthetic_scroll_call_fallback(function_declaration) {
     return false
   }
   let eval_result_json = evaluate_js_with_console(

@@ -4,7 +4,6 @@ import {
   "mizchi/crater/css",
   "mizchi/crater/types",
   "mizchi/crater-browser/cdp",
-  "mizchi/crater-browser/js",
   "mizchi/crater-browser/interaction",
   "mizchi/crater-browser/tui/paint_output" @tui_paint_output,
   "mizchi/crater-browser/tui/paint/viewport" @tui_paint_viewport,
@@ -15,6 +14,7 @@ import {
   "mizchi/js/core",
   "mizchi/js/deno",
   "moonbitlang/core/json",
+  "moonbitlang/core/string",
   "moonbitlang/core/strconv",
 }
 

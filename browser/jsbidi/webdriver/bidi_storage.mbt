@@ -248,7 +248,7 @@ fn BidiProtocol::dispatch_storage(
           return Ok(())
         }
       }
-      if not(self.manager.has_session(context_id)) {
+      if !self.manager.has_session(context_id) {
         self.send_error(
           request.id,
           "no such frame",
@@ -290,7 +290,7 @@ fn BidiProtocol::dispatch_storage(
           return Ok(())
         }
       }
-      if not(self.manager.has_session(context_id)) {
+      if !self.manager.has_session(context_id) {
         self.send_error(
           request.id,
           "no such frame",
@@ -325,7 +325,7 @@ fn BidiProtocol::dispatch_storage(
           return Ok(())
         }
       }
-      if not(self.manager.has_session(context_id)) {
+      if !self.manager.has_session(context_id) {
         self.send_error(
           request.id,
           "no such frame",
@@ -783,7 +783,7 @@ fn BidiProtocol::normalize_storage_partition(
             return None
           }
         }
-        if not(self.manager.has_session(context_id)) {
+        if !self.manager.has_session(context_id) {
           self.send_error(
             request_id,
             "no such frame",
@@ -1165,7 +1165,7 @@ fn storage_cookie_default_path(base_url : String) -> String {
   } else {
     return "/webdriver/tests/support"
   }
-  if path == "/" || not(path.has_prefix("/")) {
+  if path == "/" || !path.has_prefix("/") {
     return "/"
   }
   if path.has_suffix("/") {
@@ -1280,7 +1280,7 @@ fn storage_cookie_matches_request_url(
         )
         if normalized_domain.length() > 0 &&
           request_host != normalized_domain &&
-          not(request_host.has_suffix("." + normalized_domain)) {
+          !request_host.has_suffix("." + normalized_domain) {
           return false
         }
         let cookie_path = cookie.path
@@ -1290,7 +1290,7 @@ fn storage_cookie_matches_request_url(
         if request_path == cookie_path {
           return true
         }
-        if not(request_path.has_prefix(cookie_path)) {
+        if !request_path.has_prefix(cookie_path) {
           return false
         }
         if cookie_path.has_suffix("/") {
@@ -1777,7 +1777,7 @@ fn BidiProtocol::remember_document_cookie(
 ///|
 fn extract_document_cookie_assignment(expression : String) -> String? {
   let trimmed = expression.trim().to_string()
-  if not(trimmed.has_prefix("document.cookie")) {
+  if !trimmed.has_prefix("document.cookie") {
     return None
   }
   let eq_idx = match find_substring(trimmed, "=", 0) {

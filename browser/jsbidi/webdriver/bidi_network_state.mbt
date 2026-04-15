@@ -226,7 +226,7 @@ fn BidiProtocol::handle_network_get_data(
   }
   let (selected_collector, result) = match collector_id {
     Some(collector_id) => {
-      if not(self.network_data_collectors.contains(collector_id)) {
+      if !self.network_data_collectors.contains(collector_id) {
         self.send_error(
           request_id,
           "no such network collector",
@@ -368,7 +368,7 @@ fn BidiProtocol::handle_network_disown_data(
       return
     }
   }
-  if not(self.network_data_collectors.contains(collector_id)) {
+  if !self.network_data_collectors.contains(collector_id) {
     self.send_error(
       request_id,
       "no such network collector",
@@ -398,7 +398,7 @@ fn BidiProtocol::handle_network_disown_data(
       return
     }
   }
-  if not(collector_bucket.contains(data_type)) {
+  if !collector_bucket.contains(data_type) {
     self.send_error(
       request_id,
       "no such network data",
@@ -519,7 +519,7 @@ fn BidiProtocol::build_context_scope_ancestry_for_matching(
   } else {
     []
   }
-  if ctx_id != "" && not(array_contains_string(ancestry, ctx_id)) {
+  if ctx_id != "" && !array_contains_string(ancestry, ctx_id) {
     ancestry.push(ctx_id)
   }
   ancestry
@@ -830,7 +830,7 @@ fn network_collector_matches_scope(
             _ => ()
           }
         }
-        if not(matched) {
+        if !matched {
           return false
         }
       }
@@ -849,7 +849,7 @@ fn network_collector_matches_scope(
             _ => ()
           }
         }
-        if not(matched) {
+        if !matched {
           return false
         }
       }

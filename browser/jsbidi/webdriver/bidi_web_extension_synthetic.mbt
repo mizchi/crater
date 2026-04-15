@@ -104,7 +104,7 @@ fn BidiProtocol::resolve_web_extension_install(
               request_id, "invalid web extension", "Invalid web extension payload",
             )
             None
-          } else if not(js_is_valid_web_extension_base64(encoded_value)) {
+          } else if !js_is_valid_web_extension_base64(encoded_value) {
             self.send_error(
               request_id, "unknown error", "Unable to decode base64 extension payload",
             )
@@ -116,7 +116,7 @@ fn BidiProtocol::resolve_web_extension_install(
                 request_id, "unknown error", "Unable to decode base64 extension payload",
               )
               None
-            } else if not(is_valid_web_extension_archive_payload(decoded)) {
+            } else if !is_valid_web_extension_archive_payload(decoded) {
               self.send_error(
                 request_id, "invalid web extension", "Invalid web extension payload",
               )
@@ -223,7 +223,7 @@ fn BidiProtocol::validate_web_extension_path_value(
           )
         }
         None
-      } else if not(js_web_extension_dir_has_manifest(extension_path)) {
+      } else if !js_web_extension_dir_has_manifest(extension_path) {
         self.send_error(
           request_id, "invalid web extension", "Invalid web extension payload",
         )
@@ -237,7 +237,7 @@ fn BidiProtocol::validate_web_extension_path_value(
           request_id, "unknown error", "Unable to read extension path",
         )
         None
-      } else if not(js_web_extension_archive_is_valid(extension_path)) {
+      } else if !js_web_extension_archive_is_valid(extension_path) {
         self.send_error(
           request_id, "invalid web extension", "Invalid web extension payload",
         )
@@ -279,7 +279,7 @@ fn BidiProtocol::resolve_web_extension_uninstall(
   match map.get("extension") {
     Some(String(extension_id)) =>
       if extension_id == "" ||
-        not(self.installed_web_extensions.contains(extension_id)) {
+        !self.installed_web_extensions.contains(extension_id) {
         self.send_error(
           request_id,
           "no such web extension",

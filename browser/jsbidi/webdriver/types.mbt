@@ -35,7 +35,7 @@ pub(all) enum ErrorCode {
   UnknownError
   UnknownMethod
   UnsupportedOperation
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Convert error code to string
@@ -111,7 +111,7 @@ pub(all) enum HttpMethod {
   Get
   Post
   Delete
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Parsed WebDriver command from HTTP request
@@ -119,7 +119,7 @@ pub(all) struct WebDriverRequest {
   http_method : HttpMethod
   command : WebDriverCommand
   body : String // JSON body
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// WebDriver commands (endpoints)
@@ -199,7 +199,72 @@ pub(all) enum WebDriverCommand {
   PrintPage(session_id~ : String)
   // Unknown
   Unknown(path~ : String)
-} derive(Show)
+} derive(Debug)
+
+///|
+pub impl Show for WebDriverCommand with output(self, logger) {
+  match self {
+    Status => logger.write_string("Status")
+    NewSession => logger.write_string("NewSession")
+    DeleteSession(..) => logger.write_string("DeleteSession")
+    GetSession(..) => logger.write_string("GetSession")
+    GetTimeouts(..) => logger.write_string("GetTimeouts")
+    SetTimeouts(..) => logger.write_string("SetTimeouts")
+    NavigateTo(..) => logger.write_string("NavigateTo")
+    GetCurrentUrl(..) => logger.write_string("GetCurrentUrl")
+    Back(..) => logger.write_string("Back")
+    Forward(..) => logger.write_string("Forward")
+    Refresh(..) => logger.write_string("Refresh")
+    GetTitle(..) => logger.write_string("GetTitle")
+    GetWindowHandle(..) => logger.write_string("GetWindowHandle")
+    CloseWindow(..) => logger.write_string("CloseWindow")
+    SwitchToWindow(..) => logger.write_string("SwitchToWindow")
+    GetWindowHandles(..) => logger.write_string("GetWindowHandles")
+    NewWindow(..) => logger.write_string("NewWindow")
+    SwitchToFrame(..) => logger.write_string("SwitchToFrame")
+    SwitchToParentFrame(..) => logger.write_string("SwitchToParentFrame")
+    GetWindowRect(..) => logger.write_string("GetWindowRect")
+    SetWindowRect(..) => logger.write_string("SetWindowRect")
+    MaximizeWindow(..) => logger.write_string("MaximizeWindow")
+    MinimizeWindow(..) => logger.write_string("MinimizeWindow")
+    FullscreenWindow(..) => logger.write_string("FullscreenWindow")
+    FindElement(..) => logger.write_string("FindElement")
+    FindElements(..) => logger.write_string("FindElements")
+    FindElementFromElement(..) => logger.write_string("FindElementFromElement")
+    FindElementsFromElement(..) =>
+      logger.write_string("FindElementsFromElement")
+    GetActiveElement(..) => logger.write_string("GetActiveElement")
+    IsElementSelected(..) => logger.write_string("IsElementSelected")
+    GetElementAttribute(..) => logger.write_string("GetElementAttribute")
+    GetElementProperty(..) => logger.write_string("GetElementProperty")
+    GetElementCssValue(..) => logger.write_string("GetElementCssValue")
+    GetElementText(..) => logger.write_string("GetElementText")
+    GetElementTagName(..) => logger.write_string("GetElementTagName")
+    GetElementRect(..) => logger.write_string("GetElementRect")
+    IsElementEnabled(..) => logger.write_string("IsElementEnabled")
+    ElementClick(..) => logger.write_string("ElementClick")
+    ElementClear(..) => logger.write_string("ElementClear")
+    ElementSendKeys(..) => logger.write_string("ElementSendKeys")
+    GetPageSource(..) => logger.write_string("GetPageSource")
+    ExecuteScript(..) => logger.write_string("ExecuteScript")
+    ExecuteAsyncScript(..) => logger.write_string("ExecuteAsyncScript")
+    GetAllCookies(..) => logger.write_string("GetAllCookies")
+    GetNamedCookie(..) => logger.write_string("GetNamedCookie")
+    AddCookie(..) => logger.write_string("AddCookie")
+    DeleteCookie(..) => logger.write_string("DeleteCookie")
+    DeleteAllCookies(..) => logger.write_string("DeleteAllCookies")
+    PerformActions(..) => logger.write_string("PerformActions")
+    ReleaseActions(..) => logger.write_string("ReleaseActions")
+    DismissAlert(..) => logger.write_string("DismissAlert")
+    AcceptAlert(..) => logger.write_string("AcceptAlert")
+    GetAlertText(..) => logger.write_string("GetAlertText")
+    SendAlertText(..) => logger.write_string("SendAlertText")
+    TakeScreenshot(..) => logger.write_string("TakeScreenshot")
+    TakeElementScreenshot(..) => logger.write_string("TakeElementScreenshot")
+    PrintPage(..) => logger.write_string("PrintPage")
+    Unknown(..) => logger.write_string("Unknown")
+  }
+}
 
 // =============================================================================
 // Response Types
@@ -210,7 +275,7 @@ pub(all) enum WebDriverCommand {
 pub(all) enum WebDriverResponse {
   Success(WebDriverValue)
   Error(WebDriverError)
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// WebDriver success value
@@ -222,7 +287,7 @@ pub(all) enum WebDriverValue {
   Array(Array[WebDriverValue])
   Object(Map[String, WebDriverValue])
   Element(element_id~ : String)
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// WebDriver error response
@@ -230,7 +295,7 @@ pub(all) struct WebDriverError {
   error : ErrorCode
   message : String
   stacktrace : String
-} derive(Show)
+} derive(Debug)
 
 // =============================================================================
 // Session Types
@@ -246,7 +311,7 @@ pub(all) struct Capabilities {
   page_load_strategy : PageLoadStrategy
   proxy : ProxyConfig?
   timeouts : Timeouts
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// Page load strategy
@@ -254,7 +319,7 @@ pub(all) enum PageLoadStrategy {
   None
   Eager
   Normal
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Proxy configuration
@@ -267,7 +332,7 @@ pub(all) struct ProxyConfig {
   ssl_proxy : String?
   socks_proxy : String?
   socks_version : Int?
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// Timeout settings
@@ -275,7 +340,7 @@ pub(all) struct Timeouts {
   script : Int // milliseconds, default 30000
   page_load : Int // milliseconds, default 300000
   implicit : Int // milliseconds, default 0
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// Default timeouts
@@ -288,7 +353,7 @@ pub fn Timeouts::default() -> Timeouts {
 pub(all) struct Session {
   id : String
   capabilities : Capabilities
-} derive(Show)
+} derive(Debug)
 
 // =============================================================================
 // Element Locator
@@ -302,7 +367,7 @@ pub(all) enum LocatorStrategy {
   PartialLinkText
   TagName
   XPath
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Convert strategy to string
@@ -340,7 +405,7 @@ pub(all) struct WindowRect {
   y : Int
   width : Int
   height : Int
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// Element rectangle (with floating point)
@@ -349,4 +414,4 @@ pub(all) struct ElementRect {
   y : Double
   width : Double
   height : Double
-} derive(Show)
+} derive(Debug)

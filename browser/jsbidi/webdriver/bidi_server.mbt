@@ -512,7 +512,7 @@ pub fn BidiServer::start(self : BidiServer) -> Unit {
   let handler = @core.from_fn1(fn(request : @core.Any) -> @core.Any {
     if is_websocket_request(request) {
       // Security: validate auth token before upgrading
-      if not(self.validate_auth(request)) {
+      if !self.validate_auth(request) {
         let body = "{\"error\":\"unauthorized\",\"message\":\"Invalid or missing auth token\"}"
         return create_response(body, 403)
       }
@@ -7973,7 +7973,7 @@ pub fn decode_base64(base64 : String) -> String {
 /// Returns (content_type, content) or None if invalid
 pub fn parse_data_url(url : String) -> (String, String)? {
   // data:[<mediatype>][;base64],<data>
-  if not(url.has_prefix("data:")) {
+  if !url.has_prefix("data:") {
     return None
   }
   let chars = url.to_array()

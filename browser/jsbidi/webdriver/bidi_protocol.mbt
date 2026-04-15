@@ -1642,7 +1642,7 @@ fn BidiProtocol::dispatch_browser(
               "default user context cannot be removed",
             )
             Ok(())
-          } else if not(self.user_contexts.contains(id)) {
+          } else if !self.user_contexts.contains(id) {
             self.send_error(
               request.id,
               "no such user context",
@@ -1652,7 +1652,7 @@ fn BidiProtocol::dispatch_browser(
           } else {
             let contexts_to_close : Array[String] = []
             for ctx_id, user_ctx in self.context_user_context {
-              if user_ctx == id && not(self.context_parent.contains(ctx_id)) {
+              if user_ctx == id && !self.context_parent.contains(ctx_id) {
                 contexts_to_close.push(ctx_id)
               }
             }
@@ -1923,7 +1923,7 @@ fn BidiProtocol::dispatch_browsing_context(
         }
         None => "none"
       }
-      if not(self.manager.has_session(ctx_id)) {
+      if !self.manager.has_session(ctx_id) {
         self.send_error(
           request.id,
           "no such frame",
@@ -1940,7 +1940,7 @@ fn BidiProtocol::dispatch_browsing_context(
       let _ = self.fail_in_flight_navigation(
         ctx_id, "aborted", "Navigation interrupted by another navigation",
       )
-      if not(is_valid_navigation_target_url(resolved_url)) {
+      if !is_valid_navigation_target_url(resolved_url) {
         self.send_error(request.id, "invalid argument", "url is invalid")
         return Ok(())
       }
@@ -2102,7 +2102,7 @@ fn BidiProtocol::dispatch_browsing_context(
         }
         None => "none"
       }
-      if not(self.manager.has_session(ctx_id)) {
+      if !self.manager.has_session(ctx_id) {
         self.send_error(
           request.id,
           "no such frame",
@@ -2208,7 +2208,7 @@ fn BidiProtocol::dispatch_browsing_context(
             None => false
           }
 
-          if not(self.manager.has_session(ctx_id)) {
+          if !self.manager.has_session(ctx_id) {
             self.send_error(
               request.id,
               "no such frame",
@@ -2263,7 +2263,7 @@ fn BidiProtocol::dispatch_browsing_context(
     "handleUserPrompt" =>
       match get_param_raw(request.params, "context") {
         Some(String(ctx_id)) => {
-          if not(self.manager.has_session(ctx_id)) {
+          if !self.manager.has_session(ctx_id) {
             self.send_error(
               request.id,
               "no such frame",
@@ -2404,7 +2404,7 @@ fn BidiProtocol::dispatch_browsing_context(
                                       self.clear_pending_navigation_state(
                                         prompt_ctx_id,
                                       )
-                                    } else if not(completion.deferred_response) {
+                                    } else if !completion.deferred_response {
                                       self.send_success(
                                         nav_request_id,
                                         Some(completion.result),
@@ -2606,7 +2606,7 @@ fn BidiProtocol::handle_browsing_context_create_synthetic_child_context(
     )
     return
   }
-  if not(self.manager.has_session(context_id)) {
+  if !self.manager.has_session(context_id) {
     self.send_error(
       request_id,
       "no such frame",
@@ -2617,8 +2617,7 @@ fn BidiProtocol::handle_browsing_context_create_synthetic_child_context(
   let user_context_id = match
     get_map_field_with_alias(map, "userContext", "user_context") {
     Some(String(user_context_id)) =>
-      if user_context_id == "" ||
-        not(self.user_contexts.contains(user_context_id)) {
+      if user_context_id == "" || !self.user_contexts.contains(user_context_id) {
         self.send_error(
           request_id,
           "no such user context",
@@ -2736,7 +2735,7 @@ fn BidiProtocol::handle_browsing_context_get_requested_navigation_url(
       return
     }
   }
-  if not(self.manager.has_session(context_id)) {
+  if !self.manager.has_session(context_id) {
     self.send_error(
       request_id,
       "no such frame",
@@ -2778,7 +2777,7 @@ fn BidiProtocol::handle_browsing_context_get_context_info(
       return
     }
   }
-  if not(self.manager.has_session(context_id)) {
+  if !self.manager.has_session(context_id) {
     self.send_error(
       request_id,
       "no such frame",
@@ -2866,7 +2865,7 @@ fn BidiProtocol::resolve_current_context_url(
       return None
     }
   }
-  if not(self.manager.has_session(context_id)) {
+  if !self.manager.has_session(context_id) {
     self.send_error(
       request_id,
       "no such frame",
@@ -2977,7 +2976,7 @@ fn BidiProtocol::create_top_level_context_from_params(
   let reference_context = match
     get_map_field_with_alias(map, "referenceContext", "reference_context") {
     Some(String(reference_ctx_id)) => {
-      if not(self.manager.has_session(reference_ctx_id)) {
+      if !self.manager.has_session(reference_ctx_id) {
         self.send_error(
           request_id,
           "no such frame",
@@ -3005,7 +3004,7 @@ fn BidiProtocol::create_top_level_context_from_params(
   let requested_user_context = match
     get_map_field_with_alias(map, "userContext", "user_context") {
     Some(String(user_ctx_id)) =>
-      if user_ctx_id == "" || not(self.user_contexts.contains(user_ctx_id)) {
+      if user_ctx_id == "" || !self.user_contexts.contains(user_ctx_id) {
         self.send_error(
           request_id,
           "no such user context",
@@ -3080,7 +3079,7 @@ fn BidiProtocol::handle_browsing_context_prepare_navigate(
       return
     }
   }
-  if not(self.manager.has_session(context_id)) {
+  if !self.manager.has_session(context_id) {
     self.send_error(
       request_id,
       "no such frame",
@@ -3126,7 +3125,7 @@ fn BidiProtocol::handle_browsing_context_finalize_navigate(
       return
     }
   }
-  if not(self.manager.has_session(context_id)) {
+  if !self.manager.has_session(context_id) {
     self.send_error(
       request_id,
       "no such frame",
@@ -3332,7 +3331,7 @@ fn BidiProtocol::handle_browsing_context_navigate_with_state(
     }
     None => "none"
   }
-  if not(self.manager.has_session(ctx_id)) {
+  if !self.manager.has_session(ctx_id) {
     self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
     return
   }
@@ -3353,7 +3352,7 @@ fn BidiProtocol::handle_browsing_context_navigate_with_state(
   let _ = self.fail_in_flight_navigation(
     ctx_id, "aborted", "Navigation interrupted by another navigation",
   )
-  if not(is_valid_navigation_target_url(resolved_url)) {
+  if !is_valid_navigation_target_url(resolved_url) {
     self.send_error(request_id, "invalid argument", "url is invalid")
     return
   }
@@ -3466,7 +3465,7 @@ fn BidiProtocol::handle_browsing_context_finalize_reload(
       return
     }
   }
-  if not(self.manager.has_session(context_id)) {
+  if !self.manager.has_session(context_id) {
     self.send_error(
       request_id,
       "no such frame",
@@ -3552,7 +3551,7 @@ fn BidiProtocol::handle_browsing_context_reload_with_state(
     }
     None => "none"
   }
-  if not(self.manager.has_session(ctx_id)) {
+  if !self.manager.has_session(ctx_id) {
     self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
     return
   }
@@ -3617,7 +3616,7 @@ fn BidiProtocol::handle_browsing_context_reload_with_state(
         )
         return
       }
-      if not(completion.deferred_response) {
+      if !completion.deferred_response {
         self.send_success(request_id, Some(completion.result))
       }
     }
@@ -3660,7 +3659,7 @@ fn BidiProtocol::handle_browsing_context_get_close_metadata(
       return
     }
   }
-  if not(self.manager.has_session(context_id)) {
+  if !self.manager.has_session(context_id) {
     self.send_error(
       request_id,
       "no such frame",
@@ -3733,7 +3732,7 @@ fn BidiProtocol::handle_browsing_context_close_mode(
       return
     }
   }
-  if not(self.manager.has_session(context_id)) {
+  if !self.manager.has_session(context_id) {
     self.send_error(
       request_id,
       "no such frame",
@@ -3855,7 +3854,7 @@ fn BidiProtocol::resolve_browser_client_windows_list(
 ) -> Array[Json] {
   let top_level_contexts : Array[String] = []
   for ctx_id in self.manager.list_sessions() {
-    if not(self.context_parent.contains(ctx_id)) {
+    if !self.context_parent.contains(ctx_id) {
       top_level_contexts.push(ctx_id)
     }
   }
@@ -3863,7 +3862,7 @@ fn BidiProtocol::resolve_browser_client_windows_list(
   let mut active_client_window : String? = None
   match self.active_context_id {
     Some(active_ctx) =>
-      if not(self.context_parent.contains(active_ctx)) {
+      if !self.context_parent.contains(active_ctx) {
         active_client_window = self.context_client_window.get(active_ctx)
       }
     None => ()
@@ -3873,7 +3872,7 @@ fn BidiProtocol::resolve_browser_client_windows_list(
     None =>
       match self.default_context_id {
         Some(default_ctx) =>
-          if not(self.context_parent.contains(default_ctx)) {
+          if !self.context_parent.contains(default_ctx) {
             active_client_window = self.context_client_window.get(default_ctx)
           }
         None => ()
@@ -3886,7 +3885,7 @@ fn BidiProtocol::resolve_browser_client_windows_list(
     let client_window = self.context_client_window
       .get(ctx_id)
       .unwrap_or("client-window-" + ctx_id)
-    if not(seen_windows.contains(client_window)) {
+    if !seen_windows.contains(client_window) {
       seen_windows[client_window] = true
       let is_active = match active_client_window {
         Some(active_window) => active_window == client_window
@@ -4218,7 +4217,7 @@ fn BidiProtocol::handle_set_viewport(
                   "Unknown user context: " + user_context_id,
                 )
                 return
-              } else if not(self.user_contexts.contains(user_context_id)) {
+              } else if !self.user_contexts.contains(user_context_id) {
                 self.send_error(
                   request.id,
                   "no such user context",
@@ -4260,7 +4259,7 @@ fn BidiProtocol::handle_set_viewport(
     )
     return
   }
-  if not(has_context) && not(has_user_contexts) {
+  if !has_context && !has_user_contexts {
     self.send_error(
       request.id,
       "invalid argument",
@@ -4341,7 +4340,7 @@ fn BidiProtocol::handle_set_viewport(
 
   match target_context {
     Some(ctx_id) => {
-      if not(self.manager.has_session(ctx_id)) {
+      if !self.manager.has_session(ctx_id) {
         self.send_error(
           request.id,
           "no such frame",
@@ -4437,7 +4436,7 @@ fn BidiProtocol::handle_traverse_history(
     }
   }
 
-  if not(self.manager.has_session(ctx_id)) {
+  if !self.manager.has_session(ctx_id) {
     self.send_error(request.id, "no such frame", "Unknown context: " + ctx_id)
     return
   }
@@ -4600,7 +4599,7 @@ fn BidiProtocol::resolve_capture_screenshot_data(
       return None
     }
   }
-  if not(self.manager.has_session(ctx_id)) {
+  if !self.manager.has_session(ctx_id) {
     self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
     return None
   }
@@ -4642,8 +4641,8 @@ fn BidiProtocol::resolve_capture_screenshot_data(
           Some(Object(element)) =>
             match element.get("sharedId") {
               Some(String(shared_id)) =>
-                if not(has_runtime_shared_node(shared_id)) ||
-                  not(runtime_shared_node_is_element(shared_id)) {
+                if !has_runtime_shared_node(shared_id) ||
+                  !runtime_shared_node_is_element(shared_id) {
                   self.send_error(
                     request_id,
                     "no such node",
@@ -4891,7 +4890,7 @@ fn BidiProtocol::resolve_print_data(
       return None
     }
   }
-  if not(self.manager.has_session(ctx_id)) {
+  if !self.manager.has_session(ctx_id) {
     self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
     return None
   }
@@ -4991,7 +4990,7 @@ fn BidiProtocol::resolve_print_data(
               return None
             }
           String(v) =>
-            if not(is_valid_print_page_range(v)) {
+            if !is_valid_print_page_range(v) {
               self.send_error(
                 request_id, "invalid argument", "pageRanges entries are invalid",
               )
@@ -5114,22 +5113,22 @@ fn BidiProtocol::resolve_print_data(
   }
   let minimum_printable_cm = 2.54 / 72.0
   let printable_width_cm = if has_margin_left &&
-    not(has_margin_right) &&
+    !has_margin_right &&
     margin_left > page_width_cm - minimum_printable_cm {
     page_width_cm - minimum_printable_cm
   } else if has_margin_right &&
-    not(has_margin_left) &&
+    !has_margin_left &&
     margin_right > page_width_cm - minimum_printable_cm {
     page_width_cm - minimum_printable_cm
   } else {
     page_width_cm
   }
   let printable_height_cm = if has_margin_top &&
-    not(has_margin_bottom) &&
+    !has_margin_bottom &&
     margin_top > page_height_cm - minimum_printable_cm {
     page_height_cm - minimum_printable_cm
   } else if has_margin_bottom &&
-    not(has_margin_top) &&
+    !has_margin_top &&
     margin_bottom > page_height_cm - minimum_printable_cm {
     page_height_cm - minimum_printable_cm
   } else {
@@ -5248,7 +5247,7 @@ fn xpath_to_css_selector(xpath : String) -> String? {
         start=predicate_start,
         end=body.length(),
       )
-      if predicate_full == "" || not(predicate_full.has_suffix("]")) {
+      if predicate_full == "" || !predicate_full.has_suffix("]") {
         return None
       }
       let predicate = predicate_full.unsafe_substring(
@@ -5323,7 +5322,7 @@ fn BidiProtocol::handle_locate_nodes(
       return
     }
   }
-  if not(self.manager.has_session(ctx_id)) {
+  if !self.manager.has_session(ctx_id) {
     self.send_error(request.id, "no such frame", "Unknown context: " + ctx_id)
     return
   }
@@ -5362,7 +5361,7 @@ fn BidiProtocol::handle_locate_nodes(
       return
     }
   }
-  if not(is_valid_locate_nodes_locator_type(locator_type)) {
+  if !is_valid_locate_nodes_locator_type(locator_type) {
     self.send_error(request.id, "invalid argument", "locator.type is invalid")
     return
   }
@@ -5405,7 +5404,7 @@ fn BidiProtocol::handle_locate_nodes(
           Object(node_map) =>
             match node_map.get("sharedId") {
               Some(String(shared_id)) => {
-                if not(has_runtime_shared_node(shared_id)) {
+                if !has_runtime_shared_node(shared_id) {
                   self.send_error(
                     request.id,
                     "no such node",
@@ -5413,8 +5412,8 @@ fn BidiProtocol::handle_locate_nodes(
                   )
                   return
                 }
-                if not(runtime_shared_node_is_element(shared_id)) &&
-                  not(runtime_shared_node_is_document(shared_id)) {
+                if !runtime_shared_node_is_element(shared_id) &&
+                  !runtime_shared_node_is_document(shared_id) {
                   self.send_error(
                     request.id,
                     "invalid argument",
@@ -5644,7 +5643,7 @@ fn BidiProtocol::handle_locate_nodes(
         }
         None => ()
       }
-      if not(has_role) && not(has_name) {
+      if !has_role && !has_name {
         self.send_error(
           request.id,
           "invalid selector",
@@ -5692,7 +5691,7 @@ fn BidiProtocol::handle_locate_nodes(
           return
         }
       }
-      if not(self.manager.has_session(target_ctx)) {
+      if !self.manager.has_session(target_ctx) {
         self.send_error(
           request.id,
           "no such frame",
@@ -5701,7 +5700,7 @@ fn BidiProtocol::handle_locate_nodes(
         return
       }
       let child_contexts = self.context_children.get(ctx_id).unwrap_or([])
-      if not(array_contains(child_contexts, target_ctx)) {
+      if !array_contains(child_contexts, target_ctx) {
         self.send_error(
           request.id,
           "invalid argument",
@@ -6788,7 +6787,7 @@ fn BidiProtocol::handle_script_prepare_beforeunload_page_for_test_internal(
       let _ = self.fail_in_flight_navigation(
         ctx_id, "aborted", "Navigation interrupted by another navigation",
       )
-      if not(is_valid_navigation_target_url(resolved_url)) {
+      if !is_valid_navigation_target_url(resolved_url) {
         self.send_error(request_id, "invalid argument", "url is invalid")
         return
       }
@@ -6996,7 +6995,7 @@ fn BidiProtocol::sync_document_cookies_for_test_context(
     self.context_children.get(ctx_id).unwrap_or([]),
   )
   self.apply_effective_viewport_to_runtime_context(runtime_ctx_id, ctx_id)
-  if not(self.dom_initialized) {
+  if !self.dom_initialized {
     let _ = evaluate_js_with_console("undefined", false, false, false, "{}")
     self.dom_initialized = true
   }
@@ -7492,7 +7491,7 @@ fn BidiProtocol::send_script_fetch_from_context_for_test(
     self.context_children.get(ctx_id).unwrap_or([]),
   )
   self.apply_effective_viewport_to_runtime_context(runtime_ctx_id, ctx_id)
-  if not(self.dom_initialized) {
+  if !self.dom_initialized {
     let _ = evaluate_js_with_console("undefined", false, false, false, "{}")
     self.dom_initialized = true
   }
@@ -8749,14 +8748,14 @@ fn BidiProtocol::dispatch_script(
       let mut removed = false
       let mut removed_entry : PreloadScriptEntry? = None
       for entry in self.preload_scripts {
-        if not(removed) && entry.script_id == script_id {
+        if !removed && entry.script_id == script_id {
           removed = true
           removed_entry = Some(entry)
         } else {
           remaining_entries.push(entry)
         }
       }
-      if not(removed) {
+      if !removed {
         self.send_error(
           request.id,
           "no such script",
@@ -9017,7 +9016,7 @@ fn BidiProtocol::handle_script_evaluate(
   let needs_mutation_observer_sync = expr.contains("setAttribute(") &&
     self.has_mutation_observer_preload_for_context(ctx_id)
 
-  if self.use_quickjs && is_quickjs_initialized() && not(unwrap_result) {
+  if self.use_quickjs && is_quickjs_initialized() && !unwrap_result {
     match self.socket {
       Some(socket) => {
         quickjs_eval_ws(socket, request.id, expr, ctx_id)
@@ -9035,11 +9034,11 @@ fn BidiProtocol::handle_script_evaluate(
   }
 
   if self.dom_initialized &&
-    not(capture_console) &&
-    not(await_promise) &&
-    not(root_ownership) &&
-    not(has_serialization_options) &&
-    not(unwrap_result) {
+    !capture_console &&
+    !await_promise &&
+    !root_ownership &&
+    !has_serialization_options &&
+    !unwrap_result {
     let raw = js_evaluate_expression_fast(
       request.id,
       expr,
@@ -9051,8 +9050,8 @@ fn BidiProtocol::handle_script_evaluate(
     return
   }
 
-  if await_promise && not(needs_mutation_observer_sync) {
-    if not(self.dom_initialized) {
+  if await_promise && !needs_mutation_observer_sync {
+    if !self.dom_initialized {
       let _ = evaluate_js_with_console("undefined", false, false, false, "{}")
       self.dom_initialized = true
     }
@@ -9336,7 +9335,7 @@ fn BidiProtocol::handle_script_call_function(
     "(" + func + ").call(" + this_json + ", " + args_json + ")"
   }
 
-  if self.use_quickjs && is_quickjs_initialized() && not(unwrap_result) {
+  if self.use_quickjs && is_quickjs_initialized() && !unwrap_result {
     match self.socket {
       Some(socket) => {
         quickjs_eval_ws(socket, request.id, call_expr, ctx_id_call)
@@ -9354,8 +9353,8 @@ fn BidiProtocol::handle_script_call_function(
   }
 
   if await_promise_call &&
-    (not(has_serialization_options_call) || function_is_async) {
-    if not(self.dom_initialized) {
+    (!has_serialization_options_call || function_is_async) {
+    if !self.dom_initialized {
       let _ = evaluate_js_with_console("undefined", false, false, false, "{}")
       self.dom_initialized = true
     }
@@ -9767,7 +9766,7 @@ fn BidiProtocol::handle_input_perform_actions(
               return false
             }
           }
-          if not(input_is_single_grapheme(key_value)) {
+          if !input_is_single_grapheme(key_value) {
             self.send_error(
               request_id, "invalid argument", "key action value must be a single grapheme",
             )
@@ -9775,7 +9774,7 @@ fn BidiProtocol::handle_input_perform_actions(
           }
           let normalized_key = normalize_input_key(key_value)
           if action_type == "keyUp" &&
-            not(self.has_pressed_key(ctx_id, normalized_key)) {
+            !self.has_pressed_key(ctx_id, normalized_key) {
             continue
           }
           let (ctrl, alt, shift, meta) = self.resolve_input_modifiers(
@@ -9812,19 +9811,15 @@ fn BidiProtocol::handle_input_perform_actions(
           }
         }
         "pointer" => {
-          if not(
-              action_type == "pointerMove" ||
-              action_type == "pointerDown" ||
-              action_type == "pointerUp",
-            ) {
+          if !(action_type == "pointerMove" ||
+            action_type == "pointerDown" ||
+            action_type == "pointerUp") {
             self.send_error(
               request_id, "invalid argument", "pointer action type is invalid",
             )
             return false
           }
-          if not(
-              self.validate_pointer_common_properties(request_id, action_map),
-            ) {
+          if !self.validate_pointer_common_properties(request_id, action_map) {
             return false
           }
           if action_type == "pointerMove" {
@@ -9904,10 +9899,8 @@ fn BidiProtocol::handle_input_perform_actions(
             } else {
               get_runtime_shared_node_at_point(final_x, final_y).unwrap_or("")
             }
-            if not(
-                self.ensure_pointer_within_viewport(
-                  request_id, final_x, final_y,
-                ),
+            if !self.ensure_pointer_within_viewport(
+                request_id, final_x, final_y,
               ) {
               return false
             }
@@ -10045,7 +10038,7 @@ fn BidiProtocol::handle_input_perform_actions(
                 let mut dragover_prevented = false
                 for
                   event in @interaction.drag_move_event_sequence(
-                    emit_dragstart=not(drag_active),
+                    emit_dragstart=!drag_active,
                     emit_dragleave=move_plan.emit_dragleave,
                     emit_dragenter=move_plan.emit_dragenter,
                     emit_dragover=move_plan.emit_dragover,
@@ -10196,7 +10189,7 @@ fn BidiProtocol::handle_input_perform_actions(
                 continue
               }
               if self.context_has_window_close_onpointerdown(ctx_id) {
-                if not(self.force_close_context_from_input(ctx_id)) {
+                if !self.force_close_context_from_input(ctx_id) {
                   self.send_error(
                     request_id,
                     "no such frame",
@@ -10209,7 +10202,7 @@ fn BidiProtocol::handle_input_perform_actions(
                 continue
               }
               if self.context_has_window_close_onmousedown(ctx_id) {
-                if not(self.force_close_context_from_input(ctx_id)) {
+                if !self.force_close_context_from_input(ctx_id) {
                   self.send_error(
                     request_id,
                     "no such frame",
@@ -10426,8 +10419,8 @@ fn BidiProtocol::handle_input_perform_actions(
                   @interaction.pointer_post_release_mouse_event_sequence(
                     button,
                     false,
-                    not(was_dragged),
-                    not(was_dragged) &&
+                    !was_dragged,
+                    !was_dragged &&
                     self.input_pending_double_click.get(ctx_id).unwrap_or(false),
                   ),
                   target_shared,
@@ -10440,7 +10433,7 @@ fn BidiProtocol::handle_input_perform_actions(
                   shift,
                   meta,
                 )
-                if not(was_dragged) {
+                if !was_dragged {
                   self.input_last_click_time[ctx_id] = self.input_action_clock_ms
                     .get(ctx_id)
                     .unwrap_or(0.0)
@@ -10594,9 +10587,7 @@ fn BidiProtocol::handle_input_perform_actions(
             Some(resolved) => resolved
             None => return false
           }
-          if not(
-              self.ensure_pointer_within_viewport(request_id, final_x, final_y),
-            ) {
+          if !self.ensure_pointer_within_viewport(request_id, final_x, final_y) {
             return false
           }
           let (ctrl, alt, shift, meta) = self.resolve_input_modifiers(
@@ -10803,7 +10794,7 @@ fn BidiProtocol::handle_input_record_synthetic_events(
       return
     }
   }
-  if not(self.manager.has_session(ctx_id)) {
+  if !self.manager.has_session(ctx_id) {
     self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
     return
   }
@@ -10901,14 +10892,14 @@ fn BidiProtocol::handle_input_set_files(
     "",
   )
 
-  if not(found) || not(is_element) {
+  if !found || !is_element {
     self.send_error(request_id, "no such element", "No such element")
     return
   }
   if tag_name != "input" ||
     input_type != "file" ||
     disabled ||
-    (source_paths.length() > 1 && not(multiple)) {
+    (source_paths.length() > 1 && !multiple) {
     self.send_error(
       request_id, "unable to set file input", "Unable to set file input",
     )
@@ -11015,7 +11006,7 @@ fn BidiProtocol::resolve_input_set_files_locator(
       }
     None => ()
   }
-  if not(has_runtime_shared_node(shared_id)) {
+  if !has_runtime_shared_node(shared_id) {
     self.send_error(
       request_id,
       "no such node",
@@ -11023,7 +11014,7 @@ fn BidiProtocol::resolve_input_set_files_locator(
     )
     return None
   }
-  if not(runtime_shared_node_is_element(shared_id)) {
+  if !runtime_shared_node_is_element(shared_id) {
     self.send_error(request_id, "no such element", "No such element")
     return None
   }
@@ -11094,7 +11085,7 @@ fn BidiProtocol::validate_input_context(
       return None
     }
   }
-  if not(self.manager.has_session(ctx_id)) {
+  if !self.manager.has_session(ctx_id) {
     self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
     return None
   }
@@ -11411,8 +11402,8 @@ fn BidiProtocol::resolve_pointer_origin(
           return None
         }
       }
-      if not(has_runtime_shared_node(shared_id)) ||
-        not(runtime_shared_node_is_element(shared_id)) {
+      if !has_runtime_shared_node(shared_id) ||
+        !runtime_shared_node_is_element(shared_id) {
         self.send_error(
           request_id,
           "no such element",
@@ -11565,7 +11556,7 @@ fn BidiProtocol::remove_pressed_key(
   let filtered : Array[String] = []
   let mut removed = false
   for existing in keys {
-    if not(removed) && existing == key {
+    if !removed && existing == key {
       removed = true
     } else {
       filtered.push(existing)
@@ -11656,7 +11647,7 @@ fn button_state_add(state : Int, button : Int) -> Int {
 /// Remove button from button state bitfield.
 fn button_state_remove(state : Int, button : Int) -> Int {
   let mask = button_to_mask(button)
-  if mask == 0 || not(button_state_contains(state, mask)) {
+  if mask == 0 || !button_state_contains(state, mask) {
     state
   } else {
     state - mask
@@ -11984,7 +11975,7 @@ fn BidiProtocol::validate_network_add_intercept_params(
         for item in items {
           match item {
             String(ctx_id) =>
-              if not(self.manager.has_session(ctx_id)) {
+              if !self.manager.has_session(ctx_id) {
                 self.send_error(
                   request_id,
                   "no such frame",
@@ -12050,7 +12041,7 @@ fn BidiProtocol::handle_network_remove_intercept(
       return
     }
   }
-  if not(self.network_intercepts.contains(intercept_id)) {
+  if !self.network_intercepts.contains(intercept_id) {
     self.send_error(
       request_id,
       "no such intercept",
@@ -12257,7 +12248,7 @@ fn BidiProtocol::validate_network_add_data_collector_params(
         for item in items {
           match item {
             String(ctx_id) =>
-              if not(self.manager.has_session(ctx_id)) {
+              if !self.manager.has_session(ctx_id) {
                 self.send_error(
                   request_id,
                   "no such frame",
@@ -12303,7 +12294,7 @@ fn BidiProtocol::validate_network_add_data_collector_params(
         for item in items {
           match item {
             String(user_context_id) =>
-              if not(self.user_contexts.get(user_context_id).unwrap_or(false)) {
+              if !self.user_contexts.get(user_context_id).unwrap_or(false) {
                 self.send_error(
                   request_id,
                   "no such user context",
@@ -12426,7 +12417,7 @@ fn BidiProtocol::validate_network_set_extra_headers_params(
         for item in items {
           match item {
             String(ctx_id) =>
-              if not(self.manager.has_session(ctx_id)) {
+              if !self.manager.has_session(ctx_id) {
                 self.send_error(
                   request_id,
                   "no such frame",
@@ -12472,7 +12463,7 @@ fn BidiProtocol::validate_network_set_extra_headers_params(
         for item in items {
           match item {
             String(user_context_id) =>
-              if not(self.user_contexts.get(user_context_id).unwrap_or(false)) {
+              if !self.user_contexts.get(user_context_id).unwrap_or(false) {
                 self.send_error(
                   request_id,
                   "no such user context",
@@ -12533,7 +12524,7 @@ fn BidiProtocol::handle_network_remove_data_collector(
       return
     }
   }
-  if not(self.network_data_collectors.contains(collector_id)) {
+  if !self.network_data_collectors.contains(collector_id) {
     self.send_error(
       request_id,
       "no such network collector",
@@ -12612,7 +12603,7 @@ fn BidiProtocol::emit_log_entry_with_details(
     None => ()
   }
   let params = make_object(params_map)
-  if not(self.is_subscribed_for_context("log.entryAdded", ctx_id)) {
+  if !self.is_subscribed_for_context("log.entryAdded", ctx_id) {
     let pending = self.pending_log_entries.get(ctx_id).unwrap_or([])
     pending.push(params)
     self.pending_log_entries[ctx_id] = pending
@@ -12746,7 +12737,7 @@ fn BidiProtocol::emit_script_message(
   data : Json,
 ) -> Unit {
   let event_name = "script.message"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+  if !self.is_subscribed_for_context(event_name, ctx_id) {
     return
   }
   let params = make_object({
@@ -12828,7 +12819,7 @@ fn BidiProtocol::build_context_scope_info_json(
   self : BidiProtocol,
   ctx_id : String,
 ) -> Json {
-  if not(self.manager.has_session(ctx_id)) {
+  if !self.manager.has_session(ctx_id) {
     return make_object({
       "context": Json::string(ctx_id),
       "known": Json::boolean(false),
@@ -12943,7 +12934,7 @@ fn extract_window_property_names(source : String) -> Array[String] {
           name = name + chars[cursor].to_string()
           cursor += 1
         }
-        if name != "" && not(array_contains(names, name)) {
+        if name != "" && !array_contains(names, name) {
           names.push(name)
         }
         search_from = cursor + 1
@@ -13082,7 +13073,7 @@ fn BidiProtocol::apply_preload_scripts_for_context(
   self : BidiProtocol,
   ctx_id : String,
 ) -> Unit {
-  if not(self.manager.has_session(ctx_id)) {
+  if !self.manager.has_session(ctx_id) {
     return
   }
   for entry in self.preload_scripts {
@@ -13099,10 +13090,10 @@ fn BidiProtocol::has_mutation_observer_preload_for_context(
   ctx_id : String,
 ) -> Bool {
   for entry in self.preload_scripts {
-    if not(self.is_preload_script_applicable(entry, ctx_id)) {
+    if !self.is_preload_script_applicable(entry, ctx_id) {
       continue
     }
-    if not(entry.function_declaration.contains("MutationObserver")) {
+    if !entry.function_declaration.contains("MutationObserver") {
       continue
     }
     for argument in entry.arguments {
@@ -13140,7 +13131,7 @@ fn BidiProtocol::emit_synthetic_mutation_observer_messages(
   realm_id : String,
   expression : String,
 ) -> Unit {
-  if not(expression.contains("setAttribute(")) {
+  if !expression.contains("setAttribute(") {
     return
   }
   let attribute_name = extract_quoted_after_marker(expression, "setAttribute(")
@@ -13171,10 +13162,10 @@ fn BidiProtocol::emit_synthetic_mutation_observer_messages(
     ]),
   })
   for entry in self.preload_scripts {
-    if not(self.is_preload_script_applicable(entry, ctx_id)) {
+    if !self.is_preload_script_applicable(entry, ctx_id) {
       continue
     }
-    if not(entry.function_declaration.contains("MutationObserver")) {
+    if !entry.function_declaration.contains("MutationObserver") {
       continue
     }
     for argument in entry.arguments {
@@ -13401,7 +13392,7 @@ fn BidiProtocol::register_navigation_prompt_from_url(
   ctx_id : String,
   url : String,
 ) -> Unit {
-  if not(url.has_prefix("data:")) {
+  if !url.has_prefix("data:") {
     return
   }
   match parse_data_url(url) {
@@ -13554,7 +13545,7 @@ fn BidiProtocol::try_handle_synthetic_all_events_eval(
   if expression.trim().to_string() != "JSON.stringify(window.allEvents.events)" {
     return false
   }
-  if not(self.has_any_input_synthetic_events()) {
+  if !self.has_any_input_synthetic_events() {
     return false
   }
   let events = self.input_synthetic_events_by_context.get(ctx_id).unwrap_or([])
@@ -13688,7 +13679,7 @@ fn BidiProtocol::emit_speculation_prefetch_status_updated(
   status : String,
 ) -> Unit {
   let event_name = "speculation.prefetchStatusUpdated"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+  if !self.is_subscribed_for_context(event_name, ctx_id) {
     return
   }
   self.outbox.push(
@@ -13852,7 +13843,7 @@ fn BidiProtocol::maybe_adjust_document_dimensions_eval_result(
   expression : String,
   eval_result : Json,
 ) -> Json {
-  if not(is_document_dimensions_expression(expression)) {
+  if !is_document_dimensions_expression(expression) {
     return eval_result
   }
   ignore(self)
@@ -14072,7 +14063,7 @@ fn BidiProtocol::emit_input_file_dialog_opened(
   element : Json?,
 ) -> Unit {
   let event_name = "input.fileDialogOpened"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+  if !self.is_subscribed_for_context(event_name, ctx_id) {
     return
   }
   let params : Map[String, Json] = {
@@ -14114,7 +14105,7 @@ fn BidiProtocol::maybe_emit_file_dialog_opened_for_input(
   ctx_id : String,
   input_value : Json?,
 ) -> Unit {
-  if not(self.is_subscribed_for_context("input.fileDialogOpened", ctx_id)) {
+  if !self.is_subscribed_for_context("input.fileDialogOpened", ctx_id) {
     return
   }
   let mut element : Json? = None
@@ -14307,7 +14298,7 @@ fn BidiProtocol::try_handle_synthetic_download(
     Some(id) => id
     None => return false
   }
-  if not(is_known_synthetic_download_target(target_id)) {
+  if !is_known_synthetic_download_target(target_id) {
     return false
   }
 
@@ -14499,7 +14490,7 @@ fn BidiProtocol::try_handle_synthetic_iframe_remove(
   expression : String,
 ) -> Bool {
   let expr = expression.trim()
-  if not(expr.contains("querySelector('iframe") && expr.contains(".remove()")) {
+  if !(expr.contains("querySelector('iframe") && expr.contains(".remove()")) {
     return false
   }
   let children = self.context_children.get(ctx_id).unwrap_or([])
@@ -14521,7 +14512,7 @@ fn BidiProtocol::try_handle_synthetic_document_write_eval(
   expression : String,
 ) -> Bool {
   let expr = expression.trim()
-  if not(expr.contains("document.open()") && expr.contains("document.write(")) {
+  if !(expr.contains("document.open()") && expr.contains("document.write(")) {
     return false
   }
   let nav_id = self.next_navigation_id.to_string()
@@ -14617,9 +14608,7 @@ fn BidiProtocol::emit_history_updated_event(
   ctx_id : String,
   url : String,
 ) -> Unit {
-  if not(
-      self.is_subscribed_for_context("browsingContext.historyUpdated", ctx_id),
-    ) {
+  if !self.is_subscribed_for_context("browsingContext.historyUpdated", ctx_id) {
     return
   }
   let params = make_object({
@@ -14700,11 +14689,9 @@ fn BidiProtocol::apply_synthetic_location_assignment_from_call(
   function_declaration : String,
   params : Json?,
 ) -> Unit {
-  if not(
-      function_declaration.contains("document.location =") ||
-      function_declaration.contains("window.location =") ||
-      function_declaration.contains("location.href ="),
-    ) {
+  if !(function_declaration.contains("document.location =") ||
+    function_declaration.contains("window.location =") ||
+    function_declaration.contains("location.href =")) {
     return
   }
 
@@ -15011,7 +14998,7 @@ fn should_block_navigation_response(wait_mode : String, url : String) -> Bool {
   if wait_mode == "none" {
     return false
   }
-  if not(is_trickle_navigation_url(url)) {
+  if !is_trickle_navigation_url(url) {
     return false
   }
   if wait_mode == "complete" {
@@ -15255,7 +15242,7 @@ fn extract_http_url_path(url : String) -> String? {
 
 ///|
 fn is_wpt_http_url(url : String) -> Bool {
-  if not(url.has_prefix("http://")) && not(url.has_prefix("https://")) {
+  if !url.has_prefix("http://") && !url.has_prefix("https://") {
     return false
   }
   match extract_http_url_authority(url) {
@@ -15267,7 +15254,7 @@ fn is_wpt_http_url(url : String) -> Bool {
 
 ///|
 fn is_wpt_headers_echo_url(url : String) -> Bool {
-  if not(is_wpt_http_url(url)) {
+  if !is_wpt_http_url(url) {
     return false
   }
   match extract_http_url_path(url) {
@@ -15279,7 +15266,7 @@ fn is_wpt_headers_echo_url(url : String) -> Bool {
 
 ///|
 fn is_wpt_blank_page_url(url : String) -> Bool {
-  if not(is_wpt_http_url(url)) {
+  if !is_wpt_http_url(url) {
     return false
   }
   match extract_http_url_path(url) {
@@ -15409,7 +15396,7 @@ fn BidiProtocol::resolve_effective_navigation_target_url(
 ///|
 /// Whether navigation is same-document fragment navigation.
 fn is_fragment_navigation(previous_url : String, next_url : String) -> Bool {
-  if not(next_url.contains("#")) {
+  if !next_url.contains("#") {
     return false
   }
   // Adapter-only data URLs may carry "#domain=..." to emulate cross-origin.
@@ -15454,7 +15441,7 @@ fn resolve_navigation_committed_url(url : String) -> String {
 ///|
 /// Resolve synthetic inline script redirect targets used by interrupted-navigation WPTs.
 fn resolve_inline_script_redirect_url(url : String) -> String? {
-  if not(url.has_prefix("data:")) {
+  if !url.has_prefix("data:") {
     return None
   }
   let content = match parse_data_url(url) {
@@ -15489,7 +15476,7 @@ fn BidiProtocol::emit_fragment_navigated_event(
   navigation_id : String?,
 ) -> Unit {
   let event_name = "browsingContext.fragmentNavigated"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+  if !self.is_subscribed_for_context(event_name, ctx_id) {
     return
   }
   let navigation_json = match navigation_id {
@@ -15514,11 +15501,9 @@ fn BidiProtocol::try_handle_synthetic_history_document_open_call(
   realm_id : String,
   function_declaration : String,
 ) -> Bool {
-  if not(
-      function_declaration.contains("createElement(\"iframe\")") &&
-      function_declaration.contains("contentDocument.open()") &&
-      function_declaration.contains("window.location.hash"),
-    ) {
+  if !(function_declaration.contains("createElement(\"iframe\")") &&
+    function_declaration.contains("contentDocument.open()") &&
+    function_declaration.contains("window.location.hash")) {
     return false
   }
 
@@ -15794,7 +15779,7 @@ fn BidiProtocol::apply_effective_viewport_to_runtime_context(
   )
   set_runtime_context_network_online(
     runtime_ctx_id,
-    not(self.resolve_effective_network_offline(logical_ctx_id)),
+    !self.resolve_effective_network_offline(logical_ctx_id),
   )
   let screen_orientation = self.resolve_effective_screen_orientation(
     logical_ctx_id,
@@ -15990,7 +15975,7 @@ fn BidiProtocol::create_context(
   self.remove_storage_cookie_scope(id)
   self.context_last_started_navigation.remove(id)
   self.context_requested_navigation_url.remove(id)
-  if not(self.user_contexts.contains(user_context_id)) {
+  if !self.user_contexts.contains(user_context_id) {
     self.user_contexts[user_context_id] = true
   }
   self.active_context_id = Some(id)
@@ -16025,7 +16010,7 @@ fn BidiProtocol::create_child_context(
   self.remove_storage_cookie_scope(id)
   self.context_last_started_navigation.remove(id)
   self.context_requested_navigation_url.remove(id)
-  if not(self.user_contexts.contains(user_context_id)) {
+  if !self.user_contexts.contains(user_context_id) {
     self.user_contexts[user_context_id] = true
   }
   self.assign_new_realm(id) |> ignore
@@ -16150,7 +16135,7 @@ fn BidiProtocol::close_context_and_cleanup(
   ctx_id : String,
   emit_destroy_event : Bool,
 ) -> Bool {
-  if not(self.manager.has_session(ctx_id)) {
+  if !self.manager.has_session(ctx_id) {
     return false
   }
   let _ = self.fail_in_flight_navigation(
@@ -16318,7 +16303,7 @@ fn BidiProtocol::load_data_url_content(
     self.apply_effective_viewport_to_runtime_context(ctx_id, ctx_id)
     return
   }
-  if not(url.has_prefix("data:")) {
+  if !url.has_prefix("data:") {
     sync_runtime_page(url)
     set_runtime_context(ctx_id)
     self.apply_effective_viewport_to_runtime_context(ctx_id, ctx_id)
@@ -16695,7 +16680,7 @@ fn BidiProtocol::emit_worker_realm_created(
   owner_realm_id : String,
 ) -> String? {
   let event_name = "script.realmCreated"
-  if not(self.is_subscribed_for_context(event_name, owner_ctx_id)) {
+  if !self.is_subscribed_for_context(event_name, owner_ctx_id) {
     return None
   }
   let worker_realm_id = "realm-" + self.next_realm_id.to_string()
@@ -16956,7 +16941,7 @@ fn BidiProtocol::remove_all_realms_for_context(
           break
         }
       }
-      if not(found) {
+      if !found {
         owned_realms.push(realm_id)
       }
     }
@@ -16974,7 +16959,7 @@ fn BidiProtocol::remove_all_realms_for_context(
             break
           }
         }
-        if not(found) {
+        if !found {
           owned_realms.push(realm_id)
         }
       }
@@ -16989,7 +16974,7 @@ fn BidiProtocol::remove_all_realms_for_context(
           break
         }
       }
-      if not(found) {
+      if !found {
         owned_realms.push(realm_id)
       }
     }
@@ -17089,7 +17074,7 @@ fn BidiProtocol::resolve_get_tree_contexts(
 
   match get_param_raw(params, "root") {
     Some(String(root_id)) =>
-      if not(self.manager.has_session(root_id)) {
+      if !self.manager.has_session(root_id) {
         self.send_error(
           request_id,
           "no such frame",
@@ -17352,7 +17337,7 @@ fn BidiProtocol::handle_subscribe(
           }
         }
       }
-      if not(has_context_targets) && not(has_user_context_targets) {
+      if !has_context_targets && !has_user_context_targets {
         for evt in events_to_sub {
           let module_key = get_subscription_key(evt)
           if module_key == evt {
@@ -17482,7 +17467,7 @@ fn BidiProtocol::handle_unsubscribe(
           }
         }
       }
-      if not(has_context_targets) && not(has_user_context_targets) {
+      if !has_context_targets && !has_user_context_targets {
         self.global_subscriptions = array_filter_not(
           self.global_subscriptions,
           events_to_unsub,
@@ -17494,7 +17479,7 @@ fn BidiProtocol::handle_unsubscribe(
               self.global_unsubscribed_events,
               module_key,
             )
-          } else if not(array_contains(self.global_unsubscribed_events, evt)) {
+          } else if !array_contains(self.global_unsubscribed_events, evt) {
             self.global_unsubscribed_events.push(evt)
           }
           self.update_legacy_module_subscription(module_key)
@@ -17730,7 +17715,7 @@ fn BidiProtocol::flush_pending_log_entries(self : BidiProtocol) -> Unit {
     contexts.push(ctx_id)
   }
   for ctx_id in contexts {
-    if not(self.is_subscribed_for_context("log.entryAdded", ctx_id)) {
+    if !self.is_subscribed_for_context("log.entryAdded", ctx_id) {
       continue
     }
     match self.pending_log_entries.get(ctx_id) {
@@ -17801,7 +17786,7 @@ fn array_remove_first(arr : Array[String], target : String) -> Array[String] {
   let result : Array[String] = []
   let mut removed = false
   for item in arr {
-    if not(removed) && item == target {
+    if !removed && item == target {
       removed = true
       continue
     }
@@ -17829,7 +17814,7 @@ fn array_filter_not(
 ) -> Array[String] {
   let result : Array[String] = []
   for s in arr {
-    if not(array_contains(exclude, s)) {
+    if !array_contains(exclude, s) {
       result.push(s)
     }
   }
@@ -17862,7 +17847,7 @@ fn BidiProtocol::emit_context_created(
   parent_ctx_id : String?,
 ) -> Unit {
   let event_name = "browsingContext.contextCreated"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+  if !self.is_subscribed_for_context(event_name, ctx_id) {
     return
   }
   let user_ctx = self.context_user_context.get(ctx_id).unwrap_or("default")
@@ -17898,7 +17883,7 @@ fn BidiProtocol::emit_context_destroyed(
   original_opener : String?,
 ) -> Unit {
   let event_name = "browsingContext.contextDestroyed"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+  if !self.is_subscribed_for_context(event_name, ctx_id) {
     return
   }
   let url = match self.manager.get_session(ctx_id) {
@@ -17944,7 +17929,7 @@ fn BidiProtocol::emit_user_prompt_opened(
   default_value : String?,
 ) -> Unit {
   let event_name = "browsingContext.userPromptOpened"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+  if !self.is_subscribed_for_context(event_name, ctx_id) {
     return
   }
   let params_map : Map[String, Json] = {
@@ -17971,7 +17956,7 @@ fn BidiProtocol::emit_user_prompt_closed(
   user_text : String?,
 ) -> Unit {
   let event_name = "browsingContext.userPromptClosed"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+  if !self.is_subscribed_for_context(event_name, ctx_id) {
     return
   }
   let params_map : Map[String, Json] = {
@@ -17999,7 +17984,7 @@ fn BidiProtocol::emit_download_will_begin(
   url : String,
 ) -> Unit {
   let event_name = "browsingContext.downloadWillBegin"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+  if !self.is_subscribed_for_context(event_name, ctx_id) {
     return
   }
   let navigation_json = match navigation_id {
@@ -18027,7 +18012,7 @@ fn BidiProtocol::emit_download_end(
   url : String,
 ) -> Unit {
   let event_name = "browsingContext.downloadEnd"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+  if !self.is_subscribed_for_context(event_name, ctx_id) {
     return
   }
   let navigation_json = match navigation_id {
@@ -18057,7 +18042,7 @@ fn BidiProtocol::emit_realm_destroyed_for_context(
   ctx_id : String,
 ) -> Unit {
   let event_name = "script.realmDestroyed"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+  if !self.is_subscribed_for_context(event_name, ctx_id) {
     return
   }
   let params = make_object({ "realm": Json::string(realm_id) })
@@ -18073,7 +18058,7 @@ fn BidiProtocol::emit_realm_created(
   sandbox_name : String?,
 ) -> Unit {
   let event_name = "script.realmCreated"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+  if !self.is_subscribed_for_context(event_name, ctx_id) {
     return
   }
   let sandbox_json = match sandbox_name {
@@ -18106,7 +18091,7 @@ fn BidiProtocol::emit_existing_realms_for_context(
   self : BidiProtocol,
   ctx_id : String,
 ) -> Unit {
-  if not(self.manager.has_session(ctx_id)) {
+  if !self.manager.has_session(ctx_id) {
     return
   }
   self.emit_default_realm(ctx_id)
@@ -18181,7 +18166,7 @@ fn BidiProtocol::apply_navigation_commit_state(
     ctx_id,
     url,
     navigation_id,
-    not(defer_parent_lifecycle),
+    !defer_parent_lifecycle,
   )
   self.refresh_child_contexts_from_iframes(ctx_id)
   if defer_parent_lifecycle {
@@ -18203,7 +18188,7 @@ fn BidiProtocol::complete_navigation_request_with_wait_and_navigation(
   let completion = self.build_navigation_completion(
     request_id, ctx_id, url, wait_mode, navigation_id,
   )
-  if not(completion.deferred_response) {
+  if !completion.deferred_response {
     self.send_success(request_id, Some(completion.result))
   }
 }
@@ -18232,7 +18217,7 @@ fn BidiProtocol::build_navigation_completion(
   }
   let block_response = should_block_navigation_response(wait_mode, url)
   let mark_in_flight = is_interruptible_navigation_candidate(url) &&
-    not(has_inline_redirect)
+    !has_inline_redirect
   let deferred_response = block_response && mark_in_flight
   if mark_in_flight {
     if block_response {
@@ -18282,7 +18267,7 @@ fn BidiProtocol::emit_navigation_started_event(
   navigation_id : String,
 ) -> Unit {
   let event_name = "browsingContext.navigationStarted"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+  if !self.is_subscribed_for_context(event_name, ctx_id) {
     return
   }
   self.context_last_started_navigation[ctx_id] = navigation_id
@@ -18304,7 +18289,7 @@ fn BidiProtocol::emit_navigation_committed_event(
   navigation_id : String,
 ) -> Unit {
   let event_name = "browsingContext.navigationCommitted"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+  if !self.is_subscribed_for_context(event_name, ctx_id) {
     return
   }
   let params = make_object({
@@ -18325,7 +18310,7 @@ fn BidiProtocol::emit_navigation_failed_event(
   navigation_id : String,
 ) -> Unit {
   let event_name = "browsingContext.navigationFailed"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+  if !self.is_subscribed_for_context(event_name, ctx_id) {
     return
   }
   let params = make_object({
@@ -18346,7 +18331,7 @@ fn BidiProtocol::emit_navigation_aborted_event(
   navigation_id : String,
 ) -> Unit {
   let event_name = "browsingContext.navigationAborted"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+  if !self.is_subscribed_for_context(event_name, ctx_id) {
     return
   }
   let params = make_object({
@@ -18475,7 +18460,7 @@ fn BidiProtocol::is_subscribed_for_context(
   let module_key = get_subscription_key(event)
   let blocked_global = array_contains(self.global_unsubscribed_events, event)
   // Check legacy module-level subscription
-  if not(blocked_global) && self.subscriptions.get(module_key).unwrap_or(false) {
+  if !blocked_global && self.subscriptions.get(module_key).unwrap_or(false) {
     return true
   }
   // Check global subscriptions (exact event match or module match)
@@ -18483,7 +18468,7 @@ fn BidiProtocol::is_subscribed_for_context(
     if sub == event {
       return true
     }
-    if not(blocked_global) && sub == module_key {
+    if !blocked_global && sub == module_key {
       return true
     }
   }
@@ -18566,7 +18551,7 @@ fn split_method(method_name : String) -> (String, String)? {
   let action = StringBuilder::new()
   let mut in_action = false
   for c in method_name.iter() {
-    if c == '.' && not(in_action) {
+    if c == '.' && !in_action {
       in_action = true
     } else if in_action {
       action.write_char(c)
@@ -18630,7 +18615,7 @@ fn BidiProtocol::validate_session_subscribe_params(
       for raw_event in raw_events {
         match raw_event {
           String(event_name) =>
-            if not(is_valid_session_subscription_event_name(event_name)) {
+            if !is_valid_session_subscription_event_name(event_name) {
               self.send_error(
                 request_id,
                 "invalid argument",
@@ -18670,7 +18655,7 @@ fn BidiProtocol::validate_session_subscribe_params(
       for raw_context in raw_contexts {
         match raw_context {
           String(ctx_id) =>
-            if not(self.manager.has_session(ctx_id)) {
+            if !self.manager.has_session(ctx_id) {
               self.send_error(
                 request_id,
                 "no such frame",
@@ -18709,7 +18694,7 @@ fn BidiProtocol::validate_session_subscribe_params(
       for raw_user_context in raw_user_contexts {
         match raw_user_context {
           String(user_context_id) =>
-            if not(self.user_contexts.get(user_context_id).unwrap_or(false)) {
+            if !self.user_contexts.get(user_context_id).unwrap_or(false) {
               self.send_error(
                 request_id,
                 "no such user context",
@@ -18776,7 +18761,7 @@ fn BidiProtocol::validate_session_unsubscribe_params(
       for raw_subscription in raw_subscriptions {
         match raw_subscription {
           String(subscription_id) => {
-            if not(is_valid_subscription_id_format(subscription_id)) {
+            if !is_valid_subscription_id_format(subscription_id) {
               self.send_error(
                 request_id,
                 "invalid argument",
@@ -18784,7 +18769,7 @@ fn BidiProtocol::validate_session_unsubscribe_params(
               )
               return Some(())
             }
-            if not(self.subscription_events.contains(subscription_id)) {
+            if !self.subscription_events.contains(subscription_id) {
               self.send_error(
                 request_id,
                 "invalid argument",
@@ -18828,7 +18813,7 @@ fn BidiProtocol::validate_session_unsubscribe_params(
       for raw_event in raw_events {
         match raw_event {
           String(event_name) =>
-            if not(is_valid_session_subscription_event_name(event_name)) {
+            if !is_valid_session_subscription_event_name(event_name) {
               self.send_error(
                 request_id,
                 "invalid argument",
@@ -18921,11 +18906,11 @@ fn BidiProtocol::validate_session_unsubscribe_params(
     None => ()
   }
 
-  if not(has_context_targets) && not(has_user_context_targets) {
+  if !has_context_targets && !has_user_context_targets {
     for event_name in events_to_unsub {
       let module_key = get_subscription_key(event_name)
       if module_key == event_name {
-        if not(self.has_global_module_subscription(module_key)) {
+        if !self.has_global_module_subscription(module_key) {
           self.send_error(
             request_id,
             "invalid argument",
@@ -18942,7 +18927,7 @@ fn BidiProtocol::validate_session_unsubscribe_params(
           )
           return Some(())
         }
-      } else if not(self.has_global_event_subscription(event_name)) {
+      } else if !self.has_global_event_subscription(event_name) {
         self.send_error(
           request_id,
           "invalid argument",
@@ -19092,7 +19077,7 @@ fn BidiProtocol::validate_browser_manual_proxy(
 
   match proxy.get("httpProxy") {
     Some(String(v)) =>
-      if not(is_valid_proxy_endpoint_value(v)) {
+      if !is_valid_proxy_endpoint_value(v) {
         self.send_error(
           request_id, "invalid argument", "proxy.httpProxy is invalid",
         )
@@ -19109,7 +19094,7 @@ fn BidiProtocol::validate_browser_manual_proxy(
 
   match proxy.get("sslProxy") {
     Some(String(v)) =>
-      if not(is_valid_proxy_endpoint_value(v)) {
+      if !is_valid_proxy_endpoint_value(v) {
         self.send_error(
           request_id, "invalid argument", "proxy.sslProxy is invalid",
         )
@@ -19127,7 +19112,7 @@ fn BidiProtocol::validate_browser_manual_proxy(
   match proxy.get("socksProxy") {
     Some(String(v)) => {
       has_socks_proxy = true
-      if not(is_valid_proxy_endpoint_value(v)) {
+      if !is_valid_proxy_endpoint_value(v) {
         self.send_error(
           request_id, "invalid argument", "proxy.socksProxy is invalid",
         )
@@ -19162,13 +19147,13 @@ fn BidiProtocol::validate_browser_manual_proxy(
     None => ()
   }
 
-  if has_socks_version && not(has_socks_proxy) {
+  if has_socks_version && !has_socks_proxy {
     self.send_error(
       request_id, "invalid argument", "proxy.socksProxy is required when socksVersion is set",
     )
     return Some(())
   }
-  if has_socks_proxy && not(has_socks_version) {
+  if has_socks_proxy && !has_socks_version {
     self.send_error(
       request_id, "invalid argument", "proxy.socksVersion is required when socksProxy is set",
     )
@@ -19331,7 +19316,7 @@ fn BidiProtocol::validate_browser_set_download_behavior(
       for raw_user_context in user_contexts {
         match raw_user_context {
           String(user_context_id) =>
-            if not(self.user_contexts.contains(user_context_id)) {
+            if !self.user_contexts.contains(user_context_id) {
               self.send_error(
                 request_id,
                 "no such user context",
@@ -19475,7 +19460,7 @@ fn validate_network_extra_header_value(value : Json) -> Json? {
     Some(String(raw_value)) => raw_value
     _ => return None
   }
-  if not(is_valid_network_header_string_value(raw_value)) {
+  if !is_valid_network_header_string_value(raw_value) {
     return None
   }
   Some(
@@ -19493,7 +19478,7 @@ fn is_valid_network_header_name_token(name : String) -> Bool {
     return false
   }
   for c in name.iter() {
-    if not(is_valid_network_header_name_token_char(c)) {
+    if !is_valid_network_header_name_token_char(c) {
       return false
     }
   }
@@ -19593,7 +19578,7 @@ fn is_valid_network_string_url_pattern(pattern : String) -> Bool {
     None => return false
   }
   let scheme = pattern.unsafe_substring(start=0, end=scheme_sep)
-  if not(is_valid_network_pattern_protocol_value(scheme)) {
+  if !is_valid_network_pattern_protocol_value(scheme) {
     return false
   }
   let authority_and_path = pattern.unsafe_substring(
@@ -19710,7 +19695,7 @@ fn is_valid_network_pattern_url_pattern(map : Map[String, Json]) -> Bool {
   match protocol {
     Some(value) =>
       if has_unescaped_pattern_special_char(value) ||
-        not(is_valid_network_pattern_protocol_value(value)) {
+        !is_valid_network_pattern_protocol_value(value) {
         return false
       } else {
         match hostname {
@@ -19724,7 +19709,7 @@ fn is_valid_network_pattern_url_pattern(map : Map[String, Json]) -> Bool {
   match hostname {
     Some(value) =>
       if has_unescaped_pattern_special_char(value) ||
-        not(is_valid_network_pattern_hostname(value)) {
+        !is_valid_network_pattern_hostname(value) {
         return false
       }
     None => ()
@@ -19733,7 +19718,7 @@ fn is_valid_network_pattern_url_pattern(map : Map[String, Json]) -> Bool {
   match port {
     Some(value) =>
       if has_unescaped_pattern_special_char(value) ||
-        not(is_valid_network_pattern_port(value)) {
+        !is_valid_network_pattern_port(value) {
         return false
       }
     None => ()
@@ -19742,7 +19727,7 @@ fn is_valid_network_pattern_url_pattern(map : Map[String, Json]) -> Bool {
   match pathname {
     Some(value) =>
       if has_unescaped_pattern_special_char(value) ||
-        not(is_valid_network_pattern_pathname(value)) {
+        !is_valid_network_pattern_pathname(value) {
         return false
       }
     None => ()
@@ -19751,7 +19736,7 @@ fn is_valid_network_pattern_url_pattern(map : Map[String, Json]) -> Bool {
   match search {
     Some(value) =>
       if has_unescaped_pattern_special_char(value) ||
-        not(is_valid_network_pattern_search(value)) {
+        !is_valid_network_pattern_search(value) {
         return false
       }
     None => ()
@@ -19807,12 +19792,12 @@ fn is_valid_network_pattern_protocol_value(value : String) -> Bool {
     return false
   }
   let scheme_chars = scheme.to_array()
-  if not(is_ascii_alpha(scheme_chars[0])) {
+  if !is_ascii_alpha(scheme_chars[0]) {
     return false
   }
   for i = 1; i < scheme_chars.length(); i = i + 1 {
     let c = scheme_chars[i]
-    if not(is_ascii_alnum(c) || c == '+' || c == '-' || c == '.') {
+    if !(is_ascii_alnum(c) || c == '+' || c == '-' || c == '.') {
       return false
     }
   }
@@ -19842,7 +19827,7 @@ fn is_valid_network_pattern_hostname(value : String) -> Bool {
     value.contains(":") {
     return false
   }
-  not(value.contains("::"))
+  !value.contains("::")
 }
 
 ///|
@@ -19861,13 +19846,13 @@ fn is_valid_network_pattern_port(value : String) -> Bool {
 ///|
 /// Validate pathname token (must not include `?` or `#`).
 fn is_valid_network_pattern_pathname(value : String) -> Bool {
-  not(value.contains("?")) && not(value.contains("#"))
+  !value.contains("?") && !value.contains("#")
 }
 
 ///|
 /// Validate search token (must not include `#`).
 fn is_valid_network_pattern_search(value : String) -> Bool {
-  not(value.contains("#"))
+  !value.contains("#")
 }
 
 ///|
@@ -19968,11 +19953,9 @@ fn is_valid_subscription_id_format(subscription_id : String) -> Bool {
     return false
   }
   for c in subscription_id.iter() {
-    if not(
-        (c >= '0' && c <= '9') ||
-        (c >= 'a' && c <= 'f') ||
-        (c >= 'A' && c <= 'F'),
-      ) {
+    if !((c >= '0' && c <= '9') ||
+      (c >= 'a' && c <= 'f') ||
+      (c >= 'A' && c <= 'F')) {
       return false
     }
   }
@@ -20214,7 +20197,7 @@ fn BidiProtocol::validate_script_target(
       // Check if context is specified
       match target_map.get("context") {
         Some(String(ctx_id)) =>
-          if not(self.manager.has_session(ctx_id)) {
+          if !self.manager.has_session(ctx_id) {
             self.send_error(
               request_id,
               "no such frame",
@@ -20238,7 +20221,7 @@ fn BidiProtocol::validate_script_target(
       // Check if realm is specified
       match target_map.get("realm") {
         Some(String(realm_id)) =>
-          if not(self.realm_context.contains(realm_id)) {
+          if !self.realm_context.contains(realm_id) {
             self.send_error(
               request_id,
               "no such frame",
@@ -20616,7 +20599,7 @@ fn BidiProtocol::try_handle_window_open(
     evaluate_js("window.baz = " + bidi_value_to_js_literal(opened_value))
     |> ignore
   }
-  if not(skip_navigation_started) {
+  if !skip_navigation_started {
     let nav_id = self.next_navigation_id.to_string()
     self.next_navigation_id += 1
     self.emit_navigation_events(new_ctx_id, resolved_opened_url, nav_id)
@@ -20653,7 +20636,7 @@ fn BidiProtocol::try_handle_synthetic_iframe_creation(
       trimmed.contains("createElement(\"iframe\")")
     ) &&
     trimmed.contains("appendChild(iframe)")
-  if not(creates_iframe) {
+  if !creates_iframe {
     return false
   }
 
@@ -20738,7 +20721,7 @@ fn BidiProtocol::validate_this_param(
 ) -> Unit? {
   match get_param_raw(params, "this") {
     Some(Object(value_map)) => {
-      if not(is_valid_serialized_value_map(value_map)) {
+      if !is_valid_serialized_value_map(value_map) {
         self.send_error(
           request_id, "invalid argument", "this must be a serialized value",
         )
@@ -20746,7 +20729,7 @@ fn BidiProtocol::validate_this_param(
       }
       match value_map.get("sharedId") {
         Some(String(shared_id)) =>
-          if not(has_runtime_shared_node(shared_id)) {
+          if !has_runtime_shared_node(shared_id) {
             self.send_error(
               request_id,
               "no such node",
@@ -20764,7 +20747,7 @@ fn BidiProtocol::validate_this_param(
       }
       match value_map.get("handle") {
         Some(String(handle_id)) =>
-          if not(has_runtime_handle(handle_id)) {
+          if !has_runtime_handle(handle_id) {
             self.send_error(
               request_id,
               "no such handle",
@@ -20805,7 +20788,7 @@ fn BidiProtocol::validate_arguments_param(
       for arg in args {
         match arg {
           Object(arg_map) => {
-            if not(is_valid_serialized_value_map(arg_map)) {
+            if !is_valid_serialized_value_map(arg_map) {
               self.send_error(
                 request_id, "invalid argument", "arguments entries must be serialized values",
               )
@@ -20883,7 +20866,7 @@ fn BidiProtocol::validate_arguments_param(
             // Validate handle if present
             match arg_map.get("handle") {
               Some(String(handle_id)) =>
-                if not(has_runtime_handle(handle_id)) {
+                if !has_runtime_handle(handle_id) {
                   self.send_error(
                     request_id,
                     "no such handle",
@@ -20902,7 +20885,7 @@ fn BidiProtocol::validate_arguments_param(
             // Validate sharedId if present
             match arg_map.get("sharedId") {
               Some(String(shared_id)) =>
-                if not(has_runtime_shared_node(shared_id)) {
+                if !has_runtime_shared_node(shared_id) {
                   self.send_error(
                     request_id,
                     "no such node",
@@ -21016,7 +20999,7 @@ fn BidiProtocol::parse_add_preload_script_params(
       Object(arg_map) =>
         match arg_map.get("type") {
           Some(String(type_name)) => {
-            if not(is_supported_preload_argument_type(type_name)) {
+            if !is_supported_preload_argument_type(type_name) {
               self.send_error(
                 request_id, "invalid argument", "arguments entries must be serialized values",
               )
@@ -21068,7 +21051,7 @@ fn BidiProtocol::parse_add_preload_script_params(
       for item in items {
         match item {
           String(ctx_id) =>
-            if ctx_id == "" || not(self.manager.has_session(ctx_id)) {
+            if ctx_id == "" || !self.manager.has_session(ctx_id) {
               self.send_error(
                 request_id,
                 "no such frame",
@@ -21080,7 +21063,7 @@ fn BidiProtocol::parse_add_preload_script_params(
                 request_id, "invalid argument", "contexts entries must be top-level contexts",
               )
               return None
-            } else if not(array_contains(contexts, ctx_id)) {
+            } else if !array_contains(contexts, ctx_id) {
               contexts.push(ctx_id)
             }
           _ => {
@@ -21117,14 +21100,14 @@ fn BidiProtocol::parse_add_preload_script_params(
         match item {
           String(user_context_id) =>
             if user_context_id == "" ||
-              not(self.user_contexts.contains(user_context_id)) {
+              !self.user_contexts.contains(user_context_id) {
               self.send_error(
                 request_id,
                 "no such user context",
                 "Unknown user context: " + user_context_id,
               )
               return None
-            } else if not(array_contains(user_contexts, user_context_id)) {
+            } else if !array_contains(user_contexts, user_context_id) {
               user_contexts.push(user_context_id)
             }
           _ => {
@@ -21181,7 +21164,7 @@ fn BidiProtocol::resolve_realms_list(
 ) -> Array[Json]? {
   let context_filter = match get_param_raw(params, "context") {
     Some(String(ctx_id)) => {
-      if not(self.manager.has_session(ctx_id)) {
+      if !self.manager.has_session(ctx_id) {
         self.send_error(
           request_id,
           "no such frame",

@@ -33,7 +33,7 @@ fn BidiProtocol::handle_network_emit_navigation_request_sequence(
       return
     }
   }
-  if not(self.manager.has_session(context_id)) {
+  if !self.manager.has_session(context_id) {
     self.send_error(
       request_id,
       "no such frame",
@@ -632,7 +632,7 @@ fn synthetic_navigation_requires_auth_event(
 
 ///|
 fn synthetic_navigation_is_html_data_url(url : String) -> Bool {
-  if not(url.has_prefix("data:")) {
+  if !url.has_prefix("data:") {
     return false
   }
   match parse_data_url(url) {

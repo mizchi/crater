@@ -94,7 +94,7 @@ fn BidiProtocol::resolve_permissions_set_permission(
   let user_context_id = match
     get_map_field_with_alias(map, "userContext", "user_context") {
     Some(String(user_context_id)) =>
-      if not(self.user_contexts.contains(user_context_id)) {
+      if !self.user_contexts.contains(user_context_id) {
         self.send_error(
           request_id,
           "no such user context",
@@ -200,7 +200,7 @@ fn BidiProtocol::try_handle_synthetic_permissions_query_call(
   function_declaration : String,
   unwrap_result : Bool,
 ) -> Bool {
-  if not(function_declaration.contains("navigator.permissions.query(")) {
+  if !function_declaration.contains("navigator.permissions.query(") {
     return false
   }
   let permission_name = match
@@ -233,10 +233,8 @@ fn BidiProtocol::try_handle_synthetic_window_location_origin_call(
   function_declaration : String,
   unwrap_result : Bool,
 ) -> Bool {
-  if not(
-      function_declaration.contains("window.location.origin") ||
-      function_declaration.contains("location.origin"),
-    ) {
+  if !(function_declaration.contains("window.location.origin") ||
+    function_declaration.contains("location.origin")) {
     return false
   }
   let origin = self.permission_query_origin_for_context(ctx_id)

@@ -277,7 +277,7 @@ fn BidiProtocol::try_handle_synthetic_user_agent_fetch_eval(
   unwrap_result : Bool,
 ) -> Bool {
   let expr = expression.trim().to_string()
-  if not(expr.has_prefix("fetch(")) || not(expr.contains(".text()")) {
+  if !expr.has_prefix("fetch(") || !expr.contains(".text()") {
     return false
   }
   let request_url = match extract_emulation_fetch_url(expr) {
@@ -285,7 +285,7 @@ fn BidiProtocol::try_handle_synthetic_user_agent_fetch_eval(
     None => return false
   }
   let resolved_url = self.resolve_navigation_target_url(ctx_id, request_url)
-  if not(is_wpt_headers_echo_url(resolved_url)) {
+  if !is_wpt_headers_echo_url(resolved_url) {
     return false
   }
   self.send_script_remote_value_response(
@@ -402,7 +402,7 @@ fn BidiProtocol::extract_emulation_timezone_offset(
 ) -> Int? {
   let prefix = "(new Date("
   let suffix = ")).getTimezoneOffset()"
-  if not(expression.has_prefix(prefix)) || not(expression.has_suffix(suffix)) {
+  if !expression.has_prefix(prefix) || !expression.has_suffix(suffix) {
     return None
   }
   let timezone = self.resolve_effective_timezone(ctx_id)
@@ -422,16 +422,14 @@ fn emulation_timezone_offset_minutes(timezone : String) -> Int? {
   if chars[3] != ':' {
     return None
   }
-  if not(
-      chars[1] >= '0' &&
-      chars[1] <= '9' &&
-      chars[2] >= '0' &&
-      chars[2] <= '9' &&
-      chars[4] >= '0' &&
-      chars[4] <= '9' &&
-      chars[5] >= '0' &&
-      chars[5] <= '9',
-    ) {
+  if !(chars[1] >= '0' &&
+    chars[1] <= '9' &&
+    chars[2] >= '0' &&
+    chars[2] <= '9' &&
+    chars[4] >= '0' &&
+    chars[4] <= '9' &&
+    chars[5] >= '0' &&
+    chars[5] <= '9') {
     return None
   }
   let hours = (chars[1].to_int() - '0'.to_int()) * 10 +
@@ -516,7 +514,7 @@ fn BidiProtocol::resolve_emulation_set_user_agent_override(
         for context in contexts {
           match context {
             String(ctx_id) =>
-              if not(self.manager.has_session(ctx_id)) {
+              if !self.manager.has_session(ctx_id) {
                 self.send_error(
                   request_id,
                   "no such frame",
@@ -528,7 +526,7 @@ fn BidiProtocol::resolve_emulation_set_user_agent_override(
                   request_id, "invalid argument", "contexts must reference top-level browsing contexts",
                 )
                 return None
-              } else if not(array_contains(target_contexts, ctx_id)) {
+              } else if !array_contains(target_contexts, ctx_id) {
                 target_contexts.push(ctx_id)
               }
             _ => {
@@ -562,16 +560,14 @@ fn BidiProtocol::resolve_emulation_set_user_agent_override(
           match raw_user_context {
             String(user_context_id) =>
               if user_context_id == "" ||
-                not(self.user_contexts.contains(user_context_id)) {
+                !self.user_contexts.contains(user_context_id) {
                 self.send_error(
                   request_id,
                   "no such user context",
                   "Unknown user context: " + user_context_id,
                 )
                 return None
-              } else if not(
-                  array_contains(target_user_contexts, user_context_id),
-                ) {
+              } else if !array_contains(target_user_contexts, user_context_id) {
                 target_user_contexts.push(user_context_id)
               }
             _ => {
@@ -680,7 +676,7 @@ fn BidiProtocol::resolve_emulation_set_locale_override(
         for context in contexts {
           match context {
             String(ctx_id) =>
-              if not(self.manager.has_session(ctx_id)) {
+              if !self.manager.has_session(ctx_id) {
                 self.send_error(
                   request_id,
                   "no such frame",
@@ -692,7 +688,7 @@ fn BidiProtocol::resolve_emulation_set_locale_override(
                   request_id, "invalid argument", "contexts must reference top-level browsing contexts",
                 )
                 return None
-              } else if not(array_contains(target_contexts, ctx_id)) {
+              } else if !array_contains(target_contexts, ctx_id) {
                 target_contexts.push(ctx_id)
               }
             _ => {
@@ -726,16 +722,14 @@ fn BidiProtocol::resolve_emulation_set_locale_override(
           match raw_user_context {
             String(user_context_id) =>
               if user_context_id == "" ||
-                not(self.user_contexts.contains(user_context_id)) {
+                !self.user_contexts.contains(user_context_id) {
                 self.send_error(
                   request_id,
                   "no such user context",
                   "Unknown user context: " + user_context_id,
                 )
                 return None
-              } else if not(
-                  array_contains(target_user_contexts, user_context_id),
-                ) {
+              } else if !array_contains(target_user_contexts, user_context_id) {
                 target_user_contexts.push(user_context_id)
               }
             _ => {
@@ -844,7 +838,7 @@ fn BidiProtocol::resolve_emulation_set_timezone_override(
         for context in contexts {
           match context {
             String(ctx_id) =>
-              if not(self.manager.has_session(ctx_id)) {
+              if !self.manager.has_session(ctx_id) {
                 self.send_error(
                   request_id,
                   "no such frame",
@@ -856,7 +850,7 @@ fn BidiProtocol::resolve_emulation_set_timezone_override(
                   request_id, "invalid argument", "contexts must reference top-level browsing contexts",
                 )
                 return None
-              } else if not(array_contains(target_contexts, ctx_id)) {
+              } else if !array_contains(target_contexts, ctx_id) {
                 target_contexts.push(ctx_id)
               }
             _ => {
@@ -890,16 +884,14 @@ fn BidiProtocol::resolve_emulation_set_timezone_override(
           match raw_user_context {
             String(user_context_id) =>
               if user_context_id == "" ||
-                not(self.user_contexts.contains(user_context_id)) {
+                !self.user_contexts.contains(user_context_id) {
                 self.send_error(
                   request_id,
                   "no such user context",
                   "Unknown user context: " + user_context_id,
                 )
                 return None
-              } else if not(
-                  array_contains(target_user_contexts, user_context_id),
-                ) {
+              } else if !array_contains(target_user_contexts, user_context_id) {
                 target_user_contexts.push(user_context_id)
               }
             _ => {
