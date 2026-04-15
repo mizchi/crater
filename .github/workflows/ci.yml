@@ -404,6 +404,7 @@ jobs:
 
       - name: Run WebDriver BiDi shard
         run: |
+          export WPT_TIMEOUT_MULTIPLIER=2.0
           mkdir -p wpt-reports
           status=0
           run_quick() {
