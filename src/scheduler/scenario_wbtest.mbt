@@ -151,7 +151,7 @@ fn MockAsyncRuntime::pending_count(self : MockAsyncRuntime) -> Int {
 ///|
 test "scenario: HTML with external CSS loading" {
   reset_task_id_counter()
-  @dispatch.setup()
+  @layout.setup()
 
   // === Setup ===
   let scheduler = Scheduler::new()
@@ -233,7 +233,7 @@ test "scenario: HTML with external CSS loading" {
 ///|
 test "scenario: HTML with images - progressive loading" {
   reset_task_id_counter()
-  @dispatch.setup()
+  @layout.setup()
 
   // === Setup ===
   let scheduler = Scheduler::new()
@@ -308,7 +308,7 @@ test "scenario: HTML with images - progressive loading" {
 ///|
 test "scenario: complete page load lifecycle" {
   reset_task_id_counter()
-  @dispatch.setup()
+  @layout.setup()
 
   // === Setup ===
   let scheduler = Scheduler::new()
@@ -533,7 +533,7 @@ test "scenario: parser-blocking script" {
 ///|
 test "scenario: incremental layout as resources load" {
   reset_task_id_counter()
-  @dispatch.setup()
+  @layout.setup()
   let scheduler = Scheduler::new()
   let layout_manager = LayoutManager::new(scheduler)
 
@@ -549,7 +549,7 @@ test "scenario: incremental layout as resources load" {
 
   // === Simulate Resource Resolution ===
   // 画像リソースのモック解決
-  let rid = @tree.ResourceId(42)
+  let rid = @layout.ResourceId(42)
   let decode_task = layout_manager.schedule_image_decode(rid)
 
   // デコードタスクが並列実行可能

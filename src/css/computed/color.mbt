@@ -58,7 +58,7 @@ pub impl Show for CssColorValue with output(self, logger) {
 /// This is the legacy version without context - only uses fallback values
 fn resolve_color_var_fallback(value : String) -> String {
   let v = value.trim()
-  if not(v.has_prefix("var(")) || not(v.has_suffix(")")) {
+  if !v.has_prefix("var(") || !v.has_suffix(")") {
     return v.to_string()
   }
   // Extract content inside var(...)
@@ -93,7 +93,7 @@ fn resolve_color_var_fallback(value : String) -> String {
 /// Resolve CSS var() function for colors with context lookup
 fn resolve_color_var(value : String, ctx : ComputeContext) -> String {
   let v = value.trim().to_string()
-  if not(v.has_prefix("var(")) || not(v.has_suffix(")")) {
+  if !v.has_prefix("var(") || !v.has_suffix(")") {
     return v
   }
   // Extract content inside var(...)
@@ -382,14 +382,14 @@ fn parse_color_component(s : String, is_alpha : Bool) -> Double {
   let v = s.trim().to_string()
   if v.has_suffix("%") {
     let num_str = substr(v, 0, v.length() - 1)
-    let n = @strconv.parse_double(num_str) catch { _ => 0.0 }
+    let n = @string.parse_double(num_str) catch { _ => 0.0 }
     if is_alpha {
       n / 100.0
     } else {
       n * 255.0 / 100.0
     }
   } else {
-    let n = @strconv.parse_double(v) catch { _ => 0.0 }
+    let n = @string.parse_double(v) catch { _ => 0.0 }
     if is_alpha {
       // Alpha can be 0-1 or 0-100%
       if n > 1.0 {
@@ -590,7 +590,7 @@ pub fn default_background_color() -> @types.Color {
 pub fn parse_linear_gradient(value : String) -> @types.BackgroundImage {
   let v = value.trim().to_lower().to_string()
   // Must start with "linear-gradient("
-  if not(v.has_prefix("linear-gradient(")) {
+  if !v.has_prefix("linear-gradient(") {
     return @types.None
   }
   // Extract content between parens
@@ -616,7 +616,7 @@ pub fn parse_linear_gradient(value : String) -> @types.BackgroundImage {
     let deg_str = first
       .unsafe_substring(start=0, end=first.length() - 3)
       .to_string()
-    let d = @strconv.parse_double(deg_str) catch { _ => -999.0 }
+    let d = @string.parse_double(deg_str) catch { _ => -999.0 }
     if d != -999.0 {
       angle = d
       color_start = 1
@@ -625,7 +625,7 @@ pub fn parse_linear_gradient(value : String) -> @types.BackgroundImage {
     let turn_str = first
       .unsafe_substring(start=0, end=first.length() - 4)
       .to_string()
-    let t = @strconv.parse_double(turn_str) catch { _ => -999.0 }
+    let t = @string.parse_double(turn_str) catch { _ => -999.0 }
     if t != -999.0 {
       angle = t * 360.0
       color_start = 1
@@ -693,7 +693,7 @@ fn parse_gradient_stop(
       let pct_str = pos_part
         .unsafe_substring(start=0, end=pos_part.length() - 1)
         .to_string()
-      let pct = @strconv.parse_double(pct_str) catch { _ => -999.0 }
+      let pct = @string.parse_double(pct_str) catch { _ => -999.0 }
       if pct != -999.0 {
         let color = resolve_gradient_color(color_part)
         return (color, pct / 100.0)

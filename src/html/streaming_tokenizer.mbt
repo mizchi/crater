@@ -28,7 +28,7 @@ pub fn StreamingTokenizer::new() -> StreamingTokenizer {
 ///|
 /// Get the current string, using cache when possible
 fn StreamingTokenizer::get_string(self : StreamingTokenizer) -> String {
-  if not(self.cache_valid) {
+  if !self.cache_valid {
     self.cached_str = self.buffer.to_string()
     self.cache_valid = true
   }
@@ -192,7 +192,7 @@ fn StreamingTokenizer::try_skip_doctype_with_str(
   self : StreamingTokenizer,
   s : String,
 ) -> Token?? {
-  if not(self.matches_ci_with_str(s, "<!doctype")) {
+  if !self.matches_ci_with_str(s, "<!doctype") {
     return Some(None)
   }
   // Find closing >
@@ -361,7 +361,7 @@ pub fn StreamingTokenizer::next_token(self : StreamingTokenizer) -> Token? {
     } else if self.pos + 1 < slen &&
       s[self.pos + 1].to_int().unsafe_to_char() == '/' {
       // End tag
-      if self.pos + 2 >= slen && not(self.finished) {
+      if self.pos + 2 >= slen && !self.finished {
         return None
       }
       self.pos += 2 // Skip </
@@ -378,7 +378,7 @@ pub fn StreamingTokenizer::next_token(self : StreamingTokenizer) -> Token? {
             break
           }
         }
-        if not(found_end) && not(self.finished) {
+        if !found_end && !self.finished {
           return None
         }
         self.pos += 1 // Skip <
@@ -403,7 +403,7 @@ pub fn StreamingTokenizer::next_token(self : StreamingTokenizer) -> Token? {
       self.pos += 1
     }
     // If we consumed nothing and need more data
-    if self.pos == start && not(self.finished) {
+    if self.pos == start && !self.finished {
       return None
     }
     let text = s.unsafe_substring(start~, end=self.pos)

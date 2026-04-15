@@ -3,6 +3,7 @@ package "mizchi/crater/css/responsive"
 
 import {
   "mizchi/crater/css/selector",
+  "moonbitlang/core/debug",
 }
 
 // Values
@@ -25,18 +26,21 @@ pub struct BreakpointDiscoveryDiagnostics {
   external_stylesheet_links : Array[String]
   ignored_queries : Array[String]
   unsupported_queries : Array[String]
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for BreakpointDiscoveryDiagnostics
 
 pub struct BreakpointDiscoveryResult {
   breakpoints : Array[ResponsiveBreakpoint]
   diagnostics : BreakpointDiscoveryDiagnostics
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for BreakpointDiscoveryResult
 
 pub struct ComputedStylesWithStateResult {
   normal : Map[String, String]
   forced : Map[String, String]
   diff : Array[StylePropertyDiff]
-} derive(Show)
+} derive(@debug.Debug)
+pub impl Show for ComputedStylesWithStateResult
 
 pub struct CssRuleViewportEntry {
   selector : String
@@ -44,20 +48,24 @@ pub struct CssRuleViewportEntry {
   media_condition : String
   active_at_widths : Array[Int]
   inactive_at_widths : Array[Int]
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for CssRuleViewportEntry
 
 pub struct CssRuleViewportMap {
   rules : Array[CssRuleViewportEntry]
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for CssRuleViewportMap
 
 pub struct RequiredTestViewport {
   width : Int
   reason : String
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for RequiredTestViewport
 
 pub struct RequiredTestViewportsResult {
   viewports : Array[RequiredTestViewport]
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for RequiredTestViewportsResult
 
 pub struct ResponsiveBreakpoint {
   axis : String
@@ -67,13 +75,15 @@ pub struct ResponsiveBreakpoint {
   normalized : String
   guards : Array[String]
   rule_count : Int
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for ResponsiveBreakpoint
 
 pub struct StylePropertyDiff {
   property : String
   normal : String
   forced : String
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for StylePropertyDiff
 
 // Type aliases
 

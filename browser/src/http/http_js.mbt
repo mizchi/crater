@@ -106,7 +106,7 @@ fn extract_json_int(json : String, key : String) -> Int {
       }
       try {
         let num_str = json.unsafe_substring(start~, end~)
-        @strconv.parse_int(num_str)
+        @string.parse_int(num_str)
       } catch {
         _ => 0
       }

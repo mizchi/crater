@@ -1,7 +1,7 @@
 import {
   "mizchi/crater/dom",
   "mizchi/crater/scheduler",
-  "moonbitlang/core/strconv",
+  "moonbitlang/core/string",
 }
 
 options(

@@ -11,11 +11,11 @@
 pub struct StyleManager {
   scheduler : Scheduler
   /// パース済みのスタイルシート
-  stylesheets : Array[@cascade.Stylesheet]
+  stylesheets : Array[@css.Stylesheet]
   /// インラインスタイル (element id -> declarations)
-  inline_styles : Map[String, Array[@cascade.Declaration]]
+  inline_styles : Map[String, Array[@css.Declaration]]
   /// 計算済みスタイル (element id -> cascaded values)
-  computed_styles : Map[String, @cascade.CascadedValues]
+  computed_styles : Map[String, @css.CascadedValues]
   /// スタイルシートのソース順序カウンタ
   mut source_order : Int
 }
@@ -40,8 +40,8 @@ pub fn StyleManager::new(scheduler : Scheduler) -> StyleManager {
 pub fn StyleManager::add_stylesheet_source(
   self : StyleManager,
   source : String,
-) -> @cascade.Stylesheet {
-  let stylesheet = @parser.parse_stylesheet(source)
+) -> @css.Stylesheet {
+  let stylesheet = @css.parse_stylesheet(source)
   self.stylesheets.push(stylesheet)
   self.source_order += 1
   // スタイルが変更されたので再計算が必要
@@ -53,7 +53,7 @@ pub fn StyleManager::add_stylesheet_source(
 /// パース済みスタイルシートを追加
 pub fn StyleManager::add_stylesheet(
   self : StyleManager,
-  stylesheet : @cascade.Stylesheet,
+  stylesheet : @css.Stylesheet,
 ) -> Unit {
   self.stylesheets.push(stylesheet)
   self.source_order += 1
@@ -76,15 +76,13 @@ pub fn StyleManager::add_inline_style(
 
 ///|
 /// インラインスタイルテキストから Declaration 配列を生成
-fn parse_inline_declarations(
-  style_text : String,
-) -> Array[@cascade.Declaration] {
-  let declarations : Array[@cascade.Declaration] = []
+fn parse_inline_declarations(style_text : String) -> Array[@css.Declaration] {
+  let declarations : Array[@css.Declaration] = []
   // "property: value; property: value" 形式をパース
   let parts = split_by_semicolon(style_text)
   for part in parts {
     let trimmed = part.trim().to_string()
-    if not(trimmed.is_empty()) {
+    if !trimmed.is_empty() {
       let colon_idx = find_colon(trimmed)
       if colon_idx >= 0 {
         let prop = trimmed.unsafe_substring(start=0, end=colon_idx)
@@ -94,7 +92,7 @@ fn parse_inline_declarations(
           end=trimmed.length(),
         )
         let val_trimmed = val.trim().to_string()
-        if not(prop_trimmed.is_empty()) && not(val_trimmed.is_empty()) {
+        if !prop_trimmed.is_empty() && !val_trimmed.is_empty() {
           // !important チェック
           let (clean_val, importance) = if val_trimmed
             .to_lower()
@@ -103,14 +101,12 @@ fn parse_inline_declarations(
               start=0,
               end=val_trimmed.length() - 10,
             )
-            (clean.trim().to_string(), @cascade.Important)
+            (clean.trim().to_string(), @css.Importance::Important)
           } else {
-            (val_trimmed, @cascade.Normal)
+            (val_trimmed, @css.Importance::Normal)
           }
           declarations.push(
-            @cascade.Declaration::from_inline(
-              prop_trimmed, clean_val, importance,
-            ),
+            @css.Declaration::from_inline(prop_trimmed, clean_val, importance),
           )
         }
       }
@@ -132,7 +128,7 @@ fn split_by_semicolon(s : String) -> Array[String] {
     }
   }
   let last = current.to_string()
-  if not(last.is_empty()) {
+  if !last.is_empty() {
     result.push(last)
   }
   result
@@ -158,8 +154,8 @@ fn find_colon(s : String) -> Int {
 /// 要素のスタイルを計算
 pub fn StyleManager::compute_style(
   self : StyleManager,
-  element : @selector.Element,
-) -> @cascade.CascadedValues {
+  element : @css.Element,
+) -> @css.CascadedValues {
   let element_id = element.id.unwrap_or("")
 
   // キャッシュチェック
@@ -175,14 +171,10 @@ pub fn StyleManager::compute_style(
   }
 
   // カスケード計算
-  let cascaded = @cascade.cascade_element(
-    element,
-    self.stylesheets,
-    inline_decls,
-  )
+  let cascaded = @css.cascade_element(element, self.stylesheets, inline_decls)
 
   // キャッシュに保存
-  if not(element_id.is_empty()) {
+  if !element_id.is_empty() {
     self.computed_styles[element_id] = cascaded
   }
   cascaded
@@ -234,7 +226,7 @@ pub fn StyleManager::on_css_parsed(
   let stylesheet = self.add_stylesheet_source(source)
 
   // スタイル再計算タスクを生成（影響を受ける可能性のある全要素）
-  let recompute_task = if not(self.computed_styles.is_empty()) {
+  let recompute_task = if !self.computed_styles.is_empty() {
     let node_ids : Array[String] = []
     self.computed_styles.each(fn(id, _) { node_ids.push(id) })
     Some(self.schedule_compute_style(node_ids))
@@ -247,7 +239,7 @@ pub fn StyleManager::on_css_parsed(
 ///|
 /// CSS パース結果
 pub(all) struct CSSParseResult {
-  stylesheet : @cascade.Stylesheet
+  stylesheet : @css.Stylesheet
   recompute_task : TaskId?
   rule_count : Int
 }
@@ -318,7 +310,7 @@ fn process_element_inline_styles(
   match element.style {
     Some(style_text) => {
       let element_id = element.id.unwrap_or("")
-      if not(element_id.is_empty()) {
+      if !element_id.is_empty() {
         style_manager.add_inline_style(element_id, style_text)
       }
     }
@@ -382,8 +374,8 @@ pub fn DocumentStyleCoordinator::get_style_manager(
 
 ///|
 /// HTMLElementからselector.Elementに変換
-pub fn html_element_to_selector(element : @html.Element) -> @selector.Element {
-  let mut sel_elem = @selector.Element::new(element.tag)
+pub fn html_element_to_selector(element : @html.Element) -> @css.Element {
+  let mut sel_elem = @css.Element::new(element.tag)
 
   // IDを設定
   match element.id {
@@ -408,7 +400,7 @@ pub fn html_element_to_selector(element : @html.Element) -> @selector.Element {
 pub fn compute_element_style(
   style_manager : StyleManager,
   element : @html.Element,
-) -> @cascade.CascadedValues {
+) -> @css.CascadedValues {
   let selector_elem = html_element_to_selector(element)
   style_manager.compute_style(selector_elem)
 }

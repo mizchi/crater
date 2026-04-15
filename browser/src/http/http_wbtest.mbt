@@ -985,18 +985,12 @@ test "is_cross_origin: one empty is not cross-origin" {
 
 ///|
 test "is_cross_origin: same origin" {
-  inspect(
-    is_cross_origin("https://a.test", "https://a.test"),
-    content="false",
-  )
+  inspect(is_cross_origin("https://a.test", "https://a.test"), content="false")
 }
 
 ///|
 test "is_cross_origin: different origin" {
-  inspect(
-    is_cross_origin("https://a.test", "https://b.test"),
-    content="true",
-  )
+  inspect(is_cross_origin("https://a.test", "https://b.test"), content="true")
 }
 
 // ============================================================

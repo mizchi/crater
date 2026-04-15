@@ -10,7 +10,7 @@ pub fn parse_media_query_list(input : String) -> MediaQueryList {
   let parts = split_media_queries(input)
   for part in parts {
     let trimmed = part.trim().to_string()
-    if not(trimmed.is_empty()) {
+    if !trimmed.is_empty() {
       match parse_single_media_query(trimmed) {
         Some(query) => queries.push(query)
         None => ()
@@ -42,7 +42,7 @@ fn split_media_queries(input : String) -> Array[String] {
     }
   }
   let final_str = current.to_string()
-  if not(final_str.is_empty()) {
+  if !final_str.is_empty() {
     result.push(final_str)
   }
   result
@@ -123,7 +123,7 @@ fn tokenize_media_query(input : String) -> Array[String] {
       if paren_depth == 0 {
         // Push any preceding token
         let s = current.to_string().trim().to_string()
-        if not(s.is_empty()) {
+        if !s.is_empty() {
           tokens.push(s)
         }
         current.reset()
@@ -137,7 +137,7 @@ fn tokenize_media_query(input : String) -> Array[String] {
       if paren_depth == 0 {
         in_paren = false
         let s = current.to_string().trim().to_string()
-        if not(s.is_empty()) {
+        if !s.is_empty() {
           tokens.push(s)
         }
         current.reset()
@@ -147,7 +147,7 @@ fn tokenize_media_query(input : String) -> Array[String] {
         current.write_char(c)
       } else {
         let s = current.to_string().trim().to_string()
-        if not(s.is_empty()) {
+        if !s.is_empty() {
           tokens.push(s)
         }
         current.reset()
@@ -157,7 +157,7 @@ fn tokenize_media_query(input : String) -> Array[String] {
     }
   }
   let final_str = current.to_string().trim().to_string()
-  if not(final_str.is_empty()) {
+  if !final_str.is_empty() {
     tokens.push(final_str)
   }
   tokens
@@ -363,7 +363,7 @@ fn parse_dimension_value(s : String) -> (Double, String)? {
     let num_str = s.unsafe_substring(start=0, end=num_end)
     let unit = s.unsafe_substring(start=num_end, end=s.length())
     try {
-      let value = @strconv.parse_double(num_str)
+      let value = @string.parse_double(num_str)
       Some((value, unit))
     } catch {
       _ => None
@@ -376,7 +376,7 @@ fn parse_dimension_value(s : String) -> (Double, String)? {
 ///|
 /// Parse a number value
 fn parse_number_value(s : String) -> Double? {
-  Some(@strconv.parse_double(s)) catch {
+  Some(@string.parse_double(s)) catch {
     _ => None
   }
 }
@@ -384,7 +384,7 @@ fn parse_number_value(s : String) -> Double? {
 ///|
 /// Parse an integer value
 fn parse_int(s : String) -> Int? {
-  Some(@strconv.parse_int(s)) catch {
+  Some(@string.parse_int(s)) catch {
     _ => None
   }
 }

@@ -3,7 +3,16 @@ enum ArtifactMode {
   Layout
   Image
   Landmarks
-} derive(Show)
+} derive(Debug)
+
+///|
+pub impl Show for ArtifactMode with output(self, logger) {
+  match self {
+    Layout => logger.write_string("Layout")
+    Image => logger.write_string("Image")
+    Landmarks => logger.write_string("Landmarks")
+  }
+}
 
 ///|
 struct Options {
@@ -302,10 +311,10 @@ fn validate_options(options : Options) -> String? {
     Some(error) => return Some(error)
     None => ()
   }
-  if not(options.stdin_html) && options.html_file.is_empty() {
+  if !options.stdin_html && options.html_file.is_empty() {
     return Some("Either --html-file or --stdin-html is required")
   }
-  if options.stdin_html && not(options.html_file.is_empty()) {
+  if options.stdin_html && !options.html_file.is_empty() {
     return Some("Choose either --html-file or --stdin-html")
   }
   if options.stdin_html && options.stdin_css {

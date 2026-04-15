@@ -1,23 +1,18 @@
 import {
   "moonbitlang/async/io",
-  "moonbitlang/core/strconv",
+  "moonbitlang/core/string",
   "mizchi/crater/html",
-  "mizchi/crater/css/computed",
-  "mizchi/crater/css/parser",
-  "mizchi/crater/css/selector",
-  "mizchi/crater/css/cascade",
-  "mizchi/crater/css/media",
-  "mizchi/crater/layout/node",
-  "mizchi/crater/paint",
+  "mizchi/crater/css",
+  "mizchi/crater/layout" @node,
+  "mizchi/crater/paint/node_bridge" @paint_node,
   "mizchi/crater/style",
   "mizchi/crater/types",
-  "mizchi/crater/layout/dispatch",
   "mizchi/crater/x/kitty",
   "mizchi/crater/x/image",
 }
 
 import {
-  "mizchi/crater/layout/inline",
+  "mizchi/crater/layout/testing" @layout_test,
 } for "test"
 
 import {

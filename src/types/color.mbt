@@ -113,18 +113,48 @@ pub impl Eq for Color with equal(self, other) {
 pub(all) struct GradientStop {
   color : Color
   position : Double // 0.0-1.0
-} derive(Show)
+}
 
 ///|
 /// Linear gradient with angle and color stops
 pub(all) struct LinearGradient {
   angle_deg : Double // Angle in degrees (0 = to top, 90 = to right, 180 = to bottom)
   stops : Array[GradientStop]
-} derive(Show)
+}
 
 ///|
 /// Background image (currently only linear-gradient)
 pub(all) enum BackgroundImage {
   None
   Gradient(LinearGradient)
-} derive(Show)
+}
+
+///|
+pub impl Show for GradientStop with output(self, logger) {
+  logger.write_string("{color: ")
+  logger.write_string(self.color.to_string())
+  logger.write_string(", position: ")
+  logger.write_string(self.position.to_string())
+  logger.write_string("}")
+}
+
+///|
+pub impl Show for LinearGradient with output(self, logger) {
+  logger.write_string("{angle_deg: ")
+  logger.write_string(self.angle_deg.to_string())
+  logger.write_string(", stops: ")
+  logger.write_string(self.stops.to_string())
+  logger.write_string("}")
+}
+
+///|
+pub impl Show for BackgroundImage with output(self, logger) {
+  match self {
+    None => logger.write_string("None")
+    Gradient(gradient) => {
+      logger.write_string("Gradient(")
+      logger.write_string(gradient.to_string())
+      logger.write_string(")")
+    }
+  }
+}

@@ -116,7 +116,7 @@ pub fn compute_accessible_description_with_label(
       let parts : Array[String] = []
       for id in ids.split(" ") {
         let id_str = id.to_string().trim().to_string()
-        if not(id_str.is_empty()) {
+        if !id_str.is_empty() {
           match find_by_id(id_str) {
             Some(ref_elem) => {
               let text = compute_name_step(
@@ -126,7 +126,7 @@ pub fn compute_accessible_description_with_label(
                 find_label_for_id,
                 None,
               )
-              if not(text.is_empty()) {
+              if !text.is_empty() {
                 parts.push(text)
               }
             }
@@ -143,7 +143,7 @@ pub fn compute_accessible_description_with_label(
     Option::None =>
       // Fall back to title attribute
       match element.attributes.get("title") {
-        Some(title) if not(title.is_empty()) => Some(title)
+        Some(title) if !title.is_empty() => Some(title)
         _ => Option::None
       }
   }
@@ -163,7 +163,7 @@ fn compute_name_step(
   encapsulating_label : @html.Element?,
 ) -> String {
   // Step 1: Skip hidden elements (unless referenced)
-  if not(ctx.is_referencing) && is_hidden(element) {
+  if !ctx.is_referencing && is_hidden(element) {
     return ""
   }
 
@@ -203,12 +203,12 @@ fn compute_name_steps(
 ) -> String {
   // Step 2A: aria-labelledby
   match element.attributes.get("aria-labelledby") {
-    Some(ids) if not(ctx.is_referencing) => {
+    Some(ids) if !ctx.is_referencing => {
       let ref_ctx = ctx.with_referencing(true)
       let parts : Array[String] = []
       for id in ids.split(" ") {
         let id_str = id.to_string().trim().to_string()
-        if not(id_str.is_empty()) {
+        if !id_str.is_empty() {
           match find_by_id(id_str) {
             Some(ref_elem) => {
               let text = compute_name_step(
@@ -218,7 +218,7 @@ fn compute_name_steps(
                 find_label_for_id,
                 None,
               )
-              if not(text.is_empty()) {
+              if !text.is_empty() {
                 parts.push(text)
               }
             }
@@ -226,7 +226,7 @@ fn compute_name_steps(
           }
         }
       }
-      if not(parts.is_empty()) {
+      if !parts.is_empty() {
         return parts.join(" ")
       }
     }
@@ -235,8 +235,7 @@ fn compute_name_steps(
 
   // Step 2B: aria-label
   match element.attributes.get("aria-label") {
-    Some(label) if not(label.trim().is_empty()) =>
-      return label.trim().to_string()
+    Some(label) if !label.trim().is_empty() => return label.trim().to_string()
     _ => ()
   }
 
@@ -244,7 +243,7 @@ fn compute_name_steps(
   let native_text = compute_native_text_alternative(
     element, find_label_for_id, encapsulating_label,
   )
-  if not(native_text.is_empty()) {
+  if !native_text.is_empty() {
     return native_text
   }
 
@@ -254,7 +253,7 @@ fn compute_name_steps(
     match find_first_heading(element) {
       Some(heading) => {
         let heading_text = extract_all_text(heading)
-        if not(heading_text.is_empty()) {
+        if !heading_text.is_empty() {
           return heading_text
         }
       }
@@ -267,21 +266,21 @@ fn compute_name_steps(
     let content = compute_text_content(
       element, ctx, find_by_id, find_label_for_id,
     )
-    if not(content.is_empty()) {
+    if !content.is_empty() {
       return content
     }
   }
 
   // Step 2E: Tooltip (title attribute)
   match element.attributes.get("title") {
-    Some(title) if not(title.is_empty()) => return title
+    Some(title) if !title.is_empty() => return title
     _ => ()
   }
 
   // Special case: select element without label or title - use selected option
   if element.tag.to_lower() == "select" {
     let option_text = find_selected_option_text(element)
-    if not(option_text.is_empty()) {
+    if !option_text.is_empty() {
       return option_text
     }
   }
@@ -299,8 +298,7 @@ fn compute_name_steps_skip_labelledby(
 ) -> String {
   // Step 2B: aria-label (skip step 2A)
   match element.attributes.get("aria-label") {
-    Some(label) if not(label.trim().is_empty()) =>
-      return label.trim().to_string()
+    Some(label) if !label.trim().is_empty() => return label.trim().to_string()
     _ => ()
   }
 
@@ -308,7 +306,7 @@ fn compute_name_steps_skip_labelledby(
   let native_text = compute_native_text_alternative(
     element, find_label_for_id, encapsulating_label,
   )
-  if not(native_text.is_empty()) {
+  if !native_text.is_empty() {
     return native_text
   }
 
@@ -318,14 +316,14 @@ fn compute_name_steps_skip_labelledby(
     let content = compute_text_content(
       element, ctx, find_by_id, find_label_for_id,
     )
-    if not(content.is_empty()) {
+    if !content.is_empty() {
       return content
     }
   }
 
   // Step 2E: Tooltip
   match element.attributes.get("title") {
-    Some(title) if not(title.is_empty()) => return title
+    Some(title) if !title.is_empty() => return title
     _ => ()
   }
   ""
@@ -395,7 +393,7 @@ fn compute_input_name(
     // Button types: use value
     "button" | "submit" | "reset" =>
       match element.attributes.get("value") {
-        Some(value) if not(value.is_empty()) => value
+        Some(value) if !value.is_empty() => value
         _ =>
           // Default labels for submit/reset
           match input_type {
@@ -408,10 +406,10 @@ fn compute_input_name(
     // Image type: alt, then value
     "image" =>
       match element.attributes.get("alt") {
-        Some(alt) if not(alt.is_empty()) => alt
+        Some(alt) if !alt.is_empty() => alt
         _ =>
           match element.attributes.get("value") {
-            Some(value) if not(value.is_empty()) => value
+            Some(value) if !value.is_empty() => value
             _ => "Submit" // default for image input
           }
       }
@@ -582,7 +580,7 @@ fn get_embedded_control_value(element : @html.Element) -> String? {
     // Textbox: use value attribute
     Textbox | SearchBox =>
       match element.attributes.get("value") {
-        Some(value) if not(value.is_empty()) => Some(value)
+        Some(value) if !value.is_empty() => Some(value)
         _ => None
       }
 
@@ -615,12 +613,12 @@ fn get_embedded_control_value(element : @html.Element) -> String? {
         // For non-select combobox (input, div, span with role="combobox")
         // Use value attribute, or text content for non-input elements
         match element.attributes.get("value") {
-          Some(value) if not(value.is_empty()) => Some(value)
+          Some(value) if !value.is_empty() => Some(value)
           _ =>
             // For span/div with role="combobox", use text content
             if tag != "input" {
               let text = extract_all_text(element)
-              if not(text.is_empty()) {
+              if !text.is_empty() {
                 Some(text)
               } else {
                 None
@@ -634,14 +632,14 @@ fn get_embedded_control_value(element : @html.Element) -> String? {
     // Slider/Spinbutton: use aria-valuetext, aria-valuenow, or value attribute
     Slider | SpinButton =>
       match element.attributes.get("aria-valuetext") {
-        Some(text) if not(text.is_empty()) => Some(text)
+        Some(text) if !text.is_empty() => Some(text)
         _ =>
           match element.attributes.get("aria-valuenow") {
-            Some(value) if not(value.is_empty()) => Some(value)
+            Some(value) if !value.is_empty() => Some(value)
             _ =>
               // For native range/number inputs, use value attribute
               match element.attributes.get("value") {
-                Some(value) if not(value.is_empty()) => Some(value)
+                Some(value) if !value.is_empty() => Some(value)
                 _ => None
               }
           }
@@ -678,7 +676,7 @@ fn compute_text_content(
     Some(ids) =>
       for id in ids.split(" ") {
         let id_str = id.to_string().trim().to_string()
-        if not(id_str.is_empty()) {
+        if !id_str.is_empty() {
           match find_by_id(id_str) {
             Some(owned_elem) => {
               // Skip if the owned element is hidden from all users
@@ -691,7 +689,7 @@ fn compute_text_content(
               }
               // Get text from owned element - add space before aria-owns content
               let owned_text = extract_all_text_raw(owned_elem)
-              if not(owned_text.is_empty()) {
+              if !owned_text.is_empty() {
                 buf.write_char(' ')
                 buf.write_string(owned_text)
               }
@@ -717,7 +715,7 @@ fn compute_text_content_recursive(
     match child {
       @html.Text(text) =>
         // Skip text if we're in a visibility:hidden context
-        if not(in_hidden_visibility) {
+        if !in_hidden_visibility {
           // Write text as-is, preserving original whitespace
           buf.write_string(text)
         }
@@ -741,9 +739,9 @@ fn compute_text_content_recursive(
 
         // Handle image elements - use alt text (only if visible)
         let tag = child_elem.tag.to_lower()
-        if (tag == "img" || tag == "area") && not(child_hidden_visibility) {
+        if (tag == "img" || tag == "area") && !child_hidden_visibility {
           match child_elem.attributes.get("alt") {
-            Some(alt) if not(alt.is_empty()) => {
+            Some(alt) if !alt.is_empty() => {
               // Add space before image alt if buffer not empty and doesn't end with space
               ensure_space_separator(buf)
               buf.write_string(alt)
@@ -754,7 +752,7 @@ fn compute_text_content_recursive(
         }
 
         // Step 2F: Check for embedded control value first (only if visible)
-        if not(child_hidden_visibility) {
+        if !child_hidden_visibility {
           match get_embedded_control_value(child_elem) {
             Some(value) => {
               ensure_space_separator(buf)
@@ -767,9 +765,9 @@ fn compute_text_content_recursive(
 
         // Per accname spec: when computing text content from descendants,
         // if a child element has aria-label, use that instead of its content
-        if not(child_hidden_visibility) {
+        if !child_hidden_visibility {
           match child_elem.attributes.get("aria-label") {
-            Some(label) if not(label.trim().is_empty()) => {
+            Some(label) if !label.trim().is_empty() => {
               ensure_space_separator(buf)
               buf.write_string(label.trim().to_string())
               continue
@@ -840,7 +838,7 @@ fn extract_text_recursive(element : @html.Element, buf : StringBuilder) -> Unit 
         let tag = child_elem.tag.to_lower()
         if tag == "img" || tag == "area" {
           match child_elem.attributes.get("alt") {
-            Some(alt) if not(alt.is_empty()) => buf.write_string(alt)
+            Some(alt) if !alt.is_empty() => buf.write_string(alt)
             _ => ()
           }
         } else {
@@ -858,7 +856,7 @@ fn normalize_whitespace(s : String) -> String {
   let mut last_was_space = true // Start true to skip leading whitespace
   for c in s {
     if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
-      if not(last_was_space) {
+      if !last_was_space {
         chars.push(' ')
         last_was_space = true
       }

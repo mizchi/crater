@@ -82,6 +82,21 @@ pub fn LayoutTree::find_node(self : LayoutTree, uid : Int) -> LayoutNode? {
 }
 
 ///|
+/// Find a node by string id
+pub fn LayoutTree::find_node_by_id(
+  self : LayoutTree,
+  node_id : String,
+) -> LayoutNode? {
+  let mut result : LayoutNode? = None
+  self.node_map.each(fn(_uid, node) {
+    if node.id == node_id {
+      result = Some(node)
+    }
+  })
+  result
+}
+
+///|
 /// Get the resource registry for external management
 /// This allows decoupling resource management from LayoutTree
 pub fn LayoutTree::get_resources(self : LayoutTree) -> ResourceRegistry {
@@ -107,7 +122,7 @@ fn LayoutTree::propagate_children_dirty(
 ) -> Unit {
   let mut current_uid = from_uid
   let mut done = false
-  while not(done) {
+  while !done {
     match self.parent_map.get(current_uid) {
       Some(parent_uid) =>
         match self.node_map.get(parent_uid) {

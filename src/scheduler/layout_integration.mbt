@@ -11,7 +11,7 @@
 pub struct LayoutManager {
   scheduler : Scheduler
   /// レイアウトツリー (初期化後に設定)
-  mut layout_tree : @tree.LayoutTree?
+  mut layout_tree : @layout.LayoutTree?
   /// 最後のレイアウト結果
   mut last_layout : @types.Layout?
   /// レイアウトパス統計
@@ -41,7 +41,7 @@ pub fn LayoutManager::new(scheduler : Scheduler) -> LayoutManager {
 /// LayoutTree を設定
 pub fn LayoutManager::set_tree(
   self : LayoutManager,
-  tree : @tree.LayoutTree,
+  tree : @layout.LayoutTree,
 ) -> Unit {
   self.layout_tree = Some(tree)
   self.last_layout = None
@@ -51,11 +51,13 @@ pub fn LayoutManager::set_tree(
 /// Node から LayoutTree を構築して設定
 pub fn LayoutManager::build_tree(
   self : LayoutManager,
-  root : @node.Node,
+  root : @layout.Node,
   viewport_width : Double,
   viewport_height : Double,
 ) -> Unit {
-  let tree = @tree.LayoutTree::from_node(root, viewport_width, viewport_height)
+  let tree = @layout.layout_tree_from_node(
+    root, viewport_width, viewport_height,
+  )
   self.set_tree(tree)
 }
 
@@ -67,7 +69,7 @@ pub fn LayoutManager::build_tree_from_html(
   viewport_width : Double,
   viewport_height : Double,
 ) -> Unit {
-  let tree = @tree.LayoutTree::from_html_document(
+  let tree = @layout_html_tree.layout_tree_from_html_document(
     doc, viewport_width, viewport_height,
   )
   self.set_tree(tree)
@@ -75,7 +77,7 @@ pub fn LayoutManager::build_tree_from_html(
 
 ///|
 /// LayoutTree への参照を取得
-pub fn LayoutManager::get_tree(self : LayoutManager) -> @tree.LayoutTree? {
+pub fn LayoutManager::get_tree(self : LayoutManager) -> @layout.LayoutTree? {
   self.layout_tree
 }
 
@@ -212,10 +214,10 @@ pub fn LayoutManager::mark_node_dirty(
 pub fn LayoutManager::update_node_style(
   self : LayoutManager,
   node_id : String,
-  values : @cascade.CascadedValues,
+  values : @css.CascadedValues,
 ) -> Bool {
   match self.layout_tree {
-    Some(tree) => tree.update_node_style(node_id, values)
+    Some(tree) => @layout_style.update_node_style(tree, node_id, values)
     None => false
   }
 }
@@ -224,10 +226,10 @@ pub fn LayoutManager::update_node_style(
 /// 複数ノードのスタイルを一括更新
 pub fn LayoutManager::batch_update_styles(
   self : LayoutManager,
-  updates : Array[(String, @cascade.CascadedValues)],
+  updates : Array[(String, @css.CascadedValues)],
 ) -> Int {
   match self.layout_tree {
-    Some(tree) => tree.batch_update_styles(updates)
+    Some(tree) => @layout_style.batch_update_styles(tree, updates)
     None => 0
   }
 }
@@ -240,9 +242,9 @@ pub fn LayoutManager::batch_update_styles(
 /// 画像デコードタスクをスケジュール
 pub fn LayoutManager::schedule_image_decode(
   self : LayoutManager,
-  resource_id : @tree.ResourceId,
+  resource_id : @layout.ResourceId,
 ) -> TaskId {
-  let @tree.ResourceId(rid) = resource_id
+  let @layout.ResourceId(rid) = resource_id
   let task_id = self.scheduler.enqueue(DecodeImage(resource_id=rid), Parallel)
   self.image_tasks[rid] = task_id
   task_id
@@ -268,7 +270,7 @@ pub fn LayoutManager::register_and_decode_image(
     }
     None =>
       {
-        resource_id: @tree.ResourceId(0),
+        resource_id: @layout.ResourceId(0),
         decode_task: TaskId(0),
         registered: false,
       }
@@ -278,7 +280,7 @@ pub fn LayoutManager::register_and_decode_image(
 ///|
 /// 画像登録結果
 pub(all) struct ImageRegistration {
-  resource_id : @tree.ResourceId
+  resource_id : @layout.ResourceId
   decode_task : TaskId
   registered : Bool
 }
@@ -287,7 +289,7 @@ pub(all) struct ImageRegistration {
 /// 画像デコード完了時の処理
 pub fn LayoutManager::on_image_decoded(
   self : LayoutManager,
-  resource_id : @tree.ResourceId,
+  resource_id : @layout.ResourceId,
   width : Double,
   height : Double,
 ) -> TaskId? {
@@ -305,7 +307,7 @@ pub fn LayoutManager::on_image_decoded(
 /// 画像ロード失敗時の処理
 pub fn LayoutManager::on_image_failed(
   self : LayoutManager,
-  resource_id : @tree.ResourceId,
+  resource_id : @layout.ResourceId,
 ) -> TaskId? {
   match self.layout_tree {
     Some(tree) => {
@@ -320,7 +322,7 @@ pub fn LayoutManager::on_image_failed(
 /// 保留中の画像リソースを取得
 pub fn LayoutManager::get_pending_images(
   self : LayoutManager,
-) -> Array[@tree.ResourceId] {
+) -> Array[@layout.ResourceId] {
   match self.layout_tree {
     Some(tree) => tree.get_pending_resources()
     None => []
@@ -455,7 +457,7 @@ pub fn DocumentRenderCoordinator::on_stylesheet_fetched(
   let result = self.style_coordinator.on_stylesheet_fetched(css_source)
 
   // スタイル準備完了ならレイアウトをスケジュール
-  if self.style_coordinator.is_ready_for_style() && not(self.ready_for_render) {
+  if self.style_coordinator.is_ready_for_style() && !self.ready_for_render {
     let _ = self.layout_manager.schedule_layout()
     self.ready_for_render = true
   }

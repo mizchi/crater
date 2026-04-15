@@ -38,7 +38,7 @@ fn apply_initial_scroll_snap(
   if layout.children.is_empty() {
     return layout
   }
-  if not(node.style.scroll_snap_type.is_mandatory()) {
+  if !node.style.scroll_snap_type.is_mandatory() {
     return layout
   }
 
@@ -46,7 +46,7 @@ fn apply_initial_scroll_snap(
     overflow_creates_scroll_container(node.style.overflow_x)
   let supports_snap_y = node.style.scroll_snap_type.snaps_y() &&
     overflow_creates_scroll_container(node.style.overflow_y)
-  if not(supports_snap_x) && not(supports_snap_y) {
+  if !supports_snap_x && !supports_snap_y {
     return layout
   }
 

@@ -1,14 +1,13 @@
 import {
   "moonbitlang/core/hashset",
   "mizchi/crater/html",
-  "mizchi/crater/css/cascade",
-  "mizchi/crater/css/selector",
-  "mizchi/crater/css/parser",
-  "mizchi/crater/layout/tree",
-  "mizchi/crater/layout/node",
+  "mizchi/crater/css",
+  "mizchi/crater/layout",
+  "mizchi/crater/layout/html_tree" @layout_html_tree,
+  "mizchi/crater/layout/style_bridge" @layout_style,
   "mizchi/crater/types",
 }
 
 import {
-  "mizchi/crater/layout/dispatch",
+  "mizchi/crater/layout",
 } for "wbtest"

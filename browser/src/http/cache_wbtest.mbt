@@ -148,13 +148,13 @@ test "MemoryCacheBackend: store and lookup" {
   )
   cache.store(entry)
   let found = cache.lookup("https://example.test/resource")
-  inspect(!found.is_empty(), content="true")
+  inspect(found is Some(_), content="true")
 }
 
 ///|
 test "MemoryCacheBackend: lookup miss" {
   let cache = MemoryCacheBackend::new(max_entries=10)
-  inspect(cache.lookup("https://missing.com").is_empty(), content="true")
+  inspect(cache.lookup("https://missing.com") is None, content="true")
 }
 
 ///|
@@ -164,10 +164,7 @@ test "MemoryCacheBackend: remove" {
     make_entry(directives=CacheDirectives::default(), stored_at=1000.0),
   )
   cache.remove("https://example.test/resource")
-  inspect(
-    cache.lookup("https://example.test/resource").is_empty(),
-    content="true",
-  )
+  inspect(cache.lookup("https://example.test/resource") is None, content="true")
 }
 
 ///|
@@ -177,10 +174,7 @@ test "MemoryCacheBackend: clear" {
     make_entry(directives=CacheDirectives::default(), stored_at=1000.0),
   )
   cache.clear()
-  inspect(
-    cache.lookup("https://example.test/resource").is_empty(),
-    content="true",
-  )
+  inspect(cache.lookup("https://example.test/resource") is None, content="true")
 }
 
 ///|
@@ -201,9 +195,9 @@ test "MemoryCacheBackend: eviction at max_entries" {
   cache.store(e1)
   cache.store(e2)
   cache.store(e3) // should evict e1 (oldest)
-  inspect(cache.lookup("https://a.com/1").is_empty(), content="true")
-  inspect(!cache.lookup("https://a.com/2").is_empty(), content="true")
-  inspect(!cache.lookup("https://a.com/3").is_empty(), content="true")
+  inspect(cache.lookup("https://a.com/1") is None, content="true")
+  inspect(cache.lookup("https://a.com/2") is Some(_), content="true")
+  inspect(cache.lookup("https://a.com/3") is Some(_), content="true")
 }
 
 ///|
@@ -256,7 +250,7 @@ test "cached_fetch: no-store skips cache" {
     cache~,
     fetcher~,
   )
-  inspect(cache.lookup("https://example.com/ns.css").is_empty(), content="true")
+  inspect(cache.lookup("https://example.com/ns.css") is None, content="true")
 }
 
 ///|
@@ -309,7 +303,7 @@ test "cached_fetch: non-GET bypasses cache" {
     cache~,
     fetcher~,
   )
-  inspect(cache.lookup("https://example.com/api").is_empty(), content="true")
+  inspect(cache.lookup("https://example.com/api") is None, content="true")
 }
 
 // ============================================================
@@ -390,10 +384,7 @@ test "cached_fetch: 404 response is not cached" {
     cache~,
     fetcher~,
   )
-  inspect(
-    cache.lookup("https://example.com/missing").is_empty(),
-    content="true",
-  )
+  inspect(cache.lookup("https://example.com/missing") is None, content="true")
 }
 
 ///|
@@ -411,7 +402,7 @@ test "cached_fetch: 500 response is not cached" {
     cache~,
     fetcher~,
   )
-  inspect(cache.lookup("https://example.com/err").is_empty(), content="true")
+  inspect(cache.lookup("https://example.com/err") is None, content="true")
 }
 
 ///|
@@ -436,7 +427,7 @@ test "cached_fetch: 301 response is cached" {
     cache~,
     fetcher~,
   )
-  inspect(cache.lookup("https://example.com/old").is_empty(), content="false")
+  inspect(cache.lookup("https://example.com/old") is None, content="false")
 }
 
 ///|
@@ -599,7 +590,7 @@ test "cache attack: HEAD response should not pollute GET cache" {
     fetcher~,
   )
   // HEAD should bypass cache entirely
-  inspect(cache.lookup("https://victim.test/secret").is_empty(), content="true")
+  inspect(cache.lookup("https://victim.test/secret") is None, content="true")
 }
 
 ///|
@@ -610,7 +601,11 @@ test "cache attack: DELETE response should not be cached" {
     _url : String,
     _options : FetchOptions,
   ) -> HttpResponse raise HttpError {
-    { status: 200, headers: { "cache-control": "max-age=300" }, body: "deleted" }
+    {
+      status: 200,
+      headers: { "cache-control": "max-age=300" },
+      body: "deleted",
+    }
   }
   let opts : FetchOptions = { ..FetchOptions::default(), http_method: "DELETE" }
   let _ = cached_fetch(
@@ -619,7 +614,7 @@ test "cache attack: DELETE response should not be cached" {
     cache~,
     fetcher~,
   )
-  inspect(cache.lookup("https://victim.test/resource").is_empty(), content="true")
+  inspect(cache.lookup("https://victim.test/resource") is None, content="true")
 }
 
 ///|
@@ -799,7 +794,10 @@ test "WCD: private response with .css suffix must not be cached" {
   ) -> HttpResponse raise HttpError {
     {
       status: 200,
-      headers: { "cache-control": "no-store, private", "content-type": "text/html" },
+      headers: {
+        "cache-control": "no-store, private",
+        "content-type": "text/html",
+      },
       body: "<html>secret account page</html>",
     }
   }
@@ -811,7 +809,7 @@ test "WCD: private response with .css suffix must not be cached" {
   )
   // no-store → must not be cached regardless of URL pattern
   inspect(
-    cache.lookup("https://example.com/account/settings/evil.css").is_empty(),
+    cache.lookup("https://example.com/account/settings/evil.css") is None,
     content="true",
   )
 }
@@ -869,10 +867,10 @@ test "cache poisoning: CRLF in Cache-Control header value" {
 ///|
 /// Cache Poisoning: Cache-Control with null byte injection
 test "cache poisoning: null byte in Cache-Control" {
-  let d = parse_cache_control("max-age=300\x00no-store")
-  // \x00 in the middle — should not silently truncate and parse max-age=300
-  // Actually "max-age=300\x00no-store" is one comma-separated token
-  // trim → to_lower → has_prefix("max-age=") → value_str contains \x00 → rejected
+  let d = parse_cache_control("max-age=300\u0000no-store")
+  // \u0000 in the middle — should not silently truncate and parse max-age=300
+  // Actually "max-age=300\u0000no-store" is one comma-separated token
+  // trim → to_lower → has_prefix("max-age=") → value_str contains \u0000 → rejected
   inspect(d.max_age, content="None")
 }
 
@@ -1077,7 +1075,7 @@ test "supply chain: must-revalidate entry serves fresh within max-age" {
   let r = cached_fetch(
     url="https://cdn.test/lib.js",
     options=FetchOptions::default(),
-    cache=cache,
+    cache~,
     fetcher=hit_fetcher,
   )
   // Within max-age → served from cache (this is correct per spec)
@@ -1151,7 +1149,7 @@ test "eviction attack: flooding evicts oldest entries" {
   }
   // Victim's entry (oldest) should be evicted
   inspect(
-    cache.lookup("https://victim.test/important.js").is_empty(),
+    cache.lookup("https://victim.test/important.js") is None,
     content="true",
   )
 }
@@ -1177,8 +1175,8 @@ test "boundary: max_entries=1 only keeps latest entry" {
   let e2 : CacheEntry = { ..e1, url: "https://a.test/2", stored_at: 200.0 }
   cache.store(e1)
   cache.store(e2)
-  inspect(cache.lookup("https://a.test/1").is_empty(), content="true")
-  inspect(cache.lookup("https://a.test/2").is_empty(), content="false")
+  inspect(cache.lookup("https://a.test/1") is None, content="true")
+  inspect(cache.lookup("https://a.test/2") is None, content="false")
 }
 
 ///|
@@ -1201,8 +1199,8 @@ test "boundary: update same URL does not evict" {
   // Update existing entry — should NOT evict the other
   let e1_updated : CacheEntry = { ..e1, body: "v2", stored_at: 300.0 }
   cache.store(e1_updated)
-  inspect(cache.lookup("https://a.test/1").is_empty(), content="false")
-  inspect(cache.lookup("https://a.test/2").is_empty(), content="false")
+  inspect(cache.lookup("https://a.test/1") is None, content="false")
+  inspect(cache.lookup("https://a.test/2") is None, content="false")
   match cache.lookup("https://a.test/1") {
     Some(e) => inspect(e.body, content="v2")
     None => assert_true(false)
@@ -1215,7 +1213,7 @@ test "boundary: remove from empty cache is safe" {
   let cache = MemoryCacheBackend::new(max_entries=10)
   cache.remove("https://nonexistent.test/x")
   // No panic
-  inspect(cache.lookup("https://nonexistent.test/x").is_empty(), content="true")
+  inspect(cache.lookup("https://nonexistent.test/x") is None, content="true")
 }
 
 ///|
@@ -1223,7 +1221,7 @@ test "boundary: remove from empty cache is safe" {
 test "boundary: clear empty cache is safe" {
   let cache = MemoryCacheBackend::new(max_entries=10)
   cache.clear()
-  inspect(cache.lookup("https://any.test").is_empty(), content="true")
+  inspect(cache.lookup("https://any.test") is None, content="true")
 }
 
 ///|
@@ -1242,7 +1240,7 @@ test "boundary: store-remove-lookup returns None" {
   }
   cache.store(e)
   cache.remove("https://a.test/1")
-  inspect(cache.lookup("https://a.test/1").is_empty(), content="true")
+  inspect(cache.lookup("https://a.test/1") is None, content="true")
 }
 
 ///|
@@ -1317,7 +1315,7 @@ test "boundary: very long URL as cache key" {
     stored_at: 100.0,
   }
   cache.store(e)
-  inspect(cache.lookup(long_url).is_empty(), content="false")
+  inspect(cache.lookup(long_url) is None, content="false")
 }
 
 ///|
@@ -1403,7 +1401,7 @@ test "boundary: fetcher error propagates through cached_fetch" {
     _ => assert_true(false)
   }
   // Error should NOT be cached
-  inspect(cache.lookup("https://down.test/api").is_empty(), content="true")
+  inspect(cache.lookup("https://down.test/api") is None, content="true")
 }
 
 ///|

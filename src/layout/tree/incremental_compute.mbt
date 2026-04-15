@@ -108,7 +108,7 @@ fn can_use_cache(node : LayoutNode, constraint : ConstraintSpace) -> Bool {
       (constraint.available_width - cache.constraint.available_width).abs() <
       0.001
   }
-  if not(width_ok) {
+  if !width_ok {
     return false
   }
 
@@ -137,7 +137,7 @@ fn can_use_cache(node : LayoutNode, constraint : ConstraintSpace) -> Bool {
         _ => false
       }
   }
-  if not(height_ok) {
+  if !height_ok {
     return false
   }
 
@@ -179,7 +179,7 @@ pub fn compute_node(
   stats.nodes_computed = stats.nodes_computed + 1
 
   // Fast path: no dirty flags and constraint matches cache
-  if can_use_cache(node, constraint) && not(node.children_dirty) {
+  if can_use_cache(node, constraint) && !node.children_dirty {
     stats.cache_hits = stats.cache_hits + 1
     match node.cached_layout {
       Some(cache) => return cache.result
@@ -190,7 +190,7 @@ pub fn compute_node(
   // Optimization: if constraint matches and children_dirty but
   // all children's cached sizes match cached layout's children sizes,
   // we can use the cached result (children didn't actually change size)
-  if node.children_dirty && not(node.dirty) && can_use_cache(node, constraint) {
+  if node.children_dirty && !node.dirty && can_use_cache(node, constraint) {
     match node.cached_layout {
       Some(cache) =>
         if children_sizes_match(node, cache.result) {
@@ -257,8 +257,7 @@ fn try_cache_by_uid(uid : Int, ctx : @types.LayoutContext) -> @types.Layout? {
         ctx.available_height,
       )
       // Check cache
-      if can_use_cache(layout_node, constraint) &&
-        not(layout_node.children_dirty) {
+      if can_use_cache(layout_node, constraint) && !layout_node.children_dirty {
         match global_cache_stats.val {
           Some(stats) => stats.cache_hits = stats.cache_hits + 1
           None => ()

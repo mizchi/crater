@@ -27,7 +27,7 @@ test "intrinsic_percent_replaced_wpt_style" {
   inspect(canvas.style.aspect_ratio, content="Some(1)")
 
   // Compute layout
-  @dispatch.setup()
+  @node.setup()
   let layout_ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: None,
@@ -37,7 +37,7 @@ test "intrinsic_percent_replaced_wpt_style" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @dispatch.compute_layout(root, layout_ctx)
+  let layout = @node.compute_layout_in_context(root, layout_ctx)
   let float_layout = layout.children[0]
   let canvas_layout = float_layout.children[0]
 
@@ -620,7 +620,7 @@ test "display_contents_inside_closed_details_suppresses_non_summary_text" {
   guard contains_trimmed_text(root, "summary") else {
     fail("closed details should keep summary text")
   }
-  guard not(contains_trimmed_text(root, "details")) else {
+  guard !contains_trimmed_text(root, "details") else {
     fail("closed details should suppress non-summary descendants")
   }
 }
@@ -3130,7 +3130,7 @@ test "whitespace_between_css_inline_blocks_is_preserved" {
   let wrapper = layout.children[0]
   let inline_blocks : Array[@types.Layout] = []
   for child in wrapper.children {
-    if not(child.id.has_prefix("#text")) {
+    if !child.id.has_prefix("#text") {
       inline_blocks.push(child)
     }
   }
@@ -3258,7 +3258,7 @@ test "ruby_internal_elements_default_to_inline_display" {
   let wrapper = root.children[0]
   let ruby_children : Array[@node.Node] = []
   for child in wrapper.children {
-    if not(child.id.has_prefix("#text")) {
+    if !child.id.has_prefix("#text") {
       ruby_children.push(child)
     }
   }
@@ -3336,7 +3336,7 @@ test "ruby_with_rt_non_text_child_keeps_own_box" {
 
 ///|
 test "grouped_ruby_selector_applies_font_size_to_rt_and_rtc" {
-  let grouped_stylesheet = @parser.parse_stylesheet(
+  let grouped_stylesheet = @css.parse_stylesheet(
     "rb, rbc, rt, rtc { font-size: 2em; }",
   )
   inspect(grouped_stylesheet.rules.length(), content="4")
@@ -3344,8 +3344,8 @@ test "grouped_ruby_selector_applies_font_size_to_rt_and_rtc" {
   inspect(grouped_stylesheet.rules[1].declarations.length(), content="1")
   inspect(grouped_stylesheet.rules[2].declarations.length(), content="1")
   inspect(grouped_stylesheet.rules[3].declarations.length(), content="1")
-  let rt_selector = @selector.Element::new("rt")
-  let cascaded = @cascade.cascade_element(rt_selector, [grouped_stylesheet], [])
+  let rt_selector = @css.Element::new("rt")
+  let cascaded = @css.cascade_element(rt_selector, [grouped_stylesheet], [])
   inspect(cascaded.get_value("font-size"), content="Some(\"2em\")")
 
   let html_str =
@@ -3356,9 +3356,9 @@ test "grouped_ruby_selector_applies_font_size_to_rt_and_rtc" {
     #|<div><ruby><rb>RB</rb><rt>RT</rt><rtc>RTC</rtc></ruby></div>
   let doc = @html.parse_document(html_str)
   inspect(doc.stylesheets.length(), content="1")
-  let extracted_stylesheet = @parser.parse_stylesheet(doc.stylesheets[0])
+  let extracted_stylesheet = @css.parse_stylesheet(doc.stylesheets[0])
   inspect(extracted_stylesheet.rules.length(), content="4")
-  let cascaded_extracted = @cascade.cascade_element(
+  let cascaded_extracted = @css.cascade_element(
     rt_selector,
     [extracted_stylesheet],
     [],
@@ -3688,7 +3688,7 @@ test "wpt_aspect_ratio_intrinsic_size_005_like" {
   inspect(flex.style.height, content="Percent(1)")
   inspect(ratio_item.style.aspect_ratio, content="Some(1)")
 
-  @dispatch.setup()
+  @node.setup()
   let layout_ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
@@ -3698,7 +3698,7 @@ test "wpt_aspect_ratio_intrinsic_size_005_like" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @dispatch.compute_layout(root, layout_ctx)
+  let layout = @node.compute_layout_in_context(root, layout_ctx)
   let target_layout = layout.children[0]
   let flex_layout = target_layout.children[0]
   let ratio_layout = flex_layout.children[0]
@@ -4043,7 +4043,7 @@ test "svg_default_intrinsic_size_wpt_like" {
   let ctx = @renderer.RenderContext::default()
   let root = @renderer.render_to_node(html_str, ctx)
 
-  @dispatch.setup()
+  @node.setup()
   let layout_ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
@@ -4053,7 +4053,7 @@ test "svg_default_intrinsic_size_wpt_like" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @dispatch.compute_layout(root, layout_ctx)
+  let layout = @node.compute_layout_in_context(root, layout_ctx)
 
   let svg = layout.children[0]
 
@@ -4706,7 +4706,7 @@ test "renderer_grid_column" {
   inspect(item.style.grid_column.end, content="Span(2)")
 
   // Now compute layout
-  @dispatch.setup()
+  @node.setup()
   let layout_ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
@@ -4716,7 +4716,7 @@ test "renderer_grid_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @dispatch.compute_layout(root, layout_ctx)
+  let layout = @node.compute_layout_in_context(root, layout_ctx)
 
   // body -> mygrid -> item
   let mygrid_layout = layout.children[0]
@@ -4747,7 +4747,7 @@ test "orthogonal_child_within_flex_grid_wpt_like" {
   let ortho = grid.children[0]
   inspect(ortho.style.writing_mode, content="VerticalRl")
 
-  @dispatch.setup()
+  @node.setup()
   let layout_ctx : @types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
@@ -4757,7 +4757,7 @@ test "orthogonal_child_within_flex_grid_wpt_like" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @dispatch.compute_layout(root, layout_ctx)
+  let layout = @node.compute_layout_in_context(root, layout_ctx)
   let flex_layout = layout.children[0]
   let grid_layout = flex_layout.children[0]
   let ortho_layout = grid_layout.children[0]

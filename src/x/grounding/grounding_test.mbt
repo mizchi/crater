@@ -112,7 +112,7 @@ test "spatial_region_to_string" {
 
 ///|
 test "grounding with html integration" {
-  @dispatch.setup()
+  @layout.setup()
   // Simple HTML with buttons at different positions
   let html =
     #|<div id="container" style="width:800px;height:600px">
@@ -123,7 +123,9 @@ test "grounding with html integration" {
   // Parse and assign synthetic IDs
   let doc = @html.assign_synthetic_ids(@html.parse_document(html))
   // Build layout tree
-  let layout_tree = @tree.LayoutTree::from_html_document(doc, 800.0, 600.0)
+  let layout_tree = @layout_html_tree.layout_tree_from_html_document(
+    doc, 800.0, 600.0,
+  )
   let _ = layout_tree.calculate_layout(800.0, 600.0)
   // Build AOM with bounds
   let tree = @aom.build_accessibility_tree_with_layout(doc, layout_tree)

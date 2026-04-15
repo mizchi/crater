@@ -142,7 +142,7 @@ pub fn parse_dimension(value : String) -> @types.Dimension {
     // Parse the inner value as a length
     match inner.strip_suffix("px") {
       Some(num_str) => {
-        let n = @strconv.parse_double(num_str.to_string()) catch {
+        let n = @string.parse_double(num_str.to_string()) catch {
           _ => return @types.Dimension::Auto
         }
         return @types.Dimension::FitContent(n)
@@ -152,7 +152,7 @@ pub fn parse_dimension(value : String) -> @types.Dimension {
     // Try percentage
     match inner.strip_suffix("%") {
       Some(num_str) => {
-        let n = @strconv.parse_double(num_str.to_string()) catch {
+        let n = @string.parse_double(num_str.to_string()) catch {
           _ => return @types.Dimension::Auto
         }
         // For fit-content, percentage is relative to available space
@@ -166,7 +166,7 @@ pub fn parse_dimension(value : String) -> @types.Dimension {
   // Try to parse as length (px)
   match v.strip_suffix("px") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n)
@@ -176,7 +176,7 @@ pub fn parse_dimension(value : String) -> @types.Dimension {
   // Try to parse as percentage
   match v.strip_suffix("%") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Percent(n / 100.0)
@@ -184,7 +184,7 @@ pub fn parse_dimension(value : String) -> @types.Dimension {
     None => ()
   }
   // Try to parse as plain number (treated as px)
-  let n = @strconv.parse_double(v.to_string()) catch {
+  let n = @string.parse_double(v.to_string()) catch {
     _ => return @types.Dimension::Auto
   }
   @types.Dimension::Length(n)
@@ -228,7 +228,7 @@ pub fn extract_border_width(value : String) -> @types.Dimension {
     if part.has_suffix("px") {
       match part.strip_suffix("px") {
         Some(num_str) => {
-          let n = @strconv.parse_double(num_str.to_string()) catch {
+          let n = @string.parse_double(num_str.to_string()) catch {
             _ => continue
           }
           return @types.Dimension::Length(n)
@@ -239,7 +239,7 @@ pub fn extract_border_width(value : String) -> @types.Dimension {
     // Try plain number
     let first_char = part[0].to_int()
     if first_char >= '0'.to_int() && first_char <= '9'.to_int() {
-      let n = @strconv.parse_double(part) catch { _ => continue }
+      let n = @string.parse_double(part) catch { _ => continue }
       return @types.Dimension::Length(n)
     }
   }
@@ -444,7 +444,7 @@ fn tokenize_alignment_value(value : String) -> Array[String] {
   .to_lower()
   .split(" ")
   .map(fn(part) { part.to_string().trim().to_string() })
-  .filter(fn(part) { not(part.is_empty()) })
+  .filter(fn(part) { !part.is_empty() })
   .collect()
 }
 
@@ -617,7 +617,7 @@ pub fn parse_scroll_snap_type(value : String) -> @style.ScrollSnapType {
     .to_lower()
     .split(" ")
     .map(fn(part) { part.to_string().trim().to_string() })
-    .filter(fn(part) { not(part.is_empty()) })
+    .filter(fn(part) { !part.is_empty() })
     .collect()
   if tokens.is_empty() {
     return @style.ScrollSnapType::none()
@@ -655,7 +655,7 @@ pub fn parse_scroll_snap_align(
     .to_lower()
     .split(" ")
     .map(fn(part) { part.to_string().trim().to_string() })
-    .filter(fn(part) { not(part.is_empty()) })
+    .filter(fn(part) { !part.is_empty() })
     .collect()
   if tokens.is_empty() {
     return (@style.ScrollSnapAlign::None, @style.ScrollSnapAlign::None)
@@ -753,11 +753,11 @@ pub fn parse_grid_placement(value : String) -> @types.GridPlacement {
   // Check for "span N" pattern
   if v.has_prefix("span") {
     let num_str = view_to_string(v.view(start_offset=4))
-    let num = @strconv.parse_int(num_str.trim().to_string()) catch { _ => 1 }
+    let num = @string.parse_int(num_str.trim().to_string()) catch { _ => 1 }
     return @types.GridPlacement::Span(num)
   }
   // Otherwise, parse as integer (line number)
-  let line = @strconv.parse_int(v.to_string()) catch { _ => 0 }
+  let line = @string.parse_int(v.to_string()) catch { _ => 0 }
   if line != 0 {
     @types.GridPlacement::Line(line)
   } else if is_basic_custom_ident(v) {
@@ -804,7 +804,7 @@ pub fn parse_grid_area_shorthand(
   let parts = v
     .split("/")
     .map(fn(s) { s.trim().to_string() })
-    .filter(fn(s) { not(s.is_empty()) })
+    .filter(fn(s) { !s.is_empty() })
     .collect()
   if parts.length() >= 4 {
     (
@@ -850,7 +850,7 @@ fn is_basic_custom_ident(value : StringView) -> Bool {
     (first >= 'A' && first <= 'Z') ||
     first == '_' ||
     first == '-'
-  if not(first_ok) {
+  if !first_ok {
     return false
   }
   for i = 1; i < value.length(); i = i + 1 {
@@ -860,7 +860,7 @@ fn is_basic_custom_ident(value : StringView) -> Bool {
       (c >= '0' && c <= '9') ||
       c == '_' ||
       c == '-'
-    if not(ok) {
+    if !ok {
       return false
     }
   }
@@ -870,7 +870,7 @@ fn is_basic_custom_ident(value : StringView) -> Bool {
 ///|
 /// Parse a number value
 pub fn parse_number(value : String) -> Double {
-  @strconv.parse_double(value.trim().to_string()) catch {
+  @string.parse_double(value.trim().to_string()) catch {
     _ => 0.0
   }
 }
@@ -878,7 +878,7 @@ pub fn parse_number(value : String) -> Double {
 ///|
 /// Parse an integer value
 pub fn parse_integer(value : String) -> Int {
-  @strconv.parse_int(value.trim().to_string()) catch {
+  @string.parse_int(value.trim().to_string()) catch {
     _ => 0
   }
 }
@@ -898,7 +898,7 @@ pub fn parse_grid_template_shorthand(
   value : String,
 ) -> (Array[@types.TrackSizingFunction], Array[@types.TrackSizingFunction])? {
   let v = value.trim()
-  if not(v.contains("/")) {
+  if !v.contains("/") {
     return None
   }
   let parts = v.split("/").map(fn(s) { s.trim().to_string() }).collect()
@@ -953,7 +953,7 @@ pub fn is_grid_area_name(value : String) -> Bool {
     return false
   }
   // Check if it's a number
-  let parsed = @strconv.parse_int(v.to_string()) catch { _ => 0 }
+  let parsed = @string.parse_int(v.to_string()) catch { _ => 0 }
   if parsed != 0 {
     return false
   }
@@ -982,10 +982,10 @@ pub fn parse_aspect_ratio(value : String) -> Double? {
       // Use view slicing
       let width_str = view_to_string(v.view(end_offset=slash_pos)).trim()
       let height_str = view_to_string(v.view(start_offset=slash_pos + 1)).trim()
-      let w = @strconv.parse_double(width_str.to_string()) catch {
+      let w = @string.parse_double(width_str.to_string()) catch {
         _ => return None
       }
-      let h = @strconv.parse_double(height_str.to_string()) catch {
+      let h = @string.parse_double(height_str.to_string()) catch {
         _ => return None
       }
       if h != 0.0 {
@@ -995,7 +995,7 @@ pub fn parse_aspect_ratio(value : String) -> Double? {
     }
   }
   // Try parsing as a single number
-  let n = @strconv.parse_double(v.to_string()) catch { _ => return None }
+  let n = @string.parse_double(v.to_string()) catch { _ => return None }
   Some(n)
 }
 
@@ -1020,7 +1020,7 @@ pub fn parse_clip(value : String) -> @types.ClipRect {
     for c in content.iter() {
       if c == ',' || c == ' ' {
         let s = current.to_string().trim().to_string()
-        if not(s.is_empty()) {
+        if !s.is_empty() {
           parts.push(s)
         }
         current = StringBuilder::new()
@@ -1029,7 +1029,7 @@ pub fn parse_clip(value : String) -> @types.ClipRect {
       }
     }
     let last = current.to_string().trim().to_string()
-    if not(last.is_empty()) {
+    if !last.is_empty() {
       parts.push(last)
     }
     if parts.length() == 4 {
@@ -1054,7 +1054,7 @@ fn parse_clip_value(value : String) -> Double {
   // Parse px value
   match v.strip_suffix("px") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string().trim()) catch {
+      let n = @string.parse_double(num_str.to_string().trim()) catch {
         _ => return 0.0
       }
       return n
@@ -1062,6 +1062,6 @@ fn parse_clip_value(value : String) -> Double {
     None => ()
   }
   // Parse plain number
-  let n = @strconv.parse_double(v.to_string()) catch { _ => return 0.0 }
+  let n = @string.parse_double(v.to_string()) catch { _ => return 0.0 }
   n
 }

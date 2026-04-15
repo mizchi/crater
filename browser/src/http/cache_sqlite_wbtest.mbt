@@ -7,7 +7,7 @@ test "SqliteCacheBackend: store and lookup" {
   )
   cache.store(entry)
   let found = cache.lookup("https://example.test/resource")
-  inspect(!found.is_empty(), content="true")
+  inspect(found is Some(_), content="true")
   match found {
     Some(e) => {
       inspect(e.status, content="200")
@@ -26,7 +26,7 @@ test "SqliteCacheBackend: store and lookup" {
 ///|
 test "SqliteCacheBackend: lookup miss" {
   let cache = SqliteCacheBackend::new(":memory:")
-  inspect(cache.lookup("https://missing.com").is_empty(), content="true")
+  inspect(cache.lookup("https://missing.com") is None, content="true")
 }
 
 ///|
@@ -36,10 +36,7 @@ test "SqliteCacheBackend: remove" {
     make_entry(directives=CacheDirectives::default(), stored_at=1000.0),
   )
   cache.remove("https://example.test/resource")
-  inspect(
-    cache.lookup("https://example.test/resource").is_empty(),
-    content="true",
-  )
+  inspect(cache.lookup("https://example.test/resource") is None, content="true")
 }
 
 ///|
@@ -49,10 +46,7 @@ test "SqliteCacheBackend: clear" {
     make_entry(directives=CacheDirectives::default(), stored_at=1000.0),
   )
   cache.clear()
-  inspect(
-    cache.lookup("https://example.test/resource").is_empty(),
-    content="true",
-  )
+  inspect(cache.lookup("https://example.test/resource") is None, content="true")
 }
 
 ///|

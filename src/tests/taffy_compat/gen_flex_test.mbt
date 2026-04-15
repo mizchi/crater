@@ -33,7 +33,11 @@ test "taffy/absolute_aspect_ratio_aspect_ratio_overrides_height_of_full_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -77,7 +81,11 @@ test "taffy/absolute_aspect_ratio_fill_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -120,7 +128,11 @@ test "taffy/absolute_aspect_ratio_fill_height_from_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -170,7 +182,11 @@ test "taffy/absolute_aspect_ratio_fill_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -220,7 +236,11 @@ test "taffy/absolute_aspect_ratio_fill_max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -258,7 +278,11 @@ test "taffy/absolute_aspect_ratio_fill_min_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -296,7 +320,11 @@ test "taffy/absolute_aspect_ratio_fill_min_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -340,7 +368,11 @@ test "taffy/absolute_aspect_ratio_fill_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -383,7 +415,11 @@ test "taffy/absolute_aspect_ratio_fill_width_from_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -427,7 +463,11 @@ test "taffy/absolute_aspect_ratio_height_overrides_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -471,7 +511,11 @@ test "taffy/absolute_aspect_ratio_width_overrides_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -542,7 +586,11 @@ test "taffy/absolute_child_with_cross_margin" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 311.0)
@@ -595,7 +643,11 @@ test "taffy/absolute_child_with_main_margin" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -651,7 +703,11 @@ test "taffy/absolute_child_with_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -712,7 +768,11 @@ test "taffy/absolute_child_with_max_height_larger_shrinkable_grandchild" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -797,7 +857,11 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 300.0)
@@ -853,7 +917,11 @@ test "taffy/absolute_layout_align_items_and_justify_content_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 110.0)
@@ -899,7 +967,11 @@ test "taffy/absolute_layout_align_items_and_justify_content_center_and_bottom_po
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 110.0)
@@ -945,7 +1017,11 @@ test "taffy/absolute_layout_align_items_and_justify_content_center_and_left_posi
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 110.0)
@@ -991,7 +1067,11 @@ test "taffy/absolute_layout_align_items_and_justify_content_center_and_right_pos
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 110.0)
@@ -1037,7 +1117,11 @@ test "taffy/absolute_layout_align_items_and_justify_content_center_and_top_posit
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 110.0)
@@ -1077,7 +1161,11 @@ test "taffy/absolute_layout_align_items_and_justify_content_flex_end" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 110.0)
@@ -1116,7 +1204,11 @@ test "taffy/absolute_layout_align_items_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 110.0)
@@ -1155,7 +1247,11 @@ test "taffy/absolute_layout_align_items_center_on_child_only" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 110.0)
@@ -1209,7 +1305,11 @@ test "taffy/absolute_layout_child_order" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 110.0)
@@ -1257,7 +1357,11 @@ test "taffy/absolute_layout_in_wrap_reverse_column_container" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1299,7 +1403,11 @@ test "taffy/absolute_layout_in_wrap_reverse_column_container_flex_end" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1339,7 +1447,11 @@ test "taffy/absolute_layout_in_wrap_reverse_row_container" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1381,7 +1493,11 @@ test "taffy/absolute_layout_in_wrap_reverse_row_container_flex_end" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1420,7 +1536,11 @@ test "taffy/absolute_layout_justify_content_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 110.0)
@@ -1455,7 +1575,11 @@ test "taffy/absolute_layout_no_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1525,7 +1649,11 @@ test "taffy/absolute_layout_percentage_bottom_based_on_parent_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1576,7 +1704,11 @@ test "taffy/absolute_layout_percentage_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -1621,7 +1753,11 @@ test "taffy/absolute_layout_row_width_height_end_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1662,7 +1798,11 @@ test "taffy/absolute_layout_start_top_end_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1705,7 +1845,11 @@ test "taffy/absolute_layout_width_height_end_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1748,7 +1892,11 @@ test "taffy/absolute_layout_width_height_start_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1791,7 +1939,11 @@ test "taffy/absolute_layout_width_height_start_top_end_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1900,7 +2052,11 @@ test "taffy/absolute_layout_within_border" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1958,7 +2114,11 @@ test "taffy/absolute_margin_bottom_left" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2003,7 +2163,11 @@ test "taffy/absolute_minmax_bottom_right_max" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2048,7 +2212,11 @@ test "taffy/absolute_minmax_bottom_right_min_max" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2095,7 +2263,11 @@ test "taffy/absolute_minmax_bottom_right_min_max_preferred" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2138,7 +2310,11 @@ test "taffy/absolute_minmax_top_left_bottom_right_max" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2183,7 +2359,11 @@ test "taffy/absolute_minmax_top_left_bottom_right_min_max" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2228,7 +2408,11 @@ test "taffy/absolute_padding_border_overrides_max_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -2273,7 +2457,11 @@ test "taffy/absolute_padding_border_overrides_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -2496,7 +2684,11 @@ test "taffy/absolute_resolved_insets" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -2593,7 +2785,11 @@ test "taffy/align_baseline" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2655,7 +2851,11 @@ test "taffy/align_baseline_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2733,7 +2933,11 @@ test "taffy/align_baseline_child_margin" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2811,7 +3015,11 @@ test "taffy/align_baseline_child_margin_percent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2895,7 +3103,11 @@ test "taffy/align_baseline_child_multiline" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2997,7 +3209,11 @@ test "taffy/align_baseline_child_multiline_no_override_on_secondline" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3101,7 +3317,11 @@ test "taffy/align_baseline_child_multiline_override" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3191,7 +3411,11 @@ test "taffy/align_baseline_child_padding" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3263,7 +3487,11 @@ test "taffy/align_baseline_child_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3333,7 +3561,11 @@ test "taffy/align_baseline_child_top2" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3387,7 +3619,11 @@ test "taffy/align_baseline_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3457,7 +3693,11 @@ test "taffy/align_baseline_double_nested_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3554,7 +3794,11 @@ test "taffy/align_baseline_multiline" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3659,7 +3903,11 @@ test "taffy/align_baseline_multiline_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3772,7 +4020,11 @@ test "taffy/align_baseline_multiline_column2" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3877,7 +4129,11 @@ test "taffy/align_baseline_multiline_row_and_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3954,7 +4210,11 @@ test "taffy/align_baseline_nested_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4045,7 +4305,11 @@ test "taffy/align_baseline_nested_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4121,7 +4385,11 @@ test "taffy/align_center_should_size_based_on_content" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4203,7 +4471,11 @@ test "taffy/align_content_center_single_line" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -4282,7 +4554,11 @@ test "taffy/align_content_center_single_line_negative_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -4347,7 +4623,11 @@ test "taffy/align_content_center_single_line_negative_space_gap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -4426,7 +4706,11 @@ test "taffy/align_content_center_wrapped" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -4524,7 +4808,11 @@ test "taffy/align_content_center_wrapped_negative_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -4616,7 +4904,11 @@ test "taffy/align_content_center_wrapped_negative_space_gap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -4696,7 +4988,11 @@ test "taffy/align_content_end" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4771,7 +5067,11 @@ test "taffy/align_content_end_single_line_negative_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -4836,7 +5136,11 @@ test "taffy/align_content_end_single_line_negative_space_gap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -4918,7 +5222,11 @@ test "taffy/align_content_end_wrapped_negative_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -5010,7 +5318,11 @@ test "taffy/align_content_end_wrapped_negative_space_gap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -5090,7 +5402,11 @@ test "taffy/align_content_flex_end" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -5174,7 +5490,11 @@ test "taffy/align_content_flex_start" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 130.0)
@@ -5265,7 +5585,11 @@ test "taffy/align_content_flex_start_with_flex" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -5346,7 +5670,11 @@ test "taffy/align_content_flex_start_without_height_on_children" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -5429,7 +5757,11 @@ test "taffy/align_content_not_stretch_with_align_items_stretch" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 328.0)
@@ -5515,7 +5847,11 @@ test "taffy/align_content_space_around_single_line" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -5594,7 +5930,11 @@ test "taffy/align_content_space_around_single_line_negative_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -5659,7 +5999,11 @@ test "taffy/align_content_space_around_single_line_negative_space_gap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -5738,7 +6082,11 @@ test "taffy/align_content_space_around_wrapped" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -5836,7 +6184,11 @@ test "taffy/align_content_space_around_wrapped_negative_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -5928,7 +6280,11 @@ test "taffy/align_content_space_around_wrapped_negative_space_gap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -5980,7 +6336,11 @@ test "taffy/align_content_space_around_wrapped_single" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -6054,7 +6414,11 @@ test "taffy/align_content_space_between_single_line" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -6133,7 +6497,11 @@ test "taffy/align_content_space_between_single_line_negative_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -6198,7 +6566,11 @@ test "taffy/align_content_space_between_single_line_negative_space_gap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -6277,7 +6649,11 @@ test "taffy/align_content_space_between_wrapped" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -6375,7 +6751,11 @@ test "taffy/align_content_space_between_wrapped_negative_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -6467,7 +6847,11 @@ test "taffy/align_content_space_between_wrapped_negative_space_gap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -6519,7 +6903,11 @@ test "taffy/align_content_space_between_wrapped_single" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -6593,7 +6981,11 @@ test "taffy/align_content_space_evenly_single_line" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -6672,7 +7064,11 @@ test "taffy/align_content_space_evenly_single_line_negative_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -6737,7 +7133,11 @@ test "taffy/align_content_space_evenly_single_line_negative_space_gap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -6816,7 +7216,11 @@ test "taffy/align_content_space_evenly_wrapped" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -6914,7 +7318,11 @@ test "taffy/align_content_space_evenly_wrapped_negative_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -7006,7 +7414,11 @@ test "taffy/align_content_space_evenly_wrapped_negative_space_gap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -7058,7 +7470,11 @@ test "taffy/align_content_space_evenly_wrapped_single" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -7126,7 +7542,11 @@ test "taffy/align_content_spacearound" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 140.0)
@@ -7210,7 +7630,11 @@ test "taffy/align_content_spacebetween" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 130.0)
@@ -7294,7 +7718,11 @@ test "taffy/align_content_start" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 130.0)
@@ -7369,7 +7797,11 @@ test "taffy/align_content_start_single_line_negative_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -7434,7 +7866,11 @@ test "taffy/align_content_start_single_line_negative_space_gap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -7516,7 +7952,11 @@ test "taffy/align_content_start_wrapped_negative_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -7591,7 +8031,11 @@ test "taffy/align_content_stretch" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 150.0)
@@ -7686,7 +8130,11 @@ test "taffy/align_content_stretch_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -7758,7 +8206,11 @@ test "taffy/align_content_stretch_is_not_overriding_align_items" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -7825,7 +8277,11 @@ test "taffy/align_content_stretch_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 150.0)
@@ -7917,7 +8373,11 @@ test "taffy/align_content_stretch_row_with_children" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 150.0)
@@ -8001,7 +8461,11 @@ test "taffy/align_content_stretch_row_with_fixed_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 150.0)
@@ -8086,7 +8550,11 @@ test "taffy/align_content_stretch_row_with_flex" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 150.0)
@@ -8172,7 +8640,11 @@ test "taffy/align_content_stretch_row_with_flex_no_shrink" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 150.0)
@@ -8263,7 +8735,11 @@ test "taffy/align_content_stretch_row_with_margin" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 150.0)
@@ -8343,7 +8819,11 @@ test "taffy/align_content_stretch_row_with_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 150.0)
@@ -8423,7 +8903,11 @@ test "taffy/align_content_stretch_row_with_min_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 150.0)
@@ -8514,7 +8998,11 @@ test "taffy/align_content_stretch_row_with_padding" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 150.0)
@@ -8575,7 +9063,11 @@ test "taffy/align_content_stretch_row_with_single_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 150.0)
@@ -8628,7 +9120,11 @@ test "taffy/align_content_stretch_row_wrap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 150.0)
@@ -8690,7 +9186,11 @@ test "taffy/align_flex_start_with_shrinking_children" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 500.0)
@@ -8757,7 +9257,11 @@ test "taffy/align_flex_start_with_shrinking_children_with_stretch" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 500.0)
@@ -8823,7 +9327,11 @@ test "taffy/align_flex_start_with_stretching_children" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 500.0)
@@ -8869,7 +9377,11 @@ test "taffy/align_items_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -8924,7 +9436,11 @@ test "taffy/align_items_center_child_with_margin_bigger_than_parent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8977,7 +9493,11 @@ test "taffy/align_items_center_child_without_margin_bigger_than_parent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9053,7 +9573,11 @@ test "taffy/align_items_center_justify_content_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 500.0)
@@ -9108,7 +9632,11 @@ test "taffy/align_items_center_min_max_with_padding" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -9152,7 +9680,11 @@ test "taffy/align_items_center_with_child_margin" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -9196,7 +9728,11 @@ test "taffy/align_items_center_with_child_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -9276,7 +9812,11 @@ test "taffy/align_items_center_with_height_with_padding_border_with_wrap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -9353,7 +9893,11 @@ test "taffy/align_items_center_with_max_height_percentage_with_align_content_fle
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -9407,7 +9951,11 @@ test "taffy/align_items_center_with_max_height_with_align_content_flex_start" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -9519,7 +10067,11 @@ test "taffy/align_items_center_with_max_height_with_padding_border" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -9595,7 +10147,11 @@ test "taffy/align_items_center_with_min_height_percentage_with_align_content_fle
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -9649,7 +10205,11 @@ test "taffy/align_items_center_with_min_height_with_align_content_flex_start" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -9786,7 +10346,11 @@ test "taffy/align_items_center_with_min_height_with_align_content_flex_start_wit
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -9934,7 +10498,11 @@ test "taffy/align_items_center_with_min_height_with_padding_border" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -9992,7 +10560,11 @@ test "taffy/align_items_flex_end" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -10047,7 +10619,11 @@ test "taffy/align_items_flex_end_child_with_margin_bigger_than_parent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10100,7 +10676,11 @@ test "taffy/align_items_flex_end_child_without_margin_bigger_than_parent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10142,7 +10722,11 @@ test "taffy/align_items_flex_start" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -10182,7 +10766,11 @@ test "taffy/align_items_min_max" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -10217,7 +10805,11 @@ test "taffy/align_items_stretch" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -10256,7 +10848,11 @@ test "taffy/align_items_stretch_min_cross" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -10313,7 +10909,11 @@ test "taffy/align_self_baseline" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -10359,7 +10959,11 @@ test "taffy/align_self_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -10406,7 +11010,11 @@ test "taffy/align_self_center_undefined_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 280.0)
@@ -10448,7 +11056,11 @@ test "taffy/align_self_flex_end" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -10488,7 +11100,11 @@ test "taffy/align_self_flex_end_override_flex_start" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -10526,7 +11142,11 @@ test "taffy/align_self_flex_start" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -10584,7 +11204,11 @@ test "taffy/align_stretch_should_size_based_on_parent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -10856,7 +11480,11 @@ test "taffy/android_news_feed" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 1080.0)
@@ -11087,7 +11715,11 @@ test "taffy/aspect_ratio_flex_column_fill_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -11138,7 +11770,11 @@ test "taffy/aspect_ratio_flex_column_fill_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -11184,7 +11820,11 @@ test "taffy/aspect_ratio_flex_column_fill_max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -11223,7 +11863,11 @@ test "taffy/aspect_ratio_flex_column_fill_min_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -11262,7 +11906,11 @@ test "taffy/aspect_ratio_flex_column_fill_min_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -11301,7 +11949,11 @@ test "taffy/aspect_ratio_flex_column_fill_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -11339,7 +11991,11 @@ test "taffy/aspect_ratio_flex_column_fill_width_flex" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -11377,7 +12033,11 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -11427,7 +12087,11 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -11472,7 +12136,11 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -11510,7 +12178,11 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -11548,7 +12220,11 @@ test "taffy/aspect_ratio_flex_row_fill_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -11598,7 +12274,11 @@ test "taffy/aspect_ratio_flex_row_fill_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -11643,7 +12323,11 @@ test "taffy/aspect_ratio_flex_row_fill_max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -11681,7 +12365,11 @@ test "taffy/aspect_ratio_flex_row_fill_min_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -11719,7 +12407,11 @@ test "taffy/aspect_ratio_flex_row_fill_min_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -11757,7 +12449,11 @@ test "taffy/aspect_ratio_flex_row_fill_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -11795,7 +12491,11 @@ test "taffy/aspect_ratio_flex_row_fill_width_flex" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -11832,7 +12532,11 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -11881,7 +12585,11 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -11925,7 +12633,11 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -11962,7 +12674,11 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -12025,7 +12741,11 @@ test "taffy/bevy_issue_10343_block" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -12097,7 +12817,11 @@ test "taffy/bevy_issue_10343_flex" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -12169,7 +12893,11 @@ test "taffy/bevy_issue_10343_grid" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -12244,7 +12972,11 @@ test "taffy/bevy_issue_16304" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -12333,7 +13065,11 @@ test "taffy/bevy_issue_21240" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -12419,7 +13155,11 @@ test "taffy/bevy_issue_7976_3_level" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -12497,7 +13237,11 @@ test "taffy/bevy_issue_7976_4_level" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -12541,7 +13285,11 @@ test "taffy/bevy_issue_7976_reduced" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -12634,7 +13382,11 @@ test "taffy/bevy_issue_8017" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -12711,7 +13463,11 @@ test "taffy/bevy_issue_8017_reduced" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -12822,7 +13578,11 @@ test "taffy/bevy_issue_8082" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -12914,7 +13674,11 @@ test "taffy/bevy_issue_8082_percent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -13039,7 +13803,11 @@ test "taffy/bevy_issue_9530" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 300.0)
@@ -13110,7 +13878,11 @@ test "taffy/bevy_issue_9530_reduced" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -13175,7 +13947,11 @@ test "taffy/bevy_issue_9530_reduced2" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -13229,7 +14005,11 @@ test "taffy/bevy_issue_9530_reduced3" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -13277,7 +14057,11 @@ test "taffy/bevy_issue_9530_reduced4" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -13337,7 +14121,11 @@ test "taffy/blitz_issue_88" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 600.0)
@@ -13390,7 +14178,11 @@ test "taffy/border_center_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -13432,7 +14224,11 @@ test "taffy/border_container_match_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 30.0)
@@ -13475,7 +14271,11 @@ test "taffy/border_flex_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -13507,7 +14307,11 @@ test "taffy/border_no_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -13537,7 +14341,11 @@ test "taffy/border_no_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -13574,7 +14382,11 @@ test "taffy/border_stretch_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -13626,7 +14438,11 @@ test "taffy/child_min_max_width_flexing" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -13676,7 +14492,11 @@ test "taffy/child_with_padding_align_end" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -13708,7 +14528,11 @@ test "taffy/container_with_unsized_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -13772,7 +14596,11 @@ test "taffy/content_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -13821,7 +14649,11 @@ test "taffy/display_none" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -13878,7 +14710,11 @@ test "taffy/display_none_absolute_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -13928,7 +14764,11 @@ test "taffy/display_none_fixed_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -13961,7 +14801,11 @@ test "taffy/display_none_only_node" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -14025,7 +14869,11 @@ test "taffy/display_none_with_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -14089,7 +14937,11 @@ test "taffy/display_none_with_margin" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -14144,7 +14996,11 @@ test "taffy/display_none_with_position" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -14186,7 +15042,11 @@ test "taffy/display_none_with_position_absolute" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -14243,7 +15103,11 @@ test "taffy/do_not_clamp_height_of_absolute_node_to_height_of_its_overflow_hidde
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -14297,7 +15161,11 @@ test "taffy/flex_basis_and_main_dimen_set_when_flexing" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -14347,7 +15215,11 @@ test "taffy/flex_basis_flex_grow_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -14397,7 +15269,11 @@ test "taffy/flex_basis_flex_grow_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -14446,7 +15322,11 @@ test "taffy/flex_basis_flex_shrink_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -14495,7 +15375,11 @@ test "taffy/flex_basis_flex_shrink_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -14547,7 +15431,11 @@ test "taffy/flex_basis_larger_than_content_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -14599,7 +15487,11 @@ test "taffy/flex_basis_larger_than_content_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -14657,7 +15549,11 @@ test "taffy/flex_basis_overrides_main_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -14733,7 +15629,11 @@ test "taffy/flex_basis_slightly_smaller_then_content_with_flex_grow_large_size" 
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -14793,7 +15693,11 @@ test "taffy/flex_basis_smaller_than_content_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -14845,7 +15749,11 @@ test "taffy/flex_basis_smaller_than_content_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -14888,7 +15796,11 @@ test "taffy/flex_basis_smaller_than_main_dimen_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -14927,7 +15839,11 @@ test "taffy/flex_basis_smaller_than_main_dimen_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -14995,7 +15911,11 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_large_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -15075,7 +15995,11 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_small_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 10.0)
@@ -15154,7 +16078,11 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_unconstraint_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 90.0)
@@ -15234,7 +16162,11 @@ test "taffy/flex_basis_smaller_then_content_with_flex_grow_very_large_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -15283,7 +16215,11 @@ test "taffy/flex_basis_unconstraint_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -15320,7 +16256,11 @@ test "taffy/flex_basis_unconstraint_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -15367,7 +16307,11 @@ test "taffy/flex_basis_zero_undefined_main_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -15414,7 +16358,11 @@ test "taffy/flex_column_relative_all_sides" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -15463,7 +16411,11 @@ test "taffy/flex_direction_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -15519,7 +16471,11 @@ test "taffy/flex_direction_column_no_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -15576,7 +16532,11 @@ test "taffy/flex_direction_column_reverse" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -15632,7 +16592,11 @@ test "taffy/flex_direction_column_reverse_no_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -15687,7 +16651,11 @@ test "taffy/flex_direction_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -15738,7 +16706,11 @@ test "taffy/flex_direction_row_no_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 30.0)
@@ -15795,7 +16767,11 @@ test "taffy/flex_direction_row_reverse" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -15900,7 +16876,11 @@ test "taffy/flex_grow_0_min_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -15950,7 +16930,11 @@ test "taffy/flex_grow_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -16003,7 +16987,11 @@ test "taffy/flex_grow_flex_basis_percent_min_max" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 120.0)
@@ -16065,7 +17053,11 @@ test "taffy/flex_grow_height_maximized" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -16123,7 +17115,11 @@ test "taffy/flex_grow_in_at_most_container" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -16181,7 +17177,11 @@ test "taffy/flex_grow_less_than_factor_one" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 500.0)
@@ -16248,7 +17248,11 @@ test "taffy/flex_grow_root_minimized" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -16298,7 +17302,11 @@ test "taffy/flex_grow_shrink_at_most" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -16347,7 +17355,11 @@ test "taffy/flex_grow_to_min" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -16395,7 +17407,11 @@ test "taffy/flex_grow_within_constrained_max_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -16454,7 +17470,11 @@ test "taffy/flex_grow_within_constrained_max_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -16512,7 +17532,11 @@ test "taffy/flex_grow_within_constrained_max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -16559,7 +17583,11 @@ test "taffy/flex_grow_within_constrained_min_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -16607,7 +17635,11 @@ test "taffy/flex_grow_within_constrained_min_max_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -16655,7 +17687,11 @@ test "taffy/flex_grow_within_constrained_min_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -16709,7 +17745,11 @@ test "taffy/flex_grow_within_max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -16759,7 +17799,11 @@ test "taffy/flex_root_ignored" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -16804,7 +17848,11 @@ test "taffy/flex_row_relative_all_sides" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -16848,7 +17896,11 @@ test "taffy/flex_shrink_by_outer_margin_with_max_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -16896,7 +17948,11 @@ test "taffy/flex_shrink_flex_grow_child_flex_shrink_other_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 500.0)
@@ -16947,7 +18003,11 @@ test "taffy/flex_shrink_flex_grow_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 500.0)
@@ -17002,7 +18062,11 @@ test "taffy/flex_shrink_to_zero" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 75.0)
@@ -17054,7 +18118,11 @@ test "taffy/flex_wrap_align_stretch_fits_one_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 150.0)
@@ -17107,7 +18175,11 @@ test "taffy/flex_wrap_children_with_min_main_overriding_flex_basis" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -17179,7 +18251,11 @@ test "taffy/flex_wrap_wrap_to_child_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -17265,7 +18341,11 @@ test "taffy/gap_column_gap_child_margins" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -17323,7 +18403,11 @@ test "taffy/gap_column_gap_determines_parent_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -17388,7 +18472,11 @@ test "taffy/gap_column_gap_flexible" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -17452,7 +18540,11 @@ test "taffy/gap_column_gap_flexible_undefined_parent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -17510,7 +18602,11 @@ test "taffy/gap_column_gap_inflexible" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -17567,7 +18663,11 @@ test "taffy/gap_column_gap_inflexible_undefined_parent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -17626,7 +18726,11 @@ test "taffy/gap_column_gap_justify_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -17685,7 +18789,11 @@ test "taffy/gap_column_gap_justify_flex_end" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -17744,7 +18852,11 @@ test "taffy/gap_column_gap_justify_flex_start" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -17803,7 +18915,11 @@ test "taffy/gap_column_gap_justify_space_around" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -17862,7 +18978,11 @@ test "taffy/gap_column_gap_justify_space_between" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -17921,7 +19041,11 @@ test "taffy/gap_column_gap_justify_space_evenly" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -17981,7 +19105,11 @@ test "taffy/gap_column_gap_mixed_flexible" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -18044,7 +19172,11 @@ test "taffy/gap_column_gap_percentage_cyclic_partially_shrinkable" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -18103,7 +19235,11 @@ test "taffy/gap_column_gap_percentage_cyclic_shrinkable" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -18168,7 +19304,11 @@ test "taffy/gap_column_gap_percentage_cyclic_unshrinkable" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -18233,7 +19373,11 @@ test "taffy/gap_column_gap_percentage_flexible" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -18304,7 +19448,11 @@ test "taffy/gap_column_gap_percentage_flexible_with_padding" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -18362,7 +19510,11 @@ test "taffy/gap_column_gap_percentage_inflexible" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -18466,7 +19618,11 @@ test "taffy/gap_column_gap_row_gap_wrapping" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -18560,7 +19716,11 @@ test "taffy/gap_column_gap_start_index" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -18649,7 +19809,11 @@ test "taffy/gap_column_gap_wrap_align_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -18746,7 +19910,11 @@ test "taffy/gap_column_gap_wrap_align_flex_end" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -18843,7 +20011,11 @@ test "taffy/gap_column_gap_wrap_align_flex_start" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -18940,7 +20112,11 @@ test "taffy/gap_column_gap_wrap_align_space_around" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -19037,7 +20213,11 @@ test "taffy/gap_column_gap_wrap_align_space_between" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -19131,7 +20311,11 @@ test "taffy/gap_column_gap_wrap_align_stretch" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 300.0)
@@ -19243,7 +20427,11 @@ test "taffy/gap_column_row_gap_wrapping" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -19346,7 +20534,11 @@ test "taffy/gap_row_gap_align_items_end" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -19438,7 +20630,11 @@ test "taffy/gap_row_gap_align_items_stretch" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -19532,7 +20728,11 @@ test "taffy/gap_row_gap_column_child_margins" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -19590,7 +20790,11 @@ test "taffy/gap_row_gap_determines_parent_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -19694,7 +20898,11 @@ test "taffy/gap_row_gap_percentage_wrapping" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -19795,7 +21003,11 @@ test "taffy/gap_row_gap_row_wrap_child_margins" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -19836,7 +21048,11 @@ test "taffy/intrinsic_sizing_cross_size_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -19865,7 +21081,11 @@ test "taffy/intrinsic_sizing_main_size_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 10.0)
@@ -19904,7 +21124,11 @@ test "taffy/intrinsic_sizing_main_size_column_nested" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 10.0)
@@ -19962,7 +21186,11 @@ test "taffy/intrinsic_sizing_main_size_column_wrap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 10.0)
@@ -20036,7 +21264,11 @@ test "taffy/intrinsic_sizing_main_size_min_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 20.0)
   assert_approx(layout.y, 20.0)
   assert_approx(layout.width, 300.0)
@@ -20069,7 +21301,11 @@ test "taffy/intrinsic_sizing_main_size_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -20100,7 +21336,11 @@ test "taffy/intrinsic_sizing_main_size_row_nested" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -20149,7 +21389,11 @@ test "taffy/intrinsic_sizing_main_size_row_wrap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -20203,7 +21447,11 @@ test "taffy/justify_content_column_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -20288,7 +21536,11 @@ test "taffy/justify_content_column_center_negative_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -20379,7 +21631,11 @@ test "taffy/justify_content_column_center_negative_space_gap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -20441,7 +21697,11 @@ test "taffy/justify_content_column_end" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -20526,7 +21786,11 @@ test "taffy/justify_content_column_end_negative_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -20617,7 +21881,11 @@ test "taffy/justify_content_column_end_negative_space_gap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -20679,7 +21947,11 @@ test "taffy/justify_content_column_end_reverse" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -20737,7 +22009,11 @@ test "taffy/justify_content_column_flex_end" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -20795,7 +22071,11 @@ test "taffy/justify_content_column_flex_end_reverse" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -20853,7 +22133,11 @@ test "taffy/justify_content_column_flex_start" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -20911,7 +22195,11 @@ test "taffy/justify_content_column_flex_start_reverse" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -20970,7 +22258,11 @@ test "taffy/justify_content_column_max_height_and_margin" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -21024,7 +22316,11 @@ test "taffy/justify_content_column_min_height_and_margin" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -21072,7 +22368,11 @@ test "taffy/justify_content_column_min_height_and_margin_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -21116,7 +22416,11 @@ test "taffy/justify_content_column_min_height_and_margin_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -21166,7 +22470,11 @@ test "taffy/justify_content_column_space_around" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -21251,7 +22559,11 @@ test "taffy/justify_content_column_space_around_negative_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -21342,7 +22654,11 @@ test "taffy/justify_content_column_space_around_negative_space_gap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -21404,7 +22720,11 @@ test "taffy/justify_content_column_space_between" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -21489,7 +22809,11 @@ test "taffy/justify_content_column_space_between_negative_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -21580,7 +22904,11 @@ test "taffy/justify_content_column_space_between_negative_space_gap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -21642,7 +22970,11 @@ test "taffy/justify_content_column_space_evenly" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -21727,7 +23059,11 @@ test "taffy/justify_content_column_space_evenly_negative_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -21818,7 +23154,11 @@ test "taffy/justify_content_column_space_evenly_negative_space_gap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -21880,7 +23220,11 @@ test "taffy/justify_content_column_start" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -21965,7 +23309,11 @@ test "taffy/justify_content_column_start_negative_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -22056,7 +23404,11 @@ test "taffy/justify_content_column_start_negative_space_gap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -22118,7 +23470,11 @@ test "taffy/justify_content_column_start_reverse" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -22166,7 +23522,11 @@ test "taffy/justify_content_min_max" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -22240,7 +23600,11 @@ test "taffy/justify_content_min_width_with_padding_child_width_greater_than_pare
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 1000.0)
@@ -22322,7 +23686,11 @@ test "taffy/justify_content_min_width_with_padding_child_width_lower_than_parent
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 1080.0)
@@ -22389,7 +23757,11 @@ test "taffy/justify_content_overflow_min_max" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -22447,7 +23819,11 @@ test "taffy/justify_content_row_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -22505,7 +23881,11 @@ test "taffy/justify_content_row_flex_end" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -22563,7 +23943,11 @@ test "taffy/justify_content_row_flex_start" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -22616,7 +24000,11 @@ test "taffy/justify_content_row_max_width_and_margin" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -22660,7 +24048,11 @@ test "taffy/justify_content_row_min_width_and_margin" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -22710,7 +24102,11 @@ test "taffy/justify_content_row_space_around" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -22768,7 +24164,11 @@ test "taffy/justify_content_row_space_between" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -22826,7 +24226,11 @@ test "taffy/justify_content_row_space_evenly" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -22878,7 +24282,11 @@ test "taffy/margin_and_flex_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -22922,7 +24330,11 @@ test "taffy/margin_and_flex_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -22966,7 +24378,11 @@ test "taffy/margin_and_stretch_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -23010,7 +24426,11 @@ test "taffy/margin_and_stretch_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -23061,7 +24481,11 @@ test "taffy/margin_auto_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -23116,7 +24540,11 @@ test "taffy/margin_auto_bottom_and_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -23171,7 +24599,11 @@ test "taffy/margin_auto_bottom_and_top_justify_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -23226,7 +24658,11 @@ test "taffy/margin_auto_left" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -23279,7 +24715,11 @@ test "taffy/margin_auto_left_and_right" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -23335,7 +24775,11 @@ test "taffy/margin_auto_left_and_right_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -23390,7 +24834,11 @@ test "taffy/margin_auto_left_and_right_column_and_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -23446,7 +24894,11 @@ test "taffy/margin_auto_left_and_right_stretch" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -23494,7 +24946,11 @@ test "taffy/margin_auto_left_child_bigger_than_parent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -23538,7 +24994,11 @@ test "taffy/margin_auto_left_fix_right_child_bigger_than_parent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -23582,7 +25042,11 @@ test "taffy/margin_auto_left_right_child_bigger_than_parent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -23634,7 +25098,11 @@ test "taffy/margin_auto_left_stretching_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -23703,7 +25171,11 @@ test "taffy/margin_auto_multiple_children_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -23776,7 +25248,11 @@ test "taffy/margin_auto_multiple_children_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -23835,7 +25311,11 @@ test "taffy/margin_auto_right" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -23890,7 +25370,11 @@ test "taffy/margin_auto_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -23946,7 +25430,11 @@ test "taffy/margin_auto_top_and_bottom_stretch" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -24002,7 +25490,11 @@ test "taffy/margin_auto_top_stretching_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -24050,7 +25542,11 @@ test "taffy/margin_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -24094,7 +25590,11 @@ test "taffy/margin_fix_left_auto_right_child_bigger_than_parent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -24137,7 +25637,11 @@ test "taffy/margin_left" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -24181,7 +25685,11 @@ test "taffy/margin_right" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -24224,7 +25732,11 @@ test "taffy/margin_should_not_be_part_of_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 250.0)
@@ -24267,7 +25779,11 @@ test "taffy/margin_should_not_be_part_of_max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 250.0)
@@ -24310,7 +25826,11 @@ test "taffy/margin_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -24361,7 +25881,11 @@ test "taffy/margin_with_sibling_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -24416,7 +25940,11 @@ test "taffy/margin_with_sibling_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -24458,7 +25986,11 @@ test "taffy/max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -24490,7 +26022,11 @@ test "taffy/max_height_overrides_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -24518,7 +26054,11 @@ test "taffy/max_height_overrides_height_on_root" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -24552,7 +26092,11 @@ test "taffy/max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -24584,7 +26128,11 @@ test "taffy/max_width_overrides_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -24612,7 +26160,11 @@ test "taffy/max_width_overrides_width_on_root" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -24643,7 +26195,11 @@ test "taffy/measure_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -24685,7 +26241,11 @@ test "taffy/measure_child_absolute" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -24729,7 +26289,11 @@ test "taffy/measure_child_constraint" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -24779,7 +26343,11 @@ test "taffy/measure_child_constraint_padding_parent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -24825,7 +26393,11 @@ test "taffy/measure_child_with_flex_grow" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -24875,7 +26447,11 @@ test "taffy/measure_child_with_flex_shrink" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -24929,7 +26505,11 @@ test "taffy/measure_child_with_flex_shrink_hidden" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -24976,7 +26556,11 @@ test "taffy/measure_child_with_min_size_greater_than_available_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -25015,7 +26599,11 @@ test "taffy/measure_flex_basis_overrides_measure" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -25053,7 +26641,11 @@ test "taffy/measure_height_overrides_measure" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 10.0)
@@ -25101,7 +26693,11 @@ test "taffy/measure_remeasure_child_after_growing" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -25155,7 +26751,11 @@ test "taffy/measure_remeasure_child_after_shrinking" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -25198,7 +26798,11 @@ test "taffy/measure_remeasure_child_after_stretching" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -25227,7 +26831,11 @@ test "taffy/measure_root" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -25275,7 +26883,11 @@ test "taffy/measure_stretch_overrides_measure" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -25317,7 +26929,11 @@ test "taffy/measure_width_overrides_measure" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -25363,7 +26979,11 @@ test "taffy/min_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -25405,7 +27025,11 @@ test "taffy/min_height_larger_than_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -25437,7 +27061,11 @@ test "taffy/min_height_overrides_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -25465,7 +27093,11 @@ test "taffy/min_height_overrides_height_on_root" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -25493,7 +27125,11 @@ test "taffy/min_height_overrides_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -25556,7 +27192,11 @@ test "taffy/min_height_with_nested_fixed_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -25601,7 +27241,11 @@ test "taffy/min_max_percent_different_width_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -25642,7 +27286,11 @@ test "taffy/min_max_percent_no_width_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -25688,7 +27336,11 @@ test "taffy/min_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -25730,7 +27382,11 @@ test "taffy/min_width_larger_than_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -25762,7 +27418,11 @@ test "taffy/min_width_overrides_max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -25794,7 +27454,11 @@ test "taffy/min_width_overrides_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -25822,7 +27486,11 @@ test "taffy/min_width_overrides_width_on_root" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -26029,7 +27697,11 @@ test "taffy/multiline_column_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -26189,7 +27861,11 @@ test "taffy/multiline_min_max_12" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 610.0)
@@ -26285,7 +27961,11 @@ test "taffy/multiline_min_max_13" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 610.0)
@@ -26381,7 +28061,11 @@ test "taffy/multiline_min_max_14" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 610.0)
@@ -26471,7 +28155,11 @@ test "taffy/multiline_min_max_5" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 610.0)
@@ -26567,7 +28255,11 @@ test "taffy/multiline_min_max_8" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 610.0)
@@ -26621,7 +28313,11 @@ test "taffy/nested_overflowing_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -26671,7 +28367,11 @@ test "taffy/nested_overflowing_child_in_constraint_parent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -26735,7 +28435,11 @@ test "taffy/only_shrinkable_item_with_flex_basis_zero" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 480.0)
@@ -26779,7 +28483,11 @@ test "taffy/overflow_cross_axis" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -26816,7 +28524,11 @@ test "taffy/overflow_main_axis" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -26860,7 +28572,11 @@ test "taffy/overflow_main_axis_shrink_hidden" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -26904,7 +28620,11 @@ test "taffy/overflow_main_axis_shrink_scroll" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -26943,7 +28663,11 @@ test "taffy/overflow_main_axis_shrink_visible" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -26982,7 +28706,11 @@ test "taffy/overflow_scroll_main_axis_justify_content_end" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -27030,7 +28758,11 @@ test "taffy/overflow_scrollbars_overridden_by_available_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 2.0)
@@ -27072,7 +28804,11 @@ test "taffy/overflow_scrollbars_overridden_by_max_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -27110,7 +28846,11 @@ test "taffy/overflow_scrollbars_overridden_by_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 2.0)
@@ -27148,7 +28888,11 @@ test "taffy/overflow_scrollbars_take_up_space_both_axis" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -27185,7 +28929,11 @@ test "taffy/overflow_scrollbars_take_up_space_cross_axis" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -27222,7 +28970,11 @@ test "taffy/overflow_scrollbars_take_up_space_main_axis" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -27267,7 +29019,11 @@ test "taffy/padding_align_end_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -27311,7 +29067,11 @@ test "taffy/padding_border_overrides_max_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 22.0)
@@ -27355,7 +29115,11 @@ test "taffy/padding_border_overrides_min_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 22.0)
@@ -27399,7 +29163,11 @@ test "taffy/padding_border_overrides_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 22.0)
@@ -27456,7 +29224,11 @@ test "taffy/padding_border_overrides_size_flex_basis_0_growable" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 34.0)
@@ -27504,7 +29276,11 @@ test "taffy/padding_border_overrides_size_root" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 22.0)
@@ -27549,7 +29325,11 @@ test "taffy/padding_center_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -27591,7 +29371,11 @@ test "taffy/padding_container_match_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 30.0)
@@ -27634,7 +29418,11 @@ test "taffy/padding_flex_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -27666,7 +29454,11 @@ test "taffy/padding_no_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -27694,7 +29486,11 @@ test "taffy/padding_no_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -27731,7 +29527,11 @@ test "taffy/padding_stretch_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -27776,7 +29576,11 @@ test "taffy/parent_wrap_child_size_overflowing_parent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -27842,7 +29646,11 @@ test "taffy/percent_absolute_position" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -27910,7 +29718,11 @@ test "taffy/percent_within_flex_grow" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 350.0)
@@ -27967,7 +29779,11 @@ test "taffy/percentage_absolute_position" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -28040,7 +29856,11 @@ test "taffy/percentage_container_in_wrapping_container" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -28097,7 +29917,11 @@ test "taffy/percentage_different_width_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -28145,7 +29969,11 @@ test "taffy/percentage_different_width_height_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -28196,7 +30024,11 @@ test "taffy/percentage_flex_basis" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -28247,7 +30079,11 @@ test "taffy/percentage_flex_basis_cross" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -28300,7 +30136,11 @@ test "taffy/percentage_flex_basis_cross_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -28353,7 +30193,11 @@ test "taffy/percentage_flex_basis_cross_max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -28404,7 +30248,11 @@ test "taffy/percentage_flex_basis_cross_min_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -28457,7 +30305,11 @@ test "taffy/percentage_flex_basis_cross_min_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -28510,7 +30362,11 @@ test "taffy/percentage_flex_basis_main_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -28563,7 +30419,11 @@ test "taffy/percentage_flex_basis_main_max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -28616,7 +30476,11 @@ test "taffy/percentage_flex_basis_main_min_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -28677,7 +30541,11 @@ test "taffy/percentage_main_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 71.0)
@@ -28740,7 +30608,11 @@ test "taffy/percentage_margin_should_calculate_based_only_on_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -28821,7 +30693,11 @@ test "taffy/percentage_moderate_complexity" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -28880,7 +30756,11 @@ test "taffy/percentage_moderate_complexity2" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -28992,7 +30872,11 @@ test "taffy/percentage_multiple_nested_with_padding_margin_and_percentage_values
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -29059,7 +30943,11 @@ test "taffy/percentage_padding_should_calculate_based_only_on_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -29107,7 +30995,11 @@ test "taffy/percentage_position_bottom_right" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 500.0)
@@ -29151,7 +31043,11 @@ test "taffy/percentage_position_left_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -29195,7 +31091,11 @@ test "taffy/percentage_size_based_on_parent_inner_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -29242,7 +31142,11 @@ test "taffy/percentage_size_of_flex_basis" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -29287,7 +31191,11 @@ test "taffy/percentage_sizes_should_not_prevent_flex_shrinking" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -29329,7 +31237,11 @@ test "taffy/percentage_width_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -29365,7 +31277,11 @@ test "taffy/percentage_width_height_undefined_parent_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -29403,7 +31319,11 @@ test "taffy/position_root_with_rtl_should_position_withoutdirection" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -29458,7 +31378,11 @@ test "taffy/relative_position_should_not_nudge_siblings" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -29528,7 +31452,11 @@ test "taffy/rounding_flex_basis_flex_grow_row_prime_number_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 113.0)
@@ -29596,7 +31524,11 @@ test "taffy/rounding_flex_basis_flex_grow_row_width_of_100" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -29656,7 +31588,11 @@ test "taffy/rounding_flex_basis_flex_shrink_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 101.0)
@@ -29720,7 +31656,11 @@ test "taffy/rounding_flex_basis_overrides_main_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -29784,7 +31724,11 @@ test "taffy/rounding_fractial_input_1" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -29848,7 +31792,11 @@ test "taffy/rounding_fractial_input_2" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -29912,7 +31860,11 @@ test "taffy/rounding_fractial_input_3" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -29976,7 +31928,11 @@ test "taffy/rounding_fractial_input_4" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -30029,7 +31985,11 @@ test "taffy/rounding_fractial_input_5" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 963.3)
@@ -30108,7 +32068,11 @@ test "taffy/rounding_fractial_input_6" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 7.0)
@@ -30253,7 +32217,11 @@ test "taffy/rounding_fractial_input_7" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 7.0)
@@ -30394,7 +32362,11 @@ test "taffy/rounding_inner_node_controversy_combined" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 640.0)
@@ -30484,7 +32456,11 @@ test "taffy/rounding_inner_node_controversy_horizontal" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -30562,7 +32538,11 @@ test "taffy/rounding_inner_node_controversy_vertical" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 10.0)
@@ -30630,7 +32610,11 @@ test "taffy/rounding_total_fractial" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 87.4)
@@ -30728,7 +32712,11 @@ test "taffy/rounding_total_fractial_nested" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 87.4)
@@ -30787,7 +32775,11 @@ test "taffy/scroll_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -30873,7 +32865,11 @@ test "taffy/simple_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -30947,7 +32943,11 @@ test "taffy/single_flex_child_after_absolute_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 428.0)
@@ -30987,7 +32987,11 @@ test "taffy/size_defined_by_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -31027,7 +33031,11 @@ test "taffy/size_defined_by_child_with_border" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 30.0)
@@ -31067,7 +33075,11 @@ test "taffy/size_defined_by_child_with_padding" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 30.0)
@@ -31105,7 +33117,11 @@ test "taffy/size_defined_by_grand_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -31167,7 +33183,11 @@ test "taffy/taffy_issue_696" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -31229,7 +33249,11 @@ test "taffy/taffy_issue_696_flex_basis_20" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -31289,7 +33313,11 @@ test "taffy/taffy_issue_696_min_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -31350,7 +33378,11 @@ test "taffy/taffy_issue_696_no_flex_basis" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -31411,7 +33443,11 @@ test "taffy/taffy_issue_696_overflow_hidden" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -31453,7 +33489,11 @@ test "taffy/undefined_height_with_min_max" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 320.0)
@@ -31490,7 +33530,11 @@ test "taffy/undefined_width_with_min_max" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -31537,7 +33581,11 @@ test "taffy/undefined_width_with_min_max_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 60.0)
@@ -31609,7 +33657,11 @@ test "taffy/width_smaller_then_content_with_flex_grow_large_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -31689,7 +33741,11 @@ test "taffy/width_smaller_then_content_with_flex_grow_small_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 10.0)
@@ -31768,7 +33824,11 @@ test "taffy/width_smaller_then_content_with_flex_grow_unconstraint_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -31848,7 +33908,11 @@ test "taffy/width_smaller_then_content_with_flex_grow_very_large_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -31896,7 +33960,11 @@ test "taffy/wrap_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -31956,7 +34024,11 @@ test "taffy/wrap_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -32006,7 +34078,11 @@ test "taffy/wrap_grandchild" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -32097,7 +34173,11 @@ test "taffy/wrap_nodes_with_content_sizing_margin_cross" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 500.0)
@@ -32200,7 +34280,11 @@ test "taffy/wrap_nodes_with_content_sizing_overflowing_margin" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 500.0)
@@ -32276,7 +34360,11 @@ test "taffy/wrap_reverse_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -32356,7 +34444,11 @@ test "taffy/wrap_reverse_column_fixed_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -32431,7 +34523,11 @@ test "taffy/wrap_reverse_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -32510,7 +34606,11 @@ test "taffy/wrap_reverse_row_align_content_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -32593,7 +34693,11 @@ test "taffy/wrap_reverse_row_align_content_flex_start" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -32676,7 +34780,11 @@ test "taffy/wrap_reverse_row_align_content_space_around" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -32759,7 +34867,11 @@ test "taffy/wrap_reverse_row_align_content_stretch" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -32842,7 +34954,11 @@ test "taffy/wrap_reverse_row_single_line_different_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 300.0)
@@ -32917,7 +35033,11 @@ test "taffy/wrap_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -32989,7 +35109,11 @@ test "taffy/wrap_row_align_items_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -33061,7 +35185,11 @@ test "taffy/wrap_row_align_items_flex_end" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -33136,7 +35264,11 @@ test "taffy/wrapped_column_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 700.0)
@@ -33213,7 +35345,11 @@ test "taffy/wrapped_column_max_height_flex" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 700.0)
@@ -33278,7 +35414,11 @@ test "taffy/wrapped_row_within_align_items_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -33343,7 +35483,11 @@ test "taffy/wrapped_row_within_align_items_flex_end" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -33408,7 +35552,11 @@ test "taffy/wrapped_row_within_align_items_flex_start" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @flex.compute(root, ctx, default_dispatch())
+  let layout = @node.compute_flex_layout_with_dispatch(
+    root,
+    ctx,
+    default_dispatch(),
+  )
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)

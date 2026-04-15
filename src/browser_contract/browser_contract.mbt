@@ -5,10 +5,10 @@ pub fn create_render_context(
   viewport_height : Int,
   dark_mode : Bool,
 ) -> @renderer.RenderContext {
-  let color_scheme : @media.ColorScheme = if dark_mode {
-    @media.ColorScheme::Dark
+  let color_scheme : @css.ColorScheme = if dark_mode {
+    @css.ColorScheme::Dark
   } else {
-    @media.ColorScheme::Light
+    @css.ColorScheme::Light
   }
   {
     viewport_width: viewport_width.to_double(),
@@ -29,11 +29,11 @@ pub fn report_css_support(css_list : Array[String]) -> Unit {
   let mut unsupported_visual = 0
   let mut deprecated = 0
   let mut unknown = 0
-  let all_diagnostics : Array[@diagnostics.Diagnostic] = []
+  let all_diagnostics : Array[@css.Diagnostic] = []
   let seen : Map[String, Bool] = {}
   // Parse all CSS with diagnostics
   for css in css_list {
-    let result = @parser.parse_stylesheet_with_diagnostics(css)
+    let result = @css.parse_stylesheet_with_diagnostics(css)
     let summary = result.diagnostics.get_summary()
     // Aggregate counts
     total += summary.total_properties
@@ -46,7 +46,7 @@ pub fn report_css_support(css_list : Array[String]) -> Unit {
     // Collect unique diagnostics (non-supported only)
     for diag in result.diagnostics.get_diagnostics() {
       let key = diag.property + ":" + diag.value
-      if not(seen.contains(key)) {
+      if !seen.contains(key) {
         seen.set(key, true)
         all_diagnostics.push(diag)
       }
@@ -103,9 +103,9 @@ pub fn report_css_support(css_list : Array[String]) -> Unit {
       println("  Unknown: " + unknown.to_string() + " [ERROR]")
     }
     // Print first few layout-affecting issues
-    let layout_issues : Array[@diagnostics.Diagnostic] = []
+    let layout_issues : Array[@css.Diagnostic] = []
     for diag in all_diagnostics {
-      if @diagnostics.affects_layout(diag.level) {
+      if @css.affects_layout(diag.level) {
         layout_issues.push(diag)
       }
     }
@@ -127,10 +127,10 @@ pub fn report_css_support(css_list : Array[String]) -> Unit {
       }
     }
     // Print first few unknown properties
-    let unknown_props : Array[@diagnostics.Diagnostic] = []
+    let unknown_props : Array[@css.Diagnostic] = []
     for diag in all_diagnostics {
       match diag.level {
-        @diagnostics.Unknown => unknown_props.push(diag)
+        @css.SupportLevel::Unknown => unknown_props.push(diag)
         _ => ()
       }
     }

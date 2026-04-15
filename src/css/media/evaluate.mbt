@@ -7,7 +7,17 @@
 pub(all) enum ColorScheme {
   Light
   Dark
-} derive(Eq, Show)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for ColorScheme with output(self, logger) {
+  logger.write_string(
+    match self {
+      Light => "Light"
+      Dark => "Dark"
+    },
+  )
+}
 
 ///|
 /// Environment for evaluating media queries
@@ -67,7 +77,7 @@ pub fn MediaQueryList::evaluate(
 pub fn MediaQuery::evaluate(self : MediaQuery, env : MediaEnvironment) -> Bool {
   let result = self.evaluate_without_negation(env)
   if self.negated {
-    not(result)
+    !result
   } else {
     result
   }
@@ -87,7 +97,7 @@ fn MediaQuery::evaluate_without_negation(
   }
   // Check all conditions (AND semantics)
   for condition in self.conditions {
-    if not(evaluate_feature(condition, env)) {
+    if !evaluate_feature(condition, env) {
       return false
     }
   }

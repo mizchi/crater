@@ -1,6 +1,6 @@
 import {
   "mizchi/crater/svg",
-  "mizchi/crater/paint",
+  "mizchi/crater/paint/model" @paint_model,
   "mizchi/crater/x/image",
   "moonbitlang/async/io",
 }

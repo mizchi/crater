@@ -125,8 +125,8 @@ pub fn buffer_to_ansi(buf : CharBuffer, max_cols? : Int = 0) -> String {
         color_to_256(cell.bg)
       }
       // Check if we need to change attributes
-      let need_reset = (last_bold && not(cell.bold)) ||
-        (last_underline && not(cell.underline))
+      let need_reset = (last_bold && !cell.bold) ||
+        (last_underline && !cell.underline)
       if need_reset {
         sb.write_string(ansi_reset())
         last_fg = -1
@@ -135,12 +135,12 @@ pub fn buffer_to_ansi(buf : CharBuffer, max_cols? : Int = 0) -> String {
         last_underline = false
       }
       // Set bold if needed
-      if cell.bold && not(last_bold) {
+      if cell.bold && !last_bold {
         sb.write_string(ansi_bold())
         last_bold = true
       }
       // Set underline if needed
-      if cell.underline && not(last_underline) {
+      if cell.underline && !last_underline {
         sb.write_string(ansi_underline())
         last_underline = true
       }
@@ -209,8 +209,8 @@ pub fn buffer_diff_to_ansi(
       } else {
         color_to_256(cell.bg)
       }
-      let need_reset = (last_bold && not(cell.bold)) ||
-        (last_underline && not(cell.underline))
+      let need_reset = (last_bold && !cell.bold) ||
+        (last_underline && !cell.underline)
       if need_reset {
         sb.write_string(ansi_reset())
         last_fg = -1
@@ -218,11 +218,11 @@ pub fn buffer_diff_to_ansi(
         last_bold = false
         last_underline = false
       }
-      if cell.bold && not(last_bold) {
+      if cell.bold && !last_bold {
         sb.write_string(ansi_bold())
         last_bold = true
       }
-      if cell.underline && not(last_underline) {
+      if cell.underline && !last_underline {
         sb.write_string(ansi_underline())
         last_underline = true
       }
@@ -328,8 +328,8 @@ pub fn buffer_diff_to_ansi_rects(
         } else {
           color_to_256(cell.bg)
         }
-        let need_reset = (last_bold && not(cell.bold)) ||
-          (last_underline && not(cell.underline))
+        let need_reset = (last_bold && !cell.bold) ||
+          (last_underline && !cell.underline)
         if need_reset {
           sb.write_string(ansi_reset())
           last_fg = -1
@@ -337,11 +337,11 @@ pub fn buffer_diff_to_ansi_rects(
           last_bold = false
           last_underline = false
         }
-        if cell.bold && not(last_bold) {
+        if cell.bold && !last_bold {
           sb.write_string(ansi_bold())
           last_bold = true
         }
-        if cell.underline && not(last_underline) {
+        if cell.underline && !last_underline {
           sb.write_string(ansi_underline())
           last_underline = true
         }
@@ -406,10 +406,10 @@ pub fn buffer_to_plain(buf : CharBuffer) -> String {
         continue
       }
       // Handle underline toggle (for links)
-      if cell.underline && not(last_underline) {
+      if cell.underline && !last_underline {
         sb.write_string(ansi_underline())
         last_underline = true
-      } else if not(cell.underline) && last_underline {
+      } else if !cell.underline && last_underline {
         sb.write_string(ansi_reset())
         last_underline = false
       }
@@ -478,10 +478,10 @@ pub fn buffer_to_plain_with_links(
         continue
       }
       // Handle underline toggle (for links)
-      if cell.underline && not(last_underline) {
+      if cell.underline && !last_underline {
         sb.write_string(ansi_underline())
         last_underline = true
-      } else if not(cell.underline) && last_underline {
+      } else if !cell.underline && last_underline {
         sb.write_string(ansi_reset())
         last_underline = false
       }

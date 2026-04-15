@@ -116,7 +116,7 @@ fn BidiProtocol::emit_screen_orientation_messages_for_contexts(
   if target_contexts.length() > 0 {
     for ctx_id in target_contexts {
       let top_level_ctx_id = self.resolve_top_level_context(ctx_id)
-      if not(array_contains(affected_top_level_contexts, top_level_ctx_id)) {
+      if !array_contains(affected_top_level_contexts, top_level_ctx_id) {
         affected_top_level_contexts.push(top_level_ctx_id)
       }
     }
@@ -130,7 +130,7 @@ fn BidiProtocol::emit_screen_orientation_messages_for_contexts(
         let user_context_id = self.context_user_context
           .get(top_level_ctx_id)
           .unwrap_or("default")
-        if not(array_contains(target_user_contexts, user_context_id)) {
+        if !array_contains(target_user_contexts, user_context_id) {
           continue
         }
       }
@@ -192,7 +192,7 @@ fn BidiProtocol::resolve_emulation_set_screen_orientation_override(
         for context in contexts {
           match context {
             String(ctx_id) =>
-              if not(self.manager.has_session(ctx_id)) {
+              if !self.manager.has_session(ctx_id) {
                 self.send_error(
                   request_id,
                   "no such frame",
@@ -204,7 +204,7 @@ fn BidiProtocol::resolve_emulation_set_screen_orientation_override(
                   request_id, "invalid argument", "contexts must reference top-level browsing contexts",
                 )
                 return None
-              } else if not(array_contains(target_contexts, ctx_id)) {
+              } else if !array_contains(target_contexts, ctx_id) {
                 target_contexts.push(ctx_id)
               }
             _ => {
@@ -238,16 +238,14 @@ fn BidiProtocol::resolve_emulation_set_screen_orientation_override(
           match raw_user_context {
             String(user_context_id) =>
               if user_context_id == "" ||
-                not(self.user_contexts.contains(user_context_id)) {
+                !self.user_contexts.contains(user_context_id) {
                 self.send_error(
                   request_id,
                   "no such user context",
                   "Unknown user context: " + user_context_id,
                 )
                 return None
-              } else if not(
-                  array_contains(target_user_contexts, user_context_id),
-                ) {
+              } else if !array_contains(target_user_contexts, user_context_id) {
                 target_user_contexts.push(user_context_id)
               }
             _ => {

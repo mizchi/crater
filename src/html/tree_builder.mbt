@@ -148,7 +148,7 @@ fn create_element(tag : String, attrs : Map[String, String]) -> Element {
       let parts : Array[String] = []
       for part in class_str.split(" ") {
         let s = part.to_string().trim()
-        if not(s.is_empty()) {
+        if !s.is_empty() {
           parts.push(s.to_string())
         }
       }
@@ -290,7 +290,7 @@ fn should_preserve_inline_inter_element_whitespace(
     Some(_) => true
     None => false
   }
-  if not(has_next_element) {
+  if !has_next_element {
     return false
   }
   match current.children[prev_len - 1] {
@@ -303,7 +303,7 @@ fn should_preserve_inline_inter_element_whitespace(
 /// Check if string contains only whitespace
 fn is_whitespace_only(s : String) -> Bool {
   for c in s {
-    if not(tb_is_whitespace(c)) {
+    if !tb_is_whitespace(c) {
       return false
     }
   }
@@ -435,7 +435,7 @@ fn TreeBuilder::foster_parent_character(self : TreeBuilder, c : Char) -> Unit {
 fn TreeBuilder::pop_until(self : TreeBuilder, tag : String) -> Unit {
   // Flush pending text to current element before popping
   self.flush_pending_text()
-  while not(self.open_elements.is_empty()) {
+  while !self.open_elements.is_empty() {
     let elem = self.open_elements.pop()
     match elem {
       Some(e) if e.tag == tag => break
@@ -447,7 +447,7 @@ fn TreeBuilder::pop_until(self : TreeBuilder, tag : String) -> Unit {
 ///|
 /// Generate implied end tags
 fn TreeBuilder::generate_implied_end_tags(self : TreeBuilder) -> Unit {
-  while not(self.open_elements.is_empty()) {
+  while !self.open_elements.is_empty() {
     match self.current_node() {
       Some(e) =>
         match e.tag {
@@ -476,7 +476,7 @@ fn TreeBuilder::generate_implied_end_tags_except(
   self : TreeBuilder,
   except : String,
 ) -> Unit {
-  while not(self.open_elements.is_empty()) {
+  while !self.open_elements.is_empty() {
     match self.current_node() {
       Some(e) if e.tag == except => break
       Some(e) =>
@@ -613,7 +613,7 @@ pub fn TreeBuilder::build(self : TreeBuilder) -> Element {
       _ => {
         self.process_token_single(token)
         // Process any requeued tokens iteratively
-        while not(self.pending_tokens.is_empty()) {
+        while !self.pending_tokens.is_empty() {
           let next = self.pending_tokens.remove(0)
           self.process_token_single(next)
         }
@@ -639,7 +639,7 @@ pub fn TreeBuilder::build_document(self : TreeBuilder) -> Element {
       _ => {
         self.process_token_single(token)
         // Process any requeued tokens iteratively
-        while not(self.pending_tokens.is_empty()) {
+        while !self.pending_tokens.is_empty() {
           let next = self.pending_tokens.remove(0)
           self.process_token_single(next)
         }

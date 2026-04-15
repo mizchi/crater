@@ -410,20 +410,20 @@ fn parse_args_list(args : Array[String]) -> Options {
       headless = Viewport
     } else if arg == "--headless=full" {
       headless = Full
-    } else if not(arg.has_prefix("-")) {
+    } else if !arg.has_prefix("-") {
       url = arg
     }
   }
   // Default to text mode if no output mode is specified
-  let text = if not(sixel) &&
-    not(kitty) &&
-    not(text) &&
-    not(debug) &&
-    not(json) &&
-    not(aom) &&
-    not(arc90) &&
-    not(grounding) &&
-    not(extract_main) {
+  let text = if !sixel &&
+    !kitty &&
+    !text &&
+    !debug &&
+    !json &&
+    !aom &&
+    !arc90 &&
+    !grounding &&
+    !extract_main {
     true
   } else {
     text
@@ -553,7 +553,7 @@ async fn main {
   }
   render_page(browser, options, resolved_output_mode)
   // Only enter interactive mode for sixel or text mode
-  if not(options.sixel) && not(options.kitty) && not(options.text) {
+  if !options.sixel && !options.kitty && !options.text {
     return
   }
   // Main event loop

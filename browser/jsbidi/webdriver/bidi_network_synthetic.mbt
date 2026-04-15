@@ -170,7 +170,7 @@ fn BidiProtocol::handle_network_build_headers_echo_payload(
       return
     }
   }
-  if not(self.manager.has_session(context_id)) {
+  if !self.manager.has_session(context_id) {
     self.send_error(
       request_id,
       "no such frame",
@@ -219,7 +219,7 @@ fn BidiProtocol::handle_network_prepare_navigation_request(
       return
     }
   }
-  if not(self.manager.has_session(context_id)) {
+  if !self.manager.has_session(context_id) {
     self.send_error(
       request_id,
       "no such frame",
@@ -248,7 +248,7 @@ fn BidiProtocol::prepare_navigation_request_internal(
   url : String,
 ) -> Json? {
   let event_name = "network.beforeRequestSent"
-  if not(self.is_subscribed_for_context(event_name, context_id)) {
+  if !self.is_subscribed_for_context(event_name, context_id) {
     return Some(make_object({ "blocked": Json::boolean(false) }))
   }
   let intercepts = self.resolve_matching_network_intercepts_internal(
@@ -671,7 +671,7 @@ fn BidiProtocol::handle_network_continue_blocked_request(
       Some(navigation_id),
       "Navigation interrupted by another navigation",
     )
-    if not(is_valid_navigation_target_url(resolved_url)) {
+    if !is_valid_navigation_target_url(resolved_url) {
       self.send_error(request_id, "invalid argument", "url is invalid")
       return
     }
@@ -793,12 +793,28 @@ fn BidiProtocol::handle_network_continue_blocked_request(
     None,
   )
   match completed_navigation_url {
-    Some(url) =>
+    Some(url) => {
+      if !self.is_subscribed_for_context(
+          "browsingContext.load",
+          input.context_id,
+        ) {
+        self.outbox.push(
+          Event({
+            event_method: "browsingContext.load",
+            params: synthetic_network_load_event_json(
+              input.context_id,
+              input.navigation,
+              url,
+            ),
+          }),
+        )
+      }
       self.complete_pending_navigation_response(
         input.context_id,
         Some(url),
         input.navigation,
       )
+    }
     None => ()
   }
 }
@@ -1059,7 +1075,7 @@ fn BidiProtocol::handle_network_continue_blocked_response(
       input.url,
       credentials,
     )
-    if not(should_continue) {
+    if !should_continue {
       let auth_required_event = match
         self.build_synthetic_auth_required_event_json(
           request_id, input, blocked_request,
@@ -1086,13 +1102,13 @@ fn BidiProtocol::handle_network_continue_blocked_response(
       )
       return
     }
-    if not(has_status_code) {
+    if !has_status_code {
       status_code = 200
     }
-    if not(has_reason_phrase) {
+    if !has_reason_phrase {
       reason_phrase = "OK"
     }
-    if not(has_headers) && not(has_cookies) {
+    if !has_headers && !has_cookies {
       response_headers = []
     }
   }
@@ -1412,7 +1428,7 @@ fn BidiProtocol::maybe_emit_followup_preflight_blocked_request(
     _ => return
   }
   let event_name = "network.beforeRequestSent"
-  if not(self.is_subscribed_for_context(event_name, context_id)) {
+  if !self.is_subscribed_for_context(event_name, context_id) {
     return
   }
   let intercepts = self.resolve_matching_network_intercepts_internal(
@@ -1989,7 +2005,7 @@ fn synthetic_network_extract_set_cookie_entries(
       Some(String(name)) => name
       _ => continue
     }
-    if not(is_ascii_case_insensitive_equal(name, "set-cookie")) {
+    if !is_ascii_case_insensitive_equal(name, "set-cookie") {
       continue
     }
     let value_map = match map.get("value") {
@@ -2043,7 +2059,7 @@ fn synthetic_network_parse_set_cookie_header_value(
       } else {
         ""
       }
-      if name == "" || not(is_valid_network_header_name_token(name)) {
+      if name == "" || !is_valid_network_header_name_token(name) {
         return None
       }
       let mut domain = storage_cookie_domain_from_base_url(base_url)
@@ -2091,7 +2107,7 @@ fn synthetic_network_parse_set_cookie_header_value(
             same_site = lowered
           }
         } else if attr_name == "max-age" {
-          let parsed_max_age : Int? = Some(@strconv.parse_int(attr_value)) catch {
+          let parsed_max_age : Int? = Some(@string.parse_int(attr_value)) catch {
             _ => None
           }
           match parsed_max_age {
@@ -2278,7 +2294,7 @@ fn BidiProtocol::normalize_synthetic_network_event_input(
       return None
     }
   }
-  if not(self.manager.has_session(context_id)) {
+  if !self.manager.has_session(context_id) {
     self.send_error(
       request_id,
       "no such frame",
@@ -2417,7 +2433,7 @@ fn BidiProtocol::synthetic_network_event_input_from_blocked_request(
       return None
     }
   }
-  if not(self.manager.has_session(context_id)) {
+  if !self.manager.has_session(context_id) {
     self.send_error(request_id, "no such request", "Unknown request")
     return None
   }
@@ -2672,12 +2688,12 @@ fn BidiProtocol::build_network_headers_echo_payload(
     }
     headers[name] = Json::array([Json::string(value)])
   }
-  if not(has_user_agent) {
+  if !has_user_agent {
     headers["user-agent"] = Json::array([
       Json::string(self.resolve_effective_user_agent(context_id)),
     ])
   }
-  if not(has_accept_language) {
+  if !has_accept_language {
     headers["accept-language"] = Json::array([
       Json::string(self.resolve_effective_locale(context_id)),
     ])
@@ -3084,6 +3100,7 @@ fn BidiProtocol::build_synthetic_network_request_payload_json(
     self.resolve_storage_request_cookies(input.context_id, Some(input.url))
   }
   let request : Map[String, Json] = {}
+  request["method"] = Json::string(input.http_method)
   request["bodySize"] = Json::number(body_size.to_double())
   request["cookies"] = Json::array(cookies)
   request["destination"] = Json::string(input.destination)
@@ -3093,7 +3110,6 @@ fn BidiProtocol::build_synthetic_network_request_payload_json(
     Some(value) => Json::string(value)
     None => Json::null()
   }
-  request["method"] = Json::string(input.http_method)
   request["request"] = Json::string(input.request_token)
   request["timings"] = self.build_synthetic_network_timings_json(now)
   request["url"] = Json::string(input.url)
@@ -3279,7 +3295,7 @@ fn BidiProtocol::handle_network_set_cache_behavior(
       for item in items {
         match item {
           String(ctx_id) =>
-            if not(self.manager.has_session(ctx_id)) {
+            if !self.manager.has_session(ctx_id) {
               self.send_error(
                 request_id,
                 "no such frame",
@@ -3332,7 +3348,7 @@ fn BidiProtocol::handle_network_resolve_synthetic_response_overrides(
       return
     }
   }
-  if not(self.manager.has_session(context_id)) {
+  if !self.manager.has_session(context_id) {
     self.send_error(
       request_id,
       "no such frame",
@@ -3610,6 +3626,7 @@ fn BidiProtocol::clear_network_state_for_context(
 ) -> Unit {
   self.network_extra_headers_by_context.remove(ctx_id)
   self.network_cache_behavior_by_context.remove(ctx_id)
+  self.network_state_channel_by_context.remove(ctx_id)
   self.network_cached_requests_by_context.remove(ctx_id)
   let blocked_keys : Array[String] = []
   for request_id, blocked_request in self.network_blocked_requests {

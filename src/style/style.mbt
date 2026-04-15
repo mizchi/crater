@@ -11,7 +11,7 @@ pub(all) enum BorderStyle {
   Solid // 7
   Double // 8
   Hidden // 9 - highest priority (suppresses border)
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 pub fn BorderStyle::priority(self : BorderStyle) -> Int {
@@ -34,21 +34,21 @@ pub fn BorderStyle::priority(self : BorderStyle) -> Int {
 pub(all) enum BorderCollapse {
   Separate // Default - borders have spacing
   Collapse // Adjacent borders merge
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Table layout algorithm
 pub(all) enum TableLayout {
   Auto // Default - column widths based on content
   Fixed // Column widths based on first row only
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// CSS caption-side property (for table captions)
 pub(all) enum CaptionSide {
   Top // Caption above the table (default)
   Bottom // Caption below the table
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// CSS white-space property (for text wrapping)
@@ -58,7 +58,7 @@ pub(all) enum WhiteSpace {
   Pre // Preserve whitespace, only wrap at newlines
   PreWrap // Preserve whitespace, wrap when needed
   PreLine // Collapse whitespace, wrap at newlines
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// CSS writing-mode property (for text direction and flow)
@@ -66,7 +66,7 @@ pub(all) enum WritingMode {
   HorizontalTb // Default - left-to-right, top-to-bottom
   VerticalRl // Top-to-bottom, right-to-left (e.g., traditional Japanese)
   VerticalLr // Top-to-bottom, left-to-right (e.g., Mongolian)
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Check if writing mode is vertical
@@ -92,7 +92,7 @@ pub fn WritingMode::is_block_rtl(self : WritingMode) -> Bool {
 pub(all) enum Direction {
   Ltr // Left-to-right (default)
   Rtl // Right-to-left (e.g., Arabic, Hebrew)
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Check if direction is right-to-left
@@ -112,7 +112,7 @@ pub(all) enum TextAlign {
   Right
   Center
   Justify
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// CSS scroll-snap-type axis
@@ -121,7 +121,7 @@ pub(all) enum ScrollSnapAxis {
   X
   Y
   Both
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// CSS scroll-snap-type strictness
@@ -129,14 +129,14 @@ pub(all) enum ScrollSnapStrictness {
   None
   Mandatory
   Proximity
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// CSS scroll-snap-type value
 pub(all) struct ScrollSnapType {
   axis : ScrollSnapAxis
   strictness : ScrollSnapStrictness
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 pub fn ScrollSnapType::none() -> ScrollSnapType {
@@ -171,7 +171,7 @@ pub(all) enum ScrollSnapAlign {
   Start
   End
   Center
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// CSS visibility property
@@ -179,14 +179,14 @@ pub(all) enum Visibility {
   Visible // Element is visible (default)
   Hidden // Element is invisible but takes up space
   Collapse // Same as hidden for most elements
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// CSS pointer-events property (minimum subset for browser hit testing).
 pub(all) enum PointerEvents {
   Auto
   None
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// CSS margin-trim property
@@ -198,14 +198,14 @@ pub(all) enum MarginTrim {
   InlineStart
   InlineEnd
   Inline
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// CSS multi-column column-fill property.
 pub(all) enum ColumnFill {
   Balance
   Auto
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// CSS break-before property (minimum subset for multicol tests).
@@ -213,21 +213,21 @@ pub(all) enum BreakBefore {
   Auto
   Column
   Avoid
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// CSS break-inside property (minimum subset for multicol tests).
 pub(all) enum BreakInside {
   Auto
   Avoid
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// CSS column-span property.
 pub(all) enum ColumnSpan {
   None
   All
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 pub fn MarginTrim::trim_block_start(self : MarginTrim) -> Bool {
@@ -250,14 +250,14 @@ pub fn MarginTrim::trim_block_end(self : MarginTrim) -> Bool {
 pub(all) enum ZIndex {
   Auto // Stacking order determined by DOM order
   Value(Int) // Explicit stacking level
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// CSS transform translate value (can be length or percent)
 pub(all) enum TranslateValue {
   Length(Double) // Fixed length in pixels
   Percent(Double) // Percentage of element's own dimension (0.0 - 1.0)
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// CSS transform property - list of transform functions
@@ -267,7 +267,7 @@ pub(all) struct Transform {
   translate_y : TranslateValue // translateY or second arg of translate()
   scale_x : Double // scaleX or first arg of scale() (default 1.0)
   scale_y : Double // scaleY or second arg of scale() (default 1.0)
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// Create a none/identity transform
@@ -331,7 +331,7 @@ pub(all) struct Contain {
   layout : Bool // Layout containment - isolates internal layout
   paint : Bool // Paint containment - clips overflow, creates stacking context
   style : Bool // Style containment - scopes counters/quotes
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 pub fn Contain::none() -> Contain {
@@ -359,7 +359,7 @@ pub fn Contain::has_containment(self : Contain) -> Bool {
 /// Whether containment suppresses intrinsic contribution on physical width.
 pub fn Style::suppresses_intrinsic_width(self : Style) -> Bool {
   self.contain.size ||
-  (self.contain.inline_size && not(self.writing_mode.is_vertical()))
+  (self.contain.inline_size && !self.writing_mode.is_vertical())
 }
 
 ///|
@@ -431,7 +431,267 @@ pub(all) enum VerticalAlign {
   TextBottom // Align to bottom of parent's font (simplified to Bottom)
   Sub // Subscript position
   Super // Superscript position
-} derive(Show, Eq)
+} derive(Debug, Eq)
+
+///|
+pub impl Show for BorderStyle with output(self, logger) {
+  let name = match self {
+    None => "None"
+    Inset => "Inset"
+    Groove => "Groove"
+    Outset => "Outset"
+    Ridge => "Ridge"
+    Dotted => "Dotted"
+    Dashed => "Dashed"
+    Solid => "Solid"
+    Double => "Double"
+    Hidden => "Hidden"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for BorderCollapse with output(self, logger) {
+  let name = match self {
+    Separate => "Separate"
+    Collapse => "Collapse"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for TableLayout with output(self, logger) {
+  let name = match self {
+    Auto => "Auto"
+    Fixed => "Fixed"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for CaptionSide with output(self, logger) {
+  let name = match self {
+    Top => "Top"
+    Bottom => "Bottom"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for WhiteSpace with output(self, logger) {
+  let name = match self {
+    Normal => "Normal"
+    Nowrap => "Nowrap"
+    Pre => "Pre"
+    PreWrap => "PreWrap"
+    PreLine => "PreLine"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for WritingMode with output(self, logger) {
+  let name = match self {
+    HorizontalTb => "HorizontalTb"
+    VerticalRl => "VerticalRl"
+    VerticalLr => "VerticalLr"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for Direction with output(self, logger) {
+  let name = match self {
+    Ltr => "Ltr"
+    Rtl => "Rtl"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for TextAlign with output(self, logger) {
+  let name = match self {
+    Start => "Start"
+    End => "End"
+    Left => "Left"
+    Right => "Right"
+    Center => "Center"
+    Justify => "Justify"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for ScrollSnapAxis with output(self, logger) {
+  let name = match self {
+    None => "None"
+    X => "X"
+    Y => "Y"
+    Both => "Both"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for ScrollSnapStrictness with output(self, logger) {
+  let name = match self {
+    None => "None"
+    Mandatory => "Mandatory"
+    Proximity => "Proximity"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for ScrollSnapType with output(self, logger) {
+  logger.write_string("{axis: ")
+  logger.write_string(self.axis.to_string())
+  logger.write_string(", strictness: ")
+  logger.write_string(self.strictness.to_string())
+  logger.write_string("}")
+}
+
+///|
+pub impl Show for ScrollSnapAlign with output(self, logger) {
+  let name = match self {
+    None => "None"
+    Start => "Start"
+    End => "End"
+    Center => "Center"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for Visibility with output(self, logger) {
+  let name = match self {
+    Visible => "Visible"
+    Hidden => "Hidden"
+    Collapse => "Collapse"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for PointerEvents with output(self, logger) {
+  let name = match self {
+    Auto => "Auto"
+    None => "None"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for MarginTrim with output(self, logger) {
+  let name = match self {
+    None => "None"
+    BlockStart => "BlockStart"
+    BlockEnd => "BlockEnd"
+    Block => "Block"
+    InlineStart => "InlineStart"
+    InlineEnd => "InlineEnd"
+    Inline => "Inline"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for ColumnFill with output(self, logger) {
+  let name = match self {
+    Balance => "Balance"
+    Auto => "Auto"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for BreakBefore with output(self, logger) {
+  let name = match self {
+    Auto => "Auto"
+    Column => "Column"
+    Avoid => "Avoid"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for BreakInside with output(self, logger) {
+  let name = match self {
+    Auto => "Auto"
+    Avoid => "Avoid"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for ColumnSpan with output(self, logger) {
+  let name = match self {
+    None => "None"
+    All => "All"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for ZIndex with output(self, logger) {
+  let text = match self {
+    Auto => "Auto"
+    Value(v) => "Value(\{v})"
+  }
+  logger.write_string(text)
+}
+
+///|
+pub impl Show for TranslateValue with output(self, logger) {
+  let text = match self {
+    Length(v) => "Length(\{v})"
+    Percent(v) => "Percent(\{v})"
+  }
+  logger.write_string(text)
+}
+
+///|
+pub impl Show for Transform with output(self, logger) {
+  logger.write_string("{translate_x: ")
+  logger.write_string(self.translate_x.to_string())
+  logger.write_string(", translate_y: ")
+  logger.write_string(self.translate_y.to_string())
+  logger.write_string(", scale_x: ")
+  logger.write_string(self.scale_x.to_string())
+  logger.write_string(", scale_y: ")
+  logger.write_string(self.scale_y.to_string())
+  logger.write_string("}")
+}
+
+///|
+pub impl Show for Contain with output(self, logger) {
+  logger.write_string("{size: ")
+  logger.write_string(self.size.to_string())
+  logger.write_string(", inline_size: ")
+  logger.write_string(self.inline_size.to_string())
+  logger.write_string(", layout: ")
+  logger.write_string(self.layout.to_string())
+  logger.write_string(", paint: ")
+  logger.write_string(self.paint.to_string())
+  logger.write_string(", style: ")
+  logger.write_string(self.style.to_string())
+  logger.write_string("}")
+}
+
+///|
+pub impl Show for VerticalAlign with output(self, logger) {
+  let name = match self {
+    Baseline => "Baseline"
+    Top => "Top"
+    Middle => "Middle"
+    Bottom => "Bottom"
+    TextTop => "TextTop"
+    TextBottom => "TextBottom"
+    Sub => "Sub"
+    Super => "Super"
+  }
+  logger.write_string(name)
+}
 
 ///|
 /// CSS Style definition for layout computation
@@ -614,7 +874,7 @@ pub fn Style::default() -> Style {
     margin_trim: MarginTrim::None,
     flex_direction: @types.Row,
     flex_wrap: @types.NoWrap,
-    justify_content: @types.FlexStart,
+    justify_content: @types.Start,
     align_items: @types.Stretch,
     align_content: @types.Stretch,
     justify_content_unsafe: false,

@@ -184,7 +184,7 @@ fn Parser::consume(self : Parser) -> Char? {
 
 ///|
 fn Parser::skip_whitespace(self : Parser) -> Unit {
-  while not(self.is_eof()) {
+  while !self.is_eof() {
     match self.peek() {
       Some(c) if is_whitespace(c) => {
         let _ = self.consume()
@@ -241,7 +241,7 @@ fn Parser::skip_comment(self : Parser) -> Bool {
     let _ = self.consume() // -
     let _ = self.consume() // -
     // Skip until -->
-    while not(self.is_eof()) {
+    while !self.is_eof() {
       if self.peek() is Some('-') &&
         self.peek_at(1) is Some('-') &&
         self.peek_at(2) is Some('>') {
@@ -292,7 +292,7 @@ fn is_name_char(c : Char) -> Bool {
 ///|
 fn Parser::consume_name(self : Parser) -> String {
   let buf = StringBuilder::new()
-  while not(self.is_eof()) {
+  while !self.is_eof() {
     match self.peek() {
       Some(c) if is_name_char(c) => {
         buf.write_char(c)
@@ -307,7 +307,7 @@ fn Parser::consume_name(self : Parser) -> String {
 ///|
 fn Parser::consume_until(self : Parser, end_char : Char) -> String {
   let buf = StringBuilder::new()
-  while not(self.is_eof()) {
+  while !self.is_eof() {
     match self.peek() {
       Some(c) if c == end_char => break
       Some(c) => {
@@ -337,7 +337,7 @@ fn Parser::consume_quoted_string(self : Parser) -> String {
     }
     _ => {
       let buf = StringBuilder::new()
-      while not(self.is_eof()) {
+      while !self.is_eof() {
         match self.peek() {
           Some(c) if is_whitespace(c) ||
             c == '>' ||
@@ -361,7 +361,7 @@ fn Parser::consume_quoted_string(self : Parser) -> String {
 /// Consume ALL remaining content as text (for plaintext element)
 fn Parser::consume_all_remaining(self : Parser) -> String {
   let buf = StringBuilder::new()
-  while not(self.is_eof()) {
+  while !self.is_eof() {
     match self.consume() {
       Some(c) => buf.write_char(c)
       None => break
@@ -374,7 +374,7 @@ fn Parser::consume_all_remaining(self : Parser) -> String {
 /// Consume raw text content until the closing tag is found
 fn Parser::consume_raw_text(self : Parser, tag : String) -> String {
   let buf = StringBuilder::new()
-  while not(self.is_eof()) {
+  while !self.is_eof() {
     // Check for closing tag (case-insensitive)
     if self.peek() is Some('<') && self.peek_at(1) is Some('/') {
       // Check if this is our closing tag
@@ -487,7 +487,7 @@ fn Parser::parse_element_inner(self : Parser) -> Element? {
           let class_parts = attr_value.split(" ")
           for part in class_parts {
             let s = part.to_string().trim()
-            if not(s.is_empty()) {
+            if !s.is_empty() {
               classes.push(s.to_string())
             }
           }
@@ -538,7 +538,7 @@ fn Parser::parse_children(self : Parser, parent_tag : String) -> Array[Node] {
   let children : Array[Node] = []
   // Preserve whitespace in inline contexts (phrasing content)
   let preserve_ws = is_inline_context(parent_tag)
-  while not(self.is_eof()) {
+  while !self.is_eof() {
     match self.peek() {
       // Whitespace - collect it and decide what to do
       Some(c) if is_whitespace(c) => {
@@ -557,7 +557,7 @@ fn Parser::parse_children(self : Parser, parent_tag : String) -> Array[Node] {
             // Rewind and parse as text
             self.pos = ws_start
             let text = self.parse_text()
-            if not(text.is_empty()) {
+            if !text.is_empty() {
               children.push(Node::Text(text))
             }
           }
@@ -654,7 +654,7 @@ fn Parser::parse_children(self : Parser, parent_tag : String) -> Array[Node] {
       Some(_) => {
         // Text content
         let text = self.parse_text()
-        if not(text.is_empty()) {
+        if !text.is_empty() {
           children.push(Node::Text(text))
         }
       }
@@ -667,7 +667,7 @@ fn Parser::parse_children(self : Parser, parent_tag : String) -> Array[Node] {
 ///|
 /// Decode HTML entities in text
 fn decode_html_entities(text : String) -> String {
-  if not(text.contains("&")) {
+  if !text.contains("&") {
     return text
   }
   let buf = StringBuilder::new()
@@ -798,7 +798,7 @@ fn parse_decimal(s : String) -> Int? {
 ///|
 fn Parser::parse_text(self : Parser) -> String {
   let buf = StringBuilder::new()
-  while not(self.is_eof()) {
+  while !self.is_eof() {
     match self.peek() {
       Some('<') => break
       Some(c) => {
@@ -865,7 +865,7 @@ fn extract_stylesheets(
   // Handle <style> tags - extract text content
   if elem.tag == "style" {
     let css = extract_text_content(elem)
-    if not(css.is_empty()) {
+    if !css.is_empty() {
       stylesheets.push(css)
     }
   }

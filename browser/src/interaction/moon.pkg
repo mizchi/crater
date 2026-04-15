@@ -12,6 +12,8 @@ import {
 
 warnings = "-unused_package"
 
+supported_targets = "js+native"
+
 options(
   targets: { "interaction_wbtest.mbt": [ "js" ] },
 )

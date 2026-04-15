@@ -21,9 +21,7 @@ fn BidiProtocol::resolve_get_responsive_breakpoints(
     Some(Object(map)) => map
     _ => {
       self.send_error(
-        request_id,
-        "invalid argument",
-        "params must be an object",
+        request_id, "invalid argument", "params must be an object",
       )
       return None
     }
@@ -33,9 +31,7 @@ fn BidiProtocol::resolve_get_responsive_breakpoints(
     Some(String(id)) => id
     Some(_) => {
       self.send_error(
-        request_id,
-        "invalid argument",
-        "context must be a string",
+        request_id, "invalid argument", "context must be a string",
       )
       return None
     }
@@ -48,11 +44,7 @@ fn BidiProtocol::resolve_get_responsive_breakpoints(
   let _session = match self.manager.get_session(ctx_id) {
     Some(session) => session
     None => {
-      self.send_error(
-        request_id,
-        "no such frame",
-        "Unknown context: " + ctx_id,
-      )
+      self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
       return None
     }
   }
@@ -64,19 +56,13 @@ fn BidiProtocol::resolve_get_responsive_breakpoints(
         "live-inline" | "html-inline" => value
         _ => {
           self.send_error(
-            request_id,
-            "invalid argument",
-            "mode must be 'live-inline' or 'html-inline'",
+            request_id, "invalid argument", "mode must be 'live-inline' or 'html-inline'",
           )
           return None
         }
       }
     Some(_) => {
-      self.send_error(
-        request_id,
-        "invalid argument",
-        "mode must be a string",
-      )
+      self.send_error(request_id, "invalid argument", "mode must be a string")
       return None
     }
   }
@@ -85,18 +71,12 @@ fn BidiProtocol::resolve_get_responsive_breakpoints(
     None | Some(String("width")) => ()
     Some(String(_)) => {
       self.send_error(
-        request_id,
-        "unsupported operation",
-        "getResponsiveBreakpoints currently supports only axis='width'",
+        request_id, "unsupported operation", "getResponsiveBreakpoints currently supports only axis='width'",
       )
       return None
     }
     Some(_) => {
-      self.send_error(
-        request_id,
-        "invalid argument",
-        "axis must be a string",
-      )
+      self.send_error(request_id, "invalid argument", "axis must be a string")
       return None
     }
   }
@@ -107,16 +87,14 @@ fn BidiProtocol::resolve_get_responsive_breakpoints(
     Some(False) => false
     Some(_) => {
       self.send_error(
-        request_id,
-        "invalid argument",
-        "includeDiagnostics must be a boolean",
+        request_id, "invalid argument", "includeDiagnostics must be a boolean",
       )
       return None
     }
   }
 
   let html = responsive_breakpoint_source_html(mode)
-  let discovery = @responsive.discover_responsive_breakpoints(html)
+  let discovery = @css.discover_responsive_breakpoints(html)
   let result : Map[String, Json] = {}
   result["breakpoints"] = responsive_breakpoints_to_json(discovery.breakpoints)
   if include_diagnostics {
@@ -138,12 +116,14 @@ fn responsive_breakpoint_source_html(mode : String) -> String {
 
 ///|
 fn serialize_live_document_html_expr() -> String {
-  #|(() => { const doc = globalThis.document; if (!doc) return ''; const serNode = (n) => { if (!n) return ''; if (n.nodeType === 3) return (n._textContent || n.textContent || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); if (n.nodeType === 8) return '<!--'+(n._textContent||'')+'-->'; if (n.nodeType !== 1) return ''; const tag = (n.tagName || n._tagName || '').toLowerCase(); let h = '<'+tag; const attrs = n._attrs || {}; for (const [k,v] of Object.entries(attrs)) h+=' '+k+'="'+String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'"'; h+='>'; const voids = new Set(['area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr']); if (voids.has(tag)) return h; const children = n._children || []; for (const c of children) h += serNode(c); h += '</'+tag+'>'; return h; }; const head = doc.head; const body = doc.body; let r = '<html'; const htmlEl = doc.documentElement; if (htmlEl && htmlEl._attrs) for (const [k,v] of Object.entries(htmlEl._attrs)) r += ' '+k+'="'+String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'"'; r += '><head>'; if (head) for (const c of (head._children||[])) r += serNode(c); r += '</head><body'; if (body && body._attrs) for (const [k,v] of Object.entries(body._attrs)) r += ' '+k+'="'+v+'"'; r += '>'; if (body) for (const c of (body._children||[])) r += serNode(c); r += '</body></html>'; return r; })()
+  (
+    #|(() => { const doc = globalThis.document; if (!doc) return ''; const serNode = (n) => { if (!n) return ''; if (n.nodeType === 3) return (n._textContent || n.textContent || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); if (n.nodeType === 8) return '<!--'+(n._textContent||'')+'-->'; if (n.nodeType !== 1) return ''; const tag = (n.tagName || n._tagName || '').toLowerCase(); let h = '<'+tag; const attrs = n._attrs || {}; for (const [k,v] of Object.entries(attrs)) h+=' '+k+'="'+String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'"'; h+='>'; const voids = new Set(['area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr']); if (voids.has(tag)) return h; const children = n._children || []; for (const c of children) h += serNode(c); h += '</'+tag+'>'; return h; }; const head = doc.head; const body = doc.body; let r = '<html'; const htmlEl = doc.documentElement; if (htmlEl && htmlEl._attrs) for (const [k,v] of Object.entries(htmlEl._attrs)) r += ' '+k+'="'+String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'"'; r += '><head>'; if (head) for (const c of (head._children||[])) r += serNode(c); r += '</head><body'; if (body && body._attrs) for (const [k,v] of Object.entries(body._attrs)) r += ' '+k+'="'+v+'"'; r += '>'; if (body) for (const c of (body._children||[])) r += serNode(c); r += '</body></html>'; return r; })()
+  )
 }
 
 ///|
 fn responsive_breakpoints_to_json(
-  breakpoints : Array[@responsive.ResponsiveBreakpoint],
+  breakpoints : Array[@css.ResponsiveBreakpoint],
 ) -> Json {
   let items : Array[Json] = []
   for breakpoint in breakpoints {
@@ -166,7 +146,7 @@ fn responsive_breakpoints_to_json(
 
 ///|
 fn responsive_diagnostics_to_json(
-  diagnostics : @responsive.BreakpointDiscoveryDiagnostics,
+  diagnostics : @css.BreakpointDiscoveryDiagnostics,
 ) -> Json {
   let object : Map[String, Json] = {}
   object["stylesheetCount"] = Json::number(
@@ -176,9 +156,7 @@ fn responsive_diagnostics_to_json(
   object["externalStylesheetLinks"] = string_array_to_json(
     diagnostics.external_stylesheet_links,
   )
-  object["ignoredQueries"] = string_array_to_json(
-    diagnostics.ignored_queries,
-  )
+  object["ignoredQueries"] = string_array_to_json(diagnostics.ignored_queries)
   object["unsupportedQueries"] = string_array_to_json(
     diagnostics.unsupported_queries,
   )

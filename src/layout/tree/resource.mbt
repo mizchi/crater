@@ -4,7 +4,13 @@
 
 ///|
 /// Opaque resource identifier for external reference
-pub(all) struct ResourceId(Int) derive(Eq, Hash, Show)
+pub(all) struct ResourceId(Int) derive(Eq, Hash, Debug)
+
+///|
+pub impl Show for ResourceId with output(self, logger) {
+  let ResourceId(id) = self
+  logger.write_string("ResourceId(\{id})")
+}
 
 ///|
 /// State of an intrinsic resource

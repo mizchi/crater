@@ -42,7 +42,7 @@ fn PathParser::advance(self : PathParser) -> Char {
 
 ///|
 fn PathParser::skip_whitespace_and_comma(self : PathParser) -> Unit {
-  while not(self.is_end()) {
+  while !self.is_end() {
     let c = self.peek()
     if c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == ',' {
       let _ = self.advance()
@@ -54,7 +54,7 @@ fn PathParser::skip_whitespace_and_comma(self : PathParser) -> Unit {
 
 ///|
 fn PathParser::skip_whitespace(self : PathParser) -> Unit {
-  while not(self.is_end()) {
+  while !self.is_end() {
     let c = self.peek()
     if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
       let _ = self.advance()
@@ -83,20 +83,20 @@ fn PathParser::parse_number(self : PathParser) -> Double? {
   }
   // Integer part
   let mut has_digits = false
-  while not(self.is_end()) && is_digit(self.peek()) {
+  while !self.is_end() && is_digit(self.peek()) {
     let _ = self.advance()
     has_digits = true
   }
   // Fractional part
-  if not(self.is_end()) && self.peek() == '.' {
+  if !self.is_end() && self.peek() == '.' {
     let _ = self.advance()
-    while not(self.is_end()) && is_digit(self.peek()) {
+    while !self.is_end() && is_digit(self.peek()) {
       let _ = self.advance()
       has_digits = true
     }
   }
   // Exponent part
-  if not(self.is_end()) {
+  if !self.is_end() {
     let exp_char = self.peek()
     if exp_char == 'e' || exp_char == 'E' {
       let _ = self.advance()
@@ -104,12 +104,12 @@ fn PathParser::parse_number(self : PathParser) -> Double? {
       if sign_char == '-' || sign_char == '+' {
         let _ = self.advance()
       }
-      while not(self.is_end()) && is_digit(self.peek()) {
+      while !self.is_end() && is_digit(self.peek()) {
         let _ = self.advance()
       }
     }
   }
-  if not(has_digits) || self.pos == start {
+  if !has_digits || self.pos == start {
     return None
   }
   // Parse the number string
@@ -144,7 +144,7 @@ pub fn parse_path(data : String) -> Array[PathCommand] {
   let parser = PathParser::new(data)
   let commands : Array[PathCommand] = []
   let mut last_cmd = 'M'
-  while not(parser.is_end()) {
+  while !parser.is_end() {
     parser.skip_whitespace()
     if parser.is_end() {
       break
@@ -1025,7 +1025,7 @@ fn flatten_arc(
   )
   // Adjust sweep
   let pi = 3.14159265358979323846
-  if not(sweep) && dtheta > 0.0 {
+  if !sweep && dtheta > 0.0 {
     dtheta = dtheta - 2.0 * pi
   } else if sweep && dtheta < 0.0 {
     dtheta = dtheta + 2.0 * pi

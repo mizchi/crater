@@ -15,13 +15,45 @@ fn vrt_render_context(
 }
 
 ///|
+fn vrt_render_html_to_paint_tree(
+  html : String,
+  viewport : @types.Size[Double],
+) -> @paint_model.PaintNode {
+  let (node, layout) = @renderer.render_to_node_and_layout_with_external_css(
+    html,
+    vrt_render_context(viewport),
+    [],
+  )
+  build_vrt_paint_tree(node, layout, viewport)
+}
+
+///|
+fn vrt_render_html_to_paint_tree_json(
+  html : String,
+  viewport : @types.Size[Double],
+) -> String {
+  vrt_render_html_to_paint_tree(html, viewport).to_json_string()
+}
+
+///|
+fn vrt_diff_rendered_paint_trees(
+  baseline_html : String,
+  current_html : String,
+  viewport : @types.Size[Double],
+) -> @paint_diff.PaintTreeDiff {
+  let baseline = vrt_render_html_to_paint_tree(baseline_html, viewport)
+  let current = vrt_render_html_to_paint_tree(current_html, viewport)
+  @paint_diff.diff_trees(baseline, current)
+}
+
+///|
 fn build_vrt_paint_tree(
-  node : @node.Node,
+  node : @tree.Node,
   layout : @types.Layout,
   viewport : @types.Size[Double],
-) -> @paint.PaintNode {
+) -> @paint_model.PaintNode {
   match
-    @paint.from_node_and_layout_with_viewport(
+    @paint_render.from_node_and_layout_with_viewport(
       node,
       layout,
       0.0,
@@ -29,7 +61,7 @@ fn build_vrt_paint_tree(
       0.0,
     ) {
     Some(paint_tree) => paint_tree
-    None => @paint.from_node_and_layout(node, layout)
+    None => @paint_render.from_node_and_layout(node, layout)
   }
 }
 
@@ -81,7 +113,7 @@ test "bench_vrt_render_paint_tree_dashboard" (b : @bench.T) {
   let html = dashboard(16, 24)
   let viewport = vrt_viewport()
   b.bench(name="vrt_render_paint_tree_dashboard", fn() {
-    b.keep(@crater.render_html_to_paint_tree(html, viewport))
+    b.keep(vrt_render_html_to_paint_tree(html, viewport))
   })
 }
 
@@ -90,7 +122,7 @@ test "bench_vrt_render_paint_tree_json_component" (b : @bench.T) {
   let html = vrt_component_fixture(20, "#ffffff", "#1463ff")
   let viewport = vrt_viewport()
   b.bench(name="vrt_render_paint_tree_json_component", fn() {
-    b.keep(@crater.render_html_to_paint_tree_json(html, viewport))
+    b.keep(vrt_render_html_to_paint_tree_json(html, viewport))
   })
 }
 
@@ -100,9 +132,7 @@ test "bench_vrt_diff_rendered_paint_trees_component" (b : @bench.T) {
   let baseline_html = vrt_component_fixture(20, "#ffffff", "#1463ff")
   let mutated_html = vrt_component_fixture(8, "#eef2f8", "#0f7b3b")
   b.bench(name="vrt_diff_rendered_paint_trees_component", fn() {
-    b.keep(
-      @crater.diff_rendered_paint_trees(baseline_html, mutated_html, viewport),
-    )
+    b.keep(vrt_diff_rendered_paint_trees(baseline_html, mutated_html, viewport))
   })
 }
 
@@ -151,15 +181,15 @@ test "bench_vrt_phase_paint_tree_json_component" (b : @bench.T) {
 ///|
 test "bench_vrt_phase_diff_component" (b : @bench.T) {
   let viewport = vrt_viewport()
-  let baseline = @crater.render_html_to_paint_tree(
+  let baseline = vrt_render_html_to_paint_tree(
     vrt_component_fixture(20, "#ffffff", "#1463ff"),
     viewport,
   )
-  let mutated = @crater.render_html_to_paint_tree(
+  let mutated = vrt_render_html_to_paint_tree(
     vrt_component_fixture(8, "#eef2f8", "#0f7b3b"),
     viewport,
   )
   b.bench(name="vrt_phase_diff_component", fn() {
-    b.keep(@paint.diff_trees(baseline, mutated))
+    b.keep(@paint_diff.diff_trees(baseline, mutated))
   })
 }

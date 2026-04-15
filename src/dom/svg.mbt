@@ -17,7 +17,7 @@ pub struct GetBBoxOptions {
   stroke : Bool // Include stroke geometry (default false)
   markers : Bool // Include markers (default false)
   clipped : Bool // Apply clipping (default false)
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 /// Default getBBox options (fill only)
@@ -135,7 +135,7 @@ pub fn create_svg_matrix_with(
 /// SVGNumber - represents an animated number value
 pub struct SVGNumber {
   value : Double
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 /// Create a new SVGNumber
@@ -167,7 +167,7 @@ pub enum SVGLengthType {
   In
   Pt
   Pc
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 /// SVGLength - represents a length value with unit
@@ -175,7 +175,7 @@ pub struct SVGLength {
   unit_type : SVGLengthType
   value : Double // Value in user units
   value_in_specified_units : Double // Value in specified units
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 /// Create a new SVGLength (unitless)
@@ -224,7 +224,7 @@ pub enum SVGAngleType {
   Rad
   Grad
   Turn
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 /// SVGAngle - represents an angle value with unit
@@ -232,7 +232,7 @@ pub struct SVGAngle {
   unit_type : SVGAngleType
   value : Double // Value in degrees
   value_in_specified_units : Double // Value in specified units
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 /// Create a new SVGAngle (degrees)
@@ -284,7 +284,7 @@ pub enum SVGTransformType {
   Rotate
   SkewX
   SkewY
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 /// SVGTransform - represents a single transformation
@@ -292,7 +292,86 @@ pub struct SVGTransform {
   transform_type : SVGTransformType
   matrix : SVGMatrix
   angle : Double // For rotate, skewX, skewY
-} derive(Eq, Show)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for GetBBoxOptions with output(self, logger) {
+  logger.write_string("{fill: \{self.fill}, stroke: \{self.stroke}, ")
+  logger.write_string("markers: \{self.markers}, clipped: \{self.clipped}}")
+}
+
+///|
+pub impl Show for SVGNumber with output(self, logger) {
+  logger.write_string("{value: \{self.value}}")
+}
+
+///|
+pub impl Show for SVGLengthType with output(self, logger) {
+  let name = match self {
+    Unknown => "Unknown"
+    Number => "Number"
+    Percentage => "Percentage"
+    Ems => "Ems"
+    Exs => "Exs"
+    Px => "Px"
+    Cm => "Cm"
+    Mm => "Mm"
+    In => "In"
+    Pt => "Pt"
+    Pc => "Pc"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for SVGLength with output(self, logger) {
+  logger.write_string("{unit_type: \{self.unit_type}, value: \{self.value}, ")
+  logger.write_string(
+    "value_in_specified_units: \{self.value_in_specified_units}}",
+  )
+}
+
+///|
+pub impl Show for SVGAngleType with output(self, logger) {
+  let name = match self {
+    Unknown => "Unknown"
+    Unspecified => "Unspecified"
+    Deg => "Deg"
+    Rad => "Rad"
+    Grad => "Grad"
+    Turn => "Turn"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for SVGAngle with output(self, logger) {
+  logger.write_string("{unit_type: \{self.unit_type}, value: \{self.value}, ")
+  logger.write_string(
+    "value_in_specified_units: \{self.value_in_specified_units}}",
+  )
+}
+
+///|
+pub impl Show for SVGTransformType with output(self, logger) {
+  let name = match self {
+    Unknown => "Unknown"
+    Matrix => "Matrix"
+    Translate => "Translate"
+    Scale => "Scale"
+    Rotate => "Rotate"
+    SkewX => "SkewX"
+    SkewY => "SkewY"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for SVGTransform with output(self, logger) {
+  logger.write_string(
+    "{transform_type: \{self.transform_type}, matrix: \{self.matrix}, angle: \{self.angle}}",
+  )
+}
 
 ///|
 /// Create an SVGTransform from a matrix

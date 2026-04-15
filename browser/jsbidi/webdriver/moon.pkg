@@ -1,19 +1,20 @@
 import {
-  "mizchi/crater",
+  "mizchi/crater/vrt" @vrt,
   "mizchi/crater/browser_contract",
-  "mizchi/crater/css/responsive",
+  "mizchi/crater/css",
   "mizchi/crater/types",
   "mizchi/crater-browser/cdp",
-  "mizchi/crater-browser/js",
   "mizchi/crater-browser/interaction",
+  "mizchi/crater-browser/tui/paint_output" @tui_paint_output,
+  "mizchi/crater-browser/tui/paint/viewport" @tui_paint_viewport,
   "mizchi/crater/dom",
-  "mizchi/crater/paint",
   "mizchi/crater/renderer",
   "mizchi/crater/svg",
   "mizchi/crater/x/image",
   "mizchi/js/core",
   "mizchi/js/deno",
   "moonbitlang/core/json",
+  "moonbitlang/core/string",
   "moonbitlang/core/strconv",
 }
 
@@ -22,6 +23,4 @@ import {
   "moonbitlang/async/js_async",
 } for "wbtest"
 
-options(
-  "supported-targets": [ "js" ],
-)
+supported_targets = "js"

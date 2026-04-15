@@ -39,6 +39,17 @@ pub fn CdpSessionManager::create_session(self : CdpSessionManager) -> String {
 }
 
 ///|
+/// Recreate a CDP session with a caller-provided session id.
+pub fn CdpSessionManager::create_session_with_id(
+  self : CdpSessionManager,
+  session_id : String,
+) -> String {
+  let session = @cdp.CdpSession::new(session_id)
+  self.sessions[session_id] = session
+  session_id
+}
+
+///|
 /// Get a session by ID
 pub fn CdpSessionManager::get_session(
   self : CdpSessionManager,
@@ -271,7 +282,35 @@ pub enum CdpHandlerError {
   InvalidSelector(selector~ : String)
   NavigationFailed(url~ : String, reason~ : String)
   InternalCdpError(message~ : String)
-} derive(Show)
+} derive(Debug)
+
+///|
+pub impl Show for CdpHandlerError with output(self, logger) {
+  match self {
+    NoSuchElement(selector~) => {
+      logger.write_string("NoSuchElement(selector=")
+      selector.output(logger)
+      logger.write_string(")")
+    }
+    InvalidSelector(selector~) => {
+      logger.write_string("InvalidSelector(selector=")
+      selector.output(logger)
+      logger.write_string(")")
+    }
+    NavigationFailed(url~, reason~) => {
+      logger.write_string("NavigationFailed(url=")
+      url.output(logger)
+      logger.write_string(", reason=")
+      reason.output(logger)
+      logger.write_string(")")
+    }
+    InternalCdpError(message~) => {
+      logger.write_string("InternalCdpError(message=")
+      message.output(logger)
+      logger.write_string(")")
+    }
+  }
+}
 
 ///|
 /// Convert CdpHandlerError to W3C error format

@@ -1631,7 +1631,7 @@ fn parse_scale_value(value : String) -> Double {
   if v.is_empty() {
     return 1.0
   }
-  @strconv.parse_double(v) catch {
+  @string.parse_double(v) catch {
     _ => 1.0
   }
 }
@@ -1645,34 +1645,28 @@ fn parse_translate_value(value : String) -> @style.TranslateValue {
   }
   // Check for percentage
   if v.has_suffix("%") {
-    let num_str = v[:v.length() - 1].to_string() catch {
-      _ => return @style.TranslateValue::Length(0.0)
-    }
-    let n = @strconv.parse_double(num_str.trim()) catch {
+    let num_str = v[:v.length() - 1].to_string()
+    let n = @string.parse_double(num_str.trim()) catch {
       _ => return @style.TranslateValue::Length(0.0)
     }
     @style.TranslateValue::Percent(n / 100.0)
   } else if v.has_suffix("px") {
-    let num_str = v[:v.length() - 2].to_string() catch {
-      _ => return @style.TranslateValue::Length(0.0)
-    }
-    let n = @strconv.parse_double(num_str.trim()) catch {
+    let num_str = v[:v.length() - 2].to_string()
+    let n = @string.parse_double(num_str.trim()) catch {
       _ => return @style.TranslateValue::Length(0.0)
     }
     @style.TranslateValue::Length(n)
   } else if v.has_suffix("em") || v.has_suffix("rem") {
     // em/rem - convert to pixels assuming 16px base
     let suffix_len = if v.has_suffix("rem") { 3 } else { 2 }
-    let num_str = v[:v.length() - suffix_len].to_string() catch {
-      _ => return @style.TranslateValue::Length(0.0)
-    }
-    let n = @strconv.parse_double(num_str.trim()) catch {
+    let num_str = v[:v.length() - suffix_len].to_string()
+    let n = @string.parse_double(num_str.trim()) catch {
       _ => return @style.TranslateValue::Length(0.0)
     }
     @style.TranslateValue::Length(n * 16.0)
   } else {
     // Try parsing as plain number (assumed px)
-    let n = @strconv.parse_double(v) catch {
+    let n = @string.parse_double(v) catch {
       _ => return @style.TranslateValue::Length(0.0)
     }
     @style.TranslateValue::Length(n)
@@ -1693,7 +1687,7 @@ fn split_transform_args(s : String) -> Array[String] {
     }
   }
   let last = current.to_string()
-  if not(last.is_empty()) {
+  if !last.is_empty() {
     result.push(last)
   }
   result

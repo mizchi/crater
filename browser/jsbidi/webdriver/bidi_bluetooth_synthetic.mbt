@@ -477,7 +477,7 @@ fn BidiProtocol::resolve_bluetooth_simulate_service(
       return None
     }
   }
-  if not(self.has_bluetooth_device_descriptor(ctx_id, address)) {
+  if !self.has_bluetooth_device_descriptor(ctx_id, address) {
     self.send_error(
       request_id, "invalid argument", "Unknown bluetooth device address",
     )
@@ -526,7 +526,7 @@ fn BidiProtocol::resolve_bluetooth_simulate_service(
     self.bluetooth_services_by_scope[scope_key] = next_services
     return Some(true)
   }
-  if not(array_contains(services, uuid)) {
+  if !array_contains(services, uuid) {
     self.send_error(request_id, "invalid argument", "Service does not exist")
     return None
   }
@@ -563,7 +563,7 @@ fn BidiProtocol::resolve_bluetooth_simulate_characteristic(
       return None
     }
   }
-  if not(self.has_bluetooth_device_descriptor(ctx_id, address)) {
+  if !self.has_bluetooth_device_descriptor(ctx_id, address) {
     self.send_error(
       request_id, "invalid argument", "Unknown bluetooth device address",
     )
@@ -587,7 +587,7 @@ fn BidiProtocol::resolve_bluetooth_simulate_characteristic(
   let services = self.bluetooth_services_by_scope
     .get(service_scope_key)
     .unwrap_or([])
-  if not(array_contains(services, service_uuid)) {
+  if !array_contains(services, service_uuid) {
     self.send_error(request_id, "invalid argument", "Unknown service uuid")
     return None
   }
@@ -692,7 +692,7 @@ fn BidiProtocol::resolve_bluetooth_simulate_characteristic_response(
       return None
     }
   }
-  if not(self.has_bluetooth_device_descriptor(ctx_id, address)) {
+  if !self.has_bluetooth_device_descriptor(ctx_id, address) {
     self.send_error(
       request_id, "invalid argument", "Unknown bluetooth device address",
     )
@@ -715,7 +715,7 @@ fn BidiProtocol::resolve_bluetooth_simulate_characteristic_response(
   let services = self.bluetooth_services_by_scope
     .get(bluetooth_scope_key(ctx_id, address))
     .unwrap_or([])
-  if not(array_contains(services, service_uuid)) {
+  if !array_contains(services, service_uuid) {
     self.send_error(request_id, "invalid argument", "Unknown service uuid")
     return None
   }
@@ -870,7 +870,7 @@ fn BidiProtocol::resolve_bluetooth_simulate_descriptor(
       return None
     }
   }
-  if not(self.has_bluetooth_device_descriptor(ctx_id, address)) {
+  if !self.has_bluetooth_device_descriptor(ctx_id, address) {
     self.send_error(
       request_id, "invalid argument", "Unknown bluetooth device address",
     )
@@ -893,7 +893,7 @@ fn BidiProtocol::resolve_bluetooth_simulate_descriptor(
   let services = self.bluetooth_services_by_scope
     .get(bluetooth_scope_key(ctx_id, address))
     .unwrap_or([])
-  if not(array_contains(services, service_uuid)) {
+  if !array_contains(services, service_uuid) {
     self.send_error(request_id, "invalid argument", "Unknown service uuid")
     return None
   }
@@ -1001,7 +1001,7 @@ fn BidiProtocol::resolve_bluetooth_simulate_descriptor_response(
       return None
     }
   }
-  if not(self.has_bluetooth_device_descriptor(ctx_id, address)) {
+  if !self.has_bluetooth_device_descriptor(ctx_id, address) {
     self.send_error(
       request_id, "invalid argument", "Unknown bluetooth device address",
     )
@@ -1024,7 +1024,7 @@ fn BidiProtocol::resolve_bluetooth_simulate_descriptor_response(
   let services = self.bluetooth_services_by_scope
     .get(bluetooth_scope_key(ctx_id, address))
     .unwrap_or([])
-  if not(array_contains(services, service_uuid)) {
+  if !array_contains(services, service_uuid) {
     self.send_error(request_id, "invalid argument", "Unknown service uuid")
     return None
   }
@@ -1184,7 +1184,7 @@ fn BidiProtocol::try_handle_synthetic_bluetooth_availability_eval(
   let simulation_disabled = self.bluetooth_simulation_disabled_by_context
     .get(ctx_id)
     .unwrap_or(false)
-  let available = not(simulation_disabled) &&
+  let available = !simulation_disabled &&
     (adapter_state == "powered-off" || adapter_state == "powered-on")
   self.send_script_remote_value_response(
     request_id,
@@ -1208,7 +1208,7 @@ fn BidiProtocol::try_handle_synthetic_bluetooth_request_device_call(
   params : Json?,
   unwrap_result : Bool,
 ) -> Bool {
-  if not(function_declaration.contains("navigator.bluetooth.requestDevice(")) {
+  if !function_declaration.contains("navigator.bluetooth.requestDevice(") {
     return false
   }
   let devices = self.bluetooth_preconnected_devices_by_context
@@ -1252,7 +1252,7 @@ fn BidiProtocol::try_handle_synthetic_bluetooth_gatt_call(
   function_declaration : String,
   unwrap_result : Bool,
 ) -> Bool {
-  if not(function_declaration.contains("navigator.bluetooth.getDevices()")) {
+  if !function_declaration.contains("navigator.bluetooth.getDevices()") {
     return false
   }
   let granted_devices = self.bluetooth_granted_devices_by_context
@@ -1643,7 +1643,7 @@ fn BidiProtocol::emit_bluetooth_request_device_prompt_updated(
   address : String,
 ) -> Unit {
   let event_name = "bluetooth.requestDevicePromptUpdated"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+  if !self.is_subscribed_for_context(event_name, ctx_id) {
     return
   }
   self.outbox.push(
@@ -1667,7 +1667,7 @@ fn BidiProtocol::emit_bluetooth_gatt_connection_attempted(
   address : String,
 ) -> Unit {
   let event_name = "bluetooth.gattConnectionAttempted"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+  if !self.is_subscribed_for_context(event_name, ctx_id) {
     return
   }
   self.outbox.push(
@@ -1692,7 +1692,7 @@ fn BidiProtocol::emit_bluetooth_characteristic_event_generated(
   data : Json?,
 ) -> Unit {
   let event_name = "bluetooth.characteristicEventGenerated"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+  if !self.is_subscribed_for_context(event_name, ctx_id) {
     return
   }
   let params : Map[String, Json] = {
@@ -1723,7 +1723,7 @@ fn BidiProtocol::emit_bluetooth_descriptor_event_generated(
   data : Json?,
 ) -> Unit {
   let event_name = "bluetooth.descriptorEventGenerated"
-  if not(self.is_subscribed_for_context(event_name, ctx_id)) {
+  if !self.is_subscribed_for_context(event_name, ctx_id) {
     return
   }
   let params : Map[String, Json] = {
@@ -1979,7 +1979,7 @@ fn upsert_bluetooth_device(
       _ => out.push(device)
     }
   }
-  if not(replaced) {
+  if !replaced {
     out.push(next_device)
   }
   out
@@ -2093,7 +2093,7 @@ fn BidiProtocol::validate_bluetooth_response_data(
 ) -> Array[Json]? {
   match get_param_raw(params, "data") {
     Some(Array(entries)) =>
-      if not(required) {
+      if !required {
         self.send_error(
           request_id, "invalid argument", "data must be absent for this response type",
         )
@@ -2199,7 +2199,7 @@ fn extract_bluetooth_uint8_array_data(source : String) -> Array[Json] {
 
 ///|
 fn extract_bluetooth_byte_array_literal(raw : String) -> Array[Json] {
-  if raw.length() < 2 || not(raw.has_prefix("[")) || not(raw.has_suffix("]")) {
+  if raw.length() < 2 || !raw.has_prefix("[") || !raw.has_suffix("]") {
     return []
   }
   let body = raw.unsafe_substring(start=1, end=raw.length() - 1)
@@ -2212,7 +2212,7 @@ fn extract_bluetooth_byte_array_literal(raw : String) -> Array[Json] {
     if value_text == "" {
       continue
     }
-    let value = @strconv.parse_int(value_text) catch { _ => -1 }
+    let value = @string.parse_int(value_text) catch { _ => -1 }
     if value >= 0 && value <= 255 {
       out.push(Json::number(value.to_double()))
     }

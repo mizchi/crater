@@ -4,10 +4,10 @@
  */
 import path from "node:path";
 import { expect, test, type Browser } from "@playwright/test";
-import { CraterBidiPage } from "./helpers/crater-bidi-page";
 import {
   chromiumPageForVrt,
   compareChromiumPngToImage,
+  connectCraterPageForVrt,
   renderCraterHtml,
   type VisualDiffResult,
 } from "./helpers/crater-vrt";
@@ -38,9 +38,8 @@ async function compareAtViewports(
   for (const vp of viewports) {
     const viewport = { width: vp.width, height: vp.height };
     const chromiumPage = await chromiumPageForVrt(browser, viewport);
-    const craterPage = new CraterBidiPage();
+    const craterPage = await connectCraterPageForVrt();
     try {
-      await craterPage.connect();
       await chromiumPage.setContent(html, { waitUntil: "load" });
       const chromiumPng = await chromiumPage.screenshot({ type: "png" });
       const craterImage = await renderCraterHtml(craterPage, html, viewport);

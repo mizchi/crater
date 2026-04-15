@@ -28,7 +28,14 @@ pub struct FlushResult {
   nodes_affected : Int
   /// Whether any mutation affects layout (vs paint-only)
   needs_layout : Bool
-} derive(Show)
+} derive(Debug)
+
+///|
+pub impl Show for FlushResult with output(self, logger) {
+  logger.write_string("{processed: \{self.processed}, ")
+  logger.write_string("nodes_affected: \{self.nodes_affected}, ")
+  logger.write_string("needs_layout: \{self.needs_layout}}")
+}
 
 ///|
 /// Create a new empty mutation queue
@@ -121,7 +128,7 @@ fn merge_node_records(records : Array[MutationRecord]) -> Array[MutationRecord] 
     match r.type_ {
       StyleChange =>
         for prop in r.changed_properties {
-          if not(style_props.contains(prop)) {
+          if !style_props.contains(prop) {
             style_props.push(prop)
           }
         }
@@ -149,7 +156,7 @@ fn merge_node_records(records : Array[MutationRecord]) -> Array[MutationRecord] 
         }
       }
       CharacterData => {
-        if not(has_char_data) {
+        if !has_char_data {
           char_old = r.old_value
         }
         has_char_data = true

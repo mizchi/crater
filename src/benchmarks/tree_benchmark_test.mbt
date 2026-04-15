@@ -9,7 +9,7 @@ fn layouts_equal(a : @types.Layout, b : @types.Layout) -> Bool {
     return false
   }
   for i = 0; i < a.children.length(); i = i + 1 {
-    if not(layouts_equal(a.children[i], b.children[i])) {
+    if !layouts_equal(a.children[i], b.children[i]) {
       return false
     }
   }
@@ -102,7 +102,7 @@ fn find_leaf(node : @tree.LayoutNode, path : Array[Int]) -> @tree.LayoutNode? {
 
 ///|
 test "benchmark: cache hit rate on unchanged tree" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create a medium-sized tree: depth=3, branching=4 = 85 nodes
   let root = create_large_tree(3, 4)
@@ -132,7 +132,7 @@ test "benchmark: cache hit rate on unchanged tree" {
 
 ///|
 test "benchmark: partial update performance" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create a larger tree: depth=4, branching=3 = 121 nodes
   let root = create_large_tree(4, 3)
@@ -168,7 +168,7 @@ test "benchmark: partial update performance" {
 
 ///|
 test "benchmark: multiple partial updates" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create tree: depth=3, branching=5 = 156 nodes
   let root = create_large_tree(3, 5)
@@ -224,7 +224,7 @@ test "benchmark: multiple partial updates" {
 
 ///|
 test "benchmark: viewport resize with fixed vs percent nodes" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create tree with all fixed-size nodes
   let fixed_root = create_large_tree(3, 4) // 85 nodes, all fixed
@@ -269,7 +269,7 @@ test "benchmark: viewport resize with fixed vs percent nodes" {
 
 ///|
 test "benchmark: deep nesting performance" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create deep but narrow tree: depth=10, branching=2 = 2047 nodes
   let root = create_large_tree(10, 2)
@@ -297,7 +297,7 @@ test "benchmark: deep nesting performance" {
 
 ///|
 test "benchmark: wide tree performance" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create wide but shallow tree: depth=2, branching=10 = 111 nodes
   let root = create_large_tree(2, 10)
@@ -327,7 +327,7 @@ test "benchmark: wide tree performance" {
 
 ///|
 test "benchmark: incremental vs full recompute savings" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create a moderately large tree: depth=4, branching=4 = 341 nodes
   let root = create_large_tree(4, 4)
@@ -372,7 +372,7 @@ test "benchmark: incremental vs full recompute savings" {
 
 ///|
 test "benchmark: repeated unchanged queries" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create tree
   let root = create_large_tree(3, 5) // 156 nodes
@@ -404,7 +404,7 @@ test "benchmark: repeated unchanged queries" {
 
 ///|
 test "benchmark: correctness after many updates" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create tree
   let root = create_large_tree(3, 4) // 85 nodes
@@ -433,7 +433,7 @@ test "benchmark: correctness after many updates" {
 
 ///|
 test "analysis: detailed cache statistics" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create tree: depth=3, branching=4 = 85 nodes
   let root = create_large_tree(3, 4)
@@ -467,7 +467,7 @@ test "analysis: detailed cache statistics" {
 
 ///|
 test "analysis: cache miss breakdown by tree level" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Flat tree: depth=1, branching=10 = 11 nodes
   let flat_root = create_large_tree(1, 10)
@@ -492,7 +492,7 @@ test "analysis: cache miss breakdown by tree level" {
 
 ///|
 test "analysis: children_dirty propagation" {
-  @dispatch.setup()
+  @tree.setup()
   let root = create_large_tree(3, 3) // 40 nodes
   let tree = @tree.LayoutTree::new(root, 1200.0, 800.0)
 
@@ -520,7 +520,7 @@ test "analysis: children_dirty propagation" {
 
 ///|
 test "analysis: cache key comparison" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Test that constraint changes invalidate cache appropriately
   let child = @tree.LayoutNode::leaf("child", @style.Style::{
@@ -562,7 +562,7 @@ test "analysis: cache key comparison" {
 
 ///|
 test "analysis: subtree cache hit rate" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create tree with 4 independent subtrees
   // depth=2, branching=4 = 21 nodes (1 root + 4 subtrees of 5 nodes each)
@@ -591,7 +591,7 @@ test "analysis: subtree cache hit rate" {
 
 ///|
 test "analysis: multiple dirty leaves in different subtrees" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create tree: depth=2, branching=4
   let root = create_large_tree(2, 4) // 21 nodes
@@ -620,7 +620,7 @@ test "analysis: multiple dirty leaves in different subtrees" {
 
 ///|
 test "analysis: hit rate with auto-sized containers" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create tree with auto-sized containers
   let leaf1 = @tree.LayoutNode::leaf("leaf1", @style.Style::{
@@ -682,7 +682,7 @@ test "analysis: hit rate with auto-sized containers" {
 
 ///|
 test "benchmark: realistic UI update pattern" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Simulate a realistic UI: header, sidebar, main content, footer
   // Each with nested children
@@ -789,7 +789,7 @@ test "benchmark: realistic UI update pattern" {
 
 ///|
 test "optimization: size-match cache validation" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create simple tree with children
   let child1 = @tree.LayoutNode::leaf("child1", @style.Style::{
@@ -968,7 +968,7 @@ fn create_nav_item(id : String, is_active : Bool) -> @tree.LayoutNode {
 
 ///|
 test "realistic: e-commerce product grid" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create product grid with 24 cards (6 columns x 4 rows)
   let cards : Array[@tree.LayoutNode] = []
@@ -1033,7 +1033,7 @@ test "realistic: e-commerce product grid" {
 
 ///|
 test "realistic: chat message list" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create chat messages (50 messages)
   let messages : Array[@tree.LayoutNode] = []
@@ -1123,7 +1123,7 @@ test "realistic: chat message list" {
 
 ///|
 test "realistic: dashboard with widgets" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create dashboard widgets
   fn create_widget(
@@ -1269,7 +1269,7 @@ test "realistic: dashboard with widgets" {
 
 ///|
 test "realistic: sidebar navigation with active state" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create navigation items
   let nav_items : Array[@tree.LayoutNode] = []
@@ -1332,7 +1332,7 @@ test "realistic: sidebar navigation with active state" {
 
 ///|
 test "realistic: form with validation" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create form fields
   fn create_field(id : String) -> @tree.LayoutNode {
@@ -1444,7 +1444,7 @@ test "realistic: form with validation" {
 
 ///|
 test "optimization: size-match not used when child is dirty" {
-  @dispatch.setup()
+  @tree.setup()
   let child1 = @tree.LayoutNode::leaf("child1", @style.Style::{
     ..@style.Style::default(),
     width: @types.Length(100.0),
@@ -1806,7 +1806,7 @@ fn create_large_website(
 
 ///|
 test "large-scale: 5000 node website layout" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create ~5000 node layout
   // 50 sidebar items (50 * 3 = 150 nodes)
@@ -1848,7 +1848,7 @@ test "large-scale: 5000 node website layout" {
 
 ///|
 test "large-scale: multiple scattered updates" {
-  @dispatch.setup()
+  @tree.setup()
   let (root, items) = create_large_website(50, 20, 20)
   let tree = @tree.LayoutTree::new(root, 1440.0, 900.0)
 
@@ -1872,7 +1872,7 @@ test "large-scale: multiple scattered updates" {
 
 ///|
 test "large-scale: worst case - root dirty" {
-  @dispatch.setup()
+  @tree.setup()
   let (root, _) = create_large_website(50, 20, 20)
   let tree = @tree.LayoutTree::new(root, 1440.0, 900.0)
 
@@ -1891,7 +1891,7 @@ test "large-scale: worst case - root dirty" {
 
 ///|
 test "perf: incremental vs full recompute comparison" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create large tree similar to dashboard
   let cards : Array[@tree.LayoutNode] = []
@@ -2001,7 +2001,7 @@ fn create_deep_auto_subtree(
 
 ///|
 test "analysis: global intrinsic cache benefit" {
-  @dispatch.setup()
+  @tree.setup()
 
   // Create deep Auto-sized tree: many intrinsic calculations
   let root = create_deep_auto_tree(4, 3) // 121 nodes, all with Auto sizing

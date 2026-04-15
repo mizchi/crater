@@ -1,0 +1,21 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser/tui/paint/viewport"
+
+import {
+  "mizchi/crater/layout/node",
+  "mizchi/crater/paint/model",
+  "mizchi/crater/types",
+}
+
+// Values
+pub fn from_node_and_layout_with_viewport(@node.Node, @types.Layout, Double, Double, Double) -> @model.PaintNode?
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @model {type PaintNode}
+
+// Traits
+

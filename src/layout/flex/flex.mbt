@@ -205,7 +205,7 @@ fn estimate_multicol_intrinsic_inline_width(
   style : @style.Style,
   parent_width : Double,
 ) -> Double {
-  if not(style.has_multicol()) {
+  if !style.has_multicol() {
     return 0.0
   }
   let gap = if style.column_gap_is_normal {
@@ -466,10 +466,10 @@ fn estimate_flex_text_intrinsic_main_size(
   node : @node.Node,
   is_row : Bool,
 ) -> Double? {
-  if not(node.id.has_prefix("#text")) {
+  if !node.id.has_prefix("#text") {
     return None
   }
-  if not(flex_whitespace_collapses(node.style)) {
+  if !flex_whitespace_collapses(node.style) {
     return None
   }
   let font_size = if node.style.font_size > 0.0 {
@@ -484,7 +484,7 @@ fn estimate_flex_text_intrinsic_main_size(
   }
   let char_width = font_size * 0.5
   let main_axis_is_inline = if node.style.writing_mode.is_vertical() {
-    not(is_row)
+    !is_row
   } else {
     is_row
   }
@@ -511,10 +511,10 @@ fn estimate_flex_text_min_main_size(
   node : @node.Node,
   is_row : Bool,
 ) -> Double? {
-  if not(node.id.has_prefix("#text")) {
+  if !node.id.has_prefix("#text") {
     return None
   }
-  if not(flex_whitespace_collapses(node.style)) {
+  if !flex_whitespace_collapses(node.style) {
     return None
   }
   let font_size = if node.style.font_size > 0.0 {
@@ -529,7 +529,7 @@ fn estimate_flex_text_min_main_size(
   }
   let char_width = font_size * 0.5
   let main_axis_is_inline = if node.style.writing_mode.is_vertical() {
-    not(is_row)
+    !is_row
   } else {
     is_row
   }
@@ -573,11 +573,11 @@ fn is_collapsible_flex_text_node(node : @node.Node) -> Bool {
 
 ///|
 fn is_non_empty_collapsible_flex_text_node(node : @node.Node) -> Bool {
-  if not(is_collapsible_flex_text_node(node)) {
+  if !is_collapsible_flex_text_node(node) {
     return false
   }
   match node.text {
-    Some(text) => not(text.trim().is_empty())
+    Some(text) => !text.trim().is_empty()
     None => false
   }
 }
@@ -652,7 +652,7 @@ fn normalize_flattened_flex_text_items(
   for i = 0; i < items.length(); i = i + 1 {
     let item = items[i]
     let node = item.node
-    if not(is_collapsible_flex_text_node(node)) {
+    if !is_collapsible_flex_text_node(node) {
       normalized.push(item)
       continue
     }
@@ -707,7 +707,7 @@ fn normalize_flattened_flex_text_items(
 
 ///|
 fn is_generated_pseudo_contents_text_item(item : FlattenedChild) -> Bool {
-  if not(is_non_empty_collapsible_flex_text_node(item.node)) {
+  if !is_non_empty_collapsible_flex_text_node(item.node) {
     return false
   }
   if item.contents_ancestors.length() != 1 {
@@ -724,13 +724,13 @@ fn merge_adjacent_generated_pseudo_text_items(
 ) -> Array[FlattenedChild] {
   let merged : Array[FlattenedChild] = []
   for item in items {
-    if merged.length() == 0 || not(is_generated_pseudo_contents_text_item(item)) {
+    if merged.length() == 0 || !is_generated_pseudo_contents_text_item(item) {
       merged.push(item)
       continue
     }
     let last_index = merged.length() - 1
     let prev_item = merged[last_index]
-    if not(is_generated_pseudo_contents_text_item(prev_item)) {
+    if !is_generated_pseudo_contents_text_item(prev_item) {
       merged.push(item)
       continue
     }
@@ -1002,7 +1002,7 @@ fn resolve_flex_item_cross_alignment(
 
 ///|
 fn uses_svg_default_intrinsic_box(node : @node.Node) -> Bool {
-  if not(node.id.has_prefix("svg")) {
+  if !node.id.has_prefix("svg") {
     return false
   }
   match (node.style.width, node.style.height) {
@@ -1053,9 +1053,7 @@ fn make_flex_intrinsic_probe(
   } else {
     false
   }
-  if not(changes_main_size) &&
-    not(resets_main_constraints) &&
-    not(resets_cross_constraints) {
+  if !changes_main_size && !resets_main_constraints && !resets_cross_constraints {
     return node
   }
   let probe_style : @style.Style = if is_row {
@@ -1185,7 +1183,7 @@ fn compute_inline_flow_height(
     }
     flow_inline_children.push(child)
   }
-  if not(@inline.should_establish_ifc(flow_inline_children)) {
+  if !@inline.should_establish_ifc(flow_inline_children) {
     return None
   }
   if node.style.writing_mode.is_vertical() {
@@ -1253,7 +1251,7 @@ fn compute_measured_cross_size(
     // Computing height based on constrained width
     let max_width = intrinsic.max_width
     let max_height = intrinsic.max_height
-    if is_fixed_intrinsic && not(scale_fixed_intrinsic) {
+    if is_fixed_intrinsic && !scale_fixed_intrinsic {
       max_height
     } else if is_fixed_intrinsic && max_width > 0.0 && max_height > 0.0 {
       if constrained_main <= 0.0 {
@@ -1280,7 +1278,7 @@ fn compute_measured_cross_size(
     // Computing width based on constrained height
     let max_width = intrinsic.max_width
     let max_height = intrinsic.max_height
-    if is_fixed_intrinsic && not(scale_fixed_intrinsic) {
+    if is_fixed_intrinsic && !scale_fixed_intrinsic {
       max_width
     } else if is_fixed_intrinsic && max_width > 0.0 && max_height > 0.0 {
       if constrained_main <= 0.0 {
@@ -1337,7 +1335,7 @@ fn compute_intrinsic_main_size(
   }
   if suppress_main_intrinsic {
     let available_width = match available_cross {
-      Some(w) if not(is_row) => w
+      Some(w) if !is_row => w
       _ => 0.0
     }
     let padding = @types.resolve_rect(style.padding, available_width)
@@ -1764,7 +1762,7 @@ fn compute_intrinsic_main_size(
   // Apply explicit main-axis min/max length constraints to intrinsic result.
   // (Percentage constraints need containing block main-size and are resolved later.)
   let mut constrained_result = result
-  if not(is_row) {
+  if !is_row {
     match style.max_height {
       @types.Length(v) => if constrained_result > v { constrained_result = v }
       _ => ()
@@ -1804,7 +1802,7 @@ fn compute_min_content_main_size(
   }
   if suppress_main_intrinsic {
     let available_width = match available_cross {
-      Some(w) if not(is_row) => w
+      Some(w) if !is_row => w
       _ => 0.0
     }
     let padding = @types.resolve_rect(style.padding, available_width)
@@ -1873,7 +1871,14 @@ fn compute_min_content_main_size(
               }
             }
           }
-          None => 0.0
+          None =>
+            match style.aspect_ratio {
+              Some(ratio) if ratio > 0.0 =>
+                compute_intrinsic_main_size(
+                  node, is_row, available_cross, cache, dispatch,
+                )
+              _ => 0.0
+            }
         }
     }
   } else {
@@ -2005,8 +2010,39 @@ fn compute_min_content_flex_main_size(
         content_width_for_children,
       )
       let child_main = if child_is_row {
+        let intrinsic_cross_for_aspect : Double? = match style.height {
+          @types.Length(h) =>
+            Some(max(0.0, h - padding.vertical_sum() - border.vertical_sum()))
+          @types.Percent(p) =>
+            match available_cross {
+              Some(ac) =>
+                Some(
+                  max(
+                    0.0,
+                    ac * p - padding.vertical_sum() - border.vertical_sum(),
+                  ),
+                )
+              None => None
+            }
+          _ => None
+        }
         match child_style.width {
           @types.Length(w) => w
+          @types.Auto =>
+            match child_style.aspect_ratio {
+              Some(ratio) if ratio > 0.0 =>
+                compute_min_content_main_size(
+                  child, true, intrinsic_cross_for_aspect, cache, dispatch,
+                )
+              _ =>
+                compute_min_content_main_size(
+                  child,
+                  true,
+                  None,
+                  cache,
+                  dispatch,
+                )
+            }
           _ => compute_min_content_main_size(child, true, None, cache, dispatch)
         }
       } else {
@@ -2100,7 +2136,7 @@ fn compute_min_content_grid_main_size(
   let style = node.style
   let children = node.children
   let available_width = match available_cross {
-    Some(w) if not(parent_is_row) => w
+    Some(w) if !parent_is_row => w
     _ =>
       match style.width {
         @types.Length(w) => w
@@ -2190,7 +2226,7 @@ fn compute_min_content_block_main_size(
   let style = node.style
   let children = node.children
   let available_width = match available_cross {
-    Some(w) if not(parent_is_row) => w
+    Some(w) if !parent_is_row => w
     _ =>
       match style.width {
         @types.Length(w) => w
@@ -2200,6 +2236,37 @@ fn compute_min_content_block_main_size(
   let padding = @types.resolve_rect(style.padding, available_width)
   let border = @types.resolve_rect(style.border, available_width)
   if parent_is_row {
+    let intrinsic_cross_for_children : Double? = match style.height {
+      @types.Length(h) => {
+        let content_h = if style.box_sizing == @types.BorderBox {
+          h - padding.top - padding.bottom - border.top - border.bottom
+        } else {
+          h
+        }
+        Some(max(0.0, content_h))
+      }
+      @types.Percent(p) =>
+        match available_cross {
+          Some(cross) => {
+            let resolved_h = cross * p
+            let content_h = if style.box_sizing == @types.BorderBox {
+              resolved_h -
+              padding.top -
+              padding.bottom -
+              border.top -
+              border.bottom
+            } else {
+              resolved_h
+            }
+            Some(max(0.0, content_h))
+          }
+          None => None
+        }
+      @types.Auto
+      | @types.MinContent
+      | @types.MaxContent
+      | @types.FitContent(_) => available_cross
+    }
     // Compute min-content width.
     // In vertical writing mode, blocks advance horizontally, so contributions sum.
     let is_vertical_writing = style.writing_mode.is_vertical()
@@ -2222,7 +2289,10 @@ fn compute_min_content_block_main_size(
       )
       let raw_child_width = match child_style.width {
         @types.Length(w) => w
-        _ => compute_min_content_main_size(child, true, None, cache, dispatch)
+        _ =>
+          compute_min_content_main_size(
+            child, true, intrinsic_cross_for_children, cache, dispatch,
+          )
       }
       let mut constrained_child_width = raw_child_width
       match child_style.max_width {
@@ -2232,11 +2302,7 @@ fn compute_min_content_block_main_size(
           }
         @types.MinContent => {
           let v = compute_min_content_main_size(
-            child,
-            true,
-            None,
-            cache,
-            dispatch,
+            child, true, intrinsic_cross_for_children, cache, dispatch,
           )
           if constrained_child_width > v {
             constrained_child_width = v
@@ -2244,11 +2310,7 @@ fn compute_min_content_block_main_size(
         }
         @types.MaxContent => {
           let v = compute_intrinsic_main_size(
-            child,
-            true,
-            None,
-            cache,
-            dispatch,
+            child, true, intrinsic_cross_for_children, cache, dispatch,
           )
           if constrained_child_width > v {
             constrained_child_width = v
@@ -2267,11 +2329,7 @@ fn compute_min_content_block_main_size(
           }
         @types.MinContent => {
           let v = compute_min_content_main_size(
-            child,
-            true,
-            None,
-            cache,
-            dispatch,
+            child, true, intrinsic_cross_for_children, cache, dispatch,
           )
           if constrained_child_width < v {
             constrained_child_width = v
@@ -2279,11 +2337,7 @@ fn compute_min_content_block_main_size(
         }
         @types.MaxContent => {
           let v = compute_intrinsic_main_size(
-            child,
-            true,
-            None,
-            cache,
-            dispatch,
+            child, true, intrinsic_cross_for_children, cache, dispatch,
           )
           if constrained_child_width < v {
             constrained_child_width = v
@@ -2291,11 +2345,7 @@ fn compute_min_content_block_main_size(
         }
         @types.FitContent(_) => {
           let v = compute_min_content_main_size(
-            child,
-            true,
-            None,
-            cache,
-            dispatch,
+            child, true, intrinsic_cross_for_children, cache, dispatch,
           )
           if constrained_child_width < v {
             constrained_child_width = v
@@ -2565,7 +2615,7 @@ fn compute_intrinsic_flex_main_size(
     }
     // Heuristic: for column flex containers with definite inline size and flex-grow
     // children, allow intrinsic height to grow based on inline size.
-    if not(parent_is_row) && has_flex_grow {
+    if !parent_is_row && has_flex_grow {
       match container_inline {
         Some(inline) => {
           let padding_border = padding.vertical_sum() + border.vertical_sum()
@@ -2837,7 +2887,7 @@ fn compute_intrinsic_grid_main_size(
   // When computing grid intrinsic height for column flex items and the cross size
   // (inline size) is known, treat that inline size as extrinsically definite so
   // percentage inline sizes inside grid resolve against the final cross size.
-  let use_definite_for_column_height = not(parent_is_row) &&
+  let use_definite_for_column_height = !parent_is_row &&
     available_cross is Some(_)
   let ctx : @types.LayoutContext = {
     available_width,
@@ -2873,7 +2923,7 @@ fn compute_intrinsic_block_main_size(
   let style = node.style
   let children = node.children
   let available_width = match available_cross {
-    Some(w) if not(parent_is_row) => w
+    Some(w) if !parent_is_row => w
     _ =>
       match style.width {
         @types.Length(w) => w
@@ -3017,7 +3067,7 @@ fn compute_intrinsic_block_main_size(
           @types.Float::None => ()
         }
         has_flow_child = true
-        if not(@inline.is_inline_level(child_style.display)) {
+        if !@inline.is_inline_level(child_style.display) {
           only_inline_flow = false
           break
         }
@@ -3082,7 +3132,7 @@ fn compute_intrinsic_block_main_size(
           continue
         }
         if child_style.display != @types.Contents &&
-          not(@inline.is_inline_level(child_style.display)) {
+          !@inline.is_inline_level(child_style.display) {
           only_inline_flow = false
           break
         }
@@ -3178,7 +3228,7 @@ fn compute_intrinsic_block_main_size(
           let child_is_table = child_style.display == @types.Table ||
             child_style.display == @types.InlineTable
           let child_height = match child_style.height {
-            @types.Length(h) if not(child_is_table) =>
+            @types.Length(h) if !child_is_table =>
               h + child_margin.top + child_margin.bottom
             _ =>
               compute_intrinsic_main_size(
@@ -3284,10 +3334,10 @@ fn try_layout_simple_row_space_between_fixed_leaves(
       child_style.flex_basis != @types.Auto {
       return None
     }
-    if not(is_zero_non_auto_dimension(child_style.margin.left)) ||
-      not(is_zero_non_auto_dimension(child_style.margin.right)) ||
-      not(is_zero_non_auto_dimension(child_style.margin.top)) ||
-      not(is_zero_non_auto_dimension(child_style.margin.bottom)) {
+    if !is_zero_non_auto_dimension(child_style.margin.left) ||
+      !is_zero_non_auto_dimension(child_style.margin.right) ||
+      !is_zero_non_auto_dimension(child_style.margin.top) ||
+      !is_zero_non_auto_dimension(child_style.margin.bottom) {
       return None
     }
     let child_padding = @types.resolve_rect(child_style.padding, parent_width)
@@ -3569,9 +3619,7 @@ fn compute_internal(
             // Inline-level flex (InlineFlex) should use content-based sizing
             // Root-level flex should use content-based sizing (taffy behavior)
             @types.Definite =>
-              if is_block_level &&
-                not(is_root) &&
-                not(style.writing_mode.is_vertical()) {
+              if is_block_level && !is_root && !style.writing_mode.is_vertical() {
                 let fill_width = if use_available_width {
                   available_width
                 } else {
@@ -3814,8 +3862,8 @@ fn compute_internal(
   }
   let direction_is_row = axis.direction_is_row
   let is_row = axis.is_row
-  let is_reverse = if not(declared_direction_is_row) && is_block_rtl {
-    not(axis.is_reverse)
+  let is_reverse = if !declared_direction_is_row && is_block_rtl {
+    !axis.is_reverse
   } else {
     axis.is_reverse
   }
@@ -3831,7 +3879,7 @@ fn compute_internal(
   }
   // For column flex wrap, we need to consider max-height even when height is auto
   // This allows items to wrap when they exceed the max-height constraint
-  let max_height_for_wrap : Double? = if not(is_row) && content_height == None {
+  let max_height_for_wrap : Double? = if !is_row && content_height == None {
     match style.max_height {
       @types.Length(mh) =>
         Some(mh - padding.vertical_sum() - border.vertical_sum())
@@ -3857,7 +3905,7 @@ fn compute_internal(
   let initial_main_size_defined = if is_row {
     // Row flex: main size is defined unless we're doing intrinsic sizing with auto width
     // For percentage gaps, treat intrinsic width as definite to allow shrink/grow.
-    not(is_intrinsic_sizing && width_is_auto) ||
+    !(is_intrinsic_sizing && width_is_auto) ||
     (is_intrinsic_sizing && width_is_auto && percent_gap_on_main) ||
     // Size/inline-size containment in intrinsic sizing behaves as empty content,
     // so use the resolved content-box width (often 0) as a definite main size.
@@ -4419,7 +4467,7 @@ fn compute_internal(
           }
         _ => ()
       }
-      if not(is_row) {
+      if !is_row {
         let mut caption_main_extra = 0.0
         for table_child in child.children {
           if table_child.style.display == @types.Display::None {
@@ -4718,7 +4766,7 @@ fn compute_internal(
     let is_overflow_visible = match
       (child_style.overflow_x, child_style.overflow_y) {
       (@types.Overflow::Visible, @types.Overflow::Visible) =>
-        not(has_svg_zero_auto_min)
+        !has_svg_zero_auto_min
       _ => false
     }
     let (min_main, max_main) = if is_row {
@@ -5143,7 +5191,7 @@ fn compute_internal(
     // Compute baseline for this item (for Row flex, cross is height)
     // For Row: baseline is relative to the item's height
     // For Column: baseline is relative to the item's width (not commonly used)
-    let baseline = if not(needs_baseline) {
+    let baseline = if !needs_baseline {
       0.0
     } else if is_row {
       @baseline.compute_node_baseline(child, base_cross)
@@ -5344,7 +5392,7 @@ fn compute_internal(
           let mut any_clamped = false
           for i = 0; i < items.length(); i = i + 1 {
             let item = items[i]
-            if not(item.frozen) && item.flex_grow > 0.0 {
+            if !item.frozen && item.flex_grow > 0.0 {
               let grow_amount = if line_flex_grow < 1.0 {
                 remaining * item.flex_grow
               } else {
@@ -5360,7 +5408,7 @@ fn compute_internal(
               }
             }
           }
-          if not(any_clamped) {
+          if !any_clamped {
             break
           }
         }
@@ -5392,7 +5440,7 @@ fn compute_internal(
           let mut any_clamped = false
           for i = 0; i < items.length(); i = i + 1 {
             let item = items[i]
-            if not(item.frozen) && item.flex_shrink > 0.0 {
+            if !item.frozen && item.flex_shrink > 0.0 {
               let item_scaled = item.flex_shrink * item.base_main
               let shrink_ratio = item_scaled / total_scaled_shrink
               let shrink_amount = actual_overflow * shrink_ratio
@@ -5407,7 +5455,7 @@ fn compute_internal(
               }
             }
           }
-          if not(any_clamped) {
+          if !any_clamped {
             break
           }
         }
@@ -5457,7 +5505,7 @@ fn compute_internal(
         let mut any_clamped = false
         for i = 0; i < flex_items.length(); i = i + 1 {
           let item = flex_items[i]
-          if not(item.frozen) && item.flex_grow > 0.0 {
+          if !item.frozen && item.flex_grow > 0.0 {
             let grow_amount = if total_flex_grow < 1.0 {
               // When original sum < 1, each item gets remaining * its_flex_grow
               remaining * item.flex_grow
@@ -5475,7 +5523,7 @@ fn compute_internal(
             }
           }
         }
-        if not(any_clamped) {
+        if !any_clamped {
           break // No more clamping needed, distribution complete
         }
       }
@@ -5516,7 +5564,7 @@ fn compute_internal(
         let mut any_clamped = false
         for i = 0; i < flex_items.length(); i = i + 1 {
           let item = flex_items[i]
-          if not(item.frozen) && item.flex_shrink > 0.0 {
+          if !item.frozen && item.flex_shrink > 0.0 {
             // Each item's shrink = actual_overflow * (item_scaled_shrink / total_scaled_shrink)
             let item_scaled_shrink = item.flex_shrink * item.base_main
             let shrink_ratio = item_scaled_shrink / total_scaled_shrink
@@ -5534,7 +5582,7 @@ fn compute_internal(
             }
           }
         }
-        if not(any_clamped) {
+        if !any_clamped {
           break
         }
       }
@@ -6053,7 +6101,7 @@ fn compute_internal(
   // Note: When ctx.sizing_mode is Definite and available_height is set, the container's cross size
   // has already been constrained by the parent (e.g., max-height was applied). In this case,
   // we should use the already-constrained value rather than re-applying percentage constraints.
-  let align_cross_for_nowrap : Double? = if not(should_wrap) &&
+  let align_cross_for_nowrap : Double? = if !should_wrap &&
     flex_lines.length() == 1 {
     let cross_padding_border = if is_row {
       padding.vertical_sum() + border.vertical_sum()
@@ -6123,9 +6171,9 @@ fn compute_internal(
   // - For row flex: main axis = inline, already handled by is_reverse above
   // - For column flex: cross axis = inline, handle here
   // Use direction_is_row (CSS row/column) not is_row (physical axis)
-  let is_wrap_reverse = if not(direction_is_row) && is_rtl {
-    not(css_wrap_reverse) // RTL inverts wrap direction for column flex
-  } else {
+  let is_wrap_reverse = if !direction_is_row && is_rtl {
+    !css_wrap_reverse
+  } else { // RTL inverts wrap direction for column flex
     css_wrap_reverse
   }
   // For wrap-reverse with flex-relative alignment, the line positioning is handled
@@ -6222,7 +6270,7 @@ fn compute_internal(
   let uses_reversed_position = is_wrap_reverse && is_flex_relative_align
   let mirrors_vertical_rl_row_lines = direction_is_row &&
     style.writing_mode == @style.WritingMode::VerticalRl &&
-    not(is_wrap_reverse)
+    !is_wrap_reverse
   let mut cross_pos = if mirrors_vertical_rl_row_lines {
     line_start_offset + total_lines_cross
   } else if uses_reversed_position {
@@ -6236,7 +6284,7 @@ fn compute_internal(
   let is_single_line = flex_lines.length() == 1
   // For wrap-reverse with physical alignment (Start/End), iterate lines in reverse order
   // For wrap-reverse with flex-relative alignment, iterate normally but position from end
-  let reverse_line_order = is_wrap_reverse && not(is_flex_relative_align)
+  let reverse_line_order = is_wrap_reverse && !is_flex_relative_align
   let line_count_int = flex_lines.length()
   for iter_idx = 0; iter_idx < line_count_int; iter_idx = iter_idx + 1 {
     let line_idx = if reverse_line_order {
@@ -6435,7 +6483,7 @@ fn compute_internal(
       } else {
         @alignment.resolve_align_self(child.style.align_self, style.align_items)
       }
-      let uses_column_baseline_side_fallback = not(is_row) &&
+      let uses_column_baseline_side_fallback = !is_row &&
         raw_effective_align == @types.Baseline &&
         child.style.writing_mode == @style.WritingMode::HorizontalTb
       let effective_align = resolve_flex_item_cross_alignment(
@@ -6450,7 +6498,7 @@ fn compute_internal(
           if item.cross_is_auto {
             // Apply min/max constraints to stretched size
             let stretch_cross_size = match align_cross_for_nowrap {
-              Some(acs) if not(should_wrap) => acs
+              Some(acs) if !should_wrap => acs
               _ => line_cross_size
             }
             let stretched = stretch_cross_size - item.margin_cross
@@ -6761,7 +6809,7 @@ fn compute_internal(
       // Items that were at cross-start should now be at cross-end
       // This applies to ALL wrap-reverse containers regardless of align-content type
       let cross_align_offset = if is_wrap_reverse &&
-        not(uses_column_baseline_side_fallback) {
+        !uses_column_baseline_side_fallback {
         let total_cross_used = item_cross + item.margin_cross
         line_cross_size - total_cross_used - base_cross_align_offset
       } else {
@@ -6883,7 +6931,7 @@ fn compute_internal(
           // Grid and table descendants need this flag to treat auto sizing as
           // extrinsically definite on the flex main axis.
           stretch_width: (child_is_grid && is_row) || child_is_table,
-          stretch_height: (child_is_grid && not(is_row)) ||
+          stretch_height: (child_is_grid && !is_row) ||
           child_is_table ||
           nested_height_is_definite,
         }
@@ -7689,7 +7737,7 @@ fn compute_internal(
   // when in MaxContent sizing mode.
   let final_width = if width_is_auto &&
     child_layouts.length() > 0 &&
-    not(suppress_auto_inline_size) {
+    !suppress_auto_inline_size {
     match ctx.sizing_mode {
       @types.Definite =>
         // Block-level flex container: use container_width (already includes margin subtraction)
@@ -8001,7 +8049,7 @@ fn compute_line_cross_size(
         _ => ()
       }
     }
-    if not(has_baseline_item) {
+    if !has_baseline_item {
       // No baseline items - use simple max calculation
       let mut max_cross = 0.0
       for item in items {
@@ -8037,7 +8085,7 @@ fn compute_line_cross_size(
 
     // Use final_cross if available (after Phase 3), otherwise base_cross
     let item_cross = item.final_cross
-    if not(has_cross_auto_margin) && effective_align == @types.Baseline {
+    if !has_cross_auto_margin && effective_align == @types.Baseline {
       has_baseline_item = true
       // For baseline items, calculate above and below baseline
       let margin_start = @alignment.axis_cross_start(is_row, item.margin)

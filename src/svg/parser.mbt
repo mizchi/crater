@@ -42,7 +42,7 @@ fn SVGParser::advance(self : SVGParser) -> Char {
 
 ///|
 fn SVGParser::skip_whitespace(self : SVGParser) -> Unit {
-  while not(self.is_end()) {
+  while !self.is_end() {
     let c = self.peek()
     if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
       let _ = self.advance()
@@ -65,7 +65,7 @@ fn SVGParser::expect_char(self : SVGParser, expected : Char) -> Bool {
 ///|
 fn SVGParser::read_until(self : SVGParser, stop : Char) -> String {
   let buf = StringBuilder::new()
-  while not(self.is_end()) && self.peek() != stop {
+  while !self.is_end() && self.peek() != stop {
     buf.write_char(self.advance())
   }
   buf.to_string()
@@ -74,7 +74,7 @@ fn SVGParser::read_until(self : SVGParser, stop : Char) -> String {
 ///|
 fn SVGParser::read_name(self : SVGParser) -> String {
   let buf = StringBuilder::new()
-  while not(self.is_end()) {
+  while !self.is_end() {
     let c = self.peek()
     if is_name_char(c) {
       buf.write_char(self.advance())
@@ -98,7 +98,7 @@ fn is_name_char(c : Char) -> Bool {
 ///|
 fn SVGParser::read_attr_value(self : SVGParser) -> String {
   self.skip_whitespace()
-  if not(self.expect_char('=')) {
+  if !self.expect_char('=') {
     return ""
   }
   self.skip_whitespace()
@@ -123,7 +123,7 @@ pub fn parse_svg(svg_str : String) -> SVGNode? {
 fn parse_element(parser : SVGParser) -> SVGNode? {
   parser.skip_whitespace()
   // Skip comments and declarations
-  while not(parser.is_end()) {
+  while !parser.is_end() {
     if parser.peek() == '<' {
       let _ = parser.advance()
       if parser.peek() == '!' || parser.peek() == '?' {
@@ -157,7 +157,7 @@ fn parse_element(parser : SVGParser) -> SVGNode? {
     return Some(node)
   }
   // Expect closing '>'
-  if not(parser.expect_char('>')) {
+  if !parser.expect_char('>') {
     return Some(node)
   }
   // Parse children (for container elements)
@@ -173,7 +173,7 @@ fn parse_element(parser : SVGParser) -> SVGNode? {
 ///|
 fn skip_comment_or_decl(parser : SVGParser) -> Unit {
   // Skip until we find '>'
-  while not(parser.is_end()) {
+  while !parser.is_end() {
     if parser.advance() == '>' {
       break
     }
@@ -183,7 +183,7 @@ fn skip_comment_or_decl(parser : SVGParser) -> Unit {
 ///|
 fn skip_to_end_tag(parser : SVGParser, _tag_name : String) -> Unit {
   // Skip until we find the closing tag
-  while not(parser.is_end()) {
+  while !parser.is_end() {
     if parser.peek() == '<' {
       let _ = parser.advance()
       if parser.peek() == '/' {
@@ -205,11 +205,11 @@ fn parse_children(
   parent : SVGNode,
   parent_tag : String,
 ) -> Unit {
-  while not(parser.is_end()) {
+  while !parser.is_end() {
     parser.skip_whitespace()
     if parser.peek() != '<' {
       // Skip text content
-      while not(parser.is_end()) && parser.peek() != '<' {
+      while !parser.is_end() && parser.peek() != '<' {
         let _ = parser.advance()
       }
       continue
@@ -225,7 +225,7 @@ fn parse_children(
         break
       }
       // Skip malformed end tag
-      while not(parser.is_end()) && parser.advance() != '>' {
+      while !parser.is_end() && parser.advance() != '>' {
 
       }
       continue
@@ -263,7 +263,7 @@ fn create_node_for_tag(tag_name : String) -> SVGNode {
 
 ///|
 fn parse_attributes(parser : SVGParser, node : SVGNode) -> Unit {
-  while not(parser.is_end()) {
+  while !parser.is_end() {
     parser.skip_whitespace()
     let c = parser.peek()
     if c == '>' || c == '/' {

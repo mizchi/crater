@@ -676,7 +676,7 @@ test "bidi network continueBlockedRequest clears storage cookies when headers ov
   let continue_json = proto.take_messages()[0].to_json()
   assert_true(continue_json.contains("\"type\":\"success\""))
   assert_true(continue_json.contains("\"cookies\":[]"))
-  assert_true(not(continue_json.contains("\"name\":\"token\"")))
+  assert_true(!continue_json.contains("\"name\":\"token\""))
 }
 
 ///|

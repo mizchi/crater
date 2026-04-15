@@ -188,10 +188,7 @@ test "parse_document ignores bogus declaration text in body" {
   let mut has_table = false
   for child in body.children {
     match child {
-      @html.Node::Text(t) =>
-        if not(t.trim().is_empty()) {
-          has_non_ws_text = true
-        }
+      @html.Node::Text(t) => if !t.trim().is_empty() { has_non_ws_text = true }
       @html.Node::Element(e) => if e.tag == "table" { has_table = true }
     }
   }

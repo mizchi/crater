@@ -10,7 +10,7 @@ pub struct ResponsiveBreakpoint {
   normalized : String
   guards : Array[String]
   rule_count : Int
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 pub struct BreakpointDiscoveryDiagnostics {
@@ -19,13 +19,56 @@ pub struct BreakpointDiscoveryDiagnostics {
   external_stylesheet_links : Array[String]
   ignored_queries : Array[String]
   unsupported_queries : Array[String]
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 pub struct BreakpointDiscoveryResult {
   breakpoints : Array[ResponsiveBreakpoint]
   diagnostics : BreakpointDiscoveryDiagnostics
-} derive(Eq, Show)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for ResponsiveBreakpoint with output(self, logger) {
+  logger.write_string("{axis: ")
+  logger.write_string(self.axis.to_string())
+  logger.write_string(", op: ")
+  logger.write_string(self.op.to_string())
+  logger.write_string(", value_px: ")
+  logger.write_string(self.value_px.to_string())
+  logger.write_string(", raw: ")
+  logger.write_string(self.raw.to_string())
+  logger.write_string(", normalized: ")
+  logger.write_string(self.normalized.to_string())
+  logger.write_string(", guards: ")
+  logger.write_string(self.guards.to_string())
+  logger.write_string(", rule_count: ")
+  logger.write_string(self.rule_count.to_string())
+  logger.write_string("}")
+}
+
+///|
+pub impl Show for BreakpointDiscoveryDiagnostics with output(self, logger) {
+  logger.write_string("{stylesheet_count: ")
+  logger.write_string(self.stylesheet_count.to_string())
+  logger.write_string(", rule_count: ")
+  logger.write_string(self.rule_count.to_string())
+  logger.write_string(", external_stylesheet_links: ")
+  logger.write_string(self.external_stylesheet_links.to_string())
+  logger.write_string(", ignored_queries: ")
+  logger.write_string(self.ignored_queries.to_string())
+  logger.write_string(", unsupported_queries: ")
+  logger.write_string(self.unsupported_queries.to_string())
+  logger.write_string("}")
+}
+
+///|
+pub impl Show for BreakpointDiscoveryResult with output(self, logger) {
+  logger.write_string("{breakpoints: ")
+  logger.write_string(self.breakpoints.to_string())
+  logger.write_string(", diagnostics: ")
+  logger.write_string(self.diagnostics.to_string())
+  logger.write_string("}")
+}
 
 ///|
 priv struct BreakpointCandidate {

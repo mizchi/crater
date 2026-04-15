@@ -66,7 +66,7 @@ fn discover_resources_recursive(
   if tag == "img" {
     match element.attributes.get("src") {
       Some(src) =>
-        if not(src.is_empty()) {
+        if !src.is_empty() {
           result.resources.push({
             url: src,
             resource_type: Image,
@@ -85,7 +85,7 @@ fn discover_resources_recursive(
     if rel == "stylesheet" {
       match element.attributes.get("href") {
         Some(href) =>
-          if not(href.is_empty()) {
+          if !href.is_empty() {
             result.resources.push({
               url: href,
               resource_type: Stylesheet,
@@ -111,13 +111,13 @@ fn discover_resources_recursive(
     let is_module = type_attr == "module"
     match has_src {
       Some(src) =>
-        if not(src.is_empty()) {
+        if !src.is_empty() {
           // 外部スクリプト
           result.resources.push({
             url: src,
             resource_type: Script,
             // async/defer/module でなければ parser-blocking
-            blocking: not(has_async) && not(has_defer) && not(is_module),
+            blocking: !has_async && !has_defer && !is_module,
             is_defer: has_defer || is_module,
             is_async: has_async,
           })
@@ -125,11 +125,11 @@ fn discover_resources_recursive(
       None => {
         // インラインスクリプト
         let script_content = extract_text_content(element)
-        if not(script_content.is_empty()) {
+        if !script_content.is_empty() {
           result.inline_scripts.push({
             source: script_content,
             // インラインスクリプトは常に parser-blocking (async/defer は外部のみ)
-            blocking: not(has_async) && not(is_module),
+            blocking: !has_async && !is_module,
           })
         }
       }
@@ -139,7 +139,7 @@ fn discover_resources_recursive(
   // style要素 (インラインスタイル)
   if tag == "style" {
     let style_content = extract_text_content(element)
-    if not(style_content.is_empty()) {
+    if !style_content.is_empty() {
       result.inline_styles.push(style_content)
     }
   }

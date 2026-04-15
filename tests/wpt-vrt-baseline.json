@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-04-09T10:17:16.000Z",
+  "updatedAt": "2026-04-14T16:39:40.745Z",
   "config": {
     "viewport": {
       "width": 800,
@@ -10,8 +10,8 @@
     "defaultMaxDiffRatio": 0.15
   },
   "summary": {
-    "total": 288,
-    "passed": 285,
+    "total": 284,
+    "passed": 281,
     "failed": 3
   },
   "tests": {
@@ -104,7 +104,7 @@
       "status": "pass"
     },
     "css-flexbox/align-self-010.html": {
-      "diffRatio": 0.01078125,
+      "diffRatio": 0.01358173076923077,
       "status": "pass"
     },
     "css-flexbox/align-self-011.html": {
@@ -120,7 +120,7 @@
       "status": "pass"
     },
     "css-flexbox/align-self-015.html": {
-      "diffRatio": 0.10414828431372548,
+      "diffRatio": 0.10632965686274509,
       "status": "pass"
     },
     "css-flexbox/align-self-016.html": {
@@ -347,14 +347,6 @@
       "diffRatio": 0,
       "status": "pass"
     },
-    "css-box/margin-trim/grid-block-start.html": {
-      "diffRatio": 0,
-      "status": "pass"
-    },
-    "css-box/margin-trim/grid-block.html": {
-      "diffRatio": 0,
-      "status": "pass"
-    },
     "css-box/margin-trim/grid-inline-end.html": {
       "diffRatio": 0,
       "status": "pass"
@@ -464,14 +456,6 @@
       "status": "pass"
     },
     "css-position/position-absolute-dynamic-static-position.html": {
-      "diffRatio": 0,
-      "status": "pass"
-    },
-    "css-position/position-absolute-fieldset.html": {
-      "diffRatio": 0,
-      "status": "pass"
-    },
-    "css-position/position-absolute-fit-content.html": {
       "diffRatio": 0,
       "status": "pass"
     },
@@ -1032,15 +1016,15 @@
       "status": "pass"
     },
     "css-flexbox/anonymous-flex-item-004.html": {
-      "diffRatio": 0.04807692307692308,
+      "diffRatio": 0.04732905982905983,
       "status": "pass"
     },
     "css-flexbox/anonymous-flex-item-005.html": {
-      "diffRatio": 0.04807692307692308,
+      "diffRatio": 0.04732905982905983,
       "status": "pass"
     },
     "css-flexbox/anonymous-flex-item-006.html": {
-      "diffRatio": 0.04807692307692308,
+      "diffRatio": 0.04732905982905983,
       "status": "pass"
     },
     "css-flexbox/flexbox-whitespace-handling-001a.xhtml": {
@@ -1052,27 +1036,27 @@
       "status": "pass"
     },
     "css-flexbox/flexbox-whitespace-handling-002.xhtml": {
-      "diffRatio": 0.01794375,
+      "diffRatio": 0.018845833333333332,
       "status": "pass"
     },
     "css-flexbox/flex-container-max-content-001.html": {
-      "diffRatio": 0.09776458333333334,
+      "diffRatio": 0.14879583333333332,
       "status": "pass"
     },
     "css-flexbox/flex-container-min-content-001.html": {
-      "diffRatio": 0.083775,
+      "diffRatio": 0.08206458333333333,
       "status": "pass"
     },
     "css-flexbox/flex-item-content-is-min-width-max-content.html": {
-      "diffRatio": 0.0034958333333333334,
+      "diffRatio": 0.00455,
       "status": "pass"
     },
     "css-flexbox/table-item-flex-percentage-min-width.html": {
-      "diffRatio": 0.11062916666666667,
+      "diffRatio": 0.09278125,
       "status": "pass"
     },
     "css-flexbox/table-item-flex-percentage-width.html": {
-      "diffRatio": 0.09928125,
+      "diffRatio": 0.08665833333333334,
       "status": "pass"
     },
     "css-display/display-contents-flex-001.html": {

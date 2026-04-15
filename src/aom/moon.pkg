@@ -1,15 +1,14 @@
 import {
-  "moonbitlang/core/strconv",
+  "moonbitlang/core/string",
   "mizchi/crater/html",
-  "mizchi/crater/css/parser",
-  "mizchi/crater/css/cascade",
-  "mizchi/crater/layout/tree",
+  "mizchi/crater/css",
+  "mizchi/crater/layout",
   "mizchi/crater/types",
 }
 
 import {
+  "mizchi/crater/layout/html_tree" @layout_html_tree,
   "mizchi/crater/style",
-  "mizchi/crater/layout/dispatch",
 } for "test"
 
 import {

@@ -47,12 +47,12 @@ fn is_unbreakable_fragment_unit(
     if child.style.float != @types.Float::None {
       continue
     }
-    if not(@inline.is_inline_level(child.style.display)) {
+    if !@inline.is_inline_level(child.style.display) {
       has_inflow_block_descendant = true
       break
     }
   }
-  not(has_inflow_block_descendant)
+  !has_inflow_block_descendant
 }
 
 ///|
@@ -130,11 +130,11 @@ fn is_fragmentation_block_flow_box(
   node : @node.Node,
   style : @style.Style,
 ) -> Bool {
-  not(@inline.is_inline_level(style.display)) ||
+  !@inline.is_inline_level(style.display) ||
   (
     @inline.is_inline_level(style.display) &&
     node.children.length() > 0 &&
-    not(contents_is_inline_flow(node))
+    !contents_is_inline_flow(node)
   )
 }
 
@@ -215,7 +215,7 @@ fn reflow_fragmented_children_with_offset(
     let child_fragment_start_outer_height = child_flow_height +
       child_fragment_start_margin_top +
       child_layout.margin.bottom
-    if not(child_is_inflow_float) {
+    if !child_is_inflow_float {
       if j > 0 {
         let prev_style = if j - 1 < source_children.length() {
           source_children[j - 1].style
@@ -259,7 +259,7 @@ fn reflow_fragmented_children_with_offset(
     }
     let mut effective_child_outer_height = child_outer_height
     let mut discard_top_margin_at_fragment_start = false
-    if not(child_is_inflow_float) &&
+    if !child_is_inflow_float &&
       child_visual_margin_top > 0.0 &&
       child_fragment_start_outer_height <= effective_limit &&
       effective_pos > 0.0 {
@@ -272,7 +272,7 @@ fn reflow_fragmented_children_with_offset(
         effective_child_outer_height = child_fragment_start_outer_height
       }
     }
-    if not(child_is_inflow_float) &&
+    if !child_is_inflow_float &&
       prefer_next_column_for_block_children &&
       j > 0 &&
       child_layout.children.length() > 0 {
@@ -287,7 +287,7 @@ fn reflow_fragmented_children_with_offset(
         effective_pos = pos + fragment_offset
       }
     }
-    if not(child_is_inflow_float) &&
+    if !child_is_inflow_float &&
       child_unbreakable &&
       effective_child_outer_height <= effective_limit &&
       effective_pos > 0.0 {
@@ -333,7 +333,7 @@ fn reflow_fragmented_children_with_offset(
           child_has_direct_inflow_float = true
         }
         if is_whitespace_only_flow_text(source_grand) &&
-          not(should_preserve_flow_whitespace_text(source_child.children, g)) {
+          !should_preserve_flow_whitespace_text(source_child.children, g) {
           continue
         }
         child_source_children.push(source_grand)
@@ -359,7 +359,7 @@ fn reflow_fragmented_children_with_offset(
       let deep_single_child_reserve_case = child_following_reserved_height > 0.0 &&
         child_layout.children.length() == 1 &&
         child_layout.children[0].children.length() > 0 &&
-        not(@inline.is_inline_level(child_style.display))
+        !@inline.is_inline_level(child_style.display)
       if deep_single_child_reserve_case {
         let deep_layout = child_layout.children[0]
         let deep_source_node = if child_source_children.length() > 0 {
@@ -441,14 +441,14 @@ fn reflow_fragmented_children_with_offset(
       child_layout.children
     }
     let adjusted_positioned_children = if prefer_next_column_for_block_children &&
-      not(child_has_direct_inflow_float) &&
+      !child_has_direct_inflow_float &&
       positioned_children.length() > 1 {
       let shifted_children : Array[@types.Layout] = []
       let mut shifted_any = false
       let column_shift = multicol_column_width + multicol_column_gap
       for idx = 0; idx < positioned_children.length(); idx = idx + 1 {
         let positioned_child = positioned_children[idx]
-        if not(shifted_any) &&
+        if !shifted_any &&
           idx > 0 &&
           positioned_child.children.length() > 0 &&
           positioned_child.x <= 0.01 {
@@ -544,7 +544,7 @@ fn reflow_fragmented_children_with_offset(
     let allow_fragment_box_expansion = child_auto_height &&
       child_style.column_span != @style.ColumnSpan::All &&
       is_fragmentation_block_flow_box(source_child_node, child_style) &&
-      not(child_has_direct_inflow_float)
+      !child_has_direct_inflow_float
     let positioned_width = if allow_fragment_box_expansion &&
       positioned_children_width > base_fragmented_width {
       positioned_children_width
@@ -567,7 +567,7 @@ fn reflow_fragmented_children_with_offset(
     if prefer_next_column_for_block_children &&
       j > 0 &&
       child_layout.children.length() > 0 &&
-      not(child_has_direct_inflow_float) &&
+      !child_has_direct_inflow_float &&
       local_pos <= 0.01 &&
       positioned.length() > 0 {
       let prev_x = positioned[positioned.length() - 1].x
@@ -591,7 +591,7 @@ fn reflow_fragmented_children_with_offset(
       height: positioned_height,
       children: adjusted_positioned_children,
     })
-    if not(child_is_inflow_float) {
+    if !child_is_inflow_float {
       if positioned_children_flow_extent > child_outer_height + 0.01 {
         pos = row.to_double() * limit +
           positioned_children_flow_extent -
@@ -621,7 +621,7 @@ fn source_children_only_contribute_floats(children : Array[@node.Node]) -> Bool 
     if child.id.has_prefix("#text") {
       match child.text {
         Some(text) =>
-          if not(is_whitespace_only_flow_text(child)) && not(text.is_empty()) {
+          if !is_whitespace_only_flow_text(child) && !text.is_empty() {
             return false
           }
         None => ()
@@ -638,7 +638,7 @@ fn source_children_only_contribute_floats(children : Array[@node.Node]) -> Bool 
     if child.children.length() == 0 ||
       @inline.is_inline_level(child.style.display) ||
       child.style.display == @types.Contents ||
-      not(source_children_only_contribute_floats(child.children)) {
+      !source_children_only_contribute_floats(child.children) {
       return false
     }
     has_float_contribution = true
@@ -654,8 +654,8 @@ fn adjust_inline_span_float_quirk(
   source_node : @node.Node,
   is_vertical_writing : Bool,
 ) -> @types.Layout {
-  if not(id_matches_tag(layout.id, "span")) ||
-    not(id_matches_tag(source_node.id, "span")) ||
+  if !id_matches_tag(layout.id, "span") ||
+    !id_matches_tag(source_node.id, "span") ||
     is_vertical_writing ||
     layout.height != 0.0 ||
     layout.width <= 0.0 ||
@@ -666,7 +666,7 @@ fn adjust_inline_span_float_quirk(
   let has_inflow_float = source_children_only_contribute_floats(
     source_node.children,
   )
-  if not(has_inflow_float) {
+  if !has_inflow_float {
     return layout
   }
 
@@ -678,7 +678,7 @@ fn adjust_inline_span_float_quirk(
     }
   }
 
-  if not(has_visible_child) {
+  if !has_visible_child {
     return layout
   }
 

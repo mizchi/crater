@@ -9,7 +9,7 @@
 
 ///|
 /// Node identifier - opaque handle to a DOM node
-pub struct NodeId(Int) derive(Eq, Hash, Show)
+pub struct NodeId(Int) derive(Eq, Hash, Debug)
 
 ///|
 /// Rectangle with position and size
@@ -18,14 +18,14 @@ pub struct Rect {
   y : Double
   width : Double
   height : Double
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 /// 2D Point
 pub struct Point {
   x : Double
   y : Double
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 /// Node type enumeration
@@ -35,7 +35,7 @@ pub enum NodeType {
   Element
   Text
   Comment
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 /// Convert DOM node type constant to NodeType
@@ -59,14 +59,14 @@ pub struct NodeInfo {
   node_name : String
   node_value : String
   child_count : Int
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// Core error types
 pub enum CoreError {
   NodeNotFound(node_id~ : NodeId)
   InvalidOperation(message~ : String)
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// Scroll state for a scrollable element
@@ -77,7 +77,7 @@ pub struct ScrollState {
   scroll_height : Double
   client_width : Double
   client_height : Double
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 /// Create a new ScrollState
@@ -229,7 +229,7 @@ pub struct SVGRect {
   y : Double
   width : Double
   height : Double
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 /// Create a new SVGRect
@@ -266,7 +266,7 @@ pub fn SVGRect::from_rect(rect : Rect) -> SVGRect {
 pub struct SVGPoint {
   x : Double
   y : Double
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 /// Create a new SVGPoint
@@ -303,7 +303,97 @@ pub struct SVGMatrix {
   d : Double // scale y
   e : Double // translate x
   f : Double // translate y
-} derive(Eq, Show)
+} derive(Eq, Debug)
+
+///|
+pub impl Show for NodeId with output(self, logger) {
+  logger.write_string("NodeId(\{self.0})")
+}
+
+///|
+pub impl Show for Rect with output(self, logger) {
+  logger.write_string(
+    "{x: \{self.x}, y: \{self.y}, width: \{self.width}, height: \{self.height}}",
+  )
+}
+
+///|
+pub impl Show for Point with output(self, logger) {
+  logger.write_string("{x: \{self.x}, y: \{self.y}}")
+}
+
+///|
+pub impl Show for NodeType with output(self, logger) {
+  let name = match self {
+    Document => "Document"
+    DocumentType => "DocumentType"
+    Element => "Element"
+    Text => "Text"
+    Comment => "Comment"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for NodeInfo with output(self, logger) {
+  logger.write_string(
+    "{node_id: \{self.node_id}, node_type: \{self.node_type}, ",
+  )
+  logger.write_string("node_name: ")
+  logger.write_string("\"")
+  logger.write_string(self.node_name)
+  logger.write_string("\"")
+  logger.write_string(", node_value: ")
+  logger.write_string("\"")
+  logger.write_string(self.node_value)
+  logger.write_string("\"")
+  logger.write_string(", child_count: \{self.child_count}}")
+}
+
+///|
+pub impl Show for CoreError with output(self, logger) {
+  match self {
+    NodeNotFound(node_id~) =>
+      logger.write_string("NodeNotFound(node_id=\{node_id})")
+    InvalidOperation(message~) => {
+      logger.write_string("InvalidOperation(message=")
+      logger.write_string("\"")
+      logger.write_string(message)
+      logger.write_string("\"")
+      logger.write_string(")")
+    }
+  }
+}
+
+///|
+pub impl Show for ScrollState with output(self, logger) {
+  logger.write_string("{scroll_left: \{self.scroll_left}, ")
+  logger.write_string("scroll_top: \{self.scroll_top}, ")
+  logger.write_string("scroll_width: \{self.scroll_width}, ")
+  logger.write_string("scroll_height: \{self.scroll_height}, ")
+  logger.write_string("client_width: \{self.client_width}, ")
+  logger.write_string("client_height: \{self.client_height}}")
+}
+
+///|
+pub impl Show for SVGRect with output(self, logger) {
+  logger.write_string(
+    "{x: \{self.x}, y: \{self.y}, width: \{self.width}, height: \{self.height}}",
+  )
+}
+
+///|
+pub impl Show for SVGPoint with output(self, logger) {
+  logger.write_string("{x: \{self.x}, y: \{self.y}}")
+}
+
+///|
+pub impl Show for SVGMatrix with output(self, logger) {
+  logger.write_string(
+    "{a: \{self.a}, b: \{self.b}, c: \{self.c}, d: \{self.d}, ",
+  )
+  logger.write_string("e: \{self.e}, f: \{self.f}}")
+}
 
 ///|
 /// Create an identity matrix

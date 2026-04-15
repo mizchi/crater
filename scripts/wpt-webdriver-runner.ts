@@ -25,6 +25,8 @@ const CRATER_BIDI_PORT = 9222;
 const CRATER_BIDI_STATUS_URL = `http://127.0.0.1:${CRATER_BIDI_PORT}/`;
 const SUBSET_CONFIG = "scripts/wpt-bidi-subset.json";
 const DEFAULT_PROFILE_NAME = "strict";
+const SERVER_READY_TIMEOUT_MS = 15_000;
+const QUICK_TIMEOUT_SECONDS = 20;
 
 interface CliOptions {
   args: string[];
@@ -56,6 +58,7 @@ interface PytestSummary {
 interface RunOutcome {
   exitCode: number;
   summary: PytestSummary;
+  failureDetails?: string;
 }
 
 interface WptCompatShardReport {
@@ -134,8 +137,50 @@ function startServer(): ChildProcess {
   return server;
 }
 
+async function waitForProcessExit(
+  proc: ChildProcess,
+  timeoutMs: number,
+): Promise<boolean> {
+  if (proc.exitCode !== null || proc.signalCode !== null) {
+    return true;
+  }
+
+  return await new Promise((resolve) => {
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      proc.off("close", onClose);
+      proc.off("exit", onExit);
+      resolve(ok);
+    };
+    const onClose = () => finish(true);
+    const onExit = () => finish(true);
+    const timer = setTimeout(() => finish(false), timeoutMs);
+    proc.once("close", onClose);
+    proc.once("exit", onExit);
+  });
+}
+
+async function stopServer(server: ChildProcess): Promise<void> {
+  if (server.exitCode !== null || server.signalCode !== null) {
+    return;
+  }
+
+  server.kill("SIGTERM");
+  const terminated = await waitForProcessExit(server, 3_000);
+  if (!terminated && server.exitCode === null && server.signalCode === null) {
+    server.kill("SIGKILL");
+    await waitForProcessExit(server, 2_000);
+  }
+
+  // Give the OS a moment to release the listen socket before the next quick shard starts.
+  await new Promise((resolve) => setTimeout(resolve, 200));
+}
+
 // Wait for server to be ready
-async function waitForServer(timeout = 5000): Promise<boolean> {
+async function waitForServer(timeout = SERVER_READY_TIMEOUT_MS): Promise<boolean> {
   const start = Date.now();
   while (Date.now() - start < timeout) {
     try {
@@ -242,7 +287,7 @@ function resolveProfileConfig(config: SubsetConfig | null, profileName: string):
       targets: Object.keys(config.tests),
       skip_patterns: config.skip_patterns ?? [],
       quick: true,
-      timeout: 10,
+      timeout: QUICK_TIMEOUT_SECONDS,
     };
   }
 
@@ -272,6 +317,14 @@ function emptySummary(): PytestSummary {
 
 function stripAnsi(input: string): string {
   return input.replace(/\x1B\[[0-9;]*m/g, "");
+}
+
+function formatFailureLines(lines: string[]): string | undefined {
+  const compact = lines
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (compact.length === 0) return undefined;
+  return compact.join(" | ").replace(/\s+/g, " ").slice(0, 700);
 }
 
 export function parsePytestSummary(output: string): PytestSummary {
@@ -319,6 +372,41 @@ export function parsePytestSummary(output: string): PytestSummary {
   };
 }
 
+export function extractPytestFailureDetails(output: string): string | undefined {
+  const cleaned = stripAnsi(output).replace(/\r/g, "");
+  const lines = cleaned.split("\n").map((line) => line.trimEnd());
+  const shortSummaryIndex = lines.findIndex((line) =>
+    /short test summary info/i.test(line),
+  );
+
+  if (shortSummaryIndex >= 0) {
+    const summaryLines: string[] = [];
+    for (let i = shortSummaryIndex + 1; i < lines.length; i++) {
+      const trimmed = lines[i].trim();
+      if (!trimmed) continue;
+      if (/^=+/.test(trimmed)) break;
+      if (/^(FAILED|ERROR)\b/.test(trimmed)) {
+        summaryLines.push(trimmed);
+      }
+    }
+    const shortSummary = formatFailureLines(summaryLines);
+    if (shortSummary) return shortSummary;
+  }
+
+  const fallbackLines = lines.filter((line) => {
+    const trimmed = line.trim();
+    return (
+      /^FAILED\b/.test(trimmed) ||
+      /^ERROR\b/.test(trimmed) ||
+      /^E\s+/.test(trimmed) ||
+      /(AssertionError|TimeoutException|UnknownErrorException|NoSuch\w+Exception)/.test(
+        trimmed,
+      )
+    );
+  });
+  return formatFailureLines(fallbackLines.slice(-6));
+}
+
 function mergeSummaries(base: PytestSummary, item: PytestSummary): PytestSummary {
   return {
     passed: base.passed + item.passed,
@@ -358,6 +446,21 @@ function detectTarget(args: string[]): string {
     return args[1] ? `quick ${args[1]}` : "quick";
   }
   return args[0];
+}
+
+function escapeGitHubAnnotation(value: string): string {
+  return value
+    .replace(/%/g, "%25")
+    .replace(/\r/g, "%0D")
+    .replace(/\n/g, "%0A");
+}
+
+function emitFailureAnnotation(target: string, details: string | undefined): void {
+  if (process.env.GITHUB_ACTIONS !== "true") return;
+  const message = details ? `${target} :: ${details}` : target;
+  console.error(
+    `::error title=WPT WebDriver failure details::${escapeGitHubAnnotation(message)}`,
+  );
 }
 
 function writeShardReport(jsonOutput: string | undefined, target: string, summary: PytestSummary): void {
@@ -586,7 +689,11 @@ async function runTests(
   if (resolvedPath === null) {
     const fullPath = path.join(process.cwd(), WPT_BIDI_TESTS, testPath);
     console.error(`Test path not found: ${fullPath}`);
-    return { exitCode: 1, summary: { passed: 0, failed: 1, errors: 0, total: 1 } };
+    return {
+      exitCode: 1,
+      summary: { passed: 0, failed: 1, errors: 0, total: 1 },
+      failureDetails: `Test path not found: ${fullPath}`,
+    };
   }
 
   const { tempDir, runPath, copied, skipped } = copyTestsToTemp(resolvedPath, options);
@@ -596,7 +703,11 @@ async function runTests(
     if (skipped.length > 0) {
       console.log(`Skipped: ${skipped.slice(0, 5).join(", ")}${skipped.length > 5 ? ` and ${skipped.length - 5} more` : ""}`);
     }
-    return { exitCode: 1, summary: { passed: 0, failed: 1, errors: 0, total: 1 } };
+    return {
+      exitCode: 1,
+      summary: { passed: 0, failed: 1, errors: 0, total: 1 },
+      failureDetails: "No compatible tests found",
+    };
   }
 
   console.log(`Copied ${copied} tests to ${tempDir}`);
@@ -667,7 +778,11 @@ async function runTests(
         // pytest summary line can be missing when process crashes/interrupted
         summary = { passed: 0, failed: 1, errors: 0, total: 1 };
       }
-      resolve({ exitCode, summary });
+      resolve({
+        exitCode,
+        summary,
+        failureDetails: exitCode !== 0 ? extractPytestFailureDetails(output) : undefined,
+      });
     });
   });
 }
@@ -678,7 +793,11 @@ async function runProfile(profileName: string): Promise<RunOutcome> {
   const profile = resolveProfileConfig(config, profileName);
   if (!profile) {
     console.error(`Profile "${profileName}" not found in ${SUBSET_CONFIG}`);
-    return { exitCode: 1, summary: { passed: 0, failed: 1, errors: 0, total: 1 } };
+    return {
+      exitCode: 1,
+      summary: { passed: 0, failed: 1, errors: 0, total: 1 },
+      failureDetails: `Profile "${profileName}" not found`,
+    };
   }
 
   console.log(`Running profile: ${profileName}\n`);
@@ -742,6 +861,7 @@ async function main(): Promise<number> {
   if (!checkUv()) {
     console.error("uv not found. Install: curl -LsSf https://astral.sh/uv/install.sh | sh");
     writeShardReport(cliOptions.jsonOutput, target, { passed: 0, failed: 1, errors: 0, total: 1 });
+    emitFailureAnnotation(target, "uv not found");
     return 1;
   }
 
@@ -755,6 +875,7 @@ async function main(): Promise<number> {
     if (!ready) {
       console.error("Server failed to start");
       writeShardReport(cliOptions.jsonOutput, target, { passed: 0, failed: 1, errors: 0, total: 1 });
+      emitFailureAnnotation(target, "Server failed to start");
       return 1;
     }
     console.log("Server ready.\n");
@@ -772,7 +893,7 @@ async function main(): Promise<number> {
       outcome = await runTests(testPath, {
         skipPatterns: getDefaultSkipPatterns(config),
         quick: true,
-        timeout: 10,
+      timeout: QUICK_TIMEOUT_SECONDS,
       });
     } else {
       const testPath = args[0] === "--all" ? "" : args[0];
@@ -780,13 +901,20 @@ async function main(): Promise<number> {
     }
 
     writeShardReport(cliOptions.jsonOutput, target, outcome.summary);
+    if (outcome.exitCode !== 0) {
+      emitFailureAnnotation(target, outcome.failureDetails);
+    }
     return outcome.exitCode;
   } catch (error) {
     writeShardReport(cliOptions.jsonOutput, target, { passed: 0, failed: 1, errors: 0, total: 1 });
+    emitFailureAnnotation(
+      target,
+      error instanceof Error ? error.message : String(error),
+    );
     throw error;
   } finally {
     // Stop server
-    server.kill("SIGTERM");
+    await stopServer(server);
   }
 }
 

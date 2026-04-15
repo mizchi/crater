@@ -33,7 +33,7 @@ fn BidiProtocol::handle_network_emit_navigation_request_sequence(
       return
     }
   }
-  if not(self.manager.has_session(context_id)) {
+  if !self.manager.has_session(context_id) {
     self.send_error(
       request_id,
       "no such frame",
@@ -58,7 +58,7 @@ fn BidiProtocol::handle_network_emit_navigation_request_sequence(
       return
     }
   }
-  let emitted = self.emit_synthetic_navigation_request_sequence(
+  let emitted = self.emit_synthetic_navigation_request_sequence_for_test(
     context_id, url, navigation,
   )
   self.send_success(
@@ -78,7 +78,23 @@ fn BidiProtocol::emit_synthetic_navigation_request_sequence(
     context_id, url, navigation,
   )
   for request in requests {
-    self.emit_synthetic_network_event_sequence_internal(request, true)
+    self.emit_synthetic_network_event_sequence_internal(request, true, false)
+  }
+  requests.length()
+}
+
+///|
+fn BidiProtocol::emit_synthetic_navigation_request_sequence_for_test(
+  self : BidiProtocol,
+  context_id : String,
+  url : String,
+  navigation : String?,
+) -> Int {
+  let requests = self.build_synthetic_navigation_request_entries(
+    context_id, url, navigation,
+  )
+  for request in requests {
+    self.emit_synthetic_network_event_sequence_internal(request, true, true)
   }
   requests.length()
 }
@@ -360,6 +376,7 @@ fn BidiProtocol::emit_synthetic_network_event_sequence_internal(
   self : BidiProtocol,
   request : SyntheticNavigationRequestEntry,
   is_navigation : Bool,
+  force_before_request_sent : Bool,
 ) -> Unit {
   let base_input : SyntheticNetworkEventInput = {
     context_id: request.context_id,
@@ -390,10 +407,11 @@ fn BidiProtocol::emit_synthetic_network_event_sequence_internal(
     "beforeRequestSent",
     request.url,
   )
-  let before_subscribed = self.is_subscribed_for_context(
-    "network.beforeRequestSent",
-    request.context_id,
-  )
+  let before_subscribed = force_before_request_sent ||
+    self.is_subscribed_for_context(
+      "network.beforeRequestSent",
+      request.context_id,
+    )
   let before_blocked = before_subscribed && before_intercepts.length() > 0
   if before_subscribed {
     let before_input = {
@@ -632,7 +650,7 @@ fn synthetic_navigation_requires_auth_event(
 
 ///|
 fn synthetic_navigation_is_html_data_url(url : String) -> Bool {
-  if not(url.has_prefix("data:")) {
+  if !url.has_prefix("data:") {
     return false
   }
   match parse_data_url(url) {

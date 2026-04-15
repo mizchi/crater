@@ -171,8 +171,7 @@ fn is_table_principal_display(display : @types.Display) -> Bool {
 ///|
 /// Containment effects only apply when the element generates a principal box.
 fn containment_applies(display : @types.Display) -> Bool {
-  not(is_no_principal_table_internal_display(display)) &&
-  display != @types.Inline
+  !is_no_principal_table_internal_display(display) && display != @types.Inline
 }
 
 ///|
@@ -213,7 +212,7 @@ fn establishes_abs_containing_block(
         containment_applies(display) &&
         (style.contain.layout || style.contain.paint)
       ) ||
-      not(style.transform.is_none())
+      !style.transform.is_none()
   }
 }
 
@@ -289,13 +288,13 @@ fn is_table_run_whitespace_char(c : Char) -> Bool {
 
 ///|
 fn is_whitespace_only_table_run_text(node : @node.Node) -> Bool {
-  if not(node.id.has_prefix("#text")) {
+  if !node.id.has_prefix("#text") {
     return false
   }
   match node.text {
     Some(text) => {
       for c in text.iter() {
-        if not(is_table_run_whitespace_char(c)) {
+        if !is_table_run_whitespace_char(c) {
           return false
         }
       }
@@ -322,8 +321,8 @@ fn white_space_collapses_edges(white_space : @style.WhiteSpace) -> Bool {
 
 ///|
 fn text_ends_with_collapsible_flow_whitespace(node : @node.Node) -> Bool {
-  if not(node.id.has_prefix("#text")) ||
-    not(white_space_collapses_edges(node.style.white_space)) {
+  if !node.id.has_prefix("#text") ||
+    !white_space_collapses_edges(node.style.white_space) {
     return false
   }
   match node.text {
@@ -343,25 +342,25 @@ fn text_ends_with_collapsible_flow_whitespace(node : @node.Node) -> Bool {
 
 ///|
 fn is_whitespace_only_flow_text(node : @node.Node) -> Bool {
-  if not(node.id.has_prefix("#text")) {
+  if !node.id.has_prefix("#text") {
     return false
   }
   match node.text {
     Some(text) => {
       for c in text.iter() {
-        if not(is_flow_whitespace_char(c)) {
+        if !is_flow_whitespace_char(c) {
           return false
         }
       }
       true
     }
-    None => true
+    None => node.measure is None
   }
 }
 
 ///|
 fn flow_whitespace_contains_line_break(node : @node.Node) -> Bool {
-  if not(node.id.has_prefix("#text")) {
+  if !node.id.has_prefix("#text") {
     return false
   }
   match node.text {
@@ -413,7 +412,7 @@ fn participates_inline_for_flow_whitespace(node : @node.Node) -> Bool {
     match node.text {
       Some(text) => {
         for c in text.iter() {
-          if not(is_flow_whitespace_char(c)) {
+          if !is_flow_whitespace_char(c) {
             return true
           }
         }
@@ -490,7 +489,7 @@ fn is_replaced_only_whitespace_separator(
     return false
   }
   let node = siblings[index]
-  if not(is_whitespace_only_flow_text(node)) {
+  if !is_whitespace_only_flow_text(node) {
     return false
   }
   let mut prev_index : Int? = None
@@ -738,8 +737,8 @@ fn shift_direct_float_children_for_intrusion(
         }
       @types.Float::None =>
         if node_child.style.position == @types.Static &&
-          not(block_flow_establishes_bfc(node_child.style)) &&
-          not(@inline.is_inline_level(node_child.style.display)) {
+          !block_flow_establishes_bfc(node_child.style) &&
+          !@inline.is_inline_level(node_child.style.display) {
           shift_direct_float_children_for_intrusion(
             layout_child, node_child, shift_left, shift_right,
           )
@@ -997,9 +996,9 @@ fn is_simple_block_stack_child(style : @style.Style) -> Bool {
   style.position == @types.Static &&
   style.float == @types.Float::None &&
   style.clear == @types.Clear::None &&
-  not(style.writing_mode.is_vertical()) &&
+  !style.writing_mode.is_vertical() &&
   default_justify_self &&
-  not(block_style_has_auto_margin(style))
+  !block_style_has_auto_margin(style)
 }
 
 ///|
@@ -1053,8 +1052,8 @@ fn layout_simple_block_stack(
         child_layout.border,
         child_layout.padding,
       ) &&
-      not(child_establishes_bfc) &&
-      not(child_has_aspect_ratio)
+      !child_establishes_bfc &&
+      !child_has_aspect_ratio
 
     let child_y : Double = if is_first {
       if can_collapse_top {
@@ -1118,7 +1117,7 @@ fn layout_simple_block_stack(
       y: child_y,
     })
 
-    if not(collapses_through) {
+    if !collapses_through {
       if is_first && can_collapse_top {
         current_pos = child_layout.height
       } else if is_first {
@@ -1127,7 +1126,7 @@ fn layout_simple_block_stack(
         current_pos = current_pos + child_layout.height
       }
     }
-    if leading_collapse_chain_active && not(collapses_through) {
+    if leading_collapse_chain_active && !collapses_through {
       leading_collapse_chain_active = false
     }
     if is_last && can_collapse_bottom {
@@ -1162,7 +1161,7 @@ fn calculate_children_max_content_width(
   let inline_only = @inline.should_establish_ifc(flow_children) ||
     is_ruby_internal_id(node.id)
   let mut inline_has_forced_break = false
-  if inline_only && not(is_vertical_writing) {
+  if inline_only && !is_vertical_writing {
     for child in flow_children {
       if child.id == "br" {
         inline_has_forced_break = true
@@ -1187,7 +1186,7 @@ fn calculate_children_max_content_width(
     }
     let child_style = child.style
     let child_suppress_intrinsic_inline = child_style.suppresses_intrinsic_width() &&
-      not(is_ruby_internal_id(child.id))
+      !is_ruby_internal_id(child.id)
     // Calculate child's margin contribution (percentages resolve to 0)
     let child_margin_left = resolve_dimension_intrinsic(child_style.margin.left)
     let child_margin_right = resolve_dimension_intrinsic(
@@ -1312,7 +1311,7 @@ fn calculate_children_min_content_width(
   let inline_only = @inline.should_establish_ifc(flow_children) ||
     is_ruby_internal_id(node.id)
   let mut inline_needs_line_width = false
-  if inline_only && not(is_vertical_writing) {
+  if inline_only && !is_vertical_writing {
     for child in flow_children {
       if child.id == "br" {
         inline_needs_line_width = true
@@ -1344,7 +1343,7 @@ fn calculate_children_min_content_width(
     }
     let child_style = child.style
     let child_suppress_intrinsic_inline = child_style.suppresses_intrinsic_width() &&
-      not(is_ruby_internal_id(child.id))
+      !is_ruby_internal_id(child.id)
     // Calculate child's margin contribution (percentages resolve to 0)
     let child_margin_left = resolve_dimension_intrinsic(child_style.margin.left)
     let child_margin_right = resolve_dimension_intrinsic(
@@ -1410,7 +1409,7 @@ fn calculate_children_min_content_width(
     }
     fn apply_intrinsic_inline_constraints(raw_width : Double) -> Double {
       let mut resolved = raw_width
-      let width_is_inline_axis = not(child_style.writing_mode.is_vertical())
+      let width_is_inline_axis = !child_style.writing_mode.is_vertical()
       let is_table_principal = is_table_principal_display(child_style.display)
       let intrinsic_min_width = if child_suppress_intrinsic_inline {
         child_style.contained_intrinsic_width_fallback() + child_min_box
@@ -1737,20 +1736,10 @@ fn resolve_box_height_from_style(
   border : @types.Rect[Double],
 ) -> Double {
   match style.height {
-    @types.Length(h) =>
-      if style.box_sizing == @types.BorderBox {
-        h
-      } else {
-        h + padding.vertical_sum() + border.vertical_sum()
-      }
+    @types.Length(h) => h
     @types.Percent(p) =>
       match parent_height_opt {
-        Some(ph) =>
-          if style.box_sizing == @types.BorderBox {
-            ph * p
-          } else {
-            ph * p + padding.vertical_sum() + border.vertical_sum()
-          }
+        Some(ph) => ph * p
         None =>
           content_height_for_auto +
           padding.vertical_sum() +
@@ -1985,8 +1974,8 @@ fn try_layout_empty_block_leaf_with_definite_height(
     node.children.length() > 0 ||
     node.measure is Some(_) ||
     node.text is Some(_) ||
-    not(is_simple_display) ||
-    not(has_definite_height) ||
+    !is_simple_display ||
+    !has_definite_height ||
     style.position != @types.Static ||
     style.float != @types.Float::None ||
     style.clear != @types.Clear::None ||
@@ -2163,7 +2152,7 @@ fn adjust_float_only_inline_wrapper_for_parent(
   is_vertical_writing : Bool,
   include_inline_quirk_fallback : Bool,
 ) -> @types.Layout {
-  let parent_is_floated_auto_block = not(is_vertical_writing) &&
+  let parent_is_floated_auto_block = !is_vertical_writing &&
     parent_style.height == @types.Auto &&
     parent_style.float != @types.Float::None
   if parent_is_floated_auto_block &&
@@ -2347,7 +2336,7 @@ fn compute_with_collapse(
       }
       flow_inline_nodes.push(child)
     }
-    if not(has_out_of_flow) && @inline.should_establish_ifc(flow_inline_nodes) {
+    if !has_out_of_flow && @inline.should_establish_ifc(flow_inline_nodes) {
       let ifc_result = @inline.compute_ifc(
         flow_inline_nodes,
         ctx.available_width,
@@ -2425,7 +2414,7 @@ fn compute_with_collapse(
     for i = 0; i < node.children.length(); i = i + 1 {
       let child = node.children[i]
       if is_whitespace_only_flow_text(child) &&
-        not(should_preserve_flow_whitespace_text(node.children, i)) {
+        !should_preserve_flow_whitespace_text(node.children, i) {
         continue
       }
       if child.style.position == @types.Absolute {
@@ -2801,8 +2790,8 @@ fn compute_with_collapse(
   // TODO: logical-block-axis margin collapse in vertical writing mode.
   // For now keep vertical flow non-collapsing to avoid double-applying
   // escaped margins during coordinate remapping.
-  let collapse_with_children = not(style.writing_mode.is_vertical()) &&
-    not(establishes_bfc)
+  let collapse_with_children = !style.writing_mode.is_vertical() &&
+    !establishes_bfc
   let can_collapse_top = border.top == 0.0 &&
     padding.top == 0.0 &&
     collapse_with_children
@@ -2891,20 +2880,8 @@ fn compute_with_collapse(
     Some(w) => w
     None =>
       match style.width {
-        @types.Length(w) =>
-          if style.box_sizing == @types.BorderBox {
-            w
-          } else {
-            w + padding.horizontal_sum() + border.horizontal_sum()
-          }
-        @types.Percent(p) => {
-          let content_w = parent_width * p
-          if style.box_sizing == @types.BorderBox {
-            content_w
-          } else {
-            content_w + padding.horizontal_sum() + border.horizontal_sum()
-          }
-        }
+        @types.Length(w) => w
+        @types.Percent(p) => parent_width * p
         @types.Auto =>
           if use_max_content {
             // Will be computed from content - use parent_width as initial value for children
@@ -3128,7 +3105,10 @@ fn compute_with_collapse(
               // uses viewport-height as the percentage basis in practice.
               Some(available_h) if style.writing_mode.is_vertical() ||
                 node.id == "body" ||
-                has_percent_sized_descendant(node) =>
+                (
+                  ctx.sizing_mode == @types.Definite &&
+                  has_percent_sized_descendant(node)
+                ) =>
                 Some(
                   @types.max(
                     0.0,
@@ -3143,7 +3123,10 @@ fn compute_with_collapse(
       match ctx.available_height {
         Some(available_h) if style.writing_mode.is_vertical() ||
           node.id == "body" ||
-          has_percent_sized_descendant(node) =>
+          (
+            ctx.sizing_mode == @types.Definite &&
+            has_percent_sized_descendant(node)
+          ) =>
           Some(
             @types.max(
               0.0,
@@ -3173,7 +3156,7 @@ fn compute_with_collapse(
   for i = 0; i < node.children.length(); i = i + 1 {
     let child = node.children[i]
     if is_whitespace_only_flow_text(child) &&
-      not(should_preserve_flow_whitespace_text(node.children, i)) {
+      !should_preserve_flow_whitespace_text(node.children, i) {
       has_non_flow_children = true
       continue
     }
@@ -3220,7 +3203,7 @@ fn compute_with_collapse(
       float_container_height,
       padding.top + border.top,
       style.writing_mode.is_block_rtl(),
-      not(style.direction.is_rtl()),
+      !style.direction.is_rtl(),
     )
   } else {
     @float.FloatContext::new(child_available_width, padding.left + border.left)
@@ -3236,7 +3219,7 @@ fn compute_with_collapse(
     let inline_only = @inline.should_establish_ifc(flow_nodes) ||
       is_ruby_internal_id(node.id)
     let mut inline_has_forced_break = false
-    if inline_only && not(style.writing_mode.is_vertical()) {
+    if inline_only && !style.writing_mode.is_vertical() {
       for child in flow_nodes {
         if child.id == "br" {
           inline_has_forced_break = true
@@ -3260,7 +3243,7 @@ fn compute_with_collapse(
       }
     }
     // Skip children content calculation when contain: inline-size or size is set
-    if not(skip_content_contribution) {
+    if !skip_content_contribution {
       for i = 0; i < flow_nodes.length(); i = i + 1 {
         let child = flow_nodes[i]
         let child_style = flow_styles[i]
@@ -3969,7 +3952,7 @@ fn compute_with_collapse(
   }
   if multicol_enabled &&
     float_nodes.length() == 0 &&
-    not(has_non_flow_children) &&
+    !has_non_flow_children &&
     flow_nodes.length() == 1 &&
     flow_nodes[0].style.display == @types.Contents {
     let contents_child = flow_nodes[0]
@@ -3984,6 +3967,16 @@ fn compute_with_collapse(
     let synthetic_result = compute_with_collapse(
       synthetic_node, ctx, warnings, dispatch,
     )
+    let normalized_synthetic_children = if synthetic_result.layout.children.length() >
+      1 {
+      normalize_display_contents_children_to_column_start(
+        synthetic_result.layout.children,
+        multicol_column_width,
+        multicol_column_gap,
+      )
+    } else {
+      synthetic_result.layout.children
+    }
     let contents_layout : @types.Layout = {
       id: contents_child.id,
       x: 0.0,
@@ -3997,7 +3990,7 @@ fn compute_with_collapse(
       overflow_y: @types.Visible,
       scroll_width: 0.0,
       scroll_height: 0.0,
-      children: synthetic_result.layout.children,
+      children: normalized_synthetic_children,
       text: contents_child.text,
     }
     return {
@@ -4015,10 +4008,10 @@ fn compute_with_collapse(
       should_establish_ifc_with_contents(flow_nodes)
     ) &&
     float_nodes.length() == 0 &&
-    not(multicol_enabled) &&
-    not(has_table_internal_flow)
+    !multicol_enabled &&
+    !has_table_internal_flow
   // Check for mixed inline/block content (needs anonymous block boxes)
-  let has_mixed = not(has_table_internal_flow) &&
+  let has_mixed = !has_table_internal_flow &&
     has_mixed_inline_block_content(flow_nodes)
   if use_ifc {
     let width_is_fit_content = match style.width {
@@ -4026,10 +4019,10 @@ fn compute_with_collapse(
       _ => false
     }
     let suppress_ifc_inline_progress = style.contain.inline_size &&
-      not(style.writing_mode.is_vertical()) &&
+      !style.writing_mode.is_vertical() &&
       width_is_fit_content
     let ifc_available_width = if style.contain.inline_size &&
-      not(style.writing_mode.is_vertical()) {
+      !style.writing_mode.is_vertical() {
       match style.width {
         @types.FitContent(_) =>
           if parent_width > actual_child_available_width {
@@ -4166,9 +4159,18 @@ fn compute_with_collapse(
           0.0
         }
       }
+      let intrinsic_inline_extent = calculate_children_max_content_width(
+        node, actual_child_available_width,
+      )
+      let resolved_ifc_block_extent = if intrinsic_inline_extent >
+        ifc_block_extent {
+        intrinsic_inline_extent
+      } else {
+        ifc_block_extent
+      }
       match (style.width, style.min_width, style.max_width) {
         (@types.Auto, @types.Auto, @types.Auto) =>
-          box_width = ifc_block_extent +
+          box_width = resolved_ifc_block_extent +
             padding.horizontal_sum() +
             border.horizontal_sum()
         _ => ()
@@ -4186,9 +4188,7 @@ fn compute_with_collapse(
     let box_height = apply_content_driven_height_constraints(
       box_height, style, node, parent_width, content_height_for_auto, padding, border,
     )
-    let block_content_alignment_offset = if not(
-        style.writing_mode.is_vertical(),
-      ) {
+    let block_content_alignment_offset = if !style.writing_mode.is_vertical() {
       let content_box_height = box_height -
         padding.vertical_sum() -
         border.vertical_sum()
@@ -4270,7 +4270,7 @@ fn compute_with_collapse(
       text: node.text,
     }
     return { layout, collapsed: { top: None, bottom: None } }
-  } else if has_mixed && float_nodes.length() == 0 && not(multicol_enabled) {
+  } else if has_mixed && float_nodes.length() == 0 && !multicol_enabled {
     // Mixed inline/block content - use anonymous block boxes
     let groups = group_flow_children_for_anonymous_blocks(
       flow_nodes, flow_indices,
@@ -4293,7 +4293,7 @@ fn compute_with_collapse(
     )
     // fieldset legend overlays the top border line instead of participating in
     // normal block-flow vertical positioning.
-    if not(style.writing_mode.is_vertical()) && node.id.has_prefix("fieldset") {
+    if !style.writing_mode.is_vertical() && node.id.has_prefix("fieldset") {
       for i = 0; i < node.children.length(); i = i + 1 {
         let child = node.children[i]
         if child.id.has_prefix("legend") {
@@ -4351,9 +4351,7 @@ fn compute_with_collapse(
     let box_height = apply_content_driven_height_constraints(
       box_height, style, node, parent_width, content_height_for_auto, padding, border,
     )
-    let block_content_alignment_offset = if not(
-        style.writing_mode.is_vertical(),
-      ) {
+    let block_content_alignment_offset = if !style.writing_mode.is_vertical() {
       let content_box_height = box_height -
         padding.vertical_sum() -
         border.vertical_sum()
@@ -4478,7 +4476,7 @@ fn compute_with_collapse(
     let skip_anonymous_table_run = is_no_principal_table_internal_display(
       child.style.display,
     )
-    if is_table_internal_flow_node(child) && not(skip_anonymous_table_run) {
+    if is_table_internal_flow_node(child) && !skip_anonymous_table_run {
       // Consecutive table-internal/table-contents siblings form one anonymous table.
       let run_nodes : Array[@node.Node] = []
       let run_indices : Array[Int] = []
@@ -4584,19 +4582,19 @@ fn compute_with_collapse(
   let can_use_simple_block_stack = ctx.sizing_mode == @types.Definite &&
     has_simple_block_stack_hint &&
     style.align_content == @types.Stretch &&
-    not(style.writing_mode.is_vertical()) &&
-    not(multicol_enabled) &&
-    not(use_ifc) &&
-    not(has_mixed) &&
-    not(has_non_flow_children) &&
-    not(node.id.has_prefix("fieldset")) &&
+    !style.writing_mode.is_vertical() &&
+    !multicol_enabled &&
+    !use_ifc &&
+    !has_mixed &&
+    !has_non_flow_children &&
+    !node.id.has_prefix("fieldset") &&
     float_nodes.length() == 0 &&
     flow_nodes.length() == node.children.length() &&
     flow_children.length() == flow_nodes.length()
   let can_use_simple_block_stack = if can_use_simple_block_stack {
     let mut all_simple = true
     for child in flow_nodes {
-      if not(is_simple_block_stack_child(child.style)) {
+      if !is_simple_block_stack_child(child.style) {
         all_simple = false
         break
       }
@@ -4988,7 +4986,7 @@ fn compute_with_collapse(
       if child_node.id == "br" || child_node.id.has_prefix("#text") {
         continue
       }
-      if not(is_inline_flow_participant(child_node, child_style)) {
+      if !is_inline_flow_participant(child_node, child_style) {
         continue
       }
       if source_children_only_contribute_floats(child_node.children) {
@@ -4997,7 +4995,7 @@ fn compute_with_collapse(
     }
     false
   }
-  let enable_float_inline_run = not(is_vertical_writing) &&
+  let enable_float_inline_run = !is_vertical_writing &&
     (float_nodes.length() > 0 || has_inline_float_only_wrapper())
   let mut inline_run_active = false
   let mut inline_run_x = 0.0
@@ -5024,7 +5022,7 @@ fn compute_with_collapse(
     }
   }
   fn resolve_vertical_float_whitespace_adjust(flow_index : Int) -> Double {
-    if not(is_vertical_writing) || flow_index <= 0 {
+    if !is_vertical_writing || flow_index <= 0 {
       return 0.0
     }
     let prev_node = flow_nodes[flow_index - 1]
@@ -5150,10 +5148,10 @@ fn compute_with_collapse(
       inline_run_align_offset = next_inline_run_align_offset
       continue
     }
-    let is_inline_float_only_wrapper = not(is_vertical_writing) &&
+    let is_inline_float_only_wrapper = !is_vertical_writing &&
       @inline.is_inline_level(child_style.display) &&
       child_node.id != "br" &&
-      not(child_node.id.has_prefix("#text")) &&
+      !child_node.id.has_prefix("#text") &&
       source_children_only_contribute_floats(child_node.children)
     let participates_in_inline_run = enable_float_inline_run &&
       (
@@ -5162,7 +5160,7 @@ fn compute_with_collapse(
       ) &&
       child_style.position != @types.Absolute &&
       child_style.position != @types.Fixed
-    if not(participates_in_inline_run) && inline_run_active {
+    if !participates_in_inline_run && inline_run_active {
       flush_inline_run_state()
     }
     if participates_in_inline_run &&
@@ -5212,10 +5210,10 @@ fn compute_with_collapse(
     }
 
     let child_establishes_bfc = block_flow_establishes_bfc(child_style)
-    if not(is_vertical_writing) &&
+    if !is_vertical_writing &&
       child_establishes_bfc &&
       float_ctx.has_floats() &&
-      not(participates_in_inline_run) &&
+      !participates_in_inline_run &&
       child_style.position != @types.Absolute &&
       child_style.position != @types.Fixed {
       let probe_height = if child_layout.height > 0.0 {
@@ -5299,13 +5297,13 @@ fn compute_with_collapse(
         child_layout.border,
         child_layout.padding,
       ) &&
-      not(child_establishes_bfc) &&
-      not(child_has_aspect_ratio)
+      !child_establishes_bfc &&
+      !child_has_aspect_ratio
 
     // BFC-establishing normal-flow blocks are shifted downward until their
     // margin box can fit alongside preceding floats.
     let mut float_clearance_offset = 0.0
-    if not(is_vertical_writing) &&
+    if !is_vertical_writing &&
       child_establishes_bfc &&
       float_ctx.has_floats() &&
       child_style.position != @types.Absolute &&
@@ -5395,9 +5393,7 @@ fn compute_with_collapse(
     }
 
     // Calculate x position considering margin auto
-    let (float_inline_offset, float_inline_constrained) = if not(
-        is_vertical_writing,
-      ) &&
+    let (float_inline_offset, float_inline_constrained) = if !is_vertical_writing &&
       float_ctx.has_floats() &&
       (@inline.is_inline_level(child_style.display) || child_establishes_bfc) &&
       child_style.position != @types.Absolute &&
@@ -5431,12 +5427,10 @@ fn compute_with_collapse(
     } else {
       (0.0, false)
     }
-    let (float_intrusion_left, float_intrusion_right) = if not(
-        is_vertical_writing,
-      ) &&
+    let (float_intrusion_left, float_intrusion_right) = if !is_vertical_writing &&
       float_ctx.has_floats() &&
-      not(@inline.is_inline_level(child_style.display)) &&
-      not(child_establishes_bfc) &&
+      !@inline.is_inline_level(child_style.display) &&
+      !child_establishes_bfc &&
       child_style.position != @types.Absolute &&
       child_style.position != @types.Fixed {
       let probe_height = if child_layout.height > 0.0 {
@@ -5481,8 +5475,8 @@ fn compute_with_collapse(
       | @types.AlignSelf::Baseline => @types.Alignment::Start
     }
     let mut positioned_child_width = child_layout.width
-    if not(is_vertical_writing) &&
-      not(participates_in_inline_run) &&
+    if !is_vertical_writing &&
+      !participates_in_inline_run &&
       child_style.position != @types.Absolute &&
       child_style.position != @types.Fixed &&
       explicit_justify_self == @types.Alignment::Stretch {
@@ -5532,8 +5526,8 @@ fn compute_with_collapse(
           border.left +
           float_inline_offset +
           inline_run_offset
-        let self_align_offset = if not(is_vertical_writing) &&
-          not(participates_in_inline_run) &&
+        let self_align_offset = if !is_vertical_writing &&
+          !participates_in_inline_run &&
           child_style.position != @types.Absolute &&
           child_style.position != @types.Fixed {
           let free_space = child_available_width -
@@ -5649,7 +5643,7 @@ fn compute_with_collapse(
     } else {
       (final_x, final_y)
     }
-    let is_first_legend_in_fieldset = not(is_vertical_writing) &&
+    let is_first_legend_in_fieldset = !is_vertical_writing &&
       i == 0 &&
       node.id.has_prefix("fieldset") &&
       child_layout.id.has_prefix("legend")
@@ -5690,7 +5684,7 @@ fn compute_with_collapse(
       child_style.display,
     )
     let should_offset_for_containment = parent_containment_abs_cb &&
-      not(establishes_abs_cb) &&
+      !establishes_abs_cb &&
       (positioned_x != 0.0 || legend_border_overlay_y != 0.0)
     let parent_is_abs_cb = establishes_abs_containing_block(
       style,
@@ -5698,7 +5692,7 @@ fn compute_with_collapse(
     )
     let should_offset_no_principal_abs = no_principal &&
       parent_is_abs_cb &&
-      not(establishes_abs_cb) &&
+      !establishes_abs_cb &&
       (positioned_x != 0.0 || legend_border_overlay_y != 0.0)
     let adjusted_for_no_principal = if is_display_contents {
       // display: contents descendants are already laid out in the local flow
@@ -5801,7 +5795,7 @@ fn compute_with_collapse(
       }
     } else {
       // Update current_pos (only if not collapsing through)
-      if not(collapses_through) {
+      if !collapses_through {
         // For display: contents, use children's total height instead of element's height (which is 0)
         // In vertical mode, we advance by width instead of height
         let effective_size = if child_style.display == @types.Contents {
@@ -5826,7 +5820,7 @@ fn compute_with_collapse(
           current_pos = current_pos + effective_size
         }
       }
-      if leading_collapse_chain_active && not(collapses_through) {
+      if leading_collapse_chain_active && !collapses_through {
         leading_collapse_chain_active = false
       }
     }
@@ -6132,7 +6126,7 @@ fn compute_with_collapse(
     style, box_width, box_height, parent_width, padding, border,
   )
 
-  let block_content_alignment_offset = if not(is_vertical_writing) {
+  let block_content_alignment_offset = if !is_vertical_writing {
     let content_box_height = box_height -
       padding.vertical_sum() -
       border.vertical_sum()
@@ -6248,11 +6242,25 @@ fn compute_with_collapse(
         let adjusted_layout = adjust_float_only_inline_wrapper_for_parent(
           raw_layout, child_node, style, is_vertical_writing, true,
         )
+        let adjusted_layout = if multicol_enabled &&
+          child_node.style.display == @types.Contents &&
+          adjusted_layout.children.length() > 1 {
+          {
+            ..adjusted_layout,
+            children: normalize_display_contents_children_to_column_start(
+              adjusted_layout.children,
+              multicol_column_width,
+              multicol_column_gap,
+            ),
+          }
+        } else {
+          adjusted_layout
+        }
         let child_style = child_node.style
         let skip_out_of_flow = child_style.position == @types.Absolute ||
           child_style.position == @types.Fixed ||
           child_style.float != @types.Float::None
-        if not(skip_out_of_flow) {
+        if !skip_out_of_flow {
           let descendant_h = get_child_descendant_flow_extent_for_auto_height(
             child_node, adjusted_layout,
           )
@@ -6266,9 +6274,11 @@ fn compute_with_collapse(
           } else {
             0.0
           }
-          let extent = child_content_y +
-            child_block +
-            adjusted_layout.margin.bottom
+          // `content_height_for_auto` already accounts for margin collapse and
+          // trailing margins. Only use visual descendant extent here so we
+          // don't double-count collapsed/end margins during the auto-height
+          // correction pass.
+          let extent = child_content_y + child_block
           if extent > adjusted_flow_extent {
             adjusted_flow_extent = extent
           }
@@ -6338,7 +6348,7 @@ fn resolve_fixed_inset_offset(
 fn establishes_fixed_containing_block(style : @style.Style) -> Bool {
   let containment_establishes_cb = containment_applies(style.display) &&
     (style.contain.paint || style.contain.layout)
-  containment_establishes_cb || not(style.transform.is_none())
+  containment_establishes_cb || !style.transform.is_none()
 }
 
 ///|
@@ -7081,9 +7091,9 @@ fn compute_nested(
           | @types.FitContent(_) => true
           _ => false
         }
-        if width_auto && not(height_auto) {
+        if width_auto && !height_auto {
           width = height * ratio
-        } else if height_auto && not(width_auto) {
+        } else if height_auto && !width_auto {
           height = width / ratio
         }
       }
@@ -7216,9 +7226,9 @@ fn compute_nested_intrinsic(
           | @types.FitContent(_) => true
           _ => false
         }
-        if width_auto && not(height_auto) {
+        if width_auto && !height_auto {
           width = height * ratio
-        } else if height_auto && not(width_auto) {
+        } else if height_auto && !width_auto {
           height = width / ratio
         }
       }

@@ -697,7 +697,7 @@ fn render_landmark_node_json(node : LandmarkTree, buf : StringBuilder) -> Unit {
   buf.write_string(node.role)
   buf.write_string("\"")
   match node.name {
-    Some(name) if not(name.is_empty()) => {
+    Some(name) if !name.is_empty() => {
       buf.write_string(",\"name\":\"")
       buf.write_string(name)
       buf.write_string("\"")
@@ -705,7 +705,7 @@ fn render_landmark_node_json(node : LandmarkTree, buf : StringBuilder) -> Unit {
     _ => ()
   }
   match node.source_id {
-    Some(source_id) if not(source_id.is_empty()) => {
+    Some(source_id) if !source_id.is_empty() => {
       buf.write_string(",\"sourceId\":\"")
       buf.write_string(source_id)
       buf.write_string("\"")
@@ -744,10 +744,10 @@ fn render_component_landmark_artifact(fixture : ComponentFixture) -> String {
 
 ///|
 fn find_component_subtree(
-  node : @node.Node,
+  node : @layout.Node,
   layout : @types.Layout,
   target_id : String,
-) -> (@node.Node, @types.Layout)? {
+) -> (@layout.Node, @types.Layout)? {
   if node.id == target_id && layout.id == target_id {
     return Some((node, layout))
   }
@@ -784,7 +784,7 @@ fn pixel_span(value : Double) -> Int {
 ///|
 fn render_fixture_node_and_layout(
   fixture : ComponentFixture,
-) -> (@node.Node, @types.Layout) {
+) -> (@layout.Node, @types.Layout) {
   @renderer.render_to_node_and_layout_with_external_css(
     fixture.html,
     fixture.render_ctx(),
@@ -795,7 +795,7 @@ fn render_fixture_node_and_layout(
 ///|
 fn render_component_subtree(
   fixture : ComponentFixture,
-) -> (@node.Node, @types.Layout) {
+) -> (@layout.Node, @types.Layout) {
   let (node, layout) = render_fixture_node_and_layout(fixture)
   match find_component_subtree(node, layout, fixture.target_node_id()) {
     Some(found) => found
@@ -812,10 +812,10 @@ fn render_component_layout_artifact(fixture : ComponentFixture) -> String {
 ///|
 fn render_component_paint_node(
   fixture : ComponentFixture,
-) -> (@paint.PaintNode, Int, Int) {
+) -> (@tui_paint_plain.PaintNode, Int, Int) {
   let (node, layout) = render_component_subtree(fixture)
   let normalized = normalize_component_layout(layout)
-  let paint_node = @paint.from_node_and_layout(node, normalized)
+  let paint_node = @tui_paint_plain.from_node_and_layout(node, normalized)
   let width = pixel_span(normalized.width)
   let height = pixel_span(normalized.height)
   (paint_node, width, height)
@@ -823,21 +823,17 @@ fn render_component_paint_node(
 
 ///|
 fn raster_component_paint(
-  paint_node : @paint.PaintNode,
+  paint_node : @tui_paint_plain.PaintNode,
   width : Int,
   height : Int,
 ) -> (@image.Framebuffer, @image.DynamicPalette) {
-  let fb = @image.Framebuffer::new(width, height)
-  let palette = @image.DynamicPalette::new()
-  @image.render_paint_node_to_framebuffer(paint_node, fb, palette)
-  (fb, palette)
+  @tui_paint_output.raster_to_framebuffer(paint_node, width, height)
 }
 
 ///|
 fn render_component_image_artifact(fixture : ComponentFixture) -> String {
   let (paint_node, width, height) = render_component_paint_node(fixture)
-  let (fb, palette) = raster_component_paint(paint_node, width, height)
-  @image.framebuffer_to_rgba_base64(fb, palette)
+  @tui_paint_output.raster_to_rgba_base64(paint_node, width, height)
 }
 
 ///|
@@ -1045,7 +1041,7 @@ test "bench_component_phase_paint_m" (b : @bench.T) {
   let (node, layout) = render_component_subtree(fixture)
   let normalized = normalize_component_layout(layout)
   b.bench(name="component_phase_paint_m", fn() {
-    b.keep(@paint.from_node_and_layout(node, normalized))
+    b.keep(@tui_paint_plain.from_node_and_layout(node, normalized))
   })
 }
 
@@ -1064,6 +1060,6 @@ test "bench_component_phase_encode_m" (b : @bench.T) {
   let (paint_node, width, height) = render_component_paint_node(fixture)
   let (fb, palette) = raster_component_paint(paint_node, width, height)
   b.bench(name="component_phase_encode_m", fn() {
-    b.keep(@image.framebuffer_to_rgba_base64(fb, palette))
+    b.keep(@tui_paint_output.framebuffer_to_rgba_base64(fb, palette))
   })
 }

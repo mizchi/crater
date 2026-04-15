@@ -479,7 +479,7 @@ pub async fn dispatch_key(
   if key.length() == 0 {
     return dispatch_command(browser, IdleTick)
   }
-  if not(browser.is_hint_mode()) {
+  if !browser.is_hint_mode() {
     let focused_effect = dispatch_command(browser, FocusedKey(key))
     match focused_effect {
       None => ()

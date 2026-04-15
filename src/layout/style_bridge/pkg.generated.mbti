@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/layout/style_bridge"
+
+import {
+  "mizchi/crater/css/cascade",
+  "mizchi/crater/layout/tree",
+}
+
+// Values
+pub fn add_node(@tree.LayoutTree, String, Int, @tree.LayoutNode) -> Bool
+
+pub fn apply_css_values(@tree.LayoutNode, @cascade.CascadedValues) -> Bool
+
+pub fn batch_update_styles(@tree.LayoutTree, Array[(String, @cascade.CascadedValues)]) -> Int
+
+pub fn remove_node(@tree.LayoutTree, String) -> Bool
+
+pub fn update_node_style(@tree.LayoutTree, String, @cascade.CascadedValues) -> Bool
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

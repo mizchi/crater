@@ -44,7 +44,7 @@ pub struct TargetInfo {
   url : String
   attached : Bool
   browser_context_id : String?
-} derive(Show)
+} derive(Debug)
 
 // =============================================================================
 // Browser Context Management

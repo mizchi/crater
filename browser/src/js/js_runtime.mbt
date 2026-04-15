@@ -187,7 +187,7 @@ pub fn JsContext::execute(
   for log in result.logs {
     self.logs.push(log)
   }
-  if not(result.success) {
+  if !result.success {
     raise ExecutionError(result.value)
   }
   result
@@ -200,7 +200,7 @@ pub fn JsContext::tick(self : JsContext) -> Bool raise JsError {
   for log in result.logs {
     self.logs.push(log)
   }
-  if not(result.success) {
+  if !result.success {
     raise ExecutionError(result.value)
   }
   result.value == "true"

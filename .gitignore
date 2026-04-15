@@ -63,6 +63,9 @@ tmp/**/*.txt
 tmp/**/*.json
 tmp/wpt-modules/
 tmp/ws-video-test.html
+ci-logs/
+trace.json
+browser/jsbidi/trace.json
 .playwright-mcp/
 .claude/
 .flaker/

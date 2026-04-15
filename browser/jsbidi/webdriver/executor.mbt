@@ -388,7 +388,7 @@ fn parse_rpc_request(json : String) -> RpcRequest {
   let id = match obj.get("id") {
     Some(id_str) => {
       // Try to parse as integer
-      let parsed = @strconv.parse_int(id_str) catch { _ => -1 }
+      let parsed = @string.parse_int(id_str) catch { _ => -1 }
       if parsed >= 0 {
         RpcId::Num(parsed)
       } else {
@@ -416,7 +416,7 @@ fn Executor::log_method(self : Executor, api_method : ApiMethod) -> Unit {
   buf.write_string("(")
   let mut first = true
   for key, value in params {
-    if not(first) {
+    if !first {
       buf.write_string(", ")
     }
     buf.write_string(key)

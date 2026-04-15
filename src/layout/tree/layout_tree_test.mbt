@@ -8,14 +8,14 @@ fn layouts_equal(a : @types.Layout, b : @types.Layout) -> Bool {
     (a.y - b.y).abs() < 0.001 &&
     (a.width - b.width).abs() < 0.001 &&
     (a.height - b.height).abs() < 0.001
-  if not(pos_eq) {
+  if !pos_eq {
     return false
   }
   if a.children.length() != b.children.length() {
     return false
   }
   for i = 0; i < a.children.length(); i = i + 1 {
-    if not(layouts_equal(a.children[i], b.children[i])) {
+    if !layouts_equal(a.children[i], b.children[i]) {
       return false
     }
   }

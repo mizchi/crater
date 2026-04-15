@@ -26,7 +26,7 @@ test "trace_dark_mode_css_variables" {
     viewport_width: 375.0,
     viewport_height: 450.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let light_node = render_to_node_with_external_css(html, light_ctx, [css])
   // Light mode: text should be dark (#333333), background should be white (#ffffff)
@@ -38,7 +38,7 @@ test "trace_dark_mode_css_variables" {
     viewport_width: 375.0,
     viewport_height: 450.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Dark,
+    color_scheme: @css.ColorScheme::Dark,
   }
   let dark_node = render_to_node_with_external_css(html, dark_ctx, [css])
   // Dark mode: text should be light (#eeeeee), background should be dark (#1a1a1a)
@@ -80,7 +80,7 @@ test "trace_preact_css" {
     viewport_width: 375.0,
     viewport_height: 450.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   fn show_all(n : @node.Node, depth : Int) -> Unit {
@@ -126,7 +126,7 @@ test "trace_error_color_check" {
     viewport_width: 375.0,
     viewport_height: 450.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   fn show_all(n : @node.Node, depth : Int) -> Unit {
@@ -175,7 +175,7 @@ test "trace_loading_bar_pseudo_element" {
     viewport_width: 640.0,
     viewport_height: 800.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   fn show_all(n : @node.Node, depth : Int) -> Unit {
@@ -227,7 +227,7 @@ test "trace_gradient_fallback" {
     viewport_width: 640.0,
     viewport_height: 800.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let node = render_to_node_with_external_css(html, ctx, [css])
   fn show_all(n : @node.Node, depth : Int) -> Unit {

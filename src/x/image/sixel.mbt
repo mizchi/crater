@@ -80,9 +80,13 @@ pub fn Color::blend(self : Color, bg : Color, alpha : Int) -> Color {
 let sixel_bit_masks : Array[Int] = [1, 2, 4, 8, 16, 32]
 
 ///|
+
+///|
+#cfg(not(target="js"))
 let base64_chars : String = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
 ///|
+#cfg(not(target="js"))
 fn write_base64_quad(
   buf : StringBuilder,
   b0 : Int,
@@ -109,6 +113,7 @@ fn write_base64_quad(
 }
 
 ///|
+#cfg(not(target="js"))
 fn encode_bytes_base64(bytes : Array[Int]) -> String {
   let out = StringBuilder::new()
   let mut i = 0
@@ -1094,7 +1099,10 @@ fn DynamicPalette::get_or_add(self : DynamicPalette, c : Color) -> Int {
 
 ///|
 /// Collect all colors from PaintNode tree
-fn collect_colors(palette : DynamicPalette, node : @paint.PaintNode) -> Unit {
+fn collect_colors(
+  palette : DynamicPalette,
+  node : @paint_model.PaintNode,
+) -> Unit {
   // Add background color if not transparent
   if !node.paint.background_color.is_transparent() {
     let _ = palette.get_or_add(
@@ -1498,7 +1506,7 @@ fn resolve_radius(val : Double, ref_dim : Int) -> Int {
 fn render_paint_node(
   fb : Framebuffer,
   palette : DynamicPalette,
-  node : @paint.PaintNode,
+  node : @paint_model.PaintNode,
   parent_x : Double,
   parent_y : Double,
 ) -> Unit {
@@ -1510,7 +1518,7 @@ fn render_paint_node(
 fn render_paint_node_clipped(
   fb : Framebuffer,
   palette : DynamicPalette,
-  node : @paint.PaintNode,
+  node : @paint_model.PaintNode,
   parent_x : Double,
   parent_y : Double,
   clip : ClipRect?,
@@ -2000,7 +2008,7 @@ pub fn to_sixel_dynamic(fb : Framebuffer, palette : DynamicPalette) -> String {
 ///|
 /// Render PaintNode tree to Sixel string with actual CSS colors
 pub fn render_paint_node_to_sixel(
-  node : @paint.PaintNode,
+  node : @paint_model.PaintNode,
   width : Int,
   height : Int,
 ) -> String {
@@ -2011,7 +2019,7 @@ pub fn render_paint_node_to_sixel(
   fb.fill_rect(0, 0, width, height, 0)
 
   // Sort by stacking order (z-index) for correct rendering
-  let sorted_node = @paint.sort_tree_by_stacking_order(node)
+  let sorted_node = @paint_traversal.sort_tree_by_stacking_order(node)
 
   // Collect all colors first
   collect_colors(palette, sorted_node)
@@ -2031,14 +2039,14 @@ pub fn render_with_styles(
   width : Int,
   height : Int,
 ) -> String {
-  let paint_node = @paint.from_node_and_layout(node, layout)
+  let paint_node = @paint_node.from_node_and_layout(node, layout)
   render_paint_node_to_sixel(paint_node, width, height)
 }
 
 ///|
 /// Render PaintNode tree to Sixel string with scroll offset
 pub fn render_paint_node_to_sixel_scrolled(
-  node : @paint.PaintNode,
+  node : @paint_model.PaintNode,
   width : Int,
   height : Int,
   scroll_y : Int,
@@ -2053,7 +2061,7 @@ pub fn render_paint_node_to_sixel_scrolled(
 ///|
 /// Render PaintNode tree to framebuffer with scroll offset
 pub fn render_paint_node_to_framebuffer_scrolled(
-  node : @paint.PaintNode,
+  node : @paint_model.PaintNode,
   fb : Framebuffer,
   palette : DynamicPalette,
   scroll_y : Int,
@@ -2061,7 +2069,7 @@ pub fn render_paint_node_to_framebuffer_scrolled(
   // Fill with white background
   fb.fill_rect(0, 0, fb.width, fb.height, 0)
   // Sort by stacking order (z-index) for correct rendering
-  let sorted_node = @paint.sort_tree_by_stacking_order(node)
+  let sorted_node = @paint_traversal.sort_tree_by_stacking_order(node)
   // Collect all colors first
   collect_colors(palette, sorted_node)
   // CSS canvas background propagation (CSS 2.1 §14.2):
@@ -2093,19 +2101,19 @@ pub fn render_with_styles_scrolled(
   height : Int,
   scroll_y : Int,
 ) -> String {
-  let paint_node = @paint.from_node_and_layout(node, layout)
+  let paint_node = @paint_node.from_node_and_layout(node, layout)
   render_paint_node_to_sixel_scrolled(paint_node, width, height, scroll_y)
 }
 
 ///|
 /// Render PaintNode tree to framebuffer (for use by other renderers like Kitty)
 pub fn render_paint_node_to_framebuffer(
-  node : @paint.PaintNode,
+  node : @paint_model.PaintNode,
   fb : Framebuffer,
   palette : DynamicPalette,
 ) -> Unit {
   // Sort by stacking order (z-index) for correct rendering
-  let sorted_node = @paint.sort_tree_by_stacking_order(node)
+  let sorted_node = @paint_traversal.sort_tree_by_stacking_order(node)
   // Collect all colors first
   collect_colors(palette, sorted_node)
   // CSS canvas background propagation (CSS 2.1 §14.2):

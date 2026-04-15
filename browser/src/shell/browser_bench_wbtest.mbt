@@ -16,8 +16,18 @@ extern "js" fn js_load_builtin_github_snapshot() -> String =
   #| () => {
   #|   const fs = require("node:fs");
   #|   const path = require("node:path");
-  #|   const root = path.resolve(process.cwd(), "..");
-  #|   const dir = path.join(root, "src", "benchmarks", "fixtures");
+  #|   const candidates = [
+  #|     path.join(process.cwd(), "src", "benchmarks", "fixtures"),
+  #|     path.join(process.cwd(), "..", "src", "benchmarks", "fixtures"),
+  #|   ];
+  #|   const dir = candidates.find((candidate) =>
+  #|     fs.existsSync(path.join(candidate, "github_mizchi.html"))
+  #|   );
+  #|   if (!dir) {
+  #|     throw new Error(
+  #|       `github snapshot fixture directory not found: ${candidates.join(", ")}`,
+  #|     );
+  #|   }
   #|   const html = fs.readFileSync(path.join(dir, "github_mizchi.html"), "utf8");
   #|   const cssFiles = [
   #|     "github_primer.css",
@@ -52,7 +62,7 @@ fn make_render_ctx(width : Int, height : Int) -> @renderer.RenderContext {
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
 }
 
@@ -213,7 +223,7 @@ test "bench_browser_sixel_github_mizchi_paint_tree" (b : @bench.T) {
   let node = @renderer.render_to_node_with_external_css(html, ctx, [])
   let layout = @renderer.render_with_external_css(html, ctx, [])
   b.bench(name="browser_sixel_github_mizchi_paint_tree", fn() {
-    b.keep(@paint.from_node_and_layout(node, layout))
+    b.keep(@tui_paint_plain.from_node_and_layout(node, layout))
   })
 }
 
@@ -223,7 +233,7 @@ test "bench_browser_sixel_github_mizchi_sixel_encode" (b : @bench.T) {
   let ctx = github_snapshot_render_ctx()
   let node = @renderer.render_to_node_with_external_css(html, ctx, [])
   let layout = @renderer.render_with_external_css(html, ctx, [])
-  let paint_node = @paint.from_node_and_layout(node, layout)
+  let paint_node = @tui_paint_plain.from_node_and_layout(node, layout)
   b.bench(name="browser_sixel_github_mizchi_sixel_encode", fn() {
     b.keep(@image.render_paint_node_to_sixel_scrolled(paint_node, 1440, 960, 0))
   })
@@ -235,7 +245,7 @@ test "bench_browser_kitty_github_mizchi_kitty_encode" (b : @bench.T) {
   let ctx = github_snapshot_render_ctx()
   let node = @renderer.render_to_node_with_external_css(html, ctx, [])
   let layout = @renderer.render_with_external_css(html, ctx, [])
-  let paint_node = @paint.from_node_and_layout(node, layout)
+  let paint_node = @tui_paint_plain.from_node_and_layout(node, layout)
   b.bench(name="browser_kitty_github_mizchi_kitty_encode", fn() {
     b.keep(@kitty.render_paint_node_to_kitty_scrolled(paint_node, 1440, 960, 0))
   })
@@ -247,7 +257,7 @@ test "bench_browser_kitty_article_kitty_encode" (b : @bench.T) {
   let ctx = kitty_article_render_ctx()
   let node = @renderer.render_to_node_with_external_css(html, ctx, [])
   let layout = @renderer.render_with_external_css(html, ctx, [])
-  let paint_node = @paint.from_node_and_layout(node, layout)
+  let paint_node = @tui_paint_plain.from_node_and_layout(node, layout)
   b.bench(name="browser_kitty_article_kitty_encode", fn() {
     b.keep(@kitty.render_paint_node_to_kitty_scrolled(paint_node, 720, 480, 0))
   })

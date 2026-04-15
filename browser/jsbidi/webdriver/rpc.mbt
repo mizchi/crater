@@ -15,7 +15,7 @@ pub(all) struct RpcRequest {
   id : RpcId
   method_name : String
   params : Map[String, String] // Simplified: all params as strings
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// JSON-RPC request ID (can be string or number)
@@ -23,14 +23,14 @@ pub(all) enum RpcId {
   Num(Int)
   Str(String)
   Null
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 /// JSON-RPC response
 pub(all) enum RpcResponse {
   Success(id~ : RpcId, result~ : String) // result is JSON string
   Error(id~ : RpcId, code~ : Int, message~ : String, data~ : String?)
-} derive(Show)
+} derive(Debug)
 
 // =============================================================================
 // JSON-RPC Error Codes
@@ -49,7 +49,76 @@ pub(all) enum RpcErrorCode {
   PageNotFound // -32001
   Timeout // -32002
   NavigationFailed // -32003
-} derive(Show, Eq)
+} derive(Debug, Eq)
+
+///|
+pub impl Show for RpcRequest with output(self, logger) {
+  logger.write_string("{jsonrpc: ")
+  self.jsonrpc.output(logger)
+  logger.write_string(", id: ")
+  self.id.output(logger)
+  logger.write_string(", method_name: ")
+  self.method_name.output(logger)
+  logger.write_string(", params: ")
+  self.params.output(logger)
+  logger.write_string("}")
+}
+
+///|
+pub impl Show for RpcId with output(self, logger) {
+  match self {
+    Num(value) => {
+      logger.write_string("Num(")
+      value.output(logger)
+      logger.write_string(")")
+    }
+    Str(value) => {
+      logger.write_string("Str(")
+      value.output(logger)
+      logger.write_string(")")
+    }
+    Null => logger.write_string("Null")
+  }
+}
+
+///|
+pub impl Show for RpcResponse with output(self, logger) {
+  match self {
+    Success(id~, result~) => {
+      logger.write_string("Success(id=")
+      id.output(logger)
+      logger.write_string(", result=")
+      result.output(logger)
+      logger.write_string(")")
+    }
+    Error(id~, code~, message~, data~) => {
+      logger.write_string("Error(id=")
+      id.output(logger)
+      logger.write_string(", code=")
+      code.output(logger)
+      logger.write_string(", message=")
+      message.output(logger)
+      logger.write_string(", data=")
+      data.output(logger)
+      logger.write_string(")")
+    }
+  }
+}
+
+///|
+pub impl Show for RpcErrorCode with output(self, logger) {
+  match self {
+    ParseError => logger.write_string("ParseError")
+    InvalidRequest => logger.write_string("InvalidRequest")
+    MethodNotFound => logger.write_string("MethodNotFound")
+    InvalidParams => logger.write_string("InvalidParams")
+    InternalError => logger.write_string("InternalError")
+    ElementNotFound => logger.write_string("ElementNotFound")
+    PageNotFound => logger.write_string("PageNotFound")
+    Timeout => logger.write_string("Timeout")
+    NavigationFailed => logger.write_string("NavigationFailed")
+  }
+}
 
 ///|
 /// Get numeric error code
@@ -262,7 +331,7 @@ pub fn parse_json_object(json : String) -> Map[String, String] {
   let json = json.trim().to_string()
 
   // Remove outer braces
-  if not(json.has_prefix("{")) || not(json.has_suffix("}")) {
+  if !json.has_prefix("{") || !json.has_suffix("}") {
     return result
   }
   let content = substring(json, 1, json.length() - 1)
@@ -302,23 +371,23 @@ fn split_json_pairs(s : String) -> Array[String] {
   for c in s.iter() {
     match c {
       '"' => {
-        in_string = not(in_string)
+        in_string = !in_string
         current.write_char(c)
       }
       '{' | '[' => {
-        if not(in_string) {
+        if !in_string {
           depth = depth + 1
         }
         current.write_char(c)
       }
       '}' | ']' => {
-        if not(in_string) {
+        if !in_string {
           depth = depth - 1
         }
         current.write_char(c)
       }
       ',' =>
-        if not(in_string) && depth == 0 {
+        if !in_string && depth == 0 {
           result.push(current.to_string())
           current.reset()
         } else {
@@ -328,7 +397,7 @@ fn split_json_pairs(s : String) -> Array[String] {
     }
   }
   let last = current.to_string()
-  if not(last.trim().to_string().is_empty()) {
+  if !last.trim().to_string().is_empty() {
     result.push(last)
   }
   result
@@ -342,7 +411,7 @@ fn split_at_colon(s : String) -> Array[String] {
   let before = StringBuilder::new()
   let after = StringBuilder::new()
   for c in s.iter() {
-    if c == ':' && not(found) {
+    if c == ':' && !found {
       found = true
     } else if found {
       after.write_char(c)

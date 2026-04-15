@@ -189,7 +189,7 @@ pub fn IndexedStylesheet::match_element_with_media(
       (Some(_), None) => true
       (None, _) => true
     }
-    if not(media_matches) {
+    if !media_matches {
       continue
     }
     // Full selector match
@@ -233,7 +233,7 @@ fn cascade_indexed_stylesheet_matches_into(
       (Some(_), None) => true
       (None, _) => true
     }
-    if not(media_matches) {
+    if !media_matches {
       continue
     }
     if @selector.matches_complex(element, rule.selector) {

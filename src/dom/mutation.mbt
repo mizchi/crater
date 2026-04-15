@@ -15,7 +15,7 @@ pub enum MutationType {
   CharacterData
   /// Style property changed (extension for layout optimization)
   StyleChange
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 /// Record of a single DOM mutation
@@ -36,7 +36,29 @@ pub struct MutationRecord {
   new_value : String?
   /// For StyleChange: which CSS properties changed
   changed_properties : Array[String]
-} derive(Show)
+} derive(Debug)
+
+///|
+pub impl Show for MutationType with output(self, logger) {
+  let name = match self {
+    ChildList => "ChildList"
+    Attributes => "Attributes"
+    CharacterData => "CharacterData"
+    StyleChange => "StyleChange"
+  }
+  logger.write_string(name)
+}
+
+///|
+pub impl Show for MutationRecord with output(self, logger) {
+  logger.write_string("{type_: \{self.type_}, target: \{self.target}, ")
+  logger.write_string("added_nodes: \{self.added_nodes}, ")
+  logger.write_string("removed_nodes: \{self.removed_nodes}, ")
+  logger.write_string("attribute_name: \{self.attribute_name}, ")
+  logger.write_string("old_value: \{self.old_value}, ")
+  logger.write_string("new_value: \{self.new_value}, ")
+  logger.write_string("changed_properties: \{self.changed_properties}}")
+}
 
 ///|
 /// Create a ChildList mutation record

@@ -658,8 +658,7 @@ fn extract_ampersand_nested_rules(
                     None => decl_pos = decl_pos + 1
                   }
                 }
-                if not(nested_selector_text.is_empty()) &&
-                  not(nested_decls.is_empty()) {
+                if !nested_selector_text.is_empty() && !nested_decls.is_empty() {
                   let nested_parts = split_by_comma(nested_selector_text)
                   for parent_item in selectors {
                     let parent_selector = parent_item.0.trim().to_string()
@@ -759,7 +758,7 @@ fn parse_selector_list_text(
   let parts = split_by_comma(css)
   for part in parts {
     let trimmed = part.trim().to_string()
-    if not(trimmed.is_empty()) {
+    if !trimmed.is_empty() {
       match @selector.parse_selector_text(trimmed) {
         Some(sel) => result.push((trimmed, sel))
         None => ()

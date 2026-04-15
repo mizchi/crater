@@ -615,7 +615,7 @@ test "Browser apply JS DOM changes to TUI render output" {
   let _ = browser.execute_scripts()
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("after"))
-  assert_true(not(rendered.contains("before")))
+  assert_true(!rendered.contains("before"))
 }
 
 ///|
@@ -641,7 +641,7 @@ test "Browser syncs JS DOM mutations into html_content and link cache" {
   // HTML source used by renderer is synchronized from mutated DomTree
   assert_true(browser.html_content.contains("href=\"/after\""))
   assert_true(browser.html_content.contains(">after</a>"))
-  assert_true(not(browser.html_content.contains("href=\"/before\"")))
+  assert_true(!browser.html_content.contains("href=\"/before\""))
 
   // Link cache should also be rebuilt from synchronized HTML
   inspect(browser.get_link_count(), content="1")
@@ -672,7 +672,7 @@ test "Browser tick_js applies queued JS tasks to render output" {
   inspect(browser.tick_js(), content="true")
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("after"))
-  assert_true(not(rendered.contains("before")))
+  assert_true(!rendered.contains("before"))
 }
 
 ///|
@@ -698,7 +698,7 @@ async test "Browser activate_focused_link dispatches onclick and repaints" {
 
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("after"))
-  assert_true(not(rendered.contains("before")))
+  assert_true(!rendered.contains("before"))
 }
 
 ///|
@@ -747,7 +747,7 @@ async test "Browser activate_at dispatches button onclick and repaints" {
 
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("after"))
-  assert_true(not(rendered.contains("before")))
+  assert_true(!rendered.contains("before"))
 }
 
 ///|
@@ -797,7 +797,7 @@ async test "Browser activate_at dispatches generic onclick element and repaints"
 
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("after"))
-  assert_true(not(rendered.contains("before")))
+  assert_true(!rendered.contains("before"))
 }
 
 ///|
@@ -850,7 +850,7 @@ async test "Browser activate_at flushes requestAnimationFrame mutation and repai
   inspect(browser.tick_js(), content="true")
   let after_tick = browser.render_output(Text)
   assert_true(after_tick.contains("after"))
-  assert_true(not(after_tick.contains("before")))
+  assert_true(!after_tick.contains("before"))
 }
 
 ///|
@@ -908,8 +908,8 @@ async test "Browser activate_at prefers topmost overlapping painted element" {
 
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("top"))
-  assert_true(not(rendered.contains("bottom")))
-  assert_true(not(rendered.contains("before")))
+  assert_true(!rendered.contains("bottom"))
+  assert_true(!rendered.contains("before"))
 }
 
 ///|
@@ -959,7 +959,7 @@ async test "Browser activate_at ignores clipped overflow area" {
 
   let after_hidden = browser.render_output(Text)
   assert_true(after_hidden.contains("before"))
-  assert_true(not(after_hidden.contains("after")))
+  assert_true(!after_hidden.contains("after"))
 
   let visible_activated = browser.activate_at(region.col, region.row) catch {
     _ => false
@@ -968,7 +968,7 @@ async test "Browser activate_at ignores clipped overflow area" {
 
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("after"))
-  assert_true(not(rendered.contains("before")))
+  assert_true(!rendered.contains("before"))
 }
 
 ///|
@@ -1231,7 +1231,7 @@ async test "Browser activate_at dispatches persisted addEventListener click hand
 
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("after"))
-  assert_true(not(rendered.contains("before")))
+  assert_true(!rendered.contains("before"))
 }
 
 ///|
@@ -1264,7 +1264,7 @@ async test "Browser activate_at dispatches persisted generic addEventListener cl
 
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("after"))
-  assert_true(not(rendered.contains("before")))
+  assert_true(!rendered.contains("before"))
 }
 
 ///|
@@ -1338,7 +1338,7 @@ async test "Browser activate_at dispatches pointer and mouse events before click
       "\")",
   )
   let rendered = browser.render_output(Text)
-  assert_true(not(rendered.contains("before")))
+  assert_true(!rendered.contains("before"))
 }
 
 ///|
@@ -1972,7 +1972,7 @@ async test "Browser activate_at submit preventDefault repaints without navigatio
 
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("after"))
-  assert_true(not(rendered.contains("before")))
+  assert_true(!rendered.contains("before"))
 }
 
 ///|
@@ -2064,7 +2064,7 @@ async test "Browser handle_focused_key dispatches input event for focused text i
 
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("x"))
-  assert_true(not(rendered.contains("before")))
+  assert_true(!rendered.contains("before"))
 }
 
 ///|
@@ -2657,7 +2657,7 @@ async test "Browser handle_focused_key changes focused select with ArrowDown" {
 
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("b"))
-  assert_true(not(rendered.contains("before")))
+  assert_true(!rendered.contains("before"))
 }
 
 ///|

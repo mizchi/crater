@@ -168,7 +168,7 @@ fn split_path(path : String) -> Array[String] {
   for c in path {
     if c == '/' {
       let s = current.to_string()
-      if not(s.is_empty()) {
+      if !s.is_empty() {
         parts.push(s)
       }
       current.reset()
@@ -177,7 +177,7 @@ fn split_path(path : String) -> Array[String] {
     }
   }
   let s = current.to_string()
-  if not(s.is_empty()) {
+  if !s.is_empty() {
     parts.push(s)
   }
   parts

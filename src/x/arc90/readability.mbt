@@ -336,7 +336,7 @@ fn get_readability_score(
 
 ///|
 fn is_probably_content(node : @aom.AccessibilityNode) -> Bool {
-  if not(node.visible) {
+  if !node.visible {
     return false
   }
   if is_unlikely_candidate(node) {
@@ -370,7 +370,7 @@ fn is_unlikely_candidate(node : @aom.AccessibilityNode) -> Bool {
     selector_lower + " " + id_lower
   }
   if contains_any(match_string, readability_unlikely_patterns()) &&
-    not(contains_any(match_string, readability_ok_patterns())) {
+    !contains_any(match_string, readability_ok_patterns()) {
     true
   } else {
     false

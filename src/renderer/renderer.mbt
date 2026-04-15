@@ -126,7 +126,7 @@ pub(all) struct RenderContext {
   viewport_width : Double
   viewport_height : Double
   root_font_size : Double
-  color_scheme : @media.ColorScheme
+  color_scheme : @css.ColorScheme
 }
 
 ///|
@@ -135,7 +135,7 @@ pub fn RenderContext::default() -> RenderContext {
     viewport_width: 800.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
 }
 
@@ -232,6 +232,7 @@ extern "js" fn get_builtin_text_advance_ratio_override() -> Double =
   #|}
 
 ///|
+#cfg(not(target="js"))
 let builtin_text_advance_ratio_override : Ref[Double] = { val: -1.0 }
 
 ///|
@@ -295,7 +296,7 @@ fn create_text_measure_with_provider(
     let mut seen_first = false
     let mut ends_with_ws = false
     for c in text.iter() {
-      if not(seen_first) {
+      if !seen_first {
         seen_first = true
         starts_with_ws = c == ' ' ||
           c == '\t' ||
@@ -346,7 +347,7 @@ fn create_text_measure_with_provider(
   }
   let trimmed = trim_collapsible_whitespace_edges(text)
   let force_builtin_measure = white_space_collapses_edges(white_space) &&
-    not(text.is_empty()) &&
+    !text.is_empty() &&
     (
       trimmed.is_empty() ||
       has_boundary_collapsible_whitespace(text) ||
@@ -429,19 +430,19 @@ fn create_text_measure(
   font_family? : String = "",
 ) -> @types.MeasureFunc {
   let raw_trimmed = trim_collapsible_whitespace_edges(text)
-  let mut trimmed = if raw_trimmed.is_empty() && not(text.is_empty()) {
+  let mut trimmed = if raw_trimmed.is_empty() && !text.is_empty() {
     " "
   } else {
     raw_trimmed.to_string()
   }
-  if not(raw_trimmed.is_empty()) {
+  if !raw_trimmed.is_empty() {
     let mut starts_with_ws = false
     let mut seen_first = false
     let mut ends_with_ws = false
     let mut before_first_non_ws = true
     let mut leading_has_line_break = false
     for c in text.iter() {
-      if not(seen_first) {
+      if !seen_first {
         seen_first = true
         starts_with_ws = c == ' ' ||
           c == '\t' ||
@@ -458,7 +459,7 @@ fn create_text_measure(
           c == '\n' ||
           c == '\r' ||
           c == '\u000C'
-        if not(is_ws) {
+        if !is_ws {
           before_first_non_ws = false
         }
       }
@@ -468,7 +469,7 @@ fn create_text_measure(
         c == '\r' ||
         c == '\u000C'
     }
-    if starts_with_ws && not(leading_has_line_break) {
+    if starts_with_ws && !leading_has_line_break {
       trimmed = " " + trimmed
     }
     if ends_with_ws {
@@ -491,7 +492,7 @@ fn create_text_measure(
         break
       }
     }
-    if all_ahem_like && not(trimmed.is_empty()) {
+    if all_ahem_like && !trimmed.is_empty() {
       effective_char_width_ratio = large_ahem_like_char_width_ratio
     }
   }
@@ -579,7 +580,7 @@ fn create_text_measure(
         _ => false
       }
       let mut total_lines = 1
-      if use_word_wrap && not(no_wrap) {
+      if use_word_wrap && !no_wrap {
         // Greedy word wrapping with long-word hard-wrap fallback.
         let mut current_line_width = 0
         let mut current_word_width = 0
@@ -719,13 +720,11 @@ fn has_block_display_in_style(elem : @html.Element) -> Bool {
   match elem.style {
     Some(style_str) => {
       let style_lower = style_str.to_lower()
-      if not(
-          style_lower.contains("display:") || style_lower.contains("display :"),
-        ) {
+      if !(style_lower.contains("display:") || style_lower.contains("display :")) {
         return false
       }
       // Parse the inline style to check display property
-      let parsed = @parser.parse_inline_style(style_str)
+      let parsed = @css.parse_inline_style(style_str)
       match parsed.display {
         @types.Block | @types.Flex | @types.Grid => true
         _ => false
@@ -779,7 +778,7 @@ fn is_inline_element(elem : @html.Element) -> Bool {
 /// This is used to prevent text merging for elements that might be styled differently
 fn will_have_non_inline_display(
   elem : @html.Element,
-  stylesheets : Array[@cascade.Stylesheet],
+  stylesheets : Array[@css.Stylesheet],
   ctx : RenderContext,
 ) -> Bool {
   // Check inline style first
@@ -801,7 +800,7 @@ fn will_have_non_inline_display(
   // Check CSS stylesheets for matching rules
   if stylesheets.length() > 0 {
     // Create selector element for CSS matching
-    let mut selector_elem = @selector.Element::new(elem.tag.to_lower())
+    let mut selector_elem = @css.Element::new(elem.tag.to_lower())
     match elem.id {
       Some(id) => selector_elem = selector_elem.set_id(id)
       None => ()
@@ -813,12 +812,12 @@ fn will_have_non_inline_display(
       let (name, value) = attr
       selector_elem = selector_elem.set_attribute(name, value)
     }
-    let media_env = @media.MediaEnvironment::with_color_scheme(
+    let media_env = @css.MediaEnvironment::with_color_scheme(
       ctx.viewport_width,
       ctx.viewport_height,
       ctx.color_scheme,
     )
-    let cascaded = @cascade.cascade_element_with_media(
+    let cascaded = @css.cascade_element_with_media(
       selector_elem,
       stylesheets,
       [],
@@ -830,7 +829,7 @@ fn will_have_non_inline_display(
         let value_lower = value.to_lower()
         // inline-block, block, flex, grid, etc. should not be merged
         if value_lower.contains("inline-block") ||
-          (value_lower.contains("block") && not(value_lower.contains("inline"))) ||
+          (value_lower.contains("block") && !value_lower.contains("inline")) ||
           value_lower.contains("flex") ||
           value_lower.contains("grid") {
           return true
@@ -960,7 +959,7 @@ fn get_cached_inline_style_display(style_str : String) -> @types.Display? {
       let style_lower = style_str.to_lower()
       let parsed_display = if style_lower.contains("display:") ||
         style_lower.contains("display :") {
-        let parsed = @parser.parse_inline_style(style_str)
+        let parsed = @css.parse_inline_style(style_str)
         Some(parsed.display)
       } else {
         None
@@ -997,7 +996,7 @@ fn inline_css_establishes_effect_containing_block(inline_css : String) -> Bool {
 /// Check if an element participates in inline formatting context in the current style cascade.
 fn has_inline_participating_display(
   elem : @html.Element,
-  stylesheets : Array[@cascade.Stylesheet],
+  stylesheets : Array[@css.Stylesheet],
   ctx : RenderContext,
 ) -> Bool {
   match get_inline_style_display(elem) {
@@ -1005,7 +1004,7 @@ fn has_inline_participating_display(
     None => ()
   }
   if stylesheets.length() > 0 {
-    let mut selector_elem = @selector.Element::new(elem.tag.to_lower())
+    let mut selector_elem = @css.Element::new(elem.tag.to_lower())
     match elem.id {
       Some(id) => selector_elem = selector_elem.set_id(id)
       None => ()
@@ -1017,12 +1016,12 @@ fn has_inline_participating_display(
       let (name, value) = attr
       selector_elem = selector_elem.set_attribute(name, value)
     }
-    let media_env = @media.MediaEnvironment::with_color_scheme(
+    let media_env = @css.MediaEnvironment::with_color_scheme(
       ctx.viewport_width,
       ctx.viewport_height,
       ctx.color_scheme,
     )
-    let cascaded = @cascade.cascade_element_with_media(
+    let cascaded = @css.cascade_element_with_media(
       selector_elem,
       stylesheets,
       [],
@@ -1048,7 +1047,7 @@ fn is_whitespace_only_text(text : String) -> Bool {
     return false
   }
   for c in text.iter() {
-    if not(is_collapsible_whitespace_char(c)) {
+    if !is_collapsible_whitespace_char(c) {
       return false
     }
   }
@@ -1097,7 +1096,7 @@ fn trim_trailing_collapsible_whitespace(text : String) -> String {
   for c in text.iter() {
     chars.push(c)
   }
-  while not(chars.is_empty()) {
+  while !chars.is_empty() {
     let last = chars[chars.length() - 1]
     if is_collapsible_whitespace_char(last) {
       let _ = chars.pop()
@@ -1117,9 +1116,9 @@ fn trim_trailing_collapsible_whitespace(text : String) -> String {
 fn should_preserve_inter_element_whitespace(
   siblings : Array[@html.Node],
   index : Int,
-  parent_selector : @selector.Element,
+  parent_selector : @css.Element,
   parent_style : @style.Style,
-  indexed_stylesheets : Array[@cascade.IndexedStylesheet],
+  indexed_stylesheets : Array[@css.IndexedStylesheet],
   ctx : RenderContext,
   css_vars : Map[String, String],
 ) -> Bool {
@@ -1130,7 +1129,7 @@ fn should_preserve_inter_element_whitespace(
     @html.Node::Text(t) => t
     _ => return false
   }
-  if not(is_whitespace_only_text(text)) {
+  if !is_whitespace_only_text(text) {
     return false
   }
   let prev_is_br = match siblings[index - 1] {
@@ -1147,9 +1146,9 @@ fn should_preserve_inter_element_whitespace(
   fn inline_participates_at(
     siblings : Array[@html.Node],
     sibling_index : Int,
-    parent_selector : @selector.Element,
+    parent_selector : @css.Element,
     parent_style : @style.Style,
-    indexed_stylesheets : Array[@cascade.IndexedStylesheet],
+    indexed_stylesheets : Array[@css.IndexedStylesheet],
     ctx : RenderContext,
     css_vars : Map[String, String],
   ) -> Bool {
@@ -1181,7 +1180,7 @@ fn should_preserve_inter_element_whitespace(
         )
         is_inline_participating_display(computed.display)
       }
-      @html.Node::Text(text) => not(is_whitespace_only_text(text))
+      @html.Node::Text(text) => !is_whitespace_only_text(text)
     }
   }
   let prev_inline = inline_participates_at(
@@ -1209,7 +1208,7 @@ fn should_preserve_inter_element_whitespace(
 /// Check if an element is styled with display: contents.
 fn has_display_contents(
   elem : @html.Element,
-  stylesheets : Array[@cascade.Stylesheet],
+  stylesheets : Array[@css.Stylesheet],
   ctx : RenderContext,
 ) -> Bool {
   if is_display_contents_suppressed_html_element(elem.tag) {
@@ -1220,7 +1219,7 @@ fn has_display_contents(
     None => ()
   }
   if stylesheets.length() > 0 {
-    let mut selector_elem = @selector.Element::new(elem.tag.to_lower())
+    let mut selector_elem = @css.Element::new(elem.tag.to_lower())
     match elem.id {
       Some(id) => selector_elem = selector_elem.set_id(id)
       None => ()
@@ -1232,12 +1231,12 @@ fn has_display_contents(
       let (name, value) = attr
       selector_elem = selector_elem.set_attribute(name, value)
     }
-    let media_env = @media.MediaEnvironment::with_color_scheme(
+    let media_env = @css.MediaEnvironment::with_color_scheme(
       ctx.viewport_width,
       ctx.viewport_height,
       ctx.color_scheme,
     )
-    let cascaded = @cascade.cascade_element_with_media(
+    let cascaded = @css.cascade_element_with_media(
       selector_elem,
       stylesheets,
       [],
@@ -1257,7 +1256,7 @@ fn has_display_contents(
 /// This is needed for containing-block / positioning behaviors.
 fn should_preserve_inline_element(
   elem : @html.Element,
-  stylesheets : Array[@cascade.Stylesheet],
+  stylesheets : Array[@css.Stylesheet],
   ctx : RenderContext,
 ) -> Bool {
   let tag_lower = elem.tag.to_lower()
@@ -1289,29 +1288,29 @@ fn should_preserve_inline_element(
       let style_lower = style.to_lower()
       let has_position = style_lower.contains("position:")
       let is_static_position = style_lower.contains("position: static")
-      if has_position && not(is_static_position) {
+      if has_position && !is_static_position {
         return true
       }
       let has_filter = style_lower.contains("filter:")
       let filter_none = style_lower.contains("filter: none")
-      if has_filter && not(filter_none) {
+      if has_filter && !filter_none {
         return true
       }
       let has_transform = style_lower.contains("transform:")
       let transform_none = style_lower.contains("transform: none")
-      if has_transform && not(transform_none) {
+      if has_transform && !transform_none {
         return true
       }
       let has_perspective = style_lower.contains("perspective:")
       let perspective_none = style_lower.contains("perspective: none")
-      if has_perspective && not(perspective_none) {
+      if has_perspective && !perspective_none {
         return true
       }
       let has_contain = style_lower.contains("contain:") ||
         style_lower.contains("contain :")
       let contain_none = style_lower.contains("contain: none") ||
         style_lower.contains("contain : none")
-      if has_contain && not(contain_none) {
+      if has_contain && !contain_none {
         return true
       }
       let has_background = style_lower.contains("background:") ||
@@ -1324,7 +1323,7 @@ fn should_preserve_inline_element(
         style_lower.contains("background : transparent") ||
         style_lower.contains("background-color: transparent") ||
         style_lower.contains("background-color : transparent")
-      if has_background && not(transparent_background) {
+      if has_background && !transparent_background {
         return true
       }
       let has_visibility = style_lower.contains("visibility:") ||
@@ -1345,7 +1344,7 @@ fn should_preserve_inline_element(
         style_lower.contains("text-decoration : none") ||
         style_lower.contains("text-decoration-line: none") ||
         style_lower.contains("text-decoration-line : none")
-      if has_text_decoration && not(text_decoration_none) {
+      if has_text_decoration && !text_decoration_none {
         return true
       }
       let affects_inline_typography = style_lower.contains("font-size:") ||
@@ -1365,7 +1364,7 @@ fn should_preserve_inline_element(
 
   // Check stylesheet rules
   if stylesheets.length() > 0 {
-    let mut selector_elem = @selector.Element::new(elem.tag.to_lower())
+    let mut selector_elem = @css.Element::new(elem.tag.to_lower())
     match elem.id {
       Some(id) => selector_elem = selector_elem.set_id(id)
       None => ()
@@ -1377,12 +1376,12 @@ fn should_preserve_inline_element(
       let (name, value) = attr
       selector_elem = selector_elem.set_attribute(name, value)
     }
-    let media_env = @media.MediaEnvironment::with_color_scheme(
+    let media_env = @css.MediaEnvironment::with_color_scheme(
       ctx.viewport_width,
       ctx.viewport_height,
       ctx.color_scheme,
     )
-    let cascaded = @cascade.cascade_element_with_media(
+    let cascaded = @css.cascade_element_with_media(
       selector_elem,
       stylesheets,
       [],
@@ -1475,7 +1474,7 @@ fn has_nontrivial_background_value(value : String) -> Bool {
 /// that should be preserved for layout semantics.
 fn contains_preserved_inline_descendant(
   elem : @html.Element,
-  stylesheets : Array[@cascade.Stylesheet],
+  stylesheets : Array[@css.Stylesheet],
   ctx : RenderContext,
 ) -> Bool {
   for child in elem.children {
@@ -1502,7 +1501,7 @@ fn contains_preserved_inline_descendant(
 fn collect_text_from_inline(
   elem : @html.Element,
   buf : StringBuilder,
-  stylesheets : Array[@cascade.Stylesheet],
+  stylesheets : Array[@css.Stylesheet],
   ctx : RenderContext,
 ) -> Unit {
   for child in elem.children {
@@ -1516,8 +1515,8 @@ fn collect_text_from_inline(
           // Skip replaced elements - they'll be handled separately
           continue
         } else if is_inline_element(child_elem) &&
-          not(will_have_non_inline_display(child_elem, stylesheets, ctx)) &&
-          not(should_preserve_inline_element(child_elem, stylesheets, ctx)) {
+          !will_have_non_inline_display(child_elem, stylesheets, ctx) &&
+          !should_preserve_inline_element(child_elem, stylesheets, ctx) {
           // Recursively collect text from nested inline elements
           // Only if CSS doesn't override to non-inline display
           collect_text_from_inline(child_elem, buf, stylesheets, ctx)
@@ -1552,7 +1551,7 @@ fn contains_replaced_element(elem : @html.Element) -> Bool {
 /// This is used to detect inline elements like <code> that contain block children
 fn contains_block_child(
   elem : @html.Element,
-  stylesheets : Array[@cascade.Stylesheet],
+  stylesheets : Array[@css.Stylesheet],
   ctx : RenderContext,
 ) -> Bool {
   for child in elem.children {
@@ -1585,8 +1584,7 @@ fn contains_block_child(
           return true
         }
         // Also check if child is a block-level element by default
-        if not(is_inline_element(child_elem)) &&
-          not(is_replaced_element(tag_lower)) {
+        if !is_inline_element(child_elem) && !is_replaced_element(tag_lower) {
           return true
         }
       }
@@ -1599,9 +1597,9 @@ fn contains_block_child(
 ///|
 fn has_direct_display_contents_child(
   elem : @html.Element,
-  parent_selector : @selector.Element,
+  parent_selector : @css.Element,
   parent_style : @style.Style,
-  indexed_stylesheets : Array[@cascade.IndexedStylesheet],
+  indexed_stylesheets : Array[@css.IndexedStylesheet],
   ctx : RenderContext,
   css_vars : Map[String, String],
 ) -> Bool {
@@ -1615,7 +1613,7 @@ fn has_direct_display_contents_child(
     }
   }
   let mut element_child_index = 0
-  let mut prev_selector_sibling : @selector.Element? = None
+  let mut prev_selector_sibling : @css.Element? = None
   let include_selector_match_data = indexed_stylesheets.length() > 0
   for child in elem.children {
     match child {
@@ -1670,7 +1668,7 @@ fn has_direct_contents_class_child(elem : @html.Element) -> Bool {
 ///|
 fn is_out_of_flow_positioned(
   elem : @html.Element,
-  stylesheets : Array[@cascade.Stylesheet],
+  stylesheets : Array[@css.Stylesheet],
   ctx : RenderContext,
 ) -> Bool {
   match elem.style {
@@ -1688,7 +1686,7 @@ fn is_out_of_flow_positioned(
   if stylesheets.length() == 0 {
     return false
   }
-  let mut selector_elem = @selector.Element::new(elem.tag.to_lower())
+  let mut selector_elem = @css.Element::new(elem.tag.to_lower())
   match elem.id {
     Some(id) => selector_elem = selector_elem.set_id(id)
     None => ()
@@ -1700,12 +1698,12 @@ fn is_out_of_flow_positioned(
     let (name, value) = attr
     selector_elem = selector_elem.set_attribute(name, value)
   }
-  let media_env = @media.MediaEnvironment::with_color_scheme(
+  let media_env = @css.MediaEnvironment::with_color_scheme(
     ctx.viewport_width,
     ctx.viewport_height,
     ctx.color_scheme,
   )
-  let cascaded = @cascade.cascade_element_with_media(
+  let cascaded = @css.cascade_element_with_media(
     selector_elem,
     stylesheets,
     [],
@@ -1750,10 +1748,10 @@ fn is_replaced_element(tag : String) -> Bool {
 /// first to preserve DOM order.
 fn collect_inline_content(
   children : Array[@html.Node],
-  stylesheets : Array[@cascade.Stylesheet],
+  stylesheets : Array[@css.Stylesheet],
   ctx : RenderContext,
   preserve_inline_elements : Bool,
-  parent_selector : @selector.Element,
+  parent_selector : @css.Element,
 ) -> (String, Array[@html.Node]) {
   let text_builder = StringBuilder::new()
   let remaining : Array[@html.Node] = []
@@ -1770,7 +1768,7 @@ fn collect_inline_content(
   // Helper to flush accumulated text as a synthetic text node
   fn flush_text(builder : StringBuilder, out : Array[@html.Node]) -> Unit {
     let text = builder.to_string()
-    if not(text.is_empty()) {
+    if !text.is_empty() {
       // Create a synthetic HTML text node for accumulated content
       out.push(@html.Node::Text(text))
       builder.reset()
@@ -1947,7 +1945,7 @@ fn prune_node_to_summary_path(
     let sibling = node.children[i]
     if sibling.id == "#text" {
       match sibling.text {
-        Some(text) if not(text.is_empty()) && text.trim().is_empty() =>
+        Some(text) if !text.is_empty() && text.trim().is_empty() =>
           kept_children.push(sibling)
         _ => ()
       }
@@ -2025,7 +2023,7 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
         | @types.Contents => true
         _ => false
       }
-      if not(keep_ws) {
+      if !keep_ws {
         return @node.Node::leaf("#text", @style.Style::default())
       }
       let collapsed = " "
@@ -2168,7 +2166,7 @@ fn should_apply_intrinsic_replaced_aspect_ratio(
   width : @types.Dimension,
   height : @types.Dimension,
 ) -> Bool {
-  not(is_definite_replaced_size(width) && is_definite_replaced_size(height))
+  !(is_definite_replaced_size(width) && is_definite_replaced_size(height))
 }
 
 ///|
@@ -2263,7 +2261,7 @@ fn parse_html_dimension(value : String) -> Double? {
   }
   Some(
     // Parse as double
-    @strconv.parse_double(num_str),
+    @string.parse_double(num_str),
   ) catch {
     _ => None
   }
@@ -2369,8 +2367,8 @@ fn parse_viewbox(viewbox : String) -> (Double, Double)? {
     parts.push(current.to_string())
   }
   if parts.length() >= 4 {
-    let width = @strconv.parse_double(parts[2]) catch { _ => return None }
-    let height = @strconv.parse_double(parts[3]) catch { _ => return None }
+    let width = @string.parse_double(parts[2]) catch { _ => return None }
+    let height = @string.parse_double(parts[3]) catch { _ => return None }
     if width > 0.0 && height > 0.0 {
       Some((width, height))
     } else {
@@ -2385,7 +2383,7 @@ fn parse_viewbox(viewbox : String) -> (Double, Double)? {
 /// Extract intrinsic size from SVG data URI
 fn parse_svg_data_uri(src : String) -> (Double, Double)? {
   // Check if it's an SVG data URI
-  if not(src.has_prefix("data:image/svg+xml")) {
+  if !src.has_prefix("data:image/svg+xml") {
     return None
   }
   // Check for base64 encoding (not supported yet)
@@ -2505,7 +2503,7 @@ fn decode_base64_prefix(encoded : String, byte_count : Int) -> Array[Int]? {
 
 ///|
 fn parse_gif_data_uri(src : String) -> (Double, Double)? {
-  if not(src.to_lower().has_prefix("data:image/gif;base64,")) {
+  if !src.to_lower().has_prefix("data:image/gif;base64,") {
     return None
   }
   let mut comma_idx = -1
@@ -2544,7 +2542,7 @@ fn parse_gif_data_uri(src : String) -> (Double, Double)? {
 
 ///|
 fn parse_png_data_uri(src : String) -> (Double, Double)? {
-  if not(src.to_lower().has_prefix("data:image/png;base64,")) {
+  if !src.to_lower().has_prefix("data:image/png;base64,") {
     return None
   }
   let mut comma_idx = -1
@@ -2635,11 +2633,11 @@ pub fn element_to_node(
 ) -> @node.Node {
   // Compute style from inline style attribute with parent for inheritance
   let ctx = match parent_style {
-    Some(ps) => @computed.ComputeContext::with_parent(ps)
-    None => @computed.ComputeContext::new()
+    Some(ps) => @css.ComputeContext::with_parent(ps)
+    None => @css.ComputeContext::new()
   }
   let style = match elem.style {
-    Some(css) => @computed.compute_inline(css, ctx)
+    Some(css) => @css.compute_inline_style(css, ctx)
     None =>
       // When no inline style, inherit from parent if available
       match parent_style {
@@ -2725,7 +2723,7 @@ fn find_body_in_children(elem : @html.Element) -> @html.Element? {
 fn resolve_document_root_zoom(
   doc_root : @html.Element,
   ctx : RenderContext,
-  indexed_stylesheets : Array[@cascade.IndexedStylesheet],
+  indexed_stylesheets : Array[@css.IndexedStylesheet],
   css_vars : Map[String, String],
 ) -> Double {
   if doc_root.tag.to_lower() != "html" {
@@ -2755,7 +2753,7 @@ fn propagate_document_root_multicol_to_body(
   body_style : @style.Style,
   doc_root_style : @style.Style,
 ) -> @style.Style {
-  if body_style.has_multicol() || not(doc_root_style.has_multicol()) {
+  if body_style.has_multicol() || !doc_root_style.has_multicol() {
     return body_style
   }
   {
@@ -2922,7 +2920,7 @@ fn stretch_single_frameset_child_to_root(
   let is_frameset = child.id == "frameset" ||
     child.id.has_prefix("frameset#") ||
     child.id.has_prefix("frameset.")
-  if not(is_frameset) || child.height > 0.0 {
+  if !is_frameset || child.height > 0.0 {
     return layout
   }
   let adjusted_children : Array[@types.Layout] = []
@@ -2966,10 +2964,10 @@ fn create_zero_layout_from_node(node : @node.Node) -> @types.Layout {
 
 ///|
 pub struct PseudoRule {
-  base_selector : @selector.ComplexSelector?
+  base_selector : @css.ComplexSelector?
   base_selector_text : String
-  declarations : Array[@cascade.Declaration]
-  media_query : @media.MediaQueryList?
+  declarations : Array[@css.Declaration]
+  media_query : @css.MediaQueryList?
 }
 
 ///|
@@ -2998,9 +2996,9 @@ fn PseudoRuleIndex::build(rules : Array[PseudoRule]) -> PseudoRuleIndex {
         let mut indexed = false
         // Check ID
         for sub in sel.head.subclasses {
-          if not(indexed) {
+          if !indexed {
             match sub {
-              @selector.Id(name) => {
+              @css.SimpleSelector::Id(name) => {
                 match idx.by_id.get(name) {
                   Some(arr) => arr.push(i)
                   None => idx.by_id.set(name, [i])
@@ -3012,11 +3010,11 @@ fn PseudoRuleIndex::build(rules : Array[PseudoRule]) -> PseudoRuleIndex {
           }
         }
         // Check class
-        if not(indexed) {
+        if !indexed {
           for sub in sel.head.subclasses {
-            if not(indexed) {
+            if !indexed {
               match sub {
-                @selector.Class(name) => {
+                @css.SimpleSelector::Class(name) => {
                   match idx.by_class.get(name) {
                     Some(arr) => arr.push(i)
                     None => idx.by_class.set(name, [i])
@@ -3029,9 +3027,9 @@ fn PseudoRuleIndex::build(rules : Array[PseudoRule]) -> PseudoRuleIndex {
           }
         }
         // Check tag
-        if not(indexed) {
+        if !indexed {
           match sel.head.type_selector {
-            Some(@selector.Type(name)) => {
+            Some(@css.SimpleSelector::Type(name)) => {
               let tag = name.to_lower()
               match idx.by_tag.get(tag) {
                 Some(arr) => arr.push(i)
@@ -3042,7 +3040,7 @@ fn PseudoRuleIndex::build(rules : Array[PseudoRule]) -> PseudoRuleIndex {
             _ => ()
           }
         }
-        if not(indexed) {
+        if !indexed {
           idx.universal.push(i)
         }
       }
@@ -3055,7 +3053,7 @@ fn PseudoRuleIndex::build(rules : Array[PseudoRule]) -> PseudoRuleIndex {
 ///|
 fn PseudoRuleIndex::get_candidates(
   self : PseudoRuleIndex,
-  element : @selector.Element,
+  element : @css.Element,
 ) -> Array[Int] {
   let candidates : Array[Int] = []
   match element.id {
@@ -3104,9 +3102,7 @@ let viewport_cutoff : Ref[Double] = { val: 1.0e10 }
 let viewport_skeleton_count : Ref[Int] = { val: 0 }
 
 ///|
-let empty_indexed_stylesheets : Ref[Array[@cascade.IndexedStylesheet]] = {
-  val: [],
-}
+let empty_indexed_stylesheets : Ref[Array[@css.IndexedStylesheet]] = { val: [] }
 
 ///|
 /// Advance the viewport culling heuristic only for in-flow block containers.
@@ -3121,7 +3117,7 @@ fn should_advance_viewport_estimate(style : @style.Style) -> Bool {
         @types.Float::None => true
       }
   }
-  if not(is_in_flow) {
+  if !is_in_flow {
     return false
   }
   match style.display {
@@ -3142,8 +3138,8 @@ let active_after_index : Ref[PseudoRuleIndex] = {
 
 ///|
 priv struct ExternalCssBundle {
-  stylesheets : Array[@cascade.Stylesheet]
-  indexed_stylesheets : Array[@cascade.IndexedStylesheet]
+  stylesheets : Array[@css.Stylesheet]
+  indexed_stylesheets : Array[@css.IndexedStylesheet]
   before_rules : Array[PseudoRule]
   after_rules : Array[PseudoRule]
   before_index : PseudoRuleIndex
@@ -3173,7 +3169,7 @@ fn external_css_cache_key(external_css : Array[String]) -> String {
 
 ///|
 fn collect_pseudo_rules_from_stylesheet(
-  stylesheet : @cascade.Stylesheet,
+  stylesheet : @css.Stylesheet,
   before_rules : Array[PseudoRule],
   after_rules : Array[PseudoRule],
 ) -> Unit {
@@ -3182,7 +3178,7 @@ fn collect_pseudo_rules_from_stylesheet(
     if sel.contains("before") {
       match selector_text_without_pseudo(sel, Before) {
         Some(base_text) => {
-          let base_sel = @selector.parse_selector_text(base_text)
+          let base_sel = @css.parse_selector(base_text)
           before_rules.push({
             base_selector: base_sel,
             base_selector_text: base_text,
@@ -3196,7 +3192,7 @@ fn collect_pseudo_rules_from_stylesheet(
     if sel.contains("after") {
       match selector_text_without_pseudo(sel, After) {
         Some(base_text) => {
-          let base_sel = @selector.parse_selector_text(base_text)
+          let base_sel = @css.parse_selector(base_text)
           after_rules.push({
             base_selector: base_sel,
             base_selector_text: base_text,
@@ -3239,19 +3235,19 @@ fn get_external_css_bundle(external_css : Array[String]) -> ExternalCssBundle {
   match external_css_bundle_cache.val.get(key) {
     Some(bundle) => bundle
     None => {
-      let stylesheets : Array[@cascade.Stylesheet] = []
-      let indexed_stylesheets : Array[@cascade.IndexedStylesheet] = []
+      let stylesheets : Array[@css.Stylesheet] = []
+      let indexed_stylesheets : Array[@css.IndexedStylesheet] = []
       let before_rules : Array[PseudoRule] = []
       let after_rules : Array[PseudoRule] = []
       let mut total_rules = 0
       for css in external_css {
-        let stylesheet = @parser.parse_stylesheet(css)
+        let stylesheet = @css.parse_stylesheet(css)
         total_rules += stylesheet.rules.length()
         collect_pseudo_rules_from_stylesheet(
           stylesheet, before_rules, after_rules,
         )
         stylesheets.push(stylesheet)
-        indexed_stylesheets.push(@cascade.IndexedStylesheet::new(stylesheet))
+        indexed_stylesheets.push(@css.IndexedStylesheet::new(stylesheet))
       }
       let bundle : ExternalCssBundle = {
         stylesheets,
@@ -3270,10 +3266,10 @@ fn get_external_css_bundle(external_css : Array[String]) -> ExternalCssBundle {
 
 ///|
 pub struct PreparedRenderDocument {
-  stylesheets : Array[@cascade.Stylesheet]
-  indexed_stylesheets : Array[@cascade.IndexedStylesheet]
+  stylesheets : Array[@css.Stylesheet]
+  indexed_stylesheets : Array[@css.IndexedStylesheet]
   css_vars : Map[String, String]
-  doc_root_selector : @selector.Element
+  doc_root_selector : @css.Element
   doc_root_style : @style.Style
   render_root : @html.Element
   render_root_tag : String
@@ -3290,11 +3286,11 @@ pub fn prepare_render_document(
 ) -> PreparedRenderDocument {
   let _t0 = perf_clock_us()
   let external_bundle = get_external_css_bundle(external_css)
-  let stylesheets : Array[@cascade.Stylesheet] = []
+  let stylesheets : Array[@css.Stylesheet] = []
   for stylesheet in external_bundle.stylesheets {
     stylesheets.push(stylesheet)
   }
-  let indexed_stylesheets : Array[@cascade.IndexedStylesheet] = []
+  let indexed_stylesheets : Array[@css.IndexedStylesheet] = []
   for indexed in external_bundle.indexed_stylesheets {
     indexed_stylesheets.push(indexed)
   }
@@ -3302,11 +3298,11 @@ pub fn prepare_render_document(
   let after_rules = external_bundle.after_rules.copy()
   let mut total_rules = external_bundle.total_rules
   for css in doc.stylesheets {
-    let stylesheet = @parser.parse_stylesheet(css)
+    let stylesheet = @css.parse_stylesheet(css)
     total_rules += stylesheet.rules.length()
     collect_pseudo_rules_from_stylesheet(stylesheet, before_rules, after_rules)
     stylesheets.push(stylesheet)
-    indexed_stylesheets.push(@cascade.IndexedStylesheet::new(stylesheet))
+    indexed_stylesheets.push(@css.IndexedStylesheet::new(stylesheet))
   }
   let _t1 = perf_clock_us()
   let _t2 = perf_clock_us()
@@ -3494,9 +3490,9 @@ pub fn compute_layout_from_render_root(
     stretch_height: false,
   }
 
-  @dispatch.setup()
+  @node.setup()
 
-  let layout = @dispatch.compute_layout(root, layout_ctx)
+  let layout = @node.compute_layout_in_context(root, layout_ctx)
   let scaled_layout = apply_zoom_and_scale(
     layout,
     root,
@@ -3584,11 +3580,10 @@ pub fn render_document_with_external_css(
 
 ///|
 /// Check if a compound selector is the :root pseudo-class
-fn is_root_selector(selector : @selector.CompoundSelector) -> Bool {
+fn is_root_selector(selector : @css.CompoundSelector) -> Bool {
   for sub in selector.subclasses {
     match sub {
-      @selector.SimpleSelector::PseudoClass(@selector.PseudoClass::Root) =>
-        return true
+      @css.SimpleSelector::PseudoClass(@css.PseudoClass::Root) => return true
       _ => ()
     }
   }
@@ -3717,7 +3712,7 @@ fn parse_counter_directives(
     }
     let mut amount = default_amount
     if i < tokens.length() {
-      let parsed = @strconv.parse_int(tokens[i]) catch { _ => default_amount }
+      let parsed = @string.parse_int(tokens[i]) catch { _ => default_amount }
       // Heuristic: only treat token as number when parsing changed it from default
       // or when token is explicit zero/negative.
       if parsed != default_amount ||
@@ -3838,7 +3833,7 @@ fn parse_css_quoted_string(value : String, start : Int) -> (String, Int)? {
         let mut count = 0
         while hex_i < value.length() && count < 6 {
           let hc = value[hex_i].to_int().unsafe_to_char()
-          if not(is_ascii_hex_digit(hc)) {
+          if !is_ascii_hex_digit(hc) {
             break
           }
           code = code * 16 + ascii_hex_digit_to_int(hc)
@@ -3898,7 +3893,7 @@ fn resolve_pseudo_attr_functions(
   value : String,
   element_attributes : Map[String, String],
 ) -> String {
-  if not(value.contains("attr(")) {
+  if !value.contains("attr(") {
     return value
   }
   let buf = StringBuilder::new()
@@ -4040,7 +4035,7 @@ fn resolve_pseudo_content_value(
       i += 1
     }
     resolved = if changed { buf.to_string() } else { resolved }
-    if not(changed) {
+    if !changed {
       break
     }
     loop_count += 1
@@ -4076,7 +4071,7 @@ fn parse_content_parts(value : String) -> Array[ContentPart]? {
       let mut end = i + 1
       while end < trimmed.length() {
         let ec = trimmed[end].to_int().unsafe_to_char()
-        if not(is_ascii_alpha_num_hyphen(ec)) {
+        if !is_ascii_alpha_num_hyphen(ec) {
           break
         }
         end += 1
@@ -4086,7 +4081,7 @@ fn parse_content_parts(value : String) -> Array[ContentPart]? {
       let mut j = end
       while j < trimmed.length() {
         let jc = trimmed[j].to_int().unsafe_to_char()
-        if not(is_ascii_whitespace(jc)) {
+        if !is_ascii_whitespace(jc) {
           break
         }
         j += 1
@@ -4112,7 +4107,7 @@ fn parse_content_parts(value : String) -> Array[ContentPart]? {
           if ident_lower == "counter" {
             let name = first_token_or_empty(split_ascii_whitespace_tokens(args))
             let name = name.trim().to_string()
-            if not(name.is_empty()) {
+            if !name.is_empty() {
               parts.push(Counter(name))
             }
           } else if ident_lower == "counters" {
@@ -4130,13 +4125,13 @@ fn parse_content_parts(value : String) -> Array[ContentPart]? {
                   None => raw_sep.trim().to_string()
                 }
                 let counter_name = name.trim().to_string()
-                if not(counter_name.is_empty()) {
+                if !counter_name.is_empty() {
                   parts.push(Counters(counter_name, sep))
                 }
               }
               None => {
                 let name = args.trim().to_string()
-                if not(name.is_empty()) {
+                if !name.is_empty() {
                   parts.push(Counter(name))
                 }
               }
@@ -4190,21 +4185,21 @@ fn parse_relative_left_offset(
     16.0
   }
   if trimmed.has_suffix("ch") {
-    let num = @strconv.parse_double(remove_suffix(trimmed, 2).to_string()) catch {
+    let num = @string.parse_double(remove_suffix(trimmed, 2).to_string()) catch {
       _ => 0.0
     }
     num * base_font_size * 0.5
   } else if trimmed.has_suffix("em") {
-    let num = @strconv.parse_double(remove_suffix(trimmed, 2).to_string()) catch {
+    let num = @string.parse_double(remove_suffix(trimmed, 2).to_string()) catch {
       _ => 0.0
     }
     num * base_font_size
   } else if trimmed.has_suffix("px") {
-    @strconv.parse_double(remove_suffix(trimmed, 2).to_string()) catch {
+    @string.parse_double(remove_suffix(trimmed, 2).to_string()) catch {
       _ => 0.0
     }
   } else {
-    @strconv.parse_double(trimmed) catch {
+    @string.parse_double(trimmed) catch {
       _ => 0.0
     }
   }
@@ -4248,7 +4243,7 @@ fn selector_text_without_pseudo(
 ///|
 fn selector_text_fallback_matches(
   selector_text : String,
-  selector_elem : @selector.Element,
+  selector_elem : @css.Element,
 ) -> Bool {
   let lowered = selector_text.to_lower()
   let tag_lower = selector_elem.tag_name.to_lower()
@@ -4290,8 +4285,8 @@ fn create_generated_pseudo_node(
   let pseudo_is_contents = spec.generated_style.display == @types.Contents
   let inline_plain_generated_text = spec.generated_style.display ==
     @types.Inline &&
-    not(spec.position_relative) &&
-    not(spec.out_of_flow) &&
+    !spec.position_relative &&
+    !spec.out_of_flow &&
     spec.left_offset.abs() <= 0.01
   if spec.content.is_empty() {
     @node.Node::leaf(pseudo_id, spec.generated_style)
@@ -4324,16 +4319,16 @@ fn create_generated_pseudo_node(
 
 ///|
 fn resolve_pseudo_spec(
-  selector_elem : @selector.Element,
+  selector_elem : @css.Element,
   host_style : @style.Style,
-  stylesheets : Array[@cascade.Stylesheet],
+  stylesheets : Array[@css.Stylesheet],
   ctx : RenderContext,
   pseudo_kind : PseudoKind,
   counters : Map[String, CounterEntry],
   css_vars : Map[String, String],
   element_attributes : Map[String, String],
 ) -> AfterPseudoSpec? {
-  let media_env = @media.MediaEnvironment::with_color_scheme(
+  let media_env = @css.MediaEnvironment::with_color_scheme(
     ctx.viewport_width,
     ctx.viewport_height,
     ctx.color_scheme,
@@ -4356,22 +4351,21 @@ fn resolve_pseudo_spec(
   for stylesheet in stylesheets {
     for rule in stylesheet.rules {
       // Fast path: skip rules whose selector text doesn't contain the pseudo keyword
-      if not(rule.selector_text.contains(pseudo_keyword)) {
+      if !rule.selector_text.contains(pseudo_keyword) {
         continue
       }
       let media_matches = match rule.media_query {
         Some(mq) => mq.evaluate(media_env)
         None => true
       }
-      if not(media_matches) {
+      if !media_matches {
         continue
       }
       match selector_text_without_pseudo(rule.selector_text, pseudo_kind) {
         Some(base_selector_text) => {
-          let matches_selector = match
-            @selector.parse_selector_text(base_selector_text) {
+          let matches_selector = match @css.parse_selector(base_selector_text) {
             Some(base_selector) =>
-              @selector.matches_complex(selector_elem, base_selector) ||
+              @css.matches_selector(selector_elem, base_selector) ||
               selector_text_fallback_matches(base_selector_text, selector_elem)
             None =>
               selector_text_fallback_matches(base_selector_text, selector_elem)
@@ -4379,7 +4373,7 @@ fn resolve_pseudo_spec(
           if matches_selector {
             for decl in rule.declarations {
               match decl.value {
-                @cascade.PropertyValue::Value(v) => {
+                @css.PropertyValue::Value(v) => {
                   let prop = decl.property.to_lower()
                   if prop.has_prefix("--") {
                     pseudo_css_vars[prop] = v
@@ -4409,7 +4403,7 @@ fn resolve_pseudo_spec(
                   } else if prop == "left" {
                     left_offset = parse_relative_left_offset(v, host_style)
                   }
-                  if prop != "content" && not(prop.has_prefix("--")) {
+                  if prop != "content" && !prop.has_prefix("--") {
                     generated_style = apply_css_property(
                       generated_style, prop, v,
                     )
@@ -4425,7 +4419,7 @@ fn resolve_pseudo_spec(
     }
   }
 
-  if content_disabled || not(content_specified) {
+  if content_disabled || !content_specified {
     return None
   }
   let text = match content_parts {
@@ -4443,7 +4437,7 @@ fn resolve_pseudo_spec(
 
 ///|
 fn resolve_pseudo_spec_fast(
-  selector_elem : @selector.Element,
+  selector_elem : @css.Element,
   host_style : @style.Style,
   ctx : RenderContext,
   pseudo_kind : PseudoKind,
@@ -4451,7 +4445,7 @@ fn resolve_pseudo_spec_fast(
   css_vars : Map[String, String],
   element_attributes : Map[String, String],
 ) -> AfterPseudoSpec? {
-  let media_env = @media.MediaEnvironment::with_color_scheme(
+  let media_env = @css.MediaEnvironment::with_color_scheme(
     ctx.viewport_width,
     ctx.viewport_height,
     ctx.color_scheme,
@@ -4479,12 +4473,12 @@ fn resolve_pseudo_spec_fast(
       Some(mq) => mq.evaluate(media_env)
       None => true
     }
-    if not(media_matches) {
+    if !media_matches {
       continue
     }
     let matches_selector = match rule.base_selector {
       Some(base_selector) =>
-        @selector.matches_complex(selector_elem, base_selector) ||
+        @css.matches_selector(selector_elem, base_selector) ||
         selector_text_fallback_matches(rule.base_selector_text, selector_elem)
       None =>
         selector_text_fallback_matches(rule.base_selector_text, selector_elem)
@@ -4492,7 +4486,7 @@ fn resolve_pseudo_spec_fast(
     if matches_selector {
       for decl in rule.declarations {
         match decl.value {
-          @cascade.PropertyValue::Value(v) => {
+          @css.PropertyValue::Value(v) => {
             let prop = decl.property.to_lower()
             if prop.has_prefix("--") {
               pseudo_css_vars[prop] = v
@@ -4519,7 +4513,7 @@ fn resolve_pseudo_spec_fast(
             } else if prop == "left" {
               left_offset = parse_relative_left_offset(v, host_style)
             }
-            if prop != "content" && not(prop.has_prefix("--")) {
+            if prop != "content" && !prop.has_prefix("--") {
               generated_style = apply_css_property(generated_style, prop, v)
             }
           }
@@ -4528,7 +4522,7 @@ fn resolve_pseudo_spec_fast(
       }
     }
   }
-  if content_disabled || not(content_specified) {
+  if content_disabled || !content_specified {
     return None
   }
   let text = match content_parts {
@@ -4546,16 +4540,16 @@ fn resolve_pseudo_spec_fast(
 
 ///|
 fn get_counter_directives(
-  selector_elem : @selector.Element,
-  stylesheets : Array[@cascade.Stylesheet],
+  selector_elem : @css.Element,
+  stylesheets : Array[@css.Stylesheet],
   ctx : RenderContext,
 ) -> (Array[CounterDirective], Array[CounterDirective]) {
-  let media_env = @media.MediaEnvironment::with_color_scheme(
+  let media_env = @css.MediaEnvironment::with_color_scheme(
     ctx.viewport_width,
     ctx.viewport_height,
     ctx.color_scheme,
   )
-  let cascaded = @cascade.cascade_element_with_media(
+  let cascaded = @css.cascade_element_with_media(
     selector_elem,
     stylesheets,
     [],
@@ -4577,8 +4571,8 @@ fn get_counter_directives(
 
 ///|
 fn selector_has_generated_pseudo_content(
-  selector_elem : @selector.Element,
-  stylesheets : Array[@cascade.Stylesheet],
+  selector_elem : @css.Element,
+  stylesheets : Array[@css.Stylesheet],
   ctx : RenderContext,
 ) -> Bool {
   let empty_counters : Map[String, CounterEntry] = {}
@@ -4624,9 +4618,9 @@ fn establishes_style_containment_scope(style : @style.Style) -> Bool {
 ///|
 fn compute_element_own_counters(
   incoming_counters : Map[String, CounterEntry],
-  selector_elem : @selector.Element,
+  selector_elem : @css.Element,
   style : @style.Style,
-  stylesheets : Array[@cascade.Stylesheet],
+  stylesheets : Array[@css.Stylesheet],
   ctx : RenderContext,
   owner_id : String,
 ) -> Map[String, CounterEntry] {
@@ -4646,7 +4640,7 @@ fn compute_element_own_counters(
 
 ///|
 /// Check if a complex selector matches :root (simple :root without combinators)
-fn is_root_only_selector(selector : @selector.ComplexSelector) -> Bool {
+fn is_root_only_selector(selector : @css.ComplexSelector) -> Bool {
   // :root should be a simple selector without combinators
   if selector.tail.length() > 0 {
     return false
@@ -4658,12 +4652,12 @@ fn is_root_only_selector(selector : @selector.ComplexSelector) -> Bool {
 /// Collect CSS custom properties from :root rules in stylesheets
 /// Evaluates media queries to correctly apply dark mode variables
 fn collect_root_css_variables(
-  stylesheets : Array[@cascade.Stylesheet],
+  stylesheets : Array[@css.Stylesheet],
   ctx : RenderContext,
 ) -> Map[String, String] {
   let vars : Map[String, String] = {}
   // Create media environment for evaluating @media queries
-  let media_env = @media.MediaEnvironment::with_color_scheme(
+  let media_env = @css.MediaEnvironment::with_color_scheme(
     ctx.viewport_width,
     ctx.viewport_height,
     ctx.color_scheme,
@@ -4675,7 +4669,7 @@ fn collect_root_css_variables(
         Some(mq) => mq.evaluate(media_env)
         None => true
       }
-      if not(media_matches) {
+      if !media_matches {
         continue
       }
       // Check if this rule targets :root
@@ -4684,7 +4678,7 @@ fn collect_root_css_variables(
         for decl in rule.declarations {
           if decl.property.has_prefix("--") {
             match decl.value {
-              @cascade.PropertyValue::Value(v) => vars[decl.property] = v
+              @css.PropertyValue::Value(v) => vars[decl.property] = v
               _ => ()
             }
           }
@@ -4793,7 +4787,7 @@ fn is_svg_element(tag : String) -> Bool {
 }
 
 ///|
-fn selector_parent_is_svg(selector_elem : @selector.Element) -> Bool {
+fn selector_parent_is_svg(selector_elem : @css.Element) -> Bool {
   match selector_elem.parent {
     Some(parent) => is_svg_element(parent.tag_name.to_lower())
     None => false
@@ -4809,7 +4803,7 @@ fn normalize_svg_display_contents(
   if style.display != @types.Contents {
     return style
   }
-  if tag == "svg" && not(parent_is_svg) {
+  if tag == "svg" && !parent_is_svg {
     // Root-level SVG display:contents should not leak SVG descendants into
     // HTML flow sizing.
     return { ..style, display: @types.Display::None }
@@ -4836,15 +4830,13 @@ fn apply_svg_attributes_to_style(
     }
     if trimmed.has_suffix("%") {
       let percent_str = remove_suffix(trimmed, 1)
-      let percent = @strconv.parse_double(percent_str) catch {
-        _ => return None
-      }
+      let percent = @string.parse_double(percent_str) catch { _ => return None }
       return Some(@types.Percent(percent / 100.0))
     }
     let length = parse_svg_length(trimmed)
     // Keep zero as a valid explicit length (e.g. width="0").
     if length == 0.0 {
-      let raw = @strconv.parse_double(trimmed) catch { _ => return None }
+      let raw = @string.parse_double(trimmed) catch { _ => return None }
       return Some(@types.Length(raw))
     }
     Some(@types.Length(length))
@@ -5004,7 +4996,7 @@ fn apply_svg_attributes_to_style(
   // Handle SVG ellipse elements (cx, cy, rx, ry) - compute bounding box
   let has_rx = attrs.contains("rx")
   let has_ry = attrs.contains("ry")
-  if (has_rx || has_ry) && not(has_r) {
+  if (has_rx || has_ry) && !has_r {
     let cx = match attrs.get("cx") {
       Some(v) => parse_svg_length(v)
       None => 0.0
@@ -5055,7 +5047,7 @@ fn apply_svg_intrinsic_size(style : @style.Style, tag : String) -> @style.Style 
   }
   let has_default_object_size = style.width == @types.Auto &&
     style.height == @types.Auto &&
-    not(style.contain.size) &&
+    !style.contain.size &&
     style.display != @types.Contents
 
   {
@@ -5125,7 +5117,7 @@ fn parse_svg_length(value : String) -> Double {
   } else {
     trimmed
   }
-  @strconv.parse_double(num_str) catch {
+  @string.parse_double(num_str) catch {
     _ => 0.0
   }
 }
@@ -5162,10 +5154,10 @@ fn should_skip_element(tag : String) -> Bool {
 /// Convert HTML Element to Node tree with stylesheet styles applied
 fn element_to_node_with_styles(
   elem : @html.Element,
-  parent : @selector.Element?,
+  parent : @css.Element?,
   ctx : RenderContext,
-  stylesheets : Array[@cascade.Stylesheet],
-  indexed_stylesheets : Array[@cascade.IndexedStylesheet],
+  stylesheets : Array[@css.Stylesheet],
+  indexed_stylesheets : Array[@css.IndexedStylesheet],
   css_vars : Map[String, String],
   incoming_counters : Map[String, CounterEntry],
   owner_id : String,
@@ -5203,7 +5195,7 @@ fn element_to_node_with_styles(
   let style = if cell_tag == "table" {
     let border_spacing = match elem.attributes.get("cellspacing") {
       Some(val) => {
-        let n = @strconv.parse_double(val) catch {
+        let n = @string.parse_double(val) catch {
           _ => computed_style.border_spacing
         }
         if n >= 0.0 {
@@ -5217,7 +5209,7 @@ fn element_to_node_with_styles(
     // Track cellpadding for descendant <td>/<th> elements
     match elem.attributes.get("cellpadding") {
       Some(val) => {
-        let n = @strconv.parse_double(val) catch { _ => -1.0 }
+        let n = @string.parse_double(val) catch { _ => -1.0 }
         if n >= 0.0 {
           current_cellpadding.val = n
         }
@@ -5237,7 +5229,7 @@ fn element_to_node_with_styles(
   let style = if cell_tag == "td" || cell_tag == "th" {
     let rowspan = match elem.attributes.get("rowspan") {
       Some(val) => {
-        let n = @strconv.parse_int(val) catch { _ => 1 }
+        let n = @string.parse_int(val) catch { _ => 1 }
         if n > 0 {
           n
         } else {
@@ -5248,7 +5240,7 @@ fn element_to_node_with_styles(
     }
     let colspan = match elem.attributes.get("colspan") {
       Some(val) => {
-        let n = @strconv.parse_int(val) catch { _ => 1 }
+        let n = @string.parse_int(val) catch { _ => 1 }
         if n > 0 {
           n
         } else {
@@ -5264,7 +5256,7 @@ fn element_to_node_with_styles(
       let default_pad = @types.Dimension::Length(0.0)
       let has_css_padding = s.padding.top != @types.Dimension::Auto &&
         s.padding.top != default_pad
-      if not(has_css_padding) {
+      if !has_css_padding {
         s = {
           ..s,
           padding: {
@@ -5353,13 +5345,13 @@ fn element_to_node_with_styles(
   }
 
   match before_pseudo {
-    Some(spec) if not(spec.out_of_flow) =>
+    Some(spec) if !spec.out_of_flow =>
       children.push(create_generated_pseudo_node(spec, Before))
     _ => ()
   }
 
   // Add combined text node if there's inline content
-  if not(inline_text.trim().is_empty()) {
+  if !inline_text.trim().is_empty() {
     let text_node = create_text_node(inline_text, style)
     children.push(text_node)
   }
@@ -5373,7 +5365,7 @@ fn element_to_node_with_styles(
   }
   let include_selector_match_data = indexed_stylesheets.length() > 0
   let mut prev_sibling_counters : Map[String, CounterEntry]? = None
-  let mut prev_selector_sibling : @selector.Element? = None
+  let mut prev_selector_sibling : @css.Element? = None
   let mut element_child_index = 0
   let mut element_child_count = 0
   if include_selector_match_data {
@@ -5450,16 +5442,16 @@ fn element_to_node_with_styles(
       @html.Node::Text(text) =>
         // Process synthetic text nodes created by collect_inline_content
         // to preserve DOM order when elements are interleaved with text.
-        if not(text.is_empty()) {
+        if !text.is_empty() {
           let text_is_ws = is_whitespace_only_text(text)
           let preserve_ws = text_is_ws &&
             should_preserve_inter_element_whitespace(
               remaining_children, i, selector_elem, style, indexed_stylesheets, ctx,
               css_vars,
             ) &&
-            not(style.writing_mode.is_vertical()) &&
-            not(style.suppresses_intrinsic_width())
-          if text_is_ws && not(preserve_ws) {
+            !style.writing_mode.is_vertical() &&
+            !style.suppresses_intrinsic_width()
+          if text_is_ws && !preserve_ws {
             continue
           }
           let text_parent_style = if preserve_ws {
@@ -5473,7 +5465,7 @@ fn element_to_node_with_styles(
     }
   }
   match after_pseudo {
-    Some(spec) if not(spec.out_of_flow) =>
+    Some(spec) if !spec.out_of_flow =>
       children.push(create_generated_pseudo_node(spec, After))
     _ => ()
   }
@@ -5491,10 +5483,10 @@ fn element_to_node_with_styles(
 /// Internal element conversion with pre-computed selector element
 fn element_to_node_with_styles_internal(
   elem : @html.Element,
-  selector_elem : @selector.Element,
+  selector_elem : @css.Element,
   ctx : RenderContext,
-  stylesheets : Array[@cascade.Stylesheet],
-  indexed_stylesheets : Array[@cascade.IndexedStylesheet],
+  stylesheets : Array[@css.Stylesheet],
+  indexed_stylesheets : Array[@css.IndexedStylesheet],
   parent_style : @style.Style?,
   css_vars : Map[String, String],
   incoming_counters : Map[String, CounterEntry],
@@ -5520,7 +5512,7 @@ fn element_to_node_with_styles_internal(
       skeleton_style.display = @types.Display::None
     }
     let tag_lower = elem.tag.to_lower()
-    if tag_lower == "dialog" && not(elem.attributes.contains("open")) {
+    if tag_lower == "dialog" && !elem.attributes.contains("open") {
       skeleton_style.display = @types.Display::None
     }
     // Check inline style display override
@@ -5566,7 +5558,7 @@ fn element_to_node_with_styles_internal(
           children.push(child_node)
         }
         @html.Node::Text(text) =>
-          if not(text.is_empty()) {
+          if !text.is_empty() {
             children.push(create_text_node(text, skeleton_style))
           }
       }
@@ -5590,7 +5582,7 @@ fn element_to_node_with_styles_internal(
   // Cache tag name lowercase (avoid repeated to_lower() calls)
   let tag_lower = elem.tag.to_lower()
   // <dialog> without open attribute → display: none
-  if tag_lower == "dialog" && not(elem.attributes.contains("open")) {
+  if tag_lower == "dialog" && !elem.attributes.contains("open") {
     computed_style.display = @types.Display::None
   }
   // Early return for display:none - skip all child processing
@@ -5605,8 +5597,8 @@ fn element_to_node_with_styles_internal(
   // contain:size/paint test fixtures. Other inline elements still strip contain.
   let preserve_inline_contain = tag_lower == "rt"
   let computed_style = if computed_style.display == @types.Inline &&
-    not(preserve_inline_contain) &&
-    not(is_replaced_element(tag_lower)) &&
+    !preserve_inline_contain &&
+    !is_replaced_element(tag_lower) &&
     (
       computed_style.contain.layout ||
       computed_style.contain.paint ||
@@ -5643,15 +5635,13 @@ fn element_to_node_with_styles_internal(
     false
   } else {
     computed_style.display == @types.Inline &&
-    not(is_ruby_internal) &&
+    !is_ruby_internal &&
     computed_style.position == @types.Static &&
     contains_block_child(elem, stylesheets, ctx) &&
-    not(
-      has_direct_display_contents_child(
-        elem, selector_elem, computed_style, indexed_stylesheets, ctx, css_vars,
-      ) ||
-      has_direct_contents_class_child(elem),
-    )
+    !(has_direct_display_contents_child(
+      elem, selector_elem, computed_style, indexed_stylesheets, ctx, css_vars,
+    ) ||
+    has_direct_contents_class_child(elem))
   }
 
   // If this is an inline element containing replaced elements (like <a><img></a>),
@@ -5675,7 +5665,7 @@ fn element_to_node_with_styles_internal(
   let style = if cell_tag == "table" {
     let border_spacing = match elem.attributes.get("cellspacing") {
       Some(val) => {
-        let n = @strconv.parse_double(val) catch { _ => style.border_spacing }
+        let n = @string.parse_double(val) catch { _ => style.border_spacing }
         if n >= 0.0 {
           n
         } else {
@@ -5687,7 +5677,7 @@ fn element_to_node_with_styles_internal(
     // Track cellpadding for descendant <td>/<th> elements
     match elem.attributes.get("cellpadding") {
       Some(val) => {
-        let n = @strconv.parse_double(val) catch { _ => -1.0 }
+        let n = @string.parse_double(val) catch { _ => -1.0 }
         if n >= 0.0 {
           current_cellpadding.val = n
         }
@@ -5707,7 +5697,7 @@ fn element_to_node_with_styles_internal(
   let style = if cell_tag == "td" || cell_tag == "th" {
     let rowspan = match elem.attributes.get("rowspan") {
       Some(val) => {
-        let n = @strconv.parse_int(val) catch { _ => 1 }
+        let n = @string.parse_int(val) catch { _ => 1 }
         if n > 0 {
           n
         } else {
@@ -5718,7 +5708,7 @@ fn element_to_node_with_styles_internal(
     }
     let colspan = match elem.attributes.get("colspan") {
       Some(val) => {
-        let n = @strconv.parse_int(val) catch { _ => 1 }
+        let n = @string.parse_int(val) catch { _ => 1 }
         if n > 0 {
           n
         } else {
@@ -5734,7 +5724,7 @@ fn element_to_node_with_styles_internal(
       let default_pad = @types.Dimension::Length(0.0)
       let has_css_padding = s.padding.top != @types.Dimension::Auto &&
         s.padding.top != default_pad
-      if not(has_css_padding) {
+      if !has_css_padding {
         s = {
           ..s,
           padding: {
@@ -5831,13 +5821,13 @@ fn element_to_node_with_styles_internal(
   }
 
   match before_pseudo {
-    Some(spec) if not(spec.out_of_flow) =>
+    Some(spec) if !spec.out_of_flow =>
       children.push(create_generated_pseudo_node(spec, Before))
     _ => ()
   }
 
   // Add combined text node if there's inline content
-  if not(inline_text.trim().is_empty()) {
+  if !inline_text.trim().is_empty() {
     let text_node = create_text_node(inline_text, style)
     children.push(text_node)
   }
@@ -5851,7 +5841,7 @@ fn element_to_node_with_styles_internal(
   }
   let include_selector_match_data = indexed_stylesheets.length() > 0
   let mut prev_sibling_counters : Map[String, CounterEntry]? = None
-  let mut prev_selector_sibling : @selector.Element? = None
+  let mut prev_selector_sibling : @css.Element? = None
   let mut element_child_index = 0
   let mut element_child_count = 0
   if include_selector_match_data {
@@ -5927,16 +5917,16 @@ fn element_to_node_with_styles_internal(
       @html.Node::Text(text) =>
         // Process synthetic text nodes created by collect_inline_content
         // to preserve DOM order when elements are interleaved with text.
-        if not(text.is_empty()) {
+        if !text.is_empty() {
           let text_is_ws = is_whitespace_only_text(text)
           let preserve_ws = text_is_ws &&
             should_preserve_inter_element_whitespace(
               remaining_children, i, selector_elem, style, indexed_stylesheets, ctx,
               css_vars,
             ) &&
-            not(style.writing_mode.is_vertical()) &&
-            not(style.suppresses_intrinsic_width())
-          if text_is_ws && not(preserve_ws) {
+            !style.writing_mode.is_vertical() &&
+            !style.suppresses_intrinsic_width()
+          if text_is_ws && !preserve_ws {
             continue
           }
           let text_parent_style = if preserve_ws {
@@ -5950,12 +5940,11 @@ fn element_to_node_with_styles_internal(
     }
   }
   match after_pseudo {
-    Some(spec) if not(spec.out_of_flow) =>
+    Some(spec) if !spec.out_of_flow =>
       children.push(create_generated_pseudo_node(spec, After))
     _ => ()
   }
-  let children = if tag_lower == "details" &&
-    not(elem.attributes.contains("open")) {
+  let children = if tag_lower == "details" && !elem.attributes.contains("open") {
     prune_closed_details_children(children)
   } else {
     children
@@ -5991,7 +5980,7 @@ fn element_to_node_with_styles_internal(
       "radio" | "checkbox" => (13.0, 13.0)
       "button" | "submit" | "reset" => {
         let label = match elem.attributes.get("value") {
-          Some(v) if not(v.is_empty()) => v
+          Some(v) if !v.is_empty() => v
           _ =>
             match input_type {
               "submit" => "Submit"
@@ -6046,12 +6035,12 @@ fn element_to_node_with_styles_internal(
     let preserve_auto_height = should_preserve_auto_replaced_height(style)
     let input_style : @style.Style = {
       ..style,
-      width: if style.width == @types.Auto && not(preserve_auto_width) {
+      width: if style.width == @types.Auto && !preserve_auto_width {
         @types.Length(intrinsic_width)
       } else {
         style.width
       },
-      height: if style.height == @types.Auto && not(preserve_auto_height) {
+      height: if style.height == @types.Auto && !preserve_auto_height {
         @types.Length(intrinsic_height)
       } else {
         style.height
@@ -6060,8 +6049,8 @@ fn element_to_node_with_styles_internal(
     return @node.Node::with_measure(node_id, input_style, measure)
   }
   let style = if tag_lower == "button" &&
-    not(style.contain.size) &&
-    not(style.writing_mode.is_vertical()) {
+    !style.contain.size &&
+    !style.writing_mode.is_vertical() {
     fn is_zero_padding(dim : @types.Dimension) -> Bool {
       match dim {
         @types.Length(v) => v == 0.0
@@ -6124,12 +6113,12 @@ fn element_to_node_with_styles_internal(
     let preserve_auto_height = should_preserve_auto_replaced_height(style)
     let textarea_style : @style.Style = {
       ..style,
-      width: if style.width == @types.Auto && not(preserve_auto_width) {
+      width: if style.width == @types.Auto && !preserve_auto_width {
         @types.Length(intrinsic_width)
       } else {
         style.width
       },
-      height: if style.height == @types.Auto && not(preserve_auto_height) {
+      height: if style.height == @types.Auto && !preserve_auto_height {
         @types.Length(intrinsic_height)
       } else {
         style.height
@@ -6144,12 +6133,10 @@ fn element_to_node_with_styles_internal(
         _ => false
       }
     }
-    let has_ua_border = not(
-      border_is_zero_length(style.border.top) &&
+    let has_ua_border = !(border_is_zero_length(style.border.top) &&
       border_is_zero_length(style.border.right) &&
       border_is_zero_length(style.border.bottom) &&
-      border_is_zero_length(style.border.left),
-    )
+      border_is_zero_length(style.border.left))
     let select_size = match elem.attributes.get("size") {
       Some(size_attr) =>
         match parse_html_dimension(size_attr) {
@@ -6192,7 +6179,7 @@ fn element_to_node_with_styles_internal(
       }
     }
     let mut max_option_cols = 0
-    if not(suppress_intrinsic_width) {
+    if !suppress_intrinsic_width {
       for child in elem.children {
         match child {
           @html.Node::Element(child_elem) =>
@@ -6325,12 +6312,12 @@ fn element_to_node_with_styles_internal(
       } else {
         default_border
       },
-      width: if style.width == @types.Auto && not(preserve_auto_width) {
+      width: if style.width == @types.Auto && !preserve_auto_width {
         @types.Length(default_width)
       } else {
         style.width
       },
-      height: if style.height == @types.Auto && not(preserve_auto_height) {
+      height: if style.height == @types.Auto && !preserve_auto_height {
         @types.Length(default_height)
       } else {
         style.height
@@ -6400,7 +6387,7 @@ fn element_to_node_with_styles_internal(
     }
     let alt_text = elem.attributes.get("alt")
     let has_non_data_src = match elem.attributes.get("src") {
-      Some(src) => not(src.to_lower().has_prefix("data:"))
+      Some(src) => !src.to_lower().has_prefix("data:")
       None => false
     }
     // Chromium-style broken image fallback in our WPT setup: when external
@@ -6408,8 +6395,8 @@ fn element_to_node_with_styles_internal(
     if intrinsic_width == 0.0 &&
       intrinsic_height == 0.0 &&
       has_non_data_src &&
-      not(style.suppresses_intrinsic_width()) &&
-      not(style.suppresses_intrinsic_height()) {
+      !style.suppresses_intrinsic_width() &&
+      !style.suppresses_intrinsic_height() {
       match alt_text {
         Some(alt) =>
           if alt.length() > 0 {
@@ -6452,8 +6439,8 @@ fn element_to_node_with_styles_internal(
     // Calculate intrinsic aspect ratio (width / height)
     let intrinsic_aspect_ratio = if intrinsic_height > 0.0 &&
       intrinsic_width > 0.0 &&
-      not(uses_svg_fallback_object_size) &&
-      not(uses_alt_fallback_size) {
+      !uses_svg_fallback_object_size &&
+      !uses_alt_fallback_size {
       Some(intrinsic_width / intrinsic_height)
     } else {
       None
@@ -6598,7 +6585,7 @@ fn element_to_node_with_styles_internal(
       aspect_ratio: match style.aspect_ratio {
         Some(_) => style.aspect_ratio // Keep CSS-specified ratio
         None =>
-          if style.contain.size || not(keep_intrinsic_ratio) {
+          if style.contain.size || !keep_intrinsic_ratio {
             None
           } else {
             intrinsic_aspect_ratio
@@ -6620,7 +6607,7 @@ fn element_to_node_with_styles_internal(
         Some(src) => src.trim().length() > 0
         None => false
       }
-      if not(has_src) {
+      if !has_src {
         return @node.Node::leaf(node_id, {
           ..style,
           display: @types.Display::None,
@@ -6685,7 +6672,7 @@ fn element_to_node_with_styles_internal(
       aspect_ratio: match style.aspect_ratio {
         Some(_) => style.aspect_ratio
         None =>
-          if style.contain.size || not(keep_intrinsic_ratio) {
+          if style.contain.size || !keep_intrinsic_ratio {
             None
           } else {
             intrinsic_aspect_ratio
@@ -6775,9 +6762,9 @@ fn element_to_node_with_styles_internal(
 /// Convert HTML Element to Selector Element
 fn html_to_selector_element(
   elem : @html.Element,
-  parent : @selector.Element?,
-) -> @selector.Element {
-  let mut sel_elem = @selector.Element::new(elem.tag)
+  parent : @css.Element?,
+) -> @css.Element {
+  let mut sel_elem = @css.Element::new(elem.tag)
 
   // Set ID
   match elem.id {
@@ -6806,9 +6793,9 @@ fn html_to_selector_element(
 ///|
 fn html_to_selector_element_minimal(
   elem : @html.Element,
-  parent : @selector.Element?,
-) -> @selector.Element {
-  let mut sel_elem = @selector.Element::new(elem.tag)
+  parent : @css.Element?,
+) -> @css.Element {
+  let mut sel_elem = @css.Element::new(elem.tag)
   match elem.id {
     Some(id) => sel_elem = sel_elem.set_id(id)
     None => ()
@@ -6831,12 +6818,12 @@ fn html_to_selector_element_minimal(
 /// Convert HTML Element to Selector Element with parent and sibling info
 fn html_to_selector_element_with_parent(
   elem : @html.Element,
-  parent : @selector.Element,
+  parent : @css.Element,
   sibling_index : Int,
   sibling_count : Int,
-  prev_sibling : @selector.Element?,
-) -> @selector.Element {
-  let mut sel_elem = @selector.Element::new(elem.tag)
+  prev_sibling : @css.Element?,
+) -> @css.Element {
+  let mut sel_elem = @css.Element::new(elem.tag)
 
   // Set ID
   match elem.id {
@@ -7119,7 +7106,6 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     | "sup"
     | "small"
     | "mark"
-    | "del"
     | "q"
     | "time"
     | "data"
@@ -7291,9 +7277,9 @@ fn normalize_display_contents_for_unusual_html(
 ///|
 /// Compute element style using indexed stylesheets for better performance
 fn compute_element_style_indexed(
-  selector_elem : @selector.Element,
+  selector_elem : @css.Element,
   inline_css : String?,
-  indexed_stylesheets : Array[@cascade.IndexedStylesheet],
+  indexed_stylesheets : Array[@css.IndexedStylesheet],
   is_root : Bool,
   ctx : RenderContext,
   parent_style : @style.Style?,
@@ -7301,13 +7287,13 @@ fn compute_element_style_indexed(
 ) -> @style.Style {
   let cascaded = if indexed_stylesheets.length() > 0 {
     // Create media environment for media query evaluation only when needed.
-    let media_env = @media.MediaEnvironment::with_color_scheme(
+    let media_env = @css.MediaEnvironment::with_color_scheme(
       ctx.viewport_width,
       ctx.viewport_height,
       ctx.color_scheme,
     )
     Some(
-      @cascade.cascade_element_indexed(
+      @css.cascade_element_indexed(
         selector_elem,
         indexed_stylesheets,
         [],
@@ -7428,7 +7414,7 @@ fn compute_element_style_indexed(
   // These act as low-priority CSS and are overridden by stylesheets.
   match selector_elem.get_attribute("bgcolor") {
     Some(bg_value) => {
-      let parsed = @computed.parse_color(bg_value)
+      let parsed = @css.parse_color(bg_value)
       match parsed.get_color() {
         Some(color) => style = { ..style, background_color: color }
         None => ()
@@ -7447,7 +7433,7 @@ fn compute_element_style_indexed(
         let dim = if width_value.has_suffix("%") {
           match width_value.strip_suffix("%") {
             Some(num_str) => {
-              let n = @strconv.parse_double(num_str.to_string()) catch {
+              let n = @string.parse_double(num_str.to_string()) catch {
                 _ => -1.0
               }
               if n >= 0.0 {
@@ -7459,7 +7445,7 @@ fn compute_element_style_indexed(
             None => @types.Dimension::Auto
           }
         } else {
-          let n = @strconv.parse_double(width_value.to_string()) catch {
+          let n = @string.parse_double(width_value.to_string()) catch {
             _ => -1.0
           }
           if n >= 0.0 {
@@ -7501,7 +7487,7 @@ fn compute_element_style_indexed(
   if selector_elem.tag_name.to_lower() == "table" {
     match selector_elem.get_attribute("border") {
       Some(border_value) => {
-        let n = @strconv.parse_double(border_value.to_string()) catch {
+        let n = @string.parse_double(border_value.to_string()) catch {
           _ => 0.0
         }
         if n > 0.0 {
@@ -7538,7 +7524,7 @@ fn compute_element_style_indexed(
       match cascaded_values.get("font") {
         Some(decl) =>
           match decl.value {
-            @cascade.PropertyValue::Value(value) => {
+            @css.PropertyValue::Value(value) => {
               font_present = true
               font_order = decl.source_order
               font_value = value
@@ -7550,7 +7536,7 @@ fn compute_element_style_indexed(
       match cascaded_values.get("font-size") {
         Some(decl) =>
           match decl.value {
-            @cascade.PropertyValue::Value(value) => {
+            @css.PropertyValue::Value(value) => {
               font_size_present = true
               font_size_order = decl.source_order
               font_size_value = value
@@ -7562,7 +7548,7 @@ fn compute_element_style_indexed(
       match cascaded_values.get("line-height") {
         Some(decl) =>
           match decl.value {
-            @cascade.PropertyValue::Value(value) => {
+            @css.PropertyValue::Value(value) => {
               line_height_present = true
               line_height_order = decl.source_order
               line_height_value = value
@@ -7615,7 +7601,7 @@ fn compute_element_style_indexed(
           ()
         } else {
           match decl.value {
-            @cascade.PropertyValue::Value(value) =>
+            @css.PropertyValue::Value(value) =>
               style = apply_css_property_with_viewport(
                 style,
                 prop,
@@ -7638,7 +7624,7 @@ fn compute_element_style_indexed(
   if is_table_element(tag) {
     let keeps_non_table_display = style.display == @types.Contents ||
       style.display == @types.Display::None
-    if not(is_table_display(style.display)) && not(keeps_non_table_display) {
+    if !is_table_display(style.display) && !keeps_non_table_display {
       style = { ..style, display: ua_style.display }
     }
   }
@@ -7716,7 +7702,7 @@ fn compute_element_style_indexed(
     let has_horizontal_inset_pair = is_out_of_flow_root &&
       inset_is_definite_for_root(style.inset.left, ctx.viewport_width) &&
       inset_is_definite_for_root(style.inset.right, ctx.viewport_width)
-    if not(has_horizontal_inset_pair) {
+    if !has_horizontal_inset_pair {
       match style.width {
         @types.Dimension::Auto =>
           style = {
@@ -7830,12 +7816,7 @@ fn apply_css_property(
   value : String,
 ) -> @style.Style {
   // Use direct property application to avoid string parsing overhead
-  @computed.apply_property_direct(
-    style,
-    property,
-    value,
-    @computed.ComputeContext::new(),
-  )
+  @css.apply_property_direct(style, property, value, @css.ComputeContext::new())
 }
 
 ///|
@@ -7859,7 +7840,7 @@ fn apply_css_property_with_viewport(
     style.font_size
   }
   // Use direct property application to avoid string parsing overhead
-  let ctx : @computed.ComputeContext = {
+  let ctx : @css.ComputeContext = {
     parent_style: inherited_parent_style,
     root_font_size: 16.0,
     font_size: context_font_size,
@@ -7867,7 +7848,7 @@ fn apply_css_property_with_viewport(
     viewport_height,
     custom_properties: css_vars,
   }
-  @computed.apply_property_direct(style, property, value, ctx)
+  @css.apply_property_direct(style, property, value, ctx)
 }
 
 ///|
@@ -8154,7 +8135,7 @@ pub fn render_to_sixel(html : String, width : Int, height : Int) -> String {
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let layout = render(html, ctx)
   @image.render_layout(layout, width, height)
@@ -8194,7 +8175,7 @@ pub fn render_to_sixel_with_css(
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let (node, layout) = render_to_node_and_layout_with_external_css(
     html, ctx, external_css,
@@ -8215,12 +8196,12 @@ pub fn render_to_kitty_with_css(
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let (node, layout) = render_to_node_and_layout_with_external_css(
     html, ctx, external_css,
   )
-  let paint_node = @paint.from_node_and_layout(node, layout)
+  let paint_node = @paint_node.from_node_and_layout(node, layout)
   @kitty.render_paint_node_to_kitty_scrolled(
     paint_node, width, height, scroll_y,
   )
@@ -8239,12 +8220,12 @@ pub async fn[T : @io.Writer] write_kitty_with_css(
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let (node, layout) = render_to_node_and_layout_with_external_css(
     html, ctx, external_css,
   )
-  let paint_node = @paint.from_node_and_layout(node, layout)
+  let paint_node = @paint_node.from_node_and_layout(node, layout)
   @kitty.write_paint_node_to_kitty_scrolled(
     writer, paint_node, width, height, scroll_y,
   )
@@ -8262,7 +8243,7 @@ pub fn get_content_height_with_css(
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let layout = render_with_external_css(html, ctx, external_css)
   layout.height.to_int()
@@ -8275,7 +8256,7 @@ pub fn get_content_height(html : String, width : Int, height : Int) -> Int {
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let layout = render(html, ctx)
   layout.height.to_int()
@@ -8309,7 +8290,7 @@ pub fn get_content_height_with_document(
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let layout = render_document_with_external_css(doc, ctx, external_css)
   // Use actual content extent instead of just layout.height
@@ -8448,8 +8429,8 @@ fn is_svg_container_id(id : String) -> Bool {
 ///|
 fn establishes_absolute_containing_block(node : @node.Node) -> Bool {
   let style = node.style
-  let containment_applies = not(
-    is_no_principal_table_internal_display(style.display),
+  let containment_applies = !is_no_principal_table_internal_display(
+    style.display,
   )
   let containment_establishes_cb = containment_applies &&
     (style.contain.paint || style.contain.layout)
@@ -8459,7 +8440,7 @@ fn establishes_absolute_containing_block(node : @node.Node) -> Bool {
   }
   positioned ||
   containment_establishes_cb ||
-  not(style.transform.is_none()) ||
+  !style.transform.is_none() ||
   is_svg_container_id(node.id)
 }
 
@@ -8473,12 +8454,12 @@ fn is_auto_inset(dim : @types.Dimension) -> Bool {
 
 ///|
 fn has_non_auto_horizontal_insets(style : @style.Style) -> Bool {
-  not(is_auto_inset(style.inset.left)) || not(is_auto_inset(style.inset.right))
+  !is_auto_inset(style.inset.left) || !is_auto_inset(style.inset.right)
 }
 
 ///|
 fn has_non_auto_vertical_insets(style : @style.Style) -> Bool {
-  not(is_auto_inset(style.inset.top)) || not(is_auto_inset(style.inset.bottom))
+  !is_auto_inset(style.inset.top) || !is_auto_inset(style.inset.bottom)
 }
 
 ///|
@@ -8657,14 +8638,14 @@ fn apply_zoom_and_scale(
       let parent_based_horizontal = if has_non_auto_horizontal_insets(
           child_node.style,
         ) {
-        if not(inset_left_auto) {
+        if !inset_left_auto {
           let parent_left = resolve_dimension_with_percent_basis(
             child_node.style.inset.left,
             scaled_width,
           )
           let parent_based_x = parent_left + scaled_child.margin.left
           (scaled_child.x - parent_based_x).abs() <= 0.5
-        } else if not(inset_right_auto) {
+        } else if !inset_right_auto {
           let parent_right = resolve_dimension_with_percent_basis(
             child_node.style.inset.right,
             scaled_width,
@@ -8683,14 +8664,14 @@ fn apply_zoom_and_scale(
       let parent_based_vertical = if has_non_auto_vertical_insets(
           child_node.style,
         ) {
-        if not(inset_top_auto) {
+        if !inset_top_auto {
           let parent_top = resolve_dimension_with_percent_basis(
             child_node.style.inset.top,
             scaled_height,
           )
           let parent_based_y = parent_top + scaled_child.margin.top
           (scaled_child.y - parent_based_y).abs() <= 0.5
-        } else if not(inset_bottom_auto) {
+        } else if !inset_bottom_auto {
           let parent_bottom = resolve_dimension_with_percent_basis(
             child_node.style.inset.bottom,
             scaled_height,
@@ -8736,7 +8717,7 @@ fn apply_zoom_and_scale(
       }
       // Absolute children are laid out in their immediate static parent first.
       // For right/bottom inset cases, convert to the true containing-block size.
-      let cb_size_adjust_x = if not(inset_right_auto) && inset_left_auto {
+      let cb_size_adjust_x = if !inset_right_auto && inset_left_auto {
         let parent_right = resolve_dimension_with_percent_basis(
           child_node.style.inset.right,
           scaled_width,
@@ -8753,7 +8734,7 @@ fn apply_zoom_and_scale(
       } else {
         0.0
       }
-      let cb_size_adjust_y = if not(inset_bottom_auto) && inset_top_auto {
+      let cb_size_adjust_y = if !inset_bottom_auto && inset_top_auto {
         let parent_bottom = resolve_dimension_with_percent_basis(
           child_node.style.inset.bottom,
           scaled_height,

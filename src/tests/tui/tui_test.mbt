@@ -22,7 +22,7 @@ test "tui/flex_vertical_stack" {
     @layout.Node::leaf("content", content_style),
     @layout.Node::leaf("footer", footer_style),
   ])
-  let layout = @crater.compute_layout(root, @types.Size::new(80.0, 24.0))
+  let layout = @layout.compute_layout(root, @types.Size::new(80.0, 24.0))
 
   // Verify root dimensions
   inspect(layout.width, content="80")
@@ -63,7 +63,7 @@ test "tui/flex_horizontal_split" {
     @layout.Node::leaf("sidebar", sidebar_style),
     @layout.Node::leaf("main", main_style),
   ])
-  let layout = @crater.compute_layout(root, @types.Size::new(80.0, 24.0))
+  let layout = @layout.compute_layout(root, @types.Size::new(80.0, 24.0))
 
   // Verify sidebar
   let sidebar = layout.children[0]
@@ -91,7 +91,7 @@ test "tui/flex_with_gap" {
     @layout.Node::leaf("b", child_style),
     @layout.Node::leaf("c", child_style),
   ])
-  let layout = @crater.compute_layout(root, @types.Size::new(80.0, 24.0))
+  let layout = @layout.compute_layout(root, @types.Size::new(80.0, 24.0))
 
   // Items should be spaced with 2-unit gaps
   inspect(layout.children[0].x, content="0")
@@ -154,7 +154,7 @@ test "tui/grid_coordinate_placement" {
     @layout.Node::leaf("sidebar", sidebar_style),
     @layout.Node::leaf("main", main_style),
   ])
-  let layout = @crater.compute_layout(root, @types.Size::new(80.0, 24.0))
+  let layout = @layout.compute_layout(root, @types.Size::new(80.0, 24.0))
 
   // Verify header spans full width
   let header = layout.children[0]
@@ -198,7 +198,7 @@ test "tui/grid_named_areas" {
     @layout.Node::leaf("sidebar", sidebar_style),
     @layout.Node::leaf("main", main_style),
   ])
-  let layout = @crater.compute_layout(root, @types.Size::new(80.0, 24.0))
+  let layout = @layout.compute_layout(root, @types.Size::new(80.0, 24.0))
 
   // Verify header spans full width
   let header = layout.children[0]
@@ -233,7 +233,7 @@ test "tui/measure_func" {
   }
   let style = @layout.Style::default()
   let node = @layout.Node::with_measure("text", style, measure, text~)
-  let layout = @crater.compute_layout(node, @types.Size::new(80.0, 24.0))
+  let layout = @layout.compute_layout(node, @types.Size::new(80.0, 24.0))
 
   // Width should be based on text measurement
   inspect(layout.width, content="13")
@@ -301,7 +301,7 @@ test "tui/box_model" {
   let root = @layout.Node::new("root", root_style, [
     @layout.Node::leaf("child", child_style),
   ])
-  let layout = @crater.compute_layout(root, @types.Size::new(80.0, 24.0))
+  let layout = @layout.compute_layout(root, @types.Size::new(80.0, 24.0))
   let child = layout.children[0]
 
   // Position should account for margin
@@ -332,7 +332,7 @@ test "tui/flex_align_center" {
   let root = @layout.Node::new("root", root_style, [
     @layout.Node::leaf("child", child_style),
   ])
-  let layout = @crater.compute_layout(root, @types.Size::new(80.0, 24.0))
+  let layout = @layout.compute_layout(root, @types.Size::new(80.0, 24.0))
   let child = layout.children[0]
 
   // Child should be vertically centered: (24 - 10) / 2 = 7
@@ -354,7 +354,7 @@ test "tui/flex_justify_space_between" {
     @layout.Node::leaf("b", child_style),
     @layout.Node::leaf("c", child_style),
   ])
-  let layout = @crater.compute_layout(root, @types.Size::new(80.0, 24.0))
+  let layout = @layout.compute_layout(root, @types.Size::new(80.0, 24.0))
 
   // First item at start
   inspect(layout.children[0].x, content="0")
@@ -375,7 +375,7 @@ test "tui/layout_struct_fields" {
   style.overflow_x = @types.Hidden
   style.overflow_y = @types.Scroll
   let node = @layout.Node::leaf("test", style)
-  let layout = @crater.compute_layout(node, @types.Size::new(80.0, 24.0))
+  let layout = @layout.compute_layout(node, @types.Size::new(80.0, 24.0))
 
   // Verify all expected fields exist
   inspect(layout.id, content="test")
@@ -435,7 +435,7 @@ test "tui/nested_flex_layout" {
     body,
     @layout.Node::leaf("footer", footer_style),
   ])
-  let layout = @crater.compute_layout(root, @types.Size::new(80.0, 24.0))
+  let layout = @layout.compute_layout(root, @types.Size::new(80.0, 24.0))
 
   // Header
   let header = layout.children[0]
@@ -682,7 +682,7 @@ test "tui/layout_package_api" {
   ])
 
   // Compute layout using crater
-  let result = @crater.compute_layout(root, @layout.size(80.0, 24.0))
+  let result = @layout.compute_layout(root, @layout.size(80.0, 24.0))
   inspect(result.width, content="80")
   inspect(result.height, content="24")
   inspect(result.children[0].height, content="3")
@@ -740,7 +740,7 @@ test "tui/compute_core_layout_success" {
     @layout.Node::leaf("body", body_style),
   ])
 
-  let result = @crater.compute_core_layout(root, @layout.size(40.0, 10.0))
+  let result = @core_subset.compute_core_layout(root, @layout.size(40.0, 10.0))
   inspect(result.issues.length(), content="0")
   match result.layout {
     Some(layout) => {
@@ -758,7 +758,7 @@ test "tui/compute_core_layout_reject_unsupported_style" {
   let style = @layout.Style::default()
   style.position = @types.Absolute
   let root = @layout.Node::new("root", style, [])
-  let result = @crater.compute_core_layout(root, @layout.size(10.0, 10.0))
+  let result = @core_subset.compute_core_layout(root, @layout.size(10.0, 10.0))
   assert_true(result.layout is None)
   assert_true(result.issues.length() > 0)
 }

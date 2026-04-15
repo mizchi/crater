@@ -1,0 +1,30 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser/tui/paint_output"
+
+import {
+  "mizchi/crater/paint/model",
+  "mizchi/crater/x/image",
+}
+
+// Values
+pub fn framebuffer_to_rgba_base64(@image.Framebuffer, @image.DynamicPalette) -> String
+
+pub fn raster_to_framebuffer(@model.PaintNode, Int, Int) -> (@image.Framebuffer, @image.DynamicPalette)
+
+pub fn raster_to_rgba_base64(@model.PaintNode, Int, Int) -> String
+
+pub fn to_json_string(@model.PaintNode) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @image {type DynamicPalette}
+
+pub using @image {type Framebuffer}
+
+pub using @model {type PaintNode}
+
+// Traits
+

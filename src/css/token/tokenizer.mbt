@@ -107,7 +107,7 @@ fn hex_digit_to_int(c : Char) -> Int {
 ///|
 /// Consume whitespace
 fn Tokenizer::consume_whitespace(self : Tokenizer) -> Unit {
-  while not(self.is_eof()) {
+  while !self.is_eof() {
     match self.peek() {
       Some(c) if is_whitespace(c) => {
         let _ = self.consume()
@@ -121,7 +121,7 @@ fn Tokenizer::consume_whitespace(self : Tokenizer) -> Unit {
 /// Consume an identifier/name
 fn Tokenizer::consume_name(self : Tokenizer) -> String {
   let buf = StringBuilder::new()
-  while not(self.is_eof()) {
+  while !self.is_eof() {
     match self.peek() {
       Some(c) if is_name_char(c) => {
         buf.write_char(c)
@@ -158,7 +158,7 @@ fn Tokenizer::consume_number(self : Tokenizer) -> (Double, NumType) {
   }
 
   // Integer part
-  while not(self.is_eof()) {
+  while !self.is_eof() {
     match self.peek() {
       Some(c) if is_digit(c) => {
         buf.write_char(c)
@@ -174,7 +174,7 @@ fn Tokenizer::consume_number(self : Tokenizer) -> (Double, NumType) {
       is_integer = false
       buf.write_char('.')
       let _ = self.consume()
-      while not(self.is_eof()) {
+      while !self.is_eof() {
         match self.peek() {
           Some(c) if is_digit(c) => {
             buf.write_char(c)
@@ -205,7 +205,7 @@ fn Tokenizer::consume_number(self : Tokenizer) -> (Double, NumType) {
               }
             _ => ()
           }
-          while not(self.is_eof()) {
+          while !self.is_eof() {
             match self.peek() {
               Some(c) if is_digit(c) => {
                 buf.write_char(c)
@@ -220,7 +220,7 @@ fn Tokenizer::consume_number(self : Tokenizer) -> (Double, NumType) {
     _ => ()
   }
   let num_str = buf.to_string()
-  let value = @strconv.parse_double(num_str) catch { _ => 0.0 }
+  let value = @string.parse_double(num_str) catch { _ => 0.0 }
   let num_type : NumType = if is_integer { Integer } else { NumType::Number }
   (value, num_type)
 }
@@ -229,7 +229,7 @@ fn Tokenizer::consume_number(self : Tokenizer) -> (Double, NumType) {
 /// Consume a string token
 fn Tokenizer::consume_string(self : Tokenizer, quote : Char) -> Token {
   let buf = StringBuilder::new()
-  while not(self.is_eof()) {
+  while !self.is_eof() {
     match self.consume() {
       Some(c) if c == quote => return Token::String(buf.to_string())
       Some('\n') | Some('\r') => return BadString
@@ -242,7 +242,7 @@ fn Tokenizer::consume_string(self : Tokenizer, quote : Char) -> Token {
           Some(c) if is_hex_digit(c) => {
             let mut codepoint = 0
             let mut count = 0
-            while not(self.is_eof()) && count < 6 {
+            while !self.is_eof() && count < 6 {
               match self.peek() {
                 Some(h) if is_hex_digit(h) => {
                   codepoint = codepoint * 16 + hex_digit_to_int(h)
@@ -252,7 +252,7 @@ fn Tokenizer::consume_string(self : Tokenizer, quote : Char) -> Token {
                 _ => break
               }
             }
-            if not(self.is_eof()) {
+            if !self.is_eof() {
               match self.peek() {
                 Some(ws) if is_whitespace(ws) => {
                   let _ = self.consume()
@@ -470,7 +470,7 @@ fn Tokenizer::next_token(self : Tokenizer) -> Token {
           let _ = self.consume()
           let _ = self.consume()
           // Skip until */
-          while not(self.is_eof()) {
+          while !self.is_eof() {
             match (self.peek(), self.peek_at(1)) {
               (Some('*'), Some('/')) => {
                 let _ = self.consume()

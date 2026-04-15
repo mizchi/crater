@@ -4,6 +4,7 @@ package "mizchi/crater-browser/cdp"
 import {
   "mizchi/crater/dom",
   "mizchi/crater/scheduler",
+  "moonbitlang/core/debug",
 }
 
 // Values
@@ -19,7 +20,7 @@ pub struct CdpBoxModel {
   margin : Array[Double]
   width : Int
   height : Int
-} derive(Show)
+} derive(@debug.Debug)
 
 pub struct CdpContext {
   id : String
@@ -47,7 +48,7 @@ pub fn CdpContext::set_title(Self, String) -> Unit
 pub struct CdpError {
   code : Int
   message : String
-} derive(Show)
+} derive(@debug.Debug)
 pub fn CdpError::from_code(CdpErrorCode, String) -> Self
 
 pub enum CdpErrorCode {
@@ -55,7 +56,7 @@ pub enum CdpErrorCode {
   InternalError
   NodeNotFound
   NoSuchElement
-} derive(Show)
+} derive(@debug.Debug)
 
 pub struct CdpEvent {
   event_method : String
@@ -72,25 +73,25 @@ pub struct CdpFrameInfo {
   url : String
   security_origin : String
   mime_type : String
-} derive(Show)
+} derive(@debug.Debug)
 
 pub struct CdpNavigateResult {
   frame_id : String
   loader_id : String
   error_text : String?
-} derive(Show)
+} derive(@debug.Debug)
 
 pub struct CdpNavigationEntry {
   id : Int
   url : String
   title : String
   transition_type : String
-} derive(Show)
+} derive(@debug.Debug)
 
 pub struct CdpNavigationHistory {
   current_index : Int
   entries : Array[CdpNavigationEntry]
-} derive(Show)
+} derive(@debug.Debug)
 
 pub struct CdpNode {
   node_id : Int
@@ -102,7 +103,7 @@ pub struct CdpNode {
   child_node_count : Int?
   children : Array[CdpNode]?
   attributes : Array[String]?
-} derive(Show)
+} derive(@debug.Debug)
 
 pub enum CdpOutMessage {
   Response(CdpResponse)
@@ -258,7 +259,7 @@ pub struct TargetInfo {
   url : String
   attached : Bool
   browser_context_id : String?
-} derive(Show)
+} derive(@debug.Debug)
 
 pub struct TestContext {
   session : CdpSession

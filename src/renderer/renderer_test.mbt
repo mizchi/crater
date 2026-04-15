@@ -149,9 +149,9 @@ test "debug node style from stylesheet" {
 
   // Parse the document
   let doc = @html.parse_document(html)
-  let stylesheets : Array[@cascade.Stylesheet] = []
+  let stylesheets : Array[@css.Stylesheet] = []
   for css in doc.stylesheets {
-    let stylesheet = @parser.parse_stylesheet(css)
+    let stylesheet = @css.parse_stylesheet(css)
     stylesheets.push(stylesheet)
   }
 
@@ -183,10 +183,10 @@ test "debug node style from stylesheet" {
           @html.Node::Element(row_elem) =>
             if row_elem.classes.length() > 0 && row_elem.classes[0] == "row" {
               // Create selector element
-              let sel_elem = @selector.Element::new("div").add_class("row")
+              let sel_elem = @css.Element::new("div").add_class("row")
 
               // Match against stylesheet
-              let cascaded = @cascade.cascade_element(sel_elem, stylesheets, [])
+              let cascaded = @css.cascade_element(sel_elem, stylesheets, [])
               inspect(
                 cascaded.get_value("display"),
                 content=(
@@ -210,10 +210,10 @@ test "debug node style from stylesheet" {
 ///|
 test "debug stylesheet cascading" {
   let css = ".row { display: flex; flex-direction: row; gap: 10px; }"
-  let stylesheet = @parser.parse_stylesheet(css)
+  let stylesheet = @css.parse_stylesheet(css)
 
   // Create element that matches .row
-  let elem = @selector.Element::new("div").add_class("row")
+  let elem = @css.Element::new("div").add_class("row")
 
   // Match stylesheet
   let matches = stylesheet.match_element(elem)
@@ -224,7 +224,7 @@ test "debug stylesheet cascading" {
     let props : Array[String] = []
     for decl in m.declarations {
       match decl.value {
-        @cascade.Value(v) => props.push(decl.property + "=" + v)
+        @css.PropertyValue::Value(v) => props.push(decl.property + "=" + v)
         _ => ()
       }
     }
@@ -237,7 +237,7 @@ test "debug stylesheet cascading" {
   }
 
   // Now test compute_element_style result
-  let cascaded = @cascade.cascade_element(elem, [stylesheet], [])
+  let cascaded = @css.cascade_element(elem, [stylesheet], [])
   inspect(
     cascaded.get_value("display"),
     content=(
@@ -274,10 +274,10 @@ test "debug stylesheet cascading" {
 ///|
 test "stylesheet margin-trim is applied" {
   let css = "container { display: block; margin-trim: block; }"
-  let stylesheet = @parser.parse_stylesheet(css)
-  let elem = @selector.Element::new("container")
+  let stylesheet = @css.parse_stylesheet(css)
+  let elem = @css.Element::new("container")
 
-  let cascaded = @cascade.cascade_element(elem, [stylesheet], [])
+  let cascaded = @css.cascade_element(elem, [stylesheet], [])
   inspect(
     cascaded.get_value("margin-trim"),
     content=(
@@ -314,10 +314,10 @@ test "render_to_node applies margin-trim from stylesheet" {
 ///|
 test "font-size cascading from stylesheet" {
   let css = "#div1 { font-size: 20px; width: 30px; }"
-  let stylesheet = @parser.parse_stylesheet(css)
+  let stylesheet = @css.parse_stylesheet(css)
 
   // Create element that matches #div1
-  let elem = @selector.Element::with_id("div", "div1")
+  let elem = @css.Element::with_id("div", "div1")
 
   // Match stylesheet
   let matches = stylesheet.match_element(elem)
@@ -328,7 +328,7 @@ test "font-size cascading from stylesheet" {
     let props : Array[String] = []
     for decl in m.declarations {
       match decl.value {
-        @cascade.Value(v) => props.push(decl.property + "=" + v)
+        @css.PropertyValue::Value(v) => props.push(decl.property + "=" + v)
         _ => ()
       }
     }
@@ -341,7 +341,7 @@ test "font-size cascading from stylesheet" {
   }
 
   // Check cascaded values
-  let cascaded = @cascade.cascade_element(elem, [stylesheet], [])
+  let cascaded = @css.cascade_element(elem, [stylesheet], [])
   inspect(
     cascaded.get_value("font-size"),
     content=(
@@ -583,20 +583,16 @@ test "later body font style overrides earlier reset style" {
   inspect(doc.stylesheets.length(), content="2")
   inspect(doc.stylesheets[0].contains("font-size: 16px"), content="true")
   inspect(doc.stylesheets[1].contains("font: 10px/1 monospace"), content="true")
-  let cascaded = @cascade.cascade_element_indexed(
-    @selector.Element::new("body"),
+  let cascaded = @css.cascade_element_indexed(
+    @css.Element::new("body"),
     [
-      @cascade.IndexedStylesheet::new(
-        @parser.parse_stylesheet(doc.stylesheets[0]),
-      ),
-      @cascade.IndexedStylesheet::new(
-        @parser.parse_stylesheet(doc.stylesheets[1]),
-      ),
+      @css.IndexedStylesheet::new(@css.parse_stylesheet(doc.stylesheets[0])),
+      @css.IndexedStylesheet::new(@css.parse_stylesheet(doc.stylesheets[1])),
     ],
     [],
     None,
   )
-  let body_style = @computed.compute(cascaded, @computed.ComputeContext::new())
+  let body_style = @css.compute_style(cascaded, @css.ComputeContext::new())
   inspect(body_style.font_size, content="10")
   inspect(body_style.line_height, content="10")
   let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
@@ -623,22 +619,19 @@ test "later body font style overrides earlier reset style" {
 
 ///|
 test "later font shorthand overrides earlier reset longhands in computed style" {
-  let reset = @parser.parse_stylesheet(
+  let reset = @css.parse_stylesheet(
     "body { font-size: 16px; line-height: 1.2; }",
   )
-  let authored = @parser.parse_stylesheet("body { font: 10px/1 monospace; }")
-  let body = @selector.Element::new("body")
-  let cascaded = @cascade.cascade_element_indexed(
+  let authored = @css.parse_stylesheet("body { font: 10px/1 monospace; }")
+  let body = @css.Element::new("body")
+  let cascaded = @css.cascade_element_indexed(
     body,
-    [
-      @cascade.IndexedStylesheet::new(reset),
-      @cascade.IndexedStylesheet::new(authored),
-    ],
+    [@css.IndexedStylesheet::new(reset), @css.IndexedStylesheet::new(authored)],
     [],
     None,
   )
   inspect(cascaded.get_value("font"), content="Some(\"10px/1 monospace\")")
-  let style = @computed.compute(cascaded, @computed.ComputeContext::new())
+  let style = @css.compute_style(cascaded, @css.ComputeContext::new())
   inspect(style.font_size, content="10")
   inspect(style.line_height, content="10")
 }
@@ -1388,7 +1381,7 @@ test "visually hidden element should be skipped" {
     viewport_width: 800.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let node = render_to_node(html, ctx)
 
@@ -1414,7 +1407,7 @@ test "debug_text_wrapping_in_narrow_container" {
     viewport_width: 800.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let layout = render(html, ctx)
   let container = layout.children[0]
@@ -1444,7 +1437,7 @@ test "debug_mixed_inline_block_content" {
     viewport_width: 800.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let layout = render(html, ctx)
   let container = layout.children[0]
@@ -1506,7 +1499,7 @@ test "debug_heading_text_rendering" {
     viewport_width: 800.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let node = render_to_node(html, ctx)
   // Find h1 in children
@@ -1528,7 +1521,7 @@ test "debug_h2_with_anchor" {
     viewport_width: 800.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let node = render_to_node(html, ctx)
   // h2 should be the first child of body
@@ -1555,7 +1548,7 @@ test "debug_inline_text_with_block_sibling" {
     viewport_width: 800.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let layout = render(html, ctx)
   let container = layout.children[0]
@@ -1568,7 +1561,7 @@ test "debug_inline_text_with_block_sibling" {
     let overlap = child_bottom > next.y
     // Each pair should not overlap
     assert_true(
-      not(overlap),
+      !overlap,
       msg="Children " +
         i.to_string() +
         " and " +
@@ -1596,7 +1589,7 @@ test "img_alt_text_propagation" {
     viewport_width: 640.0,
     viewport_height: 400.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let node = render_to_node(html, ctx)
   let layout = render(html, ctx)
@@ -1768,7 +1761,7 @@ test "tall_content_scrollability" {
     viewport_width,
     viewport_height,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let layout = render(html, ctx)
 
@@ -2170,7 +2163,7 @@ test "table width=85% constrains content within 85% of viewport" {
     viewport_width: 800.0,
     viewport_height: 600.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let (node, layout) = @renderer.render_to_node_and_layout(html, ctx)
   // Check center element

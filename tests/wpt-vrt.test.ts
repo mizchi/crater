@@ -4,6 +4,7 @@ import { CraterBidiPage } from "./helpers/crater-bidi-page";
 import {
   chromiumPageForVrt,
   compareChromiumPngToImage,
+  connectCraterPageForVrt,
   renderCraterHtml,
 } from "./helpers/crater-vrt";
 import {
@@ -59,8 +60,7 @@ async function runVrtTest(
   try {
     const htmlContent = prepareHtmlContent(entry.testPath);
     chromiumPage = await chromiumPageForVrt(browser, config.viewport);
-    craterPage = new CraterBidiPage();
-    await craterPage.connect();
+    craterPage = await connectCraterPageForVrt();
 
     await chromiumPage.setContent(htmlContent, { waitUntil: "load" });
     const chromiumPng = await chromiumPage.screenshot({ type: "png" });

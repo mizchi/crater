@@ -21,9 +21,7 @@ fn BidiProtocol::resolve_get_css_rule_viewport_map(
     Some(Object(map)) => map
     _ => {
       self.send_error(
-        request_id,
-        "invalid argument",
-        "params must be an object",
+        request_id, "invalid argument", "params must be an object",
       )
       return None
     }
@@ -38,11 +36,7 @@ fn BidiProtocol::resolve_get_css_rule_viewport_map(
   let _session = match self.manager.get_session(ctx_id) {
     Some(session) => session
     None => {
-      self.send_error(
-        request_id,
-        "no such frame",
-        "Unknown context: " + ctx_id,
-      )
+      self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
       return None
     }
   }
@@ -60,15 +54,13 @@ fn BidiProtocol::resolve_get_css_rule_viewport_map(
     None => [375, 640, 768, 1024, 1280, 1440]
     _ => {
       self.send_error(
-        request_id,
-        "invalid argument",
-        "viewportWidths must be an array of numbers",
+        request_id, "invalid argument", "viewportWidths must be an array of numbers",
       )
       return None
     }
   }
   let html = responsive_breakpoint_source_html("live-inline")
-  let map = @responsive.discover_css_rule_viewport_map(html, viewport_widths)
+  let map = @css.discover_css_rule_viewport_map(html, viewport_widths)
   let rules_json : Array[Json] = []
   for entry in map.rules {
     let item : Map[String, Json] = {}
@@ -115,9 +107,7 @@ fn BidiProtocol::resolve_get_required_test_viewports(
     Some(Object(map)) => map
     _ => {
       self.send_error(
-        request_id,
-        "invalid argument",
-        "params must be an object",
+        request_id, "invalid argument", "params must be an object",
       )
       return None
     }
@@ -132,16 +122,12 @@ fn BidiProtocol::resolve_get_required_test_viewports(
   let _session = match self.manager.get_session(ctx_id) {
     Some(session) => session
     None => {
-      self.send_error(
-        request_id,
-        "no such frame",
-        "Unknown context: " + ctx_id,
-      )
+      self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
       return None
     }
   }
   let html = responsive_breakpoint_source_html("live-inline")
-  let result = @responsive.discover_required_test_viewports(html)
+  let result = @css.discover_required_test_viewports(html)
   let viewports_json : Array[Json] = []
   for v in result.viewports {
     let item : Map[String, Json] = {}
@@ -177,9 +163,7 @@ fn BidiProtocol::resolve_batch_render(
     Some(Object(map)) => map
     _ => {
       self.send_error(
-        request_id,
-        "invalid argument",
-        "params must be an object",
+        request_id, "invalid argument", "params must be an object",
       )
       return None
     }
@@ -194,11 +178,7 @@ fn BidiProtocol::resolve_batch_render(
   let _session = match self.manager.get_session(ctx_id) {
     Some(session) => session
     None => {
-      self.send_error(
-        request_id,
-        "no such frame",
-        "Unknown context: " + ctx_id,
-      )
+      self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
       return None
     }
   }
@@ -207,9 +187,7 @@ fn BidiProtocol::resolve_batch_render(
     None => responsive_breakpoint_source_html("live-inline")
     _ => {
       self.send_error(
-        request_id,
-        "invalid argument",
-        "baseHtml must be a string",
+        request_id, "invalid argument", "baseHtml must be a string",
       )
       return None
     }
@@ -234,14 +212,12 @@ fn BidiProtocol::resolve_batch_render(
     Some(Array(items)) => items
     _ => {
       self.send_error(
-        request_id,
-        "invalid argument",
-        "variants must be an array",
+        request_id, "invalid argument", "variants must be an array",
       )
       return None
     }
   }
-  let variants : Array[@crater.RenderVariant] = []
+  let variants : Array[@vrt.RenderVariant] = []
   for v in variants_json {
     match v {
       Object(obj) => {
@@ -249,7 +225,7 @@ fn BidiProtocol::resolve_batch_render(
           Some(String(s)) => s
           _ => ""
         }
-        let mutations : Array[@crater.CssMutation] = []
+        let mutations : Array[@vrt.CssMutation] = []
         match obj.get("mutations") {
           Some(Array(muts)) =>
             for m in muts {
@@ -264,29 +240,28 @@ fn BidiProtocol::resolve_batch_render(
                     _ => continue
                   }
                   let action = match mobj.get("action") {
-                    Some(String("remove")) => @crater.CssMutationAction::Remove
+                    Some(String("remove")) => @vrt.CssMutationAction::Remove
                     Some(Object(aobj)) =>
                       match aobj.get("override") {
-                        Some(String(v)) =>
-                          @crater.CssMutationAction::Override(v)
-                        _ => @crater.CssMutationAction::Remove
+                        Some(String(v)) => @vrt.CssMutationAction::Override(v)
+                        _ => @vrt.CssMutationAction::Remove
                       }
-                    _ => @crater.CssMutationAction::Remove
+                    _ => @vrt.CssMutationAction::Remove
                   }
-                  mutations.push({ selector, property, action, })
+                  mutations.push({ selector, property, action })
                 }
                 _ => ()
               }
             }
           _ => ()
         }
-        variants.push({ id, mutations, })
+        variants.push({ id, mutations })
       }
       _ => ()
     }
   }
   let viewport = @types.Size::new(viewport_width, viewport_height)
-  let results = @crater.render_html_batch_variants(base_html, viewport, variants)
+  let results = @vrt.render_html_batch_variants(base_html, viewport, variants)
   let results_json : Array[Json] = []
   for r in results {
     let item : Map[String, Json] = {}
@@ -324,9 +299,7 @@ fn BidiProtocol::resolve_get_computed_styles_with_state(
     Some(Object(map)) => map
     _ => {
       self.send_error(
-        request_id,
-        "invalid argument",
-        "params must be an object",
+        request_id, "invalid argument", "params must be an object",
       )
       return None
     }
@@ -341,11 +314,7 @@ fn BidiProtocol::resolve_get_computed_styles_with_state(
   let _session = match self.manager.get_session(ctx_id) {
     Some(session) => session
     None => {
-      self.send_error(
-        request_id,
-        "no such frame",
-        "Unknown context: " + ctx_id,
-      )
+      self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
       return None
     }
   }
@@ -353,9 +322,7 @@ fn BidiProtocol::resolve_get_computed_styles_with_state(
     Some(String(s)) => s
     _ => {
       self.send_error(
-        request_id,
-        "invalid argument",
-        "selector must be a string",
+        request_id, "invalid argument", "selector must be a string",
       )
       return None
     }
@@ -381,11 +348,21 @@ fn BidiProtocol::resolve_get_computed_styles_with_state(
     _ => ()
   }
   let forced_state_names : Array[String] = []
-  if hover { forced_state_names.push("hover") }
-  if focus { forced_state_names.push("focus") }
-  if active { forced_state_names.push("active") }
-  if focus_visible { forced_state_names.push("focus-visible") }
-  if focus_within { forced_state_names.push("focus-within") }
+  if hover {
+    forced_state_names.push("hover")
+  }
+  if focus {
+    forced_state_names.push("focus")
+  }
+  if active {
+    forced_state_names.push("active")
+  }
+  if focus_visible {
+    forced_state_names.push("focus-visible")
+  }
+  if focus_within {
+    forced_state_names.push("focus-within")
+  }
   // Parse properties to check
   let properties : Array[String] = []
   match params.get("properties") {
@@ -399,25 +376,23 @@ fn BidiProtocol::resolve_get_computed_styles_with_state(
     _ => ()
   }
   let html = responsive_breakpoint_source_html("live-inline")
-  let result = @responsive.discover_computed_styles_with_state_names(
+  let result = @css.discover_computed_styles_with_state_names(
     html, selector, forced_state_names, properties,
   )
   // Build JSON response
   let normal_json : Map[String, Json] = {}
-  result.normal.each(fn(prop, val) {
-    normal_json.set(prop, Json::string(val))
-  })
+  result.normal.each(fn(prop, val) { normal_json.set(prop, Json::string(val)) })
   let forced_json : Map[String, Json] = {}
-  result.forced.each(fn(prop, val) {
-    forced_json.set(prop, Json::string(val))
-  })
+  result.forced.each(fn(prop, val) { forced_json.set(prop, Json::string(val)) })
   let diff_json : Array[Json] = []
   for d in result.diff {
-    diff_json.push(make_object({
-      "property": Json::string(d.property),
-      "normal": Json::string(d.normal),
-      "forced": Json::string(d.forced),
-    }))
+    diff_json.push(
+      make_object({
+        "property": Json::string(d.property),
+        "normal": Json::string(d.normal),
+        "forced": Json::string(d.forced),
+      }),
+    )
   }
   let out : Map[String, Json] = {}
   out["normal"] = make_object(normal_json)

@@ -1,10 +1,6 @@
 ///|
 fn extract_string_value_from_evaluate_result(json_str : String) -> String {
-  let parsed = try {
-    @json.parse(json_str)
-  } catch {
-    _ => return ""
-  }
+  let parsed = @json.parse(json_str) catch { _ => return "" }
   match parsed {
     Object(map) =>
       match map.get("result") {
@@ -23,27 +19,6 @@ fn extract_string_value_from_evaluate_result(json_str : String) -> String {
 /// Check if JS-side text metrics provider is available
 extern "js" fn has_paint_text_provider() -> Bool =
   #|() => typeof globalThis.__craterMeasureTextIntrinsic === "function"
-
-///|
-/// Call multi-font text metrics provider (resolves font by family name)
-extern "js" fn call_multi_font_provider(
-  text : String,
-  font_size : Double,
-  font_family : String,
-  is_bold : Bool,
-) -> String =
-  #|(text, fontSize, fontFamily, isBold) => {
-  #|  const fn = globalThis.__craterMeasureTextIntrinsicMulti;
-  #|  if (typeof fn !== "function") return "";
-  #|  try {
-  #|    const result = fn(text, fontSize, fontFamily, isBold);
-  #|    if (!result) return "";
-  #|    const mw = Number(result.minWidth), xw = Number(result.maxWidth);
-  #|    const mh = Number(result.minHeight), xh = Number(result.maxHeight);
-  #|    if (!Number.isFinite(mw) || !Number.isFinite(xw)) return "";
-  #|    return `${mw},${xw},${mh},${xh}`;
-  #|  } catch { return ""; }
-  #|}
 
 ///|
 /// Call font-family-aware text metrics provider
@@ -129,7 +104,11 @@ extern "js" fn has_outline_commands() -> Bool =
 
 ///|
 /// Get glyph outline commands as JSON string: [[type, ...args], ...]
-extern "js" fn js_glyph_outline_commands(codepoint : Int, font_size : Double, is_bold : Bool) -> String =
+extern "js" fn js_glyph_outline_commands(
+  codepoint : Int,
+  font_size : Double,
+  is_bold : Bool,
+) -> String =
   #|(cp, fs, bold) => {
   #|  const fn = bold ? (globalThis.__craterGlyphOutlineCommandsBold || globalThis.__craterGlyphOutlineCommands) : globalThis.__craterGlyphOutlineCommands;
   #|  if (typeof fn !== "function") return "";
@@ -138,7 +117,12 @@ extern "js" fn js_glyph_outline_commands(codepoint : Int, font_size : Double, is
 
 ///|
 /// Get glyph outline commands for a specific font family as JSON string
-extern "js" fn js_outline_commands_for_family(codepoint : Int, font_size : Double, is_bold : Bool, font_family : String) -> String =
+extern "js" fn js_outline_commands_for_family(
+  codepoint : Int,
+  font_size : Double,
+  is_bold : Bool,
+  font_family : String,
+) -> String =
   #|(cp, fs, bold, ff) => {
   #|  const fn = globalThis.__craterOutlineCommandsForFamily;
   #|  if (typeof fn !== "function") return "";
@@ -150,11 +134,7 @@ extern "js" fn js_outline_commands_for_family(codepoint : Int, font_size : Doubl
 /// Format: [["M",x,y], ["L",x,y], ["Q",cx,cy,x,y], ["C",cx1,cy1,cx2,cy2,x,y], ["Z"]]
 fn parse_outline_commands_json(json_str : String) -> Array[@svg.PathCommand] {
   let result : Array[@svg.PathCommand] = []
-  let parsed = try {
-    @json.parse(json_str)
-  } catch {
-    _ => return result
-  }
+  let parsed = @json.parse(json_str) catch { _ => return result }
   guard parsed is Array(cmds) else { return result }
   for cmd in cmds {
     guard cmd is Array(parts) else { continue }
@@ -165,32 +145,32 @@ fn parse_outline_commands_json(json_str : String) -> Array[@svg.PathCommand] {
     match typ {
       "M" =>
         if parts.length() >= 3 {
-          guard parts[1] is Number(x) else { continue }
-          guard parts[2] is Number(y) else { continue }
+          guard parts[1] is Number(x, ..) else { continue }
+          guard parts[2] is Number(y, ..) else { continue }
           result.push(@svg.MoveTo(x, y))
         }
       "L" =>
         if parts.length() >= 3 {
-          guard parts[1] is Number(x) else { continue }
-          guard parts[2] is Number(y) else { continue }
+          guard parts[1] is Number(x, ..) else { continue }
+          guard parts[2] is Number(y, ..) else { continue }
           result.push(@svg.LineTo(x, y))
         }
       "Q" =>
         if parts.length() >= 5 {
-          guard parts[1] is Number(cx) else { continue }
-          guard parts[2] is Number(cy) else { continue }
-          guard parts[3] is Number(x) else { continue }
-          guard parts[4] is Number(y) else { continue }
+          guard parts[1] is Number(cx, ..) else { continue }
+          guard parts[2] is Number(cy, ..) else { continue }
+          guard parts[3] is Number(x, ..) else { continue }
+          guard parts[4] is Number(y, ..) else { continue }
           result.push(@svg.QuadraticCurveTo(cx, cy, x, y))
         }
       "C" =>
         if parts.length() >= 7 {
-          guard parts[1] is Number(cx1) else { continue }
-          guard parts[2] is Number(cy1) else { continue }
-          guard parts[3] is Number(cx2) else { continue }
-          guard parts[4] is Number(cy2) else { continue }
-          guard parts[5] is Number(x) else { continue }
-          guard parts[6] is Number(y) else { continue }
+          guard parts[1] is Number(cx1, ..) else { continue }
+          guard parts[2] is Number(cy1, ..) else { continue }
+          guard parts[3] is Number(cx2, ..) else { continue }
+          guard parts[4] is Number(cy2, ..) else { continue }
+          guard parts[5] is Number(x, ..) else { continue }
+          guard parts[6] is Number(y, ..) else { continue }
           result.push(@svg.CurveTo(cx1, cy1, cx2, cy2, x, y))
         }
       "Z" => result.push(@svg.ClosePath)
@@ -207,7 +187,11 @@ extern "js" fn has_glyph_functions() -> Bool =
 
 ///|
 /// Get SVG path string for a glyph
-extern "js" fn js_glyph_to_svg_path(codepoint : Int, font_size : Double, is_bold : Bool) -> String =
+extern "js" fn js_glyph_to_svg_path(
+  codepoint : Int,
+  font_size : Double,
+  is_bold : Bool,
+) -> String =
   #|(cp, fs, bold) => {
   #|  const fn = bold ? (globalThis.__craterGlyphToSvgPathBold || globalThis.__craterGlyphToSvgPath) : globalThis.__craterGlyphToSvgPath;
   #|  if (typeof fn !== "function") return "";
@@ -216,7 +200,11 @@ extern "js" fn js_glyph_to_svg_path(codepoint : Int, font_size : Double, is_bold
 
 ///|
 /// Get advance width for a glyph
-extern "js" fn js_glyph_advance(codepoint : Int, font_size : Double, is_bold : Bool) -> Double =
+extern "js" fn js_glyph_advance(
+  codepoint : Int,
+  font_size : Double,
+  is_bold : Bool,
+) -> Double =
   #|(cp, fs, bold) => {
   #|  const fn = bold ? (globalThis.__craterGlyphAdvanceBold || globalThis.__craterGlyphAdvance) : globalThis.__craterGlyphAdvance;
   #|  if (typeof fn !== "function") return fs * 0.5;
@@ -225,7 +213,12 @@ extern "js" fn js_glyph_advance(codepoint : Int, font_size : Double, is_bold : B
 
 ///|
 /// Get kerning between two codepoints
-extern "js" fn js_kern_advance(cp1 : Int, cp2 : Int, font_size : Double, is_bold : Bool) -> Double =
+extern "js" fn js_kern_advance(
+  cp1 : Int,
+  cp2 : Int,
+  font_size : Double,
+  is_bold : Bool,
+) -> Double =
   #|(cp1, cp2, fs, bold) => {
   #|  const fn = bold ? (globalThis.__craterKernAdvanceBold || globalThis.__craterKernAdvance) : globalThis.__craterKernAdvance;
   #|  if (typeof fn !== "function") return 0;
@@ -243,7 +236,12 @@ extern "js" fn js_font_ascent_ratio() -> Double =
 
 ///|
 /// Multi-font glyph: get SVG path for a codepoint using font_family
-extern "js" fn js_glyph_for_family(codepoint : Int, font_size : Double, is_bold : Bool, font_family : String) -> String =
+extern "js" fn js_glyph_for_family(
+  codepoint : Int,
+  font_size : Double,
+  is_bold : Bool,
+  font_family : String,
+) -> String =
   #|(cp, fs, bold, ff) => {
   #|  const fn = globalThis.__craterGlyphForFamily;
   #|  if (typeof fn !== "function") return "";
@@ -251,7 +249,12 @@ extern "js" fn js_glyph_for_family(codepoint : Int, font_size : Double, is_bold 
   #|}
 
 ///|
-extern "js" fn js_advance_for_family(codepoint : Int, font_size : Double, is_bold : Bool, font_family : String) -> Double =
+extern "js" fn js_advance_for_family(
+  codepoint : Int,
+  font_size : Double,
+  is_bold : Bool,
+  font_family : String,
+) -> Double =
   #|(cp, fs, bold, ff) => {
   #|  const fn = globalThis.__craterAdvanceForFamily;
   #|  if (typeof fn !== "function") return fs * 0.5;
@@ -259,7 +262,13 @@ extern "js" fn js_advance_for_family(codepoint : Int, font_size : Double, is_bol
   #|}
 
 ///|
-extern "js" fn js_kern_for_family(cp1 : Int, cp2 : Int, font_size : Double, is_bold : Bool, font_family : String) -> Double =
+extern "js" fn js_kern_for_family(
+  cp1 : Int,
+  cp2 : Int,
+  font_size : Double,
+  is_bold : Bool,
+  font_family : String,
+) -> Double =
   #|(cp1, cp2, fs, bold, ff) => {
   #|  const fn = globalThis.__craterKernForFamily;
   #|  if (typeof fn !== "function") return 0;
@@ -311,10 +320,10 @@ fn parse_csv_quad(s : String) -> (Double, Double, Double, Double)? {
   if parts.length() < 4 {
     return None
   }
-  let a = @strconv.parse_double(parts[0]) catch { _ => return None }
-  let b = @strconv.parse_double(parts[1]) catch { _ => return None }
-  let c = @strconv.parse_double(parts[2]) catch { _ => return None }
-  let d = @strconv.parse_double(parts[3]) catch { _ => return None }
+  let a = @string.parse_double(parts[0]) catch { _ => return None }
+  let b = @string.parse_double(parts[1]) catch { _ => return None }
+  let c = @string.parse_double(parts[2]) catch { _ => return None }
+  let d = @string.parse_double(parts[3]) catch { _ => return None }
   Some((a, b, c, d))
 }
 
@@ -349,36 +358,37 @@ fn ensure_paint_text_provider() -> Unit {
         func: fn(available_width, available_height) {
           let payload = if should_use_font_aware_text_provider(ff) {
             let multi = call_font_aware_text_provider(
-              text, font_size, line_height, ws, wm, available_width,
-              available_height, ff, is_bold,
+              text, font_size, line_height, ws, wm, available_width, available_height,
+              ff, is_bold,
             )
             if multi.length() > 0 {
               multi
             } else if is_bold && has_bold_text_provider() {
               call_bold_text_provider(
-                text, font_size, line_height, ws, wm, available_width,
-                available_height,
+                text, font_size, line_height, ws, wm, available_width, available_height,
               )
             } else {
               call_paint_text_provider(
-                text, font_size, line_height, ws, wm, available_width,
-                available_height,
+                text, font_size, line_height, ws, wm, available_width, available_height,
               )
             }
           } else if is_bold && has_bold_text_provider() {
             call_bold_text_provider(
-              text, font_size, line_height, ws, wm, available_width,
-              available_height,
+              text, font_size, line_height, ws, wm, available_width, available_height,
             )
           } else {
             call_paint_text_provider(
-              text, font_size, line_height, ws, wm, available_width,
-              available_height,
+              text, font_size, line_height, ws, wm, available_width, available_height,
             )
           }
           match parse_csv_quad(payload) {
             Some((min_w, max_w, min_h, max_h)) =>
-              { min_width: min_w, max_width: max_w, min_height: min_h, max_height: max_h }
+              {
+                min_width: min_w,
+                max_width: max_w,
+                min_height: min_h,
+                max_height: max_h,
+              }
             None => {
               let mut cols = 0
               for _ in text.iter() {
@@ -432,16 +442,16 @@ fn ensure_paint_provider_initialized() -> Unit {
   }
   paint_provider_initialized.val = true
   let has_provider = has_paint_text_provider()
-  js_log_stderr(
-    "has_paint_text_provider=" + has_provider.to_string(),
-  )
+  js_log_stderr("has_paint_text_provider=" + has_provider.to_string())
   ensure_paint_text_provider()
   // Set up glyph provider for text rendering
   // Prefer outline commands (JSON array) over SVG string to avoid parse_path roundtrip
   let use_outline_commands = has_outline_commands()
   if use_outline_commands || has_glyph_functions() {
     if use_outline_commands {
-      js_log_stderr("Installing glyph provider (outline commands, no SVG roundtrip)")
+      js_log_stderr(
+        "Installing glyph provider (outline commands, no SVG roundtrip)",
+      )
     } else {
       js_log_stderr("Installing glyph provider (SVG string fallback)")
     }
@@ -470,7 +480,12 @@ fn ensure_paint_provider_initialized() -> Unit {
           (commands, advance)
         }
       },
-      get_glyph_for_family: Some(fn(codepoint, font_size, is_bold, font_family) {
+      get_glyph_for_family: Some(fn(
+        codepoint,
+        font_size,
+        is_bold,
+        font_family,
+      ) {
         if use_outline_commands {
           let json = js_outline_commands_for_family(
             codepoint, font_size, is_bold, font_family,
@@ -515,7 +530,7 @@ pub fn warmup_glyph_cache() -> Unit {
   let t_pre = js_now_ms()
   let common_sizes : Array[Double] = [
     13.33, // 10pt (most common body text)
-    16.0, // 16px (browser default)
+     16.0, // 16px (browser default)
   ]
   let n = @image.pre_rasterize_glyphs(common_sizes)
   let t_pre_done = js_now_ms()
@@ -609,7 +624,7 @@ fn BidiProtocol::resolve_capture_paint_data(
   let (node, layout) = @renderer.render_to_node_and_layout(html, ctx)
   let t1 = js_now_ms()
   let paint_node = match
-    @paint.from_node_and_layout_with_viewport(
+    @tui_paint_viewport.from_node_and_layout_with_viewport(
       node,
       layout,
       0.0,
@@ -625,9 +640,7 @@ fn BidiProtocol::resolve_capture_paint_data(
     }
   }
   let t2 = js_now_ms()
-  let fb = @image.Framebuffer::new(width, height)
-  let palette = @image.DynamicPalette::new()
-  @image.render_paint_node_to_framebuffer(paint_node, fb, palette)
+  let data = @tui_paint_output.raster_to_rgba_base64(paint_node, width, height)
   let t3 = js_now_ms()
   js_log_stderr(
     "capturePaintData: render=" +
@@ -644,7 +657,7 @@ fn BidiProtocol::resolve_capture_paint_data(
     make_object({
       "width": Json::number(width.to_double()),
       "height": Json::number(height.to_double()),
-      "data": Json::string(@image.framebuffer_to_rgba_base64(fb, palette)),
+      "data": Json::string(data),
     }),
   )
 }
@@ -693,9 +706,7 @@ fn BidiProtocol::resolve_capture_paint_tree(
   let _session = match self.manager.get_session(ctx_id) {
     Some(session) => session
     None => {
-      self.send_error(
-        request_id, "no such frame", "Unknown context: " + ctx_id,
-      )
+      self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
       return None
     }
   }
@@ -706,18 +717,20 @@ fn BidiProtocol::resolve_capture_paint_tree(
   let ctx = @browser_contract.create_render_context(width, height, false)
   let (node, layout) = @renderer.render_to_node_and_layout(html, ctx)
   let paint_node = match
-    @paint.from_node_and_layout_with_viewport(
-      node, layout, 0.0, height.to_double(), 0.0,
+    @tui_paint_viewport.from_node_and_layout_with_viewport(
+      node,
+      layout,
+      0.0,
+      height.to_double(),
+      0.0,
     ) {
     Some(node) => node
     None => {
-      self.send_error(
-        request_id, "unknown error", "Failed to build paint tree",
-      )
+      self.send_error(request_id, "unknown error", "Failed to build paint tree")
       return None
     }
   }
-  let json_str = paint_node.to_json_string()
+  let json_str = @tui_paint_output.to_json_string(paint_node)
   Some(
     make_object({
       "width": Json::number(width.to_double()),

@@ -23,7 +23,7 @@ fn collect_content_blocks(
     return
   }
   let text_content = get_text_content(node)
-  if not(nav_container) {
+  if !nav_container {
     let nav_detected = is_navigation_detected(
       node, within_nav, nav_container, text_content,
     )
@@ -34,9 +34,9 @@ fn collect_content_blocks(
   let next_within_nav = within_nav || nav_container
 
   // Score content-bearing nodes
-  if not(next_within_nav) && not(is_unlikely) && is_content_container(node) {
+  if !next_within_nav && !is_unlikely && is_content_container(node) {
     if text_content.length() >= config.min_text_length &&
-      not(should_prune_content_block(node, text_content)) {
+      !should_prune_content_block(node, text_content) {
       let block = score_content_block(
         node, text_content, config, readability_scores,
       )
@@ -107,9 +107,7 @@ fn is_navigation_detected(
   }
   let ratio_threshold = if list_like { 0.15 } else { 0.2 }
   let nav_by_structure = link_count >= 2 && link_ratio >= ratio_threshold
-  let menu_by_links = not(is_link_node) &&
-    link_density >= 0.25 &&
-    text_len <= 2000
+  let menu_by_links = !is_link_node && link_density >= 0.25 && text_len <= 2000
   nav_hint || nav_by_structure || menu_by_links
 }
 

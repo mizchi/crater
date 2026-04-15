@@ -35,7 +35,7 @@ pub(all) enum RequestMode {
   SameOrigin
   NoCors
   Cors
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 /// Credentials mode for CORS checks
@@ -43,7 +43,7 @@ pub(all) enum CredentialsMode {
   Omit
   SameOrigin
   Include
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 /// Request sandbox policy
@@ -51,7 +51,7 @@ pub(all) enum RequestSandbox {
   Open
   SameOrigin
   Allowlist(Array[String])
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// Fetch options
@@ -85,7 +85,7 @@ pub fn headers_to_json(headers : Map[String, String]) -> String {
   buf.write_char('{')
   let mut first = true
   for k, v in headers {
-    if not(first) {
+    if !first {
       buf.write_char(',')
     }
     first = false
@@ -191,7 +191,7 @@ fn prepare_fetch_options(
 ) -> FetchOptions raise HttpError {
   let caller_origin = normalize_origin(options.origin)
   let request_origin = resolve_request_origin(url, caller_origin)
-  if not(sandbox_allows(options.sandbox, request_origin, caller_origin)) {
+  if !sandbox_allows(options.sandbox, request_origin, caller_origin) {
     raise SandboxError("Blocked by request sandbox: " + request_origin)
   }
   if options.mode == SameOrigin &&
@@ -200,8 +200,8 @@ fn prepare_fetch_options(
   }
   if (options.mode == Cors || options.mode == SameOrigin) &&
     is_cross_origin(request_origin, caller_origin) {
-    if not(options.headers.contains("Origin")) &&
-      not(options.headers.contains("origin")) {
+    if !options.headers.contains("Origin") &&
+      !options.headers.contains("origin") {
       let headers : Map[String, String] = {}
       for k, v in options.headers {
         headers[k] = v
@@ -302,7 +302,7 @@ fn enforce_cors_response(
       Some(raw_value) => {
         let value = raw_value.trim().to_string()
         let ok = value == "*" || value == caller_origin
-        if not(ok) {
+        if !ok {
           raise CorsError("CORS origin mismatch: " + value)
         }
         if options.credentials == Include {

@@ -9,13 +9,13 @@ fn default_render_ctx() -> @renderer.RenderContext {
     viewport_width: 1200.0,
     viewport_height: 800.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
 }
 
 ///|
 /// Create a test stylesheet with various selectors
-fn create_real_stylesheet() -> @cascade.Stylesheet {
+fn create_real_stylesheet() -> @css.Stylesheet {
   // Parse a realistic CSS string
   let css =
     #|.container { display: flex; flex-direction: column; padding: 16px; }
@@ -38,7 +38,7 @@ fn create_real_stylesheet() -> @cascade.Stylesheet {
     #|.visible { visibility: visible; }
     #|#main { width: 100%; min-height: 100vh; }
     #|#footer { height: 80px; background: #34495e; }
-  @parser.parse_stylesheet(css)
+  @css.parse_stylesheet(css)
 }
 
 ///|
@@ -47,8 +47,8 @@ fn create_selector_element(
   tag : String,
   id : String?,
   classes : Array[String],
-) -> @selector.Element {
-  let mut elem = @selector.Element::new(tag)
+) -> @css.Element {
+  let mut elem = @css.Element::new(tag)
   match id {
     Some(i) => elem = elem.set_id(i)
     None => ()
@@ -64,19 +64,14 @@ test "bench_cascade_single_element" (b : @bench.T) {
   let stylesheet = create_real_stylesheet()
   let stylesheets = [stylesheet]
   let elem = create_selector_element("div", None, ["container", "flex-col"])
-  let media_env = @media.MediaEnvironment::with_color_scheme(
+  let media_env = @css.MediaEnvironment::with_color_scheme(
     1200.0,
     800.0,
-    @media.ColorScheme::Light,
+    @css.ColorScheme::Light,
   )
   b.bench(name="cascade_single", fn() {
     b.keep(
-      @cascade.cascade_element_with_media(
-        elem,
-        stylesheets,
-        [],
-        Some(media_env),
-      ),
+      @css.cascade_element_with_media(elem, stylesheets, [], Some(media_env)),
     )
   })
 }
@@ -86,18 +81,18 @@ test "bench_compute_from_cascaded" (b : @bench.T) {
   let stylesheet = create_real_stylesheet()
   let stylesheets = [stylesheet]
   let elem = create_selector_element("div", None, ["container", "flex-col"])
-  let media_env = @media.MediaEnvironment::with_color_scheme(
+  let media_env = @css.MediaEnvironment::with_color_scheme(
     1200.0,
     800.0,
-    @media.ColorScheme::Light,
+    @css.ColorScheme::Light,
   )
-  let cascaded = @cascade.cascade_element_with_media(
+  let cascaded = @css.cascade_element_with_media(
     elem,
     stylesheets,
     [],
     Some(media_env),
   )
-  let ctx : @computed.ComputeContext = {
+  let ctx : @css.ComputeContext = {
     parent_style: None,
     root_font_size: 16.0,
     font_size: 16.0,
@@ -106,14 +101,14 @@ test "bench_compute_from_cascaded" (b : @bench.T) {
     custom_properties: {},
   }
   b.bench(name="compute_cascaded", fn() {
-    b.keep(@computed.compute(cascaded, ctx))
+    b.keep(@css.compute_style(cascaded, ctx))
   })
 }
 
 ///|
 test "bench_compute_inline_raw" (b : @bench.T) {
   let css = "display: flex; flex-direction: column; padding: 16px"
-  let ctx : @computed.ComputeContext = {
+  let ctx : @css.ComputeContext = {
     parent_style: None,
     root_font_size: 16.0,
     font_size: 16.0,
@@ -122,7 +117,7 @@ test "bench_compute_inline_raw" (b : @bench.T) {
     custom_properties: {},
   }
   b.bench(name="compute_inline", fn() {
-    b.keep(@computed.compute_inline_raw(css, ctx))
+    b.keep(@css.compute_inline_raw(css, ctx))
   })
 }
 
@@ -348,9 +343,9 @@ test "bench_phase_layout_only_100" (b : @bench.T) {
     stretch_width: false,
     stretch_height: false,
   }
-  @dispatch.setup()
+  @tree.setup()
   b.bench(name="phase_layout_100", fn() {
-    b.keep(@dispatch.compute_layout(node, layout_ctx))
+    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
   })
 }
 

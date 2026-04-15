@@ -9,7 +9,7 @@ fn default_ctx() -> @renderer.RenderContext {
     viewport_width: 1200.0,
     viewport_height: 800.0,
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
 }
 
@@ -610,9 +610,9 @@ test "bench_layout_only_flex_d5" (b : @bench.T) {
     stretch_width: false,
     stretch_height: false,
   }
-  @dispatch.setup()
+  @tree.setup()
   b.bench(name="layout_only_flex_d5", fn() {
-    b.keep(@dispatch.compute_layout(node, layout_ctx))
+    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
   })
 }
 
@@ -630,9 +630,9 @@ test "bench_layout_only_grid_10x10" (b : @bench.T) {
     stretch_width: false,
     stretch_height: false,
   }
-  @dispatch.setup()
+  @tree.setup()
   b.bench(name="layout_only_grid", fn() {
-    b.keep(@dispatch.compute_layout(node, layout_ctx))
+    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
   })
 }
 
@@ -650,9 +650,9 @@ test "bench_layout_only_dashboard" (b : @bench.T) {
     stretch_width: false,
     stretch_height: false,
   }
-  @dispatch.setup()
+  @tree.setup()
   b.bench(name="layout_only_dash", fn() {
-    b.keep(@dispatch.compute_layout(node, layout_ctx))
+    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
   })
 }
 
@@ -662,9 +662,9 @@ test "bench_layout_only_large_2k5" (b : @bench.T) {
   let ctx = default_ctx()
   let node = @renderer.render_to_node(html, ctx)
   let layout_ctx = default_layout_ctx(ctx)
-  @dispatch.setup()
+  @tree.setup()
   b.bench(name="layout_only_large", fn() {
-    b.keep(@dispatch.compute_layout(node, layout_ctx))
+    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
   })
 }
 
@@ -674,9 +674,9 @@ test "bench_layout_only_large_shell" (b : @bench.T) {
   let ctx = default_ctx()
   let node = @renderer.render_to_node(html, ctx)
   let layout_ctx = default_layout_ctx(ctx)
-  @dispatch.setup()
+  @tree.setup()
   b.bench(name="layout_only_large_shell", fn() {
-    b.keep(@dispatch.compute_layout(node, layout_ctx))
+    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
   })
 }
 
@@ -686,9 +686,9 @@ test "bench_layout_only_large_headers" (b : @bench.T) {
   let ctx = default_ctx()
   let node = @renderer.render_to_node(html, ctx)
   let layout_ctx = default_layout_ctx(ctx)
-  @dispatch.setup()
+  @tree.setup()
   b.bench(name="layout_only_large_headers", fn() {
-    b.keep(@dispatch.compute_layout(node, layout_ctx))
+    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
   })
 }
 
@@ -698,9 +698,9 @@ test "bench_layout_only_large_simple_cards" (b : @bench.T) {
   let ctx = default_ctx()
   let node = @renderer.render_to_node(html, ctx)
   let layout_ctx = default_layout_ctx(ctx)
-  @dispatch.setup()
+  @tree.setup()
   b.bench(name="layout_only_large_simple_cards", fn() {
-    b.keep(@dispatch.compute_layout(node, layout_ctx))
+    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
   })
 }
 
@@ -710,9 +710,9 @@ test "bench_layout_only_large_card_body" (b : @bench.T) {
   let ctx = default_ctx()
   let node = @renderer.render_to_node(html, ctx)
   let layout_ctx = default_layout_ctx(ctx)
-  @dispatch.setup()
+  @tree.setup()
   b.bench(name="layout_only_large_card_body", fn() {
-    b.keep(@dispatch.compute_layout(node, layout_ctx))
+    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
   })
 }
 
@@ -722,9 +722,9 @@ test "bench_layout_only_large_card_text_body" (b : @bench.T) {
   let ctx = default_ctx()
   let node = @renderer.render_to_node(html, ctx)
   let layout_ctx = default_layout_ctx(ctx)
-  @dispatch.setup()
+  @tree.setup()
   b.bench(name="layout_only_large_card_text_body", fn() {
-    b.keep(@dispatch.compute_layout(node, layout_ctx))
+    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
   })
 }
 
@@ -734,9 +734,9 @@ test "bench_layout_only_large_card_footer_body" (b : @bench.T) {
   let ctx = default_ctx()
   let node = @renderer.render_to_node(html, ctx)
   let layout_ctx = default_layout_ctx(ctx)
-  @dispatch.setup()
+  @tree.setup()
   b.bench(name="layout_only_large_card_footer_body", fn() {
-    b.keep(@dispatch.compute_layout(node, layout_ctx))
+    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
   })
 }
 
@@ -746,9 +746,9 @@ test "bench_layout_only_scrollable_500" (b : @bench.T) {
   let ctx = default_ctx()
   let node = @renderer.render_to_node(html, ctx)
   let layout_ctx = default_layout_ctx(ctx)
-  @dispatch.setup()
+  @tree.setup()
   b.bench(name="layout_only_scroll_500", fn() {
-    b.keep(@dispatch.compute_layout(node, layout_ctx))
+    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
   })
 }
 
@@ -758,8 +758,8 @@ test "bench_layout_only_scrollable_1000" (b : @bench.T) {
   let ctx = default_ctx()
   let node = @renderer.render_to_node(html, ctx)
   let layout_ctx = default_layout_ctx(ctx)
-  @dispatch.setup()
+  @tree.setup()
   b.bench(name="layout_only_scroll_1k", fn() {
-    b.keep(@dispatch.compute_layout(node, layout_ctx))
+    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
   })
 }

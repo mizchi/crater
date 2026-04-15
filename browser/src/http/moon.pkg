@@ -2,12 +2,15 @@ import {
   "moonbitlang/async/http" @async_http,
   "moonbitlang/async/js_async",
   "moonbitlang/async/io" @async_io,
+  "moonbitlang/core/double",
   "moonbitlang/core/json",
-  "moonbitlang/core/strconv",
+  "moonbitlang/core/string",
   "mizchi/sqlite",
 }
 
-warnings = "-unused_package"
+warnings = "-unused_package-unused_error_type"
+
+supported_targets = "js+native+wasm+wasm-gc"
 
 options(
   targets: {

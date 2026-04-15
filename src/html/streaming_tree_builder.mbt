@@ -78,7 +78,7 @@ fn StreamingTreeBuilder::process_available_tokens(
       Some(token) => {
         self.process_token_single(token)
         // Process requeued tokens
-        while not(self.pending_tokens.is_empty()) {
+        while !self.pending_tokens.is_empty() {
           let next = self.pending_tokens.remove(0)
           self.process_token_single(next)
         }
@@ -96,7 +96,7 @@ fn stb_create_element(tag : String, attrs : Map[String, String]) -> Element {
       let parts : Array[String] = []
       for part in class_str.split(" ") {
         let s = part.to_string().trim()
-        if not(s.is_empty()) {
+        if !s.is_empty() {
           parts.push(s.to_string())
         }
       }
@@ -191,7 +191,7 @@ fn StreamingTreeBuilder::flush_pending_text(
 ///|
 fn stb_is_whitespace_only(s : String) -> Bool {
   for c in s {
-    if not(stb_is_whitespace(c)) {
+    if !stb_is_whitespace(c) {
       return false
     }
   }
@@ -222,7 +222,7 @@ fn StreamingTreeBuilder::pop_until(
   tag : String,
 ) -> Unit {
   self.flush_pending_text()
-  while not(self.open_elements.is_empty()) {
+  while !self.open_elements.is_empty() {
     let elem = self.open_elements.pop()
     match elem {
       Some(e) if e.tag == tag => break
@@ -268,7 +268,7 @@ fn stb_is_scope_boundary(tag : String) -> Bool {
 fn StreamingTreeBuilder::generate_implied_end_tags(
   self : StreamingTreeBuilder,
 ) -> Unit {
-  while not(self.open_elements.is_empty()) {
+  while !self.open_elements.is_empty() {
     match self.current_node() {
       Some(e) =>
         match e.tag {
@@ -296,7 +296,7 @@ fn StreamingTreeBuilder::generate_implied_end_tags_except(
   self : StreamingTreeBuilder,
   except : String,
 ) -> Unit {
-  while not(self.open_elements.is_empty()) {
+  while !self.open_elements.is_empty() {
     match self.current_node() {
       Some(e) if e.tag == except => break
       Some(e) =>

@@ -618,6 +618,22 @@ fn draw_text_with_glyphs_clipped(
   clip : ClipRect?,
   font_family? : String = "",
 ) -> Int {
+  if clip is None {
+    return draw_text_with_glyphs(
+      fb,
+      palette,
+      provider,
+      x,
+      y,
+      text,
+      max_width,
+      color,
+      font_size,
+      line_height,
+      is_bold,
+      font_family~,
+    )
+  }
   let effective_line_height = if line_height > 0.0 {
     line_height
   } else {

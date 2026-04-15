@@ -902,7 +902,7 @@ pub fn compute(
 
   // Second pass: apply regular properties with var() resolution
   cascaded.each(fn(prop, decl) {
-    if not(prop.has_prefix("--")) && not(is_preseeded_font_property(prop)) {
+    if !prop.has_prefix("--") && !is_preseeded_font_property(prop) {
       let value = resolve_keyword(prop, decl.value, font_ctx)
       apply_property(builder, prop, value, font_ctx)
     }
@@ -937,7 +937,7 @@ pub fn compute_with_vars(
 
   // Second pass: apply regular properties
   cascaded.each(fn(prop, decl) {
-    if not(prop.has_prefix("--")) && not(is_preseeded_font_property(prop)) {
+    if !prop.has_prefix("--") && !is_preseeded_font_property(prop) {
       let value = resolve_keyword(prop, decl.value, font_ctx)
       apply_property(builder, prop, value, font_ctx)
     }
@@ -1176,7 +1176,7 @@ fn apply_property(
       // Parse margin shorthand: 1-4 values
       let parts : Array[StringView] = value
         .split(" ")
-        .filter(fn(s) { not(s.is_empty()) })
+        .filter(fn(s) { !s.is_empty() })
         .collect()
       match parts.length() {
         1 => {
@@ -1240,7 +1240,7 @@ fn apply_property(
       let values : Array[@types.Dimension] = []
       for part in parts {
         let p = part.to_string().trim().to_string()
-        if not(p.is_empty()) {
+        if !p.is_empty() {
           values.push(resolve_dimension(p, ctx))
         }
       }
@@ -1297,7 +1297,7 @@ fn apply_property(
       let values : Array[@types.Dimension] = []
       for part in parts {
         let p = part.to_string().trim().to_string()
-        if not(p.is_empty()) {
+        if !p.is_empty() {
           values.push(resolve_dimension(p, ctx))
         }
       }
@@ -1401,7 +1401,7 @@ fn apply_property(
       let parts : Array[String] = []
       for part in raw_parts {
         let p = part.to_string().trim().to_string()
-        if not(p.is_empty()) {
+        if !p.is_empty() {
           parts.push(p)
         }
       }
@@ -1509,7 +1509,7 @@ fn apply_property(
       let parts : Array[String] = []
       for part in raw_parts {
         let p = part.to_string().trim().to_string()
-        if not(p.is_empty()) {
+        if !p.is_empty() {
           parts.push(p)
         }
       }
@@ -1541,7 +1541,7 @@ fn apply_property(
       let parts : Array[String] = []
       for part in raw_parts {
         let p = part.to_string().trim().to_string()
-        if not(p.is_empty()) {
+        if !p.is_empty() {
           parts.push(p)
         }
       }
@@ -1659,7 +1659,7 @@ fn apply_property(
         // Try to parse as number(s) and optionally a basis
         let parts : Array[StringView] = v
           .split(" ")
-          .filter(fn(s) { not(s.is_empty()) })
+          .filter(fn(s) { !s.is_empty() })
           .collect()
         // Validate ordering: numbers first, then basis
         // A value is a "number" if it's purely numeric (no % or units)
@@ -1740,7 +1740,7 @@ fn apply_property(
       let parts : Array[StringView] = value
         .trim()
         .split(" ")
-        .filter(fn(s) { not(s.is_empty()) })
+        .filter(fn(s) { !s.is_empty() })
         .collect()
       for part in parts {
         let p = part.to_string()
@@ -1768,7 +1768,7 @@ fn apply_property(
       let parts : Array[StringView] = value
         .trim()
         .split(" ")
-        .filter(fn(s) { not(s.is_empty()) })
+        .filter(fn(s) { !s.is_empty() })
         .collect()
       builder.column_gap_is_normal = false
       match parts.length() {
@@ -1830,7 +1830,7 @@ fn apply_property(
     "inset" => {
       let parts : Array[StringView] = value
         .split(" ")
-        .filter(fn(s) { not(s.is_empty()) })
+        .filter(fn(s) { !s.is_empty() })
         .collect()
       match parts.length() {
         1 => {
@@ -1939,7 +1939,7 @@ fn apply_property(
     "grid-area" => {
       let v = value.trim().to_string()
       // Check if this is a single named area identifier (no slashes, not a number, not auto/span)
-      if not(v.contains("/")) && is_grid_area_name(v) {
+      if !v.contains("/") && is_grid_area_name(v) {
         builder.grid_area = Some(v)
       } else {
         let (row_start, column_start, row_end, column_end) = parse_grid_area_shorthand(
@@ -2123,7 +2123,7 @@ fn parse_font_weight(value : String) -> Double {
     "lighter" => 100.0
     "bolder" => 700.0
     _ => {
-      let n = @strconv.parse_double(value.trim()) catch { _ => return 400.0 }
+      let n = @string.parse_double(value.trim()) catch { _ => return 400.0 }
       if n >= 1.0 && n <= 1000.0 {
         n
       } else {
@@ -2284,7 +2284,7 @@ fn resolve_border_width(
   let parts = v
     .split(" ")
     .map(fn(part) { part.to_string().trim().to_string() })
-    .filter(fn(part) { not(part.is_empty()) })
+    .filter(fn(part) { !part.is_empty() })
     .collect()
 
   for part in parts {
@@ -2371,7 +2371,7 @@ fn parse_border_spacing(
   // Split by whitespace
   let parts : Array[StringView] = v
     .split(" ")
-    .filter(fn(s) { not(s.is_empty()) })
+    .filter(fn(s) { !s.is_empty() })
     .collect()
   if parts.length() == 0 {
     return (0.0, 0.0)
@@ -2408,7 +2408,7 @@ fn resolve_border_radius(
   }
   let parts : Array[StringView] = effective
     .split(" ")
-    .filter(fn(s) { not(s.is_empty()) })
+    .filter(fn(s) { !s.is_empty() })
     .collect()
   if parts.length() == 0 {
     return (0.0, 0.0, 0.0, 0.0)
@@ -2541,7 +2541,7 @@ fn split_css_args(input : String) -> Array[String] {
       current.write_char(c)
     } else if c == ',' && paren_depth == 0 {
       let s = current.to_string().trim().to_string()
-      if not(s.is_empty()) {
+      if !s.is_empty() {
         result.push(s)
       }
       current = StringBuilder::new()
@@ -2550,7 +2550,7 @@ fn split_css_args(input : String) -> Array[String] {
     }
   }
   let s = current.to_string().trim().to_string()
-  if not(s.is_empty()) {
+  if !s.is_empty() {
     result.push(s)
   }
   result
@@ -2572,7 +2572,7 @@ fn parse_simple_calc_expr(expr : String, ctx : ComputeContext) -> Double? {
     if c == '+' || c == '-' || c == '*' || c == '/' || i == expr.length() {
       if i > token_start {
         let token = expr.unsafe_substring(start=token_start, end=i).trim()
-        if not(token.is_empty()) {
+        if !token.is_empty() {
           match parse_css_value_to_px(token.to_string(), ctx) {
             Some(val) =>
               match current_op {
@@ -2584,7 +2584,7 @@ fn parse_simple_calc_expr(expr : String, ctx : ComputeContext) -> Double? {
               }
             None => {
               // Try parsing as unitless number for * and /
-              let n = @strconv.parse_double(token.to_string()) catch {
+              let n = @string.parse_double(token.to_string()) catch {
                 _ => return None
               }
               match current_op {
@@ -2651,7 +2651,7 @@ fn parse_css_math_function(
 fn parse_calc_terms(expr : String, ctx : ComputeContext) -> (Double, Double)? {
   // Extract the expression inside calc(...)
   let v = expr.trim()
-  if not(v.has_prefix("calc(")) || not(v.has_suffix(")")) {
+  if !v.has_prefix("calc(") || !v.has_suffix(")") {
     return None
   }
   // Extract content: "calc(" has 5 chars, ")" has 1 char
@@ -2673,15 +2673,13 @@ fn parse_calc_terms(expr : String, ctx : ComputeContext) -> (Double, Double)? {
       // Process token before operator
       if i > token_start {
         let token = inner.unsafe_substring(start=token_start, end=i).trim()
-        if not(token.is_empty()) {
+        if !token.is_empty() {
           // Parse the token
           if token.has_suffix("%") {
             let num_str = view_to_string(
               token.view(end_offset=token.length() - 1),
             )
-            let n = @strconv.parse_double(num_str.to_string()) catch {
-              _ => 0.0
-            }
+            let n = @string.parse_double(num_str.to_string()) catch { _ => 0.0 }
             match current_op {
               '+' => result_pct = result_pct + n
               '-' => result_pct = result_pct - n
@@ -2695,7 +2693,7 @@ fn parse_calc_terms(expr : String, ctx : ComputeContext) -> (Double, Double)? {
               let num_str = view_to_string(
                 token.view(end_offset=token.length() - 2),
               )
-              let n = @strconv.parse_double(num_str.to_string()) catch {
+              let n = @string.parse_double(num_str.to_string()) catch {
                 _ => return None
               }
               Some(n)
@@ -2703,7 +2701,7 @@ fn parse_calc_terms(expr : String, ctx : ComputeContext) -> (Double, Double)? {
               let num_str = view_to_string(
                 token.view(end_offset=token.length() - 2),
               )
-              let n = @strconv.parse_double(num_str.to_string()) catch {
+              let n = @string.parse_double(num_str.to_string()) catch {
                 _ => return None
               }
               Some(n * ctx.viewport_width / 100.0)
@@ -2711,7 +2709,7 @@ fn parse_calc_terms(expr : String, ctx : ComputeContext) -> (Double, Double)? {
               let num_str = view_to_string(
                 token.view(end_offset=token.length() - 2),
               )
-              let n = @strconv.parse_double(num_str.to_string()) catch {
+              let n = @string.parse_double(num_str.to_string()) catch {
                 _ => return None
               }
               Some(n * ctx.viewport_height / 100.0)
@@ -2719,7 +2717,7 @@ fn parse_calc_terms(expr : String, ctx : ComputeContext) -> (Double, Double)? {
               let num_str = view_to_string(
                 token.view(end_offset=token.length() - 4),
               )
-              let n = @strconv.parse_double(num_str.to_string()) catch {
+              let n = @string.parse_double(num_str.to_string()) catch {
                 _ => return None
               }
               let min_dimension = if ctx.viewport_width < ctx.viewport_height {
@@ -2732,7 +2730,7 @@ fn parse_calc_terms(expr : String, ctx : ComputeContext) -> (Double, Double)? {
               let num_str = view_to_string(
                 token.view(end_offset=token.length() - 4),
               )
-              let n = @strconv.parse_double(num_str.to_string()) catch {
+              let n = @string.parse_double(num_str.to_string()) catch {
                 _ => return None
               }
               let max_dimension = if ctx.viewport_width > ctx.viewport_height {
@@ -2745,7 +2743,7 @@ fn parse_calc_terms(expr : String, ctx : ComputeContext) -> (Double, Double)? {
               let num_str = view_to_string(
                 token.view(end_offset=token.length() - 3),
               )
-              let n = @strconv.parse_double(num_str.to_string()) catch {
+              let n = @string.parse_double(num_str.to_string()) catch {
                 _ => return None
               }
               Some(n * ctx.root_font_size)
@@ -2753,7 +2751,7 @@ fn parse_calc_terms(expr : String, ctx : ComputeContext) -> (Double, Double)? {
               let num_str = view_to_string(
                 token.view(end_offset=token.length() - 2),
               )
-              let n = @strconv.parse_double(num_str.to_string()) catch {
+              let n = @string.parse_double(num_str.to_string()) catch {
                 _ => return None
               }
               Some(n * ctx.font_size)
@@ -2761,7 +2759,7 @@ fn parse_calc_terms(expr : String, ctx : ComputeContext) -> (Double, Double)? {
               let num_str = view_to_string(
                 token.view(end_offset=token.length() - 2),
               )
-              let n = @strconv.parse_double(num_str.to_string()) catch {
+              let n = @string.parse_double(num_str.to_string()) catch {
                 _ => return None
               }
               Some(n * 96.0 / 72.0)
@@ -2779,7 +2777,7 @@ fn parse_calc_terms(expr : String, ctx : ComputeContext) -> (Double, Double)? {
                 }
               None => {
                 // Try as unitless number (treat as px if 0, otherwise skip)
-                let n = @strconv.parse_double(token) catch { _ => return None }
+                let n = @string.parse_double(token) catch { _ => return None }
                 if n == 0.0 {
                   // 0 has no effect on the result
                   ()
@@ -2833,10 +2831,8 @@ fn extract_first_percent_ratio(expr : String) -> Double? {
         break
       }
       let num = expr.unsafe_substring(start~, end=i).trim()
-      if not(num.is_empty()) {
-        let n = @strconv.parse_double(num.to_string()) catch {
-          _ => return None
-        }
+      if !num.is_empty() {
+        let n = @string.parse_double(num.to_string()) catch { _ => return None }
         return Some(n / 100.0)
       }
     }
@@ -2954,7 +2950,7 @@ fn resolve_dimension_with_mixed_calc_fallback(
 /// Looks up variable in context, falls back to provided fallback value if not found
 fn resolve_var(value : String, ctx : ComputeContext) -> String {
   let v = value.trim().to_string()
-  if not(v.has_prefix("var(")) || not(v.has_suffix(")")) {
+  if !v.has_prefix("var(") || !v.has_suffix(")") {
     return v
   }
   // Extract content inside var(...) - skip "var(" (4 chars) and ")" (1 char)
@@ -3014,7 +3010,7 @@ fn resolve_var(value : String, ctx : ComputeContext) -> String {
 fn resolve_all_vars(value : String, ctx : ComputeContext) -> String {
   let v = value.trim()
   // If no var() in value, return as-is
-  if not(v.contains("var(")) {
+  if !v.contains("var(") {
     return v.to_string()
   }
   // Simple case: entire value is a var()
@@ -3128,7 +3124,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle rem units (check before em)
   match v.strip_suffix("rem") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * ctx.root_font_size)
@@ -3139,7 +3135,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle em units
   match v.strip_suffix("em") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * ctx.font_size)
@@ -3150,7 +3146,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle vw units
   match v.strip_suffix("vw") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * ctx.viewport_width / 100.0)
@@ -3161,7 +3157,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle vh units
   match v.strip_suffix("vh") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * ctx.viewport_height / 100.0)
@@ -3172,7 +3168,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle vmin units (smaller of vw or vh)
   match v.strip_suffix("vmin") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       let min_dimension = if ctx.viewport_width < ctx.viewport_height {
@@ -3188,7 +3184,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle vmax units (larger of vw or vh)
   match v.strip_suffix("vmax") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       let max_dimension = if ctx.viewport_width > ctx.viewport_height {
@@ -3205,7 +3201,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // the historical 0.5em approximation for generic monospace rendering.
   match v.strip_suffix("ch") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * ctx.font_size * ch_unit_ratio(ctx))
@@ -3216,7 +3212,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle ex units (x-height, approximated as 0.5em)
   match v.strip_suffix("ex") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * ctx.font_size * 0.5)
@@ -3227,7 +3223,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle pt units (1pt = 1/72 inch = 96/72 px ≈ 1.333px)
   match v.strip_suffix("pt") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * 96.0 / 72.0)
@@ -3238,7 +3234,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle pc units (1pc = 12pt = 16px)
   match v.strip_suffix("pc") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * 16.0)
@@ -3249,7 +3245,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle in units (1in = 96px)
   match v.strip_suffix("in") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * 96.0)
@@ -3260,7 +3256,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle cm units (1cm = 96/2.54 px ≈ 37.795px)
   match v.strip_suffix("cm") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * 96.0 / 2.54)
@@ -3271,7 +3267,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle mm units (1mm = 96/25.4 px ≈ 3.7795px)
   match v.strip_suffix("mm") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * 96.0 / 25.4)
@@ -3282,7 +3278,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle Q units (1Q = 1/4mm = 96/101.6 px)
   match v.strip_suffix("Q") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * 96.0 / 101.6)
@@ -3302,25 +3298,23 @@ fn is_pure_number(s : String) -> Bool {
     return false
   }
   // Try to parse as double - will fail if it has units
-  let _ = @strconv.parse_double(v.to_string()) catch { _ => return false }
+  let _ = @string.parse_double(v.to_string()) catch { _ => return false }
   // Make sure it doesn't have any unit suffixes that parse_double might accept
   for i = 0; i < v.length(); i = i + 1 {
     let c = v[i]
-    if not(
-        c == '0' ||
-        c == '1' ||
-        c == '2' ||
-        c == '3' ||
-        c == '4' ||
-        c == '5' ||
-        c == '6' ||
-        c == '7' ||
-        c == '8' ||
-        c == '9' ||
-        c == '.' ||
-        c == '-' ||
-        c == '+',
-      ) {
+    if !(c == '0' ||
+      c == '1' ||
+      c == '2' ||
+      c == '3' ||
+      c == '4' ||
+      c == '5' ||
+      c == '6' ||
+      c == '7' ||
+      c == '8' ||
+      c == '9' ||
+      c == '.' ||
+      c == '-' ||
+      c == '+') {
       return false
     }
   }
@@ -3442,7 +3436,7 @@ fn parse_scale_value(value : String) -> Double {
   if v.is_empty() {
     return 1.0
   }
-  @strconv.parse_double(v) catch {
+  @string.parse_double(v) catch {
     _ => 1.0
   }
 }
@@ -3458,11 +3452,11 @@ fn parse_zoom(value : String) -> Double {
   // Check for percentage (e.g., "150%")
   if v.has_suffix("%") {
     let num_str = view_to_string(v.view(end_offset=v.length() - 1))
-    let n = @strconv.parse_double(num_str.trim()) catch { _ => return 1.0 }
+    let n = @string.parse_double(num_str.trim()) catch { _ => return 1.0 }
     return n / 100.0
   }
   // Parse as number (e.g., "1.5" or "2")
-  @strconv.parse_double(v) catch {
+  @string.parse_double(v) catch {
     _ => 1.0
   }
 }
@@ -3477,13 +3471,13 @@ fn parse_translate_value(value : String) -> @style.TranslateValue {
   // Check for percentage
   if v.has_suffix("%") {
     let num_str = view_to_string(v.view(end_offset=v.length() - 1))
-    let n = @strconv.parse_double(num_str.trim()) catch {
+    let n = @string.parse_double(num_str.trim()) catch {
       _ => return @style.TranslateValue::Length(0.0)
     }
     @style.TranslateValue::Percent(n / 100.0)
   } else if v.has_suffix("px") {
     let num_str = view_to_string(v.view(end_offset=v.length() - 2))
-    let n = @strconv.parse_double(num_str.trim()) catch {
+    let n = @string.parse_double(num_str.trim()) catch {
       _ => return @style.TranslateValue::Length(0.0)
     }
     @style.TranslateValue::Length(n)
@@ -3491,13 +3485,13 @@ fn parse_translate_value(value : String) -> @style.TranslateValue {
     // em/rem - convert to pixels assuming 16px base
     let suffix_len = if v.has_suffix("rem") { 3 } else { 2 }
     let num_str = view_to_string(v.view(end_offset=v.length() - suffix_len))
-    let n = @strconv.parse_double(num_str.trim()) catch {
+    let n = @string.parse_double(num_str.trim()) catch {
       _ => return @style.TranslateValue::Length(0.0)
     }
     @style.TranslateValue::Length(n * 16.0)
   } else {
     // Try parsing as plain number (assumed px)
-    let n = @strconv.parse_double(v) catch {
+    let n = @string.parse_double(v) catch {
       _ => return @style.TranslateValue::Length(0.0)
     }
     @style.TranslateValue::Length(n)
@@ -3518,7 +3512,7 @@ fn split_by_comma(s : String) -> Array[String] {
     }
   }
   let last = current.to_string()
-  if not(last.is_empty()) {
+  if !last.is_empty() {
     result.push(last)
   }
   result
@@ -3566,7 +3560,7 @@ fn apply_inheritance(
     let covered_by_font_shorthand = cascaded.has("font") &&
       (prop == "font-size" || prop == "line-height")
     // If property not in cascaded values, inherit from parent
-    if not(cascaded.has(prop)) && not(covered_by_font_shorthand) {
+    if !cascaded.has(prop) && !covered_by_font_shorthand {
       match ctx.parent_style {
         Some(parent) => {
           let value = get_style_value_as_string(prop, parent)
@@ -3607,7 +3601,7 @@ pub fn compute_inline_raw(
     if colon_pos > 0 {
       let prop = view_to_string(pair_str.view(end_offset=colon_pos)).trim()
       let val = view_to_string(pair_str.view(start_offset=colon_pos + 1)).trim()
-      if not(prop.is_empty()) && not(val.is_empty()) {
+      if !prop.is_empty() && !val.is_empty() {
         decls.push(
           @cascade.Declaration::with_metadata(
             prop.to_string(),
@@ -3756,7 +3750,7 @@ fn parse_font_size(value : String, ctx : ComputeContext) -> Double {
   // "1rem" also ends with "em", so ordering matters.
   match v.strip_suffix("rem") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch { _ => 1.0 }
+      let n = @string.parse_double(num_str.to_string()) catch { _ => 1.0 }
       return n * ctx.root_font_size
     }
     None => ()
@@ -3765,7 +3759,7 @@ fn parse_font_size(value : String, ctx : ComputeContext) -> Double {
   // Handle em units (relative to parent font-size)
   match v.strip_suffix("em") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch { _ => 1.0 }
+      let n = @string.parse_double(num_str.to_string()) catch { _ => 1.0 }
       return n * ctx.font_size
     }
     None => ()
@@ -3774,7 +3768,7 @@ fn parse_font_size(value : String, ctx : ComputeContext) -> Double {
   // Handle px units
   match v.strip_suffix("px") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return ctx.font_size
       }
       return n
@@ -3785,7 +3779,7 @@ fn parse_font_size(value : String, ctx : ComputeContext) -> Double {
   // Handle pt units (1pt = 1.333px)
   match v.strip_suffix("pt") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return ctx.font_size
       }
       return n * 1.333
@@ -3796,7 +3790,7 @@ fn parse_font_size(value : String, ctx : ComputeContext) -> Double {
   // Handle percent (relative to parent font-size)
   match v.strip_suffix("%") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return ctx.font_size
       }
       return n / 100.0 * ctx.font_size
@@ -3804,7 +3798,7 @@ fn parse_font_size(value : String, ctx : ComputeContext) -> Double {
     None => ()
   }
 
-  let plain_number = @strconv.parse_double(v) catch { _ => -1.0 }
+  let plain_number = @string.parse_double(v) catch { _ => -1.0 }
   if plain_number == 0.0 {
     return 0.0
   }
@@ -3835,22 +3829,22 @@ fn parse_line_height(value : String, font_size : Double) -> Double {
     let mut pure = true
     for i = 0; i < v.length(); i = i + 1 {
       let c = v[i].to_int().unsafe_to_char()
-      if c != '.' && not(c >= '0' && c <= '9') {
+      if c != '.' && !(c >= '0' && c <= '9') {
         pure = false
         break
       }
     }
     pure
   }
-  if is_pure_number && not(v.is_empty()) {
-    let n = @strconv.parse_double(v.to_string()) catch { _ => 1.0 }
+  if is_pure_number && !v.is_empty() {
+    let n = @string.parse_double(v.to_string()) catch { _ => 1.0 }
     return n * font_size
   }
 
   // Handle px units
   match v.strip_suffix("px") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return font_size
       }
       return n
@@ -3861,7 +3855,7 @@ fn parse_line_height(value : String, font_size : Double) -> Double {
   // Handle em units
   match v.strip_suffix("em") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return font_size
       }
       return n * font_size
@@ -3872,7 +3866,7 @@ fn parse_line_height(value : String, font_size : Double) -> Double {
   // Handle percent (relative to font-size)
   match v.strip_suffix("%") {
     Some(num_str) => {
-      let n = @strconv.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_string()) catch {
         _ => return font_size
       }
       return n / 100.0 * font_size
@@ -3904,9 +3898,9 @@ fn parse_font_shorthand(
   let mut in_quotes = false
   for c in v.iter() {
     if c == '"' || c == '\'' {
-      in_quotes = not(in_quotes)
+      in_quotes = !in_quotes
       current.write_char(c)
-    } else if (c == ' ' || c == '\t') && not(in_quotes) {
+    } else if (c == ' ' || c == '\t') && !in_quotes {
       let s = current.to_string()
       if s.length() > 0 {
         parts.push(s)
@@ -3971,7 +3965,7 @@ fn parse_column_count(value : String) -> Int? {
     return None
   }
   try {
-    let parsed = @strconv.parse_int(trimmed)
+    let parsed = @string.parse_int(trimmed)
     if parsed >= 1 {
       Some(parsed)
     } else {
@@ -4050,7 +4044,7 @@ fn parse_columns_shorthand(
   let parts : Array[StringView] = value
     .trim()
     .split(" ")
-    .filter(fn(s) { not(s.is_empty()) })
+    .filter(fn(s) { !s.is_empty() })
     .collect()
   if parts.length() == 0 {
     return None
@@ -4249,7 +4243,7 @@ fn parse_z_index(value : String) -> @style.ZIndex {
     @style.ZIndex::Auto
   } else {
     try {
-      let v = @strconv.parse_int(trimmed)
+      let v = @string.parse_int(trimmed)
       @style.ZIndex::Value(v)
     } catch {
       _ => @style.ZIndex::Auto
@@ -4262,7 +4256,7 @@ fn parse_z_index(value : String) -> @style.ZIndex {
 fn parse_opacity(value : String) -> Double {
   let trimmed = value.trim().to_string()
   try {
-    let v = @strconv.parse_double(trimmed)
+    let v = @string.parse_double(trimmed)
     // Clamp to valid range
     if v < 0.0 {
       0.0

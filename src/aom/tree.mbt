@@ -20,7 +20,7 @@ priv struct TreeBuilderContext {
   // UID counter for generating unique ids
   mut uid_counter : Int
   // Parsed stylesheets for pseudo-element content
-  stylesheets : Array[@cascade.Stylesheet]
+  stylesheets : Array[@css.Stylesheet]
   // Ref counter for sequential element refs (ref_1, ref_2, ...)
   mut ref_counter : Int
 }
@@ -41,7 +41,7 @@ fn TreeBuilderContext::new() -> TreeBuilderContext {
 ///|
 fn TreeBuilderContext::with_stylesheets(
   self : TreeBuilderContext,
-  stylesheets : Array[@cascade.Stylesheet],
+  stylesheets : Array[@css.Stylesheet],
 ) -> TreeBuilderContext {
   { ..self, stylesheets, }
 }
@@ -138,10 +138,10 @@ fn get_pseudo_element_content(
           for decl in rule.declarations {
             if decl.property == "content" {
               match decl.value {
-                @cascade.Value(value) => {
+                @css.PropertyValue::Value(value) => {
                   // Remove quotes from string value
                   let content = parse_content_value(value)
-                  if not(content.is_empty()) {
+                  if !content.is_empty() {
                     return Some(content)
                   }
                 }
@@ -269,9 +269,9 @@ pub fn build_accessibility_tree(doc : @html.Document) -> AccessibilityTree {
   let ctx = TreeBuilderContext::new()
 
   // Parse stylesheets from the document
-  let stylesheets : Array[@cascade.Stylesheet] = []
+  let stylesheets : Array[@css.Stylesheet] = []
   for css_text in doc.stylesheets {
-    let stylesheet = @parser.parse_stylesheet(css_text)
+    let stylesheet = @css.parse_stylesheet(css_text)
     stylesheets.push(stylesheet)
   }
   let ctx = ctx.with_stylesheets(stylesheets)
@@ -560,14 +560,14 @@ fn build_children(
       @html.Element(child_elem) => {
         let child_node = build_node(child_elem, child_ctx)
         // Don't add generic nodes with no name and no children
-        if not(is_empty_generic(child_node)) {
+        if !is_empty_generic(child_node) {
           children.push(child_node)
         }
       }
       @html.Text(text) => {
         // Text nodes become static text
         let trimmed = text.trim().to_string()
-        if not(trimmed.is_empty()) {
+        if !trimmed.is_empty() {
           let text_node = AccessibilityNode::{
             id: ctx.next_uid(),
             role: Generic,
@@ -611,19 +611,19 @@ fn build_children(
 fn has_accessible_name_source(element : @html.Element) -> Bool {
   // aria-label
   match element.attributes.get("aria-label") {
-    Some(label) if not(label.is_empty()) => return true
+    Some(label) if !label.is_empty() => return true
     _ => ()
   }
 
   // aria-labelledby
   match element.attributes.get("aria-labelledby") {
-    Some(ids) if not(ids.is_empty()) => return true
+    Some(ids) if !ids.is_empty() => return true
     _ => ()
   }
 
   // title
   match element.attributes.get("title") {
-    Some(title) if not(title.is_empty()) => return true
+    Some(title) if !title.is_empty() => return true
     _ => ()
   }
   false
@@ -664,8 +664,7 @@ fn should_skip_element(element : @html.Element, role : Role) -> Bool {
 /// Check if node is an empty generic that should be pruned
 fn is_empty_generic(node : AccessibilityNode) -> Bool {
   match node.role {
-    Generic =>
-      node.name is None && node.children.is_empty() && not(node.focusable)
+    Generic => node.name is None && node.children.is_empty() && !node.focusable
     _ => false
   }
 }
@@ -695,7 +694,7 @@ fn build_selector(element : @html.Element) -> String? {
 
   // Add id if present (most specific)
   match element.id {
-    Some(id) if not(id.is_empty()) => {
+    Some(id) if !id.is_empty() => {
       buf.write_string("#")
       buf.write_string(id)
       return Some(buf.to_string())
@@ -704,7 +703,7 @@ fn build_selector(element : @html.Element) -> String? {
   }
 
   // Add classes if present
-  if not(element.classes.is_empty()) {
+  if !element.classes.is_empty() {
     for cls in element.classes {
       buf.write_string(".")
       buf.write_string(cls)
@@ -831,7 +830,7 @@ fn collect_text_content(element : @html.Element, buf : StringBuilder) -> Unit {
     match child {
       @html.Text(text) => {
         let trimmed = text.trim().to_string()
-        if not(trimmed.is_empty()) {
+        if !trimmed.is_empty() {
           if buf.to_string().length() > 0 {
             buf.write_string(" ")
           }
@@ -855,7 +854,7 @@ fn find_labelling_ref(
 ) -> String? {
   // Check aria-labelledby first
   match element.attributes.get("aria-labelledby") {
-    Some(label_id) if not(label_id.is_empty()) => {
+    Some(label_id) if !label_id.is_empty() => {
       // The value might be a space-separated list of IDs, take the first
       let parts : Array[String] = label_id
         .split(" ")
@@ -962,7 +961,7 @@ fn is_focusable(element : @html.Element, role : Role) -> Bool {
   // Check tabindex
   match element.attributes.get("tabindex") {
     Some(tabindex) => {
-      let idx = @strconv.parse_int(tabindex) catch { _ => return false }
+      let idx = @string.parse_int(tabindex) catch { _ => return false }
       if idx >= 0 {
         return true
       }
@@ -975,19 +974,18 @@ fn is_focusable(element : @html.Element, role : Role) -> Bool {
   // Inherently focusable elements
   match tag {
     "a" => if element.attributes.contains("href") { return true }
-    "button" => return not(element.attributes.contains("disabled"))
+    "button" => return !element.attributes.contains("disabled")
     "input" =>
       if element.attributes.get("type") != Some("hidden") {
-        return not(element.attributes.contains("disabled"))
+        return !element.attributes.contains("disabled")
       }
-    "select" | "textarea" => return not(element.attributes.contains("disabled"))
+    "select" | "textarea" => return !element.attributes.contains("disabled")
     "summary" => return true
     _ => ()
   }
 
   // Check if role is inherently focusable
-  role_is_inherently_focusable(role) &&
-  not(element.attributes.contains("disabled"))
+  role_is_inherently_focusable(role) && !element.attributes.contains("disabled")
 }
 
 ///|
@@ -996,7 +994,7 @@ fn is_focusable(element : @html.Element, role : Role) -> Bool {
 fn get_tabindex(element : @html.Element) -> Int? {
   match element.attributes.get("tabindex") {
     Some(tabindex_str) => {
-      let idx = @strconv.parse_int(tabindex_str) catch { _ => return None }
+      let idx = @string.parse_int(tabindex_str) catch { _ => return None }
       Some(idx)
     }
     Option::None => None
@@ -1148,7 +1146,7 @@ fn find_headings_recursive(
 /// Extract bounds from LayoutTree node map into a Map[String, Bounds]
 /// Uses the layout node's id as key (which corresponds to HTML element id)
 pub fn extract_bounds_from_layout(
-  layout_tree : @tree.LayoutTree,
+  layout_tree : @layout.LayoutTree,
 ) -> Map[String, Bounds] {
   let bounds_map : Map[String, Bounds] = {}
   extract_bounds_recursive(layout_tree.root, bounds_map)
@@ -1157,11 +1155,11 @@ pub fn extract_bounds_from_layout(
 
 ///|
 fn extract_bounds_recursive(
-  node : @tree.LayoutNode,
+  node : @layout.LayoutNode,
   bounds_map : Map[String, Bounds],
 ) -> Unit {
   // Add bounds for this node if it has a non-empty id
-  if not(node.id.is_empty()) {
+  if !node.id.is_empty() {
     bounds_map[node.id] = Bounds::new(
       node.computed_x,
       node.computed_y,
@@ -1180,7 +1178,7 @@ fn extract_bounds_recursive(
 /// This is the main integration function for combining a11y and layout
 pub fn build_accessibility_tree_with_layout(
   doc : @html.Document,
-  layout_tree : @tree.LayoutTree,
+  layout_tree : @layout.LayoutTree,
 ) -> AccessibilityTree {
   // Build accessibility tree
   let a11y_tree = build_accessibility_tree(doc)
@@ -1209,9 +1207,9 @@ fn extract_node_layout_bounds_recursive(
   // Add bounds for this node if it has a non-empty id
   // The renderer uses format "tag#id" or "tag.class" or "tag"
   // We need to extract just the id part for matching with AOM source_id
-  if not(layout.id.is_empty()) {
+  if !layout.id.is_empty() {
     let id = extract_element_id(layout.id)
-    if not(id.is_empty()) {
+    if !id.is_empty() {
       bounds_map[id] = Bounds::new(
         layout.x,
         layout.y,
@@ -1342,7 +1340,7 @@ fn lightweight_build_node(
   // Determine if element should be visible
   let is_hidden = element.attributes.get("hidden") is Some(_) ||
     element.attributes.get("aria-hidden") == Some("true")
-  let visible = not(is_hidden)
+  let visible = !is_hidden
 
   // Handle labels for form inputs
   let ctx = if tag == "label" {
@@ -1361,7 +1359,7 @@ fn lightweight_build_node(
       }
       @html.Node::Text(text) => {
         let trimmed = text.trim().to_string()
-        if not(trimmed.is_empty()) {
+        if !trimmed.is_empty() {
           let text_node = AccessibilityNode::new(ctx.next_ref(), Role::Generic)
           let text_node = { ..text_node, name: Some(trimmed) }
           children.push(text_node)
@@ -1400,7 +1398,7 @@ fn lightweight_get_name(
 
   // Check aria-label first
   match element.attributes.get("aria-label") {
-    Some(label) if not(label.is_empty()) => return Some(label)
+    Some(label) if !label.is_empty() => return Some(label)
     _ => ()
   }
 
@@ -1413,7 +1411,7 @@ fn lightweight_get_name(
         match ctx.element_map.get(id_str) {
           Some(elem) => {
             let text = lightweight_extract_text(elem)
-            if not(text.is_empty()) {
+            if !text.is_empty() {
               names.push(text)
             }
           }
@@ -1443,7 +1441,7 @@ fn lightweight_get_name(
       match ctx.label_map.get(id) {
         Some(label_elem) => {
           let text = lightweight_extract_text(label_elem)
-          if not(text.is_empty()) {
+          if !text.is_empty() {
             return Some(text)
           }
         }
@@ -1456,7 +1454,7 @@ fn lightweight_get_name(
   match ctx.encapsulating_label {
     Some(label_elem) => {
       let text = lightweight_extract_text(label_elem)
-      if not(text.is_empty()) {
+      if !text.is_empty() {
         return Some(text)
       }
     }
@@ -1467,7 +1465,7 @@ fn lightweight_get_name(
   match tag {
     "img" | "area" =>
       match element.attributes.get("alt") {
-        Some(alt) if not(alt.is_empty()) => return Some(alt)
+        Some(alt) if !alt.is_empty() => return Some(alt)
         _ => ()
       }
     "input" =>
@@ -1496,7 +1494,7 @@ fn lightweight_get_name(
     | "td"
     | "li" => {
       let text = lightweight_extract_text(element)
-      if not(text.is_empty()) {
+      if !text.is_empty() {
         return Some(text)
       }
     }
@@ -1505,7 +1503,7 @@ fn lightweight_get_name(
 
   // Check title attribute as fallback
   match element.attributes.get("title") {
-    Some(title) if not(title.is_empty()) => Some(title)
+    Some(title) if !title.is_empty() => Some(title)
     _ => None
   }
 }
@@ -1524,7 +1522,7 @@ fn lightweight_extract_text(element : @html.Element) -> String {
       }
       @html.Node::Element(child_elem) => {
         let child_text = lightweight_extract_text(child_elem)
-        if not(child_text.is_empty()) {
+        if !child_text.is_empty() {
           if buf.to_string().length() > 0 {
             buf.write_char(' ')
           }

@@ -503,7 +503,7 @@ fn BidiProtocol::resolve_emulation_set_geolocation_override(
 
   let has_coordinates = map.contains("coordinates")
   let has_error = map.contains("error")
-  if not(has_coordinates) && not(has_error) {
+  if !has_coordinates && !has_error {
     self.send_error(
       request_id, "invalid argument", "coordinates or error must be provided",
     )
@@ -515,7 +515,7 @@ fn BidiProtocol::resolve_emulation_set_geolocation_override(
     let (ok, normalized_coordinates) = self.parse_geolocation_coordinates_param(
       request_id, raw_value,
     )
-    if not(ok) {
+    if !ok {
       return None
     }
     match normalized_coordinates {
@@ -532,7 +532,7 @@ fn BidiProtocol::resolve_emulation_set_geolocation_override(
     let (ok, error_type) = self.parse_geolocation_error_param(
       request_id, raw_value,
     )
-    if not(ok) {
+    if !ok {
       return None
     }
     match error_type {
@@ -567,7 +567,7 @@ fn BidiProtocol::resolve_emulation_set_geolocation_override(
         for context in contexts {
           match context {
             String(ctx_id) =>
-              if not(self.manager.has_session(ctx_id)) {
+              if !self.manager.has_session(ctx_id) {
                 self.send_error(
                   request_id,
                   "no such frame",
@@ -579,7 +579,7 @@ fn BidiProtocol::resolve_emulation_set_geolocation_override(
                   request_id, "invalid argument", "contexts must reference top-level browsing contexts",
                 )
                 return None
-              } else if not(array_contains(target_contexts, ctx_id)) {
+              } else if !array_contains(target_contexts, ctx_id) {
                 target_contexts.push(ctx_id)
               }
             _ => {
@@ -613,16 +613,14 @@ fn BidiProtocol::resolve_emulation_set_geolocation_override(
           match raw_user_context {
             String(user_context_id) =>
               if user_context_id == "" ||
-                not(self.user_contexts.contains(user_context_id)) {
+                !self.user_contexts.contains(user_context_id) {
                 self.send_error(
                   request_id,
                   "no such user context",
                   "Unknown user context: " + user_context_id,
                 )
                 return None
-              } else if not(
-                  array_contains(target_user_contexts, user_context_id),
-                ) {
+              } else if !array_contains(target_user_contexts, user_context_id) {
                 target_user_contexts.push(user_context_id)
               }
             _ => {
@@ -707,7 +705,7 @@ fn BidiProtocol::try_handle_synthetic_geolocation_call(
     }
     let notify_success = function_declaration.contains("result.coords.toJSON()")
     let notify_error = function_declaration.contains("error.code")
-    if not(notify_success) && not(notify_error) {
+    if !notify_success && !notify_error {
       return false
     }
     let watch_id = self.register_geolocation_watch(
@@ -725,9 +723,7 @@ fn BidiProtocol::try_handle_synthetic_geolocation_call(
     return true
   }
 
-  if not(
-      function_declaration.contains("navigator.geolocation.getCurrentPosition("),
-    ) {
+  if !function_declaration.contains("navigator.geolocation.getCurrentPosition(") {
     return false
   }
 

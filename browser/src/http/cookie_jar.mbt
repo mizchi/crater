@@ -16,7 +16,7 @@ pub(all) struct ParsedCookie {
   same_site : String // "strict" | "lax" | "none" | ""
   max_age : Int? // seconds
   expires : String? // raw date string
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// Cookie Jar — stores cookies per-domain with security enforcement
@@ -29,6 +29,29 @@ pub struct CookieJar {
 ///|
 pub fn CookieJar::new(enabled? : Bool = false) -> CookieJar {
   { cookies: [], enabled }
+}
+
+///|
+pub impl Show for ParsedCookie with output(self, logger) {
+  logger.write_string("{name: ")
+  self.name.output(logger)
+  logger.write_string(", value: ")
+  self.value.output(logger)
+  logger.write_string(", domain: ")
+  self.domain.output(logger)
+  logger.write_string(", path: ")
+  self.path.output(logger)
+  logger.write_string(", secure: ")
+  self.secure.output(logger)
+  logger.write_string(", http_only: ")
+  self.http_only.output(logger)
+  logger.write_string(", same_site: ")
+  self.same_site.output(logger)
+  logger.write_string(", max_age: ")
+  self.max_age.output(logger)
+  logger.write_string(", expires: ")
+  self.expires.output(logger)
+  logger.write_string("}")
 }
 
 ///|
@@ -63,13 +86,12 @@ pub fn parse_set_cookie(
       // name=value pair
       match trimmed.find("=") {
         Some(eq_idx) => {
-          name = trimmed.substring(end=eq_idx).trim().to_string()
-          value = trimmed.substring(start=eq_idx + 1).trim().to_string()
+          name = trimmed[:eq_idx].trim().to_string()
+          value = trimmed[eq_idx + 1:].trim().to_string()
         }
-        None => {
+        None =>
           // Cookie with no value
           name = trimmed
-        }
       }
       // Empty cookie name is invalid (RFC 6265 §5.2)
       if name.is_empty() {
@@ -84,20 +106,20 @@ pub fn parse_set_cookie(
     } else if lower == "httponly" {
       http_only = true
     } else if lower.has_prefix("domain=") {
-      let d = trimmed.substring(start=7).trim().to_string().to_lower()
+      let d = trimmed[7:].trim().to_string().to_lower()
       // Strip leading dot (RFC 6265 §5.2.3)
-      domain = if d.has_prefix(".") { d.substring(start=1) } else { d }
+      domain = if d.has_prefix(".") { d[1:].to_string() } else { d }
       domain_set = true
     } else if lower.has_prefix("path=") {
-      path = trimmed.substring(start=5).trim().to_string()
+      path = trimmed[5:].trim().to_string()
       path_set = true
     } else if lower.has_prefix("max-age=") {
-      let val = trimmed.substring(start=8).trim().to_string()
+      let val = trimmed[8:].trim().to_string()
       max_age = parse_cookie_int(val)
     } else if lower.has_prefix("expires=") {
-      expires = Some(trimmed.substring(start=8).trim().to_string())
+      expires = Some(trimmed[8:].trim().to_string())
     } else if lower.has_prefix("samesite=") {
-      same_site = trimmed.substring(start=9).trim().to_string().to_lower()
+      same_site = trimmed[9:].trim().to_string().to_lower()
     }
   }
   // Default domain to request domain if not set
@@ -116,7 +138,17 @@ pub fn parse_set_cookie(
       return None // Reject: domain does not match request
     }
   }
-  Some({ name, value, domain, path, secure, http_only, same_site, max_age, expires })
+  Some({
+    name,
+    value,
+    domain,
+    path,
+    secure,
+    http_only,
+    same_site,
+    max_age,
+    expires,
+  })
 }
 
 ///|
@@ -135,7 +167,7 @@ fn cookie_default_path(request_path : String) -> String {
   if last_slash == 0 {
     "/"
   } else {
-    request_path.substring(end=last_slash)
+    request_path[:last_slash].to_string()
   }
 }
 
@@ -296,7 +328,11 @@ pub fn CookieJar::get_cookie_header(
     buf.write_string(cookie.value)
   }
   let result = buf.to_string()
-  if result.is_empty() { None } else { Some(result) }
+  if result.is_empty() {
+    None
+  } else {
+    Some(result)
+  }
 }
 
 ///|
@@ -335,7 +371,7 @@ fn cookie_registrable_domain(domain : String) -> String {
     return domain
   }
   // Two+ dots → take from second_last_dot+1
-  domain.substring(start=second_last_dot + 1)
+  domain[second_last_dot + 1:].to_string()
 }
 
 ///|
@@ -371,7 +407,10 @@ pub fn CookieJar::size(self : CookieJar) -> Int {
 
 ///|
 /// Domain match per RFC 6265 §5.1.3
-fn cookie_domain_matches(request_domain : String, cookie_domain : String) -> Bool {
+fn cookie_domain_matches(
+  request_domain : String,
+  cookie_domain : String,
+) -> Bool {
   let req = request_domain.to_lower()
   let cd = cookie_domain.to_lower()
   if req == cd {
@@ -405,15 +444,15 @@ fn cookie_path_matches(request_path : String, cookie_path : String) -> Bool {
 fn cookie_extract_domain(url : String) -> String {
   match url.find("://") {
     Some(i) => {
-      let after = url.substring(start=i + 3)
+      let after = url[i + 3:].to_string()
       let end = match after.find("/") {
         Some(j) => j
         None => after.length()
       }
-      let host_port = after.substring(end~)
+      let host_port = after[:end].to_string()
       // Remove port
       match host_port.find(":") {
-        Some(j) => host_port.substring(end=j).to_lower()
+        Some(j) => host_port[:j].to_string().to_lower()
         None => host_port.to_lower()
       }
     }
@@ -426,9 +465,9 @@ fn cookie_extract_domain(url : String) -> String {
 fn cookie_extract_path(url : String) -> String {
   match url.find("://") {
     Some(i) => {
-      let after = url.substring(start=i + 3)
+      let after = url[i + 3:].to_string()
       match after.find("/") {
-        Some(j) => after.substring(start=j)
+        Some(j) => after[j:].to_string()
         None => "/"
       }
     }

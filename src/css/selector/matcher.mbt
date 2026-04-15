@@ -237,13 +237,13 @@ fn matches_nth(index : Int, expr : NthExpr) -> Bool {
 fn matches_compound(element : Element, selector : CompoundSelector) -> Bool {
   // Check type selector
   match selector.type_selector {
-    Some(type_sel) => if not(matches_simple(element, type_sel)) { return false }
+    Some(type_sel) => if !matches_simple(element, type_sel) { return false }
     None => ()
   }
 
   // Check all subclass selectors
   for sub in selector.subclasses {
-    if not(matches_simple(element, sub)) {
+    if !matches_simple(element, sub) {
       return false
     }
   }
@@ -254,7 +254,7 @@ fn matches_compound(element : Element, selector : CompoundSelector) -> Bool {
 /// Check if an element matches a complex selector
 pub fn matches_complex(element : Element, selector : ComplexSelector) -> Bool {
   // First, check if the element matches the head (rightmost/subject)
-  if not(matches_compound(element, selector.head)) {
+  if !matches_compound(element, selector.head) {
     return false
   }
 
@@ -284,7 +284,7 @@ pub fn matches_complex(element : Element, selector : ComplexSelector) -> Bool {
             }
           }
         }
-        if not(found) {
+        if !found {
           return false
         }
       }
@@ -293,7 +293,7 @@ pub fn matches_complex(element : Element, selector : ComplexSelector) -> Bool {
         match current_element.parent {
           None => return false
           Some(parent) => {
-            if not(matches_compound(parent, step.selector)) {
+            if !matches_compound(parent, step.selector) {
               return false
             }
             current_element = parent
@@ -304,7 +304,7 @@ pub fn matches_complex(element : Element, selector : ComplexSelector) -> Bool {
         match current_element.prev_sibling {
           None => return false
           Some(prev) => {
-            if not(matches_compound(prev, step.selector)) {
+            if !matches_compound(prev, step.selector) {
               return false
             }
             current_element = prev
@@ -327,7 +327,7 @@ pub fn matches_complex(element : Element, selector : ComplexSelector) -> Bool {
             }
           }
         }
-        if not(found) {
+        if !found {
           return false
         }
       }

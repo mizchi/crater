@@ -42,7 +42,7 @@ fn SelectorParser::advance(self : SelectorParser) -> @token.Token {
 
 ///|
 fn SelectorParser::skip_whitespace(self : SelectorParser) -> Unit {
-  while not(self.is_at_end()) {
+  while !self.is_at_end() {
     match self.peek() {
       Whitespace => {
         let _ = self.advance()
@@ -66,7 +66,7 @@ fn parse_selector_list(tokens : Array[@token.Token]) -> SelectorList? {
   }
 
   // Parse remaining selectors
-  while not(parser.is_at_end()) {
+  while !parser.is_at_end() {
     parser.skip_whitespace()
     match parser.peek() {
       Comma => {
@@ -81,7 +81,7 @@ fn parse_selector_list(tokens : Array[@token.Token]) -> SelectorList? {
     }
   }
   parser.skip_whitespace()
-  if not(parser.is_at_end()) {
+  if !parser.is_at_end() {
     return None
   }
   Some(SelectorList::{ selectors, })
@@ -116,7 +116,7 @@ fn SelectorParser::parse_complex_selector(
   }
   let tail : Array[ComplexSelectorStep] = []
   let mut current = first
-  while not(self.is_at_end()) {
+  while !self.is_at_end() {
     // Check for combinator (maybe preceded by whitespace)
     let had_whitespace = match self.peek() {
       Whitespace => {
@@ -195,7 +195,7 @@ fn SelectorParser::parse_compound_selector(
   }
 
   // Parse subclass selectors
-  while not(self.is_at_end()) {
+  while !self.is_at_end() {
     match self.peek() {
       // ID selector
       Hash(id, _) => {
@@ -626,10 +626,10 @@ fn SelectorParser::parse_nth_expr(self : SelectorParser) -> NthExpr? {
           start=1,
           end=unit_lower.length(),
         )
-        let b = @strconv.parse_int(suffix) catch {
+        let b = @string.parse_int(suffix) catch {
           _ =>
             if suffix.length() > 1 && suffix[0] == '+' {
-              @strconv.parse_int(
+              @string.parse_int(
                 suffix.unsafe_substring(start=1, end=suffix.length()),
               ) catch {
                 _ => 0
@@ -732,7 +732,7 @@ fn SelectorParser::parse_compound_selector_list_until_paren(
   self : SelectorParser,
 ) -> Array[CompoundSelector] {
   let result : Array[CompoundSelector] = []
-  while not(self.is_at_end()) {
+  while !self.is_at_end() {
     self.skip_whitespace()
     match self.peek() {
       RightParen | EOF => break
@@ -754,7 +754,7 @@ fn SelectorParser::parse_complex_selector_list_until_paren(
   self : SelectorParser,
 ) -> Array[ComplexSelector] {
   let result : Array[ComplexSelector] = []
-  while not(self.is_at_end()) {
+  while !self.is_at_end() {
     self.skip_whitespace()
     match self.peek() {
       RightParen | EOF => break
@@ -776,7 +776,7 @@ fn SelectorParser::parse_relative_selector_list_until_paren(
   self : SelectorParser,
 ) -> Array[RelativeSelector] {
   let result : Array[RelativeSelector] = []
-  while not(self.is_at_end()) {
+  while !self.is_at_end() {
     self.skip_whitespace()
     match self.peek() {
       RightParen | EOF => break

@@ -16,7 +16,7 @@ pub struct CdpNode {
   child_node_count : Int?
   children : Array[CdpNode]?
   attributes : Array[String]? // [name, value, name, value, ...]
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// CDP Box Model
@@ -27,7 +27,7 @@ pub struct CdpBoxModel {
   margin : Array[Double]
   width : Int
   height : Int
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// CDP Frame Info
@@ -39,7 +39,7 @@ pub struct CdpFrameInfo {
   url : String
   security_origin : String
   mime_type : String
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// CDP Navigation Entry
@@ -48,7 +48,7 @@ pub struct CdpNavigationEntry {
   url : String
   title : String
   transition_type : String
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// CDP Error codes (subset)
@@ -57,14 +57,14 @@ pub enum CdpErrorCode {
   InternalError // -32603
   NodeNotFound // -32000
   NoSuchElement // -32000
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// CDP Error
 pub struct CdpError {
   code : Int
   message : String
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// Create CDP error from code

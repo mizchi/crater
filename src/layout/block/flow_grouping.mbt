@@ -75,7 +75,7 @@ fn contents_is_inline_flow(node : @node.Node) -> Bool {
       @types.Float::None => ()
     }
     if child.style.display == @types.Contents {
-      if not(contents_is_inline_flow(child)) {
+      if !contents_is_inline_flow(child) {
         return false
       }
       has_inline = true
@@ -336,13 +336,13 @@ fn compute_mixed_content_layout(
           let mut group_min_x = 0.0
           let mut group_max_x = 0.0
           let mut has_group_box = false
-          if not(is_vertical) {
+          if !is_vertical {
             for child_layout in ifc_result.layouts {
               let child_left = child_layout.x - child_layout.margin.left
               let child_right = child_layout.x +
                 child_layout.width +
                 child_layout.margin.right
-              if not(has_group_box) {
+              if !has_group_box {
                 group_min_x = child_left
                 group_max_x = child_right
                 has_group_box = true
@@ -450,7 +450,7 @@ fn compute_mixed_content_layout(
           _ => true
         }
         if allow_mixed_auto_shrink &&
-          not(is_vertical) &&
+          !is_vertical &&
           justify_items_enables_self_alignment &&
           node.style.width == @types.Auto {
           let intrinsic_inline = if node.children.length() == 0 &&
@@ -566,7 +566,7 @@ fn compute_mixed_content_layout(
           @types.Length(v) => v == 0.0
           _ => false
         }
-        let child_size = if not(is_vertical) && explicit_zero_height {
+        let child_size = if !is_vertical && explicit_zero_height {
           0.0
         } else if is_vertical {
           if child_layout.width > 0.0 {

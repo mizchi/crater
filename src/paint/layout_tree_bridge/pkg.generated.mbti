@@ -1,0 +1,19 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater/paint/layout_tree_bridge"
+
+import {
+  "mizchi/crater/paint/model",
+  "mizchi/crater/types",
+}
+
+// Values
+pub fn from_layout(@types.Layout) -> @model.PaintNode
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

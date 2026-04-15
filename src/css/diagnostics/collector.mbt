@@ -109,7 +109,7 @@ pub fn DiagnosticsCollector::add_property(
   if should_warn(level) {
     let key = property + ":" + value
     // Deduplicate
-    if not(self.seen.contains(key)) {
+    if !self.seen.contains(key) {
       self.seen.set(key, true)
       self.diagnostics.push({ property, value, level, severity, selector })
     }

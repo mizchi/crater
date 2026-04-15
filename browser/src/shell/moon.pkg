@@ -5,13 +5,14 @@ import {
   "mizchi/crater/browser_contract",
   "mizchi/crater/aom",
   "mizchi/crater/layout",
-  "mizchi/crater/layout/node",
   "mizchi/crater/dom",
-  "mizchi/crater/paint",
   "mizchi/crater/scheduler",
   "mizchi/crater-browser/http",
   "mizchi/crater-browser/interaction_policy",
   "mizchi/crater-browser/tui",
+  "mizchi/crater-browser/tui/paint_output" @tui_paint_output,
+  "mizchi/crater-browser/tui/paint/plain" @tui_paint_plain,
+  "mizchi/crater-browser/tui/paint/runtime" @tui_paint_runtime,
   "mizchi/crater-browser/js",
   "mizchi/crater/svg",
   "mizchi/crater/x/image",
@@ -22,7 +23,7 @@ import {
   "moonbitlang/async",
   "moonbitlang/core/bench",
   "mizchi/crater/benchmarks",
-  "mizchi/crater/css/media",
+  "mizchi/crater/css",
   "mizchi/crater/types",
   "mizchi/x/pipe",
   "mizchi/crater/x/kitty",
@@ -30,6 +31,8 @@ import {
 } for "wbtest"
 
 warnings = "-unused_package"
+
+supported_targets = "js+native"
 
 options(
   targets: {

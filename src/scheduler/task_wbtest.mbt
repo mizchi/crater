@@ -428,7 +428,7 @@ test "StyleManager compute style with element" {
   let _ = style_manager.add_stylesheet_source(".test { width: 100px; }")
 
   // Create a selector element with class "test"
-  let elem = @selector.Element::new("div").add_class("test").set_id("myid")
+  let elem = @css.Element::new("div").add_class("test").set_id("myid")
   let cascaded = style_manager.compute_style(elem)
 
   // Should have width from the rule
@@ -446,7 +446,7 @@ test "StyleManager invalidate styles" {
   let _ = style_manager.add_stylesheet_source(".test { width: 100px; }")
 
   // Compute style to cache it
-  let elem = @selector.Element::new("div").add_class("test").set_id("myid")
+  let elem = @css.Element::new("div").add_class("test").set_id("myid")
   let _ = style_manager.compute_style(elem)
 
   // Cache should have the computed style
@@ -643,7 +643,7 @@ test "LayoutManager schedule image decode" {
   reset_task_id_counter()
   let scheduler = Scheduler::new()
   let manager = LayoutManager::new(scheduler)
-  let rid = @tree.ResourceId(42)
+  let rid = @layout.ResourceId(42)
   let task_id = manager.schedule_image_decode(rid)
   inspect(scheduler.task_count(), content="1")
   match scheduler.find_task(task_id) {

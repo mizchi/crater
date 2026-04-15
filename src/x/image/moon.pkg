@@ -1,8 +1,10 @@
 import {
   "moonbitlang/core/cmp",
   "moonbitlang/core/math",
-  "mizchi/crater/layout/node",
-  "mizchi/crater/paint",
+  "mizchi/crater/layout" @node,
+  "mizchi/crater/paint/model" @paint_model,
+  "mizchi/crater/paint/traversal" @paint_traversal,
+  "mizchi/crater/paint/node_bridge" @paint_node,
   "mizchi/crater/types",
   "mizchi/crater/svg",
   "mizchi/font" @font,

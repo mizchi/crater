@@ -81,8 +81,8 @@ fn parse_csv_pair(payload : String) -> (Double, Double)? {
   if parts.length() != 2 {
     return None
   }
-  let first = @strconv.parse_double(parts[0]) catch { _ => return None }
-  let second = @strconv.parse_double(parts[1]) catch { _ => return None }
+  let first = @string.parse_double(parts[0]) catch { _ => return None }
+  let second = @string.parse_double(parts[1]) catch { _ => return None }
   Some((first, second))
 }
 
@@ -96,10 +96,10 @@ fn parse_csv_quad(payload : String) -> (Double, Double, Double, Double)? {
   if parts.length() != 4 {
     return None
   }
-  let first = @strconv.parse_double(parts[0]) catch { _ => return None }
-  let second = @strconv.parse_double(parts[1]) catch { _ => return None }
-  let third = @strconv.parse_double(parts[2]) catch { _ => return None }
-  let fourth = @strconv.parse_double(parts[3]) catch { _ => return None }
+  let first = @string.parse_double(parts[0]) catch { _ => return None }
+  let second = @string.parse_double(parts[1]) catch { _ => return None }
+  let third = @string.parse_double(parts[2]) catch { _ => return None }
+  let fourth = @string.parse_double(parts[3]) catch { _ => return None }
   Some((first, second, third, fourth))
 }
 

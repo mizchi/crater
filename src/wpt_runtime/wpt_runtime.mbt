@@ -11,7 +11,7 @@ pub fn renderHtmlToJsonForWpt(
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
     root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
+    color_scheme: @css.ColorScheme::Light,
   }
   let layout = @renderer.render(html, ctx)
   @renderer.layout_to_json(layout)
