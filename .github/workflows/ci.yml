@@ -406,17 +406,25 @@ jobs:
         run: |
           mkdir -p wpt-reports
           status=0
+          run_quick() {
+            local target="$1"
+            local report="$2"
+            if ! npx tsx scripts/wpt-webdriver-runner.ts --quick "$target" --json "$report"; then
+              echo "::error title=WPT WebDriver shard failed::$target"
+              status=1
+            fi
+          }
 
-          npx tsx scripts/wpt-webdriver-runner.ts --quick "errors" --json "wpt-reports/wpt-webdriver-errors.json" || status=1
-          npx tsx scripts/wpt-webdriver-runner.ts --quick "session/status" --json "wpt-reports/wpt-webdriver-session-status.json" || status=1
-          npx tsx scripts/wpt-webdriver-runner.ts --quick "session/subscribe/events.py" --json "wpt-reports/wpt-webdriver-session-subscribe-events.json" || status=1
-          npx tsx scripts/wpt-webdriver-runner.ts --quick "session/unsubscribe/events.py" --json "wpt-reports/wpt-webdriver-session-unsubscribe-events.json" || status=1
-          npx tsx scripts/wpt-webdriver-runner.ts --quick "browsing_context/get_tree" --json "wpt-reports/wpt-webdriver-browsing-context-get-tree.json" || status=1
-          npx tsx scripts/wpt-webdriver-runner.ts --quick "browsing_context/context_created/context_created.py" --json "wpt-reports/wpt-webdriver-browsing-context-context-created.json" || status=1
-          npx tsx scripts/wpt-webdriver-runner.ts --quick "script/evaluate/invalid.py" --json "wpt-reports/wpt-webdriver-script-evaluate-invalid.json" || status=1
-          npx tsx scripts/wpt-webdriver-runner.ts --quick "script/get_realms" --json "wpt-reports/wpt-webdriver-script-get-realms.json" || status=1
-          npx tsx scripts/wpt-webdriver-runner.ts --quick "script/realm_created/realm_created.py" --json "wpt-reports/wpt-webdriver-script-realm-created.json" || status=1
-          npx tsx scripts/wpt-webdriver-runner.ts --quick "script/realm_created/window_open.py" --json "wpt-reports/wpt-webdriver-script-realm-window-open.json" || status=1
+          run_quick "errors" "wpt-reports/wpt-webdriver-errors.json"
+          run_quick "session/status" "wpt-reports/wpt-webdriver-session-status.json"
+          run_quick "session/subscribe/events.py" "wpt-reports/wpt-webdriver-session-subscribe-events.json"
+          run_quick "session/unsubscribe/events.py" "wpt-reports/wpt-webdriver-session-unsubscribe-events.json"
+          run_quick "browsing_context/get_tree" "wpt-reports/wpt-webdriver-browsing-context-get-tree.json"
+          run_quick "browsing_context/context_created/context_created.py" "wpt-reports/wpt-webdriver-browsing-context-context-created.json"
+          run_quick "script/evaluate/invalid.py" "wpt-reports/wpt-webdriver-script-evaluate-invalid.json"
+          run_quick "script/get_realms" "wpt-reports/wpt-webdriver-script-get-realms.json"
+          run_quick "script/realm_created/realm_created.py" "wpt-reports/wpt-webdriver-script-realm-created.json"
+          run_quick "script/realm_created/window_open.py" "wpt-reports/wpt-webdriver-script-realm-window-open.json"
           exit $status
 
       - name: Upload WPT WebDriver shard report
