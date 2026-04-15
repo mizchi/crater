@@ -136,6 +136,48 @@ function startServer(): ChildProcess {
   return server;
 }
 
+async function waitForProcessExit(
+  proc: ChildProcess,
+  timeoutMs: number,
+): Promise<boolean> {
+  if (proc.exitCode !== null || proc.signalCode !== null) {
+    return true;
+  }
+
+  return await new Promise((resolve) => {
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      proc.off("close", onClose);
+      proc.off("exit", onExit);
+      resolve(ok);
+    };
+    const onClose = () => finish(true);
+    const onExit = () => finish(true);
+    const timer = setTimeout(() => finish(false), timeoutMs);
+    proc.once("close", onClose);
+    proc.once("exit", onExit);
+  });
+}
+
+async function stopServer(server: ChildProcess): Promise<void> {
+  if (server.exitCode !== null || server.signalCode !== null) {
+    return;
+  }
+
+  server.kill("SIGTERM");
+  const terminated = await waitForProcessExit(server, 3_000);
+  if (!terminated && server.exitCode === null && server.signalCode === null) {
+    server.kill("SIGKILL");
+    await waitForProcessExit(server, 2_000);
+  }
+
+  // Give the OS a moment to release the listen socket before the next quick shard starts.
+  await new Promise((resolve) => setTimeout(resolve, 200));
+}
+
 // Wait for server to be ready
 async function waitForServer(timeout = SERVER_READY_TIMEOUT_MS): Promise<boolean> {
   const start = Date.now();
@@ -788,7 +830,7 @@ async function main(): Promise<number> {
     throw error;
   } finally {
     // Stop server
-    server.kill("SIGTERM");
+    await stopServer(server);
   }
 }
 
