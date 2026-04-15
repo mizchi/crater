@@ -400,7 +400,9 @@ jobs:
         run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path browser/jsbidi/moon.mod.json
 
       - name: Build BiDi server
-        run: bash scripts/ci/run-moon-step.sh bidi-build moon -C browser/jsbidi build bidi_main --target js --release -j 1
+        run: |
+          bash scripts/ci/run-moon-step.sh bidi-build moon -C browser/jsbidi build bidi_main --target js --release -j 1
+          bash scripts/ci/run-moon-step.sh webdriver-fixture-build moon -C browser/jsbidi build webdriver_fixture_builder --target js --release -j 1
 
       - name: Run WebDriver BiDi shard
         run: |
