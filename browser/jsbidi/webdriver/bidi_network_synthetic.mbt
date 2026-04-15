@@ -793,12 +793,28 @@ fn BidiProtocol::handle_network_continue_blocked_request(
     None,
   )
   match completed_navigation_url {
-    Some(url) =>
+    Some(url) => {
+      if !self.is_subscribed_for_context(
+          "browsingContext.load",
+          input.context_id,
+        ) {
+        self.outbox.push(
+          Event({
+            event_method: "browsingContext.load",
+            params: synthetic_network_load_event_json(
+              input.context_id,
+              input.navigation,
+              url,
+            ),
+          }),
+        )
+      }
       self.complete_pending_navigation_response(
         input.context_id,
         Some(url),
         input.navigation,
       )
+    }
     None => ()
   }
 }
@@ -3084,6 +3100,7 @@ fn BidiProtocol::build_synthetic_network_request_payload_json(
     self.resolve_storage_request_cookies(input.context_id, Some(input.url))
   }
   let request : Map[String, Json] = {}
+  request["method"] = Json::string(input.http_method)
   request["bodySize"] = Json::number(body_size.to_double())
   request["cookies"] = Json::array(cookies)
   request["destination"] = Json::string(input.destination)
@@ -3093,7 +3110,6 @@ fn BidiProtocol::build_synthetic_network_request_payload_json(
     Some(value) => Json::string(value)
     None => Json::null()
   }
-  request["method"] = Json::string(input.http_method)
   request["request"] = Json::string(input.request_token)
   request["timings"] = self.build_synthetic_network_timings_json(now)
   request["url"] = Json::string(input.url)
@@ -3610,6 +3626,7 @@ fn BidiProtocol::clear_network_state_for_context(
 ) -> Unit {
   self.network_extra_headers_by_context.remove(ctx_id)
   self.network_cache_behavior_by_context.remove(ctx_id)
+  self.network_state_channel_by_context.remove(ctx_id)
   self.network_cached_requests_by_context.remove(ctx_id)
   let blocked_keys : Array[String] = []
   for request_id, blocked_request in self.network_blocked_requests {

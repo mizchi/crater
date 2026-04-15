@@ -288,15 +288,21 @@ fn BidiProtocol::try_handle_synthetic_user_agent_fetch_eval(
   if !is_wpt_headers_echo_url(resolved_url) {
     return false
   }
-  self.send_script_remote_value_response(
-    request_id,
-    realm_id,
-    make_object({
-      "type": Json::string("string"),
-      "value": Json::string(self.build_network_headers_echo_payload(ctx_id, [])),
-    }),
-    unwrap_result,
-  )
+  let payload = self.build_network_headers_echo_payload(ctx_id, [])
+  if unwrap_result {
+    let parsed_payload = @json.parse(payload) catch { _ => make_object({}) }
+    self.send_success(request_id, Some(parsed_payload))
+  } else {
+    self.send_script_remote_value_response(
+      request_id,
+      realm_id,
+      make_object({
+        "type": Json::string("string"),
+        "value": Json::string(payload),
+      }),
+      false,
+    )
+  }
   true
 }
 

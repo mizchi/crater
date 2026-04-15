@@ -215,12 +215,17 @@ fn BidiProtocol::try_handle_synthetic_permissions_query_call(
   }
 
   let state = self.resolve_permission_state_for_context(permission_name, ctx_id)
-  self.send_script_remote_value_response(
-    request_id,
-    realm_id,
-    make_object({ "type": Json::string("string"), "value": Json::string(state) }),
-    unwrap_result,
-  )
+  let remote_value = make_object({
+    "type": Json::string("string"),
+    "value": Json::string(state),
+  })
+  if unwrap_result {
+    self.send_script_synthetic_value_response(request_id, remote_value)
+  } else {
+    self.send_script_remote_value_response(
+      request_id, realm_id, remote_value, false,
+    )
+  }
   true
 }
 

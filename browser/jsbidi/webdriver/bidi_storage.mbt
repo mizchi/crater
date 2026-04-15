@@ -1825,15 +1825,17 @@ fn BidiProtocol::try_handle_synthetic_window_location_href_eval(
   }
   match self.resolve_synthetic_location_href(ctx_id) {
     Some(href) => {
-      self.send_script_remote_value_response(
-        request_id,
-        realm_id,
-        make_object({
-          "type": Json::string("string"),
-          "value": Json::string(href),
-        }),
-        unwrap_result,
-      )
+      let remote_value = make_object({
+        "type": Json::string("string"),
+        "value": Json::string(href),
+      })
+      if unwrap_result {
+        self.send_script_synthetic_value_response(request_id, remote_value)
+      } else {
+        self.send_script_remote_value_response(
+          request_id, realm_id, remote_value, false,
+        )
+      }
       true
     }
     None => false

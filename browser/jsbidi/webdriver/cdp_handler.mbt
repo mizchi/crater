@@ -39,6 +39,17 @@ pub fn CdpSessionManager::create_session(self : CdpSessionManager) -> String {
 }
 
 ///|
+/// Recreate a CDP session with a caller-provided session id.
+pub fn CdpSessionManager::create_session_with_id(
+  self : CdpSessionManager,
+  session_id : String,
+) -> String {
+  let session = @cdp.CdpSession::new(session_id)
+  self.sessions[session_id] = session
+  session_id
+}
+
+///|
 /// Get a session by ID
 pub fn CdpSessionManager::get_session(
   self : CdpSessionManager,

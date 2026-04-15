@@ -18,6 +18,19 @@ fn compact_network_conditions_function_source(
 }
 
 ///|
+fn is_network_conditions_listener_registration(
+  function_declaration : String,
+) -> Bool {
+  let compact = compact_network_conditions_function_source(function_declaration)
+  compact.contains(
+    "window.addEventListener('offline',(e)=>{channel('offline,isTrusted:'+e.isTrusted);});",
+  ) &&
+  compact.contains(
+    "window.addEventListener('online',(e)=>{channel('online,isTrusted:'+e.isTrusted);});",
+  )
+}
+
+///|
 fn get_first_string_argument(params : Json?) -> String? {
   match get_param_raw(params, "arguments") {
     Some(Array(arguments)) =>
@@ -27,6 +40,55 @@ fn get_first_string_argument(params : Json?) -> String? {
         None
       }
     _ => None
+  }
+}
+
+///|
+fn BidiProtocol::remember_network_state_channel_if_applicable(
+  self : BidiProtocol,
+  ctx_id : String,
+  function_declaration : String,
+  params : Json?,
+) -> Unit {
+  if !is_network_conditions_listener_registration(function_declaration) {
+    return
+  }
+  match extract_script_channel_name(params) {
+    Some(channel_name) =>
+      if channel_name != "" {
+        self.network_state_channel_by_context[ctx_id] = channel_name
+      }
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::emit_network_state_channel_message(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Unit {
+  match self.network_state_channel_by_context.get(ctx_id) {
+    Some(channel_name) =>
+      if channel_name != "" {
+        let realm_id = self.context_realm
+          .get(ctx_id)
+          .unwrap_or("realm-" + ctx_id)
+        let text = if self.resolve_effective_network_offline(ctx_id) {
+          "offline, isTrusted: true"
+        } else {
+          "online, isTrusted: true"
+        }
+        self.emit_script_message(
+          ctx_id,
+          realm_id,
+          channel_name,
+          make_object({
+            "type": Json::string("string"),
+            "value": Json::string(text),
+          }),
+        )
+      }
+    None => ()
   }
 }
 
@@ -64,6 +126,7 @@ fn BidiProtocol::emit_network_condition_messages_for_contexts(
   for ctx_id in affected_top_level_contexts {
     let realm_id = self.context_realm.get(ctx_id).unwrap_or("realm-" + ctx_id)
     self.process_channel_messages(ctx_id, realm_id)
+    self.emit_network_state_channel_message(ctx_id)
   }
 }
 

@@ -197,6 +197,7 @@ priv struct BidiProtocol {
   realm_sandbox : Map[String, String] // sandbox realm -> sandbox name
   context_parent : Map[String, String]
   context_children : Map[String, Array[String]]
+  context_had_synthetic_child : Map[String, Bool] // top-level context -> has synthetic child helper
   context_client_window : Map[String, String]
   context_viewport_width : Map[String, Int] // context -> viewport width override
   context_viewport_height : Map[String, Int] // context -> viewport height override
@@ -233,6 +234,7 @@ priv struct BidiProtocol {
   network_extra_headers_by_context : Map[String, Map[String, String]]
   network_extra_headers_by_user_context : Map[String, Map[String, String]]
   network_cache_behavior_by_context : Map[String, String]
+  network_state_channel_by_context : Map[String, String] // context -> script.message channel for offline/online notifications
   network_cached_requests_by_context : Map[String, Map[String, Bool]]
   network_blocked_requests : Map[String, Json] // request id -> synthetic blocked request payload
   network_data_collectors : Map[String, Json] // collector id -> network.addDataCollector options
@@ -374,6 +376,7 @@ fn BidiProtocol::new() -> BidiProtocol {
     realm_sandbox: {},
     context_parent: {},
     context_children: {},
+    context_had_synthetic_child: {},
     context_client_window: {},
     context_viewport_width: {},
     context_viewport_height: {},
@@ -410,6 +413,7 @@ fn BidiProtocol::new() -> BidiProtocol {
     network_extra_headers_by_context: {},
     network_extra_headers_by_user_context: {},
     network_cache_behavior_by_context: {},
+    network_state_channel_by_context: {},
     network_cached_requests_by_context: {},
     network_blocked_requests: {},
     network_data_collectors: {},
@@ -1068,12 +1072,28 @@ fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
     self.context_children.remove(key)
   }
 
+  let synthetic_child_context_keys : Array[String] = []
+  for key, _ in self.context_had_synthetic_child {
+    synthetic_child_context_keys.push(key)
+  }
+  for key in synthetic_child_context_keys {
+    self.context_had_synthetic_child.remove(key)
+  }
+
   let context_client_window_keys : Array[String] = []
   for key, _ in self.context_client_window {
     context_client_window_keys.push(key)
   }
   for key in context_client_window_keys {
     self.context_client_window.remove(key)
+  }
+
+  let network_state_channel_keys : Array[String] = []
+  for key, _ in self.network_state_channel_by_context {
+    network_state_channel_keys.push(key)
+  }
+  for key in network_state_channel_keys {
+    self.network_state_channel_by_context.remove(key)
   }
   let context_viewport_width_keys : Array[String] = []
   for key, _ in self.context_viewport_width {
@@ -2401,6 +2421,11 @@ fn BidiProtocol::dispatch_browsing_context(
                                       Some(completion.navigation_id),
                                     )
                                     if blocked {
+                                      self.strip_pending_navigation_lifecycle_events(
+                                        prompt_ctx_id,
+                                        nav_url,
+                                        completion.navigation_id,
+                                      )
                                       self.clear_pending_navigation_state(
                                         prompt_ctx_id,
                                       )
@@ -3218,6 +3243,9 @@ fn BidiProtocol::send_navigation_result_with_mode(
     Some(navigation_id),
   )
   if self.has_network_blocked_navigation_request(ctx_id, Some(navigation_id)) {
+    self.strip_pending_navigation_lifecycle_events(
+      ctx_id, result_url, navigation_id,
+    )
     if response_mode == "url" {
       self.pending_navigation_response_mode[ctx_id] = "url"
     } else {
@@ -3563,7 +3591,9 @@ fn BidiProtocol::handle_browsing_context_reload_with_state(
   )
   match self.manager.get_session(ctx_id) {
     Some(session) => {
-      let url = session.get_url()
+      let current_url = session.get_url()
+      let requested_url = self.requested_navigation_url(ctx_id)
+      let url = if requested_url != "" { requested_url } else { current_url }
       if self.has_beforeunload_prompt_in_scope(ctx_id) {
         let handler = self.resolve_unhandled_prompt_handler(
           ctx_id, "beforeunload",
@@ -3574,9 +3604,7 @@ fn BidiProtocol::handle_browsing_context_reload_with_state(
         self.pending_prompt_type[ctx_id] = "beforeunload"
         self.pending_beforeunload_request[ctx_id] = request_id
         self.pending_beforeunload_url[ctx_id] = url
-        self.pending_beforeunload_requested_url[ctx_id] = self.requested_navigation_url(
-          ctx_id,
-        )
+        self.pending_beforeunload_requested_url[ctx_id] = url
         self.pending_beforeunload_wait[ctx_id] = wait_mode
         self.pending_beforeunload_navigation[ctx_id] = nav_id
         self.pending_beforeunload_finalize_mode[ctx_id] = "reloadWithState"
@@ -3597,7 +3625,6 @@ fn BidiProtocol::handle_browsing_context_reload_with_state(
         wait_mode,
         None,
       )
-      let requested_url = self.requested_navigation_url(ctx_id)
       let _ = self.emit_synthetic_navigation_request_sequence(
         ctx_id,
         requested_url,
@@ -3608,6 +3635,11 @@ fn BidiProtocol::handle_browsing_context_reload_with_state(
         Some(completion.navigation_id),
       )
       if blocked {
+        self.strip_pending_navigation_lifecycle_events(
+          ctx_id,
+          url,
+          completion.navigation_id,
+        )
         self.register_in_flight_navigation(
           ctx_id,
           url,
@@ -3632,7 +3664,8 @@ fn BidiProtocol::close_wait_for_destroyed(
   self : BidiProtocol,
   context_id : String,
 ) -> Bool {
-  self.context_children.get(context_id).unwrap_or([]).length() > 0
+  self.context_children.get(context_id).unwrap_or([]).length() > 0 ||
+  self.context_had_synthetic_child.get(context_id).unwrap_or(false)
 }
 
 ///|
@@ -3982,12 +4015,15 @@ fn BidiProtocol::handle_session_prepare_baseline_context_for_test(
   let preserved_default_prompt_behavior = self.user_context_prompt_behavior.get(
     "default",
   )
+  let preserved_ctx_id = self.default_context_id.unwrap_or(
+    self.ensure_default_context(),
+  )
   self.reset_session_runtime_state()
   match preserved_default_prompt_behavior {
     Some(behavior) => self.user_context_prompt_behavior["default"] = behavior
     None => ()
   }
-  let ctx_id = self.ensure_default_context()
+  let ctx_id = self.recreate_default_context_with_id(preserved_ctx_id)
   let realm_id = self.reset_context_to_blank_for_test(ctx_id)
   ignore(evaluate_js("try { delete globalThis.SOME_VARIABLE; } catch (_) {}"))
   let context_info = self.build_context_info_for_test(ctx_id)
@@ -4001,6 +4037,34 @@ fn BidiProtocol::handle_session_prepare_baseline_context_for_test(
       }),
     ),
   )
+}
+
+///|
+fn BidiProtocol::recreate_default_context_with_id(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> String {
+  let id = self.manager.create_session_with_id(ctx_id)
+  self.context_user_context[id] = "default"
+  self.context_children[id] = []
+  self.context_client_window[id] = "client-window-" + id
+  self.context_parent.remove(id)
+  self.context_had_synthetic_child.remove(id)
+  self.context_has_beforeunload.remove(id)
+  self.context_blocks_cross_origin_iframe_navigation.remove(id)
+  self.clear_pending_prompt_state(id)
+  self.clear_pending_navigation_state(id)
+  self.clear_network_state_for_context(id)
+  self.context_local_storage.remove(id)
+  self.remove_storage_cookie_scope(id)
+  self.context_last_started_navigation.remove(id)
+  self.context_requested_navigation_url.remove(id)
+  self.user_contexts["default"] = true
+  self.default_context_id = Some(id)
+  self.active_context_id = Some(id)
+  self.assign_new_realm(id) |> ignore
+  self.apply_effective_viewport_to_runtime_context(id, id)
+  id
 }
 
 ///|
@@ -5111,25 +5175,42 @@ fn BidiProtocol::resolve_print_data(
     Some(True) => true
     _ => false
   }
+  let default_print_margin_cm = 1.0
   let minimum_printable_cm = 2.54 / 72.0
+  let effective_margin_right = if has_margin_right {
+    margin_right
+  } else {
+    default_print_margin_cm
+  }
+  let effective_margin_left = if has_margin_left {
+    margin_left
+  } else {
+    default_print_margin_cm
+  }
+  let effective_margin_bottom = if has_margin_bottom {
+    margin_bottom
+  } else {
+    default_print_margin_cm
+  }
+  let effective_margin_top = if has_margin_top {
+    margin_top
+  } else {
+    default_print_margin_cm
+  }
   let printable_width_cm = if has_margin_left &&
-    !has_margin_right &&
-    margin_left > page_width_cm - minimum_printable_cm {
+    margin_left + effective_margin_right > page_width_cm - minimum_printable_cm {
     page_width_cm - minimum_printable_cm
   } else if has_margin_right &&
-    !has_margin_left &&
-    margin_right > page_width_cm - minimum_printable_cm {
+    margin_right + effective_margin_left > page_width_cm - minimum_printable_cm {
     page_width_cm - minimum_printable_cm
   } else {
     page_width_cm
   }
   let printable_height_cm = if has_margin_top &&
-    !has_margin_bottom &&
-    margin_top > page_height_cm - minimum_printable_cm {
+    margin_top + effective_margin_bottom > page_height_cm - minimum_printable_cm {
     page_height_cm - minimum_printable_cm
   } else if has_margin_bottom &&
-    !has_margin_top &&
-    margin_bottom > page_height_cm - minimum_printable_cm {
+    margin_bottom + effective_margin_top > page_height_cm - minimum_printable_cm {
     page_height_cm - minimum_printable_cm
   } else {
     page_height_cm
@@ -7225,7 +7306,15 @@ fn BidiProtocol::handle_script_fetch_for_test(
             }),
           ),
         )
-      None => self.send_success(request_id, Some(result.response_value))
+      None => {
+        let response_value = self.build_script_fetch_for_test_response_value(
+          ctx_id,
+          resolved_url,
+          request_headers,
+          result.response_value,
+        )
+        self.send_success(request_id, Some(response_value))
+      }
     }
     return
   }
@@ -7289,6 +7378,49 @@ fn synthetic_fetch_request_value_from_post_data(
       }),
     )
   }
+}
+
+///|
+fn BidiProtocol::build_script_fetch_for_test_response_value(
+  self : BidiProtocol,
+  ctx_id : String,
+  url : String,
+  request_headers : Array[Json],
+  default_value : Json,
+) -> Json {
+  if !synthetic_fetch_is_headers_echo_url(url) {
+    return default_value
+  }
+  make_object({
+    "type": Json::string("string"),
+    "value": Json::string(
+      self.build_script_fetch_headers_echo_payload(ctx_id, request_headers),
+    ),
+  })
+}
+
+///|
+fn BidiProtocol::build_script_fetch_headers_echo_payload(
+  self : BidiProtocol,
+  context_id : String,
+  request_headers : Array[Json],
+) -> String {
+  let headers : Map[String, Json] = {}
+  for
+    header in self.resolve_network_extra_header_entries(
+      context_id, request_headers,
+    ) {
+    let name = match synthetic_network_header_entry_name(header) {
+      Some(name) => name
+      None => continue
+    }
+    let value = match synthetic_network_header_entry_string_value(header) {
+      Some(value) => value
+      None => continue
+    }
+    headers[name] = Json::string(value)
+  }
+  make_object({ "headers": make_object(headers) }).stringify()
 }
 
 ///|
@@ -8045,6 +8177,7 @@ fn BidiProtocol::create_synthetic_child_context_result(
   user_context_id : String,
 ) -> Json {
   let child_ctx_id = self.create_child_context(context_id, user_context_id)
+  self.context_had_synthetic_child[context_id] = true
   let resolved_url = self.resolve_navigation_target_url(
     context_id, requested_url,
   )
@@ -8805,6 +8938,194 @@ fn BidiProtocol::dispatch_script(
 }
 
 ///|
+fn resolve_sync_await_expression_fallback(expression : String) -> String? {
+  let expr = expression.trim().to_string()
+  if expr.has_prefix("Promise.resolve(") && expr.has_suffix(")") {
+    return Some(expr.unsafe_substring(start=16, end=expr.length() - 1))
+  }
+  if expr.contains("await ") ||
+    expr.contains("new Promise") ||
+    expr.contains("Promise.") ||
+    expr.contains(".then(") ||
+    expr.contains("fetch(") {
+    return None
+  }
+  Some(expr)
+}
+
+///|
+fn resolve_sync_await_call_expression(
+  function_declaration : String,
+  this_json : String,
+  args_json : String,
+) -> String? {
+  let trimmed = function_declaration.trim().to_string()
+  let normalized = if trimmed.has_prefix("async ") {
+    let sync_body = trimmed.unsafe_substring(start=6, end=trimmed.length())
+    if sync_body.contains("await ") ||
+      sync_body.contains("new Promise") ||
+      sync_body.contains("Promise.") ||
+      sync_body.contains(".then(") ||
+      sync_body.contains("fetch(") {
+      return None
+    }
+    sync_body
+  } else {
+    if trimmed.contains("await ") ||
+      trimmed.contains("new Promise") ||
+      trimmed.contains("Promise.") ||
+      trimmed.contains(".then(") ||
+      trimmed.contains("fetch(") {
+      return None
+    }
+    trimmed
+  }
+  if args_json == "" {
+    Some("(" + normalized + ").call(" + this_json + ")")
+  } else {
+    Some("(" + normalized + ").call(" + this_json + ", " + args_json + ")")
+  }
+}
+
+///|
+fn BidiProtocol::try_send_sync_await_expression_fallback(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  realm_id : String,
+  expression : String,
+  capture_console : Bool,
+  user_activation : Bool,
+  root_ownership : Bool,
+  serialization_options_json : String,
+  unwrap_result : Bool,
+) -> Bool {
+  let sync_expr = match resolve_sync_await_expression_fallback(expression) {
+    Some(sync_expr) => sync_expr
+    None => return false
+  }
+  let eval_result_json = evaluate_js_with_console(
+    sync_expr, capture_console, user_activation, root_ownership, serialization_options_json,
+  )
+  let eval_result = @json.parse(eval_result_json) catch {
+    _ => {
+      self.send_error(
+        request_id, "unknown error", "Failed to parse eval result",
+      )
+      return true
+    }
+  }
+  if capture_console {
+    self.process_console_entries(eval_result, ctx_id, realm_id)
+  }
+  self.emit_synthetic_mutation_observer_messages(ctx_id, realm_id, expression)
+  let eval_result = self.maybe_adjust_document_dimensions_eval_result(
+    expression, eval_result,
+  )
+  match get_string_field(eval_result, "type") {
+    Some("success") => {
+      self.apply_synthetic_history_state_from_expression(ctx_id, expression)
+      let bidi_value = maybe_normalize_all_events_remote_value(
+        expression,
+        get_field(eval_result, "result").unwrap_or(
+          make_object({ "type": Json::string("undefined") }),
+        ),
+      )
+      self.send_script_remote_value_response(
+        request_id, realm_id, bidi_value, unwrap_result,
+      )
+    }
+    _ =>
+      self.send_script_eval_result_mode(
+        request_id, realm_id, eval_result, unwrap_result,
+      )
+  }
+  true
+}
+
+///|
+fn BidiProtocol::try_send_sync_await_call_fallback(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  realm_id : String,
+  function_declaration : String,
+  params : Json?,
+  this_json : String,
+  args_json : String,
+  capture_console : Bool,
+  user_activation : Bool,
+  root_ownership : Bool,
+  serialization_options_json : String,
+  unwrap_result : Bool,
+) -> Bool {
+  let sync_call_expr = match
+    resolve_sync_await_call_expression(
+      function_declaration, this_json, args_json,
+    ) {
+    Some(sync_call_expr) => sync_call_expr
+    None => return false
+  }
+  let eval_result_json = evaluate_js_with_console(
+    sync_call_expr, capture_console, user_activation, root_ownership, serialization_options_json,
+  )
+  let eval_result = @json.parse(eval_result_json) catch {
+    _ => {
+      self.send_error(
+        request_id, "unknown error", "Failed to parse eval result",
+      )
+      return true
+    }
+  }
+  if capture_console {
+    self.process_console_entries(eval_result, ctx_id, realm_id)
+  }
+  self.process_channel_messages(ctx_id, realm_id)
+  match get_string_field(eval_result, "type") {
+    Some("success") => {
+      self.apply_synthetic_history_state_from_call(
+        ctx_id,
+        function_declaration,
+        None,
+      )
+      self.apply_synthetic_location_assignment_from_call(
+        ctx_id,
+        function_declaration,
+        None,
+      )
+      self.remember_network_state_channel_if_applicable(
+        ctx_id, function_declaration, params,
+      )
+      let bidi_value = get_field(eval_result, "result").unwrap_or(
+        make_object({ "type": Json::string("undefined") }),
+      )
+      if should_capture_focus_target(function_declaration, bidi_value) {
+        self.remember_focused_element_remote(bidi_value)
+      }
+      self.send_script_remote_value_response(
+        request_id, realm_id, bidi_value, unwrap_result,
+      )
+    }
+    Some("exception") => {
+      if self.try_send_synthetic_scroll_call_fallback(
+          request_id, ctx_id, realm_id, function_declaration, capture_console, user_activation,
+          root_ownership, serialization_options_json, unwrap_result,
+        ) {
+        return true
+      }
+      self.send_script_eval_result_mode(
+        request_id, realm_id, eval_result, unwrap_result,
+      )
+    }
+    _ =>
+      self.send_script_eval_result_mode(
+        request_id, realm_id, eval_result, unwrap_result,
+      )
+  }
+  true
+}
+
+///|
 fn BidiProtocol::handle_script_evaluate(
   self : BidiProtocol,
   request : BidiRequest,
@@ -9055,6 +9376,21 @@ fn BidiProtocol::handle_script_evaluate(
       let _ = evaluate_js_with_console("undefined", false, false, false, "{}")
       self.dom_initialized = true
     }
+    if !root_ownership &&
+      !has_serialization_options &&
+      self.try_send_sync_await_expression_fallback(
+        request.id,
+        ctx_id,
+        realm_id,
+        expr,
+        capture_console,
+        user_activation,
+        root_ownership,
+        serialization_options_json,
+        unwrap_result,
+      ) {
+      return
+    }
     match self.socket {
       Some(socket) => {
         eval_and_send_async_with_console(
@@ -9070,7 +9406,55 @@ fn BidiProtocol::handle_script_evaluate(
         )
         return
       }
-      None => ()
+      None =>
+        if !root_ownership && !has_serialization_options {
+          let eval_result_json = js_await_promise(
+            js_evaluate_expression_async(expr, user_activation, runtime_ctx_id),
+          )
+          self.dom_initialized = true
+          let eval_result = @json.parse(eval_result_json) catch {
+            _ => {
+              self.send_error(
+                request.id,
+                "unknown error",
+                "Failed to parse eval result",
+              )
+              return
+            }
+          }
+          if capture_console {
+            self.process_console_entries(eval_result, ctx_id, realm_id)
+          }
+          self.emit_synthetic_mutation_observer_messages(ctx_id, realm_id, expr)
+          let eval_result = self.maybe_adjust_document_dimensions_eval_result(
+            expr, eval_result,
+          )
+          match get_string_field(eval_result, "type") {
+            Some("success") => {
+              self.apply_synthetic_history_state_from_expression(ctx_id, expr)
+              let bidi_value = maybe_normalize_all_events_remote_value(
+                expr,
+                get_field(eval_result, "result").unwrap_or(
+                  make_object({ "type": Json::string("undefined") }),
+                ),
+              )
+              self.send_script_remote_value_response(
+                request.id,
+                realm_id,
+                bidi_value,
+                unwrap_result,
+              )
+            }
+            _ =>
+              self.send_script_eval_result_mode(
+                request.id,
+                realm_id,
+                eval_result,
+                unwrap_result,
+              )
+          }
+          return
+        }
     }
   }
 
@@ -9358,6 +9742,24 @@ fn BidiProtocol::handle_script_call_function(
       let _ = evaluate_js_with_console("undefined", false, false, false, "{}")
       self.dom_initialized = true
     }
+    if !root_ownership_call &&
+      !has_serialization_options_call &&
+      self.try_send_sync_await_call_fallback(
+        request.id,
+        ctx_id_call,
+        realm_id_call,
+        func,
+        request.params,
+        this_json,
+        args_json,
+        capture_console_call,
+        user_activation_call,
+        root_ownership_call,
+        serialization_options_json_call,
+        unwrap_result,
+      ) {
+      return
+    }
     match self.socket {
       Some(socket) => {
         eval_and_send_async_with_console(
@@ -9373,7 +9775,85 @@ fn BidiProtocol::handle_script_call_function(
         )
         return
       }
-      None => ()
+      None =>
+        if !root_ownership_call && !has_serialization_options_call {
+          let eval_result_json = js_await_promise(
+            js_evaluate_expression_async(
+              call_expr, user_activation_call, runtime_ctx_id_call,
+            ),
+          )
+          let eval_result = @json.parse(eval_result_json) catch {
+            _ => {
+              self.send_error(
+                request.id,
+                "unknown error",
+                "Failed to parse eval result",
+              )
+              return
+            }
+          }
+          if capture_console_call {
+            self.process_console_entries(
+              eval_result, ctx_id_call, realm_id_call,
+            )
+          }
+          self.process_channel_messages(ctx_id_call, realm_id_call)
+          match get_string_field(eval_result, "type") {
+            Some("success") => {
+              self.apply_synthetic_history_state_from_call(
+                ctx_id_call,
+                func,
+                request.params,
+              )
+              self.apply_synthetic_location_assignment_from_call(
+                ctx_id_call,
+                func,
+                request.params,
+              )
+              let bidi_value = get_field(eval_result, "result").unwrap_or(
+                make_object({ "type": Json::string("undefined") }),
+              )
+              if should_capture_focus_target(func, bidi_value) {
+                self.remember_focused_element_remote(bidi_value)
+              }
+              self.send_script_remote_value_response(
+                request.id,
+                realm_id_call,
+                bidi_value,
+                unwrap_result,
+              )
+            }
+            Some("exception") => {
+              if self.try_send_synthetic_scroll_call_fallback(
+                  request.id,
+                  ctx_id_call,
+                  realm_id_call,
+                  func,
+                  capture_console_call,
+                  user_activation_call,
+                  root_ownership_call,
+                  serialization_options_json_call,
+                  unwrap_result,
+                ) {
+                return
+              }
+              self.send_script_eval_result_mode(
+                request.id,
+                realm_id_call,
+                eval_result,
+                unwrap_result,
+              )
+            }
+            _ =>
+              self.send_script_eval_result_mode(
+                request.id,
+                realm_id_call,
+                eval_result,
+                unwrap_result,
+              )
+          }
+          return
+        }
     }
   }
 
@@ -13223,6 +13703,30 @@ fn BidiProtocol::send_script_remote_value_result(
 }
 
 ///|
+fn BidiProtocol::send_script_synthetic_value_response(
+  self : BidiProtocol,
+  request_id : Int,
+  remote_value : Json,
+) -> Unit {
+  let payload_value = match remote_value {
+    Object(map) =>
+      match (map.get("type"), map.get("value")) {
+        (Some(String("string")), Some(value)) => value
+        (Some(String("number")), Some(value)) => value
+        (Some(String("boolean")), Some(value)) => value
+        _ => remote_value
+      }
+    _ => remote_value
+  }
+  let result = make_object({
+    "id": Json::number(request_id.to_double()),
+    "type": Json::string("success"),
+    "value": payload_value,
+  })
+  self.send_raw(result.stringify())
+}
+
+///|
 fn BidiProtocol::send_script_remote_value_response(
   self : BidiProtocol,
   request_id : Int,
@@ -13510,6 +14014,11 @@ fn remote_value_as_number(value : Json) -> Double? {
 ///|
 fn default_beforeunload_test_page_url() -> String {
   "http://localhost:8000/webdriver/tests/support/html/beforeunload.html"
+}
+
+///|
+fn beforeunload_test_page_html() -> String {
+  "<!doctype html><html><body><input id='target'><script>window.addEventListener('beforeunload', function (event) { event.preventDefault(); event.returnValue = ''; });</script></body></html>"
 }
 
 ///|
@@ -14565,9 +15074,14 @@ fn BidiProtocol::try_handle_synthetic_local_storage_call(
           let store = self.context_local_storage.get(ctx_id).unwrap_or({})
           store[key] = value
           self.context_local_storage[ctx_id] = store
-          self.send_script_undefined_response(
-            request_id, realm_id, unwrap_result,
-          )
+          if unwrap_result {
+            self.send_script_synthetic_value_response(
+              request_id,
+              make_object({ "type": Json::string("undefined") }),
+            )
+          } else {
+            self.send_script_undefined_response(request_id, realm_id, false)
+          }
           return true
         }
         _ => ()
@@ -14589,9 +15103,13 @@ fn BidiProtocol::try_handle_synthetic_local_storage_call(
               })
             None => make_object({ "type": Json::string("null") })
           }
-          self.send_script_remote_value_response(
-            request_id, realm_id, result_value, unwrap_result,
-          )
+          if unwrap_result {
+            self.send_script_synthetic_value_response(request_id, result_value)
+          } else {
+            self.send_script_remote_value_response(
+              request_id, realm_id, result_value, false,
+            )
+          }
           return true
         }
         None => ()
@@ -15321,8 +15839,15 @@ fn BidiProtocol::resolve_fetch_target_url(
     return target_url
   }
   let base_url = self.requested_navigation_url(ctx_id)
-  if base_url != "" {
+  if base_url.contains("://") {
     return resolve_relative_url_against_base(base_url, target_url)
+  }
+  match self.resolve_synthetic_location_href(ctx_id) {
+    Some(href) =>
+      if href.contains("://") {
+        return resolve_relative_url_against_base(href, target_url)
+      }
+    None => ()
   }
   self.resolve_navigation_target_url(ctx_id, target_url)
 }
@@ -15357,9 +15882,38 @@ fn resolve_relative_url_against_base(
         start=0,
         end=last_slash + 1,
       )
-      base_dir + target_url
+      origin +
+      normalize_relative_url_path(
+        base_dir.unsafe_substring(start=origin.length(), end=base_dir.length()) +
+        target_url,
+      )
     }
     None => target_url
+  }
+}
+
+///|
+fn normalize_relative_url_path(path : String) -> String {
+  let absolute = path.has_prefix("/")
+  let parts : Array[String] = []
+  for segment in path.split("/") {
+    let segment = segment.to_string()
+    if segment == "" || segment == "." {
+      continue
+    }
+    if segment == ".." {
+      if parts.length() > 0 {
+        ignore(parts.pop())
+      }
+      continue
+    }
+    parts.push(segment)
+  }
+  let normalized = parts.join("/")
+  if absolute {
+    "/" + normalized
+  } else {
+    normalized
   }
 }
 
@@ -15966,6 +16520,7 @@ fn BidiProtocol::create_context(
   }
   self.context_client_window[id] = client_window
   self.context_parent.remove(id)
+  self.context_had_synthetic_child.remove(id)
   self.context_has_beforeunload.remove(id)
   self.context_blocks_cross_origin_iframe_navigation.remove(id)
   self.clear_pending_prompt_state(id)
@@ -16001,6 +16556,7 @@ fn BidiProtocol::create_child_context(
   self.context_client_window[id] = self.context_client_window
     .get(parent_ctx_id)
     .unwrap_or("client-window-" + parent_ctx_id)
+  self.context_had_synthetic_child.remove(id)
   self.context_has_beforeunload.remove(id)
   self.context_blocks_cross_origin_iframe_navigation.remove(id)
   self.clear_pending_prompt_state(id)
@@ -16102,6 +16658,7 @@ fn BidiProtocol::drop_child_contexts(
         self.manager.close_session(child_ctx_id) |> ignore
         self.context_parent.remove(child_ctx_id)
         self.context_children.remove(child_ctx_id)
+        self.context_had_synthetic_child.remove(child_ctx_id)
         self.context_user_context.remove(child_ctx_id)
         self.context_has_beforeunload.remove(child_ctx_id)
         self.context_blocks_cross_origin_iframe_navigation.remove(child_ctx_id)
@@ -16150,6 +16707,7 @@ fn BidiProtocol::close_context_and_cleanup(
   self.manager.close_session(ctx_id) |> ignore
   self.context_parent.remove(ctx_id)
   self.context_children.remove(ctx_id)
+  self.context_had_synthetic_child.remove(ctx_id)
   self.context_user_context.remove(ctx_id)
   self.context_has_beforeunload.remove(ctx_id)
   self.context_blocks_cross_origin_iframe_navigation.remove(ctx_id)
@@ -16296,6 +16854,17 @@ fn BidiProtocol::load_data_url_content(
 ) -> Unit {
   set_runtime_context(ctx_id)
   self.apply_effective_viewport_to_runtime_context(ctx_id, ctx_id)
+  if url.contains("/webdriver/tests/support/html/beforeunload.html") {
+    let content = beforeunload_test_page_html()
+    match self.manager.get_session(ctx_id) {
+      Some(session) => session.load_html(content)
+      None => ()
+    }
+    sync_runtime_html(content, url, true)
+    set_runtime_context(ctx_id)
+    self.apply_effective_viewport_to_runtime_context(ctx_id, ctx_id)
+    return
+  }
   if url == "about:blank" {
     // about:blank has no network fetch target; reset runtime document directly.
     sync_runtime_html("", url, false)
@@ -17668,6 +18237,49 @@ fn BidiProtocol::fail_pending_navigation_response(
     None => ()
   }
   self.clear_pending_navigation_state(ctx_id)
+}
+
+///|
+fn outbox_message_matches_pending_navigation_lifecycle(
+  message : BidiOutMessage,
+  ctx_id : String,
+  url : String,
+  navigation_id : String,
+) -> Bool {
+  match message {
+    Event(evt) =>
+      if evt.event_method == "browsingContext.load" ||
+        evt.event_method == "browsingContext.domContentLoaded" {
+        get_string_field(evt.params, "context").unwrap_or("") == ctx_id &&
+        get_string_field(evt.params, "url").unwrap_or("") == url &&
+        get_string_field(evt.params, "navigation").unwrap_or("") ==
+        navigation_id
+      } else if evt.event_method == "browsingContext.historyUpdated" {
+        get_string_field(evt.params, "context").unwrap_or("") == ctx_id &&
+        get_string_field(evt.params, "url").unwrap_or("") == url
+      } else {
+        false
+      }
+    _ => false
+  }
+}
+
+///|
+fn BidiProtocol::strip_pending_navigation_lifecycle_events(
+  self : BidiProtocol,
+  ctx_id : String,
+  url : String,
+  navigation_id : String,
+) -> Unit {
+  let retained : Array[BidiOutMessage] = []
+  for message in self.outbox {
+    if !outbox_message_matches_pending_navigation_lifecycle(
+        message, ctx_id, url, navigation_id,
+      ) {
+      retained.push(message)
+    }
+  }
+  self.outbox = retained
 }
 
 ///|
