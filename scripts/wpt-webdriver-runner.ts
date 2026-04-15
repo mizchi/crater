@@ -58,6 +58,7 @@ interface PytestSummary {
 interface RunOutcome {
   exitCode: number;
   summary: PytestSummary;
+  failureDetails?: string;
 }
 
 interface WptCompatShardReport {
@@ -318,6 +319,14 @@ function stripAnsi(input: string): string {
   return input.replace(/\x1B\[[0-9;]*m/g, "");
 }
 
+function formatFailureLines(lines: string[]): string | undefined {
+  const compact = lines
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (compact.length === 0) return undefined;
+  return compact.join(" | ").replace(/\s+/g, " ").slice(0, 700);
+}
+
 export function parsePytestSummary(output: string): PytestSummary {
   const cleaned = stripAnsi(output).replace(/\r/g, "");
   const lines = cleaned.split("\n").map((line) => line.trim());
@@ -363,6 +372,41 @@ export function parsePytestSummary(output: string): PytestSummary {
   };
 }
 
+export function extractPytestFailureDetails(output: string): string | undefined {
+  const cleaned = stripAnsi(output).replace(/\r/g, "");
+  const lines = cleaned.split("\n").map((line) => line.trimEnd());
+  const shortSummaryIndex = lines.findIndex((line) =>
+    /short test summary info/i.test(line),
+  );
+
+  if (shortSummaryIndex >= 0) {
+    const summaryLines: string[] = [];
+    for (let i = shortSummaryIndex + 1; i < lines.length; i++) {
+      const trimmed = lines[i].trim();
+      if (!trimmed) continue;
+      if (/^=+/.test(trimmed)) break;
+      if (/^(FAILED|ERROR)\b/.test(trimmed)) {
+        summaryLines.push(trimmed);
+      }
+    }
+    const shortSummary = formatFailureLines(summaryLines);
+    if (shortSummary) return shortSummary;
+  }
+
+  const fallbackLines = lines.filter((line) => {
+    const trimmed = line.trim();
+    return (
+      /^FAILED\b/.test(trimmed) ||
+      /^ERROR\b/.test(trimmed) ||
+      /^E\s+/.test(trimmed) ||
+      /(AssertionError|TimeoutException|UnknownErrorException|NoSuch\w+Exception)/.test(
+        trimmed,
+      )
+    );
+  });
+  return formatFailureLines(fallbackLines.slice(-6));
+}
+
 function mergeSummaries(base: PytestSummary, item: PytestSummary): PytestSummary {
   return {
     passed: base.passed + item.passed,
@@ -402,6 +446,21 @@ function detectTarget(args: string[]): string {
     return args[1] ? `quick ${args[1]}` : "quick";
   }
   return args[0];
+}
+
+function escapeGitHubAnnotation(value: string): string {
+  return value
+    .replace(/%/g, "%25")
+    .replace(/\r/g, "%0D")
+    .replace(/\n/g, "%0A");
+}
+
+function emitFailureAnnotation(target: string, details: string | undefined): void {
+  if (process.env.GITHUB_ACTIONS !== "true") return;
+  const message = details ? `${target} :: ${details}` : target;
+  console.error(
+    `::error title=WPT WebDriver failure details::${escapeGitHubAnnotation(message)}`,
+  );
 }
 
 function writeShardReport(jsonOutput: string | undefined, target: string, summary: PytestSummary): void {
@@ -630,7 +689,11 @@ async function runTests(
   if (resolvedPath === null) {
     const fullPath = path.join(process.cwd(), WPT_BIDI_TESTS, testPath);
     console.error(`Test path not found: ${fullPath}`);
-    return { exitCode: 1, summary: { passed: 0, failed: 1, errors: 0, total: 1 } };
+    return {
+      exitCode: 1,
+      summary: { passed: 0, failed: 1, errors: 0, total: 1 },
+      failureDetails: `Test path not found: ${fullPath}`,
+    };
   }
 
   const { tempDir, runPath, copied, skipped } = copyTestsToTemp(resolvedPath, options);
@@ -640,7 +703,11 @@ async function runTests(
     if (skipped.length > 0) {
       console.log(`Skipped: ${skipped.slice(0, 5).join(", ")}${skipped.length > 5 ? ` and ${skipped.length - 5} more` : ""}`);
     }
-    return { exitCode: 1, summary: { passed: 0, failed: 1, errors: 0, total: 1 } };
+    return {
+      exitCode: 1,
+      summary: { passed: 0, failed: 1, errors: 0, total: 1 },
+      failureDetails: "No compatible tests found",
+    };
   }
 
   console.log(`Copied ${copied} tests to ${tempDir}`);
@@ -711,7 +778,11 @@ async function runTests(
         // pytest summary line can be missing when process crashes/interrupted
         summary = { passed: 0, failed: 1, errors: 0, total: 1 };
       }
-      resolve({ exitCode, summary });
+      resolve({
+        exitCode,
+        summary,
+        failureDetails: exitCode !== 0 ? extractPytestFailureDetails(output) : undefined,
+      });
     });
   });
 }
@@ -722,7 +793,11 @@ async function runProfile(profileName: string): Promise<RunOutcome> {
   const profile = resolveProfileConfig(config, profileName);
   if (!profile) {
     console.error(`Profile "${profileName}" not found in ${SUBSET_CONFIG}`);
-    return { exitCode: 1, summary: { passed: 0, failed: 1, errors: 0, total: 1 } };
+    return {
+      exitCode: 1,
+      summary: { passed: 0, failed: 1, errors: 0, total: 1 },
+      failureDetails: `Profile "${profileName}" not found`,
+    };
   }
 
   console.log(`Running profile: ${profileName}\n`);
@@ -786,6 +861,7 @@ async function main(): Promise<number> {
   if (!checkUv()) {
     console.error("uv not found. Install: curl -LsSf https://astral.sh/uv/install.sh | sh");
     writeShardReport(cliOptions.jsonOutput, target, { passed: 0, failed: 1, errors: 0, total: 1 });
+    emitFailureAnnotation(target, "uv not found");
     return 1;
   }
 
@@ -799,6 +875,7 @@ async function main(): Promise<number> {
     if (!ready) {
       console.error("Server failed to start");
       writeShardReport(cliOptions.jsonOutput, target, { passed: 0, failed: 1, errors: 0, total: 1 });
+      emitFailureAnnotation(target, "Server failed to start");
       return 1;
     }
     console.log("Server ready.\n");
@@ -824,9 +901,16 @@ async function main(): Promise<number> {
     }
 
     writeShardReport(cliOptions.jsonOutput, target, outcome.summary);
+    if (outcome.exitCode !== 0) {
+      emitFailureAnnotation(target, outcome.failureDetails);
+    }
     return outcome.exitCode;
   } catch (error) {
     writeShardReport(cliOptions.jsonOutput, target, { passed: 0, failed: 1, errors: 0, total: 1 });
+    emitFailureAnnotation(
+      target,
+      error instanceof Error ? error.message : String(error),
+    );
     throw error;
   } finally {
     // Stop server

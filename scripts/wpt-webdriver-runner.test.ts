@@ -3,6 +3,7 @@ import os from "os";
 import path from "path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  extractPytestFailureDetails,
   parsePytestSummary,
   resolveBidiServerPath,
   resolveRequestedTargetPath,
@@ -89,6 +90,27 @@ describe("parsePytestSummary", () => {
       errors: 0,
       total: 7,
     });
+  });
+});
+
+describe("extractPytestFailureDetails", () => {
+  it("extracts concise lines from pytest short summary info", () => {
+    const output = [
+      "============================= test session starts ==============================",
+      "collected 2 items",
+      "",
+      "=================================== FAILURES ===================================",
+      "... traceback omitted ...",
+      "",
+      "=========================== short test summary info ============================",
+      "FAILED .wpt-temp/tests/bidi/session/subscribe/events.py::test_subscribe_to_module - AssertionError: assert 1 == 2",
+      "ERROR .wpt-temp/tests/bidi/script/get_realms/get_realms.py::test_iframes - TimeoutException: Timed out waiting",
+      "========================= 1 failed, 1 error in 3.21s ==========================",
+    ].join("\n");
+
+    expect(extractPytestFailureDetails(output)).toBe(
+      "FAILED .wpt-temp/tests/bidi/session/subscribe/events.py::test_subscribe_to_module - AssertionError: assert 1 == 2 | ERROR .wpt-temp/tests/bidi/script/get_realms/get_realms.py::test_iframes - TimeoutException: Timed out waiting",
+    );
   });
 });
 
