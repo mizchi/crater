@@ -185,6 +185,7 @@ priv struct StyleBuilder {
   // Text wrapping and direction
   mut text_align : @style.TextAlign
   mut white_space : @style.WhiteSpace
+  mut text_overflow : @style.TextOverflow
   mut writing_mode : @style.WritingMode
   mut direction : @style.Direction
   // Vertical alignment for inline elements
@@ -200,6 +201,7 @@ priv struct StyleBuilder {
   mut color : @types.Color
   mut background_color : @types.Color
   mut background_image : @types.BackgroundImage
+  mut box_shadows : Array[@style.BoxShadow]
   // Containment
   mut contain : @style.Contain
   // Fragmentation
@@ -314,6 +316,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     line_height: 16.0,
     text_align: @style.TextAlign::Start,
     white_space: @style.WhiteSpace::Normal,
+    text_overflow: @style.TextOverflow::Clip,
     writing_mode: @style.WritingMode::HorizontalTb,
     direction: @style.Direction::Ltr,
     vertical_align: @style.VerticalAlign::Baseline,
@@ -325,6 +328,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     color: @types.Color::black(),
     background_color: @types.Color::transparent(),
     background_image: @types.None,
+    box_shadows: [],
     contain: @style.Contain::none(),
     break_before: @style.BreakBefore::Auto,
     break_after: @style.BreakBefore::Auto,
@@ -434,6 +438,7 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     line_height: style.line_height,
     text_align: style.text_align,
     white_space: style.white_space,
+    text_overflow: style.text_overflow,
     writing_mode: style.writing_mode,
     direction: style.direction,
     vertical_align: style.vertical_align,
@@ -445,6 +450,7 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     color: style.color,
     background_color: style.background_color,
     background_image: style.background_image,
+    box_shadows: style.box_shadows,
     contain: style.contain,
     break_before: style.break_before,
     break_after: style.break_after,
@@ -565,6 +571,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     line_height: self.line_height,
     text_align: self.text_align,
     white_space: self.white_space,
+    text_overflow: self.text_overflow,
     writing_mode: self.writing_mode,
     direction: self.direction,
     vertical_align: self.vertical_align,
@@ -576,6 +583,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     color: self.color,
     background_color: self.background_color,
     background_image: self.background_image,
+    box_shadows: self.box_shadows,
     contain: self.contain,
     break_before: self.break_before,
     break_after: self.break_after,
@@ -791,6 +799,11 @@ fn get_style_value_as_string(property : String, style : @style.Style) -> String 
         style.text_decoration_line_through,
         style.text_decoration_overline,
       )
+    "text-overflow" =>
+      match style.text_overflow {
+        @style.TextOverflow::Clip => "clip"
+        @style.TextOverflow::Ellipsis => "ellipsis"
+      }
     "text-align" =>
       match style.text_align {
         @style.TextAlign::Start => "start"
@@ -992,7 +1005,11 @@ fn seed_writing_mode(
 
 ///|
 fn is_preseeded_font_property(property : String) -> Bool {
-  property == "font" || property == "font-size" || property == "line-height"
+  property == "font" ||
+  property == "font-size" ||
+  property == "line-height" ||
+  property == "font-weight" ||
+  property == "font-family"
 }
 
 ///|
@@ -1005,9 +1022,19 @@ fn seed_font_metrics(
 ) -> ComputeContext {
   let mut seeded_font_size = ctx.font_size
   let mut seeded_line_height = ctx.font_size * 1.2 // CSS initial: normal ≈ 1.2
+  let mut seeded_font_weight = match ctx.parent_style {
+    Some(parent_style) => parent_style.font_weight
+    None => 400.0
+  }
+  let mut seeded_font_family = match ctx.parent_style {
+    Some(parent_style) => parent_style.font_family
+    None => ""
+  }
   let mut font_decl : @cascade.Declaration? = None
   let mut font_size_decl : @cascade.Declaration? = None
   let mut line_height_decl : @cascade.Declaration? = None
+  let mut font_weight_decl : @cascade.Declaration? = None
+  let mut font_family_decl : @cascade.Declaration? = None
   match cascaded.get("font") {
     Some(decl) => font_decl = Some(decl)
     None => ()
@@ -1020,7 +1047,15 @@ fn seed_font_metrics(
     Some(decl) => line_height_decl = Some(decl)
     None => ()
   }
-  for idx = 0; idx < 3; idx = idx + 1 {
+  match cascaded.get("font-weight") {
+    Some(decl) => font_weight_decl = Some(decl)
+    None => ()
+  }
+  match cascaded.get("font-family") {
+    Some(decl) => font_family_decl = Some(decl)
+    None => ()
+  }
+  for idx = 0; idx < 5; idx = idx + 1 {
     let mut next_prop = ""
     let mut next_decl : @cascade.Declaration? = None
     let mut next_order = 2147483647
@@ -1047,6 +1082,24 @@ fn seed_font_metrics(
         if decl.source_order < next_order {
           next_prop = "line-height"
           next_decl = Some(decl)
+          next_order = decl.source_order
+        }
+      None => ()
+    }
+    match font_weight_decl {
+      Some(decl) =>
+        if decl.source_order < next_order {
+          next_prop = "font-weight"
+          next_decl = Some(decl)
+          next_order = decl.source_order
+        }
+      None => ()
+    }
+    match font_family_decl {
+      Some(decl) =>
+        if decl.source_order < next_order {
+          next_prop = "font-family"
+          next_decl = Some(decl)
         }
       None => ()
     }
@@ -1060,9 +1113,11 @@ fn seed_font_metrics(
     let value = resolve_keyword(next_prop, decl.value, ctx)
     match next_prop {
       "font" => {
-        let (font_size, line_height) = parse_font_shorthand(value, ctx)
-        seeded_font_size = font_size
-        seeded_line_height = line_height
+        let parsed = parse_font_shorthand(value, ctx)
+        seeded_font_size = parsed.font_size
+        seeded_line_height = parsed.line_height
+        seeded_font_weight = parsed.font_weight
+        seeded_font_family = parsed.font_family
         font_decl = None
       }
       "font-size" => {
@@ -1073,12 +1128,22 @@ fn seed_font_metrics(
         seeded_line_height = parse_line_height(value, seeded_font_size)
         line_height_decl = None
       }
+      "font-weight" => {
+        seeded_font_weight = parse_font_weight(value)
+        font_weight_decl = None
+      }
+      "font-family" => {
+        seeded_font_family = parse_font_family(value)
+        font_family_decl = None
+      }
       _ => ()
     }
   }
 
   builder.font_size = seeded_font_size
   builder.line_height = seeded_line_height
+  builder.font_weight = seeded_font_weight
+  builder.font_family = seeded_font_family
   { ..ctx, font_size: seeded_font_size }
 }
 
@@ -1962,9 +2027,11 @@ fn apply_property(
     "vertical-align" => builder.vertical_align = parse_vertical_align(value)
     "font" => {
       // Parse font shorthand: [style] [variant] [weight] size[/line-height] family
-      let (fs, lh) = parse_font_shorthand(value, ctx)
-      builder.font_size = fs
-      builder.line_height = lh
+      let parsed = parse_font_shorthand(value, ctx)
+      builder.font_size = parsed.font_size
+      builder.line_height = parsed.line_height
+      builder.font_weight = parsed.font_weight
+      builder.font_family = parsed.font_family
     }
     // CSS Containment
     "contain" => builder.contain = parse_contain(value)
@@ -2044,6 +2111,8 @@ fn apply_property(
         builder.background_image = parse_linear_gradient(value)
       }
     }
+    "box-shadow" =>
+      builder.box_shadows = parse_box_shadows(value, ctx, builder.color)
     // Font weight
     "font-weight" => builder.font_weight = parse_font_weight(value)
     // Font family (store first family name for font matching)
@@ -2091,6 +2160,11 @@ fn apply_property(
       builder.text_decoration_line_through = v.contains("line-through")
       builder.text_decoration_overline = v.contains("overline")
     }
+    "text-overflow" =>
+      builder.text_overflow = match value.trim().to_lower() {
+        "ellipsis" => @style.TextOverflow::Ellipsis
+        _ => @style.TextOverflow::Clip
+      }
     "letter-spacing" => {
       let v = value.trim().to_lower()
       if v == "normal" {
@@ -2152,6 +2226,183 @@ fn parse_font_family(value : String) -> String {
   } else {
     trimmed.to_string().to_lower()
   }
+}
+
+///|
+fn split_css_top_level(input : String, delimiter : Char) -> Array[String] {
+  let parts : Array[String] = []
+  let current = StringBuilder::new()
+  let mut depth = 0
+  for ch in input {
+    if ch == '(' {
+      depth += 1
+      current.write_char(ch)
+      continue
+    }
+    if ch == ')' {
+      if depth > 0 {
+        depth -= 1
+      }
+      current.write_char(ch)
+      continue
+    }
+    if ch == delimiter && depth == 0 {
+      let part = current.to_string().trim().to_string()
+      if !part.is_empty() {
+        parts.push(part)
+      }
+      current.reset()
+      continue
+    }
+    current.write_char(ch)
+  }
+  let last = current.to_string().trim().to_string()
+  if !last.is_empty() {
+    parts.push(last)
+  }
+  parts
+}
+
+///|
+fn split_css_whitespace_preserving_functions(input : String) -> Array[String] {
+  let parts : Array[String] = []
+  let current = StringBuilder::new()
+  let mut depth = 0
+  for ch in input {
+    if ch == '(' {
+      depth += 1
+      current.write_char(ch)
+      continue
+    }
+    if ch == ')' {
+      if depth > 0 {
+        depth -= 1
+      }
+      current.write_char(ch)
+      continue
+    }
+    let is_space = ch == ' ' || ch == '\t' || ch == '\n'
+    if is_space && depth == 0 {
+      let part = current.to_string().trim().to_string()
+      if !part.is_empty() {
+        parts.push(part)
+      }
+      current.reset()
+      continue
+    }
+    current.write_char(ch)
+  }
+  let last = current.to_string().trim().to_string()
+  if !last.is_empty() {
+    parts.push(last)
+  }
+  parts
+}
+
+///|
+fn parse_box_shadows(
+  value : String,
+  ctx : ComputeContext,
+  default_color : @types.Color,
+) -> Array[@style.BoxShadow] {
+  let trimmed = value.trim().to_lower()
+  if trimmed == "none" {
+    return []
+  }
+  let shadows : Array[@style.BoxShadow] = []
+  for entry in split_css_top_level(value, ',') {
+    match parse_box_shadow(entry, ctx, default_color) {
+      Some(shadow) => shadows.push(shadow)
+      None => ()
+    }
+  }
+  shadows
+}
+
+///|
+fn parse_box_shadow(
+  value : String,
+  ctx : ComputeContext,
+  default_color : @types.Color,
+) -> @style.BoxShadow? {
+  let tokens = split_css_whitespace_preserving_functions(value)
+  if tokens.length() == 0 {
+    return None
+  }
+
+  let mut inset = false
+  let mut color = default_color
+  let length_tokens : Array[String] = []
+  for token in tokens {
+    let lower = token.to_lower()
+    if lower == "inset" {
+      inset = true
+      continue
+    }
+    match parse_css_value_to_px(token, ctx) {
+      Some(_) => {
+        length_tokens.push(token)
+        continue
+      }
+      None => ()
+    }
+    if is_box_shadow_color_token(lower) {
+      let parsed_color = parse_color_with_ctx(token, ctx)
+      match parsed_color {
+        Resolved(resolved) => {
+          color = resolved
+          continue
+        }
+        CurrentColor => {
+          color = default_color
+          continue
+        }
+        Inherit => return None
+      }
+    }
+    return None
+  }
+
+  if length_tokens.length() < 2 || length_tokens.length() > 4 {
+    return None
+  }
+
+  let lengths : Array[Double] = []
+  for token in length_tokens {
+    match parse_css_value_to_px(token, ctx) {
+      Some(px) => lengths.push(px)
+      None => return None
+    }
+  }
+
+  Some(
+    @style.BoxShadow::new(
+      inset,
+      lengths[0],
+      lengths[1],
+      if lengths.length() >= 3 {
+        @cmp.maximum(lengths[2], 0.0)
+      } else {
+        0.0
+      },
+      if lengths.length() >= 4 {
+        lengths[3]
+      } else {
+        0.0
+      },
+      color,
+    ),
+  )
+}
+
+///|
+fn is_box_shadow_color_token(token : String) -> Bool {
+  token.has_prefix("#") ||
+  token.has_prefix("rgb(") ||
+  token.has_prefix("rgba(") ||
+  token == "transparent" ||
+  token == "currentcolor" ||
+  get_named_color(token) is Some(_)
 }
 
 ///|
@@ -3558,7 +3809,12 @@ fn apply_inheritance(
   ]
   for prop in inherited_props {
     let covered_by_font_shorthand = cascaded.has("font") &&
-      (prop == "font-size" || prop == "line-height")
+      (
+        prop == "font-size" ||
+        prop == "line-height" ||
+        prop == "font-family" ||
+        prop == "font-weight"
+      )
     // If property not in cascaded values, inherit from parent
     if !cascaded.has(prop) && !covered_by_font_shorthand {
       match ctx.parent_style {
@@ -3884,12 +4140,20 @@ fn parse_line_height(value : String, font_size : Double) -> Double {
 }
 
 ///|
+priv struct ParsedFontShorthand {
+  font_size : Double
+  line_height : Double
+  font_weight : Double
+  font_family : String
+}
+
+///|
 /// Parse font shorthand and extract font-size and line-height
 /// Supports: [style] [variant] [weight] size[/line-height] family
 fn parse_font_shorthand(
   value : String,
   ctx : ComputeContext,
-) -> (Double, Double) {
+) -> ParsedFontShorthand {
   let v = value.trim()
 
   // Split by whitespace
@@ -3920,7 +4184,10 @@ fn parse_font_shorthand(
   // Look for a part that starts with a digit or contains 'px', 'em', 'rem', '%'
   let mut font_size = ctx.font_size
   let mut line_height = ctx.font_size
-  for part in parts {
+  let mut font_weight = 400.0
+  let mut size_index = -1
+  for idx = 0; idx < parts.length(); idx = idx + 1 {
+    let part = parts[idx]
     // Check if this part contains size/line-height
     if part.contains("/") {
       // Split by /
@@ -3939,6 +4206,7 @@ fn parse_font_shorthand(
         )
         font_size = parse_font_size(size_part, ctx)
         line_height = parse_line_height(lh_part, font_size)
+        size_index = idx
         break
       }
     } else {
@@ -3947,11 +4215,37 @@ fn parse_font_shorthand(
       if first_char >= '0' && first_char <= '9' {
         font_size = parse_font_size(part, ctx)
         line_height = font_size // Default line-height = font-size (ratio 1)
+        size_index = idx
         break
       }
     }
   }
-  (font_size, line_height)
+  if size_index > 0 {
+    for idx = 0; idx < size_index; idx = idx + 1 {
+      let part = parts[idx].trim().to_lower().to_string()
+      if part == "normal" ||
+        part == "bold" ||
+        part == "bolder" ||
+        part == "lighter" {
+        font_weight = parse_font_weight(part)
+        continue
+      }
+      let parsed_weight = @string.parse_double(part) catch { _ => -1.0 }
+      if parsed_weight >= 1.0 && parsed_weight <= 1000.0 {
+        font_weight = parsed_weight
+      }
+    }
+  }
+  let font_family = if size_index >= 0 && size_index + 1 < parts.length() {
+    let family_parts : Array[String] = []
+    for idx = size_index + 1; idx < parts.length(); idx = idx + 1 {
+      family_parts.push(parts[idx])
+    }
+    parse_font_family(family_parts.join(" "))
+  } else {
+    ""
+  }
+  { font_size, line_height, font_weight, font_family }
 }
 
 // =============================================================================

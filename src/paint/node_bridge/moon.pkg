@@ -1,11 +1,11 @@
 import {
   "mizchi/crater/layout" @layout,
   "mizchi/crater/paint/model" @model,
+  "mizchi/crater/style" @style,
   "mizchi/crater/types",
 }
 
 import {
-  "mizchi/crater/style",
 } for "test"
 
 import {

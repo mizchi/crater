@@ -11,6 +11,7 @@ pub(all) struct PaintProperties {
   color : @types.Color
   background_color : @types.Color
   background_image : @types.BackgroundImage
+  box_shadows : Array[@style.BoxShadow]
   font_size : Double
   is_bold : Bool
   font_family : String
@@ -43,6 +44,7 @@ pub fn PaintProperties::default() -> PaintProperties {
     color: @types.Color::black(),
     background_color: @types.Color::transparent(),
     background_image: @types.None,
+    box_shadows: [],
     font_size: 16.0,
     is_bold: false,
     font_family: "",
@@ -76,6 +78,7 @@ pub fn PaintProperties::from_style(style : @style.Style) -> PaintProperties {
     color: style.color,
     background_color: style.background_color,
     background_image: style.background_image,
+    box_shadows: style.box_shadows,
     font_size: style.font_size,
     is_bold: is_bold_weight(style.font_weight),
     font_family: style.font_family,

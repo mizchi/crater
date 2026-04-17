@@ -61,6 +61,13 @@ pub(all) enum WhiteSpace {
 } derive(Debug, Eq)
 
 ///|
+/// CSS text-overflow property.
+pub(all) enum TextOverflow {
+  Clip
+  Ellipsis
+} derive(Debug, Eq)
+
+///|
 /// CSS writing-mode property (for text direction and flow)
 pub(all) enum WritingMode {
   HorizontalTb // Default - left-to-right, top-to-bottom
@@ -490,6 +497,15 @@ pub impl Show for WhiteSpace with output(self, logger) {
 }
 
 ///|
+pub impl Show for TextOverflow with output(self, logger) {
+  let name = match self {
+    Clip => "Clip"
+    Ellipsis => "Ellipsis"
+  }
+  logger.write_string(name)
+}
+
+///|
 pub impl Show for WritingMode with output(self, logger) {
   let name = match self {
     HorizontalTb => "HorizontalTb"
@@ -694,6 +710,28 @@ pub impl Show for VerticalAlign with output(self, logger) {
 }
 
 ///|
+pub struct BoxShadow {
+  inset : Bool
+  offset_x : Double
+  offset_y : Double
+  blur_radius : Double
+  spread_radius : Double
+  color : @types.Color
+}
+
+///|
+pub fn BoxShadow::new(
+  inset : Bool,
+  offset_x : Double,
+  offset_y : Double,
+  blur_radius : Double,
+  spread_radius : Double,
+  color : @types.Color,
+) -> BoxShadow {
+  { inset, offset_x, offset_y, blur_radius, spread_radius, color }
+}
+
+///|
 /// CSS Style definition for layout computation
 /// All fields are mutable to support Yoga-like setter API
 pub(all) struct Style {
@@ -775,6 +813,7 @@ pub(all) struct Style {
   // Text wrapping and direction
   mut text_align : TextAlign
   mut white_space : WhiteSpace // white-space: normal | nowrap | pre | pre-wrap | pre-line
+  mut text_overflow : TextOverflow // text-overflow: clip | ellipsis
   mut writing_mode : WritingMode // writing-mode: horizontal-tb | vertical-rl | vertical-lr
   mut direction : Direction // direction: ltr | rtl (inline text direction)
   // Vertical alignment for inline elements
@@ -790,6 +829,7 @@ pub(all) struct Style {
   mut color : @types.Color // Text color (inherited)
   mut background_color : @types.Color // Background color (not inherited)
   mut background_image : @types.BackgroundImage // Background image (gradient etc.)
+  mut box_shadows : Array[BoxShadow]
   // Containment (for layout optimization)
   mut contain : Contain
   // Fragmentation
@@ -914,6 +954,7 @@ pub fn Style::default() -> Style {
     line_height: 19.2, // 16.0 * 1.2 (CSS initial: normal)
     text_align: Start,
     white_space: Normal,
+    text_overflow: Clip,
     writing_mode: HorizontalTb,
     direction: Ltr,
     vertical_align: Baseline,
@@ -925,6 +966,7 @@ pub fn Style::default() -> Style {
     color: @types.Color::black(),
     background_color: @types.Color::transparent(),
     background_image: @types.None,
+    box_shadows: [],
     contain: Contain::none(),
     break_before: BreakBefore::Auto,
     break_after: BreakBefore::Auto,

@@ -32,6 +32,16 @@ pub(all) enum BorderStyle {
 pub fn BorderStyle::priority(Self) -> Int
 pub impl Show for BorderStyle
 
+pub struct BoxShadow {
+  inset : Bool
+  offset_x : Double
+  offset_y : Double
+  blur_radius : Double
+  spread_radius : Double
+  color : @types.Color
+}
+pub fn BoxShadow::new(Bool, Double, Double, Double, Double, @types.Color) -> Self
+
 pub(all) enum BreakBefore {
   Auto
   Column
@@ -195,6 +205,7 @@ pub(all) struct Style {
   mut line_height : Double
   mut text_align : TextAlign
   mut white_space : WhiteSpace
+  mut text_overflow : TextOverflow
   mut writing_mode : WritingMode
   mut direction : Direction
   mut vertical_align : VerticalAlign
@@ -206,6 +217,7 @@ pub(all) struct Style {
   mut color : @types.Color
   mut background_color : @types.Color
   mut background_image : @types.BackgroundImage
+  mut box_shadows : Array[BoxShadow]
   mut contain : Contain
   mut break_before : BreakBefore
   mut break_after : BreakBefore
@@ -254,6 +266,12 @@ pub(all) enum TextAlign {
   Justify
 } derive(Eq, @debug.Debug)
 pub impl Show for TextAlign
+
+pub(all) enum TextOverflow {
+  Clip
+  Ellipsis
+} derive(Eq, @debug.Debug)
+pub impl Show for TextOverflow
 
 pub(all) struct Transform {
   translate_x : TranslateValue
