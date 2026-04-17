@@ -373,12 +373,12 @@ pub fn get_support_level(property : String) -> SupportLevel {
     // Text properties
     "text-transform"
     | "text-indent"
-    | "text-overflow"
     | "white-space"
     | "word-break"
     | "word-wrap"
     | "overflow-wrap"
     | "hyphens" => UnsupportedVisual
+    "text-overflow" => Supported
     // List Style
     "list-style"
     | "list-style-type"

@@ -229,3 +229,39 @@ test "render_paint_node_to_framebuffer draws overline and line_through beyond gl
   inspect(decorated.get_pixel(35, 3) > 0, content="true")
   inspect(decorated.get_pixel(35, 9) > 0, content="true")
 }
+
+///|
+test "render_paint_node_to_framebuffer draws box shadow outside element bounds" {
+  let style = @style.Style::default()
+  style.background_color = @types.Color::rgb(240, 240, 240)
+  style.box_shadows = [
+    @style.BoxShadow::new(
+      false,
+      3.0,
+      2.0,
+      0.0,
+      0.0,
+      @types.Color::rgba(0, 0, 0, 0.5),
+    ),
+  ]
+  let node = @paint_model.PaintNode::new(
+    "box",
+    "div",
+    4.0,
+    4.0,
+    6.0,
+    6.0,
+    @paint_model.PaintProperties::from_style(style),
+    [],
+  )
+  let fb = @image.Framebuffer::new(20, 20)
+  let palette = @image.DynamicPalette::new()
+  @image.render_paint_node_to_framebuffer(node, fb, palette)
+
+  let outside_shadow = palette.colors[fb.get_pixel(10, 7)]
+  let untouched = palette.colors[fb.get_pixel(1, 1)]
+
+  inspect(outside_shadow.r < untouched.r, content="true")
+  inspect(outside_shadow.g < untouched.g, content="true")
+  inspect(outside_shadow.b < untouched.b, content="true")
+}

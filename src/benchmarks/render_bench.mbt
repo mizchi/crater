@@ -27,6 +27,26 @@ fn default_layout_ctx(ctx : @renderer.RenderContext) -> @types.LayoutContext {
 }
 
 ///|
+fn large_2k5_node_build_bench_html() -> String {
+  large_website(15, 10, 8)
+}
+
+///|
+fn large_2k5_node_build_bench_doc() -> @html.Document {
+  @html.parse_document(large_2k5_node_build_bench_html())
+}
+
+///|
+fn large_2k5_node_build_bench_ctx() -> @renderer.RenderContext {
+  default_ctx()
+}
+
+///|
+fn large_2k5_node_build_bench_external_css() -> Array[String] {
+  []
+}
+
+///|
 fn large_website_simple_cards(
   sidebar_items : Int,
   sections : Int,
@@ -556,11 +576,32 @@ test "bench_render_to_node_large_2k5" (b : @bench.T) {
 
 ///|
 test "bench_node_build_large_2k5" (b : @bench.T) {
-  let html = large_website(15, 10, 8)
-  let doc = @html.parse_document(html)
-  let ctx = default_ctx()
+  let doc = large_2k5_node_build_bench_doc()
+  let ctx = large_2k5_node_build_bench_ctx()
+  let external_css = large_2k5_node_build_bench_external_css()
   b.bench(name="node_build_large_2k5", fn() {
-    b.keep(@renderer.render_to_node_with_document(doc, ctx, []))
+    b.keep(@renderer.render_to_node_with_document(doc, ctx, external_css))
+  })
+}
+
+///|
+test "bench_node_build_large_2k5_style_compute" (b : @bench.T) {
+  let doc = large_2k5_node_build_bench_doc()
+  let ctx = large_2k5_node_build_bench_ctx()
+  let external_css = large_2k5_node_build_bench_external_css()
+  b.bench(name="node_build_large_2k5_style_compute", fn() {
+    b.keep(@renderer.prepare_render_document(doc, ctx, external_css))
+  })
+}
+
+///|
+test "bench_node_build_large_2k5_node_assembly" (b : @bench.T) {
+  let doc = large_2k5_node_build_bench_doc()
+  let ctx = large_2k5_node_build_bench_ctx()
+  let external_css = large_2k5_node_build_bench_external_css()
+  let prepared = @renderer.prepare_render_document(doc, ctx, external_css)
+  b.bench(name="node_build_large_2k5_node_assembly", fn() {
+    b.keep(@renderer.build_render_root_node(doc, ctx, prepared))
   })
 }
 

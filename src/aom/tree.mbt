@@ -11,6 +11,8 @@
 priv struct TreeBuilderContext {
   // Element lookup by id (for aria-labelledby, etc.)
   element_map : Map[String, @html.Element]
+  // Whether the currently indexed id sits under a hidden ancestor.
+  hidden_ancestor_map : Map[String, Bool]
   // Label elements indexed by 'for' attribute
   label_map : Map[String, @html.Element]
   // Current nesting level for sectioning content
@@ -29,6 +31,7 @@ priv struct TreeBuilderContext {
 fn TreeBuilderContext::new() -> TreeBuilderContext {
   {
     element_map: {},
+    hidden_ancestor_map: {},
     label_map: {},
     in_sectioning: false,
     encapsulating_label: None,
@@ -67,6 +70,14 @@ fn TreeBuilderContext::find_by_id(
   id : String,
 ) -> @html.Element? {
   self.element_map.get(id)
+}
+
+///|
+fn TreeBuilderContext::has_hidden_ancestor(
+  self : TreeBuilderContext,
+  id : String,
+) -> Bool {
+  self.hidden_ancestor_map.get(id).unwrap_or(false)
 }
 
 ///|
@@ -277,7 +288,7 @@ pub fn build_accessibility_tree(doc : @html.Document) -> AccessibilityTree {
   let ctx = ctx.with_stylesheets(stylesheets)
 
   // First pass: index all elements by id and collect labels
-  index_elements(doc.root, ctx)
+  index_elements(doc.root, ctx, false)
 
   // Second pass: build the accessibility tree
   let root_node = build_node(doc.root, ctx)
@@ -290,7 +301,7 @@ pub fn build_accessibility_tree_from_element(
   element : @html.Element,
 ) -> AccessibilityTree {
   let ctx = TreeBuilderContext::new()
-  index_elements(element, ctx)
+  index_elements(element, ctx, false)
   let root_node = build_node(element, ctx)
   AccessibilityTree::new(root_node)
 }
@@ -301,10 +312,17 @@ pub fn build_accessibility_tree_from_element(
 
 ///|
 /// Index all elements by id for cross-referencing
-fn index_elements(element : @html.Element, ctx : TreeBuilderContext) -> Unit {
+fn index_elements(
+  element : @html.Element,
+  ctx : TreeBuilderContext,
+  hidden_ancestor : Bool,
+) -> Unit {
   // Index by id
   match element.id {
-    Some(id) => ctx.element_map[id] = element
+    Some(id) => {
+      ctx.element_map[id] = element
+      ctx.hidden_ancestor_map[id] = hidden_ancestor
+    }
     Option::None => ()
   }
 
@@ -316,10 +334,13 @@ fn index_elements(element : @html.Element, ctx : TreeBuilderContext) -> Unit {
     }
   }
 
+  let child_hidden_ancestor = hidden_ancestor || hides_descendants_from_all_users(element)
+
   // Recurse
   for child in element.children {
     match child {
-      @html.Element(child_elem) => index_elements(child_elem, ctx)
+      @html.Element(child_elem) =>
+        index_elements(child_elem, ctx, child_hidden_ancestor)
       @html.Text(_) => ()
     }
   }
@@ -423,11 +444,18 @@ fn build_node(
   let find_label_for_id = fn(id : String) -> @html.Element? {
     ctx.label_map.get(id)
   }
-  let base_name = compute_accessible_name_full(
+  let is_in_hidden_subtree = fn(target : @html.Element) -> Bool {
+    match target.id {
+      Some(id) => ctx.has_hidden_ancestor(id)
+      None => false
+    }
+  }
+  let base_name = compute_accessible_name_with_hidden_subtree_check(
     element,
     find_by_id,
     find_label_for_id,
     ctx.encapsulating_label,
+    is_in_hidden_subtree,
   )
 
   // Add pseudo-element content (::before and ::after)
