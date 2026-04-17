@@ -850,19 +850,20 @@ class ScriptModule(_CommandProxy):
             "url": url,
             "timeoutMs": int(timeout_ms),
             "shouldAbort": should_abort,
-            "headersJson": json.dumps(dict(headers)) if isinstance(headers, Mapping) else "null",
         }
         context_id = _context_id(context)
         if isinstance(context_id, str):
             params["context"] = context_id
         if isinstance(method, str):
             params["method"] = method
+        if isinstance(headers, Mapping):
+            params["headers"] = dict(headers)
         if isinstance(post_data, dict):
+            params["postData"] = post_data
             params["postDataMode"] = "formData"
-            params["postDataJson"] = json.dumps(post_data)
         elif post_data is not None:
+            params["postData"] = post_data
             params["postDataMode"] = "value"
-            params["postDataJson"] = json.dumps(post_data)
         if isinstance(sandbox, str):
             params["sandbox"] = sandbox
         return await self._result_command("script.fetchForTest", params)
@@ -945,16 +946,10 @@ class NetworkModule(_CommandProxy):
         return {}
 
     async def continue_with_auth(self, request: str, action: str, credentials=None):
-        request_id = self._validate_request_id(request)
-        if action == "provideCredentials":
-            return await self.continue_response(
-                request=request,
-                credentials=credentials,
-            )
-        await self._command(
-            "network.continueAuthRequest",
-            {"request": request_id, "action": action},
-        )
+        params = {"request": request, "action": action}
+        if credentials is not None:
+            params["credentials"] = credentials
+        await self._command("network.continueAuthRequest", params)
         return {}
 
     async def provide_response(self, request: str, **kwargs):
@@ -1331,13 +1326,10 @@ class BluetoothModule(_CommandProxy):
 class WebExtensionModule(_CommandProxy):
 
     async def install(self, extension_data):
-        result = await self._command(
-            "webExtension.install",
+        return await self._command(
+            "webExtension.installId",
             {"extensionData": extension_data},
         )
-        if isinstance(result, Mapping):
-            return result.get("extension")
-        return result
 
     async def uninstall(self, extension):
         return await self._command(

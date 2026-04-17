@@ -1,3 +1,8 @@
+import {
+  buildStableVrtIdentity,
+  type VrtStableIdentity,
+} from "./vrt-report-contract.ts";
+
 type WptVrtStatus = "pass" | "fail";
 
 export interface WptVrtRawTestResult {
@@ -60,6 +65,8 @@ export interface WptVrtFailureRow {
   diffRatio: number;
   status: "fail";
   error?: string;
+  identityKey?: string;
+  identity?: VrtStableIdentity;
 }
 
 export interface WptVrtThresholdSummaryRow {
@@ -71,6 +78,8 @@ export interface WptVrtThresholdSummaryRow {
   headroom: number;
   status: WptVrtStatus;
   error?: string;
+  identityKey?: string;
+  identity?: VrtStableIdentity;
 }
 
 export interface WptVrtShardSummary {
@@ -151,37 +160,102 @@ function compareThresholdRow(
   return a.relativePath.localeCompare(b.relativePath);
 }
 
+interface WptVrtIdentityOptions {
+  taskId?: string;
+  spec?: string;
+}
+
+function buildWptVrtIdentity(
+  relativePath: string,
+  options?: WptVrtIdentityOptions,
+): VrtStableIdentity {
+  return buildStableVrtIdentity({
+    taskId: options?.taskId ?? "wpt-vrt",
+    spec: options?.spec ?? "tests/wpt-vrt.test.ts",
+    filter: relativePath,
+    title: relativePath,
+    variant: {
+      snapshotKind: "wpt",
+    },
+  });
+}
+
+function withFailureIdentity(
+  row: WptVrtFailureRow,
+  identityOptions?: WptVrtIdentityOptions,
+): WptVrtFailureRow {
+  if (row.identity && row.identityKey) {
+    return row;
+  }
+  const identity = buildWptVrtIdentity(row.relativePath, identityOptions);
+  return {
+    ...row,
+    identityKey: identity.key,
+    identity,
+  };
+}
+
+function withThresholdIdentity(
+  row: WptVrtThresholdSummaryRow,
+  identityOptions?: WptVrtIdentityOptions,
+): WptVrtThresholdSummaryRow {
+  if (row.identity && row.identityKey) {
+    return row;
+  }
+  const identity = buildWptVrtIdentity(row.relativePath, identityOptions);
+  return {
+    ...row,
+    identityKey: identity.key,
+    identity,
+  };
+}
+
 function withModule(
   row: WptVrtRawThresholdRow,
+  identityOptions?: WptVrtIdentityOptions,
 ): WptVrtThresholdSummaryRow {
+  const identity = buildWptVrtIdentity(row.relativePath, identityOptions);
   return {
     ...row,
     module: moduleNameFromRelativePath(row.relativePath),
+    identityKey: identity.key,
+    identity,
   };
 }
 
 function normalizeThresholdRows(
   rows: Array<WptVrtRawThresholdRow | WptVrtThresholdSummaryRow>,
+  identityOptions?: WptVrtIdentityOptions,
 ): WptVrtThresholdSummaryRow[] {
-  return rows.map((row) => ("module" in row ? row : withModule(row)));
+  return rows.map((row) => (
+    "module" in row
+      ? withThresholdIdentity(row, identityOptions)
+      : withModule(row, identityOptions)
+  ));
 }
 
 function deriveThresholdRows(
   tests: Record<string, WptVrtRawTestResult>,
+  identityOptions?: WptVrtIdentityOptions,
 ): WptVrtThresholdSummaryRow[] {
   return Object.entries(tests)
     .filter(([, result]) =>
       typeof result.regressionLimit === "number" && typeof result.headroom === "number")
-    .map(([relativePath, result]) => ({
-      relativePath,
-      module: moduleNameFromRelativePath(relativePath),
-      diffRatio: result.diffRatio,
-      baselineDiffRatio: result.baselineDiffRatio,
-      regressionLimit: result.regressionLimit!,
-      headroom: result.headroom!,
-      status: result.status,
-      ...(result.error ? { error: result.error } : {}),
-    }))
+    .map(([relativePath, result]) => {
+      const identity = buildWptVrtIdentity(relativePath, identityOptions);
+      return {
+        relativePath,
+        module: moduleNameFromRelativePath(relativePath),
+        diffRatio: result.diffRatio,
+        baselineDiffRatio: result.baselineDiffRatio,
+        regressionLimit: result.regressionLimit!,
+        headroom: result.headroom!,
+        status: result.status,
+        ...(result.error ? { error: result.error } : {}),
+        identityKey: identity.key,
+        identity,
+      };
+    })
     .sort(compareThresholdRow);
 }
 
@@ -200,15 +274,19 @@ export function asWptVrtShardSummary(value: unknown): WptVrtShardSummary | null 
   if (!Array.isArray(row.modules) || !Array.isArray(row.moduleTotals) || !Array.isArray(row.failures)) {
     return null;
   }
+  const summary = value as WptVrtShardSummary;
   return {
-    ...(value as WptVrtShardSummary),
+    ...summary,
     expectedTotal: typeof row.expectedTotal === "number" ? row.expectedTotal : row.total as number,
     regressionCount: typeof row.regressionCount === "number" ? row.regressionCount : 0,
+    failures: Array.isArray(row.failures)
+      ? (row.failures as WptVrtFailureRow[]).map((failure) => withFailureIdentity(failure))
+      : [],
     closestToThreshold: Array.isArray(row.closestToThreshold)
-      ? row.closestToThreshold as WptVrtThresholdSummaryRow[]
+      ? normalizeThresholdRows(row.closestToThreshold as WptVrtThresholdSummaryRow[])
       : [],
     regressions: Array.isArray(row.regressions)
-      ? row.regressions as WptVrtThresholdSummaryRow[]
+      ? normalizeThresholdRows(row.regressions as WptVrtThresholdSummaryRow[])
       : [],
   };
 }
@@ -216,6 +294,7 @@ export function asWptVrtShardSummary(value: unknown): WptVrtShardSummary | null 
 export function buildWptVrtShardSummary(
   report: WptVrtRawReport,
   label?: string,
+  identityOptions?: WptVrtIdentityOptions,
 ): WptVrtShardSummary {
   const entries = Object.entries(report.tests ?? {}).sort(([a], [b]) => a.localeCompare(b));
   const moduleMap = new Map<string, { total: number; passed: number; failed: number }>();
@@ -234,12 +313,15 @@ export function buildWptVrtShardSummary(
     } else {
       current.failed += 1;
       failed += 1;
+      const identity = buildWptVrtIdentity(relativePath, identityOptions);
       failures.push({
         relativePath,
         module,
         diffRatio: result.diffRatio,
         status: "fail",
         ...(result.error ? { error: result.error } : {}),
+        identityKey: identity.key,
+        identity,
       });
     }
     if (result.diffRatio > maxDiffRatio) {
@@ -252,11 +334,15 @@ export function buildWptVrtShardSummary(
   const expectedTotal = report.summary?.expectedTotal ?? report.summary?.total ?? total;
   const summaryPassed = report.summary?.passed ?? passed;
   const summaryFailed = report.summary?.failed ?? failed;
-  const derivedThresholdRows = deriveThresholdRows(report.tests ?? {});
-  const closestToThreshold = normalizeThresholdRows(report.closestToThreshold ?? derivedThresholdRows)
+  const derivedThresholdRows = deriveThresholdRows(report.tests ?? {}, identityOptions);
+  const closestToThreshold = normalizeThresholdRows(
+    report.closestToThreshold ?? derivedThresholdRows,
+    identityOptions,
+  )
     .sort(compareThresholdRow);
   const regressions = normalizeThresholdRows(
     report.regressions ?? closestToThreshold.filter((row) => row.headroom < 0),
+    identityOptions,
   )
     .sort(compareThresholdRow);
   const regressionCount = report.summary?.regressions ?? regressions.length;
@@ -320,10 +406,10 @@ export function aggregateWptVrtSummaries(
       byModule.set(moduleRow.module, current);
     }
     for (const failure of row.failures) {
-      topFailures.push({ ...failure, label: row.label });
+      topFailures.push({ ...withFailureIdentity(failure), label: row.label });
     }
     for (const regression of row.regressions) {
-      topRegressions.push({ ...regression, label: row.label });
+      topRegressions.push({ ...withThresholdIdentity(regression), label: row.label });
     }
   }
 

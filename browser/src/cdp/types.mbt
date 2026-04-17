@@ -16,6 +16,8 @@ pub struct CdpNode {
   child_node_count : Int?
   children : Array[CdpNode]?
   attributes : Array[String]? // [name, value, name, value, ...]
+  shadow_roots : Array[CdpNode]?
+  shadow_root_type : String?
 } derive(Debug)
 
 ///|

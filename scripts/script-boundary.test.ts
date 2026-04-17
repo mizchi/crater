@@ -17,6 +17,9 @@ const PURE_MODULES = [
   "flaker-quarantine-summary-core.ts",
   "flaker-task-summary-contract.ts",
   "flaker-task-summary-core.ts",
+  "flaker-collected-summary-paths.ts",
+  "vrt-report-contract.ts",
+  "vrt-report-summary-core.ts",
   "wpt-vrt-summary-core.ts",
 ] as const;
 
@@ -28,6 +31,7 @@ const FORBIDDEN_WRAPPER_IMPORTS = [
   './flaker-quarantine.ts',
   './wpt-vrt-summary.ts',
   './flaker-task-summary.ts',
+  './vrt-report-summary.ts',
 ] as const;
 
 const ADAPTER_MODULES = [

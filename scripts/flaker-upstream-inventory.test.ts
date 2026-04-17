@@ -1,9 +1,13 @@
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   buildFlakerUpstreamInventory,
   renderFlakerUpstreamInventoryMarkdown,
   runFlakerUpstreamInventoryCli,
 } from "./flaker-upstream-inventory.ts";
+
+const SCRIPT_DIR = path.dirname(new URL(import.meta.url).pathname);
 
 describe("buildFlakerUpstreamInventory", () => {
   it("groups files by upstream ownership and extraction unit", () => {
@@ -18,7 +22,12 @@ describe("buildFlakerUpstreamInventory", () => {
       "metric-ci:flaker-config-core",
       "crater-adapter:flaker-config-adapter",
       "crater-adapter:task-runner-adapter",
+      "crater-adapter:flaker-report-loader-adapter",
+      "crater-domain:vrt-report-core",
       "crater-domain:wpt-vrt-summary-core",
+      "crater-tooling:report-cli-wrappers",
+      "crater-tooling:flaker-cli-tooling",
+      "crater-tooling:upstream-staging-tooling",
       "crater-tooling:script-runtime-boundary",
     ]);
     expect(inventory.groups[0]?.files).toContain("scripts/playwright-report-summary-core.ts");
@@ -30,7 +39,41 @@ describe("buildFlakerUpstreamInventory", () => {
     expect(inventory.groups[5]?.files).toContain("scripts/flaker-config-summary-core.ts");
     expect(inventory.groups[5]?.files).toContain("scripts/flaker-config-task.ts");
     expect(inventory.groups[5]?.testFiles).toContain("scripts/flaker-config-task.test.ts");
-    expect(inventory.groups[8]?.reason).toContain("VRT");
+    expect(inventory.groups[8]?.files).toContain("scripts/flaker-batch-summary-loader.ts");
+    expect(inventory.groups[8]?.files).toContain("scripts/flaker-quarantine-loader.ts");
+    expect(inventory.groups[8]?.testFiles).toContain("scripts/flaker-batch-summary-loader.test.ts");
+    expect(inventory.groups[8]?.testFiles).toContain("scripts/flaker-quarantine-loader.test.ts");
+    expect(inventory.groups[8]?.testFiles).toContain("scripts/vrt-report-loader.test.ts");
+    expect(inventory.groups[9]?.files).toContain("scripts/vrt-report-contract.ts");
+    expect(inventory.groups[9]?.files).toContain("scripts/vrt-report-summary-core.ts");
+    expect(inventory.groups[9]?.testFiles).toContain("scripts/vrt-report-contract.test.ts");
+    expect(inventory.groups[9]?.testFiles).toContain("scripts/vrt-report-summary.test.ts");
+    expect(inventory.groups[9]?.reason).toContain("VRT");
+    expect(inventory.groups[10]?.testFiles).toContain("scripts/wpt-vrt-summary.test.ts");
+    expect(inventory.groups[10]?.reason).toContain("VRT");
+    expect(inventory.groups[11]?.files).toContain("scripts/playwright-report-summary.ts");
+    expect(inventory.groups[11]?.files).toContain("scripts/vrt-report-summary.ts");
+    expect(inventory.groups[11]?.testFiles).toContain("scripts/playwright-report-summary-cli.test.ts");
+    expect(inventory.groups[11]?.testFiles).toContain("scripts/vrt-report-summary-cli.test.ts");
+    expect(inventory.groups[12]?.files).toContain("scripts/flaker-entry.ts");
+    expect(inventory.groups[12]?.files).toContain("scripts/flaker-cli-path.ts");
+    expect(inventory.groups[13]?.files).toContain("scripts/flaker-upstream-inventory.ts");
+    expect(inventory.groups[13]?.testFiles).toContain("scripts/flaker-upstream-export.test.ts");
+    expect(inventory.groups[14]?.files).toContain("scripts/flaker-collected-summary-paths.ts");
+    expect(inventory.groups[14]?.testFiles).toContain("scripts/flaker-collected-summary-paths.test.ts");
+  });
+
+  it("classifies every flaker/report/vrt script file into an inventory group", () => {
+    const inventory = buildFlakerUpstreamInventory();
+    const covered = new Set(
+      inventory.groups.flatMap((group) => [...group.files, ...group.testFiles]),
+    );
+    const candidates = fs.readdirSync(SCRIPT_DIR)
+      .filter((fileName) => /^(flaker-|playwright-report-|vrt-report-|wpt-vrt-summary)/.test(fileName))
+      .map((fileName) => `scripts/${fileName}`)
+      .sort();
+
+    expect(candidates.filter((fileName) => !covered.has(fileName))).toEqual([]);
   });
 });
 

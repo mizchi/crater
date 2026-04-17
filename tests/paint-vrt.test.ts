@@ -1,5 +1,6 @@
 import path from "node:path";
 import { expect, test, type Browser } from "@playwright/test";
+import { createVrtArtifactReportContext } from "../scripts/vrt-report-contract.ts";
 import {
   listRealWorldSnapshotNames,
   loadRealWorldSnapshot,
@@ -16,10 +17,18 @@ const OUTPUT_ROOT = path.join(process.cwd(), "output", "playwright", "vrt");
 const PAINT_VRT_SPEC = "tests/paint-vrt.test.ts";
 const AVAILABLE_REAL_WORLD_SNAPSHOTS = new Set(listRealWorldSnapshotNames());
 
+function paintVrtReport(title: string) {
+  return createVrtArtifactReportContext({
+    taskId: "paint-vrt",
+    file: PAINT_VRT_SPEC,
+    title,
+  });
+}
+
 async function expectSnapshotWithinBudget(
   browser: Browser,
   snapshotName: string,
-  options: { threshold: number; maxDiffRatio: number },
+  options: { threshold: number; maxDiffRatio: number; reportTitle: string },
 ): Promise<void> {
   const snapshot = loadRealWorldSnapshot(snapshotName);
   const chromiumPage = await chromiumPageForVrt(browser, snapshot.viewport);
@@ -37,6 +46,7 @@ async function expectSnapshotWithinBudget(
         outputDir: path.join(OUTPUT_ROOT, snapshot.name),
         threshold: options.threshold,
         maxDiffRatio: options.maxDiffRatio,
+        report: paintVrtReport(options.reportTitle),
         cropToContent: true,
         contentPadding: 12,
         backgroundTolerance: 18,
@@ -167,6 +177,7 @@ test.describe("Paint VRT", () => {
         outputDir: path.join(OUTPUT_ROOT, "fixture-cards-controls"),
         threshold: 0.3,
         maxDiffRatio: 0.12,
+        report: paintVrtReport("fixture: cards and controls stay within relaxed visual diff budget"),
         cropToContent: true,
         contentPadding: 12,
         backgroundTolerance: 18,
@@ -188,6 +199,7 @@ test.describe("Paint VRT", () => {
     await expectSnapshotWithinBudget(browser, "github-mizchi", {
       threshold: 0.35,
       maxDiffRatio: 0.12,
+      reportTitle: "real-world snapshot: github-mizchi stays within loose visual diff budget",
     });
   });
 
@@ -204,6 +216,7 @@ test.describe("Paint VRT", () => {
         outputDir: path.join(OUTPUT_ROOT, "example-com"),
         threshold: 0.3,
         maxDiffRatio: 1.0,
+        report: paintVrtReport("real-world snapshot: example-com visual parity"),
         cropToContent: true,
         contentPadding: 12,
         backgroundTolerance: 18,
@@ -252,6 +265,7 @@ test.describe("Paint VRT", () => {
       await expectSnapshotWithinBudget(browser, snapshotName, {
         threshold: 0.35,
         maxDiffRatio: snapshotName === "playwright-intro" ? 0.06 : 0.08,
+        reportTitle: `real-world snapshot: ${snapshotName} stays within loose visual diff budget`,
       });
     });
   }
@@ -298,6 +312,7 @@ test.describe("Paint VRT", () => {
         outputDir: path.join(OUTPUT_ROOT, "fixture-blog-article"),
         threshold: 0.3,
         maxDiffRatio: 0.15,
+        report: paintVrtReport("fixture: blog article page layout"),
         cropToContent: true,
         contentPadding: 12,
         backgroundTolerance: 18,
@@ -359,6 +374,7 @@ test.describe("Paint VRT", () => {
         outputDir: path.join(OUTPUT_ROOT, "fixture-navbar"),
         threshold: 0.3,
         maxDiffRatio: 0.15,
+        report: paintVrtReport("fixture: navigation bar with dropdown-style layout"),
         cropToContent: true,
         contentPadding: 12,
         backgroundTolerance: 18,
@@ -425,6 +441,7 @@ test.describe("Paint VRT", () => {
         outputDir: path.join(OUTPUT_ROOT, "fixture-pricing-cards"),
         threshold: 0.3,
         maxDiffRatio: 0.15,
+        report: paintVrtReport("fixture: pricing cards grid"),
         cropToContent: true,
         contentPadding: 12,
         backgroundTolerance: 18,
@@ -478,6 +495,7 @@ test.describe("Paint VRT", () => {
         outputDir: path.join(OUTPUT_ROOT, "fixture-footer"),
         threshold: 0.3,
         maxDiffRatio: 0.15,
+        report: paintVrtReport("fixture: footer with multi-column links"),
         cropToContent: true,
         contentPadding: 12,
         backgroundTolerance: 18,
@@ -539,12 +557,161 @@ test.describe("Paint VRT", () => {
         outputDir: path.join(OUTPUT_ROOT, "fixture-login-form"),
         threshold: 0.3,
         maxDiffRatio: 0.15,
+        report: paintVrtReport("fixture: login form centered page"),
         cropToContent: true,
         contentPadding: 12,
         backgroundTolerance: 18,
         maskToVisibleContent: true,
         maskPadding: 2,
       });
+      expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+    } finally {
+      await craterPage.close();
+      await chromiumPage.close();
+    }
+  });
+
+  test("fixture: live form state after scripted save interaction", async ({ browser }) => {
+    const viewport = { width: 960, height: 360 };
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      :root { color-scheme: light; font-family: Arial, sans-serif; }
+      body { margin: 0; background: linear-gradient(180deg, #eef2ff, #f8fafc); color: #0f172a; }
+      .shell { width: 760px; margin: 40px auto; padding: 24px; border-radius: 20px; background: rgba(255,255,255,0.92); box-shadow: 0 18px 48px rgba(15,23,42,0.12); }
+      .row { display: flex; gap: 16px; align-items: flex-start; }
+      .form { flex: 1; }
+      .preview { width: 240px; padding: 16px; border-radius: 16px; background: #f8fafc; border: 1px solid #dbe4ff; }
+      h2 { margin: 0 0 8px; font-size: 24px; }
+      p { margin: 0 0 16px; color: #475569; font-size: 14px; }
+      label { display: block; margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+      input[type="text"] {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        box-sizing: border-box;
+        background: #fff;
+        font-size: 14px;
+      }
+      .check {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 14px 0 18px;
+        font-size: 14px;
+        color: #334155;
+      }
+      .check label {
+        margin: 0;
+        font-weight: 500;
+      }
+      button {
+        padding: 10px 16px;
+        border: 0;
+        border-radius: 999px;
+        background: #2563eb;
+        color: #fff;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .status {
+        margin-top: 16px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: #e2e8f0;
+        color: #334155;
+        font-size: 14px;
+      }
+      .status.saved {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .preview-title {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #64748b;
+      }
+      .preview-name {
+        margin-top: 10px;
+        font-size: 22px;
+        font-weight: 700;
+      }
+      .preview-meta {
+        margin-top: 8px;
+        font-size: 14px;
+        color: #475569;
+      }
+    </style></head><body>
+      <section class="shell">
+        <div class="row">
+          <div class="form">
+            <h2>Profile draft</h2>
+            <p>Update the public card and save the current draft.</p>
+            <label for="name">Display name</label>
+            <input id="name" type="text" value="" />
+            <div class="check">
+              <input id="notify" type="checkbox" />
+              <label for="notify">Send launch updates to followers</label>
+            </div>
+            <button id="save" type="button">Save draft</button>
+            <div id="status" class="status">Draft is not saved yet.</div>
+          </div>
+          <aside class="preview">
+            <div class="preview-title">Public preview</div>
+            <div id="preview-name" class="preview-name">Anonymous</div>
+            <div id="preview-meta" class="preview-meta">Notifications disabled</div>
+          </aside>
+        </div>
+      </section>
+      <script>
+        const nameInput = document.getElementById("name");
+        const notifyInput = document.getElementById("notify");
+        const saveButton = document.getElementById("save");
+        const status = document.getElementById("status");
+        const previewName = document.getElementById("preview-name");
+        const previewMeta = document.getElementById("preview-meta");
+
+        saveButton.addEventListener("click", () => {
+          const name = nameInput.value.trim() || "Anonymous";
+          const notify = notifyInput.checked;
+          previewName.textContent = name;
+          previewMeta.textContent = notify ? "Notifications enabled" : "Notifications disabled";
+          status.textContent = notify
+            ? "Saved and notifications enabled."
+            : "Saved without notifications.";
+          status.classList.add("saved");
+        });
+      </script>
+    </body></html>`;
+
+    const chromiumPage = await chromiumPageForVrt(browser, viewport);
+    const craterPage = await connectCraterPageForVrt();
+    try {
+      await chromiumPage.setContent(html, { waitUntil: "load" });
+      await chromiumPage.locator("#name").type("Crater Team");
+      await chromiumPage.locator("#notify").check();
+      await chromiumPage.locator("#save").click();
+      const chromiumPng = await chromiumPage.screenshot({ type: "png" });
+
+      await craterPage.setViewport(viewport.width, viewport.height);
+      await craterPage.setContentWithScripts(html);
+      await craterPage.type("#name", "Crater Team");
+      await craterPage.check("#notify");
+      await craterPage.click("#save");
+      const craterImage = await craterPage.capturePaintData();
+
+      const result = await compareChromiumPngToImage(chromiumPage, chromiumPng, craterImage, {
+        outputDir: path.join(OUTPUT_ROOT, "fixture-live-form-state"),
+        threshold: 0.3,
+        maxDiffRatio: 0.15,
+        report: paintVrtReport("fixture: live form state after scripted save interaction"),
+        cropToContent: true,
+        contentPadding: 12,
+        backgroundTolerance: 18,
+        maskToVisibleContent: true,
+        maskPadding: 2,
+      });
+
       expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
     } finally {
       await craterPage.close();
@@ -612,6 +779,7 @@ test.describe("Paint VRT", () => {
         outputDir: path.join(OUTPUT_ROOT, "fixture-hackernews"),
         threshold: 0.3,
         maxDiffRatio: 0.20,
+        report: paintVrtReport("fixture: hackernews-style listing page"),
         cropToContent: true,
         contentPadding: 12,
         backgroundTolerance: 18,
@@ -653,6 +821,7 @@ test.describe("Paint VRT", () => {
         outputDir: path.join(OUTPUT_ROOT, "fixture-canvas-background"),
         threshold: 0.3,
         maxDiffRatio: 0.10,
+        report: paintVrtReport("fixture: canvas background propagates from body to viewport"),
         cropToContent: true,
         contentPadding: 12,
         backgroundTolerance: 18,
@@ -717,6 +886,7 @@ test.describe("Paint VRT", () => {
         outputDir: path.join(OUTPUT_ROOT, "fixture-table-hn-like"),
         threshold: 0.3,
         maxDiffRatio: 0.15,
+        report: paintVrtReport("fixture: table with cellpadding and cellspacing attributes"),
         cropToContent: true,
         contentPadding: 12,
         backgroundTolerance: 18,
@@ -752,6 +922,7 @@ test.describe("Paint VRT", () => {
         outputDir: path.join(OUTPUT_ROOT, "fixture-table-cellpadding"),
         threshold: 0.3,
         maxDiffRatio: 0.20,
+        report: paintVrtReport("fixture: table with cellpadding=10 adds visible padding"),
         cropToContent: true,
         contentPadding: 12,
         backgroundTolerance: 18,
@@ -797,6 +968,7 @@ test.describe("Paint VRT", () => {
       await expectSnapshotWithinBudget(browser, snapshotName, {
         threshold: 0.3,
         maxDiffRatio,
+        reportTitle: `url snapshot: ${snapshotName} visual diff within budget`,
       });
     });
   }

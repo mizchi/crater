@@ -10,6 +10,22 @@ test "fixed article fixture renders heading and navigation in text mode" {
 }
 
 ///|
+test "fixed article fixture full text output includes below-the-fold sections" {
+  let viewport_browser = Browser::new(1440, 240)
+  load_fixture(viewport_browser, docs_article_fixture())
+  let viewport = viewport_browser.render_output(Text)
+  assert_true(viewport.contains("セクション 0"))
+  assert_true(!viewport.contains("セクション 9"))
+
+  let full_browser = Browser::new(1440, 240)
+  load_fixture(full_browser, docs_article_fixture())
+  let full = full_browser.render_text_full_page()
+  assert_true(full.contains("セクション 0"))
+  assert_true(full.contains("セクション 9"))
+  assert_true(full.contains("セクション 13"))
+}
+
+///|
 test "fixed article fixture exposes links and article role in aom output" {
   let browser = Browser::new(1440, 960)
   load_fixture(browser, docs_article_fixture())
@@ -54,6 +70,84 @@ test "fixed article fixture renders kitty graphics output" {
   assert_true(rendered.has_prefix("\u001b_Ga=T,f=24,q=2,s="))
   assert_true(rendered.length() > 64)
 }
+
+///|
+async test "dashboard fixture reflects DOM mutation and click repaint" {
+  let browser = Browser::new(1280, 800)
+  load_fixture(browser, @benchmarks.dashboard(15, 12))
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let initial = browser.render_output(Text)
+  assert_true(!initial.contains("Refresh"))
+  assert_true(!initial.contains("ready"))
+
+  let insert_code =
+    #|(
+    #|  function() {
+    #|    const root = document.body && document.body.firstElementChild;
+    #|    const main = root && root.children ? root.children[1] : null;
+    #|    const grid = main && main.lastElementChild ? main.lastElementChild : null;
+    #|    if (!grid) {
+    #|      return "missing-grid";
+    #|    }
+    #|    const card = grid.firstElementChild || document.createElement("div");
+    #|    card.id = "dash-card";
+    #|    if (!card.parentNode) {
+    #|      card.style.background = "#fff";
+    #|      card.style.borderRadius = "8px";
+    #|      card.style.padding = "16px";
+    #|      grid.appendChild(card);
+    #|    }
+    #|    card.textContent = "";
+    #|    const button = document.createElement("button");
+    #|    button.id = "dash-action";
+    #|    button.textContent = "Refresh";
+    #|    button.style.display = "block";
+    #|    button.style.width = "120px";
+    #|    button.style.height = "32px";
+    #|    const status = document.createElement("p");
+    #|    status.id = "dash-status";
+    #|    status.textContent = "ready";
+    #|    button.addEventListener("click", function() {
+    #|      status.textContent = "clicked";
+    #|    });
+    #|    card.appendChild(button);
+    #|    card.appendChild(status);
+    #|    return status.textContent;
+    #|  }
+    #|)()
+  let inserted = browser.execute_inline_js(insert_code)
+  inspect(inserted, content="Some(\"ready\")")
+  let _ = browser.sync_render_state_from_dom_tree()
+
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("Refresh"))
+  assert_true(rendered.contains("ready"))
+  let persisted = browser.execute_inline_js(
+    "(function(){ const button=document.getElementById('dash-action'); return button ? String(!!button.getAttribute('data-crater-listeners-click')) : 'missing'; })()",
+  )
+  inspect(persisted, content="Some(\"true\")")
+
+  let (button_col, button_row) = center_of_source_id(browser, "dash-action")
+  let clicked = browser.activate_at(button_col, button_row) catch { _ => false }
+  inspect(clicked, content="true")
+
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('dash-status').textContent; })()",
+  )
+  inspect(status, content="Some(\"clicked\")")
+  inspect(browser.html_content.contains("clicked"), content="true")
+  let after_click = browser.render_text_full_page()
+  assert_true(after_click.contains("clicked"))
+}
+
+// TODO: "builtin github snapshot fixture applies DOM mutation and click repaint"
+// was drafted here but is deferred. After execute_scripts() runs against the
+// full github snapshot fixture, sync_render_state_from_dom_tree emits a
+// near-empty html_content (56 chars) so subsequent render_text_full_page calls
+// return almost nothing. The regression is unrelated to the textContent op
+// sync fix in browser/src/js/js_runtime_quickjs.mbt and needs its own
+// investigation before the test can be re-enabled.
 
 ///|
 let tiny_png_base64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIW2NgYGD4DwABBAEAwS2OUAAAAABJRU5ErkJggg=="

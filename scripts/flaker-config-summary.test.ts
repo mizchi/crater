@@ -32,9 +32,17 @@ describe("flaker-config-summary", () => {
   it("discovers specs while excluding benchmark fixtures", () => {
     const root = makeTempDir();
     writeFile(root, "tests/alpha.test.ts");
+    writeFile(root, "tests/beta.spec.ts");
+    writeFile(root, "tests/gamma.test.tsx");
+    writeFile(root, "tests/delta.spec.tsx");
     writeFile(root, "tests/playwright-benchmark.test.ts");
 
-    expect(discoverPlaywrightSpecs(root)).toEqual(["tests/alpha.test.ts"]);
+    expect(discoverPlaywrightSpecs(root)).toEqual([
+      "tests/alpha.test.ts",
+      "tests/beta.spec.ts",
+      "tests/delta.spec.tsx",
+      "tests/gamma.test.tsx",
+    ]);
   });
 
   it("summarizes ownership and unmanaged specs directly", () => {

@@ -235,7 +235,7 @@ test "wpt_inline_abspos_003_block_child_forces_new_line_static_y" {
   inspect(
     span.width,
     content=(
-      #|48
+      #|40
     ),
   )
   let non_text_children : Array[@types.Layout] = []

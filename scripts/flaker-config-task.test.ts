@@ -36,6 +36,33 @@ describe("resolveTaskSummary", () => {
       srcCount: 2,
     });
   });
+
+  it("extracts Playwright spec files beyond .test.ts", () => {
+    const task: FlakerTask = {
+      id: "browser-ui",
+      node: "browser",
+      cmd: [
+        "pnpm",
+        "exec",
+        "playwright",
+        "test",
+        "./tests/browser-ui.spec.ts",
+        "tests/browser-ui.test.tsx",
+        "tests/browser-ui.spec.tsx",
+      ],
+      srcs: ["src/browser/**"],
+      needs: [],
+      trigger: "auto",
+    };
+
+    const resolved = resolveTaskSummary(task, "/repo");
+
+    expect(resolved.specs).toEqual([
+      "tests/browser-ui.spec.ts",
+      "tests/browser-ui.spec.tsx",
+      "tests/browser-ui.test.tsx",
+    ]);
+  });
 });
 
 describe("resolveTaskSummaries", () => {

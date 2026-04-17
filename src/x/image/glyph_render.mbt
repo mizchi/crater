@@ -458,7 +458,13 @@ fn draw_text_with_glyphs(
       continue
     }
     // Measure word with Regular font (matching layout)
-    let word_width = measure_word_width(provider, word, font_size, false)
+    let word_width = measure_word_width(
+      provider,
+      word,
+      font_size,
+      false,
+      font_family~,
+    )
     // Calculate space before word (except at line start)
     let mut space_width = 0.0
     if i > 0 && word != "\n" && cur_x > x.to_double() + 0.01 {
@@ -481,15 +487,6 @@ fn draw_text_with_glyphs(
     let mut prev_cp = 0
     for c in word {
       let cp = c.to_int()
-      // Apply kerning between consecutive characters
-      if prev_cp != 0 {
-        let kern = match provider.get_kern_for_family {
-          Some(kern_fn) if font_family.length() > 0 =>
-            kern_fn(prev_cp, cp, font_size, is_bold, font_family)
-          _ => (provider.get_kern)(prev_cp, cp, font_size, is_bold)
-        }
-        cur_x = cur_x + kern
-      }
       let (commands, advance) = match provider.get_glyph_for_family {
         Some(glyph_fn) if font_family.length() > 0 =>
           match glyph_fn(cp, font_size, is_bold, font_family) {
@@ -498,15 +495,33 @@ fn draw_text_with_glyphs(
           }
         _ => (provider.get_glyph)(cp, font_size, is_bold)
       }
+      let kern = if prev_cp != 0 {
+        match provider.get_kern_for_family {
+          Some(kern_fn) if font_family.length() > 0 =>
+            kern_fn(prev_cp, cp, font_size, is_bold, font_family)
+          _ => (provider.get_kern)(prev_cp, cp, font_size, is_bold)
+        }
+      } else {
+        0.0
+      }
+      let mut draw_x = cur_x + kern
+      if max_width > 0 &&
+        draw_x + advance > max_x_limit &&
+        cur_x > x.to_double() + 0.01 {
+        cur_x = x.to_double()
+        cur_y = cur_y + effective_line_height
+        max_y_seen = cur_y + effective_line_height
+        draw_x = cur_x
+      }
       if commands.length() > 0 {
         let translated = translate_path_commands(
           commands,
-          cur_x,
+          draw_x,
           cur_y + baseline_offset,
         )
         @svg.raster_path(translated, Some(color), None, 0.0, setter)
       }
-      cur_x = cur_x + advance
+      cur_x = draw_x + advance
       prev_cp = cp
     }
   }
@@ -530,10 +545,22 @@ fn measure_word_width(
   word : String,
   font_size : Double,
   is_bold : Bool,
+  font_family? : String = "",
 ) -> Double {
   let mut w = 0.0
+  let mut prev_cp = 0
   for c in word {
-    w = w + get_advance(provider, c.to_int(), font_size, is_bold)
+    let cp = c.to_int()
+    if prev_cp != 0 {
+      let kern = match provider.get_kern_for_family {
+        Some(kern_fn) if font_family.length() > 0 =>
+          kern_fn(prev_cp, cp, font_size, is_bold, font_family)
+        _ => (provider.get_kern)(prev_cp, cp, font_size, is_bold)
+      }
+      w = w + kern
+    }
+    w = w + get_advance(provider, cp, font_size, is_bold)
+    prev_cp = cp
   }
   w
 }
@@ -666,7 +693,13 @@ fn draw_text_with_glyphs_clipped(
       max_y_seen = cur_y + effective_line_height
       continue
     }
-    let word_width = measure_word_width(provider, word, font_size, false)
+    let word_width = measure_word_width(
+      provider,
+      word,
+      font_size,
+      false,
+      font_family~,
+    )
     let mut space_width = 0.0
     if i > 0 && word != "\n" && cur_x > x.to_double() + 0.01 {
       space_width = space_advance_layout
@@ -681,26 +714,11 @@ fn draw_text_with_glyphs_clipped(
       }
     }
     cur_x = cur_x + space_width
-    // Skip rendering if entire line is outside clip vertically
-    let line_top = cur_y.to_int()
-    let line_bottom = (cur_y + effective_line_height).to_int()
-    let in_clip_v = match clip {
-      Some(cr) => line_bottom >= cr.y && line_top < cr.y + cr.h
-      None => line_bottom >= 0 && line_top < fb.height
-    }
     // Pre-compute palette index for this word's color (constant per word)
     let color_idx = palette.get_or_add({ r: color.r, g: color.g, b: color.b })
     let mut prev_cp = 0
     for c in word {
       let cp = c.to_int()
-      if prev_cp != 0 {
-        let kern = match provider.get_kern_for_family {
-          Some(kern_fn) if font_family.length() > 0 =>
-            kern_fn(prev_cp, cp, font_size, is_bold, font_family)
-          _ => (provider.get_kern)(prev_cp, cp, font_size, is_bold)
-        }
-        cur_x = cur_x + kern
-      }
       // Use bitmap cache: rasterize each glyph once, then blit
       let cache_key = glyph_cache_key(cp, font_size, is_bold, font_family)
       let bitmap = match glyph_bitmap_cache.val.get(cache_key) {
@@ -722,9 +740,33 @@ fn draw_text_with_glyphs_clipped(
           bm
         }
       }
+      let kern = if prev_cp != 0 {
+        match provider.get_kern_for_family {
+          Some(kern_fn) if font_family.length() > 0 =>
+            kern_fn(prev_cp, cp, font_size, is_bold, font_family)
+          _ => (provider.get_kern)(prev_cp, cp, font_size, is_bold)
+        }
+      } else {
+        0.0
+      }
+      let mut draw_x = cur_x + kern
+      if max_width > 0 &&
+        draw_x + bitmap.advance > max_x_limit &&
+        cur_x > x.to_double() + 0.01 {
+        cur_x = x.to_double()
+        cur_y = cur_y + effective_line_height
+        max_y_seen = cur_y + effective_line_height
+        draw_x = cur_x
+      }
+      let line_top = cur_y.to_int()
+      let line_bottom = (cur_y + effective_line_height).to_int()
+      let in_clip_v = match clip {
+        Some(cr) => line_bottom >= cr.y && line_top < cr.y + cr.h
+        None => line_bottom >= 0 && line_top < fb.height
+      }
       // Blit cached bitmap to framebuffer with antialiasing
       if in_clip_v && bitmap.width > 0 {
-        let dx = cur_x.to_int() + bitmap.offset_x
+        let dx = draw_x.to_int() + bitmap.offset_x
         let dy = cur_y.to_int() + bitmap.offset_y
         let has_coverage = bitmap.coverage.length() ==
           bitmap.width * bitmap.height
@@ -771,7 +813,7 @@ fn draw_text_with_glyphs_clipped(
           }
         }
       }
-      cur_x = cur_x + bitmap.advance
+      cur_x = draw_x + bitmap.advance
       prev_cp = cp
     }
   }

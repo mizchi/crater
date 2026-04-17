@@ -56,14 +56,15 @@ jobs:
           INPUT_TASKS: ${{ github.event.inputs.tasks || '' }}
           INPUT_NODES: ${{ github.event.inputs.nodes || '' }}
         run: |
+          mkdir -p flaker-daily-plan
           if [ -n "$INPUT_TASKS" ] && [ -n "$INPUT_NODES" ]; then
-            just flaker-batch-plan flaker-daily-plan "$INPUT_TASKS" "$INPUT_NODES"
+            node scripts/flaker-batch-plan.ts --tasks "$INPUT_TASKS" --nodes "$INPUT_NODES" --json flaker-daily-plan/plan.json --markdown flaker-daily-plan/plan.md | tee flaker-daily-plan/plan.log
           elif [ -n "$INPUT_TASKS" ]; then
-            just flaker-batch-plan flaker-daily-plan "$INPUT_TASKS"
+            node scripts/flaker-batch-plan.ts --tasks "$INPUT_TASKS" --json flaker-daily-plan/plan.json --markdown flaker-daily-plan/plan.md | tee flaker-daily-plan/plan.log
           elif [ -n "$INPUT_NODES" ]; then
-            just flaker-batch-plan flaker-daily-plan "" "$INPUT_NODES"
+            node scripts/flaker-batch-plan.ts --nodes "$INPUT_NODES" --json flaker-daily-plan/plan.json --markdown flaker-daily-plan/plan.md | tee flaker-daily-plan/plan.log
           else
-            just flaker-batch-plan flaker-daily-plan
+            node scripts/flaker-batch-plan.ts --json flaker-daily-plan/plan.json --markdown flaker-daily-plan/plan.md | tee flaker-daily-plan/plan.log
           fi
 
       - name: Publish nightly plan
@@ -158,7 +159,7 @@ jobs:
         if: steps.metric_ci_package.outcome == 'success' || steps.metric_ci_source.outcome == 'success'
         continue-on-error: true
         run: |
-          just flaker-task-record "${{ matrix.task_id }}" "flaker-daily/${{ matrix.task_id }}/playwright-report.json" "flaker-daily/${{ matrix.task_id }}/playwright-summary"
+          just flaker-task-record "${{ matrix.task_id }}" "flaker-daily/${{ matrix.task_id }}/playwright-report.json" "flaker-daily/${{ matrix.task_id }}/playwright-summary" "flaker-daily/${{ matrix.task_id }}/vrt-summary"
 
       - name: Build flaker task summary
         if: always() && (steps.metric_ci_package.outcome == 'success' || steps.metric_ci_source.outcome == 'success')
@@ -202,7 +203,9 @@ jobs:
           merge-multiple: true
 
       - name: Build daily batch summary
-        run: just flaker-batch-summary flaker-daily-artifacts flaker-daily-summary
+        run: |
+          mkdir -p flaker-daily-summary
+          node scripts/flaker-batch-summary.ts --input flaker-daily-artifacts --collect-task-id flaker-daily --json flaker-daily-summary/summary.json --markdown flaker-daily-summary/summary.md | tee flaker-daily-summary/summary.log
 
       - name: Publish daily batch summary
         run: cat flaker-daily-summary/summary.md >> "$GITHUB_STEP_SUMMARY"

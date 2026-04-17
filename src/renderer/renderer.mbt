@@ -232,8 +232,40 @@ extern "js" fn get_builtin_text_advance_ratio_override() -> Double =
   #|}
 
 ///|
+/// Test-only hook for deterministic built-in text measurement on JS.
+#cfg(target="js")
+pub extern "js" fn set_builtin_text_advance_ratio_override_for_test(
+  ratio : Double,
+) -> Unit =
+  #|(ratio) => {
+  #|  globalThis.__craterBuiltinTextAdvanceRatio = ratio;
+  #|}
+
+///|
+/// Clear the deterministic built-in text measurement hook on JS.
+#cfg(target="js")
+pub extern "js" fn clear_builtin_text_advance_ratio_override_for_test() -> Unit =
+  #|() => {
+  #|  delete globalThis.__craterBuiltinTextAdvanceRatio;
+  #|}
+
+///|
 #cfg(not(target="js"))
 let builtin_text_advance_ratio_override : Ref[Double] = { val: -1.0 }
+
+///|
+/// Test-only hook for deterministic built-in text measurement.
+#cfg(not(target="js"))
+pub fn set_builtin_text_advance_ratio_override_for_test(ratio : Double) -> Unit {
+  builtin_text_advance_ratio_override.val = ratio
+}
+
+///|
+/// Clear the deterministic built-in text measurement hook.
+#cfg(not(target="js"))
+pub fn clear_builtin_text_advance_ratio_override_for_test() -> Unit {
+  builtin_text_advance_ratio_override.val = -1.0
+}
 
 ///|
 #cfg(not(target="js"))
@@ -1276,6 +1308,9 @@ fn should_preserve_inline_element(
     return true
   }
   let ua_style = get_ua_default_style(tag_lower)
+  if ua_style.font_weight != 400.0 {
+    return true
+  }
   if ua_style.text_decoration_underline ||
     ua_style.text_decoration_line_through ||
     ua_style.text_decoration_overline {
@@ -1349,6 +1384,8 @@ fn should_preserve_inline_element(
       }
       let affects_inline_typography = style_lower.contains("font-size:") ||
         style_lower.contains("font-size :") ||
+        style_lower.contains("font-weight:") ||
+        style_lower.contains("font-weight :") ||
         style_lower.contains("font:") ||
         style_lower.contains("font :") ||
         style_lower.contains("line-height:") ||
@@ -1434,6 +1471,14 @@ fn should_preserve_inline_element(
       }
       None => ()
     }
+    match cascaded.get_value("font-weight") {
+      Some(_) => return true
+      None => ()
+    }
+    match cascaded.get_value("font") {
+      Some(_) => return true
+      None => ()
+    }
     match cascaded.get_value("filter") {
       Some(value) => if value.to_lower().trim() != "none" { return true }
       None => ()
@@ -1467,6 +1512,15 @@ fn has_nontrivial_background_value(value : String) -> Bool {
   lowered != "transparent" &&
   lowered != "rgba(0,0,0,0)" &&
   lowered != "rgba(0, 0, 0, 0)"
+}
+
+///|
+fn should_preserve_inline_children_for_text_overflow(
+  style : @style.Style,
+) -> Bool {
+  style.text_overflow == @style.TextOverflow::Ellipsis &&
+  style.white_space == @style.WhiteSpace::Nowrap &&
+  (style.overflow_x != @types.Visible || style.overflow_y != @types.Visible)
 }
 
 ///|
@@ -5330,7 +5384,7 @@ fn element_to_node_with_styles(
   let children : Array[@node.Node] = []
   let preserve_inline_elements = match style.display {
     @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid => true
-    _ => false
+    _ => should_preserve_inline_children_for_text_overflow(style)
   }
   let (inline_text, remaining_children) = if is_svg_element(cell_tag) {
     ("", elem.children)
@@ -5806,7 +5860,7 @@ fn element_to_node_with_styles_internal(
   let children : Array[@node.Node] = []
   let preserve_inline_elements = match style.display {
     @types.Flex | @types.InlineFlex | @types.Grid | @types.InlineGrid => true
-    _ => false
+    _ => should_preserve_inline_children_for_text_overflow(style)
   }
   let (inline_text, remaining_children) = if is_svg_element(tag_lower) {
     ("", elem.children)
@@ -7337,7 +7391,8 @@ fn compute_element_style_indexed(
   }
 
   // Start with default style
-  let mut style = @style.Style::default()
+  let default_style = @style.Style::default()
+  let mut style = default_style
 
   // Inherit properties from parent first
   match parent_style {
@@ -7372,12 +7427,11 @@ fn compute_element_style_indexed(
   style = { ..style, display: ua_style.display }
   style = { ..style, box_sizing: ua_style.box_sizing }
   style = { ..style, margin: ua_style.margin, padding: ua_style.padding }
-  if ua_style.font_size != 16.0 || ua_style.line_height != 16.0 {
-    style = {
-      ..style,
-      font_size: ua_style.font_size,
-      line_height: ua_style.line_height,
-    }
+  if ua_style.font_size != default_style.font_size {
+    style = { ..style, font_size: ua_style.font_size }
+  }
+  if ua_style.line_height != default_style.line_height {
+    style = { ..style, line_height: ua_style.line_height }
   }
   if ua_style.font_family != "" {
     style = { ..style, font_family: ua_style.font_family }

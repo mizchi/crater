@@ -237,6 +237,145 @@ test "DOM.requestChildNodes returns children" {
 }
 
 ///|
+test "DOM.getDocument exposes shadow root metadata on host node" {
+  let ctx = TestContext::with_html("<div id=\"host\"><span>light</span></div>")
+  let dom = ctx.dom()
+  let tree = ctx.tree()
+  let doc_id = ctx.doc_id()
+  let host_id = dom.query_selector(doc_id, "#host").unwrap().unwrap()
+  let shadow = tree
+    .attach_shadow(@dom.NodeId::from_int(host_id), "open")
+    .unwrap()
+  let inner = tree.create_element("p")
+  let inner_text = tree.create_text("shadow")
+  let _ = tree.append_child(inner, inner_text)
+  let _ = tree.append_child(shadow, inner)
+
+  let result = dom.get_document(Some(4))
+  inspect(result is Ok(_), content="true")
+  let doc = result.unwrap()
+  let html = doc.children.unwrap()[0]
+  let body = html.children.unwrap()[0]
+  let host = body.children.unwrap()[0]
+  inspect(!(host.shadow_roots is None), content="true")
+  inspect(host.shadow_roots.unwrap().length(), content="1")
+  inspect(
+    host.shadow_roots.unwrap()[0].shadow_root_type,
+    content="Some(\"open\")",
+  )
+}
+
+///|
+test "DOM.requestChildNodes includes shadow root nodes for host" {
+  let ctx = TestContext::with_html(
+    "<div id=\"host\"><span id=\"light\">light</span></div>",
+  )
+  let dom = ctx.dom()
+  let tree = ctx.tree()
+  let doc_id = ctx.doc_id()
+  let host_id = dom.query_selector(doc_id, "#host").unwrap().unwrap()
+  let shadow = tree
+    .attach_shadow(@dom.NodeId::from_int(host_id), "open")
+    .unwrap()
+  let inner = tree.create_element("p")
+  let inner_text = tree.create_text("shadow")
+  let _ = tree.append_child(inner, inner_text)
+  let _ = tree.append_child(shadow, inner)
+
+  let result = dom.request_child_nodes(host_id, Some(1))
+  inspect(result is Ok(_), content="true")
+  let children = result.unwrap()
+  inspect(children.length(), content="2")
+  inspect(children[0].node_type, content="1")
+  inspect(children[1].node_type, content="11")
+  inspect(children[1].shadow_root_type, content="Some(\"open\")")
+}
+
+///|
+test "DOM.getOuterHTML returns serialized shadow root contents" {
+  let ctx = TestContext::with_html("<div id=\"host\"></div>")
+  let dom = ctx.dom()
+  let tree = ctx.tree()
+  let doc_id = ctx.doc_id()
+  let host_id = dom.query_selector(doc_id, "#host").unwrap().unwrap()
+  let shadow = tree
+    .attach_shadow(@dom.NodeId::from_int(host_id), "open")
+    .unwrap()
+  let inner = tree.create_element("p")
+  let inner_text = tree.create_text("shadow")
+  let _ = tree.append_child(inner, inner_text)
+  let _ = tree.append_child(shadow, inner)
+
+  let result = dom.get_outer_html(shadow.to_int())
+  inspect(result is Ok(_), content="true")
+  inspect(result.unwrap(), content="<p>shadow</p>")
+}
+
+///|
+test "DOM.querySelector finds descendants from shadow root node" {
+  let ctx = TestContext::with_html("<div id=\"host\"></div>")
+  let dom = ctx.dom()
+  let tree = ctx.tree()
+  let doc_id = ctx.doc_id()
+  let host_id = dom.query_selector(doc_id, "#host").unwrap().unwrap()
+  let shadow = tree
+    .attach_shadow(@dom.NodeId::from_int(host_id), "open")
+    .unwrap()
+  let wrapper = tree.create_element("section")
+  let inner = tree.create_element("button")
+  let _ = tree.set_attribute(inner, "class", "target")
+  let _ = tree.append_child(wrapper, inner)
+  let _ = tree.append_child(shadow, wrapper)
+
+  let result = dom.query_selector(shadow.to_int(), ".target")
+  inspect(result is Ok(_), content="true")
+  inspect(result.unwrap(), content="Some(\{inner.to_int()})")
+}
+
+///|
+test "DOM.querySelectorAll finds all descendants from shadow root node" {
+  let ctx = TestContext::with_html("<div id=\"host\"></div>")
+  let dom = ctx.dom()
+  let tree = ctx.tree()
+  let doc_id = ctx.doc_id()
+  let host_id = dom.query_selector(doc_id, "#host").unwrap().unwrap()
+  let shadow = tree
+    .attach_shadow(@dom.NodeId::from_int(host_id), "open")
+    .unwrap()
+  let first = tree.create_element("div")
+  let _ = tree.set_attribute(first, "class", "item")
+  let second = tree.create_element("div")
+  let _ = tree.set_attribute(second, "class", "item")
+  let nested = tree.create_element("section")
+  let _ = tree.append_child(nested, second)
+  let _ = tree.append_child(shadow, first)
+  let _ = tree.append_child(shadow, nested)
+
+  let result = dom.query_selector_all(shadow.to_int(), ".item")
+  inspect(result is Ok(_), content="true")
+  inspect(result.unwrap(), content="[\{first.to_int()}, \{second.to_int()}]")
+}
+
+///|
+test "DOM.querySelector on host node does not pierce shadow root" {
+  let ctx = TestContext::with_html("<div id=\"host\"></div>")
+  let dom = ctx.dom()
+  let tree = ctx.tree()
+  let doc_id = ctx.doc_id()
+  let host_id = dom.query_selector(doc_id, "#host").unwrap().unwrap()
+  let shadow = tree
+    .attach_shadow(@dom.NodeId::from_int(host_id), "open")
+    .unwrap()
+  let inner = tree.create_element("button")
+  let _ = tree.set_attribute(inner, "id", "shadow-button")
+  let _ = tree.append_child(shadow, inner)
+
+  let result = dom.query_selector(host_id, "#shadow-button")
+  inspect(result is Ok(_), content="true")
+  inspect(result.unwrap(), content="None")
+}
+
+///|
 test "DOM operations on invalid node return error" {
   let ctx = TestContext::new()
   let dom = ctx.dom()

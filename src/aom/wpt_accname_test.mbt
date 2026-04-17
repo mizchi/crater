@@ -134,7 +134,7 @@ test "accname: Ignore aria-owns when it targets an element with an ancestor that
   inspect(
     name,
     content=(
-      #|Some("World Wide Web Consortium (opens in a new window)")
+      #|Some("World Wide Web Consortium")
     ),
   )
 }

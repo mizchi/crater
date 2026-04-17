@@ -142,10 +142,14 @@ fn BidiProtocol::dispatch_interaction_hover_sequence(
       @interaction.HoverPreviousTarget => previous_target_shared
       @interaction.HoverCurrentTarget => current_target_shared
     }
+    let related_shared = match event.target {
+      @interaction.HoverPreviousTarget => current_target_shared
+      @interaction.HoverCurrentTarget => previous_target_shared
+    }
     if target_shared == "" {
       continue
     }
-    input_dispatch_pointer_event(
+    input_dispatch_pointer_event_with_related(
       target_shared,
       event.event_type,
       x,
@@ -157,6 +161,7 @@ fn BidiProtocol::dispatch_interaction_hover_sequence(
       alt,
       shift,
       meta,
+      related_shared,
     )
   }
 }

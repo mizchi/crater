@@ -58,13 +58,10 @@ fn main {
     }
     None => ()
   }
-  // Load system font for high-quality text rendering
-  let font_data = load_system_font()
-  if font_data.length() > 0 {
-    match @image.glyph_provider_from_bytes(font_data) {
-      Some(provider) => @image.set_glyph_provider(provider)
-      None => ()
-    }
+  // Prefer a regular/bold system font pair when available.
+  match load_system_glyph_provider() {
+    Some(provider) => @image.set_glyph_provider(provider)
+    None => ()
   }
   match load_request(options) {
     Ok(request) =>

@@ -58,6 +58,106 @@ fn generate_list_marker(parent_tag : String, child_index : Int) -> String? {
 }
 
 ///|
+fn should_apply_text_overflow_ellipsis(
+  style : @style.Style,
+  layout : @types.Layout,
+) -> Bool {
+  style.text_overflow == @style.TextOverflow::Ellipsis &&
+  style.white_space == @style.WhiteSpace::Nowrap &&
+  layout.width > 0.0 &&
+  (layout.overflow_x != @types.Visible || layout.overflow_y != @types.Visible)
+}
+
+///|
+fn resolve_text_overflow_char_width(style : @style.Style) -> Double {
+  let font_size = if style.font_size > 0.0 { style.font_size } else { 16.0 }
+  if style.font_family.to_lower().contains("ahem") {
+    font_size
+  } else {
+    font_size * 0.5
+  }
+}
+
+///|
+fn truncate_text_with_ellipsis(
+  text : String,
+  max_width : Double,
+  char_width : Double,
+) -> String {
+  if char_width <= 0.0 {
+    return text
+  }
+  let max_chars = (max_width / char_width).to_int()
+  if max_chars <= 0 {
+    return ""
+  }
+  if text.length().to_double() * char_width <= max_width {
+    return text
+  }
+  if max_chars <= 3 {
+    return "..."
+  }
+  let keep_chars = max_chars - 3
+  let mut result = ""
+  let mut count = 0
+  for c in text {
+    if count >= keep_chars {
+      break
+    }
+    result = result + c.to_string()
+    count += 1
+  }
+  result + "..."
+}
+
+///|
+fn clamp_to_available_width(width : Double, available_width : Double) -> Double {
+  if width > available_width {
+    available_width
+  } else {
+    width
+  }
+}
+
+///|
+fn apply_text_overflow_ellipsis_to_subtree(
+  paint_node : @model.PaintNode,
+  source_node : @layout.Node,
+  available_width : Double,
+) -> @model.PaintNode {
+  if source_node.id == "#text" {
+    match paint_node.text {
+      Some(text) => {
+        let truncated = truncate_text_with_ellipsis(
+          text,
+          available_width,
+          resolve_text_overflow_char_width(source_node.style),
+        )
+        return {
+          ..paint_node,
+          width: clamp_to_available_width(paint_node.width, available_width),
+          text: Some(truncated),
+        }
+      }
+      None => return paint_node
+    }
+  }
+  if paint_node.children.length() == 1 && source_node.children.length() == 1 {
+    let updated_child = apply_text_overflow_ellipsis_to_subtree(
+      paint_node.children[0],
+      source_node.children[0],
+      available_width,
+    )
+    return {
+      ..paint_node,
+      width: clamp_to_available_width(paint_node.width, available_width),
+      children: [updated_child],
+    }
+  }
+  paint_node
+}
+
+///|
 priv struct ExtentNode {
   relative_extent : Double
   children : Array[ExtentNode]
@@ -174,6 +274,13 @@ fn from_node_and_layout_with_viewport_inner(
             }
             None => ()
           }
+        }
+        if should_apply_text_overflow_ellipsis(node.style, layout) {
+          current = apply_text_overflow_ellipsis_to_subtree(
+            current,
+            child_node,
+            layout.width,
+          )
         }
         children.push(current)
       }

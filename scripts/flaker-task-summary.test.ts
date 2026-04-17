@@ -214,7 +214,7 @@ describe("renderFlakerTaskSummaryMarkdown", () => {
 });
 
 describe("runFlakerTaskSummaryCli", () => {
-  it("returns markdown stdout and optional artifact writes", () => {
+  it("returns markdown stdout, flat artifact writes, and collect-compatible copies", () => {
     const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "crater-flaker-task-summary-cli-"));
     fs.writeFileSync(path.join(repoRoot, "flaker.star"), FLAKER_STAR, "utf8");
 
@@ -288,6 +288,26 @@ describe("runFlakerTaskSummaryCli", () => {
       },
       {
         path: path.resolve(repoRoot, "out/summary.json"),
+        content: expect.stringContaining('"taskId": "paint-vrt"'),
+      },
+      {
+        path: path.resolve(
+          repoRoot,
+          "out",
+          "paint-vrt",
+          "flaker-summary",
+          "paint-vrt.md",
+        ),
+        content: expect.stringContaining("# Flaker Task Summary"),
+      },
+      {
+        path: path.resolve(
+          repoRoot,
+          "out",
+          "paint-vrt",
+          "flaker-summary",
+          "paint-vrt.json",
+        ),
         content: expect.stringContaining('"taskId": "paint-vrt"'),
       },
     ]);

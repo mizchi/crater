@@ -77,9 +77,31 @@ pub fn compute_accessible_name_full(
   find_label_for_id : (String) -> @html.Element?,
   encapsulating_label : @html.Element?,
 ) -> String? {
+  compute_accessible_name_with_hidden_subtree_check(
+    element,
+    find_by_id,
+    find_label_for_id,
+    encapsulating_label,
+    fn(_element) { false },
+  )
+}
+
+///|
+fn compute_accessible_name_with_hidden_subtree_check(
+  element : @html.Element,
+  find_by_id : (String) -> @html.Element?,
+  find_label_for_id : (String) -> @html.Element?,
+  encapsulating_label : @html.Element?,
+  is_in_hidden_subtree : (@html.Element) -> Bool,
+) -> String? {
   let ctx = NameComputationContext::new()
   let name = compute_name_step(
-    element, ctx, find_by_id, find_label_for_id, encapsulating_label,
+    element,
+    ctx,
+    find_by_id,
+    find_label_for_id,
+    encapsulating_label,
+    is_in_hidden_subtree,
   )
   let trimmed = name.trim().to_string()
   if trimmed.is_empty() {
@@ -125,6 +147,7 @@ pub fn compute_accessible_description_with_label(
                 find_by_id,
                 find_label_for_id,
                 None,
+                fn(_element) { false },
               )
               if !text.is_empty() {
                 parts.push(text)
@@ -161,6 +184,7 @@ fn compute_name_step(
   find_by_id : (String) -> @html.Element?,
   find_label_for_id : (String) -> @html.Element?,
   encapsulating_label : @html.Element?,
+  is_in_hidden_subtree : (@html.Element) -> Bool,
 ) -> String {
   // Step 1: Skip hidden elements (unless referenced)
   if !ctx.is_referencing && is_hidden(element) {
@@ -175,7 +199,12 @@ fn compute_name_step(
       // but still check aria-label, native alternatives, etc.
       if ctx.is_referencing {
         return compute_name_steps_skip_labelledby(
-          element, ctx, find_by_id, find_label_for_id, encapsulating_label,
+          element,
+          ctx,
+          find_by_id,
+          find_label_for_id,
+          encapsulating_label,
+          is_in_hidden_subtree,
         )
       }
       return ""
@@ -183,12 +212,22 @@ fn compute_name_step(
     Some(id) => {
       let new_ctx = ctx.mark_visited(id)
       return compute_name_steps(
-        element, new_ctx, find_by_id, find_label_for_id, encapsulating_label,
+        element,
+        new_ctx,
+        find_by_id,
+        find_label_for_id,
+        encapsulating_label,
+        is_in_hidden_subtree,
       )
     }
     Option::None =>
       compute_name_steps(
-        element, ctx, find_by_id, find_label_for_id, encapsulating_label,
+        element,
+        ctx,
+        find_by_id,
+        find_label_for_id,
+        encapsulating_label,
+        is_in_hidden_subtree,
       )
   }
 }
@@ -200,6 +239,7 @@ fn compute_name_steps(
   find_by_id : (String) -> @html.Element?,
   find_label_for_id : (String) -> @html.Element?,
   encapsulating_label : @html.Element?,
+  is_in_hidden_subtree : (@html.Element) -> Bool,
 ) -> String {
   // Step 2A: aria-labelledby
   match element.attributes.get("aria-labelledby") {
@@ -217,6 +257,7 @@ fn compute_name_steps(
                 find_by_id,
                 find_label_for_id,
                 None,
+                is_in_hidden_subtree,
               )
               if !text.is_empty() {
                 parts.push(text)
@@ -264,7 +305,11 @@ fn compute_name_steps(
   // Step 2D: Name from content (if role allows it)
   if role_supports_name_from_content(role) || ctx.is_referencing {
     let content = compute_text_content(
-      element, ctx, find_by_id, find_label_for_id,
+      element,
+      ctx,
+      find_by_id,
+      find_label_for_id,
+      is_in_hidden_subtree,
     )
     if !content.is_empty() {
       return content
@@ -295,6 +340,7 @@ fn compute_name_steps_skip_labelledby(
   find_by_id : (String) -> @html.Element?,
   find_label_for_id : (String) -> @html.Element?,
   encapsulating_label : @html.Element?,
+  is_in_hidden_subtree : (@html.Element) -> Bool,
 ) -> String {
   // Step 2B: aria-label (skip step 2A)
   match element.attributes.get("aria-label") {
@@ -314,7 +360,11 @@ fn compute_name_steps_skip_labelledby(
   let role = compute_role(element, RoleMappingContext::default())
   if role_supports_name_from_content(role) || ctx.is_referencing {
     let content = compute_text_content(
-      element, ctx, find_by_id, find_label_for_id,
+      element,
+      ctx,
+      find_by_id,
+      find_label_for_id,
+      is_in_hidden_subtree,
     )
     if !content.is_empty() {
       return content
@@ -665,6 +715,7 @@ fn compute_text_content(
   _ctx : NameComputationContext,
   find_by_id : (String) -> @html.Element?,
   _find_label_for_id : (String) -> @html.Element?,
+  is_in_hidden_subtree : (@html.Element) -> Bool,
 ) -> String {
   let buf = StringBuilder::new()
   compute_text_content_recursive(element, buf, false)
@@ -683,8 +734,7 @@ fn compute_text_content(
               if is_hidden(owned_elem) {
                 continue
               }
-              // Skip if any ancestor is hidden (check via find_by_id traversal)
-              if is_in_hidden_subtree(owned_elem, find_by_id) {
+              if is_in_hidden_subtree(owned_elem) {
                 continue
               }
               // Get text from owned element - add space before aria-owns content
@@ -905,6 +955,27 @@ fn is_hidden(element : @html.Element) -> Bool {
 }
 
 ///|
+/// Check if an element hides descendants from all users regardless of aria-owns.
+/// This intentionally excludes aria-hidden ancestors, because reassigned nodes
+/// no longer inherit that ancestor state.
+fn hides_descendants_from_all_users(element : @html.Element) -> Bool {
+  if element.attributes.contains("hidden") {
+    return true
+  }
+
+  match element.style {
+    Some(style) => {
+      let style_lower = style.to_lower()
+      if style_lower.contains("display") && style_lower.contains("none") {
+        return true
+      }
+    }
+    Option::None => ()
+  }
+  false
+}
+
+///|
 /// Check if element has visibility:hidden (children can override with visibility:visible)
 fn has_visibility_hidden(element : @html.Element) -> Bool {
   match element.style {
@@ -928,21 +999,6 @@ fn has_visibility_visible(element : @html.Element) -> Bool {
   }
 }
 
-///|
-/// Check if an element is inside a hidden subtree
-/// This is a simplified check - full implementation would require parent references
-/// For now, we can't detect if an ancestor is hidden without traversing the DOM
-fn is_in_hidden_subtree(
-  _element : @html.Element,
-  _find_by_id : (String) -> @html.Element?,
-) -> Bool {
-  // TODO: Implement ancestor hidden check when parent references are available
-  // Currently, the test generator includes hidden wrappers for aria-owns targets,
-  // but we can't traverse up the DOM tree to check ancestors at runtime
-  false
-}
-
-///|
 /// Find the first heading inside an element (h1-h6 or role="heading")
 /// Used for dialog-like roles that get name from first heading (tentative feature)
 fn find_first_heading(element : @html.Element) -> @html.Element? {

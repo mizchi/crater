@@ -2420,6 +2420,77 @@ test "visibility_hidden_parent_preserves_visible_inline_child_for_text_overflow"
 }
 
 ///|
+test "text_overflow_ellipsis_truncates_direct_text_in_paint_tree" {
+  let html_str =
+    #|<!doctype html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#clip {
+    #|  width: 64px;
+    #|  overflow: hidden;
+    #|  white-space: nowrap;
+    #|  text-overflow: ellipsis;
+    #|  font-size: 16px;
+    #|  line-height: 16px;
+    #|}
+    #|</style>
+    #|<div id="clip">abcdefghijk</div>
+  let (node_root, layout_root) = @renderer.render_to_node_and_layout(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let paint_root = @paint_node.from_node_and_layout(node_root, layout_root)
+  let clip_paint = paint_root.children[0]
+  guard clip_paint.id == "div#clip" else {
+    fail("paint tree should keep the clip container as first child")
+  }
+  guard clip_paint.children.length() == 1 else {
+    fail("clip container should expose a single text child")
+  }
+  let text_paint = clip_paint.children[0]
+  inspect(text_paint.text, content="Some(\"abcde...\")")
+  inspect(text_paint.width, content="64")
+}
+
+///|
+test "text_overflow_ellipsis_truncates_single_inline_wrapper_text_in_paint_tree" {
+  let html_str =
+    #|<!doctype html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#clip {
+    #|  width: 64px;
+    #|  overflow: hidden;
+    #|  white-space: nowrap;
+    #|  text-overflow: ellipsis;
+    #|  font-size: 16px;
+    #|  line-height: 16px;
+    #|}
+    #|</style>
+    #|<div id="clip"><span>abcdefghijk</span></div>
+  let (node_root, layout_root) = @renderer.render_to_node_and_layout(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let paint_root = @paint_node.from_node_and_layout(node_root, layout_root)
+  let clip_paint = paint_root.children[0]
+  guard clip_paint.id == "div#clip" else {
+    fail("paint tree should keep the clip container as first child")
+  }
+  guard clip_paint.children.length() == 1 else {
+    fail("clip container should expose the inline wrapper child")
+  }
+  let span_paint = clip_paint.children[0]
+  inspect(span_paint.id, content="span")
+  guard span_paint.children.length() == 1 else {
+    fail("inline wrapper should keep a single text child")
+  }
+  let text_paint = span_paint.children[0]
+  inspect(text_paint.text, content="Some(\"abcde...\")")
+  inspect(text_paint.width, content="64")
+}
+
+///|
 test "contain_size_float_replaced_elements_are_not_dropped" {
   let html_str =
     #|<!DOCTYPE html>

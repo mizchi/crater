@@ -29,12 +29,14 @@ pub struct Point {
 
 ///|
 /// Node type enumeration
-pub enum NodeType {
+pub(all) enum NodeType {
   Document
   DocumentType
   Element
   Text
   Comment
+  DocumentFragment
+  ShadowRoot
 } derive(Eq, Debug)
 
 ///|
@@ -47,6 +49,7 @@ pub fn NodeType::from_dom_constant(value : Int) -> NodeType? {
     8 => Some(Comment)
     9 => Some(Document)
     10 => Some(DocumentType)
+    11 => Some(DocumentFragment)
     _ => None
   }
 }
@@ -330,6 +333,8 @@ pub impl Show for NodeType with output(self, logger) {
     Element => "Element"
     Text => "Text"
     Comment => "Comment"
+    DocumentFragment => "DocumentFragment"
+    ShadowRoot => "ShadowRoot"
   }
   logger.write_string(name)
 }

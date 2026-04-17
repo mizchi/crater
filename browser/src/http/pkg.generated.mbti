@@ -7,9 +7,9 @@ import {
 }
 
 // Values
-pub fn cached_fetch(url~ : String, options~ : FetchOptions, cache~ : MemoryCacheBackend, fetcher~ : (String, FetchOptions) -> HttpResponse raise HttpError) -> HttpResponse raise HttpError
+pub fn[CacheBackend : HttpCacheBackend] cached_fetch(url~ : String, options~ : FetchOptions, cache~ : CacheBackend, fetcher~ : (String, FetchOptions) -> HttpResponse raise HttpError) -> HttpResponse raise HttpError
 
-pub async fn cached_fetch_async(url~ : String, options~ : FetchOptions, cache~ : MemoryCacheBackend, fetcher~ : async (String, FetchOptions) -> HttpResponse raise HttpError) -> HttpResponse raise HttpError
+pub async fn[CacheBackend : HttpCacheBackend] cached_fetch_async(url~ : String, options~ : FetchOptions, cache~ : CacheBackend, fetcher~ : async (String, FetchOptions) -> HttpResponse raise HttpError) -> HttpResponse raise HttpError
 
 pub async fn fetch(String, options? : FetchOptions) -> HttpResponse raise HttpError
 
@@ -101,6 +101,7 @@ pub fn MemoryCacheBackend::lookup(Self, String) -> CacheEntry?
 pub fn MemoryCacheBackend::new(max_entries? : Int) -> Self
 pub fn MemoryCacheBackend::remove(Self, String) -> Unit
 pub fn MemoryCacheBackend::store(Self, CacheEntry) -> Unit
+pub impl HttpCacheBackend for MemoryCacheBackend
 
 pub(all) struct ParsedCookie {
   name : String
@@ -136,8 +137,15 @@ pub fn SqliteCacheBackend::lookup(Self, String) -> CacheEntry?
 pub fn SqliteCacheBackend::new(String) -> Self
 pub fn SqliteCacheBackend::remove(Self, String) -> Unit
 pub fn SqliteCacheBackend::store(Self, CacheEntry) -> Unit
+pub impl HttpCacheBackend for SqliteCacheBackend
 
 // Type aliases
 
 // Traits
+pub(open) trait HttpCacheBackend {
+  lookup(Self, String) -> CacheEntry?
+  store(Self, CacheEntry) -> Unit
+  remove(Self, String) -> Unit
+  clear(Self) -> Unit
+}
 

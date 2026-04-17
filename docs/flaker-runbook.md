@@ -48,6 +48,7 @@ just flaker task config paint-vrt
 just flaker task exec paint-vrt flaky --limit 20
 just flaker task import paint-vrt paint-vrt-report.json
 just flaker task record paint-vrt --workers 1
+just flaker-task-record paint-vrt paint-vrt-report.json .flaker/task-summary .flaker/task-vrt-summary --workers 1
 just flaker task summary paint-vrt .flaker/task-summary
 just flaker task sample paint-vrt --count 20
 just flaker task run paint-vrt --max-failures 1
@@ -57,7 +58,9 @@ just flaker task run paint-vrt --max-failures 1
 - `flaker-task-exec`: task-scoped config で任意の `flaker` サブコマンドを実行する
 - `flaker-task-import`: 既存 Playwright JSON report を shared store に import する
 - `flaker-task-record`: Playwright task 実行、report 保存、`flaker import` まで一度に行う
+  - `--vrt-summary-dir <dir>` を渡すと、`output/playwright/vrt/**/report.json` がある task は `vrt-summary` artifact を、`output/playwright/vrt/wpt/wpt-vrt-results.json` がある task は sibling の `wpt-vrt-summary` artifact を同時に出す
 - `flaker-task-summary`: task 単位の `flaker eval/reason` を markdown/json に落とす
+  - `--json` / `--markdown` を指定すると、`<out>/<task-id>/flaker-summary/<task-id>.{json,md}` の collect 互換コピーも出す
 - `flaker-task-sample`: `task exec <task> sample ...` の shorthand
 - `flaker-task-run`: `task exec <task> run ...` の shorthand
 
@@ -66,11 +69,13 @@ just flaker task run paint-vrt --max-failures 1
 ```bash
 just flaker batch plan
 just flaker batch plan flaker-daily-plan
-just flaker batch summary flaker-daily-artifacts
+just flaker batch summary flaker-daily-artifacts .flaker/batch-summary flaker-daily
 ```
 
 - `flaker-batch-plan`: nightly 対象 task の matrix を作る
 - `flaker-batch-summary`: nightly artifact を集約して全体 summary を作る
+  - `playwright-summary` / `flaker-summary` に加えて `vrt-summary` または `wpt-vrt-summary` があれば、task ごとの over-budget 件数と最大 diff も拾う
+  - `collect_task_id` を渡すと、`<out>/<task-id>/batch-summary/<task-id>.{json,md}` の collect 互換コピーも出す
 
 ### 4. CI / report の入口
 
@@ -79,7 +84,9 @@ just flaker config report .flaker/report
 just flaker quarantine report .flaker/quarantine
 just flaker upstream inventory .flaker/upstream
 just playwright-report-summary paint-vrt-report.json paint-vrt
+just playwright-report-summary paint-vrt-report.json paint-vrt-artifacts .playwright-report paint-vrt
 just playwright-report-diff base.json head.json paint-vrt
+just vrt-report-summary output/playwright/vrt paint-vrt-artifacts vrt-report-summary paint-vrt
 just wpt-vrt-report path/to/shard.json shard-1
 just wpt-vrt-report-aggregate wpt-vrt-summary
 ```
@@ -88,9 +95,17 @@ just wpt-vrt-report-aggregate wpt-vrt-summary
 - `flaker-quarantine-report`: quarantine manifest の CI summary
 - `flaker-upstream-inventory`: `metric-ci (flaker)` と `crater` の境界 inventory
 - `playwright-report-summary`: raw Playwright JSON を normalized summary に変換する
+  - `--json` / `--markdown` を指定すると、`<out>/<collect-task-id-or-label>/playwright-summary/<collect-task-id-or-label>.{json,md}` の collect 互換コピーも出す
+  - 表示用 label と taskId を分けたいときは `--collect-task-id <task-id>` を使う
+- `flaker-task-summary`: task 単位の `flaker eval/reason` を collect 互換の `flaker-summary` artifact としても出せる
 - `playwright-report-diff`: normalized summary の base/head diff を出す
+- `vrt-report-summary`: `output/playwright/vrt/**/report.json` を集約して CI summary 化する
+  - `--json` / `--markdown` を指定すると、`<out>/<collect-task-id-or-label>/vrt-summary/<collect-task-id-or-label>.{json,md}` の collect 互換コピーも出す
+  - 表示用 label と taskId を分けたいときは `--collect-task-id <task-id>` を使う
 - `wpt-vrt-report`: WPT VRT shard を summary 化する
+  - `--json` / `--markdown` を指定すると、`<out>/<collect-task-id-or-label>/wpt-vrt-summary/<collect-task-id-or-label>.{json,md}` の collect 互換コピーも出せる
 - `wpt-vrt-report-aggregate`: WPT VRT shard summary を集約する
+  - `collect_task_id` を渡すと、`<out>/<task-id>/wpt-vrt-summary/<task-id>.{json,md}` の collect 互換コピーも出せる
 
 ### 5. `metric-ci (flaker)` への upstream 境界を見る
 
@@ -137,7 +152,7 @@ just flaker batch summary flaker-daily-artifacts
 
 1. `contract`
    型契約だけを持つ。wrapper を import しない。
-   例: `playwright-report-contract.ts`, `flaker-task-summary-contract.ts`, `flaker-quarantine-contract.ts`
+   例: `playwright-report-contract.ts`, `flaker-task-summary-contract.ts`, `flaker-quarantine-contract.ts`, `vrt-report-contract.ts`
 
 2. `parser`
    `metric-ci` 側が理解する設定フォーマットを pure に parse する。
@@ -145,7 +160,7 @@ just flaker batch summary flaker-daily-artifacts
 
 3. `core`
    pure な build / summarize / diff / render を持つ。repo 固有の file scan をしない。
-   例: `playwright-report-summary-core.ts`, `playwright-report-diff-core.ts`, `flaker-task-summary-core.ts`, `flaker-batch-summary-core.ts`, `flaker-quarantine-summary-core.ts`, `flaker-batch-plan-core.ts`
+   例: `playwright-report-summary-core.ts`, `playwright-report-diff-core.ts`, `flaker-task-summary-core.ts`, `flaker-batch-summary-core.ts`, `flaker-quarantine-summary-core.ts`, `flaker-batch-plan-core.ts`, `vrt-report-summary-core.ts`
 
 3.5. `task/core helper`
    pure な task 解決 helper。`core` が task summary を必要とするときの共有部品。
@@ -153,7 +168,7 @@ just flaker batch summary flaker-daily-artifacts
 
 4. `loader`
    repo 上の file / artifact / spec ownership を解決して core input に変換する。
-   例: `flaker-batch-summary-loader.ts`, `flaker-quarantine-loader.ts`
+   例: `flaker-batch-summary-loader.ts`, `flaker-quarantine-loader.ts`, `vrt-report-loader.ts`
 
 5. `adapter / plan / execution`
    `crater` 固有の task graph や workspace 構成を `flaker` の入力へ変換する。
@@ -184,6 +199,7 @@ just flaker batch summary flaker-daily-artifacts
 - task workspace の構築
 - Playwright task 実行、report 保存、artifact 配置
 - VRT / WPT / paint diff の domain metadata
+  - `vrt-report-contract.ts` / `vrt-report-summary-core.ts` / `wpt-vrt-summary-core.ts`
 
 この層は `crater` の repo layout と renderer domain に依存する。
 

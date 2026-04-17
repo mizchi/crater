@@ -2,6 +2,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { Browser, Page } from "@playwright/test";
 import pixelmatchFn from "pixelmatch";
+import {
+  createNormalizedVrtArtifactReport,
+  inferVrtStableFilter,
+  inferVrtSnapshotKind,
+  type VrtArtifactReportContext,
+} from "../../scripts/vrt-report-contract.ts";
 import { CraterBidiPage } from "./crater-bidi-page";
 
 export interface DecodedImage {
@@ -22,6 +28,7 @@ export interface VisualDiffOptions {
   backgroundTolerance?: number;
   maskToVisibleContent?: boolean;
   maskPadding?: number;
+  report?: VrtArtifactReportContext;
 }
 
 export interface VisualDiffResult {
@@ -80,6 +87,89 @@ type FloatRect = {
   width: number;
   height: number;
 };
+
+function resolveReportTitle(options: VisualDiffOptions): string {
+  const explicit = options.report?.title?.trim();
+  if (explicit) {
+    return explicit;
+  }
+  const fallback = path.basename(options.outputDir).trim();
+  return fallback.length > 0 ? fallback : "vrt-artifact";
+}
+
+function resolveReportBackend(options: VisualDiffOptions): string | undefined {
+  const explicit = options.report?.backend?.trim();
+  if (explicit) {
+    return explicit;
+  }
+  const backend = process.env.CRATER_PAINT_BACKEND?.trim();
+  return backend && backend.length > 0 ? backend : "sixel";
+}
+
+export function buildVrtArtifactReportJson(
+  options: VisualDiffOptions,
+  metrics: {
+    width: number;
+    height: number;
+    diffPixels: number;
+    totalPixels: number;
+    diffRatio: number;
+    roi?: RoiRect;
+    maskPixels?: number;
+  },
+): string {
+  const title = resolveReportTitle(options);
+  const snapshotKind = options.report?.snapshotKind ?? inferVrtSnapshotKind({
+    title,
+    spec: options.report?.spec,
+    outputDir: options.outputDir,
+  });
+  const inferredFilter = inferVrtStableFilter({
+    title,
+    spec: options.report?.spec,
+    outputDir: options.outputDir,
+    snapshotKind,
+  });
+  const explicitFilter = options.report?.filter;
+  const filter = explicitFilter && explicitFilter !== title
+    ? explicitFilter
+    : inferredFilter ?? explicitFilter;
+  const backend = resolveReportBackend(options);
+  const report = createNormalizedVrtArtifactReport({
+    title,
+    taskId: options.report?.taskId,
+    spec: options.report?.spec,
+    filter,
+    variant: options.report?.variant,
+    shard: options.report?.shard,
+    durationMs: options.report?.durationMs,
+    artifacts: {
+      chromium: "chromium.png",
+      crater: "crater.png",
+      diff: "diff.png",
+      report: "report.json",
+      ...(options.report?.artifacts ?? {}),
+    },
+    metadata: {
+      width: metrics.width,
+      height: metrics.height,
+      diffPixels: metrics.diffPixels,
+      totalPixels: metrics.totalPixels,
+      diffRatio: metrics.diffRatio,
+      roi: metrics.roi,
+      maskPixels: metrics.maskPixels,
+      threshold: options.threshold,
+      maxDiffRatio: options.maxDiffRatio,
+      backend,
+      viewport: {
+        width: metrics.width,
+        height: metrics.height,
+      },
+      snapshotKind,
+    },
+  });
+  return JSON.stringify(report, null, 2);
+}
 
 
 export async function chromiumPageForVrt(
@@ -399,19 +489,13 @@ export async function comparePngs(
   await fs.writeFile(diffPath, await encodePng(page, diffImage));
   await fs.writeFile(
     reportPath,
-    JSON.stringify(
-      {
-        width: chromiumImage.width,
-        height: chromiumImage.height,
-        diffPixels,
-        totalPixels,
-        diffRatio,
-        threshold: options.threshold,
-        maxDiffRatio: options.maxDiffRatio,
-      },
-      null,
-      2,
-    ),
+    buildVrtArtifactReportJson(options, {
+      width: chromiumImage.width,
+      height: chromiumImage.height,
+      diffPixels,
+      totalPixels,
+      diffRatio,
+    }),
   );
 
   return {
@@ -503,21 +587,15 @@ export async function compareChromiumPngToImage(
   await fs.writeFile(diffPath, await encodePng(page, diffImage));
   await fs.writeFile(
     reportPath,
-    JSON.stringify(
-      {
-        width: chromiumImage.width,
-        height: chromiumImage.height,
-        diffPixels,
-        totalPixels,
-        diffRatio,
-        roi,
-        maskPixels: compareMask ? maskPixelCount(compareMask) : undefined,
-        threshold: options.threshold,
-        maxDiffRatio: options.maxDiffRatio,
-      },
-      null,
-      2,
-    ),
+    buildVrtArtifactReportJson(options, {
+      width: chromiumImage.width,
+      height: chromiumImage.height,
+      diffPixels,
+      totalPixels,
+      diffRatio,
+      roi,
+      maskPixels: compareMask ? maskPixelCount(compareMask) : undefined,
+    }),
   );
 
   return {

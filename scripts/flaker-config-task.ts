@@ -5,6 +5,10 @@ export interface ResolvedFlakerTask extends FlakerTaskSummary {
   srcs: string[];
 }
 
+export function isPlaywrightSpecPath(value: string): boolean {
+  return /\.(spec|test)\.[cm]?[jt]sx?$/.test(value);
+}
+
 function findOptionValue(command: string[], optionName: string): string | undefined {
   const index = command.findIndex((part) => part === optionName);
   if (index < 0) {
@@ -14,7 +18,7 @@ function findOptionValue(command: string[], optionName: string): string | undefi
 }
 
 function extractSpecs(command: string[]): string[] {
-  return command.filter((part) => part.endsWith(".test.ts"));
+  return command.filter((part) => isPlaywrightSpecPath(part));
 }
 
 export function isFilteredTask(task: FlakerTaskSummary): boolean {

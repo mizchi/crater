@@ -1397,11 +1397,25 @@ fn cdp_node_to_json(node : CdpNode) -> Json {
     }
     None => ()
   }
+  match node.shadow_roots {
+    Some(shadow_roots) => {
+      let json_shadow_roots = shadow_roots.map(fn(root) {
+        cdp_node_to_json(root)
+      })
+      obj["shadowRoots"] = Json::array(json_shadow_roots)
+    }
+    None => ()
+  }
   match node.attributes {
     Some(attrs) => {
       let json_attrs = attrs.map(fn(a) { Json::string(a) })
       obj["attributes"] = Json::array(json_attrs)
     }
+    None => ()
+  }
+  match node.shadow_root_type {
+    Some(shadow_root_type) =>
+      obj["shadowRootType"] = Json::string(shadow_root_type)
     None => ()
   }
   make_object(obj)

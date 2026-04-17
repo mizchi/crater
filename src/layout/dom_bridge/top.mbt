@@ -66,6 +66,11 @@ pub fn Document::process_mutations(self : Document) -> Int {
   if records.is_empty() {
     return 0
   }
+  if self.dom.has_shadow_roots() {
+    self.rebuild_layout_from_dom()
+    self.needs_layout = true
+    return result.processed
+  }
   for record in records {
     self.apply_mutation(record)
   }
@@ -289,6 +294,119 @@ fn Document::create_layout_node_for_dom(
     }
     Err(_) => None
   }
+}
+
+///|
+fn Document::rebuild_layout_from_dom(self : Document) -> Unit {
+  self.dom_to_layout.clear()
+  self.layout_to_dom.clear()
+  self.layout.root.children.clear()
+  self.layout.parent_map.clear()
+  self.layout.node_map.clear()
+  self.layout.node_map[self.layout.root.uid] = self.layout.root
+
+  let dom_root = self.dom.get_document()
+  match self.dom.get_children(dom_root) {
+    Ok(children) =>
+      for child in children {
+        let layout_nodes = self.build_layout_nodes_for_dom(child, None)
+        for layout_node in layout_nodes {
+          self.layout.root.children.push(layout_node)
+        }
+      }
+    Err(_) => ()
+  }
+
+  for child in self.layout.root.children {
+    self.register_layout_subtree(child, self.layout.root.uid)
+  }
+  self.layout.mark_node_dirty(self.layout.root.uid)
+}
+
+///|
+fn Document::register_layout_subtree(
+  self : Document,
+  node : @tree.LayoutNode,
+  parent_uid : Int,
+) -> Unit {
+  let dom_id = Some(@string.parse_int(node.id)) catch { _ => None }
+  match dom_id {
+    Some(dom_id) => {
+      self.dom_to_layout[dom_id] = node.uid
+      self.layout_to_dom[node.uid] = dom_id
+      self.layout.node_map[node.uid] = node
+      self.layout.parent_map[node.uid] = parent_uid
+      for child in node.children {
+        self.register_layout_subtree(child, node.uid)
+      }
+    }
+    None => ()
+  }
+}
+
+///|
+fn Document::build_layout_nodes_for_dom(
+  self : Document,
+  node_id : @dom.NodeId,
+  shadow_host : @dom.NodeId?,
+) -> Array[@tree.LayoutNode] {
+  let nodes : Array[@tree.LayoutNode] = []
+  match self.dom.get_node_info(node_id) {
+    Ok(info) =>
+      match info.node_type {
+        @dom.Document | @dom.DocumentFragment | @dom.ShadowRoot =>
+          for child in self.dom.get_composed_children(node_id, shadow_host~) {
+            let child_nodes = self.build_layout_nodes_for_dom(
+              child, shadow_host,
+            )
+            for child_node in child_nodes {
+              nodes.push(child_node)
+            }
+          }
+        @dom.Element => {
+          let tag = self.dom.get_tag_name(node_id).unwrap_or("")
+          if shadow_host != None && self.dom.is_slot_element(node_id) {
+            for child in self.dom.get_composed_children(node_id, shadow_host~) {
+              let child_nodes = self.build_layout_nodes_for_dom(
+                child, shadow_host,
+              )
+              for child_node in child_nodes {
+                nodes.push(child_node)
+              }
+            }
+            return nodes
+          }
+
+          let layout_node = @tree.LayoutNode::create_with_id(
+            node_id.to_int().to_string(),
+          )
+          apply_default_tag_styles(layout_node, tag)
+
+          let child_shadow_host = match self.dom.get_shadow_root(node_id) {
+            Ok(Some(_)) => Some(node_id)
+            _ => shadow_host
+          }
+          for child in self.dom.get_composed_children(node_id, shadow_host~) {
+            let child_nodes = self.build_layout_nodes_for_dom(
+              child, child_shadow_host,
+            )
+            for child_node in child_nodes {
+              layout_node.children.push(child_node)
+            }
+          }
+          nodes.push(layout_node)
+        }
+        @dom.Text => {
+          let node = @tree.LayoutNode::create_with_id(
+            node_id.to_int().to_string(),
+          )
+          nodes.push(node)
+        }
+        _ => ()
+      }
+    Err(_) => ()
+  }
+  nodes
 }
 
 ///|

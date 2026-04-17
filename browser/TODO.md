@@ -13,7 +13,8 @@
 - [x] `inline-flex` レイアウトで hidden input (`position:absolute` + `clip:rect`) がある場合に後続要素が消える
 - [ ] サブピクセルレイアウト (rem/padding の端数処理で Chrome と 1-4px のずれ)
 - [ ] `box-shadow` 描画
-- [ ] `text-overflow: ellipsis`
+- [x] `text-overflow: ellipsis`
+  - paint tree truncation は `src/renderer/render_test.mbt` と `tests/paint-vrt-levels.test.ts` で固定
 - [ ] `::before` / `::after` 疑似要素のコンテンツ幅計算の改善
 
 ## フォント
@@ -35,6 +36,23 @@
 - [ ] `--headless=full` で複数 viewport をまたいだ全ページ出力
 - [ ] CDP bridge の hit testing と runtime fidelity 強化
 - [ ] selection mode とマウス操作の UX 改善
+
+## Web Components / Shadow DOM
+
+- [x] `attachShadow`, `getRootNode({ composed })`, `ShadowRoot` 永続化
+- [x] `customElements.define/get/whenDefined` と autonomous custom element の upgrade / lifecycle
+- [x] `slot`, `assignedNodes`, `assignedElements`, `assignedSlot`, `slotchange`, `flatten`
+- [x] `document.activeElement`, `shadowRoot.activeElement`, `delegatesFocus`, `Tab` / `Shift+Tab`
+- [x] shadow boundary を跨ぐ `click` / focus-family / pointer / hover の retargeting
+- [x] `:host`, `:host(.class)`, `:host > ...` の最小 query surface
+- [x] jsbidi / CDP の shadow-aware 観測面
+  - `locateNodes(css|innerText|accessibility|xpath)` の shadow root `startNodes`
+  - `getResponsiveBreakpoints` の shadow 内 `<style>`
+  - `DOM.getDocument` / `requestChildNodes` / `getOuterHTML` の shadow root metadata
+- [ ] layout/render の `serialize -> reparse` 依存を減らし、composed tree を直接使う
+- [ ] selector/style の残件: `:host` の複合 selector, `::slotted`, `:host-context`
+- [ ] DOM surface の残件: `closed` shadow root, declarative shadow DOM, customized built-in, form-associated custom elements / `ElementInternals`
+- [ ] Playwright / CDP / jsbidi の query / action / inspection surface を shadow-aware に揃え切る
 
 ## 検証コマンド
 

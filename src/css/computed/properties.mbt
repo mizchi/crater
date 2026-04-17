@@ -104,7 +104,9 @@ pub fn initial_value(property : String) -> String {
     "text-align" => "start"
     "font-weight" => "400"
     "white-space" => "normal"
+    "text-overflow" => "clip"
     "text-decoration" | "text-decoration-line" => "none"
+    "box-shadow" => "none"
     // Containment
     "contain" => "none"
     "contain-intrinsic-size"

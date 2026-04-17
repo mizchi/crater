@@ -14,6 +14,7 @@ import {
   isMainModule,
   type ScriptExecutionResult,
 } from "./script-runtime.ts";
+import { appendFlakerCollectedSummaryWrites } from "./flaker-collected-summary-paths.ts";
 import {
   aggregateWptVrtSummaries,
   asWptVrtShardSummary,
@@ -33,6 +34,7 @@ interface WptVrtSummaryCliArgs extends ReportOutputCliOptions {
   input?: string;
   inputDir?: string;
   label?: string;
+  collectTaskId?: string;
 }
 
 function usage(): string {
@@ -43,6 +45,7 @@ function usage(): string {
       `  --input <file>       Raw WPT VRT results JSON (default: ${DEFAULT_INPUT})`,
       `  --aggregate <dir>    Aggregate shard summary JSON files from a directory (default: ${DEFAULT_INPUT_DIR})`,
       "  --label <name>       Shard label override",
+      "  --collect-task-id <task-id>  Task id used for collect-compatible copies",
       "  --json <file>        Write JSON summary",
       "  --markdown <file>    Write markdown summary",
     ],
@@ -67,6 +70,11 @@ export function parseWptVrtSummaryArgs(args: string[]): WptVrtSummaryCliArgs {
       "--label": {
         set: (target, value) => {
           target.label = value;
+        },
+      },
+      "--collect-task-id": {
+        set: (target, value) => {
+          target.collectTaskId = value;
         },
       },
       ...createReportOutputHandlers(),
@@ -135,6 +143,16 @@ export function loadWptVrtSummariesFromDir(
   return rows.sort((a, b) => a.label.localeCompare(b.label));
 }
 
+function resolveAggregateCollectTaskId(
+  parsed: WptVrtSummaryCliArgs,
+  cwd: string,
+): string {
+  return parsed.collectTaskId?.trim()
+    || parsed.label?.trim()
+    || path.basename(path.resolve(cwd, parsed.inputDir ?? DEFAULT_INPUT_DIR))
+    || DEFAULT_INPUT_DIR;
+}
+
 export function runWptVrtSummaryCli(
   args: string[],
   options?: {
@@ -173,12 +191,22 @@ export function runWptVrtSummaryCli(
       });
       const aggregate = aggregateWptVrtSummaries(summaries);
       const markdown = renderWptVrtAggregateMarkdown(aggregate);
+      const jsonContent = `${JSON.stringify(aggregate, null, 2)}\n`;
       appendReportWrites(writes, {
         cwd,
         markdownPath: parsed.markdownOutput,
         markdownContent: markdown,
         jsonPath: parsed.jsonOutput,
         jsonValue: aggregate,
+      });
+      appendFlakerCollectedSummaryWrites(writes, {
+        cwd,
+        taskId: resolveAggregateCollectTaskId(parsed, cwd),
+        kind: "wpt-vrt-summary",
+        jsonOutput: parsed.jsonOutput,
+        markdownOutput: parsed.markdownOutput,
+        jsonContent,
+        markdownContent: markdown,
       });
       return {
         exitCode: 0,
@@ -191,12 +219,22 @@ export function runWptVrtSummaryCli(
     const raw = JSON.parse(readFile(inputPath)) as WptVrtRawReport;
     const summary = buildWptVrtShardSummary(raw, parsed.label);
     const markdown = renderWptVrtShardMarkdown(summary);
+    const jsonContent = `${JSON.stringify(summary, null, 2)}\n`;
     appendReportWrites(writes, {
       cwd,
       markdownPath: parsed.markdownOutput,
       markdownContent: markdown,
       jsonPath: parsed.jsonOutput,
       jsonValue: summary,
+    });
+    appendFlakerCollectedSummaryWrites(writes, {
+      cwd,
+      taskId: parsed.collectTaskId?.trim() || summary.label,
+      kind: "wpt-vrt-summary",
+      jsonOutput: parsed.jsonOutput,
+      markdownOutput: parsed.markdownOutput,
+      jsonContent,
+      markdownContent: markdown,
     });
     return {
       exitCode: 0,

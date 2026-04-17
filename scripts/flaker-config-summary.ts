@@ -5,7 +5,7 @@ import {
   buildFlakerConfigSummary,
   type BuildFlakerConfigSummaryInputs,
 } from "./flaker-config-summary-core.ts";
-import { resolveTaskSummaries } from "./flaker-config-task.ts";
+import { isPlaywrightSpecPath, resolveTaskSummaries } from "./flaker-config-task.ts";
 
 const DEFAULT_TESTS_DIR = "tests";
 const DEFAULT_EXCLUDED_SPECS = ["tests/playwright-benchmark.test.ts"];
@@ -31,7 +31,7 @@ export function discoverPlaywrightSpecs(
   const excluded = new Set(excludedSpecs);
   const entries = fs.readdirSync(baseDir, { withFileTypes: true });
   return entries
-    .filter((entry) => entry.isFile() && entry.name.endsWith(".test.ts"))
+    .filter((entry) => entry.isFile() && isPlaywrightSpecPath(entry.name))
     .map((entry) => `${testsDir}/${entry.name}`)
     .filter((spec) => !excluded.has(spec))
     .sort();

@@ -920,6 +920,250 @@ extern "js" fn js_evaluate_expression(
   #|     };
   #|
   #|     // Minimal Mock DOM for Preact compatibility
+  #|     const getContainingShadowRoot = (node) => {
+  #|       let current = node;
+  #|       while (current) {
+  #|         if (current._isShadowRoot) return current;
+  #|         current = current._parent || current.parentNode || null;
+  #|       }
+  #|       return null;
+  #|     };
+  #|     const getFocusAttr = (node, name) => {
+  #|       if (!node || typeof node !== "object") return null;
+  #|       try {
+  #|         if (typeof node.getAttribute === "function") {
+  #|           const value = node.getAttribute(name);
+  #|           if (value !== null && value !== undefined) return String(value);
+  #|         }
+  #|       } catch (_e) {}
+  #|       if (node._attrs && Object.prototype.hasOwnProperty.call(node._attrs, name)) {
+  #|         const value = node._attrs[name];
+  #|         return value === null || value === undefined ? null : String(value);
+  #|       }
+  #|       return null;
+  #|     };
+  #|     const getFocusChildren = (node) => {
+  #|       if (!node || typeof node !== "object") return [];
+  #|       if (Array.isArray(node._children)) return node._children;
+  #|       if (Array.isArray(node.children)) return Array.from(node.children);
+  #|       if (Array.isArray(node.childNodes)) return Array.from(node.childNodes);
+  #|       return [];
+  #|     };
+  #|     const nodeContains = (root, node) => {
+  #|       if (!root || !node) return false;
+  #|       if (root === node) return true;
+  #|       try {
+  #|         if (typeof root.contains === "function") return !!root.contains(node);
+  #|       } catch (_e) {}
+  #|       const children = getFocusChildren(root);
+  #|       for (let i = 0; i < children.length; i += 1) {
+  #|         if (nodeContains(children[i], node)) return true;
+  #|       }
+  #|       return false;
+  #|     };
+  #|     const isSlotElementForFocus = (node) => {
+  #|       if (!node || node.nodeType !== 1) return false;
+  #|       const localName = String(node.localName || node.tagName || node.nodeName || "").toLowerCase();
+  #|       return localName === "slot";
+  #|     };
+  #|     const findFirstSlotForFocusName = (root, slotName) => {
+  #|       const children = getFocusChildren(root);
+  #|       for (let i = 0; i < children.length; i += 1) {
+  #|         const child = children[i];
+  #|         if (!child || child.nodeType !== 1) continue;
+  #|         if (isSlotElementForFocus(child) && String(getFocusAttr(child, "name") || "") === slotName) {
+  #|           return child;
+  #|         }
+  #|         const nested = findFirstSlotForFocusName(child, slotName);
+  #|         if (nested) return nested;
+  #|       }
+  #|       return null;
+  #|     };
+  #|     const getAssignedChildrenForFocusSlot = (slot) => {
+  #|       const shadowRoot = getContainingShadowRoot(slot);
+  #|       if (!shadowRoot || !shadowRoot.host) return getFocusChildren(slot);
+  #|       const slotName = String(getFocusAttr(slot, "name") || "");
+  #|       const firstMatch = findFirstSlotForFocusName(shadowRoot, slotName);
+  #|       if (firstMatch && firstMatch !== slot) return [];
+  #|       const assigned = [];
+  #|       const hostChildren = getFocusChildren(shadowRoot.host);
+  #|       for (let i = 0; i < hostChildren.length; i += 1) {
+  #|         const child = hostChildren[i];
+  #|         if (!child) continue;
+  #|         const childSlotName = String(getFocusAttr(child, "slot") || "");
+  #|         if (childSlotName === slotName) assigned.push(child);
+  #|       }
+  #|       return assigned.length > 0 ? assigned : getFocusChildren(slot);
+  #|     };
+  #|     const getDelegatesFocusChildren = (node) => {
+  #|       if (!node || typeof node !== "object") return [];
+  #|       if (isSlotElementForFocus(node)) return getAssignedChildrenForFocusSlot(node);
+  #|       const shadowRoot = node.shadowRoot || null;
+  #|       if (shadowRoot) return getFocusChildren(shadowRoot);
+  #|       return getFocusChildren(node);
+  #|     };
+  #|     const hasExplicitSequentialTabIndexForFocus = (node) => {
+  #|       if (!node || typeof node !== "object") return false;
+  #|       try {
+  #|         if (typeof node.getAttribute === "function" && node.getAttribute("tabindex") !== null) {
+  #|           return true;
+  #|         }
+  #|       } catch (_e) {}
+  #|       return !!(node._attrs && Object.prototype.hasOwnProperty.call(node._attrs, "tabindex"));
+  #|     };
+  #|     const isSequentiallyFocusableForFocus = (node) => {
+  #|       if (!node || node.nodeType !== 1) return false;
+  #|       if (node.disabled || node.hidden) return false;
+  #|       const style = node.style || {};
+  #|       if (style.display === "none" || style.visibility === "hidden") return false;
+  #|       if (hasExplicitSequentialTabIndexForFocus(node)) {
+  #|         try {
+  #|           return Number(node.tabIndex) >= 0;
+  #|         } catch (_e) {
+  #|           return false;
+  #|         }
+  #|       }
+  #|       const tag = String(node.tagName || node.nodeName || "").toLowerCase();
+  #|       if (["input", "textarea", "select", "button"].includes(tag)) return true;
+  #|       if (tag === "a") {
+  #|         try {
+  #|           return !!(typeof node.getAttribute === "function" ? node.getAttribute("href") : null);
+  #|         } catch (_e) {
+  #|           return false;
+  #|         }
+  #|       }
+  #|       return !!node.isContentEditable;
+  #|     };
+  #|     const findDelegatesFocusTarget = (node) => {
+  #|       const shadowRoot = node && node.shadowRoot ? node.shadowRoot : null;
+  #|       if (!shadowRoot || !shadowRoot.delegatesFocus) return null;
+  #|       const visit = (current) => {
+  #|         const children = getDelegatesFocusChildren(current);
+  #|         for (let i = 0; i < children.length; i += 1) {
+  #|           const child = children[i];
+  #|           if (!child || child.nodeType !== 1) continue;
+  #|           if (isSequentiallyFocusableForFocus(child)) return child;
+  #|           const nested = visit(child);
+  #|           if (nested) return nested;
+  #|         }
+  #|         return null;
+  #|       };
+  #|       return visit(shadowRoot);
+  #|     };
+  #|     const clearDocumentActiveChain = (doc) => {
+  #|       if (!doc) return;
+  #|       const current = doc.activeElement || null;
+  #|       if (current && current.shadowRoot && current.shadowRoot.activeElement) {
+  #|         current.shadowRoot.activeElement = null;
+  #|       }
+  #|       doc.activeElement = doc.body || null;
+  #|     };
+  #|     const getDeepActiveElement = (doc) => {
+  #|       if (!doc) return null;
+  #|       let current = doc.activeElement || null;
+  #|       const visited = new Set();
+  #|       while (current && !visited.has(current)) {
+  #|         visited.add(current);
+  #|         const next =
+  #|           current.shadowRoot && current.shadowRoot.activeElement
+  #|             ? current.shadowRoot.activeElement
+  #|             : null;
+  #|         if (!next) break;
+  #|         current = next;
+  #|       }
+  #|       return current;
+  #|     };
+  #|     const retargetEventTarget = (originalTarget, currentTarget) => {
+  #|       let candidate = originalTarget;
+  #|       while (candidate) {
+  #|         const shadowRoot = getContainingShadowRoot(candidate);
+  #|         if (!shadowRoot) return candidate;
+  #|         if (currentTarget === shadowRoot || nodeContains(shadowRoot, currentTarget)) {
+  #|           return candidate;
+  #|         }
+  #|         candidate = shadowRoot.host || candidate;
+  #|         if (!shadowRoot.host) return candidate;
+  #|       }
+  #|       return originalTarget;
+  #|     };
+  #|     const prepareEventForCurrentTarget = (event, currentTarget) => {
+  #|       const originalTarget = event.__originalTarget || event.target || currentTarget;
+  #|       const originalRelatedTarget =
+  #|         event.__originalRelatedTarget !== undefined
+  #|           ? event.__originalRelatedTarget
+  #|           : (event.relatedTarget || null);
+  #|       event.__originalTarget = originalTarget;
+  #|       event.__originalRelatedTarget = originalRelatedTarget;
+  #|       const adjustedTarget = retargetEventTarget(originalTarget, currentTarget);
+  #|       const adjustedRelatedTarget = originalRelatedTarget
+  #|         ? retargetEventTarget(originalRelatedTarget, currentTarget)
+  #|         : null;
+  #|       event.__retargetSuppressed =
+  #|         !!(adjustedTarget && adjustedRelatedTarget && adjustedTarget === adjustedRelatedTarget);
+  #|       try { event.target = adjustedTarget; } catch (_e) {}
+  #|       try { event.relatedTarget = adjustedRelatedTarget; } catch (_e) {}
+  #|       try { event.currentTarget = currentTarget; } catch (_e) {}
+  #|     };
+  #|     const dispatchFocusFamilyEvent = (target, type, bubbles, relatedTarget) => {
+  #|       if (!target || typeof target.dispatchEvent !== "function") return;
+  #|       const event = globalThis.__bidiCreateEvent(type, {
+  #|         bubbles: !!bubbles,
+  #|         cancelable: false,
+  #|       });
+  #|       event.relatedTarget = relatedTarget || null;
+  #|       event.__originalRelatedTarget = relatedTarget || null;
+  #|       target.dispatchEvent(event);
+  #|     };
+  #|     const focusNode = (node) => {
+  #|       const doc = node && node.ownerDocument ? node.ownerDocument : globalThis.document;
+  #|       if (!doc) return;
+  #|       const delegatedTarget = findDelegatesFocusTarget(node);
+  #|       if (delegatedTarget && delegatedTarget !== node) {
+  #|         focusNode(delegatedTarget);
+  #|         return;
+  #|       }
+  #|       const previous = getDeepActiveElement(doc);
+  #|       if (previous === node) return;
+  #|       if (previous) {
+  #|         dispatchFocusFamilyEvent(previous, "blur", false, node);
+  #|         dispatchFocusFamilyEvent(previous, "focusout", true, node);
+  #|       }
+  #|       clearDocumentActiveChain(doc);
+  #|       const shadowRoot = getContainingShadowRoot(node);
+  #|       if (shadowRoot && shadowRoot.host) {
+  #|         shadowRoot.activeElement = node;
+  #|         doc.activeElement = shadowRoot.host;
+  #|       } else {
+  #|         doc.activeElement = node;
+  #|       }
+  #|       dispatchFocusFamilyEvent(node, "focus", false, previous);
+  #|       dispatchFocusFamilyEvent(node, "focusin", true, previous);
+  #|     };
+  #|     const blurNode = (node) => {
+  #|       const doc = node && node.ownerDocument ? node.ownerDocument : globalThis.document;
+  #|       if (!doc) return;
+  #|       let target = node;
+  #|       const ownShadowRoot = node && node.shadowRoot ? node.shadowRoot : null;
+  #|       if (ownShadowRoot && ownShadowRoot.activeElement) {
+  #|         target = ownShadowRoot.activeElement;
+  #|       }
+  #|       const active = getDeepActiveElement(doc);
+  #|       if (active && active !== target && active !== node) return;
+  #|       const shadowRoot = getContainingShadowRoot(target);
+  #|       dispatchFocusFamilyEvent(target, "blur", false, null);
+  #|       dispatchFocusFamilyEvent(target, "focusout", true, null);
+  #|       if (shadowRoot && shadowRoot.activeElement === target) {
+  #|         shadowRoot.activeElement = null;
+  #|         if (doc.activeElement === shadowRoot.host) {
+  #|           doc.activeElement = doc.body || null;
+  #|         }
+  #|       }
+  #|       if (doc.activeElement === target || doc.activeElement === node) {
+  #|         doc.activeElement = doc.body || null;
+  #|       }
+  #|     };
+  #|
+  #|     // Minimal Mock DOM for Preact compatibility
   #|     const createMockElement = (tagName) => {
   #|       const lowerTag = String(tagName || "").toLowerCase();
   #|       const defaultNamespace =
@@ -1004,6 +1248,12 @@ extern "js" fn js_evaluate_expression(
   #|         set id(v) { this._attrs.id = v; },
   #|         get className() { return this._attrs.class || ''; },
   #|         set className(v) { this._attrs.class = v; },
+  #|         get slot() { return this._attrs.slot || ''; },
+  #|         set slot(v) {
+  #|           const next = String(v || '');
+  #|           if (next === '') delete this._attrs.slot;
+  #|           else this._attrs.slot = next;
+  #|         },
   #|         get classList() {
   #|           const self = this;
   #|           return {
@@ -1308,10 +1558,8 @@ extern "js" fn js_evaluate_expression(
   #|           }
   #|         },
   #|         dispatchEvent(event) {
-  #|           if (!event.target) {
-  #|             try { event.target = this; } catch (_e) {}
-  #|           }
-  #|           try { event.currentTarget = this; } catch (_e) {}
+  #|           prepareEventForCurrentTarget(event, this);
+  #|           if (event.__retargetSuppressed) return !event.defaultPrevented;
   #|           const listeners = this._listeners[event.type] || [];
   #|           const previousEvent = globalThis.event;
   #|           globalThis.event = event;
@@ -1345,21 +1593,11 @@ extern "js" fn js_evaluate_expression(
   #|           this.dispatchEvent(globalThis.__bidiCreateEvent('click', { bubbles: true }));
   #|         },
   #|         focus() {
-  #|           const doc = this.ownerDocument || globalThis.document || null;
-  #|           if (doc && typeof doc === "object") {
-  #|             try { doc.activeElement = this; } catch (_e) {}
-  #|           }
+  #|           focusNode(this);
   #|           try { globalThis.__bidiFocusedElement = this; } catch (_e) {}
   #|         },
   #|         blur() {
-  #|           const doc = this.ownerDocument || globalThis.document || null;
-  #|           if (doc && typeof doc === "object") {
-  #|             try {
-  #|               if (doc.activeElement === this) {
-  #|                 doc.activeElement = doc.body || null;
-  #|               }
-  #|             } catch (_e) {}
-  #|           }
+  #|           blurNode(this);
   #|           try {
   #|             if (globalThis.__bidiFocusedElement === this) {
   #|               globalThis.__bidiFocusedElement = null;
@@ -1384,8 +1622,11 @@ extern "js" fn js_evaluate_expression(
   #|           root.nodeType = 11;
   #|           root.nodeName = '#document-fragment';
   #|           root.mode = opts && typeof opts.mode === "string" ? String(opts.mode) : "open";
+  #|           root.delegatesFocus = !!(opts && opts.delegatesFocus);
   #|           root._parent = this;
+  #|           root._isShadowRoot = true;
   #|           root.host = this;
+  #|           root.activeElement = null;
   #|           root.ownerDocument = this.ownerDocument;
   #|           this.shadowRoot = root;
   #|           return root;
@@ -1682,8 +1923,63 @@ extern "js" fn js_evaluate_expression(
   #|       return false;
   #|     };
   #|
+  #|     const matchHostSelector = (root, sel) => {
+  #|       if (!root || !root._isShadowRoot || !root.host) return null;
+  #|       const trimmed = String(sel || "").trim();
+  #|       if (trimmed === ":host") return [root.host];
+  #|       if (trimmed.startsWith(":host(") && trimmed.endsWith(")")) {
+  #|         const inner = trimmed.slice(6, -1).trim();
+  #|         if (!inner) return [root.host];
+  #|         return matchesSelector(root.host, inner) ? [root.host] : [];
+  #|       }
+  #|       return null;
+  #|     };
+  #|     const matchHostChildSelector = (root, sel) => {
+  #|       if (!root || !root._isShadowRoot || !root.host) return null;
+  #|       const trimmed = String(sel || "").trim();
+  #|       if (!trimmed.startsWith(":host")) return null;
+  #|       let idx = 5;
+  #|       let hostSelector = "";
+  #|       if (trimmed[idx] === "(") {
+  #|         let depth = 1;
+  #|         let end = idx + 1;
+  #|         for (; end < trimmed.length; end++) {
+  #|           const ch = trimmed[end];
+  #|           if (ch === "(") depth++;
+  #|           else if (ch === ")") {
+  #|             depth--;
+  #|             if (depth === 0) break;
+  #|           }
+  #|         }
+  #|         if (depth !== 0) return [];
+  #|         hostSelector = trimmed.slice(idx + 1, end).trim();
+  #|         idx = end + 1;
+  #|       }
+  #|       const remainder = trimmed.slice(idx).trim();
+  #|       if (!remainder.startsWith(">")) return null;
+  #|       const childSelector = remainder.slice(1).trim();
+  #|       if (!childSelector) return [];
+  #|       if (hostSelector && !matchesSelector(root.host, hostSelector)) return [];
+  #|       const results = [];
+  #|       const children = root._children || [];
+  #|       for (let i = 0; i < children.length; i++) {
+  #|         const child = children[i];
+  #|         if (!child || child.nodeType !== 1) continue;
+  #|         if (matchesSelector(child, childSelector)) results.push(child);
+  #|       }
+  #|       return results;
+  #|     };
+  #|
   #|     // querySelector with recursive DFS (document order) + selector caching
   #|     const querySelect = (root, sel, all) => {
+  #|       const hostMatches = matchHostSelector(root, sel);
+  #|       if (hostMatches !== null) {
+  #|         return all ? toCollection(hostMatches, "nodelist") : hostMatches[0] || null;
+  #|       }
+  #|       const hostChildMatches = matchHostChildSelector(root, sel);
+  #|       if (hostChildMatches !== null) {
+  #|         return all ? toCollection(hostChildMatches, "nodelist") : hostChildMatches[0] || null;
+  #|       }
   #|       const results = [];
   #|       const search = (node) => {
   #|         const children = node._children;
@@ -1759,6 +2055,7 @@ extern "js" fn js_evaluate_expression(
   #|       nodeType: 9,
   #|       doctype: doctypeNode,
   #|       documentElement: html,
+  #|       activeElement: null,
   #|       _listeners: {},
   #|       get childNodes() { return [this.doctype, this.documentElement]; },
   #|       get scrollingElement() {
@@ -1812,7 +2109,8 @@ extern "js" fn js_evaluate_expression(
   #|         this._listeners[type] = this._listeners[type].filter((f) => f !== fn);
   #|       },
   #|       dispatchEvent(event) {
-  #|         try { event.currentTarget = this; } catch (_e) {}
+  #|         prepareEventForCurrentTarget(event, this);
+  #|         if (event.__retargetSuppressed) return !event.defaultPrevented;
   #|         const listeners = this._listeners[event.type] || [];
   #|         for (const fn of listeners) {
   #|           try { fn.call(this, event); } catch (_e) {}
@@ -1822,22 +2120,48 @@ extern "js" fn js_evaluate_expression(
   #|       elementFromPoint(x, y) {
   #|         const px = Number(x);
   #|         const py = Number(y);
+  #|         const rectContains = (node) => {
+  #|           if (!node || typeof node.getBoundingClientRect !== "function") return false;
+  #|           const rect = node.getBoundingClientRect();
+  #|           return (
+  #|             px >= Number(rect.left) && px <= Number(rect.right) &&
+  #|             py >= Number(rect.top) && py <= Number(rect.bottom)
+  #|           );
+  #|         };
+  #|         const getTraversalChildren = (node) => {
+  #|           if (!node || typeof node !== "object") return [];
+  #|           const localName = String(node.localName || node.tagName || node.nodeName || "").toLowerCase();
+  #|           if (localName === "slot") {
+  #|             return getAssignedChildrenForFocusSlot(node);
+  #|           }
+  #|           const shadowRoot = node.shadowRoot;
+  #|           if (shadowRoot) {
+  #|             const shadowChildren = getTraversalChildren(shadowRoot);
+  #|             if (shadowChildren.length > 0) return shadowChildren;
+  #|           }
+  #|           if (Array.isArray(node._children)) return node._children;
+  #|           if (Array.isArray(node.children)) return Array.from(node.children);
+  #|           if (Array.isArray(node.childNodes)) return Array.from(node.childNodes);
+  #|           return [];
+  #|         };
+  #|         const findDeepestHit = (node) => {
+  #|           const children = getTraversalChildren(node);
+  #|           for (let i = children.length - 1; i >= 0; i--) {
+  #|             const child = children[i];
+  #|             if (!child || child.nodeType !== 1) continue;
+  #|             const nested = findDeepestHit(child);
+  #|             if (nested) return nested;
+  #|             if (rectContains(child)) return child;
+  #|           }
+  #|           return null;
+  #|         };
+  #|         const root = this.body || this.documentElement || null;
+  #|         const hit = findDeepestHit(root);
+  #|         if (hit) return hit;
   #|         const pointerTarget =
   #|           this.getElementById("pointer-target") ||
   #|           this.getElementById("outer");
   #|         if (pointerTarget) return pointerTarget;
-  #|         const all = this.querySelectorAll("*");
-  #|         for (let i = all.length - 1; i >= 0; i--) {
-  #|           const node = all[i];
-  #|           if (!node || typeof node.getBoundingClientRect !== "function") continue;
-  #|           const rect = node.getBoundingClientRect();
-  #|           if (
-  #|             px >= Number(rect.left) && px <= Number(rect.right) &&
-  #|             py >= Number(rect.top) && py <= Number(rect.bottom)
-  #|           ) {
-  #|             return node;
-  #|           }
-  #|         }
   #|         return this.body || this.documentElement || null;
   #|       },
   #|       getElementsByTagName(tag) { return html.getElementsByTagName(tag); },
@@ -1867,6 +2191,7 @@ extern "js" fn js_evaluate_expression(
   #|     html.ownerDocument = globalThis.document;
   #|     head.ownerDocument = globalThis.document;
   #|     body.ownerDocument = globalThis.document;
+  #|     globalThis.document.activeElement = body;
   #|     doctypeNode.ownerDocument = globalThis.document;
   #|     doctypeNode.parentNode = globalThis.document;
   #|
@@ -2472,8 +2797,6 @@ extern "js" fn js_evaluate_expression(
   #|       const element = globalThis.document.querySelector(selector);
   #|       if (!element) throw new Error('Element not found: ' + selector);
   #|       if (element.focus) element.focus();
-  #|       const focusEvent = globalThis.__bidiCreateEvent('focus', { bubbles: false });
-  #|       element.dispatchEvent(focusEvent);
   #|       return true;
   #|     };
   #|
@@ -2481,8 +2804,6 @@ extern "js" fn js_evaluate_expression(
   #|       const element = globalThis.document.querySelector(selector);
   #|       if (!element) throw new Error('Element not found: ' + selector);
   #|       if (element.blur) element.blur();
-  #|       const blurEvent = globalThis.__bidiCreateEvent('blur', { bubbles: false });
-  #|       element.dispatchEvent(blurEvent);
   #|       return true;
   #|     };
   #|
@@ -3161,6 +3482,8 @@ extern "js" fn js_evaluate_expression(
   #|       this._listeners[type] = this._listeners[type].filter((f) => f !== fn);
   #|     };
   #|     win.dispatchEvent = function(event) {
+  #|       prepareEventForCurrentTarget(event, this);
+  #|       if (event.__retargetSuppressed) return !event.defaultPrevented;
   #|       try { event.currentTarget = this; } catch (_e) {}
   #|       const listeners = this._listeners[event.type] || [];
   #|       for (const fn of listeners) {
@@ -5715,6 +6038,24 @@ pub fn runtime_shared_node_is_document(shared_id : String) -> Bool {
 }
 
 ///|
+/// Check if runtime shared node exists and is a shadow root node.
+extern "js" fn js_runtime_shared_node_is_shadow_root(
+  shared_id : String,
+) -> Bool =
+  #| (sharedId) => {
+  #|   const store = globalThis.__bidiSharedNodeStore;
+  #|   if (!store) return false;
+  #|   const node = store.get(sharedId);
+  #|   return !!(node && node.nodeType === 11 && node.host);
+  #| }
+
+///|
+/// Check if runtime shared node exists and is a shadow root node.
+pub fn runtime_shared_node_is_shadow_root(shared_id : String) -> Bool {
+  js_runtime_shared_node_is_shadow_root(shared_id)
+}
+
+///|
 /// Check if runtime shared node has draggable attribute enabled.
 extern "js" fn js_runtime_shared_node_is_draggable(shared_id : String) -> Bool =
   #| (sharedId) => {
@@ -6385,6 +6726,138 @@ extern "js" fn js_input_dispatch_key_action(
   #|   if (hasExplicitTarget && typeof element.focus === "function") {
   #|     try { element.focus(); } catch (_e) {}
   #|   }
+  #|   const getSequentialContainingShadowRoot = (node) => {
+  #|     let current = node;
+  #|     while (current) {
+  #|       if (current._isShadowRoot) return current;
+  #|       current = current._parent || current.parentNode || null;
+  #|     }
+  #|     return null;
+  #|   };
+  #|   const getSequentialChildren = (node) => {
+  #|     if (!node || typeof node !== "object") return [];
+  #|     const getAttr = (target, name) => {
+  #|       if (!target || typeof target !== "object") return null;
+  #|       try {
+  #|         if (typeof target.getAttribute === "function") {
+  #|           const value = target.getAttribute(name);
+  #|           if (value !== null && value !== undefined) return String(value);
+  #|         }
+  #|       } catch (_e) {}
+  #|       if (target._attrs && Object.prototype.hasOwnProperty.call(target._attrs, name)) {
+  #|         const value = target._attrs[name];
+  #|         return value === null || value === undefined ? null : String(value);
+  #|       }
+  #|       return null;
+  #|     };
+  #|     const isSlotElement = (target) => {
+  #|       if (!target || target.nodeType !== 1) return false;
+  #|       const localName = String(target.localName || target.tagName || target.nodeName || "").toLowerCase();
+  #|       return localName === "slot";
+  #|     };
+  #|     const getDirectChildren = (target) => {
+  #|       if (!target || typeof target !== "object") return [];
+  #|       if (Array.isArray(target._children)) return target._children;
+  #|       if (Array.isArray(target.children)) return Array.from(target.children);
+  #|       if (Array.isArray(target.childNodes)) return Array.from(target.childNodes);
+  #|       return [];
+  #|     };
+  #|     const findFirstSlotForName = (root, slotName) => {
+  #|       const children = getDirectChildren(root);
+  #|       for (let i = 0; i < children.length; i += 1) {
+  #|         const child = children[i];
+  #|         if (!child || child.nodeType !== 1) continue;
+  #|         if (isSlotElement(child) && String(getAttr(child, "name") || "") === slotName) {
+  #|           return child;
+  #|         }
+  #|         const nested = findFirstSlotForName(child, slotName);
+  #|         if (nested) return nested;
+  #|       }
+  #|       return null;
+  #|     };
+  #|     const getAssignedChildrenForSlot = (slot) => {
+  #|       const shadowRoot = getSequentialContainingShadowRoot(slot);
+  #|       if (!shadowRoot || !shadowRoot.host) return getDirectChildren(slot);
+  #|       const slotName = String(getAttr(slot, "name") || "");
+  #|       const firstMatch = findFirstSlotForName(shadowRoot, slotName);
+  #|       if (firstMatch && firstMatch !== slot) return [];
+  #|       const assigned = [];
+  #|       const hostChildren = getDirectChildren(shadowRoot.host);
+  #|       for (let i = 0; i < hostChildren.length; i += 1) {
+  #|         const child = hostChildren[i];
+  #|         if (!child) continue;
+  #|         const childSlotName = String(getAttr(child, "slot") || "");
+  #|         if (childSlotName === slotName) assigned.push(child);
+  #|       }
+  #|       return assigned.length > 0 ? assigned : getDirectChildren(slot);
+  #|     };
+  #|     if (isSlotElement(node)) return getAssignedChildrenForSlot(node);
+  #|     const shadowRoot = node.shadowRoot || null;
+  #|     if (shadowRoot && Array.isArray(shadowRoot._children)) return shadowRoot._children;
+  #|     return getDirectChildren(node);
+  #|   };
+  #|   const hasExplicitTabIndex = (node) => {
+  #|     if (!node || typeof node !== "object") return false;
+  #|     try {
+  #|       if (typeof node.getAttribute === "function" && node.getAttribute("tabindex") !== null) {
+  #|         return true;
+  #|       }
+  #|     } catch (_e) {}
+  #|     return !!(node._attrs && Object.prototype.hasOwnProperty.call(node._attrs, "tabindex"));
+  #|   };
+  #|   const isSequentiallyFocusable = (node) => {
+  #|     if (!node || node.nodeType !== 1) return false;
+  #|     if (node.disabled) return false;
+  #|     if (node.hidden) return false;
+  #|     const style = node.style || {};
+  #|     if (style.display === "none" || style.visibility === "hidden") return false;
+  #|     if (hasExplicitTabIndex(node)) {
+  #|       try {
+  #|         return Number(node.tabIndex) >= 0;
+  #|       } catch (_e) {
+  #|         return false;
+  #|       }
+  #|     }
+  #|     const tag = String(node.tagName || node.nodeName || "").toLowerCase();
+  #|     if (["input", "textarea", "select", "button"].includes(tag)) return true;
+  #|     if (tag === "a") {
+  #|       try {
+  #|         return !!(typeof node.getAttribute === "function" ? node.getAttribute("href") : null);
+  #|       } catch (_e) {
+  #|         return false;
+  #|       }
+  #|     }
+  #|     return !!node.isContentEditable;
+  #|   };
+  #|   const collectSequentialFocusables = (node, results) => {
+  #|     const children = getSequentialChildren(node);
+  #|     for (let i = 0; i < children.length; i += 1) {
+  #|       const child = children[i];
+  #|       if (!child || child.nodeType !== 1) continue;
+  #|       if (isSequentiallyFocusable(child)) results.push(child);
+  #|       collectSequentialFocusables(child, results);
+  #|     }
+  #|   };
+  #|   const moveSequentialFocus = (backward) => {
+  #|     const root = doc.body || doc.documentElement || doc;
+  #|     const order = [];
+  #|     collectSequentialFocusables(root, order);
+  #|     if (order.length === 0) return false;
+  #|     const current = resolveDeepActiveElement();
+  #|     const currentIndex = order.indexOf(current);
+  #|     let nextIndex = 0;
+  #|     if (currentIndex >= 0) {
+  #|       nextIndex = currentIndex + (backward ? -1 : 1);
+  #|       if (nextIndex < 0 || nextIndex >= order.length) return false;
+  #|     } else if (backward) {
+  #|       nextIndex = order.length - 1;
+  #|     }
+  #|     const next = order[nextIndex];
+  #|     if (!next || typeof next.focus !== "function") return false;
+  #|     try { next.focus(); } catch (_e) { return false; }
+  #|     try { globalThis.__bidiFocusedElement = next; } catch (_e) {}
+  #|     return true;
+  #|   };
   #|
   #|   const makeEvent = (type) => {
   #|     const event = globalThis.__bidiCreateEvent(type, { bubbles: true, cancelable: true });
@@ -6463,10 +6936,11 @@ extern "js" fn js_input_dispatch_key_action(
   #|   };
   #|   const dispatchWithFallback = (type) => {
   #|     const beforeCount = shouldRecordFallback ? globalThis.allEvents.events.length : 0;
-  #|     element.dispatchEvent(makeEvent(type));
+  #|     const allowed = element.dispatchEvent(makeEvent(type));
   #|     if (shouldRecordFallback && globalThis.allEvents.events.length === beforeCount) {
   #|       pushFallback(type);
   #|     }
+  #|     return allowed;
   #|   };
   #|   const getSelection = () => {
   #|     const value = typeof element.value === "string" ? element.value : "";
@@ -6567,7 +7041,13 @@ extern "js" fn js_input_dispatch_key_action(
   #|   };
   #|
   #|   if (actionType === "keyDown") {
-  #|     dispatchWithFallback("keydown");
+  #|     const keydownAllowed = dispatchWithFallback("keydown");
+  #|     if (key === "Tab") {
+  #|       if (keydownAllowed) {
+  #|         moveSequentialFocus(!!shift);
+  #|       }
+  #|       return;
+  #|     }
   #|
   #|     const usesShortcut = (ctrl || meta) && !alt;
   #|     const lowerKey = key.length === 1 ? key.toLowerCase() : key;
@@ -6743,7 +7223,7 @@ pub fn input_clear_pointer_event_properties() -> Unit {
 
 ///|
 /// Dispatch synthetic pointer/mouse event.
-extern "js" fn js_input_dispatch_pointer_event(
+extern "js" fn js_input_dispatch_pointer_event_with_related(
   shared_id : String,
   event_type : String,
   x : Double,
@@ -6755,8 +7235,9 @@ extern "js" fn js_input_dispatch_pointer_event(
   alt : Bool,
   shift : Bool,
   meta : Bool,
+  related_shared_id : String,
 ) -> Unit =
-  #| (sharedId, eventType, x, y, button, buttons, pointerType, ctrl, alt, shift, meta) => {
+  #| (sharedId, eventType, x, y, button, buttons, pointerType, ctrl, alt, shift, meta, relatedSharedId) => {
   #|   const doc = globalThis.document;
   #|   if (!doc) return;
   #|   const store = globalThis.__bidiSharedNodeStore;
@@ -6771,6 +7252,10 @@ extern "js" fn js_input_dispatch_pointer_event(
   #|     try { target = doc.elementFromPoint(Number(x), Number(y)); } catch (_e) {}
   #|   }
   #|   const safeTarget = target || doc.body || doc.documentElement || doc;
+  #|   let relatedTarget = null;
+  #|   if (relatedSharedId && store) {
+  #|     relatedTarget = store.get(relatedSharedId) || null;
+  #|   }
   #|   const isFocusable = (node) => {
   #|     if (!node || typeof node !== "object") return false;
   #|     const tag = String(node.tagName || node.nodeName || "").toLowerCase();
@@ -6787,10 +7272,100 @@ extern "js" fn js_input_dispatch_pointer_event(
   #|     } catch (_e) {}
   #|     return !!node.isContentEditable;
   #|   };
+  #|   const getFocusAttr = (node, name) => {
+  #|     if (!node || typeof node !== "object") return null;
+  #|     try {
+  #|       if (typeof node.getAttribute === "function") {
+  #|         const value = node.getAttribute(name);
+  #|         if (value !== null && value !== undefined) return String(value);
+  #|       }
+  #|     } catch (_e) {}
+  #|     if (node._attrs && Object.prototype.hasOwnProperty.call(node._attrs, name)) {
+  #|       const value = node._attrs[name];
+  #|       return value === null || value === undefined ? null : String(value);
+  #|     }
+  #|     return null;
+  #|   };
+  #|   const isSlotElement = (node) => {
+  #|     if (!node || node.nodeType !== 1) return false;
+  #|     const localName = String(node.localName || node.tagName || node.nodeName || "").toLowerCase();
+  #|     return localName === "slot";
+  #|   };
+  #|   const getFocusChildren = (node) => {
+  #|     if (!node || typeof node !== "object") return [];
+  #|     if (Array.isArray(node._children)) return node._children;
+  #|     if (Array.isArray(node.children)) return Array.from(node.children);
+  #|     if (Array.isArray(node.childNodes)) return Array.from(node.childNodes);
+  #|     return [];
+  #|   };
+  #|   const findFirstSlotForName = (root, slotName) => {
+  #|     const children = getFocusChildren(root);
+  #|     for (let i = 0; i < children.length; i += 1) {
+  #|       const child = children[i];
+  #|       if (!child || child.nodeType !== 1) continue;
+  #|       if (isSlotElement(child) && String(getFocusAttr(child, "name") || "") === slotName) {
+  #|         return child;
+  #|       }
+  #|       const nested = findFirstSlotForName(child, slotName);
+  #|       if (nested) return nested;
+  #|     }
+  #|     return null;
+  #|   };
+  #|   const getContainingShadowRoot = (node) => {
+  #|     let current = node;
+  #|     while (current) {
+  #|       if (current._isShadowRoot) return current;
+  #|       current = current._parent || current.parentNode || null;
+  #|     }
+  #|     return null;
+  #|   };
+  #|   const getAssignedChildrenForSlot = (slot) => {
+  #|     const shadowRoot = getContainingShadowRoot(slot);
+  #|     if (!shadowRoot || !shadowRoot.host) return getFocusChildren(slot);
+  #|     const slotName = String(getFocusAttr(slot, "name") || "");
+  #|     const firstMatch = findFirstSlotForName(shadowRoot, slotName);
+  #|     if (firstMatch && firstMatch !== slot) return [];
+  #|     const assigned = [];
+  #|     const hostChildren = getFocusChildren(shadowRoot.host);
+  #|     for (let i = 0; i < hostChildren.length; i += 1) {
+  #|       const child = hostChildren[i];
+  #|       if (!child) continue;
+  #|       const childSlotName = String(getFocusAttr(child, "slot") || "");
+  #|       if (childSlotName === slotName) assigned.push(child);
+  #|     }
+  #|     return assigned.length > 0 ? assigned : getFocusChildren(slot);
+  #|   };
+  #|   const getDelegatesFocusChildren = (node) => {
+  #|     if (!node || typeof node !== "object") return [];
+  #|     if (isSlotElement(node)) return getAssignedChildrenForSlot(node);
+  #|     const shadowRoot = node.shadowRoot || null;
+  #|     if (shadowRoot) return getFocusChildren(shadowRoot);
+  #|     return getFocusChildren(node);
+  #|   };
+  #|   const findDelegatesFocusTarget = (node) => {
+  #|     const shadowRoot = node && node.shadowRoot ? node.shadowRoot : null;
+  #|     if (!shadowRoot || !shadowRoot.delegatesFocus) return null;
+  #|     const visit = (current) => {
+  #|       const children = getDelegatesFocusChildren(current);
+  #|       for (let i = 0; i < children.length; i += 1) {
+  #|         const child = children[i];
+  #|         if (!child || child.nodeType !== 1) continue;
+  #|         if (isFocusable(child)) return child;
+  #|         const nested = visit(child);
+  #|         if (nested) return nested;
+  #|       }
+  #|       return null;
+  #|     };
+  #|     return visit(shadowRoot);
+  #|   };
   #|   const focusTarget = () => {
-  #|     if (!isFocusable(safeTarget) || typeof safeTarget.focus !== "function") return;
-  #|     try { safeTarget.focus(); } catch (_e) {}
-  #|     try { globalThis.__bidiFocusedElement = safeTarget; } catch (_e) {}
+  #|     const targetToFocus =
+  #|       isFocusable(safeTarget)
+  #|         ? safeTarget
+  #|         : findDelegatesFocusTarget(safeTarget);
+  #|     if (!targetToFocus || typeof targetToFocus.focus !== "function") return;
+  #|     try { targetToFocus.focus(); } catch (_e) {}
+  #|     try { globalThis.__bidiFocusedElement = targetToFocus; } catch (_e) {}
   #|   };
   #|   const safeTagName = String(safeTarget.tagName || safeTarget.nodeName || "").toLowerCase();
   #|   const safeInputType = () => {
@@ -7065,7 +7640,16 @@ extern "js" fn js_input_dispatch_pointer_event(
   #|     };
   #|   };
   #|   const createSyntheticEvent = (dispatchTarget) => {
-  #|     const event = globalThis.__bidiCreateEvent(eventType, { bubbles: true, cancelable: true });
+  #|     const nonBubblingHoverEvent =
+  #|       eventType === "pointerenter" ||
+  #|       eventType === "mouseenter" ||
+  #|       eventType === "pointerleave" ||
+  #|       eventType === "mouseleave";
+  #|     const event = globalThis.__bidiCreateEvent(eventType, {
+  #|       bubbles: !nonBubblingHoverEvent,
+  #|       cancelable: !nonBubblingHoverEvent,
+  #|       relatedTarget,
+  #|     });
   #|     event.clientX = Number(x);
   #|     event.clientY = Number(y);
   #|     event.pageX = Number(x);
@@ -7116,6 +7700,8 @@ extern "js" fn js_input_dispatch_pointer_event(
   #|       event.tiltY = tilt.tiltY;
   #|     }
   #|     try { event.target = safeTarget; } catch (_e) {}
+  #|     try { event.relatedTarget = relatedTarget; } catch (_e) {}
+  #|     try { event.__originalRelatedTarget = relatedTarget; } catch (_e) {}
   #|     try { event.currentTarget = dispatchTarget || safeTarget; } catch (_e) {}
   #|     return event;
   #|   };
@@ -7322,9 +7908,30 @@ pub fn input_dispatch_pointer_event(
   shift : Bool,
   meta : Bool,
 ) -> Unit {
-  js_input_dispatch_pointer_event(
+  input_dispatch_pointer_event_with_related(
     shared_id, event_type, x, y, button, buttons, pointer_type, ctrl, alt, shift,
-    meta,
+    meta, "",
+  )
+}
+
+///|
+pub fn input_dispatch_pointer_event_with_related(
+  shared_id : String,
+  event_type : String,
+  x : Double,
+  y : Double,
+  button : Int,
+  buttons : Int,
+  pointer_type : String,
+  ctrl : Bool,
+  alt : Bool,
+  shift : Bool,
+  meta : Bool,
+  related_shared_id : String,
+) -> Unit {
+  js_input_dispatch_pointer_event_with_related(
+    shared_id, event_type, x, y, button, buttons, pointer_type, ctrl, alt, shift,
+    meta, related_shared_id,
   )
 }
 
@@ -7401,9 +8008,14 @@ extern "js" fn js_input_dispatch_drag_event(
   #|       globalThis.__bidiDragTransfers.set(dragTransferId, dataTransfer);
   #|     }
   #|   }
+  #|   const nonBubblingHoverEvent =
+  #|     eventType === "pointerenter" ||
+  #|     eventType === "mouseenter" ||
+  #|     eventType === "pointerleave" ||
+  #|     eventType === "mouseleave";
   #|   const event = globalThis.__bidiCreateEvent(eventType, {
-  #|     bubbles: true,
-  #|     cancelable: true,
+  #|     bubbles: !nonBubblingHoverEvent,
+  #|     cancelable: !nonBubblingHoverEvent,
   #|     relatedTarget,
   #|     dataTransfer,
   #|   });

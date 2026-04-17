@@ -183,3 +183,22 @@ test "label encapsulation - checkbox wrapped in label" {
     ),
   )
 }
+
+///|
+test "aria-owns ignores targets under hidden ancestors" {
+  let html =
+    #|<div>
+    #|  <a href="https://www.w3.org/" aria-owns="new-window-warning">World Wide Web Consortium</a>
+    #|  <div hidden><span id="new-window-warning"> (opens in a new window)</span></div>
+    #|</div>
+  let doc = @html.parse_document(html)
+  let tree = build_accessibility_tree(doc)
+  let links = tree.find_by_role(Link)
+  inspect(links.length(), content="1")
+  inspect(
+    links[0].name,
+    content=(
+      #|Some("World Wide Web Consortium")
+    ),
+  )
+}

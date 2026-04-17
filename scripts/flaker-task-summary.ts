@@ -25,6 +25,7 @@ import {
   emitScriptExecutionResult,
   type ScriptExecutionResult,
 } from "./script-runtime.ts";
+import { appendFlakerCollectedSummaryWrites } from "./flaker-collected-summary-paths.ts";
 import type {
   FlakerEvalReport,
   FlakerReasonReport,
@@ -140,6 +141,7 @@ export function runFlakerTaskSummaryCli(
       spawnText: options?.spawnText,
     });
     const markdown = renderFlakerTaskSummaryMarkdown(summary);
+    const jsonContent = `${JSON.stringify(summary, null, 2)}\n`;
     const writes: ScriptExecutionResult["writes"] = [];
     appendReportWrites(writes, {
       cwd: repoRoot,
@@ -147,6 +149,15 @@ export function runFlakerTaskSummaryCli(
       markdownContent: markdown,
       jsonPath: parsed.jsonOutput,
       jsonValue: summary,
+    });
+    appendFlakerCollectedSummaryWrites(writes, {
+      cwd: repoRoot,
+      taskId: parsed.taskId,
+      kind: "flaker-summary",
+      jsonOutput: parsed.jsonOutput,
+      markdownOutput: parsed.markdownOutput,
+      jsonContent,
+      markdownContent: markdown,
     });
     return {
       exitCode: 0,

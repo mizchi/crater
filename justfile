@@ -335,8 +335,8 @@ flaker-task-import task_id report_path *args:
     node scripts/flaker-entry.ts task import {{task_id}} {{report_path}} {{args}}
 
 # Run a Playwright task, persist its JSON report, and import it into flaker
-flaker-task-record task_id report_path="" summary_dir="" *args:
-    if [ -n "{{report_path}}" ] && [ -n "{{summary_dir}}" ]; then node scripts/flaker-task-record.ts --task {{task_id}} --report-path {{report_path}} --summary-dir {{summary_dir}} -- {{args}}; elif [ -n "{{report_path}}" ]; then node scripts/flaker-task-record.ts --task {{task_id}} --report-path {{report_path}} -- {{args}}; elif [ -n "{{summary_dir}}" ]; then node scripts/flaker-task-record.ts --task {{task_id}} --summary-dir {{summary_dir}} -- {{args}}; else node scripts/flaker-task-record.ts --task {{task_id}} -- {{args}}; fi
+flaker-task-record task_id report_path="" summary_dir="" vrt_summary_dir="" *args:
+    bash -lc 'set -euo pipefail; cmd=(node scripts/flaker-task-record.ts --task "$1"); report_path="$2"; summary_dir="$3"; vrt_summary_dir="$4"; shift 4; if [ -n "$report_path" ]; then cmd+=(--report-path "$report_path"); fi; if [ -n "$summary_dir" ]; then cmd+=(--summary-dir "$summary_dir"); fi; if [ -n "$vrt_summary_dir" ]; then cmd+=(--vrt-summary-dir "$vrt_summary_dir"); fi; if [ "$#" -gt 0 ]; then cmd+=(-- "$@"); fi; "${cmd[@]}"' -- {{task_id}} {{report_path}} {{summary_dir}} {{vrt_summary_dir}} {{args}}
 
 # Run tests using flaker for a single task
 flaker-task-run task_id *args:
@@ -353,9 +353,9 @@ flaker-batch-plan output_dir=".flaker/batch-plan" tasks="" nodes="":
     if [ -n "{{tasks}}" ] && [ -n "{{nodes}}" ]; then node scripts/flaker-batch-plan.ts --tasks {{tasks}} --nodes {{nodes}} --json {{output_dir}}/plan.json --markdown {{output_dir}}/plan.md | tee {{output_dir}}/plan.log; elif [ -n "{{tasks}}" ]; then node scripts/flaker-batch-plan.ts --tasks {{tasks}} --json {{output_dir}}/plan.json --markdown {{output_dir}}/plan.md | tee {{output_dir}}/plan.log; elif [ -n "{{nodes}}" ]; then node scripts/flaker-batch-plan.ts --nodes {{nodes}} --json {{output_dir}}/plan.json --markdown {{output_dir}}/plan.md | tee {{output_dir}}/plan.log; else node scripts/flaker-batch-plan.ts --json {{output_dir}}/plan.json --markdown {{output_dir}}/plan.md | tee {{output_dir}}/plan.log; fi
 
 # Aggregate full-batch flaker artifacts
-flaker-batch-summary input_dir output_dir=".flaker/batch-summary":
+flaker-batch-summary input_dir output_dir=".flaker/batch-summary" collect_task_id="":
     mkdir -p {{output_dir}}
-    node scripts/flaker-batch-summary.ts --input {{input_dir}} --json {{output_dir}}/summary.json --markdown {{output_dir}}/summary.md | tee {{output_dir}}/summary.log
+    if [ -n "{{collect_task_id}}" ]; then node scripts/flaker-batch-summary.ts --input {{input_dir}} --collect-task-id {{collect_task_id}} --json {{output_dir}}/summary.json --markdown {{output_dir}}/summary.md; else node scripts/flaker-batch-summary.ts --input {{input_dir}} --json {{output_dir}}/summary.json --markdown {{output_dir}}/summary.md; fi | tee {{output_dir}}/summary.log
 
 # Render flaker config summary for CI or local inspection
 flaker-report output_dir=".flaker/report":
@@ -382,9 +382,9 @@ flaker-upstream-export group output_dir=".flaker/upstream-export":
     node scripts/flaker-entry.ts upstream export {{group}} {{output_dir}} | tee {{output_dir}}/{{group}}.log
 
 # Normalize a Playwright JSON report into JSON/Markdown summary
-playwright-report-summary input label output_dir=".playwright-report":
+playwright-report-summary input label output_dir=".playwright-report" collect_task_id="":
     mkdir -p {{output_dir}}
-    npx tsx scripts/playwright-report-summary.ts --input {{input}} --label {{label}} --json {{output_dir}}/{{label}}.json --markdown {{output_dir}}/{{label}}.md | tee {{output_dir}}/{{label}}.log
+    if [ -n "{{collect_task_id}}" ]; then npx tsx scripts/playwright-report-summary.ts --input {{input}} --label {{label}} --collect-task-id {{collect_task_id}} --json {{output_dir}}/{{label}}.json --markdown {{output_dir}}/{{label}}.md; else npx tsx scripts/playwright-report-summary.ts --input {{input}} --label {{label}} --json {{output_dir}}/{{label}}.json --markdown {{output_dir}}/{{label}}.md; fi | tee {{output_dir}}/{{label}}.log
 
 # Compare normalized Playwright summaries against a baseline
 playwright-report-diff base_input head_input label output_dir=".playwright-report":
@@ -392,14 +392,19 @@ playwright-report-diff base_input head_input label output_dir=".playwright-repor
     npx tsx scripts/playwright-report-diff.ts --base {{base_input}} --head {{head_input}} --label {{label}} --json {{output_dir}}/{{label}}-diff.json --markdown {{output_dir}}/{{label}}-diff.md | tee {{output_dir}}/{{label}}-diff.log
 
 # Summarize a WPT VRT shard result JSON
-wpt-vrt-report input label output_dir="wpt-vrt-summary":
+wpt-vrt-report input label output_dir="wpt-vrt-summary" collect_task_id="":
     mkdir -p {{output_dir}}
-    npx tsx scripts/wpt-vrt-summary.ts --input {{input}} --label {{label}} --json {{output_dir}}/{{label}}.json --markdown {{output_dir}}/{{label}}.md | tee {{output_dir}}/{{label}}.log
+    if [ -n "{{collect_task_id}}" ]; then npx tsx scripts/wpt-vrt-summary.ts --input {{input}} --label {{label}} --collect-task-id {{collect_task_id}} --json {{output_dir}}/{{label}}.json --markdown {{output_dir}}/{{label}}.md; else npx tsx scripts/wpt-vrt-summary.ts --input {{input}} --label {{label}} --json {{output_dir}}/{{label}}.json --markdown {{output_dir}}/{{label}}.md; fi | tee {{output_dir}}/{{label}}.log
 
 # Aggregate WPT VRT shard summaries
-wpt-vrt-report-aggregate input_dir output_dir="wpt-vrt-summary":
+wpt-vrt-report-aggregate input_dir output_dir="wpt-vrt-summary" collect_task_id="":
     mkdir -p {{output_dir}}
-    npx tsx scripts/wpt-vrt-summary.ts --aggregate {{input_dir}} --json {{output_dir}}/wpt-vrt-summary.json --markdown {{output_dir}}/wpt-vrt-summary.md | tee {{output_dir}}/wpt-vrt-summary.log
+    if [ -n "{{collect_task_id}}" ]; then npx tsx scripts/wpt-vrt-summary.ts --aggregate {{input_dir}} --collect-task-id {{collect_task_id}} --json {{output_dir}}/wpt-vrt-summary.json --markdown {{output_dir}}/wpt-vrt-summary.md; else npx tsx scripts/wpt-vrt-summary.ts --aggregate {{input_dir}} --json {{output_dir}}/wpt-vrt-summary.json --markdown {{output_dir}}/wpt-vrt-summary.md; fi | tee {{output_dir}}/wpt-vrt-summary.log
+
+# Aggregate VRT artifact report.json files under an output directory
+vrt-report-summary input_dir label="vrt-artifacts" output_dir="vrt-report-summary" collect_task_id="":
+    mkdir -p {{output_dir}}
+    if [ -n "{{collect_task_id}}" ]; then node --import tsx scripts/vrt-report-summary.ts --input {{input_dir}} --label {{label}} --collect-task-id {{collect_task_id}} --json {{output_dir}}/{{label}}.json --markdown {{output_dir}}/{{label}}.md; else node --import tsx scripts/vrt-report-summary.ts --input {{input_dir}} --label {{label}} --json {{output_dir}}/{{label}}.json --markdown {{output_dir}}/{{label}}.md; fi | tee {{output_dir}}/{{label}}.log
 
 # Capture a live site into real-world/ (gitignored)
 capture-realworld *args:

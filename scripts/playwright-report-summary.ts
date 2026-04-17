@@ -15,6 +15,7 @@ import {
   isMainModule,
   type ScriptExecutionResult,
 } from "./script-runtime.ts";
+import { appendFlakerCollectedSummaryWrites } from "./flaker-collected-summary-paths.ts";
 import {
   buildPlaywrightSummary,
   renderPlaywrightMarkdown,
@@ -27,6 +28,7 @@ export * from "./playwright-report-summary-core.ts";
 export interface PlaywrightReportSummaryCliArgs extends ReportOutputCliOptions {
   input: string;
   label?: string;
+  collectTaskId?: string;
 }
 
 const DEFAULT_INPUT = "playwright-report.json";
@@ -43,6 +45,7 @@ function usage(): string {
     optionLines: [
       `  --input <file>      Playwright JSON report (default: ${DEFAULT_INPUT})`,
       "  --label <name>      Summary label shown in markdown/json",
+      "  --collect-task-id <task-id>  Task id used for collect-compatible copies (defaults to label)",
       "  --json <file>       Write normalized summary JSON",
       "  --markdown <file>   Write markdown summary",
     ],
@@ -66,6 +69,11 @@ export function parsePlaywrightReportSummaryArgs(
       "--label": {
         set: (target, value) => {
           target.label = value;
+        },
+      },
+      "--collect-task-id": {
+        set: (target, value) => {
+          target.collectTaskId = value;
         },
       },
       ...createReportOutputHandlers(),
@@ -100,7 +108,9 @@ export function runPlaywrightReportSummaryCli(
       parsed.label ?? basenameWithoutExt(inputPath),
       path.relative(cwd, inputPath),
     );
+    const collectTaskId = parsed.collectTaskId?.trim() || summary.label;
     const markdown = renderPlaywrightMarkdown(summary);
+    const jsonContent = `${JSON.stringify(summary, null, 2)}\n`;
     const writes: ScriptExecutionResult["writes"] = [];
     appendReportWrites(writes, {
       cwd,
@@ -108,6 +118,15 @@ export function runPlaywrightReportSummaryCli(
       markdownContent: markdown,
       jsonPath: parsed.jsonOutput,
       jsonValue: summary,
+    });
+    appendFlakerCollectedSummaryWrites(writes, {
+      cwd,
+      taskId: collectTaskId,
+      kind: "playwright-summary",
+      jsonOutput: parsed.jsonOutput,
+      markdownOutput: parsed.markdownOutput,
+      jsonContent,
+      markdownContent: markdown,
     });
     return {
       exitCode: 0,

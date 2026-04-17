@@ -1,4 +1,50 @@
 ///|
+
+///|
+fn stub_glyph_provider(
+  base_advance : Double,
+  kern : Double,
+) -> @image.GlyphProvider {
+  {
+    get_glyph: fn(_codepoint, _font_size, _is_bold) { ([], base_advance) },
+    get_kern: fn(_cp1, _cp2, _font_size, _is_bold) { kern },
+    ascent_ratio: base_advance / 10.0,
+    get_glyph_for_family: None,
+    get_kern_for_family: None,
+    get_ascent_for_family: None,
+  }
+}
+
+///|
+test "merge_glyph_providers uses bold provider for bold requests" {
+  let merged = merge_glyph_providers(
+    stub_glyph_provider(10.0, 1.0),
+    Some(stub_glyph_provider(20.0, 2.0)),
+  )
+  let (_, regular_advance) = (merged.get_glyph)(65, 16.0, false)
+  let (_, bold_advance) = (merged.get_glyph)(65, 16.0, true)
+  let regular_kern = (merged.get_kern)(65, 66, 16.0, false)
+  let bold_kern = (merged.get_kern)(65, 66, 16.0, true)
+  inspect(regular_advance, content="10")
+  inspect(bold_advance, content="20")
+  inspect(regular_kern, content="1")
+  inspect(bold_kern, content="2")
+}
+
+///|
+test "merge_glyph_providers falls back to regular provider without bold font" {
+  let merged = merge_glyph_providers(stub_glyph_provider(10.0, 1.0), None)
+  let (_, regular_advance) = (merged.get_glyph)(65, 16.0, false)
+  let (_, bold_advance) = (merged.get_glyph)(65, 16.0, true)
+  let regular_kern = (merged.get_kern)(65, 66, 16.0, false)
+  let bold_kern = (merged.get_kern)(65, 66, 16.0, true)
+  inspect(regular_advance, content="10")
+  inspect(bold_advance, content="10")
+  inspect(regular_kern, content="1")
+  inspect(bold_kern, content="1")
+}
+
+///|
 test "parse_args_list reads component artifact options" {
   let options = parse_args_list([
     "--html-file", "fixture.html", "--css-file", "baseline.css", "--css-file", "component.css",

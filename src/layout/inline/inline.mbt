@@ -2410,8 +2410,13 @@ fn compute_inline_child(
       }
       let @node.DispatchFn(dispatch_fn) = dispatch
       let child_layout_raw = dispatch_fn(child, child_ctx, dispatch)
+      let child_has_intrinsic_content = match child.measure {
+        Some(_) => true
+        None => child.text is Some(_) || child.children.length() > 0
+      }
       let child_layout = if child_layout_raw.width <= 0.0 &&
-        !style.writing_mode.is_vertical() {
+        !style.writing_mode.is_vertical() &&
+        (child_layout_raw.height > 0.0 || child_has_intrinsic_content) {
         { ..child_layout_raw, width: available_width }
       } else {
         child_layout_raw

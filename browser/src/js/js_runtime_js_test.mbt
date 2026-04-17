@@ -998,6 +998,1548 @@ test "getRootNode supports shadow root composed option" {
 }
 
 ///|
+test "shadow root persists across execute calls" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let setup =
+    #|const host = document.createElement('div');
+    #|host.id = 'host';
+    #|document.body.appendChild(host);
+    #|const shadow = host.attachShadow({ mode: 'open' });
+    #|const inner = document.createElement('span');
+    #|inner.textContent = 'inside';
+    #|shadow.appendChild(inner);
+    #|'ok'
+  let setup_result = ctx.execute(setup)
+  inspect(setup_result.success, content="true")
+  inspect(setup_result.value, content="ok")
+
+  let persisted =
+    #|const persistedHost = document.getElementById('host');
+    #|[
+    #|  persistedHost !== null,
+    #|  persistedHost.shadowRoot !== null,
+    #|  persistedHost.shadowRoot && persistedHost.shadowRoot.firstChild !== null,
+    #|  persistedHost.shadowRoot && persistedHost.shadowRoot.firstChild ? persistedHost.shadowRoot.firstChild.textContent : 'missing'
+    #|].join(',')
+  let persisted_result = ctx.execute(persisted)
+  inspect(persisted_result.success, content="true")
+  inspect(persisted_result.value, content="true,true,true,inside")
+}
+
+///|
+test "shadowRoot querySelector supports :host pseudo-class" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(() => {
+    #|  const host = document.createElement('div');
+    #|  host.className = 'active';
+    #|  document.body.appendChild(host);
+    #|  const shadow = host.attachShadow({ mode: 'open' });
+    #|  shadow.innerHTML = '<button id="inner">ok</button>';
+    #|  return JSON.stringify([
+    #|    shadow.querySelector(':host') === host,
+    #|    shadow.querySelector(':host(.active)') === host,
+    #|    shadow.querySelector(':host(.missing)') === null,
+    #|    shadow.querySelectorAll(':host').length,
+    #|    shadow.querySelector(':host > #inner') === shadow.firstChild,
+    #|    shadow.querySelectorAll(':host > button').length
+    #|  ]);
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[true,true,true,1,true,1]")
+}
+
+///|
+test "customElements define get whenDefined" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|globalThis.__ceResolved = 'pending';
+    #|const before = customElements.get('x-define-check') === undefined;
+    #|class DefineCheckElement extends HTMLElement {}
+    #|customElements.whenDefined('x-define-check').then((ctor) => {
+    #|  globalThis.__ceResolved = ctor === DefineCheckElement ? 'resolved' : 'wrong';
+    #|});
+    #|customElements.define('x-define-check', DefineCheckElement);
+    #|[before, customElements.get('x-define-check') === DefineCheckElement].join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true,true")
+
+  let resolved_result = ctx.execute("globalThis.__ceResolved")
+  inspect(resolved_result.success, content="true")
+  inspect(resolved_result.value, content="resolved")
+}
+
+///|
+test "custom element lifecycle for connected attributeChanged disconnected" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|globalThis.__ceLifecycle = [];
+    #|class LifecycleElement extends HTMLElement {
+    #|  static get observedAttributes() { return ['data-state']; }
+    #|  constructor() {
+    #|    super();
+    #|    this.constructed = 'yes';
+    #|  }
+    #|  connectedCallback() {
+    #|    globalThis.__ceLifecycle.push('connected:' + this.constructed);
+    #|  }
+    #|  disconnectedCallback() {
+    #|    globalThis.__ceLifecycle.push('disconnected');
+    #|  }
+    #|  attributeChangedCallback(name, oldValue, newValue) {
+    #|    globalThis.__ceLifecycle.push(name + ':' + String(oldValue) + '->' + String(newValue));
+    #|  }
+    #|}
+    #|customElements.define('x-lifecycle-check', LifecycleElement);
+    #|const el = document.createElement('x-lifecycle-check');
+    #|document.body.appendChild(el);
+    #|el.setAttribute('data-state', 'ready');
+    #|document.body.removeChild(el);
+    #|[el.constructed, globalThis.__ceLifecycle.join('|')].join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="yes,connected:yes|data-state:null->ready|disconnected",
+  )
+}
+
+///|
+test "customElements define upgrades existing connected elements" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|globalThis.__upgradeCount = 0;
+    #|const early = document.createElement('x-upgrade-check');
+    #|document.body.appendChild(early);
+    #|class UpgradeCheckElement extends HTMLElement {
+    #|  connectedCallback() {
+    #|    globalThis.__upgradeCount += 1;
+    #|    this.setAttribute('upgraded', 'yes');
+    #|  }
+    #|}
+    #|customElements.define('x-upgrade-check', UpgradeCheckElement);
+    #|[early.getAttribute('upgraded'), globalThis.__upgradeCount].join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="yes,1")
+}
+
+///|
+test "parser-created custom element connects when detached host is inserted" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|globalThis.__parserLifecycle = [];
+    #|class ParserLifecycleElement extends HTMLElement {
+    #|  connectedCallback() {
+    #|    globalThis.__parserLifecycle.push('connected');
+    #|  }
+    #|}
+    #|customElements.define('x-parser-lifecycle', ParserLifecycleElement);
+    #|const host = document.createElement('div');
+    #|host.innerHTML = '<x-parser-lifecycle></x-parser-lifecycle>';
+    #|const beforeAttach = globalThis.__parserLifecycle.length;
+    #|document.body.appendChild(host);
+    #|[beforeAttach, globalThis.__parserLifecycle.join('|')].join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="0,connected")
+}
+
+///|
+test "parser-created custom element disconnects when innerHTML replaces subtree" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|globalThis.__parserReplaceLifecycle = [];
+    #|class ParserReplaceElement extends HTMLElement {
+    #|  connectedCallback() {
+    #|    globalThis.__parserReplaceLifecycle.push('connected');
+    #|  }
+    #|  disconnectedCallback() {
+    #|    globalThis.__parserReplaceLifecycle.push('disconnected');
+    #|  }
+    #|}
+    #|customElements.define('x-parser-replace', ParserReplaceElement);
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|host.innerHTML = '<x-parser-replace></x-parser-replace>';
+    #|host.innerHTML = '';
+    #|globalThis.__parserReplaceLifecycle.join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="connected|disconnected")
+}
+
+///|
+test "disconnectedCallback observes detached state on removeChild" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|globalThis.__disconnectState = 'unset';
+    #|class DisconnectStateElement extends HTMLElement {
+    #|  disconnectedCallback() {
+    #|    globalThis.__disconnectState = [String(this.isConnected), String(this.parentNode === null)].join(',');
+    #|  }
+    #|}
+    #|customElements.define('x-disconnect-state', DisconnectStateElement);
+    #|const el = document.createElement('x-disconnect-state');
+    #|document.body.appendChild(el);
+    #|document.body.removeChild(el);
+    #|globalThis.__disconnectState
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="false,true")
+}
+
+///|
+test "custom element appended into connected shadow root gets connectedCallback" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|globalThis.__shadowCeLifecycle = [];
+    #|class ShadowLifecycleElement extends HTMLElement {
+    #|  connectedCallback() {
+    #|    globalThis.__shadowCeLifecycle.push('connected');
+    #|  }
+    #|}
+    #|customElements.define('x-shadow-lifecycle', ShadowLifecycleElement);
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|const shadow = host.attachShadow({ mode: 'open' });
+    #|const el = document.createElement('x-shadow-lifecycle');
+    #|shadow.appendChild(el);
+    #|globalThis.__shadowCeLifecycle.join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="connected")
+}
+
+///|
+test "shadow event with composed false stays inside shadow root" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|globalThis.__shadowEventLog = [];
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|const shadow = host.attachShadow({ mode: 'open' });
+    #|const inner = document.createElement('button');
+    #|shadow.appendChild(inner);
+    #|const labelPath = (event) => event.composedPath().map((node) => {
+    #|  if (node === inner) return 'inner';
+    #|  if (node === shadow) return 'shadow';
+    #|  if (node === host) return 'host';
+    #|  if (node === document.body) return 'body';
+    #|  return 'other';
+    #|}).join('>');
+    #|shadow.addEventListener('shadow-test', (event) => {
+    #|  globalThis.__shadowEventLog.push('shadow:' + String(event.target === inner) + ':' + labelPath(event));
+    #|});
+    #|host.addEventListener('shadow-test', () => {
+    #|  globalThis.__shadowEventLog.push('host');
+    #|});
+    #|document.body.addEventListener('shadow-test', () => {
+    #|  globalThis.__shadowEventLog.push('body');
+    #|});
+    #|inner.dispatchEvent(new Event('shadow-test', { bubbles: true, composed: false }));
+    #|globalThis.__shadowEventLog.join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="shadow:true:inner>shadow")
+}
+
+///|
+test "shadow event with composed true bubbles outward and retargets target" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|globalThis.__shadowEventLog = [];
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|const shadow = host.attachShadow({ mode: 'open' });
+    #|const inner = document.createElement('button');
+    #|shadow.appendChild(inner);
+    #|const labelPath = (event) => event.composedPath().map((node) => {
+    #|  if (node === inner) return 'inner';
+    #|  if (node === shadow) return 'shadow';
+    #|  if (node === host) return 'host';
+    #|  if (node === document.body) return 'body';
+    #|  if (node === document.documentElement) return 'html';
+    #|  if (node === document) return 'document';
+    #|  if (node === window) return 'window';
+    #|  return 'other';
+    #|}).join('>');
+    #|shadow.addEventListener('shadow-test', (event) => {
+    #|  globalThis.__shadowEventLog.push('shadow:' + String(event.target === inner) + ':' + labelPath(event));
+    #|});
+    #|host.addEventListener('shadow-test', (event) => {
+    #|  globalThis.__shadowEventLog.push('host:' + String(event.target === host));
+    #|});
+    #|document.body.addEventListener('shadow-test', (event) => {
+    #|  globalThis.__shadowEventLog.push('body:' + String(event.target === host));
+    #|});
+    #|inner.dispatchEvent(new Event('shadow-test', { bubbles: true, composed: true }));
+    #|globalThis.__shadowEventLog.join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="shadow:true:inner>shadow>host>body>html>document>window|host:true|body:true",
+  )
+}
+
+///|
+test "shadow event capture listeners and document listeners observe retargeted path" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|globalThis.__shadowCaptureLog = [];
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|const shadow = host.attachShadow({ mode: 'open' });
+    #|const inner = document.createElement('button');
+    #|shadow.appendChild(inner);
+    #|document.addEventListener('shadow-capture', (event) => {
+    #|  globalThis.__shadowCaptureLog.push('document-capture:' + String(event.eventPhase === Event.CAPTURING_PHASE) + ':' + String(event.target === host));
+    #|}, true);
+    #|host.addEventListener('shadow-capture', (event) => {
+    #|  globalThis.__shadowCaptureLog.push('host-capture:' + String(event.eventPhase === Event.CAPTURING_PHASE) + ':' + String(event.target === host));
+    #|}, true);
+    #|shadow.addEventListener('shadow-capture', (event) => {
+    #|  globalThis.__shadowCaptureLog.push('shadow-capture:' + String(event.eventPhase === Event.CAPTURING_PHASE) + ':' + String(event.target === inner));
+    #|}, true);
+    #|inner.addEventListener('shadow-capture', (event) => {
+    #|  globalThis.__shadowCaptureLog.push('target:' + String(event.eventPhase === Event.AT_TARGET) + ':' + String(event.target === inner));
+    #|});
+    #|host.addEventListener('shadow-capture', (event) => {
+    #|  globalThis.__shadowCaptureLog.push('host-bubble:' + String(event.eventPhase === Event.BUBBLING_PHASE) + ':' + String(event.target === host));
+    #|});
+    #|document.addEventListener('shadow-capture', (event) => {
+    #|  globalThis.__shadowCaptureLog.push('document-bubble:' + String(event.eventPhase === Event.BUBBLING_PHASE) + ':' + String(event.target === host));
+    #|});
+    #|inner.dispatchEvent(new Event('shadow-capture', { bubbles: true, composed: true }));
+    #|globalThis.__shadowCaptureLog.join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="document-capture:true:true|host-capture:true:true|shadow-capture:true:true|target:true:true|host-bubble:true:true|document-bubble:true:true",
+  )
+}
+
+///|
+test "focus inside shadow root updates document and shadowRoot activeElement" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|const shadow = host.attachShadow({ mode: 'open' });
+    #|const inner = document.createElement('input');
+    #|shadow.appendChild(inner);
+    #|inner.focus();
+    #|JSON.stringify([
+    #|  document.activeElement === host,
+    #|  shadow.activeElement === inner
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[true,true]")
+}
+
+///|
+test "blur inside shadow root clears shadowRoot activeElement and restores body focus" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|const shadow = host.attachShadow({ mode: 'open' });
+    #|const inner = document.createElement('input');
+    #|shadow.appendChild(inner);
+    #|inner.focus();
+    #|inner.blur();
+    #|JSON.stringify([
+    #|  document.activeElement === document.body,
+    #|  shadow.activeElement === null
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[true,true]")
+}
+
+///|
+test "Tab moves focus through named slotted control in shadow tree" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const first = document.createElement('input');
+    #|first.id = 'first';
+    #|const host = document.createElement('div');
+    #|host.id = 'host';
+    #|const last = document.createElement('input');
+    #|last.id = 'last';
+    #|document.body.appendChild(first);
+    #|document.body.appendChild(host);
+    #|document.body.appendChild(last);
+    #|const shadow = host.attachShadow({ mode: 'open' });
+    #|const slot = document.createElement('slot');
+    #|slot.name = 'content';
+    #|shadow.appendChild(slot);
+    #|const slotted = document.createElement('input');
+    #|slotted.id = 'slotted';
+    #|slotted.slot = 'content';
+    #|host.appendChild(slotted);
+    #|first.focus();
+    #|first.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'Tab' }));
+    #|const firstStep = document.activeElement === slotted;
+    #|slotted.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'Tab' }));
+    #|JSON.stringify([firstStep, document.activeElement === last])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[true,true]")
+}
+
+///|
+test "Shift+Tab moves focus from named slotted control to previous light DOM control" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const first = document.createElement('input');
+    #|first.id = 'first';
+    #|const host = document.createElement('div');
+    #|const last = document.createElement('input');
+    #|document.body.appendChild(first);
+    #|document.body.appendChild(host);
+    #|document.body.appendChild(last);
+    #|const shadow = host.attachShadow({ mode: 'open' });
+    #|const slot = document.createElement('slot');
+    #|slot.name = 'content';
+    #|shadow.appendChild(slot);
+    #|const slotted = document.createElement('input');
+    #|slotted.slot = 'content';
+    #|host.appendChild(slotted);
+    #|slotted.focus();
+    #|slotted.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'Tab', shiftKey: true }));
+    #|JSON.stringify([document.activeElement === first, shadow.activeElement === null])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[true,true]")
+}
+
+///|
+test "focus on shadow host delegates to first focusable descendant when delegatesFocus is enabled" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|const shadow = host.attachShadow({ mode: 'open', delegatesFocus: true });
+    #|const button = document.createElement('button');
+    #|button.id = 'inner';
+    #|shadow.appendChild(button);
+    #|host.focus();
+    #|JSON.stringify([
+    #|  document.activeElement === host,
+    #|  shadow.activeElement === button,
+    #|  shadow.delegatesFocus === true
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[true,true,true]")
+}
+
+///|
+test "focus on delegatesFocus host reaches slotted focusable descendant" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|const shadow = host.attachShadow({ mode: 'open', delegatesFocus: true });
+    #|const slot = document.createElement('slot');
+    #|slot.name = 'content';
+    #|shadow.appendChild(slot);
+    #|const input = document.createElement('input');
+    #|input.id = 'slotted';
+    #|input.slot = 'content';
+    #|host.appendChild(input);
+    #|host.focus();
+    #|JSON.stringify([
+    #|  document.activeElement === input,
+    #|  shadow.activeElement === null
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[true,true]")
+}
+
+///|
+test "click on delegatesFocus host reaches first shadow descendant" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|const shadow = host.attachShadow({ mode: 'open', delegatesFocus: true });
+    #|const button = document.createElement('button');
+    #|button.id = 'inner';
+    #|shadow.appendChild(button);
+    #|host.click();
+    #|JSON.stringify([
+    #|  document.activeElement === host,
+    #|  shadow.activeElement === button
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[true,true]")
+}
+
+///|
+test "click on delegatesFocus host reaches slotted focusable descendant" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|const shadow = host.attachShadow({ mode: 'open', delegatesFocus: true });
+    #|const slot = document.createElement('slot');
+    #|slot.name = 'content';
+    #|shadow.appendChild(slot);
+    #|const input = document.createElement('input');
+    #|input.id = 'slotted';
+    #|input.slot = 'content';
+    #|host.appendChild(input);
+    #|host.click();
+    #|JSON.stringify([
+    #|  document.activeElement === input,
+    #|  shadow.activeElement === null
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[true,true]")
+}
+
+///|
+test "focus and blur on delegatesFocus host dispatch focus-family events on shadow descendant" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(() => {
+    #|  const host = document.createElement('div');
+    #|  document.body.appendChild(host);
+    #|  const shadow = host.attachShadow({ mode: 'open', delegatesFocus: true });
+    #|  const input = document.createElement('input');
+    #|  shadow.appendChild(input);
+    #|  const logs = [];
+    #|  for (const type of ['focus', 'focusin', 'blur', 'focusout']) {
+    #|    input.addEventListener(type, () => logs.push(type));
+    #|  }
+    #|  host.focus();
+    #|  host.blur();
+    #|  return JSON.stringify(logs);
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[\"focus\",\"focusin\",\"blur\",\"focusout\"]")
+}
+
+///|
+test "focus and blur on delegatesFocus host dispatch focus-family events on slotted descendant" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(() => {
+    #|  const host = document.createElement('div');
+    #|  document.body.appendChild(host);
+    #|  const shadow = host.attachShadow({ mode: 'open', delegatesFocus: true });
+    #|  const slot = document.createElement('slot');
+    #|  slot.name = 'content';
+    #|  shadow.appendChild(slot);
+    #|  const input = document.createElement('input');
+    #|  input.slot = 'content';
+    #|  host.appendChild(input);
+    #|  const logs = [];
+    #|  for (const type of ['focus', 'focusin', 'blur', 'focusout']) {
+    #|    input.addEventListener(type, () => logs.push(type));
+    #|  }
+    #|  host.focus();
+    #|  input.blur();
+    #|  return JSON.stringify(logs);
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[\"focus\",\"focusin\",\"blur\",\"focusout\"]")
+}
+
+///|
+test "focus-family bubbling retargets delegatesFocus shadow descendant to host outside shadow root" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(() => {
+    #|  const host = document.createElement('div');
+    #|  document.body.appendChild(host);
+    #|  const shadow = host.attachShadow({ mode: 'open', delegatesFocus: true });
+    #|  const input = document.createElement('input');
+    #|  shadow.appendChild(input);
+    #|  const logs = [];
+    #|  input.addEventListener('focusin', (event) => logs.push('inner:' + String(event.target === input)));
+    #|  shadow.addEventListener('focusin', (event) => logs.push('shadow:' + String(event.target === input)));
+    #|  host.addEventListener('focusin', (event) => logs.push('host:' + String(event.target === host)));
+    #|  document.addEventListener('focusin', (event) => logs.push('doc:' + String(event.target === host)));
+    #|  host.focus();
+    #|  return JSON.stringify(logs);
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="[\"inner:true\",\"shadow:true\",\"host:true\",\"doc:true\"]",
+  )
+}
+
+///|
+test "focus-family bubbling keeps slotted delegatesFocus target as light DOM node" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(() => {
+    #|  const host = document.createElement('div');
+    #|  document.body.appendChild(host);
+    #|  const shadow = host.attachShadow({ mode: 'open', delegatesFocus: true });
+    #|  const slot = document.createElement('slot');
+    #|  slot.name = 'content';
+    #|  shadow.appendChild(slot);
+    #|  const input = document.createElement('input');
+    #|  input.slot = 'content';
+    #|  host.appendChild(input);
+    #|  const logs = [];
+    #|  input.addEventListener('focusin', (event) => logs.push('inner:' + String(event.target === input)));
+    #|  host.addEventListener('focusin', (event) => logs.push('host:' + String(event.target === input)));
+    #|  document.addEventListener('focusin', (event) => logs.push('doc:' + String(event.target === input)));
+    #|  host.focus();
+    #|  return JSON.stringify(logs);
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[\"inner:true\",\"host:true\",\"doc:true\"]")
+}
+
+///|
+test "focusout and focusin between slotted descendants keep light DOM target and relatedTarget" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(() => {
+    #|  const host = document.createElement('div');
+    #|  document.body.appendChild(host);
+    #|  const shadow = host.attachShadow({ mode: 'open' });
+    #|  const slot = document.createElement('slot');
+    #|  slot.name = 'content';
+    #|  shadow.appendChild(slot);
+    #|  const left = document.createElement('input');
+    #|  left.id = 'left';
+    #|  left.slot = 'content';
+    #|  const right = document.createElement('input');
+    #|  right.id = 'right';
+    #|  right.slot = 'content';
+    #|  host.appendChild(left);
+    #|  host.appendChild(right);
+    #|  left.focus();
+    #|  const logs = [];
+    #|  left.addEventListener('focusout', (event) => logs.push('left:focusout:' + (event.relatedTarget ? event.relatedTarget.id : 'none')));
+    #|  right.addEventListener('focusin', (event) => logs.push('right:focusin:' + (event.relatedTarget ? event.relatedTarget.id : 'none')));
+    #|  host.addEventListener('focusout', (event) => logs.push('host:focusout:' + (event.target ? event.target.id : '') + ':' + (event.relatedTarget ? event.relatedTarget.id : 'none')));
+    #|  document.addEventListener('focusout', (event) => logs.push('doc:focusout:' + (event.target ? event.target.id : '') + ':' + (event.relatedTarget ? event.relatedTarget.id : 'none')));
+    #|  host.addEventListener('focusin', (event) => logs.push('host:focusin:' + (event.target ? event.target.id : '') + ':' + (event.relatedTarget ? event.relatedTarget.id : 'none')));
+    #|  document.addEventListener('focusin', (event) => logs.push('doc:focusin:' + (event.target ? event.target.id : '') + ':' + (event.relatedTarget ? event.relatedTarget.id : 'none')));
+    #|  right.focus();
+    #|  return JSON.stringify(logs);
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="[\"left:focusout:right\",\"host:focusout:left:right\",\"doc:focusout:left:right\",\"right:focusin:left\",\"host:focusin:right:left\",\"doc:focusin:right:left\"]",
+  )
+}
+
+///|
+test "focusout and focusin between shadow descendants stay inside shadow root" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(() => {
+    #|  const host = document.createElement('div');
+    #|  document.body.appendChild(host);
+    #|  const shadow = host.attachShadow({ mode: 'open' });
+    #|  const left = document.createElement('input');
+    #|  left.id = 'left';
+    #|  const right = document.createElement('input');
+    #|  right.id = 'right';
+    #|  shadow.appendChild(left);
+    #|  shadow.appendChild(right);
+    #|  left.focus();
+    #|  const logs = [];
+    #|  left.addEventListener('focusout', (event) => logs.push('left:focusout:' + (event.relatedTarget ? event.relatedTarget.id : 'none')));
+    #|  right.addEventListener('focusin', (event) => logs.push('right:focusin:' + (event.relatedTarget ? event.relatedTarget.id : 'none')));
+    #|  shadow.addEventListener('focusout', (event) => logs.push('shadow:focusout:' + (event.target ? event.target.id : '') + ':' + (event.relatedTarget ? event.relatedTarget.id : 'none')));
+    #|  shadow.addEventListener('focusin', (event) => logs.push('shadow:focusin:' + (event.target ? event.target.id : '') + ':' + (event.relatedTarget ? event.relatedTarget.id : 'none')));
+    #|  host.addEventListener('focusout', () => logs.push('host:focusout'));
+    #|  document.addEventListener('focusout', () => logs.push('doc:focusout'));
+    #|  host.addEventListener('focusin', () => logs.push('host:focusin'));
+    #|  document.addEventListener('focusin', () => logs.push('doc:focusin'));
+    #|  right.focus();
+    #|  return JSON.stringify(logs);
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="[\"left:focusout:right\",\"shadow:focusout:left:right\",\"right:focusin:left\",\"shadow:focusin:right:left\"]",
+  )
+}
+
+///|
+test "click on shadow descendant bubbles across shadow boundary and retargets to host" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(() => {
+    #|  const host = document.createElement('div');
+    #|  document.body.appendChild(host);
+    #|  const shadow = host.attachShadow({ mode: 'open' });
+    #|  const button = document.createElement('button');
+    #|  shadow.appendChild(button);
+    #|  const logs = [];
+    #|  button.addEventListener('click', (event) => logs.push('inner:' + String(event.target === button)));
+    #|  shadow.addEventListener('click', (event) => logs.push('shadow:' + String(event.target === button)));
+    #|  host.addEventListener('click', (event) => logs.push('host:' + String(event.target === host)));
+    #|  document.addEventListener('click', (event) => logs.push('doc:' + String(event.target === host)));
+    #|  button.click();
+    #|  return JSON.stringify(logs);
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="[\"inner:true\",\"shadow:true\",\"host:true\",\"doc:true\"]",
+  )
+}
+
+///|
+test "click on slotted descendant keeps light DOM target outside shadow root" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(() => {
+    #|  const host = document.createElement('div');
+    #|  document.body.appendChild(host);
+    #|  const shadow = host.attachShadow({ mode: 'open' });
+    #|  const slot = document.createElement('slot');
+    #|  slot.name = 'content';
+    #|  shadow.appendChild(slot);
+    #|  const button = document.createElement('button');
+    #|  button.slot = 'content';
+    #|  host.appendChild(button);
+    #|  const logs = [];
+    #|  button.addEventListener('click', (event) => logs.push('inner:' + String(event.target === button)));
+    #|  host.addEventListener('click', (event) => logs.push('host:' + String(event.target === button)));
+    #|  document.addEventListener('click', (event) => logs.push('doc:' + String(event.target === button)));
+    #|  button.click();
+    #|  return JSON.stringify(logs);
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[\"inner:true\",\"host:true\",\"doc:true\"]")
+}
+
+///|
+test "pointer and mouse down/up on shadow descendant retarget to host outside shadow root" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(() => {
+    #|  const host = document.createElement('div');
+    #|  document.body.appendChild(host);
+    #|  const shadow = host.attachShadow({ mode: 'open' });
+    #|  const button = document.createElement('button');
+    #|  shadow.appendChild(button);
+    #|  const logs = [];
+    #|  for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup']) {
+    #|    button.addEventListener(type, (event) => logs.push('inner:' + type + ':' + String(event.target === button)));
+    #|    shadow.addEventListener(type, (event) => logs.push('shadow:' + type + ':' + String(event.target === button)));
+    #|    host.addEventListener(type, (event) => logs.push('host:' + type + ':' + String(event.target === host)));
+    #|    document.addEventListener(type, (event) => logs.push('doc:' + type + ':' + String(event.target === host)));
+    #|  }
+    #|  button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true }));
+    #|  button.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, composed: true }));
+    #|  button.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true }));
+    #|  button.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, composed: true }));
+    #|  return JSON.stringify(logs);
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="[\"inner:pointerdown:true\",\"shadow:pointerdown:true\",\"host:pointerdown:true\",\"doc:pointerdown:true\",\"inner:mousedown:true\",\"shadow:mousedown:true\",\"host:mousedown:true\",\"doc:mousedown:true\",\"inner:pointerup:true\",\"shadow:pointerup:true\",\"host:pointerup:true\",\"doc:pointerup:true\",\"inner:mouseup:true\",\"shadow:mouseup:true\",\"host:mouseup:true\",\"doc:mouseup:true\"]",
+  )
+}
+
+///|
+test "pointer and mouse down/up on slotted descendant keep light DOM target" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(() => {
+    #|  const host = document.createElement('div');
+    #|  document.body.appendChild(host);
+    #|  const shadow = host.attachShadow({ mode: 'open' });
+    #|  const slot = document.createElement('slot');
+    #|  slot.name = 'content';
+    #|  shadow.appendChild(slot);
+    #|  const button = document.createElement('button');
+    #|  button.slot = 'content';
+    #|  host.appendChild(button);
+    #|  const logs = [];
+    #|  for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup']) {
+    #|    button.addEventListener(type, (event) => logs.push('inner:' + type + ':' + String(event.target === button)));
+    #|    host.addEventListener(type, (event) => logs.push('host:' + type + ':' + String(event.target === button)));
+    #|    document.addEventListener(type, (event) => logs.push('doc:' + type + ':' + String(event.target === button)));
+    #|  }
+    #|  button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true }));
+    #|  button.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, composed: true }));
+    #|  button.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true }));
+    #|  button.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, composed: true }));
+    #|  return JSON.stringify(logs);
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="[\"inner:pointerdown:true\",\"host:pointerdown:true\",\"doc:pointerdown:true\",\"inner:mousedown:true\",\"host:mousedown:true\",\"doc:mousedown:true\",\"inner:pointerup:true\",\"host:pointerup:true\",\"doc:pointerup:true\",\"inner:mouseup:true\",\"host:mouseup:true\",\"doc:mouseup:true\"]",
+  )
+}
+
+///|
+test "pointerover/out and mouseover/out on shadow descendant retarget to host outside shadow root" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(() => {
+    #|  const host = document.createElement('div');
+    #|  document.body.appendChild(host);
+    #|  const shadow = host.attachShadow({ mode: 'open' });
+    #|  const button = document.createElement('button');
+    #|  shadow.appendChild(button);
+    #|  const logs = [];
+    #|  for (const type of ['pointerover', 'mouseover', 'pointerout', 'mouseout']) {
+    #|    button.addEventListener(type, (event) => logs.push('inner:' + type + ':' + String(event.target === button)));
+    #|    shadow.addEventListener(type, (event) => logs.push('shadow:' + type + ':' + String(event.target === button)));
+    #|    host.addEventListener(type, (event) => logs.push('host:' + type + ':' + String(event.target === host)));
+    #|    document.addEventListener(type, (event) => logs.push('doc:' + type + ':' + String(event.target === host)));
+    #|  }
+    #|  button.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, composed: true, relatedTarget: null }));
+    #|  button.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, composed: true, relatedTarget: null }));
+    #|  button.dispatchEvent(new PointerEvent('pointerout', { bubbles: true, composed: true, relatedTarget: document.body }));
+    #|  button.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, composed: true, relatedTarget: document.body }));
+    #|  return JSON.stringify(logs);
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="[\"inner:pointerover:true\",\"shadow:pointerover:true\",\"host:pointerover:true\",\"doc:pointerover:true\",\"inner:mouseover:true\",\"shadow:mouseover:true\",\"host:mouseover:true\",\"doc:mouseover:true\",\"inner:pointerout:true\",\"shadow:pointerout:true\",\"host:pointerout:true\",\"doc:pointerout:true\",\"inner:mouseout:true\",\"shadow:mouseout:true\",\"host:mouseout:true\",\"doc:mouseout:true\"]",
+  )
+}
+
+///|
+test "pointerover/out and mouseover/out on slotted descendant keep light DOM target" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(() => {
+    #|  const host = document.createElement('div');
+    #|  document.body.appendChild(host);
+    #|  const shadow = host.attachShadow({ mode: 'open' });
+    #|  const slot = document.createElement('slot');
+    #|  slot.name = 'content';
+    #|  shadow.appendChild(slot);
+    #|  const button = document.createElement('button');
+    #|  button.slot = 'content';
+    #|  host.appendChild(button);
+    #|  const logs = [];
+    #|  for (const type of ['pointerover', 'mouseover', 'pointerout', 'mouseout']) {
+    #|    button.addEventListener(type, (event) => logs.push('inner:' + type + ':' + String(event.target === button)));
+    #|    host.addEventListener(type, (event) => logs.push('host:' + type + ':' + String(event.target === button)));
+    #|    document.addEventListener(type, (event) => logs.push('doc:' + type + ':' + String(event.target === button)));
+    #|  }
+    #|  button.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, composed: true, relatedTarget: null }));
+    #|  button.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, composed: true, relatedTarget: null }));
+    #|  button.dispatchEvent(new PointerEvent('pointerout', { bubbles: true, composed: true, relatedTarget: document.body }));
+    #|  button.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, composed: true, relatedTarget: document.body }));
+    #|  return JSON.stringify(logs);
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="[\"inner:pointerover:true\",\"host:pointerover:true\",\"doc:pointerover:true\",\"inner:mouseover:true\",\"host:mouseover:true\",\"doc:mouseover:true\",\"inner:pointerout:true\",\"host:pointerout:true\",\"doc:pointerout:true\",\"inner:mouseout:true\",\"host:mouseout:true\",\"doc:mouseout:true\"]",
+  )
+}
+
+///|
+test "pointerenter/leave and mouseenter/leave on shadow descendant do not bubble outside shadow root" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(() => {
+    #|  const host = document.createElement('div');
+    #|  document.body.appendChild(host);
+    #|  const shadow = host.attachShadow({ mode: 'open' });
+    #|  const button = document.createElement('button');
+    #|  shadow.appendChild(button);
+    #|  const logs = [];
+    #|  for (const type of ['pointerenter', 'mouseenter', 'pointerleave', 'mouseleave']) {
+    #|    button.addEventListener(type, (event) => logs.push('inner:' + type + ':' + String(event.target === button)));
+    #|    shadow.addEventListener(type, (event) => logs.push('shadow:' + type + ':' + String(event.target === button)));
+    #|    host.addEventListener(type, (event) => logs.push('host:' + type + ':' + String(event.target === host)));
+    #|    document.addEventListener(type, (event) => logs.push('doc:' + type + ':' + String(event.target === host)));
+    #|  }
+    #|  button.dispatchEvent(new PointerEvent('pointerenter', { bubbles: false, composed: true, relatedTarget: null }));
+    #|  button.dispatchEvent(new MouseEvent('mouseenter', { bubbles: false, composed: true, relatedTarget: null }));
+    #|  button.dispatchEvent(new PointerEvent('pointerleave', { bubbles: false, composed: true, relatedTarget: document.body }));
+    #|  button.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false, composed: true, relatedTarget: document.body }));
+    #|  return JSON.stringify(logs);
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="[\"inner:pointerenter:true\",\"inner:mouseenter:true\",\"inner:pointerleave:true\",\"inner:mouseleave:true\"]",
+  )
+}
+
+///|
+test "pointerenter/leave and mouseenter/leave on slotted descendant keep light DOM target and do not bubble" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(() => {
+    #|  const host = document.createElement('div');
+    #|  document.body.appendChild(host);
+    #|  const shadow = host.attachShadow({ mode: 'open' });
+    #|  const slot = document.createElement('slot');
+    #|  slot.name = 'content';
+    #|  shadow.appendChild(slot);
+    #|  const button = document.createElement('button');
+    #|  button.slot = 'content';
+    #|  host.appendChild(button);
+    #|  const logs = [];
+    #|  for (const type of ['pointerenter', 'mouseenter', 'pointerleave', 'mouseleave']) {
+    #|    button.addEventListener(type, (event) => logs.push('inner:' + type + ':' + String(event.target === button)));
+    #|    host.addEventListener(type, (event) => logs.push('host:' + type + ':' + String(event.target === button)));
+    #|    document.addEventListener(type, (event) => logs.push('doc:' + type + ':' + String(event.target === button)));
+    #|  }
+    #|  button.dispatchEvent(new PointerEvent('pointerenter', { bubbles: false, composed: true, relatedTarget: null }));
+    #|  button.dispatchEvent(new MouseEvent('mouseenter', { bubbles: false, composed: true, relatedTarget: null }));
+    #|  button.dispatchEvent(new PointerEvent('pointerleave', { bubbles: false, composed: true, relatedTarget: document.body }));
+    #|  button.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false, composed: true, relatedTarget: document.body }));
+    #|  return JSON.stringify(logs);
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="[\"inner:pointerenter:true\",\"inner:mouseenter:true\",\"inner:pointerleave:true\",\"inner:mouseleave:true\"]",
+  )
+}
+
+///|
+test "pointerover/out between shadow descendants stays inside shadow root" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(() => {
+    #|  const host = document.createElement('div');
+    #|  document.body.appendChild(host);
+    #|  const shadow = host.attachShadow({ mode: 'open' });
+    #|  const left = document.createElement('button');
+    #|  left.id = 'left';
+    #|  const right = document.createElement('button');
+    #|  right.id = 'right';
+    #|  shadow.appendChild(left);
+    #|  shadow.appendChild(right);
+    #|  const logs = [];
+    #|  for (const type of ['pointerover', 'mouseover', 'pointerout', 'mouseout']) {
+    #|    left.addEventListener(type, (event) => logs.push('left:' + type + ':' + (event.relatedTarget ? event.relatedTarget.id : 'none')));
+    #|    right.addEventListener(type, (event) => logs.push('right:' + type + ':' + (event.relatedTarget ? event.relatedTarget.id : 'none')));
+    #|    shadow.addEventListener(type, (event) => logs.push('shadow:' + type + ':' + (event.target.id || '')));
+    #|    host.addEventListener(type, (event) => logs.push('host:' + type + ':' + String(event.target === host) + ':' + (event.relatedTarget === host)));
+    #|    document.addEventListener(type, (event) => logs.push('doc:' + type + ':' + String(event.target === host) + ':' + (event.relatedTarget === host)));
+    #|  }
+    #|  left.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, composed: true, relatedTarget: null }));
+    #|  left.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, composed: true, relatedTarget: null }));
+    #|  left.dispatchEvent(new PointerEvent('pointerout', { bubbles: true, composed: true, relatedTarget: right }));
+    #|  left.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, composed: true, relatedTarget: right }));
+    #|  right.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, composed: true, relatedTarget: left }));
+    #|  right.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, composed: true, relatedTarget: left }));
+    #|  return JSON.stringify(logs);
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="[\"left:pointerover:none\",\"shadow:pointerover:left\",\"host:pointerover:true:false\",\"doc:pointerover:true:false\",\"left:mouseover:none\",\"shadow:mouseover:left\",\"host:mouseover:true:false\",\"doc:mouseover:true:false\",\"left:pointerout:right\",\"shadow:pointerout:left\",\"left:mouseout:right\",\"shadow:mouseout:left\",\"right:pointerover:left\",\"shadow:pointerover:right\",\"right:mouseover:left\",\"shadow:mouseover:right\"]",
+  )
+}
+
+///|
+test "pointerover/out between slotted descendants keeps light DOM target and relatedTarget outside shadow root" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(() => {
+    #|  const host = document.createElement('div');
+    #|  document.body.appendChild(host);
+    #|  const shadow = host.attachShadow({ mode: 'open' });
+    #|  const slot = document.createElement('slot');
+    #|  slot.name = 'content';
+    #|  shadow.appendChild(slot);
+    #|  const left = document.createElement('button');
+    #|  left.id = 'left';
+    #|  left.slot = 'content';
+    #|  const right = document.createElement('button');
+    #|  right.id = 'right';
+    #|  right.slot = 'content';
+    #|  host.appendChild(left);
+    #|  host.appendChild(right);
+    #|  const logs = [];
+    #|  for (const type of ['pointerover', 'mouseover', 'pointerout', 'mouseout']) {
+    #|    left.addEventListener(type, (event) => logs.push('left:' + type + ':' + (event.relatedTarget ? event.relatedTarget.id : 'none')));
+    #|    right.addEventListener(type, (event) => logs.push('right:' + type + ':' + (event.relatedTarget ? event.relatedTarget.id : 'none')));
+    #|    host.addEventListener(type, (event) => logs.push('host:' + type + ':' + (event.target ? event.target.id : '') + ':' + (event.relatedTarget ? event.relatedTarget.id : 'none')));
+    #|    document.addEventListener(type, (event) => logs.push('doc:' + type + ':' + (event.target ? event.target.id : '') + ':' + (event.relatedTarget ? event.relatedTarget.id : 'none')));
+    #|  }
+    #|  left.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, composed: true, relatedTarget: null }));
+    #|  left.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, composed: true, relatedTarget: null }));
+    #|  left.dispatchEvent(new PointerEvent('pointerout', { bubbles: true, composed: true, relatedTarget: right }));
+    #|  left.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, composed: true, relatedTarget: right }));
+    #|  right.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, composed: true, relatedTarget: left }));
+    #|  right.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, composed: true, relatedTarget: left }));
+    #|  return JSON.stringify(logs);
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="[\"left:pointerover:none\",\"host:pointerover:left:none\",\"doc:pointerover:left:none\",\"left:mouseover:none\",\"host:mouseover:left:none\",\"doc:mouseover:left:none\",\"left:pointerout:right\",\"host:pointerout:left:right\",\"doc:pointerout:left:right\",\"left:mouseout:right\",\"host:mouseout:left:right\",\"doc:mouseout:left:right\",\"right:pointerover:left\",\"host:pointerover:right:left\",\"doc:pointerover:right:left\",\"right:mouseover:left\",\"host:mouseover:right:left\",\"doc:mouseover:right:left\"]",
+  )
+}
+
+///|
+test "pointerenter/leave between slotted descendants keeps relatedTarget and does not leak outside shadow root" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(() => {
+    #|  const host = document.createElement('div');
+    #|  document.body.appendChild(host);
+    #|  const shadow = host.attachShadow({ mode: 'open' });
+    #|  const slot = document.createElement('slot');
+    #|  slot.name = 'content';
+    #|  shadow.appendChild(slot);
+    #|  const left = document.createElement('button');
+    #|  left.id = 'left';
+    #|  left.slot = 'content';
+    #|  const right = document.createElement('button');
+    #|  right.id = 'right';
+    #|  right.slot = 'content';
+    #|  host.appendChild(left);
+    #|  host.appendChild(right);
+    #|  const logs = [];
+    #|  for (const type of ['pointerenter', 'mouseenter', 'pointerleave', 'mouseleave']) {
+    #|    left.addEventListener(type, (event) => logs.push('left:' + type + ':' + (event.relatedTarget ? event.relatedTarget.id : 'none')));
+    #|    right.addEventListener(type, (event) => logs.push('right:' + type + ':' + (event.relatedTarget ? event.relatedTarget.id : 'none')));
+    #|    host.addEventListener(type, (event) => logs.push('host:' + type + ':' + (event.target ? event.target.id : '') + ':' + (event.relatedTarget ? event.relatedTarget.id : 'none')));
+    #|    document.addEventListener(type, (event) => logs.push('doc:' + type + ':' + (event.target ? event.target.id : '') + ':' + (event.relatedTarget ? event.relatedTarget.id : 'none')));
+    #|  }
+    #|  left.dispatchEvent(new PointerEvent('pointerenter', { bubbles: false, composed: true, relatedTarget: null }));
+    #|  left.dispatchEvent(new MouseEvent('mouseenter', { bubbles: false, composed: true, relatedTarget: null }));
+    #|  left.dispatchEvent(new PointerEvent('pointerleave', { bubbles: false, composed: true, relatedTarget: right }));
+    #|  left.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false, composed: true, relatedTarget: right }));
+    #|  right.dispatchEvent(new PointerEvent('pointerenter', { bubbles: false, composed: true, relatedTarget: left }));
+    #|  right.dispatchEvent(new MouseEvent('mouseenter', { bubbles: false, composed: true, relatedTarget: left }));
+    #|  return JSON.stringify(logs);
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="[\"left:pointerenter:none\",\"left:mouseenter:none\",\"left:pointerleave:right\",\"left:mouseleave:right\",\"right:pointerenter:left\",\"right:mouseenter:left\"]",
+  )
+}
+
+///|
+test "slot assignedNodes distributes default and named light DOM children" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|const shadow = host.attachShadow({ mode: 'open' });
+    #|shadow.innerHTML = '<slot></slot><slot name="label"></slot>';
+    #|const slots = shadow.querySelectorAll('slot');
+    #|const defaultSlot = slots[0];
+    #|const namedSlot = slots[1];
+    #|const text = document.createTextNode('hello');
+    #|const plain = document.createElement('span');
+    #|plain.id = 'plain';
+    #|const named = document.createElement('em');
+    #|named.id = 'named';
+    #|named.slot = 'label';
+    #|host.appendChild(text);
+    #|host.appendChild(plain);
+    #|host.appendChild(named);
+    #|[
+    #|  defaultSlot.assignedNodes().length,
+    #|  defaultSlot.assignedNodes()[0] === text,
+    #|  defaultSlot.assignedNodes()[1] === plain,
+    #|  namedSlot.assignedNodes().length,
+    #|  namedSlot.assignedNodes()[0] === named,
+    #|  namedSlot.assignedElements().length,
+    #|  namedSlot.assignedElements()[0] === named,
+    #|].join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="2|true|true|1|true|1|true")
+}
+
+///|
+test "slot assignedNodes falls back to slot children when no assignment exists" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|const shadow = host.attachShadow({ mode: 'open' });
+    #|shadow.innerHTML = '<slot name="missing"><span id="fb">fallback</span></slot>';
+    #|const slot = shadow.querySelector('slot');
+    #|const fallbackNode = slot.assignedNodes()[0];
+    #|const fallbackEl = slot.assignedElements()[0];
+    #|[slot.assignedNodes().length, fallbackNode.id, slot.assignedElements().length, fallbackEl.id].join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="1|fb|1|fb")
+}
+
+///|
+test "slot assignedNodes with flatten traverses nested fallback slots" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|const shadow = host.attachShadow({ mode: 'open' });
+    #|shadow.innerHTML = '<slot id="outer"><slot name="inner"><span id="fb">fallback</span></slot></slot>';
+    #|const outer = shadow.getElementById('outer');
+    #|const nested = outer.assignedNodes()[0];
+    #|const flatNode = outer.assignedNodes({ flatten: true })[0];
+    #|const flatEl = outer.assignedElements({ flatten: true })[0];
+    #|[
+    #|  outer.assignedNodes().length,
+    #|  nested.localName,
+    #|  outer.assignedNodes({ flatten: true }).length,
+    #|  flatNode.id,
+    #|  outer.assignedElements({ flatten: true }).length,
+    #|  flatEl.id,
+    #|].join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="1|slot|1|fb|1|fb")
+}
+
+///|
+test "slot assignedNodes with flatten resolves nested slot assignments" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|const shadow = host.attachShadow({ mode: 'open' });
+    #|shadow.innerHTML = '<slot id="outer"><slot name="inner"></slot></slot>';
+    #|const outer = shadow.getElementById('outer');
+    #|const child = document.createElement('span');
+    #|child.id = 'assigned';
+    #|child.slot = 'inner';
+    #|host.appendChild(child);
+    #|[
+    #|  outer.assignedNodes().length,
+    #|  outer.assignedNodes()[0].localName,
+    #|  outer.assignedNodes({ flatten: true }).length,
+    #|  outer.assignedNodes({ flatten: true })[0] === child,
+    #|  outer.assignedElements({ flatten: true }).length,
+    #|  outer.assignedElements({ flatten: true })[0] === child,
+    #|].join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="1|slot|1|true|1|true")
+}
+
+///|
+test "slotable nodes expose assignedSlot for default and named slots" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|const shadow = host.attachShadow({ mode: 'open' });
+    #|shadow.innerHTML = '<slot id="default-slot"></slot><slot id="named-slot" name="label"></slot>';
+    #|const text = document.createTextNode('hello');
+    #|const plain = document.createElement('span');
+    #|const named = document.createElement('em');
+    #|named.slot = 'label';
+    #|host.appendChild(text);
+    #|host.appendChild(plain);
+    #|host.appendChild(named);
+    #|[
+    #|  text.assignedSlot.id,
+    #|  plain.assignedSlot.id,
+    #|  named.assignedSlot.id,
+    #|  document.createElement('i').assignedSlot === null,
+    #|].join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="default-slot|default-slot|named-slot|true")
+}
+
+///|
+test "assignedSlot prefers the first matching slot and ignores unmatched nodes" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|const shadow = host.attachShadow({ mode: 'open' });
+    #|shadow.innerHTML = '<slot id="first"></slot><slot id="second"><span id="fb">fallback</span></slot><slot id="named" name="label"></slot>';
+    #|const first = shadow.getElementById('first');
+    #|const second = shadow.getElementById('second');
+    #|const fallback = shadow.getElementById('fb');
+    #|const plain = document.createElement('span');
+    #|const missing = document.createElement('em');
+    #|missing.slot = 'missing';
+    #|host.appendChild(plain);
+    #|host.appendChild(missing);
+    #|[
+    #|  plain.assignedSlot.id,
+    #|  first.assignedNodes().length,
+    #|  second.assignedNodes().length,
+    #|  second.assignedNodes()[0].id,
+    #|  missing.assignedSlot === null,
+    #|  fallback.assignedSlot === null,
+    #|].join('|')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="first|1|1|fb|true|true")
+}
+
+///|
+test "slotchange fires after default slot assignment changes" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let setup =
+    #|globalThis.__slotChangeCount = 0;
+    #|globalThis.__slotAssignedLength = 0;
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|const shadow = host.attachShadow({ mode: 'open' });
+    #|shadow.innerHTML = '<slot></slot>';
+    #|const slot = shadow.querySelector('slot');
+    #|slot.addEventListener('slotchange', () => {
+    #|  globalThis.__slotChangeCount += 1;
+    #|  globalThis.__slotAssignedLength = slot.assignedNodes().length;
+    #|});
+    #|host.appendChild(document.createElement('span'));
+    #|'ok'
+  let setup_result = ctx.execute(setup)
+  inspect(setup_result.success, content="true")
+  inspect(setup_result.value, content="ok")
+
+  let verify = ctx.execute(
+    "[globalThis.__slotChangeCount, globalThis.__slotAssignedLength].join('|')",
+  )
+  inspect(verify.success, content="true")
+  inspect(verify.value, content="1|1")
+}
+
+///|
+test "slotchange fires for old and new slot when slot attribute reassigns node" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let setup =
+    #|globalThis.__slotReassignLog = [];
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|const shadow = host.attachShadow({ mode: 'open' });
+    #|shadow.innerHTML = '<slot></slot><slot name="label"></slot>';
+    #|const slots = shadow.querySelectorAll('slot');
+    #|const defaultSlot = slots[0];
+    #|const namedSlot = slots[1];
+    #|defaultSlot.addEventListener('slotchange', () => {
+    #|  globalThis.__slotReassignLog.push('default:' + defaultSlot.assignedNodes().length);
+    #|});
+    #|namedSlot.addEventListener('slotchange', () => {
+    #|  globalThis.__slotReassignLog.push('named:' + namedSlot.assignedNodes().length);
+    #|});
+    #|const child = document.createElement('span');
+    #|host.appendChild(child);
+    #|globalThis.__slotReassignLog = [];
+    #|child.slot = 'label';
+    #|'ok'
+  let setup_result = ctx.execute(setup)
+  inspect(setup_result.success, content="true")
+  inspect(setup_result.value, content="ok")
+
+  let verify = ctx.execute("globalThis.__slotReassignLog.join('|')")
+  inspect(verify.success, content="true")
+  inspect(verify.value, content="default:0|named:1")
+}
+
+///|
 test "insertAdjacent validates element arguments and detached beforebegin returns null" {
   let dom = @dom.DomTree::new()
   let html = dom.create_element("html")

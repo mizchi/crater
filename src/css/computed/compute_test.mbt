@@ -717,6 +717,16 @@ test "white-space inherits from parent style" {
 }
 
 ///|
+test "text-overflow computes to ellipsis and is not inherited" {
+  let root_ctx = @computed.ComputeContext::new()
+  let parent = @computed.compute_inline("text-overflow: ellipsis", root_ctx)
+  inspect(parent.text_overflow, content="Ellipsis")
+  let child_ctx = @computed.ComputeContext::with_parent(parent)
+  let child = @computed.compute_inline("", child_ctx)
+  inspect(child.text_overflow, content="Clip")
+}
+
+///|
 test "pointer-events inherits from parent style" {
   let root_ctx = @computed.ComputeContext::new()
   let parent = @computed.compute_inline("pointer-events: none", root_ctx)
@@ -1125,4 +1135,35 @@ test "parse_linear_gradient basic" {
       #|Gradient({angle_deg: 135, stops: [{color: rgb(102, 126, 234), position: 0}, {color: rgb(118, 75, 162), position: 1}]})
     ),
   )
+}
+
+///|
+test "compute_inline box-shadow parses multiple and inset shadows" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "box-shadow: 2px 4px 8px rgba(0,0,0,0.25), inset 0 2px 6px #112233", ctx,
+  )
+
+  inspect(style.box_shadows.length(), content="2")
+
+  let first = style.box_shadows[0]
+  inspect(first.inset, content="false")
+  inspect(first.offset_x, content="2")
+  inspect(first.offset_y, content="4")
+  inspect(first.blur_radius, content="8")
+  inspect(first.spread_radius, content="0")
+  inspect(first.color.r, content="0")
+  inspect(first.color.g, content="0")
+  inspect(first.color.b, content="0")
+  inspect(first.color.a, content="0.25")
+
+  let second = style.box_shadows[1]
+  inspect(second.inset, content="true")
+  inspect(second.offset_x, content="0")
+  inspect(second.offset_y, content="2")
+  inspect(second.blur_radius, content="6")
+  inspect(second.spread_radius, content="0")
+  inspect(second.color.r, content="17")
+  inspect(second.color.g, content="34")
+  inspect(second.color.b, content="51")
 }

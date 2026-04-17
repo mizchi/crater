@@ -153,3 +153,65 @@ test "Document set_attribute records mutation" {
   let _ = doc.process_mutations()
   inspect(doc.dom.has_pending_mutations(), content="false")
 }
+
+///|
+test "Document rebuilds layout from shadow root composed children" {
+  let doc = Document::new(800.0, 600.0)
+  let root = doc.get_document_root()
+  let host = doc.create_element("div")
+  let light = doc.create_element("span")
+  let shadow_child = doc.create_element("p")
+  let _ = doc.append_child(root, host)
+  let _ = doc.append_child(host, light)
+  let _ = doc.process_mutations()
+
+  let shadow = doc.dom.attach_shadow(host, "open").unwrap()
+  let _ = doc.dom.append_child(shadow, shadow_child)
+  let _ = doc.process_mutations()
+
+  inspect(doc.dom_to_layout.contains(host.to_int()), content="true")
+  inspect(doc.dom_to_layout.contains(shadow_child.to_int()), content="true")
+  inspect(doc.dom_to_layout.contains(light.to_int()), content="false")
+
+  let host_uid = doc.dom_to_layout.get(host.to_int()).unwrap()
+  let host_node = doc.layout.find_node(host_uid).unwrap()
+  inspect(host_node.children.length(), content="1")
+  inspect(host_node.children[0].id, content=shadow_child.to_int().to_string())
+}
+
+///|
+test "Document rebuilds layout when slot reassignment changes composed child" {
+  let doc = Document::new(800.0, 600.0)
+  let root = doc.get_document_root()
+  let host = doc.create_element("div")
+  let light = doc.create_element("span")
+  let fallback = doc.create_element("i")
+  let named_slot = doc.create_element("slot")
+  let shadow = doc.dom.attach_shadow(host, "open").unwrap()
+
+  let _ = doc.append_child(root, host)
+  let _ = doc.append_child(host, light)
+  let _ = doc.dom.set_attribute(named_slot, "name", "label")
+  let _ = doc.dom.append_child(named_slot, fallback)
+  let _ = doc.dom.append_child(shadow, named_slot)
+  let _ = doc.process_mutations()
+
+  let host_uid_before = doc.dom_to_layout.get(host.to_int()).unwrap()
+  let host_node_before = doc.layout.find_node(host_uid_before).unwrap()
+  inspect(host_node_before.children.length(), content="1")
+  inspect(
+    host_node_before.children[0].id,
+    content=fallback.to_int().to_string(),
+  )
+  inspect(doc.dom_to_layout.contains(light.to_int()), content="false")
+
+  let _ = doc.set_attribute(light, "slot", "label")
+  let _ = doc.process_mutations()
+
+  let host_uid_after = doc.dom_to_layout.get(host.to_int()).unwrap()
+  let host_node_after = doc.layout.find_node(host_uid_after).unwrap()
+  inspect(host_node_after.children.length(), content="1")
+  inspect(host_node_after.children[0].id, content=light.to_int().to_string())
+  inspect(doc.dom_to_layout.contains(light.to_int()), content="true")
+  inspect(doc.dom_to_layout.contains(fallback.to_int()), content="false")
+}

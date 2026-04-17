@@ -1,9 +1,13 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   buildPlaywrightSummary,
   renderPlaywrightMarkdown,
   type PlaywrightJsonReport,
 } from "./playwright-report-summary-core.ts";
+import { runPlaywrightReportSummaryCli } from "./playwright-report-summary.ts";
 
 function makeReport(): PlaywrightJsonReport {
   return {
@@ -178,5 +182,69 @@ describe("renderPlaywrightMarkdown", () => {
     expect(markdown).toContain("## Flaky / Retried Tests");
     expect(markdown).toContain("locator count");
     expect(markdown).toContain("failed -> passed");
+  });
+});
+
+describe("runPlaywrightReportSummaryCli", () => {
+  it("writes collect-compatible copies when report outputs are requested", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "crater-playwright-summary-"));
+    fs.writeFileSync(
+      path.join(root, "playwright-report.json"),
+      `${JSON.stringify(makeReport())}\n`,
+      "utf8",
+    );
+
+    const result = runPlaywrightReportSummaryCli([
+      "--input",
+      "playwright-report.json",
+      "--label",
+      "paint-vrt",
+      "--json",
+      "out/paint-vrt.json",
+      "--markdown",
+      "out/paint-vrt.md",
+    ], {
+      cwd: root,
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.writes?.map((write) => path.relative(root, write.path))).toEqual([
+      "out/paint-vrt.md",
+      "out/paint-vrt.json",
+      "out/paint-vrt/playwright-summary/paint-vrt.md",
+      "out/paint-vrt/playwright-summary/paint-vrt.json",
+    ]);
+  });
+
+  it("supports a separate collect task id from the display label", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "crater-playwright-summary-task-id-"));
+    fs.writeFileSync(
+      path.join(root, "playwright-report.json"),
+      `${JSON.stringify(makeReport())}\n`,
+      "utf8",
+    );
+
+    const result = runPlaywrightReportSummaryCli([
+      "--input",
+      "playwright-report.json",
+      "--label",
+      "paint-vrt-artifacts",
+      "--collect-task-id",
+      "paint-vrt",
+      "--json",
+      "out/paint-vrt-artifacts.json",
+      "--markdown",
+      "out/paint-vrt-artifacts.md",
+    ], {
+      cwd: root,
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.writes?.map((write) => path.relative(root, write.path))).toEqual([
+      "out/paint-vrt-artifacts.md",
+      "out/paint-vrt-artifacts.json",
+      "out/paint-vrt/playwright-summary/paint-vrt.md",
+      "out/paint-vrt/playwright-summary/paint-vrt.json",
+    ]);
   });
 });

@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     include: [
       "scripts/**/*.test.ts",
+      "tests/helpers/**/*.test.ts",
     ],
     exclude: [
       "**/node_modules/**",

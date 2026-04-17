@@ -177,6 +177,36 @@ fn write_sixel_row_compressed(
 }
 
 ///|
+fn color_percent_string(value : Int) -> String {
+  (value * 100 / 255).to_string()
+}
+
+///|
+fn build_sixel_palette_definition(colors : Array[Color]) -> String {
+  let buf = StringBuilder::new()
+  for i, color in colors {
+    buf.write_string("#")
+    buf.write_string(i.to_string())
+    buf.write_string(";2;")
+    buf.write_string(color_percent_string(color.r))
+    buf.write_string(";")
+    buf.write_string(color_percent_string(color.g))
+    buf.write_string(";")
+    buf.write_string(color_percent_string(color.b))
+  }
+  buf.to_string()
+}
+
+///|
+fn build_sixel_color_headers(count : Int) -> Array[String] {
+  let headers : Array[String] = []
+  for i = 0; i < count; i = i + 1 {
+    headers.push("#" + i.to_string())
+  }
+  headers
+}
+
+///|
 /// Simple framebuffer for rendering
 pub struct Framebuffer {
   width : Int
@@ -502,22 +532,14 @@ fn Palette::extended() -> Palette {
 pub fn to_sixel(fb : Framebuffer) -> String {
   let buf = StringBuilder::new()
   let palette = Palette::new()
+  let color_headers = build_sixel_color_headers(palette.colors.length())
 
   // Sixel start sequence: ESC P q
   buf.write_string("\u001bPq")
 
   // Define color palette
   // Format: #n;2;r;g;b (RGB in 0-100 range)
-  for i, color in palette.colors {
-    buf.write_string("#")
-    buf.write_string(i.to_string())
-    buf.write_string(";2;")
-    buf.write_string((color.r * 100 / 255).to_string())
-    buf.write_string(";")
-    buf.write_string((color.g * 100 / 255).to_string())
-    buf.write_string(";")
-    buf.write_string((color.b * 100 / 255).to_string())
-  }
+  buf.write_string(build_sixel_palette_definition(palette.colors))
 
   // Process in bands of 6 pixels height
   let num_bands = (fb.height + 5) / 6
@@ -529,8 +551,7 @@ pub fn to_sixel(fb : Framebuffer) -> String {
         color_idx < palette.colors.length()
         color_idx = color_idx + 1 {
       // Select color
-      buf.write_string("#")
-      buf.write_string(color_idx.to_string())
+      buf.write_string(color_headers[color_idx])
 
       // Encode row
       for x = 0; x < fb.width; x = x + 1 {
@@ -552,11 +573,11 @@ pub fn to_sixel(fb : Framebuffer) -> String {
       }
 
       // Carriage return (go back to start of row)
-      buf.write_string("$")
+      buf.write_char('$')
     }
 
     // Line feed (move to next band)
-    buf.write_string("-")
+    buf.write_char('-')
   }
 
   // Sixel end sequence: ESC \
@@ -569,21 +590,13 @@ pub fn to_sixel(fb : Framebuffer) -> String {
 pub fn to_sixel_extended(fb : Framebuffer) -> String {
   let buf = StringBuilder::new()
   let palette = Palette::extended()
+  let color_headers = build_sixel_color_headers(palette.colors.length())
 
   // Sixel start sequence: ESC P q
   buf.write_string("\u001bPq")
 
   // Define color palette
-  for i, color in palette.colors {
-    buf.write_string("#")
-    buf.write_string(i.to_string())
-    buf.write_string(";2;")
-    buf.write_string((color.r * 100 / 255).to_string())
-    buf.write_string(";")
-    buf.write_string((color.g * 100 / 255).to_string())
-    buf.write_string(";")
-    buf.write_string((color.b * 100 / 255).to_string())
-  }
+  buf.write_string(build_sixel_palette_definition(palette.colors))
 
   // Process in bands of 6 pixels height
   let num_bands = (fb.height + 5) / 6
@@ -592,8 +605,7 @@ pub fn to_sixel_extended(fb : Framebuffer) -> String {
     for color_idx = 0
         color_idx < palette.colors.length()
         color_idx = color_idx + 1 {
-      buf.write_string("#")
-      buf.write_string(color_idx.to_string())
+      buf.write_string(color_headers[color_idx])
       for x = 0; x < fb.width; x = x + 1 {
         let mut sixel_value = 0
         let bit_masks = [1, 2, 4, 8, 16, 32]
@@ -609,9 +621,9 @@ pub fn to_sixel_extended(fb : Framebuffer) -> String {
         let ch = (63 + sixel_value).unsafe_to_char()
         buf.write_char(ch)
       }
-      buf.write_string("$")
+      buf.write_char('$')
     }
-    buf.write_string("-")
+    buf.write_char('-')
   }
   buf.write_string("\u001b\\")
   buf.to_string()
@@ -1109,6 +1121,11 @@ fn collect_colors(
       types_color_to_sixel(node.paint.background_color),
     )
   }
+  for shadow in node.paint.box_shadows {
+    if !shadow.color.is_transparent() {
+      let _ = palette.get_or_add(types_color_to_sixel(shadow.color))
+    }
+  }
   // Add text color
   let _ = palette.get_or_add(types_color_to_sixel(node.paint.color))
 
@@ -1205,6 +1222,40 @@ fn fill_rect_clipped(
         )
       }
     }
+  }
+}
+
+///|
+fn fill_box_shadow_clipped(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  x : Int,
+  y : Int,
+  w : Int,
+  h : Int,
+  color : @types.Color,
+  opacity : Double,
+  clip : ClipRect?,
+  spread : Int,
+  tl : Int,
+  tr : Int,
+  br : Int,
+  bl : Int,
+) -> Unit {
+  if w <= 0 || h <= 0 || color.is_transparent() {
+    return
+  }
+  let draw_tl = @cmp.maximum(tl + spread, 0)
+  let draw_tr = @cmp.maximum(tr + spread, 0)
+  let draw_br = @cmp.maximum(br + spread, 0)
+  let draw_bl = @cmp.maximum(bl + spread, 0)
+  let has_radius = draw_tl > 0 || draw_tr > 0 || draw_br > 0 || draw_bl > 0
+  if has_radius {
+    fill_rounded_rect_clipped(
+      fb, palette, x, y, w, h, color, opacity, clip, draw_tl, draw_tr, draw_br, draw_bl,
+    )
+  } else {
+    fill_rect_clipped(fb, palette, x, y, w, h, color, opacity, clip)
   }
 }
 
@@ -1587,6 +1638,33 @@ fn render_paint_node_clipped(
   )
   let has_radius = tl_r > 0 || tr_r > 0 || br_r > 0 || bl_r > 0
 
+  for shadow in node.paint.box_shadows {
+    if shadow.inset || shadow.color.is_transparent() {
+      continue
+    }
+    let spread = shadow.spread_radius.to_int()
+    let shadow_x = x + shadow.offset_x.to_int() - spread
+    let shadow_y = y + shadow.offset_y.to_int() - spread
+    let shadow_w = w + spread * 2
+    let shadow_h = h + spread * 2
+    fill_box_shadow_clipped(
+      fb,
+      palette,
+      shadow_x,
+      shadow_y,
+      shadow_w,
+      shadow_h,
+      shadow.color,
+      node.paint.opacity,
+      clip,
+      spread,
+      tl_r,
+      tr_r,
+      br_r,
+      bl_r,
+    )
+  }
+
   // Draw background: gradient or solid color
   match node.paint.background_image {
     @types.Gradient(grad) =>
@@ -1953,21 +2031,13 @@ fn render_svg_into_region(
 pub fn to_sixel_dynamic(fb : Framebuffer, palette : DynamicPalette) -> String {
   let buf = StringBuilder::new()
   let palette_len = palette.colors.length()
+  let color_headers = build_sixel_color_headers(palette_len)
 
   // Sixel start sequence: ESC P q
   buf.write_string("\u001bPq")
 
   // Define color palette
-  for i, color in palette.colors {
-    buf.write_string("#")
-    buf.write_string(i.to_string())
-    buf.write_string(";2;")
-    buf.write_string((color.r * 100 / 255).to_string())
-    buf.write_string(";")
-    buf.write_string((color.g * 100 / 255).to_string())
-    buf.write_string(";")
-    buf.write_string((color.b * 100 / 255).to_string())
-  }
+  buf.write_string(build_sixel_palette_definition(palette.colors))
 
   // Process in bands of 6 pixels height
   let num_bands = (fb.height + 5) / 6
@@ -1993,13 +2063,12 @@ pub fn to_sixel_dynamic(fb : Framebuffer, palette : DynamicPalette) -> String {
       if !active_colors[color_idx] {
         continue
       }
-      buf.write_string("#")
-      buf.write_string(color_idx.to_string())
+      buf.write_string(color_headers[color_idx])
       let row_base = color_idx * fb.width
       write_sixel_row_compressed(buf, band_rows, row_base, fb.width)
-      buf.write_string("$")
+      buf.write_char('$')
     }
-    buf.write_string("-")
+    buf.write_char('-')
   }
   buf.write_string("\u001b\\")
   buf.to_string()

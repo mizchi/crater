@@ -76,6 +76,35 @@ pub fn parse_cache_control(header : String) -> CacheDirectives {
 }
 
 ///|
+/// Render CacheDirectives into a normalized Cache-Control header value.
+fn render_cache_control(directives : CacheDirectives) -> String {
+  let parts : Array[String] = []
+  if directives.public_ {
+    parts.push("public")
+  }
+  if directives.private_ {
+    parts.push("private")
+  }
+  match directives.max_age {
+    Some(max_age) => parts.push("max-age=" + max_age.to_string())
+    None => ()
+  }
+  if directives.no_cache {
+    parts.push("no-cache")
+  }
+  if directives.no_store {
+    parts.push("no-store")
+  }
+  if directives.must_revalidate {
+    parts.push("must-revalidate")
+  }
+  if directives.immutable {
+    parts.push("immutable")
+  }
+  parts.join(", ")
+}
+
+///|
 /// Parse an integer from a string, returning None on failure.
 fn parse_int_string(s : String) -> Int? {
   if s.length() == 0 {
@@ -105,6 +134,15 @@ pub(all) struct CacheEntry {
   directives : CacheDirectives
   stored_at : Double
 } derive(Debug)
+
+///|
+/// Shared cache backend contract used by cached_fetch.
+pub(open) trait HttpCacheBackend {
+  lookup(Self, String) -> CacheEntry?
+  store(Self, CacheEntry) -> Unit
+  remove(Self, String) -> Unit
+  clear(Self) -> Unit
+}
 
 ///|
 /// Check whether a cache entry is still fresh at the given time.

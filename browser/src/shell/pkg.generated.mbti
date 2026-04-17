@@ -43,6 +43,7 @@ pub async fn Browser::pointer_up_at(Self, Int, Int) -> Bool raise @http.HttpErro
 pub fn Browser::prev_link(Self) -> Unit
 pub fn Browser::process_hint_char(Self, String) -> String?
 pub fn Browser::render_output(Self, OutputMode) -> String
+pub fn Browser::render_text_full_page(Self) -> String
 pub fn Browser::scroll_down(Self, Int) -> Unit
 pub fn Browser::scroll_up(Self, Int) -> Unit
 pub fn Browser::set_dark_mode(Self, Bool) -> Unit

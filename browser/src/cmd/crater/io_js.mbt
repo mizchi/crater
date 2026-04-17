@@ -50,6 +50,72 @@ extern "js" fn js_write_text_file(path : String, content : String) -> Bool =
   #| }
 
 ///|
+fn load_first_font_candidate(paths : Array[String]) -> Bytes {
+  for path in paths {
+    let data = js_read_binary_file(path)
+    if data.length() > 100 {
+      return data
+    }
+  }
+  Bytes::new(0)
+}
+
+///|
+fn system_font_face_candidates() -> Array[(Array[String], Array[String])] {
+  [
+    (
+      [
+        "/System/Library/Fonts/Supplemental/Arial.ttf", "/Library/Fonts/Arial.ttf",
+      ],
+      [
+        "/System/Library/Fonts/Supplemental/Arial Bold.ttf", "/Library/Fonts/Arial Bold.ttf",
+      ],
+    ),
+    (
+      [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/TTF/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
+      ],
+      [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf",
+      ],
+    ),
+    (["/System/Library/Fonts/SFNS.ttf"], []),
+  ]
+}
+
+///|
+fn load_system_font_faces() -> (Bytes, Bytes) {
+  let candidates = system_font_face_candidates()
+  for candidate in candidates {
+    let (regular_paths, bold_paths) = candidate
+    let regular = load_first_font_candidate(regular_paths)
+    if regular.length() == 0 || bold_paths.is_empty() {
+      continue
+    }
+    let bold = load_first_font_candidate(bold_paths)
+    if bold.length() > 0 {
+      return (regular, bold)
+    }
+  }
+  for candidate in candidates {
+    let (regular_paths, bold_paths) = candidate
+    let regular = load_first_font_candidate(regular_paths)
+    if regular.length() == 0 {
+      continue
+    }
+    let bold = if bold_paths.is_empty() {
+      Bytes::new(0)
+    } else {
+      load_first_font_candidate(bold_paths)
+    }
+    return (regular, bold)
+  }
+  (Bytes::new(0), Bytes::new(0))
+}
+
+///|
 /// Read binary file as Bytes
 extern "js" fn js_read_binary_file(path : String) -> Bytes =
   #| (path) => {
@@ -62,25 +128,6 @@ extern "js" fn js_read_binary_file(path : String) -> Bytes =
   #|     return new Uint8Array(0);
   #|   }
   #| }
-
-///|
-/// Try to find and load a system font, returns font file bytes
-fn load_system_font() -> Bytes {
-  // macOS system font paths (in preference order)
-  let font_paths = [
-    // macOS: SF Pro (closest to -apple-system)
-    "/System/Library/Fonts/SFNS.ttf", "/System/Library/Fonts/Supplemental/Arial.ttf",
-    // Linux fallbacks
-     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/TTF/DejaVuSans.ttf",
-  ]
-  for path in font_paths {
-    let data = js_read_binary_file(path)
-    if data.length() > 100 {
-      return data
-    }
-  }
-  Bytes::new(0)
-}
 
 ///|
 fn read_text_file(path : String) -> String? {

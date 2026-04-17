@@ -1,3 +1,8 @@
+import {
+  buildStableIdentityKey,
+  normalizeStableIdentityVariant,
+} from "./stable-test-identity.ts";
+
 export type PlaywrightOutcome =
   | "passed"
   | "failed"
@@ -70,14 +75,7 @@ export interface PlaywrightSummary {
 export function normalizePlaywrightVariant(
   variant: Record<string, string> | null | undefined,
 ): Record<string, string> {
-  if (!variant) {
-    return {};
-  }
-  return Object.fromEntries(
-    Object.entries(variant)
-      .filter((entry) => entry[1].length > 0)
-      .sort((a, b) => a[0].localeCompare(b[0])),
-  );
+  return normalizeStableIdentityVariant(variant);
 }
 
 export function buildStablePlaywrightIdentity(input: {
@@ -88,17 +86,14 @@ export function buildStablePlaywrightIdentity(input: {
   variant?: Record<string, string> | null;
 }): PlaywrightStableIdentity {
   const variant = normalizePlaywrightVariant(input.variant);
-  const keyPayload: Record<string, unknown> = {
-    spec: input.spec,
-    suite: input.suite,
-    testName: input.testName,
-    titlePath: [...input.titlePath],
-  };
-  if (Object.keys(variant).length > 0) {
-    keyPayload.variant = variant;
-  }
   return {
-    key: JSON.stringify(keyPayload),
+    key: buildStableIdentityKey([
+      ["spec", input.spec],
+      ["suite", input.suite],
+      ["testName", input.testName],
+      ["titlePath", [...input.titlePath]],
+      Object.keys(variant).length > 0 ? ["variant", variant] : undefined,
+    ]),
     suite: input.suite,
     testName: input.testName,
     spec: input.spec,
