@@ -72,6 +72,38 @@ fn serialize_node_recursive(
           }
         Err(_) => ()
       }
+
+      match dom.get_shadow_root(node_id) {
+        Ok(Some(shadow_root_id)) => {
+          let shadow_int = shadow_root_id.to_int()
+          let mode = dom
+            .get_shadow_mode(shadow_root_id)
+            .unwrap_or(None)
+            .unwrap_or("open")
+          let mode = escape_js_string(mode)
+          buf.write_string(indent)
+          buf.write_string(
+            "_nodeMap.set(\{shadow_int}, _nodeMap.get(\{id}).attachShadow({ mode: '\{mode}' }));\n",
+          )
+          buf.write_string(indent)
+          buf.write_string(
+            "_nodeMap.get(\{shadow_int})._mockId = \{shadow_int};\n",
+          )
+          match dom.get_children(shadow_root_id) {
+            Ok(shadow_children) =>
+              for child_id in shadow_children {
+                serialize_node_recursive(dom, child_id, buf, depth)
+                let child_int = child_id.to_int()
+                buf.write_string(indent)
+                buf.write_string(
+                  "if (_nodeMap.has(\{child_int})) _nodeMap.get(\{shadow_int}).appendChild(_nodeMap.get(\{child_int}));\n",
+                )
+              }
+            Err(_) => ()
+          }
+        }
+        _ => ()
+      }
     }
     @dom.Text => {
       let text = dom.get_text_content(node_id)
@@ -99,7 +131,10 @@ fn serialize_node_recursive(
         Err(_) => ()
       }
     }
-    @dom.Document | @dom.DocumentType =>
+    @dom.Document
+    | @dom.DocumentType
+    | @dom.DocumentFragment
+    | @dom.ShadowRoot =>
       // Skip document nodes in serialization (handled separately)
       // Process children for Document
       match info.node_type {
@@ -160,7 +195,7 @@ pub fn serialize_dom_to_html(dom : @dom.DomTree) -> String {
   match dom.get_children(doc_id) {
     Ok(children) =>
       for child in children {
-        serialize_node_to_html(dom, child, buf)
+        serialize_node_to_html_in_context(dom, child, buf, None)
       }
     Err(_) => ()
   }
@@ -168,21 +203,18 @@ pub fn serialize_dom_to_html(dom : @dom.DomTree) -> String {
 }
 
 ///|
-fn serialize_node_to_html(
+fn serialize_node_to_html_in_context(
   dom : @dom.DomTree,
   node_id : @dom.NodeId,
   buf : StringBuilder,
+  shadow_host : @dom.NodeId?,
 ) -> Unit {
   let info = dom.get_node_info(node_id)
   guard info is Ok(info) else { return }
   match info.node_type {
     @dom.Document =>
-      match dom.get_children(node_id) {
-        Ok(children) =>
-          for child in children {
-            serialize_node_to_html(dom, child, buf)
-          }
-        Err(_) => ()
+      for child in dom.get_composed_children(node_id, shadow_host~) {
+        serialize_node_to_html_in_context(dom, child, buf, shadow_host)
       }
     @dom.DocumentType => {
       let name = info.node_name.to_lower()
@@ -196,7 +228,17 @@ fn serialize_node_to_html(
       buf.write_string(info.node_value)
       buf.write_string("-->")
     }
+    @dom.DocumentFragment | @dom.ShadowRoot =>
+      for child in dom.get_composed_children(node_id, shadow_host~) {
+        serialize_node_to_html_in_context(dom, child, buf, shadow_host)
+      }
     @dom.Element => {
+      if shadow_host != None && dom.is_slot_element(node_id) {
+        for child in dom.get_composed_children(node_id, shadow_host~) {
+          serialize_node_to_html_in_context(dom, child, buf, shadow_host)
+        }
+        return
+      }
       let tag = info.node_name
       buf.write_char('<')
       buf.write_string(tag)
@@ -216,12 +258,12 @@ fn serialize_node_to_html(
       if is_void_html_element(tag) {
         return
       }
-      match dom.get_children(node_id) {
-        Ok(children) =>
-          for child in children {
-            serialize_node_to_html(dom, child, buf)
-          }
-        Err(_) => ()
+      let child_shadow_host = match dom.get_shadow_root(node_id) {
+        Ok(Some(_)) => Some(node_id)
+        _ => shadow_host
+      }
+      for child in dom.get_composed_children(node_id, shadow_host~) {
+        serialize_node_to_html_in_context(dom, child, buf, child_shadow_host)
       }
       buf.write_string("</")
       buf.write_string(tag)
@@ -391,6 +433,34 @@ fn serialize_element_to_append(
         Err(_) => ()
       }
 
+      match dom.get_shadow_root(node_id) {
+        Ok(Some(shadow_root_id)) => {
+          let shadow_int = shadow_root_id.to_int()
+          let mode = dom
+            .get_shadow_mode(shadow_root_id)
+            .unwrap_or(None)
+            .unwrap_or("open")
+          let mode = escape_js_string(mode)
+          buf.write_string(
+            "  const shadow_\{shadow_int} = el_\{id}.attachShadow({ mode: '\{mode}' });\n",
+          )
+          buf.write_string("  shadow_\{shadow_int}._mockId = \{shadow_int};\n")
+          match dom.get_children(shadow_root_id) {
+            Ok(shadow_children) =>
+              for child_id in shadow_children {
+                serialize_element_to_append(
+                  dom,
+                  child_id,
+                  buf,
+                  "shadow_\{shadow_int}",
+                )
+              }
+            Err(_) => ()
+          }
+        }
+        _ => ()
+      }
+
       // Append to parent
       buf.write_string("  \{parent_var}.appendChild(el_\{id});\n")
     }
@@ -424,6 +494,9 @@ fn serialize_element_to_append(
         Err(_) => ()
       }
     }
-    _ => ()
+    @dom.DocumentFragment
+    | @dom.ShadowRoot
+    | @dom.Document
+    | @dom.DocumentType => ()
   }
 }

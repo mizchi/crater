@@ -469,6 +469,10 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       set(v) { this._parent = v; },
   #|       configurable: true
   #|     });
+  #|     Object.defineProperty(Node.prototype, 'assignedSlot', {
+  #|       get() { return getAssignedSlotForNode(this); },
+  #|       configurable: true
+  #|     });
   #|     Object.defineProperty(Node.prototype, 'parentElement', {
   #|       get() {
   #|         const p = this.parentNode;
@@ -595,7 +599,14 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           for (const source of sources) {
   #|             try {
   #|               const listener = eval('(' + source + ')');
-  #|               if (!store[eventType].includes(listener)) store[eventType].push(listener);
+  #|               const hasListener = store[eventType].some((entry) => {
+  #|                 const callback = entry && typeof entry === 'object' && 'callback' in entry
+  #|                   ? entry.callback
+  #|                   : entry;
+  #|                 const capture = !!(entry && typeof entry === 'object' && entry.capture);
+  #|                 return callback === listener && !capture;
+  #|               });
+  #|               if (!hasListener) store[eventType].push({ callback: listener, capture: false });
   #|             } catch (e) {
   #|               logs.push('[WARN] restore ' + eventType + ' listener failed: ' + e);
   #|             }
@@ -613,22 +624,310 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         _restorePersistedListenersTree(children[i]);
   #|       }
   #|     }
-  #|     function addEventListenerImpl(target, type, listener) {
+  #|     function parseCaptureOption(options) {
+  #|       if (options === true) return true;
+  #|       if (options === false || options === undefined || options === null) return false;
+  #|       if (typeof options === 'object') return !!options.capture;
+  #|       return false;
+  #|     }
+  #|     function addEventListenerImpl(target, type, listener, options) {
   #|       if (listener === null || listener === undefined) return;
   #|       const eventType = String(type);
+  #|       const capture = parseCaptureOption(options);
   #|       const store = getListenerStore(target);
   #|       if (!store[eventType]) store[eventType] = [];
-  #|       if (!store[eventType].includes(listener)) store[eventType].push(listener);
-  #|       _persistEventListener(target, eventType, listener);
+  #|       const hasListener = store[eventType].some((entry) => {
+  #|         const callback = entry && typeof entry === 'object' && 'callback' in entry
+  #|           ? entry.callback
+  #|           : entry;
+  #|         const existingCapture = !!(entry && typeof entry === 'object' && entry.capture);
+  #|         return callback === listener && existingCapture === capture;
+  #|       });
+  #|       if (!hasListener) store[eventType].push({ callback: listener, capture });
+  #|       if (!capture) _persistEventListener(target, eventType, listener);
   #|     }
-  #|     function removeEventListenerImpl(target, type, listener) {
+  #|     function removeEventListenerImpl(target, type, listener, options) {
   #|       if (listener === null || listener === undefined || !target._listeners) return;
   #|       const eventType = String(type);
+  #|       const capture = parseCaptureOption(options);
   #|       const list = target._listeners[eventType];
   #|       if (!list) return;
-  #|       const index = list.indexOf(listener);
+  #|       const index = list.findIndex((entry) => {
+  #|         const callback = entry && typeof entry === 'object' && 'callback' in entry
+  #|           ? entry.callback
+  #|           : entry;
+  #|         const existingCapture = !!(entry && typeof entry === 'object' && entry.capture);
+  #|         return callback === listener && existingCapture === capture;
+  #|       });
   #|       if (index >= 0) list.splice(index, 1);
-  #|       _removePersistedEventListener(target, eventType, listener);
+  #|       if (!capture) _removePersistedEventListener(target, eventType, listener);
+  #|     }
+  #|     function getContainingShadowRoot(node) {
+  #|       let current = node;
+  #|       while (current) {
+  #|         if (current._isShadowRoot) return current;
+  #|         current = getParentNode(current);
+  #|       }
+  #|       return null;
+  #|     }
+  #|     function getDeepActiveElement(doc) {
+  #|       if (!doc) return null;
+  #|       let current = doc._activeElement || null;
+  #|       const visited = new Set();
+  #|       while (current && !visited.has(current)) {
+  #|         visited.add(current);
+  #|         const shadowRoot = current._shadowRoot || current.shadowRoot || null;
+  #|         if (shadowRoot && shadowRoot._activeElement) {
+  #|           current = shadowRoot._activeElement;
+  #|           continue;
+  #|         }
+  #|         break;
+  #|       }
+  #|       return current;
+  #|     }
+  #|     function clearDocumentActiveChain(doc) {
+  #|       if (!doc) return;
+  #|       let current = doc._activeElement || null;
+  #|       const visited = new Set();
+  #|       while (current && !visited.has(current)) {
+  #|         visited.add(current);
+  #|         const shadowRoot = current._shadowRoot || current.shadowRoot || null;
+  #|         if (shadowRoot && shadowRoot._activeElement) {
+  #|           const next = shadowRoot._activeElement;
+  #|           shadowRoot._activeElement = null;
+  #|           current = next;
+  #|           continue;
+  #|         }
+  #|         break;
+  #|       }
+  #|       doc._activeElement = null;
+  #|     }
+  #|     function dispatchFocusFamilyEvent(target, type, bubbles, relatedTarget) {
+  #|       if (!target) return;
+  #|       const event = new FocusEvent(type, {
+  #|         bubbles: !!bubbles,
+  #|         composed: true,
+  #|         relatedTarget: relatedTarget || null,
+  #|       });
+  #|       dispatchEventImpl(target, event);
+  #|     }
+  #|     function focusNodeImpl(node) {
+  #|       const delegatedTarget = getDelegatesFocusTarget(node);
+  #|       if (delegatedTarget && delegatedTarget !== node) {
+  #|         focusNodeImpl(delegatedTarget);
+  #|         return;
+  #|       }
+  #|       const doc = getOwnerDocument(node) || (typeof document !== 'undefined' ? document : null);
+  #|       const shadowRoot = getContainingShadowRoot(node);
+  #|       const isConnected =
+  #|         isConnectedToDocument(node) ||
+  #|         (shadowRoot && isConnectedToDocument(shadowRoot));
+  #|       if (!doc || !isConnected) return;
+  #|       const previous = getDeepActiveElement(doc);
+  #|       if (previous === node) return;
+  #|       if (previous) {
+  #|         dispatchFocusFamilyEvent(previous, 'blur', false, node);
+  #|         dispatchFocusFamilyEvent(previous, 'focusout', true, node);
+  #|       }
+  #|       clearDocumentActiveChain(doc);
+  #|       if (shadowRoot && shadowRoot.host) {
+  #|         shadowRoot._activeElement = node;
+  #|         doc._activeElement = shadowRoot.host;
+  #|       } else {
+  #|         doc._activeElement = node;
+  #|       }
+  #|       dispatchFocusFamilyEvent(node, 'focus', false, previous);
+  #|       dispatchFocusFamilyEvent(node, 'focusin', true, previous);
+  #|     }
+  #|     function blurNodeImpl(node) {
+  #|       const doc = getOwnerDocument(node) || (typeof document !== 'undefined' ? document : null);
+  #|       if (!doc) return;
+  #|       let target = node;
+  #|       const ownShadowRoot = node && (node._shadowRoot || node.shadowRoot || null);
+  #|       if (ownShadowRoot && ownShadowRoot._activeElement) {
+  #|         target = ownShadowRoot._activeElement;
+  #|       }
+  #|       const active = getDeepActiveElement(doc);
+  #|       if (active && active !== target && active !== node) return;
+  #|       const shadowRoot = getContainingShadowRoot(target);
+  #|       dispatchFocusFamilyEvent(target, 'blur', false, null);
+  #|       dispatchFocusFamilyEvent(target, 'focusout', true, null);
+  #|       if (shadowRoot && shadowRoot._activeElement === target) {
+  #|         shadowRoot._activeElement = null;
+  #|         if (doc._activeElement === shadowRoot.host) {
+  #|           doc._activeElement = null;
+  #|         }
+  #|       }
+  #|       if (doc._activeElement === target || doc._activeElement === node) {
+  #|         doc._activeElement = null;
+  #|       }
+  #|       if (!doc._activeElement) {
+  #|         doc._activeElement = doc.body || null;
+  #|       }
+  #|     }
+  #|     function clearFocusWithinSubtree(root) {
+  #|       const doc = getOwnerDocument(root) || (typeof document !== 'undefined' ? document : null);
+  #|       if (!doc) return;
+  #|       const active = getDeepActiveElement(doc);
+  #|       if (!active || !nodeContains(root, active)) return;
+  #|       clearDocumentActiveChain(doc);
+  #|       doc._activeElement = doc.body || null;
+  #|     }
+  #|     function getSequentialFocusChildren(node) {
+  #|       if (!node) return [];
+  #|       if (isSlotElementNode(node)) return getAssignedNodesForSlot(node);
+  #|       const shadowRoot = node._shadowRoot || node.shadowRoot || null;
+  #|       if (shadowRoot) return getChildNodesArray(shadowRoot);
+  #|       return getChildNodesArray(node);
+  #|     }
+  #|     function hasExplicitSequentialTabIndex(node) {
+  #|       if (!node || node._nodeType !== 1) return false;
+  #|       try {
+  #|         if (typeof node.hasAttribute === 'function' && node.hasAttribute('tabindex')) return true;
+  #|       } catch (_e) {}
+  #|       return !!(node._attrs && Object.prototype.hasOwnProperty.call(node._attrs, 'tabindex'));
+  #|     }
+  #|     function isSequentiallyFocusableNode(node) {
+  #|       if (!node || node._nodeType !== 1) return false;
+  #|       if (node.disabled || node.hidden) return false;
+  #|       const style = node.style || {};
+  #|       if (style.display === 'none' || style.visibility === 'hidden') return false;
+  #|       if (hasExplicitSequentialTabIndex(node)) {
+  #|         return Number(node.tabIndex) >= 0;
+  #|       }
+  #|       const tag = asciiLowercase(String(node.localName || node._tagName || ''));
+  #|       if (tag === 'a') {
+  #|         try { return !!(typeof node.getAttribute === 'function' ? node.getAttribute('href') : null); } catch (_e) { return false; }
+  #|       }
+  #|       if (tag === 'input' || tag === 'textarea' || tag === 'select' || tag === 'button') return true;
+  #|       return !!node.isContentEditable;
+  #|     }
+  #|     function collectSequentialFocusableNodes(node, results) {
+  #|       const children = getSequentialFocusChildren(node);
+  #|       for (const child of children) {
+  #|         if (!child || child._nodeType !== 1) continue;
+  #|         if (isSequentiallyFocusableNode(child)) results.push(child);
+  #|         collectSequentialFocusableNodes(child, results);
+  #|       }
+  #|     }
+  #|     function moveSequentialFocus(doc, backward) {
+  #|       if (!doc) return false;
+  #|       const root = doc.body || doc.documentElement || doc;
+  #|       const order = [];
+  #|       collectSequentialFocusableNodes(root, order);
+  #|       if (order.length === 0) return false;
+  #|       const current = getDeepActiveElement(doc) || doc.activeElement || null;
+  #|       const currentIndex = order.indexOf(current);
+  #|       let nextIndex = 0;
+  #|       if (currentIndex >= 0) {
+  #|         nextIndex = currentIndex + (backward ? -1 : 1);
+  #|         if (nextIndex < 0 || nextIndex >= order.length) return false;
+  #|       } else if (backward) {
+  #|         nextIndex = order.length - 1;
+  #|       }
+  #|       const next = order[nextIndex];
+  #|       if (!next || typeof next.focus !== 'function') return false;
+  #|       try { next.focus(); } catch (_e) { return false; }
+  #|       return true;
+  #|     }
+  #|     function getDelegatesFocusTarget(node) {
+  #|       if (!node) return null;
+  #|       const shadowRoot = node._shadowRoot || node.shadowRoot || null;
+  #|       if (!shadowRoot || !shadowRoot.delegatesFocus) return null;
+  #|       const order = [];
+  #|       collectSequentialFocusableNodes(shadowRoot, order);
+  #|       return order.length > 0 ? order[0] : null;
+  #|     }
+  #|     function applySyntheticClickFocus(node) {
+  #|       if (!node) return;
+  #|       const delegatedTarget = getDelegatesFocusTarget(node);
+  #|       if (delegatedTarget && delegatedTarget !== node) {
+  #|         focusNodeImpl(delegatedTarget);
+  #|       }
+  #|     }
+  #|     function getEventParent(node, event) {
+  #|       if (!node) return null;
+  #|       if (typeof window !== 'undefined' && node === window) return null;
+  #|       if (node._nodeType === 9) {
+  #|         return typeof window !== 'undefined' ? window : null;
+  #|       }
+  #|       if (node._isShadowRoot) {
+  #|         if (event && event.composed && node.host) return node.host;
+  #|         return null;
+  #|       }
+  #|       return getParentNode(node);
+  #|     }
+  #|     function buildEventPath(target, event) {
+  #|       const path = [];
+  #|       let current = target;
+  #|       while (current) {
+  #|         path.push(current);
+  #|         current = getEventParent(current, event);
+  #|       }
+  #|       return path;
+  #|     }
+  #|     function retargetEventTarget(originalTarget, currentTarget) {
+  #|       let candidate = originalTarget;
+  #|       while (candidate) {
+  #|         const shadowRoot = getContainingShadowRoot(candidate);
+  #|         if (!shadowRoot) return candidate;
+  #|         if (currentTarget === shadowRoot || nodeContains(shadowRoot, currentTarget)) {
+  #|           return candidate;
+  #|         }
+  #|         candidate = shadowRoot.host || candidate;
+  #|         if (!shadowRoot.host) return candidate;
+  #|       }
+  #|       return originalTarget;
+  #|     }
+  #|     function invokeEventListeners(currentTarget, event, eventType, originalTarget, capturePhase, includeInlineHandlers) {
+  #|       const adjustedTarget = retargetEventTarget(originalTarget, currentTarget);
+  #|       const originalRelatedTarget =
+  #|         event._originalRelatedTarget !== undefined
+  #|           ? event._originalRelatedTarget
+  #|           : (event.relatedTarget || null);
+  #|       event._originalRelatedTarget = originalRelatedTarget;
+  #|       const adjustedRelatedTarget = originalRelatedTarget
+  #|         ? retargetEventTarget(originalRelatedTarget, currentTarget)
+  #|         : null;
+  #|       event._target = adjustedTarget;
+  #|       event.target = adjustedTarget;
+  #|       event._relatedTarget = adjustedRelatedTarget;
+  #|       event.relatedTarget = adjustedRelatedTarget;
+  #|       event._currentTarget = currentTarget;
+  #|       event.currentTarget = currentTarget;
+  #|       if (adjustedTarget && adjustedRelatedTarget && adjustedTarget === adjustedRelatedTarget) {
+  #|         return;
+  #|       }
+  #|       if (includeInlineHandlers) {
+  #|         const propName = 'on' + eventType;
+  #|         const inlineHandler = currentTarget.getAttribute ? currentTarget.getAttribute(propName) : null;
+  #|         if (inlineHandler !== null && inlineHandler !== undefined) {
+  #|           const handler = Function('event', 'with(globalThis){ with(this){ ' + String(inlineHandler) + ' } }');
+  #|           handler.call(currentTarget, event);
+  #|           if (event._immediatePropagationStopped) return;
+  #|         }
+  #|         const propHandler = currentTarget[propName];
+  #|         if (typeof propHandler === 'function') {
+  #|           propHandler.call(currentTarget, event);
+  #|           if (event._immediatePropagationStopped) return;
+  #|         }
+  #|       }
+  #|       const listeners = currentTarget._listeners && currentTarget._listeners[eventType]
+  #|         ? currentTarget._listeners[eventType].slice()
+  #|         : [];
+  #|       for (const entry of listeners) {
+  #|         const callback = entry && typeof entry === 'object' && 'callback' in entry
+  #|           ? entry.callback
+  #|           : entry;
+  #|         const listenerCapture = !!(entry && typeof entry === 'object' && entry.capture);
+  #|         if (listenerCapture !== capturePhase) continue;
+  #|         if (typeof callback === 'function') {
+  #|           callback.call(currentTarget, event);
+  #|         } else if (callback && typeof callback.handleEvent === 'function') {
+  #|           callback.handleEvent(event);
+  #|         }
+  #|         if (event._immediatePropagationStopped) return;
+  #|       }
   #|     }
   #|     function dispatchEventImpl(target, event) {
   #|       if (!event || typeof event !== 'object') {
@@ -636,32 +935,53 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       }
   #|       const eventType = String(event.type || event._type || '');
   #|       event._type = eventType;
+  #|       event._originalTarget = target;
+  #|       event._path = buildEventPath(target, event);
+  #|       event._propagationStopped = false;
+  #|       event._immediatePropagationStopped = false;
+  #|       for (let i = event._path.length - 1; i >= 1; i--) {
+  #|         const currentTarget = event._path[i];
+  #|         event._immediatePropagationStopped = false;
+  #|         event._eventPhase = Event.CAPTURING_PHASE;
+  #|         invokeEventListeners(currentTarget, event, eventType, target, true, false);
+  #|         if (event._propagationStopped) break;
+  #|       }
+  #|       if (!event._propagationStopped) {
+  #|         event._eventPhase = Event.AT_TARGET;
+  #|         event._immediatePropagationStopped = false;
+  #|         invokeEventListeners(target, event, eventType, target, true, false);
+  #|         if (!event._immediatePropagationStopped) {
+  #|           invokeEventListeners(target, event, eventType, target, false, true);
+  #|         }
+  #|       }
+  #|       if (event.bubbles && !event._propagationStopped) {
+  #|         for (let i = 1; i < event._path.length; i++) {
+  #|           const currentTarget = event._path[i];
+  #|           event._immediatePropagationStopped = false;
+  #|           event._eventPhase = Event.BUBBLING_PHASE;
+  #|           invokeEventListeners(currentTarget, event, eventType, target, false, true);
+  #|           if (event._propagationStopped) break;
+  #|         }
+  #|       }
   #|       event._target = target;
   #|       event.target = target;
-  #|       event._currentTarget = target;
-  #|       event.currentTarget = target;
-  #|       const propName = 'on' + eventType;
-  #|       const inlineHandler = target.getAttribute ? target.getAttribute(propName) : null;
-  #|       if (inlineHandler !== null && inlineHandler !== undefined) {
-  #|         const handler = Function('event', 'with(globalThis){ with(this){ ' + String(inlineHandler) + ' } }');
-  #|         handler.call(target, event);
-  #|       }
-  #|       const propHandler = target[propName];
-  #|       if (typeof propHandler === 'function') {
-  #|         propHandler.call(target, event);
-  #|       }
-  #|       const listeners = target._listeners && target._listeners[eventType] ? target._listeners[eventType].slice() : [];
-  #|       for (const listener of listeners) {
-  #|         if (typeof listener === 'function') {
-  #|           listener.call(target, event);
-  #|         } else if (listener && typeof listener.handleEvent === 'function') {
-  #|           listener.handleEvent(event);
-  #|         }
+  #|       const originalRelatedTarget =
+  #|         event._originalRelatedTarget !== undefined
+  #|           ? event._originalRelatedTarget
+  #|           : (event.relatedTarget || null);
+  #|       event._relatedTarget = originalRelatedTarget;
+  #|       event.relatedTarget = originalRelatedTarget;
+  #|       event._currentTarget = null;
+  #|       event.currentTarget = null;
+  #|       event._eventPhase = Event.NONE;
+  #|       if (!event.defaultPrevented && eventType === 'keydown' && String(event.key || '') === 'Tab') {
+  #|         const doc = getOwnerDocument(target) || (typeof document !== 'undefined' ? document : null);
+  #|         moveSequentialFocus(doc, !!event.shiftKey);
   #|       }
   #|       return !event.defaultPrevented;
   #|     }
-  #|     Node.prototype.addEventListener = function(type, listener, options) { addEventListenerImpl(this, type, listener); };
-  #|     Node.prototype.removeEventListener = function(type, listener, options) { removeEventListenerImpl(this, type, listener); };
+  #|     Node.prototype.addEventListener = function(type, listener, options) { addEventListenerImpl(this, type, listener, options); };
+  #|     Node.prototype.removeEventListener = function(type, listener, options) { removeEventListenerImpl(this, type, listener, options); };
   #|     Node.prototype.dispatchEvent = function(event) { return dispatchEventImpl(this, event); };
   #|
   #|     function CharacterData() {}
@@ -2394,6 +2714,13 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       if (pseudoMatches.length > 0) {
   #|         for (const pseudo of pseudoMatches) {
   #|           const pname = pseudo.name;
+  #|           if (pname === 'host') {
+  #|             if (!scopeRoot || !scopeRoot._isShadowRoot || !scopeRoot.host) return false;
+  #|             if (el !== scopeRoot.host) return false;
+  #|             const argSel = pseudo.arg ? pseudo.arg.trim() : '';
+  #|             if (argSel && !matchesSimpleSelector(el, argSel, scopeRoot)) return false;
+  #|             continue;
+  #|           }
   #|           if (pname === 'scope') {
   #|             if (!scopeRoot || el !== scopeRoot) return false;
   #|             continue;
@@ -2464,6 +2791,61 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         }
   #|       }
   #|       return true;
+  #|     }
+  #|     function getHostQueryMatches(scopeRoot, selector) {
+  #|       if (!scopeRoot || !scopeRoot._isShadowRoot || !scopeRoot.host) return null;
+  #|       const sel = trimAsciiWhitespace(String(selector || ''));
+  #|       if (sel === ':host') return [scopeRoot.host];
+  #|       if (sel.startsWith(':host(') && sel.endsWith(')')) {
+  #|         const argSel = trimAsciiWhitespace(sel.slice(6, -1));
+  #|         if (!argSel) return [scopeRoot.host];
+  #|         return matchesSimpleSelector(scopeRoot.host, argSel, scopeRoot)
+  #|           ? [scopeRoot.host]
+  #|           : [];
+  #|       }
+  #|       return null;
+  #|     }
+  #|     function getHostChildQueryMatches(scopeRoot, selector) {
+  #|       if (!scopeRoot || !scopeRoot._isShadowRoot || !scopeRoot.host) return null;
+  #|       const sel = trimAsciiWhitespace(String(selector || ''));
+  #|       if (!sel.startsWith(':host')) return null;
+  #|       let idx = 5;
+  #|       let argSel = '';
+  #|       if (sel[idx] === '(') {
+  #|         let depth = 1;
+  #|         let end = idx + 1;
+  #|         for (; end < sel.length; end++) {
+  #|           const ch = sel[end];
+  #|           if (ch === '(') depth++;
+  #|           else if (ch === ')') {
+  #|             depth--;
+  #|             if (depth === 0) break;
+  #|           }
+  #|         }
+  #|         if (depth !== 0) return [];
+  #|         argSel = trimAsciiWhitespace(sel.slice(idx + 1, end));
+  #|         idx = end + 1;
+  #|       }
+  #|       const remainder = trimAsciiWhitespace(sel.slice(idx));
+  #|       if (!remainder.startsWith('>')) return null;
+  #|       const childSelector = trimAsciiWhitespace(remainder.slice(1));
+  #|       if (!childSelector) return [];
+  #|       if (argSel && !matchesSimpleSelector(scopeRoot.host, argSel, scopeRoot)) return [];
+  #|       const compiled = compileSelector(childSelector);
+  #|       const groups = compiled.groups || [];
+  #|       if (groups.length === 0) return [];
+  #|       const results = [];
+  #|       for (const child of scopeRoot._children || []) {
+  #|         if (!child || child._nodeType !== 1) continue;
+  #|         for (const group of groups) {
+  #|           if (group.filter && !applySimpleFilter(child, group.filter)) continue;
+  #|           if (matchesSelectorGroupCompiled(child, group, scopeRoot, true)) {
+  #|             results.push(child);
+  #|             break;
+  #|           }
+  #|         }
+  #|       }
+  #|       return results;
   #|     }
   #|     function parseSimpleClassSelector(selector) {
   #|       const sel = trimAsciiWhitespace(selector);
@@ -2866,9 +3248,319 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       return false;
   #|     }
   #|
-  #|     function HTMLElement() {}
+  #|     const __customElementDefinitions = new Map();
+  #|     const __customElementWhenDefined = new Map();
+  #|     const __customElementConstructionStack = [];
+  #|
+  #|     function normalizeCustomElementName(name) {
+  #|       return asciiLowercase(String(name || ''));
+  #|     }
+  #|     function isCustomElementName(name) {
+  #|       const normalized = normalizeCustomElementName(name);
+  #|       return normalized.includes('-') && !normalized.startsWith('-') && !normalized.endsWith('-');
+  #|     }
+  #|     function getCustomElementDefinition(name) {
+  #|       return __customElementDefinitions.get(normalizeCustomElementName(name)) || null;
+  #|     }
+  #|     function getObservedAttributesForDefinition(definition) {
+  #|       if (!definition || !definition.ctor) return [];
+  #|       const observed = definition.ctor.observedAttributes;
+  #|       if (!Array.isArray(observed)) return [];
+  #|       return observed.map(attr => asciiLowercase(String(attr)));
+  #|     }
+  #|     function traverseCustomElementTree(root, visit) {
+  #|       if (!root) return;
+  #|       const walk = (node) => {
+  #|         if (!node) return;
+  #|         visit(node);
+  #|         if (node._shadowRoot) walk(node._shadowRoot);
+  #|         const children = getChildNodesArray(node);
+  #|         for (const child of children) {
+  #|           walk(child);
+  #|         }
+  #|       };
+  #|       walk(root);
+  #|     }
+  #|     function notifyConnectedSubtree(root) {
+  #|       traverseCustomElementTree(root, (node) => {
+  #|         if (!node || node._nodeType !== 1 || !node.__customElementDefinition) return;
+  #|         if (node.__ceConnected) return;
+  #|         node.__ceConnected = true;
+  #|         if (typeof node.connectedCallback === 'function') {
+  #|           node.connectedCallback();
+  #|         }
+  #|       });
+  #|     }
+  #|     function notifyDisconnectedSubtree(root) {
+  #|       clearFocusWithinSubtree(root);
+  #|       traverseCustomElementTree(root, (node) => {
+  #|         if (!node || node._nodeType !== 1 || !node.__customElementDefinition) return;
+  #|         if (!node.__ceConnected) return;
+  #|         node.__ceConnected = false;
+  #|         if (typeof node.disconnectedCallback === 'function') {
+  #|           node.disconnectedCallback();
+  #|         }
+  #|       });
+  #|     }
+  #|     function maybeInvokeAttributeChanged(element, name, oldValue, newValue) {
+  #|       if (!element || !element.__customElementDefinition) return;
+  #|       const observed = element.__customElementDefinition.observedAttributes || [];
+  #|       const normalizedName = asciiLowercase(String(name));
+  #|       if (!observed.includes(normalizedName)) return;
+  #|       if (typeof element.attributeChangedCallback === 'function') {
+  #|         element.attributeChangedCallback(normalizedName, oldValue, newValue);
+  #|       }
+  #|     }
+  #|     function upgradeCustomElement(element, definition) {
+  #|       if (!element || !definition) return element;
+  #|       if (element.__customElementDefinition === definition) return element;
+  #|       Object.setPrototypeOf(element, definition.ctor.prototype);
+  #|       element.__customElementDefinition = definition;
+  #|       element.__ceConnected = false;
+  #|       __customElementConstructionStack.push(element);
+  #|       try {
+  #|         Reflect.construct(definition.ctor, [], definition.ctor);
+  #|       } finally {
+  #|         __customElementConstructionStack.pop();
+  #|       }
+  #|       if (element.isConnected) {
+  #|         notifyConnectedSubtree(element);
+  #|       }
+  #|       return element;
+  #|     }
+  #|     function maybeUpgradeCustomElement(element) {
+  #|       if (!element || element._nodeType !== 1) return element;
+  #|       const definition = getCustomElementDefinition(element.localName || element._tagName || '');
+  #|       if (!definition) return element;
+  #|       return upgradeCustomElement(element, definition);
+  #|     }
+  #|     function upgradeExistingCustomElements(root, normalizedName) {
+  #|       traverseCustomElementTree(root, (node) => {
+  #|         if (!node || node._nodeType !== 1) return;
+  #|         const localName = asciiLowercase(String(node.localName || node._tagName || ''));
+  #|         if (localName !== normalizedName) return;
+  #|         const definition = getCustomElementDefinition(normalizedName);
+  #|         if (definition) upgradeCustomElement(node, definition);
+  #|       });
+  #|     }
+  #|     function clearChildNodes(parent) {
+  #|       const removedNodes = parent && parent._children ? parent._children.slice() : [];
+  #|       if (removedNodes.length === 0) return removedNodes;
+  #|       const affectedSlotNames = parent && parent._shadowRoot
+  #|         ? new Set(removedNodes.map(getSlotNameForLightNode))
+  #|         : null;
+  #|       if (isConnectedToDocument(parent)) {
+  #|         const doc = getOwnerDocument(parent);
+  #|         if (doc) {
+  #|           for (const child of removedNodes) {
+  #|             unindexSubtree(child, doc);
+  #|           }
+  #|         }
+  #|       }
+  #|       for (const child of removedNodes) {
+  #|         if (child && child._parent === parent) child._parent = null;
+  #|         if (child && 'parentNode' in child) child.parentNode = null;
+  #|       }
+  #|       parent._children = [];
+  #|       for (const child of removedNodes) {
+  #|         notifyDisconnectedSubtree(child);
+  #|       }
+  #|       if (affectedSlotNames) enqueueSlotChangeForHost(parent, affectedSlotNames);
+  #|       return removedNodes;
+  #|     }
+  #|     function getEnclosingShadowRoot(node) {
+  #|       let current = node;
+  #|       while (current) {
+  #|         if (current._isShadowRoot) return current;
+  #|         current = getParentNode(current);
+  #|       }
+  #|       return null;
+  #|     }
+  #|     function getAssignedNodesForSlot(slotElement) {
+  #|       if (!slotElement) return [];
+  #|       const shadowRoot = getEnclosingShadowRoot(slotElement);
+  #|       if (!shadowRoot || !shadowRoot.host) {
+  #|         return slotElement._children ? slotElement._children.slice() : [];
+  #|       }
+  #|       const hostChildren = getChildNodesArray(shadowRoot.host);
+  #|       const assigned = hostChildren.filter((node) => getAssignedSlotForNode(node) === slotElement);
+  #|       if (assigned.length > 0) return assigned;
+  #|       return slotElement._children ? slotElement._children.slice() : [];
+  #|     }
+  #|     function findFirstSlotForName(shadowRoot, slotName) {
+  #|       if (!shadowRoot) return null;
+  #|       let found = null;
+  #|       traverseTree(shadowRoot, (node) => {
+  #|         if (!isSlotElementNode(node)) return;
+  #|         const currentName = node.getAttribute && node.getAttribute('name')
+  #|           ? String(node.getAttribute('name'))
+  #|           : '';
+  #|         if (currentName !== slotName) return;
+  #|         found = node;
+  #|         return false;
+  #|       });
+  #|       return found;
+  #|     }
+  #|     function getAssignedSlotForNode(node) {
+  #|       if (!node) return null;
+  #|       if (node._nodeType !== 1 && node._nodeType !== 3) return null;
+  #|       const parent = node._parent;
+  #|       if (!parent || !parent._shadowRoot) return null;
+  #|       return findFirstSlotForName(parent._shadowRoot, getSlotNameForLightNode(node));
+  #|     }
+  #|     function getFlattenedAssignedNodesForSlot(slotElement) {
+  #|       const nodes = getAssignedNodesForSlot(slotElement);
+  #|       const flattened = [];
+  #|       for (const node of nodes) {
+  #|         if (isSlotElementNode(node)) {
+  #|           flattened.push(...getFlattenedAssignedNodesForSlot(node));
+  #|         } else {
+  #|           flattened.push(node);
+  #|         }
+  #|       }
+  #|       return flattened;
+  #|     }
+  #|     function getSlotNameForLightNode(node) {
+  #|       if (!node || typeof node.getAttribute !== 'function') return '';
+  #|       const value = node.getAttribute('slot');
+  #|       return value === null || value === undefined ? '' : String(value);
+  #|     }
+  #|     function isSlotElementNode(node) {
+  #|       if (!node || node._nodeType !== 1) return false;
+  #|       const localName = asciiLowercase(String(node.localName || node._tagName || ''));
+  #|       return localName === 'slot';
+  #|     }
+  #|     function collectSlotsForNames(shadowRoot, names) {
+  #|       const slots = [];
+  #|       const nameSet = names instanceof Set ? names : new Set(names || []);
+  #|       traverseTree(shadowRoot, (node) => {
+  #|         if (!node || node._nodeType !== 1) return;
+  #|         const localName = asciiLowercase(String(node.localName || node._tagName || ''));
+  #|         if (localName !== 'slot') return;
+  #|         const slotName = node.getAttribute && node.getAttribute('name')
+  #|           ? String(node.getAttribute('name'))
+  #|           : '';
+  #|         if (nameSet.has(slotName)) slots.push(node);
+  #|       });
+  #|       return slots;
+  #|     }
+  #|     function enqueueSlotChangeForSlot(slotElement) {
+  #|       if (!slotElement || slotElement.__slotChangeQueued) return;
+  #|       slotElement.__slotChangeQueued = true;
+  #|       queueMicrotask(() => {
+  #|         slotElement.__slotChangeQueued = false;
+  #|         dispatchEventImpl(slotElement, new Event('slotchange'));
+  #|       });
+  #|     }
+  #|     function enqueueSlotChangeForHost(host, names) {
+  #|       if (!host || !host._shadowRoot) return;
+  #|       const effectiveNames = names instanceof Set ? names : new Set(names || []);
+  #|       if (effectiveNames.size === 0) effectiveNames.add('');
+  #|       const slots = collectSlotsForNames(host._shadowRoot, effectiveNames);
+  #|       for (const slot of slots) {
+  #|         enqueueSlotChangeForSlot(slot);
+  #|       }
+  #|     }
+  #|     function enqueueSlotChangeForParent(parent, names) {
+  #|       if (!parent || !parent._shadowRoot) return;
+  #|       enqueueSlotChangeForHost(parent, names);
+  #|     }
+  #|     function HTMLElement() {
+  #|       if (__customElementConstructionStack.length > 0) {
+  #|         return __customElementConstructionStack[__customElementConstructionStack.length - 1];
+  #|       }
+  #|     }
   #|     HTMLElement.prototype = Object.create(Element.prototype);
   #|     HTMLElement.prototype.constructor = HTMLElement;
+  #|
+  #|     function CustomElementRegistry() {}
+  #|     CustomElementRegistry.prototype.define = function(name, ctor) {
+  #|       const normalizedName = normalizeCustomElementName(name);
+  #|       if (!isCustomElementName(normalizedName)) {
+  #|         throw new DOMException(
+  #|           "Failed to execute 'define' on 'CustomElementRegistry': invalid custom element name",
+  #|           'SyntaxError',
+  #|         );
+  #|       }
+  #|       if (typeof ctor !== 'function') {
+  #|         throw new TypeError(
+  #|           "Failed to execute 'define' on 'CustomElementRegistry': constructor is not a function",
+  #|         );
+  #|       }
+  #|       if (__customElementDefinitions.has(normalizedName)) {
+  #|         throw new DOMException(
+  #|           "Failed to execute 'define' on 'CustomElementRegistry': the name has already been used",
+  #|           'NotSupportedError',
+  #|         );
+  #|       }
+  #|       for (const existing of __customElementDefinitions.values()) {
+  #|         if (existing.ctor === ctor) {
+  #|           throw new DOMException(
+  #|             "Failed to execute 'define' on 'CustomElementRegistry': the constructor has already been used",
+  #|             'NotSupportedError',
+  #|           );
+  #|         }
+  #|       }
+  #|       const prototype = ctor.prototype;
+  #|       if (!prototype || !HTMLElement.prototype.isPrototypeOf(prototype)) {
+  #|         throw new TypeError(
+  #|           "Failed to execute 'define' on 'CustomElementRegistry': constructor prototype is not an HTMLElement",
+  #|         );
+  #|       }
+  #|       const definition = {
+  #|         name: normalizedName,
+  #|         ctor,
+  #|         observedAttributes: getObservedAttributesForDefinition({ ctor }),
+  #|       };
+  #|       __customElementDefinitions.set(normalizedName, definition);
+  #|       const pending = __customElementWhenDefined.get(normalizedName);
+  #|       if (pending) {
+  #|         pending.resolve(ctor);
+  #|         __customElementWhenDefined.delete(normalizedName);
+  #|       }
+  #|       upgradeExistingCustomElements(document, normalizedName);
+  #|     };
+  #|     CustomElementRegistry.prototype.get = function(name) {
+  #|       const definition = getCustomElementDefinition(name);
+  #|       return definition ? definition.ctor : undefined;
+  #|     };
+  #|     CustomElementRegistry.prototype.whenDefined = function(name) {
+  #|       const normalizedName = normalizeCustomElementName(name);
+  #|       if (!isCustomElementName(normalizedName)) {
+  #|         return Promise.reject(
+  #|           new DOMException(
+  #|             "Failed to execute 'whenDefined' on 'CustomElementRegistry': invalid custom element name",
+  #|             'SyntaxError',
+  #|           ),
+  #|         );
+  #|       }
+  #|       const definition = getCustomElementDefinition(normalizedName);
+  #|       if (definition) {
+  #|         return Promise.resolve(definition.ctor);
+  #|       }
+  #|       const existing = __customElementWhenDefined.get(normalizedName);
+  #|       if (existing) return existing.promise;
+  #|       let resolveFn = null;
+  #|       let rejectFn = null;
+  #|       const promise = new Promise((resolve, reject) => {
+  #|         resolveFn = resolve;
+  #|         rejectFn = reject;
+  #|       });
+  #|       __customElementWhenDefined.set(normalizedName, {
+  #|         promise,
+  #|         resolve: resolveFn,
+  #|         reject: rejectFn,
+  #|       });
+  #|       return promise;
+  #|     };
+  #|     CustomElementRegistry.prototype.upgrade = function(root) {
+  #|       if (!root) return;
+  #|       traverseCustomElementTree(root, (node) => {
+  #|         if (!node || node._nodeType !== 1) return;
+  #|         maybeUpgradeCustomElement(node);
+  #|       });
+  #|     };
+  #|     const customElements = new CustomElementRegistry();
   #|
   #|     function HTMLHtmlElement() {}
   #|     HTMLHtmlElement.prototype = Object.create(HTMLElement.prototype);
@@ -3057,6 +3749,21 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|     function HTMLSlotElement() {}
   #|     HTMLSlotElement.prototype = Object.create(HTMLElement.prototype);
   #|     HTMLSlotElement.prototype.constructor = HTMLSlotElement;
+  #|     Object.defineProperty(HTMLSlotElement.prototype, 'name', {
+  #|       get() { return this.getAttribute('name') || ''; },
+  #|       set(v) { setReflectedStringAttribute(this, 'name', v); },
+  #|       configurable: true
+  #|     });
+  #|     HTMLSlotElement.prototype.assignedNodes = function(options) {
+  #|       const shouldFlatten = !!(options && options.flatten);
+  #|       const nodes = shouldFlatten
+  #|         ? getFlattenedAssignedNodesForSlot(this)
+  #|         : getAssignedNodesForSlot(this);
+  #|       return Array.isArray(nodes) ? nodes.slice() : [];
+  #|     };
+  #|     HTMLSlotElement.prototype.assignedElements = function(options) {
+  #|       return this.assignedNodes(options).filter((node) => node && node._nodeType === 1);
+  #|     };
   #|
   #|     function HTMLSourceElement() {}
   #|     HTMLSourceElement.prototype = Object.create(HTMLElement.prototype);
@@ -3733,6 +4440,28 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|             attributeNamespace: null,
   #|             oldValue: oldValue
   #|           });
+  #|           if (oldValue !== strValue) {
+  #|             maybeInvokeAttributeChanged(this, normalizedName, oldValue, strValue);
+  #|             if (
+  #|               normalizedName === 'slot' &&
+  #|               this._parent &&
+  #|               this._parent._shadowRoot
+  #|             ) {
+  #|               enqueueSlotChangeForHost(this._parent, new Set([
+  #|                 oldValue === null ? '' : String(oldValue),
+  #|                 strValue,
+  #|               ]));
+  #|             }
+  #|             if (normalizedName === 'name' && isSlotElementNode(this)) {
+  #|               const shadowRoot = getEnclosingShadowRoot(this);
+  #|               if (shadowRoot && shadowRoot.host) {
+  #|                 enqueueSlotChangeForHost(shadowRoot.host, new Set([
+  #|                   oldValue === null ? '' : String(oldValue),
+  #|                   strValue,
+  #|                 ]));
+  #|               }
+  #|             }
+  #|           }
   #|         },
   #|         getAttribute(name) {
   #|           const attr = getAttrNodeByName(this, name);
@@ -3760,6 +4489,16 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|               attributeNamespace: null,
   #|               oldValue: oldValue
   #|             });
+  #|             maybeInvokeAttributeChanged(this, searchName, oldValue, null);
+  #|             if (searchName === 'slot' && this._parent && this._parent._shadowRoot) {
+  #|               enqueueSlotChangeForHost(this._parent, new Set([String(oldValue), '']));
+  #|             }
+  #|             if (searchName === 'name' && isSlotElementNode(this)) {
+  #|               const shadowRoot = getEnclosingShadowRoot(this);
+  #|               if (shadowRoot && shadowRoot.host) {
+  #|                 enqueueSlotChangeForHost(shadowRoot.host, new Set([String(oldValue), '']));
+  #|               }
+  #|             }
   #|           }
   #|         },
   #|         hasAttribute(name) {
@@ -3923,23 +4662,13 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         },
   #|         set textContent(v) {
   #|           const str = (v === null || v === undefined) ? '' : String(v);
-  #|           const removedNodes = this._children.slice();
-  #|           if (isConnectedToDocument(this)) {
-  #|             const doc = getOwnerDocument(this);
-  #|             if (doc) {
-  #|               for (const child of this._children) {
-  #|                 unindexSubtree(child, doc);
-  #|               }
-  #|             }
-  #|           }
-  #|           // Remove all children
-  #|           this._children.forEach(c => { c._parent = null; });
-  #|           this._children = [];
+  #|           const removedNodes = clearChildNodes(this);
   #|           // If non-empty, add a text node
   #|           if (str !== '') {
   #|             const textNode = document.createTextNode(str);
   #|             textNode._parent = this;
   #|             this._children.push(textNode);
+  #|             if (this._shadowRoot) enqueueSlotChangeForHost(this, new Set(['']));
   #|           }
   #|           domOps.push({ op: 'setTextContent', id: this._mockId, value: str });
   #|           if (removedNodes.length > 0 || this._children.length > 0) {
@@ -3955,21 +4684,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         get innerHTML() { return this._children.map(c => c.outerHTML || c.textContent).join(''); },
   #|         set innerHTML(v) {
   #|           const html = (v === null || v === undefined) ? '' : String(v);
-  #|           if (isConnectedToDocument(this)) {
-  #|             const doc = getOwnerDocument(this);
-  #|             if (doc) {
-  #|               for (const child of this._children) {
-  #|                 unindexSubtree(child, doc);
-  #|               }
-  #|             }
-  #|           }
-  #|           if (this._children && this._children.length > 0) {
-  #|             for (const child of this._children) {
-  #|               if (child && child._parent === this) child._parent = null;
-  #|               if (child && 'parentNode' in child) child.parentNode = null;
-  #|             }
-  #|           }
-  #|           this._children = [];
+  #|           clearChildNodes(this);
   #|           if (html === '') return;
   #|           const owner = getOwnerDocument(this) || document;
   #|           const nodes = parseHtmlFragment(html, owner);
@@ -4025,6 +4740,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           if (isConnectedToDocument(this)) {
   #|             const doc = getOwnerDocument(this);
   #|             if (doc) indexSubtree(child, doc);
+  #|             notifyConnectedSubtree(child);
   #|           }
   #|           domOps.push({ op: 'appendChild', parentId: this._mockId, childId: child._mockId });
   #|           queueMutationRecord(this, {
@@ -4034,6 +4750,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|             previousSibling: previousSibling,
   #|             nextSibling: null
   #|           });
+  #|           if (this._shadowRoot) enqueueSlotChangeForHost(this, new Set([getSlotNameForLightNode(child)]));
   #|           if (String(this._tagName || '').toLowerCase() === 'script') maybeExecuteScriptElement(this);
   #|           if (String(child._tagName || '').toLowerCase() === 'script') maybeExecuteScriptElement(child);
   #|           return child;
@@ -4088,6 +4805,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|             if (isConnectedToDocument(this)) {
   #|               const doc = getOwnerDocument(this);
   #|               if (doc) indexSubtree(newChild, doc);
+  #|               notifyConnectedSubtree(newChild);
   #|             }
   #|             domOps.push({ op: 'insertBefore', parentId: this._mockId, childId: newChild._mockId, refId: actualRef._mockId });
   #|             queueMutationRecord(this, {
@@ -4097,6 +4815,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|               previousSibling: previousSibling,
   #|               nextSibling: actualRef
   #|             });
+  #|             if (this._shadowRoot) enqueueSlotChangeForHost(this, new Set([getSlotNameForLightNode(newChild)]));
   #|             if (String(this._tagName || '').toLowerCase() === 'script') maybeExecuteScriptElement(this);
   #|             if (String(newChild._tagName || '').toLowerCase() === 'script') maybeExecuteScriptElement(newChild);
   #|           } else {
@@ -4114,11 +4833,16 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           }
   #|           const previousSibling = idx > 0 ? this._children[idx - 1] : null;
   #|           const nextSibling = idx + 1 < this._children.length ? this._children[idx + 1] : null;
+  #|           const parentConnected = isConnectedToDocument(this);
   #|           this._children.splice(idx, 1);
   #|           child._parent = null;
-  #|           if (isConnectedToDocument(this)) {
+  #|           if ('parentNode' in child) child.parentNode = null;
+  #|           if (parentConnected) {
   #|             const doc = getOwnerDocument(this);
-  #|             if (doc) unindexSubtree(child, doc);
+  #|             if (doc) {
+  #|               unindexSubtree(child, doc);
+  #|             }
+  #|             notifyDisconnectedSubtree(child);
   #|           }
   #|           domOps.push({ op: 'removeChild', parentId: this._mockId, childId: child._mockId });
   #|           queueMutationRecord(this, {
@@ -4128,6 +4852,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|             previousSibling: previousSibling,
   #|             nextSibling: nextSibling
   #|           });
+  #|           if (this._shadowRoot) enqueueSlotChangeForHost(this, new Set([getSlotNameForLightNode(child)]));
   #|           return child;
   #|         },
   #|         replaceChild(newChild, oldChild) {
@@ -4162,16 +4887,27 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           detachNode(newChild);
   #|           adoptSubtree(newChild, getOwnerDocument(this));
   #|           this._children.splice(idx, 1, newChild);
+  #|           const parentConnected = isConnectedToDocument(this);
   #|           oldChild._parent = null;
+  #|           if ('parentNode' in oldChild) oldChild.parentNode = null;
   #|           newChild._parent = this;
-  #|           if (isConnectedToDocument(this)) {
+  #|           if ('parentNode' in newChild) newChild.parentNode = this;
+  #|           if (parentConnected) {
   #|             const doc = getOwnerDocument(this);
   #|             if (doc) {
   #|               unindexSubtree(oldChild, doc);
   #|               indexSubtree(newChild, doc);
   #|             }
+  #|             notifyDisconnectedSubtree(oldChild);
+  #|             notifyConnectedSubtree(newChild);
   #|           }
   #|           domOps.push({ op: 'replaceChild', parentId: this._mockId, childId: newChild._mockId, refId: oldChild._mockId });
+  #|           if (this._shadowRoot) {
+  #|             enqueueSlotChangeForHost(this, new Set([
+  #|               getSlotNameForLightNode(oldChild),
+  #|               getSlotNameForLightNode(newChild),
+  #|             ]));
+  #|           }
   #|           return oldChild;
   #|         },
   #|         cloneNode(deep) {
@@ -4395,8 +5131,10 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           if (this._shadowRoot) throw new Error('Already has shadow root');
   #|           const shadowId = nodeIdCounter++;
   #|           domOps.push({ op: 'createDocumentFragment', id: shadowId });
+  #|           domOps.push({ op: 'attachShadow', parentId: this._mockId, childId: shadowId, value: String((init && init.mode) || 'open') });
   #|           const shadow = createMockDocumentFragment(shadowId);
   #|           shadow.mode = init.mode;
+  #|           shadow.delegatesFocus = !!(init && init.delegatesFocus);
   #|           shadow.host = this;
   #|           shadow._isShadowRoot = true;
   #|           shadow._parent = this;
@@ -4405,21 +5143,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|             get() { return this._children.map(c => c.outerHTML || c.textContent).join(''); },
   #|             set(v) {
   #|               const html = (v === null || v === undefined) ? '' : String(v);
-  #|               if (isConnectedToDocument(this)) {
-  #|                 const doc = getOwnerDocument(this);
-  #|                 if (doc) {
-  #|                   for (const child of this._children) {
-  #|                     unindexSubtree(child, doc);
-  #|                   }
-  #|                 }
-  #|               }
-  #|               if (this._children && this._children.length > 0) {
-  #|                 for (const child of this._children) {
-  #|                   if (child && child._parent === this) child._parent = null;
-  #|                   if (child && 'parentNode' in child) child.parentNode = null;
-  #|                 }
-  #|               }
-  #|               this._children = [];
+  #|               clearChildNodes(this);
   #|               if (html === '') return;
   #|               const owner = getOwnerDocument(this) || document;
   #|               const nodes = parseHtmlFragment(html, owner);
@@ -4432,14 +5156,22 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           this._shadowRoot = shadow;
   #|           return shadow;
   #|         },
-  #|         focus() {},
-  #|         blur() {},
-  #|         click() {},
+  #|         focus() { focusNodeImpl(this); },
+  #|         blur() { blurNodeImpl(this); },
+  #|         click() {
+  #|           const event = new MouseEvent('click', { bubbles: true, cancelable: true, composed: true });
+  #|           const allowed = dispatchEventImpl(this, event);
+  #|           if (allowed) applySyntheticClickFocus(this);
+  #|         },
   #|         dispatchEvent(event) { return dispatchEventImpl(this, event); },
-  #|         addEventListener(type, listener, options) { addEventListenerImpl(this, type, listener); },
-  #|         removeEventListener(type, listener, options) { removeEventListenerImpl(this, type, listener); },
+  #|         addEventListener(type, listener, options) { addEventListenerImpl(this, type, listener, options); },
+  #|         removeEventListener(type, listener, options) { removeEventListenerImpl(this, type, listener, options); },
   #|         querySelector(selector) {
   #|           const sel = String(selector);
+  #|           const hostMatches = getHostQueryMatches(this, sel);
+  #|           if (hostMatches !== null) return hostMatches[0] || null;
+  #|           const hostChildMatches = getHostChildQueryMatches(this, sel);
+  #|           if (hostChildMatches !== null) return hostChildMatches[0] || null;
   #|           const classTokens = parseSimpleClassSelector(sel);
   #|           if (classTokens) {
   #|             const list = getCandidatesByFilter(this, false, { kind: 'class', tokens: classTokens });
@@ -4480,6 +5212,10 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         },
   #|         querySelectorAll(selector) {
   #|           const sel = String(selector);
+  #|           const hostMatches = getHostQueryMatches(this, sel);
+  #|           if (hostMatches !== null) return makeNodeList(hostMatches);
+  #|           const hostChildMatches = getHostChildQueryMatches(this, sel);
+  #|           if (hostChildMatches !== null) return makeNodeList(hostChildMatches);
   #|           const classTokens = parseSimpleClassSelector(sel);
   #|           if (classTokens) {
   #|             const list = getCandidatesByFilter(this, false, { kind: 'class', tokens: classTokens });
@@ -5219,12 +5955,14 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         _parent: null,
   #|         _nodeType: 11,
   #|         _ownerDocument: null,
+  #|         _activeElement: null,
   #|         get nodeType() { return 11; },
   #|         get nodeName() { return '#document-fragment'; },
   #|         get nodeValue() { return null; },
   #|         set nodeValue(v) { /* ignore */ },
   #|         get ownerDocument() { return this._ownerDocument || getGlobalDocument(); },
   #|         set ownerDocument(v) { this._ownerDocument = v; },
+  #|         get activeElement() { return this._activeElement || null; },
   #|         get textContent() {
   #|           // Collect text content from Text node descendants only
   #|           const collectText = (node) => {
@@ -5236,20 +5974,12 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         },
   #|         set textContent(v) {
   #|           const str = (v === null || v === undefined) ? '' : String(v);
-  #|           if (isConnectedToDocument(this)) {
-  #|             const doc = getOwnerDocument(this);
-  #|             if (doc) {
-  #|               for (const child of this._children) {
-  #|                 unindexSubtree(child, doc);
-  #|               }
-  #|             }
-  #|           }
-  #|           this._children.forEach(c => { c._parent = null; });
-  #|           this._children = [];
+  #|           clearChildNodes(this);
   #|           if (str !== '') {
   #|             const textNode = document.createTextNode(str);
   #|             textNode._parent = this;
   #|             this._children.push(textNode);
+  #|             domOps.push({ op: 'appendChild', parentId: this._mockId, childId: textNode._mockId });
   #|           }
   #|         },
   #|         get firstChild() { return this._children[0] || null; },
@@ -5289,7 +6019,9 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           if (isConnectedToDocument(this)) {
   #|             const doc = getOwnerDocument(this);
   #|             if (doc) indexSubtree(child, doc);
+  #|             notifyConnectedSubtree(child);
   #|           }
+  #|           domOps.push({ op: 'appendChild', parentId: this._mockId, childId: child._mockId });
   #|           return child;
   #|         },
   #|         insertBefore(newChild, refChild) {
@@ -5332,7 +6064,9 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|             if (isConnectedToDocument(this)) {
   #|               const doc = getOwnerDocument(this);
   #|               if (doc) indexSubtree(newChild, doc);
+  #|               notifyConnectedSubtree(newChild);
   #|             }
+  #|             domOps.push({ op: 'insertBefore', parentId: this._mockId, childId: newChild._mockId, refId: actualRef._mockId });
   #|           }
   #|           else { return this.appendChild(newChild); }
   #|           return newChild;
@@ -5350,7 +6084,9 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           if (isConnectedToDocument(this)) {
   #|             const doc = getOwnerDocument(this);
   #|             if (doc) unindexSubtree(child, doc);
+  #|             notifyDisconnectedSubtree(child);
   #|           }
+  #|           domOps.push({ op: 'removeChild', parentId: this._mockId, childId: child._mockId });
   #|           return child;
   #|         },
   #|         replaceChild(newChild, oldChild) {
@@ -5388,7 +6124,10 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|               unindexSubtree(oldChild, doc);
   #|               indexSubtree(newChild, doc);
   #|             }
+  #|             notifyDisconnectedSubtree(oldChild);
+  #|             notifyConnectedSubtree(newChild);
   #|           }
+  #|           domOps.push({ op: 'replaceChild', parentId: this._mockId, childId: newChild._mockId, refId: oldChild._mockId });
   #|           return oldChild;
   #|         },
   #|         append(...nodes) {
@@ -5402,6 +6141,10 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         },
   #|         querySelector(selector) {
   #|           const sel = String(selector);
+  #|           const hostMatches = getHostQueryMatches(this, sel);
+  #|           if (hostMatches !== null) return hostMatches[0] || null;
+  #|           const hostChildMatches = getHostChildQueryMatches(this, sel);
+  #|           if (hostChildMatches !== null) return hostChildMatches[0] || null;
   #|           const classTokens = parseSimpleClassSelector(sel);
   #|           if (classTokens) {
   #|             const list = getCandidatesByFilter(this, false, { kind: 'class', tokens: classTokens });
@@ -5439,6 +6182,10 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         },
   #|         querySelectorAll(selector) {
   #|           const sel = String(selector);
+  #|           const hostMatches = getHostQueryMatches(this, sel);
+  #|           if (hostMatches !== null) return makeNodeList(hostMatches);
+  #|           const hostChildMatches = getHostChildQueryMatches(this, sel);
+  #|           if (hostChildMatches !== null) return makeNodeList(hostChildMatches);
   #|           const classTokens = parseSimpleClassSelector(sel);
   #|           if (classTokens) {
   #|             const list = getCandidatesByFilter(this, false, { kind: 'class', tokens: classTokens });
@@ -5548,7 +6295,10 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           }
   #|           return true;
   #|         },
-  #|         isSameNode(other) { return this === other; }
+  #|         isSameNode(other) { return this === other; },
+  #|         addEventListener(type, listener, options) { addEventListenerImpl(this, type, listener, options); },
+  #|         removeEventListener(type, listener, options) { removeEventListenerImpl(this, type, listener, options); },
+  #|         dispatchEvent(event) { return dispatchEventImpl(this, event); }
   #|       };
   #|       mockElements.set(mockId, frag);
   #|       return frag;
@@ -5663,7 +6413,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|                   ? (localName === lowerName ? (tagToConstructor[lowerName] || HTMLElement) : HTMLUnknownElement)
   #|                   : Element;
   #|                 Object.setPrototypeOf(el, Ctor.prototype);
-  #|                 return el;
+  #|                 return isHtmlNamespace ? maybeUpgradeCustomElement(el) : el;
   #|               };
   #|               const createAttributeForDoc = function(name, lowercase) {
   #|                 return createAttrNode(doc, null, name, '', null, lowercase);
@@ -5900,6 +6650,15 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|                   detach(node);
   #|                   updateOwner(node);
   #|                   return node;
+  #|                 },
+  #|                 addEventListener(type, listener, options) {
+  #|                   addEventListenerImpl(this, type, listener, options);
+  #|                 },
+  #|                 removeEventListener(type, listener, options) {
+  #|                   removeEventListenerImpl(this, type, listener, options);
+  #|                 },
+  #|                 dispatchEvent(event) {
+  #|                   return dispatchEventImpl(this, event);
   #|                 }
   #|               };
   #|               ensureDocumentIndexes(doc);
@@ -6084,14 +6843,16 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         _implementation = impl;
   #|         return impl;
   #|       },
-  #|       get activeElement() { return bodyEl; },
+  #|       _activeElement: bodyEl,
+  #|       get activeElement() { return this._activeElement || this.body || bodyEl || null; },
+  #|       set activeElement(value) { this._activeElement = value || this.body || bodyEl || null; },
   #|       get forms() { return []; },
   #|       get images() { return []; },
   #|       get links() { return []; },
   #|       get scripts() { return []; },
   #|       get embeds() { return []; },
   #|       get plugins() { return []; },
-  #|       hasFocus() { return true; },
+  #|       hasFocus() { return !!(this._activeElement || this.body || bodyEl); },
   #|       createElement(tagName) {
   #|         const rawName = String(tagName);
   #|         if (!isValidElementName(rawName)) {
@@ -6106,7 +6867,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         el._prefix = null;
   #|         const Ctor = tagToConstructor[normalizedName] || HTMLUnknownElement;
   #|         Object.setPrototypeOf(el, Ctor.prototype);
-  #|         return el;
+  #|         return maybeUpgradeCustomElement(el);
   #|       },
   #|       createTextNode(text) {
   #|         const str = String(text);
@@ -6438,6 +7199,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|             ? (tagToConstructor[lowerName] || HTMLElement)
   #|             : HTMLUnknownElement;
   #|           Object.setPrototypeOf(el, Ctor.prototype);
+  #|           return maybeUpgradeCustomElement(el);
   #|         } else {
   #|           Object.setPrototypeOf(el, Element.prototype);
   #|         }
@@ -6701,6 +7463,9 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       get firstElementChild() { return htmlEl; },
   #|       get lastElementChild() { return htmlEl; },
   #|       get childElementCount() { return 1; },
+  #|       addEventListener(type, listener, options) { addEventListenerImpl(this, type, listener, options); },
+  #|       removeEventListener(type, listener, options) { removeEventListenerImpl(this, type, listener, options); },
+  #|       dispatchEvent(event) { return dispatchEventImpl(this, event); },
   #|       prepend(...nodes) {
   #|         for (const n of nodes.reverse()) {
   #|           const node = (n && n._mockId !== undefined) ? n : this.createTextNode(String(n));
@@ -6768,6 +7533,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       get isTrusted() { return this._isTrusted; }
   #|       get timeStamp() { return this._timeStamp; }
   #|       get eventPhase() { return this._eventPhase; }
+  #|       composedPath() { return this._path ? this._path.slice() : []; }
   #|       stopPropagation() { this._propagationStopped = true; }
   #|       stopImmediatePropagation() { this._immediatePropagationStopped = true; this._propagationStopped = true; }
   #|       preventDefault() { if (this._cancelable) this._defaultPrevented = true; }
@@ -6813,8 +7579,26 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       get clientY() { return this._clientY; }
   #|       get relatedTarget() { return this._relatedTarget; }
   #|     }
-  #|     class FocusEvent extends UIEvent {}
-  #|     class KeyboardEvent extends UIEvent {}
+  #|     class FocusEvent extends UIEvent {
+  #|       constructor(type, options) {
+  #|         super(type, options);
+  #|         options = options || {};
+  #|         this._relatedTarget = options.relatedTarget || null;
+  #|       }
+  #|       get relatedTarget() { return this._relatedTarget; }
+  #|     }
+  #|     class KeyboardEvent extends UIEvent {
+  #|       constructor(type, options) {
+  #|         options = options || {};
+  #|         super(type, options);
+  #|         this.key = options.key || '';
+  #|         this.code = options.code || '';
+  #|         this.shiftKey = !!options.shiftKey;
+  #|         this.ctrlKey = !!options.ctrlKey;
+  #|         this.altKey = !!options.altKey;
+  #|         this.metaKey = !!options.metaKey;
+  #|       }
+  #|     }
   #|     class PointerEvent extends MouseEvent {
   #|       constructor(type, options) {
   #|         options = options || {};
@@ -7051,8 +7835,8 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           dispatchEvent(ev) { return true; }
   #|         };
   #|       },
-  #|       addEventListener(type, listener, options) { addEventListenerImpl(this, type, listener); },
-  #|       removeEventListener(type, listener, options) { removeEventListenerImpl(this, type, listener); },
+  #|       addEventListener(type, listener, options) { addEventListenerImpl(this, type, listener, options); },
+  #|       removeEventListener(type, listener, options) { removeEventListenerImpl(this, type, listener, options); },
   #|       dispatchEvent(event) { return dispatchEventImpl(this, event); },
   #|       Event: Event,
   #|       Node: Node,
@@ -7069,6 +7853,8 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       DOMParser: DOMParser,
   #|       DOMException: DOMException,
   #|       DOMImplementation: DOMImplementation,
+  #|       CustomElementRegistry: CustomElementRegistry,
+  #|       customElements: customElements,
   #|       HTMLElement: HTMLElement,
   #|       HTMLHtmlElement: HTMLHtmlElement,
   #|       HTMLHeadElement: HTMLHeadElement,
@@ -7167,6 +7953,8 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       globalThis.addEventListener = window.addEventListener.bind(window);
   #|       globalThis.removeEventListener = window.removeEventListener.bind(window);
   #|       globalThis.dispatchEvent = window.dispatchEvent.bind(window);
+  #|       globalThis.customElements = customElements;
+  #|       globalThis.CustomElementRegistry = CustomElementRegistry;
   #|       globalThis.queueMicrotask = queueMicrotask;
   #|       globalThis.fetch = fetch;
   #|       globalThis.Response = Response;
@@ -7180,6 +7968,8 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|     window.Request = Request;
   #|     window.Headers = Headers;
   #|     window.Blob = Blob;
+  #|     window.customElements = customElements;
+  #|     window.CustomElementRegistry = CustomElementRegistry;
   #|     window.parent = window;
   #|     window.top = window;
   #|     const NativeFunction = Function;
@@ -8211,23 +9001,51 @@ fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
   for op in ops {
     match op.op {
       "createElement" => {
-        let node_id = dom.create_element(op.tag_name)
-        id_map.set(op.id, node_id)
+        match
+          dom.create_runtime_node(op.id, @dom.Element, tag_name=op.tag_name) {
+          Ok(node_id) => id_map.set(op.id, node_id)
+          Err(_) => ()
+        }
       }
       "createTextNode" => {
-        let node_id = dom.create_text(op.text)
-        id_map.set(op.id, node_id)
+        match
+          dom.create_runtime_node(
+            op.id,
+            @dom.Text,
+            text_content=op.text,
+          ) {
+          Ok(node_id) => id_map.set(op.id, node_id)
+          Err(_) => ()
+        }
       }
       "createComment" => {
-        let node_id = dom.create_comment(op.text)
-        id_map.set(op.id, node_id)
+        match
+          dom.create_runtime_node(
+            op.id,
+            @dom.Comment,
+            text_content=op.text,
+          ) {
+          Ok(node_id) => id_map.set(op.id, node_id)
+          Err(_) => ()
+        }
       }
       "createDocumentFragment" => {
-        // DocumentFragment is represented as a temporary container
-        // For now, create a dummy element that won't be rendered
-        let node_id = dom.create_element("template")
-        id_map.set(op.id, node_id)
+        match dom.create_runtime_node(op.id, @dom.DocumentFragment) {
+          Ok(node_id) => id_map.set(op.id, node_id)
+          Err(_) => ()
+        }
       }
+      "attachShadow" =>
+        match
+          (
+            resolve_dom_id(id_map, op.parent_id),
+            resolve_dom_id(id_map, op.child_id),
+          ) {
+          (Some(host), Some(shadow_root)) => {
+            let _ = dom.attach_existing_shadow_root(host, shadow_root, op.value)
+          }
+          _ => ()
+        }
       "appendChild" =>
         match
           (
