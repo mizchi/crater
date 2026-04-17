@@ -75,9 +75,11 @@
 - [ ] stable test identity を 3 者で共有する
   - 候補: `taskId + spec + filter + variant + optional shard`
   - `flaker` issue: `mizchi/flaker#8`
-- [ ] VRT report schema を固定する
+- [x] VRT report schema を固定する
   - 共通: `status`, `title`, `identity`, `duration`, `artifacts`
   - domain metadata: `diffRatio`, `threshold`, `backend`, `viewport`, `snapshotKind`
+  - `crater` 側では `scripts/vrt-report-contract.ts` / `scripts/vrt-report-summary-core.ts` で artifact/report summary 契約を先に固定した
+  - `tests/helpers/crater-vrt.ts` / `scripts/vrt-report-summary.ts` / `docs/flaker-runbook.md` まで導線を揃え、task record / CI summary から同じ schema を参照できる状態にした
 - [ ] quarantine contract を固定する
   - `taskId`, `spec`, `titlePattern`, `mode`, `scope`, `owner`, `reason`, `condition`, `expiresAt`
   - `flaker` issue: `mizchi/flaker#5`, `mizchi/flaker#9`
@@ -97,8 +99,10 @@
 - [ ] matrix/shard aggregate summary を追加する (`mizchi/flaker#7`)
 
 #### Phase 2: crater 側の glue を薄くする
-- [ ] `crater` の公開 VRT API を入口として固定する
-- [ ] repo 内の一時スクリプトを、`flaker` に移せるものと残すものへ棚卸しする
+- [x] `crater` の公開 VRT API を入口として固定する
+  - `src/vrt_api.mbt` / `src/vrt_batch.mbt` で public wrapper を切り出し、`src/vrt_api_test.mbt` / `src/vrt_api_semantic_test.mbt` で契約を固定した
+- [x] repo 内の一時スクリプトを、`flaker` に移せるものと残すものへ棚卸しする
+  - `scripts/flaker-upstream-inventory.ts` で `ready-to-upstream` / `keep-in-crater` を group 単位で固定し、`docs/flaker-runbook.md` に core / contract / loader / CLI wrapper の境界を反映した
 - [x] `core` / `contract` / `loader` / `CLI wrapper` の境界を script 群で揃える
 - [x] `flaker` へ返す候補を inventory (`scripts/flaker-upstream-inventory.ts`) で明示する
 - [x] `ready-to-upstream` group を staging export (`scripts/flaker-upstream-export.ts`) できるようにする
@@ -108,7 +112,9 @@
 - [x] Playwright task の実行 -> report 保存 -> flaker import を 1 コマンドにまとめる
 - [x] task-scoped `flaker eval/reason` summary を local/CI から出せるようにする
 - [x] daily batch 用の full task plan / aggregate summary / scheduled workflow を追加する
-- [ ] daily batch artifact を run 間で `flaker collect` できる契約へ寄せる
+- [x] daily batch artifact を run 間で `flaker collect` できる契約へ寄せる
+  - `playwright-report-summary` / `flaker-task-summary` / `vrt-report-summary` は collect 互換コピーを出す
+  - `flaker-batch-summary` は `playwright-summary` / `flaker-summary` / `vrt-summary` を横断集約する
 - [ ] `flaker` に移した機能に合わせて `scripts/flaker-*` の自前実装を順次削る
 - [ ] VRT 判定は `crater` 側に残しつつ、summary / identity / quarantine 連携だけ共通契約へ寄せる
 
@@ -185,10 +191,11 @@
   - native: `crater_paint/main_native.mbt` の `split_words` + `font.measure_text`
   - layout: `scripts/text-intrinsic.ts` の `createTextIntrinsicFnFromMeasureText` (JS) / `wpt_runtime/providers_js.mbt` (MoonBit FFI)
   - 改善策: layout と同じロジック（スペース考慮の行幅累積）を paint 側にも実装
-- [ ] `b`, `strong` タグの CSS `font-weight: bold` が compute で処理されない
-  - 現在は UA stylesheet (h1-h6) と paint の `is_bold_tag()` でタグ名ベースの推定
-  - 正しくは CSS cascade で `font-weight` を解決すべき
-- [ ] text-decoration: underline 未実装（リンクのアンダーラインが表示されない）
+- [x] `b`, `strong` タグの `font-weight` は crater 側の paint tree まで反映する
+  - block 親配下の inline flatten でも `font-weight` を落とさないようにした
+  - semantic default / author override は `src/vrt_api_semantic_test.mbt` で固定
+- [x] text-decoration: underline は crater 側の paint tree / sixel render で反映する
+  - `a` / `u` / `s` の semantic default / author override は `src/vrt_api_semantic_test.mbt` で固定
 - [ ] WPT VRT ベースライン更新: `just wpt-vrt-baseline-update` で native backend の結果を記録
 - [ ] Inline abspos テキスト幅推定: Ahem フォント (ratio=1.0) でもブラウザ値と不一致
   - `position-absolute-in-inline-003.html`: span.width browser=40 vs crater=48
@@ -210,8 +217,9 @@
 ### 未着手
 - [ ] fixture ごとの threshold を artifact を見ながら段階的に tighten する
 - [ ] built-in real-world snapshot を増やして CI で 3-5 ページ比較できるようにする
-- [ ] `output/playwright/vrt/**/report.json` を CI summary に集約する
-- [ ] live form state や script 後の動的 UI の actual paint 比較
+- [x] `output/playwright/vrt/**/report.json` を CI summary に集約する
+- [x] live form state や script 後の動的 UI の actual paint 比較
+  - `tests/paint-vrt.test.ts` に `fixture: live form state after scripted save interaction` を追加済み
 
 ## kagura ↔ crater 作業分解点
 
@@ -814,11 +822,22 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
   - `Enter` / `Space` で link / button / submit / reset / checkbox / radio / summary
   - text input / textarea / select の入力と repaint
   - form `submit` / `reset`
+- Web Components / Shadow DOM:
+  - `attachShadow`, `getRootNode({ composed })`, `shadowRoot` 永続化
+  - `customElements.define/get/whenDefined` と autonomous custom element の upgrade / lifecycle
+  - `slot`, `assignedNodes`, `assignedElements`, `assignedSlot`, `slotchange`, `flatten`
+  - `document.activeElement`, `shadowRoot.activeElement`, `delegatesFocus`, `Tab` / `Shift+Tab`
+  - shadow boundary を跨ぐ `click` / focus-family / pointer / hover の retargeting
+  - `:host`, `:host(.class)`, `:host > ...` の最小 query surface
 - paint-side integration:
   - `tick_js()` -> DOM sync -> repaint
   - clip-aware topmost hit-test
   - `pointer-events: none`
   - `transform: translate(...)` 後の hit-test は fixture で確認済み
+- browser integration:
+  - composed tree serialize による render / a11y / jsbidi / CDP の観測面
+  - shadow root start node を起点にした `locateNodes(css|innerText|accessibility|xpath)`
+  - CDP `DOM.getDocument` / `requestChildNodes` / `getOuterHTML` の shadow root metadata
 
 ### Browser shell の未実装 / 未整理
 
@@ -845,13 +864,18 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
   - blur 時 `change` の細かい spec 差分
   - IME / selection / caret
 - [ ] browser shell fixture の実ページ寄りカバレッジ拡張
-  - article / dashboard / GitHub snapshot で DOM mutation + repaint を固定観測する
-  - 動的に追加された interactive 要素が `sync_render_state_from_dom_tree()` 後に
+  - [ ] article / dashboard / GitHub snapshot で DOM mutation + repaint を固定観測する
+  - [x] 動的に追加された interactive 要素が `sync_render_state_from_dom_tree()` 後に
     render/a11y/hit-test へ再同期されることを fixture で固定する
-  - 動的に削除された interactive 要素が stale hit region を残さないことを fixture で固定する
-  - 同じ `source_id` の要素差し替えで focus が replacement に継続することを fixture で固定する
-  - focus 中の要素が消えたとき、次の `Tab` で次の focusable へ進めることを fixture で固定する
-  - focus 中の要素が消えたとき、`Shift+Tab` と mouse click でも次の実要素へ自然に落ちることを fixture で固定する
+  - [x] 動的に削除された interactive 要素が stale hit region を残さないことを fixture で固定する
+  - [x] 同じ `source_id` の要素差し替えで focus が replacement に継続することを fixture で固定する
+  - [x] focus 中の要素が消えたとき、次の `Tab` で次の focusable へ進めることを fixture で固定する
+  - [x] focus 中の要素が消えたとき、`Shift+Tab` と mouse click でも次の実要素へ自然に落ちることを fixture で固定する
+- [ ] Web Components の残件を layout/render 側まで通す
+  - `sync_render_state_from_dom_tree()` の `serialize -> reparse` 依存を減らし、composed tree を直接 layout 入力へ渡す
+  - selector/style は `:host` の複合 selector、`::slotted`、`:host-context` まで広げる
+  - DOM surface は `closed` shadow root、declarative shadow DOM、customized built-in、form-associated custom elements / `ElementInternals` を残す
+  - Playwright / CDP / jsbidi の query / action / inspection surface を shadow-aware に揃え切る
 
 ## パフォーマンス改善メモ（2026-03-11）
 
