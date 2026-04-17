@@ -70,6 +70,19 @@ describe("buildWptVrtShardSummary", () => {
         module: "css-flexbox",
         diffRatio: 0.033,
         status: "fail",
+        identityKey:
+          "{\"taskId\":\"wpt-vrt\",\"spec\":\"tests/wpt-vrt.test.ts\",\"filter\":\"css-flexbox/gap-002.html\",\"variant\":{\"snapshotKind\":\"wpt\"}}",
+        identity: {
+          key:
+            "{\"taskId\":\"wpt-vrt\",\"spec\":\"tests/wpt-vrt.test.ts\",\"filter\":\"css-flexbox/gap-002.html\",\"variant\":{\"snapshotKind\":\"wpt\"}}",
+          taskId: "wpt-vrt",
+          spec: "tests/wpt-vrt.test.ts",
+          filter: "css-flexbox/gap-002.html",
+          title: "css-flexbox/gap-002.html",
+          variant: {
+            snapshotKind: "wpt",
+          },
+        },
       },
     ]);
   });
@@ -146,6 +159,19 @@ describe("buildWptVrtShardSummary", () => {
         regressionLimit: 0.019,
         headroom: -0.002,
         status: "pass",
+        identityKey:
+          "{\"taskId\":\"wpt-vrt\",\"spec\":\"tests/wpt-vrt.test.ts\",\"filter\":\"css-display/display-contents-text-only-001.html\",\"variant\":{\"snapshotKind\":\"wpt\"}}",
+        identity: {
+          key:
+            "{\"taskId\":\"wpt-vrt\",\"spec\":\"tests/wpt-vrt.test.ts\",\"filter\":\"css-display/display-contents-text-only-001.html\",\"variant\":{\"snapshotKind\":\"wpt\"}}",
+          taskId: "wpt-vrt",
+          spec: "tests/wpt-vrt.test.ts",
+          filter: "css-display/display-contents-text-only-001.html",
+          title: "css-display/display-contents-text-only-001.html",
+          variant: {
+            snapshotKind: "wpt",
+          },
+        },
       },
     ]);
     expect(summary.closestToThreshold).toEqual([
@@ -157,6 +183,19 @@ describe("buildWptVrtShardSummary", () => {
         regressionLimit: 0.019,
         headroom: -0.002,
         status: "pass",
+        identityKey:
+          "{\"taskId\":\"wpt-vrt\",\"spec\":\"tests/wpt-vrt.test.ts\",\"filter\":\"css-display/display-contents-text-only-001.html\",\"variant\":{\"snapshotKind\":\"wpt\"}}",
+        identity: {
+          key:
+            "{\"taskId\":\"wpt-vrt\",\"spec\":\"tests/wpt-vrt.test.ts\",\"filter\":\"css-display/display-contents-text-only-001.html\",\"variant\":{\"snapshotKind\":\"wpt\"}}",
+          taskId: "wpt-vrt",
+          spec: "tests/wpt-vrt.test.ts",
+          filter: "css-display/display-contents-text-only-001.html",
+          title: "css-display/display-contents-text-only-001.html",
+          variant: {
+            snapshotKind: "wpt",
+          },
+        },
       },
       {
         relativePath: "css-display/display-contents-dynamic-multicol-001-inline.html",
@@ -166,8 +205,45 @@ describe("buildWptVrtShardSummary", () => {
         regressionLimit: 0.019,
         headroom: 0.0007,
         status: "pass",
+        identityKey:
+          "{\"taskId\":\"wpt-vrt\",\"spec\":\"tests/wpt-vrt.test.ts\",\"filter\":\"css-display/display-contents-dynamic-multicol-001-inline.html\",\"variant\":{\"snapshotKind\":\"wpt\"}}",
+        identity: {
+          key:
+            "{\"taskId\":\"wpt-vrt\",\"spec\":\"tests/wpt-vrt.test.ts\",\"filter\":\"css-display/display-contents-dynamic-multicol-001-inline.html\",\"variant\":{\"snapshotKind\":\"wpt\"}}",
+          taskId: "wpt-vrt",
+          spec: "tests/wpt-vrt.test.ts",
+          filter: "css-display/display-contents-dynamic-multicol-001-inline.html",
+          title: "css-display/display-contents-dynamic-multicol-001-inline.html",
+          variant: {
+            snapshotKind: "wpt",
+          },
+        },
       },
     ]);
+  });
+
+  it("accepts explicit task/spec identity context for downstream quarantine matching", () => {
+    const summary = buildWptVrtShardSummary(
+      makeRawReport(),
+      "flexbox-1",
+      {
+        taskId: "paint-vrt",
+        spec: "tests/custom-wpt-vrt.test.ts",
+      },
+    );
+
+    expect(summary.failures[0]).toMatchObject({
+      identityKey:
+        "{\"taskId\":\"paint-vrt\",\"spec\":\"tests/custom-wpt-vrt.test.ts\",\"filter\":\"css-flexbox/gap-002.html\",\"variant\":{\"snapshotKind\":\"wpt\"}}",
+      identity: {
+        taskId: "paint-vrt",
+        spec: "tests/custom-wpt-vrt.test.ts",
+        filter: "css-flexbox/gap-002.html",
+        variant: {
+          snapshotKind: "wpt",
+        },
+      },
+    });
   });
 });
 
@@ -258,6 +334,19 @@ describe("aggregateWptVrtSummaries", () => {
         regressionLimit: 0.019,
         headroom: -0.002,
         status: "pass",
+        identityKey:
+          "{\"taskId\":\"wpt-vrt\",\"spec\":\"tests/wpt-vrt.test.ts\",\"filter\":\"css-display/display-contents-text-only-001.html\",\"variant\":{\"snapshotKind\":\"wpt\"}}",
+        identity: {
+          key:
+            "{\"taskId\":\"wpt-vrt\",\"spec\":\"tests/wpt-vrt.test.ts\",\"filter\":\"css-display/display-contents-text-only-001.html\",\"variant\":{\"snapshotKind\":\"wpt\"}}",
+          taskId: "wpt-vrt",
+          spec: "tests/wpt-vrt.test.ts",
+          filter: "css-display/display-contents-text-only-001.html",
+          title: "css-display/display-contents-text-only-001.html",
+          variant: {
+            snapshotKind: "wpt",
+          },
+        },
       },
     ]);
   });

@@ -1,5 +1,6 @@
 import path from "node:path";
 import { expect, test, type Browser } from "@playwright/test";
+import { createVrtArtifactReportContext } from "../scripts/vrt-report-contract.ts";
 import { CraterBidiPage } from "./helpers/crater-bidi-page";
 import {
   chromiumPageForVrt,
@@ -28,6 +29,7 @@ const SHARD_MODULES = process.env.WPT_VRT_SHARD?.split(",").map(s => s.trim()).f
 const SHARD_OFFSET = Number(process.env.WPT_VRT_OFFSET) || 0;
 const SHARD_LIMIT = Number(process.env.WPT_VRT_LIMIT) || 0;
 const OUTPUT_ROOT = path.join(process.cwd(), "output", "playwright", "vrt", "wpt");
+const WPT_VRT_SPEC = "tests/wpt-vrt.test.ts";
 const REGRESSION_EPSILON = 0.01;
 const BATCH_SIZE = 5;
 const RUN_ID = [
@@ -73,6 +75,16 @@ async function runVrtTest(
       outputDir,
       threshold: config.pixelmatchThreshold,
       maxDiffRatio: config.defaultMaxDiffRatio,
+      report: createVrtArtifactReportContext({
+        taskId: "wpt-vrt",
+        file: WPT_VRT_SPEC,
+        title: entry.relativePath,
+        filter: entry.relativePath,
+        shard: SHARD_NAME,
+        variant: {
+          module: entry.moduleName,
+        },
+      }),
       cropToContent: true,
       contentPadding: 12,
       backgroundTolerance: 18,

@@ -43,10 +43,12 @@ describe("runPlaywrightReportSummaryCli", () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("# Playwright Report Summary");
-    expect(result.writes).toHaveLength(2);
+    expect(result.writes).toHaveLength(4);
     expect(result.writes?.map((write) => write.path)).toEqual([
       "/repo/out/summary.md",
       "/repo/out/summary.json",
+      "/repo/out/paint-vrt/playwright-summary/paint-vrt.md",
+      "/repo/out/paint-vrt/playwright-summary/paint-vrt.json",
     ]);
     expect(result.writes?.[0]?.content).toContain("| Label | paint-vrt |");
   });

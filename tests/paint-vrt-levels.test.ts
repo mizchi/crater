@@ -4,6 +4,7 @@
  */
 import path from "node:path";
 import { expect, test, type Browser } from "@playwright/test";
+import { createVrtArtifactReportContext } from "../scripts/vrt-report-contract.ts";
 import {
   chromiumPageForVrt,
   compareChromiumPngToImage,
@@ -13,6 +14,15 @@ import {
 } from "./helpers/crater-vrt";
 
 const OUTPUT_ROOT = path.join(process.cwd(), "output", "playwright", "vrt", "levels");
+const PAINT_VRT_LEVELS_SPEC = "tests/paint-vrt-levels.test.ts";
+
+function paintVrtLevelsReport(title: string) {
+  return createVrtArtifactReportContext({
+    taskId: "paint-vrt",
+    file: PAINT_VRT_LEVELS_SPEC,
+    title,
+  });
+}
 
 async function compareFixture(
   browser: Browser,
@@ -36,6 +46,7 @@ async function compareFixture(
       outputDir: path.join(OUTPUT_ROOT, name),
       threshold: options.threshold ?? 0.3,
       maxDiffRatio: options.maxDiffRatio,
+      report: paintVrtLevelsReport(name),
       cropToContent: true,
       contentPadding: 8,
       backgroundTolerance: 18,

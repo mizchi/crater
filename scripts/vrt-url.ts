@@ -16,12 +16,13 @@ import fs from "node:fs";
 import { execFileSync } from "node:child_process";
 import pixelmatchFn from "pixelmatch";
 import { resolveBidiUrl } from "./bidi-url.ts";
+import { createNormalizedVrtArtifactReport } from "./vrt-report-contract.ts";
 
 // --- Args ---
 const args = process.argv.slice(2);
 const url = args.find((a) => a.startsWith("http"));
 if (!url) {
-  console.error("Usage: npx tsx scripts/vrt-url.ts <url> [--name slug] [--width N] [--height N] [--backend native|sixel]");
+  console.error("Usage: npx tsx scripts/vrt-url.ts <url> [--name slug] [--width N] [--height N] [--backend native|sixel] [--max-diff-ratio N]");
   process.exit(1);
 }
 
@@ -35,6 +36,7 @@ const width = parseInt(getArg("--width", "800"));
 const height = parseInt(getArg("--height", "600"));
 const backend = getArg("--backend", "sixel");
 const threshold = parseFloat(getArg("--threshold", "0.3"));
+const maxDiffRatio = parseFloat(getArg("--max-diff-ratio", "0.15"));
 const outputDir = path.join(process.cwd(), "output", "playwright", "vrt", "url", name);
 
 console.log(`\nVRT: ${url}`);
@@ -256,15 +258,35 @@ fs.writeFileSync(path.join(outputDir, "crater.png"), await encodePng(craterRgba,
 fs.writeFileSync(path.join(outputDir, "diff.png"), await encodePng(diffOutput, w, h));
 await encodeBrowser.close();
 
-fs.writeFileSync(path.join(outputDir, "report.json"), JSON.stringify({
-  url, name, width: w, height: h,
-  backend, threshold,
-  diffPixels, totalPixels, diffRatio,
-  timestamp: new Date().toISOString(),
-}, null, 2));
+const report = createNormalizedVrtArtifactReport({
+  title: name,
+  filter: url,
+  artifacts: {
+    chromium: "chromium.png",
+    crater: "crater.png",
+    diff: "diff.png",
+    report: "report.json",
+  },
+  metadata: {
+    width: w,
+    height: h,
+    diffPixels,
+    totalPixels,
+    diffRatio,
+    threshold,
+    maxDiffRatio,
+    backend,
+    viewport: {
+      width: w,
+      height: h,
+    },
+    snapshotKind: "url",
+  },
+});
+fs.writeFileSync(path.join(outputDir, "report.json"), JSON.stringify(report, null, 2));
 
 // --- Report ---
 const pct = (diffRatio * 100).toFixed(2);
-const status = diffRatio <= 0.05 ? "PASS" : diffRatio <= 0.15 ? "WARN" : "FAIL";
+const status = diffRatio <= 0.05 ? "PASS" : diffRatio <= maxDiffRatio ? "WARN" : "FAIL";
 console.log(`\n${status}: ${pct}% diff (${diffPixels}/${totalPixels} pixels)`);
 console.log(`  Output: ${outputDir}/`);

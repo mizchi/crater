@@ -1,9 +1,7 @@
 #!/usr/bin/env npx tsx
 
-import fs from "node:fs";
 import path from "node:path";
 import {
-  assertRequiredOptions,
   createReportOutputHandlers,
   parseCliFlags,
   renderUsage,
@@ -17,53 +15,43 @@ import {
 } from "./script-runtime.ts";
 import { appendFlakerCollectedSummaryWrites } from "./flaker-collected-summary-paths.ts";
 import {
-  buildPlaywrightSummary,
-  renderPlaywrightMarkdown,
-  type PlaywrightJsonReport,
-} from "./playwright-report-summary-core.ts";
+  buildVrtArtifactSummary,
+  renderVrtArtifactSummaryMarkdown,
+} from "./vrt-report-summary-core.ts";
+import { loadVrtArtifactReports } from "./vrt-report-loader.ts";
 
-export * from "./playwright-report-contract.ts";
-export * from "./playwright-report-summary-core.ts";
+const DEFAULT_INPUT = path.join("output", "playwright", "vrt");
+export * from "./vrt-report-summary-core.ts";
+export { loadVrtArtifactReports } from "./vrt-report-loader.ts";
 
-export interface PlaywrightReportSummaryCliArgs extends ReportOutputCliOptions {
-  input: string;
+interface VrtReportSummaryCliArgs extends ReportOutputCliOptions {
+  inputDir?: string;
   label?: string;
   collectTaskId?: string;
 }
 
-const DEFAULT_INPUT = "playwright-report.json";
-
-function basenameWithoutExt(filePath: string): string {
-  const base = path.basename(filePath);
-  return base.replace(/\.[^.]+$/, "");
-}
-
 function usage(): string {
   return renderUsage({
-    summary: "Playwright Report Summary",
-    command: "npx tsx scripts/playwright-report-summary.ts [options]",
+    summary: "Aggregate VRT artifact report.json files",
+    command: "npx tsx scripts/vrt-report-summary.ts [options]",
     optionLines: [
-      `  --input <file>      Playwright JSON report (default: ${DEFAULT_INPUT})`,
-      "  --label <name>      Summary label shown in markdown/json",
+      `  --input <dir>       Directory containing VRT artifact report.json files (default: ${DEFAULT_INPUT})`,
+      "  --label <name>      Summary label override",
       "  --collect-task-id <task-id>  Task id used for collect-compatible copies (defaults to label)",
-      "  --json <file>       Write normalized summary JSON",
+      "  --json <file>       Write JSON summary",
       "  --markdown <file>   Write markdown summary",
     ],
     helpLine: "  --help              Show this help",
   });
 }
 
-export function parsePlaywrightReportSummaryArgs(
-  args: string[],
-): PlaywrightReportSummaryCliArgs {
-  const options = parseCliFlags(args, {
-    input: DEFAULT_INPUT,
-  } as PlaywrightReportSummaryCliArgs, {
+export function parseVrtReportSummaryArgs(args: string[]): VrtReportSummaryCliArgs {
+  const options = parseCliFlags(args, {} as VrtReportSummaryCliArgs, {
     usage,
     handlers: {
       "--input": {
         set: (target, value) => {
-          target.input = value ?? "";
+          target.inputDir = value ?? "";
         },
       },
       "--label": {
@@ -80,36 +68,27 @@ export function parsePlaywrightReportSummaryArgs(
     },
   });
 
-  assertRequiredOptions(options, [
-    {
-      select: (candidate) => candidate.input,
-      errorMessage: "--input is required",
-    },
-  ]);
+  if (!options.inputDir) {
+    options.inputDir = DEFAULT_INPUT;
+  }
 
   return options;
 }
-
-export function runPlaywrightReportSummaryCli(
+export function runVrtReportSummaryCli(
   args: string[],
   options?: {
     cwd?: string;
-    readFile?: (targetPath: string) => string;
   },
 ): ScriptExecutionResult {
   try {
-    const parsed = parsePlaywrightReportSummaryArgs(args);
+    const parsed = parseVrtReportSummaryArgs(args);
     const cwd = options?.cwd ?? process.cwd();
-    const inputPath = path.resolve(cwd, parsed.input);
-    const readFile = options?.readFile ?? ((targetPath: string) => fs.readFileSync(targetPath, "utf8"));
-    const report = JSON.parse(readFile(inputPath)) as PlaywrightJsonReport;
-    const summary = buildPlaywrightSummary(
-      report,
-      parsed.label ?? basenameWithoutExt(inputPath),
-      path.relative(cwd, inputPath),
-    );
-    const collectTaskId = parsed.collectTaskId?.trim() || summary.label;
-    const markdown = renderPlaywrightMarkdown(summary);
+    const inputDir = path.resolve(cwd, parsed.inputDir ?? DEFAULT_INPUT);
+    const reports = loadVrtArtifactReports(inputDir);
+    const label = parsed.label ?? (path.basename(inputDir) || "vrt");
+    const collectTaskId = parsed.collectTaskId?.trim() || label;
+    const summary = buildVrtArtifactSummary(reports, label);
+    const markdown = renderVrtArtifactSummaryMarkdown(summary);
     const jsonContent = `${JSON.stringify(summary, null, 2)}\n`;
     const writes: ScriptExecutionResult["writes"] = [];
     appendReportWrites(writes, {
@@ -122,7 +101,7 @@ export function runPlaywrightReportSummaryCli(
     appendFlakerCollectedSummaryWrites(writes, {
       cwd,
       taskId: collectTaskId,
-      kind: "playwright-summary",
+      kind: "vrt-summary",
       jsonOutput: parsed.jsonOutput,
       markdownOutput: parsed.markdownOutput,
       jsonContent,
@@ -144,5 +123,5 @@ export function runPlaywrightReportSummaryCli(
 }
 
 if (isMainModule(import.meta.url)) {
-  emitScriptExecutionResult(runPlaywrightReportSummaryCli(process.argv.slice(2)));
+  emitScriptExecutionResult(runVrtReportSummaryCli(process.argv.slice(2)));
 }

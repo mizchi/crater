@@ -4,6 +4,7 @@
  */
 import path from "node:path";
 import { expect, test, type Browser } from "@playwright/test";
+import { createVrtArtifactReportContext } from "../scripts/vrt-report-contract.ts";
 import {
   chromiumPageForVrt,
   compareChromiumPngToImage,
@@ -13,6 +14,7 @@ import {
 } from "./helpers/crater-vrt";
 
 const OUTPUT_ROOT = path.join(process.cwd(), "output", "playwright", "vrt", "responsive");
+const PAINT_VRT_RESPONSIVE_SPEC = "tests/paint-vrt-responsive.test.ts";
 
 const VIEWPORTS = [
   { name: "mobile", width: 320, height: 568 },
@@ -21,6 +23,17 @@ const VIEWPORTS = [
   { name: "desktop", width: 1024, height: 768 },
   { name: "wide", width: 1280, height: 800 },
 ] as const;
+
+function paintVrtResponsiveReport(title: string, viewport: string) {
+  return createVrtArtifactReportContext({
+    taskId: "paint-vrt",
+    file: PAINT_VRT_RESPONSIVE_SPEC,
+    title,
+    variant: {
+      viewport,
+    },
+  });
+}
 
 async function compareAtViewports(
   browser: Browser,
@@ -48,6 +61,7 @@ async function compareAtViewports(
         outputDir: path.join(OUTPUT_ROOT, testName, vp.name),
         threshold: options.threshold ?? 0.3,
         maxDiffRatio: options.maxDiffRatio,
+        report: paintVrtResponsiveReport(testName, vp.name),
         cropToContent: true,
         contentPadding: 8,
         backgroundTolerance: 18,

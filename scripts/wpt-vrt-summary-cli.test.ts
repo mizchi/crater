@@ -9,6 +9,8 @@ describe("runWptVrtSummaryCli", () => {
         "output/playwright/vrt/wpt/wpt-vrt-results.json",
         "--label",
         "flexbox-1",
+        "--collect-task-id",
+        "paint-vrt-wpt",
         "--json",
         "out/shard.json",
         "--markdown",
@@ -46,6 +48,14 @@ describe("runWptVrtSummaryCli", () => {
         path: "/repo/out/shard.json",
         content: expect.stringContaining('"suite": "wpt-vrt"'),
       },
+      {
+        path: "/repo/out/paint-vrt-wpt/wpt-vrt-summary/paint-vrt-wpt.md",
+        content: expect.stringContaining("# WPT VRT Shard Summary"),
+      },
+      {
+        path: "/repo/out/paint-vrt-wpt/wpt-vrt-summary/paint-vrt-wpt.json",
+        content: expect.stringContaining('"label": "flexbox-1"'),
+      },
     ]);
   });
 
@@ -54,6 +64,8 @@ describe("runWptVrtSummaryCli", () => {
       [
         "--aggregate",
         "wpt-vrt-reports",
+        "--collect-task-id",
+        "wpt-vrt-daily",
         "--json",
         "out/aggregate.json",
         "--markdown",
@@ -95,6 +107,14 @@ describe("runWptVrtSummaryCli", () => {
       },
       {
         path: "/repo/out/aggregate.json",
+        content: expect.stringContaining('"shards": 1'),
+      },
+      {
+        path: "/repo/out/wpt-vrt-daily/wpt-vrt-summary/wpt-vrt-daily.md",
+        content: expect.stringContaining("# WPT VRT Aggregate Summary"),
+      },
+      {
+        path: "/repo/out/wpt-vrt-daily/wpt-vrt-summary/wpt-vrt-daily.json",
         content: expect.stringContaining('"shards": 1'),
       },
     ]);
