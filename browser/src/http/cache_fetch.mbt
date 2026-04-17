@@ -30,10 +30,10 @@ fn entry_to_response(entry : CacheEntry) -> HttpResponse {
 /// Fetch with transparent HTTP caching (async version).
 /// Wraps an async fetcher (e.g. @http.fetch) with cache lookup/store.
 /// Only GET requests are cached.
-pub async fn cached_fetch_async(
+pub async fn[CacheBackend : HttpCacheBackend] cached_fetch_async(
   url~ : String,
   options~ : FetchOptions,
-  cache~ : MemoryCacheBackend,
+  cache~ : CacheBackend,
   fetcher~ : async (String, FetchOptions) -> HttpResponse raise HttpError,
 ) -> HttpResponse raise HttpError {
   if options.http_method != "GET" {
@@ -93,10 +93,10 @@ pub async fn cached_fetch_async(
 /// Fetch with transparent HTTP caching (sync version for testing).
 /// Only GET requests are cached. The fetcher parameter allows callers to
 /// inject any transport function.
-pub fn cached_fetch(
+pub fn[CacheBackend : HttpCacheBackend] cached_fetch(
   url~ : String,
   options~ : FetchOptions,
-  cache~ : MemoryCacheBackend,
+  cache~ : CacheBackend,
   fetcher~ : (String, FetchOptions) -> HttpResponse raise HttpError,
 ) -> HttpResponse raise HttpError {
   // Only cache GET

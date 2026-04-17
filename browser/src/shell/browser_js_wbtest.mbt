@@ -2336,6 +2336,207 @@ async test "Browser execute_inline_js setRangeText updates focused text input" {
 }
 
 ///|
+async test "Browser sync_render_state_from_dom_tree renders shadow root composed content" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <div id="host"><span>light</span></div>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+
+  let code =
+    #|(() => {
+    #|  const host = document.getElementById('host');
+    #|  const shadow = host.attachShadow({ mode: 'open' });
+    #|  shadow.innerHTML = '<p>shadow-text</p>';
+    #|  return host.shadowRoot.firstChild.textContent;
+    #|})()
+  let result = browser.execute_inline_js(code)
+  inspect(result, content="Some(\"shadow-text\")")
+
+  let _ = browser.sync_render_state_from_dom_tree()
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("shadow-text"))
+  assert_false(rendered.contains("light"))
+}
+
+///|
+async test "Browser sync_render_state_from_dom_tree renders distributed slot content" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <div id="host">
+    #|    <span id="plain">plain-text</span>
+    #|    <em id="named" slot="label">named-text</em>
+    #|  </div>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+
+  let code =
+    #|(() => {
+    #|  const host = document.getElementById('host');
+    #|  const shadow = host.attachShadow({ mode: 'open' });
+    #|  shadow.innerHTML = '<section><slot></slot><slot name="label"></slot><span>fallback</span></section>';
+    #|  return shadow.textContent.replace(/\s+/g, ' ').trim();
+    #|})()
+  let result = browser.execute_inline_js(code)
+  inspect(result, content="Some(\"fallback\")")
+
+  let _ = browser.sync_render_state_from_dom_tree()
+  assert_true(browser.html_content.contains("plain-text"))
+  assert_true(browser.html_content.contains("named-text"))
+  assert_true(browser.html_content.contains("fallback"))
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("plain-text"))
+  assert_true(rendered.contains("named-text"))
+}
+
+///|
+async test "Browser sync_render_state_from_dom_tree updates slot reassignment" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <div id="host">
+    #|    <span id="item">slot-source</span>
+    #|  </div>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+
+  let code =
+    #|(() => {
+    #|  const host = document.getElementById('host');
+    #|  const shadow = host.attachShadow({ mode: 'open' });
+    #|  shadow.innerHTML = '<section><slot name="label"></slot><slot></slot></section>';
+    #|  const slots = shadow.querySelectorAll('slot');
+    #|  document.getElementById('item').slot = 'label';
+    #|  return [
+    #|    slots[0].assignedNodes().length,
+    #|    slots[1].assignedNodes().length
+    #|  ].join('|');
+    #|})()
+  let result = browser.execute_inline_js(code)
+  inspect(result, content="Some(\"1|0\")")
+
+  let _ = browser.sync_render_state_from_dom_tree()
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("slot-source"))
+}
+
+///|
+async test "Browser sync_render_state_from_dom_tree builds accessibility tree from shadow root composed content" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <div id="host">
+    #|    <button id="light-btn">light</button>
+    #|  </div>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+
+  let code =
+    #|(() => {
+    #|  const host = document.getElementById('host');
+    #|  const shadow = host.attachShadow({ mode: 'open' });
+    #|  shadow.innerHTML = '<button id="shadow-btn">shadow action</button>';
+    #|  return shadow.firstChild.id;
+    #|})()
+  let result = browser.execute_inline_js(code)
+  inspect(result, content="Some(\"shadow-btn\")")
+
+  let _ = browser.sync_render_state_from_dom_tree()
+  match browser.a11y_tree {
+    Some(tree) => {
+      match tree.find_by_source_id("shadow-btn") {
+        Some(_) => assert_true(true)
+        None => assert_true(false)
+      }
+      match tree.find_by_source_id("light-btn") {
+        Some(_) => assert_true(false)
+        None => assert_true(true)
+      }
+    }
+    None => panic()
+  }
+}
+
+///|
+async test "Browser sync_render_state_from_dom_tree builds accessibility tree from distributed slot content" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <div id="host">
+    #|    <button id="slotted-btn" slot="cta">slotted action</button>
+    #|  </div>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+
+  let code =
+    #|(() => {
+    #|  const host = document.getElementById('host');
+    #|  const shadow = host.attachShadow({ mode: 'open' });
+    #|  shadow.innerHTML = '<section><slot name="cta"><button id="fallback-btn">fallback action</button></slot></section>';
+    #|  return shadow.textContent.replace(/\s+/g, ' ').trim();
+    #|})()
+  let result = browser.execute_inline_js(code)
+  inspect(result, content="Some(\"fallback action\")")
+
+  let _ = browser.sync_render_state_from_dom_tree()
+  match browser.a11y_tree {
+    Some(tree) => {
+      match tree.find_by_source_id("slotted-btn") {
+        Some(_) => assert_true(true)
+        None => assert_true(false)
+      }
+      match tree.find_by_source_id("fallback-btn") {
+        Some(_) => assert_true(false)
+        None => assert_true(true)
+      }
+    }
+    None => panic()
+  }
+}
+
+///|
 async test "Browser handle_focused_key dispatches change event for focused text input on Enter" {
   let browser = Browser::new(800, 600)
   let html =

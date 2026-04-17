@@ -5,20 +5,7 @@ pub struct SqliteCacheBackend {
 }
 
 ///|
-pub fn SqliteCacheBackend::new(db_path : String) -> SqliteCacheBackend {
-  let db = match @sqlite.Database::open(db_path) {
-    Some(db) => db
-    None => panic()
-  }
-  db.exec(
-    "CREATE TABLE IF NOT EXISTS http_cache (url TEXT PRIMARY KEY, status INTEGER NOT NULL, headers TEXT NOT NULL, body TEXT, etag TEXT, last_modified TEXT, cache_control TEXT, stored_at REAL NOT NULL)",
-  )
-  |> ignore
-  { db, }
-}
-
-///|
-pub fn SqliteCacheBackend::lookup(
+pub impl HttpCacheBackend for SqliteCacheBackend with lookup(
   self : SqliteCacheBackend,
   url : String,
 ) -> CacheEntry? {
@@ -63,7 +50,7 @@ pub fn SqliteCacheBackend::lookup(
 }
 
 ///|
-pub fn SqliteCacheBackend::store(
+pub impl HttpCacheBackend for SqliteCacheBackend with store(
   self : SqliteCacheBackend,
   entry : CacheEntry,
 ) -> Unit {
@@ -74,10 +61,7 @@ pub fn SqliteCacheBackend::store(
     Some(s) => s
     None => return
   }
-  let cc = match get_header(entry.headers, "cache-control") {
-    Some(h) => h
-    None => ""
-  }
+  let cc = render_cache_control(entry.directives)
   stmt.bind(1, @sqlite.Text(@sqlite.string_to_bytes(entry.url))) |> ignore
   stmt.bind(2, @sqlite.Int(entry.status)) |> ignore
   stmt.bind(
@@ -109,7 +93,7 @@ pub fn SqliteCacheBackend::store(
 }
 
 ///|
-pub fn SqliteCacheBackend::remove(
+pub impl HttpCacheBackend for SqliteCacheBackend with remove(
   self : SqliteCacheBackend,
   url : String,
 ) -> Unit {
@@ -123,8 +107,52 @@ pub fn SqliteCacheBackend::remove(
 }
 
 ///|
-pub fn SqliteCacheBackend::clear(self : SqliteCacheBackend) -> Unit {
+pub impl HttpCacheBackend for SqliteCacheBackend with clear(
+  self : SqliteCacheBackend,
+) -> Unit {
   self.db.exec("DELETE FROM http_cache") |> ignore
+}
+
+///|
+pub fn SqliteCacheBackend::new(db_path : String) -> SqliteCacheBackend {
+  let db = match @sqlite.Database::open(db_path) {
+    Some(db) => db
+    None => panic()
+  }
+  db.exec(
+    "CREATE TABLE IF NOT EXISTS http_cache (url TEXT PRIMARY KEY, status INTEGER NOT NULL, headers TEXT NOT NULL, body TEXT, etag TEXT, last_modified TEXT, cache_control TEXT, stored_at REAL NOT NULL)",
+  )
+  |> ignore
+  { db, }
+}
+
+///|
+pub fn SqliteCacheBackend::lookup(
+  self : SqliteCacheBackend,
+  url : String,
+) -> CacheEntry? {
+  HttpCacheBackend::lookup(self, url)
+}
+
+///|
+pub fn SqliteCacheBackend::store(
+  self : SqliteCacheBackend,
+  entry : CacheEntry,
+) -> Unit {
+  HttpCacheBackend::store(self, entry)
+}
+
+///|
+pub fn SqliteCacheBackend::remove(
+  self : SqliteCacheBackend,
+  url : String,
+) -> Unit {
+  HttpCacheBackend::remove(self, url)
+}
+
+///|
+pub fn SqliteCacheBackend::clear(self : SqliteCacheBackend) -> Unit {
+  HttpCacheBackend::clear(self)
 }
 
 ///|

@@ -515,10 +515,7 @@ async fn main {
       } catch {
         err => println("Navigation error: \{err}")
       }
-      // For full mode, we need to scroll through entire content
-      // For now, just render the initial viewport
-      // TODO: Implement full page rendering by scrolling through content
-      let text_output = browser.render_output(@shell.OutputMode::Text)
+      let text_output = browser.render_text_full_page()
       @tui.print_raw(text_output)
       return
     }

@@ -6,13 +6,7 @@ pub(all) struct MemoryCacheBackend {
 }
 
 ///|
-pub fn MemoryCacheBackend::new(max_entries? : Int = 1000) -> MemoryCacheBackend {
-  { entries: {}, max_entries }
-}
-
-///|
-/// Look up a cache entry by URL. Returns None if not found.
-pub fn MemoryCacheBackend::lookup(
+pub impl HttpCacheBackend for MemoryCacheBackend with lookup(
   self : MemoryCacheBackend,
   url : String,
 ) -> CacheEntry? {
@@ -20,8 +14,7 @@ pub fn MemoryCacheBackend::lookup(
 }
 
 ///|
-/// Store a cache entry. If at capacity and key is new, evict the oldest entry by stored_at.
-pub fn MemoryCacheBackend::store(
+pub impl HttpCacheBackend for MemoryCacheBackend with store(
   self : MemoryCacheBackend,
   entry : CacheEntry,
 ) -> Unit {
@@ -44,8 +37,7 @@ pub fn MemoryCacheBackend::store(
 }
 
 ///|
-/// Remove a cache entry by URL.
-pub fn MemoryCacheBackend::remove(
+pub impl HttpCacheBackend for MemoryCacheBackend with remove(
   self : MemoryCacheBackend,
   url : String,
 ) -> Unit {
@@ -53,7 +45,46 @@ pub fn MemoryCacheBackend::remove(
 }
 
 ///|
+pub impl HttpCacheBackend for MemoryCacheBackend with clear(
+  self : MemoryCacheBackend,
+) -> Unit {
+  self.entries.clear()
+}
+
+///|
+pub fn MemoryCacheBackend::new(max_entries? : Int = 1000) -> MemoryCacheBackend {
+  { entries: {}, max_entries }
+}
+
+///|
+/// Look up a cache entry by URL. Returns None if not found.
+pub fn MemoryCacheBackend::lookup(
+  self : MemoryCacheBackend,
+  url : String,
+) -> CacheEntry? {
+  HttpCacheBackend::lookup(self, url)
+}
+
+///|
+/// Store a cache entry. If at capacity and key is new, evict the oldest entry by stored_at.
+pub fn MemoryCacheBackend::store(
+  self : MemoryCacheBackend,
+  entry : CacheEntry,
+) -> Unit {
+  HttpCacheBackend::store(self, entry)
+}
+
+///|
+/// Remove a cache entry by URL.
+pub fn MemoryCacheBackend::remove(
+  self : MemoryCacheBackend,
+  url : String,
+) -> Unit {
+  HttpCacheBackend::remove(self, url)
+}
+
+///|
 /// Clear all cache entries.
 pub fn MemoryCacheBackend::clear(self : MemoryCacheBackend) -> Unit {
-  self.entries.clear()
+  HttpCacheBackend::clear(self)
 }

@@ -869,27 +869,7 @@ fn Browser::render_text(self : Browser) -> String {
   self.image_regions = buffer_result.image_regions
   // Initialize scroll states for scrollable elements
   self.init_scrollable_elements(buffer_result.scrollable_elements)
-  // Build plain links array for no_color mode with clickable hyperlinks
-  let plain_links : Array[@tui.PlainLink] = []
-  if self.no_color {
-    for region in buffer_result.link_regions {
-      // Find matching link URL from extracted links
-      for link in self.links {
-        if region.text == link.text {
-          let url = resolve_url(self.current_url, link.href)
-          if url.length() > 0 {
-            plain_links.push({
-              col: region.col,
-              row: region.row,
-              width: region.width,
-              url,
-            })
-          }
-          break
-        }
-      }
-    }
-  }
+  let plain_links = self.build_plain_links(buffer_result.link_regions)
   // Choose buffer-to-output based on no_color mode
   // Clip output to terminal_cols (buffer may be wider than terminal)
   let max_cols = self.terminal_cols
@@ -954,6 +934,122 @@ fn Browser::render_text(self : Browser) -> String {
     "[perf:render] node+layout_build=\{(rt1 - rt0).to_int()}ms layout_compute=\{(rt2 - rt1).to_int()}ms tui_buffer=\{(rt3 - rt2).to_int()}ms ansi=\{(rt4 - rt3).to_int()}ms total=\{(rt4 - rt0).to_int()}ms",
   )
   final_output
+}
+
+///|
+fn Browser::build_plain_links(
+  self : Browser,
+  link_regions : Array[@tui.LinkRegion],
+) -> Array[@tui.PlainLink] {
+  let plain_links : Array[@tui.PlainLink] = []
+  if !self.no_color {
+    return plain_links
+  }
+  for region in link_regions {
+    // Find matching link URL from extracted links
+    for link in self.links {
+      if region.text == link.text {
+        let url = resolve_url(self.current_url, link.href)
+        if url.length() > 0 {
+          plain_links.push({
+            col: region.col,
+            row: region.row,
+            width: region.width,
+            url,
+          })
+        }
+        break
+      }
+    }
+  }
+  plain_links
+}
+
+///|
+pub fn Browser::render_text_full_page(self : Browser) -> String {
+  if self.html_content.length() == 0 {
+    return ""
+  }
+  let ctx = @browser_contract.create_render_context(
+    self.viewport_width,
+    self.viewport_height,
+    self.dark_mode,
+  )
+  if self.last_color_scheme_dark != self.dark_mode {
+    self.render_node = None
+    self.layout_tree = None
+    self.prev_buffer = None
+    self.last_render_key = ""
+  }
+  let render_node = match (self.render_node, self.layout_tree) {
+    (Some(node), Some(_tree)) => node
+    _ => {
+      let n = match self.parsed_doc {
+        Some(doc) =>
+          @renderer.render_to_node_with_document(doc, ctx, self.external_css)
+        None =>
+          @renderer.render_to_node_with_external_css(
+            self.html_content,
+            ctx,
+            self.external_css,
+          )
+      }
+      let tree = @layout.LayoutTree::from_node(
+        n,
+        self.viewport_width.to_double(),
+        self.viewport_height.to_double(),
+      )
+      self.render_node = Some(n)
+      self.layout_tree = Some(tree)
+      n
+    }
+  }
+  let layout = match self.layout_tree {
+    Some(tree) => {
+      let l = tree.compute_incremental()
+      tree.mark_all_layouts_seen()
+      self.layout_tree = Some(tree)
+      l
+    }
+    None => {
+      let tree = @layout.LayoutTree::from_node(
+        render_node,
+        self.viewport_width.to_double(),
+        self.viewport_height.to_double(),
+      )
+      let l = tree.compute_incremental()
+      tree.mark_all_layouts_seen()
+      self.layout_tree = Some(tree)
+      l
+    }
+  }
+  if self.content_height == 0 {
+    self.content_height = @tui.get_content_extent(layout).to_int()
+  }
+  let char_width = self.viewport_width / 8
+  let content_height = @tui.get_content_height_chars(layout).max(1)
+  let focused_element_name = self.get_focused_element_name()
+  let buffer_result = @tui.render_to_buffer(
+    render_node,
+    layout,
+    char_width,
+    content_height,
+    0,
+    focused_element_name~,
+  )
+  self.link_regions = buffer_result.link_regions
+  self.hit_regions = buffer_result.hit_regions
+  self.image_regions = buffer_result.image_regions
+  self.init_scrollable_elements(buffer_result.scrollable_elements)
+  self.prev_buffer = None
+  self.last_render_key = ""
+  self.last_color_scheme_dark = self.dark_mode
+  let plain_links = self.build_plain_links(buffer_result.link_regions)
+  if self.no_color {
+    @tui.buffer_to_plain_with_links(buffer_result.buffer, plain_links)
+  } else {
+    @tui.buffer_to_ansi(buffer_result.buffer, max_cols=self.terminal_cols)
+  }
 }
 
 ///|

@@ -15,7 +15,7 @@ test "SqliteCacheBackend: store and lookup" {
       inspect(
         e.directives.max_age,
         content=(
-          #|None
+          #|Some(300)
         ),
       )
     }
@@ -27,6 +27,28 @@ test "SqliteCacheBackend: store and lookup" {
 test "SqliteCacheBackend: lookup miss" {
   let cache = SqliteCacheBackend::new(":memory:")
   inspect(cache.lookup("https://missing.com") is None, content="true")
+}
+
+///|
+test "SqliteCacheBackend: directives roundtrip without cache-control header" {
+  let cache = SqliteCacheBackend::new(":memory:")
+  let entry = make_entry(
+    directives=parse_cache_control(
+      "private, max-age=0, no-cache, must-revalidate, immutable",
+    ),
+    stored_at=1000.0,
+  )
+  cache.store(entry)
+  match cache.lookup("https://example.test/resource") {
+    Some(e) => {
+      inspect(e.directives.private_, content="true")
+      inspect(e.directives.max_age, content="Some(0)")
+      inspect(e.directives.no_cache, content="true")
+      inspect(e.directives.must_revalidate, content="true")
+      inspect(e.directives.immutable, content="true")
+    }
+    None => panic()
+  }
 }
 
 ///|
@@ -79,4 +101,34 @@ test "SqliteCacheBackend: etag and last_modified roundtrip" {
     }
     None => panic()
   }
+}
+
+///|
+test "SqliteCacheBackend: cached_fetch can reuse stored response" {
+  let cache = SqliteCacheBackend::new(":memory:")
+  let log : Array[String] = []
+  let fetcher = fn(
+    url : String,
+    _options : FetchOptions,
+  ) -> HttpResponse raise HttpError {
+    log.push(url)
+    { status: 200, headers: { "cache-control": "max-age=300" }, body: "body" }
+  }
+  let opts = FetchOptions::default()
+  let r1 = cached_fetch(
+    url="https://example.test/sqlite.css",
+    options=opts,
+    cache~,
+    fetcher~,
+  )
+  inspect(r1.status, content="200")
+  inspect(log.length(), content="1")
+  let r2 = cached_fetch(
+    url="https://example.test/sqlite.css",
+    options=opts,
+    cache~,
+    fetcher~,
+  )
+  inspect(r2.body, content="body")
+  inspect(log.length(), content="1")
 }
