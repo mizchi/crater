@@ -29,12 +29,15 @@ pub struct DomTree {
 ///|
 /// Internal DOM node representation
 struct DomNode {
-  node_type : NodeType
-  tag_name : String
+  mut node_type : NodeType
+  mut tag_name : String
   mut text_content : String
   attributes : Map[String, String]
   mut parent_id : Int?
   children : Array[Int]
+  mut shadow_root_id : Int?
+  mut host_id : Int?
+  mut shadow_mode : String?
   /// For elements: computed style cache
   mut cached_rect : Rect?
 }
@@ -52,8 +55,16 @@ fn DomNode::new(
     attributes: {},
     parent_id: None,
     children: [],
+    shadow_root_id: None,
+    host_id: None,
+    shadow_mode: None,
     cached_rect: None,
   }
+}
+
+///|
+fn DomNode::new_document_fragment() -> DomNode {
+  DomNode::new(DocumentFragment, "#document-fragment")
 }
 
 ///|
@@ -94,11 +105,57 @@ pub fn DomTree::create_comment(self : DomTree, content : String) -> NodeId {
 }
 
 ///|
+pub fn DomTree::create_runtime_node(
+  self : DomTree,
+  id : Int,
+  node_type : NodeType,
+  tag_name? : String = "",
+  text_content? : String = "",
+) -> Result[NodeId, CoreError] {
+  let node = match node_type {
+    Element => DomNode::new(Element, tag_name)
+    Text => DomNode::new(Text, "#text", text_content~)
+    Comment => DomNode::new(Comment, "#comment", text_content~)
+    DocumentFragment => DomNode::new_document_fragment()
+    _ =>
+      return Err(
+        InvalidOperation(
+          message: "unsupported runtime node type",
+        ),
+      )
+  }
+  self.allocate_node_with_id(id, node)
+}
+
+///|
 fn DomTree::allocate_node(self : DomTree, node : DomNode) -> NodeId {
   let id = self.next_id
   self.next_id += 1
   self.nodes[id] = node
   NodeId(id)
+}
+
+///|
+fn DomTree::allocate_node_with_id(
+  self : DomTree,
+  id : Int,
+  node : DomNode,
+) -> Result[NodeId, CoreError] {
+  if id <= 0 {
+    return Err(
+      InvalidOperation(message: "node id must be positive"),
+    )
+  }
+  if self.nodes.contains(id) {
+    return Err(
+      InvalidOperation(message: "node id already exists"),
+    )
+  }
+  if id >= self.next_id {
+    self.next_id = id + 1
+  }
+  self.nodes[id] = node
+  Ok(NodeId(id))
 }
 
 // =============================================================================
@@ -540,7 +597,7 @@ fn DomTree::invalidate_layout(self : DomTree, node_id : Int) -> Unit {
   match self.nodes.get(node_id) {
     Some(n) => {
       n.cached_rect = None
-      match n.parent_id {
+      match self.get_invalidation_parent_id(node_id) {
         Some(parent_id) => self.invalidate_layout(parent_id)
         None => ()
       }

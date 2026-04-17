@@ -51,8 +51,11 @@ pub struct DomTree {
   mutations : MutationQueue
 }
 pub fn DomTree::append_child(Self, NodeId, NodeId) -> Result[Unit, CoreError]
+pub fn DomTree::attach_existing_shadow_root(Self, NodeId, NodeId, String) -> Result[Unit, CoreError]
+pub fn DomTree::attach_shadow(Self, NodeId, String) -> Result[NodeId, CoreError]
 pub fn DomTree::clear_mutations(Self) -> Unit
 pub fn DomTree::create_comment(Self, String) -> NodeId
+pub fn DomTree::create_document_fragment(Self) -> NodeId
 pub fn DomTree::create_element(Self, String) -> NodeId
 pub fn DomTree::create_text(Self, String) -> NodeId
 pub fn DomTree::flush_mutations(Self) -> (Array[MutationRecord], FlushResult)
@@ -62,19 +65,26 @@ pub fn DomTree::get_attributes(Self, NodeId) -> Result[Array[(String, String)], 
 pub fn DomTree::get_bbox(Self, NodeId, options? : GetBBoxOptions) -> SVGRect?
 pub fn DomTree::get_cached_rect(Self, NodeId) -> Rect?
 pub fn DomTree::get_children(Self, NodeId) -> Result[Array[NodeId], CoreError]
+pub fn DomTree::get_composed_children(Self, NodeId, shadow_host? : NodeId?) -> Array[NodeId]
 pub fn DomTree::get_ctm(Self, NodeId) -> SVGMatrix?
 pub fn DomTree::get_document(Self) -> NodeId
 pub fn DomTree::get_first_child(Self, NodeId) -> Result[NodeId?, CoreError]
 pub fn DomTree::get_focus(Self) -> NodeId?
+pub fn DomTree::get_host(Self, NodeId) -> Result[NodeId?, CoreError]
 pub fn DomTree::get_mutation_queue(Self) -> MutationQueue
 pub fn DomTree::get_next_sibling(Self, NodeId) -> Result[NodeId?, CoreError]
 pub fn DomTree::get_node_info(Self, NodeId) -> Result[NodeInfo, CoreError]
 pub fn DomTree::get_parent(Self, NodeId) -> Result[NodeId?, CoreError]
+pub fn DomTree::get_root_node(Self, NodeId, composed? : Bool) -> Result[NodeId, CoreError]
 pub fn DomTree::get_screen_ctm(Self, NodeId) -> SVGMatrix?
+pub fn DomTree::get_shadow_mode(Self, NodeId) -> Result[String?, CoreError]
+pub fn DomTree::get_shadow_root(Self, NodeId) -> Result[NodeId?, CoreError]
 pub fn DomTree::get_tag_name(Self, NodeId) -> Result[String, CoreError]
 pub fn DomTree::get_text_content(Self, NodeId) -> Result[String, CoreError]
 pub fn DomTree::has_pending_mutations(Self) -> Bool
+pub fn DomTree::has_shadow_roots(Self) -> Bool
 pub fn DomTree::insert_before(Self, NodeId, NodeId, NodeId?) -> Result[Unit, CoreError]
+pub fn DomTree::is_slot_element(Self, NodeId) -> Bool
 pub fn DomTree::new() -> Self
 pub fn DomTree::pending_mutation_count(Self) -> Int
 pub fn DomTree::query_selector(Self, NodeId, String) -> Result[NodeId?, CoreError]
@@ -166,6 +176,8 @@ pub enum NodeType {
   Element
   Text
   Comment
+  DocumentFragment
+  ShadowRoot
 } derive(Eq, @debug.Debug)
 pub fn NodeType::from_dom_constant(Int) -> Self?
 pub impl Show for NodeType

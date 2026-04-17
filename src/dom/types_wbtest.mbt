@@ -7,6 +7,8 @@ test "NodeType enum coverage" {
     NodeType::Element,
     NodeType::Text,
     NodeType::Comment,
+    NodeType::DocumentFragment,
+    NodeType::ShadowRoot,
   ]
-  inspect(types.length(), content="5")
+  inspect(types.length(), content="7")
 }
