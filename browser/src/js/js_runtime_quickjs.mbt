@@ -4663,14 +4663,30 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         set textContent(v) {
   #|           const str = (v === null || v === undefined) ? '' : String(v);
   #|           const removedNodes = clearChildNodes(this);
-  #|           // If non-empty, add a text node
+  #|           for (const removed of removedNodes) {
+  #|             if (removed && removed._mockId !== undefined) {
+  #|               domOps.push({
+  #|                 op: 'removeChild',
+  #|                 parentId: this._mockId,
+  #|                 childId: removed._mockId
+  #|               });
+  #|             }
+  #|           }
+  #|           // If non-empty, add a text node via createTextNode + appendChild so
+  #|           // the host-side DomTree mirrors the JS-side tree without a separate
+  #|           // setTextContent op (which would allocate a second text node and
+  #|           // collide with subsequent createElement ids).
   #|           if (str !== '') {
   #|             const textNode = document.createTextNode(str);
   #|             textNode._parent = this;
   #|             this._children.push(textNode);
+  #|             domOps.push({
+  #|               op: 'appendChild',
+  #|               parentId: this._mockId,
+  #|               childId: textNode._mockId
+  #|             });
   #|             if (this._shadowRoot) enqueueSlotChangeForHost(this, new Set(['']));
   #|           }
-  #|           domOps.push({ op: 'setTextContent', id: this._mockId, value: str });
   #|           if (removedNodes.length > 0 || this._children.length > 0) {
   #|             queueMutationRecord(this, {
   #|               type: 'childList',
