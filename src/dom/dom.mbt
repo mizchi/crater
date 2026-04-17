@@ -120,7 +120,7 @@ pub fn DomTree::create_runtime_node(
     _ =>
       return Err(
         InvalidOperation(
-          message: "unsupported runtime node type",
+          message="unsupported runtime node type",
         ),
       )
   }
@@ -143,12 +143,12 @@ fn DomTree::allocate_node_with_id(
 ) -> Result[NodeId, CoreError] {
   if id <= 0 {
     return Err(
-      InvalidOperation(message: "node id must be positive"),
+      InvalidOperation(message="node id must be positive"),
     )
   }
   if self.nodes.contains(id) {
     return Err(
-      InvalidOperation(message: "node id already exists"),
+      InvalidOperation(message="node id already exists"),
     )
   }
   if id >= self.next_id {
