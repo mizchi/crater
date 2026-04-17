@@ -4,6 +4,7 @@ package "mizchi/crater-browser-js/webdriver"
 import {
   "mizchi/crater-browser/cdp",
   "mizchi/js/core",
+  "moonbitlang/core/debug",
 }
 
 // Values
@@ -22,6 +23,8 @@ pub fn eval_and_send_async(@core.Any, Int, String, String) -> Unit
 pub fn evaluate_js(String) -> String
 
 pub fn evaluate_js_async(String) -> @core.Any
+
+pub fn generate_auth_token() -> String
 
 pub fn get_runtime_anchor_download_attr_by_id(String) -> String?
 
@@ -79,6 +82,8 @@ pub fn input_dispatch_key_action(String, String, Bool, Bool, Bool, Bool) -> Unit
 
 pub fn input_dispatch_pointer_event(String, String, Double, Double, Int, Int, String, Bool, Bool, Bool, Bool) -> Unit
 
+pub fn input_dispatch_pointer_event_with_related(String, String, Double, Double, Int, Int, String, Bool, Bool, Bool, Bool, String) -> Unit
+
 pub fn input_dispatch_wheel_event(String, Double, Double, Double, Double, Bool, Bool, Bool, Bool) -> Unit
 
 pub fn input_drag_transfer_state(String) -> String
@@ -115,6 +120,8 @@ pub fn quickjs_fetch(String) -> @core.Any
 
 pub fn quickjs_load(String) -> @core.Any
 
+pub fn reset_paint_provider() -> Unit
+
 pub fn reset_runtime_event_buffers(String) -> Unit
 
 pub fn rpc_error(RpcId, RpcErrorCode, String) -> RpcResponse
@@ -136,6 +143,8 @@ pub fn runtime_shared_node_is_document(String) -> Bool
 pub fn runtime_shared_node_is_draggable(String) -> Bool
 
 pub fn runtime_shared_node_is_element(String) -> Bool
+
+pub fn runtime_shared_node_is_shadow_root(String) -> Bool
 
 pub fn runtime_write_text_file(String, String) -> Unit
 
@@ -171,6 +180,8 @@ pub fn sync_runtime_page(String) -> Unit
 
 pub fn take_channel_messages_json() -> String
 
+pub fn warmup_glyph_cache() -> Unit
+
 // Errors
 
 // Types and methods
@@ -186,7 +197,7 @@ pub(all) enum ApiError {
   InvalidArgument(message~ : String)
   NotSupported(message~ : String)
   InternalError(message~ : String)
-}
+} derive(@debug.Debug)
 pub impl Show for ApiError
 
 pub(all) enum ApiMethod {
@@ -237,14 +248,13 @@ pub(all) enum ApiMethod {
   Screenshot(page_id~ : String)
   ElementScreenshot(element_id~ : String)
   AccessibilitySnapshot(page_id~ : String)
-}
+} derive(@debug.Debug)
 pub impl Show for ApiMethod
 
 pub(all) enum ApiResult[T] {
   Ok(T)
   Err(ApiError)
-}
-pub impl[T : Show] Show for ApiResult[T]
+} derive(@debug.Debug)
 
 pub struct BidiServer {
   config : BidiServerConfig
@@ -258,8 +268,10 @@ pub fn BidiServer::stop(Self) -> Unit
 pub(all) struct BidiServerConfig {
   host : String
   port : Int
+  auth_token : String
 }
 pub fn BidiServerConfig::default() -> Self
+pub fn BidiServerConfig::web_socket_url(Self) -> String
 
 pub(all) struct Capabilities {
   browser_name : String
@@ -269,16 +281,15 @@ pub(all) struct Capabilities {
   page_load_strategy : PageLoadStrategy
   proxy : ProxyConfig?
   timeouts : Timeouts
-}
+} derive(@debug.Debug)
 pub fn Capabilities::to_json(Self) -> String
-pub impl Show for Capabilities
 
 pub enum CdpHandlerError {
   NoSuchElement(selector~ : String)
   InvalidSelector(selector~ : String)
   NavigationFailed(url~ : String, reason~ : String)
   InternalCdpError(message~ : String)
-}
+} derive(@debug.Debug)
 pub fn CdpHandlerError::to_w3c_error(Self) -> (String, String)
 pub impl Show for CdpHandlerError
 
@@ -288,6 +299,7 @@ pub struct CdpSessionManager {
 }
 pub fn CdpSessionManager::close_session(Self, String) -> Bool
 pub fn CdpSessionManager::create_session(Self) -> String
+pub fn CdpSessionManager::create_session_with_id(Self, String) -> String
 pub fn CdpSessionManager::get_session(Self, String) -> @cdp.CdpSession?
 pub fn CdpSessionManager::has_session(Self, String) -> Bool
 pub fn CdpSessionManager::list_sessions(Self) -> Array[String]
@@ -295,24 +307,19 @@ pub fn CdpSessionManager::new() -> Self
 
 pub(all) struct ContextId {
   id : String
-}
-pub impl Eq for ContextId
-pub impl Show for ContextId
+} derive(Eq, @debug.Debug)
 
 pub(all) struct ElementId {
   id : String
-}
-pub impl Eq for ElementId
-pub impl Show for ElementId
+} derive(Eq, @debug.Debug)
 
 pub(all) struct ElementRect {
   x : Double
   y : Double
   width : Double
   height : Double
-}
+} derive(@debug.Debug)
 pub fn ElementRect::to_json(Self) -> String
-pub impl Show for ElementRect
 
 pub(all) enum ErrorCode {
   ElementClickIntercepted
@@ -341,11 +348,9 @@ pub(all) enum ErrorCode {
   UnknownError
   UnknownMethod
   UnsupportedOperation
-}
+} derive(Eq, @debug.Debug)
 pub fn ErrorCode::http_status(Self) -> Int
 pub fn ErrorCode::to_string(Self) -> String
-pub impl Eq for ErrorCode
-pub impl Show for ErrorCode
 
 pub struct Executor {
   manager : CdpSessionManager
@@ -375,9 +380,7 @@ pub(all) enum HttpMethod {
   Get
   Post
   Delete
-}
-pub impl Eq for HttpMethod
-pub impl Show for HttpMethod
+} derive(Eq, @debug.Debug)
 
 pub(all) enum LocatorStrategy {
   CssSelector
@@ -385,49 +388,39 @@ pub(all) enum LocatorStrategy {
   PartialLinkText
   TagName
   XPath
-}
+} derive(Eq, @debug.Debug)
 pub fn LocatorStrategy::from_string(String) -> Self?
 pub fn LocatorStrategy::to_string(Self) -> String
-pub impl Eq for LocatorStrategy
-pub impl Show for LocatorStrategy
 
 pub(all) struct Modifiers {
   ctrl : Bool
   shift : Bool
   alt : Bool
   meta : Bool
-}
+} derive(@debug.Debug)
 pub fn Modifiers::none() -> Self
-pub impl Show for Modifiers
 
 pub(all) enum MouseButton {
   Left
   Right
   Middle
-}
-pub impl Eq for MouseButton
-pub impl Show for MouseButton
+} derive(Eq, @debug.Debug)
 
 pub(all) struct PageId {
   id : String
-}
-pub impl Eq for PageId
-pub impl Show for PageId
+} derive(Eq, @debug.Debug)
 
 pub(all) enum PageLoadStrategy {
   None
   Eager
   Normal
-}
+} derive(Eq, @debug.Debug)
 pub fn PageLoadStrategy::to_json_string(Self) -> String
-pub impl Eq for PageLoadStrategy
-pub impl Show for PageLoadStrategy
 
 pub(all) struct Point {
   x : Double
   y : Double
-}
-pub impl Show for Point
+} derive(@debug.Debug)
 
 pub(all) struct ProxyConfig {
   proxy_type : String
@@ -438,16 +431,14 @@ pub(all) struct ProxyConfig {
   ssl_proxy : String?
   socks_proxy : String?
   socks_version : Int?
-}
-pub impl Show for ProxyConfig
+} derive(@debug.Debug)
 
 pub(all) struct Rect {
   x : Double
   y : Double
   width : Double
   height : Double
-}
-pub impl Show for Rect
+} derive(@debug.Debug)
 
 pub(all) enum RpcErrorCode {
   ParseError
@@ -459,18 +450,16 @@ pub(all) enum RpcErrorCode {
   PageNotFound
   Timeout
   NavigationFailed
-}
+} derive(Eq, @debug.Debug)
 pub fn RpcErrorCode::code(Self) -> Int
-pub impl Eq for RpcErrorCode
 pub impl Show for RpcErrorCode
 
 pub(all) enum RpcId {
   Num(Int)
   Str(String)
   Null
-}
+} derive(Eq, @debug.Debug)
 pub fn RpcId::to_json(Self) -> String
-pub impl Eq for RpcId
 pub impl Show for RpcId
 
 pub(all) struct RpcRequest {
@@ -478,13 +467,13 @@ pub(all) struct RpcRequest {
   id : RpcId
   method_name : String
   params : Map[String, String]
-}
+} derive(@debug.Debug)
 pub impl Show for RpcRequest
 
 pub(all) enum RpcResponse {
   Success(id~ : RpcId, result~ : String)
   Error(id~ : RpcId, code~ : Int, message~ : String, data~ : String?)
-}
+} derive(@debug.Debug)
 pub fn RpcResponse::to_json(Self) -> String
 pub impl Show for RpcResponse
 
@@ -499,16 +488,14 @@ pub(all) enum Selector {
   Placeholder(String)
   AltText(String)
   Title(String)
-}
+} derive(@debug.Debug)
 pub fn Selector::to_string(Self) -> String
-pub impl Show for Selector
 
 pub(all) struct Session {
   id : String
   capabilities : Capabilities
-}
+} derive(@debug.Debug)
 pub fn Session::to_json(Self) -> String
-pub impl Show for Session
 
 pub(all) struct SessionManager {
   sessions : Map[String, SessionState]
@@ -533,16 +520,14 @@ pub(all) struct Timeouts {
   script : Int
   page_load : Int
   implicit : Int
-}
+} derive(@debug.Debug)
 pub fn Timeouts::default() -> Self
 pub fn Timeouts::to_json(Self) -> String
-pub impl Show for Timeouts
 
 pub(all) struct Viewport {
   width : Int
   height : Int
-}
-pub impl Show for Viewport
+} derive(@debug.Debug)
 
 pub(all) enum WebDriverCommand {
   Status
@@ -603,30 +588,27 @@ pub(all) enum WebDriverCommand {
   TakeElementScreenshot(session_id~ : String, element_id~ : String)
   PrintPage(session_id~ : String)
   Unknown(path~ : String)
-}
+} derive(@debug.Debug)
 pub impl Show for WebDriverCommand
 
 pub(all) struct WebDriverError {
   error : ErrorCode
   message : String
   stacktrace : String
-}
+} derive(@debug.Debug)
 pub fn WebDriverError::to_json(Self) -> String
-pub impl Show for WebDriverError
 
 pub(all) struct WebDriverRequest {
   http_method : HttpMethod
   command : WebDriverCommand
   body : String
-}
-pub impl Show for WebDriverRequest
+} derive(@debug.Debug)
 
 pub(all) enum WebDriverResponse {
   Success(WebDriverValue)
   Error(WebDriverError)
-}
+} derive(@debug.Debug)
 pub fn WebDriverResponse::to_json(Self) -> String
-pub impl Show for WebDriverResponse
 
 pub(all) enum WebDriverValue {
   Null
@@ -636,18 +618,16 @@ pub(all) enum WebDriverValue {
   Array(Array[WebDriverValue])
   Object(Map[String, WebDriverValue])
   Element(element_id~ : String)
-}
+} derive(@debug.Debug)
 pub fn WebDriverValue::to_json(Self) -> String
-pub impl Show for WebDriverValue
 
 pub(all) struct WindowRect {
   x : Int
   y : Int
   width : Int
   height : Int
-}
+} derive(@debug.Debug)
 pub fn WindowRect::to_json(Self) -> String
-pub impl Show for WindowRect
 
 // Type aliases
 

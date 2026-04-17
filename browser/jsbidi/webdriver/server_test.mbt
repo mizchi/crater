@@ -79,6 +79,40 @@ test "navigate to url" {
 }
 
 ///|
+test "navigate to arbitrary url preserves request url" {
+  let manager = SessionManager::new()
+  let create_req = parse_request("POST", "/session", "{}")
+  let (_, _) = manager.handle_request(create_req)
+  let target = "https://mizchi.dev/docs?q=1#frag"
+  let nav_req = parse_request(
+    "POST",
+    "/session/session-1/url",
+    "{\"url\":\"" + target + "\"}",
+  )
+  let (status, _) = manager.handle_request(nav_req)
+  inspect(status, content="200")
+  let url_req = parse_request("GET", "/session/session-1/url", "")
+  let (_, resp) = manager.handle_request(url_req)
+  inspect(
+    resp.to_json(),
+    content="{\"value\":\"https://mizchi.dev/docs?q=1#frag\"}",
+  )
+}
+
+///|
+test "navigate without url returns invalid argument" {
+  let manager = SessionManager::new()
+  let create_req = parse_request("POST", "/session", "{}")
+  let (_, _) = manager.handle_request(create_req)
+  let nav_req = parse_request("POST", "/session/session-1/url", "{}")
+  let (status, resp) = manager.handle_request(nav_req)
+  inspect(status, content="400")
+  let json = resp.to_json()
+  assert_true(json.contains("invalid argument"))
+  assert_true(json.contains("Missing string url"))
+}
+
+///|
 test "get title" {
   let manager = SessionManager::new()
   // Create session

@@ -414,6 +414,23 @@ fn BidiProtocol::handle_network_continue_auth_request(
       return
     }
   }
+  if action == "provideCredentials" {
+    if !map.contains("credentials") {
+      self.send_error(
+        request_id, "invalid argument", "credentials must be an object",
+      )
+      return
+    }
+    let forwarded : Map[String, Json] = {}
+    forwarded["request"] = map.get("request").unwrap_or(Json::null())
+    forwarded["mode"] = Json::string("continueResponse")
+    forwarded["credentials"] = map.get("credentials").unwrap_or(Json::null())
+    self.handle_network_continue_blocked_response(
+      request_id,
+      Some(Json::object(forwarded)),
+    )
+    return
+  }
   if action != "default" && action != "cancel" {
     self.send_error(request_id, "invalid argument", "action is invalid")
     return

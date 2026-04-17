@@ -5494,11 +5494,12 @@ fn BidiProtocol::handle_locate_nodes(
                   return
                 }
                 if !runtime_shared_node_is_element(shared_id) &&
-                  !runtime_shared_node_is_document(shared_id) {
+                  !runtime_shared_node_is_document(shared_id) &&
+                  !runtime_shared_node_is_shadow_root(shared_id) {
                   self.send_error(
                     request.id,
                     "invalid argument",
-                    "startNodes entries must reference element or document nodes",
+                    "startNodes entries must reference element, document, or shadow root nodes",
                   )
                   return
                 }
@@ -6147,7 +6148,7 @@ fn BidiProtocol::locate_nodes_css(
     "let __start = null;" +
     "if (__root.nodeType === 9) {" +
     "__start = __root.documentElement || __root.body || null;" +
-    "} else if (__root.nodeType === 1) {" +
+    "} else if (__root.nodeType === 1 || __root.nodeType === 11) {" +
     "__start = __root;" +
     "}" +
     "if (!__start) continue;" +
@@ -7169,9 +7170,14 @@ fn BidiProtocol::handle_script_fetch_for_test(
       return
     }
   }
+  let raw_headers = map.get("headers")
   let headers_json = match map.get("headersJson") {
     Some(String(headers_json)) => headers_json
-    Some(Null) | None => "null"
+    Some(Null) | None =>
+      match raw_headers {
+        Some(raw_headers) => raw_headers.stringify()
+        None => "null"
+      }
     _ => {
       self.send_error(
         request_id, "invalid argument", "headersJson must be a string",
@@ -7179,9 +7185,14 @@ fn BidiProtocol::handle_script_fetch_for_test(
       return
     }
   }
+  let raw_post_data = get_map_field_with_alias(map, "postData", "post_data")
   let post_data_json = match map.get("postDataJson") {
     Some(String(post_data_json)) => post_data_json
-    Some(Null) | None => "null"
+    Some(Null) | None =>
+      match raw_post_data {
+        Some(raw_post_data) => raw_post_data.stringify()
+        None => "null"
+      }
     _ => {
       self.send_error(
         request_id, "invalid argument", "postDataJson must be a string",
@@ -7200,8 +7211,11 @@ fn BidiProtocol::handle_script_fetch_for_test(
       return
     }
     Some(Null) | None =>
-      if get_map_field_with_alias(map, "requestData", "request_data") != None ||
-        post_data_json != "null" {
+      if get_map_field_with_alias(map, "requestData", "request_data") != None {
+        "value"
+      } else if raw_post_data is Some(raw_post_data) {
+        synthetic_fetch_post_data_mode_from_value(raw_post_data)
+      } else if post_data_json != "null" {
         "value"
       } else {
         "none"
@@ -7224,7 +7238,12 @@ fn BidiProtocol::handle_script_fetch_for_test(
         Some(request_headers) => request_headers
         None => return
       }
-    None => synthetic_fetch_request_headers_from_json(headers_json)
+    None =>
+      match raw_headers {
+        Some(raw_headers) =>
+          synthetic_fetch_request_headers_from_value(raw_headers)
+        None => synthetic_fetch_request_headers_from_json(headers_json)
+      }
   }
   let request_value = match
     get_map_field_with_alias(map, "requestData", "request_data") {
@@ -7237,9 +7256,16 @@ fn BidiProtocol::handle_script_fetch_for_test(
         None => return
       }
     None =>
-      synthetic_fetch_request_value_from_post_data_json(
-        post_data_json, post_data_mode,
-      )
+      match raw_post_data {
+        Some(raw_post_data) =>
+          synthetic_fetch_request_value_from_post_data(
+            raw_post_data, post_data_mode,
+          )
+        None =>
+          synthetic_fetch_request_value_from_post_data_json(
+            post_data_json, post_data_mode,
+          )
+      }
   }
   let request_method = match map.get("method") {
     Some(String(request_method)) => request_method
@@ -7330,7 +7356,14 @@ fn synthetic_fetch_request_headers_from_json(
   headers_json : String,
 ) -> Array[Json] {
   let parsed = @json.parse(headers_json) catch { _ => return [] }
-  match parsed {
+  synthetic_fetch_request_headers_from_value(parsed)
+}
+
+///|
+fn synthetic_fetch_request_headers_from_value(
+  raw_headers : Json,
+) -> Array[Json] {
+  match raw_headers {
     Object(headers_map) => {
       let headers : Array[Json] = []
       for name, raw_value in headers_map {
@@ -7344,6 +7377,15 @@ fn synthetic_fetch_request_headers_from_json(
       headers
     }
     _ => []
+  }
+}
+
+///|
+fn synthetic_fetch_post_data_mode_from_value(raw_post_data : Json) -> String {
+  match raw_post_data {
+    Null => "none"
+    Object(_) => "formData"
+    _ => "value"
   }
 }
 
@@ -8386,7 +8428,13 @@ fn BidiProtocol::locate_nodes_inner_text(
     "__candidates.push(__node);" +
     "};" +
     "const __visit = (__node, __depth) => {" +
-    "if (!__node || __node.nodeType !== 1) return;" +
+    "if (!__node) return;" +
+    "if (__node.nodeType === 11) {" +
+    "const __shadowChildren = __collectChildren(__node);" +
+    "for (const __child of __shadowChildren) { __visit(__child, __depth); }" +
+    "return;" +
+    "}" +
+    "if (__node.nodeType !== 1) return;" +
     "if (__maxDepth < 0 || __depth <= __maxDepth) {" +
     "const __text = (__node.innerText !== undefined && __node.innerText !== null && String(__node.innerText) !== '') ? __node.innerText : (__node.textContent || '');" +
     "if (__matches(__text)) {" +
@@ -8409,7 +8457,7 @@ fn BidiProtocol::locate_nodes_inner_text(
     "let __start = null;" +
     "if (__root && __root.nodeType === 9) {" +
     "__start = __root.documentElement || __root.body || null;" +
-    "} else if (__root && __root.nodeType === 1) {" +
+    "} else if (__root && (__root.nodeType === 1 || __root.nodeType === 11)) {" +
     "__start = __root;" +
     "}" +
     "if (__start) __visit(__start, 0);" +
@@ -8573,7 +8621,13 @@ fn BidiProtocol::locate_nodes_accessibility(
     "return true;" +
     "};" +
     "const __visit = (__node) => {" +
-    "if (!__node || __node.nodeType !== 1) return false;" +
+    "if (!__node) return false;" +
+    "if (__node.nodeType === 11) {" +
+    "const __shadowChildren = __collectChildren(__node);" +
+    "for (const __child of __shadowChildren) { if (__visit(__child)) return true; }" +
+    "return false;" +
+    "}" +
+    "if (__node.nodeType !== 1) return false;" +
     "if (__matches(__node)) {" +
     "__push(__node);" +
     "if (__max > 0 && __result.length >= __max) return true;" +
@@ -8586,7 +8640,7 @@ fn BidiProtocol::locate_nodes_accessibility(
     "let __start = null;" +
     "if (__root && __root.nodeType === 9) {" +
     "__start = __root.documentElement || __root.body || null;" +
-    "} else if (__root && __root.nodeType === 1) {" +
+    "} else if (__root && (__root.nodeType === 1 || __root.nodeType === 11)) {" +
     "__start = __root;" +
     "}" +
     "if (__start && __visit(__start)) return __result.slice(0, __max);" +

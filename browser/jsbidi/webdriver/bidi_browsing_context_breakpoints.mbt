@@ -117,7 +117,57 @@ fn responsive_breakpoint_source_html(mode : String) -> String {
 ///|
 fn serialize_live_document_html_expr() -> String {
   (
-    #|(() => { const doc = globalThis.document; if (!doc) return ''; const serNode = (n) => { if (!n) return ''; if (n.nodeType === 3) return (n._textContent || n.textContent || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); if (n.nodeType === 8) return '<!--'+(n._textContent||'')+'-->'; if (n.nodeType !== 1) return ''; const tag = (n.tagName || n._tagName || '').toLowerCase(); let h = '<'+tag; const attrs = n._attrs || {}; for (const [k,v] of Object.entries(attrs)) h+=' '+k+'="'+String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'"'; h+='>'; const voids = new Set(['area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr']); if (voids.has(tag)) return h; const children = n._children || []; for (const c of children) h += serNode(c); h += '</'+tag+'>'; return h; }; const head = doc.head; const body = doc.body; let r = '<html'; const htmlEl = doc.documentElement; if (htmlEl && htmlEl._attrs) for (const [k,v] of Object.entries(htmlEl._attrs)) r += ' '+k+'="'+String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'"'; r += '><head>'; if (head) for (const c of (head._children||[])) r += serNode(c); r += '</head><body'; if (body && body._attrs) for (const [k,v] of Object.entries(body._attrs)) r += ' '+k+'="'+v+'"'; r += '>'; if (body) for (const c of (body._children||[])) r += serNode(c); r += '</body></html>'; return r; })()
+    #|(() => {
+    #|  const doc = globalThis.document;
+    #|  if (!doc) return '';
+    #|  const voids = new Set(['area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr']);
+    #|  const escapeText = (value) => String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    #|  const escapeAttr = (value) => String(value ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    #|  const getChildren = (node) => {
+    #|    if (!node) return [];
+    #|    const shadowRoot = node.shadowRoot;
+    #|    if (shadowRoot && Array.isArray(shadowRoot._children)) return shadowRoot._children;
+    #|    if (Array.isArray(node._children)) return node._children;
+    #|    if (Array.isArray(node.children)) return Array.from(node.children);
+    #|    if (Array.isArray(node.childNodes)) return Array.from(node.childNodes);
+    #|    return [];
+    #|  };
+    #|  const serNode = (node) => {
+    #|    if (!node) return '';
+    #|    if (node.nodeType === 3) return escapeText(node._textContent || node.textContent || '');
+    #|    if (node.nodeType === 8) return '<!--' + (node._textContent || '') + '-->';
+    #|    if (node.nodeType === 11) {
+    #|      let html = '';
+    #|      for (const child of getChildren(node)) html += serNode(child);
+    #|      return html;
+    #|    }
+    #|    if (node.nodeType !== 1) return '';
+    #|    const tag = (node.tagName || node._tagName || '').toLowerCase();
+    #|    let html = '<' + tag;
+    #|    const attrs = node._attrs || {};
+    #|    for (const [k, v] of Object.entries(attrs)) html += ' ' + k + '="' + escapeAttr(v) + '"';
+    #|    html += '>';
+    #|    if (voids.has(tag)) return html;
+    #|    for (const child of getChildren(node)) html += serNode(child);
+    #|    html += '</' + tag + '>';
+    #|    return html;
+    #|  };
+    #|  let html = '<html';
+    #|  const htmlEl = doc.documentElement;
+    #|  if (htmlEl && htmlEl._attrs) {
+    #|    for (const [k, v] of Object.entries(htmlEl._attrs)) html += ' ' + k + '="' + escapeAttr(v) + '"';
+    #|  }
+    #|  html += '><head>';
+    #|  if (doc.head) for (const child of getChildren(doc.head)) html += serNode(child);
+    #|  html += '</head><body';
+    #|  if (doc.body && doc.body._attrs) {
+    #|    for (const [k, v] of Object.entries(doc.body._attrs)) html += ' ' + k + '="' + escapeAttr(v) + '"';
+    #|  }
+    #|  html += '>';
+    #|  if (doc.body) for (const child of getChildren(doc.body)) html += serNode(child);
+    #|  html += '</body></html>';
+    #|  return html;
+    #|})()
   )
 }
 

@@ -17,6 +17,14 @@ fn BidiProtocol::dispatch_web_extension(
         }
         None => Ok(())
       }
+    "installId" =>
+      match self.resolve_web_extension_install(request.id, request.params) {
+        Some(extension_id) => {
+          self.send_success(request.id, Some(Json::string(extension_id)))
+          Ok(())
+        }
+        None => Ok(())
+      }
     "uninstall" =>
       match self.resolve_web_extension_uninstall(request.id, request.params) {
         Some(_) => {

@@ -129,6 +129,22 @@ fn rgba_meta_from_base64(
 }
 
 ///|
+fn extract_script_remote_value(result : Map[String, Json]) -> Map[String, Json] {
+  match result.get("result") {
+    Some(Object(value)) => value
+    _ => {}
+  }
+}
+
+///|
+fn extract_shared_id(result : Map[String, Json]) -> String {
+  match result.get("sharedId") {
+    Some(String(value)) => value
+    _ => ""
+  }
+}
+
+///|
 test "bidi captureScreenshot uses viewport and document dimensions" {
   let proto = BidiProtocol::new()
   ignore(
@@ -306,6 +322,54 @@ test "bidi getResponsiveBreakpoints returns canonical breakpoint metadata" {
     _ => assert_true(false)
   }
   match diagnostics.get("ruleCount") {
+    Some(Number(value, ..)) => assert_eq(value.to_int(), 1)
+    _ => assert_true(false)
+  }
+}
+
+///|
+test "bidi getResponsiveBreakpoints discovers styles inside shadow root" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+  let html = "<!DOCTYPE html><html><body><div id='host'></div></body></html>"
+  let navigate_message = "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"" +
+    js_test_build_html_data_url(html) +
+    "\",\"wait\":\"complete\"}}"
+  ignore(proto.process_message(navigate_message))
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":3,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"(() => { const host = document.getElementById('host'); const root = host.attachShadow({ mode: 'open' }); root.innerHTML = '<style>@media (min-width: 640px) { .card { display: block; } }</style><div class=\\\"card\\\">foo</div>'; return !!host.shadowRoot; })()\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+    ),
+  )
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":4,\"method\":\"browsingContext.getResponsiveBreakpoints\",\"params\":{\"context\":\"session-1\",\"includeDiagnostics\":true}}",
+    ),
+  )
+  let result = extract_success_result(proto.take_messages())
+  let breakpoints = match result.get("breakpoints") {
+    Some(Array(items)) => items
+    _ => []
+  }
+  assert_eq(breakpoints.length(), 1)
+  let breakpoint = match breakpoints[0] {
+    Object(map) => map
+    _ => {}
+  }
+  match breakpoint.get("valuePx") {
+    Some(Number(value, ..)) => assert_eq(value.to_int(), 640)
+    _ => assert_true(false)
+  }
+  let diagnostics = match result.get("diagnostics") {
+    Some(Object(map)) => map
+    _ => {}
+  }
+  match diagnostics.get("stylesheetCount") {
     Some(Number(value, ..)) => assert_eq(value.to_int(), 1)
     _ => assert_true(false)
   }
@@ -658,4 +722,160 @@ test "bidi locateNodes validates max_node_count alias" {
       "\"message\":\"maxNodeCount must be an integer in [1, 9007199254740991]\"",
     ),
   )
+}
+
+///|
+test "bidi locateNodes accepts shadow root sharedId in startNodes" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+
+  ignore(
+    proto.process_message(
+      "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<div id='host'></div>\",\"wait\":\"complete\"}}",
+    ),
+  )
+  ignore(proto.take_messages())
+
+  ignore(
+    proto.process_message(
+      "{\"id\":3,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"(() => { const host = document.getElementById('host'); const root = host.attachShadow({ mode: 'open' }); root.innerHTML = '<button class=\\\"target\\\">one</button><button class=\\\"target\\\">two</button>'; return root; })()\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+    ),
+  )
+  let shadow_root_id = extract_shared_id(
+    extract_script_remote_value(extract_success_result(proto.take_messages())),
+  )
+  assert_true(shadow_root_id != "")
+
+  ignore(
+    proto.process_message(
+      "{\"id\":4,\"method\":\"browsingContext.locateNodes\",\"params\":{\"context\":\"session-1\",\"locator\":{\"type\":\"css\",\"value\":\".target\"},\"startNodes\":[{\"sharedId\":\"" +
+      shadow_root_id +
+      "\"}]}}",
+    ),
+  )
+  let result = extract_success_result(proto.take_messages())
+  match result.get("nodes") {
+    Some(Array(nodes)) => assert_eq(nodes.length(), 2)
+    _ => assert_true(false)
+  }
+}
+
+///|
+test "bidi locateNodes innerText accepts shadow root sharedId in startNodes" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+
+  ignore(
+    proto.process_message(
+      "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<div id='host'></div>\",\"wait\":\"complete\"}}",
+    ),
+  )
+  ignore(proto.take_messages())
+
+  ignore(
+    proto.process_message(
+      "{\"id\":3,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"(() => { const host = document.getElementById('host'); const root = host.attachShadow({ mode: 'open' }); root.innerHTML = '<section><span>alpha beta</span></section><span>gamma</span>'; return root; })()\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+    ),
+  )
+  let shadow_root_id = extract_shared_id(
+    extract_script_remote_value(extract_success_result(proto.take_messages())),
+  )
+  assert_true(shadow_root_id != "")
+
+  ignore(
+    proto.process_message(
+      "{\"id\":4,\"method\":\"browsingContext.locateNodes\",\"params\":{\"context\":\"session-1\",\"locator\":{\"type\":\"innerText\",\"value\":\"alpha beta\",\"matchType\":\"full\"},\"startNodes\":[{\"sharedId\":\"" +
+      shadow_root_id +
+      "\"}]}}",
+    ),
+  )
+  let result = extract_success_result(proto.take_messages())
+  match result.get("nodes") {
+    Some(Array(nodes)) => assert_eq(nodes.length(), 1)
+    _ => assert_true(false)
+  }
+}
+
+///|
+test "bidi locateNodes accessibility accepts shadow root sharedId in startNodes" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+
+  ignore(
+    proto.process_message(
+      "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<div id='host'></div>\",\"wait\":\"complete\"}}",
+    ),
+  )
+  ignore(proto.take_messages())
+
+  ignore(
+    proto.process_message(
+      "{\"id\":3,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"(() => { const host = document.getElementById('host'); const root = host.attachShadow({ mode: 'open' }); root.innerHTML = '<button aria-label=\\\"Shadow CTA\\\">ignored</button><button aria-label=\\\"Other\\\">other</button>'; return root; })()\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+    ),
+  )
+  let shadow_root_id = extract_shared_id(
+    extract_script_remote_value(extract_success_result(proto.take_messages())),
+  )
+  assert_true(shadow_root_id != "")
+
+  ignore(
+    proto.process_message(
+      "{\"id\":4,\"method\":\"browsingContext.locateNodes\",\"params\":{\"context\":\"session-1\",\"locator\":{\"type\":\"accessibility\",\"value\":{\"role\":\"button\",\"name\":\"Shadow CTA\"}},\"startNodes\":[{\"sharedId\":\"" +
+      shadow_root_id +
+      "\"}]}}",
+    ),
+  )
+  let result = extract_success_result(proto.take_messages())
+  match result.get("nodes") {
+    Some(Array(nodes)) => assert_eq(nodes.length(), 1)
+    _ => assert_true(false)
+  }
+}
+
+///|
+test "bidi locateNodes xpath accepts shadow root sharedId in startNodes" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+
+  ignore(
+    proto.process_message(
+      "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<div id='host'></div>\",\"wait\":\"complete\"}}",
+    ),
+  )
+  ignore(proto.take_messages())
+
+  ignore(
+    proto.process_message(
+      "{\"id\":3,\"method\":\"script.evaluate\",\"params\":{\"expression\":\"(() => { const host = document.getElementById('host'); const root = host.attachShadow({ mode: 'open' }); root.innerHTML = '<button data-kind=\\\"target\\\">one</button><button data-kind=\\\"target\\\">two</button><button data-kind=\\\"other\\\">other</button>'; return root; })()\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+    ),
+  )
+  let shadow_root_id = extract_shared_id(
+    extract_script_remote_value(extract_success_result(proto.take_messages())),
+  )
+  assert_true(shadow_root_id != "")
+
+  ignore(
+    proto.process_message(
+      "{\"id\":4,\"method\":\"browsingContext.locateNodes\",\"params\":{\"context\":\"session-1\",\"locator\":{\"type\":\"xpath\",\"value\":\".//button[@data-kind='target']\"},\"startNodes\":[{\"sharedId\":\"" +
+      shadow_root_id +
+      "\"}]}}",
+    ),
+  )
+  let result = extract_success_result(proto.take_messages())
+  match result.get("nodes") {
+    Some(Array(nodes)) => assert_eq(nodes.length(), 2)
+    _ => assert_true(false)
+  }
 }

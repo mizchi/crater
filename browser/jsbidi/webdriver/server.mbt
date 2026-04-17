@@ -171,13 +171,15 @@ pub fn SessionManager::handle_request(
       }
     NavigateTo(session_id~) =>
       match self.sessions.get(session_id) {
-        Some(state) => {
-          // TODO: Parse URL from body and actually navigate
-          // For now, just update the URL
-          state.current_url = "https://example.com"
-          state.title = "Example Domain"
-          (200, success_null())
-        }
+        Some(state) =>
+          match parse_navigation_url(request.body) {
+            Ok(url) => {
+              state.current_url = url
+              state.title = navigation_title_for_url(url)
+              (200, success_null())
+            }
+            Err(message) => (400, error_response(InvalidArgument, message))
+          }
         None =>
           (
             404,
@@ -228,4 +230,61 @@ fn SessionManager::handle_status(self : SessionManager) -> WebDriverResponse {
   map["ready"] = Bool(true)
   map["message"] = String("Crater WebDriver is ready")
   success_object(map)
+}
+
+///|
+fn parse_navigation_url(body : String) -> Result[String, String] {
+  let parsed = @json.parse(body) catch {
+    _ => return Err("Body must be a JSON object")
+  }
+  match parsed {
+    Object(map) =>
+      match map.get("url") {
+        Some(String(url)) => Ok(url)
+        _ => Err("Missing string url")
+      }
+    _ => Err("Body must be a JSON object")
+  }
+}
+
+///|
+fn navigation_title_for_url(url : String) -> String {
+  if is_example_domain_url(url) {
+    "Example Domain"
+  } else if url == "about:blank" || url.has_prefix("data:") {
+    ""
+  } else {
+    navigation_host_for_url(url)
+  }
+}
+
+///|
+fn is_example_domain_url(url : String) -> Bool {
+  url == "https://example.com" ||
+  url.has_prefix("https://example.com/") ||
+  url == "http://example.com" ||
+  url.has_prefix("http://example.com/")
+}
+
+///|
+fn navigation_host_for_url(url : String) -> String {
+  match url.find("://") {
+    Some(scheme_idx) => {
+      let host_start = scheme_idx + 3
+      let after_scheme = url.unsafe_substring(
+        start=host_start,
+        end=url.length(),
+      )
+      let host_end = match after_scheme.find("/") {
+        Some(path_idx) => host_start + path_idx
+        None => url.length()
+      }
+      let host_port = url.unsafe_substring(start=host_start, end=host_end)
+      match host_port.find(":") {
+        Some(port_idx) => host_port.unsafe_substring(start=0, end=port_idx)
+        None => host_port
+      }
+    }
+    None => ""
+  }
 }

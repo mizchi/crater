@@ -525,6 +525,87 @@ test "bidi network continueAuthRequest cancel consumes blocked request" {
 }
 
 ///|
+test "bidi network continueAuthRequest provideCredentials consumes blocked request" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"network.rememberBlockedRequest\",\"params\":{\"request\":\"request-13b\",\"blockedRequest\":{\"phase\":\"authRequired\",\"context_id\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/authentication.py?realm=secure&username=user&password=pass\",\"method\":\"GET\",\"request_headers\":{\"x-test\":\"ok\"},\"response_headers\":[{\"name\":\"www-authenticate\",\"value\":{\"type\":\"string\",\"value\":\"Basic realm=\\\"secure\\\"\"}}],\"response_status\":401,\"response_status_text\":\"Unauthorized\"}}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.continueAuthRequest\",\"params\":{\"request\":\"request-13b\",\"action\":\"provideCredentials\",\"credentials\":{\"type\":\"password\",\"username\":\"user\",\"password\":\"pass\"}}}",
+  )
+  let continue_json = proto.take_messages()[0].to_json()
+  assert_true(continue_json.contains("\"type\":\"success\""))
+  assert_true(continue_json.contains("\"responseCompletedEvent\""))
+  assert_true(continue_json.contains("\"status\":200"))
+  assert_true(continue_json.contains("\"statusText\":\"OK\""))
+  assert_true(continue_json.contains("\"consumed\":true"))
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"network.getBlockedRequest\",\"params\":{\"request\":\"request-13b\"}}",
+  )
+  let forgotten_json = proto.take_messages()[0].to_json()
+  assert_true(forgotten_json.contains("\"blockedRequest\":null"))
+}
+
+///|
+test "bidi network continueAuthRequest provideCredentials with wrong credentials keeps authRequired blocked" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"network.rememberBlockedRequest\",\"params\":{\"request\":\"request-13c\",\"blockedRequest\":{\"phase\":\"authRequired\",\"context_id\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/authentication.py?realm=secure&username=user&password=pass\",\"method\":\"GET\",\"request_headers\":{\"x-test\":\"ok\"},\"response_headers\":[{\"name\":\"www-authenticate\",\"value\":{\"type\":\"string\",\"value\":\"Basic realm=\\\"secure\\\"\"}}],\"response_status\":401,\"response_status_text\":\"Unauthorized\"}}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.continueAuthRequest\",\"params\":{\"request\":\"request-13c\",\"action\":\"provideCredentials\",\"credentials\":{\"type\":\"password\",\"username\":\"user\",\"password\":\"wrong\"}}}",
+  )
+  let continue_json = proto.take_messages()[0].to_json()
+  assert_true(continue_json.contains("\"type\":\"success\""))
+  assert_true(continue_json.contains("\"authRequiredEvent\""))
+  assert_true(continue_json.contains("\"status\":401"))
+  assert_true(continue_json.contains("\"consumed\":false"))
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"network.getBlockedRequest\",\"params\":{\"request\":\"request-13c\"}}",
+  )
+  let still_blocked_json = proto.take_messages()[0].to_json()
+  assert_true(still_blocked_json.contains("\"phase\":\"authRequired\""))
+}
+
+///|
+test "bidi network continueAuthRequest provideCredentials requires credentials" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"network.rememberBlockedRequest\",\"params\":{\"request\":\"request-13d\",\"blockedRequest\":{\"phase\":\"authRequired\",\"context_id\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/authentication.py?realm=secure&username=user&password=pass\",\"method\":\"GET\"}}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.continueAuthRequest\",\"params\":{\"request\":\"request-13d\",\"action\":\"provideCredentials\"}}",
+  )
+  let error_json = proto.take_messages()[0].to_json()
+  assert_true(error_json.contains("\"type\":\"error\""))
+  assert_true(error_json.contains("\"error\":\"invalid argument\""))
+  assert_true(error_json.contains("credentials must be an object"))
+}
+
+///|
 test "bidi network continueResponse on responseStarted consumes blocked request and stores cookies" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
