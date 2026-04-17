@@ -572,7 +572,7 @@ jobs:
         run: pnpm install
 
       - name: Validate flaker/report tool tests
-        run: pnpm exec vitest run scripts/flaker-cli-path.test.ts scripts/flaker-config.test.ts scripts/flaker-quarantine.test.ts scripts/flaker-task-config.test.ts scripts/flaker-task-run.test.ts scripts/flaker-task-record.test.ts scripts/flaker-task-summary.test.ts scripts/playwright-report-summary.test.ts
+        run: pnpm exec vitest run scripts/flaker-cli-path.test.ts scripts/flaker-collected-summary-paths.test.ts scripts/flaker-config.test.ts scripts/flaker-quarantine.test.ts scripts/flaker-task-config.test.ts scripts/flaker-task-run.test.ts scripts/flaker-task-record.test.ts scripts/flaker-task-record-artifacts.test.ts scripts/flaker-task-summary.test.ts scripts/flaker-batch-summary-core.test.ts scripts/flaker-batch-summary-loader.test.ts scripts/flaker-batch-summary.test.ts scripts/playwright-report-summary.test.ts scripts/script-boundary.test.ts scripts/vrt-report-contract.test.ts scripts/vrt-report-loader.test.ts scripts/vrt-report-summary.test.ts scripts/vrt-report-summary-cli.test.ts tests/helpers/crater-vrt.test.ts
 
       - name: Build flaker config summary
         run: just flaker-report flaker-report
@@ -774,6 +774,21 @@ jobs:
             echo "_paint-vrt flaker summary was not generated._" >> "$GITHUB_STEP_SUMMARY"
           fi
 
+      - name: Build paint VRT artifact summary
+        if: always()
+        run: just vrt-report-summary output/playwright/vrt paint-vrt-artifacts paint-vrt-artifact-summary paint-vrt
+
+      - name: Publish paint VRT artifact summary
+        if: always()
+        run: |
+          if [ -f paint-vrt-artifact-summary/paint-vrt-artifacts.md ]; then
+            printf '\n\n' >> "$GITHUB_STEP_SUMMARY"
+            cat paint-vrt-artifact-summary/paint-vrt-artifacts.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf '\n\n' >> "$GITHUB_STEP_SUMMARY"
+            echo "_paint-vrt artifact summary was not generated._" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Upload paint VRT report summary
         if: always()
         uses: actions/upload-artifact@v6
@@ -788,6 +803,14 @@ jobs:
         with:
           name: paint-vrt-flaker-summary
           path: paint-vrt-flaker-summary/*
+          if-no-files-found: warn
+
+      - name: Upload paint VRT artifact summary
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: paint-vrt-artifact-summary
+          path: paint-vrt-artifact-summary/*
           if-no-files-found: warn
 
       - name: Upload paint VRT artifacts
@@ -942,7 +965,7 @@ jobs:
         run: pnpm install
 
       - name: Validate WPT VRT summary tests
-        run: pnpm exec vitest run scripts/wpt-vrt-summary.test.ts
+        run: pnpm exec vitest run scripts/wpt-vrt-summary.test.ts scripts/wpt-vrt-summary-cli.test.ts
 
       - name: Download WPT VRT shard summaries
         uses: actions/download-artifact@v8
