@@ -57,6 +57,7 @@ pub fn DomTree::clear_mutations(Self) -> Unit
 pub fn DomTree::create_comment(Self, String) -> NodeId
 pub fn DomTree::create_document_fragment(Self) -> NodeId
 pub fn DomTree::create_element(Self, String) -> NodeId
+pub fn DomTree::create_runtime_node(Self, Int, NodeType, tag_name? : String, text_content? : String) -> Result[NodeId, CoreError]
 pub fn DomTree::create_text(Self, String) -> NodeId
 pub fn DomTree::flush_mutations(Self) -> (Array[MutationRecord], FlushResult)
 pub fn[T] DomTree::flush_mutations_with(Self, (MutationRecord) -> T) -> (Array[T], FlushResult)
@@ -170,7 +171,7 @@ pub struct NodeInfo {
 } derive(@debug.Debug)
 pub impl Show for NodeInfo
 
-pub enum NodeType {
+pub(all) enum NodeType {
   Document
   DocumentType
   Element

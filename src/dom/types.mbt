@@ -29,7 +29,7 @@ pub struct Point {
 
 ///|
 /// Node type enumeration
-pub enum NodeType {
+pub(all) enum NodeType {
   Document
   DocumentType
   Element
