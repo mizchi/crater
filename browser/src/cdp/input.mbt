@@ -21,6 +21,48 @@ pub fn InputDomain::new(tree : @dom.DomTree) -> InputDomain {
   { tree, mouse_x: 0.0, mouse_y: 0.0, button_pressed: false }
 }
 
+///|
+fn rect_contains_point(rect : @dom.Rect, x : Double, y : Double) -> Bool {
+  x >= rect.x &&
+  x <= rect.x + rect.width &&
+  y >= rect.y &&
+  y <= rect.y + rect.height
+}
+
+///|
+fn InputDomain::find_hit_node(
+  self : InputDomain,
+  node : @dom.NodeId,
+  x : Double,
+  y : Double,
+) -> @dom.NodeId? {
+  match self.tree.get_children(node) {
+    Ok(children) => {
+      let mut idx = children.length() - 1
+      while idx >= 0 {
+        match self.find_hit_node(children[idx], x, y) {
+          Some(hit) => return Some(hit)
+          None => ()
+        }
+        idx -= 1
+      }
+    }
+    Err(_) => ()
+  }
+  match self.tree.get_node_info(node) {
+    Ok(info) =>
+      match info.node_type {
+        @dom.Element =>
+          match self.tree.get_cached_rect(node) {
+            Some(rect) if rect_contains_point(rect, x, y) => Some(node)
+            _ => None
+          }
+        _ => None
+      }
+    Err(_) => None
+  }
+}
+
 // =============================================================================
 // Mouse Events
 // =============================================================================
@@ -67,12 +109,11 @@ fn InputDomain::click_at(
   x : Double,
   y : Double,
 ) -> Result[Unit, CdpError] {
-  // Find element at position by checking cached rects
-  let _ = self
-  let _ = x
-  let _ = y
-  // TODO: Implement hit testing using cached layout rects
-  // For now, just return success
+  let doc = self.tree.get_document()
+  match self.find_hit_node(doc, x, y) {
+    Some(node) => self.tree.set_focus(Some(node))
+    None => self.tree.set_focus(None)
+  }
   Ok(())
 }
 

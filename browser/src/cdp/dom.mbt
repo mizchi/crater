@@ -40,10 +40,10 @@ pub fn DomDomain::request_child_nodes(
 ) -> Result[Array[CdpNode], CdpError] {
   let max_depth = depth.unwrap_or(1)
   let node = @dom.NodeId::from_int(node_id)
-  match self.tree.get_children(node) {
-    Ok(children) => {
+  match self.get_request_child_nodes(node) {
+    Ok(child_nodes) => {
       let cdp_children : Array[CdpNode] = []
-      for child in children {
+      for child in child_nodes {
         match self.node_to_cdp(child, 0, max_depth) {
           Ok(cdp_node) => cdp_children.push(cdp_node)
           Err(e) => return Err(e)
@@ -160,7 +160,7 @@ pub fn DomDomain::get_outer_html(
     Ok(info) =>
       match info.node_type {
         @dom.Text => Ok(info.node_value)
-        @dom.Element => {
+        @dom.Element | @dom.DocumentFragment | @dom.ShadowRoot => {
           // Build outer HTML
           let buf = StringBuilder::new()
           self.build_outer_html(node, buf)
@@ -271,6 +271,8 @@ fn DomDomain::node_to_cdp(
         @dom.Text => 3
         @dom.Comment => 8
         @dom.DocumentType => 10
+        @dom.DocumentFragment => 11
+        @dom.ShadowRoot => 11
       }
       // Get attributes for elements
       let attributes : Array[String]? = match info.node_type {
@@ -286,6 +288,19 @@ fn DomDomain::node_to_cdp(
             }
             Err(_) => None
           }
+        _ => None
+      }
+      let shadow_roots : Array[CdpNode]? = match
+        self.tree.get_shadow_root(node) {
+        Ok(Some(shadow_root)) =>
+          match self.node_to_cdp(shadow_root, current_depth + 1, max_depth) {
+            Ok(cdp_shadow_root) => Some([cdp_shadow_root])
+            Err(_) => None
+          }
+        _ => None
+      }
+      let shadow_root_type = match info.node_type {
+        @dom.ShadowRoot => self.tree.get_shadow_mode(node).unwrap_or(None)
         _ => None
       }
       // Get children if within depth limit
@@ -316,6 +331,8 @@ fn DomDomain::node_to_cdp(
         child_node_count: Some(info.child_count),
         children,
         attributes,
+        shadow_roots,
+        shadow_root_type,
       })
     }
     Err(e) => Err(core_to_cdp_error(e))
@@ -367,8 +384,36 @@ fn DomDomain::build_outer_html(
           buf.write_string(info.node_name)
           buf.write_string(">")
         }
+        @dom.DocumentFragment | @dom.ShadowRoot =>
+          match self.tree.get_children(node) {
+            Ok(children) =>
+              for child in children {
+                self.build_outer_html(child, buf)
+              }
+            Err(_) => ()
+          }
         _ => ()
       }
     Err(_) => ()
+  }
+}
+
+///|
+fn DomDomain::get_request_child_nodes(
+  self : DomDomain,
+  node : @dom.NodeId,
+) -> Result[Array[@dom.NodeId], @dom.CoreError] {
+  match self.tree.get_children(node) {
+    Ok(children) =>
+      match self.tree.get_shadow_root(node) {
+        Ok(Some(shadow_root)) => {
+          let result = children.copy()
+          result.push(shadow_root)
+          Ok(result)
+        }
+        Ok(None) => Ok(children)
+        Err(err) => Err(err)
+      }
+    Err(err) => Err(err)
   }
 }
