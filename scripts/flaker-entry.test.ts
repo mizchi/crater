@@ -190,6 +190,35 @@ describe("runFlakerEntryCli", () => {
     ]);
   });
 
+  it("dispatches batch summary with positional output dir and collect task id", () => {
+    const calls: Array<{ name: string; args: string[] }> = [];
+    runFlakerEntryCli([
+      "batch",
+      "summary",
+      "flaker-daily-artifacts",
+      ".flaker/batch-summary",
+      "flaker-daily",
+    ], {
+      handlers: createHandlers(calls),
+    });
+
+    expect(calls).toEqual([
+      {
+        name: "batch-summary",
+        args: [
+          "--input",
+          "flaker-daily-artifacts",
+          "--json",
+          ".flaker/batch-summary/summary.json",
+          "--markdown",
+          ".flaker/batch-summary/summary.md",
+          "--collect-task-id",
+          "flaker-daily",
+        ],
+      },
+    ]);
+  });
+
   it("dispatches quarantine report", () => {
     const calls: Array<{ name: string; args: string[] }> = [];
     runFlakerEntryCli(["quarantine", "report"], {

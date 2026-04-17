@@ -50,6 +50,18 @@ describe("buildFlakerBatchSummary", () => {
           },
         } as FlakerTaskSummaryReport],
       ]),
+      vrtSummaries: new Map([
+        ["paint-vrt", {
+          failed: 1,
+          unknown: 0,
+          maxDiffRatio: 0.2,
+        }],
+        ["wpt-vrt", {
+          failed: 0,
+          unknown: 1,
+          maxDiffRatio: 0.08,
+        }],
+      ]),
     });
 
     expect(summary.taskCount).toBe(2);
@@ -66,6 +78,9 @@ describe("buildFlakerBatchSummary", () => {
         healthScore: 72,
         newFlaky: 1,
         urgentFixes: 1,
+        vrtFailed: 1,
+        vrtUnknown: 0,
+        vrtMaxDiffRatio: 0.2,
         status: "failed",
       },
       {
@@ -77,6 +92,9 @@ describe("buildFlakerBatchSummary", () => {
         healthScore: undefined,
         newFlaky: undefined,
         urgentFixes: undefined,
+        vrtFailed: 0,
+        vrtUnknown: 1,
+        vrtMaxDiffRatio: 0.08,
         status: "ok",
       },
     ]);
@@ -103,6 +121,9 @@ describe("renderFlakerBatchSummaryMarkdown", () => {
           healthScore: 72,
           newFlaky: 1,
           urgentFixes: 1,
+          vrtFailed: 1,
+          vrtUnknown: 0,
+          vrtMaxDiffRatio: 0.2,
           status: "failed",
         },
       ],
@@ -110,6 +131,6 @@ describe("renderFlakerBatchSummaryMarkdown", () => {
 
     expect(markdown).toContain("# Flaker Daily Batch Summary");
     expect(markdown).toContain("| Failed tasks | 1 |");
-    expect(markdown).toContain("| paint-vrt | failed | 10 | 1 | 0 | 72 | 1 | 1 |");
+    expect(markdown).toContain("| paint-vrt | failed | 10 | 1 | 0 | 72 | 1 | 1 | 1 | 0 | 0.2000 |");
   });
 });

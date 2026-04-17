@@ -10,6 +10,8 @@ import {
 } from "./flaker-task-cli.ts";
 import {
   buildFlakerTaskRecordArtifacts,
+  buildFlakerTaskRecordVrtArtifacts,
+  buildFlakerTaskRecordWptVrtArtifacts,
 } from "./flaker-task-record-artifacts.ts";
 import {
   buildFlakerTaskRecordImportArgs,
@@ -40,6 +42,7 @@ import type { FlakerTaskRunCliArgs } from "./flaker-task-run.ts";
 export interface FlakerTaskRecordCliArgs extends FlakerTaskRecordPlanArgs {
   commitSha?: string;
   branch?: string;
+  vrtSummaryDir?: string;
 }
 export type { FlakerTaskRecordPlanArgs };
 export { buildFlakerTaskRecordImportArgs } from "./flaker-task-record-execution.ts";
@@ -52,6 +55,10 @@ export interface FlakerTaskRecordResult {
   reportPath: string;
   summaryJsonPath?: string;
   summaryMarkdownPath?: string;
+  vrtSummaryJsonPath?: string;
+  vrtSummaryMarkdownPath?: string;
+  wptVrtSummaryJsonPath?: string;
+  wptVrtSummaryMarkdownPath?: string;
   workspaceDir: string;
   taskCommand: string[];
 }
@@ -70,6 +77,18 @@ function renderFlakerTaskRecordResult(result: FlakerTaskRecordResult): string {
   if (result.summaryMarkdownPath) {
     lines.push(`summary_markdown: ${result.summaryMarkdownPath}`);
   }
+  if (result.vrtSummaryJsonPath) {
+    lines.push(`vrt_summary_json: ${result.vrtSummaryJsonPath}`);
+  }
+  if (result.vrtSummaryMarkdownPath) {
+    lines.push(`vrt_summary_markdown: ${result.vrtSummaryMarkdownPath}`);
+  }
+  if (result.wptVrtSummaryJsonPath) {
+    lines.push(`wpt_vrt_summary_json: ${result.wptVrtSummaryJsonPath}`);
+  }
+  if (result.wptVrtSummaryMarkdownPath) {
+    lines.push(`wpt_vrt_summary_markdown: ${result.wptVrtSummaryMarkdownPath}`);
+  }
   return `${lines.join("\n")}\n`;
 }
 
@@ -85,6 +104,7 @@ function usage(): string {
       "  --branch <name>        Branch name recorded in flaker import",
       "  --report-path <file>   Persist raw Playwright JSON report to this path",
       "  --summary-dir <dir>    Persist normalized summary JSON/Markdown to this directory",
+      "  --vrt-summary-dir <dir>  Persist VRT artifact summaries (report.json and WPT raw results) when present",
     ],
   });
 }
@@ -116,6 +136,11 @@ export function parseFlakerTaskRecordArgs(args: string[]): FlakerTaskRecordCliAr
       "--summary-dir": {
         set: (target, value) => {
           target.summaryDir = value;
+        },
+      },
+      "--vrt-summary-dir": {
+        set: (target, value) => {
+          target.vrtSummaryDir = value;
         },
       },
     },
@@ -172,6 +197,30 @@ export function recordFlakerTask(
   for (const output of artifacts.writes) {
     writeOutput(output.path, output.content);
   }
+  const vrtArtifacts = args.vrtSummaryDir
+    ? buildFlakerTaskRecordVrtArtifacts(
+      repoRoot,
+      args.taskId,
+      args.vrtSummaryDir,
+    )
+    : {
+      writes: [],
+    };
+  for (const output of vrtArtifacts.writes) {
+    writeOutput(output.path, output.content);
+  }
+  const wptVrtArtifacts = args.vrtSummaryDir
+    ? buildFlakerTaskRecordWptVrtArtifacts(
+      repoRoot,
+      args.taskId,
+      args.vrtSummaryDir,
+    )
+    : {
+      writes: [],
+    };
+  for (const output of wptVrtArtifacts.writes) {
+    writeOutput(output.path, output.content);
+  }
 
   const gitMetadata = options?.detectGitMetadata?.(repoRoot) ?? detectGitMetadata(repoRoot);
   const importResult = runFlakerTaskRecordImport(args, plan.paths.reportPath, gitMetadata, {
@@ -188,6 +237,10 @@ export function recordFlakerTask(
     reportPath: plan.paths.reportPath,
     summaryJsonPath: artifacts.summaryJsonPath,
     summaryMarkdownPath: artifacts.summaryMarkdownPath,
+    vrtSummaryJsonPath: vrtArtifacts.summaryJsonPath,
+    vrtSummaryMarkdownPath: vrtArtifacts.summaryMarkdownPath,
+    wptVrtSummaryJsonPath: wptVrtArtifacts.summaryJsonPath,
+    wptVrtSummaryMarkdownPath: wptVrtArtifacts.summaryMarkdownPath,
     workspaceDir: plan.workspace.workspaceDir,
     taskCommand: plan.taskCommand,
   };

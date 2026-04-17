@@ -67,7 +67,7 @@ function helpText(): string {
     "  task sample <task-id> [flaker args...]",
     "  task run <task-id> [flaker args...]",
     "  batch plan [output-dir]",
-    "  batch summary <input-dir> [output-dir]",
+    "  batch summary <input-dir> [output-dir] [collect-task-id]",
     "  quarantine check",
     "  quarantine report [output-dir]",
     "  upstream inventory [output-dir]",
@@ -252,14 +252,16 @@ function dispatchBatchCommand(
   }
 
   if (subcommand === "summary") {
-    const [inputDir, outputDir] = rest;
+    const [inputDir, outputDir, collectTaskId] = rest;
     if (!inputDir) {
-      return err("Usage: flaker batch summary <input-dir> [output-dir]");
+      return err("Usage: flaker batch summary <input-dir> [output-dir] [collect-task-id]");
     }
     if (outputDir) {
-      return handlers.runBatchSummaryCli(
-        withReportDir(["--input", inputDir], outputDir, "summary"),
-      );
+      const args = withReportDir(["--input", inputDir], outputDir, "summary");
+      if (collectTaskId) {
+        args.push("--collect-task-id", collectTaskId);
+      }
+      return handlers.runBatchSummaryCli(args);
     }
     return handlers.runBatchSummaryCli(["--input", inputDir]);
   }

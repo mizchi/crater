@@ -18,6 +18,10 @@ describe("parseFlakerBatchSummaryArgs", () => {
     const args = parseFlakerBatchSummaryArgs([
       "--input",
       "nightly",
+      "--label",
+      "nightly-summary",
+      "--collect-task-id",
+      "flaker-daily",
       "--json",
       "out/summary.json",
       "--markdown",
@@ -26,6 +30,8 @@ describe("parseFlakerBatchSummaryArgs", () => {
 
     expect(args).toMatchObject({
       inputDir: "nightly",
+      label: "nightly-summary",
+      collectTaskId: "flaker-daily",
       jsonOutput: "out/summary.json",
       markdownOutput: "out/summary.md",
     });
@@ -76,6 +82,18 @@ describe("buildFlakerBatchSummary", () => {
           },
         } as FlakerTaskSummaryReport],
       ]),
+      vrtSummaries: new Map([
+        ["paint-vrt", {
+          failed: 1,
+          unknown: 0,
+          maxDiffRatio: 0.2,
+        }],
+        ["wpt-vrt", {
+          failed: 0,
+          unknown: 1,
+          maxDiffRatio: 0.08,
+        }],
+      ]),
     });
 
     expect(summary.taskCount).toBe(2);
@@ -92,6 +110,9 @@ describe("buildFlakerBatchSummary", () => {
         healthScore: 72,
         newFlaky: 1,
         urgentFixes: 1,
+        vrtFailed: 1,
+        vrtUnknown: 0,
+        vrtMaxDiffRatio: 0.2,
         status: "failed",
       },
       {
@@ -103,6 +124,9 @@ describe("buildFlakerBatchSummary", () => {
         healthScore: undefined,
         newFlaky: undefined,
         urgentFixes: undefined,
+        vrtFailed: 0,
+        vrtUnknown: 1,
+        vrtMaxDiffRatio: 0.08,
         status: "ok",
       },
     ]);
@@ -129,6 +153,9 @@ describe("renderFlakerBatchSummaryMarkdown", () => {
           healthScore: 72,
           newFlaky: 1,
           urgentFixes: 1,
+          vrtFailed: 1,
+          vrtUnknown: 0,
+          vrtMaxDiffRatio: 0.2,
           status: "failed",
         },
       ],
@@ -136,14 +163,15 @@ describe("renderFlakerBatchSummaryMarkdown", () => {
 
     expect(markdown).toContain("# Flaker Daily Batch Summary");
     expect(markdown).toContain("| Failed tasks | 1 |");
-    expect(markdown).toContain("| paint-vrt | failed | 10 | 1 | 0 | 72 | 1 | 1 |");
+    expect(markdown).toContain("| paint-vrt | failed | 10 | 1 | 0 | 72 | 1 | 1 | 1 | 0 | 0.2000 |");
   });
 });
 
 describe("runFlakerBatchSummaryCli", () => {
-  it("returns markdown stdout and artifact writes", () => {
+  it("returns markdown stdout, flat writes, and collect-compatible copies", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "crater-flaker-batch-summary-cli-"));
     fs.mkdirSync(path.join(root, "paint-vrt", "playwright-summary"), { recursive: true });
+    fs.mkdirSync(path.join(root, "paint-vrt", "vrt-summary"), { recursive: true });
     fs.writeFileSync(
       path.join(root, "paint-vrt", "playwright-summary", "paint-vrt.json"),
       JSON.stringify({
@@ -162,10 +190,34 @@ describe("runFlakerBatchSummaryCli", () => {
       }),
       "utf8",
     );
+    fs.writeFileSync(
+      path.join(root, "paint-vrt", "vrt-summary", "paint-vrt.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        suite: "vrt-artifact-summary",
+        generatedAt: "2026-04-02T00:00:00.000Z",
+        label: "paint-vrt",
+        total: 2,
+        budgeted: 2,
+        passed: 1,
+        failed: 1,
+        unknown: 0,
+        averageDiffRatio: 0.11,
+        maxObservedDiffRatio: 0.2,
+        rows: [],
+        failures: [],
+        closestToBudget: [],
+      }),
+      "utf8",
+    );
 
     const result = runFlakerBatchSummaryCli([
       "--input",
       root,
+      "--label",
+      "nightly-summary",
+      "--collect-task-id",
+      "flaker-daily",
       "--json",
       "out/summary.json",
       "--markdown",
@@ -174,6 +226,7 @@ describe("runFlakerBatchSummaryCli", () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("# Flaker Daily Batch Summary");
+    expect(result.stdout).toContain("| paint-vrt | failed | 1 | 0 | 0 | N/A | N/A | N/A | 1 | 0 | 0.2000 |");
     expect(result.writes).toEqual([
       {
         path: path.resolve(process.cwd(), "out/summary.md"),
@@ -183,6 +236,86 @@ describe("runFlakerBatchSummaryCli", () => {
         path: path.resolve(process.cwd(), "out/summary.json"),
         content: expect.stringContaining('"taskCount": 1'),
       },
+      {
+        path: path.resolve(process.cwd(), "out/flaker-daily/batch-summary/flaker-daily.md"),
+        content: expect.stringContaining("# Flaker Daily Batch Summary"),
+      },
+      {
+        path: path.resolve(process.cwd(), "out/flaker-daily/batch-summary/flaker-daily.json"),
+        content: expect.stringContaining('"taskCount": 1'),
+      },
     ]);
+  });
+
+  it("includes WPT VRT collect artifacts in batch VRT metrics", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "crater-flaker-batch-summary-wpt-vrt-cli-"));
+    fs.mkdirSync(path.join(root, "wpt-vrt", "playwright-summary"), { recursive: true });
+    fs.mkdirSync(path.join(root, "wpt-vrt", "wpt-vrt-summary"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "wpt-vrt", "playwright-summary", "wpt-vrt.json"),
+      JSON.stringify({
+        totals: {
+          total: 2,
+          passed: 1,
+          failed: 1,
+          flaky: 0,
+          skipped: 0,
+          timedout: 0,
+          interrupted: 0,
+          unknown: 0,
+          retries: 0,
+          durationMs: 10,
+        },
+      }),
+      "utf8",
+    );
+    fs.writeFileSync(
+      path.join(root, "wpt-vrt", "wpt-vrt-summary", "wpt-vrt.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        suite: "wpt-vrt",
+        generatedAt: "2026-04-02T00:00:00.000Z",
+        label: "wpt-vrt",
+        shardName: "wpt-vrt",
+        modules: ["css-flexbox"],
+        offset: 0,
+        limit: 10,
+        total: 2,
+        expectedTotal: 3,
+        passed: 1,
+        failed: 1,
+        regressionCount: 1,
+        passRate: 0.5,
+        maxDiffRatio: 0.08,
+        moduleTotals: [
+          {
+            module: "css-flexbox",
+            total: 2,
+            passed: 1,
+            failed: 1,
+            passRate: 0.5,
+          },
+        ],
+        failures: [
+          {
+            relativePath: "css-flexbox/gap-002.html",
+            module: "css-flexbox",
+            diffRatio: 0.08,
+            status: "fail",
+          },
+        ],
+        closestToThreshold: [],
+        regressions: [],
+      }),
+      "utf8",
+    );
+
+    const result = runFlakerBatchSummaryCli([
+      "--input",
+      root,
+    ]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("| wpt-vrt | failed | 2 | 1 | 0 | N/A | N/A | N/A | 1 | 1 | 0.0800 |");
   });
 });

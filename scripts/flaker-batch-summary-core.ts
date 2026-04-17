@@ -1,6 +1,12 @@
 import type { PlaywrightSummary } from "./playwright-report-contract.ts";
 import type { FlakerTaskSummaryReport } from "./flaker-task-summary-contract.ts";
 
+export interface FlakerBatchVrtSummary {
+  failed: number;
+  unknown: number;
+  maxDiffRatio: number;
+}
+
 export interface FlakerBatchTaskSummary {
   taskId: string;
   totalTests: number;
@@ -10,6 +16,9 @@ export interface FlakerBatchTaskSummary {
   healthScore?: number;
   newFlaky?: number;
   urgentFixes?: number;
+  vrtFailed?: number;
+  vrtUnknown?: number;
+  vrtMaxDiffRatio?: number;
   status: "ok" | "failed" | "missing";
 }
 
@@ -27,6 +36,7 @@ export interface FlakerBatchSummary {
 export interface FlakerBatchSummaryInputs {
   playwrightSummaries: Map<string, PlaywrightSummary>;
   flakerSummaries: Map<string, FlakerTaskSummaryReport>;
+  vrtSummaries: Map<string, FlakerBatchVrtSummary>;
 }
 
 function escapeCell(value: string): string {
@@ -37,15 +47,17 @@ export function buildFlakerBatchSummary(
   inputs: FlakerBatchSummaryInputs,
 ): FlakerBatchSummary {
   const taskIds = [
-    ...new Set([
-      ...inputs.playwrightSummaries.keys(),
-      ...inputs.flakerSummaries.keys(),
-    ]),
+      ...new Set([
+        ...inputs.playwrightSummaries.keys(),
+        ...inputs.flakerSummaries.keys(),
+        ...inputs.vrtSummaries.keys(),
+      ]),
   ].sort();
 
   const tasks: FlakerBatchTaskSummary[] = taskIds.map((taskId) => {
     const playwrightSummary = inputs.playwrightSummaries.get(taskId);
     const flakerSummary = inputs.flakerSummaries.get(taskId);
+    const vrtSummary = inputs.vrtSummaries.get(taskId);
 
     if (!playwrightSummary) {
       return {
@@ -54,6 +66,9 @@ export function buildFlakerBatchSummary(
         failed: 0,
         flaky: 0,
         skipped: 0,
+        vrtFailed: vrtSummary?.failed,
+        vrtUnknown: vrtSummary?.unknown,
+        vrtMaxDiffRatio: vrtSummary?.maxDiffRatio,
         status: "missing",
       };
     }
@@ -62,6 +77,7 @@ export function buildFlakerBatchSummary(
       playwrightSummary.totals.failed
       + playwrightSummary.totals.timedout
       + playwrightSummary.totals.interrupted;
+    const vrtFailed = vrtSummary?.failed;
 
     return {
       taskId,
@@ -72,7 +88,10 @@ export function buildFlakerBatchSummary(
       healthScore: flakerSummary?.eval.healthScore,
       newFlaky: flakerSummary?.eval.resolution.newFlaky,
       urgentFixes: flakerSummary?.reason.summary.urgentFixes,
-      status: failed > 0 ? "failed" : "ok",
+      vrtFailed,
+      vrtUnknown: vrtSummary?.unknown,
+      vrtMaxDiffRatio: vrtSummary?.maxDiffRatio,
+      status: failed > 0 || (vrtFailed ?? 0) > 0 ? "failed" : "ok",
     };
   });
 
@@ -102,11 +121,11 @@ export function renderFlakerBatchSummaryMarkdown(
   lines.push(`| Healthy tasks | ${summary.healthyTasks} |`);
   lines.push(`| Total tests | ${summary.totalTests} |`);
   lines.push("");
-  lines.push("| Task | Status | Total | Failed | Flaky | Health | New flaky | Urgent fixes |");
-  lines.push("| --- | --- | --- | --- | --- | --- | --- | --- |");
+  lines.push("| Task | Status | Total | Failed | Flaky | Health | New flaky | Urgent fixes | VRT fail | VRT unk | VRT max diff |");
+  lines.push("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
   for (const task of summary.tasks) {
     lines.push(
-      `| ${escapeCell(task.taskId)} | ${task.status} | ${task.totalTests} | ${task.failed} | ${task.flaky} | ${task.healthScore ?? "N/A"} | ${task.newFlaky ?? "N/A"} | ${task.urgentFixes ?? "N/A"} |`,
+      `| ${escapeCell(task.taskId)} | ${task.status} | ${task.totalTests} | ${task.failed} | ${task.flaky} | ${task.healthScore ?? "N/A"} | ${task.newFlaky ?? "N/A"} | ${task.urgentFixes ?? "N/A"} | ${task.vrtFailed ?? "N/A"} | ${task.vrtUnknown ?? "N/A"} | ${task.vrtMaxDiffRatio?.toFixed(4) ?? "N/A"} |`,
     );
   }
   return `${lines.join("\n")}\n`;

@@ -20,6 +20,7 @@ describe("buildFlakerBatchPlan", () => {
       "browser-user-scenarios",
       "paint-vrt",
       "paint-vrt-levels",
+      "paint-vrt-responsive",
       "playwright-adapter",
       "preact-compat",
       "script-execution-edge-cases",
