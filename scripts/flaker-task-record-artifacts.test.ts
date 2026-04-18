@@ -144,6 +144,14 @@ describe("buildFlakerTaskRecordVrtArtifacts", () => {
         diffRatio: 0.03,
         threshold: 0.3,
         maxDiffRatio: 0.15,
+        cssRuleUsage: {
+          reports: 1,
+          totalRules: 10,
+          deadRules: 4,
+          unusedRules: 1,
+          overriddenRules: 1,
+          noEffectRules: 2,
+        },
       }),
       "utf8",
     );
@@ -163,11 +171,11 @@ describe("buildFlakerTaskRecordVrtArtifacts", () => {
     expect(artifacts.writes).toEqual([
       {
         path: path.resolve(repoRoot, "flaker-daily/paint-vrt/vrt-summary/paint-vrt.json"),
-        content: expect.stringContaining('"suite": "vrt-artifact-summary"'),
+        content: expect.stringContaining('"cssRuleUsage"'),
       },
       {
         path: path.resolve(repoRoot, "flaker-daily/paint-vrt/vrt-summary/paint-vrt.md"),
-        content: expect.stringContaining("# VRT Artifact Summary"),
+        content: expect.stringContaining("| CSS Unused / Overridden / No-Effect | 1 / 1 / 2 |"),
       },
     ]);
   });

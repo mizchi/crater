@@ -16,7 +16,11 @@ import fs from "node:fs";
 import { execFileSync } from "node:child_process";
 import pixelmatchFn from "pixelmatch";
 import { resolveBidiUrl } from "./bidi-url.ts";
-import { createNormalizedVrtArtifactReport } from "./vrt-report-contract.ts";
+import {
+  createNormalizedVrtArtifactReport,
+  type VrtCssRuleUsageMetrics,
+} from "./vrt-report-contract.ts";
+import { summarizeCssRuleUsageResult } from "./vrt-css-rule-usage.ts";
 
 // --- Args ---
 const args = process.argv.slice(2);
@@ -103,6 +107,7 @@ console.log(`2. Rendering with Crater (${backend})...`);
 let craterRgba: Uint8Array;
 let craterWidth = width;
 let craterHeight = height;
+let cssRuleUsage: VrtCssRuleUsageMetrics | undefined;
 
 if (backend === "native") {
   // Native: write HTML to file, run crater_paint binary
@@ -192,6 +197,8 @@ if (backend === "native") {
   craterWidth = paintResult.width;
   craterHeight = paintResult.height;
   craterRgba = Uint8Array.from(Buffer.from(paintResult.data, "base64"));
+  const cssRuleUsageResp = await send("browsingContext.getCssRuleUsage", { context: contextId });
+  cssRuleUsage = summarizeCssRuleUsageResult(cssRuleUsageResp.result);
 
   await send("browsingContext.close", { context: contextId });
   ws.close();
@@ -281,6 +288,7 @@ const report = createNormalizedVrtArtifactReport({
       height: h,
     },
     snapshotKind: "url",
+    cssRuleUsage,
   },
 });
 fs.writeFileSync(path.join(outputDir, "report.json"), JSON.stringify(report, null, 2));

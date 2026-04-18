@@ -122,6 +122,14 @@ describe("recordFlakerTask", () => {
         diffRatio: 0.03,
         threshold: 0.3,
         maxDiffRatio: 0.15,
+        cssRuleUsage: {
+          reports: 1,
+          totalRules: 10,
+          deadRules: 4,
+          unusedRules: 1,
+          overriddenRules: 1,
+          noEffectRules: 2,
+        },
       }),
       "utf8",
     );
@@ -215,8 +223,9 @@ describe("recordFlakerTask", () => {
     expect(fs.readFileSync(result.summaryMarkdownPath!, "utf8")).toContain("# Playwright Report Summary");
     expect(result.vrtSummaryJsonPath).toBeTruthy();
     expect(result.vrtSummaryMarkdownPath).toBeTruthy();
-    expect(fs.readFileSync(result.vrtSummaryJsonPath!, "utf8")).toContain('"suite": "vrt-artifact-summary"');
-    expect(fs.readFileSync(result.vrtSummaryMarkdownPath!, "utf8")).toContain("# VRT Artifact Summary");
+    expect(fs.readFileSync(result.vrtSummaryJsonPath!, "utf8")).toContain('"cssRuleUsage"');
+    expect(fs.readFileSync(result.vrtSummaryMarkdownPath!, "utf8"))
+      .toContain("| CSS Unused / Overridden / No-Effect | 1 / 1 / 2 |");
     expect(
       fs.readFileSync(
         path.join(path.dirname(result.reportPath), "playwright.stderr.log"),

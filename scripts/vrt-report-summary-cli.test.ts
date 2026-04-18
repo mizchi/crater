@@ -22,6 +22,13 @@ describe("runVrtReportSummaryCli", () => {
         diffRatio: 0.03,
         threshold: 0.3,
         maxDiffRatio: 0.15,
+        cssRuleUsage: {
+          totalRules: 10,
+          deadRules: 4,
+          unusedRules: 1,
+          overriddenRules: 1,
+          noEffectRules: 2,
+        },
       }),
       "utf8",
     );
@@ -56,6 +63,8 @@ describe("runVrtReportSummaryCli", () => {
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("# VRT Artifact Summary");
     expect(result.stdout).toContain("fixture-nav");
+    expect(result.stdout).toContain("| CSS Rules (total/dead) | 10 / 4 |");
+    expect(result.stdout).toContain("| CSS Unused / Overridden / No-Effect | 1 / 1 / 2 |");
     expect(result.writes?.map((write) => path.relative(root, write.path))).toEqual([
       "out/vrt-summary.md",
       "out/vrt-summary.json",
@@ -68,10 +77,25 @@ describe("runVrtReportSummaryCli", () => {
     const parsed = JSON.parse(jsonWrite!.content) as {
       total: number;
       failed: number;
+      cssRuleUsage?: {
+        totalRules?: number;
+        deadRules?: number;
+        unusedRules?: number;
+        overriddenRules?: number;
+        noEffectRules?: number;
+      };
       rows: Array<{ label: string; status: string }>;
     };
     expect(parsed.total).toBe(2);
     expect(parsed.failed).toBe(1);
+    expect(parsed.cssRuleUsage).toEqual({
+      reports: 1,
+      totalRules: 10,
+      deadRules: 4,
+      unusedRules: 1,
+      overriddenRules: 1,
+      noEffectRules: 2,
+    });
     expect(parsed.rows.map((row) => `${row.label}:${row.status}`)).toEqual([
       "fixture-nav:fail",
       "fixture-card:pass",
