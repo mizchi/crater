@@ -69,4 +69,5 @@ browser/jsbidi/trace.json
 .playwright-mcp/
 .claude/
 .flaker/
+.tornado/
 .bidi-ws-url
