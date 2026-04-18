@@ -33,9 +33,15 @@ pub fn compute_style(@cascade.CascadedValues, @computed.ComputeContext) -> @styl
 
 pub fn compute_style_with_vars(@cascade.CascadedValues, @computed.ComputeContext) -> (@style.Style, Map[String, String])
 
+pub fn discover_all_computed_styles(String, Array[String]) -> Map[String, Map[String, String]]
+
 pub fn discover_computed_styles_with_state(String, String, @selector.ForcedPseudoStates, Array[String]) -> @responsive.ComputedStylesWithStateResult
 
 pub fn discover_computed_styles_with_state_names(String, String, Array[String], Array[String]) -> @responsive.ComputedStylesWithStateResult
+
+pub fn discover_css_effective_property_sources(String) -> Map[String, Map[String, String]]
+
+pub fn discover_css_rule_usage(String) -> Array[@responsive.CssRuleUsage]
 
 pub fn discover_css_rule_viewport_map(String, Array[Int]) -> @responsive.CssRuleViewportMap
 
@@ -95,6 +101,8 @@ pub using @computed {type ComputeContext}
 pub using @responsive {type ComputedStylesWithStateResult}
 
 pub using @computed {type CssColorValue}
+
+pub using @responsive {type CssRuleUsage}
 
 pub using @responsive {type CssRuleViewportEntry}
 

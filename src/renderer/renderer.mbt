@@ -1144,6 +1144,137 @@ fn trim_trailing_collapsible_whitespace(text : String) -> String {
 }
 
 ///|
+fn trim_leading_collapsible_whitespace(text : String) -> String {
+  let chars : Array[Char] = []
+  for c in text.iter() {
+    chars.push(c)
+  }
+  let mut start = 0
+  while start < chars.length() && is_collapsible_whitespace_char(chars[start]) {
+    start = start + 1
+  }
+  let buf = StringBuilder::new()
+  for i = start; i < chars.length(); i = i + 1 {
+    buf.write_char(chars[i])
+  }
+  buf.to_string()
+}
+
+///|
+fn sibling_participates_inline_flow(
+  siblings : Array[@html.Node],
+  sibling_index : Int,
+  parent_selector : @css.Element,
+  parent_style : @style.Style,
+  indexed_stylesheets : Array[@css.IndexedStylesheet],
+  ctx : RenderContext,
+  css_vars : Map[String, String],
+) -> Bool {
+  match siblings[sibling_index] {
+    @html.Node::Element(elem) => {
+      if indexed_stylesheets.length() == 0 {
+        if is_out_of_flow_positioned(elem, [], ctx) {
+          return false
+        }
+        match get_inline_style_display(elem) {
+          Some(display) => return is_inline_participating_display(display)
+          None => return is_inline_element(elem)
+        }
+      }
+      let selector_elem = html_to_selector_element_with_parent(
+        elem,
+        parent_selector,
+        sibling_index + 1,
+        siblings.length(),
+        None,
+      )
+      let computed = compute_element_style_indexed(
+        selector_elem,
+        elem.style,
+        indexed_stylesheets,
+        false,
+        ctx,
+        Some(parent_style),
+        css_vars,
+      )
+      if computed.position == @types.Absolute ||
+        computed.position == @types.Fixed {
+        return false
+      }
+      is_inline_participating_display(computed.display)
+    }
+    @html.Node::Text(text) => !is_whitespace_only_text(text)
+  }
+}
+
+///|
+fn trim_boundary_collapsible_whitespace_for_inline_context(
+  siblings : Array[@html.Node],
+  index : Int,
+  parent_selector : @css.Element,
+  parent_style : @style.Style,
+  indexed_stylesheets : Array[@css.IndexedStylesheet],
+  ctx : RenderContext,
+  css_vars : Map[String, String],
+) -> String {
+  let text = match siblings[index] {
+    @html.Node::Text(t) => t
+    _ => return ""
+  }
+  if text.is_empty() || is_whitespace_only_text(text) {
+    return text
+  }
+  let prev_is_br = match index > 0 {
+    true =>
+      match siblings[index - 1] {
+        @html.Node::Element(prev_elem) => prev_elem.tag.to_lower() == "br"
+        _ => false
+      }
+    false => false
+  }
+  let next_is_br = match index < siblings.length() - 1 {
+    true =>
+      match siblings[index + 1] {
+        @html.Node::Element(next_elem) => next_elem.tag.to_lower() == "br"
+        _ => false
+      }
+    false => false
+  }
+  let keep_leading = index > 0 &&
+    !prev_is_br &&
+    sibling_participates_inline_flow(
+      siblings,
+      index - 1,
+      parent_selector,
+      parent_style,
+      indexed_stylesheets,
+      ctx,
+      css_vars,
+    )
+  let keep_trailing = index < siblings.length() - 1 &&
+    !next_is_br &&
+    sibling_participates_inline_flow(
+      siblings,
+      index + 1,
+      parent_selector,
+      parent_style,
+      indexed_stylesheets,
+      ctx,
+      css_vars,
+    )
+  let trimmed_leading = if keep_leading {
+    text
+  } else {
+    trim_leading_collapsible_whitespace(text)
+  }
+  if keep_trailing {
+    trimmed_leading
+  } else {
+    trim_trailing_collapsible_whitespace(trimmed_leading)
+  }
+}
+
+///|
 /// Keep collapsed whitespace text between inline-participating element siblings.
 fn should_preserve_inter_element_whitespace(
   siblings : Array[@html.Node],
@@ -1175,47 +1306,7 @@ fn should_preserve_inter_element_whitespace(
   if prev_is_br || next_is_br {
     return false
   }
-  fn inline_participates_at(
-    siblings : Array[@html.Node],
-    sibling_index : Int,
-    parent_selector : @css.Element,
-    parent_style : @style.Style,
-    indexed_stylesheets : Array[@css.IndexedStylesheet],
-    ctx : RenderContext,
-    css_vars : Map[String, String],
-  ) -> Bool {
-    match siblings[sibling_index] {
-      @html.Node::Element(elem) => {
-        // Fast path for inline-style-only documents.
-        // Avoid full computed-style resolution when no stylesheet rules exist.
-        if indexed_stylesheets.length() == 0 {
-          match get_inline_style_display(elem) {
-            Some(display) => return is_inline_participating_display(display)
-            None => return is_inline_element(elem)
-          }
-        }
-        let selector_elem = html_to_selector_element_with_parent(
-          elem,
-          parent_selector,
-          sibling_index + 1,
-          siblings.length(),
-          None,
-        )
-        let computed = compute_element_style_indexed(
-          selector_elem,
-          elem.style,
-          indexed_stylesheets,
-          false,
-          ctx,
-          Some(parent_style),
-          css_vars,
-        )
-        is_inline_participating_display(computed.display)
-      }
-      @html.Node::Text(text) => !is_whitespace_only_text(text)
-    }
-  }
-  let prev_inline = inline_participates_at(
+  let prev_inline = sibling_participates_inline_flow(
     siblings,
     index - 1,
     parent_selector,
@@ -1224,7 +1315,7 @@ fn should_preserve_inter_element_whitespace(
     ctx,
     css_vars,
   )
-  let next_inline = inline_participates_at(
+  let next_inline = sibling_participates_inline_flow(
     siblings,
     index + 1,
     parent_selector,
@@ -5497,7 +5588,14 @@ fn element_to_node_with_styles(
         // Process synthetic text nodes created by collect_inline_content
         // to preserve DOM order when elements are interleaved with text.
         if !text.is_empty() {
-          let text_is_ws = is_whitespace_only_text(text)
+          let normalized_text = trim_boundary_collapsible_whitespace_for_inline_context(
+            remaining_children, i, selector_elem, style, indexed_stylesheets, ctx,
+            css_vars,
+          )
+          if normalized_text.is_empty() {
+            continue
+          }
+          let text_is_ws = is_whitespace_only_text(normalized_text)
           let preserve_ws = text_is_ws &&
             should_preserve_inter_element_whitespace(
               remaining_children, i, selector_elem, style, indexed_stylesheets, ctx,
@@ -5513,7 +5611,7 @@ fn element_to_node_with_styles(
           } else {
             style
           }
-          let text_node = create_text_node(text, text_parent_style)
+          let text_node = create_text_node(normalized_text, text_parent_style)
           children.push(text_node)
         }
     }
@@ -5972,7 +6070,14 @@ fn element_to_node_with_styles_internal(
         // Process synthetic text nodes created by collect_inline_content
         // to preserve DOM order when elements are interleaved with text.
         if !text.is_empty() {
-          let text_is_ws = is_whitespace_only_text(text)
+          let normalized_text = trim_boundary_collapsible_whitespace_for_inline_context(
+            remaining_children, i, selector_elem, style, indexed_stylesheets, ctx,
+            css_vars,
+          )
+          if normalized_text.is_empty() {
+            continue
+          }
+          let text_is_ws = is_whitespace_only_text(normalized_text)
           let preserve_ws = text_is_ws &&
             should_preserve_inter_element_whitespace(
               remaining_children, i, selector_elem, style, indexed_stylesheets, ctx,
@@ -5988,7 +6093,7 @@ fn element_to_node_with_styles_internal(
           } else {
             style
           }
-          let text_node = create_text_node(text, text_parent_style)
+          let text_node = create_text_node(normalized_text, text_parent_style)
           children.push(text_node)
         }
     }

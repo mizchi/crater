@@ -51,6 +51,7 @@ pub using @responsive {
   type BreakpointDiscoveryDiagnostics,
   type BreakpointDiscoveryResult,
   type ComputedStylesWithStateResult,
+  type CssRuleUsage,
   type CssRuleViewportEntry,
   type CssRuleViewportMap,
   type RequiredTestViewport,
@@ -233,6 +234,20 @@ pub fn discover_css_rule_viewport_map(
 }
 
 ///|
+pub fn discover_css_rule_usage(
+  html : String,
+) -> Array[@responsive.CssRuleUsage] {
+  @responsive.discover_css_rule_usage(html)
+}
+
+///|
+pub fn discover_css_effective_property_sources(
+  html : String,
+) -> Map[String, Map[String, String]] {
+  @responsive.discover_css_effective_property_sources(html)
+}
+
+///|
 pub fn discover_required_test_viewports(
   html : String,
 ) -> @responsive.RequiredTestViewportsResult {
@@ -261,4 +276,12 @@ pub fn discover_computed_styles_with_state_names(
   @responsive.discover_computed_styles_with_state_names(
     html, target_selector, forced_state_names, properties,
   )
+}
+
+///|
+pub fn discover_all_computed_styles(
+  html : String,
+  properties : Array[String],
+) -> Map[String, Map[String, String]] {
+  @responsive.discover_all_computed_styles(html, properties)
 }

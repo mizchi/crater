@@ -6,6 +6,7 @@ import {
   createNormalizedVrtArtifactReport,
   inferVrtStableFilter,
   inferVrtSnapshotKind,
+  type VrtCssRuleUsageMetrics,
   type VrtArtifactReportContext,
 } from "../../scripts/vrt-report-contract.ts";
 import { CraterBidiPage } from "./crater-bidi-page";
@@ -14,6 +15,7 @@ export interface DecodedImage {
   width: number;
   height: number;
   data: Uint8Array;
+  cssRuleUsage?: VrtCssRuleUsageMetrics;
 }
 
 export interface VisualDiffOptions {
@@ -51,6 +53,13 @@ const VRT_BIDI_CONNECT_OPTIONS = {
   timeout: 60_000,
   retries: 0,
 } as const;
+
+type CssRuleUsageEntry = {
+  matched: boolean;
+  overridden: boolean;
+  noEffect?: boolean;
+  noEffectReason?: string;
+};
 
 interface PixelmatchResult {
   diffCount: number;
@@ -116,6 +125,7 @@ export function buildVrtArtifactReportJson(
     diffRatio: number;
     roi?: RoiRect;
     maskPixels?: number;
+    cssRuleUsage?: VrtCssRuleUsageMetrics;
   },
 ): string {
   const title = resolveReportTitle(options);
@@ -166,9 +176,38 @@ export function buildVrtArtifactReportJson(
         height: metrics.height,
       },
       snapshotKind,
+      cssRuleUsage: metrics.cssRuleUsage,
     },
   });
   return JSON.stringify(report, null, 2);
+}
+
+export function summarizeCssRuleUsageRules(
+  rules: CssRuleUsageEntry[],
+): VrtCssRuleUsageMetrics {
+  const totalRules = rules.length;
+  const matchedRules = rules.filter((rule) => rule.matched).length;
+  const unusedRules = rules.filter((rule) => !rule.matched).length;
+  const overriddenRules = rules.filter((rule) => rule.overridden).length;
+  const noEffectRules = rules.filter((rule) => rule.noEffect === true).length;
+  return {
+    totalRules,
+    matchedRules,
+    unusedRules,
+    overriddenRules,
+    noEffectRules,
+    deadRules: unusedRules + overriddenRules + noEffectRules,
+    sameAsInheritedRules: rules.filter((rule) => rule.noEffectReason === "same_as_inherited").length,
+    sameAsInitialRules: rules.filter((rule) => rule.noEffectReason === "same_as_initial").length,
+    sameAsFallbackRules: rules.filter((rule) => rule.noEffectReason === "same_as_fallback").length,
+  };
+}
+
+async function collectCssRuleUsageMetrics(
+  page: CraterBidiPage,
+): Promise<VrtCssRuleUsageMetrics> {
+  const usage = await page.getCssRuleUsageDetails();
+  return summarizeCssRuleUsageRules(usage.rules);
 }
 
 
@@ -495,6 +534,7 @@ export async function comparePngs(
       diffPixels,
       totalPixels,
       diffRatio,
+      cssRuleUsage: craterImage.cssRuleUsage,
     }),
   );
 
@@ -595,6 +635,7 @@ export async function compareChromiumPngToImage(
       diffRatio,
       roi,
       maskPixels: compareMask ? maskPixelCount(compareMask) : undefined,
+      cssRuleUsage: craterImage.cssRuleUsage,
     }),
   );
 
@@ -625,7 +666,11 @@ export async function renderCraterHtml(
   }
   await page.setViewport(viewport.width, viewport.height);
   await page.setContentWithScripts(html);
-  return page.capturePaintData();
+  const image = await page.capturePaintData();
+  return {
+    ...image,
+    cssRuleUsage: await collectCssRuleUsageMetrics(page),
+  };
 }
 
 function getCraterPaintBinCandidates(): string[] {

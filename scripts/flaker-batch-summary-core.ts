@@ -5,6 +5,11 @@ export interface FlakerBatchVrtSummary {
   failed: number;
   unknown: number;
   maxDiffRatio: number;
+  cssDeadRules?: number;
+  cssTotalRules?: number;
+  cssUnusedRules?: number;
+  cssOverriddenRules?: number;
+  cssNoEffectRules?: number;
 }
 
 export interface FlakerBatchTaskSummary {
@@ -19,6 +24,11 @@ export interface FlakerBatchTaskSummary {
   vrtFailed?: number;
   vrtUnknown?: number;
   vrtMaxDiffRatio?: number;
+  vrtCssDeadRules?: number;
+  vrtCssTotalRules?: number;
+  vrtCssUnusedRules?: number;
+  vrtCssOverriddenRules?: number;
+  vrtCssNoEffectRules?: number;
   status: "ok" | "failed" | "missing";
 }
 
@@ -30,6 +40,12 @@ export interface FlakerBatchSummary {
   flakyTasks: number;
   healthyTasks: number;
   totalTests: number;
+  vrtCssReports: number;
+  vrtCssDeadRules: number;
+  vrtCssTotalRules: number;
+  vrtCssUnusedRules: number;
+  vrtCssOverriddenRules: number;
+  vrtCssNoEffectRules: number;
   tasks: FlakerBatchTaskSummary[];
 }
 
@@ -41,6 +57,12 @@ export interface FlakerBatchSummaryInputs {
 
 function escapeCell(value: string): string {
   return value.replace(/\|/g, "\\|");
+}
+
+function formatCssDead(deadRules?: number, totalRules?: number): string {
+  return deadRules !== undefined && totalRules !== undefined
+    ? `${deadRules}/${totalRules}`
+    : "N/A";
 }
 
 export function buildFlakerBatchSummary(
@@ -69,6 +91,11 @@ export function buildFlakerBatchSummary(
         vrtFailed: vrtSummary?.failed,
         vrtUnknown: vrtSummary?.unknown,
         vrtMaxDiffRatio: vrtSummary?.maxDiffRatio,
+        vrtCssDeadRules: vrtSummary?.cssDeadRules,
+        vrtCssTotalRules: vrtSummary?.cssTotalRules,
+        vrtCssUnusedRules: vrtSummary?.cssUnusedRules,
+        vrtCssOverriddenRules: vrtSummary?.cssOverriddenRules,
+        vrtCssNoEffectRules: vrtSummary?.cssNoEffectRules,
         status: "missing",
       };
     }
@@ -91,9 +118,18 @@ export function buildFlakerBatchSummary(
       vrtFailed,
       vrtUnknown: vrtSummary?.unknown,
       vrtMaxDiffRatio: vrtSummary?.maxDiffRatio,
+      vrtCssDeadRules: vrtSummary?.cssDeadRules,
+      vrtCssTotalRules: vrtSummary?.cssTotalRules,
+      vrtCssUnusedRules: vrtSummary?.cssUnusedRules,
+      vrtCssOverriddenRules: vrtSummary?.cssOverriddenRules,
+      vrtCssNoEffectRules: vrtSummary?.cssNoEffectRules,
       status: failed > 0 || (vrtFailed ?? 0) > 0 ? "failed" : "ok",
     };
   });
+
+  const vrtCssRows = tasks.filter((task) =>
+    task.vrtCssDeadRules !== undefined && task.vrtCssTotalRules !== undefined
+  );
 
   return {
     schemaVersion: 1,
@@ -103,6 +139,12 @@ export function buildFlakerBatchSummary(
     flakyTasks: tasks.filter((task) => task.flaky > 0).length,
     healthyTasks: tasks.filter((task) => (task.healthScore ?? 0) >= 80).length,
     totalTests: tasks.reduce((sum, task) => sum + task.totalTests, 0),
+    vrtCssReports: vrtCssRows.length,
+    vrtCssDeadRules: vrtCssRows.reduce((sum, task) => sum + (task.vrtCssDeadRules ?? 0), 0),
+    vrtCssTotalRules: vrtCssRows.reduce((sum, task) => sum + (task.vrtCssTotalRules ?? 0), 0),
+    vrtCssUnusedRules: vrtCssRows.reduce((sum, task) => sum + (task.vrtCssUnusedRules ?? 0), 0),
+    vrtCssOverriddenRules: vrtCssRows.reduce((sum, task) => sum + (task.vrtCssOverriddenRules ?? 0), 0),
+    vrtCssNoEffectRules: vrtCssRows.reduce((sum, task) => sum + (task.vrtCssNoEffectRules ?? 0), 0),
     tasks,
   };
 }
@@ -120,12 +162,19 @@ export function renderFlakerBatchSummaryMarkdown(
   lines.push(`| Flaky tasks | ${summary.flakyTasks} |`);
   lines.push(`| Healthy tasks | ${summary.healthyTasks} |`);
   lines.push(`| Total tests | ${summary.totalTests} |`);
+  if (summary.vrtCssReports > 0) {
+    lines.push(`| VRT CSS Reports | ${summary.vrtCssReports} |`);
+    lines.push(`| VRT CSS Rules (total/dead) | ${summary.vrtCssTotalRules} / ${summary.vrtCssDeadRules} |`);
+    lines.push(
+      `| VRT CSS Unused / Overridden / No-Effect | ${summary.vrtCssUnusedRules} / ${summary.vrtCssOverriddenRules} / ${summary.vrtCssNoEffectRules} |`,
+    );
+  }
   lines.push("");
-  lines.push("| Task | Status | Total | Failed | Flaky | Health | New flaky | Urgent fixes | VRT fail | VRT unk | VRT max diff |");
-  lines.push("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
+  lines.push("| Task | Status | Total | Failed | Flaky | Health | New flaky | Urgent fixes | VRT fail | VRT unk | VRT max diff | VRT CSS dead |");
+  lines.push("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
   for (const task of summary.tasks) {
     lines.push(
-      `| ${escapeCell(task.taskId)} | ${task.status} | ${task.totalTests} | ${task.failed} | ${task.flaky} | ${task.healthScore ?? "N/A"} | ${task.newFlaky ?? "N/A"} | ${task.urgentFixes ?? "N/A"} | ${task.vrtFailed ?? "N/A"} | ${task.vrtUnknown ?? "N/A"} | ${task.vrtMaxDiffRatio?.toFixed(4) ?? "N/A"} |`,
+      `| ${escapeCell(task.taskId)} | ${task.status} | ${task.totalTests} | ${task.failed} | ${task.flaky} | ${task.healthScore ?? "N/A"} | ${task.newFlaky ?? "N/A"} | ${task.urgentFixes ?? "N/A"} | ${task.vrtFailed ?? "N/A"} | ${task.vrtUnknown ?? "N/A"} | ${task.vrtMaxDiffRatio?.toFixed(4) ?? "N/A"} | ${formatCssDead(task.vrtCssDeadRules, task.vrtCssTotalRules)} |`,
     );
   }
   return `${lines.join("\n")}\n`;

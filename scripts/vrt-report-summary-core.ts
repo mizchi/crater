@@ -34,6 +34,20 @@ export interface VrtArtifactSummaryRow {
   identity?: VrtStableIdentity;
   backend?: string;
   snapshotKind?: string;
+  cssTotalRules?: number;
+  cssDeadRules?: number;
+  cssUnusedRules?: number;
+  cssOverriddenRules?: number;
+  cssNoEffectRules?: number;
+}
+
+export interface VrtArtifactCssRuleUsageSummary {
+  reports: number;
+  totalRules: number;
+  deadRules: number;
+  unusedRules: number;
+  overriddenRules: number;
+  noEffectRules: number;
 }
 
 export interface VrtArtifactSummary {
@@ -51,6 +65,7 @@ export interface VrtArtifactSummary {
   rows: VrtArtifactSummaryRow[];
   failures: VrtArtifactSummaryRow[];
   closestToBudget: VrtArtifactSummaryRow[];
+  cssRuleUsage?: VrtArtifactCssRuleUsageSummary;
 }
 
 function compareRows(a: VrtArtifactSummaryRow, b: VrtArtifactSummaryRow): number {
@@ -98,6 +113,15 @@ function compareClosestToBudget(a: VrtArtifactSummaryRow, b: VrtArtifactSummaryR
 
 function formatRatio(value: number | undefined): string {
   return typeof value === "number" ? value.toFixed(4) : "";
+}
+
+function formatCssDead(row: VrtArtifactSummaryRow): string {
+  if (row.cssDeadRules === undefined) {
+    return "";
+  }
+  return row.cssTotalRules === undefined
+    ? String(row.cssDeadRules)
+    : `${row.cssDeadRules}/${row.cssTotalRules}`;
 }
 
 function escapeCell(value: string): string {
@@ -150,6 +174,11 @@ export function buildVrtArtifactSummary(
       identity: readVrtArtifactIdentity(report),
       backend: metrics?.backend,
       snapshotKind: metrics?.snapshotKind,
+      cssTotalRules: metrics?.cssRuleUsage?.totalRules,
+      cssDeadRules: metrics?.cssRuleUsage?.deadRules,
+      cssUnusedRules: metrics?.cssRuleUsage?.unusedRules,
+      cssOverriddenRules: metrics?.cssRuleUsage?.overriddenRules,
+      cssNoEffectRules: metrics?.cssRuleUsage?.noEffectRules,
     };
   }).sort(compareRows);
 
@@ -169,6 +198,30 @@ export function buildVrtArtifactSummary(
   const closestToBudget = rows
     .filter((row) => row.headroom !== undefined)
     .sort(compareClosestToBudget);
+  const cssRows = rows.filter((row) =>
+    row.cssTotalRules !== undefined ||
+    row.cssDeadRules !== undefined ||
+    row.cssUnusedRules !== undefined ||
+    row.cssOverriddenRules !== undefined ||
+    row.cssNoEffectRules !== undefined
+  );
+  const cssRuleUsage = cssRows.length === 0
+    ? undefined
+    : cssRows.reduce<VrtArtifactCssRuleUsageSummary>((acc, row) => ({
+      reports: acc.reports + 1,
+      totalRules: acc.totalRules + (row.cssTotalRules ?? 0),
+      deadRules: acc.deadRules + (row.cssDeadRules ?? 0),
+      unusedRules: acc.unusedRules + (row.cssUnusedRules ?? 0),
+      overriddenRules: acc.overriddenRules + (row.cssOverriddenRules ?? 0),
+      noEffectRules: acc.noEffectRules + (row.cssNoEffectRules ?? 0),
+    }), {
+      reports: 0,
+      totalRules: 0,
+      deadRules: 0,
+      unusedRules: 0,
+      overriddenRules: 0,
+      noEffectRules: 0,
+    });
 
   return {
     schemaVersion: 1,
@@ -185,6 +238,7 @@ export function buildVrtArtifactSummary(
     rows,
     failures,
     closestToBudget,
+    cssRuleUsage,
   };
 }
 
@@ -205,6 +259,13 @@ export function renderVrtArtifactSummaryMarkdown(summary: VrtArtifactSummary): s
   lines.push(`| Unknown Budget | ${summary.unknown} |`);
   lines.push(`| Average Diff Ratio | ${formatRatio(summary.averageDiffRatio)} |`);
   lines.push(`| Max Diff Ratio | ${formatRatio(summary.maxObservedDiffRatio)} |`);
+  if (summary.cssRuleUsage) {
+    lines.push(`| Reports With CSS Usage | ${summary.cssRuleUsage.reports} |`);
+    lines.push(`| CSS Rules (total/dead) | ${summary.cssRuleUsage.totalRules} / ${summary.cssRuleUsage.deadRules} |`);
+    lines.push(
+      `| CSS Unused / Overridden / No-Effect | ${summary.cssRuleUsage.unusedRules} / ${summary.cssRuleUsage.overriddenRules} / ${summary.cssRuleUsage.noEffectRules} |`,
+    );
+  }
 
   lines.push("");
   lines.push("## Priority Reports");
@@ -213,15 +274,15 @@ export function renderVrtArtifactSummaryMarkdown(summary: VrtArtifactSummary): s
     lines.push(`Showing first ${reportLimit} of ${summary.rows.length} reports, ordered by severity and budget headroom.`);
     lines.push("");
   }
-  lines.push("| Target | Status | Diff | Budget | Headroom | Threshold | Size |");
-  lines.push("| --- | --- | --- | --- | --- | --- | --- |");
+  lines.push("| Target | Status | Diff | Budget | Headroom | Threshold | Dead CSS | Size |");
+  lines.push("| --- | --- | --- | --- | --- | --- | --- | --- |");
   if (summary.rows.length === 0) {
-    lines.push("| _(none)_ |  |  |  |  |  |  |");
+    lines.push("| _(none)_ |  |  |  |  |  |  |  |");
   } else {
     for (const row of summary.rows.slice(0, reportLimit)) {
       const size = row.width && row.height ? `${row.width}x${row.height}` : "";
       lines.push(
-        `| ${escapeCell(row.label)} | ${row.status} | ${formatRatio(row.diffRatio)} | ${formatRatio(row.maxDiffRatio)} | ${formatRatio(row.headroom)} | ${formatRatio(row.threshold)} | ${size} |`,
+        `| ${escapeCell(row.label)} | ${row.status} | ${formatRatio(row.diffRatio)} | ${formatRatio(row.maxDiffRatio)} | ${formatRatio(row.headroom)} | ${formatRatio(row.threshold)} | ${formatCssDead(row)} | ${size} |`,
       );
     }
   }

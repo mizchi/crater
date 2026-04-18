@@ -205,6 +205,164 @@ test.describe("Browser user scenarios", () => {
     await page.waitForText("#status", "Saved newsletter:on theme:dark");
   });
 
+  test("computed styles flow: selector and element targets return the same values", async () => {
+    await page.setContentWithScripts(`
+      <html>
+        <body>
+          <div id="card" style="display:flex;padding:12px 24px;color:rgb(31, 35, 40)">foo</div>
+        </body>
+      </html>
+    `);
+
+    await expect(
+      page.getComputedStyles("#card", ["display", "padding", "color"]),
+    ).resolves.toEqual({
+      color: "rgb(31, 35, 40)",
+      display: "flex",
+      padding: "12px 24px",
+    });
+
+    await expect(
+      page.getComputedStylesForElement("#card", ["display", "padding", "color"]),
+    ).resolves.toEqual({
+      color: "rgb(31, 35, 40)",
+      display: "flex",
+      padding: "12px 24px",
+    });
+
+    await expect(
+      page.getAllComputedStyles(["display", "color"]),
+    ).resolves.toMatchObject({
+      "div#card": {
+        color: "rgb(31, 35, 40)",
+        display: "flex",
+      },
+    });
+  });
+
+  test("css rule usage flow: overridden and unmatched selectors are reported", async () => {
+    await page.setContentWithScripts(`
+      <html>
+        <head>
+          <style>
+            .unused { color: red; }
+            .card { color: red; }
+            div.card { color: blue; }
+            .chip { padding: 4px; }
+          </style>
+        </head>
+        <body>
+          <div id="card" class="card">A</div>
+          <div id="chip" class="chip">B</div>
+        </body>
+      </html>
+    `);
+
+    await expect(page.getCssRuleUsage()).resolves.toEqual([
+      {
+        selector: ".unused",
+        matched: false,
+        elements: 0,
+        overridden: false,
+      },
+      {
+        selector: ".card",
+        matched: true,
+        elements: 1,
+        overridden: true,
+        overriddenBy: "div.card",
+      },
+      {
+        selector: "div.card",
+        matched: true,
+        elements: 1,
+        overridden: false,
+      },
+      {
+        selector: ".chip",
+        matched: true,
+        elements: 1,
+        overridden: false,
+      },
+    ]);
+
+    await expect(page.getCssRuleUsageDetails()).resolves.toMatchObject({
+      elements: {
+        "div#card": {
+          color: "div.card",
+        },
+        "div#chip": {
+          padding: ".chip",
+        },
+      },
+    });
+  });
+
+  test("css rule usage details flow: inherited and initial no-op rules are reported", async () => {
+    await page.setContentWithScripts(`
+      <html>
+        <head>
+          <style>
+            .wrapper { color: red; }
+            .child { color: red; }
+            .box { margin: 0; }
+          </style>
+        </head>
+        <body>
+          <div class="wrapper"><span id="child" class="child">A</span></div>
+          <div id="box" class="box">B</div>
+        </body>
+      </html>
+    `);
+
+    await expect(page.getCssRuleUsageDetails()).resolves.toMatchObject({
+      rules: [
+        { selector: ".wrapper", noEffect: false },
+        {
+          selector: ".child",
+          noEffect: true,
+          noEffectReason: "same_as_inherited",
+        },
+        {
+          selector: ".box",
+          noEffect: true,
+          noEffectReason: "same_as_initial",
+        },
+      ],
+    });
+  });
+
+  test("css rule usage details flow: winning rules with fallback-equivalent values are reported as no-op", async () => {
+    await page.setContentWithScripts(`
+      <html>
+        <head>
+          <style>
+            .card { color: red; }
+            div.card { color: red; }
+          </style>
+        </head>
+        <body>
+          <div class="card">A</div>
+        </body>
+      </html>
+    `);
+
+    await expect(page.getCssRuleUsageDetails()).resolves.toMatchObject({
+      rules: [
+        {
+          selector: ".card",
+          overridden: true,
+          overriddenBy: "div.card",
+        },
+        {
+          selector: "div.card",
+          noEffect: true,
+          noEffectReason: "same_as_fallback",
+        },
+      ],
+    });
+  });
+
   test("menu flow: hover to open actions and archive item", async () => {
     await page.setContentWithScripts(`
       <html>

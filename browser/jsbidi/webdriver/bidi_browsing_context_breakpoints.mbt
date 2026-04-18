@@ -115,14 +115,81 @@ fn responsive_breakpoint_source_html(mode : String) -> String {
 }
 
 ///|
+fn responsive_breakpoint_source_html_with_shared_node_marker(
+  shared_id : String,
+) -> String {
+  let html_json = evaluate_js(
+    serialize_live_document_html_with_target_resolver_expr(
+      (
+        #|    const sharedId =
+      ) +
+      Json::string(shared_id).stringify() +
+      (
+        #|;
+        #|    const store = globalThis.__bidiSharedNodeStore;
+        #|    return (store && store.get(sharedId)) || null;
+      ),
+    ),
+  )
+  extract_string_value_from_evaluate_result(html_json)
+}
+
+///|
+fn responsive_breakpoint_source_html_with_element_id_marker(
+  element_id : String,
+) -> String {
+  let html_json = evaluate_js(
+    serialize_live_document_html_with_target_resolver_expr(
+      (
+        #|    const elementId =
+      ) +
+      Json::string(element_id).stringify() +
+      (
+        #|;
+        #|    if (typeof doc.getElementById !== "function") return null;
+        #|    return doc.getElementById(elementId);
+      ),
+    ),
+  )
+  extract_string_value_from_evaluate_result(html_json)
+}
+
+///|
 fn serialize_live_document_html_expr() -> String {
+  let target_resolver =
+    #|    return null;
+  serialize_live_document_html_with_target_resolver_expr(target_resolver)
+}
+
+///|
+fn serialize_live_document_html_with_target_resolver_expr(
+  target_resolver_js : String,
+) -> String {
   (
     #|(() => {
     #|  const doc = globalThis.document;
     #|  if (!doc) return '';
+    #|  const markerAttrName =
+  ) +
+  Json::string(computed_styles_target_marker_attribute_name()).stringify() +
+  (
+    #|;
+    #|  const markerAttrValue = "1";
+    #|  const targetNode = (() => {
+  ) +
+  target_resolver_js +
+  (
+    #|  })();
     #|  const voids = new Set(['area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr']);
     #|  const escapeText = (value) => String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     #|  const escapeAttr = (value) => String(value ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    #|  const appendAttrs = (node, rawAttrs) => {
+    #|    const attrs = { ...(rawAttrs || {}) };
+    #|    if (node && node === targetNode) attrs[markerAttrName] = markerAttrValue;
+    #|    let html = '';
+    #|    for (const [k, v] of Object.entries(attrs)) html += ' ' + k + '="' + escapeAttr(v) + '"';
+    #|    return html;
+    #|  };
     #|  const getChildren = (node) => {
     #|    if (!node) return [];
     #|    const shadowRoot = node.shadowRoot;
@@ -144,8 +211,7 @@ fn serialize_live_document_html_expr() -> String {
     #|    if (node.nodeType !== 1) return '';
     #|    const tag = (node.tagName || node._tagName || '').toLowerCase();
     #|    let html = '<' + tag;
-    #|    const attrs = node._attrs || {};
-    #|    for (const [k, v] of Object.entries(attrs)) html += ' ' + k + '="' + escapeAttr(v) + '"';
+    #|    html += appendAttrs(node, node._attrs);
     #|    html += '>';
     #|    if (voids.has(tag)) return html;
     #|    for (const child of getChildren(node)) html += serNode(child);
@@ -154,21 +220,29 @@ fn serialize_live_document_html_expr() -> String {
     #|  };
     #|  let html = '<html';
     #|  const htmlEl = doc.documentElement;
-    #|  if (htmlEl && htmlEl._attrs) {
-    #|    for (const [k, v] of Object.entries(htmlEl._attrs)) html += ' ' + k + '="' + escapeAttr(v) + '"';
-    #|  }
-    #|  html += '><head>';
+    #|  html += appendAttrs(htmlEl, htmlEl && htmlEl._attrs);
+    #|  html += '><head';
+    #|  html += appendAttrs(doc.head, doc.head && doc.head._attrs);
+    #|  html += '>';
     #|  if (doc.head) for (const child of getChildren(doc.head)) html += serNode(child);
     #|  html += '</head><body';
-    #|  if (doc.body && doc.body._attrs) {
-    #|    for (const [k, v] of Object.entries(doc.body._attrs)) html += ' ' + k + '="' + escapeAttr(v) + '"';
-    #|  }
+    #|  html += appendAttrs(doc.body, doc.body && doc.body._attrs);
     #|  html += '>';
     #|  if (doc.body) for (const child of getChildren(doc.body)) html += serNode(child);
     #|  html += '</body></html>';
     #|  return html;
     #|})()
   )
+}
+
+///|
+fn computed_styles_target_marker_attribute_name() -> String {
+  "data-crater-computed-style-target"
+}
+
+///|
+fn computed_styles_target_marker_selector() -> String {
+  "[" + computed_styles_target_marker_attribute_name() + "=\"1\"]"
 }
 
 ///|

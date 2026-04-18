@@ -56,6 +56,14 @@ describe("loadFlakerBatchSummaryInputs", () => {
         unknown: 0,
         averageDiffRatio: 0.08,
         maxObservedDiffRatio: 0.2,
+        cssRuleUsage: {
+          reports: 1,
+          totalRules: 10,
+          deadRules: 4,
+          unusedRules: 1,
+          overriddenRules: 1,
+          noEffectRules: 2,
+        },
         rows: [],
         failures: [],
         closestToBudget: [],
@@ -67,7 +75,16 @@ describe("loadFlakerBatchSummaryInputs", () => {
 
     expect(loaded.playwrightSummaries.get("paint-vrt")?.totals.total).toBe(10);
     expect(loaded.flakerSummaries.get("paint-vrt")?.eval.healthScore).toBe(72);
-    expect(loaded.vrtSummaries.get("paint-vrt")?.failed).toBe(1);
+    expect(loaded.vrtSummaries.get("paint-vrt")).toEqual({
+      failed: 1,
+      unknown: 0,
+      maxDiffRatio: 0.2,
+      cssDeadRules: 4,
+      cssTotalRules: 10,
+      cssUnusedRules: 1,
+      cssOverriddenRules: 1,
+      cssNoEffectRules: 2,
+    });
   });
 
   it("normalizes wpt-vrt summary artifacts into batch VRT metrics", () => {

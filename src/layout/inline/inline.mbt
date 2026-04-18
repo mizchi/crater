@@ -51,6 +51,7 @@ fn inline_establishes_abs_containing_block(style : @style.Style) -> Bool {
 priv struct WrappedTextMetrics {
   line_count : Int
   last_line_width : Double
+  max_line_width : Double
 }
 
 ///|
@@ -272,6 +273,7 @@ fn estimate_wrapped_text_metrics(
 
       let mut total_lines = 1
       let mut last_line_cols = 0
+      let mut max_line_cols = 0
       if use_word_wrap && !no_wrap {
         let mut current_line_width = 0
         let mut current_word_width = 0
@@ -285,9 +287,19 @@ fn estimate_wrapped_text_metrics(
               )
               total_lines = l
               current_line_width = w
+              if current_line_width > max_line_cols {
+                max_line_cols = current_line_width
+              }
+              if current_word_width > cols_available &&
+                cols_available > max_line_cols {
+                max_line_cols = cols_available
+              }
               current_word_width = 0
             }
             total_lines = total_lines + 1
+            if current_line_width > max_line_cols {
+              max_line_cols = current_line_width
+            }
             current_line_width = 0
             has_pending_space = false
           } else if c == ' ' || c == '\t' {
@@ -298,6 +310,13 @@ fn estimate_wrapped_text_metrics(
               )
               total_lines = l
               current_line_width = w
+              if current_line_width > max_line_cols {
+                max_line_cols = current_line_width
+              }
+              if current_word_width > cols_available &&
+                cols_available > max_line_cols {
+                max_line_cols = cols_available
+              }
               current_word_width = 0
             }
             has_pending_space = true
@@ -312,6 +331,13 @@ fn estimate_wrapped_text_metrics(
           )
           total_lines = l
           current_line_width = w
+          if current_line_width > max_line_cols {
+            max_line_cols = current_line_width
+          }
+          if current_word_width > cols_available &&
+            cols_available > max_line_cols {
+            max_line_cols = cols_available
+          }
         }
         last_line_cols = current_line_width
       } else {
@@ -326,6 +352,15 @@ fn estimate_wrapped_text_metrics(
               1
             }
             total_lines = total_lines + line_visual_lines
+            let wrapped_line_width = if cols_available > 0 &&
+              current_line_width > cols_available {
+              cols_available
+            } else {
+              current_line_width
+            }
+            if wrapped_line_width > max_line_cols {
+              max_line_cols = wrapped_line_width
+            }
             current_line_width = 0
           } else if c == ' ' || c == '\t' {
             current_line_width = current_line_width + 1
@@ -347,6 +382,18 @@ fn estimate_wrapped_text_metrics(
         } else {
           last_line_cols = current_line_width
         }
+        let wrapped_line_width = if cols_available > 0 &&
+          current_line_width > cols_available {
+          cols_available
+        } else {
+          current_line_width
+        }
+        if wrapped_line_width > max_line_cols {
+          max_line_cols = wrapped_line_width
+        }
+      }
+      if last_line_cols > max_line_cols {
+        max_line_cols = last_line_cols
       }
       Some({
         line_count: if total_lines > 0 {
@@ -355,6 +402,7 @@ fn estimate_wrapped_text_metrics(
           1
         },
         last_line_width: last_line_cols.to_double() * char_width,
+        max_line_width: max_line_cols.to_double() * char_width,
       })
     }
     None => None
@@ -1657,16 +1705,19 @@ pub fn compute_ifc(
                 } else {
                   carry_width
                 }
-                if bounded_carry > 0.0 {
-                  if child.style.display == @types.Inline {
+                if child.style.display == @types.Inline {
+                  if carry_width > 0.0 {
                     effective_layout = shift_inline_out_of_flow_descendants(
-                      effective_layout, child, bounded_carry, 0.0,
+                      effective_layout,
+                      child,
+                      carry_width,
+                      -line_height_from_style(child.style),
                     )
-                  } else {
-                    positioned_x = content_offset_x +
-                      child_margin.left +
-                      bounded_carry
                   }
+                } else if bounded_carry > 0.0 {
+                  positioned_x = content_offset_x +
+                    child_margin.left +
+                    bounded_carry
                 }
               }
               None => ()
@@ -2003,6 +2054,20 @@ fn compute_inline_child(
           final_height = @types.clamp(final_height, min_height, max_height)
         }
         _ => ()
+      }
+      if node.id.has_prefix("#text") && !style.writing_mode.is_vertical() {
+        match estimate_wrapped_text_metrics(node, content_width) {
+          Some(metrics) if metrics.line_count > 1 &&
+            metrics.max_line_width > 0.0 => {
+            let wrapped_width = metrics.max_line_width +
+              padding.horizontal_sum() +
+              border.horizontal_sum()
+            if wrapped_width < final_width {
+              final_width = wrapped_width
+            }
+          }
+          _ => ()
+        }
       }
       return {
         id: node.id,

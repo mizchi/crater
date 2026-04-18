@@ -18,6 +18,13 @@ describe("buildVrtArtifactSummary", () => {
           diffRatio: 0.04,
           threshold: 0.3,
           maxDiffRatio: 0.15,
+          cssRuleUsage: {
+            totalRules: 10,
+            deadRules: 1,
+            unusedRules: 1,
+            overriddenRules: 0,
+            noEffectRules: 0,
+          },
         },
       },
       {
@@ -31,6 +38,13 @@ describe("buildVrtArtifactSummary", () => {
           diffRatio: 0.149,
           threshold: 0.3,
           maxDiffRatio: 0.15,
+          cssRuleUsage: {
+            totalRules: 4,
+            deadRules: 1,
+            unusedRules: 0,
+            overriddenRules: 1,
+            noEffectRules: 0,
+          },
         },
       },
       {
@@ -44,6 +58,13 @@ describe("buildVrtArtifactSummary", () => {
           diffRatio: 0.2,
           threshold: 0.3,
           maxDiffRatio: 0.12,
+          cssRuleUsage: {
+            totalRules: 6,
+            deadRules: 4,
+            unusedRules: 1,
+            overriddenRules: 1,
+            noEffectRules: 2,
+          },
         },
       },
       {
@@ -74,10 +95,19 @@ describe("buildVrtArtifactSummary", () => {
       "example-com",
       "fixture-blog-article",
     ]);
+    expect(summary.cssRuleUsage).toEqual({
+      reports: 3,
+      totalRules: 20,
+      deadRules: 6,
+      unusedRules: 2,
+      overriddenRules: 2,
+      noEffectRules: 2,
+    });
 
     const markdown = renderVrtArtifactSummaryMarkdown(summary);
     expect(markdown).toContain("# VRT Artifact Summary");
     expect(markdown).toContain("| Label | paint-vrt |");
-    expect(markdown).toContain("| example-com | fail | 0.2000 | 0.1200 | -0.0800 |");
+    expect(markdown).toContain("| CSS Rules (total/dead) | 20 / 6 |");
+    expect(markdown).toContain("| example-com | fail | 0.2000 | 0.1200 | -0.0800 | 0.3000 | 4/6 | 1280x720 |");
   });
 });

@@ -85,6 +85,85 @@ fn BidiProtocol::resolve_get_css_rule_viewport_map(
 }
 
 ///|
+/// BiDi handler for browsingContext.getCssRuleUsage
+fn BidiProtocol::handle_get_css_rule_usage(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match self.resolve_get_css_rule_usage(request_id, params) {
+    Some(result) => self.send_success(request_id, Some(result))
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::resolve_get_css_rule_usage(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Json? {
+  let params = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return None
+    }
+  }
+  let ctx_id = match params.get("context") {
+    Some(String(id)) => id
+    _ => {
+      self.send_error(request_id, "invalid argument", "Missing context")
+      return None
+    }
+  }
+  let _session = match self.manager.get_session(ctx_id) {
+    Some(session) => session
+    None => {
+      self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
+      return None
+    }
+  }
+  let html = responsive_breakpoint_source_html("live-inline")
+  let usage = @css.discover_css_rule_usage(html)
+  let effective_sources = @css.discover_css_effective_property_sources(html)
+  let rules_json : Array[Json] = []
+  for entry in usage {
+    let item : Map[String, Json] = {}
+    item["selector"] = Json::string(entry.selector)
+    item["matched"] = Json::boolean(entry.matched)
+    item["elements"] = Json::number(entry.elements.to_double())
+    item["overridden"] = Json::boolean(entry.overridden)
+    match entry.overridden_by {
+      Some(value) => item["overriddenBy"] = Json::string(value)
+      None => ()
+    }
+    item["noEffect"] = Json::boolean(entry.no_effect)
+    match entry.no_effect_reason {
+      Some(value) => item["noEffectReason"] = Json::string(value)
+      None => ()
+    }
+    rules_json.push(make_object(item))
+  }
+  let elements_json : Map[String, Json] = {}
+  effective_sources.each(fn(selector, sources) {
+    let source_json : Map[String, Json] = {}
+    sources.each(fn(property, label) {
+      source_json[property] = Json::string(label)
+    })
+    elements_json[selector] = make_object(source_json)
+  })
+  Some(
+    make_object({
+      "rules": Json::array(rules_json),
+      "elements": make_object(elements_json),
+    }),
+  )
+}
+
+///|
 /// BiDi handler for browsingContext.getRequiredTestViewports
 fn BidiProtocol::handle_get_required_test_viewports(
   self : BidiProtocol,

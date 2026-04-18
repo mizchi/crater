@@ -101,10 +101,28 @@ function asBatchVrtSummary(
   ) {
     return undefined;
   }
+  const cssRuleUsage = typeof summary.cssRuleUsage === "object" && summary.cssRuleUsage !== null
+    ? summary.cssRuleUsage as Record<string, unknown>
+    : undefined;
   return {
     failed: summary.failed,
     unknown: summary.unknown,
     maxDiffRatio: summary.maxObservedDiffRatio,
+    cssDeadRules: isFiniteNumber(cssRuleUsage?.deadRules)
+      ? cssRuleUsage.deadRules
+      : undefined,
+    cssTotalRules: isFiniteNumber(cssRuleUsage?.totalRules)
+      ? cssRuleUsage.totalRules
+      : undefined,
+    cssUnusedRules: isFiniteNumber(cssRuleUsage?.unusedRules)
+      ? cssRuleUsage.unusedRules
+      : undefined,
+    cssOverriddenRules: isFiniteNumber(cssRuleUsage?.overriddenRules)
+      ? cssRuleUsage.overriddenRules
+      : undefined,
+    cssNoEffectRules: isFiniteNumber(cssRuleUsage?.noEffectRules)
+      ? cssRuleUsage.noEffectRules
+      : undefined,
   };
 }
 

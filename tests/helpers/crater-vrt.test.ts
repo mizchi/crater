@@ -1,7 +1,11 @@
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { createVrtArtifactReportContext } from "../../scripts/vrt-report-contract.ts";
-import { buildVrtArtifactReportJson } from "./crater-vrt.ts";
+import {
+  buildVrtArtifactReportJson,
+  renderCraterHtml,
+  summarizeCssRuleUsageRules,
+} from "./crater-vrt.ts";
 
 const originalPaintBackend = process.env.CRATER_PAINT_BACKEND;
 
@@ -249,5 +253,139 @@ describe("buildVrtArtifactReportJson", () => {
     expect(String((report.identity as Record<string, unknown>).key)).not.toContain(
       "github profile visual parity",
     );
+  });
+
+  it("includes css rule usage summary in normalized VRT metadata", () => {
+    const report = JSON.parse(buildVrtArtifactReportJson({
+      outputDir: path.join("/repo", "output", "playwright", "vrt", "fixture-cards-controls"),
+      threshold: 0.3,
+      maxDiffRatio: 0.12,
+      report: {
+        title: "fixture: cards and controls stay within relaxed visual diff budget",
+        taskId: "paint-vrt",
+        spec: "tests/paint-vrt.test.ts",
+      },
+    }, {
+      width: 960,
+      height: 720,
+      diffPixels: 1200,
+      totalPixels: 691200,
+      diffRatio: 0.03,
+      cssRuleUsage: {
+        totalRules: 6,
+        matchedRules: 5,
+        unusedRules: 1,
+        overriddenRules: 1,
+        noEffectRules: 2,
+        deadRules: 4,
+        sameAsInheritedRules: 1,
+        sameAsInitialRules: 0,
+        sameAsFallbackRules: 1,
+      },
+    })) as Record<string, unknown>;
+
+    expect(report).toMatchObject({
+      metadata: {
+        cssRuleUsage: {
+          totalRules: 6,
+          matchedRules: 5,
+          unusedRules: 1,
+          overriddenRules: 1,
+          noEffectRules: 2,
+          deadRules: 4,
+          sameAsInheritedRules: 1,
+          sameAsInitialRules: 0,
+          sameAsFallbackRules: 1,
+        },
+      },
+    });
+  });
+});
+
+describe("summarizeCssRuleUsageRules", () => {
+  it("counts dead css categories and no-effect reasons", () => {
+    expect(summarizeCssRuleUsageRules([
+      { matched: false, overridden: false },
+      { matched: true, overridden: true },
+      { matched: true, overridden: false, noEffect: true, noEffectReason: "same_as_inherited" },
+      { matched: true, overridden: false, noEffect: true, noEffectReason: "same_as_fallback" },
+      { matched: true, overridden: false },
+    ])).toEqual({
+      totalRules: 5,
+      matchedRules: 4,
+      unusedRules: 1,
+      overriddenRules: 1,
+      noEffectRules: 2,
+      deadRules: 4,
+      sameAsInheritedRules: 1,
+      sameAsInitialRules: 0,
+      sameAsFallbackRules: 1,
+    });
+  });
+});
+
+describe("renderCraterHtml", () => {
+  it("attaches css rule usage summary to captured crater image", async () => {
+    delete process.env.CRATER_PAINT_BACKEND;
+
+    const calls: string[] = [];
+    const fakePage = {
+      async setViewport(width: number, height: number) {
+        calls.push(`viewport:${width}x${height}`);
+      },
+      async setContentWithScripts(html: string) {
+        calls.push(`content:${html.length}`);
+      },
+      async capturePaintData() {
+        calls.push("paint");
+        return {
+          width: 320,
+          height: 240,
+          data: new Uint8Array([255, 255, 255, 255]),
+        };
+      },
+      async getCssRuleUsageDetails() {
+        calls.push("css");
+        return {
+          rules: [
+            { selector: ".unused", matched: false, elements: 0, overridden: false },
+            { selector: ".card", matched: true, elements: 1, overridden: true },
+            {
+              selector: "div.card",
+              matched: true,
+              elements: 1,
+              overridden: false,
+              noEffect: true,
+              noEffectReason: "same_as_fallback",
+            },
+          ],
+          elements: {},
+        };
+      },
+    };
+
+    const image = await renderCraterHtml(
+      fakePage as never,
+      "<div class='card'>A</div>",
+      { width: 320, height: 240 },
+    );
+
+    expect(calls).toEqual([
+      "viewport:320x240",
+      "content:25",
+      "paint",
+      "css",
+    ]);
+    expect(image.cssRuleUsage).toEqual({
+      totalRules: 3,
+      matchedRules: 2,
+      unusedRules: 1,
+      overriddenRules: 1,
+      noEffectRules: 1,
+      deadRules: 3,
+      sameAsInheritedRules: 0,
+      sameAsInitialRules: 0,
+      sameAsFallbackRules: 1,
+    });
   });
 });

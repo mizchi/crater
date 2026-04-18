@@ -184,6 +184,135 @@ export class CraterBidiPage {
     };
   }
 
+  async getComputedStyles(
+    selector: string,
+    properties: string[],
+  ): Promise<Record<string, string>> {
+    return this.requestComputedStyles({ selector, properties });
+  }
+
+  async getComputedStylesBySharedId(
+    sharedId: string,
+    properties: string[],
+  ): Promise<Record<string, string>> {
+    return this.requestComputedStyles({ sharedId, properties });
+  }
+
+  async getAllComputedStyles(
+    properties: string[],
+  ): Promise<Record<string, Record<string, string>>> {
+    const resp = await this.sendBidi("browsingContext.getAllComputedStyles", {
+      context: this.requireContextId(),
+      properties,
+    });
+    if (resp.type === "error") {
+      throw new Error(resp.message || resp.error || "getAllComputedStyles failed");
+    }
+    const result = resp.result as {
+      styles?: Record<string, Record<string, string>>;
+    };
+    return result.styles ?? {};
+  }
+
+  async getCssRuleUsage(): Promise<
+    Array<{
+      selector: string;
+      matched: boolean;
+      elements: number;
+      overridden: boolean;
+      overriddenBy?: string;
+    }>
+  > {
+    const resp = await this.sendBidi("browsingContext.getCssRuleUsage", {
+      context: this.requireContextId(),
+    });
+    if (resp.type === "error") {
+      throw new Error(resp.message || resp.error || "getCssRuleUsage failed");
+    }
+    const result = resp.result as {
+      rules?: Array<{
+        selector?: string;
+        matched?: boolean;
+        elements?: number;
+        overridden?: boolean;
+        overriddenBy?: string;
+      }>;
+    };
+    return (result.rules ?? []).map((rule) => ({
+      selector: String(rule.selector ?? ""),
+      matched: Boolean(rule.matched),
+      elements: Number(rule.elements ?? 0),
+      overridden: Boolean(rule.overridden),
+      ...(rule.overriddenBy ? { overriddenBy: String(rule.overriddenBy) } : {}),
+    }));
+  }
+
+  async getCssRuleUsageDetails(): Promise<{
+    rules: Array<{
+      selector: string;
+      matched: boolean;
+      elements: number;
+      overridden: boolean;
+      overriddenBy?: string;
+      noEffect?: boolean;
+      noEffectReason?: string;
+    }>;
+    elements: Record<string, Record<string, string>>;
+  }> {
+    const resp = await this.sendBidi("browsingContext.getCssRuleUsage", {
+      context: this.requireContextId(),
+    });
+    if (resp.type === "error") {
+      throw new Error(resp.message || resp.error || "getCssRuleUsage failed");
+    }
+    const result = resp.result as {
+      rules?: Array<{
+        selector?: string;
+        matched?: boolean;
+        elements?: number;
+        overridden?: boolean;
+        overriddenBy?: string;
+        noEffect?: boolean;
+        noEffectReason?: string;
+      }>;
+      elements?: Record<string, Record<string, string>>;
+    };
+    return {
+      rules: (result.rules ?? []) as Array<{
+        selector: string;
+        matched: boolean;
+        elements: number;
+        overridden: boolean;
+        overriddenBy?: string;
+        noEffect?: boolean;
+        noEffectReason?: string;
+      }>,
+      elements: result.elements ?? {},
+    };
+  }
+
+  async getComputedStylesForElement(
+    selector: string,
+    properties: string[],
+  ): Promise<Record<string, string>> {
+    const sharedId = await this.elementSharedId(selector);
+    return this.getComputedStylesBySharedId(sharedId, properties);
+  }
+
+  private async requestComputedStyles(
+    params: Record<string, unknown>,
+  ): Promise<Record<string, string>> {
+    const resp = await this.sendBidi("browsingContext.getComputedStyles", {
+      context: this.requireContextId(),
+      ...params,
+    });
+    if (resp.type === "error") {
+      throw new Error(resp.message || resp.error || "getComputedStyles failed");
+    }
+    const result = resp.result as { styles?: Record<string, string> };
+    return result.styles ?? {};
+  }
+
   async click(selector: string): Promise<void> {
     const sharedId = await this.elementSharedId(selector);
     await this.performPointer([

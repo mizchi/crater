@@ -238,6 +238,27 @@ test "wpt_inline_abspos_003_block_child_forces_new_line_static_y" {
       #|40
     ),
   )
+  let text_children : Array[@types.Layout] = []
+  for child in span.children {
+    match child.text {
+      Some(text) => if !text.trim().is_empty() { text_children.push(child) }
+      None => ()
+    }
+  }
+  guard text_children.length() == 1 else {
+    fail("span should keep one non-whitespace text fragment")
+  }
+  let text_layout = text_children[0]
+  inspect(
+    text_layout.width,
+    content=(
+      #|40
+    ),
+  )
+  match text_layout.text {
+    Some(text) => inspect(text == "AA", content="true")
+    None => fail("text fragment should keep content")
+  }
   let non_text_children : Array[@types.Layout] = []
   for child in span.children {
     if !child.id.has_prefix("#text") {
@@ -254,7 +275,7 @@ test "wpt_inline_abspos_003_block_child_forces_new_line_static_y" {
   inspect(
     abs.y,
     content=(
-      #|-79.2
+      #|-80
     ),
   )
   @layout_test.clear_builtin_text_advance_ratio()
@@ -288,7 +309,7 @@ test "wpt_inline_abspos_004_relative_inline_keeps_carry_for_abs_insets" {
   inspect(
     span.width,
     content=(
-      #|100
+      #|80
     ),
   )
   let abs_children : Array[@types.Layout] = []
@@ -302,18 +323,22 @@ test "wpt_inline_abspos_004_relative_inline_keeps_carry_for_abs_insets" {
   }
   let abs0 = abs_children[0]
   let abs1 = abs_children[1]
-  inspect(abs0.y, content="-50")
-  inspect(abs1.y, content="-50")
+  let abs0_global_x = span.x + abs0.x
+  let abs1_global_x = span.x + abs1.x
+  let abs0_global_y = span.y + abs0.y
+  let abs1_global_y = span.y + abs1.y
+  inspect(abs0_global_y, content="0")
+  inspect(abs1_global_y, content="0")
   inspect(
-    abs0.x,
+    abs0_global_x,
     content=(
-      #|-30
+      #|50
     ),
   )
   inspect(
-    abs1.x,
+    abs1_global_x,
     content=(
-      #|-80
+      #|0
     ),
   )
   @layout_test.clear_builtin_text_advance_ratio()

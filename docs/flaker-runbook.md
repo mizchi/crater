@@ -74,7 +74,8 @@ just flaker batch summary flaker-daily-artifacts .flaker/batch-summary flaker-da
 
 - `flaker-batch-plan`: nightly 対象 task の matrix を作る
 - `flaker-batch-summary`: nightly artifact を集約して全体 summary を作る
-  - `playwright-summary` / `flaker-summary` に加えて `vrt-summary` または `wpt-vrt-summary` があれば、task ごとの over-budget 件数と最大 diff も拾う
+  - `playwright-summary` / `flaker-summary` に加えて `vrt-summary` または `wpt-vrt-summary` があれば、task ごとの over-budget 件数と最大 diff を拾う
+  - `vrt-summary` 由来の `cssRuleUsage` がある場合は、batch summary に dead CSS (`dead/total`) と `unused / overridden / no-effect` の内訳も載る
   - `collect_task_id` を渡すと、`<out>/<task-id>/batch-summary/<task-id>.{json,md}` の collect 互換コピーも出す
 
 ### 4. CI / report の入口
@@ -100,6 +101,7 @@ just wpt-vrt-report-aggregate wpt-vrt-summary
 - `flaker-task-summary`: task 単位の `flaker eval/reason` を collect 互換の `flaker-summary` artifact としても出せる
 - `playwright-report-diff`: normalized summary の base/head diff を出す
 - `vrt-report-summary`: `output/playwright/vrt/**/report.json` を集約して CI summary 化する
+  - `report.json` に `metadata.cssRuleUsage` があれば、summary JSON / Markdown に dead CSS と `unused / overridden / no-effect` 集計を載せる
   - `--json` / `--markdown` を指定すると、`<out>/<collect-task-id-or-label>/vrt-summary/<collect-task-id-or-label>.{json,md}` の collect 互換コピーも出す
   - 表示用 label と taskId を分けたいときは `--collect-task-id <task-id>` を使う
 - `wpt-vrt-report`: WPT VRT shard を summary 化する

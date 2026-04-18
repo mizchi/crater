@@ -197,11 +197,10 @@
 - [x] text-decoration: underline は crater 側の paint tree / sixel render で反映する
   - `a` / `u` / `s` の semantic default / author override は `src/vrt_api_semantic_test.mbt` で固定
 - [ ] WPT VRT ベースライン更新: `just wpt-vrt-baseline-update` で native backend の結果を記録
-- [ ] Inline abspos テキスト幅推定: Ahem フォント (ratio=1.0) でもブラウザ値と不一致
-  - `position-absolute-in-inline-003.html`: span.width browser=40 vs crater=48
-  - `position-absolute-in-inline-004.html`: span.width browser=80 vs crater=100
-  - `wpt.json` の `knownFailures` で一時的にスキップ中
-  - 原因: inline layout の whitespace 折り返し推定がブラウザと異なる
+- [x] Inline abspos テキスト幅推定: Ahem フォントでの inline abspos ずれを修正
+  - `position-absolute-in-inline-003.html` / `004.html` は browser 比較で pass
+  - `wpt.json` の `knownFailures` から除外済み
+  - inline layout の whitespace 折り返し推定と abs descendant carry offset を調整済み
 
 #### kagura 側 (`mizchi/kagura`)
 - [ ] テキスト色が薄い: SVG ラスタライザのアンチエイリアスで alpha が弱い
@@ -313,6 +312,15 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
   - [x] `script.callFunction` の focus / scroll fallback を MoonBit 化
   - [x] `browsingContext.getRequestedNavigationUrl` で requested URL state を MoonBit query 化
   - [x] `browsingContext.navigate / reload / close` の wrapper glue を MoonBit command に移行
+  - [x] `browsingContext.getComputedStyles` / `getAllComputedStyles` を MoonBit query に追加
+    - selector / `sharedId` / `elementId` target と batch style map を受理し、BiDi consumer test まで固定
+  - [x] `browsingContext.getCssRuleUsage` を MoonBit query に追加
+    - unmatched / overridden rule を selector 単位で返し、BiDi wbtest と consumer test を固定
+    - element ごとの `property -> winning selector` source map も返す
+    - inherited / initial / fallback と同値で実質 no-op な rule も返す
+    - VRT artifact `report.json` metadata に dead CSS summary を載せる
+    - VRT summary markdown / JSON でも dead CSS 集計を見えるようにする
+    - `flaker-batch-summary` でも dead CSS と `unused / overridden / no-effect` 内訳を集計表示する
 - [x] `session.prepareBaselineContextForTest` と `browsingContext.getContextInfo` で fixture glue を MoonBit query/command 化
 - [x] `script.evaluate / callFunction / locateNodes` の `serializationOptions` snake_case 正規化を MoonBit 化
 - [x] `script.callFunction` の arguments local normalize を削除して protocol validation に委譲

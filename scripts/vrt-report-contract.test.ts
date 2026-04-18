@@ -261,6 +261,48 @@ describe("vrt report contract", () => {
     expect(report.identity.key).toContain("\"backend\":\"native\"");
   });
 
+  it("preserves css rule usage summary inside normalized metadata", () => {
+    const report = createNormalizedVrtArtifactReport({
+      title: "fixture-nav-native",
+      taskId: "paint-vrt",
+      spec: "tests/paint-vrt.test.ts",
+      filter: "fixture-nav",
+      metadata: {
+        diffRatio: 0.02,
+        maxDiffRatio: 0.15,
+        backend: "native",
+        snapshotKind: "fixture",
+        cssRuleUsage: {
+          totalRules: 8,
+          matchedRules: 7,
+          unusedRules: 1,
+          overriddenRules: 2,
+          noEffectRules: 1,
+          deadRules: 4,
+          sameAsInheritedRules: 1,
+          sameAsInitialRules: 0,
+          sameAsFallbackRules: 0,
+        },
+      },
+    });
+
+    expect(report).toMatchObject({
+      metadata: {
+        cssRuleUsage: {
+          totalRules: 8,
+          matchedRules: 7,
+          unusedRules: 1,
+          overriddenRules: 2,
+          noEffectRules: 1,
+          deadRules: 4,
+          sameAsInheritedRules: 1,
+          sameAsInitialRules: 0,
+          sameAsFallbackRules: 0,
+        },
+      },
+    });
+  });
+
   it("accepts normalized vrt-artifact payloads", () => {
     const report = asNormalizedVrtArtifactReport({
       schemaVersion: 1,

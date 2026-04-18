@@ -18,6 +18,18 @@ export interface VrtArtifactRoi {
   height: number;
 }
 
+export interface VrtCssRuleUsageMetrics {
+  totalRules?: number;
+  matchedRules?: number;
+  unusedRules?: number;
+  overriddenRules?: number;
+  noEffectRules?: number;
+  deadRules?: number;
+  sameAsInheritedRules?: number;
+  sameAsInitialRules?: number;
+  sameAsFallbackRules?: number;
+}
+
 export interface VrtArtifactMetrics {
   width?: number;
   height?: number;
@@ -31,6 +43,7 @@ export interface VrtArtifactMetrics {
   backend?: string;
   viewport?: VrtArtifactViewport;
   snapshotKind?: string;
+  cssRuleUsage?: VrtCssRuleUsageMetrics;
 }
 
 export interface VrtStableIdentity {
@@ -148,6 +161,27 @@ function asRoi(value: unknown): VrtArtifactRoi | undefined {
   return { x, y, width, height };
 }
 
+function asCssRuleUsageMetrics(value: unknown): VrtCssRuleUsageMetrics | undefined {
+  const record = asRecord(value);
+  if (!record) {
+    return undefined;
+  }
+  const metrics: VrtCssRuleUsageMetrics = {
+    totalRules: asFiniteNumber(record.totalRules),
+    matchedRules: asFiniteNumber(record.matchedRules),
+    unusedRules: asFiniteNumber(record.unusedRules),
+    overriddenRules: asFiniteNumber(record.overriddenRules),
+    noEffectRules: asFiniteNumber(record.noEffectRules),
+    deadRules: asFiniteNumber(record.deadRules),
+    sameAsInheritedRules: asFiniteNumber(record.sameAsInheritedRules),
+    sameAsInitialRules: asFiniteNumber(record.sameAsInitialRules),
+    sameAsFallbackRules: asFiniteNumber(record.sameAsFallbackRules),
+  };
+  return Object.values(metrics).some((value) => value !== undefined)
+    ? metrics
+    : undefined;
+}
+
 function normalizeMetrics(record: Record<string, unknown>): VrtArtifactMetrics {
   return {
     width: asFiniteNumber(record.width),
@@ -164,6 +198,7 @@ function normalizeMetrics(record: Record<string, unknown>): VrtArtifactMetrics {
     snapshotKind: typeof record.snapshotKind === "string" && record.snapshotKind.length > 0
       ? record.snapshotKind
       : undefined,
+    cssRuleUsage: asCssRuleUsageMetrics(record.cssRuleUsage),
   };
 }
 

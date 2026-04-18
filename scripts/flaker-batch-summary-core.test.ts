@@ -55,6 +55,11 @@ describe("buildFlakerBatchSummary", () => {
           failed: 1,
           unknown: 0,
           maxDiffRatio: 0.2,
+          cssDeadRules: 4,
+          cssTotalRules: 10,
+          cssUnusedRules: 1,
+          cssOverriddenRules: 1,
+          cssNoEffectRules: 2,
         }],
         ["wpt-vrt", {
           failed: 0,
@@ -81,6 +86,11 @@ describe("buildFlakerBatchSummary", () => {
         vrtFailed: 1,
         vrtUnknown: 0,
         vrtMaxDiffRatio: 0.2,
+        vrtCssDeadRules: 4,
+        vrtCssTotalRules: 10,
+        vrtCssUnusedRules: 1,
+        vrtCssOverriddenRules: 1,
+        vrtCssNoEffectRules: 2,
         status: "failed",
       },
       {
@@ -95,6 +105,11 @@ describe("buildFlakerBatchSummary", () => {
         vrtFailed: 0,
         vrtUnknown: 1,
         vrtMaxDiffRatio: 0.08,
+        vrtCssDeadRules: undefined,
+        vrtCssTotalRules: undefined,
+        vrtCssUnusedRules: undefined,
+        vrtCssOverriddenRules: undefined,
+        vrtCssNoEffectRules: undefined,
         status: "ok",
       },
     ]);
@@ -124,13 +139,23 @@ describe("renderFlakerBatchSummaryMarkdown", () => {
           vrtFailed: 1,
           vrtUnknown: 0,
           vrtMaxDiffRatio: 0.2,
+          vrtCssDeadRules: 4,
+          vrtCssTotalRules: 10,
           status: "failed",
         },
       ],
+      vrtCssReports: 1,
+      vrtCssDeadRules: 4,
+      vrtCssTotalRules: 10,
+      vrtCssUnusedRules: 1,
+      vrtCssOverriddenRules: 1,
+      vrtCssNoEffectRules: 2,
     });
 
     expect(markdown).toContain("# Flaker Daily Batch Summary");
     expect(markdown).toContain("| Failed tasks | 1 |");
-    expect(markdown).toContain("| paint-vrt | failed | 10 | 1 | 0 | 72 | 1 | 1 | 1 | 0 | 0.2000 |");
+    expect(markdown).toContain("| VRT CSS Rules (total/dead) | 10 / 4 |");
+    expect(markdown).toContain("| VRT CSS Unused / Overridden / No-Effect | 1 / 1 / 2 |");
+    expect(markdown).toContain("| paint-vrt | failed | 10 | 1 | 0 | 72 | 1 | 1 | 1 | 0 | 0.2000 | 4/10 |");
   });
 });

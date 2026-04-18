@@ -2553,12 +2553,24 @@ fn BidiProtocol::dispatch_browsing_context(
       self.handle_get_css_rule_viewport_map(request.id, request.params)
       Ok(())
     }
+    "getCssRuleUsage" => {
+      self.handle_get_css_rule_usage(request.id, request.params)
+      Ok(())
+    }
     "getRequiredTestViewports" => {
       self.handle_get_required_test_viewports(request.id, request.params)
       Ok(())
     }
     "batchRender" => {
       self.handle_batch_render(request.id, request.params)
+      Ok(())
+    }
+    "getComputedStyles" => {
+      self.handle_get_computed_styles(request.id, request.params)
+      Ok(())
+    }
+    "getAllComputedStyles" => {
+      self.handle_get_all_computed_styles(request.id, request.params)
       Ok(())
     }
     "getComputedStylesWithState" => {

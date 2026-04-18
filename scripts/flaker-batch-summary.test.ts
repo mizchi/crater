@@ -87,6 +87,11 @@ describe("buildFlakerBatchSummary", () => {
           failed: 1,
           unknown: 0,
           maxDiffRatio: 0.2,
+          cssDeadRules: 4,
+          cssTotalRules: 10,
+          cssUnusedRules: 1,
+          cssOverriddenRules: 1,
+          cssNoEffectRules: 2,
         }],
         ["wpt-vrt", {
           failed: 0,
@@ -113,6 +118,11 @@ describe("buildFlakerBatchSummary", () => {
         vrtFailed: 1,
         vrtUnknown: 0,
         vrtMaxDiffRatio: 0.2,
+        vrtCssDeadRules: 4,
+        vrtCssTotalRules: 10,
+        vrtCssUnusedRules: 1,
+        vrtCssOverriddenRules: 1,
+        vrtCssNoEffectRules: 2,
         status: "failed",
       },
       {
@@ -127,9 +137,20 @@ describe("buildFlakerBatchSummary", () => {
         vrtFailed: 0,
         vrtUnknown: 1,
         vrtMaxDiffRatio: 0.08,
+        vrtCssDeadRules: undefined,
+        vrtCssTotalRules: undefined,
+        vrtCssUnusedRules: undefined,
+        vrtCssOverriddenRules: undefined,
+        vrtCssNoEffectRules: undefined,
         status: "ok",
       },
     ]);
+    expect(summary.vrtCssReports).toBe(1);
+    expect(summary.vrtCssDeadRules).toBe(4);
+    expect(summary.vrtCssTotalRules).toBe(10);
+    expect(summary.vrtCssUnusedRules).toBe(1);
+    expect(summary.vrtCssOverriddenRules).toBe(1);
+    expect(summary.vrtCssNoEffectRules).toBe(2);
   });
 });
 
@@ -156,14 +177,27 @@ describe("renderFlakerBatchSummaryMarkdown", () => {
           vrtFailed: 1,
           vrtUnknown: 0,
           vrtMaxDiffRatio: 0.2,
+          vrtCssDeadRules: 4,
+          vrtCssTotalRules: 10,
+          vrtCssUnusedRules: 1,
+          vrtCssOverriddenRules: 1,
+          vrtCssNoEffectRules: 2,
           status: "failed",
         },
       ],
+      vrtCssReports: 1,
+      vrtCssDeadRules: 4,
+      vrtCssTotalRules: 10,
+      vrtCssUnusedRules: 1,
+      vrtCssOverriddenRules: 1,
+      vrtCssNoEffectRules: 2,
     });
 
     expect(markdown).toContain("# Flaker Daily Batch Summary");
     expect(markdown).toContain("| Failed tasks | 1 |");
-    expect(markdown).toContain("| paint-vrt | failed | 10 | 1 | 0 | 72 | 1 | 1 | 1 | 0 | 0.2000 |");
+    expect(markdown).toContain("| VRT CSS Rules (total/dead) | 10 / 4 |");
+    expect(markdown).toContain("| VRT CSS Unused / Overridden / No-Effect | 1 / 1 / 2 |");
+    expect(markdown).toContain("| paint-vrt | failed | 10 | 1 | 0 | 72 | 1 | 1 | 1 | 0 | 0.2000 | 4/10 |");
   });
 });
 
@@ -204,6 +238,14 @@ describe("runFlakerBatchSummaryCli", () => {
         unknown: 0,
         averageDiffRatio: 0.11,
         maxObservedDiffRatio: 0.2,
+        cssRuleUsage: {
+          reports: 1,
+          totalRules: 10,
+          deadRules: 4,
+          unusedRules: 1,
+          overriddenRules: 1,
+          noEffectRules: 2,
+        },
         rows: [],
         failures: [],
         closestToBudget: [],
@@ -226,7 +268,9 @@ describe("runFlakerBatchSummaryCli", () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("# Flaker Daily Batch Summary");
-    expect(result.stdout).toContain("| paint-vrt | failed | 1 | 0 | 0 | N/A | N/A | N/A | 1 | 0 | 0.2000 |");
+    expect(result.stdout).toContain("| VRT CSS Rules (total/dead) | 10 / 4 |");
+    expect(result.stdout).toContain("| VRT CSS Unused / Overridden / No-Effect | 1 / 1 / 2 |");
+    expect(result.stdout).toContain("| paint-vrt | failed | 1 | 0 | 0 | N/A | N/A | N/A | 1 | 0 | 0.2000 | 4/10 |");
     expect(result.writes).toEqual([
       {
         path: path.resolve(process.cwd(), "out/summary.md"),
@@ -316,6 +360,6 @@ describe("runFlakerBatchSummaryCli", () => {
     ]);
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain("| wpt-vrt | failed | 2 | 1 | 0 | N/A | N/A | N/A | 1 | 1 | 0.0800 |");
+    expect(result.stdout).toContain("| wpt-vrt | failed | 2 | 1 | 0 | N/A | N/A | N/A | 1 | 1 | 0.0800 | N/A |");
   });
 });

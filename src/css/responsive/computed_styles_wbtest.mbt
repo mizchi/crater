@@ -78,3 +78,14 @@ test "discover_computed_styles_with_state unknown selector returns empty" {
   assert_eq(result.diff.length(), 0)
   assert_true(result.normal.is_empty())
 }
+
+///|
+test "discover_all_computed_styles returns selector keyed styles for all elements" {
+  let html =
+    #|<html><body><div id="card" style="display:flex">card</div><span id="badge" style="color:rgb(255, 0, 0)">badge</span></body></html>
+  let result = discover_all_computed_styles(html, ["display", "color"])
+  let card_styles = result.get("div#card").unwrap()
+  let badge_styles = result.get("span#badge").unwrap()
+  assert_eq(card_styles.get("display").unwrap(), "flex")
+  assert_eq(badge_styles.get("color").unwrap(), "rgb(255, 0, 0)")
+}
