@@ -1,10 +1,10 @@
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { createVrtArtifactReportContext } from "../../scripts/vrt-report-contract.ts";
+import { summarizeCssRuleUsageRules } from "../../scripts/vrt-css-rule-usage.ts";
 import {
   buildVrtArtifactReportJson,
   renderCraterHtml,
-  summarizeCssRuleUsageRules,
 } from "./crater-vrt.ts";
 
 const originalPaintBackend = process.env.CRATER_PAINT_BACKEND;

@@ -9,6 +9,7 @@ import {
   type VrtCssRuleUsageMetrics,
   type VrtArtifactReportContext,
 } from "../../scripts/vrt-report-contract.ts";
+import { summarizeCssRuleUsageRules } from "../../scripts/vrt-css-rule-usage.ts";
 import { CraterBidiPage } from "./crater-bidi-page";
 
 export interface DecodedImage {
@@ -53,13 +54,6 @@ const VRT_BIDI_CONNECT_OPTIONS = {
   timeout: 60_000,
   retries: 0,
 } as const;
-
-type CssRuleUsageEntry = {
-  matched: boolean;
-  overridden: boolean;
-  noEffect?: boolean;
-  noEffectReason?: string;
-};
 
 interface PixelmatchResult {
   diffCount: number;
@@ -180,27 +174,6 @@ export function buildVrtArtifactReportJson(
     },
   });
   return JSON.stringify(report, null, 2);
-}
-
-export function summarizeCssRuleUsageRules(
-  rules: CssRuleUsageEntry[],
-): VrtCssRuleUsageMetrics {
-  const totalRules = rules.length;
-  const matchedRules = rules.filter((rule) => rule.matched).length;
-  const unusedRules = rules.filter((rule) => !rule.matched).length;
-  const overriddenRules = rules.filter((rule) => rule.overridden).length;
-  const noEffectRules = rules.filter((rule) => rule.noEffect === true).length;
-  return {
-    totalRules,
-    matchedRules,
-    unusedRules,
-    overriddenRules,
-    noEffectRules,
-    deadRules: unusedRules + overriddenRules + noEffectRules,
-    sameAsInheritedRules: rules.filter((rule) => rule.noEffectReason === "same_as_inherited").length,
-    sameAsInitialRules: rules.filter((rule) => rule.noEffectReason === "same_as_initial").length,
-    sameAsFallbackRules: rules.filter((rule) => rule.noEffectReason === "same_as_fallback").length,
-  };
 }
 
 async function collectCssRuleUsageMetrics(
