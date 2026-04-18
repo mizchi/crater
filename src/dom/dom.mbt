@@ -117,12 +117,7 @@ pub fn DomTree::create_runtime_node(
     Text => DomNode::new(Text, "#text", text_content~)
     Comment => DomNode::new(Comment, "#comment", text_content~)
     DocumentFragment => DomNode::new_document_fragment()
-    _ =>
-      return Err(
-        InvalidOperation(
-          message="unsupported runtime node type",
-        ),
-      )
+    _ => return Err(InvalidOperation(message="unsupported runtime node type"))
   }
   self.allocate_node_with_id(id, node)
 }
@@ -142,14 +137,10 @@ fn DomTree::allocate_node_with_id(
   node : DomNode,
 ) -> Result[NodeId, CoreError] {
   if id <= 0 {
-    return Err(
-      InvalidOperation(message="node id must be positive"),
-    )
+    return Err(InvalidOperation(message="node id must be positive"))
   }
   if self.nodes.contains(id) {
-    return Err(
-      InvalidOperation(message="node id already exists"),
-    )
+    return Err(InvalidOperation(message="node id already exists"))
   }
   if id >= self.next_id {
     self.next_id = id + 1
