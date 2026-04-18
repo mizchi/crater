@@ -96,12 +96,7 @@ fn compute_accessible_name_with_hidden_subtree_check(
 ) -> String? {
   let ctx = NameComputationContext::new()
   let name = compute_name_step(
-    element,
-    ctx,
-    find_by_id,
-    find_label_for_id,
-    encapsulating_label,
-    is_in_hidden_subtree,
+    element, ctx, find_by_id, find_label_for_id, encapsulating_label, is_in_hidden_subtree,
   )
   let trimmed = name.trim().to_string()
   if trimmed.is_empty() {
@@ -199,12 +194,7 @@ fn compute_name_step(
       // but still check aria-label, native alternatives, etc.
       if ctx.is_referencing {
         return compute_name_steps_skip_labelledby(
-          element,
-          ctx,
-          find_by_id,
-          find_label_for_id,
-          encapsulating_label,
-          is_in_hidden_subtree,
+          element, ctx, find_by_id, find_label_for_id, encapsulating_label, is_in_hidden_subtree,
         )
       }
       return ""
@@ -212,22 +202,12 @@ fn compute_name_step(
     Some(id) => {
       let new_ctx = ctx.mark_visited(id)
       return compute_name_steps(
-        element,
-        new_ctx,
-        find_by_id,
-        find_label_for_id,
-        encapsulating_label,
-        is_in_hidden_subtree,
+        element, new_ctx, find_by_id, find_label_for_id, encapsulating_label, is_in_hidden_subtree,
       )
     }
     Option::None =>
       compute_name_steps(
-        element,
-        ctx,
-        find_by_id,
-        find_label_for_id,
-        encapsulating_label,
-        is_in_hidden_subtree,
+        element, ctx, find_by_id, find_label_for_id, encapsulating_label, is_in_hidden_subtree,
       )
   }
 }
@@ -305,11 +285,7 @@ fn compute_name_steps(
   // Step 2D: Name from content (if role allows it)
   if role_supports_name_from_content(role) || ctx.is_referencing {
     let content = compute_text_content(
-      element,
-      ctx,
-      find_by_id,
-      find_label_for_id,
-      is_in_hidden_subtree,
+      element, ctx, find_by_id, find_label_for_id, is_in_hidden_subtree,
     )
     if !content.is_empty() {
       return content
@@ -360,11 +336,7 @@ fn compute_name_steps_skip_labelledby(
   let role = compute_role(element, RoleMappingContext::default())
   if role_supports_name_from_content(role) || ctx.is_referencing {
     let content = compute_text_content(
-      element,
-      ctx,
-      find_by_id,
-      find_label_for_id,
-      is_in_hidden_subtree,
+      element, ctx, find_by_id, find_label_for_id, is_in_hidden_subtree,
     )
     if !content.is_empty() {
       return content
@@ -999,6 +971,7 @@ fn has_visibility_visible(element : @html.Element) -> Bool {
   }
 }
 
+///|
 /// Find the first heading inside an element (h1-h6 or role="heading")
 /// Used for dialog-like roles that get name from first heading (tentative feature)
 fn find_first_heading(element : @html.Element) -> @html.Element? {

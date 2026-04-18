@@ -334,7 +334,8 @@ fn index_elements(
     }
   }
 
-  let child_hidden_ancestor = hidden_ancestor || hides_descendants_from_all_users(element)
+  let child_hidden_ancestor = hidden_ancestor ||
+    hides_descendants_from_all_users(element)
 
   // Recurse
   for child in element.children {
