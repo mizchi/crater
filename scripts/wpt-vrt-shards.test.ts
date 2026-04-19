@@ -55,12 +55,35 @@ describe("CI_WPT_VRT_SHARDS", () => {
     );
   });
 
+  it("splits css-display into two balanced shards", () => {
+    const entries = collectWptVrtTests(loadWptVrtConfig()).filter((entry) =>
+      entry.moduleName === "css-display"
+    );
+    const displayShards = CI_WPT_VRT_SHARDS.filter((shard) =>
+      shard.modules.length === 1 && shard.modules[0] === "css-display"
+    );
+
+    expect(displayShards.map((shard) => shard.name)).toEqual([
+      "display-1",
+      "display-2",
+    ]);
+
+    const selectedPathsByShard = displayShards.map((shard) =>
+      selectEntriesForShard(entries, shard).map((entry) => entry.relativePath)
+    );
+    expect(selectedPathsByShard.map((paths) => paths.length)).toEqual([20, 19]);
+    expect(selectedPathsByShard[0]).toContain(
+      "css-display/display-contents-details-001.html",
+    );
+  });
+
   it("publishes a GitHub matrix with the expected shard names", () => {
     const matrix = toGithubMatrix();
     expect(matrix.include.map((row) => row.name)).toEqual([
       "flexbox-1",
       "flexbox-2",
-      "display",
+      "display-1",
+      "display-2",
       "box-1",
       "box-2",
       "position-1",

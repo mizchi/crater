@@ -112,6 +112,8 @@ function diffSec(startMs: number, endMs: number): number {
 }
 
 function jobGroup(name: string): string {
+  if (name.startsWith("paint-vrt")) return "paint-vrt";
+  if (name.startsWith("playwright-paint-vrt")) return "paint-vrt";
   if (name.startsWith("wpt-css")) return "wpt-css";
   if (name.startsWith("wpt-dom")) return "wpt-dom";
   if (name.startsWith("wpt-webdriver")) return "wpt-webdriver";

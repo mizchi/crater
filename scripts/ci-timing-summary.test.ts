@@ -54,6 +54,18 @@ describe("buildTimingSummary", () => {
         startedAt: "2026-02-25T15:00:11Z",
         completedAt: "2026-02-25T15:03:31Z",
       }),
+      makeJob({
+        name: "paint-vrt (shard-1)",
+        createdAt: "2026-02-25T15:00:00Z",
+        startedAt: "2026-02-25T15:00:08Z",
+        completedAt: "2026-02-25T15:01:38Z",
+      }),
+      makeJob({
+        name: "paint-vrt (shard-2)",
+        createdAt: "2026-02-25T15:00:00Z",
+        startedAt: "2026-02-25T15:00:09Z",
+        completedAt: "2026-02-25T15:01:49Z",
+      }),
     ];
 
     const summary = buildTimingSummary(jobs, 123);
@@ -61,9 +73,10 @@ describe("buildTimingSummary", () => {
     expect(summary.rows[0]?.durationSec).toBe(200);
     expect(summary.rows[0]?.queueSec).toBe(11);
     expect(summary.totals.failedJobs).toBe(1);
-    expect(summary.totals.completedJobs).toBe(5);
+    expect(summary.totals.completedJobs).toBe(7);
     expect(summary.byGroup.find((g) => g.group === "wpt-css")?.durationSec).toBe(120);
     expect(summary.byGroup.find((g) => g.group === "wpt-vrt")?.durationSec).toBe(380);
+    expect(summary.byGroup.find((g) => g.group === "paint-vrt")?.durationSec).toBe(190);
   });
 });
 

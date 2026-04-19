@@ -1,20 +1,22 @@
 #!/usr/bin/env node
 
-// Tuned against CI #343 (8ae9a55) and the font-runtime follow-up:
-// - wpt-vrt (position): 10m40s test step
-// - wpt-vrt (box): 8m25s test step
-// - wpt-vrt (flexbox-1/2): 7m59s / 7m19s test step
-// - playwright-paint-vrt: 7m16s total
-// - css-display: ~7m locally after the font-runtime fix, so keep it whole
+// Tuned against CI #24632336814 (80bef97):
+// - wpt-vrt (display): ~22m
+// - wpt-vrt (flexbox-2): ~19m
+// - wpt-vrt (flexbox-1): ~14m
+// - wpt-vrt (box-1/2): ~7m
+// - wpt-vrt (position-1/2): ~8m / ~6m
 //
 // CI #345 showed that splitting css-flexbox into 3 shards changed VRT outcomes
 // for threshold-sensitive cases, while the previous 2-shard layout was stable.
-// Keep the flexbox grouping conservative and only split box/position further.
+// Keep the flexbox grouping conservative, split css-display in half, and keep
+// the already-balanced box/position layout.
 
 export const CI_WPT_VRT_SHARDS = Object.freeze([
   { name: "flexbox-1", modules: ["css-flexbox"], offset: 0, limit: 21 },
   { name: "flexbox-2", modules: ["css-flexbox"], offset: 21, limit: 21 },
-  { name: "display", modules: ["css-display"] },
+  { name: "display-1", modules: ["css-display"], offset: 0, limit: 20 },
+  { name: "display-2", modules: ["css-display"], offset: 20, limit: 19 },
   { name: "box-1", modules: ["css-box"], offset: 0, limit: 14 },
   { name: "box-2", modules: ["css-box"], offset: 14, limit: 14 },
   { name: "position-1", modules: ["css-position"], offset: 0, limit: 15 },

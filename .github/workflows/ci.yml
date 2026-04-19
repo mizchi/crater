@@ -673,9 +673,21 @@ jobs:
           if-no-files-found: error
 
   playwright-paint-vrt:
+    name: paint-vrt (${{ matrix.name }})
     runs-on: ubuntu-latest
     env:
       METRIC_CI_ROOT: ${{ github.workspace }}/metric-ci
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - name: fixtures
+            grep: 'fixture:'
+          - name: realworld
+            grep: 'real-world snapshot:|example-com visual parity'
+          - name: url
+            grep: 'url snapshot:'
 
     steps:
       - name: Checkout code
@@ -755,23 +767,31 @@ jobs:
         id: paint_vrt_record
         if: steps.metric_ci_package.outcome == 'success' || steps.metric_ci_source.outcome == 'success'
         continue-on-error: true
-        run: just flaker-task-record paint-vrt paint-vrt-report.json paint-vrt-summary
+        run: |
+          node scripts/flaker-task-record.ts \
+            --task paint-vrt \
+            --report-path paint-vrt-report.json \
+            --summary-dir paint-vrt-summary \
+            -- \
+            --grep "${{ matrix.grep }}"
 
       - name: Run paint VRT without metric-ci fallback
         if: steps.metric_ci_package.outcome != 'success' && steps.metric_ci_source.outcome != 'success'
-        run: just test-vrt
+        run: pnpm exec playwright test tests/paint-vrt.test.ts --grep "${{ matrix.grep }}"
 
       - name: Upload paint VRT JSON report
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: paint-vrt-report
+          name: paint-vrt-report-${{ matrix.name }}
           path: paint-vrt-report.json
           if-no-files-found: warn
 
       - name: Publish paint VRT report summary
         if: always()
         run: |
+          echo "### paint-vrt ${{ matrix.name }}" >> "$GITHUB_STEP_SUMMARY"
+          printf '\n' >> "$GITHUB_STEP_SUMMARY"
           if [ -f paint-vrt-summary/paint-vrt.md ]; then
             cat paint-vrt-summary/paint-vrt.md >> "$GITHUB_STEP_SUMMARY"
             printf '\n\n' >> "$GITHUB_STEP_SUMMARY"
@@ -813,7 +833,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: paint-vrt-summary
+          name: paint-vrt-summary-${{ matrix.name }}
           path: paint-vrt-summary/*
           if-no-files-found: warn
 
@@ -821,7 +841,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: paint-vrt-flaker-summary
+          name: paint-vrt-flaker-summary-${{ matrix.name }}
           path: paint-vrt-flaker-summary/*
           if-no-files-found: warn
 
@@ -829,7 +849,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: paint-vrt-artifact-summary
+          name: paint-vrt-artifact-summary-${{ matrix.name }}
           path: paint-vrt-artifact-summary/*
           if-no-files-found: warn
 
@@ -837,7 +857,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: paint-vrt-artifacts
+          name: paint-vrt-artifacts-${{ matrix.name }}
           path: |
             output/playwright/vrt/**
             test-results/**
@@ -847,13 +867,60 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: moon-diagnostics-paint-vrt
+          name: moon-diagnostics-paint-vrt-${{ matrix.name }}
           path: ci-logs/**
           if-no-files-found: warn
 
       - name: Fail job when paint VRT failed
         if: steps.paint_vrt_record.outcome == 'failure'
         run: exit 1
+
+  paint-vrt-summary:
+    if: always()
+    runs-on: ubuntu-latest
+    needs:
+      - playwright-paint-vrt
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install just
+        uses: extractions/setup-just@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Validate paint VRT summary tests
+        run: pnpm exec vitest run scripts/vrt-report-summary.test.ts
+
+      - name: Download paint VRT shard artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: paint-vrt-artifacts-*
+          path: paint-vrt-reports
+          merge-multiple: true
+
+      - name: Aggregate paint VRT artifact summary
+        run: just vrt-report-summary paint-vrt-reports/output/playwright/vrt paint-vrt-artifacts paint-vrt-artifact-summary paint-vrt
+
+      - name: Publish paint VRT artifact summary
+        run: cat paint-vrt-artifact-summary/paint-vrt-artifacts.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload paint VRT artifact summary
+        uses: actions/upload-artifact@v6
+        with:
+          name: paint-vrt-artifact-summary
+          path: paint-vrt-artifact-summary/*
+          if-no-files-found: error
 
   wpt-vrt-matrix:
     runs-on: ubuntu-latest
@@ -1036,6 +1103,7 @@ jobs:
       - flaker-config
       - vrt-bench
       - playwright-paint-vrt
+      - paint-vrt-summary
       - wpt-vrt-matrix
       - playwright-wpt-vrt
       - wpt-vrt-summary
