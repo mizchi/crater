@@ -16,10 +16,7 @@ import { spawn, execSync, ChildProcess } from "child_process";
 import fs from "fs";
 import path from "path";
 import { pathToFileURL } from "url";
-import {
-  BIDI_MAIN_BUILD_CANDIDATES,
-  resolveBidiMainBuildPath,
-} from "../browser/jsbidi/bidi_main/build-paths.ts";
+import * as bidiBuildPaths from "./bidi-build-paths.mjs";
 import { resolveBidiUrl } from "./bidi-url.ts";
 
 const WPT_TESTS_ROOT = "wpt/webdriver/tests";
@@ -95,7 +92,7 @@ function checkUv(): boolean {
 
 // Start Crater BiDi server
 export function resolveBidiServerPath(cwd: string = process.cwd()): string | null {
-  return resolveBidiMainBuildPath(cwd);
+  return bidiBuildPaths.resolveBidiMainBuildPath(cwd);
 }
 
 function startServer(): ChildProcess {
@@ -105,7 +102,7 @@ function startServer(): ChildProcess {
   if (!serverPath) {
     console.error("BiDi server not built. Run: just build-bidi");
     console.error("Expected one of:");
-    for (const candidate of BIDI_MAIN_BUILD_CANDIDATES) {
+    for (const candidate of bidiBuildPaths.BIDI_MAIN_BUILD_CANDIDATES) {
       console.error(`  ${candidate}`);
     }
     process.exit(1);

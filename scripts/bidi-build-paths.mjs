@@ -7,12 +7,12 @@ export const BIDI_MAIN_BUILD_CANDIDATES = [
   "_build/js/release/build/mizchi/crater-browser-js/bidi_main/bidi_main.js",
   "browser/target/js/release/build/bidi_main/bidi_main.js",
   "browser/_build/js/release/build/bidi_main/bidi_main.js",
-] as const;
+];
 
 export function resolveBidiMainBuildPath(
-  cwd: string,
-  existsSync: (filepath: string) => boolean = fs.existsSync,
-): string | null {
+  cwd,
+  existsSync = fs.existsSync,
+) {
   for (const candidate of BIDI_MAIN_BUILD_CANDIDATES) {
     const resolved = path.join(cwd, candidate);
     if (existsSync(resolved)) {
@@ -23,9 +23,9 @@ export function resolveBidiMainBuildPath(
 }
 
 export function resolveBidiMainBuildUrl(
-  cwd: string,
-  existsSync: (filepath: string) => boolean = fs.existsSync,
-): string {
+  cwd,
+  existsSync = fs.existsSync,
+) {
   const resolved = resolveBidiMainBuildPath(cwd, existsSync);
   if (!resolved) {
     throw new Error(

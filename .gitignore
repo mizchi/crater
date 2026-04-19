@@ -29,12 +29,12 @@ render-results/
 
 # Generated test fixtures (regenerate with npm run gentest)
 fixtures/
-!src/benchmarks/fixtures/
-!src/benchmarks/fixtures/github_mizchi.html
-!src/benchmarks/fixtures/github_primer.css
-!src/benchmarks/fixtures/github_global.css
-!src/benchmarks/fixtures/github_main.css
-!src/benchmarks/fixtures/github_profile.css
+!benchmarks/fixtures/
+!benchmarks/fixtures/github_mizchi.html
+!benchmarks/fixtures/github_primer.css
+!benchmarks/fixtures/github_global.css
+!benchmarks/fixtures/github_main.css
+!benchmarks/fixtures/github_profile.css
 
 # WPT support files (CSS/fonts, regenerated during fetch)
 wpt-tests/**/support/

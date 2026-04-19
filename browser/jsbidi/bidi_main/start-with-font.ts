@@ -10,7 +10,7 @@ import {
   listBundledWptFonts,
   resolveBundledWptFontUrl,
 } from "../../../scripts/wpt-font-utils.ts";
-import { resolveBidiMainBuildUrl } from "./build-paths.ts";
+import { resolveBidiMainBuildUrl } from "../../../scripts/bidi-build-paths.mjs";
 
 const HOME = Deno.env.get("HOME") || "/tmp";
 const fontModulePath = `${HOME}/ghq/github.com/mizchi/font/_build/js/release/build/js/js.js`;
