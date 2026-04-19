@@ -1,0 +1,38 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/layout"
+
+import {
+  "mizchi/layout/types",
+}
+
+// Values
+pub fn apply_aspect_ratio_after_constraints(Double, Double, Double?, Bool, Bool) -> (Double, Double)
+
+pub fn clamp_size(Double, Double, Double, Double, Double, Double) -> (Double, Double)
+
+pub fn clamp_size_with_box_min(Double, Double, Double, Double, Double, Double, Double, Double) -> (Double, Double)
+
+pub fn clamp_value(Double, Double, Double) -> Double
+
+pub fn compute_align_offset(@types.Alignment, Double) -> Double
+
+pub fn compute_align_self_offset(@types.AlignSelf, @types.Alignment, Double) -> Double
+
+pub fn compute_justify(@types.Alignment, Double, Int) -> (Double, Double)
+
+pub fn resolve_align_self(@types.AlignSelf, @types.Alignment) -> @types.Alignment
+
+pub fn resolve_auto_margin_pair(Bool, Bool, Double, Double, Double) -> (Double, Double)
+
+pub fn resolve_relative_inset_axis_offset(@types.Dimension, @types.Dimension, Double?) -> Double
+
+pub fn resolve_relative_inset_offsets(@types.Rect[@types.Dimension], Double, Double?) -> (Double, Double)
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

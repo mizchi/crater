@@ -1,0 +1,114 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-css/cascade"
+
+import {
+  "mizchi/crater-css/media",
+  "mizchi/crater-css/selector",
+}
+
+// Values
+pub fn cascade(Array[Declaration]) -> CascadedValues
+
+pub fn cascade_element(@selector.Element, Array[Stylesheet], Array[Declaration]) -> CascadedValues
+
+pub fn cascade_element_indexed(@selector.Element, Array[IndexedStylesheet], Array[Declaration], @media.MediaEnvironment?) -> CascadedValues
+
+pub fn cascade_element_with_forced_states(@selector.Element, Array[Stylesheet], Array[Declaration], @media.MediaEnvironment?, @selector.ForcedPseudoStates) -> CascadedValues
+
+pub fn cascade_element_with_media(@selector.Element, Array[Stylesheet], Array[Declaration], @media.MediaEnvironment?) -> CascadedValues
+
+// Errors
+
+// Types and methods
+pub struct CSSRule {
+  selector_text : String
+  selector : @selector.ComplexSelector
+  declarations : Array[Declaration]
+  source_order : Int
+  media_query : @media.MediaQueryList?
+}
+
+pub struct CascadedValues {
+  values : Map[String, Declaration]
+}
+pub fn CascadedValues::each(Self, (String, Declaration) -> Unit) -> Unit
+pub fn CascadedValues::get(Self, String) -> Declaration?
+pub fn CascadedValues::get_value(Self, String) -> String?
+pub fn CascadedValues::has(Self, String) -> Bool
+pub fn CascadedValues::new() -> Self
+pub fn CascadedValues::properties(Self) -> Array[String]
+
+pub(all) struct Declaration {
+  property : String
+  value : PropertyValue
+  origin : Origin
+  importance : Importance
+  specificity : @selector.Specificity
+  source_order : Int
+}
+pub fn Declaration::from_inline(String, String, Importance) -> Self
+pub fn Declaration::new(String, String) -> Self
+pub fn Declaration::with_metadata(String, PropertyValue, Origin, Importance, @selector.Specificity, Int) -> Self
+pub impl Show for Declaration
+
+pub(all) enum Importance {
+  Normal
+  Important
+}
+pub impl Show for Importance
+
+pub struct IndexedStylesheet {
+  stylesheet : Stylesheet
+  index : SelectorIndex
+}
+pub fn IndexedStylesheet::match_element(Self, @selector.Element) -> Array[RuleMatch]
+pub fn IndexedStylesheet::match_element_with_media(Self, @selector.Element, @media.MediaEnvironment?) -> Array[RuleMatch]
+pub fn IndexedStylesheet::new(Stylesheet) -> Self
+
+pub(all) enum Origin {
+  UserAgent
+  User
+  Author
+}
+pub impl Show for Origin
+
+pub(all) enum PropertyValue {
+  Value(String)
+  Inherit
+  Initial
+  Unset
+  Revert
+  RevertLayer
+}
+pub impl Show for PropertyValue
+
+pub(all) struct RuleMatch {
+  specificity : @selector.Specificity
+  declarations : Array[Declaration]
+  source_order : Int
+}
+
+pub(all) struct SelectorIndex {
+  by_id : Map[String, Array[Int]]
+  by_class : Map[String, Array[Int]]
+  by_tag : Map[String, Array[Int]]
+  universal : Array[Int]
+}
+pub fn SelectorIndex::from_stylesheet(Stylesheet) -> Self
+pub fn SelectorIndex::get_candidates(Self, @selector.Element) -> Array[Int]
+pub fn SelectorIndex::new() -> Self
+
+pub struct Stylesheet {
+  rules : Array[CSSRule]
+  origin : Origin
+}
+pub fn Stylesheet::add_rule(Self, String, @selector.ComplexSelector, Array[Declaration]) -> Unit
+pub fn Stylesheet::add_rule_with_media(Self, String, @selector.ComplexSelector, Array[Declaration], @media.MediaQueryList) -> Unit
+pub fn Stylesheet::match_element(Self, @selector.Element) -> Array[RuleMatch]
+pub fn Stylesheet::match_element_with_media(Self, @selector.Element, @media.MediaEnvironment?) -> Array[RuleMatch]
+pub fn Stylesheet::new(Origin) -> Self
+
+// Type aliases
+
+// Traits
+

@@ -1,0 +1,11 @@
+{
+  "name": "mizchi/crater-layout",
+  "version": "0.1.0",
+  "description": "Layout kernel for crater CSS layout engine",
+  "deps": {
+    "mizchi/layout": "0.2.0"
+  },
+  "preferred-target": "js",
+  "license": "Apache-2.0",
+  "repository": "https://github.com/mizchi/crater"
+}

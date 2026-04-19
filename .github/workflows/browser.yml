@@ -4,12 +4,38 @@ on:
   push:
     branches: [main]
     paths:
+      - 'aomx/**'
+      - 'benchmarks/**'
       - 'browser/**'
+      - 'css/**'
+      - 'dom/**'
+      - 'js/**'
+      - 'justfile'
+      - 'layout/**'
+      - 'moon.mod.json'
+      - 'moon.work'
+      - 'painter/**'
+      - 'renderer/**'
+      - 'testing/**'
+      - 'webvitals/**'
       - '.github/workflows/browser.yml'
   pull_request:
     branches: [main]
     paths:
+      - 'aomx/**'
+      - 'benchmarks/**'
       - 'browser/**'
+      - 'css/**'
+      - 'dom/**'
+      - 'js/**'
+      - 'justfile'
+      - 'layout/**'
+      - 'moon.mod.json'
+      - 'moon.work'
+      - 'painter/**'
+      - 'renderer/**'
+      - 'testing/**'
+      - 'webvitals/**'
       - '.github/workflows/browser.yml'
 
 env:
@@ -37,8 +63,7 @@ jobs:
         run: moon update
 
       - name: Update dependencies (browser)
-        working-directory: browser
-        run: moon update
+        run: moon update --manifest-path browser/moon.mod.json
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -46,12 +71,10 @@ jobs:
           node-version: '24'
 
       - name: Check code
-        working-directory: browser
-        run: moon check --target js
+        run: moon check --manifest-path browser/moon.mod.json --target js -j 1
 
       - name: Run tests
-        working-directory: browser
-        run: moon test --target js
+        run: moon test --manifest-path browser/moon.mod.json -p mizchi/crater-browser --target js -j 1
 
       - name: Install pnpm
         uses: pnpm/action-setup@v5

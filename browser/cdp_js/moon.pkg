@@ -1,0 +1,28 @@
+import {
+  "mizchi/crater-browser/cdp" @cdp,
+  "mizchi/crater-dom/scheduler" @scheduler,
+  "moonbitlang/core/json",
+}
+
+options(
+  link: {
+    "js": {
+      "exports": [
+        "processCdpMessage",
+        "getNextCdpMessage",
+        "hasPendingCdpMessages",
+        "resetCdpProtocol",
+        "loadHtmlContent",
+        "getCdpProtocolInfo",
+        "createNetworkRequest",
+        "createNetworkRequestWithLoader",
+        "notifyResponseReceived",
+        "notifyResponseReceivedWithLoader",
+        "notifyLoadingFinished",
+        "notifyLoadingFailed",
+        "flushNetworkEvents",
+      ],
+      "format": "esm",
+    },
+  },
+)

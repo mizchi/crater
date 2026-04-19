@@ -12,10 +12,10 @@ function sampleOutput(): string {
 0\tbench_vrt_render_paint_tree_dashboard
 1\tbench_vrt_render_paint_tree_json_component
 ----- BEGIN MOON TEST RESULT -----
-{"package":"mizchi/crater/benchmarks","filename":"vrt_api_bench.mbt","index":"0","test_name":"bench_vrt_render_paint_tree_dashboard","message":"@BATCH_BENCH { \\"summaries\\": [{\\"name\\":\\"vrt_render_paint_tree_dashboard\\",\\"sum\\":1000,\\"min\\":90,\\"max\\":110,\\"mean\\":100,\\"median\\":98,\\"variance\\":4,\\"std_dev\\":2,\\"std_dev_pct\\":2,\\"median_abs_dev\\":1,\\"median_abs_dev_pct\\":1,\\"quartiles\\":[95,98,104],\\"iqr\\":9,\\"batch_size\\":64,\\"runs\\":10}] }"}
+{"package":"mizchi/crater-benchmarks","filename":"vrt_api_bench.mbt","index":"0","test_name":"bench_vrt_render_paint_tree_dashboard","message":"@BATCH_BENCH { \\"summaries\\": [{\\"name\\":\\"vrt_render_paint_tree_dashboard\\",\\"sum\\":1000,\\"min\\":90,\\"max\\":110,\\"mean\\":100,\\"median\\":98,\\"variance\\":4,\\"std_dev\\":2,\\"std_dev_pct\\":2,\\"median_abs_dev\\":1,\\"median_abs_dev_pct\\":1,\\"quartiles\\":[95,98,104],\\"iqr\\":9,\\"batch_size\\":64,\\"runs\\":10}] }"}
 ----- END MOON TEST RESULT -----
 ----- BEGIN MOON TEST RESULT -----
-{"package":"mizchi/crater/benchmarks","filename":"vrt_api_bench.mbt","index":"1","test_name":"bench_vrt_render_paint_tree_json_component","message":"@BATCH_BENCH { \\"summaries\\": [{\\"name\\":\\"vrt_render_paint_tree_json_component\\",\\"sum\\":550,\\"min\\":50,\\"max\\":60,\\"mean\\":55,\\"median\\":54,\\"variance\\":2,\\"std_dev\\":1.4,\\"std_dev_pct\\":2.5,\\"median_abs_dev\\":1,\\"median_abs_dev_pct\\":1.8,\\"quartiles\\":[53,54,56],\\"iqr\\":3,\\"batch_size\\":128,\\"runs\\":10}] }"}
+{"package":"mizchi/crater-benchmarks","filename":"vrt_api_bench.mbt","index":"1","test_name":"bench_vrt_render_paint_tree_json_component","message":"@BATCH_BENCH { \\"summaries\\": [{\\"name\\":\\"vrt_render_paint_tree_json_component\\",\\"sum\\":550,\\"min\\":50,\\"max\\":60,\\"mean\\":55,\\"median\\":54,\\"variance\\":2,\\"std_dev\\":1.4,\\"std_dev_pct\\":2.5,\\"median_abs_dev\\":1,\\"median_abs_dev_pct\\":1.8,\\"quartiles\\":[53,54,56],\\"iqr\\":3,\\"batch_size\\":128,\\"runs\\":10}] }"}
 ----- END MOON TEST RESULT -----
 `;
 }

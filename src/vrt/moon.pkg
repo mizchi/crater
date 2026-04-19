@@ -1,8 +1,0 @@
-import {
-  "mizchi/crater/types",
-  "mizchi/crater/html",
-  "mizchi/crater/paint/model" @paint_model,
-  "mizchi/crater/paint/render_bridge" @paint_render,
-  "mizchi/crater/paint/diff" @paint_diff,
-  "mizchi/crater/renderer",
-}

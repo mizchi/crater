@@ -1,0 +1,22 @@
+package mizchi:pixelmatch@0.1.0;
+
+interface pixelmatch {
+    record match-result {
+        diff-count: u32,
+        output: option<list<u8>>,
+    }
+
+    /// Compare two images pixel by pixel.
+    /// If include-output is true, returns the diff image data in match-result.output.
+    pixelmatch: func(img1-data: list<u8>, img2-data: list<u8>, width: u32, height: u32, include-output: bool, threshold: f64, include-aa: bool, alpha: f64, diff-mask: bool) -> match-result;
+
+    /// Simple comparison without anti-aliasing detection.
+    pixelmatch-simple: func(img1-data: list<u8>, img2-data: list<u8>, width: u32, height: u32, threshold: f64) -> u32;
+
+    /// Calculate similarity ratio (0.0 = completely different, 1.0 = identical).
+    match-ratio: func(img1-data: list<u8>, img2-data: list<u8>, width: u32, height: u32, threshold: f64, include-aa: bool, alpha: f64, diff-mask: bool) -> f64;
+}
+
+world pixelmatch-world {
+    export pixelmatch;
+}

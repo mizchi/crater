@@ -1,0 +1,4 @@
+import {
+  "moonbitlang/core/bench",
+  "moonbitlang/x/fs",
+}

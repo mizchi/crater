@@ -1,0 +1,7 @@
+import {
+  "mizchi/crater-painter/paint/model" @model,
+  "mizchi/crater-layout/types",
+}
+
+import {
+} for "wbtest"

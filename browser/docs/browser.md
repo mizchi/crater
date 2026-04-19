@@ -7,9 +7,9 @@ The current codebase has three distinct integration surfaces:
 
 | Surface | Entry Point | Purpose | Status |
 | --- | --- | --- | --- |
-| Terminal CLI | `src/main/main.mbt` | Interactive browsing and structured extraction | Primary user-facing surface |
+| Terminal CLI | `main/main.mbt` | Interactive browsing and structured extraction | Primary user-facing surface |
 | WebDriver BiDi | `jsbidi/bidi_main/main.mbt`, `jsbidi/webdriver/*` | Automation, WPT-oriented behavior, future Playwright/WebDriver work | Primary automation surface |
-| CDP bridge | `tools/cdp-server.ts`, `src/cdp/*` | `puppeteer-core` smoke tests and legacy compatibility | Secondary and partial |
+| CDP bridge | `tools/cdp-server.ts`, `cdp/*` | `puppeteer-core` smoke tests and legacy compatibility | Secondary and partial |
 
 The center of gravity is now BiDi-first. CDP still exists, but mainly as a compatibility bridge.
 
@@ -17,17 +17,17 @@ The center of gravity is now BiDi-first. CDP still exists, but mainly as a compa
 
 | Layer | Main Files | Responsibility |
 | --- | --- | --- |
-| CLI entry | `src/main/main.mbt` | Parses flags, chooses output mode, runs interactive loop or headless render |
-| Browser shell | `src/shell/browser.mbt` | Owns URL/history state, DOM/AOM/render caches, scheduler, hint mode, selection mode, output generation |
-| Interaction | `src/interaction/interaction.mbt`, `src/tui/*` | Maps keyboard and mouse input to browser actions |
-| CDP domains | `src/cdp/*` | MoonBit-side `Target`, `DOM`, `Page`, `Input`, and related protocol handling |
+| CLI entry | `main/main.mbt` | Parses flags, chooses output mode, runs interactive loop or headless render |
+| Browser shell | `shell/browser.mbt` | Owns URL/history state, DOM/AOM/render caches, scheduler, hint mode, selection mode, output generation |
+| Interaction | `interaction/interaction.mbt`, `tui/*` | Maps keyboard and mouse input to browser actions |
+| CDP domains | `cdp/*` | MoonBit-side `Target`, `DOM`, `Page`, `Input`, and related protocol handling |
 | BiDi protocol | `jsbidi/webdriver/bidi_protocol.mbt` | Session state, browsing contexts, subscriptions, script/input/network/storage/emulation modules |
 | BiDi transport | `jsbidi/webdriver/bidi_server.mbt` | Deno WebSocket server and JS runtime bootstrap |
 | Test bridges | `tools/cdp-server.ts`, `tools/webdriver-server.ts` | Node-side harnesses used by Puppeteer/WebDriver smoke tests |
 
 ## Terminal Browser Path
 
-The CLI path is centered on `src/shell/browser.mbt`.
+The CLI path is centered on `shell/browser.mbt`.
 
 It currently supports:
 
@@ -88,7 +88,7 @@ The CDP path remains useful, but it is intentionally smaller than the BiDi path.
 
 ### MoonBit Side
 
-`src/cdp/` currently provides:
+`cdp/` currently provides:
 
 - `Target` domain session/context plumbing
 - `DOM` domain document, query, attribute, and box-model helpers
@@ -111,7 +111,7 @@ It does the parts that are currently simpler in Node:
 The CDP bridge is good enough for smoke tests and basic page automation flows.
 It is not the authoritative architecture for the project anymore, and some areas remain partial:
 
-- hit testing in `src/cdp/input.mbt`
+- hit testing in `cdp/input.mbt`
 - richer `Runtime.*` behavior
 - broader DevTools parity across domains
 
@@ -140,7 +140,7 @@ BiDi request
 ```text
 Puppeteer CDP request
   -> tools/cdp-server.ts
-  -> src/cdp/*
+  -> cdp/*
   -> CDP response + compatibility events
 ```
 

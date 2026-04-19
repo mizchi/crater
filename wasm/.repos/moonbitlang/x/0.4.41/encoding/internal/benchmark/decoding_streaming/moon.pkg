@@ -1,0 +1,9 @@
+import {
+  "moonbitlang/x/encoding",
+  "moonbitlang/x/sys",
+  "moonbitlang/x/encoding/internal/benchmark" @bench,
+}
+
+options(
+  "is-main": true,
+)

@@ -1,0 +1,10 @@
+import {
+  "mizchi/crater-layout" @node,
+  "mizchi/crater-painter/paint/model" @paint_model,
+  "mizchi/crater-painter/paint/node_bridge" @paint_node,
+  "mizchi/crater-layout/types",
+}
+
+import {
+  "mizchi/crater-layout/style",
+} for "test"

@@ -1,0 +1,10 @@
+import {
+  "mizchi/svg",
+  "mizchi/zlib",
+  "mizchi/brotli",
+}
+
+import {
+  "mizchi/pixelmatch",
+  "moonbitlang/x/fs",
+} for "wbtest"

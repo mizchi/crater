@@ -2,17 +2,41 @@
   "name": "mizchi/crater-browser",
   "version": "0.2.0",
   "deps": {
+    "mizchi/crater-aomx": {
+      "path": "../aomx",
+      "version": "0.1.0"
+    },
+    "mizchi/crater-benchmarks": {
+      "path": "../benchmarks",
+      "version": "0.1.0"
+    },
     "mizchi/crater": {
-      "path": ".."
+      "path": "..",
+      "version": "0.16.1"
+    },
+    "mizchi/crater-dom": {
+      "path": "../dom",
+      "version": "0.1.0"
+    },
+    "mizchi/crater-layout": {
+      "path": "../layout",
+      "version": "0.1.0"
+    },
+    "mizchi/crater-painter": {
+      "path": "../painter",
+      "version": "0.1.0"
+    },
+    "mizchi/crater-renderer": {
+      "path": "../renderer",
+      "version": "0.1.0"
     },
     "mizchi/x": "0.2.0",
-    "moonbitlang/async": "0.16.6",
-    "moonbitlang/x": "0.4.40",
+    "moonbitlang/async": "0.17.1",
+    "moonbitlang/x": "0.4.41",
     "mizchi/sqlite": "0.2.3"
   },
-  "source": "src",
-  "preferred-target": "js",
+  "repository": "https://github.com/mizchi/crater",
   "license": "Apache-2.0",
   "description": "Browser engine for crater CSS layout engine",
-  "repository": "https://github.com/mizchi/crater"
+  "preferred-target": "js"
 }

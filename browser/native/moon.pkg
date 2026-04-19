@@ -1,0 +1,6 @@
+import {
+  "mizchi/crater-browser-native/e2e_native",
+  "mizchi/crater-browser-native/js_v8",
+}
+
+supported_targets = "+native"

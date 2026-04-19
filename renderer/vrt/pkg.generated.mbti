@@ -1,0 +1,53 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-renderer/vrt"
+
+import {
+  "mizchi/crater-layout/types",
+  "mizchi/crater-painter/paint/diff",
+  "mizchi/crater-painter/paint/model",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn diff_rendered_paint_trees(String, String, @types.Size[Double]) -> @diff.PaintTreeDiff
+
+pub fn render_html_batch_variants(String, @types.Size[Double], Array[RenderVariant]) -> Array[RenderVariantResult]
+
+pub fn render_html_to_paint_tree(String, @types.Size[Double]) -> @model.PaintNode
+
+pub fn render_html_to_paint_tree_json(String, @types.Size[Double]) -> String
+
+pub fn render_html_to_paint_tree_with_external_css(String, @types.Size[Double], Array[String]) -> @model.PaintNode
+
+// Errors
+
+// Types and methods
+pub(all) struct CssMutation {
+  selector : String
+  property : String
+  action : CssMutationAction
+} derive(Eq, @debug.Debug)
+pub impl Show for CssMutation
+
+pub(all) enum CssMutationAction {
+  Remove
+  Override(String)
+} derive(Eq, @debug.Debug)
+pub impl Show for CssMutationAction
+
+pub(all) struct RenderVariant {
+  id : String
+  mutations : Array[CssMutation]
+} derive(Eq, @debug.Debug)
+pub impl Show for RenderVariant
+
+pub(all) struct RenderVariantResult {
+  id : String
+  paint_tree : @model.PaintNode
+}
+pub impl Show for RenderVariantResult
+
+// Type aliases
+
+// Traits
+

@@ -13,9 +13,13 @@ setup:
 
 # === Testing ===
 
-# Run all MoonBit tests
+# Run default JS-target MoonBit tests across the workspace
 test:
-    moon test
+    moon test --target js
+
+# Run JS-target MoonBit tests across the workspace
+test-js:
+    moon test --target js
 
 # Run all repository Vitest suites with an explicit include/exclude boundary
 test-vitest:
@@ -30,21 +34,37 @@ test-all:
     just test-vitest
     just test-node
 
-# Run tests with native target
+# Run native-target smoke tests for the native browser host facade
 test-native:
-    moon test --target native
+    moon -C browser/native test -p mizchi/crater-browser-native --target native -j 1
 
-# Run tests for specific package (e.g., just test-pkg mizchi/crater/layout/flex)
-test-pkg pkg:
-    moon test -p {{pkg}}
+# Run wasm-target MoonBit tests for the wasm component module
+test-wasm-mbt:
+    moon -C wasm test --target wasm
+
+# Run JS-target tests for a specific package
+test-pkg-js pkg:
+    moon test -p {{pkg}} --target js
+
+# Run native-target tests for a specific browser/native package
+test-pkg-native pkg:
+    moon -C browser/native test -p {{pkg}} --target native -j 1
+
+# Run wasm-target tests for a specific wasm package
+test-pkg-wasm pkg:
+    moon -C wasm test -p {{pkg}} --target wasm -j 1
+
+# Run tests for a specific package with auto target selection.
+test-pkg pkg target='auto':
+    if [ "{{target}}" = "auto" ]; then case "{{pkg}}" in mizchi/crater-browser-native*) moon -C browser/native test -p {{pkg}} --target native -j 1 ;; mizchi/crater-component*) moon -C wasm test -p {{pkg}} --target wasm -j 1 ;; *) moon test -p {{pkg}} --target js ;; esac; elif [ "{{target}}" = "native" ]; then moon -C browser/native test -p {{pkg}} --target native -j 1; elif [ "{{target}}" = "wasm" ]; then moon -C wasm test -p {{pkg}} --target wasm -j 1; else moon test -p {{pkg}} --target {{target}}; fi
 
 # Update test snapshots
 test-update:
-    moon test --update
+    moon test --target js --update
 
 # Run taffy compatibility tests
 test-taffy:
-    moon test -p mizchi/crater/tests/taffy_compat
+    moon test -p mizchi/crater-testing/taffy_compat --target js
 
 # Verify moon test result does not regress from recorded baseline
 test-baseline:
@@ -70,25 +90,50 @@ wpt-baseline-update:
 
 # Check compilation (main + browser + js)
 check:
-    moon info
-    moon check -j 1 src
+    moon info --target js
+    moon -C browser/native info --target native
+    moon -C wasm info --target wasm
+    moon check --manifest-path aomx/moon.mod.json --target js -j 1
+    moon check --manifest-path benchmarks/moon.mod.json --target js -j 1
+    moon check --manifest-path testing/moon.mod.json --target js -j 1
+    moon check --manifest-path webvitals/moon.mod.json --target js -j 1
+    moon check --manifest-path css/moon.mod.json --target js -j 1
+    moon check --manifest-path dom/moon.mod.json --target js -j 1
+    moon check --manifest-path layout/moon.mod.json --target js -j 1
+    moon check --manifest-path painter/moon.mod.json --target js -j 1
+    moon check --manifest-path renderer/moon.mod.json --target js -j 1
+    moon check -j 1 src --target js
     moon check --manifest-path browser/moon.mod.json --target js -j 1
-    moon check --manifest-path js/moon.mod.json
+    moon -C browser/native check --target native -j 1
+    moon check --manifest-path js/moon.mod.json --target js
+    moon -C wasm check --target wasm -j 1
 
 # Format code
 fmt:
     moon fmt
+    moon fmt --manifest-path aomx/moon.mod.json
+    moon fmt --manifest-path benchmarks/moon.mod.json
+    moon fmt --manifest-path testing/moon.mod.json
+    moon fmt --manifest-path webvitals/moon.mod.json
+    moon fmt --manifest-path css/moon.mod.json
+    moon fmt --manifest-path dom/moon.mod.json
+    moon fmt --manifest-path layout/moon.mod.json
+    moon fmt --manifest-path painter/moon.mod.json
+    moon fmt --manifest-path renderer/moon.mod.json
     moon fmt --manifest-path browser/moon.mod.json
+    moon -C browser/native fmt
     moon fmt --manifest-path js/moon.mod.json
-    moon fmt --manifest-path wasm/moon.mod.json
+    moon -C wasm fmt
 
 # Update interface files (.mbti)
 info:
-    moon info
+    moon info --target js
+    moon -C browser/native info --target native
+    moon -C wasm info --target wasm
 
 # Format and update interface (run before commit)
 prepare:
-    moon info
+    just info
     just fmt
 
 # Analyze test coverage
@@ -96,10 +141,10 @@ coverage:
     moon coverage analyze > uncovered.log
     @echo "Coverage report written to uncovered.log"
 
-# Show test summary
+# Show JS-target MoonBit test summary
 status:
     @echo "Running tests..."
-    @moon test 2>&1 | tail -1
+    @moon test --target js 2>&1 | tail -1
 
 # === Test Generation ===
 
@@ -441,7 +486,7 @@ build-wasm:
 transpile-wasm:
     npx jco transpile wasm/_build/crater.wasm -o wasm/dist --name crater
 
-# Test WASM component
+# Test transpiled WASM component from Node/JCO
 test-wasm:
     node --test wasm/test/component.test.mjs
 

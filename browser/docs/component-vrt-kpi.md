@@ -192,9 +192,9 @@ This keeps the benchmark focused on renderer cost instead of browser-shell overh
 
 The current codebase already has useful building blocks:
 
-- `src/shell/browser_bench_wbtest.mbt`
+- `shell/browser_bench_wbtest.mbt`
   - existing bench entry point for render phases
-- `src/shell/browser.mbt`
+- `shell/browser.mbt`
   - `Browser::set_html_content`
   - `Browser::render_output`
 - `mizchi/crater/aom`

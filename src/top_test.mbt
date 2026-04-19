@@ -31,3 +31,34 @@ test "compute_layout preserves display_contents root children" {
   inspect(layout.children[1].width, content="40")
   inspect(layout.children[1].height, content="20")
 }
+
+///|
+test "root package exposes core_subset compatibility wrapper" {
+  let root_style = @style.Style::default()
+  root_style.display = @types.Flex
+  root_style.flex_direction = @types.Column
+  root_style.width = @types.Length(20.0)
+  root_style.height = @types.Length(10.0)
+
+  let child_style = @style.Style::default()
+  child_style.flex_grow = 1.0
+
+  let root = @layout.Node::new("root", root_style, [
+    @layout.Node::new("child", child_style, []),
+  ])
+
+  let result = compute_core_layout(root, @types.Size::new(20.0, 10.0))
+  assert_true(result.layout is Some(_))
+  assert_eq(result.issues.length(), 0)
+}
+
+///|
+test "root package exposes renderer compatibility wrapper" {
+  let html =
+    #|<!DOCTYPE html><body><div style="width: 100px; height: 50px;">hello</div></body>
+  let json = render_html_to_paint_tree_json(
+    html,
+    @types.Size::new(320.0, 200.0),
+  )
+  assert_true(json.contains("\"id\":\"div\""))
+}

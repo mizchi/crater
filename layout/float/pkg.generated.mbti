@@ -1,0 +1,47 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-layout/float"
+
+import {
+  "mizchi/crater-layout/types",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) struct FloatBox {
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+  float_type : @types.Float
+}
+pub fn FloatBox::bottom(Self) -> Double
+pub fn FloatBox::right(Self) -> Double
+
+pub(all) struct FloatContext {
+  container_width : Double
+  container_left : Double
+  container_height : Double
+  container_top : Double
+  is_vertical : Bool
+  block_rtl : Bool
+  line_left_is_top : Bool
+  left_floats : Array[FloatBox]
+  right_floats : Array[FloatBox]
+}
+pub fn FloatContext::find_y_with_space(Self, Double, Double, Double) -> Double
+pub fn FloatContext::get_available_space(Self, Double, Double) -> (Double, Double)
+pub fn FloatContext::get_clear_y(Self, @types.Clear, Double) -> Double
+pub fn FloatContext::get_float_height(Self) -> Double
+pub fn FloatContext::has_floats(Self) -> Bool
+pub fn FloatContext::new(Double, Double) -> Self
+pub fn FloatContext::new_vertical(Double, Double, Double, Double, Bool, Bool) -> Self
+pub fn FloatContext::place_float(Self, @types.Float, Double, Double, Double, Double, Double, Double, Double) -> (Double, Double)
+pub fn FloatContext::prune_floats_above(Self, Double) -> Unit
+
+// Type aliases
+
+// Traits
+

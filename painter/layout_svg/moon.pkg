@@ -1,0 +1,7 @@
+import {
+  "mizchi/crater-layout/types",
+  "mizchi/crater-painter/svg" @svgcore,
+}
+
+import {
+} for "wbtest"

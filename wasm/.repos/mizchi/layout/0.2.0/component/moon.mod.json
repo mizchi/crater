@@ -1,0 +1,8 @@
+{
+  "name": "layout-component",
+  "version": "0.1.0",
+  "deps": {
+    "mizchi/layout": { "path": ".." }
+  },
+  "source": "."
+}

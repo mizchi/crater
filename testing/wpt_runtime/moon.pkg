@@ -1,0 +1,11 @@
+import {
+  "moonbitlang/core/string",
+  "mizchi/crater-renderer/renderer",
+  "mizchi/crater/css",
+}
+
+supported_targets = "js+wasm+wasm-gc"
+
+options(
+  link: { "js": { "exports": [ "renderHtmlToJsonForWpt" ], "format": "esm" } },
+)

@@ -1,0 +1,143 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-css"
+
+import {
+  "mizchi/crater-css/cascade",
+  "mizchi/crater-css/computed",
+  "mizchi/crater-css/diagnostics",
+  "mizchi/crater-css/media",
+  "mizchi/crater-css/parser",
+  "mizchi/crater-css/selector",
+  "mizchi/crater-layout/style",
+}
+
+// Values
+pub fn affects_layout(@diagnostics.SupportLevel) -> Bool
+
+pub fn apply_property_direct(@style.Style, String, String, @computed.ComputeContext) -> @style.Style
+
+pub fn cascade_declarations(Array[@cascade.Declaration]) -> @cascade.CascadedValues
+
+pub fn cascade_element(@selector.Element, Array[@cascade.Stylesheet], Array[@cascade.Declaration]) -> @cascade.CascadedValues
+
+pub fn cascade_element_indexed(@selector.Element, Array[@cascade.IndexedStylesheet], Array[@cascade.Declaration], @media.MediaEnvironment?) -> @cascade.CascadedValues
+
+pub fn cascade_element_with_media(@selector.Element, Array[@cascade.Stylesheet], Array[@cascade.Declaration], @media.MediaEnvironment?) -> @cascade.CascadedValues
+
+pub fn compute_inline_raw(String, @computed.ComputeContext) -> @style.Style
+
+pub fn compute_inline_style(String, @computed.ComputeContext) -> @style.Style
+
+pub fn compute_style(@cascade.CascadedValues, @computed.ComputeContext) -> @style.Style
+
+pub fn compute_style_with_vars(@cascade.CascadedValues, @computed.ComputeContext) -> (@style.Style, Map[String, String])
+
+pub fn matches_selector(@selector.Element, @selector.ComplexSelector) -> Bool
+
+pub fn matches_selector_list(@selector.Element, @selector.SelectorList) -> Bool
+
+pub fn parse_color(String) -> @computed.CssColorValue
+
+pub fn parse_inline_style(String) -> @style.Style
+
+pub fn parse_media_query_list(String) -> @media.MediaQueryList
+
+pub fn parse_selector(String) -> @selector.ComplexSelector?
+
+pub fn parse_selector_list(String) -> @selector.SelectorList?
+
+pub fn parse_stylesheet(String) -> @cascade.Stylesheet
+
+pub fn parse_stylesheet_with_diagnostics(String) -> @parser.ParseResult
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @selector {type Attribute}
+
+pub using @selector {type AttributeMatch}
+
+pub using @selector {type AttributeSelector}
+
+pub using @cascade {type CSSRule}
+
+pub using @cascade {type CascadedValues}
+
+pub using @media {type ColorScheme}
+
+pub using @selector {type Combinator}
+
+pub using @selector {type ComplexSelector}
+
+pub using @selector {type ComplexSelectorStep}
+
+pub using @selector {type CompoundSelector}
+
+pub using @computed {type ComputeContext}
+
+pub using @computed {type CssColorValue}
+
+pub using @cascade {type Declaration}
+
+pub using @diagnostics {type Diagnostic}
+
+pub using @diagnostics {type DiagnosticSummary}
+
+pub using @diagnostics {type DiagnosticsCollector}
+
+pub using @selector {type Element}
+
+pub using @selector {type ForcedPseudoStates}
+
+pub using @cascade {type Importance}
+
+pub using @cascade {type IndexedStylesheet}
+
+pub using @media {type MediaEnvironment}
+
+pub using @media {type MediaFeature}
+
+pub using @media {type MediaQuery}
+
+pub using @media {type MediaQueryList}
+
+pub using @media {type MediaType}
+
+pub using @media {type MediaValue}
+
+pub using @selector {type NthExpr}
+
+pub using @cascade {type Origin}
+
+pub using @parser {type ParseResult}
+
+pub using @cascade {type PropertyValue}
+
+pub using @selector {type PseudoClass}
+
+pub using @selector {type PseudoElement}
+
+pub using @media {type RangeOp}
+
+pub using @selector {type RelativeSelector}
+
+pub using @cascade {type RuleMatch}
+
+pub using @cascade {type SelectorIndex}
+
+pub using @selector {type SelectorList}
+
+pub using @diagnostics {type Severity}
+
+pub using @selector {type SimpleSelector}
+
+pub using @selector {type Specificity}
+
+pub using @cascade {type Stylesheet}
+
+pub using @diagnostics {type SupportLevel}
+
+// Traits
+

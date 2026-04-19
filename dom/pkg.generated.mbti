@@ -1,0 +1,142 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-dom"
+
+import {
+  "mizchi/crater-dom/aom",
+  "mizchi/crater-dom/dom",
+  "mizchi/crater-dom/html",
+  "mizchi/crater-dom/scheduler",
+}
+
+// Values
+pub fn build_accessibility_tree(@html.Document) -> @aom.AccessibilityTree
+
+pub fn build_accessibility_tree_from_element(@html.Element) -> @aom.AccessibilityTree
+
+pub fn compute_accessible_description(@html.Element, (String) -> @html.Element?) -> String?
+
+pub fn compute_accessible_name(@html.Element, (String) -> @html.Element?) -> String?
+
+pub fn discover_resources(@html.Element) -> @scheduler.ResourceDiscoveryResult
+
+pub fn parse(String) -> @html.Element?
+
+pub fn parse_and_schedule(@scheduler.Scheduler, String, base_url? : String) -> @scheduler.ParseCompleteResult
+
+pub fn parse_document(String) -> @html.Document
+
+pub fn parse_fragment(String) -> @html.Element
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @aom {type AccessibilityNode}
+
+pub using @aom {type AccessibilityTree}
+
+pub using @aom {type Bounds}
+
+pub using @dom {type CoreError}
+
+pub using @scheduler {type DiscoveredResource}
+
+pub using @html {type Document}
+
+pub using @scheduler {type DocumentParser}
+
+pub using @scheduler {type DocumentRenderCoordinator}
+
+pub using @scheduler {type DocumentStyleCoordinator}
+
+pub using @dom {type DomTree}
+
+pub using @html {type Element}
+
+pub using @scheduler {type FetchResult}
+
+pub using @dom {type FlushResult}
+
+pub using @aom {type FocusManager}
+
+pub using @aom {type FocusableItem}
+
+pub using @dom {type GetBBoxOptions}
+
+pub using @scheduler {type HttpMethod}
+
+pub using @scheduler {type InputEvent}
+
+pub using @scheduler {type KeyEventType}
+
+pub using @scheduler {type KeyboardEvent}
+
+pub using @scheduler {type LayoutComputeResult}
+
+pub using @scheduler {type LayoutManager}
+
+pub using @scheduler {type LayoutStats}
+
+pub using @scheduler {type MouseButton}
+
+pub using @scheduler {type MouseEvent}
+
+pub using @scheduler {type MouseEventType}
+
+pub using @dom {type MutationQueue}
+
+pub using @dom {type MutationRecord}
+
+pub using @dom {type MutationType}
+
+pub using @scheduler {type NetworkRequest}
+
+pub using @scheduler {type NetworkResponse}
+
+pub using @html {type Node}
+
+pub using @dom {type NodeId}
+
+pub using @dom {type NodeInfo}
+
+pub using @dom {type NodeType}
+
+pub using @scheduler {type ParseCompleteResult}
+
+pub using @dom {type Point}
+
+pub using @dom {type Rect}
+
+pub using @scheduler {type RenderPipelineResult}
+
+pub using @scheduler {type ResizeResult}
+
+pub using @scheduler {type ResourceDiscoveryResult}
+
+pub using @scheduler {type ResourceType}
+
+pub using @aom {type Role}
+
+pub using @dom {type SVGAngle}
+
+pub using @dom {type SVGLength}
+
+pub using @dom {type SVGMatrix}
+
+pub using @dom {type SVGPoint}
+
+pub using @dom {type SVGRect}
+
+pub using @dom {type SVGTransform}
+
+pub using @scheduler {type Scheduler}
+
+pub using @aom {type SelectOption}
+
+pub using @aom {type State}
+
+pub using @scheduler {type TaskId}
+
+// Traits
+

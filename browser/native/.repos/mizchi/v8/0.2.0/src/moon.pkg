@@ -1,0 +1,21 @@
+import {
+  "moonbitlang/async" @async,
+  "moonbitlang/core/strconv" @strconv,
+  "moonbitlang/core/encoding/utf8" @utf8,
+}
+
+options(
+  link: {
+    "native": {
+      "cc-link-flags": "target/rusty_v8_bridge/release/librusty_v8_bridge.a -lc++ -pthread -framework CoreFoundation",
+    },
+  },
+  "pre-build": [
+    {
+      "command": "bash src/scripts/build-rusty-v8.sh $output",
+      "input": "../native/bridge/src/lib.rs",
+      "output": "build-stamps/rusty_v8_build.stamp",
+    },
+  ],
+  "supported-targets": "native",
+)

@@ -1,0 +1,14 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/svg/cmd/wpt-svg"
+
+// Values
+
+// Errors
+
+// Types and methods
+type WptCase
+
+// Type aliases
+
+// Traits
+

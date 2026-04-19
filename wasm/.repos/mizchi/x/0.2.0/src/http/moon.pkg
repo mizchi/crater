@@ -1,0 +1,25 @@
+import {
+  "moonbitlang/async",
+  "moonbitlang/async/http" @async_http,
+  "moonbitlang/async/io",
+  "moonbitlang/async/js_async",
+  "moonbitlang/async/socket",
+  "moonbitlang/core/cmp",
+  "moonbitlang/core/debug",
+  "moonbitlang/core/json",
+}
+
+warnings = "-0029-0014-0001"
+
+options(
+  targets: {
+    "http_js.mbt": [ "js" ],
+    "http_js_only_test.mbt": [ "js" ],
+    "http_js_test.mbt": [ "native", "js" ],
+    "http_native.mbt": [ "native" ],
+    "http_native_test.mbt": [ "native" ],
+    "http_native_wbtest.mbt": [ "native" ],
+    "http_wasm.mbt": [ "wasm" ],
+    "http_wasmgc.mbt": [ "wasm-gc" ],
+  },
+)

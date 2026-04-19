@@ -1,0 +1,27 @@
+{
+  "is-main": true,
+  "import": [
+    { "path": "pixelmatch-component/gen/cabi", "alias": "cabi" },
+    { "path": "mizchi/pixelmatch", "alias": "pm" }
+  ],
+  "link": {
+    "wasm": {
+      "exports": [
+        "cabi_realloc:cabi_realloc",
+        "wasmExportMatchRatio:mizchi:pixelmatch/pixelmatch@0.1.0#match-ratio",
+        "wasmExportPixelmatch:mizchi:pixelmatch/pixelmatch@0.1.0#pixelmatch",
+        "wasmExportPixelmatchSimple:mizchi:pixelmatch/pixelmatch@0.1.0#pixelmatch-simple"
+      ],
+      "export-memory-name": "memory"
+    },
+    "wasm-gc": {
+      "exports": [
+        "cabi_realloc:cabi_realloc",
+        "wasmExportMatchRatio:mizchi:pixelmatch/pixelmatch@0.1.0#match-ratio",
+        "wasmExportPixelmatch:mizchi:pixelmatch/pixelmatch@0.1.0#pixelmatch",
+        "wasmExportPixelmatchSimple:mizchi:pixelmatch/pixelmatch@0.1.0#pixelmatch-simple"
+      ],
+      "export-memory-name": "memory"
+    }
+  }
+}

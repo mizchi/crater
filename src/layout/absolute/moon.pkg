@@ -1,6 +1,0 @@
-import {
-  "moonbitlang/core/double",
-  "mizchi/crater/core",
-  "mizchi/crater/types",
-  "mizchi/crater/style",
-}

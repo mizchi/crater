@@ -1,0 +1,7 @@
+import {
+  "mizchi/svg" @svg,
+}
+
+options(
+  is_main: true,
+)

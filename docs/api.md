@@ -5,32 +5,22 @@ This document describes the public interfaces provided by Crater for external us
 ## Package Overview
 
 ```
-mizchi/crater                 # Thin compatibility entry point
-├── types/                    # Core types (Dimension, Rect, Size, Color)
-├── style/                    # CSS style definitions (Style, Display, Position)
-├── layout/                   # Layout entry point (Node, LayoutTree, compute_layout)
-├── layout/html_tree/         # HTML -> LayoutTree builders
-├── layout/style_bridge/      # Cascaded CSS / tree mutation bridge helpers
-├── layout/html_bridge/       # Compatibility wrapper for html_tree/style_bridge
-├── layout/dom_bridge/        # DOM mutation -> LayoutTree bridge helpers
-├── core_subset/              # TUI-oriented checked layout subset
-├── html/                     # HTML parser (parse_document, Element)
-├── css/                     # Unified CSS entry point
-│   ├── parser/              # CSS parser (parse_stylesheet)
-│   ├── cascade/             # Cascade algorithm (Stylesheet, CascadedValues)
-│   ├── selector/            # CSS selectors (ComplexSelector, matches_*)
-│   ├── media/               # Media queries (MediaQueryList)
-│   ├── responsive/          # Breakpoint / computed-style discovery
-│   └── diagnostics/         # CSS diagnostics (DiagnosticsCollector)
-├── dom/                      # DOM tree (DomTree, MutationRecord)
-├── renderer/                 # Rendering API (render, RenderContext)
-├── paint/                    # Broad paint facade
-│   ├── model/               # Paint tree data model (PaintNode, PaintProperties)
-│   ├── build/               # Layout -> Paint tree conversion / traversal helpers
-│   └── diff/                # Paint tree diff helpers
-├── vrt/                      # Visual regression rendering/diff helpers
-├── aom/                      # Accessibility (AccessibilityTree, Role)
-└── webvitals/               # Web Vitals metrics (LCPTracker, LayoutShift)
+mizchi/crater                        # Thin compatibility entry point
+mizchi/crater-layout                 # Layout entry point (Node, LayoutTree, compute_layout)
+mizchi/crater-layout/core_subset     # TUI-oriented checked layout subset
+mizchi/crater-dom/html               # HTML parser (parse_document, Element)
+mizchi/crater-dom/layout/html_tree   # HTML -> LayoutTree builders
+mizchi/crater-dom/layout/style_bridge # Cascaded CSS / tree mutation bridge helpers
+mizchi/crater-dom/layout/html_bridge # Compatibility wrapper for html_tree/style_bridge
+mizchi/crater-dom/layout/dom_bridge  # DOM mutation -> LayoutTree bridge helpers
+mizchi/crater-css                    # Unified CSS entry point
+mizchi/crater-dom/css/responsive     # Breakpoint / computed-style discovery
+mizchi/crater-dom/dom                # DOM tree (DomTree, MutationRecord)
+mizchi/crater-dom/aom                # Accessibility (AccessibilityTree, Role)
+mizchi/crater-painter/paint          # Broad paint facade
+mizchi/crater-renderer               # Renderer module public facade (VRT helpers)
+mizchi/crater-renderer/vrt           # Narrow VRT implementation package
+mizchi/crater-webvitals              # Web Vitals metrics (LCPTracker, LayoutShift)
 ```
 
 ---
@@ -71,7 +61,7 @@ pub fn setup() -> Unit
 pub fn layout_tree_from_node(Node, Double, Double) -> LayoutTree
 ```
 
-### `mizchi/crater/layout/html_tree`
+### `mizchi/crater-dom/layout/html_tree`
 
 HTML-specific bridge APIs that build `LayoutTree` values from parsed documents.
 
@@ -80,7 +70,7 @@ pub fn layout_node_from_html_element(Element, CascadedValues) -> LayoutNode
 pub fn layout_tree_from_html_document(Document, Double, Double) -> LayoutTree
 ```
 
-### `mizchi/crater/layout/style_bridge`
+### `mizchi/crater-dom/layout/style_bridge`
 
 Bridge APIs that apply cascaded CSS values or mutate `LayoutTree` structure.
 
@@ -92,13 +82,13 @@ pub fn add_node(LayoutTree, String, Int, LayoutNode) -> Bool
 pub fn remove_node(LayoutTree, String) -> Bool
 ```
 
-### `mizchi/crater/layout/html_bridge`
+### `mizchi/crater-dom/layout/html_bridge`
 
-Compatibility wrapper around `mizchi/crater/layout/html_tree` and
-`mizchi/crater/layout/style_bridge`. Keep using it only when you need the old
+Compatibility wrapper around `mizchi/crater-dom/layout/html_tree` and
+`mizchi/crater-dom/layout/style_bridge`. Keep using it only when you need the old
 single import surface.
 
-### `mizchi/crater/layout/dom_bridge`
+### `mizchi/crater-dom/layout/dom_bridge`
 
 DOM mutation bridge built on top of `LayoutTree`.
 
@@ -109,7 +99,7 @@ pub fn Document::process_mutations(Document) -> Int
 pub fn Document::update(Document) -> Layout
 ```
 
-### `mizchi/crater/core_subset`
+### `mizchi/crater-layout/core_subset`
 
 TUI-oriented checked subset on top of `mizchi/crater/layout`.
 
@@ -122,7 +112,8 @@ pub fn compute_core_layout(Node, Size[Double]) -> CoreComputeResult
 
 Unified CSS entry point. This package groups parser / selector / cascade /
 computed-style APIs so they can later be split into a separate package with a
-single import surface.
+single import surface. Responsive / breakpoint discovery helpers are re-exported
+from `mizchi/crater-dom/css/responsive`.
 
 ```moonbit
 pub fn parse_stylesheet(String) -> Stylesheet
@@ -243,9 +234,10 @@ Paint tree diff helpers.
 pub fn diff_trees(PaintNode, PaintNode) -> PaintTreeDiff
 ```
 
-### `mizchi/crater/vrt`
+### `mizchi/crater-renderer`
 
-VRT-oriented helpers built on `renderer` + `paint`.
+Renderer module facade. Prefer this package over importing `.../vrt` directly
+when you want the public renderer/VRT surface.
 
 ```moonbit
 pub fn render_html_to_paint_tree(String, Size[Double]) -> PaintNode
@@ -255,9 +247,9 @@ pub fn diff_rendered_paint_trees(String, String, Size[Double]) -> PaintTreeDiff
 pub fn render_html_batch_variants(String, Size[Double], Array[RenderVariant]) -> Array[RenderVariantResult]
 ```
 
-### `mizchi/crater/renderer`
+### `mizchi/crater-renderer/renderer`
 
-High-level rendering API for HTML strings.
+High-level HTML-to-layout renderer implementation.
 
 ```moonbit
 // Render HTML string to Layout
@@ -860,7 +852,7 @@ pub fn diff_trees(PaintNode, PaintNode) -> PaintTreeDiff
 
 ## Metrics
 
-### `mizchi/crater/x/webvitals`
+### `mizchi/crater-webvitals`
 
 Web Vitals metrics.
 

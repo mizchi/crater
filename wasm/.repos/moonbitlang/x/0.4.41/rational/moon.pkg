@@ -1,0 +1,9 @@
+import {
+  "moonbitlang/core/int64",
+  "moonbitlang/core/quickcheck",
+}
+
+import {
+  "moonbitlang/core/double",
+  "moonbitlang/core/quickcheck",
+} for "test"

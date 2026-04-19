@@ -56,7 +56,7 @@ println(layout.children[1].height)  // Content height
 pub fn compute_layout(node: Node, viewport: Size[Double]) -> Layout
 ```
 
-### `mizchi/crater/core_subset`
+### `mizchi/crater-layout/core_subset`
 
 ```moonbit
 /// Validate whether a Node tree stays inside the predictable TUI subset
@@ -732,7 +732,7 @@ These APIs are stable and safe to depend on:
 | API | Package |
 |-----|---------|
 | `compute_layout(Node, Size[Double]) -> Layout` | `mizchi/crater/layout` |
-| `compute_core_layout(Node, Size[Double]) -> CoreComputeResult` | `mizchi/crater/core_subset` |
+| `compute_core_layout(Node, Size[Double]) -> CoreComputeResult` | `mizchi/crater-layout/core_subset` |
 | `Node::new`, `Node::leaf`, `Node::with_measure` | `mizchi/crater/layout` |
 | `Style::default()` | `mizchi/crater/style` |
 | `Size`, `Rect`, `Dimension`, `Layout` structs | `mizchi/crater/types` |
@@ -786,7 +786,7 @@ For TUI applications, add these imports to your `moon.pkg.json`:
     "mizchi/crater/types",
     "mizchi/crater/style",
     "mizchi/crater/layout",
-    "mizchi/crater/core_subset"
+    "mizchi/crater-layout/core_subset"
   ]
 }
 ```

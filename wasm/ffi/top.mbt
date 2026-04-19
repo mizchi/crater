@@ -231,7 +231,7 @@ pub fn utf16_ptr2str(ptr : Int, len : Int) -> String {
   let buf = StringBuilder::new()
   for i = 0; i < len; i = i + 1 {
     let ch = load16_u(ptr + i * 2)
-    buf.write_char(Char::from_int(ch))
+    buf.write_char(Int::unsafe_to_char(ch))
   }
   buf.to_string()
 }
@@ -246,20 +246,20 @@ pub fn utf8_ptr2str(ptr : Int, len : Int) -> String {
     let b0 = load8_u(ptr + i)
     if b0 < 0x80 {
       // ASCII
-      buf.write_char(Char::from_int(b0))
+      buf.write_char(Int::unsafe_to_char(b0))
       i = i + 1
     } else if b0 < 0xE0 {
       // 2-byte sequence
       let b1 = load8_u(ptr + i + 1)
       let cp = ((b0 & 0x1F) << 6) | (b1 & 0x3F)
-      buf.write_char(Char::from_int(cp))
+      buf.write_char(Int::unsafe_to_char(cp))
       i = i + 2
     } else if b0 < 0xF0 {
       // 3-byte sequence
       let b1 = load8_u(ptr + i + 1)
       let b2 = load8_u(ptr + i + 2)
       let cp = ((b0 & 0x0F) << 12) | ((b1 & 0x3F) << 6) | (b2 & 0x3F)
-      buf.write_char(Char::from_int(cp))
+      buf.write_char(Int::unsafe_to_char(cp))
       i = i + 3
     } else {
       // 4-byte sequence
@@ -270,7 +270,7 @@ pub fn utf8_ptr2str(ptr : Int, len : Int) -> String {
         ((b1 & 0x3F) << 12) |
         ((b2 & 0x3F) << 6) |
         (b3 & 0x3F)
-      buf.write_char(Char::from_int(cp))
+      buf.write_char(Int::unsafe_to_char(cp))
       i = i + 4
     }
   }

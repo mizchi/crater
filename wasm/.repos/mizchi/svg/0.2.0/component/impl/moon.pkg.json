@@ -1,0 +1,23 @@
+{
+  "is-main": true,
+  "import": [
+    { "path": "svg-component/gen/cabi", "alias": "cabi" },
+    { "path": "mizchi/svg", "alias": "svg" }
+  ],
+  "link": {
+    "wasm": {
+      "exports": [
+        "cabi_realloc:cabi_realloc",
+        "wasmExportRender:mizchi:svg/svg@0.1.0#render"
+      ],
+      "export-memory-name": "memory"
+    },
+    "wasm-gc": {
+      "exports": [
+        "cabi_realloc:cabi_realloc",
+        "wasmExportRender:mizchi:svg/svg@0.1.0#render"
+      ],
+      "export-memory-name": "memory"
+    }
+  }
+}

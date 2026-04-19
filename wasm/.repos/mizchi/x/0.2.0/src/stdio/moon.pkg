@@ -1,0 +1,22 @@
+import {
+  "moonbitlang/async/stdio" @async_stdio,
+  "moonbitlang/async/io",
+  "moonbitlang/async/js_async",
+}
+
+import {
+  "moonbitlang/async",
+} for "test"
+
+warnings = "-0029-0014"
+
+options(
+  targets: {
+    "stdio_js.mbt": [ "js" ],
+    "stdio_js_test.mbt": [ "js" ],
+    "stdio_native.mbt": [ "native" ],
+    "stdio_native_test.mbt": [ "native" ],
+    "stdio_wasm.mbt": [ "wasm" ],
+    "stdio_wasmgc.mbt": [ "wasm-gc" ],
+  },
+)

@@ -1,0 +1,27 @@
+{
+  "name": "mizchi/crater-renderer",
+  "version": "0.1.0",
+  "deps": {
+    "mizchi/crater-css": {
+      "path": "../css",
+      "version": "0.1.0"
+    },
+    "mizchi/crater-dom": {
+      "path": "../dom",
+      "version": "0.1.0"
+    },
+    "mizchi/crater-layout": {
+      "path": "../layout",
+      "version": "0.1.0"
+    },
+    "mizchi/crater-painter": {
+      "path": "../painter",
+      "version": "0.1.0"
+    },
+    "moonbitlang/async": "0.17.1"
+  },
+  "repository": "https://github.com/mizchi/crater",
+  "license": "Apache-2.0",
+  "description": "Renderer and VRT packages for crater",
+  "preferred-target": "js"
+}

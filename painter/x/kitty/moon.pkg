@@ -1,0 +1,12 @@
+import {
+  "mizchi/crater-painter/svg",
+  "mizchi/crater-painter/paint/model" @paint_model,
+  "mizchi/crater-painter/x/image",
+  "moonbitlang/async/io",
+}
+
+import {
+  "mizchi/x/pipe",
+  "moonbitlang/async",
+  "moonbitlang/core/bench",
+} for "wbtest"

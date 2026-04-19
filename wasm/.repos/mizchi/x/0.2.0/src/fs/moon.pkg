@@ -1,0 +1,21 @@
+import {
+  "moonbitlang/async/fs" @async_fs,
+  "moonbitlang/async/io",
+  "moonbitlang/async/js_async",
+}
+
+import {
+  "moonbitlang/async",
+} for "test"
+
+warnings = "-0029"
+
+options(
+  targets: {
+    "fs_js.mbt": [ "js" ],
+    "fs_native.mbt": [ "native" ],
+    "fs_native_test.mbt": [ "native" ],
+    "fs_wasm.mbt": [ "wasm" ],
+    "fs_wasmgc.mbt": [ "wasm-gc" ],
+  },
+)

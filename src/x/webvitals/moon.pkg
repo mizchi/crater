@@ -1,7 +1,0 @@
-import {
-  "mizchi/crater/types",
-  "mizchi/crater/layout" @tree,
-}
-
-import {
-} for "wbtest"

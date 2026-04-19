@@ -45,7 +45,7 @@ This is the most stable user-facing surface in the repository today.
 **Status**: Implemented
 
 ```text
-✓ Central browser shell in src/shell/browser.mbt
+✓ Central browser shell in shell/browser.mbt
 ✓ DOM / layout / paint / accessibility orchestration
 ✓ Scheduler and JS runtime hooks for tests and automation
 ✓ Shared state for history, focus, scroll, drag, and pointer input

@@ -1,0 +1,379 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-layout/types"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn apply_aspect_ratio_height(Double, Double?) -> Double?
+
+pub fn apply_aspect_ratio_width(Double, Double?) -> Double?
+
+pub fn clamp(Double, Double, Double) -> Double
+
+pub fn max(Double, Double) -> Double
+
+pub fn min(Double, Double) -> Double
+
+pub fn resolve_dimensions_with_aspect_ratio(Double?, Double?, Double?, Double, Double, Double, Double) -> (Double?, Double?)
+
+pub fn resolve_rect(Rect[Dimension], Double) -> Rect[Double]
+
+pub fn resolve_rect_intrinsic(Rect[Dimension]) -> Rect[Double]
+
+// Errors
+
+// Types and methods
+pub(all) enum AlignSelf {
+  Auto
+  Start
+  End
+  Center
+  Stretch
+  Baseline
+} derive(Eq, @debug.Debug)
+pub impl Show for AlignSelf
+
+pub(all) enum Alignment {
+  Start
+  End
+  Left
+  Right
+  FlexStart
+  FlexEnd
+  Center
+  SpaceBetween
+  SpaceAround
+  SpaceEvenly
+  Stretch
+  Baseline
+} derive(Eq, @debug.Debug)
+pub impl Show for Alignment
+
+pub(all) enum BackgroundImage {
+  None
+  Gradient(LinearGradient)
+}
+pub impl Show for BackgroundImage
+
+pub(all) struct BoundingRect {
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+}
+pub fn BoundingRect::area(Self) -> Double
+pub fn BoundingRect::bottom(Self) -> Double
+pub fn BoundingRect::new(Double, Double, Double, Double) -> Self
+pub fn BoundingRect::right(Self) -> Double
+pub fn BoundingRect::union(Self, Self) -> Self
+pub fn BoundingRect::zero() -> Self
+pub impl Show for BoundingRect
+
+pub(all) enum BoxSizing {
+  ContentBox
+  BorderBox
+} derive(Eq, @debug.Debug)
+pub impl Show for BoxSizing
+
+pub(all) enum Clear {
+  None
+  Left
+  Right
+  Both
+} derive(Eq, @debug.Debug)
+pub impl Show for Clear
+
+pub(all) enum ClipRect {
+  Auto
+  Rect(top~ : Double, right~ : Double, bottom~ : Double, left~ : Double)
+} derive(Eq)
+pub fn ClipRect::default() -> Self
+pub impl Show for ClipRect
+
+pub(all) struct Color {
+  r : Int
+  g : Int
+  b : Int
+  a : Double
+}
+pub fn Color::black() -> Self
+pub fn Color::is_opaque(Self) -> Bool
+pub fn Color::is_transparent(Self) -> Bool
+pub fn Color::rgb(Int, Int, Int) -> Self
+pub fn Color::rgba(Int, Int, Int, Double) -> Self
+pub fn Color::to_hex(Self) -> String
+pub fn Color::to_rgba_string(Self) -> String
+pub fn Color::transparent() -> Self
+pub fn Color::white() -> Self
+pub impl Eq for Color
+pub impl Show for Color
+
+pub(all) enum Dimension {
+  Length(Double)
+  Percent(Double)
+  Auto
+  MinContent
+  MaxContent
+  FitContent(Double)
+} derive(Eq)
+pub fn Dimension::eq_length(Self, Double) -> Bool
+pub fn Dimension::eq_percent(Self, Double) -> Bool
+pub fn Dimension::is_definite(Self) -> Bool
+pub fn Dimension::is_intrinsic(Self) -> Bool
+pub fn Dimension::resolve(Self, Double) -> Double?
+pub fn Dimension::resolve_or(Self, Double, Double) -> Double
+pub fn Dimension::resolve_or_intrinsic(Self, Double, Double) -> Double
+pub impl Show for Dimension
+
+pub(all) enum Display {
+  Block
+  Inline
+  InlineBlock
+  Flex
+  InlineFlex
+  Grid
+  InlineGrid
+  Table
+  InlineTable
+  TableRow
+  TableCell
+  TableCaption
+  TableRowGroup
+  TableHeaderGroup
+  TableFooterGroup
+  TableColumn
+  TableColumnGroup
+  None
+  Contents
+  FlowRoot
+} derive(Eq, @debug.Debug)
+pub impl Show for Display
+
+pub(all) enum FlexDirection {
+  Row
+  RowReverse
+  Column
+  ColumnReverse
+} derive(Eq, @debug.Debug)
+pub impl Show for FlexDirection
+
+pub(all) enum FlexWrap {
+  NoWrap
+  Wrap
+  WrapReverse
+} derive(Eq, @debug.Debug)
+pub impl Show for FlexWrap
+
+pub(all) enum Float {
+  None
+  Left
+  Right
+} derive(Eq, @debug.Debug)
+pub impl Show for Float
+
+pub(all) struct GradientStop {
+  color : Color
+  position : Double
+}
+pub impl Show for GradientStop
+
+pub(all) enum GridAutoFlow {
+  Row
+  Column
+  RowDense
+  ColumnDense
+} derive(Eq, @debug.Debug)
+pub impl Show for GridAutoFlow
+
+pub(all) struct GridLine {
+  start : GridPlacement
+  end : GridPlacement
+} derive(Eq, @debug.Debug)
+pub fn GridLine::auto() -> Self
+pub impl Show for GridLine
+
+pub(all) enum GridPlacement {
+  Auto
+  Line(Int)
+  Span(Int)
+} derive(Eq, @debug.Debug)
+pub impl Show for GridPlacement
+
+pub(all) struct IntrinsicSize {
+  min_width : Double
+  max_width : Double
+  min_height : Double
+  max_height : Double
+}
+pub fn IntrinsicSize::default() -> Self
+
+pub(all) struct Layout {
+  id : String
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+  margin : Rect[Double]
+  padding : Rect[Double]
+  border : Rect[Double]
+  overflow_x : Overflow
+  overflow_y : Overflow
+  scroll_width : Double
+  scroll_height : Double
+  children : Array[Layout]
+  text : String?
+}
+pub fn Layout::to_bounding_rect(Self) -> BoundingRect
+
+pub(all) struct LayoutContext {
+  available_width : Double
+  available_height : Double?
+  sizing_mode : SizingMode
+  viewport_width : Double
+  viewport_height : Double
+  stretch_width : Bool
+  stretch_height : Bool
+}
+
+pub(all) struct LayoutResult {
+  layout : Layout
+  warnings : Array[LayoutWarning]
+}
+
+pub(all) enum LayoutWarning {
+  UnsupportedFloat(String)
+  UnsupportedPosition(String)
+  UnsupportedDisplay(String)
+} derive(@debug.Debug)
+pub impl Show for LayoutWarning
+
+pub struct Line[T] {
+  start : T
+  end : T
+}
+pub fn[T] Line::new(T, T) -> Self[T]
+pub impl[T : Show] Show for Line[T]
+
+pub(all) struct LinearGradient {
+  angle_deg : Double
+  stops : Array[GradientStop]
+}
+pub impl Show for LinearGradient
+
+pub(all) enum MaxTrackSizing {
+  Length(Double)
+  Percent(Double)
+  Fr(Double)
+  Auto
+  MinContent
+  MaxContent
+} derive(Eq, @debug.Debug)
+pub impl Show for MaxTrackSizing
+
+pub(all) struct MeasureFunc {
+  func : (Double, Double) -> IntrinsicSize
+}
+
+pub(all) enum MinTrackSizing {
+  Length(Double)
+  Percent(Double)
+  Auto
+  MinContent
+  MaxContent
+} derive(Eq, @debug.Debug)
+pub impl Show for MinTrackSizing
+
+pub(all) enum Overflow {
+  Visible
+  Hidden
+  Clip
+  Scroll
+  Auto
+} derive(Eq, @debug.Debug)
+pub impl Show for Overflow
+
+pub struct Point[T] {
+  x : T
+  y : T
+}
+pub fn[T, U] Point::map(Self[T], (T) -> U) -> Self[U]
+pub fn[T] Point::new(T, T) -> Self[T]
+pub fn Point::zero() -> Self[Double]
+pub impl[T : Show] Show for Point[T]
+
+pub(all) enum Position {
+  Static
+  Relative
+  Absolute
+  Fixed
+} derive(Eq, @debug.Debug)
+pub impl Show for Position
+
+pub(all) struct Rect[T] {
+  left : T
+  right : T
+  top : T
+  bottom : T
+}
+pub fn[T] Rect::all(T) -> Self[T]
+pub fn Rect::horizontal_sum(Self[Double]) -> Double
+pub fn[T, U] Rect::map(Self[T], (T) -> U) -> Self[U]
+pub fn[T] Rect::new(T, T, T, T) -> Self[T]
+pub fn Rect::vertical_sum(Self[Double]) -> Double
+pub fn Rect::zero() -> Self[Double]
+pub impl[T : Show] Show for Rect[T]
+
+pub(all) enum RepeatCount {
+  Count(Int)
+  AutoFill
+  AutoFit
+} derive(Eq, @debug.Debug)
+pub impl Show for RepeatCount
+
+pub(all) enum SingleTrackSizing {
+  Length(Double)
+  Percent(Double)
+  Fr(Double)
+  Auto
+  MinContent
+  MaxContent
+  MinMax(MinTrackSizing, MaxTrackSizing)
+  FitContentLength(Double)
+  FitContentPercent(Double)
+} derive(Eq, @debug.Debug)
+pub impl Show for SingleTrackSizing
+
+pub struct Size[T] {
+  width : T
+  height : T
+}
+pub fn[T, U] Size::map(Self[T], (T) -> U) -> Self[U]
+pub fn[T] Size::new(T, T) -> Self[T]
+pub fn Size::zero() -> Self[Double]
+pub impl[T : Show] Show for Size[T]
+
+pub(all) enum SizingMode {
+  Definite
+  MaxContent
+} derive(Eq)
+
+pub(all) enum TrackSizingFunction {
+  Length(Double)
+  Percent(Double)
+  Fr(Double)
+  Auto
+  MinContent
+  MaxContent
+  MinMax(MinTrackSizing, MaxTrackSizing)
+  Repeat(RepeatCount, Array[SingleTrackSizing])
+  FitContentLength(Double)
+  FitContentPercent(Double)
+} derive(Eq, @debug.Debug)
+pub impl Show for TrackSizingFunction
+
+// Type aliases
+
+// Traits
+

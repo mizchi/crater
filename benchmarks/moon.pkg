@@ -1,0 +1,17 @@
+import {
+  "moonbitlang/core/bench",
+  "mizchi/crater/css",
+  "mizchi/crater-dom/html",
+  "mizchi/crater-renderer/renderer",
+  "mizchi/crater-layout" @tree,
+  "mizchi/crater-layout/style",
+  "mizchi/crater-layout/types",
+  "mizchi/crater-painter/paint/model" @paint_model,
+  "mizchi/crater-painter/paint/traversal" @paint_traversal,
+  "mizchi/crater-painter/paint/render_bridge" @paint_render,
+  "mizchi/crater-painter/paint/diff" @paint_diff,
+}
+
+import {
+  "mizchi/crater-layout/node" @node,
+} for "wbtest"

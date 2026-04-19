@@ -1,0 +1,49 @@
+package mizchi:layout@0.1.0;
+
+interface layout {
+    enum alignment {
+        start, end, flex-start, flex-end, center,
+        space-between, space-around, space-evenly,
+        stretch, baseline
+    }
+
+    enum align-self {
+        auto, start, end, center, stretch, baseline
+    }
+
+    record pair {
+        a: f64,
+        b: f64,
+    }
+
+    /// Compute (start-offset, gap-between-items) for content distribution.
+    compute-justify: func(align: alignment, container-size: f64, item-count: s32) -> pair;
+
+    /// Compute alignment offset for a single item.
+    compute-align-offset: func(align: alignment, remaining-space: f64) -> f64;
+
+    /// Resolve align-self against parent alignment.
+    resolve-align-self: func(self-align: align-self, parent-align: alignment) -> alignment;
+
+    /// Compute alignment offset with self override.
+    compute-align-self-offset: func(self-align: align-self, parent-align: alignment, remaining-space: f64) -> f64;
+
+    /// Resolve auto margin distribution. Returns (margin-start, margin-end).
+    resolve-auto-margin-pair: func(start-auto: bool, end-auto: bool, margin-start: f64, margin-end: f64, remaining-space: f64) -> pair;
+
+    /// Clamp value to [min-val, max-val].
+    clamp-value: func(value: f64, min-val: f64, max-val: f64) -> f64;
+
+    /// Clamp width/height independently.
+    clamp-size: func(width: f64, height: f64, min-width: f64, max-width: f64, min-height: f64, max-height: f64) -> pair;
+
+    /// Clamp with box minimum as absolute lower bound.
+    clamp-size-with-box-min: func(width: f64, height: f64, min-width: f64, max-width: f64, min-height: f64, max-height: f64, box-min-width: f64, box-min-height: f64) -> pair;
+
+    /// Apply aspect-ratio after constraints. ratio is optional (use has-ratio + ratio-value).
+    apply-aspect-ratio: func(width: f64, height: f64, has-ratio: bool, ratio-value: f64, width-changed: bool, height-changed: bool) -> pair;
+}
+
+world layout-world {
+    export layout;
+}

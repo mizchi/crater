@@ -1,0 +1,248 @@
+# mizchi/v8
+
+MoonBit から V8 を扱うためのネイティブバインディングです。
+
+## Package
+
+- `mizchi/v8`
+
+## Public Surface
+
+- `version() -> String`
+- `module_source(String, String) -> ModuleSource`
+- `runtime_image_new(Bytes) -> RuntimeImage`
+- `snapshot_builder_new() -> SnapshotBuilder`
+- `snapshot_create(String) -> Result[Bytes, V8Error]`
+- `snapshot_extend(Bytes, String) -> Result[Bytes, V8Error]`
+- `runtime_new() -> Result[Runtime, V8Error]`
+- `runtime_new_with_snapshot(Bytes) -> Result[Runtime, V8Error]`
+- `runtime_builder_new() -> RuntimeBuilder`
+- `with_runtime_async(async (Runtime) -> Result[T, V8Error]) -> Result[T, V8Error]`
+- `with_runtime_with_snapshot(Bytes, (Runtime) -> Result[T, V8Error]) -> Result[T, V8Error]`
+- `with_runtime_with_snapshot_async(Bytes, async (Runtime) -> Result[T, V8Error]) -> Result[T, V8Error]`
+- `PromiseState`
+- `PromiseHandle`
+- `ModuleEvalHandle`
+- `ModuleHandle`
+- `RuntimeResource`
+- `AsyncJsonOpRequest`
+- `SyncJsonOpRequest`
+- `SyncBytesOpRequest`
+- `AsyncBytesOpRequest`
+- `Runtime::load_module(String, String) -> Result[Unit, V8Error]`
+- `Runtime::load_modules(Array[ModuleSource]) -> Result[Unit, V8Error]`
+- `Runtime::register_sync_json_op(String) -> Result[Unit, V8Error]`
+- `Runtime::register_sync_json_callback(String, (String) -> String) -> Result[Unit, V8Error]`
+- `Runtime::register_sync_json_result_callback(String, (String) -> Result[String, String]) -> Result[Unit, V8Error]`
+- `Runtime::register_sync_json_result_callback_with_json_error(String, (String) -> Result[String, String]) -> Result[Unit, V8Error]`
+- `Runtime::push_sync_json_op_response(String, String, String) -> Result[Unit, V8Error]`
+- `Runtime::take_sync_json_op() -> Result[SyncJsonOpRequest?, V8Error]`
+- `Runtime::register_sync_bytes_op(String) -> Result[Unit, V8Error]`
+- `Runtime::register_sync_bytes_callback(String, (Bytes) -> Bytes) -> Result[Unit, V8Error]`
+- `Runtime::register_sync_bytes_result_callback(String, (Bytes) -> Result[Bytes, String]) -> Result[Unit, V8Error]`
+- `Runtime::register_sync_bytes_result_callback_with_json_error(String, (Bytes) -> Result[Bytes, String]) -> Result[Unit, V8Error]`
+- `Runtime::push_sync_bytes_op_response(String, Bytes, Bytes) -> Result[Unit, V8Error]`
+- `Runtime::take_sync_bytes_op() -> Result[SyncBytesOpRequest?, V8Error]`
+- `Runtime::register_async_json_op(String) -> Result[Unit, V8Error]`
+- `Runtime::register_async_json_callback(String, (String) -> String) -> Result[Unit, V8Error]`
+- `Runtime::register_async_json_result_callback(String, (String) -> Result[String, String]) -> Result[Unit, V8Error]`
+- `Runtime::register_async_json_result_callback_with_json_error(String, (String) -> Result[String, String]) -> Result[Unit, V8Error]`
+- `Runtime::register_async_json_task_callback(String, async (String) -> String) -> Result[Unit, V8Error]`
+- `Runtime::register_async_json_task_result_callback(String, async (String) -> Result[String, String]) -> Result[Unit, V8Error]`
+- `Runtime::register_async_json_task_result_callback_with_json_error(String, async (String) -> Result[String, String]) -> Result[Unit, V8Error]`
+- `Runtime::take_async_json_op() -> Result[AsyncJsonOpRequest?, V8Error]`
+- `Runtime::resolve_async_json_op(UInt64, String) -> Result[Unit, V8Error]`
+- `Runtime::reject_async_json_op(UInt64, String) -> Result[Unit, V8Error]`
+- `Runtime::reject_async_json_op_with_json(UInt64, String) -> Result[Unit, V8Error]`
+- `Runtime::register_async_bytes_op(String) -> Result[Unit, V8Error]`
+- `Runtime::register_async_bytes_callback(String, (Bytes) -> Bytes) -> Result[Unit, V8Error]`
+- `Runtime::register_async_bytes_result_callback(String, (Bytes) -> Result[Bytes, String]) -> Result[Unit, V8Error]`
+- `Runtime::register_async_bytes_result_callback_with_json_error(String, (Bytes) -> Result[Bytes, String]) -> Result[Unit, V8Error]`
+- `Runtime::register_async_bytes_task_callback(String, async (Bytes) -> Bytes) -> Result[Unit, V8Error]`
+- `Runtime::register_async_bytes_task_result_callback(String, async (Bytes) -> Result[Bytes, String]) -> Result[Unit, V8Error]`
+- `Runtime::register_async_bytes_task_result_callback_with_json_error(String, async (Bytes) -> Result[Bytes, String]) -> Result[Unit, V8Error]`
+- `Runtime::take_async_bytes_op() -> Result[AsyncBytesOpRequest?, V8Error]`
+- `Runtime::resolve_async_bytes_op(UInt64, Bytes) -> Result[Unit, V8Error]`
+- `Runtime::reject_async_bytes_op(UInt64, String) -> Result[Unit, V8Error]`
+- `Runtime::reject_async_bytes_op_with_json(UInt64, String) -> Result[Unit, V8Error]`
+- `Runtime::set_global_json(String, String) -> Result[Unit, V8Error]`
+- `Runtime::get_global_json(String) -> Result[String, V8Error]`
+- `Runtime::call_global_json(String, String) -> Result[String, V8Error]`
+- `Runtime::set_global_bytes(String, Bytes) -> Result[Unit, V8Error]`
+- `Runtime::get_global_bytes(String) -> Result[Bytes, V8Error]`
+- `Runtime::call_global_bytes(String, Bytes) -> Result[Bytes, V8Error]`
+- `Runtime::add_resource(String) -> Result[Int, V8Error]`
+- `Runtime::add_resource_with_close(String, () -> Unit) -> Result[Int, V8Error]`
+- `Runtime::ref_resource(Int) -> Result[Bool, V8Error]`
+- `Runtime::unref_resource(Int) -> Result[Bool, V8Error]`
+- `Runtime::get_resource_name(Int) -> Result[String?, V8Error]`
+- `Runtime::list_resources() -> Result[Array[RuntimeResource], V8Error]`
+- `Runtime::close_resource(Int) -> Result[Unit, V8Error]`
+- `Runtime::try_close_resource(Int) -> Result[Bool, V8Error]`
+- `Runtime::eval_json(String) -> Result[String, V8Error]`
+- `Runtime::eval_json_with_name(String, String) -> Result[String, V8Error]`
+- `Runtime::eval_async_json(String) -> Result[String, V8Error]`
+- `Runtime::eval_async_json_with_name(String, String) -> Result[String, V8Error]`
+- `Runtime::eval_bytes(String) -> Result[Bytes, V8Error]`
+- `Runtime::eval_bytes_with_name(String, String) -> Result[Bytes, V8Error]`
+- `Runtime::eval_async_bytes(String) -> Result[Bytes, V8Error]`
+- `Runtime::eval_async_bytes_with_name(String, String) -> Result[Bytes, V8Error]`
+- `Runtime::eval_string(String) -> Result[String, V8Error]`
+- `Runtime::eval_string_with_name(String, String) -> Result[String, V8Error]`
+- `Runtime::eval_async_string(String) -> Result[String, V8Error]`
+- `Runtime::eval_async_string_with_name(String, String) -> Result[String, V8Error]`
+- `Runtime::eval_promise_string(String) -> Result[PromiseHandle, V8Error]`
+- `Runtime::eval_promise_string_with_name(String, String) -> Result[PromiseHandle, V8Error]`
+- `Runtime::eval_promise_string_async(String) -> Result[String, V8Error]`
+- `Runtime::eval_promise_string_async_with_name(String, String) -> Result[String, V8Error]`
+- `Runtime::eval_promise_json_async(String) -> Result[String, V8Error]`
+- `Runtime::eval_promise_json_async_with_name(String, String) -> Result[String, V8Error]`
+- `Runtime::eval_promise_bytes_async(String) -> Result[Bytes, V8Error]`
+- `Runtime::eval_promise_bytes_async_with_name(String, String) -> Result[Bytes, V8Error]`
+- `Runtime::eval_module_handle_async_string(String) -> Result[ModuleEvalHandle, V8Error]`
+- `Runtime::eval_module_handle_async_string_with_specifier(String, String) -> Result[ModuleEvalHandle, V8Error]`
+- `Runtime::eval_module_handle_string_async(String) -> Result[ModuleHandle, V8Error]`
+- `Runtime::eval_module_handle_string_async_with_specifier(String, String) -> Result[ModuleHandle, V8Error]`
+- `Runtime::eval_module_handle_string(String) -> Result[ModuleHandle, V8Error]`
+- `Runtime::eval_module_handle_string_with_specifier(String, String) -> Result[ModuleHandle, V8Error]`
+- `Runtime::eval_module_string(String) -> Result[String, V8Error]`
+- `Runtime::eval_module_string_with_specifier(String, String) -> Result[String, V8Error]`
+- `Runtime::install_deno_core_compat() -> Result[Unit, V8Error]`
+- `Runtime::install_node_compat() -> Result[Unit, V8Error]`
+- `Runtime::perform_microtask_checkpoint() -> Result[Unit, V8Error]`
+- `Runtime::dispose() -> Unit`
+- `PromiseHandle::state() -> Result[PromiseState, V8Error]`
+- `PromiseHandle::result_string() -> Result[String, V8Error]`
+- `PromiseHandle::result_json() -> Result[String, V8Error]`
+- `PromiseHandle::result_bytes() -> Result[Bytes, V8Error]`
+- `PromiseHandle::await_string() -> Result[String, V8Error]`
+- `PromiseHandle::await_string_async() -> Result[String, V8Error]`
+- `PromiseHandle::await_json() -> Result[String, V8Error]`
+- `PromiseHandle::await_json_async() -> Result[String, V8Error]`
+- `PromiseHandle::await_bytes() -> Result[Bytes, V8Error]`
+- `PromiseHandle::await_bytes_async() -> Result[Bytes, V8Error]`
+- `eval_promise_string_async(String) -> Result[String, V8Error]`
+- `eval_promise_string_async_with_name(String, String) -> Result[String, V8Error]`
+- `eval_promise_json_async(String) -> Result[String, V8Error]`
+- `eval_promise_json_async_with_name(String, String) -> Result[String, V8Error]`
+- `eval_promise_bytes_async(String) -> Result[Bytes, V8Error]`
+- `eval_promise_bytes_async_with_name(String, String) -> Result[Bytes, V8Error]`
+- `PromiseHandle::dispose() -> Unit`
+- `PromiseHandle::is_closed() -> Bool`
+- `SyncJsonOpRequest { id : UInt64, name : String, payload_json : String }`
+- `SyncBytesOpRequest { id : UInt64, name : String, payload : Bytes }`
+- `AsyncJsonOpRequest { id : UInt64, name : String, payload_json : String }`
+- `AsyncBytesOpRequest { id : UInt64, name : String, payload : Bytes }`
+- `RuntimeResource { rid : Int, name : String, is_ref : Bool }`
+- `ModuleEvalHandle::module_handle() -> ModuleHandle`
+- `ModuleEvalHandle::promise_handle() -> PromiseHandle?`
+- `ModuleEvalHandle::await_ready() -> Result[ModuleHandle, V8Error]`
+- `ModuleEvalHandle::await_ready_async() -> Result[ModuleHandle, V8Error]`
+- `ModuleEvalHandle::dispose() -> Unit`
+- `ModuleEvalHandle::is_closed() -> Bool`
+- `ModuleHandle::get_export_json(String) -> Result[String, V8Error]`
+- `ModuleHandle::export_names() -> Result[Array[String], V8Error]`
+- `ModuleHandle::get_export_bytes(String) -> Result[Bytes, V8Error]`
+- `ModuleHandle::call_export_json(String, String) -> Result[String, V8Error]`
+- `ModuleHandle::call_export_bytes(String, Bytes) -> Result[Bytes, V8Error]`
+- `ModuleHandle::dispose() -> Unit`
+- `ModuleHandle::is_closed() -> Bool`
+- `RuntimeImage::load_module(String, String) -> RuntimeImage`
+- `RuntimeImage::load_modules(Array[ModuleSource]) -> RuntimeImage`
+- `RuntimeImage::build_runtime() -> Result[Runtime, V8Error]`
+- `RuntimeImage::with_runtime((Runtime) -> Result[T, V8Error]) -> Result[T, V8Error]`
+- `RuntimeBuilder::eval_snapshot(String) -> RuntimeBuilder`
+- `RuntimeBuilder::with_deno_core_compat() -> RuntimeBuilder`
+- `RuntimeBuilder::with_node_compat() -> RuntimeBuilder`
+- `RuntimeBuilder::with_snapshot(Bytes) -> RuntimeBuilder`
+- `RuntimeBuilder::with_snapshot_builder(SnapshotBuilder) -> RuntimeBuilder`
+- `RuntimeBuilder::build_image() -> Result[RuntimeImage, V8Error]`
+- `SnapshotBuilder::with_snapshot(Bytes) -> SnapshotBuilder`
+- `SnapshotBuilder::with_deno_core_compat() -> SnapshotBuilder`
+- `SnapshotBuilder::with_node_compat() -> SnapshotBuilder`
+- `SnapshotBuilder::eval(String) -> SnapshotBuilder`
+- `SnapshotBuilder::build() -> Result[Bytes, V8Error]`
+- `SnapshotBuilder::build_image() -> Result[RuntimeImage, V8Error]`
+- `SnapshotBuilder::build_runtime() -> Result[Runtime, V8Error]`
+- `SnapshotBuilder::with_runtime((Runtime) -> Result[T, V8Error]) -> Result[T, V8Error]`
+- `RuntimeBuilder::load_module(String, String) -> RuntimeBuilder`
+- `RuntimeBuilder::load_modules(Array[ModuleSource]) -> RuntimeBuilder`
+- `RuntimeBuilder::build() -> Result[Runtime, V8Error]`
+- `RuntimeBuilder::with_runtime((Runtime) -> Result[T, V8Error]) -> Result[T, V8Error]`
+- `eval_string(String) -> Result[String, V8Error]`
+- `eval_string_with_name(String, String) -> Result[String, V8Error]`
+- `eval_async_string(String) -> Result[String, V8Error]`
+- `eval_async_string_with_name(String, String) -> Result[String, V8Error]`
+- `eval_json(String) -> Result[String, V8Error]`
+- `eval_json_with_name(String, String) -> Result[String, V8Error]`
+- `eval_async_json(String) -> Result[String, V8Error]`
+- `eval_async_json_with_name(String, String) -> Result[String, V8Error]`
+- `eval_bytes(String) -> Result[Bytes, V8Error]`
+- `eval_bytes_with_name(String, String) -> Result[Bytes, V8Error]`
+- `eval_async_bytes(String) -> Result[Bytes, V8Error]`
+- `eval_async_bytes_with_name(String, String) -> Result[Bytes, V8Error]`
+- `eval_module_string(String) -> Result[String, V8Error]`
+- `eval_module_string_with_specifier(String, String) -> Result[String, V8Error]`
+
+## Notes
+
+- `rusty_v8` を依存取得に使い、Rust staticlib ブリッジ経由で MoonBit から呼びます
+- いまは `Context` 1 個を保持する最小ランタイムです
+- 複数 runtime を同時に保持できます
+- module 評価は top-level await に対応します
+- `Runtime::load_module` で事前登録した module に対して static import / dynamic import と相対 specifier を解決できます
+- `Runtime::eval_async_string_with_name` と `Runtime::eval_module_string_with_specifier` で script/module ごとの基準 specifier を制御できます
+- `Runtime::eval_promise_string` と `Runtime::eval_promise_string_with_name` で pending Promise を host 側 handle として保持できます
+- `with_runtime_async` / `with_runtime_with_snapshot_async` で runtime の生成と破棄を MoonBit async 側に寄せられます
+- `PromiseHandle::result_json` / `result_bytes` で fulfilled Promise の値を JSON/bytes のまま取得できます
+- `PromiseHandle::await_string` / `await_json` / `await_bytes` で checkpoint を内包して Promise を待てます
+- `PromiseHandle::await_*_async` と `ModuleEvalHandle::await_ready_async` で、Deno core の `run_event_loop` に近い形で MoonBit async event loop 上から pending op / microtask を進められます
+- `Runtime::eval_promise_*_async` と top-level `eval_promise_*_async` で handle を明示せずに same loop を使えます
+- `Runtime::register_sync_json_callback` で `MoonBit.opSync(...)` を MoonBit closure に直接 dispatch できます
+- `Runtime::register_sync_json_result_callback` で `MoonBit.opSync(...)` を closure の `Result` で return/throw できます
+- `Runtime::register_sync_json_result_callback_with_json_error` で `MoonBit.opSync(...)` を closure の `Result` で return/throw しつつ、throw reason を JSON value にできます
+- `Runtime::register_sync_json_op` / `push_sync_json_op_response` / `take_sync_json_op` で `MoonBit.opSync(...)` を固定応答テーブル付きでも扱えます
+- `Runtime::register_sync_bytes_callback` で `MoonBit.opSyncBytes(...)` を MoonBit closure に直接 dispatch できます
+- `Runtime::register_sync_bytes_result_callback` で `MoonBit.opSyncBytes(...)` を closure の `Result` で return/throw できます
+- `Runtime::register_sync_bytes_result_callback_with_json_error` で `MoonBit.opSyncBytes(...)` を closure の `Result` で return/throw しつつ、throw reason を JSON value にできます
+- `Runtime::register_sync_bytes_op` / `push_sync_bytes_op_response` / `take_sync_bytes_op` で `MoonBit.opSyncBytes(...)` を固定応答テーブル付きでも扱えます
+- `Runtime::register_async_json_callback` で `MoonBit.opAsync(...)` を MoonBit closure に直接 dispatch して Promise を解決できます
+- `Runtime::register_async_json_result_callback` で `MoonBit.opAsync(...)` を closure の `Result` で resolve/reject できます
+- `Runtime::register_async_json_result_callback_with_json_error` で `MoonBit.opAsync(...)` を closure の `Result` で resolve/reject しつつ、reject reason を JSON value にできます
+- `Runtime::register_async_json_op` / `take_async_json_op` / `resolve_async_json_op` / `reject_async_json_op` / `reject_async_json_op_with_json` で `MoonBit.opAsync(...)` を host loop で処理できます
+- `Runtime::register_async_json_task_*` で queue ベース op を MoonBit async task として処理し、`PromiseHandle::await_*_async` からそのまま駆動できます
+- `Runtime::register_async_bytes_callback` で `MoonBit.opAsyncBytes(...)` を MoonBit closure に直接 dispatch して Promise を解決できます
+- `Runtime::register_async_bytes_result_callback` で `MoonBit.opAsyncBytes(...)` を closure の `Result` で resolve/reject できます
+- `Runtime::register_async_bytes_result_callback_with_json_error` で `MoonBit.opAsyncBytes(...)` を closure の `Result` で resolve/reject しつつ、reject reason を JSON value にできます
+- `Runtime::register_async_bytes_op` / `take_async_bytes_op` / `resolve_async_bytes_op` / `reject_async_bytes_op` / `reject_async_bytes_op_with_json` で `MoonBit.opAsyncBytes(...)` を host loop で処理できます
+- `Runtime::register_async_bytes_task_*` で bytes lane も同じ MoonBit async event loop に載せられます
+- `Runtime::eval_module_handle_async_string` / `eval_module_handle_async_string_with_specifier` と `ModuleEvalHandle::await_ready` / `await_ready_async` で top-level await module を host loop で扱えます
+- `Runtime::eval_module_handle_string_async` / `eval_module_handle_string_async_with_specifier` で、その top-level await module path を handle までまとめて待てます
+- `Runtime::eval_json` / `eval_bytes` / `eval_async_json` / `eval_async_bytes` で script 結果を typed bridge で直接取得できます
+- `Runtime::eval_module_handle_string` と `Runtime::eval_module_handle_string_with_specifier` で評価済み module の export を host 側から取得できます
+- `ModuleHandle::export_names` / `get_export_bytes` / `call_export_json` / `call_export_bytes` で module namespace を host 側 API として直接扱えます
+- `Runtime::set_global_json` / `get_global_json` / `call_global_json` で host と JS の JSON ベース値受け渡しができます
+- `Runtime::set_global_bytes` / `get_global_bytes` / `call_global_bytes` で `Uint8Array` / `ArrayBuffer` を host と往復できます
+- `Runtime::add_resource` / `add_resource_with_close` / `ref_resource` / `unref_resource` / `list_resources` / `close_resource` / `try_close_resource` で embedder 側 resource table を管理できます
+- `Runtime::install_deno_core_compat` で opt-in の Deno shim を入れ、`Deno.core.op*` / `ops*` に加えて `encode` / `decode` / `resources` / `close` / `tryClose` / `refOpPromise` / `unrefOpPromise` などの utility helper と、`Deno.sleep` / 最小 `setTimeout` / `clearTimeout` / `setInterval` / `clearInterval`、`Deno.args` / `Deno.build` / `Deno.version` / `Deno.inspect` / `Deno.cwd` / `Deno.execPath` を使えます
+- `Runtime::install_node_compat` で opt-in の Node 風 shim を入れ、`global` / `process.nextTick` / `Buffer` / `setImmediate` を最小限の実装で使えます
+- `snapshot_create` と `snapshot_extend` で初期化済み isolate snapshot を作り、`runtime_new_with_snapshot` で起動できます
+- `SnapshotBuilder` で複数の初期化 script を積んでから snapshot 化できます
+- `RuntimeBuilder` で snapshot 初期化 script と module preload をまとめて runtime 起動に流せます
+- `RuntimeBuilder::with_snapshot_builder` で `SnapshotBuilder` をそのまま runtime 起動に接続できます
+- `RuntimeBuilder::with_deno_core_compat` と `SnapshotBuilder::with_deno_core_compat` で runtime/snapshot 作成時から同じ Deno shim を preload できます
+- `RuntimeBuilder::with_node_compat` と `SnapshotBuilder::with_node_compat` で runtime/snapshot 作成時から同じ Node shim を preload できます
+- `RuntimeImage` は snapshot と module preload をまとめた再利用可能な起動イメージです
+- sync host op は preloaded JSON / bytes response table ベースで利用可能です
+- async host op は JSON / bytes queue ベースで利用可能です
+- sync host callback は JSON / bytes で利用可能です
+- async host callback は JSON / bytes で利用可能です
+- result callback は sync では throw、async では reject を返せます
+- `with_json_error` 系 callback と `reject_async_*_op_with_json` は throw/reject reason を JSON object / array / primitive で渡せます
+- async callback 経由の op は queue に積まれません
+- MoonBit async event loop driver は 1 runtime あたり 1 本だけ同時実行できます
+- MoonBit async event loop driver を使う lane では、同じ runtime 上で `take_async_*_op` による手動 loop と混在させない前提です
+- `Deno.sleep` と最小 `setTimeout` / `clearTimeout` / `setInterval` / `clearInterval` は queue ベース async op の上に載せつつ runtime resource table にも載り、`refOpPromise` / `unrefOpPromise` はその ref state を更新します
+- `oden/` 配下に sibling module を切ると、`mizchi/v8` とは別の `moon.mod.json` で CLI 層や runtime policy を分離して開発できます。現在の `oden` 側では `run` / `check` / `test` / `bundle` / `fmt` / `info` / `task` / `plan` を MoonBit-first な router として管理しています
+- Deno 互換は `Deno.core` の op/util shim と最小の top-level `Deno` helper に絞っていて、fs/runtime permissions/web API 全体までは含みません
+- Node 互換も今のところ `global` / `process` / `Buffer` / `setImmediate` の最小 shim に限り、標準 library 全体や fs/net/timers 実装は含みません

@@ -1,0 +1,6 @@
+import {
+  "mizchi/crater-dom/html",
+  "mizchi/crater-dom/dom" @dom_core,
+  "mizchi/crater-dom/aom",
+  "mizchi/crater-dom/scheduler",
+}

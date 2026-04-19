@@ -12,8 +12,8 @@
   ],
   "scripts": {
     "build:moon": "moon build --target js --release",
-    "build:minify:browser": "rolldown _build/js/release/build/main/main.js --platform=node --format=cjs --minify --file=dist/crater-browser.js --banner='#!/usr/bin/env node'",
-    "build:minify:crater": "rolldown _build/js/release/build/cmd/crater/crater.js --platform=node --format=cjs --minify --file=dist/crater.js --banner='#!/usr/bin/env node'",
+    "build:minify:browser": "rolldown ../_build/js/release/build/mizchi/crater-browser/main/main.js --platform=node --format=cjs --minify --file=dist/crater-browser.js --banner='#!/usr/bin/env node'",
+    "build:minify:crater": "rolldown ../_build/js/release/build/mizchi/crater-browser/cmd/crater/crater.js --platform=node --format=cjs --minify --file=dist/crater.js --banner='#!/usr/bin/env node'",
     "build:minify": "npm run build:minify:browser && npm run build:minify:crater",
     "build": "npm run build:moon && npm run build:minify",
     "prepublishOnly": "npm run build",

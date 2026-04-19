@@ -1,0 +1,36 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-renderer"
+
+import {
+  "mizchi/crater-layout/types",
+  "mizchi/crater-painter/paint/diff",
+  "mizchi/crater-painter/paint/model",
+  "mizchi/crater-renderer/vrt",
+}
+
+// Values
+pub fn diff_rendered_paint_trees(String, String, @types.Size[Double]) -> @diff.PaintTreeDiff
+
+pub fn render_html_batch_variants(String, @types.Size[Double], Array[@vrt.RenderVariant]) -> Array[@vrt.RenderVariantResult]
+
+pub fn render_html_to_paint_tree(String, @types.Size[Double]) -> @model.PaintNode
+
+pub fn render_html_to_paint_tree_json(String, @types.Size[Double]) -> String
+
+pub fn render_html_to_paint_tree_with_external_css(String, @types.Size[Double], Array[String]) -> @model.PaintNode
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @vrt {type CssMutation}
+
+pub using @vrt {type CssMutationAction}
+
+pub using @vrt {type RenderVariant}
+
+pub using @vrt {type RenderVariantResult}
+
+// Traits
+

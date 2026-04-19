@@ -1,0 +1,15 @@
+package mizchi:svg@0.1.0;
+
+interface svg {
+    record image {
+        width: u32,
+        height: u32,
+        data: list<u8>,
+    }
+
+    render: func(svg-markup: string, width: u32, height: u32) -> option<image>;
+}
+
+world svg-world {
+    export svg;
+}

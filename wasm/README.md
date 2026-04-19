@@ -11,7 +11,7 @@ Add to your `moon.mod.json`:
 ```json
 {
   "deps": {
-    "mizchi/crater": "*"
+    "mizchi/crater-component": "*"
   }
 }
 ```

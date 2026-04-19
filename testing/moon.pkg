@@ -1,0 +1,7 @@
+import {
+  "mizchi/crater-layout/node",
+  "mizchi/crater-testing/taffy_compat",
+  "mizchi/crater-testing/wpt_runtime",
+}
+
+supported_targets = "js+wasm+wasm-gc"

@@ -1,0 +1,33 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/x/fs"
+
+import {
+  "moonbitlang/async/io",
+}
+
+// Values
+pub async fn exists(StringView) -> Bool
+
+pub async fn mkdir(StringView, permission~ : Int, recursive? : Bool) -> Unit raise IOError
+
+pub async fn read_file(StringView) -> &@io.Data raise IOError
+
+pub async fn readdir(StringView) -> Array[String] raise IOError
+
+pub async fn remove(StringView) -> Unit raise IOError
+
+pub async fn rmdir(StringView, recursive? : Bool) -> Unit raise IOError
+
+pub async fn write_file(StringView, &@io.Data, create? : Int) -> Unit raise IOError
+
+// Errors
+pub suberror IOError {
+  IOError(String)
+}
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

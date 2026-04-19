@@ -113,7 +113,7 @@ fn write_paint_node(node : @paint.PaintNode, buf : StringBuilder) -> Unit {
   buf.write_string(",\"children\":[")
   let mut first = true
   for child in node.children {
-    if not(first) {
+    if !first {
       buf.write_string(",")
     }
     first = false
@@ -950,7 +950,7 @@ fn write_accessibility_node(
   }
 
   // states
-  if not(node.states.is_empty()) {
+  if !node.states.is_empty() {
     buf.write_string(",\n")
     write_json_indent(buf, indent + 1)
     buf.write_string("\"states\": [")
@@ -966,7 +966,7 @@ fn write_accessibility_node(
   }
 
   // children
-  if not(node.children.is_empty()) {
+  if !node.children.is_empty() {
     buf.write_string(",\n")
     write_json_indent(buf, indent + 1)
     buf.write_string("\"children\": [\n")
@@ -1292,12 +1292,12 @@ fn strip_html_to_text(html : String) -> String {
       let tag = html.unsafe_substring(start=i + 1, end=tag_end)
       let (tag_name, is_end) = parse_tag_name(tag)
       if tag_name == "script" {
-        in_script = not(is_end)
+        in_script = !is_end
       } else if tag_name == "style" {
-        in_style = not(is_end)
+        in_style = !is_end
       }
       i = tag_end
-    } else if not(in_script) && not(in_style) {
+    } else if !in_script && !in_style {
       if is_ascii_whitespace(c) {
         buf.write_char(' ')
       } else {
@@ -1353,7 +1353,7 @@ fn normalize_spaces(text : String) -> String {
   let mut last_space = true
   for c in text {
     if is_ascii_whitespace(c) {
-      if not(last_space) {
+      if !last_space {
         buf.write_char(' ')
         last_space = true
       }
@@ -1367,7 +1367,11 @@ fn normalize_spaces(text : String) -> String {
 
 ///|
 fn is_ascii_whitespace(c : Char) -> Bool {
-  c == ' ' || c == '\n' || c == '\t' || c == '\r' || c == '\x0c'
+  c == ' ' ||
+  c == '\n' ||
+  c == '\t' ||
+  c == '\r' ||
+  c == Int::unsafe_to_char(12)
 }
 
 ///|
@@ -1412,7 +1416,7 @@ fn collect_text_simple(
   buf : StringBuilder,
 ) -> Unit {
   // Skip invisible nodes
-  if not(node.visible) {
+  if !node.visible {
     return
   }
 
@@ -1429,9 +1433,9 @@ fn collect_text_simple(
     _ => ()
   }
   match node.name {
-    Some(name) if not(name.is_empty()) =>
+    Some(name) if !name.is_empty() =>
       // Skip text that looks like JavaScript code
-      if not(looks_like_code(name)) {
+      if !looks_like_code(name) {
         if buf.to_string().length() > 0 {
           buf.write_string(" ")
         }
@@ -1519,13 +1523,13 @@ fn collect_text_with_context(
   }
 
   // Skip invisible nodes
-  if not(node.visible) {
+  if !node.visible {
     return
   }
   match node.name {
-    Some(name) if not(name.is_empty()) =>
+    Some(name) if !name.is_empty() =>
       // Skip text that looks like JavaScript code
-      if not(looks_like_code(name)) {
+      if !looks_like_code(name) {
         if buf.to_string().length() > 0 {
           buf.write_string(" ")
         }

@@ -1,0 +1,12 @@
+import {
+  "mizchi/crater-browser/tui/paint_output" @paint_output,
+}
+
+import {
+  "mizchi/crater-layout" @node,
+  "mizchi/crater-layout/style",
+  "mizchi/crater-layout/types",
+  "mizchi/crater-browser/tui/paint/plain" @paint_plain,
+} for "test"
+
+supported_targets = "js"

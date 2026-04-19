@@ -1,0 +1,26 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser/tui/paint_png"
+
+import {
+  "mizchi/crater-painter/paint/model",
+  "mizchi/crater-painter/x/image",
+}
+
+// Values
+pub fn framebuffer_to_png_base64(@image.Framebuffer, @image.DynamicPalette) -> String
+
+pub fn raster_to_png_base64(@model.PaintNode, Int, Int) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @image {type DynamicPalette}
+
+pub using @image {type Framebuffer}
+
+pub using @model {type PaintNode}
+
+// Traits
+

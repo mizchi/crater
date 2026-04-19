@@ -1,5 +1,54 @@
 # TODO
 
+## Workspace / Monorepo Status (2026-04-19)
+
+- 入口:
+  - workspace 構成: `docs/monorepo-workspace.md`
+  - target-aware task runner: `justfile`
+
+### 完了
+
+- [x] `moon.work` を導入し、主要 module を workspace 管理に移した
+- [x] `layout`, `css`, `dom`, `painter`, `renderer`, `aomx`, `benchmarks`, `testing`, `webvitals`, `browser`, `browser/jsbidi`, `js` を root module から分離した
+- [x] `browser/native`, `wasm` も workspace member に復帰した
+- [x] publishable module 側の root facade を揃えた
+  - `mizchi/crater-layout`
+  - `mizchi/crater-css`
+  - `mizchi/crater-dom`
+  - `mizchi/crater-painter`
+  - `mizchi/crater-renderer`
+  - `mizchi/crater-aomx`
+  - `mizchi/crater-browser`
+  - `mizchi/crater-browser-js`
+  - `mizchi/crater-browser-native`
+  - `mizchi/crater-component`
+- [x] `browser/native` / `wasm` は local `moon.work` を持つ構成にして、module 単体の `native` / `wasm` command を root workspace から隔離した
+- [x] `just check` / `just info` / `just fmt` / `just prepare` を mixed-target workspace 前提で通る形に揃えた
+- [x] `just test` / `test-native` / `test-wasm-mbt` / `test-pkg*` を target-aware に整理した
+- [x] `js` / `wasm` の既知 deprecated warning を一通り解消した
+- [x] `ci.yml` / `browser.yml` を mixed-target workspace 前提に更新した
+
+### 次にやる
+
+- [ ] root compatibility layer (`mizchi/crater`, `mizchi/crater/css`) を長期互換 API として残すか、module 直 import へ段階的に寄せるか決める
+- [ ] module 直 import を推奨する migration note を README / docs に追加する
+- [ ] 残りの CI workflow / scripts でも target-aware recipe を前提に整理し、root で target 未指定の `moon` command を叩かないようにする
+- [ ] `browser/native` の full test が `sqlite3.h` 前提で落ちるので、native smoke test と full test の境界を明文化する
+- [ ] `browser/native` から sqlite 依存 package を切り離せるなら切り離し、native module をより純粋な V8 host module に寄せる
+- [ ] `test-baseline` / `test-baseline-update` の基準が JS suite であることを CI / docs に明記する
+- [ ] `just status` のような長時間コマンドを lightweight な summary へ差し替えるか、用途を docs に明記する
+- [ ] `taffy_compat` の既存 failure 群を、baseline 管理対象として維持するのか、段階的に潰すのか方針を決める
+- [ ] `moon coverage analyze` の mixed-target 前提の扱いを決める
+- [ ] module ごとの publish / versioning / changelog 方針を決める
+- [ ] `scripts/flaker-*` の整理と並行して、module split 後の task ownership を棚卸しする
+- [ ] `docs/monorepo-workspace.md` を維持管理の canonical doc として、関連 docs から参照を寄せる
+
+### 判断待ち
+
+- [ ] `mizchi/crater` facade をいつ deprecated 扱いにするか
+- [ ] `browser/native` と `wasm` を CI の required check にどこまで含めるか
+- [ ] module release を repo 単位で同期させるか、module ごとに独立 versioning するか
+
 ## Long-term Roadmap (2026-04-02)
 
 - 再現用の入口と API 境界: `docs/flaker-runbook.md`

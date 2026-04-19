@@ -1,0 +1,14 @@
+{
+  "name": "mizchi/crater-webvitals",
+  "version": "0.1.0",
+  "deps": {
+    "mizchi/crater-layout": {
+      "path": "../layout",
+      "version": "0.1.0"
+    }
+  },
+  "repository": "https://github.com/mizchi/crater",
+  "license": "Apache-2.0",
+  "description": "Web Vitals metrics helpers for crater",
+  "preferred-target": "js"
+}

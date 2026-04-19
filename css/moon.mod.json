@@ -1,0 +1,14 @@
+{
+  "name": "mizchi/crater-css",
+  "version": "0.1.0",
+  "deps": {
+    "mizchi/crater-layout": {
+      "path": "../layout",
+      "version": "0.1.0"
+    }
+  },
+  "repository": "https://github.com/mizchi/crater",
+  "license": "Apache-2.0",
+  "description": "CSS parser, selector, cascade, and computed style engine for crater",
+  "preferred-target": "js"
+}

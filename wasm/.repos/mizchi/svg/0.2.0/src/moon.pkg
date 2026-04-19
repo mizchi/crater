@@ -1,0 +1,8 @@
+import {
+  "moonbitlang/core/bench",
+  "moonbitlang/core/double",
+  "moonbitlang/core/math",
+}
+
+import {
+} for "wbtest"

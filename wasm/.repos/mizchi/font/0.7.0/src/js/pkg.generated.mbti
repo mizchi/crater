@@ -1,0 +1,38 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/font/js"
+
+// Values
+pub fn codepointCoverage() -> String
+
+pub fn fontName(Int) -> String
+
+pub fn fontWeightClass() -> Int
+
+pub fn getFontInfo() -> String
+
+pub fn glyphAdvance(Int, Double) -> Double
+
+pub fn glyphIds() -> String
+
+pub fn glyphToSvgPath(Int, Double) -> String
+
+pub fn isFixedPitch() -> Int
+
+pub fn kernAdvance(Int, Int, Double) -> Double
+
+pub fn layoutText(String, Double) -> String
+
+pub fn loadFont(Bytes) -> String
+
+pub fn measureText(String, Double) -> Double
+
+pub fn tableSizes() -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

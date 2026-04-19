@@ -114,9 +114,9 @@ moon build --target js --release
 Run the terminal browser from the source tree:
 
 ```bash
-moon run src/main --target js -- https://example.com
-moon run src/main --target js -- --aom https://example.com
-moon run src/main --target js -- --headless=viewport https://example.com
+moon run main --target js -- https://example.com
+moon run main --target js -- --aom https://example.com
+moon run main --target js -- --headless=viewport https://example.com
 ```
 
 Run the test helpers exposed through `package.json`:
@@ -139,10 +139,10 @@ deno run -A jsbidi/bidi_main/start-with-font.ts
 
 ## Architecture Notes
 
-- `src/main/main.mbt`: terminal CLI entry point
-- `src/shell/browser.mbt`: browser shell, rendering orchestration, output modes, history, hint mode, selection mode
-- `src/interaction/interaction.mbt`: keyboard and mouse dispatch
-- `src/cdp/`: partial MoonBit CDP domains
+- `main/main.mbt`: terminal CLI entry point
+- `shell/browser.mbt`: browser shell, rendering orchestration, output modes, history, hint mode, selection mode
+- `interaction/interaction.mbt`: keyboard and mouse dispatch
+- `cdp/`: partial MoonBit CDP domains
 - `jsbidi/webdriver/`: WebDriver BiDi protocol, server, synthetic WPT helpers
 - `tools/cdp-server.ts`: Node-side CDP bridge used by Puppeteer tests
 

@@ -1,0 +1,46 @@
+import {
+  "moonbitlang/async/io",
+  "mizchi/crater-renderer/renderer",
+  "mizchi/crater-dom/html",
+  "mizchi/crater-browser/browser_contract",
+  "mizchi/crater-dom/aom",
+  "mizchi/crater-layout" @layout,
+  "mizchi/crater-dom/dom",
+  "mizchi/crater-dom/scheduler",
+  "mizchi/crater-browser/http",
+  "mizchi/crater-browser/interaction_policy",
+  "mizchi/crater-browser/tui",
+  "mizchi/crater-browser/tui/paint_output" @tui_paint_output,
+  "mizchi/crater-browser/tui/paint/plain" @tui_paint_plain,
+  "mizchi/crater-browser/tui/paint/runtime" @tui_paint_runtime,
+  "mizchi/crater-browser/js",
+  "mizchi/crater-painter/svg",
+  "mizchi/crater-painter/x/image",
+  "mizchi/crater-painter/x/kitty",
+}
+
+import {
+  "moonbitlang/async",
+  "moonbitlang/core/bench",
+  "mizchi/crater-benchmarks" @benchmarks,
+  "mizchi/crater/css",
+  "mizchi/crater-layout/types",
+  "mizchi/x/pipe",
+  "mizchi/crater-painter/x/kitty",
+  "mizchi/crater-painter/x/image",
+} for "wbtest"
+
+warnings = "-unused_package"
+
+supported_targets = "js+native"
+
+options(
+  targets: {
+    "browser_bench_wbtest.mbt": [ "js" ],
+    "browser_fixture_wbtest.mbt": [ "js" ],
+    "browser_js_wbtest.mbt": [ "js" ],
+    "component_vrt_bench_wbtest.mbt": [ "js" ],
+    "perf_js.mbt": [ "js" ],
+    "perf_native.mbt": [ "native" ],
+  },
+)

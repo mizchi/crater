@@ -1,0 +1,16 @@
+{
+  "name": "mizchi/layout",
+  "version": "0.2.0",
+  "deps": {},
+  "readme": "README.mbt.md",
+  "repository": "https://github.com/mizchi/layout",
+  "license": "Apache-2.0",
+  "keywords": [
+    "layout",
+    "flexbox",
+    "css"
+  ],
+  "description": "Pure layout computation kernel: alignment, justify, clamp, axis utilities",
+  "source": "src",
+  "preferred-target": "js"
+}

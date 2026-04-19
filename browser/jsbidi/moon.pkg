@@ -1,0 +1,6 @@
+import {
+  "mizchi/crater-browser/cdp",
+  "mizchi/crater-browser-js/webdriver",
+}
+
+supported_targets = "js"

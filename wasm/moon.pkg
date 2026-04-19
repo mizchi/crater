@@ -1,0 +1,11 @@
+import {
+  "mizchi/crater-component/gen/interface/mizchi/crater/accessibility" @accessibility,
+  "mizchi/crater-component/gen/interface/mizchi/crater/core" @core,
+  "mizchi/crater-component/gen/interface/mizchi/crater/incremental" @incremental,
+  "mizchi/crater-component/gen/interface/mizchi/crater/renderer" @renderer,
+  "mizchi/crater-component/gen/interface/mizchi/crater/yoga" @yoga,
+  "mizchi/crater-component/interface/mizchi/crater/types" @types,
+  "mizchi/crater-js" @crater_js,
+}
+
+supported_targets = "wasm"

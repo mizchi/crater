@@ -2,13 +2,13 @@
 package "mizchi/crater"
 
 import {
-  "mizchi/crater/core_subset",
-  "mizchi/crater/layout/node",
-  "mizchi/crater/paint/diff",
-  "mizchi/crater/paint/model",
-  "mizchi/crater/types",
-  "mizchi/crater/vrt",
-  "mizchi/crater/x/webvitals",
+  "mizchi/crater-layout/core_subset",
+  "mizchi/crater-layout/node",
+  "mizchi/crater-layout/types",
+  "mizchi/crater-painter/paint/diff",
+  "mizchi/crater-painter/paint/model",
+  "mizchi/crater-renderer/vrt",
+  "mizchi/crater-webvitals",
 }
 
 // Values
@@ -16,7 +16,7 @@ pub fn compute_block_layout(@node.Node, @types.LayoutContext) -> @types.Layout
 
 pub fn compute_core_layout(@node.Node, @types.Size[Double]) -> @core_subset.CoreComputeResult
 
-pub fn compute_element_shift(@types.BoundingRect, @types.BoundingRect, @types.Size[Double]) -> @webvitals.LayoutShift
+pub fn compute_element_shift(@types.BoundingRect, @types.BoundingRect, @types.Size[Double]) -> @crater-webvitals.LayoutShift
 
 pub fn compute_flex_layout(@node.Node, @types.LayoutContext) -> @types.Layout
 

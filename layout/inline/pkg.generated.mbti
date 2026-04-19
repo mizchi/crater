@@ -1,0 +1,32 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-layout/inline"
+
+import {
+  "mizchi/crater-layout/node",
+  "mizchi/crater-layout/style",
+  "mizchi/crater-layout/types",
+}
+
+// Values
+pub fn clear_builtin_text_advance_ratio() -> Unit
+
+pub fn compute_ifc(Array[@node.Node], Double, Double?, Double, Double, @node.DispatchFn, container_writing_mode? : @style.WritingMode, container_direction? : @style.Direction, container_text_align? : @style.TextAlign, container_white_space? : @style.WhiteSpace) -> InlineLayoutResult
+
+pub fn is_inline_level(@types.Display) -> Bool
+
+pub fn set_builtin_text_advance_ratio(Double) -> Unit
+
+pub fn should_establish_ifc(Array[@node.Node]) -> Bool
+
+// Errors
+
+// Types and methods
+pub struct InlineLayoutResult {
+  layouts : Array[@types.Layout]
+  total_height : Double
+}
+
+// Type aliases
+
+// Traits
+

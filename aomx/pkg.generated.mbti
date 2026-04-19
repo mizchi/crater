@@ -1,0 +1,62 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-aomx"
+
+import {
+  "mizchi/crater-aomx/arc90",
+  "mizchi/crater-aomx/diff",
+  "mizchi/crater-aomx/grounding",
+  "mizchi/crater-dom/aom",
+}
+
+// Values
+pub fn diff_summary(@aom.AccessibilityTree, @aom.AccessibilityTree) -> String
+
+pub fn diff_trees(@aom.AccessibilityTree, @aom.AccessibilityTree, @diff.DiffConfig) -> @diff.DiffResult
+
+pub fn extract_content(@aom.AccessibilityTree, @arc90.ExtractConfig) -> @arc90.ExtractionResult
+
+pub fn extract_main_content(@aom.AccessibilityTree) -> @aom.AccessibilityNode?
+
+pub fn find_best(@aom.AccessibilityTree, @grounding.SpatialQuery, @grounding.Viewport) -> @grounding.GroundingResult?
+
+pub fn find_by_spatial(@aom.AccessibilityTree, @grounding.SpatialQuery, @grounding.Viewport) -> Array[@grounding.GroundingResult]
+
+pub fn get_click_coords(@aom.AccessibilityTree, String) -> (Double, Double)?
+
+pub fn get_extraction_stats(@arc90.ExtractionResult) -> String
+
+pub fn print_extraction_result(@arc90.ExtractionResult) -> String
+
+pub fn trees_equal(@aom.AccessibilityTree, @aom.AccessibilityTree) -> Bool
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @diff {type ChangeType}
+
+pub using @arc90 {type ContentBlock}
+
+pub using @diff {type DiffConfig}
+
+pub using @diff {type DiffResult}
+
+pub using @diff {type Difference}
+
+pub using @arc90 {type ExtractConfig}
+
+pub using @arc90 {type ExtractionResult}
+
+pub using @grounding {type GroundingResult}
+
+pub using @grounding {type SpatialQuery}
+
+pub using @grounding {type SpatialRegion}
+
+pub using @grounding {type SpatialRelation}
+
+pub using @grounding {type Viewport}
+
+// Traits
+

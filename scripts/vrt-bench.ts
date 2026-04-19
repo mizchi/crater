@@ -66,10 +66,17 @@ export interface VrtBenchRunSummary {
   generatedAt: string;
 }
 
-const BENCH_PACKAGE = "benchmarks";
-const BENCH_SOURCE_FILE = "src/benchmarks/vrt_api_bench.mbt";
-const DRIVER_FILE = "_build/js/release/bench/benchmarks/__generated_driver_for_internal_test.mbt";
-const INTERNAL_RUNNER = "_build/js/release/bench/benchmarks/benchmarks.internal_test.js";
+const BENCH_MANIFEST = "benchmarks/moon.mod.json";
+const BENCH_PACKAGE = "mizchi/crater-benchmarks";
+const BENCH_SOURCE_FILE = "vrt_api_bench.mbt";
+const DRIVER_FILE_CANDIDATES = [
+  "_build/js/release/bench/mizchi/crater-benchmarks/__generated_driver_for_internal_test.mbt",
+  "_build/js/release/bench/benchmarks/__generated_driver_for_internal_test.mbt",
+];
+const INTERNAL_RUNNER_CANDIDATES = [
+  "_build/js/release/bench/mizchi/crater-benchmarks/crater-benchmarks.internal_test.js",
+  "_build/js/release/bench/benchmarks/benchmarks.internal_test.js",
+];
 const GENERATED_FILE_KEY = "vrt_api_bench.mbt";
 
 function usage(): string {
@@ -139,6 +146,8 @@ function runOrThrow(command: string, args: string[]): void {
 function buildBenchArtifacts(): void {
   runOrThrow("moon", [
     "bench",
+    "--manifest-path",
+    BENCH_MANIFEST,
     "-p",
     BENCH_PACKAGE,
     "-f",
@@ -148,15 +157,28 @@ function buildBenchArtifacts(): void {
   ]);
 }
 
+function resolveArtifactPath(candidates: string[], label: string): string {
+  const resolved = candidates.find((candidate) =>
+    fs.existsSync(path.join(process.cwd(), candidate))
+  );
+  if (!resolved) {
+    throw new Error(`Failed to locate ${label}: ${candidates.join(", ")}`);
+  }
+  return resolved;
+}
+
 function readBenchEntries(): BenchEntry[] {
-  const driverPath = path.join(process.cwd(), DRIVER_FILE);
+  const driverPath = path.join(
+    process.cwd(),
+    resolveArtifactPath(DRIVER_FILE_CANDIDATES, "bench driver"),
+  );
   const text = fs.readFileSync(driverPath, "utf8");
   const lines = text.split("\n");
   const start = lines.findIndex((line) =>
     line.includes(`"${GENERATED_FILE_KEY}": {`)
   );
   if (start < 0) {
-    throw new Error(`Failed to locate ${GENERATED_FILE_KEY} in ${DRIVER_FILE}`);
+    throw new Error(`Failed to locate ${GENERATED_FILE_KEY} in ${driverPath}`);
   }
 
   const entries: BenchEntry[] = [];
@@ -177,7 +199,7 @@ function readBenchEntries(): BenchEntry[] {
   }
 
   if (entries.length === 0) {
-    throw new Error(`No VRT bench entries found in ${DRIVER_FILE}`);
+    throw new Error(`No VRT bench entries found in ${driverPath}`);
   }
 
   return entries.sort((a, b) => a.index - b.index);
@@ -220,7 +242,10 @@ function listEntries(group: BenchGroup, entries: BenchEntry[]): void {
 }
 
 function runSelectedEntries(entries: BenchEntry[]): string {
-  const runnerPath = path.join(process.cwd(), INTERNAL_RUNNER);
+  const runnerPath = path.join(
+    process.cwd(),
+    resolveArtifactPath(INTERNAL_RUNNER_CANDIDATES, "bench runner"),
+  );
   const ranges = compressRanges(entries);
   const payload = JSON.stringify({
     file_and_index: [[GENERATED_FILE_KEY, ranges]],

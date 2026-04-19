@@ -1,0 +1,26 @@
+import {
+  "moonbitlang/async/io",
+  "moonbitlang/core/string",
+  "mizchi/crater-dom/html",
+  "mizchi/crater-css" @css,
+  "mizchi/crater-layout" @node,
+  "mizchi/crater-painter/paint/node_bridge" @paint_node,
+  "mizchi/crater-layout/style",
+  "mizchi/crater-layout/types",
+  "mizchi/crater-painter/x/kitty",
+  "mizchi/crater-painter/x/image",
+}
+
+import {
+  "mizchi/crater-layout/testing" @layout_test,
+} for "test"
+
+import {
+} for "wbtest"
+
+options(
+  targets: {
+    "perf_js.mbt": [ "js", "wasm", "wasm-gc" ],
+    "perf_native.mbt": [ "native" ],
+  },
+)

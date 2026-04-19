@@ -21,6 +21,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Install just
+        uses: extractions/setup-just@v3
+
       - name: Set up MoonBit
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
@@ -47,31 +50,37 @@ jobs:
       - name: Prefetch browser dependencies
         run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path browser/moon.mod.json
 
+      - name: Update browser/native dependencies
+        run: moon -C browser/native update
+
+      - name: Prefetch browser/native dependencies
+        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path browser/native/moon.mod.json
+
+      - name: Update wasm dependencies
+        run: moon -C wasm update
+
+      - name: Prefetch wasm dependencies
+        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path wasm/moon.mod.json
+
       - name: Check code
-        run: bash scripts/ci/run-moon-step.sh root-check moon check -j 1 src
-
-      - name: Check js code
-        run: moon check --manifest-path js/moon.mod.json
-
-      - name: Check browser code
-        run: bash scripts/ci/run-moon-step.sh browser-check moon --manifest-path browser/moon.mod.json check --target js -j 1
+        run: just check
 
       - name: Run tests
-        run: moon test
+        run: just test-js
         continue-on-error: true
 
       - name: Run js tests
-        run: moon test --manifest-path js/moon.mod.json
+        run: moon test --manifest-path js/moon.mod.json --target js
         continue-on-error: true
 
       - name: Run browser tests
-        run: moon test --manifest-path browser/moon.mod.json --target js
+        run: moon test --manifest-path browser/moon.mod.json -p mizchi/crater-browser --target js -j 1
         continue-on-error: true
 
       - name: Format check
         run: |
-          moon fmt
-          git diff --exit-code || (echo "Code is not formatted. Run 'moon fmt' to fix." && exit 1)
+          just fmt
+          git diff --exit-code || (echo "Code is not formatted. Run 'just fmt' to fix." && exit 1)
         continue-on-error: true
 
       - name: Upload Moon diagnostics
@@ -162,8 +171,13 @@ jobs:
       - name: Update MoonBit dependencies
         run: moon update
 
+      - name: Update wasm module dependencies
+        run: moon -C wasm update
+
       - name: Build and test WASM
-        run: just wasm
+        run: |
+          just test-wasm-mbt
+          just wasm
 
   wpt-css-tests:
     name: wpt-css (${{ matrix.name }})
@@ -232,6 +246,9 @@ jobs:
 
       - name: Update MoonBit dependencies
         run: moon update
+
+      - name: Update wasm module dependencies
+        run: moon -C wasm update
 
       - name: Build WASM
         run: just build-wasm && just transpile-wasm

@@ -1,0 +1,8 @@
+{
+  "name": "pixelmatch-component",
+  "version": "0.1.0",
+  "deps": {
+    "mizchi/pixelmatch": { "path": ".." }
+  },
+  "source": "."
+}

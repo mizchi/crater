@@ -1,0 +1,17 @@
+members = [
+  ".",
+  "./aomx",
+  "./benchmarks",
+  "./testing",
+  "./webvitals",
+  "./css",
+  "./dom",
+  "./layout",
+  "./painter",
+  "./renderer",
+  "./browser",
+  "./browser/jsbidi",
+  "./browser/native",
+  "./js",
+  "./wasm",
+]

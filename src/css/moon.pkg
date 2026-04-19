@@ -1,10 +1,10 @@
 import {
-  "mizchi/crater/style",
-  "mizchi/crater/css/cascade",
-  "mizchi/crater/css/computed",
-  "mizchi/crater/css/diagnostics",
-  "mizchi/crater/css/media",
-  "mizchi/crater/css/parser",
-  "mizchi/crater/css/responsive",
-  "mizchi/crater/css/selector",
+  "mizchi/crater-layout/style",
+  "mizchi/crater-css/cascade",
+  "mizchi/crater-css/computed",
+  "mizchi/crater-css/diagnostics",
+  "mizchi/crater-css/media",
+  "mizchi/crater-css/parser",
+  "mizchi/crater-dom/css/responsive",
+  "mizchi/crater-css/selector",
 }

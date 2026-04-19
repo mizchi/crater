@@ -1,0 +1,34 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitlang/async/internal/gzip_internal"
+
+// Values
+pub const HEADER_SIZE : Int = 10
+
+// Errors
+
+// Types and methods
+pub struct Decoder {
+  // private fields
+
+  fn new() -> Decoder
+}
+pub fn Decoder::is_finished(Self) -> Bool
+pub fn Decoder::minimum_input_size(Self) -> Int
+pub fn Decoder::new() -> Self
+pub fn Decoder::write(Self, Bytes, FixedArray[Byte], input_offset? : Int, input_len? : Int, output_offset? : Int, output_len? : Int) -> (Int, Int) raise
+pub fn Decoder::write_partial_data(Self, Bytes, input_offset? : Int, input_len? : Int) -> Unit
+
+pub struct Encoder {
+  // private fields
+
+  fn new(mtime? : UInt, extra_flags? : Byte, operating_system? : Byte) -> Encoder
+}
+pub fn Encoder::end(Self, FixedArray[Byte], output_offset? : Int, output_len? : Int) -> Int
+pub fn Encoder::minimum_output_space(Self, end~ : Bool) -> Int
+pub fn Encoder::new(mtime? : UInt, extra_flags? : Byte, operating_system? : Byte) -> Self
+pub fn Encoder::write(Self, Bytes, FixedArray[Byte], input_offset? : Int, input_len? : Int, output_offset? : Int, output_len? : Int) -> (Int, Int)
+
+// Type aliases
+
+// Traits
+

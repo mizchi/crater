@@ -1,7 +1,0 @@
-import {
-  "mizchi/crater/renderer",
-  "mizchi/crater/css",
-  "mizchi/crater/aom",
-  "mizchi/crater/x/arc90",
-  "mizchi/crater/x/grounding",
-}

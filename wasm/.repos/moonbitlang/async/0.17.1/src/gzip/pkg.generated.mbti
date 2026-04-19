@@ -1,0 +1,34 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitlang/async/gzip"
+
+import {
+  "moonbitlang/async/io",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct Decoder[R] {
+  // private fields
+
+  fn[R : @io.Reader] new(R) -> Decoder[R]
+}
+pub fn[R : @io.Reader] Decoder::new(R) -> Self[R]
+pub impl[R : @io.Reader] @io.Reader for Decoder[R]
+
+pub struct Encoder[W] {
+  // private fields
+
+  fn[W] new(W, mtime? : UInt, extra_flags? : Byte, operating_system? : Byte) -> Encoder[W]
+}
+pub async fn[W : @io.Writer] Encoder::end(Self[W]) -> Unit
+pub async fn[W : @io.Writer] Encoder::flush(Self[W]) -> Unit
+pub fn[W] Encoder::new(W, mtime? : UInt, extra_flags? : Byte, operating_system? : Byte) -> Self[W]
+pub impl[W : @io.Writer] @io.Writer for Encoder[W]
+
+// Type aliases
+
+// Traits
+

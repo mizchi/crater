@@ -1,0 +1,280 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser/cdp"
+
+import {
+  "mizchi/crater-dom/dom",
+  "mizchi/crater-dom/scheduler",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn core_to_cdp_error(@dom.CoreError) -> CdpError
+
+// Errors
+
+// Types and methods
+pub struct CdpBoxModel {
+  content : Array[Double]
+  padding : Array[Double]
+  border : Array[Double]
+  margin : Array[Double]
+  width : Int
+  height : Int
+} derive(@debug.Debug)
+
+pub struct CdpContext {
+  id : String
+  mut target_id : String?
+  mut session_id : String?
+  session : CdpSession
+  mut url : String
+  mut title : String
+}
+pub fn CdpContext::clear_target(Self) -> Unit
+pub fn CdpContext::detach(Self) -> Unit
+pub fn CdpContext::get_id(Self) -> String
+pub fn CdpContext::get_session(Self) -> CdpSession
+pub fn CdpContext::get_session_id(Self) -> String?
+pub fn CdpContext::get_target_id(Self) -> String?
+pub fn CdpContext::get_title(Self) -> String
+pub fn CdpContext::get_url(Self) -> String
+pub fn CdpContext::is_attached(Self) -> Bool
+pub fn CdpContext::navigate(Self, String) -> Result[CdpNavigateResult, CdpError]
+pub fn CdpContext::new(String) -> Self
+pub fn CdpContext::set_session_id(Self, String) -> Unit
+pub fn CdpContext::set_target_id(Self, String) -> Unit
+pub fn CdpContext::set_title(Self, String) -> Unit
+
+pub struct CdpError {
+  code : Int
+  message : String
+} derive(@debug.Debug)
+pub fn CdpError::from_code(CdpErrorCode, String) -> Self
+
+pub enum CdpErrorCode {
+  InvalidParams
+  InternalError
+  NodeNotFound
+  NoSuchElement
+} derive(@debug.Debug)
+
+pub struct CdpEvent {
+  event_method : String
+  params : Json?
+  session_id : String?
+}
+pub fn CdpEvent::new(String, Json?, String?) -> Self
+
+pub struct CdpFrameInfo {
+  id : String
+  parent_id : String?
+  loader_id : String
+  name : String
+  url : String
+  security_origin : String
+  mime_type : String
+} derive(@debug.Debug)
+
+pub struct CdpNavigateResult {
+  frame_id : String
+  loader_id : String
+  error_text : String?
+} derive(@debug.Debug)
+
+pub struct CdpNavigationEntry {
+  id : Int
+  url : String
+  title : String
+  transition_type : String
+} derive(@debug.Debug)
+
+pub struct CdpNavigationHistory {
+  current_index : Int
+  entries : Array[CdpNavigationEntry]
+} derive(@debug.Debug)
+
+pub struct CdpNode {
+  node_id : Int
+  backend_node_id : Int
+  node_type : Int
+  node_name : String
+  local_name : String
+  node_value : String
+  child_node_count : Int?
+  children : Array[CdpNode]?
+  attributes : Array[String]?
+  shadow_roots : Array[CdpNode]?
+  shadow_root_type : String?
+} derive(@debug.Debug)
+
+pub enum CdpOutMessage {
+  Response(CdpResponse)
+  Event(CdpEvent)
+}
+pub fn CdpOutMessage::event(CdpEvent) -> Self
+pub fn CdpOutMessage::response(CdpResponse) -> Self
+pub fn CdpOutMessage::to_json(Self) -> String
+
+pub struct CdpProtocol {
+  target : TargetDomain
+  network : @scheduler.NetworkManager
+  outbox : Array[CdpOutMessage]
+  mut lifecycle_events : Bool
+}
+pub fn CdpProtocol::create_network_request(Self, String, @scheduler.ResourceType, String, String) -> @scheduler.RequestId
+pub fn CdpProtocol::create_network_request_with_loader(Self, String, @scheduler.ResourceType, String, String, String) -> @scheduler.RequestId
+pub fn CdpProtocol::flush_network_events(Self, String?) -> Unit
+pub fn CdpProtocol::get_network_manager(Self) -> @scheduler.NetworkManager
+pub fn CdpProtocol::has_pending_network_events(Self) -> Bool
+pub fn CdpProtocol::new() -> Self
+pub fn CdpProtocol::notify_loading_failed(Self, @scheduler.RequestId, String) -> Unit
+pub fn CdpProtocol::notify_loading_finished(Self, @scheduler.RequestId, Int) -> Unit
+pub fn CdpProtocol::notify_response_received(Self, @scheduler.RequestId, String, Int, String, Map[String, String]) -> Unit
+pub fn CdpProtocol::notify_response_received_with_loader(Self, @scheduler.RequestId, String, Int, String, Map[String, String], String) -> Unit
+pub fn CdpProtocol::process_message(Self, String) -> Result[Unit, String]
+pub fn CdpProtocol::take_messages(Self) -> Array[CdpOutMessage]
+
+pub struct CdpRequest {
+  id : Int?
+  request_method : String
+  params : Json?
+  session_id : String?
+}
+
+pub struct CdpResponse {
+  id : Int?
+  result : Json?
+  error : CdpResponseError?
+  session_id : String?
+}
+pub fn CdpResponse::new(Int?, Json?, CdpResponseError?, String?) -> Self
+
+pub struct CdpResponseError {
+  code : Int
+  message : String
+}
+
+pub struct CdpSession {
+  tree : @dom.DomTree
+  dom : DomDomain
+  input : InputDomain
+  page : PageDomain
+  session_id : String
+  target_id : String
+}
+pub fn CdpSession::click_element(Self, Int) -> Result[Unit, CdpError]
+pub fn CdpSession::focus_element(Self, Int) -> Result[Unit, CdpError]
+pub fn CdpSession::get_dom(Self) -> DomDomain
+pub fn CdpSession::get_input(Self) -> InputDomain
+pub fn CdpSession::get_page(Self) -> PageDomain
+pub fn CdpSession::get_session_id(Self) -> String
+pub fn CdpSession::get_target_id(Self) -> String
+pub fn CdpSession::get_title(Self) -> String
+pub fn CdpSession::get_tree(Self) -> @dom.DomTree
+pub fn CdpSession::get_url(Self) -> String
+pub fn CdpSession::load_html(Self, String) -> Unit
+pub fn CdpSession::navigate_to(Self, String) -> Result[CdpNavigateResult, CdpError]
+pub fn CdpSession::new(String) -> Self
+pub fn CdpSession::query_selector(Self, String) -> Result[Int?, CdpError]
+pub fn CdpSession::query_selector_all(Self, String) -> Result[Array[Int], CdpError]
+pub fn CdpSession::set_title(Self, String) -> Unit
+pub fn CdpSession::type_text(Self, String) -> Result[Unit, CdpError]
+
+pub struct DomDomain {
+  tree : @dom.DomTree
+}
+pub fn DomDomain::get_attributes(Self, Int) -> Result[Array[String], CdpError]
+pub fn DomDomain::get_box_model(Self, Int) -> Result[CdpBoxModel, CdpError]
+pub fn DomDomain::get_document(Self, Int?) -> Result[CdpNode, CdpError]
+pub fn DomDomain::get_outer_html(Self, Int) -> Result[String, CdpError]
+pub fn DomDomain::new(@dom.DomTree) -> Self
+pub fn DomDomain::query_selector(Self, Int, String) -> Result[Int?, CdpError]
+pub fn DomDomain::query_selector_all(Self, Int, String) -> Result[Array[Int], CdpError]
+pub fn DomDomain::remove_attribute(Self, Int, String) -> Result[Unit, CdpError]
+pub fn DomDomain::remove_node(Self, Int) -> Result[Unit, CdpError]
+pub fn DomDomain::request_child_nodes(Self, Int, Int?) -> Result[Array[CdpNode], CdpError]
+pub fn DomDomain::set_attribute_value(Self, Int, String, String) -> Result[Unit, CdpError]
+pub fn DomDomain::set_node_value(Self, Int, String) -> Result[Unit, CdpError]
+
+pub struct InputDomain {
+  tree : @dom.DomTree
+  mut mouse_x : Double
+  mut mouse_y : Double
+  mut button_pressed : Bool
+}
+pub fn InputDomain::dispatch_key_event(Self, String, String, String, String?) -> Result[Unit, CdpError]
+pub fn InputDomain::dispatch_mouse_event(Self, String, Double, Double, String, Int) -> Result[Unit, CdpError]
+pub fn InputDomain::insert_text(Self, String) -> Result[Unit, CdpError]
+pub fn InputDomain::new(@dom.DomTree) -> Self
+
+pub struct PageDomain {
+  tree : @dom.DomTree
+  mut current_url : String
+  mut title : String
+  frame_id : String
+  mut loader_id : Int
+  history : Array[CdpNavigationEntry]
+  mut history_index : Int
+}
+pub fn PageDomain::get_frame_tree(Self) -> Result[CdpFrameInfo, CdpError]
+pub fn PageDomain::get_navigation_history(Self) -> Result[CdpNavigationHistory, CdpError]
+pub fn PageDomain::get_title(Self) -> String
+pub fn PageDomain::get_url(Self) -> String
+pub fn PageDomain::go_back(Self) -> Result[Bool, CdpError]
+pub fn PageDomain::go_forward(Self) -> Result[Bool, CdpError]
+pub fn PageDomain::navigate(Self, String) -> Result[CdpNavigateResult, CdpError]
+pub fn PageDomain::new(@dom.DomTree) -> Self
+pub fn PageDomain::push_history_url(Self, String) -> Unit
+pub fn PageDomain::reload(Self) -> Result[Unit, CdpError]
+pub fn PageDomain::replace_history_url(Self, String) -> Unit
+pub fn PageDomain::set_title(Self, String) -> Unit
+
+pub struct TargetDomain {
+  contexts : Map[String, CdpContext]
+  mut active_context_id : String?
+  mut next_context_id : Int
+  mut next_target_id : Int
+  mut next_session_id : Int
+  mut auto_attach : Bool
+  mut discover_targets : Bool
+}
+pub fn TargetDomain::attach_to_target(Self, String) -> Result[String, CdpError]
+pub fn TargetDomain::close_target(Self, String) -> Result[Unit, CdpError]
+pub fn TargetDomain::create_browser_context(Self) -> Result[String, CdpError]
+pub fn TargetDomain::create_target(Self, String, String?) -> Result[String, CdpError]
+pub fn TargetDomain::detach_from_target(Self, String?, String?) -> Result[Unit, CdpError]
+pub fn TargetDomain::dispose_browser_context(Self, String) -> Result[Unit, CdpError]
+pub fn TargetDomain::get_active_context(Self) -> CdpContext?
+pub fn TargetDomain::get_browser_contexts(Self) -> Array[String]
+pub fn TargetDomain::get_context(Self, String) -> CdpContext?
+pub fn TargetDomain::get_target_info(Self, String?) -> Result[TargetInfo, CdpError]
+pub fn TargetDomain::get_targets(Self) -> Array[TargetInfo]
+pub fn TargetDomain::is_auto_attach(Self) -> Bool
+pub fn TargetDomain::new() -> Self
+pub fn TargetDomain::set_auto_attach(Self, Bool, Bool) -> Unit
+pub fn TargetDomain::set_discover_targets(Self, Bool) -> Unit
+
+pub struct TargetInfo {
+  target_id : String
+  target_type : String
+  title : String
+  url : String
+  attached : Bool
+  browser_context_id : String?
+} derive(@debug.Debug)
+
+pub struct TestContext {
+  session : CdpSession
+}
+pub fn TestContext::doc_id(Self) -> Int
+pub fn TestContext::dom(Self) -> DomDomain
+pub fn TestContext::input(Self) -> InputDomain
+pub fn TestContext::new() -> Self
+pub fn TestContext::page(Self) -> PageDomain
+pub fn TestContext::tree(Self) -> @dom.DomTree
+pub fn TestContext::with_html(String) -> Self
+
+// Type aliases
+
+// Traits
+

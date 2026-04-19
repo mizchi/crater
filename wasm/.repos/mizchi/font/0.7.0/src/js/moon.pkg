@@ -1,0 +1,27 @@
+import {
+  "mizchi/font",
+  "mizchi/svg",
+}
+
+options(
+  link: {
+    "js": {
+      "exports": [
+        "loadFont",
+        "glyphToSvgPath",
+        "glyphAdvance",
+        "getFontInfo",
+        "fontName",
+        "kernAdvance",
+        "layoutText",
+        "measureText",
+        "fontWeightClass",
+        "isFixedPitch",
+        "codepointCoverage",
+        "glyphIds",
+        "tableSizes",
+      ],
+      "format": "esm",
+    },
+  },
+)

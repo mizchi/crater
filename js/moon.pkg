@@ -1,16 +1,15 @@
 import {
-  "mizchi/crater/renderer",
-  "mizchi/crater/x/image" @sixel,
-  "mizchi/crater/x/arc90",
-  "mizchi/crater/layout/node",
-  "mizchi/crater/paint",
-  "mizchi/crater/types",
-  "mizchi/crater/layout/tree",
-  "mizchi/crater/css/computed",
-  "mizchi/crater/css/media",
-  "mizchi/crater/style",
-  "mizchi/crater/aom",
-  "mizchi/crater/html",
+  "mizchi/crater-renderer/renderer",
+  "mizchi/crater-painter/x/image" @sixel,
+  "mizchi/crater-aomx/arc90",
+  "mizchi/crater-painter/paint",
+  "mizchi/crater-layout/types",
+  "mizchi/crater-layout/tree",
+  "mizchi/crater-css/computed",
+  "mizchi/crater-css/media",
+  "mizchi/crater-layout/style",
+  "mizchi/crater-dom/aom",
+  "mizchi/crater-dom/html",
 }
 
 options(

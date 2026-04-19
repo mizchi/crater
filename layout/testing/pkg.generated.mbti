@@ -1,0 +1,16 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-layout/testing"
+
+// Values
+pub fn clear_builtin_text_advance_ratio() -> Unit
+
+pub fn set_builtin_text_advance_ratio(Double) -> Unit
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

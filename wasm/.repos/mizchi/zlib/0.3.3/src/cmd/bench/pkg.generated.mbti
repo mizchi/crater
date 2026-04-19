@@ -1,0 +1,16 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/zlib/cmd/bench"
+
+// Values
+
+// Errors
+
+// Types and methods
+type Format
+
+type Mode
+
+// Type aliases
+
+// Traits
+

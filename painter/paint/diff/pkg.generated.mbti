@@ -1,0 +1,39 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-painter/paint/diff"
+
+import {
+  "mizchi/crater-painter/paint/model",
+}
+
+// Values
+pub fn diff_trees(@model.PaintNode, @model.PaintNode) -> PaintTreeDiff
+
+// Errors
+
+// Types and methods
+pub(all) struct PaintLayoutShift {
+  node_path : String
+  node_id : String
+  dx : Double
+  dy : Double
+  dw : Double
+  dh : Double
+}
+
+pub(all) struct PaintPropertyChange {
+  node_path : String
+  node_id : String
+  property : String
+  before : String?
+  after : String?
+}
+
+pub(all) struct PaintTreeDiff {
+  changes : Array[PaintPropertyChange]
+  layout_shifts : Array[PaintLayoutShift]
+}
+
+// Type aliases
+
+// Traits
+

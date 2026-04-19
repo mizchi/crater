@@ -3,14 +3,19 @@
   "version": "0.1.0",
   "deps": {
     "mizchi/crater": {
-      "path": "../.."
+      "path": "../..",
+      "version": "0.16.1"
     },
     "mizchi/crater-browser": {
-      "path": ".."
+      "path": "..",
+      "version": "0.2.0"
+    },
+    "mizchi/crater-dom": {
+      "path": "../../dom",
+      "version": "0.1.0"
     },
     "mizchi/v8": "0.2.0"
   },
-  "source": "src",
   "preferred-target": "native",
   "--moonbit-unstable-prebuild": "../scripts/mizchi-v8-consumer-prebuild.mjs"
 }

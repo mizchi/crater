@@ -1,0 +1,428 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/font"
+
+import {
+  "mizchi/svg",
+}
+
+// Values
+pub fn analyze_tables(Bytes) -> Array[TableInfo]?
+
+pub fn blit_to_atlas(Array[Int], Int, GlyphBitmap, Int, Int) -> Unit
+
+pub fn bytes_slice(Bytes, Int, Int) -> Bytes
+
+pub fn calc_table_checksum(Bytes) -> Int
+
+pub fn compute_path_bbox(Array[@svg.PathCommand]) -> GlyphBBox
+
+pub fn default_text_style(String, Double) -> TextStyle
+
+pub fn detect_font_format(Bytes) -> FontFormat
+
+pub fn log2_floor(Int) -> Int
+
+pub fn make_glyph_cache_key(Int, Double) -> Int
+
+pub fn new_text_run(String, TextStyle) -> TextRun
+
+pub fn outline_bbox(Array[@svg.PathCommand]) -> (Double, Double, Double, Double)
+
+pub fn pad4(Int) -> Int
+
+pub fn parse_avar(BinaryReader, Int, Int) -> Array[Array[(Double, Double)]]
+
+pub fn parse_cmap(BinaryReader, Int) -> Map[Int, Int]
+
+pub fn parse_font(Bytes) -> TTFont?
+
+pub fn parse_font_at(Bytes, Int) -> TTFont?
+
+pub fn parse_font_collection(Bytes) -> Array[TTFont]?
+
+pub fn parse_fvar(BinaryReader, Int) -> Array[VarAxis]
+
+pub fn parse_gasp(BinaryReader, Int) -> Array[GaspRange]
+
+pub fn parse_head(BinaryReader, Int) -> (Int, Int)
+
+pub fn parse_hhea(BinaryReader, Int) -> (Int, Int, Int, Int)
+
+pub fn parse_hmtx(BinaryReader, Int, Int, Int) -> (Array[Int], Array[Int])
+
+pub fn parse_kern(BinaryReader, Int) -> Map[Int, Int]
+
+pub fn parse_loca(BinaryReader, Int, Int, Int) -> Array[Int]
+
+pub fn parse_maxp(BinaryReader, Int) -> Int
+
+pub fn parse_name(BinaryReader, Int) -> Map[Int, String]
+
+pub fn parse_os2(BinaryReader, Int) -> OS2Table
+
+pub fn parse_post(BinaryReader, Int, Int) -> PostTable
+
+pub fn parse_ttf(Bytes) -> TTFont?
+
+pub fn parse_vhea(BinaryReader, Int) -> (Int, Int, Int)
+
+pub fn parse_vmtx(BinaryReader, Int, Int, Int) -> (Array[Int], Array[Int])
+
+pub fn parse_vorg(BinaryReader, Int) -> VorgData
+
+pub fn parse_woff1(Bytes) -> TTFont?
+
+pub fn parse_woff2(Bytes) -> TTFont?
+
+pub fn path_commands_to_svg_d(Array[@svg.PathCommand]) -> String
+
+pub fn rasterize_glyph(TTFont, Int, Double) -> GlyphBitmap?
+
+pub fn rebuild_sfnt(Int, Array[(String, Bytes)]) -> Bytes
+
+pub fn scale_commands(Array[@svg.PathCommand], Double, Bool) -> Array[@svg.PathCommand]
+
+pub fn subset_font(Bytes, Array[Int]) -> Bytes?
+
+pub fn write_be16(Array[Byte], Int, Int) -> Unit
+
+pub fn write_be32(Array[Byte], Int, Int) -> Unit
+
+// Errors
+
+// Types and methods
+pub(all) struct AtlasPageInfo {
+  page_id : Int
+  width : Int
+  height : Int
+  dirty : Bool
+}
+pub impl Show for AtlasPageInfo
+
+pub(all) struct BinaryReader {
+  data : Bytes
+  mut pos : Int
+}
+pub fn BinaryReader::at(Bytes, Int) -> Self
+pub fn BinaryReader::new(Bytes) -> Self
+pub fn BinaryReader::peek_int16_at(Self, Int) -> Int
+pub fn BinaryReader::peek_uint16_at(Self, Int) -> Int
+pub fn BinaryReader::peek_uint32_at(Self, Int) -> Int
+pub fn BinaryReader::position(Self) -> Int
+pub fn BinaryReader::read_f16dot16(Self) -> Double
+pub fn BinaryReader::read_f2dot14(Self) -> Double
+pub fn BinaryReader::read_int16(Self) -> Int
+pub fn BinaryReader::read_int8(Self) -> Int
+pub fn BinaryReader::read_tag(Self) -> String
+pub fn BinaryReader::read_uint16(Self) -> Int
+pub fn BinaryReader::read_uint32(Self) -> Int
+pub fn BinaryReader::read_uint8(Self) -> Int
+pub fn BinaryReader::seek(Self, Int) -> Unit
+pub fn BinaryReader::skip(Self, Int) -> Unit
+
+pub(all) struct CFFData {
+  charstrings : CFFIndex
+  global_subrs : CFFIndex
+  local_subrs : CFFIndex
+  default_width_x : Int
+  nominal_width_x : Int
+  is_cff2 : Bool
+  ivs : ItemVariationStore?
+}
+
+pub(all) struct CFFIndex {
+  data_offset : Int
+  offsets : Array[Int]
+}
+
+pub enum FontFormat {
+  TrueType
+  OpenType
+  Woff1
+  Woff2
+  TrueTypeCollection
+  Unknown
+}
+pub impl Eq for FontFormat
+pub impl Show for FontFormat
+
+pub(all) struct FontKey {
+  family : String
+  weight : Int
+  italic : Bool
+}
+pub impl Show for FontKey
+
+pub(all) struct GaspRange {
+  max_ppem : Int
+  behavior : Int
+}
+
+pub(all) struct Glyph {
+  glyph_id : Int
+  metrics : GlyphMetrics
+  outline : Array[@svg.PathCommand]
+}
+
+pub struct GlyphAtlas {
+  cache : GlyphCache
+  width : Int
+  height : Int
+  pixels : Array[Int]
+  mut dirty : Bool
+  mut last_used_generation : Int
+}
+pub fn GlyphAtlas::deserialize(Array[Int]) -> Self?
+pub fn GlyphAtlas::get_cache(Self) -> GlyphCache
+pub fn GlyphAtlas::get_pixels(Self) -> Array[Int]
+pub fn GlyphAtlas::new(Int, Int, Int) -> Self
+pub fn GlyphAtlas::rasterize_glyph(Self, TTFont, Int, Double) -> GlyphCacheEntry?
+pub fn GlyphAtlas::serialize(Self) -> Array[Int]
+
+pub(all) struct GlyphBBox {
+  x_min : Int
+  y_min : Int
+  x_max : Int
+  y_max : Int
+}
+
+pub struct GlyphBitmap {
+  width : Int
+  height : Int
+  pixels : Array[Int]
+}
+pub impl Show for GlyphBitmap
+
+pub struct GlyphCache {
+  entries : Map[Int, GlyphCacheEntry]
+  mut next_x : Double
+  mut next_y : Double
+  mut row_height : Double
+  atlas_width : Double
+  atlas_height : Double
+  atlas_page_id : Int
+}
+pub fn GlyphCache::allocate(Self, Int, Double, Double) -> GlyphCacheEntry?
+pub fn GlyphCache::clear(Self) -> Unit
+pub fn GlyphCache::entry_count(Self) -> Int
+pub fn GlyphCache::get(Self, Int) -> GlyphCacheEntry?
+pub fn GlyphCache::new(Double, Double, Int) -> Self
+
+pub(all) struct GlyphCacheEntry {
+  glyph_id : Int
+  atlas_x : Double
+  atlas_y : Double
+  atlas_w : Double
+  atlas_h : Double
+  atlas_page_id : Int
+}
+pub impl Show for GlyphCacheEntry
+
+pub(all) struct GlyphMetrics {
+  advance_width : Int
+  left_side_bearing : Int
+  bbox : GlyphBBox
+}
+
+pub(all) struct GlyphPosition {
+  codepoint : Int
+  glyph_id : Int
+  x_offset : Double
+  y_offset : Double
+  x_advance : Double
+}
+
+pub(all) struct GlyphQuad {
+  glyph_id : Int
+  atlas_x : Double
+  atlas_y : Double
+  atlas_w : Double
+  atlas_h : Double
+  dst_x : Double
+  dst_y : Double
+  dst_w : Double
+  dst_h : Double
+}
+pub impl Show for GlyphQuad
+
+pub(all) struct GvarData {
+  axis_count : Int
+  shared_tuples : Array[Array[Double]]
+  gvar_offset : Int
+  glyph_var_data_offset : Int
+  glyph_offsets : Array[Int]
+}
+
+pub(all) struct ItemVariationData {
+  region_indices : Array[Int]
+  delta_sets : Array[Array[Int]]
+}
+
+pub(all) struct ItemVariationStore {
+  regions : Array[VarRegion]
+  data : Array[ItemVariationData]
+}
+
+pub(all) struct OS2Table {
+  version : Int
+  us_weight_class : Int
+  us_width_class : Int
+  fs_type : Int
+  panose : FixedArray[Int]
+  ul_unicode_range1 : Int
+  ul_unicode_range2 : Int
+  ul_unicode_range3 : Int
+  ul_unicode_range4 : Int
+  fs_selection : Int
+  s_typo_ascender : Int
+  s_typo_descender : Int
+  s_typo_line_gap : Int
+  us_win_ascent : Int
+  us_win_descent : Int
+  sx_height : Int
+  s_cap_height : Int
+}
+
+pub(all) struct PostTable {
+  italic_angle : Double
+  underline_position : Int
+  underline_thickness : Int
+  is_fixed_pitch : Bool
+  glyph_names : Array[String]
+}
+
+pub(all) struct TTFont {
+  units_per_em : Int
+  index_to_loc_format : Int
+  num_glyphs : Int
+  ascent : Int
+  descent : Int
+  line_gap : Int
+  num_h_metrics : Int
+  glyf_offset : Int
+  data : Bytes
+  cmap : Map[Int, Int]
+  loca : Array[Int]
+  advance_widths : Array[Int]
+  left_side_bearings : Array[Int]
+  cff : CFFData?
+  gvar : GvarData?
+  var_axes : Array[VarAxis]
+  kern_pairs : Map[Int, Int]
+  avar_segments : Array[Array[(Double, Double)]]
+  name_records : Map[Int, String]
+  os2 : OS2Table?
+  post : PostTable?
+  vertical : VerticalMetrics?
+  gasp : Array[GaspRange]
+  vorg : VorgData?
+}
+pub fn TTFont::cap_height(Self) -> Int
+pub fn TTFont::char_outline(Self, Int) -> Array[@svg.PathCommand]
+pub fn TTFont::char_outline_at(Self, Int, Map[String, Double]) -> Array[@svg.PathCommand]
+pub fn TTFont::codepoint_coverage(Self) -> Array[Int]
+pub fn TTFont::font_name(Self, Int) -> String?
+pub fn TTFont::get_glyph(Self, Int) -> Glyph
+pub fn TTFont::glyph_ids(Self) -> Array[Int]
+pub fn TTFont::glyph_index(Self, Int) -> Int
+pub fn TTFont::glyph_metrics(Self, Int) -> GlyphMetrics
+pub fn TTFont::glyph_metrics_at(Self, Int, Map[String, Double]) -> GlyphMetrics
+pub fn TTFont::glyph_name(Self, Int) -> String
+pub fn TTFont::glyph_outline(Self, Int) -> Array[@svg.PathCommand]
+pub fn TTFont::glyph_outline_at(Self, Int, Map[String, Double]) -> Array[@svg.PathCommand]
+pub fn TTFont::is_fixed_pitch(Self) -> Bool
+pub fn TTFont::italic_angle(Self) -> Double
+pub fn TTFont::kern_pair(Self, Int, Int) -> Int
+pub fn TTFont::layout_text(Self, String, Double) -> Array[GlyphPosition]
+pub fn TTFont::layout_text_vertical(Self, String, Double) -> Array[GlyphPosition]
+pub fn TTFont::measure_text(Self, String, Double) -> Double
+pub fn TTFont::measure_text_vertical(Self, String, Double) -> Double
+pub fn TTFont::scaled_outline(Self, Int, Double) -> Array[@svg.PathCommand]
+pub fn TTFont::vert_origin_y(Self, Int) -> Int
+pub fn TTFont::weight_class(Self) -> Int
+pub fn TTFont::x_height(Self) -> Int
+
+pub(all) struct TableInfo {
+  tag : String
+  offset : Int
+  length : Int
+}
+
+pub(all) struct TextMetrics {
+  width : Double
+  height : Double
+  baseline : Double
+}
+pub impl Show for TextMetrics
+
+pub struct TextRenderer {
+  mut pages : Array[GlyphAtlas]
+  font : TTFont
+  pipeline_id : Int
+  atlas_size : Int
+  base_page_id : Int
+  max_pages : Int
+  mut generation : Int
+}
+pub fn TextRenderer::clear(Self) -> Unit
+pub fn TextRenderer::ensure_glyph(Self, Int, Double) -> (Int, GlyphCacheEntry)?
+pub fn TextRenderer::flush_dirty_pages(Self) -> Array[AtlasPageInfo]
+pub fn TextRenderer::get_atlas(Self) -> GlyphAtlas
+pub fn TextRenderer::get_page(Self, Int) -> GlyphAtlas
+pub fn TextRenderer::get_page_id(Self) -> Int
+pub fn TextRenderer::get_page_ids(Self) -> Array[Int]
+pub fn TextRenderer::glyph_count(Self) -> Int
+pub fn TextRenderer::load_cache(Self, Array[Array[Int]]) -> Int
+pub fn TextRenderer::measure(Self, String, Double) -> TextMetrics
+pub fn TextRenderer::new(TTFont, Int, Int, Int) -> Self
+pub fn TextRenderer::new_with_options(TTFont, Int, Int, Int, Int) -> Self
+pub fn TextRenderer::page_count(Self) -> Int
+pub fn TextRenderer::serialize_cache(Self) -> Array[Array[Int]]
+
+pub(all) struct TextRun {
+  text : String
+  style : TextStyle
+}
+pub impl Show for TextRun
+
+pub(all) struct TextStyle {
+  font : FontKey
+  size_px : Double
+  line_height : Double
+  letter_spacing : Double
+}
+pub impl Show for TextStyle
+
+pub(all) struct VarAxis {
+  tag : String
+  min_value : Double
+  default_value : Double
+  max_value : Double
+}
+
+pub(all) struct VarRegion {
+  axes : Array[VarRegionAxis]
+}
+
+pub(all) struct VarRegionAxis {
+  start_coord : Double
+  peak_coord : Double
+  end_coord : Double
+}
+
+pub(all) struct VerticalMetrics {
+  v_ascent : Int
+  v_descent : Int
+  advance_heights : Array[Int]
+  top_side_bearings : Array[Int]
+}
+
+pub(all) struct VorgData {
+  default_vert_origin_y : Int
+  vert_origins : Map[Int, Int]
+}
+
+// Type aliases
+
+// Traits
+

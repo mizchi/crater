@@ -1,0 +1,134 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-css/computed"
+
+import {
+  "mizchi/crater-css/cascade",
+  "mizchi/crater-layout/style",
+  "mizchi/crater-layout/types",
+}
+
+// Values
+pub fn apply_property_direct(@style.Style, String, String, ComputeContext) -> @style.Style
+
+pub fn compute(@cascade.CascadedValues, ComputeContext) -> @style.Style
+
+pub fn compute_inline(String, ComputeContext) -> @style.Style
+
+pub fn compute_inline_raw(String, ComputeContext) -> @style.Style
+
+pub fn compute_with_vars(@cascade.CascadedValues, ComputeContext) -> (@style.Style, Map[String, String])
+
+pub fn default_background_color() -> @types.Color
+
+pub fn default_color() -> @types.Color
+
+pub fn extract_border_width(String) -> @types.Dimension
+
+pub fn initial_value(String) -> String
+
+pub fn is_grid_area_name(String) -> Bool
+
+pub fn is_inherited(String) -> Bool
+
+pub fn parse_align_self(String) -> @types.AlignSelf
+
+pub fn parse_alignment(String) -> @types.Alignment
+
+pub fn parse_alignment_with_overflow(String) -> (@types.Alignment, Bool)
+
+pub fn parse_aspect_ratio(String) -> Double?
+
+pub fn parse_clear(String) -> @types.Clear
+
+pub fn parse_clear_with_direction(String, @style.Direction) -> @types.Clear
+
+pub fn parse_clip(String) -> @types.ClipRect
+
+pub fn parse_color(String) -> CssColorValue
+
+pub fn parse_color_with_ctx(String, ComputeContext) -> CssColorValue
+
+pub fn parse_dimension(String) -> @types.Dimension
+
+pub fn parse_direction(String) -> @style.Direction
+
+pub fn parse_display(String) -> @types.Display
+
+pub fn parse_flex_direction(String) -> @types.FlexDirection
+
+pub fn parse_flex_wrap(String) -> @types.FlexWrap
+
+pub fn parse_float(String) -> @types.Float
+
+pub fn parse_float_with_direction(String, @style.Direction) -> @types.Float
+
+pub fn parse_grid_area_shorthand(String) -> (@types.GridPlacement, @types.GridPlacement, @types.GridPlacement, @types.GridPlacement)
+
+pub fn parse_grid_auto_flow(String) -> @types.GridAutoFlow
+
+pub fn parse_grid_line_shorthand(String) -> (@types.GridPlacement, @types.GridPlacement)
+
+pub fn parse_grid_placement(String) -> @types.GridPlacement
+
+pub fn parse_grid_template_areas_value(String) -> Array[String]
+
+pub fn parse_grid_template_shorthand(String) -> (Array[@types.TrackSizingFunction], Array[@types.TrackSizingFunction])?
+
+pub fn parse_grid_template_tracks(String) -> Array[@types.TrackSizingFunction]
+
+pub fn parse_integer(String) -> Int
+
+pub fn parse_linear_gradient(String) -> @types.BackgroundImage
+
+pub fn parse_number(String) -> Double
+
+pub fn parse_overflow(String) -> @types.Overflow
+
+pub fn parse_place_content(String) -> (@types.Alignment, @types.Alignment)?
+
+pub fn parse_place_content_with_overflow(String) -> ((@types.Alignment, Bool), (@types.Alignment, Bool))?
+
+pub fn parse_position(String) -> @types.Position
+
+pub fn parse_scroll_snap_align(String) -> (@style.ScrollSnapAlign, @style.ScrollSnapAlign)
+
+pub fn parse_scroll_snap_type(String) -> @style.ScrollSnapType
+
+pub fn parse_text_align(String) -> @style.TextAlign
+
+pub fn parse_white_space(String) -> @style.WhiteSpace
+
+pub fn parse_writing_mode(String) -> @style.WritingMode
+
+pub fn resolve_current_color(CssColorValue, @types.Color) -> @types.Color
+
+// Errors
+
+// Types and methods
+pub(all) struct ComputeContext {
+  parent_style : @style.Style?
+  root_font_size : Double
+  font_size : Double
+  viewport_width : Double
+  viewport_height : Double
+  custom_properties : Map[String, String]
+}
+pub fn ComputeContext::new() -> Self
+pub fn ComputeContext::with_parent(@style.Style) -> Self
+pub fn ComputeContext::with_parent_and_vars(@style.Style, Map[String, String]) -> Self
+pub fn ComputeContext::with_viewport(Double, Double) -> Self
+
+pub(all) enum CssColorValue {
+  Resolved(@types.Color)
+  CurrentColor
+  Inherit
+}
+pub fn CssColorValue::get_color(Self) -> @types.Color?
+pub fn CssColorValue::is_resolved(Self) -> Bool
+pub fn CssColorValue::or_default(Self, @types.Color) -> @types.Color
+pub impl Show for CssColorValue
+
+// Type aliases
+
+// Traits
+

@@ -1,0 +1,66 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/layout/types"
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) enum AlignSelf {
+  Auto
+  Start
+  End
+  Center
+  Stretch
+  Baseline
+}
+pub impl Eq for AlignSelf
+pub impl Show for AlignSelf
+
+pub(all) enum Alignment {
+  Start
+  End
+  FlexStart
+  FlexEnd
+  Center
+  SpaceBetween
+  SpaceAround
+  SpaceEvenly
+  Stretch
+  Baseline
+}
+pub impl Eq for Alignment
+pub impl Show for Alignment
+
+pub(all) enum Dimension {
+  Length(Double)
+  Percent(Double)
+  Auto
+  MinContent
+  MaxContent
+  FitContent(Double)
+}
+pub impl Eq for Dimension
+pub impl Show for Dimension
+
+pub(all) enum FlexDirection {
+  Row
+  RowReverse
+  Column
+  ColumnReverse
+}
+pub impl Eq for FlexDirection
+pub impl Show for FlexDirection
+
+pub(all) struct Rect[T] {
+  left : T
+  right : T
+  top : T
+  bottom : T
+}
+pub fn[T] Rect::new(T, T, T, T) -> Self[T]
+
+// Type aliases
+
+// Traits
+

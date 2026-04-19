@@ -1,0 +1,99 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser"
+
+import {
+  "mizchi/crater-browser/cdp",
+  "mizchi/crater-browser/http",
+  "mizchi/crater-browser/js",
+  "mizchi/crater-browser/shell",
+  "mizchi/crater-dom/dom",
+}
+
+// Values
+pub fn browser(Int, Int, terminal_cols? : Int) -> @shell.Browser
+
+pub fn cdp_protocol() -> @cdp.CdpProtocol
+
+pub fn create_dom_init_code(@dom.DomTree) -> String
+
+pub fn serialize_dom_for_mock(@dom.DomTree) -> String
+
+pub fn serialize_dom_to_html(@dom.DomTree) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @js {type AsyncExecutionMode}
+
+pub using @shell {type Browser}
+
+pub using @http {type CacheDirectives}
+
+pub using @http {type CacheEntry}
+
+pub using @cdp {type CdpBoxModel}
+
+pub using @cdp {type CdpContext}
+
+pub using @cdp {type CdpError}
+
+pub using @cdp {type CdpErrorCode}
+
+pub using @cdp {type CdpEvent}
+
+pub using @cdp {type CdpFrameInfo}
+
+pub using @cdp {type CdpNavigateResult}
+
+pub using @cdp {type CdpNavigationEntry}
+
+pub using @cdp {type CdpNavigationHistory}
+
+pub using @cdp {type CdpNode}
+
+pub using @cdp {type CdpOutMessage}
+
+pub using @cdp {type CdpProtocol}
+
+pub using @cdp {type CdpRequest}
+
+pub using @cdp {type CdpResponse}
+
+pub using @cdp {type CdpResponseError}
+
+pub using @cdp {type CdpSession}
+
+pub using @http {type CookieJar}
+
+pub using @http {type CredentialsMode}
+
+pub using @cdp {type DomDomain}
+
+pub using @http {type FetchOptions}
+
+pub using @http {type HttpResponse}
+
+pub using @cdp {type InputDomain}
+
+pub using @js {type JsContext}
+
+pub using @js {type JsResult}
+
+pub using @http {type MemoryCacheBackend}
+
+pub using @shell {type OutputMode}
+
+pub using @cdp {type PageDomain}
+
+pub using @http {type ParsedCookie}
+
+pub using @http {type RequestMode}
+
+pub using @http {type RequestSandbox}
+
+pub using @js {type ScriptExecutor}
+
+// Traits
+

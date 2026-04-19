@@ -6,7 +6,7 @@ log_file="$(mktemp)"
 trap 'rm -f "$log_file"' EXIT
 
 set +e
-TERM=dumb moon test >"$log_file" 2>&1
+TERM=dumb moon test --target js >"$log_file" 2>&1
 moon_exit=$?
 set -e
 
@@ -30,5 +30,5 @@ EOF
 echo "Updated baseline: $baseline_file"
 echo "Summary: total=$total passed=$passed failed=$failed"
 if [ "$moon_exit" -ne 0 ] && [ "$failed" -gt 0 ]; then
-  echo "moon test exited non-zero due to known failures; baseline was recorded."
+  echo "moon test --target js exited non-zero due to known failures; baseline was recorded."
 fi

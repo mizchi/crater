@@ -1,0 +1,40 @@
+{
+  "is-main": true,
+  "import": [
+    { "path": "layout-component/gen/cabi", "alias": "cabi" },
+    { "path": "mizchi/layout", "alias": "layout" },
+    { "path": "mizchi/layout/types", "alias": "layout_types" }
+  ],
+  "link": {
+    "wasm": {
+      "exports": [
+        "cabi_realloc:cabi_realloc",
+        "wasmExportApplyAspectRatio:mizchi:layout/layout@0.1.0#apply-aspect-ratio",
+        "wasmExportClampSize:mizchi:layout/layout@0.1.0#clamp-size",
+        "wasmExportClampSizeWithBoxMin:mizchi:layout/layout@0.1.0#clamp-size-with-box-min",
+        "wasmExportClampValue:mizchi:layout/layout@0.1.0#clamp-value",
+        "wasmExportComputeAlignOffset:mizchi:layout/layout@0.1.0#compute-align-offset",
+        "wasmExportComputeAlignSelfOffset:mizchi:layout/layout@0.1.0#compute-align-self-offset",
+        "wasmExportComputeJustify:mizchi:layout/layout@0.1.0#compute-justify",
+        "wasmExportResolveAlignSelf:mizchi:layout/layout@0.1.0#resolve-align-self",
+        "wasmExportResolveAutoMarginPair:mizchi:layout/layout@0.1.0#resolve-auto-margin-pair"
+      ],
+      "export-memory-name": "memory"
+    },
+    "wasm-gc": {
+      "exports": [
+        "cabi_realloc:cabi_realloc",
+        "wasmExportApplyAspectRatio:mizchi:layout/layout@0.1.0#apply-aspect-ratio",
+        "wasmExportClampSize:mizchi:layout/layout@0.1.0#clamp-size",
+        "wasmExportClampSizeWithBoxMin:mizchi:layout/layout@0.1.0#clamp-size-with-box-min",
+        "wasmExportClampValue:mizchi:layout/layout@0.1.0#clamp-value",
+        "wasmExportComputeAlignOffset:mizchi:layout/layout@0.1.0#compute-align-offset",
+        "wasmExportComputeAlignSelfOffset:mizchi:layout/layout@0.1.0#compute-align-self-offset",
+        "wasmExportComputeJustify:mizchi:layout/layout@0.1.0#compute-justify",
+        "wasmExportResolveAlignSelf:mizchi:layout/layout@0.1.0#resolve-align-self",
+        "wasmExportResolveAutoMarginPair:mizchi:layout/layout@0.1.0#resolve-auto-margin-pair"
+      ],
+      "export-memory-name": "memory"
+    }
+  }
+}

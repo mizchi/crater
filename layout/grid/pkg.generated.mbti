@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-layout/grid"
+
+import {
+  "mizchi/crater-layout/node",
+  "mizchi/crater-layout/types",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn compute(@node.Node, @types.LayoutContext, @node.DispatchFn) -> @types.Layout
+
+pub fn compute_grid_layout(@node.Node, Double, Double, @node.DispatchFn) -> @types.Layout
+
+pub fn compute_layout(@node.Node, Double, Double) -> @types.Layout
+
+// Errors
+
+// Types and methods
+type BaselineInfo derive(@debug.Debug)
+
+type GridAreaBounds derive(@debug.Debug)
+
+// Type aliases
+
+// Traits
+

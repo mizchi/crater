@@ -1,0 +1,97 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-painter"
+
+import {
+  "mizchi/crater-layout/node",
+  "mizchi/crater-layout/types",
+  "mizchi/crater-painter/paint/diff",
+  "mizchi/crater-painter/paint/model",
+  "mizchi/crater-painter/paint/scroll",
+  "mizchi/crater-painter/svg",
+  "mizchi/crater-painter/x/image",
+}
+
+// Values
+pub fn attributes_to_svg_node(String, Array[(String, String)]) -> @svg.SVGNode
+
+pub fn circle(String, Double, Double, Double) -> @svg.SVGNode
+
+pub fn collect_scrollable_elements(@model.PaintNode) -> Array[@scroll.ScrollableElement]
+
+pub fn create_svg_layout(String, Array[(String, String)], Double, available_height? : Double) -> @types.Layout
+
+pub fn diff_trees(@model.PaintNode, @model.PaintNode) -> @diff.PaintTreeDiff
+
+pub fn find_scrollable_at(@model.PaintNode, Double, Double, Double, Double) -> @scroll.ScrollableHitResult?
+
+pub fn flatten_for_rendering(@model.PaintNode) -> Array[@model.PaintNode]
+
+pub fn from_layout(@types.Layout) -> @model.PaintNode
+
+pub fn from_node_and_layout(@node.Node, @types.Layout) -> @model.PaintNode
+
+pub fn group(String, Array[@svg.SVGNode]) -> @svg.SVGNode
+
+pub fn line(String, Double, Double, Double, Double) -> @svg.SVGNode
+
+pub fn parse_svg(String) -> @svg.SVGNode?
+
+pub fn path(String, String) -> @svg.SVGNode
+
+pub fn rect(String, Double, Double, Double, Double) -> @svg.SVGNode
+
+pub fn render_paint_node_to_kitty(@model.PaintNode, Int, Int) -> String
+
+pub fn render_paint_node_to_sixel(@model.PaintNode, Int, Int) -> String
+
+pub fn render_svg_node_to_sixel(@svg.SVGNode, Int, Int) -> String
+
+pub fn render_svg_to_kitty(@svg.Scene, Int, Int) -> String
+
+pub fn render_svg_to_sixel(@svg.Scene, Int, Int) -> String
+
+pub fn text(String, Double, Double, String, Double) -> @svg.SVGNode
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @svg {type BoundingBox}
+
+pub using @svg {type Camera}
+
+pub using @svg {type Color}
+
+pub using @image {type DynamicPalette}
+
+pub using @image {type Framebuffer}
+
+pub using @image {type GlyphProvider}
+
+pub using @diff {type PaintLayoutShift}
+
+pub using @model {type PaintNode}
+
+pub using @model {type PaintProperties}
+
+pub using @diff {type PaintPropertyChange}
+
+pub using @diff {type PaintTreeDiff}
+
+pub using @svg {type PathCommand}
+
+pub using @svg {type RenderContext}
+
+pub using @svg {type SVGNode}
+
+pub using @svg {type Scene}
+
+pub using @scroll {type ScrollableElement}
+
+pub using @scroll {type ScrollableHitResult}
+
+pub using @svg {type Transform}
+
+// Traits
+

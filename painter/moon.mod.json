@@ -1,0 +1,18 @@
+{
+  "name": "mizchi/crater-painter",
+  "version": "0.1.0",
+  "deps": {
+    "mizchi/crater-layout": {
+      "path": "../layout",
+      "version": "0.1.0"
+    },
+    "mizchi/font": "0.7.0",
+    "mizchi/svg": "0.2.0",
+    "mizchi/x": "0.2.0",
+    "moonbitlang/async": "0.17.1"
+  },
+  "repository": "https://github.com/mizchi/crater",
+  "license": "Apache-2.0",
+  "description": "Paint tree, image output, and SVG packages for crater",
+  "preferred-target": "js"
+}

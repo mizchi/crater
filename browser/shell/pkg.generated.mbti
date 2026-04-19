@@ -1,0 +1,76 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser/shell"
+
+import {
+  "mizchi/crater-browser/http",
+  "mizchi/crater-browser/js",
+  "mizchi/crater-dom/dom",
+  "moonbitlang/async/io",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+type Browser
+pub async fn Browser::activate_at(Self, Int, Int) -> Bool raise @http.HttpError
+pub async fn Browser::activate_focused_link(Self) -> Bool raise @http.HttpError
+pub async fn Browser::activate_link_at(Self, Int, Int) -> Bool raise @http.HttpError
+pub fn Browser::debug_layout(Self) -> Unit
+pub fn Browser::enter_hint_mode(Self) -> Unit
+pub fn Browser::execute_scripts(Self) -> Int
+pub fn Browser::exit_hint_mode(Self) -> Unit
+pub fn Browser::get_current_url(Self) -> String
+pub fn Browser::get_dom_tree(Self) -> @dom.DomTree?
+pub fn Browser::get_focused_link_index(Self) -> Int
+pub fn Browser::get_focused_link_url(Self) -> String?
+pub fn Browser::get_link_at(Self, Int, Int) -> String?
+pub fn Browser::get_link_count(Self) -> Int
+pub fn Browser::get_viewport_height(Self) -> Int
+pub async fn Browser::go_back(Self) -> String? raise @http.HttpError
+pub async fn Browser::go_forward(Self) -> String? raise @http.HttpError
+pub async fn Browser::handle_focused_key(Self, String) -> Bool raise @http.HttpError
+pub fn Browser::hover_at(Self, Int, Int) -> Bool
+pub fn Browser::is_hint_mode(Self) -> Bool
+pub async fn Browser::navigate(Self, String) -> String raise @http.HttpError
+pub async fn Browser::navigate_lightweight(Self, String) -> String raise @http.HttpError
+pub fn Browser::new(Int, Int, terminal_cols? : Int) -> Self
+pub fn Browser::next_link(Self) -> Unit
+pub fn Browser::pointer_down_at(Self, Int, Int) -> Bool
+pub fn Browser::pointer_move_at(Self, Int, Int) -> Bool
+pub async fn Browser::pointer_up_at(Self, Int, Int) -> Bool raise @http.HttpError
+pub fn Browser::prev_link(Self) -> Unit
+pub fn Browser::process_hint_char(Self, String) -> String?
+pub fn Browser::render_output(Self, OutputMode) -> String
+pub fn Browser::render_text_full_page(Self) -> String
+pub fn Browser::scroll_down(Self, Int) -> Unit
+pub fn Browser::scroll_up(Self, Int) -> Unit
+pub fn Browser::set_dark_mode(Self, Bool) -> Unit
+pub fn Browser::set_enable_cookies(Self, Bool) -> Unit
+pub fn Browser::set_enable_js(Self, Bool) -> Unit
+pub fn Browser::set_html_content(Self, String) -> Unit
+pub fn Browser::set_image_cache_max_bytes(Self, Int) -> Unit
+pub fn Browser::set_js_runtime(Self, &@js.JsRuntime) -> Unit
+pub fn Browser::set_no_color(Self, Bool) -> Unit
+pub fn Browser::set_request_sandbox(Self, @http.RequestSandbox) -> Unit
+pub fn Browser::tick_js(Self) -> Bool
+pub fn Browser::toggle_dark_mode(Self) -> Unit
+pub fn Browser::toggle_selection_mode(Self) -> Bool
+pub async fn[T : @io.Writer] Browser::write_output(Self, OutputMode, T) -> Unit
+
+pub(all) enum OutputMode {
+  Sixel
+  Kitty
+  Text
+  Json
+  Aom
+  Arc90
+  ExtractMain
+  Grounding
+}
+
+// Type aliases
+
+// Traits
+

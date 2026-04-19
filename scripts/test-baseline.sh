@@ -14,7 +14,7 @@ log_file="$(mktemp)"
 trap 'rm -f "$log_file"' EXIT
 
 set +e
-TERM=dumb moon test >"$log_file" 2>&1
+TERM=dumb moon test --target js >"$log_file" 2>&1
 moon_exit=$?
 set -e
 

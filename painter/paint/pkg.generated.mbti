@@ -1,0 +1,51 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-painter/paint"
+
+import {
+  "mizchi/crater-layout/node",
+  "mizchi/crater-layout/types",
+  "mizchi/crater-painter/paint/diff",
+  "mizchi/crater-painter/paint/model",
+  "mizchi/crater-painter/paint/scroll",
+}
+
+// Values
+pub fn collect_scrollable_elements(@model.PaintNode) -> Array[@scroll.ScrollableElement]
+
+pub fn diff_trees(@model.PaintNode, @model.PaintNode) -> @diff.PaintTreeDiff
+
+pub fn find_scrollable_at(@model.PaintNode, Double, Double, Double, Double) -> @scroll.ScrollableHitResult?
+
+pub fn flatten_for_rendering(@model.PaintNode) -> Array[@model.PaintNode]
+
+pub fn from_layout(@types.Layout) -> @model.PaintNode
+
+pub fn from_node_and_layout(@node.Node, @types.Layout) -> @model.PaintNode
+
+pub fn from_node_and_layout_with_viewport(@node.Node, @types.Layout, Double, Double, Double) -> @model.PaintNode?
+
+pub fn sort_by_stacking_order(Array[@model.PaintNode]) -> Array[@model.PaintNode]
+
+pub fn sort_tree_by_stacking_order(@model.PaintNode) -> @model.PaintNode
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @diff {type PaintLayoutShift}
+
+pub using @model {type PaintNode}
+
+pub using @model {type PaintProperties}
+
+pub using @diff {type PaintPropertyChange}
+
+pub using @diff {type PaintTreeDiff}
+
+pub using @scroll {type ScrollableElement}
+
+pub using @scroll {type ScrollableHitResult}
+
+// Traits
+

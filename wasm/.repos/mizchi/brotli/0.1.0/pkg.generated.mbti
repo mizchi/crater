@@ -1,0 +1,17 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/brotli"
+
+// Values
+pub fn brotli_decompress(Bytes) -> Bytes raise BrotliError
+
+// Errors
+pub(all) suberror BrotliError {
+  InvalidData(String)
+}
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

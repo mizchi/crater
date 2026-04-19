@@ -1,0 +1,24 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-painter/paint/layout_bridge"
+
+import {
+  "mizchi/crater-layout/node",
+  "mizchi/crater-layout/types",
+  "mizchi/crater-painter/paint/model",
+}
+
+// Values
+pub fn from_layout(@types.Layout) -> @model.PaintNode
+
+pub fn from_node_and_layout(@node.Node, @types.Layout) -> @model.PaintNode
+
+pub fn from_node_and_layout_with_viewport(@node.Node, @types.Layout, Double, Double, Double) -> @model.PaintNode?
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

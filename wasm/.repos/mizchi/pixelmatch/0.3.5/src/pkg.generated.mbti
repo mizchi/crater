@@ -1,0 +1,76 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/pixelmatch"
+
+// Values
+pub fn diff_report(Image, Image, Options, grid_size? : Int) -> DiffReport
+
+pub fn match_ratio(Image, Image, Options) -> Double
+
+pub fn pixelmatch(Image, Image, Image?, Options) -> Int
+
+pub fn pixelmatch_simple(Image, Image, Double) -> Int
+
+// Errors
+
+// Types and methods
+pub(all) struct Color {
+  r : Int
+  g : Int
+  b : Int
+  a : Int
+}
+pub fn Color::rgb(Int, Int, Int) -> Self
+pub fn Color::rgba(Int, Int, Int, Int) -> Self
+pub impl Eq for Color
+pub impl Show for Color
+
+pub(all) struct DiffRegion {
+  x : Int
+  y : Int
+  width : Int
+  height : Int
+  diff_pixels : Int
+}
+
+pub(all) struct DiffReport {
+  width : Int
+  height : Int
+  total_pixels : Int
+  diff_count : Int
+  aa_count : Int
+  match_ratio : Double
+  grid : Array[Array[Int]]
+  grid_cols : Int
+  grid_rows : Int
+  regions : Array[DiffRegion]
+}
+pub fn DiffReport::to_compact(Self) -> String
+pub fn DiffReport::to_compact_with_hints(Self) -> String
+pub fn DiffReport::to_json(Self) -> String
+pub fn DiffReport::to_text(Self) -> String
+
+pub(all) struct Image {
+  width : Int
+  height : Int
+  data : Array[Int]
+}
+pub fn Image::from_pixels(Int, Int, Array[Color]) -> Self
+pub fn Image::get_pixel(Self, Int, Int) -> Color
+pub fn Image::new(Int, Int) -> Self
+pub fn Image::set_pixel(Self, Int, Int, Color) -> Unit
+
+pub(all) struct Options {
+  threshold : Double
+  include_aa : Bool
+  alpha : Double
+  aa_color : Color
+  diff_color : Color
+  diff_color_alt : Color?
+  diff_mask : Bool
+}
+pub fn Options::default() -> Self
+
+// Type aliases
+
+// Traits
+

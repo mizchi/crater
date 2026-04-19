@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser-native"
+
+import {
+  "mizchi/crater-browser-native/js_v8",
+}
+
+// Values
+pub fn full_mock_dom_js() -> String
+
+pub fn minimal_mock_dom_js() -> String
+
+pub fn preact_bundle_js() -> String
+
+pub fn react_bundle_js() -> String
+
+pub fn read_file_to_string_via_eval(String) -> String?
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @js_v8 {type V8JsRuntime}
+
+// Traits
+

@@ -1,14 +1,14 @@
 import {
-  "mizchi/crater/types",
-  "mizchi/crater/layout",
-  "mizchi/crater/core_subset" @core_subset_pkg,
-  "mizchi/crater/x/webvitals",
-  "mizchi/crater/paint",
-  "mizchi/crater/vrt",
+  "mizchi/crater-layout/types",
+  "mizchi/crater-layout" @layout,
+  "mizchi/crater-layout/core_subset" @core_subset_pkg,
+  "mizchi/crater-webvitals" @webvitals,
+  "mizchi/crater-painter/paint",
+  "mizchi/crater-renderer" @renderer_api,
 }
 
 import {
-  "mizchi/crater/style",
+  "mizchi/crater-layout/style",
 } for "test"
 
 import {

@@ -111,12 +111,20 @@ declare global {
 
 let renderHtmlToJsonImpl: RenderHtmlToJsonFn | null = null;
 let currentCraterHtmlPath: string | null = null;
-const LOCAL_WPT_RUNTIME = pathToFileURL(
-  path.join(process.cwd(), '_build/js/release/build/wpt_runtime/wpt_runtime.js')
-).href;
+const LOCAL_WPT_RUNTIME_CANDIDATES = [
+  path.join(process.cwd(), '_build/js/release/build/mizchi/crater-testing/wpt_runtime/wpt_runtime.js'),
+  path.join(process.cwd(), '_build/js/release/build/wpt_runtime/wpt_runtime.js'),
+];
 const LOCAL_WASM_DIST = pathToFileURL(
   path.join(process.cwd(), 'wasm/dist/crater.js')
 ).href;
+
+function resolveLocalWptRuntimeHref(): string {
+  const resolved = LOCAL_WPT_RUNTIME_CANDIDATES.find((candidate) =>
+    fs.existsSync(candidate)
+  );
+  return pathToFileURL(resolved ?? LOCAL_WPT_RUNTIME_CANDIDATES[0]!).href;
+}
 
 function hasFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
@@ -568,11 +576,11 @@ async function initCraterRenderer(): Promise<void> {
 
   // Always refresh local runtime first so WPT reflects latest MoonBit changes.
   try {
-    execSync('moon build src/wpt_runtime --target js --release --warn-list -27-29', {
+    execSync('moon build testing/wpt_runtime --target js --release --warn-list -27-29', {
       stdio: 'ignore',
       cwd: process.cwd(),
     });
-    const mod = await import(LOCAL_WPT_RUNTIME);
+    const mod = await import(resolveLocalWptRuntimeHref());
     renderHtmlToJsonImpl = mod.renderHtmlToJsonForWpt as RenderHtmlToJsonFn;
     return;
   } catch {

@@ -39,7 +39,16 @@ function realWorldDir(options: RealWorldSnapshotOptions = {}): string {
 }
 
 function fixtureDir(options: RealWorldSnapshotOptions = {}): string {
-  return path.join(repoRoot(options), "src", "benchmarks", "fixtures");
+  const root = repoRoot(options);
+  const candidates = [
+    path.join(root, "benchmarks", "fixtures"),
+    path.join(root, "src", "benchmarks", "fixtures"),
+  ];
+  const resolved = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!resolved) {
+    throw new Error(`benchmark fixture directory not found: ${candidates.join(", ")}`);
+  }
+  return resolved;
 }
 
 function removeScriptTags(html: string): string {

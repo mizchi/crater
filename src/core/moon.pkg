@@ -1,5 +1,0 @@
-import {
-  "mizchi/crater/types" @types,
-  "mizchi/layout/kernel" @layout_kernel,
-  "mizchi/layout/types" @lt,
-}

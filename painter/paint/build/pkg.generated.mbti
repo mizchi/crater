@@ -1,0 +1,30 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-painter/paint/build"
+
+import {
+  "mizchi/crater-painter/paint/model",
+  "mizchi/crater-painter/paint/scroll",
+}
+
+// Values
+pub fn collect_scrollable_elements(@model.PaintNode) -> Array[@scroll.ScrollableElement]
+
+pub fn find_scrollable_at(@model.PaintNode, Double, Double, Double, Double) -> @scroll.ScrollableHitResult?
+
+pub fn flatten_for_rendering(@model.PaintNode) -> Array[@model.PaintNode]
+
+pub fn sort_by_stacking_order(Array[@model.PaintNode]) -> Array[@model.PaintNode]
+
+pub fn sort_tree_by_stacking_order(@model.PaintNode) -> @model.PaintNode
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @scroll {type ScrollableElement}
+
+pub using @scroll {type ScrollableHitResult}
+
+// Traits
+

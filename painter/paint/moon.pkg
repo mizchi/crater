@@ -1,0 +1,19 @@
+import {
+  "mizchi/crater-painter/paint/build" @paint_build,
+  "mizchi/crater-painter/paint/diff" @paint_diff,
+  "mizchi/crater-painter/paint/layout_tree_bridge" @paint_layout_tree,
+  "mizchi/crater-painter/paint/node_bridge" @paint_node,
+  "mizchi/crater-painter/paint/viewport_bridge" @paint_viewport,
+  "mizchi/crater-painter/paint/model" @paint_model,
+  "mizchi/crater-layout/types",
+  "mizchi/crater-layout" @node,
+}
+
+import {
+  "mizchi/crater-layout/style",
+} for "test"
+
+import {
+  "mizchi/crater-layout/style",
+  "moonbitlang/core/bench",
+} for "wbtest"
