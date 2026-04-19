@@ -10,6 +10,7 @@ import {
   listBundledWptFonts,
   resolveBundledWptFontUrl,
 } from "../../../scripts/wpt-font-utils.ts";
+import { resolveBidiMainBuildUrl } from "./build-paths.ts";
 
 const HOME = Deno.env.get("HOME") || "/tmp";
 const fontModulePath = `${HOME}/ghq/github.com/mizchi/font/_build/js/release/build/js/js.js`;
@@ -386,4 +387,4 @@ globalThis.addEventListener("unload", () => {
 });
 
 // Start the BiDi server (warmup_glyph_cache is called in main() before server.start())
-await import("../_build/js/release/build/bidi_main/bidi_main.js");
+await import(resolveBidiMainBuildUrl(Deno.cwd()));

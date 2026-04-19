@@ -345,7 +345,7 @@ bench-vrt-list group="all":
 # Run VRT benchmarks and write parsed reports
 bench-vrt-report group output_dir="vrt-bench":
     mkdir -p {{output_dir}}
-    npx tsx scripts/vrt-bench.ts --group {{group}} --json {{output_dir}}/{{group}}.json --markdown {{output_dir}}/{{group}}.md | tee {{output_dir}}/{{group}}.log
+    bash -lc 'set -euo pipefail; npx tsx scripts/vrt-bench.ts --group {{group}} --json {{output_dir}}/{{group}}.json --markdown {{output_dir}}/{{group}}.md | tee {{output_dir}}/{{group}}.log'
 
 # Compact flaker entrypoint
 flaker *args:

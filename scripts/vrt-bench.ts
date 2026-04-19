@@ -143,8 +143,8 @@ function runOrThrow(command: string, args: string[]): void {
   }
 }
 
-function buildBenchArtifacts(): void {
-  runOrThrow("moon", [
+export function buildBenchCommandArgs(): string[] {
+  return [
     "bench",
     "--manifest-path",
     BENCH_MANIFEST,
@@ -152,14 +152,25 @@ function buildBenchArtifacts(): void {
     BENCH_PACKAGE,
     "-f",
     BENCH_SOURCE_FILE,
+    "--target",
+    "js",
     "--build-only",
     "--no-render",
-  ]);
+  ];
 }
 
-function resolveArtifactPath(candidates: string[], label: string): string {
+function buildBenchArtifacts(): void {
+  runOrThrow("moon", buildBenchCommandArgs());
+}
+
+export function resolveArtifactPath(
+  candidates: string[],
+  label: string,
+  cwd: string = process.cwd(),
+  existsSync: (filepath: string) => boolean = fs.existsSync,
+): string {
   const resolved = candidates.find((candidate) =>
-    fs.existsSync(path.join(process.cwd(), candidate))
+    existsSync(path.join(cwd, candidate))
   );
   if (!resolved) {
     throw new Error(`Failed to locate ${label}: ${candidates.join(", ")}`);

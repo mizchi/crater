@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildBenchCommandArgs,
   parseBenchRunOutput,
+  resolveArtifactPath,
   renderMarkdownSummary,
   summarizeBenchRun,
   type VrtBenchGroup,
@@ -53,5 +55,34 @@ describe("renderMarkdownSummary", () => {
     expect(markdown).toContain("| Test | Benchmark | Mean | Median | Min | Max | Batch | Runs |");
     expect(markdown).toContain("| bench_vrt_render_paint_tree_dashboard | vrt_render_paint_tree_dashboard | 100.00 | 98.00 | 90.00 | 110.00 | 64 | 10 |");
     expect(markdown).toContain("Slowest benchmark");
+  });
+});
+
+describe("buildBenchCommandArgs", () => {
+  it("forces js target for mixed-target workspace benches", () => {
+    expect(buildBenchCommandArgs()).toContain("--target");
+    expect(buildBenchCommandArgs()).toContain("js");
+  });
+});
+
+describe("resolveArtifactPath", () => {
+  it("picks the first existing bench artifact candidate", () => {
+    const existing = new Set([
+      "/repo/_build/js/release/bench/mizchi/crater-benchmarks/__generated_driver_for_internal_test.mbt",
+    ]);
+
+    const resolved = resolveArtifactPath(
+      [
+        "_build/js/release/bench/mizchi/crater-benchmarks/__generated_driver_for_internal_test.mbt",
+        "_build/js/release/bench/benchmarks/__generated_driver_for_internal_test.mbt",
+      ],
+      "bench driver",
+      "/repo",
+      (filepath) => existing.has(filepath),
+    );
+
+    expect(resolved).toBe(
+      "_build/js/release/bench/mizchi/crater-benchmarks/__generated_driver_for_internal_test.mbt",
+    );
   });
 });
