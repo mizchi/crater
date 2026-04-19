@@ -283,7 +283,7 @@ if (!defaultFont) {
     fontFamily: string,
     isBold: boolean,
   ) => {
-    const font = getFontInstance(fontFamily || "sans-serif", isBold);
+    const font = getFontInstance(fontFamily, isBold);
     if (!font) return null;
     const fn = getIntrinsicFn(font);
     return fn(text, fontSize, lineHeight, whiteSpace, writingMode, availableWidth, availableHeight);
@@ -296,7 +296,7 @@ if (!defaultFont) {
     fontFamily: string,
     isBold: boolean,
   ): { minWidth: number; maxWidth: number; minHeight: number; maxHeight: number } | null => {
-    const font = getFontInstance(fontFamily || "sans-serif", isBold);
+    const font = getFontInstance(fontFamily, isBold);
     if (!font) return null;
     // Use full intrinsic measurement (with word-wrap calculation)
     const fn = getIntrinsicFn(font);
@@ -343,29 +343,29 @@ if (!defaultFont) {
 
   // Multi-font outline commands provider (returns JSON array, avoids SVG string roundtrip)
   (globalThis as any).__craterOutlineCommandsForFamily = (cp: number, fs: number, isBold: boolean, ff: string) => {
-    const font = getFontInstance(ff || "sans-serif", isBold);
+    const font = getFontInstance(ff, isBold);
     if (!font || !font.glyphOutlineCommands) return "";
     return font.glyphOutlineCommands(cp, fs);
   };
 
   // Multi-font glyph providers for sixel rendering
   (globalThis as any).__craterGlyphForFamily = (cp: number, fs: number, isBold: boolean, ff: string) => {
-    const font = getFontInstance(ff || "sans-serif", isBold);
+    const font = getFontInstance(ff, isBold);
     if (!font || !font.glyphToSvgPath) return "";
     return font.glyphToSvgPath(cp, fs);
   };
   (globalThis as any).__craterAdvanceForFamily = (cp: number, fs: number, isBold: boolean, ff: string) => {
-    const font = getFontInstance(ff || "sans-serif", isBold);
+    const font = getFontInstance(ff, isBold);
     if (!font || !font.glyphAdvance) return fs * 0.5;
     return font.glyphAdvance(cp, fs);
   };
   (globalThis as any).__craterKernForFamily = (cp1: number, cp2: number, fs: number, isBold: boolean, ff: string) => {
-    const font = getFontInstance(ff || "sans-serif", isBold);
+    const font = getFontInstance(ff, isBold);
     if (!font || !font.kernAdvance) return 0;
     return font.kernAdvance(cp1, cp2, fs);
   };
   (globalThis as any).__craterAscentForFamily = (ff: string) => {
-    const font = getFontInstance(ff || "sans-serif", false);
+    const font = getFontInstance(ff, false);
     return font ? font.ascentRatio : 0.8;
   };
 }
