@@ -736,6 +736,9 @@ jobs:
       - name: Install Playwright browsers for VRT
         run: pnpm exec playwright install --with-deps chromium
 
+      - name: Install compatible fonts for VRT
+        run: bash scripts/ci/install-compatible-fonts.sh
+
       - name: Update MoonBit dependencies
         run: |
           moon update
@@ -917,6 +920,9 @@ jobs:
 
       - name: Install Playwright browsers for VRT
         run: pnpm exec playwright install --with-deps chromium
+
+      - name: Install compatible fonts for VRT
+        run: bash scripts/ci/install-compatible-fonts.sh
 
       - name: Update MoonBit dependencies
         run: |

@@ -34,23 +34,23 @@ const LINUX_FONT_DIRS = [
 const FONT_FILE_MAP: Record<string, { regular: string[]; bold: string[] }> = {
   arial: {
     regular: ["Arial.ttf", "arial.ttf", "LiberationSans-Regular.ttf", "DejaVuSans.ttf"],
-    bold: ["Arial Bold.ttf", "arial-bold.ttf", "LiberationSans-Bold.ttf", "DejaVuSans-Bold.ttf"],
+    bold: ["Arial Bold.ttf", "Arial_Bold.ttf", "arialbd.ttf", "arial-bold.ttf", "LiberationSans-Bold.ttf", "DejaVuSans-Bold.ttf"],
   },
   verdana: {
     regular: ["Verdana.ttf", "verdana.ttf"],
-    bold: ["Verdana Bold.ttf", "verdana-bold.ttf"],
+    bold: ["Verdana Bold.ttf", "Verdana_Bold.ttf", "verdanab.ttf", "verdana-bold.ttf"],
   },
   "times new roman": {
-    regular: ["Times New Roman.ttf", "timesnewroman.ttf", "LiberationSerif-Regular.ttf", "DejaVuSerif.ttf"],
-    bold: ["Times New Roman Bold.ttf", "LiberationSerif-Bold.ttf", "DejaVuSerif-Bold.ttf"],
+    regular: ["Times New Roman.ttf", "Times_New_Roman.ttf", "times.ttf", "timesnewroman.ttf", "LiberationSerif-Regular.ttf", "DejaVuSerif.ttf"],
+    bold: ["Times New Roman Bold.ttf", "Times_New_Roman_Bold.ttf", "timesbd.ttf", "LiberationSerif-Bold.ttf", "DejaVuSerif-Bold.ttf"],
   },
   georgia: {
     regular: ["Georgia.ttf", "georgia.ttf"],
-    bold: ["Georgia Bold.ttf", "georgia-bold.ttf"],
+    bold: ["Georgia Bold.ttf", "Georgia_Bold.ttf", "georgiab.ttf", "georgia-bold.ttf"],
   },
   courier: {
-    regular: ["Courier New.ttf", "courier-new.ttf", "LiberationMono-Regular.ttf", "DejaVuSansMono.ttf"],
-    bold: ["Courier New Bold.ttf", "LiberationMono-Bold.ttf", "DejaVuSansMono-Bold.ttf"],
+    regular: ["Courier New.ttf", "Courier_New.ttf", "cour.ttf", "courier-new.ttf", "LiberationMono-Regular.ttf", "DejaVuSansMono.ttf"],
+    bold: ["Courier New Bold.ttf", "Courier_New_Bold.ttf", "courbd.ttf", "LiberationMono-Bold.ttf", "DejaVuSansMono-Bold.ttf"],
   },
   "sans-serif": {
     regular: ["Arial.ttf", "LiberationSans-Regular.ttf", "DejaVuSans.ttf", "NotoSans-Regular.ttf"],
