@@ -852,27 +852,38 @@ jobs:
         if: steps.paint_vrt_record.outcome == 'failure'
         run: exit 1
 
+  wpt-vrt-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.build.outputs.matrix }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Build WPT VRT matrix
+        id: build
+        run: |
+          matrix="$(node scripts/wpt-vrt-shards.mjs --github-matrix)"
+          {
+            echo "matrix<<EOF"
+            echo "$matrix"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
   playwright-wpt-vrt:
     name: wpt-vrt (${{ matrix.name }})
     runs-on: ubuntu-latest
+    needs: wpt-vrt-matrix
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - name: flexbox-1
-            modules: css-flexbox
-            offset: 0
-            limit: 21
-          - name: flexbox-2
-            modules: css-flexbox
-            offset: 21
-            limit: 21
-          - name: display
-            modules: css-display
-          - name: box
-            modules: css-box
-          - name: position
-            modules: css-position
+      max-parallel: 8
+      matrix: ${{ fromJson(needs.wpt-vrt-matrix.outputs.matrix) }}
 
     steps:
       - name: Checkout code
@@ -1019,6 +1030,7 @@ jobs:
       - flaker-config
       - vrt-bench
       - playwright-paint-vrt
+      - wpt-vrt-matrix
       - playwright-wpt-vrt
       - wpt-vrt-summary
     permissions:

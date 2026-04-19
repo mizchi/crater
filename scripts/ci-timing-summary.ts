@@ -115,6 +115,7 @@ function jobGroup(name: string): string {
   if (name.startsWith("wpt-css")) return "wpt-css";
   if (name.startsWith("wpt-dom")) return "wpt-dom";
   if (name.startsWith("wpt-webdriver")) return "wpt-webdriver";
+  if (name.startsWith("wpt-vrt")) return "wpt-vrt";
   return name;
 }
 

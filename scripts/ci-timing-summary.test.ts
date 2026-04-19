@@ -42,15 +42,28 @@ describe("buildTimingSummary", () => {
         startedAt: "2026-02-25T15:00:15Z",
         completedAt: "2026-02-25T15:01:00Z",
       }),
+      makeJob({
+        name: "wpt-vrt (box)",
+        createdAt: "2026-02-25T15:00:00Z",
+        startedAt: "2026-02-25T15:00:12Z",
+        completedAt: "2026-02-25T15:03:12Z",
+      }),
+      makeJob({
+        name: "wpt-vrt (position)",
+        createdAt: "2026-02-25T15:00:00Z",
+        startedAt: "2026-02-25T15:00:11Z",
+        completedAt: "2026-02-25T15:03:31Z",
+      }),
     ];
 
     const summary = buildTimingSummary(jobs, 123);
-    expect(summary.rows[0]?.name).toBe("wpt-css (css-flexbox)");
-    expect(summary.rows[0]?.durationSec).toBe(120);
-    expect(summary.rows[0]?.queueSec).toBe(20);
+    expect(summary.rows[0]?.name).toBe("wpt-vrt (position)");
+    expect(summary.rows[0]?.durationSec).toBe(200);
+    expect(summary.rows[0]?.queueSec).toBe(11);
     expect(summary.totals.failedJobs).toBe(1);
-    expect(summary.totals.completedJobs).toBe(3);
+    expect(summary.totals.completedJobs).toBe(5);
     expect(summary.byGroup.find((g) => g.group === "wpt-css")?.durationSec).toBe(120);
+    expect(summary.byGroup.find((g) => g.group === "wpt-vrt")?.durationSec).toBe(380);
   });
 });
 
