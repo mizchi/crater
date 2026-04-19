@@ -11,9 +11,10 @@ import {
   resolveBundledWptFontUrl,
 } from "../../../scripts/wpt-font-utils.ts";
 import { resolveBidiMainBuildUrl } from "../../../scripts/bidi-build-paths.mjs";
+import { resolveFontRuntimeBuildUrl } from "../../../scripts/font-build-paths.mjs";
 
 const HOME = Deno.env.get("HOME") || "/tmp";
-const fontModulePath = `${HOME}/ghq/github.com/mizchi/font/_build/js/release/build/js/js.js`;
+const fontModuleUrl = resolveFontRuntimeBuildUrl(Deno.cwd());
 
 // ============================================================
 // System font resolution (inline, no external deps)
@@ -130,7 +131,7 @@ function fontPathLabel(fontPath: string | URL): string {
 async function loadFontInstance(fontPath: string | URL): Promise<FontInstance | null> {
   try {
     const cacheBuster = `?f=${encodeURIComponent(String(fontPath))}`;
-    const mod = await import(`${fontModulePath}${cacheBuster}`);
+    const mod = await import(`${fontModuleUrl}${cacheBuster}`);
     const loadFont = mod.loadFont ?? mod.default?.loadFont;
     const measureText = mod.measureText ?? mod.default?.measureText;
     const glyphToSvgPath = mod.glyphToSvgPath ?? mod.default?.glyphToSvgPath;

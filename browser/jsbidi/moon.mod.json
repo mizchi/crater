@@ -6,6 +6,7 @@
       "path": "../..",
       "version": "0.16.1"
     },
+    "mizchi/font": "0.7.0",
     "mizchi/crater-dom": {
       "path": "../../dom",
       "version": "0.1.0"

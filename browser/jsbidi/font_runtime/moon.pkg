@@ -1,0 +1,28 @@
+import {
+  "mizchi/font/js" @font_js,
+}
+
+supported_targets = "js"
+
+options(
+  link: {
+    "js": {
+      "exports": [
+        "loadFont",
+        "glyphToSvgPath",
+        "glyphAdvance",
+        "getFontInfo",
+        "fontName",
+        "kernAdvance",
+        "layoutText",
+        "measureText",
+        "fontWeightClass",
+        "isFixedPitch",
+        "codepointCoverage",
+        "glyphIds",
+        "tableSizes",
+      ],
+      "format": "esm",
+    },
+  },
+)
