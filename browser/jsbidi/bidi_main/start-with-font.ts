@@ -7,6 +7,10 @@
  */
 import { createTextIntrinsicFnFromMeasureText } from "../../../scripts/text-intrinsic.ts";
 import {
+  DEFAULT_TEXT_FONT_FAMILY,
+  resolveEffectiveFontFamily,
+} from "../../../scripts/font-family-defaults.ts";
+import {
   listBundledWptFonts,
   resolveBundledWptFontUrl,
 } from "../../../scripts/wpt-font-utils.ts";
@@ -222,7 +226,9 @@ async function preloadBundledWptFonts() {
 }
 
 function getFontInstance(fontFamily: string, isBold: boolean): FontInstance | null {
-  const families = fontFamily.split(",").map((f) => f.trim().replace(/['"]/g, "").toLowerCase());
+  const families = resolveEffectiveFontFamily(fontFamily)
+    .split(",")
+    .map((f) => f.trim().replace(/['"]/g, "").toLowerCase());
   for (const f of families) {
     const norm = ALIASES[f] || f;
     const entry = fontCache.get(norm);
@@ -243,7 +249,7 @@ function getFontInstance(fontFamily: string, isBold: boolean): FontInstance | nu
 await preloadFonts();
 await preloadBundledWptFonts();
 
-const defaultFont = getFontInstance("arial, sans-serif", false);
+const defaultFont = getFontInstance(DEFAULT_TEXT_FONT_FAMILY, false);
 if (!defaultFont) {
   console.error("[font] No font loaded, using monospace fallback");
 } else {
@@ -319,7 +325,7 @@ if (!defaultFont) {
   }
 
   // Bold glyph providers
-  const boldFont = getFontInstance("arial, sans-serif", true);
+  const boldFont = getFontInstance(DEFAULT_TEXT_FONT_FAMILY, true);
   if (boldFont && boldFont.glyphToSvgPath && boldFont.glyphAdvance) {
     (globalThis as any).__craterGlyphToSvgPathBold = boldFont.glyphToSvgPath;
     (globalThis as any).__craterGlyphAdvanceBold = boldFont.glyphAdvance;
