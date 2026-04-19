@@ -1,9 +1,0 @@
-import {
-  "mizchi/zlib",
-  "moonbitlang/x/fs",
-  "moonbitlang/x/sys",
-}
-
-options(
-  is_main: true,
-)

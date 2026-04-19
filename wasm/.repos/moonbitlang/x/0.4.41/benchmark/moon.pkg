@@ -1,7 +1,0 @@
-import {
-  "moonbitlang/x/benchmark/internal/benchmark_ffi" @ffi,
-  "moonbitlang/core/double",
-  "moonbitlang/core/cmp",
-}
-
-warnings = "-deprecated"

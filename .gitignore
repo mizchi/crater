@@ -8,6 +8,7 @@ target
 
 # Dependencies
 node_modules/
+**/.repos/
 
 # Python
 __pycache__/

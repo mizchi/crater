@@ -1,7 +1,0 @@
-import {
-  "moonbitlang/x/sys",
-} for "test"
-
-options(
-  "native-stub": [ "native_stub.c" ],
-)

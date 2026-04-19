@@ -1,8 +1,0 @@
-import {
-  "mizchi/layout" @lib,
-  "mizchi/layout/types" @types,
-}
-
-options(
-  "is-main": true,
-)
