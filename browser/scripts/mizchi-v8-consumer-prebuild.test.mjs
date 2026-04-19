@@ -53,3 +53,22 @@ test("resolve_v8_module_root falls back to nested consumer mooncakes", (t) => {
 
   assert.equal(resolve_v8_module_root(browser_root), v8_root)
 })
+
+test("resolve_v8_module_root falls back to ancestor workspace mooncakes", (t) => {
+  const temp_root = fs.mkdtempSync(path.join(os.tmpdir(), "mizchi-v8-prebuild-"))
+  t.after(() => fs.rmSync(temp_root, { recursive: true, force: true }))
+
+  const native_root = path.join(temp_root, "browser", "native")
+  const v8_root = path.join(temp_root, ".mooncakes", "mizchi", "v8")
+  write_json(path.join(native_root, "moon.mod.json"), {
+    name: "mizchi/crater-browser-native",
+    deps: {
+      "mizchi/v8": "0.2.0",
+    },
+  })
+  write_json(path.join(v8_root, "moon.mod.json"), {
+    name: "mizchi/v8",
+  })
+
+  assert.equal(resolve_v8_module_root(native_root), v8_root)
+})

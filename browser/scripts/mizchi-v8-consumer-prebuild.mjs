@@ -37,8 +37,24 @@ function collect_search_roots(module_root, search_roots) {
   return roots
 }
 
+function ancestor_roots(root) {
+  const roots = []
+  let current = path.resolve(root)
+  while (true) {
+    roots.push(current)
+    const parent = path.dirname(current)
+    if (parent === current) {
+      return roots
+    }
+    current = parent
+  }
+}
+
 function candidate_mooncakes_roots(root) {
-  const candidates = [path.join(root, ".mooncakes", "mizchi", "v8")]
+  const candidates = []
+  for (const ancestor of ancestor_roots(root)) {
+    candidates.push(path.join(ancestor, ".mooncakes", "mizchi", "v8"))
+  }
   for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
     if (!entry.isDirectory() || entry.name.startsWith(".")) {
       continue
