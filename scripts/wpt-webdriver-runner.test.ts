@@ -38,6 +38,17 @@ describe("resolveBidiServerPath", () => {
     expect(resolveBidiServerPath(cwd)).toBe(serverPath);
   });
 
+  it("detects server in workspace root _build when local module output is absent", () => {
+    const cwd = mkTempProject();
+    const serverPath = path.join(
+      cwd,
+      "_build/js/release/build/mizchi/crater-browser-js/bidi_main/bidi_main.js",
+    );
+    touch(serverPath);
+
+    expect(resolveBidiServerPath(cwd)).toBe(serverPath);
+  });
+
   it("detects server in browser/_build when newer submodule build is missing", () => {
     const cwd = mkTempProject();
     const serverPath = path.join(cwd, "browser/_build/js/release/build/bidi_main/bidi_main.js");
@@ -49,9 +60,11 @@ describe("resolveBidiServerPath", () => {
   it("prefers browser/jsbidi/_build over legacy paths", () => {
     const cwd = mkTempProject();
     const submodulePath = path.join(cwd, "browser/jsbidi/_build/js/release/build/bidi_main/bidi_main.js");
+    const workspacePath = path.join(cwd, "_build/js/release/build/mizchi/crater-browser-js/bidi_main/bidi_main.js");
     const targetPath = path.join(cwd, "browser/target/js/release/build/bidi_main/bidi_main.js");
     const buildPath = path.join(cwd, "browser/_build/js/release/build/bidi_main/bidi_main.js");
     touch(submodulePath);
+    touch(workspacePath);
     touch(buildPath);
     touch(targetPath);
 

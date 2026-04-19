@@ -27,6 +27,12 @@ const SUBSET_CONFIG = "scripts/wpt-bidi-subset.json";
 const DEFAULT_PROFILE_NAME = "strict";
 const SERVER_READY_TIMEOUT_MS = 15_000;
 const QUICK_TIMEOUT_SECONDS = 20;
+const BIDI_SERVER_CANDIDATES = [
+  "browser/jsbidi/_build/js/release/build/bidi_main/bidi_main.js",
+  "_build/js/release/build/mizchi/crater-browser-js/bidi_main/bidi_main.js",
+  "browser/target/js/release/build/bidi_main/bidi_main.js",
+  "browser/_build/js/release/build/bidi_main/bidi_main.js",
+];
 
 interface CliOptions {
   args: string[];
@@ -92,13 +98,8 @@ function checkUv(): boolean {
 
 // Start Crater BiDi server
 export function resolveBidiServerPath(cwd: string = process.cwd()): string | null {
-  const candidates = [
-    path.join(cwd, "browser/jsbidi/_build/js/release/build/bidi_main/bidi_main.js"),
-    path.join(cwd, "browser/target/js/release/build/bidi_main/bidi_main.js"),
-    path.join(cwd, "browser/_build/js/release/build/bidi_main/bidi_main.js"),
-  ];
-
-  for (const serverPath of candidates) {
+  for (const candidate of BIDI_SERVER_CANDIDATES) {
+    const serverPath = path.join(cwd, candidate);
     if (fs.existsSync(serverPath)) {
       return serverPath;
     }
@@ -113,9 +114,9 @@ function startServer(): ChildProcess {
   if (!serverPath) {
     console.error("BiDi server not built. Run: just build-bidi");
     console.error("Expected one of:");
-    console.error("  browser/jsbidi/_build/js/release/build/bidi_main/bidi_main.js");
-    console.error("  browser/target/js/release/build/bidi_main/bidi_main.js");
-    console.error("  browser/_build/js/release/build/bidi_main/bidi_main.js");
+    for (const candidate of BIDI_SERVER_CANDIDATES) {
+      console.error(`  ${candidate}`);
+    }
     process.exit(1);
   }
 
