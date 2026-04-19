@@ -6,11 +6,14 @@
 // - wpt-vrt (flexbox-1/2): 7m59s / 7m19s test step
 // - playwright-paint-vrt: 7m16s total
 // - css-display: ~7m locally after the font-runtime fix, so keep it whole
+//
+// CI #345 showed that splitting css-flexbox into 3 shards changed VRT outcomes
+// for threshold-sensitive cases, while the previous 2-shard layout was stable.
+// Keep the flexbox grouping conservative and only split box/position further.
 
 export const CI_WPT_VRT_SHARDS = Object.freeze([
-  { name: "flexbox-1", modules: ["css-flexbox"], offset: 0, limit: 14 },
-  { name: "flexbox-2", modules: ["css-flexbox"], offset: 14, limit: 14 },
-  { name: "flexbox-3", modules: ["css-flexbox"], offset: 28, limit: 14 },
+  { name: "flexbox-1", modules: ["css-flexbox"], offset: 0, limit: 21 },
+  { name: "flexbox-2", modules: ["css-flexbox"], offset: 21, limit: 21 },
   { name: "display", modules: ["css-display"] },
   { name: "box-1", modules: ["css-box"], offset: 0, limit: 14 },
   { name: "box-2", modules: ["css-box"], offset: 14, limit: 14 },

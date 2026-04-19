@@ -27,12 +27,39 @@ describe("CI_WPT_VRT_SHARDS", () => {
     expect([...duplicates]).toEqual([]);
   });
 
+  it("keeps css-flexbox on the previously stable 2-shard layout", () => {
+    const entries = collectWptVrtTests(loadWptVrtConfig()).filter((entry) =>
+      entry.moduleName === "css-flexbox"
+    );
+    const flexboxShards = CI_WPT_VRT_SHARDS.filter((shard) =>
+      shard.modules.length === 1 && shard.modules[0] === "css-flexbox"
+    );
+
+    expect(flexboxShards.map((shard) => shard.name)).toEqual([
+      "flexbox-1",
+      "flexbox-2",
+    ]);
+
+    const selectedPathsByShard = flexboxShards.map((shard) =>
+      selectEntriesForShard(entries, shard).map((entry) => entry.relativePath)
+    );
+    expect(selectedPathsByShard.map((paths) => paths.length)).toEqual([21, 20]);
+    expect(selectedPathsByShard[0]).toContain("css-flexbox/align-content_stretch.html");
+    expect(selectedPathsByShard[1]).toEqual(
+      expect.arrayContaining([
+        "css-flexbox/align-self-015.html",
+        "css-flexbox/anonymous-flex-item-004.html",
+        "css-flexbox/anonymous-flex-item-005.html",
+        "css-flexbox/anonymous-flex-item-006.html",
+      ]),
+    );
+  });
+
   it("publishes a GitHub matrix with the expected shard names", () => {
     const matrix = toGithubMatrix();
     expect(matrix.include.map((row) => row.name)).toEqual([
       "flexbox-1",
       "flexbox-2",
-      "flexbox-3",
       "display",
       "box-1",
       "box-2",
