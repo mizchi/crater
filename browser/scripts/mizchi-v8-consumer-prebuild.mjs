@@ -91,7 +91,7 @@ export function resolve_v8_module_root(module_root, search_roots = []) {
   )
 }
 
-function platform_link_flags(platform, module_root) {
+export function platform_link_flags(platform, module_root) {
   const archive_path = path.join(
     module_root,
     "target",
@@ -103,7 +103,7 @@ function platform_link_flags(platform, module_root) {
     case "darwin":
       return `${archive_path} -lc++ -pthread -framework CoreFoundation`
     case "linux":
-      return `${archive_path} -lstdc++ -ldl -pthread`
+      return `${archive_path} -lstdc++ -ldl -pthread -lm`
     default:
       throw new Error(
         `mizchi/v8 consumer setup does not support host platform ${platform}`,

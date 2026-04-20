@@ -4,7 +4,10 @@ import os from "node:os"
 import path from "node:path"
 import test from "node:test"
 
-import { resolve_v8_module_root } from "./mizchi-v8-consumer-prebuild.mjs"
+import {
+  platform_link_flags,
+  resolve_v8_module_root,
+} from "./mizchi-v8-consumer-prebuild.mjs"
 
 function write_json(file_path, value) {
   fs.mkdirSync(path.dirname(file_path), { recursive: true })
@@ -71,4 +74,13 @@ test("resolve_v8_module_root falls back to ancestor workspace mooncakes", (t) =>
   })
 
   assert.equal(resolve_v8_module_root(native_root), v8_root)
+})
+
+test("platform_link_flags includes libm on linux", () => {
+  const flags = platform_link_flags("linux", "/tmp/mizchi-v8")
+  assert.match(flags, /librusty_v8_bridge\.a/)
+  assert.match(flags, /-lstdc\+\+/)
+  assert.match(flags, /-ldl/)
+  assert.match(flags, /-pthread/)
+  assert.match(flags, /-lm(\s|$)/)
 })
