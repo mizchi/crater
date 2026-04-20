@@ -24,6 +24,11 @@ jobs:
       - name: Install just
         uses: extractions/setup-just@v3
 
+      - name: Install native system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsqlite3-dev
+
       - name: Set up MoonBit
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
@@ -64,6 +69,15 @@ jobs:
 
       - name: Check code
         run: just check
+
+      - name: Run native facade smoke
+        run: moon -C browser/native test -p mizchi/crater-browser-native --target native -j 1
+
+      - name: Run native V8 runtime smoke
+        run: moon -C browser/native test -p mizchi/crater-browser-native/js_v8 -f js_runtime_v8_wbtest.mbt --target native -j 1
+
+      - name: Run native V8 DOM/snapshot smoke
+        run: moon -C browser/native test -p mizchi/crater-browser-native/js_v8 -f js_runtime_v8_dom_wbtest.mbt --target native -j 1
 
       - name: Run tests
         run: just test-js
