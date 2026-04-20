@@ -27,7 +27,7 @@ describe("CI_WPT_VRT_SHARDS", () => {
     expect([...duplicates]).toEqual([]);
   });
 
-  it("keeps css-flexbox on the previously stable 2-shard layout", () => {
+  it("keeps the stable first css-flexbox shard and splits the heavy tail", () => {
     const entries = collectWptVrtTests(loadWptVrtConfig()).filter((entry) =>
       entry.moduleName === "css-flexbox"
     );
@@ -38,16 +38,17 @@ describe("CI_WPT_VRT_SHARDS", () => {
     expect(flexboxShards.map((shard) => shard.name)).toEqual([
       "flexbox-1",
       "flexbox-2",
+      "flexbox-3",
     ]);
 
     const selectedPathsByShard = flexboxShards.map((shard) =>
       selectEntriesForShard(entries, shard).map((entry) => entry.relativePath)
     );
-    expect(selectedPathsByShard.map((paths) => paths.length)).toEqual([21, 20]);
+    expect(selectedPathsByShard.map((paths) => paths.length)).toEqual([21, 9, 11]);
     expect(selectedPathsByShard[0]).toContain("css-flexbox/align-content_stretch.html");
-    expect(selectedPathsByShard[1]).toEqual(
+    expect(selectedPathsByShard[1]).toContain("css-flexbox/align-self-015.html");
+    expect(selectedPathsByShard[2]).toEqual(
       expect.arrayContaining([
-        "css-flexbox/align-self-015.html",
         "css-flexbox/anonymous-flex-item-004.html",
         "css-flexbox/anonymous-flex-item-005.html",
         "css-flexbox/anonymous-flex-item-006.html",
@@ -82,6 +83,7 @@ describe("CI_WPT_VRT_SHARDS", () => {
     expect(matrix.include.map((row) => row.name)).toEqual([
       "flexbox-1",
       "flexbox-2",
+      "flexbox-3",
       "display-1",
       "display-2",
       "box-1",

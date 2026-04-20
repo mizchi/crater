@@ -2,19 +2,19 @@
 
 // Tuned against CI #24632336814 (80bef97):
 // - wpt-vrt (display): ~22m
-// - wpt-vrt (flexbox-2): ~19m
-// - wpt-vrt (flexbox-1): ~14m
+// - wpt-vrt (flexbox-2): ~20m
+// - wpt-vrt (flexbox-1): ~15m
 // - wpt-vrt (box-1/2): ~7m
 // - wpt-vrt (position-1/2): ~8m / ~6m
 //
-// CI #345 showed that splitting css-flexbox into 3 shards changed VRT outcomes
-// for threshold-sensitive cases, while the previous 2-shard layout was stable.
-// Keep the flexbox grouping conservative, split css-display in half, and keep
-// the already-balanced box/position layout.
+// CI #345 showed that moving early flexbox cases around changed VRT outcomes.
+// Keep the first 21 flexbox cases fixed, then split the tail where the current
+// runtime skew lives. Display stays split in half; box/position are unchanged.
 
 export const CI_WPT_VRT_SHARDS = Object.freeze([
   { name: "flexbox-1", modules: ["css-flexbox"], offset: 0, limit: 21 },
-  { name: "flexbox-2", modules: ["css-flexbox"], offset: 21, limit: 21 },
+  { name: "flexbox-2", modules: ["css-flexbox"], offset: 21, limit: 9 },
+  { name: "flexbox-3", modules: ["css-flexbox"], offset: 30, limit: 11 },
   { name: "display-1", modules: ["css-display"], offset: 0, limit: 20 },
   { name: "display-2", modules: ["css-display"], offset: 20, limit: 19 },
   { name: "box-1", modules: ["css-box"], offset: 0, limit: 14 },
