@@ -28,6 +28,9 @@ pub struct CssRuleUsage {
 } derive(Eq, Debug)
 
 ///|
+let render_custom_states_attr_name = "data-crater-custom-states"
+
+///|
 pub impl Show for StylePropertyDiff with output(self, logger) {
   logger.write_string("{property: ")
   logger.write_string(self.property.to_string())
@@ -816,14 +819,20 @@ fn html_element_to_selector_element(
   let classes = el.classes.copy()
   let id = el.id
   let attributes : Array[@selector.Attribute] = []
+  let custom_states = parse_render_custom_states(
+    el.attributes.get(render_custom_states_attr_name),
+  )
   el.attributes.each(fn(name, value) {
-    attributes.push(@selector.Attribute::{ name, value })
+    if name != render_custom_states_attr_name {
+      attributes.push(@selector.Attribute::{ name, value })
+    }
   })
   {
     tag_name: el.tag,
     id,
     classes,
     attributes,
+    custom_states,
     parent,
     prev_sibling: None,
     next_sibling: None,
@@ -831,6 +840,22 @@ fn html_element_to_selector_element(
     sibling_index: 1,
     sibling_count: 1,
   }
+}
+
+///|
+fn parse_render_custom_states(value : String?) -> Array[String] {
+  let states : Array[String] = []
+  match value {
+    Some(value) =>
+      for part in value.split(" ") {
+        let state = part.trim().to_string()
+        if !state.is_empty() {
+          states.push(state)
+        }
+      }
+    None => ()
+  }
+  states
 }
 
 ///|

@@ -574,6 +574,20 @@ fn SelectorParser::parse_pseudo_class(self : SelectorParser) -> PseudoClass? {
             _ => None
           }
         }
+        "state" => {
+          self.skip_whitespace()
+          let state = self.parse_attr_value()
+          match self.peek() {
+            RightParen => {
+              let _ = self.advance()
+              match state {
+                Some(token) => Some(State(token))
+                None => None
+              }
+            }
+            _ => None
+          }
+        }
         _ => None
       }
     }

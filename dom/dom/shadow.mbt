@@ -11,8 +11,17 @@ pub fn DomTree::attach_shadow(
   host : NodeId,
   mode : String,
 ) -> Result[NodeId, CoreError] {
+  self.attach_shadow_with_init(host, ShadowRootInit::default(mode~))
+}
+
+///|
+pub fn DomTree::attach_shadow_with_init(
+  self : DomTree,
+  host : NodeId,
+  init : ShadowRootInit,
+) -> Result[NodeId, CoreError] {
   let shadow_root = self.create_document_fragment()
-  match self.attach_existing_shadow_root(host, shadow_root, mode) {
+  match self.attach_existing_shadow_root_with_init(host, shadow_root, init) {
     Ok(_) => Ok(shadow_root)
     Err(err) => {
       self.nodes.remove(shadow_root.to_int())
@@ -28,6 +37,20 @@ pub fn DomTree::attach_existing_shadow_root(
   host : NodeId,
   shadow_root : NodeId,
   mode : String,
+) -> Result[Unit, CoreError] {
+  self.attach_existing_shadow_root_with_init(
+    host,
+    shadow_root,
+    ShadowRootInit::default(mode~),
+  )
+}
+
+///|
+pub fn DomTree::attach_existing_shadow_root_with_init(
+  self : DomTree,
+  host : NodeId,
+  shadow_root : NodeId,
+  init : ShadowRootInit,
 ) -> Result[Unit, CoreError] {
   let host_id = host.to_int()
   let shadow_id = shadow_root.to_int()
@@ -52,7 +75,11 @@ pub fn DomTree::attach_existing_shadow_root(
       shadow_node.node_type = ShadowRoot
       shadow_node.tag_name = "#shadow-root"
       shadow_node.host_id = Some(host_id)
-      shadow_node.shadow_mode = Some(mode)
+      shadow_node.shadow_mode = Some(init.mode)
+      shadow_node.shadow_delegates_focus = init.delegates_focus
+      shadow_node.shadow_slot_assignment = init.slot_assignment
+      shadow_node.shadow_clonable = init.clonable
+      shadow_node.shadow_serializable = init.serializable
       host_node.shadow_root_id = Some(shadow_id)
       self.mutations.push(MutationRecord::child_list(host, added=[shadow_root]))
       self.invalidate_layout(host_id)
@@ -98,6 +125,31 @@ pub fn DomTree::get_shadow_mode(
   let id = node.to_int()
   match self.nodes.get(id) {
     Some(dom_node) => Ok(dom_node.shadow_mode)
+    None => Err(NodeNotFound(node_id=node))
+  }
+}
+
+///|
+pub fn DomTree::get_shadow_init(
+  self : DomTree,
+  node : NodeId,
+) -> Result[ShadowRootInit?, CoreError] {
+  let id = node.to_int()
+  match self.nodes.get(id) {
+    Some(dom_node) =>
+      match dom_node.shadow_mode {
+        Some(mode) =>
+          Ok(
+            Some({
+              mode,
+              delegates_focus: dom_node.shadow_delegates_focus,
+              slot_assignment: dom_node.shadow_slot_assignment,
+              clonable: dom_node.shadow_clonable,
+              serializable: dom_node.shadow_serializable,
+            }),
+          )
+        None => Ok(None)
+      }
     None => Err(NodeNotFound(node_id=node))
   }
 }

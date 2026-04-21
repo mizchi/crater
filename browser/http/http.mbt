@@ -58,6 +58,7 @@ pub(all) enum RequestSandbox {
 pub(all) struct FetchOptions {
   http_method : String
   headers : Map[String, String]
+  body : String
   timeout_ms : Int
   mode : RequestMode
   credentials : CredentialsMode
@@ -70,6 +71,7 @@ pub fn FetchOptions::default() -> FetchOptions {
   {
     http_method: "GET",
     headers: {},
+    body: "",
     timeout_ms: 30000,
     mode: Cors,
     credentials: Omit,
@@ -191,6 +193,7 @@ fn prepare_fetch_options(
 ) -> FetchOptions raise HttpError {
   let caller_origin = normalize_origin(options.origin)
   let request_origin = resolve_request_origin(url, caller_origin)
+  let normalized_method = options.http_method.to_upper()
   if !sandbox_allows(options.sandbox, request_origin, caller_origin) {
     raise SandboxError("Blocked by request sandbox: " + request_origin)
   }
@@ -198,8 +201,19 @@ fn prepare_fetch_options(
     is_cross_origin(request_origin, caller_origin) {
     raise CorsError("Blocked by same-origin policy: " + request_origin)
   }
-  if (options.mode == Cors || options.mode == SameOrigin) &&
-    is_cross_origin(request_origin, caller_origin) {
+  let should_inject_origin = caller_origin.length() > 0 &&
+    (
+      (
+        (options.mode == Cors || options.mode == SameOrigin) &&
+        is_cross_origin(request_origin, caller_origin)
+      ) ||
+      (
+        options.mode == Navigate &&
+        normalized_method != "GET" &&
+        normalized_method != "HEAD"
+      )
+    )
+  if should_inject_origin {
     if !options.headers.contains("Origin") &&
       !options.headers.contains("origin") {
       let headers : Map[String, String] = {}

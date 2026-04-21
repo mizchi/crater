@@ -1,4 +1,5 @@
 import {
+  "moonbitlang/core/json",
   "moonbitlang/async/io",
   "mizchi/crater-renderer/renderer",
   "mizchi/crater-dom/html",

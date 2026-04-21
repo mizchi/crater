@@ -9,6 +9,7 @@ let default_image_cache_max_bytes : Int = 8 * 1024 * 1024
 priv struct Link {
   href : String
   text : String
+  source_id : String
 }
 
 ///|
@@ -18,11 +19,19 @@ priv struct ClickDispatchResult {
 }
 
 ///|
+priv struct NavigationRequest {
+  url : String
+  http_method : String
+  content_type : String
+  body : String
+}
+
+///|
 priv enum SubmitDispatchResult {
   NotSubmittable
   Prevented
   Handled
-  Navigate(String)
+  Navigate(NavigationRequest)
 }
 
 ///|
@@ -74,6 +83,8 @@ pub(all) enum OutputMode {
 struct Browser {
   /// Current URL
   mut current_url : String
+  /// Last navigation request metadata
+  mut last_navigation_request : NavigationRequest?
   /// Request sandbox policy
   mut request_sandbox : @http.RequestSandbox
   /// Viewport width in pixels
@@ -82,6 +93,10 @@ struct Browser {
   viewport_height : Int
   /// Current HTML content
   mut html_content : String
+  /// Last raw HTML source before render-time normalization
+  mut source_html : String
+  /// DOM snapshot HTML that preserves serializable shadow roots
+  mut dom_snapshot_html : String
   /// Parsed document (cached to avoid re-parsing)
   mut parsed_doc : @html.Document?
   /// External CSS content
@@ -190,10 +205,13 @@ pub fn Browser::new(
 ) -> Browser {
   {
     current_url: "",
+    last_navigation_request: None,
     request_sandbox: @http.RequestSandbox::Open,
     viewport_width: width,
     viewport_height: height,
     html_content: "",
+    source_html: "",
+    dom_snapshot_html: "",
     parsed_doc: None,
     external_css: [],
     links: [],
@@ -298,8 +316,30 @@ pub fn Browser::get_dom_tree(self : Browser) -> @dom.DomTree? {
 ///|
 /// Set HTML content directly (for testing or headless rendering).
 pub fn Browser::set_html_content(self : Browser, html : String) -> Unit {
-  self.html_content = html
-  self.parsed_doc = None
+  self.source_html = html
+  match normalize_declarative_shadow_source_html(html) {
+    Some(normalized) => {
+      self.html_content = normalized.render_html
+      self.dom_snapshot_html = normalized.snapshot_html
+      self.parsed_doc = Some(normalized.parsed_doc)
+    }
+    None => {
+      self.html_content = html
+      self.dom_snapshot_html = html
+      self.parsed_doc = None
+    }
+  }
+  self.links = extract_links(self.html_content)
+  self.focused_link = 0
+  self.scroll_y = 0
+  self.clear_element_scroll_states()
+  self.render_node = None
+  self.layout_tree = None
+  self.prev_buffer = None
+  self.last_render_key = ""
+  self.content_height = 0
+  self.a11y_tree = None
+  self.focus_manager = None
   self.dom_tree = None
   self.script_executor = None
 }
@@ -307,6 +347,14 @@ pub fn Browser::set_html_content(self : Browser, html : String) -> Unit {
 ///|
 pub fn Browser::get_current_url(self : Browser) -> String {
   self.current_url
+}
+
+///|
+pub fn Browser::get_last_navigation_url(self : Browser) -> String? {
+  match self.last_navigation_request {
+    Some(request) => Some(request.url)
+    None => None
+  }
 }
 
 ///|
@@ -391,6 +439,167 @@ fn resolve_url(base_url : String, href : String) -> String {
 }
 
 ///|
+fn make_substr(chars : Array[Char], start : Int, end : Int) -> String {
+  let buf = StringBuilder::new()
+  for i = start; i < end; i = i + 1 {
+    buf.write_char(chars[i])
+  }
+  buf.to_string()
+}
+
+///|
+fn hex_digit_to_int(c : Char) -> Int? {
+  if c >= '0' && c <= '9' {
+    Some(c.to_int() - '0'.to_int())
+  } else if c >= 'a' && c <= 'f' {
+    Some(c.to_int() - 'a'.to_int() + 10)
+  } else if c >= 'A' && c <= 'F' {
+    Some(c.to_int() - 'A'.to_int() + 10)
+  } else {
+    None
+  }
+}
+
+///|
+fn percent_decode_data_url_payload(payload : String) -> String {
+  let chars = payload.to_array()
+  let buf = StringBuilder::new()
+  let mut i = 0
+  while i < chars.length() {
+    if chars[i] == '%' && i + 2 < chars.length() {
+      match (hex_digit_to_int(chars[i + 1]), hex_digit_to_int(chars[i + 2])) {
+        (Some(high), Some(low)) => {
+          buf.write_char((high * 16 + low).unsafe_to_char())
+          i = i + 3
+        }
+        _ => {
+          buf.write_char(chars[i])
+          i = i + 1
+        }
+      }
+    } else {
+      buf.write_char(chars[i])
+      i = i + 1
+    }
+  }
+  buf.to_string()
+}
+
+///|
+fn decode_sync_navigable_html_url(url : String) -> String? {
+  if url == "about:blank" {
+    return Some("")
+  }
+  if !url.has_prefix("data:") {
+    return None
+  }
+  let chars = url.to_array()
+  let mut comma_idx = -1
+  for i = 5; i < chars.length(); i = i + 1 {
+    if chars[i] == ',' {
+      comma_idx = i
+      break
+    }
+  }
+  if comma_idx < 0 {
+    return None
+  }
+  let header = make_substr(chars, 5, comma_idx)
+  if header.contains(";base64") {
+    return None
+  }
+  let mut payload_end = chars.length()
+  for i = comma_idx + 1; i < chars.length(); i = i + 1 {
+    if chars[i] == '?' || chars[i] == '#' {
+      payload_end = i
+      break
+    }
+  }
+  let payload = make_substr(chars, comma_idx + 1, payload_end)
+  Some(percent_decode_data_url_payload(payload))
+}
+
+///|
+fn default_navigation_request(url : String) -> NavigationRequest {
+  { url, http_method: "GET", content_type: "", body: "" }
+}
+
+///|
+fn parse_navigation_request(json_str : String) -> NavigationRequest? {
+  let parsed = @json.parse(json_str) catch { _ => return None }
+  match parsed {
+    Object(map) =>
+      match
+        (
+          map.get("url"),
+          map.get("http_method"),
+          map.get("content_type"),
+          map.get("body"),
+        ) {
+        (
+          Some(String(url)),
+          Some(String(http_method)),
+          Some(String(content_type)),
+          Some(String(body)),
+        ) =>
+          Some({ url, http_method: http_method.to_upper(), content_type, body })
+        _ => None
+      }
+    _ => None
+  }
+}
+
+///|
+fn decode_js_string_result(value : String) -> String? {
+  let parsed = @json.parse(value) catch { _ => return None }
+  match parsed {
+    String(text) => Some(text)
+    _ => None
+  }
+}
+
+///|
+fn Browser::load_sync_navigable_html_request(
+  self : Browser,
+  request : NavigationRequest,
+) -> Bool {
+  match decode_sync_navigable_html_url(request.url) {
+    Some(html) => {
+      self.current_url = request.url
+      self.last_navigation_request = Some(request)
+      self.set_html_content(html)
+      self.external_css = []
+      let script_count = self.execute_scripts()
+      if script_count > 0 {
+        println(
+          "Executed " +
+          script_count.to_string() +
+          " script(s) during sync page load",
+        )
+      }
+      true
+    }
+    None => false
+  }
+}
+
+///|
+fn Browser::navigate_sync_if_supported(
+  self : Browser,
+  request : NavigationRequest,
+) -> Bool {
+  let previous_url = self.current_url
+  let navigated = self.load_sync_navigable_html_request(request)
+  if navigated {
+    if previous_url.length() > 0 {
+      self.back_history.push(previous_url)
+    }
+    self.forward_history.clear()
+  }
+  navigated
+}
+
+///|
 /// Wrapper to adapt @http.fetch (which has optional params) to the
 /// async fetcher signature expected by cached_fetch_async.
 async fn http_fetch_adapter(
@@ -452,13 +661,7 @@ pub async fn Browser::navigate(
   self : Browser,
   url : String,
 ) -> String raise @http.HttpError {
-  // Save current URL to back history before navigating (if not empty)
-  if self.current_url.length() > 0 {
-    self.back_history.push(self.current_url)
-  }
-  // Clear forward history on new navigation
-  self.forward_history.clear()
-  self.load_url(url)
+  self.navigate_request(default_navigation_request(url))
 }
 
 ///|
@@ -477,7 +680,40 @@ async fn Browser::load_url(
   self : Browser,
   url : String,
 ) -> String raise @http.HttpError {
+  self.load_url_request(default_navigation_request(url))
+}
+
+///|
+async fn Browser::navigate_request(
+  self : Browser,
+  request : NavigationRequest,
+) -> String raise @http.HttpError {
+  if self.current_url.length() > 0 {
+    self.back_history.push(self.current_url)
+  }
+  self.forward_history.clear()
+  self.load_url_request(request)
+}
+
+///|
+async fn Browser::load_url_request(
+  self : Browser,
+  request : NavigationRequest,
+) -> String raise @http.HttpError {
+  let source_url = self.current_url
+  let request_record = {
+    url: request.url,
+    http_method: request.http_method,
+    content_type: request.content_type,
+    body: request.body,
+  }
+  let url = request_record.url
   self.current_url = url
+  self.last_navigation_request = Some(request_record)
+  if url == "about:blank" || url.has_prefix("data:") {
+    let _ = self.load_sync_navigable_html_request(request_record)
+    return ""
+  }
   let t0 = perf_now()
   // Fetch the page
   let page_headers : Map[String, String] = {}
@@ -487,17 +723,22 @@ async fn Browser::load_url(
       url,
       is_secure,
       true,
-      site_origin=self.current_url,
+      site_origin=source_url,
       is_top_level_navigation=true,
     ) {
     Some(cookie_header) => page_headers["Cookie"] = cookie_header
     None => ()
   }
+  if request_record.content_type.length() > 0 {
+    page_headers["Content-Type"] = request_record.content_type
+  }
   let page_options = {
     ..@http.FetchOptions::default(),
     headers: page_headers,
+    http_method: request_record.http_method,
+    body: request_record.body,
     mode: @http.RequestMode::Navigate,
-    origin: url,
+    origin: source_url,
     sandbox: self.request_sandbox,
   }
   let response = @http.fetch(url, options=page_options)
@@ -506,7 +747,19 @@ async fn Browser::load_url(
     Some(sc) => self.cookie_jar.store_from_header(sc, url, is_secure)
     None => ()
   }
-  self.html_content = response.body
+  self.source_html = response.body
+  match normalize_declarative_shadow_source_html(response.body) {
+    Some(normalized) => {
+      self.html_content = normalized.render_html
+      self.dom_snapshot_html = normalized.snapshot_html
+      self.parsed_doc = Some(normalized.parsed_doc)
+    }
+    None => {
+      self.html_content = response.body
+      self.dom_snapshot_html = response.body
+      self.parsed_doc = None
+    }
+  }
   let t1 = perf_now()
   // Fetch external CSS using lightweight extraction (no full parsing)
   self.external_css = fetch_external_css(
@@ -525,8 +778,15 @@ async fn Browser::load_url(
   // Clear element scroll states on navigation
   self.clear_element_scroll_states()
   // Parse HTML using regular parser (streaming parser under investigation)
-  let doc = @html.assign_synthetic_ids(@html.parse_document(self.html_content))
-  self.parsed_doc = Some(doc)
+  match self.parsed_doc {
+    Some(_) => ()
+    None => {
+      let doc = @html.assign_synthetic_ids(
+        @html.parse_document(self.html_content),
+      )
+      self.parsed_doc = Some(doc)
+    }
+  }
   self.render_node = None
   self.layout_tree = None
   self.prev_buffer = None
@@ -566,16 +826,29 @@ async fn Browser::load_url_lightweight(
   self : Browser,
   url : String,
 ) -> String raise @http.HttpError {
+  let source_url = self.current_url
   self.current_url = url
   // Fetch the page
   let page_options = {
     ..@http.FetchOptions::default(),
     mode: @http.RequestMode::Navigate,
-    origin: url,
+    origin: source_url,
     sandbox: self.request_sandbox,
   }
   let response = @http.fetch(url, options=page_options)
-  self.html_content = response.body
+  self.source_html = response.body
+  match normalize_declarative_shadow_source_html(response.body) {
+    Some(normalized) => {
+      self.html_content = normalized.render_html
+      self.dom_snapshot_html = normalized.snapshot_html
+      self.parsed_doc = Some(normalized.parsed_doc)
+    }
+    None => {
+      self.html_content = response.body
+      self.dom_snapshot_html = response.body
+      self.parsed_doc = None
+    }
+  }
   // Skip external CSS fetching in lightweight mode
   self.external_css = []
   // Skip link extraction (not needed for JSON/AOM output)
@@ -585,8 +858,15 @@ async fn Browser::load_url_lightweight(
   // Clear element scroll states on navigation
   self.clear_element_scroll_states()
   // Parse HTML using regular parser (streaming parser under investigation)
-  let doc = @html.assign_synthetic_ids(@html.parse_document(self.html_content))
-  self.parsed_doc = Some(doc)
+  match self.parsed_doc {
+    Some(_) => ()
+    None => {
+      let doc = @html.assign_synthetic_ids(
+        @html.parse_document(self.html_content),
+      )
+      self.parsed_doc = Some(doc)
+    }
+  }
   self.render_node = None
   self.layout_tree = None
   self.prev_buffer = None
@@ -634,6 +914,7 @@ pub async fn Browser::go_forward(
 ///|
 /// Render current content in selected output mode
 pub fn Browser::render_output(self : Browser, mode : OutputMode) -> String {
+  self.ensure_declarative_shadow_dom_normalized()
   match mode {
     Sixel => self.render()
     Kitty => self.render_kitty()
@@ -946,10 +1227,9 @@ fn Browser::build_plain_links(
     return plain_links
   }
   for region in link_regions {
-    // Find matching link URL from extracted links
-    for link in self.links {
-      if region.text == link.text {
-        let url = resolve_url(self.current_url, link.href)
+    match self.get_link_href_for_region(region) {
+      Some(href) => {
+        let url = resolve_url(self.current_url, href)
         if url.length() > 0 {
           plain_links.push({
             col: region.col,
@@ -958,8 +1238,8 @@ fn Browser::build_plain_links(
             url,
           })
         }
-        break
       }
+      None => ()
     }
   }
   plain_links
@@ -2187,8 +2467,27 @@ pub fn Browser::prev_link(self : Browser) -> Unit {
 }
 
 ///|
+fn Browser::ensure_declarative_shadow_dom_normalized(self : Browser) -> Unit {
+  match self.dom_tree {
+    Some(_) => return
+    None => ()
+  }
+  if !html_source_has_declarative_shadow_dom(self.html_content) {
+    return
+  }
+  match build_dom_tree_from_source_html(self.html_content) {
+    Some(dom) => {
+      self.dom_tree = Some(dom)
+      let _ = self.sync_render_state_from_dom_tree()
+    }
+    None => ()
+  }
+}
+
+///|
 /// Build accessibility tree from current HTML content
 fn Browser::build_accessibility_tree(self : Browser) -> Unit {
+  self.ensure_declarative_shadow_dom_normalized()
   let previous_focus_source_id = match self.focus_manager {
     Some(fm) =>
       match fm.current() {
@@ -2244,6 +2543,7 @@ fn Browser::build_accessibility_tree(self : Browser) -> Unit {
 /// Build lightweight accessibility tree (no CSS cascade, no layout)
 /// Used for --json and --aom modes to reduce memory usage
 fn Browser::build_accessibility_tree_lightweight(self : Browser) -> Unit {
+  self.ensure_declarative_shadow_dom_normalized()
   // Use cached parsed document if available
   let doc = match self.parsed_doc {
     Some(d) => d
@@ -2290,21 +2590,39 @@ pub fn Browser::get_focused_link_url(self : Browser) -> String? {
     Some(fm) =>
       match fm.current() {
         Some(node) =>
-          // Check if it's a link and has a name (which may contain href info)
-          // For now, we need to look up the link by matching text
           match node.role {
             @aom.Link =>
-              // Find matching link by accessible name
-              match node.name {
-                Some(name) => {
-                  for link in self.links {
-                    if link.text == name {
-                      return Some(resolve_url(self.current_url, link.href))
-                    }
+              match node.source_id {
+                Some(source_id) =>
+                  match self.get_link_href_for_source_id(source_id) {
+                    Some(href) => Some(resolve_url(self.current_url, href))
+                    None =>
+                      match node.name {
+                        Some(name) => {
+                          for link in self.links {
+                            if link.text == name {
+                              return Some(
+                                resolve_url(self.current_url, link.href),
+                              )
+                            }
+                          }
+                          None
+                        }
+                        None => None
+                      }
                   }
-                  None
-                }
-                None => None
+                None =>
+                  match node.name {
+                    Some(name) => {
+                      for link in self.links {
+                        if link.text == name {
+                          return Some(resolve_url(self.current_url, link.href))
+                        }
+                      }
+                      None
+                    }
+                    None => None
+                  }
               }
             _ => None
           }
@@ -2371,9 +2689,76 @@ fn Browser::get_link_source_id_at(
   col : Int,
   row : Int,
 ) -> String? {
-  match @tui.find_link_region_at(self.link_regions, col, row) {
-    Some(region) => Some(region.source_id)
+  for i = self.link_regions.length() - 1; i >= 0; i = i - 1 {
+    let region = self.link_regions[i]
+    if region.contains(col, row) {
+      return Some(region.source_id)
+    }
+  }
+  None
+}
+
+///|
+fn Browser::get_extracted_link_href_for_source_id(
+  self : Browser,
+  source_id : String,
+) -> String? {
+  for link in self.links {
+    if link.source_id == source_id {
+      return Some(link.href)
+    }
+  }
+  None
+}
+
+///|
+fn Browser::get_a11y_link_href_for_source_id(
+  self : Browser,
+  source_id : String,
+) -> String? {
+  if self.a11y_tree is None {
+    self.build_accessibility_tree()
+  }
+  match self.a11y_tree {
+    Some(tree) =>
+      match tree.find_by_source_id(source_id) {
+        Some(node) => node.href
+        None => None
+      }
     None => None
+  }
+}
+
+///|
+fn Browser::get_link_href_for_source_id(
+  self : Browser,
+  source_id : String,
+) -> String? {
+  match self.get_href_for_source_id(source_id) {
+    Some(href) => Some(href)
+    None =>
+      match self.get_a11y_link_href_for_source_id(source_id) {
+        Some(href) => Some(href)
+        None => self.get_extracted_link_href_for_source_id(source_id)
+      }
+  }
+}
+
+///|
+fn Browser::get_link_href_for_region(
+  self : Browser,
+  region : @tui.LinkRegion,
+) -> String? {
+  match self.get_link_href_for_source_id(region.source_id) {
+    Some(href) => Some(href)
+    None => {
+      for link in self.links {
+        if region.text == link.text {
+          return Some(link.href)
+        }
+      }
+      None
+    }
   }
 }
 
@@ -2659,18 +3044,23 @@ fn Browser::get_visible_focus_index(self : Browser) -> Int {
 /// Find link URL at screen coordinates (for mouse click)
 /// Returns the resolved absolute URL if a link is found
 pub fn Browser::get_link_at(self : Browser, col : Int, row : Int) -> String? {
-  // Find link region at the click position
-  match @tui.find_link_at(self.link_regions, col, row) {
-    Some(link_text) => {
-      // Find matching link in our links array by text
-      for link in self.links {
-        if link.text == link_text {
-          return Some(link.href)
-        }
+  match self.get_link_source_id_at(col, row) {
+    Some(source_id) =>
+      match self.get_link_href_for_source_id(source_id) {
+        Some(href) => Some(href)
+        None =>
+          match @tui.find_link_at(self.link_regions, col, row) {
+            Some(link_text) => {
+              for link in self.links {
+                if link.text == link_text {
+                  return Some(link.href)
+                }
+              }
+              None
+            }
+            None => None
+          }
       }
-      // No exact match found
-      None
-    }
     None => None
   }
 }
@@ -2704,6 +3094,7 @@ fn Browser::execute_inline_js(self : Browser, source : String) -> String? {
       try {
         let result = executor.execute_source(source)
         self.flush_js_logs()
+        let _ = self.drain_pending_form_submission_navigation_sync()
         Some(result.value)
       } catch {
         err => {
@@ -2714,6 +3105,94 @@ fn Browser::execute_inline_js(self : Browser, source : String) -> String? {
       }
     None => None
   }
+}
+
+///|
+async fn Browser::drain_pending_form_submission_navigation(
+  self : Browser,
+) -> Bool raise @http.HttpError {
+  let value = self.peek_pending_form_submission_navigation()
+  match value {
+    Some(value) =>
+      if value.length() == 0 {
+        false
+      } else if value.has_prefix("request:") {
+        match
+          parse_navigation_request(
+            value.unsafe_substring(start=8, end=value.length()),
+          ) {
+          Some(request) => {
+            let _ = self.shift_pending_form_submission_navigation()
+            let resolved_request = {
+              ..request,
+              url: resolve_url(self.current_url, request.url),
+            }
+            let _ = self.navigate_request(resolved_request)
+            true
+          }
+          None => {
+            let _ = self.shift_pending_form_submission_navigation()
+            self.drain_pending_form_submission_navigation()
+          }
+        }
+      } else {
+        let _ = self.shift_pending_form_submission_navigation()
+        self.drain_pending_form_submission_navigation()
+      }
+    None => false
+  }
+}
+
+///|
+fn Browser::drain_pending_form_submission_navigation_sync(
+  self : Browser,
+) -> Bool {
+  let value = self.peek_pending_form_submission_navigation()
+  match value {
+    Some(value) =>
+      if value.length() == 0 {
+        false
+      } else if value.has_prefix("request:") {
+        match
+          parse_navigation_request(
+            value.unsafe_substring(start=8, end=value.length()),
+          ) {
+          Some(request) => {
+            let resolved_request = {
+              ..request,
+              url: resolve_url(self.current_url, request.url),
+            }
+            if self.navigate_sync_if_supported(resolved_request) {
+              let _ = self.shift_pending_form_submission_navigation()
+              true
+            } else {
+              false
+            }
+          }
+          None => {
+            let _ = self.shift_pending_form_submission_navigation()
+            self.drain_pending_form_submission_navigation_sync()
+          }
+        }
+      } else {
+        let _ = self.shift_pending_form_submission_navigation()
+        self.drain_pending_form_submission_navigation_sync()
+      }
+    None => false
+  }
+}
+
+///|
+pub async fn Browser::execute_inline_js_async(
+  self : Browser,
+  source : String,
+) -> String? raise @http.HttpError {
+  let result = self.execute_inline_js(source)
+  let navigated = self.drain_pending_form_submission_navigation()
+  if !navigated {
+    let _ = self.sync_render_state_from_dom_tree()
+  }
+  result
 }
 
 ///|
@@ -3079,17 +3558,267 @@ fn Browser::dispatch_hover_transition(
 }
 
 ///|
+fn browser_form_submit_bridge_source() -> String {
+  let source =
+    #|(() => {
+    #|  const queue = (globalThis.__craterPendingFormSubmissions = []);
+    #|  function isSubmitButtonElement(element) {
+    #|    if (!element || !element.tagName || !element.getAttribute) return false;
+    #|    const tag = String(element.tagName || '').toLowerCase();
+    #|    const type = String(element.getAttribute('type') || '').toLowerCase();
+    #|    if (tag === 'button') return type === '' || type === 'submit';
+    #|    return tag === 'input' && (type === 'submit' || type === 'image');
+    #|  }
+    #|  function resolveFormOwnerForSubmitter(element) {
+    #|    if (!element) return null;
+    #|    if (element.form !== undefined && element.form !== null) return element.form;
+    #|    return element.closest ? element.closest('form') : null;
+    #|  }
+    #|  function hasSubmitListenersInPath(target) {
+    #|    let current = target;
+    #|    while (current) {
+    #|      const store = current._listeners && current._listeners.submit;
+    #|      if (store && store.length > 0) return true;
+    #|      current = current.parentNode || null;
+    #|    }
+    #|    const docStore = document && document._listeners && document._listeners.submit;
+    #|    if (docStore && docStore.length > 0) return true;
+    #|    const winStore = window && window._listeners && window._listeners.submit;
+    #|    return !!(winStore && winStore.length > 0);
+    #|  }
+    #|  function buildFormNavigationRequest(form, submitter, clientX, clientY) {
+    #|    if (!form) return 'none';
+    #|    const submitMethodAttr = submitter && submitter.getAttribute ? submitter.getAttribute('formmethod') : null;
+    #|    const methodSource = submitMethodAttr === null ? ((form.getAttribute && form.getAttribute('method')) || 'get') : String(submitMethodAttr);
+    #|    const method = methodSource ? String(methodSource).toLowerCase() : 'get';
+    #|    const submitTargetAttr = submitter && submitter.getAttribute ? submitter.getAttribute('formtarget') : null;
+    #|    const targetSource = submitTargetAttr === null ? ((form.getAttribute && form.getAttribute('target')) || '') : String(submitTargetAttr);
+    #|    const normalizedTarget = targetSource ? String(targetSource).toLowerCase() : '';
+    #|    if (normalizedTarget !== '' && normalizedTarget !== '_self' && normalizedTarget !== '_top' && normalizedTarget !== '_parent') return 'handled';
+    #|    const submitActionAttr = submitter && submitter.getAttribute ? submitter.getAttribute('formaction') : null;
+    #|    let action = submitActionAttr === null ? ((form.getAttribute && form.getAttribute('action')) || '') : String(submitActionAttr);
+    #|    if (!action) action = (document && document.URL) || ((window && window.location && window.location.href) || '');
+    #|    if (!action) return 'handled';
+    #|    const submitEnctypeAttr = submitter && submitter.getAttribute ? submitter.getAttribute('formenctype') : null;
+    #|    const enctypeSource = submitEnctypeAttr === null ? ((form.getAttribute && form.getAttribute('enctype')) || 'application/x-www-form-urlencoded') : String(submitEnctypeAttr);
+    #|    const enctype = enctypeSource ? String(enctypeSource).toLowerCase() : 'application/x-www-form-urlencoded';
+    #|    const encodedPairs = [];
+    #|    const plainPairs = [];
+    #|    function pushPair(name, value) {
+    #|      const stringName = String(name);
+    #|      const stringValue = String(value);
+    #|      encodedPairs.push(encodeURIComponent(stringName) + '=' + encodeURIComponent(stringValue));
+    #|      plainPairs.push(stringName + '=' + stringValue);
+    #|    }
+    #|    function pushField(element) {
+    #|      if (!element || !element.getAttribute) return;
+    #|      const name = element.getAttribute('name');
+    #|      if (!name) return;
+    #|      const tag = String(element.tagName || '').toLowerCase();
+    #|      const type = String(element.getAttribute('type') || '').toLowerCase();
+    #|      if (tag === 'input' && (type === 'submit' || type === 'button' || type === 'image' || type === 'reset' || type === 'file')) return;
+    #|      if ((type === 'checkbox' || type === 'radio') && !element.checked) return;
+    #|      const value = element.value !== undefined && element.value !== null ? String(element.value) : String(element.getAttribute('value') || '');
+    #|      pushPair(name, value);
+    #|    }
+    #|    function walk(node) {
+    #|      if (!node || !node.childNodes) return;
+    #|      for (let i = 0; i < node.childNodes.length; i++) {
+    #|        const child = node.childNodes[i];
+    #|        if (!child || child.nodeType !== 1) continue;
+    #|        const childTag = String(child.tagName || '').toLowerCase();
+    #|        if (childTag === 'input' || childTag === 'select' || childTag === 'textarea') pushField(child);
+    #|        walk(child);
+    #|      }
+    #|    }
+    #|    walk(form);
+    #|    if (submitter && submitter.getAttribute) {
+    #|      const submitTag = String(submitter.tagName || '').toLowerCase();
+    #|      const submitType = String(submitter.getAttribute('type') || '').toLowerCase();
+    #|      const submitName = submitter.getAttribute('name');
+    #|      if (submitTag === 'input' && submitType === 'image') {
+    #|        const rect = submitter.getBoundingClientRect ? submitter.getBoundingClientRect() : { left: 0, top: 0 };
+    #|        const imageX = Math.max(0, Math.floor(Number(clientX) - (Number(rect.left) || 0)));
+    #|        const imageY = Math.max(0, Math.floor(Number(clientY) - (Number(rect.top) || 0)));
+    #|        const prefix = submitName ? String(submitName) + '.' : '';
+    #|        pushPair(prefix + 'x', imageX);
+    #|        pushPair(prefix + 'y', imageY);
+    #|      } else if (submitName) {
+    #|        const submitValue = submitter.value !== undefined && submitter.value !== null ? String(submitter.value) : String(submitter.getAttribute('value') || '');
+    #|        pushPair(submitName, submitValue);
+    #|      }
+    #|    }
+    #|    if (method === 'get') {
+    #|      if (encodedPairs.length > 0) action += (action.indexOf('?') >= 0 ? '&' : '?') + encodedPairs.join('&');
+    #|      return 'request:' + JSON.stringify({ url: action, http_method: 'GET', content_type: '', body: '' });
+    #|    }
+    #|    let contentType = 'application/x-www-form-urlencoded;charset=UTF-8';
+    #|    let body = encodedPairs.join('&');
+    #|    if (enctype === 'text/plain') {
+    #|      contentType = 'text/plain;charset=UTF-8';
+    #|      body = plainPairs.join('\r\n');
+    #|    } else if (enctype === 'multipart/form-data') {
+    #|      const boundary = '----CraterFormBoundary';
+    #|      contentType = 'multipart/form-data; boundary=' + boundary;
+    #|      body = '';
+    #|      for (const pair of plainPairs) {
+    #|        const idx = pair.indexOf('=');
+    #|        const partName = idx >= 0 ? pair.slice(0, idx) : pair;
+    #|        const partValue = idx >= 0 ? pair.slice(idx + 1) : '';
+    #|        body += '--' + boundary + '\r\n';
+    #|        body += 'Content-Disposition: form-data; name="' + partName.replace(/"/g, '%22') + '"\r\n\r\n';
+    #|        body += partValue + '\r\n';
+    #|      }
+    #|      body += '--' + boundary + '--\r\n';
+    #|    }
+    #|    return 'request:' + JSON.stringify({ url: action, http_method: method.toUpperCase(), content_type: contentType, body });
+    #|  }
+    #|  function shouldSkipValidation(form, submitter) {
+    #|    if (submitter && submitter.hasAttribute && submitter.hasAttribute('formnovalidate')) return true;
+    #|    return !!(form && form.hasAttribute && form.hasAttribute('novalidate'));
+    #|  }
+    #|  function dispatchFormSubmitThroughBridge(form, submitter, clientX, clientY) {
+    #|    if (!form) return 'none';
+    #|    if (!shouldSkipValidation(form, submitter) &&
+    #|        typeof form.reportValidity === 'function' &&
+    #|        !form.reportValidity()) {
+    #|      return 'invalid';
+    #|    }
+    #|    const event = new SubmitEvent('submit', { bubbles: true, cancelable: true, submitter });
+    #|    if (!form.dispatchEvent(event) && hasSubmitListenersInPath(form)) return 'prevent';
+    #|    return buildFormNavigationRequest(form, submitter, clientX, clientY);
+    #|  }
+    #|  function submitThroughBridge() {
+    #|    const result = buildFormNavigationRequest(this, null, 0, 0);
+    #|    if (result !== 'none' && result !== 'prevent') queue.push(result);
+    #|    return undefined;
+    #|  }
+    #|  function requestSubmitThroughBridge(submitter) {
+    #|    const normalizedSubmitter = submitter === undefined ? null : submitter;
+    #|    if (normalizedSubmitter !== null) {
+    #|      if (!isSubmitButtonElement(normalizedSubmitter)) {
+    #|        throw new TypeError("Failed to execute 'requestSubmit' on 'HTMLFormElement': parameter 1 is not a submit button");
+    #|      }
+    #|      if (resolveFormOwnerForSubmitter(normalizedSubmitter) !== this) {
+    #|        throw new DOMException("Failed to execute 'requestSubmit' on 'HTMLFormElement': the specified element is not owned by this form element", 'NotFoundError');
+    #|      }
+    #|    }
+    #|    const result = dispatchFormSubmitThroughBridge(this, normalizedSubmitter, 0, 0);
+    #|    if (result !== 'none' && result !== 'prevent' && result !== 'invalid') queue.push(result);
+    #|    return undefined;
+    #|  }
+    #|  globalThis.__craterBuildFormNavigationRequest = buildFormNavigationRequest;
+    #|  globalThis.__craterDispatchFormSubmit = dispatchFormSubmitThroughBridge;
+    #|  Object.defineProperty(HTMLFormElement.prototype, 'submit', {
+    #|    value: submitThroughBridge,
+    #|    configurable: true,
+    #|    writable: true,
+    #|  });
+    #|  Object.defineProperty(HTMLFormElement.prototype, 'requestSubmit', {
+    #|    value: requestSubmitThroughBridge,
+    #|    configurable: true,
+    #|    writable: true,
+    #|  });
+    #|  if (document && typeof document.querySelectorAll === 'function') {
+    #|    const forms = document.querySelectorAll('form');
+    #|    for (let i = 0; i < forms.length; i++) {
+    #|      const form = forms[i];
+    #|      if (!form) continue;
+    #|      Object.defineProperty(form, 'submit', {
+    #|        value: submitThroughBridge,
+    #|        configurable: true,
+    #|        writable: true,
+    #|      });
+    #|      Object.defineProperty(form, 'requestSubmit', {
+    #|        value: requestSubmitThroughBridge,
+    #|        configurable: true,
+    #|        writable: true,
+    #|      });
+    #|    }
+    #|  }
+    #|  globalThis.__craterHasSubmitListenersInPath = hasSubmitListenersInPath;
+    #|  globalThis.__craterBrowserFormSubmitBridgeInstalled = true;
+    #|  return 'ok';
+    #|})()
+  source
+}
+
+///|
+fn browser_pending_form_submission_source() -> String {
+  let source =
+    #|(() => {
+    #|  const queue = globalThis.__craterPendingFormSubmissions || [];
+    #|  if (queue.length === 0) return JSON.stringify('');
+    #|  const next = queue.shift();
+    #|  return JSON.stringify(next === undefined || next === null ? '' : String(next));
+    #|})()
+  source
+}
+
+///|
+fn browser_peek_pending_form_submission_source() -> String {
+  let source =
+    #|(() => {
+    #|  const queue = globalThis.__craterPendingFormSubmissions || [];
+    #|  if (queue.length === 0) return JSON.stringify('');
+    #|  const next = queue[0];
+    #|  return JSON.stringify(next === undefined || next === null ? '' : String(next));
+    #|})()
+  source
+}
+
+///|
+fn Browser::peek_pending_form_submission_navigation(self : Browser) -> String? {
+  match self.script_executor {
+    Some(executor) =>
+      decode_js_string_result(
+        executor.execute_source(browser_peek_pending_form_submission_source()).value,
+      ) catch {
+        err => {
+          println("[JS] Error: " + err.to_string())
+          None
+        }
+      }
+    None => None
+  }
+}
+
+///|
+fn Browser::shift_pending_form_submission_navigation(self : Browser) -> String? {
+  match self.script_executor {
+    Some(executor) =>
+      decode_js_string_result(
+        executor.execute_source(browser_pending_form_submission_source()).value,
+      ) catch {
+        err => {
+          println("[JS] Error: " + err.to_string())
+          None
+        }
+      }
+    None => None
+  }
+}
+
+///|
 fn Browser::dispatch_submit_to_source_id(
   self : Browser,
   source_id : String,
+  client_x? : Int = 0,
+  client_y? : Int = 0,
 ) -> SubmitDispatchResult {
   if !self.enable_js {
     return NotSubmittable
   }
   let escaped = escape_js_string(source_id)
+  let source_client_x = client_x.to_string()
+  let source_client_y = client_y.to_string()
   let source = "(function(){const target=document.getElementById('" +
     escaped +
-    "');if(!target){return 'none';}const tag=(target.tagName||'').toLowerCase();const type=(target.getAttribute?((target.getAttribute('type')||'').toLowerCase()):'');let form=null;let submitter=null;if(tag==='form'){form=target;}else{if(tag==='button'){if(type!==''&&type!=='submit'){return 'none';}submitter=target;}else if(tag==='input'){if(type==='submit'||type==='image'){submitter=target;}else if(type==='button'||type==='reset'||type==='checkbox'||type==='radio'||type==='file'){return 'none';}}else if(tag==='textarea'||tag==='select'){return 'none';}form=target.closest?target.closest('form'):null;}if(!form){return 'none';}const submitEvent=new Event('submit',{bubbles:true,cancelable:true});if(!form.dispatchEvent(submitEvent)){return 'prevent';}const method=((form.getAttribute&&form.getAttribute('method'))||'get').toLowerCase();let action=((form.getAttribute&&form.getAttribute('action'))||'');if(!action){action=(document&&document.URL)||((window&&window.location&&window.location.href)||'');}if(method!=='get'||!action){return 'handled';}const pairs=[];function pushField(el){if(!el||!el.getAttribute){return;}const name=el.getAttribute('name');if(!name){return;}const elTag=(el.tagName||'').toLowerCase();const elType=((el.getAttribute('type')||'').toLowerCase());if((elTag==='input')&&(elType==='submit'||elType==='button'||elType==='image'||elType==='reset'||elType==='file')){return;}if((elType==='checkbox'||elType==='radio')&&!el.checked){return;}const value=(el.value!==undefined&&el.value!==null)?String(el.value):String(el.getAttribute('value')||'');pairs.push(encodeURIComponent(name)+'='+encodeURIComponent(value));}function walk(node){if(!node||!node.childNodes){return;}for(let i=0;i<node.childNodes.length;i++){const child=node.childNodes[i];if(!child||child.nodeType!==1){continue;}const childTag=(child.tagName||'').toLowerCase();if(childTag==='input'||childTag==='select'||childTag==='textarea'){pushField(child);}walk(child);}}walk(form);if(submitter&&submitter.getAttribute){const submitName=submitter.getAttribute('name');if(submitName){const submitValue=(submitter.value!==undefined&&submitter.value!==null)?String(submitter.value):String(submitter.getAttribute('value')||'');pairs.push(encodeURIComponent(submitName)+'='+encodeURIComponent(submitValue));}}if(pairs.length>0){action += (action.indexOf('?')>=0 ? '&' : '?') + pairs.join('&');}return 'navigate:' + action;})()"
+    "');if(!target){return 'none';}const clientX=" +
+    source_client_x +
+    ";const clientY=" +
+    source_client_y +
+    ";const tag=(target.tagName||'').toLowerCase();const type=(target.getAttribute?((target.getAttribute('type')||'').toLowerCase()):'');let form=null;let submitter=null;if(tag==='form'){form=target;}else{if(tag==='button'){if(type!==''&&type!=='submit'){return 'none';}submitter=target;}else if(tag==='input'){if(type==='submit'||type==='image'){submitter=target;}else if(type==='button'||type==='reset'||type==='checkbox'||type==='radio'||type==='file'){return 'none';}}else if(tag==='textarea'||tag==='select'){return 'none';}form=target.closest?target.closest('form'):null;}if(!form){return 'none';}const dispatchSubmit=globalThis.__craterDispatchFormSubmit;if(typeof dispatchSubmit==='function'){return dispatchSubmit(form,submitter,clientX,clientY);}const build=globalThis.__craterBuildFormNavigationRequest;if(typeof build!=='function'){return 'handled';}return build(form,submitter,clientX,clientY);})()"
   match self.execute_inline_js(source) {
     Some(result) => {
       let _ = self.sync_render_state_from_dom_tree()
@@ -3097,10 +3826,18 @@ fn Browser::dispatch_submit_to_source_id(
         NotSubmittable
       } else if result == "prevent" {
         Prevented
+      } else if result == "invalid" {
+        Handled
       } else if result == "handled" {
         Handled
-      } else if result.has_prefix("navigate:") {
-        Navigate(result.unsafe_substring(start=9, end=result.length()))
+      } else if result.has_prefix("request:") {
+        match
+          parse_navigation_request(
+            result.unsafe_substring(start=8, end=result.length()),
+          ) {
+          Some(request) => Navigate(request)
+          None => NotSubmittable
+        }
       } else {
         NotSubmittable
       }
@@ -3152,6 +3889,9 @@ pub fn Browser::tick_js(self : Browser) -> Bool {
   let processed = self.process_pending_script_tasks()
   if processed > 0 {
     self.flush_js_logs()
+    if self.drain_pending_form_submission_navigation_sync() {
+      return true
+    }
     return self.sync_render_state_from_dom_tree()
   }
   let ticked = match self.script_executor {
@@ -3168,6 +3908,9 @@ pub fn Browser::tick_js(self : Browser) -> Bool {
     return false
   }
   self.flush_js_logs()
+  if self.drain_pending_form_submission_navigation_sync() {
+    return true
+  }
   self.sync_render_state_from_dom_tree()
 }
 
@@ -3187,8 +3930,12 @@ pub async fn Browser::handle_focused_key(
           match self.dispatch_submit_to_source_id(id) {
             Prevented => true
             Handled => true
-            Navigate(url) => {
-              let _ = self.navigate(resolve_url(self.current_url, url))
+            Navigate(request) => {
+              let resolved_request = {
+                ..request,
+                url: resolve_url(self.current_url, request.url),
+              }
+              let _ = self.navigate_request(resolved_request)
               true
             }
             NotSubmittable => true
@@ -3221,11 +3968,15 @@ pub async fn Browser::activate_focused_link(
       if self.dispatch_activation_default_to_source_id(id) {
         return true
       }
-      match self.dispatch_submit_to_source_id(id) {
+      match self.dispatch_submit_to_source_id(id, client_x~, client_y~) {
         Prevented => return true
         Handled => return true
-        Navigate(url) => {
-          let _ = self.navigate(resolve_url(self.current_url, url))
+        Navigate(request) => {
+          let resolved_request = {
+            ..request,
+            url: resolve_url(self.current_url, request.url),
+          }
+          let _ = self.navigate_request(resolved_request)
           return true
         }
         NotSubmittable => ()
@@ -3482,11 +4233,15 @@ pub async fn Browser::pointer_up_at(
       if self.dispatch_activation_default_to_source_id(down_id) {
         return true
       }
-      match self.dispatch_submit_to_source_id(down_id) {
+      match self.dispatch_submit_to_source_id(down_id, client_x~, client_y~) {
         Prevented => return true
         Handled => return true
-        Navigate(url) => {
-          let _ = self.navigate(resolve_url(self.current_url, url))
+        Navigate(request) => {
+          let resolved_request = {
+            ..request,
+            url: resolve_url(self.current_url, request.url),
+          }
+          let _ = self.navigate_request(resolved_request)
           return true
         }
         NotSubmittable => ()
@@ -3533,11 +4288,20 @@ pub async fn Browser::activate_at(
       if self.dispatch_activation_default_to_source_id(id) {
         return true
       }
-      match self.dispatch_submit_to_source_id(id) {
+      match
+        self.dispatch_submit_to_source_id(
+          id,
+          client_x=cell_to_client_x(col),
+          client_y=cell_to_client_y(row),
+        ) {
         Prevented => return true
         Handled => return true
-        Navigate(url) => {
-          let _ = self.navigate(resolve_url(self.current_url, url))
+        Navigate(request) => {
+          let resolved_request = {
+            ..request,
+            url: resolve_url(self.current_url, request.url),
+          }
+          let _ = self.navigate_request(resolved_request)
           return true
         }
         NotSubmittable => ()
@@ -3678,6 +4442,7 @@ fn extract_links(html : String) -> Array[Link] {
       // Find href="
       let mut j = i + 2
       let mut href = ""
+      let mut source_id = ""
       while j < len && char_at(html, j) != '>' {
         if j + 6 < len &&
           (char_at(html, j) == 'h' || char_at(html, j) == 'H') &&
@@ -3692,6 +4457,18 @@ fn extract_links(html : String) -> Array[Link] {
               k = k + 1
             }
             href = html.unsafe_substring(start=j + 6, end=k)
+          }
+        } else if j + 4 < len &&
+          (char_at(html, j) == 'i' || char_at(html, j) == 'I') &&
+          (char_at(html, j + 1) == 'd' || char_at(html, j + 1) == 'D') &&
+          char_at(html, j + 2) == '=' {
+          let quote = char_at(html, j + 3)
+          if quote == '"' || quote == '\'' {
+            let mut k = j + 4
+            while k < len && char_at(html, k) != quote {
+              k = k + 1
+            }
+            source_id = html.unsafe_substring(start=j + 4, end=k)
           }
         }
         j = j + 1
@@ -3716,7 +4493,7 @@ fn extract_links(html : String) -> Array[Link] {
           .trim()
           .to_string()
         if href.length() > 0 {
-          links.push({ href, text })
+          links.push({ href, text, source_id })
         }
         i = text_end
       }
@@ -3738,26 +4515,23 @@ pub fn Browser::enter_hint_mode(self : Browser) -> Unit {
   self.hints = []
   let mut label_idx = 0
   for region in self.link_regions {
-    // Find corresponding link href from extracted links
-    let mut href = ""
-    for link in self.links {
-      if region.text == link.text {
-        href = resolve_url(self.current_url, link.href)
-        break
+    match self.get_link_href_for_region(region) {
+      Some(link_href) => {
+        let href = resolve_url(self.current_url, link_href)
+        if href.length() == 0 {
+          continue
+        }
+        self.hints.push({
+          label: generate_single_label(label_idx),
+          href,
+          text: region.text,
+          col: region.col,
+          row: region.row,
+        })
+        label_idx = label_idx + 1
       }
+      None => ()
     }
-    // Skip if no href found or resolved URL is empty
-    if href.length() == 0 {
-      continue
-    }
-    self.hints.push({
-      label: generate_single_label(label_idx),
-      href,
-      text: region.text,
-      col: region.col,
-      row: region.row,
-    })
-    label_idx = label_idx + 1
   }
 }
 
@@ -4007,26 +4781,49 @@ fn extract_scripts(html : String) -> Array[ScriptInfo] {
 fn Browser::init_js_execution(self : Browser) -> Unit {
   // Build from parsed_doc/html_content when available so scripts can mutate
   // existing DOM and those mutations can be reflected back to rendering.
-  let dom = match self.parsed_doc {
-    Some(doc) => build_dom_tree_from_document(doc)
-    None =>
-      if self.html_content.length() > 0 {
-        let doc = @html.assign_synthetic_ids(
-          @html.parse_document(self.html_content),
-        )
-        self.parsed_doc = Some(doc)
-        build_dom_tree_from_document(doc)
-      } else {
-        let d = @dom.DomTree::new()
-        let html = d.create_element("html")
-        let head = d.create_element("head")
-        let body = d.create_element("body")
-        let doc_id = d.get_document()
-        let _ = d.append_child(doc_id, html)
-        let _ = d.append_child(html, head)
-        let _ = d.append_child(html, body)
-        d
-      }
+  let shadow_source_html = if html_source_requires_runtime_rebuild(
+      self.source_html,
+    ) {
+    self.source_html
+  } else if html_source_requires_runtime_rebuild(self.dom_snapshot_html) {
+    self.dom_snapshot_html
+  } else if html_source_requires_runtime_rebuild(self.html_content) {
+    self.html_content
+  } else {
+    ""
+  }
+  let dom = if shadow_source_html.length() > 0 {
+    match build_dom_tree_from_source_html(shadow_source_html) {
+      Some(dom) => dom
+      None =>
+        match self.parsed_doc {
+          Some(doc) => build_dom_tree_from_document(doc)
+          None =>
+            if self.html_content.length() > 0 {
+              let doc = @html.assign_synthetic_ids(
+                @html.parse_document(self.html_content),
+              )
+              self.parsed_doc = Some(doc)
+              build_dom_tree_from_document(doc)
+            } else {
+              create_empty_html_dom_tree()
+            }
+        }
+    }
+  } else {
+    match self.parsed_doc {
+      Some(doc) => build_dom_tree_from_document(doc)
+      None =>
+        if self.html_content.length() > 0 {
+          let doc = @html.assign_synthetic_ids(
+            @html.parse_document(self.html_content),
+          )
+          self.parsed_doc = Some(doc)
+          build_dom_tree_from_document(doc)
+        } else {
+          create_empty_html_dom_tree()
+        }
+    }
   }
   self.dom_tree = Some(dom)
   self.script_executor = Some(
@@ -4035,6 +4832,13 @@ fn Browser::init_js_execution(self : Browser) -> Unit {
       None => @js.ScriptExecutor::new_deferred(dom)
     },
   )
+  match self.script_executor {
+    Some(executor) =>
+      ignore(executor.execute_source(browser_form_submit_bridge_source())) catch {
+        err => println("[JS] Error: " + err.to_string())
+      }
+    None => ()
+  }
 }
 
 ///|
@@ -4076,6 +4880,11 @@ pub fn Browser::execute_scripts(self : Browser) -> Int {
   // Process queued scripts
   executed = self.process_pending_script_tasks()
   if executed > 0 {
+    if self.drain_pending_form_submission_navigation_sync() {
+      self.flush_js_logs()
+      println("Executed " + executed.to_string() + " script(s)")
+      return executed
+    }
     let _ = self.sync_render_state_from_dom_tree()
   }
   self.flush_js_logs()
@@ -4164,7 +4973,12 @@ async fn Browser::execute_scripts_async(self : Browser) -> Int {
   // Process queued scripts
   executed = self.process_pending_script_tasks()
   if executed > 0 {
-    let _ = self.sync_render_state_from_dom_tree()
+    let navigated = self.drain_pending_form_submission_navigation() catch {
+      _ => false
+    }
+    if !navigated {
+      let _ = self.sync_render_state_from_dom_tree()
+    }
   }
   self.flush_js_logs()
   println("Executed " + executed.to_string() + " script(s)")
@@ -4177,10 +4991,18 @@ fn Browser::sync_render_state_from_dom_tree(self : Browser) -> Bool {
   match self.dom_tree {
     Some(dom) => {
       let next_html = @js.serialize_dom_to_html(dom)
+      let next_snapshot_html = @js.serialize_dom_to_snapshot_html(dom)
       if next_html.length() == 0 {
         return false
       }
-      if next_html == self.html_content {
+      let render_changed = next_html != self.html_content
+      let snapshot_changed = next_snapshot_html != self.dom_snapshot_html
+      if !render_changed && !snapshot_changed {
+        return false
+      }
+      self.dom_snapshot_html = next_snapshot_html
+      self.source_html = next_snapshot_html
+      if !render_changed {
         return false
       }
       self.html_content = next_html
@@ -4221,6 +5043,370 @@ fn build_dom_tree_from_document(doc : @html.Document) -> @dom.DomTree {
 }
 
 ///|
+fn html_source_has_declarative_shadow_dom(html : String) -> Bool {
+  html.to_lower().contains("shadowrootmode")
+}
+
+///|
+priv struct SourceHtmlFragment {
+  attrs : Array[(String, String)]
+  inner_html : String
+}
+
+///|
+priv struct NormalizedShadowSourceHtml {
+  render_html : String
+  snapshot_html : String
+  parsed_doc : @html.Document
+}
+
+///|
+fn is_html_attr_whitespace(c : Char) -> Bool {
+  c == ' ' || c == '\n' || c == '\r' || c == '\t'
+}
+
+///|
+fn parse_html_attributes(raw : String) -> Array[(String, String)] {
+  let attrs : Array[(String, String)] = []
+  let mut i = 0
+  while i < raw.length() {
+    while i < raw.length() && is_html_attr_whitespace(char_at(raw, i)) {
+      i = i + 1
+    }
+    if i >= raw.length() {
+      break
+    }
+    if char_at(raw, i) == '/' {
+      i = i + 1
+      continue
+    }
+    let name_start = i
+    while i < raw.length() {
+      let c = char_at(raw, i)
+      if is_html_attr_whitespace(c) || c == '=' || c == '>' || c == '/' {
+        break
+      }
+      i = i + 1
+    }
+    let name = raw.unsafe_substring(start=name_start, end=i).trim().to_string()
+    while i < raw.length() && is_html_attr_whitespace(char_at(raw, i)) {
+      i = i + 1
+    }
+    let mut value = ""
+    if i < raw.length() && char_at(raw, i) == '=' {
+      i = i + 1
+      while i < raw.length() && is_html_attr_whitespace(char_at(raw, i)) {
+        i = i + 1
+      }
+      if i < raw.length() {
+        let quote = char_at(raw, i)
+        if quote == '"' || quote == '\'' {
+          i = i + 1
+          let value_start = i
+          while i < raw.length() && char_at(raw, i) != quote {
+            i = i + 1
+          }
+          value = raw.unsafe_substring(start=value_start, end=i)
+          if i < raw.length() {
+            i = i + 1
+          }
+        } else {
+          let value_start = i
+          while i < raw.length() {
+            let c = char_at(raw, i)
+            if is_html_attr_whitespace(c) || c == '>' {
+              break
+            }
+            i = i + 1
+          }
+          value = raw.unsafe_substring(start=value_start, end=i)
+        }
+      }
+    }
+    if name.length() > 0 {
+      attrs.push((name, value))
+    }
+  }
+  attrs
+}
+
+///|
+fn extract_source_html_fragment(
+  html : String,
+  tag : String,
+) -> SourceHtmlFragment? {
+  let lower = html.to_lower()
+  let open_needle = "<" + tag
+  match lower.find(open_needle) {
+    Some(start) => {
+      let mut open_end = start
+      while open_end < html.length() && char_at(html, open_end) != '>' {
+        open_end = open_end + 1
+      }
+      if open_end >= html.length() {
+        return None
+      }
+      let attr_source = html
+        .unsafe_substring(start=start + open_needle.length(), end=open_end)
+        .trim()
+        .to_string()
+      let close_needle = "</" + tag + ">"
+      let inner_html = match lower.find(close_needle) {
+        Some(close_start) if close_start > open_end =>
+          html.unsafe_substring(start=open_end + 1, end=close_start)
+        _ => ""
+      }
+      Some({ attrs: parse_html_attributes(attr_source), inner_html })
+    }
+    None => None
+  }
+}
+
+///|
+fn write_set_attributes_js(
+  buf : StringBuilder,
+  target_expr : String,
+  attrs : Array[(String, String)],
+) -> Unit {
+  for pair in attrs {
+    let (name, value) = pair
+    buf.write_string(target_expr)
+    buf.write_string(".setAttribute('")
+    buf.write_string(escape_js_string(name))
+    buf.write_string("', '")
+    buf.write_string(escape_js_string(value))
+    buf.write_string("');")
+  }
+}
+
+///|
+fn create_empty_html_dom_tree() -> @dom.DomTree {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let head = dom.create_element("head")
+  let body = dom.create_element("body")
+  let doc_id = dom.get_document()
+  let _ = dom.append_child(doc_id, html)
+  let _ = dom.append_child(html, head)
+  let _ = dom.append_child(html, body)
+  dom
+}
+
+///|
+fn normalize_declarative_shadow_source_html(
+  html : String,
+) -> NormalizedShadowSourceHtml? {
+  if !html_source_has_declarative_shadow_dom(html) {
+    return None
+  }
+  match build_dom_tree_from_source_html(html) {
+    Some(dom) => {
+      let render_html = @js.serialize_dom_to_html(dom)
+      if render_html.length() == 0 {
+        return None
+      }
+      let snapshot_html = @js.serialize_dom_to_snapshot_html(dom)
+      let parsed_doc = @html.assign_synthetic_ids(
+        @html.parse_document(render_html),
+      )
+      Some({ render_html, snapshot_html, parsed_doc })
+    }
+    None => None
+  }
+}
+
+///|
+let crater_form_value_attr_name = "data-crater-form-value"
+
+///|
+let crater_form_state_attr_name = "data-crater-form-state-value"
+
+///|
+fn html_source_has_internal_form_restore_state(html : String) -> Bool {
+  html.contains(crater_form_value_attr_name) ||
+  html.contains(crater_form_state_attr_name)
+}
+
+///|
+fn html_source_requires_runtime_rebuild(html : String) -> Bool {
+  html_source_has_declarative_shadow_dom(html) ||
+  html_source_has_internal_form_restore_state(html)
+}
+
+///|
+fn consume_internal_form_restore_state_recursive(
+  dom : @dom.DomTree,
+  node_id : @dom.NodeId,
+) -> Unit {
+  let info = dom.get_node_info(node_id)
+  guard info is Ok(info) else { return }
+  if info.node_type == @dom.Element {
+    let form_value = dom
+      .get_attribute(node_id, crater_form_value_attr_name)
+      .unwrap_or(None)
+    let form_state_value = dom
+      .get_attribute(node_id, crater_form_state_attr_name)
+      .unwrap_or(None)
+    if form_value != None || form_state_value != None {
+      let _ = dom.set_form_associated_state(
+        node_id, form_value, form_state_value,
+      )
+      let _ = dom.remove_attribute(node_id, crater_form_value_attr_name)
+      let _ = dom.remove_attribute(node_id, crater_form_state_attr_name)
+    }
+  }
+  match dom.get_children(node_id) {
+    Ok(children) =>
+      for child_id in children {
+        consume_internal_form_restore_state_recursive(dom, child_id)
+      }
+    Err(_) => ()
+  }
+  match dom.get_shadow_root(node_id) {
+    Ok(Some(shadow_root_id)) =>
+      consume_internal_form_restore_state_recursive(dom, shadow_root_id)
+    _ => ()
+  }
+}
+
+///|
+fn consume_internal_form_restore_state(dom : @dom.DomTree) -> Unit {
+  consume_internal_form_restore_state_recursive(dom, dom.get_document())
+}
+
+///|
+fn build_dom_tree_from_source_html(html : String) -> @dom.DomTree? {
+  if html.length() == 0 {
+    return None
+  }
+  let dom = create_empty_html_dom_tree()
+  let ctx = @js.JsContext::new_deferred(dom)
+  let html_fragment = extract_source_html_fragment(html, "html")
+  let head_fragment = extract_source_html_fragment(html, "head")
+  let body_fragment = extract_source_html_fragment(html, "body")
+  let body_inner_html = match body_fragment {
+    Some(fragment) => fragment.inner_html
+    None => html
+  }
+  let source = StringBuilder::new()
+  source.write_string("(function(){")
+  source.write_string("const htmlEl=document.documentElement;")
+  source.write_string("const headEl=document.head;")
+  source.write_string("const bodyEl=document.body;")
+  match html_fragment {
+    Some(fragment) => write_set_attributes_js(source, "htmlEl", fragment.attrs)
+    None => ()
+  }
+  match head_fragment {
+    Some(fragment) => {
+      write_set_attributes_js(source, "headEl", fragment.attrs)
+      source.write_string("headEl.setHTMLUnsafe('")
+      source.write_string(escape_js_string(fragment.inner_html))
+      source.write_string("');")
+    }
+    None => source.write_string("headEl.setHTMLUnsafe('');")
+  }
+  match body_fragment {
+    Some(fragment) => {
+      write_set_attributes_js(source, "bodyEl", fragment.attrs)
+      source.write_string("bodyEl.setHTMLUnsafe('")
+      source.write_string(escape_js_string(fragment.inner_html))
+      source.write_string("');")
+    }
+    None => {
+      source.write_string("bodyEl.setHTMLUnsafe('")
+      source.write_string(escape_js_string(body_inner_html))
+      source.write_string("');")
+    }
+  }
+  source.write_string("return 'ok';})()")
+  try {
+    let result = ctx.execute(source.to_string())
+    if result.success {
+      consume_internal_form_restore_state(dom)
+      Some(dom)
+    } else {
+      None
+    }
+  } catch {
+    _ => None
+  }
+}
+
+///|
+fn get_declarative_shadow_root_init(
+  elem : @html.Element,
+) -> @dom.ShadowRootInit? {
+  if elem.tag.to_lower() != "template" {
+    return None
+  }
+  match elem.attributes.get("shadowrootmode") {
+    Some(mode) => {
+      let mode = mode.to_lower()
+      if mode != "open" && mode != "closed" {
+        return None
+      }
+      Some(
+        @dom.ShadowRootInit::new(
+          mode~,
+          delegates_focus=elem.attributes.contains("shadowrootdelegatesfocus"),
+          slot_assignment=if elem.attributes.contains(
+              "shadowrootslotassignment",
+            ) {
+            match elem.attributes.get("shadowrootslotassignment") {
+              Some(value) if value.to_lower() == "manual" => "manual"
+              _ => "named"
+            }
+          } else {
+            "named"
+          },
+          clonable=elem.attributes.contains("shadowrootclonable"),
+          serializable=elem.attributes.contains("shadowrootserializable"),
+        ),
+      )
+    }
+    None => None
+  }
+}
+
+///|
+fn build_dom_children(
+  dom : @dom.DomTree,
+  parent_id : @dom.NodeId,
+  children : Array[@html.Node],
+) -> Unit {
+  for child in children {
+    match child {
+      @html.Node::Element(child_elem) =>
+        match get_declarative_shadow_root_init(child_elem) {
+          Some(shadow_init) =>
+            match dom.get_shadow_root(parent_id) {
+              Ok(None) => {
+                let shadow_root = dom
+                  .attach_shadow_with_init(parent_id, shadow_init)
+                  .unwrap()
+                build_dom_children(dom, shadow_root, child_elem.children)
+              }
+              _ => {
+                let child_id = build_dom_element(dom, child_elem)
+                let _ = dom.append_child(parent_id, child_id)
+              }
+            }
+          None => {
+            let child_id = build_dom_element(dom, child_elem)
+            let _ = dom.append_child(parent_id, child_id)
+          }
+        }
+      @html.Node::Text(text) =>
+        if text.length() > 0 {
+          let text_id = dom.create_text(text)
+          let _ = dom.append_child(parent_id, text_id)
+        }
+    }
+  }
+}
+
+///|
 fn build_dom_element(dom : @dom.DomTree, elem : @html.Element) -> @dom.NodeId {
   let node_id = dom.create_element(elem.tag)
   match elem.id {
@@ -4232,18 +5418,6 @@ fn build_dom_element(dom : @dom.DomTree, elem : @html.Element) -> @dom.NodeId {
   for name, value in elem.attributes {
     let _ = dom.set_attribute(node_id, name, value)
   }
-  for child in elem.children {
-    match child {
-      @html.Node::Element(child_elem) => {
-        let child_id = build_dom_element(dom, child_elem)
-        let _ = dom.append_child(node_id, child_id)
-      }
-      @html.Node::Text(text) =>
-        if text.length() > 0 {
-          let text_id = dom.create_text(text)
-          let _ = dom.append_child(node_id, text_id)
-        }
-    }
-  }
+  build_dom_children(dom, node_id, elem.children)
   node_id
 }

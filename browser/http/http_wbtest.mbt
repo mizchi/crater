@@ -400,6 +400,35 @@ test "sandbox: allowlist permits listed origin" {
 }
 
 ///|
+test "prepare_fetch_options injects Origin for navigate POST" {
+  let options = {
+    ..FetchOptions::default(),
+    http_method: "POST",
+    mode: Navigate,
+    origin: "https://example.test/form",
+    sandbox: Open,
+  }
+  let prepared = prepare_fetch_options("https://other.test/submit", options)
+  match prepared.headers.get("Origin") {
+    Some(value) => inspect(value, content="https://example.test")
+    None => assert_true(false)
+  }
+}
+
+///|
+test "prepare_fetch_options does not inject Origin for navigate GET" {
+  let options = {
+    ..FetchOptions::default(),
+    http_method: "GET",
+    mode: Navigate,
+    origin: "https://example.test/form",
+    sandbox: Open,
+  }
+  let prepared = prepare_fetch_options("https://other.test/page", options)
+  inspect(prepared.headers.get("Origin"), content="None")
+}
+
+///|
 test "sandbox: allowlist blocks unlisted origin" {
   let err = capture_error(fn() raise HttpError {
     let _ = prepare_fetch_options("https://blocked.test/api", {

@@ -81,6 +81,7 @@ pub(all) struct Element {
   id : String?
   classes : Array[String]
   attributes : Array[Attribute]
+  custom_states : Array[String]
   parent : Element?
   prev_sibling : Element?
   next_sibling : Element?
@@ -89,6 +90,7 @@ pub(all) struct Element {
   sibling_count : Int
 }
 pub fn Element::add_class(Self, String) -> Self
+pub fn Element::add_custom_state(Self, String) -> Self
 pub fn Element::get_attribute(Self, String) -> String?
 pub fn Element::has_class(Self, String) -> Bool
 pub fn Element::is_first_child(Self) -> Bool
@@ -135,6 +137,7 @@ pub enum PseudoClass {
   Is(Array[ComplexSelector])
   Where(Array[ComplexSelector])
   Has(Array[RelativeSelector])
+  State(String)
   Hover
   Active
   Focus

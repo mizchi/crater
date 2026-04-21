@@ -23,6 +23,8 @@ pub fn serialize_dom_for_mock(@dom.DomTree) -> String
 
 pub fn serialize_dom_to_html(@dom.DomTree) -> String
 
+pub fn serialize_dom_to_snapshot_html(@dom.DomTree) -> String
+
 // Errors
 pub suberror JsError {
   NotSupported

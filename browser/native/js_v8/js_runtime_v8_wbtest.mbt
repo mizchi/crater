@@ -151,6 +151,132 @@ test "V8+DOM: addEventListener and click" {
 }
 
 ///|
+test "V8+DOM: form.requestSubmit dispatches SubmitEvent with submitter" {
+  let rt = V8JsRuntime::new_with_mock_dom(full_mock_dom_js())
+  rt.init()
+  let dom = @dom.DomTree::new()
+  let result = rt.execute(
+    0,
+    dom,
+    (
+      #|document.body.innerHTML = '<form id="form"><button id="btn" type="submit">Go</button></form>';
+      #|const form = document.getElementById('form');
+      #|const button = document.getElementById('btn');
+      #|let seen = '';
+      #|form.addEventListener('submit', (event) => {
+      #|  seen = [
+      #|    typeof SubmitEvent === 'function',
+      #|    event instanceof SubmitEvent,
+      #|    event.submitter === button,
+      #|    event.target === form
+      #|  ].join(',');
+      #|  event.preventDefault();
+      #|});
+      #|form.requestSubmit(button);
+      #|return seen
+    ),
+    @js.ImmediateFlush,
+  )
+  assert_true(result.success)
+  assert_eq(result.value, "true,true,true,true")
+}
+
+///|
+test "V8+DOM: form.requestSubmit validates required controls and honors formnovalidate" {
+  let rt = V8JsRuntime::new_with_mock_dom(full_mock_dom_js())
+  rt.init()
+  let dom = @dom.DomTree::new()
+  let result = rt.execute(
+    0,
+    dom,
+    (
+      #|document.body.innerHTML = `
+      #|  <form id="form">
+      #|    <input id="field" required>
+      #|    <button id="submitter" type="submit">Go</button>
+      #|    <button id="skip" type="submit" formnovalidate>Skip</button>
+      #|  </form>`;
+      #|const form = document.getElementById('form');
+      #|const field = document.getElementById('field');
+      #|const submitter = document.getElementById('submitter');
+      #|const skip = document.getElementById('skip');
+      #|let submitCount = 0;
+      #|let invalidCount = 0;
+      #|field.addEventListener('invalid', () => { invalidCount += 1; });
+      #|form.addEventListener('submit', (event) => {
+      #|  submitCount += 1;
+      #|  event.preventDefault();
+      #|});
+      #|form.requestSubmit(submitter);
+      #|const blocked = [submitCount, invalidCount, field.validity.valueMissing, field.validationMessage.length > 0].join(',');
+      #|form.requestSubmit(skip);
+      #|return blocked + '|' + [submitCount, invalidCount].join(',')
+    ),
+    @js.ImmediateFlush,
+  )
+  assert_true(result.success)
+  assert_eq(result.value, "0,1,true,true|1,1")
+}
+
+///|
+test "V8+DOM: form.submit bypasses submit event" {
+  let rt = V8JsRuntime::new_with_mock_dom(full_mock_dom_js())
+  rt.init()
+  let dom = @dom.DomTree::new()
+  let result = rt.execute(
+    0,
+    dom,
+    (
+      #|document.body.innerHTML = '<form id="form"><input id="field" required><button id="btn" type="submit">Go</button></form>';
+      #|const form = document.getElementById('form');
+      #|const field = document.getElementById('field');
+      #|let submitCount = 0;
+      #|let invalidCount = 0;
+      #|form.addEventListener('submit', () => {
+      #|  submitCount += 1;
+      #|});
+      #|field.addEventListener('invalid', () => {
+      #|  invalidCount += 1;
+      #|});
+      #|const value = form.submit();
+      #|return [typeof form.submit === 'function', value === undefined, submitCount, invalidCount].join(',')
+    ),
+    @js.ImmediateFlush,
+  )
+  assert_true(result.success)
+  assert_eq(result.value, "true,true,0,0")
+}
+
+///|
+test "V8+DOM: click on reset button dispatches reset and restores controls" {
+  let rt = V8JsRuntime::new_with_mock_dom(full_mock_dom_js())
+  rt.init()
+  let dom = @dom.DomTree::new()
+  let result = rt.execute(
+    0,
+    dom,
+    (
+      #|document.body.innerHTML = '<form id="form"><input id="field" value="seed"><input id="check" type="checkbox" checked><button id="reset" type="reset">Reset</button></form>';
+      #|const form = document.getElementById('form');
+      #|const field = document.getElementById('field');
+      #|const check = document.getElementById('check');
+      #|const button = document.getElementById('reset');
+      #|let resetCount = 0;
+      #|form.addEventListener('reset', () => {
+      #|  resetCount += 1;
+      #|});
+      #|field.value = 'edited';
+      #|check.checked = false;
+      #|button.click();
+      #|return [resetCount, field.value, check.checked].join(',')
+    ),
+    @js.ImmediateFlush,
+  )
+  assert_true(result.success)
+  assert_eq(result.value, "1,seed,true")
+}
+
+///|
 test "V8+DOM: Promise ordering" {
   let rt = V8JsRuntime::new_with_mock_dom(minimal_mock_dom_js())
   rt.init()
@@ -329,6 +455,133 @@ test "V8+FullDOM: setTimeout with nested setTimeout" {
   )
   assert_true(check.success)
   assert_eq(check.value, "first,nested")
+}
+
+///|
+test "V8+FullDOM: attachShadow closed mode tracks metadata and clonable serialization" {
+  let rt = V8JsRuntime::new_with_mock_dom(full_mock_dom_js())
+  rt.init()
+  let dom = @dom.DomTree::new()
+  let source =
+    #|const host = document.createElement('div');
+    #|const shadow = host.attachShadow({
+    #|  mode: 'closed',
+    #|  delegatesFocus: true,
+    #|  clonable: true,
+    #|  serializable: true,
+    #|  slotAssignment: 'manual'
+    #|});
+    #|shadow.innerHTML = '<span id="inner">shadow-text</span>';
+    #|const clone = host.cloneNode(true);
+    #|return JSON.stringify([
+    #|  host.shadowRoot === null,
+    #|  shadow.mode,
+    #|  shadow.delegatesFocus === true,
+    #|  shadow.clonable === true,
+    #|  shadow.serializable === true,
+    #|  shadow.slotAssignment === 'manual',
+    #|  shadow.getHTML().indexOf('shadow-text') >= 0,
+    #|  clone.getHTML({ serializableShadowRoots: true }).indexOf('shadowrootmode="closed"') >= 0,
+    #|  clone.getHTML({ serializableShadowRoots: true }).indexOf('shadow-text') >= 0
+    #|]);
+  let result = rt.execute(0, dom, source, @js.ImmediateFlush)
+  assert_true(result.success)
+  assert_eq(
+    result.value,
+    "[true,\"closed\",true,true,true,true,true,true,true]",
+  )
+}
+
+///|
+test "V8+FullDOM: setHTMLUnsafe parses declarative shadow DOM" {
+  let rt = V8JsRuntime::new_with_mock_dom(full_mock_dom_js())
+  rt.init()
+  let dom = @dom.DomTree::new()
+  let source =
+    #|const host = document.createElement('div');
+    #|host.setHTMLUnsafe('<template shadowrootmode="open" shadowrootdelegatesfocus shadowrootclonable shadowrootserializable><button id="inner">shadow-text</button></template><span id="light">light-text</span>');
+    #|return JSON.stringify([
+    #|  host.shadowRoot !== null,
+    #|  host.shadowRoot && host.shadowRoot.getElementById('inner') !== null,
+    #|  host.querySelector('template') === null,
+    #|  host.querySelector('#light') !== null,
+    #|  host.shadowRoot && host.shadowRoot.delegatesFocus === true,
+    #|  host.shadowRoot && host.shadowRoot.clonable === true,
+    #|  host.shadowRoot && host.shadowRoot.serializable === true,
+    #|  host.getHTML({ serializableShadowRoots: true }).indexOf('shadowrootmode="open"') >= 0
+    #|]);
+  let result = rt.execute(0, dom, source, @js.ImmediateFlush)
+  assert_true(result.success)
+  assert_eq(result.value, "[true,true,true,true,true,true,true,true]")
+}
+
+///|
+test "V8+FullDOM: attachInternals exposes CustomStateSet on custom element names" {
+  let rt = V8JsRuntime::new_with_mock_dom(full_mock_dom_js())
+  rt.init()
+  let dom = @dom.DomTree::new()
+  let source =
+    #|const panel = document.createElement('x-panel');
+    #|panel.id = 'panel';
+    #|document.body.appendChild(panel);
+    #|const internals = panel.attachInternals();
+    #|const states = internals.states;
+    #|states.add('open');
+    #|let invalidName = '';
+    #|try {
+    #|  document.createElement('div').attachInternals();
+    #|} catch (e) {
+    #|  invalidName = e.name;
+    #|}
+    #|let duplicateName = '';
+    #|try {
+    #|  panel.attachInternals();
+    #|} catch (e) {
+    #|  duplicateName = e.name;
+    #|}
+    #|return JSON.stringify([
+    #|  internals.states === states,
+    #|  states instanceof CustomStateSet,
+    #|  states.has('open'),
+    #|  panel.__customStates instanceof Set && panel.__customStates.has('open'),
+    #|  invalidName,
+    #|  duplicateName
+    #|]);
+  let result = rt.execute(0, dom, source, @js.ImmediateFlush)
+  assert_true(result.success)
+  assert_eq(
+    result.value,
+    "[true,true,true,true,\"NotSupportedError\",\"NotSupportedError\"]",
+  )
+}
+
+///|
+test "V8+FullDOM: :state() matches and querySelector reflect CustomStateSet changes" {
+  let rt = V8JsRuntime::new_with_mock_dom(full_mock_dom_js())
+  rt.init()
+  let dom = @dom.DomTree::new()
+  let source =
+    #|const panel = document.createElement('x-panel');
+    #|document.body.appendChild(panel);
+    #|const internals = panel.attachInternals();
+    #|internals.states.add('open');
+    #|const beforeDelete = JSON.stringify([
+    #|  panel.matches(':state(open)'),
+    #|  !panel.matches(':state(closed)'),
+    #|  document.querySelector(':state(open)') === panel,
+    #|  document.querySelector('x-panel:state(open)') === panel,
+    #|  document.querySelectorAll(':state(open)').length
+    #|]);
+    #|internals.states.delete('open');
+    #|const afterDelete = JSON.stringify([
+    #|  !panel.matches(':state(open)'),
+    #|  document.querySelector(':state(open)') === null,
+    #|  document.querySelectorAll(':state(open)').length
+    #|]);
+    #|return beforeDelete + '|' + afterDelete;
+  let result = rt.execute(0, dom, source, @js.ImmediateFlush)
+  assert_true(result.success)
+  assert_eq(result.value, "[true,true,true,true,1]|[true,true,0]")
 }
 
 // ============================================================

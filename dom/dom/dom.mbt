@@ -33,11 +33,18 @@ struct DomNode {
   mut tag_name : String
   mut text_content : String
   attributes : Map[String, String]
+  mut custom_states : Array[String]
+  mut form_value : String?
+  mut form_state_value : String?
   mut parent_id : Int?
   children : Array[Int]
   mut shadow_root_id : Int?
   mut host_id : Int?
   mut shadow_mode : String?
+  mut shadow_delegates_focus : Bool
+  mut shadow_slot_assignment : String
+  mut shadow_clonable : Bool
+  mut shadow_serializable : Bool
   /// For elements: computed style cache
   mut cached_rect : Rect?
 }
@@ -53,11 +60,18 @@ fn DomNode::new(
     tag_name,
     text_content,
     attributes: {},
+    custom_states: [],
+    form_value: None,
+    form_state_value: None,
     parent_id: None,
     children: [],
     shadow_root_id: None,
     host_id: None,
     shadow_mode: None,
+    shadow_delegates_focus: false,
+    shadow_slot_assignment: "named",
+    shadow_clonable: false,
+    shadow_serializable: false,
     cached_rect: None,
   }
 }
@@ -375,6 +389,91 @@ pub fn DomTree::get_attributes(
       }
       Ok(attrs)
     }
+    None => Err(NodeNotFound(node_id=node))
+  }
+}
+
+///|
+fn normalize_custom_states(states : Array[String]) -> Array[String] {
+  let normalized : Array[String] = []
+  for state in states {
+    if state.is_empty() {
+      continue
+    }
+    if normalized.search(state) is None {
+      normalized.push(state)
+    }
+  }
+  normalized
+}
+
+///|
+pub fn DomTree::set_custom_states(
+  self : DomTree,
+  node : NodeId,
+  states : Array[String],
+) -> Result[Unit, CoreError] {
+  let id = node.to_int()
+  match self.nodes.get(id) {
+    Some(n) => {
+      if n.node_type != Element {
+        return Err(
+          InvalidOperation(message="Custom states can only be set on elements"),
+        )
+      }
+      n.custom_states = normalize_custom_states(states)
+      self.invalidate_layout(id)
+      Ok(())
+    }
+    None => Err(NodeNotFound(node_id=node))
+  }
+}
+
+///|
+pub fn DomTree::get_custom_states(
+  self : DomTree,
+  node : NodeId,
+) -> Result[Array[String], CoreError] {
+  let id = node.to_int()
+  match self.nodes.get(id) {
+    Some(n) => Ok(n.custom_states.copy())
+    None => Err(NodeNotFound(node_id=node))
+  }
+}
+
+///|
+pub fn DomTree::set_form_associated_state(
+  self : DomTree,
+  node : NodeId,
+  form_value : String?,
+  form_state_value : String?,
+) -> Result[Unit, CoreError] {
+  let id = node.to_int()
+  match self.nodes.get(id) {
+    Some(n) => {
+      if n.node_type != Element {
+        return Err(
+          InvalidOperation(
+            message="Form-associated state can only be set on elements",
+          ),
+        )
+      }
+      n.form_value = form_value
+      n.form_state_value = form_state_value
+      Ok(())
+    }
+    None => Err(NodeNotFound(node_id=node))
+  }
+}
+
+///|
+pub fn DomTree::get_form_associated_state(
+  self : DomTree,
+  node : NodeId,
+) -> Result[(String?, String?), CoreError] {
+  let id = node.to_int()
+  match self.nodes.get(id) {
+    Some(n) => Ok((n.form_value, n.form_state_value))
     None => Err(NodeNotFound(node_id=node))
   }
 }

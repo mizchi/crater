@@ -219,6 +219,18 @@ test "match :not with class - .foo:not(.bar) does NOT match element with foo and
 }
 
 ///|
+test "match :state pseudo-class" {
+  let open_elem = Element::new("x-panel").add_custom_state("open")
+  let closed_elem = Element::new("x-panel")
+  inspect(matches_selector_text(open_elem, ":state(open)"), content="true")
+  inspect(
+    matches_selector_text(open_elem, "x-panel:state(open)"),
+    content="true",
+  )
+  inspect(matches_selector_text(closed_elem, ":state(open)"), content="false")
+}
+
+///|
 test "match :not with class - body:not(.hidden) div matches div under body without hidden class" {
   let body = Element::new("body")
   let div = Element::new("div").set_parent(body)

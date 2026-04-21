@@ -19,12 +19,14 @@ pub async fn Browser::activate_focused_link(Self) -> Bool raise @http.HttpError
 pub async fn Browser::activate_link_at(Self, Int, Int) -> Bool raise @http.HttpError
 pub fn Browser::debug_layout(Self) -> Unit
 pub fn Browser::enter_hint_mode(Self) -> Unit
+pub async fn Browser::execute_inline_js_async(Self, String) -> String? raise @http.HttpError
 pub fn Browser::execute_scripts(Self) -> Int
 pub fn Browser::exit_hint_mode(Self) -> Unit
 pub fn Browser::get_current_url(Self) -> String
 pub fn Browser::get_dom_tree(Self) -> @dom.DomTree?
 pub fn Browser::get_focused_link_index(Self) -> Int
 pub fn Browser::get_focused_link_url(Self) -> String?
+pub fn Browser::get_last_navigation_url(Self) -> String?
 pub fn Browser::get_link_at(Self, Int, Int) -> String?
 pub fn Browser::get_link_count(Self) -> Int
 pub fn Browser::get_viewport_height(Self) -> Int

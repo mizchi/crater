@@ -973,6 +973,74 @@ test "attachShadow" {
 }
 
 ///|
+test "attachShadow closed mode hides host.shadowRoot and preserves root access" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|const shadow = host.attachShadow({ mode: 'closed' });
+    #|shadow.innerHTML = "<span id='inner'>ok</span>";
+    #|const inner = shadow.getElementById('inner');
+    #|JSON.stringify([
+    #|  shadow.mode === 'closed',
+    #|  host.shadowRoot === null,
+    #|  inner.getRootNode() === shadow,
+    #|  inner.getRootNode({ composed: true }) === document
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[true,true,true,true]")
+}
+
+///|
+test "attachShadow tracks clonable serializable metadata and deep clone copies clonable shadow roots" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const host = document.createElement('div');
+    #|const shadow = host.attachShadow({
+    #|  mode: 'open',
+    #|  delegatesFocus: true,
+    #|  slotAssignment: 'manual',
+    #|  clonable: true,
+    #|  serializable: true
+    #|});
+    #|shadow.innerHTML = '<span id="shadow-child">inside</span>';
+    #|const clone = host.cloneNode(true);
+    #|const plainHost = document.createElement('div');
+    #|plainHost.attachShadow({ mode: 'open' }).innerHTML = '<span id="plain-shadow">x</span>';
+    #|const plainClone = plainHost.cloneNode(true);
+    #|JSON.stringify([
+    #|  shadow.clonable === true,
+    #|  shadow.serializable === true,
+    #|  shadow.slotAssignment === 'manual',
+    #|  clone.shadowRoot !== null,
+    #|  clone.shadowRoot && clone.shadowRoot.clonable === true,
+    #|  clone.shadowRoot && clone.shadowRoot.serializable === true,
+    #|  clone.shadowRoot && clone.shadowRoot.slotAssignment === 'manual',
+    #|  clone.shadowRoot && clone.shadowRoot.getElementById('shadow-child') !== null,
+    #|  plainClone.shadowRoot === null
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="[true,true,true,true,true,true,true,true,true]",
+  )
+}
+
+///|
 test "getRootNode supports shadow root composed option" {
   let dom = @dom.DomTree::new()
   let html = dom.create_element("html")
@@ -1090,6 +1158,154 @@ test "customElements define get whenDefined" {
 }
 
 ///|
+test "customElements.define reads observedAttributes and form-associated callbacks in spec order" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|function OrderedElement() {}
+    #|OrderedElement.prototype = Object.create(HTMLElement.prototype);
+    #|OrderedElement.prototype.constructor = OrderedElement;
+    #|const prototypeCalls = [];
+    #|OrderedElement.prototype = new Proxy(OrderedElement.prototype, {
+    #|  get(target, name) {
+    #|    prototypeCalls.push(String(name));
+    #|    if (name === 'attributeChangedCallback') {
+    #|      return function() {};
+    #|    }
+    #|    return target[name];
+    #|  }
+    #|});
+    #|const constructorCalls = [];
+    #|const proxy = new Proxy(OrderedElement, {
+    #|  get(target, name) {
+    #|    constructorCalls.push(String(name));
+    #|    if (name === 'observedAttributes') return ['data-state'];
+    #|    if (name === 'formAssociated') return 1;
+    #|    return target[name];
+    #|  }
+    #|});
+    #|customElements.define('x-ordered-element', proxy);
+    #|JSON.stringify([constructorCalls, prototypeCalls])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="[[\"prototype\",\"observedAttributes\",\"disabledFeatures\",\"formAssociated\"],[\"connectedCallback\",\"disconnectedCallback\",\"adoptedCallback\",\"attributeChangedCallback\",\"formAssociatedCallback\",\"formResetCallback\",\"formDisabledCallback\",\"formStateRestoreCallback\"]]",
+  )
+}
+
+///|
+test "customElements.define does not read observedAttributes without attributeChangedCallback" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|function NoObservedElement() {}
+    #|NoObservedElement.prototype = Object.create(HTMLElement.prototype);
+    #|NoObservedElement.prototype.constructor = NoObservedElement;
+    #|const constructorCalls = [];
+    #|const proxy = new Proxy(NoObservedElement, {
+    #|  get(target, name) {
+    #|    constructorCalls.push(String(name));
+    #|    if (name === 'observedAttributes') throw new Error('observedAttributes should not be read');
+    #|    return target[name];
+    #|  }
+    #|});
+    #|customElements.define('x-no-observed-element', proxy);
+    #|JSON.stringify(constructorCalls)
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="[\"prototype\",\"disabledFeatures\",\"formAssociated\"]",
+  )
+}
+
+///|
+test "customElements getName and upgrade detached subtree explicitly" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|globalThis.__explicitUpgradeLog = [];
+    #|const host = document.createElement('div');
+    #|host.innerHTML =
+    #|  '<x-upgrade-root data-state="ready"></x-upgrade-root>' +
+    #|  '<button is="x-upgrade-fancy" value="ok">OK</button>';
+    #|const rootBefore = host.firstElementChild;
+    #|const buttonBefore = host.lastElementChild;
+    #|class UpgradeRootElement extends HTMLElement {
+    #|  static get observedAttributes() { return ['data-state']; }
+    #|  constructor() {
+    #|    super();
+    #|    globalThis.__explicitUpgradeLog.push('root:ctor');
+    #|  }
+    #|  attributeChangedCallback(name, oldValue, newValue) {
+    #|    globalThis.__explicitUpgradeLog.push('root:attr:' + name + ':' + String(oldValue) + '->' + String(newValue));
+    #|  }
+    #|  connectedCallback() {
+    #|    globalThis.__explicitUpgradeLog.push('root:connected');
+    #|  }
+    #|}
+    #|class UpgradeFancyButton extends HTMLButtonElement {
+    #|  static get observedAttributes() { return ['value']; }
+    #|  constructor() {
+    #|    super();
+    #|    globalThis.__explicitUpgradeLog.push('button:ctor');
+    #|  }
+    #|  attributeChangedCallback(name, oldValue, newValue) {
+    #|    globalThis.__explicitUpgradeLog.push('button:attr:' + name + ':' + String(oldValue) + '->' + String(newValue));
+    #|  }
+    #|  connectedCallback() {
+    #|    globalThis.__explicitUpgradeLog.push('button:connected');
+    #|  }
+    #|}
+    #|customElements.define('x-upgrade-root', UpgradeRootElement);
+    #|customElements.define('x-upgrade-fancy', UpgradeFancyButton, { extends: 'button' });
+    #|const beforeUpgrade = [
+    #|  customElements.getName(UpgradeRootElement),
+    #|  customElements.getName(UpgradeFancyButton),
+    #|  rootBefore instanceof UpgradeRootElement,
+    #|  buttonBefore instanceof UpgradeFancyButton,
+    #|  globalThis.__explicitUpgradeLog.slice()
+    #|];
+    #|customElements.upgrade(host);
+    #|const rootAfter = host.firstElementChild;
+    #|const buttonAfter = host.lastElementChild;
+    #|const afterUpgrade = [
+    #|  rootAfter instanceof UpgradeRootElement,
+    #|  buttonAfter instanceof UpgradeFancyButton,
+    #|  buttonAfter instanceof HTMLButtonElement,
+    #|  globalThis.__explicitUpgradeLog.slice()
+    #|];
+    #|document.body.appendChild(host);
+    #|JSON.stringify([
+    #|  beforeUpgrade,
+    #|  afterUpgrade,
+    #|  globalThis.__explicitUpgradeLog
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="[[\"x-upgrade-root\",\"x-upgrade-fancy\",false,false,[]],[true,true,true,[\"root:ctor\",\"root:attr:data-state:null->ready\",\"button:ctor\",\"button:attr:value:null->ok\"]],[\"root:ctor\",\"root:attr:data-state:null->ready\",\"button:ctor\",\"button:attr:value:null->ok\",\"root:connected\",\"button:connected\"]]",
+  )
+}
+
+///|
 test "custom element lifecycle for connected attributeChanged disconnected" {
   let dom = @dom.DomTree::new()
   let html = dom.create_element("html")
@@ -1154,6 +1370,46 @@ test "customElements define upgrades existing connected elements" {
   let result = ctx.execute(code)
   inspect(result.success, content="true")
   inspect(result.value, content="yes,1")
+}
+
+///|
+test "customElements upgrade existing connected elements fires initial observed attributes before connected" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|globalThis.__upgradeAttrLifecycle = [];
+    #|const early = document.createElement('x-upgrade-attrs');
+    #|early.setAttribute('data-state', 'ready');
+    #|document.body.appendChild(early);
+    #|class UpgradeAttrsElement extends HTMLElement {
+    #|  static get observedAttributes() { return ['data-state']; }
+    #|  constructor() {
+    #|    super();
+    #|    globalThis.__upgradeAttrLifecycle.push('ctor');
+    #|  }
+    #|  attributeChangedCallback(name, oldValue, newValue) {
+    #|    globalThis.__upgradeAttrLifecycle.push(name + ':' + String(oldValue) + '->' + String(newValue));
+    #|  }
+    #|  connectedCallback() {
+    #|    globalThis.__upgradeAttrLifecycle.push('connected');
+    #|  }
+    #|}
+    #|customElements.define('x-upgrade-attrs', UpgradeAttrsElement);
+    #|JSON.stringify([
+    #|  early instanceof UpgradeAttrsElement,
+    #|  globalThis.__upgradeAttrLifecycle
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="[true,[\"ctor\",\"data-state:null->ready\",\"connected\"]]",
+  )
 }
 
 ///|
@@ -1904,6 +2160,67 @@ test "click on slotted descendant keeps light DOM target outside shadow root" {
 }
 
 ///|
+test "click on submit button dispatches SubmitEvent with submitter" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(() => {
+    #|  document.body.innerHTML = '<form id="form"><button id="btn" name="go" value="Go">Go</button></form>';
+    #|  const form = document.getElementById('form');
+    #|  const button = document.getElementById('btn');
+    #|  const logs = [];
+    #|  form.addEventListener('submit', (event) => {
+    #|    logs.push([
+    #|      event instanceof SubmitEvent,
+    #|      event.submitter === button,
+    #|      event.target === form,
+    #|      event.bubbles,
+    #|      event.cancelable
+    #|    ]);
+    #|    event.preventDefault();
+    #|  });
+    #|  button.click();
+    #|  return JSON.stringify(logs);
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[[true,true,true,true,true]]")
+}
+
+///|
+test "click on reset button dispatches reset and restores controls" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(() => {
+    #|  document.body.innerHTML = '<form id="form"><input id="field" value="seed"><input id="check" type="checkbox" checked><button id="reset" type="reset">Reset</button></form>';
+    #|  const form = document.getElementById('form');
+    #|  const field = document.getElementById('field');
+    #|  const check = document.getElementById('check');
+    #|  const button = document.getElementById('reset');
+    #|  let resetCount = 0;
+    #|  form.addEventListener('reset', () => { resetCount += 1; });
+    #|  field.value = 'edited';
+    #|  check.checked = false;
+    #|  button.click();
+    #|  return JSON.stringify([resetCount, field.value, check.checked]);
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[1,\"seed\",true]")
+}
+
+///|
 test "pointer and mouse down/up on shadow descendant retarget to host outside shadow root" {
   let dom = @dom.DomTree::new()
   let html = dom.create_element("html")
@@ -2537,6 +2854,70 @@ test "slotchange fires for old and new slot when slot attribute reassigns node" 
   let verify = ctx.execute("globalThis.__slotReassignLog.join('|')")
   inspect(verify.success, content="true")
   inspect(verify.value, content="default:0|named:1")
+}
+
+///|
+test "slot.assign supports manual slot assignment and assignedSlot" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const host = document.createElement('div');
+    #|const shadow = host.attachShadow({ mode: 'open', slotAssignment: 'manual' });
+    #|shadow.innerHTML = '<slot id="default-slot"></slot><slot id="named-slot" name="label"><span id="fallback">fallback</span></slot>';
+    #|const defaultSlot = shadow.getElementById('default-slot');
+    #|const namedSlot = shadow.getElementById('named-slot');
+    #|const plain = document.createElement('span');
+    #|plain.id = 'plain';
+    #|const labeled = document.createElement('span');
+    #|labeled.id = 'labeled';
+    #|labeled.slot = 'label';
+    #|host.appendChild(plain);
+    #|host.appendChild(labeled);
+    #|defaultSlot.assign(labeled);
+    #|JSON.stringify([
+    #|  shadow.slotAssignment,
+    #|  defaultSlot.assignedNodes().length,
+    #|  defaultSlot.assignedNodes()[0] === labeled,
+    #|  namedSlot.assignedNodes().length,
+    #|  namedSlot.assignedNodes()[0].id,
+    #|  labeled.assignedSlot === defaultSlot,
+    #|  plain.assignedSlot === null
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[\"manual\",1,true,1,\"fallback\",true,true]")
+}
+
+///|
+test "slot.assign throws when shadow root uses named slot assignment" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const host = document.createElement('div');
+    #|const shadow = host.attachShadow({ mode: 'open' });
+    #|shadow.innerHTML = '<slot></slot>';
+    #|const slot = shadow.querySelector('slot');
+    #|const child = document.createElement('span');
+    #|host.appendChild(child);
+    #|try {
+    #|  slot.assign(child);
+    #|  'no-error';
+    #|} catch (e) {
+    #|  e instanceof DOMException ? e.name : 'wrong-error';
+    #|}
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="NotAllowedError")
 }
 
 ///|
@@ -3447,16 +3828,785 @@ test "HTMLElement: attachInternals" {
   let ctx = JsContext::new(dom)
   let code =
     #|const results = [];
-    #|const div = document.createElement('div');
-    #|const internals = div.attachInternals();
-    #|results.push(internals !== null);
-    #|results.push(internals.shadowRoot === null);
-    #|results.push(internals.form === null);
-    #|results.push(internals.willValidate === false);
+    #|class InternalsElement extends HTMLElement {
+    #|  static get formAssociated() { return true; }
+    #|  constructor() {
+    #|    super();
+    #|    this.internals = this.attachInternals();
+    #|    results.push(this.internals instanceof ElementInternals);
+    #|    results.push(this.internals.shadowRoot === null);
+    #|    const shadow = this.attachShadow({ mode: 'closed' });
+    #|    results.push(this.shadowRoot === null);
+    #|    results.push(this.internals.shadowRoot === shadow);
+    #|  }
+    #|}
+    #|customElements.define('x-internals-check', InternalsElement);
+    #|const element = document.createElement('x-internals-check');
+    #|results.push(element.internals.form === null);
+    #|results.push(element.internals.willValidate === true);
+    #|try {
+    #|  element.attachInternals();
+    #|  results.push(false);
+    #|} catch (e) {
+    #|  results.push(e instanceof DOMException && e.name === 'NotSupportedError');
+    #|}
+    #|try {
+    #|  document.createElement('div').attachInternals();
+    #|  results.push(false);
+    #|} catch (e) {
+    #|  results.push(e instanceof DOMException && e.name === 'NotSupportedError');
+    #|}
+    #|class DisabledInternalsElement extends HTMLElement {
+    #|  static get disabledFeatures() { return ['internals']; }
+    #|}
+    #|customElements.define('x-disabled-internals', DisabledInternalsElement);
+    #|try {
+    #|  document.createElement('x-disabled-internals').attachInternals();
+    #|  results.push(false);
+    #|} catch (e) {
+    #|  results.push(e instanceof DOMException && e.name === 'NotSupportedError');
+    #|}
     #|results.join(',')
   let result = ctx.execute(code)
   inspect(result.success, content="true")
-  inspect(result.value, content="true,true,true,true")
+  inspect(result.value, content="true,true,true,true,true,true,true,true,true")
+}
+
+///|
+test "ElementInternals.form resolves associated form for form-associated custom elements" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|class AssociatedControl extends HTMLElement {
+    #|  static get formAssociated() { return true; }
+    #|  constructor() {
+    #|    super();
+    #|    this.internals = this.attachInternals();
+    #|  }
+    #|}
+    #|customElements.define('x-associated-control', AssociatedControl);
+    #|const form = document.createElement('form');
+    #|form.id = 'owner';
+    #|document.body.appendChild(form);
+    #|const nested = document.createElement('x-associated-control');
+    #|form.appendChild(nested);
+    #|const external = document.createElement('x-associated-control');
+    #|external.setAttribute('form', 'owner');
+    #|document.body.appendChild(external);
+    #|const detached = document.createElement('x-associated-control');
+    #|JSON.stringify([
+    #|  nested.internals.form === form,
+    #|  external.internals.form === form,
+    #|  detached.internals.form === null
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[true,true,true]")
+}
+
+///|
+test "FormData(form) includes form-associated custom element values via setFormValue" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|class ValueControl extends HTMLElement {
+    #|  static get formAssociated() { return true; }
+    #|  constructor() {
+    #|    super();
+    #|    this.internals = this.attachInternals();
+    #|  }
+    #|  set value(v) {
+    #|    this.internals.setFormValue(v);
+    #|  }
+    #|}
+    #|customElements.define('x-value-control', ValueControl);
+    #|const form = document.createElement('form');
+    #|document.body.appendChild(form);
+    #|const control = document.createElement('x-value-control');
+    #|control.setAttribute('name', 'answer');
+    #|form.appendChild(control);
+    #|control.value = '42';
+    #|const fd = new FormData(form);
+    #|JSON.stringify([
+    #|  control.internals.form === form,
+    #|  fd.get('answer'),
+    #|  fd.getAll('answer').length
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[true,\"42\",1]")
+}
+
+///|
+test "ElementInternals form APIs throw for non-form-associated custom elements" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|class PlainControl extends HTMLElement {
+    #|  constructor() {
+    #|    super();
+    #|    this.internals = this.attachInternals();
+    #|  }
+    #|}
+    #|customElements.define('x-plain-control', PlainControl);
+    #|const control = document.createElement('x-plain-control');
+    #|const results = [];
+    #|try {
+    #|  void control.internals.form;
+    #|  results.push(false);
+    #|} catch (e) {
+    #|  results.push(e instanceof DOMException && e.name === 'NotSupportedError');
+    #|}
+    #|try {
+    #|  control.internals.setFormValue('x');
+    #|  results.push(false);
+    #|} catch (e) {
+    #|  results.push(e instanceof DOMException && e.name === 'NotSupportedError');
+    #|}
+    #|results.join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true,true")
+}
+
+///|
+test "formAssociatedCallback tracks association changes on connect remove and form attribute update" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|class CallbackControl extends HTMLElement {
+    #|  static get formAssociated() { return true; }
+    #|  constructor() {
+    #|    super();
+    #|    this.internals = this.attachInternals();
+    #|    this.history = [];
+    #|  }
+    #|  formAssociatedCallback(form) {
+    #|    this.history.push(form ? form.id : 'null');
+    #|  }
+    #|}
+    #|customElements.define('x-callback-control', CallbackControl);
+    #|const form1 = document.createElement('form');
+    #|form1.id = 'f1';
+    #|const form2 = document.createElement('form');
+    #|form2.id = 'f2';
+    #|document.body.appendChild(form1);
+    #|document.body.appendChild(form2);
+    #|const nested = document.createElement('x-callback-control');
+    #|form1.appendChild(nested);
+    #|const external = document.createElement('x-callback-control');
+    #|external.setAttribute('form', 'f2');
+    #|document.body.appendChild(external);
+    #|external.setAttribute('form', 'f1');
+    #|nested.remove();
+    #|external.remove();
+    #|JSON.stringify([
+    #|  nested.history,
+    #|  external.history
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[[\"f1\",\"null\"],[\"f2\",\"f1\",\"null\"]]")
+}
+
+///|
+test "document.forms and form.elements include form-associated custom elements" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|class ListedControl extends HTMLElement {
+    #|  static get formAssociated() { return true; }
+    #|}
+    #|customElements.define('x-listed-control', ListedControl);
+    #|const form1 = document.createElement('form');
+    #|form1.id = 'login';
+    #|const input = document.createElement('input');
+    #|input.name = 'user';
+    #|const custom = document.createElement('x-listed-control');
+    #|custom.setAttribute('name', 'token');
+    #|form1.appendChild(input);
+    #|form1.appendChild(custom);
+    #|document.body.appendChild(form1);
+    #|const external = document.createElement('x-listed-control');
+    #|external.setAttribute('name', 'otp');
+    #|external.setAttribute('form', 'login');
+    #|document.body.appendChild(external);
+    #|const form2 = document.createElement('form');
+    #|form2.id = 'other';
+    #|document.body.appendChild(form2);
+    #|const forms = document.forms;
+    #|const controls = form1.elements;
+    #|JSON.stringify([
+    #|  forms.length,
+    #|  forms[0] === form1,
+    #|  forms.namedItem('other') === form2,
+    #|  controls.length,
+    #|  controls[0] === input,
+    #|  controls[1] === custom,
+    #|  controls[2] === external,
+    #|  controls.namedItem('token') === custom,
+    #|  controls.namedItem('otp') === external
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[2,true,true,3,true,true,true,true,true]")
+}
+
+///|
+test "ElementInternals.labels resolves implicit and explicit labels" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|class LabeledControl extends HTMLElement {
+    #|  static get formAssociated() { return true; }
+    #|  constructor() {
+    #|    super();
+    #|    this.internals = this.attachInternals();
+    #|  }
+    #|}
+    #|customElements.define('x-labeled-control', LabeledControl);
+    #|const implicitLabel = document.createElement('label');
+    #|implicitLabel.id = 'implicit';
+    #|implicitLabel.textContent = 'Implicit';
+    #|const control = document.createElement('x-labeled-control');
+    #|control.id = 'target';
+    #|implicitLabel.appendChild(control);
+    #|document.body.appendChild(implicitLabel);
+    #|const explicitLabel = document.createElement('label');
+    #|explicitLabel.id = 'explicit';
+    #|explicitLabel.setAttribute('for', 'target');
+    #|explicitLabel.textContent = 'Explicit';
+    #|document.body.appendChild(explicitLabel);
+    #|const labels = control.internals.labels;
+    #|JSON.stringify([
+    #|  labels.length,
+    #|  labels[0] === implicitLabel,
+    #|  labels[1] === explicitLabel,
+    #|  labels.item(2) === null
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[2,true,true,true]")
+}
+
+///|
+test "fieldset.elements includes descendant listed controls and form-associated custom elements" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|class FieldsetControl extends HTMLElement {
+    #|  static get formAssociated() { return true; }
+    #|}
+    #|customElements.define('x-fieldset-control', FieldsetControl);
+    #|const form = document.createElement('form');
+    #|form.id = 'login';
+    #|const fieldset = document.createElement('fieldset');
+    #|fieldset.id = 'group';
+    #|const input = document.createElement('input');
+    #|input.setAttribute('name', 'email');
+    #|const custom = document.createElement('x-fieldset-control');
+    #|custom.setAttribute('name', 'token');
+    #|fieldset.appendChild(input);
+    #|fieldset.appendChild(custom);
+    #|form.appendChild(fieldset);
+    #|document.body.appendChild(form);
+    #|const outside = document.createElement('x-fieldset-control');
+    #|outside.setAttribute('name', 'outside');
+    #|outside.setAttribute('form', 'login');
+    #|document.body.appendChild(outside);
+    #|const elements = fieldset.elements;
+    #|JSON.stringify([
+    #|  elements.length,
+    #|  elements[0] === input,
+    #|  elements[1] === custom,
+    #|  elements.namedItem('email') === input,
+    #|  elements.namedItem('token') === custom,
+    #|  elements.namedItem('outside') === null
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[2,true,true,true,true,true]")
+}
+
+///|
+test "formDisabledCallback tracks host and fieldset disabled state changes" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|class DisabledAwareControl extends HTMLElement {
+    #|  static get formAssociated() { return true; }
+    #|  constructor() {
+    #|    super();
+    #|    this.internals = this.attachInternals();
+    #|    this.history = [];
+    #|  }
+    #|  formDisabledCallback(disabled) {
+    #|    this.history.push(disabled);
+    #|  }
+    #|}
+    #|customElements.define('x-disabled-aware', DisabledAwareControl);
+    #|const form = document.createElement('form');
+    #|const fieldset = document.createElement('fieldset');
+    #|fieldset.setAttribute('disabled', '');
+    #|const control = document.createElement('x-disabled-aware');
+    #|fieldset.appendChild(control);
+    #|form.appendChild(fieldset);
+    #|document.body.appendChild(form);
+    #|fieldset.removeAttribute('disabled');
+    #|control.setAttribute('disabled', '');
+    #|control.removeAttribute('disabled');
+    #|JSON.stringify(control.history)
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[true,false,true,false]")
+}
+
+///|
+test "form.reset invokes formResetCallback on form-associated custom elements" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|class ResetAwareControl extends HTMLElement {
+    #|  static get formAssociated() { return true; }
+    #|  constructor() {
+    #|    super();
+    #|    this.internals = this.attachInternals();
+    #|    this.resetCount = 0;
+    #|  }
+    #|  formResetCallback() {
+    #|    this.resetCount += 1;
+    #|    this.internals.setFormValue('reset');
+    #|  }
+    #|}
+    #|customElements.define('x-reset-aware', ResetAwareControl);
+    #|const form = document.createElement('form');
+    #|const control = document.createElement('x-reset-aware');
+    #|control.setAttribute('name', 'token');
+    #|form.appendChild(control);
+    #|document.body.appendChild(form);
+    #|let resetEventCount = 0;
+    #|form.addEventListener('reset', () => {
+    #|  resetEventCount += 1;
+    #|});
+    #|form.reset();
+    #|const fd = new FormData(form);
+    #|JSON.stringify([
+    #|  resetEventCount,
+    #|  control.resetCount,
+    #|  fd.get('token')
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[1,1,\"reset\"]")
+}
+
+///|
+test "form.reset restores standard form controls" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|(() => {
+    #|  document.body.innerHTML = '<form id="form"><input id="field" value="seed"><input id="check" type="checkbox" checked><textarea id="area">hello</textarea><select id="select"><option value="a" selected>A</option><option value="b">B</option></select></form>';
+    #|  const form = document.getElementById('form');
+    #|  const field = document.getElementById('field');
+    #|  const check = document.getElementById('check');
+    #|  const area = document.getElementById('area');
+    #|  const select = document.getElementById('select');
+    #|  let resetCount = 0;
+    #|  form.addEventListener('reset', () => { resetCount += 1; });
+    #|  field.value = 'edited';
+    #|  check.checked = false;
+    #|  area.value = 'changed';
+    #|  select.value = 'b';
+    #|  form.reset();
+    #|  return JSON.stringify([
+    #|    resetCount,
+    #|    field.value,
+    #|    check.checked,
+    #|    area.value,
+    #|    select.value,
+    #|    select.selectedIndex
+    #|  ]);
+    #|})()
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[1,\"seed\",true,\"hello\",\"a\",0]")
+}
+
+///|
+test "ElementInternals formStateRestoreCallback restores state in a new JsContext from DomTree" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let form = dom.create_element("form")
+  let control = dom.create_element("x-restore-aware")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let _ = dom.set_attribute(form, "id", "form")
+  let _ = dom.append_child(body, form)
+  let _ = dom.set_attribute(control, "id", "control")
+  let _ = dom.set_attribute(control, "name", "token")
+  let _ = dom.append_child(form, control)
+  let ctx = JsContext::new(dom)
+  let bootstrap =
+    #|class RestoreAwareControl extends HTMLElement {
+    #|  static get formAssociated() { return true; }
+    #|  constructor() {
+    #|    super();
+    #|    this.restored = [];
+    #|    this.internals = this.attachInternals();
+    #|  }
+    #|  formStateRestoreCallback(state, mode) {
+    #|    const form = this.internals.form;
+    #|    this.restored.push([state, mode, form ? form.id : null]);
+    #|  }
+    #|}
+    #|customElements.define('x-restore-aware', RestoreAwareControl);
+    #|const control = document.getElementById('control');
+    #|control.internals.setFormValue('draft-value', 'draft-state');
+    #|JSON.stringify([
+    #|  control.restored.length,
+    #|  new FormData(document.getElementById('form')).get('token')
+    #|])
+  let first = ctx.execute(bootstrap)
+  inspect(first.success, content="true")
+  inspect(first.value, content="[0,\"draft-value\"]")
+
+  let restored_ctx = JsContext::new(dom)
+  let restored_code =
+    #|class RestoreAwareControl extends HTMLElement {
+    #|  static get formAssociated() { return true; }
+    #|  constructor() {
+    #|    super();
+    #|    this.restored = [];
+    #|    this.internals = this.attachInternals();
+    #|  }
+    #|  formStateRestoreCallback(state, mode) {
+    #|    const form = this.internals.form;
+    #|    this.restored.push([state, mode, form ? form.id : null]);
+    #|  }
+    #|}
+    #|customElements.define('x-restore-aware', RestoreAwareControl);
+    #|const control = document.getElementById('control');
+    #|const form = document.getElementById('form');
+    #|JSON.stringify([
+    #|  control.restored,
+    #|  new FormData(form).get('token')
+    #|])
+  let restored = restored_ctx.execute(restored_code)
+  inspect(restored.success, content="true")
+  inspect(
+    restored.value,
+    content="[[[\"draft-state\",\"restore\",\"form\"]],\"draft-value\"]",
+  )
+}
+
+///|
+test "ElementInternals.states exposes a stable CustomStateSet" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|class StatefulElement extends HTMLElement {
+    #|  constructor() {
+    #|    super();
+    #|    this.internals = this.attachInternals();
+    #|  }
+    #|}
+    #|customElements.define('x-stateful-element', StatefulElement);
+    #|const element = document.createElement('x-stateful-element');
+    #|const states = element.internals.states;
+    #|const first = states.add('open');
+    #|const second = states.add('checked');
+    #|const duplicate = states.add('open');
+    #|const values = Array.from(states.values());
+    #|const entries = Array.from(states.entries()).map(([a, b]) => a === b);
+    #|const iterated = [];
+    #|states.forEach((value) => iterated.push(value));
+    #|JSON.stringify([
+    #|  states instanceof CustomStateSet,
+    #|  element.internals.states === states,
+    #|  first === states,
+    #|  second === states,
+    #|  duplicate === states,
+    #|  states.size,
+    #|  states.has('open'),
+    #|  states.has('checked'),
+    #|  values[0] === 'open',
+    #|  values[1] === 'checked',
+    #|  entries.length === 2 && entries.every(Boolean),
+    #|  iterated.length === 2 && iterated[0] === 'open' && iterated[1] === 'checked',
+    #|  states.delete('open'),
+    #|  !states.delete('open'),
+    #|  states.size,
+    #|  states.has('checked')
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="[true,true,true,true,true,2,true,true,true,true,true,true,true,true,1,true]",
+  )
+}
+
+///|
+test ":state() matches and querySelector reflect CustomStateSet changes" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|class StatefulSelectorElement extends HTMLElement {
+    #|  constructor() {
+    #|    super();
+    #|    this.internals = this.attachInternals();
+    #|  }
+    #|}
+    #|customElements.define('x-state-selector', StatefulSelectorElement);
+    #|const element = document.createElement('x-state-selector');
+    #|document.body.appendChild(element);
+    #|element.internals.states.add('open');
+    #|const beforeDelete = JSON.stringify([
+    #|  element.matches(':state(open)'),
+    #|  !element.matches(':state(closed)'),
+    #|  document.querySelector(':state(open)') === element,
+    #|  document.querySelector('x-state-selector:state(open)') === element,
+    #|  document.querySelectorAll(':state(open)').length
+    #|]);
+    #|element.internals.states.delete('open');
+    #|const afterDelete = JSON.stringify([
+    #|  !element.matches(':state(open)'),
+    #|  document.querySelector(':state(open)') === null,
+    #|  document.querySelectorAll(':state(open)').length
+    #|]);
+    #|beforeDelete + '|' + afterDelete
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[true,true,true,true,1]|[true,true,0]")
+}
+
+///|
+test "customized built-in custom elements upgrade via createElement options.is" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const ceLogs = [];
+    #|class FancyButton extends HTMLButtonElement {
+    #|  constructor() {
+    #|    super();
+    #|    ceLogs.push('ctor');
+    #|  }
+    #|  connectedCallback() {
+    #|    ceLogs.push('connected');
+    #|  }
+    #|}
+    #|customElements.define('x-fancy-button', FancyButton, { extends: 'button' });
+    #|const ctor = customElements.get('x-fancy-button');
+    #|const button = document.createElement('button', { is: 'x-fancy-button' });
+    #|document.body.appendChild(button);
+    #|JSON.stringify([
+    #|  ctor === FancyButton,
+    #|  button instanceof FancyButton,
+    #|  button instanceof HTMLButtonElement,
+    #|  button.getAttribute('is') === 'x-fancy-button',
+    #|  button.localName === 'button',
+    #|  ceLogs[0] === 'ctor',
+    #|  ceLogs[1] === 'connected'
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[true,true,true,true,true,true,true]")
+}
+
+///|
+test "customized built-in custom elements upgrade via innerHTML parser" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const parserLogs = [];
+    #|class ParserFancyButton extends HTMLButtonElement {
+    #|  constructor() {
+    #|    super();
+    #|    parserLogs.push('ctor');
+    #|  }
+    #|  connectedCallback() {
+    #|    parserLogs.push('connected');
+    #|  }
+    #|}
+    #|customElements.define('x-parser-fancy-button', ParserFancyButton, { extends: 'button' });
+    #|const container = document.createElement('div');
+    #|container.innerHTML = '<button is="x-parser-fancy-button">OK</button>';
+    #|document.body.appendChild(container);
+    #|const button = container.firstElementChild;
+    #|JSON.stringify([
+    #|  button instanceof ParserFancyButton,
+    #|  button instanceof HTMLButtonElement,
+    #|  button.getAttribute('is') === 'x-parser-fancy-button',
+    #|  button.textContent === 'OK',
+    #|  parserLogs[0] === 'ctor',
+    #|  parserLogs[1] === 'connected'
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[true,true,true,true,true,true]")
+}
+
+///|
+test "declarative shadow DOM attaches shadow root during innerHTML parsing" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|host.innerHTML =
+    #|  '<template shadowrootmode="open" shadowrootdelegatesfocus><button id="shadow-btn">inside</button></template>' +
+    #|  '<span id="light-child">outside</span>';
+    #|JSON.stringify([
+    #|  host.shadowRoot !== null,
+    #|  host.shadowRoot && host.shadowRoot.mode === 'open',
+    #|  host.shadowRoot && host.shadowRoot.delegatesFocus === true,
+    #|  host.shadowRoot && host.shadowRoot.getElementById('shadow-btn') !== null,
+    #|  host.querySelector('#shadow-btn') === null,
+    #|  host.firstElementChild && host.firstElementChild.id === 'light-child',
+    #|  host.childElementCount === 1
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[true,true,true,true,true,true,true]")
+}
+
+///|
+test "declarative shadow DOM attaches shadow root during insertAdjacentHTML" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const host = document.createElement('div');
+    #|document.body.appendChild(host);
+    #|host.insertAdjacentHTML(
+    #|  'beforeend',
+    #|  '<template shadowrootmode="open" shadowrootdelegatesfocus><button id="shadow-inserted">inside</button></template>' +
+    #|  '<span id="light-inserted">outside</span>'
+    #|);
+    #|JSON.stringify([
+    #|  host.shadowRoot !== null,
+    #|  host.shadowRoot && host.shadowRoot.mode === 'open',
+    #|  host.shadowRoot && host.shadowRoot.delegatesFocus === true,
+    #|  host.shadowRoot && host.shadowRoot.getElementById('shadow-inserted') !== null,
+    #|  host.querySelector('#shadow-inserted') === null,
+    #|  host.firstElementChild && host.firstElementChild.id === 'light-inserted',
+    #|  host.childElementCount === 1
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[true,true,true,true,true,true,true]")
+}
+
+///|
+test "declarative shadow DOM metadata and getHTML serialization work together" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|const host = document.createElement('div');
+    #|host.setHTMLUnsafe(
+    #|  '<template shadowrootmode="closed" shadowrootdelegatesfocus shadowrootclonable shadowrootserializable><span id="shadow-closed">inside</span></template>' +
+    #|  '<span id="light-child">outside</span>'
+    #|);
+    #|const openHost = document.createElement('div');
+    #|const openShadow = openHost.attachShadow({ mode: 'open', serializable: true });
+    #|openShadow.setHTMLUnsafe('<em id="shadow-open">value</em>');
+    #|JSON.stringify([
+    #|  host.shadowRoot === null,
+    #|  host.getHTML() === '<span id="light-child">outside</span>',
+    #|  host.getHTML({ serializableShadowRoots: true }) === '<template shadowrootmode="closed" shadowrootdelegatesfocus shadowrootclonable shadowrootserializable><span id="shadow-closed">inside</span></template><span id="light-child">outside</span>',
+    #|  openShadow.getHTML() === '<em id="shadow-open">value</em>',
+    #|  openHost.getHTML({ serializableShadowRoots: true }) === '<template shadowrootmode="open" shadowrootserializable><em id="shadow-open">value</em></template>'
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[true,true,true,true,true]")
 }
 
 ///|
@@ -3552,6 +4702,217 @@ test "Event: initEvent" {
   let result = ctx.execute(code)
   inspect(result.success, content="true")
   inspect(result.value, content="true,true,true")
+}
+
+///|
+test "HTMLFormElement.requestSubmit dispatches SubmitEvent with submitter" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|document.body.innerHTML = '<form id="form"><button id="btn" name="go" value="Go">Go</button></form>';
+    #|const form = document.getElementById('form');
+    #|const button = document.getElementById('btn');
+    #|const records = [];
+    #|form.addEventListener('submit', (event) => {
+    #|  records.push([
+    #|    typeof SubmitEvent === 'function',
+    #|    event instanceof SubmitEvent,
+    #|    event instanceof Event,
+    #|    event.type,
+    #|    event.submitter === null ? 'null' : event.submitter.id,
+    #|    event.target === form,
+    #|    event.bubbles,
+    #|    event.cancelable,
+    #|  ]);
+    #|  event.preventDefault();
+    #|});
+    #|form.requestSubmit();
+    #|form.requestSubmit(button);
+    #|JSON.stringify(records)
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="[[true,true,true,\"submit\",\"null\",true,true,true],[true,true,true,\"submit\",\"btn\",true,true,true]]",
+  )
+}
+
+///|
+test "HTMLFormElement.requestSubmit validates submitter" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|document.body.innerHTML = `
+    #|  <form id="form">
+    #|    <button id="submitter">Go</button>
+    #|  </form>
+    #|  <form id="other-form">
+    #|    <button id="other-submit" type="submit">Other</button>
+    #|  </form>`;
+    #|const form = document.getElementById('form');
+    #|const plain = document.createElement('div');
+    #|const nonSubmitButton = document.createElement('button');
+    #|nonSubmitButton.setAttribute('type', 'button');
+    #|const foreignSubmitter = document.getElementById('other-submit');
+    #|const results = [];
+    #|try {
+    #|  form.requestSubmit(plain);
+    #|  results.push(false);
+    #|} catch (e) {
+    #|  results.push(e instanceof TypeError);
+    #|}
+    #|try {
+    #|  form.requestSubmit(nonSubmitButton);
+    #|  results.push(false);
+    #|} catch (e) {
+    #|  results.push(e instanceof TypeError);
+    #|}
+    #|try {
+    #|  form.requestSubmit(foreignSubmitter);
+    #|  results.push(false);
+    #|} catch (e) {
+    #|  results.push(e instanceof DOMException && e.name === 'NotFoundError');
+    #|}
+    #|results.join(',')
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="true,true,true")
+}
+
+///|
+test "HTMLFormElement.requestSubmit validates controls and honors formnovalidate" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|document.body.innerHTML = `
+    #|  <form id="form">
+    #|    <input id="field" name="name" required />
+    #|    <button id="submitter" type="submit">Go</button>
+    #|    <button id="skip" type="submit" formnovalidate>Skip</button>
+    #|  </form>`;
+    #|const form = document.getElementById('form');
+    #|const field = document.getElementById('field');
+    #|const submitter = document.getElementById('submitter');
+    #|const skip = document.getElementById('skip');
+    #|let submitCount = 0;
+    #|let invalidCount = 0;
+    #|field.addEventListener('invalid', () => {
+    #|  invalidCount += 1;
+    #|});
+    #|form.addEventListener('submit', (event) => {
+    #|  submitCount += 1;
+    #|  event.preventDefault();
+    #|});
+    #|form.requestSubmit(submitter);
+    #|const afterBlocked = [
+    #|  submitCount,
+    #|  invalidCount,
+    #|  field.validity.valueMissing,
+    #|  field.validationMessage.length > 0,
+    #|];
+    #|form.requestSubmit(skip);
+    #|JSON.stringify([
+    #|  afterBlocked,
+    #|  [submitCount, invalidCount],
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[[0,1,true,true],[1,1]]")
+}
+
+///|
+test "HTMLFormElement.submit bypasses submit event" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|document.body.innerHTML = '<form id="form"><input id="field" required><button id="btn" type="submit">Go</button></form>';
+    #|const form = document.getElementById('form');
+    #|const field = document.getElementById('field');
+    #|let submitCount = 0;
+    #|let invalidCount = 0;
+    #|form.addEventListener('submit', () => {
+    #|  submitCount += 1;
+    #|});
+    #|field.addEventListener('invalid', () => {
+    #|  invalidCount += 1;
+    #|});
+    #|const result = form.submit();
+    #|JSON.stringify([
+    #|  typeof form.submit === 'function',
+    #|  result === undefined,
+    #|  submitCount,
+    #|  invalidCount,
+    #|])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(result.value, content="[true,true,0,0]")
+}
+
+///|
+test "HTMLInputElement exposes basic validation API" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let code =
+    #|document.body.innerHTML = '<input id="field" required>';
+    #|const field = document.getElementById('field');
+    #|let invalidCount = 0;
+    #|field.addEventListener('invalid', () => {
+    #|  invalidCount += 1;
+    #|});
+    #|const first = [
+    #|  field.willValidate,
+    #|  field.checkValidity(),
+    #|  invalidCount,
+    #|  field.validity.valueMissing,
+    #|  field.validationMessage.length > 0,
+    #|];
+    #|field.value = 'ok';
+    #|field.setCustomValidity('custom');
+    #|const second = [
+    #|  field.checkValidity(),
+    #|  invalidCount,
+    #|  field.validity.customError,
+    #|  field.validationMessage,
+    #|];
+    #|field.setCustomValidity('');
+    #|const third = [
+    #|  field.reportValidity(),
+    #|  invalidCount,
+    #|  field.validity.valid,
+    #|  field.validationMessage,
+    #|];
+    #|JSON.stringify([first, second, third])
+  let result = ctx.execute(code)
+  inspect(result.success, content="true")
+  inspect(
+    result.value,
+    content="[[true,false,1,true,true],[false,2,true,\"custom\"],[true,2,true,\"\"]]",
+  )
 }
 
 ///|

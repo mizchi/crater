@@ -72,8 +72,8 @@ pub async fn fetch(
   let response = try {
     match prepared.http_method {
       "GET" => client.get(path)
-      "POST" => client.post(path, "")
-      "PUT" => client.put(path, "")
+      "POST" => client.post(path, prepared.body)
+      "PUT" => client.put(path, prepared.body)
       _ => client.get(path)
     }
   } catch {

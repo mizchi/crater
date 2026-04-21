@@ -23,29 +23,35 @@ extern "js" fn js_fetch_internal(
   url : String,
   http_method : String,
   headers_json : String,
+  body_json : String,
   timeout_ms : Int,
 ) -> @js_async.Promise[String] =
-  #| async (url, method, headersJson, timeoutMs) => {
+  #| async (url, method, headersJson, bodyJson, timeoutMs) => {
   #|   const headers = JSON.parse(headersJson);
+  #|   const body = JSON.parse(bodyJson);
   #|   const controller = new AbortController();
   #|   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   #|   try {
-  #|     const res = await fetch(url, { method, headers, signal: controller.signal });
+  #|     const init = { method, headers, signal: controller.signal };
+  #|     if (method !== 'GET' && method !== 'HEAD' && body.length > 0) {
+  #|       init.body = body;
+  #|     }
+  #|     const res = await fetch(url, init);
   #|     clearTimeout(timeoutId);
   #|     const resHeaders = {};
   #|     res.headers.forEach((v, k) => { resHeaders[k] = v; });
   #|     const ct = (resHeaders['content-type'] || '').toLowerCase();
-  #|     let body;
+  #|     let responseBody;
   #|     if (ct.startsWith('image/') && !ct.includes('svg')) {
   #|       const buf = await res.arrayBuffer();
   #|       const bytes = new Uint8Array(buf);
   #|       let binary = '';
   #|       for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  #|       body = 'base64:' + btoa(binary);
+  #|       responseBody = 'base64:' + btoa(binary);
   #|     } else {
-  #|       body = await res.text();
+  #|       responseBody = await res.text();
   #|     }
-  #|     return JSON.stringify({ status: res.status, headers: resHeaders, body });
+  #|     return JSON.stringify({ status: res.status, headers: resHeaders, body: responseBody });
   #|   } catch (e) {
   #|     clearTimeout(timeoutId);
   #|     if (e.name === 'AbortError') {
@@ -54,6 +60,27 @@ extern "js" fn js_fetch_internal(
   #|     throw e;
   #|   }
   #| }
+
+///|
+fn escape_json_string(s : String) -> String {
+  let buf = StringBuilder::new()
+  for c in s {
+    match c {
+      '"' => buf.write_string("\\\"")
+      '\\' => buf.write_string("\\\\")
+      '\n' => buf.write_string("\\n")
+      '\r' => buf.write_string("\\r")
+      '\t' => buf.write_string("\\t")
+      _ => buf.write_char(c)
+    }
+  }
+  buf.to_string()
+}
+
+///|
+fn body_to_json(body : String) -> String {
+  "\"" + escape_json_string(body) + "\""
+}
 
 ///|
 /// Parse JSON response into HttpResponse
@@ -172,11 +199,13 @@ pub async fn fetch(
 ) -> HttpResponse raise HttpError {
   let prepared = prepare_fetch_options(url, options)
   let headers_json = headers_to_json(prepared.headers)
+  let body_json = body_to_json(prepared.body)
   let controller = @js_async.AbortController::new()
   let promise = js_fetch_internal(
     url,
     prepared.http_method,
     headers_json,
+    body_json,
     prepared.timeout_ms,
   )
   let result_json = @js_async.Promise::wait(

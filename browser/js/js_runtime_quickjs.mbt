@@ -1710,6 +1710,36 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           throw new DOMException("Invalid position: " + position, "SyntaxError");
   #|       }
   #|     }
+  #|     function insertAdjacentNodes(target, position, nodes) {
+  #|       const pos = String(position).toLowerCase();
+  #|       const list = Array.isArray(nodes) ? nodes : [];
+  #|       switch (pos) {
+  #|         case 'beforebegin':
+  #|           if (!target._parent) return null;
+  #|           for (const node of list) {
+  #|             target._parent.insertBefore(node, target);
+  #|           }
+  #|           return null;
+  #|         case 'afterbegin':
+  #|           for (const node of list) {
+  #|             target.insertBefore(node, target.firstChild);
+  #|           }
+  #|           return null;
+  #|         case 'beforeend':
+  #|           for (const node of list) {
+  #|             target.appendChild(node);
+  #|           }
+  #|           return null;
+  #|         case 'afterend':
+  #|           if (!target._parent) return null;
+  #|           for (const node of list) {
+  #|             target._parent.insertBefore(node, target.nextSibling);
+  #|           }
+  #|           return null;
+  #|         default:
+  #|           throw new DOMException("Invalid position: " + position, "SyntaxError");
+  #|       }
+  #|     }
   #|     function detachNode(node) {
   #|       if (!node) return;
   #|       const doc = getOwnerDocument(node);
@@ -2505,7 +2535,52 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       }
   #|       return attrs;
   #|     }
-  #|     function parseHtmlFragment(html, ownerDoc) {
+  #|     function serializeHtmlAttribute(attr) {
+  #|       if (!attr) return '';
+  #|       return ' ' + attr.name + '="' + String(attr.value || '') + '"';
+  #|     }
+  #|     function serializeChildrenForHtml(node, options) {
+  #|       let html = '';
+  #|       const children = getChildNodesArray(node);
+  #|       for (const child of children) {
+  #|         html += serializeNodeForHtml(child, options);
+  #|       }
+  #|       return html;
+  #|     }
+  #|     function serializeShadowRootTemplate(shadowRoot, options) {
+  #|       if (!shadowRoot || !shadowRoot.serializable) return '';
+  #|       if (!(options && options.serializableShadowRoots)) return '';
+  #|       const attrs = [' shadowrootmode="' + String(shadowRoot.mode || 'open') + '"'];
+  #|       if (shadowRoot.delegatesFocus) attrs.push(' shadowrootdelegatesfocus');
+  #|       if (shadowRoot.clonable) attrs.push(' shadowrootclonable');
+  #|       if (shadowRoot.serializable) attrs.push(' shadowrootserializable');
+  #|       return '<template' + attrs.join('') + '>' + serializeChildrenForHtml(shadowRoot, options) + '</template>';
+  #|     }
+  #|     function serializeNodeForHtml(node, options) {
+  #|       if (!node) return '';
+  #|       if (node._nodeType === 3) return node._textContent || '';
+  #|       if (node._nodeType === 8) return '<!--' + (node._textContent || '') + '-->';
+  #|       if (node._nodeType === 11) return serializeChildrenForHtml(node, options);
+  #|       if (node._nodeType !== 1) return '';
+  #|       const attrs = (node._attrList || []).map(serializeHtmlAttribute).join('');
+  #|       const tag = String(node._tagName || node.tagName || '').toLowerCase();
+  #|       const shadowHtml = serializeShadowRootTemplate(node._shadowRoot || null, options);
+  #|       const childHtml = serializeChildrenForHtml(node, options);
+  #|       const textHtml = childHtml === '' ? (node._textContent || '') : '';
+  #|       return '<' + tag + attrs + '>' + shadowHtml + childHtml + textHtml + '</' + tag + '>';
+  #|     }
+  #|     function setUnsafeHtmlForNode(target, value) {
+  #|       const html = value === null || value === undefined ? '' : String(value);
+  #|       clearChildNodes(target);
+  #|       if (html === '') return;
+  #|       const owner = getOwnerDocument(target) || document;
+  #|       const contextHost = target && target._isShadowRoot ? null : target;
+  #|       const nodes = parseHtmlFragment(html, owner, contextHost);
+  #|       for (const node of nodes) {
+  #|         target.appendChild(node);
+  #|       }
+  #|     }
+  #|     function parseHtmlFragment(html, ownerDoc, contextHost) {
   #|       const doc = ownerDoc || document;
   #|       const frag = doc.createDocumentFragment();
   #|       const voidTags = {
@@ -2528,6 +2603,10 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           const endName = asciiLowercase(token.slice(2, -1).trim());
   #|           for (let i = stack.length - 1; i > 0; i--) {
   #|             const el = stack[i];
+  #|             if (el && el.__declarativeTemplateTagName && asciiLowercase(el.__declarativeTemplateTagName) === endName) {
+  #|               stack.length = i;
+  #|               break;
+  #|             }
   #|             if (el && el._tagName && asciiLowercase(el._tagName) === endName) {
   #|               stack.length = i;
   #|               break;
@@ -2542,13 +2621,45 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           const parts = inner.split(/\\s+/, 1);
   #|           const tagName = parts[0];
   #|           const attrText = inner.slice(tagName.length);
-  #|           const el = doc.createElement(tagName);
   #|           const attrs = parseHtmlAttributes(attrText);
+  #|           const lower = asciiLowercase(tagName);
+  #|           const shadowRootModeAttr = attrs.find(attr => asciiLowercase(String(attr.name || '')) === 'shadowrootmode');
+  #|           const shadowRootMode = shadowRootModeAttr ? asciiLowercase(String(shadowRootModeAttr.value || '')) : '';
+  #|           const currentHost = current && current._nodeType === 1 && typeof current.attachShadow === 'function'
+  #|             ? current
+  #|             : (current === frag ? contextHost || null : null);
+  #|           if (
+  #|             lower === 'template' &&
+  #|             currentHost &&
+  #|             !currentHost._shadowRoot &&
+  #|             (shadowRootMode === 'open' || shadowRootMode === 'closed')
+  #|           ) {
+  #|             const delegatesFocusAttr = attrs.find(
+  #|               attr => asciiLowercase(String(attr.name || '')) === 'shadowrootdelegatesfocus',
+  #|             );
+  #|             const clonableAttr = attrs.find(
+  #|               attr => asciiLowercase(String(attr.name || '')) === 'shadowrootclonable',
+  #|             );
+  #|             const serializableAttr = attrs.find(
+  #|               attr => asciiLowercase(String(attr.name || '')) === 'shadowrootserializable',
+  #|             );
+  #|             const shadowRoot = currentHost.attachShadow({
+  #|               mode: shadowRootMode,
+  #|               delegatesFocus: !!delegatesFocusAttr,
+  #|               clonable: !!clonableAttr,
+  #|               serializable: !!serializableAttr,
+  #|             });
+  #|             shadowRoot.__declarativeTemplateTagName = 'template';
+  #|             if (!selfClosing) stack.push(shadowRoot);
+  #|             continue;
+  #|           }
+  #|           const isAttr = attrs.find(attr => asciiLowercase(String(attr.name || '')) === 'is');
+  #|           const options = isAttr ? { is: isAttr.value } : undefined;
+  #|           const el = doc.createElement(tagName, options);
   #|           for (const attr of attrs) {
   #|             try { el.setAttribute(attr.name, attr.value); } catch (e) {}
   #|           }
   #|           current.appendChild(el);
-  #|           const lower = asciiLowercase(tagName);
   #|           if (!selfClosing && !voidTags[lower]) {
   #|             stack.push(el);
   #|           }
@@ -2728,6 +2839,13 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           if (pname === 'not') {
   #|             const argSel = pseudo.arg || '';
   #|             if (argSel && matchesSimpleSelector(el, argSel.trim(), scopeRoot)) return false;
+  #|             continue;
+  #|           }
+  #|           if (pname === 'state') {
+  #|             const argState = pseudo.arg ? pseudo.arg.trim() : '';
+  #|             if (!argState) return false;
+  #|             const states = el.__customStates instanceof Set ? el.__customStates : null;
+  #|             if (!states || !states.has(argState)) return false;
   #|             continue;
   #|           }
   #|           if (pname === 'empty') {
@@ -3255,6 +3373,20 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|     function normalizeCustomElementName(name) {
   #|       return asciiLowercase(String(name || ''));
   #|     }
+  #|     function normalizeCustomizedBuiltInExtends(options) {
+  #|       if (options === undefined || options === null || typeof options !== 'object') return null;
+  #|       if (!Object.prototype.hasOwnProperty.call(options, 'extends')) return null;
+  #|       const value = options.extends;
+  #|       if (value === undefined || value === null) return null;
+  #|       return asciiLowercase(String(value));
+  #|     }
+  #|     function getCustomElementIsValue(options) {
+  #|       if (options === undefined || options === null || typeof options !== 'object') return null;
+  #|       if (!Object.prototype.hasOwnProperty.call(options, 'is')) return null;
+  #|       const value = options.is;
+  #|       if (value === undefined || value === null || String(value) === '') return null;
+  #|       return normalizeCustomElementName(value);
+  #|     }
   #|     function isCustomElementName(name) {
   #|       const normalized = normalizeCustomElementName(name);
   #|       return normalized.includes('-') && !normalized.startsWith('-') && !normalized.endsWith('-');
@@ -3262,11 +3394,662 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|     function getCustomElementDefinition(name) {
   #|       return __customElementDefinitions.get(normalizeCustomElementName(name)) || null;
   #|     }
-  #|     function getObservedAttributesForDefinition(definition) {
+  #|     function getCustomElementDefinitionForElement(element) {
+  #|       if (!element || element._nodeType !== 1) return null;
+  #|       const localName = asciiLowercase(String(element.localName || element._tagName || ''));
+  #|       const isValue = element.getAttribute ? element.getAttribute('is') : null;
+  #|       if (isValue !== null && isValue !== undefined && String(isValue) !== '') {
+  #|         const customized = getCustomElementDefinition(String(isValue));
+  #|         if (customized && customized.extends === localName) return customized;
+  #|       }
+  #|       const autonomous = getCustomElementDefinition(localName);
+  #|       if (autonomous && !autonomous.extends) return autonomous;
+  #|       return null;
+  #|     }
+  #|     function readDOMStringSequenceProperty(target, propertyName) {
+  #|       if (!target) return [];
+  #|       const value = target[propertyName];
+  #|       if (value === null || value === undefined) return [];
+  #|       const iterator = value[Symbol.iterator];
+  #|       if (typeof iterator !== 'function') {
+  #|         throw new TypeError(
+  #|           "Failed to execute 'define' on 'CustomElementRegistry': " + String(propertyName) + " is not iterable",
+  #|         );
+  #|       }
+  #|       const result = [];
+  #|       for (const item of value) {
+  #|         result.push(asciiLowercase(String(item)));
+  #|       }
+  #|       return result;
+  #|     }
+  #|     function readLifecycleCallback(prototype, callbackName) {
+  #|       if (!prototype) return undefined;
+  #|       const value = prototype[callbackName];
+  #|       if (value === undefined) return undefined;
+  #|       if (typeof value !== 'function') {
+  #|         throw new TypeError(
+  #|           "Failed to execute 'define' on 'CustomElementRegistry': " + String(callbackName) + " is not a function",
+  #|         );
+  #|       }
+  #|       return value;
+  #|     }
+  #|     function collectBaseLifecycleCallbacks(prototype) {
+  #|       return {
+  #|         connectedCallback: readLifecycleCallback(prototype, 'connectedCallback'),
+  #|         disconnectedCallback: readLifecycleCallback(prototype, 'disconnectedCallback'),
+  #|         adoptedCallback: readLifecycleCallback(prototype, 'adoptedCallback'),
+  #|         attributeChangedCallback: readLifecycleCallback(prototype, 'attributeChangedCallback'),
+  #|       };
+  #|     }
+  #|     function collectFormAssociatedLifecycleCallbacks(prototype) {
+  #|       return {
+  #|         formAssociatedCallback: readLifecycleCallback(prototype, 'formAssociatedCallback'),
+  #|         formResetCallback: readLifecycleCallback(prototype, 'formResetCallback'),
+  #|         formDisabledCallback: readLifecycleCallback(prototype, 'formDisabledCallback'),
+  #|         formStateRestoreCallback: readLifecycleCallback(prototype, 'formStateRestoreCallback'),
+  #|       };
+  #|     }
+  #|     function getObservedAttributesForConstructor(ctor, hasAttributeChangedCallback) {
+  #|       if (!ctor || !hasAttributeChangedCallback) return [];
+  #|       return readDOMStringSequenceProperty(ctor, 'observedAttributes');
+  #|     }
+  #|     function getDisabledFeaturesForDefinition(definition) {
   #|       if (!definition || !definition.ctor) return [];
-  #|       const observed = definition.ctor.observedAttributes;
-  #|       if (!Array.isArray(observed)) return [];
-  #|       return observed.map(attr => asciiLowercase(String(attr)));
+  #|       return readDOMStringSequenceProperty(definition.ctor, 'disabledFeatures');
+  #|     }
+  #|     function hasDefinitionDisabledFeature(definition, feature) {
+  #|       if (!definition) return false;
+  #|       const normalized = asciiLowercase(String(feature || ''));
+  #|       return Array.isArray(definition.disabledFeatures) && definition.disabledFeatures.includes(normalized);
+  #|     }
+  #|     function isFormElementNode(node) {
+  #|       if (!node || node._nodeType !== 1) return false;
+  #|       return asciiLowercase(String(node.localName || node._tagName || '')) === 'form';
+  #|     }
+  #|     function isFieldSetElementNode(node) {
+  #|       if (!node || node._nodeType !== 1) return false;
+  #|       return asciiLowercase(String(node.localName || node._tagName || '')) === 'fieldset';
+  #|     }
+  #|     function isLabelElementNode(node) {
+  #|       if (!node || node._nodeType !== 1) return false;
+  #|       return asciiLowercase(String(node.localName || node._tagName || '')) === 'label';
+  #|     }
+  #|     const builtInFormControlNames = new Set([
+  #|       'button',
+  #|       'fieldset',
+  #|       'input',
+  #|       'object',
+  #|       'output',
+  #|       'select',
+  #|       'textarea',
+  #|     ]);
+  #|     function isFormControlElementNode(node) {
+  #|       if (!node || node._nodeType !== 1) return false;
+  #|       const localName = asciiLowercase(String(node.localName || node._tagName || ''));
+  #|       if (builtInFormControlNames.has(localName)) return true;
+  #|       const definition = node.__customElementDefinition || null;
+  #|       return !!(definition && definition.formAssociated);
+  #|     }
+  #|     function resolveFormOwnerForElement(element) {
+  #|       if (!element || element._nodeType !== 1) return null;
+  #|       if (!isConnectedToDocument(element)) return null;
+  #|       const ownerDocument = getOwnerDocument(element);
+  #|       const formAttr = element.getAttribute && element.getAttribute('form');
+  #|       if (formAttr !== null && formAttr !== undefined && String(formAttr) !== '') {
+  #|         if (!ownerDocument || typeof ownerDocument.getElementById !== 'function') return null;
+  #|         const candidate = ownerDocument.getElementById(String(formAttr));
+  #|         return isFormElementNode(candidate) ? candidate : null;
+  #|       }
+  #|       let current = getParentNode(element);
+  #|       while (current) {
+  #|         if (isFormElementNode(current)) return current;
+  #|         current = getParentNode(current);
+  #|       }
+  #|       return null;
+  #|     }
+  #|     function collectFormControlsForForm(form) {
+  #|       if (!isFormElementNode(form)) return [];
+  #|       const ownerDocument = getOwnerDocument(form);
+  #|       const root = ownerDocument && ownerDocument.documentElement ? ownerDocument.documentElement : form;
+  #|       const controls = [];
+  #|       traverseTree(root, (node) => {
+  #|         if (!isFormControlElementNode(node)) return;
+  #|         if (resolveFormOwnerForElement(node) === form) controls.push(node);
+  #|       });
+  #|       return controls;
+  #|     }
+  #|     function collectFieldSetControls(fieldset) {
+  #|       if (!isFieldSetElementNode(fieldset)) return [];
+  #|       return collectElements(fieldset, false, (node) => isFormControlElementNode(node));
+  #|     }
+  #|     function collectAssociatedCustomElementsForForm(form) {
+  #|       if (!isFormElementNode(form)) return [];
+  #|       const ownerDocument = getOwnerDocument(form);
+  #|       const root = ownerDocument && ownerDocument.documentElement ? ownerDocument.documentElement : form;
+  #|       const controls = [];
+  #|       traverseTree(root, (node) => {
+  #|         if (!node || node._nodeType !== 1) return;
+  #|         if (!node.__elementInternals) return;
+  #|         const definition = node.__customElementDefinition || null;
+  #|         if (!definition || !definition.formAssociated) return;
+  #|         if (resolveFormOwnerForElement(node) === form) controls.push(node);
+  #|       });
+  #|       return controls;
+  #|     }
+  #|     function resolveFormOwnerForSubmitter(element) {
+  #|       if (!element || element._nodeType !== 1) return null;
+  #|       const formAttr = element.getAttribute && element.getAttribute('form');
+  #|       if (formAttr !== null && formAttr !== undefined && String(formAttr) !== '') {
+  #|         const ownerDocument = getOwnerDocument(element);
+  #|         if (!ownerDocument || typeof ownerDocument.getElementById !== 'function') return null;
+  #|         const candidate = ownerDocument.getElementById(String(formAttr));
+  #|         return isFormElementNode(candidate) ? candidate : null;
+  #|       }
+  #|       let current = getParentNode(element);
+  #|       while (current) {
+  #|         if (isFormElementNode(current)) return current;
+  #|         current = getParentNode(current);
+  #|       }
+  #|       return null;
+  #|     }
+  #|     function isSubmitButtonElementNode(element) {
+  #|       if (!element || element._nodeType !== 1) return false;
+  #|       const localName = asciiLowercase(String(element.localName || element._tagName || ''));
+  #|       const type = element.getAttribute
+  #|         ? asciiLowercase(String(element.getAttribute('type') || ''))
+  #|         : '';
+  #|       if (localName === 'button') {
+  #|         return type === '' || type === 'submit';
+  #|       }
+  #|       if (localName === 'input') {
+  #|         return type === 'submit' || type === 'image';
+  #|       }
+  #|       return false;
+  #|     }
+  #|     function isResetButtonElementNode(element) {
+  #|       if (!element || element._nodeType !== 1) return false;
+  #|       const localName = asciiLowercase(String(element.localName || element._tagName || ''));
+  #|       const type = element.getAttribute
+  #|         ? asciiLowercase(String(element.getAttribute('type') || ''))
+  #|         : '';
+  #|       if (localName === 'button') return type === 'reset';
+  #|       if (localName === 'input') return type === 'reset';
+  #|       return false;
+  #|     }
+  #|     function rememberInputDefaultValue(element) {
+  #|       if (!element || !element.hasAttribute || !element.setAttribute) return;
+  #|       if (element.hasAttribute('data-crater-default-value')) return;
+  #|       const current = element.getAttribute ? element.getAttribute('value') : null;
+  #|       element.setAttribute(
+  #|         'data-crater-default-value',
+  #|         current === null || current === undefined ? '' : String(current),
+  #|       );
+  #|     }
+  #|     function rememberTextAreaDefaultValue(element) {
+  #|       if (!element || !element.hasAttribute || !element.setAttribute) return;
+  #|       if (element.hasAttribute('data-crater-default-value')) return;
+  #|       element.setAttribute(
+  #|         'data-crater-default-value',
+  #|         element.textContent === null || element.textContent === undefined ? '' : String(element.textContent),
+  #|       );
+  #|     }
+  #|     function rememberInputDefaultChecked(element) {
+  #|       if (!element || !element.hasAttribute || !element.setAttribute) return;
+  #|       if (element.hasAttribute('data-crater-default-checked')) return;
+  #|       element.setAttribute('data-crater-default-checked', element.hasAttribute('checked') ? 'true' : 'false');
+  #|     }
+  #|     function rememberOptionDefaultSelected(element) {
+  #|       if (!element || !element.hasAttribute || !element.setAttribute) return;
+  #|       if (element.hasAttribute('data-crater-default-selected')) return;
+  #|       element.setAttribute('data-crater-default-selected', element.hasAttribute('selected') ? 'true' : 'false');
+  #|     }
+  #|     function resetFormControls(form) {
+  #|       const controls = collectFormControlsForForm(form);
+  #|       for (let i = 0; i < controls.length; i++) {
+  #|         const control = controls[i];
+  #|         if (!control || control._nodeType !== 1) continue;
+  #|         const localName = asciiLowercase(String(control.localName || control._tagName || ''));
+  #|         if (localName === 'input') {
+  #|           const type = control.getAttribute
+  #|             ? asciiLowercase(String(control.getAttribute('type') || ''))
+  #|             : '';
+  #|           if (type === 'checkbox' || type === 'radio') {
+  #|             const defaultChecked = control.getAttribute
+  #|               ? control.getAttribute('data-crater-default-checked')
+  #|               : null;
+  #|             setReflectedBooleanAttribute(
+  #|               control,
+  #|               'checked',
+  #|               defaultChecked === null ? control.hasAttribute('checked') : defaultChecked === 'true',
+  #|             );
+  #|           } else if (
+  #|             type !== 'submit' &&
+  #|             type !== 'button' &&
+  #|             type !== 'image' &&
+  #|             type !== 'reset' &&
+  #|             type !== 'file'
+  #|           ) {
+  #|             const defaultValue = control.getAttribute
+  #|               ? control.getAttribute('data-crater-default-value')
+  #|               : null;
+  #|             setReflectedStringAttribute(
+  #|               control,
+  #|               'value',
+  #|               defaultValue === null
+  #|                 ? ((control.getAttribute && control.getAttribute('value')) || '')
+  #|                 : String(defaultValue),
+  #|             );
+  #|             setSelectionState(control, getTextControlValue(control).length, getTextControlValue(control).length, 'none');
+  #|           }
+  #|         } else if (localName === 'textarea') {
+  #|           const defaultValue = control.getAttribute
+  #|             ? control.getAttribute('data-crater-default-value')
+  #|             : null;
+  #|           control.textContent = defaultValue === null
+  #|             ? (control.textContent === null || control.textContent === undefined ? '' : String(control.textContent))
+  #|             : String(defaultValue);
+  #|           setSelectionState(control, getTextControlValue(control).length, getTextControlValue(control).length, 'none');
+  #|         } else if (localName === 'select') {
+  #|           const options = getSelectOptions(control);
+  #|           let selectedIndex = -1;
+  #|           for (let j = 0; j < options.length; j++) {
+  #|             const option = options[j];
+  #|             const defaultSelected = option.getAttribute
+  #|               ? option.getAttribute('data-crater-default-selected')
+  #|               : null;
+  #|             const selected = defaultSelected === null
+  #|               ? !!(option.hasAttribute && option.hasAttribute('selected'))
+  #|               : defaultSelected === 'true';
+  #|             setReflectedBooleanAttribute(option, 'selected', selected);
+  #|             if (selected && selectedIndex < 0) selectedIndex = j;
+  #|           }
+  #|           if (selectedIndex < 0 && options.length > 0) {
+  #|             setReflectedBooleanAttribute(options[0], 'selected', true);
+  #|           }
+  #|         }
+  #|       }
+  #|     }
+  #|     function runSyntheticClickActivation(target) {
+  #|       if (!target || target._nodeType !== 1) return;
+  #|       if (target.hasAttribute && target.hasAttribute('disabled')) return;
+  #|       if (isSubmitButtonElementNode(target)) {
+  #|         const form = resolveFormOwnerForSubmitter(target);
+  #|         if (form && typeof form.requestSubmit === 'function') {
+  #|           form.requestSubmit(target);
+  #|         }
+  #|         return;
+  #|       }
+  #|       if (isResetButtonElementNode(target)) {
+  #|         const form = resolveFormOwnerForSubmitter(target);
+  #|         if (form && typeof form.reset === 'function') {
+  #|           form.reset();
+  #|         }
+  #|       }
+  #|     }
+  #|     function validateRequestSubmitter(form, submitter) {
+  #|       if (submitter === undefined || submitter === null) return null;
+  #|       if (!isSubmitButtonElementNode(submitter)) {
+  #|         throw new TypeError(
+  #|           "Failed to execute 'requestSubmit' on 'HTMLFormElement': parameter 1 is not a submit button",
+  #|         );
+  #|       }
+  #|       if (resolveFormOwnerForSubmitter(submitter) !== form) {
+  #|         throw new DOMException(
+  #|           "Failed to execute 'requestSubmit' on 'HTMLFormElement': the specified element is not owned by this form element",
+  #|           'NotFoundError',
+  #|         );
+  #|       }
+  #|       return submitter;
+  #|     }
+  #|     function dispatchFormSubmitEvent(form, submitter) {
+  #|       const event = new SubmitEvent('submit', {
+  #|         bubbles: true,
+  #|         cancelable: true,
+  #|         submitter: submitter === undefined ? null : submitter,
+  #|       });
+  #|       return dispatchEventImpl(form, event);
+  #|     }
+  #|     function assertFormAssociatedInternals(internals, operation) {
+  #|       const host = internals && internals._host ? internals._host : null;
+  #|       const definition = host ? (host.__customElementDefinition || null) : null;
+  #|       if (!definition || !definition.formAssociated) {
+  #|         throw new DOMException(
+  #|           'ElementInternals.' + String(operation || 'operation') + ' is only supported on form-associated custom elements',
+  #|           'NotSupportedError',
+  #|         );
+  #|       }
+  #|       return host;
+  #|     }
+  #|     function updateFormAssociationForElement(element) {
+  #|       if (!element || element._nodeType !== 1) return;
+  #|       const definition = element.__customElementDefinition || null;
+  #|       if (!definition || !definition.formAssociated) return;
+  #|       const nextForm = resolveFormOwnerForElement(element);
+  #|       const previousForm = Object.prototype.hasOwnProperty.call(element, '__associatedForm')
+  #|         ? element.__associatedForm
+  #|         : null;
+  #|       if (previousForm === nextForm) {
+  #|         maybeDispatchPendingFormStateRestore(element);
+  #|         return;
+  #|       }
+  #|       element.__associatedForm = nextForm;
+  #|       if (typeof element.formAssociatedCallback === 'function') {
+  #|         element.formAssociatedCallback(nextForm);
+  #|       }
+  #|       maybeDispatchPendingFormStateRestore(element);
+  #|     }
+  #|     function computeFormDisabledStateForElement(element) {
+  #|       if (!element || element._nodeType !== 1) return false;
+  #|       if (element.hasAttribute && element.hasAttribute('disabled')) return true;
+  #|       let current = getParentNode(element);
+  #|       while (current) {
+  #|         if (isFieldSetElementNode(current) && current.hasAttribute && current.hasAttribute('disabled')) return true;
+  #|         current = getParentNode(current);
+  #|       }
+  #|       return false;
+  #|     }
+  #|     function updateFormDisabledStateForElement(element) {
+  #|       if (!element || element._nodeType !== 1) return;
+  #|       const definition = element.__customElementDefinition || null;
+  #|       if (!definition || !definition.formAssociated) return;
+  #|       const nextDisabled = computeFormDisabledStateForElement(element);
+  #|       const hasPrevious = Object.prototype.hasOwnProperty.call(element, '__formDisabled');
+  #|       const previousDisabled = hasPrevious ? !!element.__formDisabled : false;
+  #|       element.__formDisabled = nextDisabled;
+  #|       if (!hasPrevious && !nextDisabled) return;
+  #|       if (previousDisabled === nextDisabled) return;
+  #|       if (typeof element.formDisabledCallback === 'function') {
+  #|         element.formDisabledCallback(nextDisabled);
+  #|       }
+  #|     }
+  #|     function refreshFormAssociatedCustomElements(root) {
+  #|       if (!root) return;
+  #|       traverseCustomElementTree(root, (node) => {
+  #|         updateFormAssociationForElement(node);
+  #|         updateFormDisabledStateForElement(node);
+  #|       });
+  #|     }
+  #|     function resolveLabelElementsForElement(host) {
+  #|       if (!host || host._nodeType !== 1) return [];
+  #|       const labels = [];
+  #|       const seen = new Set();
+  #|       const hostId = host.getAttribute ? host.getAttribute('id') : null;
+  #|       let current = getParentNode(host);
+  #|       while (current) {
+  #|         if (isLabelElementNode(current) && !seen.has(current)) {
+  #|           seen.add(current);
+  #|           labels.push(current);
+  #|         }
+  #|         current = getParentNode(current);
+  #|       }
+  #|       const ownerDocument = getOwnerDocument(host);
+  #|       const root = ownerDocument && ownerDocument.documentElement
+  #|         ? ownerDocument.documentElement
+  #|         : (getRootNodeInternal(host) || host);
+  #|       traverseTree(root, (node) => {
+  #|         if (!isLabelElementNode(node)) return;
+  #|         const forAttr = node.getAttribute ? node.getAttribute('for') : null;
+  #|         if (forAttr === null || forAttr === undefined || String(forAttr) === '') return;
+  #|         const matches = hostId !== null && hostId !== undefined && String(hostId) !== '' && String(forAttr) === String(hostId);
+  #|         if (!matches || seen.has(node)) return;
+  #|         seen.add(node);
+  #|         labels.push(node);
+  #|       });
+  #|       return labels;
+  #|     }
+  #|     function syncCustomStateSetToHost(stateSet) {
+  #|       if (!stateSet || !stateSet._host) return;
+  #|       stateSet._host.__customStates = new Set(stateSet._states);
+  #|       if (stateSet._host._mockId) {
+  #|         domOps.push({
+  #|           op: 'setCustomStates',
+  #|           id: stateSet._host._mockId,
+  #|           value: Array.from(stateSet._states).join(' '),
+  #|         });
+  #|       }
+  #|     }
+  #|     function serializeRestorableFormAssociatedValue(value) {
+  #|       if (value === null || value === undefined) return null;
+  #|       if (value instanceof FormData) return null;
+  #|       return String(value);
+  #|     }
+  #|     function hydrateInternalsFromRestoredFormState(element, internals) {
+  #|       if (!element || !internals) return false;
+  #|       const hasFormValue = Object.prototype.hasOwnProperty.call(element, '__craterRestoredFormValue');
+  #|       const hasStateValue = Object.prototype.hasOwnProperty.call(element, '__craterRestoredStateValue');
+  #|       if (!hasFormValue && !hasStateValue) return false;
+  #|       internals._formValue = hasFormValue ? element.__craterRestoredFormValue : null;
+  #|       internals._stateValue = hasStateValue ? element.__craterRestoredStateValue : internals._formValue;
+  #|       element.__pendingFormStateRestore = hasStateValue;
+  #|       return true;
+  #|     }
+  #|     function maybeDispatchPendingFormStateRestore(element) {
+  #|       if (!element || !element.__pendingFormStateRestore) return;
+  #|       if (__customElementConstructionStack.length > 0 &&
+  #|           __customElementConstructionStack[__customElementConstructionStack.length - 1] === element) {
+  #|         return;
+  #|       }
+  #|       const internals = element.__elementInternals || null;
+  #|       if (!internals) return;
+  #|       element.__pendingFormStateRestore = false;
+  #|       if (typeof element.formStateRestoreCallback === 'function') {
+  #|         element.formStateRestoreCallback(internals._stateValue, 'restore');
+  #|       }
+  #|     }
+  #|     function __craterRestoreFormAssociatedState(element, hasFormValue, formValue, hasStateValue, stateValue) {
+  #|       if (!element || element._nodeType !== 1) return;
+  #|       if (hasFormValue) {
+  #|         element.__craterRestoredFormValue = formValue;
+  #|       } else {
+  #|         delete element.__craterRestoredFormValue;
+  #|       }
+  #|       if (hasStateValue) {
+  #|         element.__craterRestoredStateValue = stateValue;
+  #|       } else {
+  #|         delete element.__craterRestoredStateValue;
+  #|       }
+  #|       if (!hasFormValue && !hasStateValue) {
+  #|         element.__pendingFormStateRestore = false;
+  #|         if (element.__elementInternals) {
+  #|           element.__elementInternals._formValue = null;
+  #|           element.__elementInternals._stateValue = null;
+  #|         }
+  #|         return;
+  #|       }
+  #|       if (element.__elementInternals) {
+  #|         hydrateInternalsFromRestoredFormState(element, element.__elementInternals);
+  #|       }
+  #|     }
+  #|     function syncFormAssociatedValueToHost(internals) {
+  #|       if (!internals || !internals._host || !internals._host._mockId) return;
+  #|       const serializedFormValue = serializeRestorableFormAssociatedValue(internals._formValue);
+  #|       const serializedStateValue = serializeRestorableFormAssociatedValue(internals._stateValue);
+  #|       domOps.push({
+  #|         op: 'setFormValue',
+  #|         id: internals._host._mockId,
+  #|         hasName: serializedFormValue !== null,
+  #|         name: serializedFormValue === null ? '' : serializedFormValue,
+  #|         hasValue: serializedStateValue !== null,
+  #|         value: serializedStateValue === null ? '' : serializedStateValue,
+  #|       });
+  #|     }
+  #|     function computeElementInternalsWillValidate(host) {
+  #|       if (!host) return false;
+  #|       if (host.hasAttribute && (host.hasAttribute('disabled') || host.hasAttribute('readonly'))) return false;
+  #|       let current = getParentNode(host);
+  #|       while (current) {
+  #|         const localName = asciiLowercase(String(current.localName || current._tagName || ''));
+  #|         if (localName === 'datalist') return false;
+  #|         if (localName === 'fieldset' && current.hasAttribute && current.hasAttribute('disabled')) return false;
+  #|         current = getParentNode(current);
+  #|       }
+  #|       return true;
+  #|     }
+  #|     function isValidationIgnoredInputType(type) {
+  #|       switch (asciiLowercase(String(type || ''))) {
+  #|         case 'hidden':
+  #|         case 'button':
+  #|         case 'reset':
+  #|         case 'submit':
+  #|         case 'image':
+  #|           return true;
+  #|         default:
+  #|           return false;
+  #|       }
+  #|     }
+  #|     function computeControlWillValidate(element) {
+  #|       if (!element || element._nodeType !== 1) return false;
+  #|       const definition = element.__customElementDefinition || null;
+  #|       if (definition && definition.formAssociated) {
+  #|         return computeElementInternalsWillValidate(element);
+  #|       }
+  #|       const localName = asciiLowercase(String(element.localName || element._tagName || ''));
+  #|       if (!isFormControlElementNode(element)) return false;
+  #|       if (localName === 'button' || localName === 'fieldset' || localName === 'output') return false;
+  #|       if (element.hasAttribute && (element.hasAttribute('disabled') || element.hasAttribute('readonly'))) return false;
+  #|       if (localName === 'input') {
+  #|         const type = element.getAttribute
+  #|           ? asciiLowercase(String(element.getAttribute('type') || ''))
+  #|           : '';
+  #|         if (isValidationIgnoredInputType(type)) return false;
+  #|       }
+  #|       let current = getParentNode(element);
+  #|       while (current) {
+  #|         const ancestorName = asciiLowercase(String(current.localName || current._tagName || ''));
+  #|         if (ancestorName === 'datalist') return false;
+  #|         if (ancestorName === 'fieldset' && current.hasAttribute && current.hasAttribute('disabled')) return false;
+  #|         current = getParentNode(current);
+  #|       }
+  #|       return true;
+  #|     }
+  #|     function findCheckedRadioInGroup(element) {
+  #|       if (!element || element._nodeType !== 1) return null;
+  #|       const ownerForm = resolveFormOwnerForElement(element);
+  #|       const ownerDocument = getOwnerDocument(element);
+  #|       const root = ownerDocument && ownerDocument.documentElement ? ownerDocument.documentElement : (getRootNodeInternal(element) || element);
+  #|       const name = element.getAttribute ? String(element.getAttribute('name') || '') : '';
+  #|       let found = null;
+  #|       traverseTree(root, (node) => {
+  #|         if (found || !node || node._nodeType !== 1 || node === element) return;
+  #|         const localName = asciiLowercase(String(node.localName || node._tagName || ''));
+  #|         if (localName !== 'input') return;
+  #|         const type = node.getAttribute
+  #|           ? asciiLowercase(String(node.getAttribute('type') || ''))
+  #|           : '';
+  #|         if (type !== 'radio') return;
+  #|         const nodeName = node.getAttribute ? String(node.getAttribute('name') || '') : '';
+  #|         if (nodeName !== name) return;
+  #|         if (resolveFormOwnerForElement(node) !== ownerForm) return;
+  #|         if (node.checked) {
+  #|           found = node;
+  #|           return false;
+  #|         }
+  #|       });
+  #|       return found;
+  #|     }
+  #|     function computeRequiredValueMissing(element) {
+  #|       if (!element || !element.hasAttribute || !element.hasAttribute('required')) return false;
+  #|       const definition = element.__customElementDefinition || null;
+  #|       if (definition && definition.formAssociated) {
+  #|         const internals = element.__elementInternals || null;
+  #|         if (!internals) return true;
+  #|         if (internals._formValue === null || internals._formValue === undefined) return true;
+  #|         return String(internals._formValue) === '';
+  #|       }
+  #|       const localName = asciiLowercase(String(element.localName || element._tagName || ''));
+  #|       if (localName === 'textarea') {
+  #|         return getTextControlValue(element) === '';
+  #|       }
+  #|       if (localName === 'select') {
+  #|         const options = getSelectOptions(element);
+  #|         const selected = options.find((option) => !!option.selected) || options[0] || null;
+  #|         if (!selected) return true;
+  #|         let selectedValue = selected.getAttribute ? selected.getAttribute('value') : null;
+  #|         if (selectedValue === null || selectedValue === undefined) {
+  #|           selectedValue = selected.textContent || '';
+  #|         }
+  #|         return String(selectedValue) === '';
+  #|       }
+  #|       if (localName === 'input') {
+  #|         const type = element.getAttribute
+  #|           ? asciiLowercase(String(element.getAttribute('type') || ''))
+  #|           : '';
+  #|         if (type === 'checkbox') return !element.checked;
+  #|         if (type === 'radio') {
+  #|           if (element.checked) return false;
+  #|           return findCheckedRadioInGroup(element) === null;
+  #|         }
+  #|         if (isValidationIgnoredInputType(type) || type === 'file') return false;
+  #|         return getTextControlValue(element) === '';
+  #|       }
+  #|       return false;
+  #|     }
+  #|     function computeValidationStateForElement(element) {
+  #|       const validity = { valueMissing: false, customError: false, valid: true };
+  #|       let message = '';
+  #|       if (!computeControlWillValidate(element)) {
+  #|         return { validity, message: '' };
+  #|       }
+  #|       const definition = element && element.__customElementDefinition
+  #|         ? element.__customElementDefinition
+  #|         : null;
+  #|       if (definition && definition.formAssociated && element.__elementInternals) {
+  #|         const internalsValidity = element.__elementInternals._validity || {};
+  #|         for (const key of Object.keys(internalsValidity)) {
+  #|           if (internalsValidity[key]) validity[key] = true;
+  #|         }
+  #|         if (element.__elementInternals._validationMessage) {
+  #|           message = String(element.__elementInternals._validationMessage);
+  #|         }
+  #|       }
+  #|       const customMessage = element && Object.prototype.hasOwnProperty.call(element, '__customValidationMessage')
+  #|         ? String(element.__customValidationMessage || '')
+  #|         : '';
+  #|       if (customMessage !== '') {
+  #|         validity.customError = true;
+  #|         message = customMessage;
+  #|       }
+  #|       if (computeRequiredValueMissing(element)) {
+  #|         validity.valueMissing = true;
+  #|         if (message === '') message = 'Please fill out this field.';
+  #|       }
+  #|       const keys = Object.keys(validity);
+  #|       let hasError = false;
+  #|       for (let i = 0; i < keys.length; i++) {
+  #|         const key = keys[i];
+  #|         if (key !== 'valid' && validity[key]) {
+  #|           hasError = true;
+  #|           break;
+  #|         }
+  #|       }
+  #|       validity.valid = !hasError;
+  #|       if (validity.valid) message = '';
+  #|       return { validity, message };
+  #|     }
+  #|     function dispatchInvalidEventForElement(element) {
+  #|       if (!element) return;
+  #|       const event = new Event('invalid', { bubbles: false, cancelable: true });
+  #|       dispatchEventImpl(element, event);
+  #|     }
+  #|     function checkFormControlValidity(element, report) {
+  #|       const state = computeValidationStateForElement(element);
+  #|       if (state.validity.valid) return true;
+  #|       if (report) dispatchInvalidEventForElement(element);
+  #|       return false;
+  #|     }
+  #|     function shouldSkipFormValidation(form, submitter) {
+  #|       if (submitter && submitter.hasAttribute && submitter.hasAttribute('formnovalidate')) return true;
+  #|       return !!(form && form.hasAttribute && form.hasAttribute('novalidate'));
+  #|     }
+  #|     function validateFormForSubmission(form, report, submitter) {
+  #|       if (!isFormElementNode(form)) return true;
+  #|       if (shouldSkipFormValidation(form, submitter)) return true;
+  #|       const controls = collectFormControlsForForm(form);
+  #|       let allValid = true;
+  #|       for (let i = 0; i < controls.length; i++) {
+  #|         if (!checkFormControlValidity(controls[i], report)) allValid = false;
+  #|       }
+  #|       return allValid;
   #|     }
   #|     function traverseCustomElementTree(root, visit) {
   #|       if (!root) return;
@@ -3323,6 +4106,18 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       } finally {
   #|         __customElementConstructionStack.pop();
   #|       }
+  #|       if (Array.isArray(element._attrList)) {
+  #|         for (const attr of element._attrList) {
+  #|           if (!attr) continue;
+  #|           maybeInvokeAttributeChanged(
+  #|             element,
+  #|             attr.localName || attr.name,
+  #|             null,
+  #|             attr.value === undefined ? null : String(attr.value),
+  #|           );
+  #|         }
+  #|       }
+  #|       updateFormAssociationForElement(element);
   #|       if (element.isConnected) {
   #|         notifyConnectedSubtree(element);
   #|       }
@@ -3330,17 +4125,16 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|     }
   #|     function maybeUpgradeCustomElement(element) {
   #|       if (!element || element._nodeType !== 1) return element;
-  #|       const definition = getCustomElementDefinition(element.localName || element._tagName || '');
+  #|       const definition = getCustomElementDefinitionForElement(element);
   #|       if (!definition) return element;
   #|       return upgradeCustomElement(element, definition);
   #|     }
   #|     function upgradeExistingCustomElements(root, normalizedName) {
   #|       traverseCustomElementTree(root, (node) => {
   #|         if (!node || node._nodeType !== 1) return;
-  #|         const localName = asciiLowercase(String(node.localName || node._tagName || ''));
-  #|         if (localName !== normalizedName) return;
-  #|         const definition = getCustomElementDefinition(normalizedName);
-  #|         if (definition) upgradeCustomElement(node, definition);
+  #|         const definition = getCustomElementDefinitionForElement(node);
+  #|         if (!definition || definition.name !== normalizedName) return;
+  #|         upgradeCustomElement(node, definition);
   #|       });
   #|     }
   #|     function clearChildNodes(parent) {
@@ -3364,7 +4158,10 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       parent._children = [];
   #|       for (const child of removedNodes) {
   #|         notifyDisconnectedSubtree(child);
+  #|         refreshFormAssociatedCustomElements(child);
   #|       }
+  #|       const docForForms = getOwnerDocument(parent);
+  #|       if (docForForms) refreshFormAssociatedCustomElements(docForForms);
   #|       if (affectedSlotNames) enqueueSlotChangeForHost(parent, affectedSlotNames);
   #|       return removedNodes;
   #|     }
@@ -3376,10 +4173,32 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       }
   #|       return null;
   #|     }
+  #|     function isManualSlotAssignmentRoot(shadowRoot) {
+  #|       return !!(shadowRoot && shadowRoot.slotAssignment === 'manual');
+  #|     }
+  #|     function getManualAssignedNodesForSlot(slotElement) {
+  #|       if (!slotElement) return [];
+  #|       const shadowRoot = getEnclosingShadowRoot(slotElement);
+  #|       if (!isManualSlotAssignmentRoot(shadowRoot) || !shadowRoot.host) return [];
+  #|       const assigned = Array.isArray(slotElement.__manualAssignedNodes)
+  #|         ? slotElement.__manualAssignedNodes
+  #|         : [];
+  #|       return assigned.filter((node) =>
+  #|         node &&
+  #|         (node._nodeType === 1 || node._nodeType === 3) &&
+  #|         node._parent === shadowRoot.host &&
+  #|         node.__manualAssignedSlot === slotElement
+  #|       );
+  #|     }
   #|     function getAssignedNodesForSlot(slotElement) {
   #|       if (!slotElement) return [];
   #|       const shadowRoot = getEnclosingShadowRoot(slotElement);
   #|       if (!shadowRoot || !shadowRoot.host) {
+  #|         return slotElement._children ? slotElement._children.slice() : [];
+  #|       }
+  #|       if (isManualSlotAssignmentRoot(shadowRoot)) {
+  #|         const manualAssigned = getManualAssignedNodesForSlot(slotElement);
+  #|         if (manualAssigned.length > 0) return manualAssigned;
   #|         return slotElement._children ? slotElement._children.slice() : [];
   #|       }
   #|       const hostChildren = getChildNodesArray(shadowRoot.host);
@@ -3406,6 +4225,14 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       if (node._nodeType !== 1 && node._nodeType !== 3) return null;
   #|       const parent = node._parent;
   #|       if (!parent || !parent._shadowRoot) return null;
+  #|       if (isManualSlotAssignmentRoot(parent._shadowRoot)) {
+  #|         const manualSlot = node.__manualAssignedSlot || null;
+  #|         if (!manualSlot) return null;
+  #|         const shadowRoot = getEnclosingShadowRoot(manualSlot);
+  #|         if (shadowRoot !== parent._shadowRoot) return null;
+  #|         if (node._parent !== shadowRoot.host) return null;
+  #|         return manualSlot;
+  #|       }
   #|       return findFirstSlotForName(parent._shadowRoot, getSlotNameForLightNode(node));
   #|     }
   #|     function getFlattenedAssignedNodesForSlot(slotElement) {
@@ -3465,6 +4292,137 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       if (!parent || !parent._shadowRoot) return;
   #|       enqueueSlotChangeForHost(parent, names);
   #|     }
+  #|     function decorateShadowRoot(shadowRoot) {
+  #|       if (!shadowRoot || shadowRoot.__shadowApisInitialized) return shadowRoot;
+  #|       shadowRoot.__shadowApisInitialized = true;
+  #|       shadowRoot.getHTML = function(options) {
+  #|         return serializeChildrenForHtml(this, options || {});
+  #|       };
+  #|       shadowRoot.setHTMLUnsafe = function(value) {
+  #|         setUnsafeHtmlForNode(this, value);
+  #|       };
+  #|       return shadowRoot;
+  #|     }
+  #|     function ElementInternals(host) {
+  #|       this._host = host || null;
+  #|       this._validity = {};
+  #|       this._validationMessage = '';
+  #|       this._labels = [];
+  #|       this._formValue = null;
+  #|       this._stateValue = null;
+  #|     }
+  #|     function CustomStateSet(host) {
+  #|       this._host = host || null;
+  #|       this._states = new Set();
+  #|     }
+  #|     CustomStateSet.prototype._validateState = function(value) {
+  #|       const str = String(value);
+  #|       if (str.length === 0) {
+  #|         throw new DOMException('The custom state token provided must not be empty.', 'SyntaxError');
+  #|       }
+  #|       if (containsAsciiWhitespace(str)) {
+  #|         throw new DOMException(
+  #|           'The custom state token provided contains HTML space characters, which are not valid in tokens.',
+  #|           'InvalidCharacterError',
+  #|         );
+  #|       }
+  #|       return str;
+  #|     };
+  #|     Object.defineProperty(CustomStateSet.prototype, 'size', {
+  #|       get() { return this._states.size; },
+  #|       configurable: true,
+  #|     });
+  #|     CustomStateSet.prototype.add = function(value) {
+  #|       const state = this._validateState(value);
+  #|       this._states.add(state);
+  #|       syncCustomStateSetToHost(this);
+  #|       return this;
+  #|     };
+  #|     CustomStateSet.prototype.clear = function() {
+  #|       this._states.clear();
+  #|       syncCustomStateSetToHost(this);
+  #|     };
+  #|     CustomStateSet.prototype['delete'] = function(value) {
+  #|       const state = this._validateState(value);
+  #|       const deleted = this._states.delete(state);
+  #|       if (deleted) syncCustomStateSetToHost(this);
+  #|       return deleted;
+  #|     };
+  #|     CustomStateSet.prototype.has = function(value) {
+  #|       const state = String(value);
+  #|       if (state.length === 0 || containsAsciiWhitespace(state)) return false;
+  #|       return this._states.has(state);
+  #|     };
+  #|     CustomStateSet.prototype.forEach = function(callback, thisArg) {
+  #|       for (const value of this._states) callback.call(thisArg, value, value, this);
+  #|     };
+  #|     CustomStateSet.prototype.keys = function() { return this._states.keys(); };
+  #|     CustomStateSet.prototype.values = function() { return this._states.values(); };
+  #|     CustomStateSet.prototype.entries = function() { return this._states.entries(); };
+  #|     CustomStateSet.prototype[Symbol.iterator] = function() { return this.values(); };
+  #|     Object.defineProperties(ElementInternals.prototype, {
+  #|       shadowRoot: {
+  #|         get() {
+  #|           const host = this._host;
+  #|           return host ? (host.__elementInternalsShadowRoot || null) : null;
+  #|         },
+  #|       },
+  #|       form: {
+  #|         get() {
+  #|           const host = assertFormAssociatedInternals(this, 'form');
+  #|           return resolveFormOwnerForElement(host);
+  #|         },
+  #|       },
+  #|       willValidate: {
+  #|         get() {
+  #|           const host = assertFormAssociatedInternals(this, 'willValidate');
+  #|           return computeElementInternalsWillValidate(host);
+  #|         },
+  #|       },
+  #|       validity: {
+  #|         get() { return this._validity; },
+  #|       },
+  #|       validationMessage: {
+  #|         get() { return this._validationMessage; },
+  #|       },
+  #|       states: {
+  #|         get() {
+  #|           if (!this._statesSet) {
+  #|             this._statesSet = new CustomStateSet(this._host);
+  #|             if (this._host && this._host.__customStates instanceof Set) {
+  #|               this._host.__customStates.forEach((state) => {
+  #|                 this._statesSet._states.add(String(state));
+  #|               });
+  #|             }
+  #|           }
+  #|           return this._statesSet;
+  #|         },
+  #|       },
+  #|       labels: {
+  #|         get() {
+  #|           const host = assertFormAssociatedInternals(this, 'labels');
+  #|           return makeNodeList(resolveLabelElementsForElement(host));
+  #|         },
+  #|       },
+  #|     });
+  #|     ElementInternals.prototype.setFormValue = function(value, state) {
+  #|       assertFormAssociatedInternals(this, 'setFormValue');
+  #|       this._formValue = value === undefined ? null : value;
+  #|       this._stateValue = state === undefined ? this._formValue : state;
+  #|       syncFormAssociatedValueToHost(this);
+  #|     };
+  #|     ElementInternals.prototype.setValidity = function(flags, message, _anchor) {
+  #|       this._validity = flags && typeof flags === 'object' ? Object.assign({}, flags) : {};
+  #|       this._validationMessage = message === undefined || message === null ? '' : String(message);
+  #|     };
+  #|     ElementInternals.prototype.checkValidity = function() {
+  #|       assertFormAssociatedInternals(this, 'checkValidity');
+  #|       return false === Object.values(this._validity).some(Boolean);
+  #|     };
+  #|     ElementInternals.prototype.reportValidity = function() {
+  #|       assertFormAssociatedInternals(this, 'reportValidity');
+  #|       return this.checkValidity();
+  #|     };
   #|     function HTMLElement() {
   #|       if (__customElementConstructionStack.length > 0) {
   #|         return __customElementConstructionStack[__customElementConstructionStack.length - 1];
@@ -3474,7 +4432,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|     HTMLElement.prototype.constructor = HTMLElement;
   #|
   #|     function CustomElementRegistry() {}
-  #|     CustomElementRegistry.prototype.define = function(name, ctor) {
+  #|     CustomElementRegistry.prototype.define = function(name, ctor, options) {
   #|       const normalizedName = normalizeCustomElementName(name);
   #|       if (!isCustomElementName(normalizedName)) {
   #|         throw new DOMException(
@@ -3502,15 +4460,38 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         }
   #|       }
   #|       const prototype = ctor.prototype;
-  #|       if (!prototype || !HTMLElement.prototype.isPrototypeOf(prototype)) {
+  #|       const customizedExtends = normalizeCustomizedBuiltInExtends(options);
+  #|       const baseCtor = customizedExtends ? (tagToConstructor[customizedExtends] || null) : HTMLElement;
+  #|       if (!baseCtor) {
+  #|         throw new DOMException(
+  #|           "Failed to execute 'define' on 'CustomElementRegistry': unsupported extends option",
+  #|           'NotSupportedError',
+  #|         );
+  #|       }
+  #|       if (!prototype || !baseCtor.prototype.isPrototypeOf(prototype)) {
   #|         throw new TypeError(
   #|           "Failed to execute 'define' on 'CustomElementRegistry': constructor prototype is not an HTMLElement",
   #|         );
   #|       }
+  #|       const lifecycleCallbacks = collectBaseLifecycleCallbacks(prototype);
+  #|       const observedAttributes = getObservedAttributesForConstructor(
+  #|         ctor,
+  #|         lifecycleCallbacks.attributeChangedCallback !== undefined,
+  #|       );
+  #|       const disabledFeatures = getDisabledFeaturesForDefinition({ ctor });
+  #|       const formAssociated = !!ctor.formAssociated;
+  #|       const formAssociatedCallbacks = formAssociated
+  #|         ? collectFormAssociatedLifecycleCallbacks(prototype)
+  #|         : null;
   #|       const definition = {
   #|         name: normalizedName,
   #|         ctor,
-  #|         observedAttributes: getObservedAttributesForDefinition({ ctor }),
+  #|         disabledFeatures,
+  #|         formAssociated,
+  #|         lifecycleCallbacks,
+  #|         formAssociatedCallbacks,
+  #|         extends: customizedExtends,
+  #|         observedAttributes,
   #|       };
   #|       __customElementDefinitions.set(normalizedName, definition);
   #|       const pending = __customElementWhenDefined.get(normalizedName);
@@ -3523,6 +4504,12 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|     CustomElementRegistry.prototype.get = function(name) {
   #|       const definition = getCustomElementDefinition(name);
   #|       return definition ? definition.ctor : undefined;
+  #|     };
+  #|     CustomElementRegistry.prototype.getName = function(ctor) {
+  #|       for (const [name, definition] of __customElementDefinitions.entries()) {
+  #|         if (definition && definition.ctor === ctor) return name;
+  #|       }
+  #|       return null;
   #|     };
   #|     CustomElementRegistry.prototype.whenDefined = function(name) {
   #|       const normalizedName = normalizeCustomElementName(name);
@@ -3641,10 +4628,60 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|     function HTMLFieldSetElement() {}
   #|     HTMLFieldSetElement.prototype = Object.create(HTMLElement.prototype);
   #|     HTMLFieldSetElement.prototype.constructor = HTMLFieldSetElement;
+  #|     Object.defineProperty(HTMLFieldSetElement.prototype, 'elements', {
+  #|       get() {
+  #|         if (!this._elementsCollection) {
+  #|           this._elementsCollection = makeHTMLCollection(() => collectFieldSetControls(this));
+  #|         }
+  #|         return this._elementsCollection;
+  #|       },
+  #|       configurable: true,
+  #|     });
   #|
   #|     function HTMLFormElement() {}
   #|     HTMLFormElement.prototype = Object.create(HTMLElement.prototype);
   #|     HTMLFormElement.prototype.constructor = HTMLFormElement;
+  #|     Object.defineProperty(HTMLFormElement.prototype, 'elements', {
+  #|       get() {
+  #|         if (!this._elementsCollection) {
+  #|           this._elementsCollection = makeHTMLCollection(() => collectFormControlsForForm(this));
+  #|         }
+  #|         return this._elementsCollection;
+  #|       },
+  #|       configurable: true,
+  #|     });
+  #|     Object.defineProperty(HTMLFormElement.prototype, 'noValidate', {
+  #|       get() { return getReflectedBooleanAttribute(this, 'novalidate'); },
+  #|       set(v) { setReflectedBooleanAttribute(this, 'novalidate', v); },
+  #|       configurable: true,
+  #|     });
+  #|     HTMLFormElement.prototype.reset = function() {
+  #|       const event = new Event('reset', { bubbles: true, cancelable: true });
+  #|       const allowed = dispatchEventImpl(this, event);
+  #|       if (!allowed) return;
+  #|       resetFormControls(this);
+  #|       const controls = collectAssociatedCustomElementsForForm(this);
+  #|       for (const control of controls) {
+  #|         if (typeof control.formResetCallback === 'function') {
+  #|           control.formResetCallback();
+  #|         }
+  #|       }
+  #|     };
+  #|     HTMLFormElement.prototype.submit = function() {
+  #|       return undefined;
+  #|     };
+  #|     HTMLFormElement.prototype.checkValidity = function() {
+  #|       return validateFormForSubmission(this, true, null);
+  #|     };
+  #|     HTMLFormElement.prototype.reportValidity = function() {
+  #|       return validateFormForSubmission(this, true, null);
+  #|     };
+  #|     HTMLFormElement.prototype.requestSubmit = function(submitter) {
+  #|       const validatedSubmitter = validateRequestSubmitter(this, submitter);
+  #|       if (!validateFormForSubmission(this, true, validatedSubmitter)) return undefined;
+  #|       dispatchFormSubmitEvent(this, validatedSubmitter);
+  #|       return undefined;
+  #|     };
   #|
   #|     function HTMLHRElement() {}
   #|     HTMLHRElement.prototype = Object.create(HTMLElement.prototype);
@@ -3763,6 +4800,47 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|     };
   #|     HTMLSlotElement.prototype.assignedElements = function(options) {
   #|       return this.assignedNodes(options).filter((node) => node && node._nodeType === 1);
+  #|     };
+  #|     HTMLSlotElement.prototype.assign = function() {
+  #|       const shadowRoot = getEnclosingShadowRoot(this);
+  #|       if (!isManualSlotAssignmentRoot(shadowRoot)) {
+  #|         throw new DOMException('Manual slot assignment requires slotAssignment="manual"', 'NotAllowedError');
+  #|       }
+  #|       const nextAssigned = [];
+  #|       const nextSet = new Set();
+  #|       const affectedSlots = new Set([this]);
+  #|       for (let i = 0; i < arguments.length; i++) {
+  #|         const node = arguments[i];
+  #|         if (!isNodeLike(node)) {
+  #|           throw new TypeError("Failed to execute 'assign' on 'HTMLSlotElement': parameter is not of type Node");
+  #|         }
+  #|         const nodeType = __craterGetNodeType(node);
+  #|         if (nodeType !== 1 && nodeType !== 3) continue;
+  #|         if (!shadowRoot.host || node._parent !== shadowRoot.host) continue;
+  #|         if (nextSet.has(node)) continue;
+  #|         const previousSlot = node.__manualAssignedSlot || null;
+  #|         if (previousSlot && previousSlot !== this) {
+  #|           affectedSlots.add(previousSlot);
+  #|           if (Array.isArray(previousSlot.__manualAssignedNodes)) {
+  #|             previousSlot.__manualAssignedNodes = previousSlot.__manualAssignedNodes.filter((item) => item !== node);
+  #|           }
+  #|         }
+  #|         nextSet.add(node);
+  #|         nextAssigned.push(node);
+  #|       }
+  #|       const currentAssigned = Array.isArray(this.__manualAssignedNodes) ? this.__manualAssignedNodes : [];
+  #|       for (const node of currentAssigned) {
+  #|         if (!nextSet.has(node) && node && node.__manualAssignedSlot === this) {
+  #|           node.__manualAssignedSlot = null;
+  #|         }
+  #|       }
+  #|       for (const node of nextAssigned) {
+  #|         node.__manualAssignedSlot = this;
+  #|       }
+  #|       this.__manualAssignedNodes = nextAssigned;
+  #|       for (const slot of affectedSlots) {
+  #|         enqueueSlotChangeForSlot(slot);
+  #|       }
   #|     };
   #|
   #|     function HTMLSourceElement() {}
@@ -3901,12 +4979,12 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|     Object.defineProperties(HTMLInputElement.prototype, {
   #|       value: {
   #|         get() { return getReflectedStringAttribute(this, 'value'); },
-  #|         set(v) { setReflectedStringAttribute(this, 'value', v); setSelectionState(this, getTextControlValue(this).length, getTextControlValue(this).length, 'none'); },
+  #|         set(v) { rememberInputDefaultValue(this); setReflectedStringAttribute(this, 'value', v); setSelectionState(this, getTextControlValue(this).length, getTextControlValue(this).length, 'none'); },
   #|         configurable: true
   #|       },
   #|       checked: {
   #|         get() { return getReflectedBooleanAttribute(this, 'checked'); },
-  #|         set(v) { setReflectedBooleanAttribute(this, 'checked', v); },
+  #|         set(v) { rememberInputDefaultChecked(this); setReflectedBooleanAttribute(this, 'checked', v); },
   #|         configurable: true
   #|       },
   #|       selectionStart: {
@@ -3922,6 +5000,23 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       selectionDirection: {
   #|         get() { return ensureSelectionState(this).direction; },
   #|         set(v) { const state = ensureSelectionState(this); setSelectionState(this, state.start, state.end, v); },
+  #|         configurable: true
+  #|       },
+  #|       willValidate: {
+  #|         get() { return computeControlWillValidate(this); },
+  #|         configurable: true
+  #|       },
+  #|       validity: {
+  #|         get() { return computeValidationStateForElement(this).validity; },
+  #|         configurable: true
+  #|       },
+  #|       validationMessage: {
+  #|         get() { return computeValidationStateForElement(this).message; },
+  #|         configurable: true
+  #|       },
+  #|       formNoValidate: {
+  #|         get() { return getReflectedBooleanAttribute(this, 'formnovalidate'); },
+  #|         set(v) { setReflectedBooleanAttribute(this, 'formnovalidate', v); },
   #|         configurable: true
   #|       }
   #|     });
@@ -3940,6 +5035,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       let nextEnd = clampSelectionIndex(this, rangeEnd);
   #|       if (nextEnd < nextStart) nextEnd = nextStart;
   #|       const text = replacement === null || replacement === undefined ? '' : String(replacement);
+  #|       rememberInputDefaultValue(this);
   #|       setReflectedStringAttribute(this, 'value', value.slice(0, nextStart) + text + value.slice(nextEnd));
   #|       const insertedEnd = nextStart + text.length;
   #|       switch (selectionMode) {
@@ -3960,14 +5056,51 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           break;
   #|       }
   #|     };
+  #|     HTMLInputElement.prototype.setCustomValidity = function(message) {
+  #|       this.__customValidationMessage = message === undefined || message === null ? '' : String(message);
+  #|     };
+  #|     HTMLInputElement.prototype.checkValidity = function() {
+  #|       return checkFormControlValidity(this, true);
+  #|     };
+  #|     HTMLInputElement.prototype.reportValidity = function() {
+  #|       return checkFormControlValidity(this, true);
+  #|     };
   #|     Object.defineProperty(HTMLButtonElement.prototype, 'value', {
   #|       get() { return getReflectedStringAttribute(this, 'value'); },
   #|       set(v) { setReflectedStringAttribute(this, 'value', v); },
   #|       configurable: true
   #|     });
+  #|     Object.defineProperties(HTMLButtonElement.prototype, {
+  #|       willValidate: {
+  #|         get() { return computeControlWillValidate(this); },
+  #|         configurable: true
+  #|       },
+  #|       validity: {
+  #|         get() { return computeValidationStateForElement(this).validity; },
+  #|         configurable: true
+  #|       },
+  #|       validationMessage: {
+  #|         get() { return computeValidationStateForElement(this).message; },
+  #|         configurable: true
+  #|       },
+  #|       formNoValidate: {
+  #|         get() { return getReflectedBooleanAttribute(this, 'formnovalidate'); },
+  #|         set(v) { setReflectedBooleanAttribute(this, 'formnovalidate', v); },
+  #|         configurable: true
+  #|       }
+  #|     });
+  #|     HTMLButtonElement.prototype.setCustomValidity = function(message) {
+  #|       this.__customValidationMessage = message === undefined || message === null ? '' : String(message);
+  #|     };
+  #|     HTMLButtonElement.prototype.checkValidity = function() {
+  #|       return checkFormControlValidity(this, true);
+  #|     };
+  #|     HTMLButtonElement.prototype.reportValidity = function() {
+  #|       return checkFormControlValidity(this, true);
+  #|     };
   #|     Object.defineProperty(HTMLTextAreaElement.prototype, 'value', {
   #|       get() { return this.textContent || ''; },
-  #|       set(v) { this.textContent = v === null || v === undefined ? '' : String(v); setSelectionState(this, getTextControlValue(this).length, getTextControlValue(this).length, 'none'); },
+  #|       set(v) { rememberTextAreaDefaultValue(this); this.textContent = v === null || v === undefined ? '' : String(v); setSelectionState(this, getTextControlValue(this).length, getTextControlValue(this).length, 'none'); },
   #|       configurable: true
   #|     });
   #|     Object.defineProperties(HTMLTextAreaElement.prototype, {
@@ -3984,6 +5117,18 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       selectionDirection: {
   #|         get() { return ensureSelectionState(this).direction; },
   #|         set(v) { const state = ensureSelectionState(this); setSelectionState(this, state.start, state.end, v); },
+  #|         configurable: true
+  #|       },
+  #|       willValidate: {
+  #|         get() { return computeControlWillValidate(this); },
+  #|         configurable: true
+  #|       },
+  #|       validity: {
+  #|         get() { return computeValidationStateForElement(this).validity; },
+  #|         configurable: true
+  #|       },
+  #|       validationMessage: {
+  #|         get() { return computeValidationStateForElement(this).message; },
   #|         configurable: true
   #|       }
   #|     });
@@ -4002,6 +5147,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       let nextEnd = clampSelectionIndex(this, rangeEnd);
   #|       if (nextEnd < nextStart) nextEnd = nextStart;
   #|       const text = replacement === null || replacement === undefined ? '' : String(replacement);
+  #|       rememberTextAreaDefaultValue(this);
   #|       this.textContent = value.slice(0, nextStart) + text + value.slice(nextEnd);
   #|       const insertedEnd = nextStart + text.length;
   #|       switch (selectionMode) {
@@ -4022,6 +5168,15 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           break;
   #|       }
   #|     };
+  #|     HTMLTextAreaElement.prototype.setCustomValidity = function(message) {
+  #|       this.__customValidationMessage = message === undefined || message === null ? '' : String(message);
+  #|     };
+  #|     HTMLTextAreaElement.prototype.checkValidity = function() {
+  #|       return checkFormControlValidity(this, true);
+  #|     };
+  #|     HTMLTextAreaElement.prototype.reportValidity = function() {
+  #|       return checkFormControlValidity(this, true);
+  #|     };
   #|     Object.defineProperties(HTMLOptionElement.prototype, {
   #|       value: {
   #|         get() {
@@ -4033,7 +5188,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       },
   #|       selected: {
   #|         get() { return getReflectedBooleanAttribute(this, 'selected'); },
-  #|         set(v) { setReflectedBooleanAttribute(this, 'selected', v); },
+  #|         set(v) { rememberOptionDefaultSelected(this); setReflectedBooleanAttribute(this, 'selected', v); },
   #|         configurable: true
   #|       }
   #|     });
@@ -4106,8 +5261,29 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           }
   #|         },
   #|         configurable: true
+  #|       },
+  #|       willValidate: {
+  #|         get() { return computeControlWillValidate(this); },
+  #|         configurable: true
+  #|       },
+  #|       validity: {
+  #|         get() { return computeValidationStateForElement(this).validity; },
+  #|         configurable: true
+  #|       },
+  #|       validationMessage: {
+  #|         get() { return computeValidationStateForElement(this).message; },
+  #|         configurable: true
   #|       }
   #|     });
+  #|     HTMLSelectElement.prototype.setCustomValidity = function(message) {
+  #|       this.__customValidationMessage = message === undefined || message === null ? '' : String(message);
+  #|     };
+  #|     HTMLSelectElement.prototype.checkValidity = function() {
+  #|       return checkFormControlValidity(this, true);
+  #|     };
+  #|     HTMLSelectElement.prototype.reportValidity = function() {
+  #|       return checkFormControlValidity(this, true);
+  #|     };
   #|
   #|     function HTMLTimeElement() {}
   #|     HTMLTimeElement.prototype = Object.create(HTMLElement.prototype);
@@ -4443,6 +5619,14 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           if (oldValue !== strValue) {
   #|             maybeInvokeAttributeChanged(this, normalizedName, oldValue, strValue);
   #|             if (
+  #|               normalizedName === 'form' ||
+  #|               normalizedName === 'disabled' ||
+  #|               (normalizedName === 'id' && isFormElementNode(this))
+  #|             ) {
+  #|               const docForForms = getOwnerDocument(this);
+  #|               if (docForForms) refreshFormAssociatedCustomElements(docForForms);
+  #|             }
+  #|             if (
   #|               normalizedName === 'slot' &&
   #|               this._parent &&
   #|               this._parent._shadowRoot
@@ -4490,6 +5674,14 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|               oldValue: oldValue
   #|             });
   #|             maybeInvokeAttributeChanged(this, searchName, oldValue, null);
+  #|             if (
+  #|               searchName === 'form' ||
+  #|               searchName === 'disabled' ||
+  #|               (searchName === 'id' && isFormElementNode(this))
+  #|             ) {
+  #|               const docForForms = getOwnerDocument(this);
+  #|               if (docForForms) refreshFormAssociatedCustomElements(docForForms);
+  #|             }
   #|             if (searchName === 'slot' && this._parent && this._parent._shadowRoot) {
   #|               enqueueSlotChangeForHost(this._parent, new Set([String(oldValue), '']));
   #|             }
@@ -4703,10 +5895,16 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           clearChildNodes(this);
   #|           if (html === '') return;
   #|           const owner = getOwnerDocument(this) || document;
-  #|           const nodes = parseHtmlFragment(html, owner);
+  #|           const nodes = parseHtmlFragment(html, owner, this);
   #|           for (const node of nodes) {
   #|             this.appendChild(node);
   #|           }
+  #|         },
+  #|         getHTML(options) {
+  #|           return serializeShadowRootTemplate(this._shadowRoot || null, options || {}) + serializeChildrenForHtml(this, options || {});
+  #|         },
+  #|         setHTMLUnsafe(value) {
+  #|           setUnsafeHtmlForNode(this, value);
   #|         },
   #|         get outerHTML() {
   #|           const attrs = this._attrList.map(function(a) { return ' ' + a.name + '="' + a.value + '"'; }).join('');
@@ -4758,6 +5956,8 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|             if (doc) indexSubtree(child, doc);
   #|             notifyConnectedSubtree(child);
   #|           }
+  #|           const docForForms = getOwnerDocument(this);
+  #|           if (docForForms) refreshFormAssociatedCustomElements(docForForms);
   #|           domOps.push({ op: 'appendChild', parentId: this._mockId, childId: child._mockId });
   #|           queueMutationRecord(this, {
   #|             type: 'childList',
@@ -4823,6 +6023,8 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|               if (doc) indexSubtree(newChild, doc);
   #|               notifyConnectedSubtree(newChild);
   #|             }
+  #|             const docForForms = getOwnerDocument(this);
+  #|             if (docForForms) refreshFormAssociatedCustomElements(docForForms);
   #|             domOps.push({ op: 'insertBefore', parentId: this._mockId, childId: newChild._mockId, refId: actualRef._mockId });
   #|             queueMutationRecord(this, {
   #|               type: 'childList',
@@ -4860,6 +6062,9 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|             }
   #|             notifyDisconnectedSubtree(child);
   #|           }
+  #|           refreshFormAssociatedCustomElements(child);
+  #|           const docForForms = getOwnerDocument(this);
+  #|           if (docForForms) refreshFormAssociatedCustomElements(docForForms);
   #|           domOps.push({ op: 'removeChild', parentId: this._mockId, childId: child._mockId });
   #|           queueMutationRecord(this, {
   #|             type: 'childList',
@@ -4994,6 +6199,19 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|                 clone._children.push(clonedChild);
   #|                 clonedChild._parent = clone;
   #|                 domOps.push({ op: 'appendChild', parentId: id, childId: clonedChild._mockId });
+  #|               }
+  #|             }
+  #|             if (isDeep && el._shadowRoot && el._shadowRoot.clonable && typeof clone.attachShadow === 'function' && !clone._shadowRoot) {
+  #|               const clonedShadow = clone.attachShadow({
+  #|                 mode: el._shadowRoot.mode || 'open',
+  #|                 delegatesFocus: !!el._shadowRoot.delegatesFocus,
+  #|                 slotAssignment: el._shadowRoot.slotAssignment || 'named',
+  #|                 clonable: !!el._shadowRoot.clonable,
+  #|                 serializable: !!el._shadowRoot.serializable,
+  #|               });
+  #|               for (const child of el._shadowRoot._children || []) {
+  #|                 const clonedShadowChild = cloneElement(child, true);
+  #|                 clonedShadow.appendChild(clonedShadowChild);
   #|               }
   #|             }
   #|             return clone;
@@ -5138,19 +6356,42 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           return null;
   #|         },
   #|         insertAdjacentHTML(position, html) {
-  #|           const temp = document.createElement('template');
-  #|           temp._textContent = html;
-  #|           insertAdjacentNode(this, position, temp);
+  #|           const pos = String(position).toLowerCase();
+  #|           const owner = getOwnerDocument(this) || document;
+  #|           const contextHost = pos === 'afterbegin' || pos === 'beforeend' ? this : null;
+  #|           const nodes = parseHtmlFragment(html, owner, contextHost);
+  #|           insertAdjacentNodes(this, pos, nodes);
   #|         },
-  #|         get shadowRoot() { return this._shadowRoot || null; },
+  #|         get shadowRoot() {
+  #|           if (this._shadowRootMode === 'closed') return null;
+  #|           return this._shadowRoot || null;
+  #|         },
   #|         attachShadow(init) {
   #|           if (this._shadowRoot) throw new Error('Already has shadow root');
+  #|           const definition = this.__customElementDefinition || null;
+  #|           if (hasDefinitionDisabledFeature(definition, 'shadow')) {
+  #|             throw new DOMException('Shadow root creation is disabled for this custom element', 'NotSupportedError');
+  #|           }
+  #|           const mode = String((init && init.mode) || 'open');
+  #|           const slotAssignment = init && init.slotAssignment === 'manual' ? 'manual' : 'named';
   #|           const shadowId = nodeIdCounter++;
   #|           domOps.push({ op: 'createDocumentFragment', id: shadowId });
-  #|           domOps.push({ op: 'attachShadow', parentId: this._mockId, childId: shadowId, value: String((init && init.mode) || 'open') });
-  #|           const shadow = createMockDocumentFragment(shadowId);
-  #|           shadow.mode = init.mode;
+  #|           domOps.push({
+  #|             op: 'attachShadow',
+  #|             parentId: this._mockId,
+  #|             childId: shadowId,
+  #|             value: mode,
+  #|             delegatesFocus: !!(init && init.delegatesFocus),
+  #|             slotAssignment,
+  #|             clonable: !!(init && init.clonable),
+  #|             serializable: !!(init && init.serializable)
+  #|           });
+  #|           const shadow = decorateShadowRoot(createMockDocumentFragment(shadowId));
+  #|           shadow.mode = mode;
   #|           shadow.delegatesFocus = !!(init && init.delegatesFocus);
+  #|           shadow.slotAssignment = slotAssignment;
+  #|           shadow.clonable = !!(init && init.clonable);
+  #|           shadow.serializable = !!(init && init.serializable);
   #|           shadow.host = this;
   #|           shadow._isShadowRoot = true;
   #|           shadow._parent = this;
@@ -5158,18 +6399,15 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           Object.defineProperty(shadow, 'innerHTML', {
   #|             get() { return this._children.map(c => c.outerHTML || c.textContent).join(''); },
   #|             set(v) {
-  #|               const html = (v === null || v === undefined) ? '' : String(v);
-  #|               clearChildNodes(this);
-  #|               if (html === '') return;
-  #|               const owner = getOwnerDocument(this) || document;
-  #|               const nodes = parseHtmlFragment(html, owner);
-  #|               for (const node of nodes) {
-  #|                 this.appendChild(node);
-  #|               }
+  #|               setUnsafeHtmlForNode(this, v);
   #|             },
   #|             configurable: true
   #|           });
   #|           this._shadowRoot = shadow;
+  #|           this._shadowRootMode = shadow.mode;
+  #|           if (this.__elementInternals) {
+  #|             this.__elementInternalsShadowRoot = shadow;
+  #|           }
   #|           return shadow;
   #|         },
   #|         focus() { focusNodeImpl(this); },
@@ -5177,7 +6415,10 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         click() {
   #|           const event = new MouseEvent('click', { bubbles: true, cancelable: true, composed: true });
   #|           const allowed = dispatchEventImpl(this, event);
-  #|           if (allowed) applySyntheticClickFocus(this);
+  #|           if (allowed) {
+  #|             applySyntheticClickFocus(this);
+  #|             runSyntheticClickActivation(this);
+  #|           }
   #|         },
   #|         dispatchEvent(event) { return dispatchEventImpl(this, event); },
   #|         addEventListener(type, listener, options) { addEventListenerImpl(this, type, listener, options); },
@@ -5432,7 +6673,24 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           }
   #|           return this._popoverState === 'showing';
   #|         },
-  #|         attachInternals() { return { shadowRoot: null, form: null, willValidate: false, validity: {}, validationMessage: '', labels: [] }; },
+  #|         attachInternals() {
+  #|           const definition = this.__customElementDefinition || null;
+  #|           if (!definition) {
+  #|             throw new DOMException('attachInternals is only supported on upgraded autonomous custom elements', 'NotSupportedError');
+  #|           }
+  #|           if (hasDefinitionDisabledFeature(definition, 'internals')) {
+  #|             throw new DOMException('ElementInternals are disabled for this custom element', 'NotSupportedError');
+  #|           }
+  #|           if (this.__elementInternals) {
+  #|             throw new DOMException('ElementInternals already attached', 'NotSupportedError');
+  #|           }
+  #|           const internals = new ElementInternals(this);
+  #|           this.__elementInternals = internals;
+  #|           this.__elementInternalsShadowRoot = null;
+  #|           hydrateInternalsFromRestoredFormState(this, internals);
+  #|           maybeDispatchPendingFormStateRestore(this);
+  #|           return internals;
+  #|         },
   #|         get offsetParent() { return this._parent; },
   #|         get offsetTop() { return 0; },
   #|         get offsetLeft() { return 0; },
@@ -6401,7 +7659,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|                 contentType = 'image/svg+xml';
   #|               }
   #|               let doc = null;
-  #|               const createElementForDoc = function(ns, qname) {
+  #|               const createElementForDoc = function(ns, qname, options) {
   #|                 const normalizedNs = ns === undefined || ns === '' ? null : ns;
   #|                 const name = String(qname);
   #|                 const parsed = normalizedNs === null
@@ -6424,6 +7682,12 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|                 el._namespaceURI = normalizedNs;
   #|                 el._prefix = prefix;
   #|                 el._ownerDocument = doc;
+  #|                 const isValue = normalizedNs === 'http://www.w3.org/1999/xhtml'
+  #|                   ? getCustomElementIsValue(options)
+  #|                   : null;
+  #|                 if (isValue) {
+  #|                   el._attrList.push(createAttrNode(doc, null, 'is', isValue, el, false));
+  #|                 }
   #|                 const lowerName = asciiLowercase(localName);
   #|                 const Ctor = isHtmlNamespace
   #|                   ? (localName === lowerName ? (tagToConstructor[lowerName] || HTMLElement) : HTMLUnknownElement)
@@ -6459,13 +7723,13 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|                   if (!this._impl) this._impl = createImplForDoc(this);
   #|                   return this._impl;
   #|                 },
-  #|                 createElement(name) {
+  #|                 createElement(name, options) {
   #|                   const defaultNs = (this.contentType === 'text/html' || this.contentType === 'application/xhtml+xml')
   #|                     ? 'http://www.w3.org/1999/xhtml'
   #|                     : null;
-  #|                   return createElementForDoc(defaultNs, name);
+  #|                   return createElementForDoc(defaultNs, name, options);
   #|                 },
-  #|                 createElementNS(ns, name) { return createElementForDoc(ns, name); },
+  #|                 createElementNS(ns, name, options) { return createElementForDoc(ns, name, options); },
   #|                 createTextNode(text) {
   #|                   const str = String(text);
   #|                   const id = nodeIdCounter++;
@@ -6862,14 +8126,21 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       _activeElement: bodyEl,
   #|       get activeElement() { return this._activeElement || this.body || bodyEl || null; },
   #|       set activeElement(value) { this._activeElement = value || this.body || bodyEl || null; },
-  #|       get forms() { return []; },
+  #|       get forms() {
+  #|         if (!this._formsCollection) {
+  #|           this._formsCollection = makeHTMLCollection(() =>
+  #|             collectElements(htmlEl, true, (el) => isFormElementNode(el))
+  #|           );
+  #|         }
+  #|         return this._formsCollection;
+  #|       },
   #|       get images() { return []; },
   #|       get links() { return []; },
   #|       get scripts() { return []; },
   #|       get embeds() { return []; },
   #|       get plugins() { return []; },
   #|       hasFocus() { return !!(this._activeElement || this.body || bodyEl); },
-  #|       createElement(tagName) {
+  #|       createElement(tagName, options) {
   #|         const rawName = String(tagName);
   #|         if (!isValidElementName(rawName)) {
   #|           throw new DOMException('Invalid character in qualifiedName', 'InvalidCharacterError');
@@ -6881,6 +8152,10 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         el._tagName = normalizedName;
   #|         el._localName = normalizedName;
   #|         el._prefix = null;
+  #|         const isValue = getCustomElementIsValue(options);
+  #|         if (isValue) {
+  #|           el._attrList.push(createAttrNode(document, null, 'is', isValue, el, false));
+  #|         }
   #|         const Ctor = tagToConstructor[normalizedName] || HTMLUnknownElement;
   #|         Object.setPrototypeOf(el, Ctor.prototype);
   #|         return maybeUpgradeCustomElement(el);
@@ -7564,6 +8839,17 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|     Event.AT_TARGET = 2;
   #|     Event.BUBBLING_PHASE = 3;
   #|
+  #|     class SubmitEvent extends Event {
+  #|       constructor(type, options) {
+  #|         options = options || {};
+  #|         super(type, options);
+  #|         this._submitter = Object.prototype.hasOwnProperty.call(options, 'submitter')
+  #|           ? options.submitter
+  #|           : null;
+  #|       }
+  #|       get submitter() { return this._submitter; }
+  #|     }
+  #|
   #|     class UIEvent extends Event {
   #|       constructor(type, options) {
   #|         options = options || {};
@@ -7741,6 +9027,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       get self() { return this; },
   #|       get document() { return document; },
   #|       Event: Event,
+  #|       SubmitEvent: SubmitEvent,
   #|       UIEvent: UIEvent,
   #|       MouseEvent: MouseEvent,
   #|       PointerEvent: PointerEvent,
@@ -7855,6 +9142,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       removeEventListener(type, listener, options) { removeEventListenerImpl(this, type, listener, options); },
   #|       dispatchEvent(event) { return dispatchEventImpl(this, event); },
   #|       Event: Event,
+  #|       SubmitEvent: SubmitEvent,
   #|       Node: Node,
   #|       Attr: Attr,
   #|       CharacterData: CharacterData,
@@ -7869,6 +9157,8 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       DOMParser: DOMParser,
   #|       DOMException: DOMException,
   #|       DOMImplementation: DOMImplementation,
+  #|       ElementInternals: ElementInternals,
+  #|       CustomStateSet: CustomStateSet,
   #|       CustomElementRegistry: CustomElementRegistry,
   #|       customElements: customElements,
   #|       HTMLElement: HTMLElement,
@@ -7971,6 +9261,8 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       globalThis.dispatchEvent = window.dispatchEvent.bind(window);
   #|       globalThis.customElements = customElements;
   #|       globalThis.CustomElementRegistry = CustomElementRegistry;
+  #|       globalThis.ElementInternals = ElementInternals;
+  #|       globalThis.CustomStateSet = CustomStateSet;
   #|       globalThis.queueMicrotask = queueMicrotask;
   #|       globalThis.fetch = fetch;
   #|       globalThis.Response = Response;
@@ -7984,6 +9276,8 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|     window.Request = Request;
   #|     window.Headers = Headers;
   #|     window.Blob = Blob;
+  #|     window.ElementInternals = ElementInternals;
+  #|     window.CustomStateSet = CustomStateSet;
   #|     window.customElements = customElements;
   #|     window.CustomElementRegistry = CustomElementRegistry;
   #|     window.parent = window;
@@ -8339,8 +9633,34 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       return window.__waitForFunction(condition, options);
   #|     };
   #|
+  #|     function appendFormDataValueEntries(formData, name, value) {
+  #|       if (value === null || value === undefined) return;
+  #|       if (value instanceof FormData) {
+  #|         for (const entry of value._data) {
+  #|           formData.append(entry[0], entry[1]);
+  #|         }
+  #|         return;
+  #|       }
+  #|       formData.append(name, value);
+  #|     }
+  #|     function appendAssociatedCustomElementEntries(formData, form) {
+  #|       const controls = collectAssociatedCustomElementsForForm(form);
+  #|       for (const control of controls) {
+  #|         const name = control.getAttribute && control.getAttribute('name');
+  #|         if (name === null || name === undefined || String(name) === '') continue;
+  #|         const internals = control.__elementInternals || null;
+  #|         if (!internals) continue;
+  #|         appendFormDataValueEntries(formData, String(name), internals._formValue);
+  #|       }
+  #|     }
+  #|
   #|     // FormData class (using bracket notation for reserved words)
-  #|     function FormData(form) { this._data = []; }
+  #|     function FormData(form) {
+  #|       this._data = [];
+  #|       if (form !== undefined && form !== null && isFormElementNode(form)) {
+  #|         appendAssociatedCustomElementEntries(this, form);
+  #|       }
+  #|     }
   #|     FormData.prototype.append = function(name, value) { this._data.push([name, String(value)]); };
   #|     FormData.prototype['delete'] = function(name) { this._data = this._data.filter(function(e) { return e[0] !== name; }); };
   #|     FormData.prototype['get'] = function(name) { var entry = this._data.find(function(e) { return e[0] === name; }); return entry ? entry[1] : null; };
@@ -8884,6 +10204,12 @@ priv struct DomOp {
   text : String
   name : String
   value : String
+  has_name : Bool
+  has_value : Bool
+  delegates_focus : Bool
+  slot_assignment : String
+  clonable : Bool
+  serializable : Bool
 }
 
 ///|
@@ -8953,6 +10279,28 @@ fn parse_single_dom_op(json : String) -> DomOp {
     text: extract_json_field(json, "text"),
     name: extract_json_field(json, "name"),
     value: extract_json_field(json, "value"),
+    has_name: parse_bool_field(json, "hasName"),
+    has_value: parse_bool_field(json, "hasValue"),
+    delegates_focus: parse_bool_field(json, "delegatesFocus"),
+    slot_assignment: extract_json_field(json, "slotAssignment"),
+    clonable: parse_bool_field(json, "clonable"),
+    serializable: parse_bool_field(json, "serializable"),
+  }
+}
+
+///|
+fn parse_bool_field(json : String, field : String) -> Bool {
+  let pattern = "\"" + field + "\":"
+  match json.find(pattern) {
+    Some(start) => {
+      let value_start = start + pattern.length()
+      let remaining = json.unsafe_substring(
+        start=value_start,
+        end=json.length(),
+      )
+      remaining.has_prefix("true")
+    }
+    None => false
   }
 }
 
@@ -8980,6 +10328,21 @@ fn parse_int_field(json : String, field : String) -> Int {
     }
     None => 0
   }
+}
+
+///|
+fn parse_custom_states_value(value : String) -> Array[String] {
+  let states : Array[String] = []
+  if value.is_empty() {
+    return states
+  }
+  for part in value.split(" ") {
+    let state = part.trim().to_string()
+    if !state.is_empty() {
+      states.push(state)
+    }
+  }
+  states
 }
 
 ///|
@@ -9045,7 +10408,20 @@ fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
             resolve_dom_id(id_map, op.child_id),
           ) {
           (Some(host), Some(shadow_root)) => {
-            let _ = dom.attach_existing_shadow_root(host, shadow_root, op.value)
+            let init = @dom.ShadowRootInit::new(
+              mode=op.value,
+              delegates_focus=op.delegates_focus,
+              slot_assignment=if op.slot_assignment.length() > 0 {
+                op.slot_assignment
+              } else {
+                "named"
+              },
+              clonable=op.clonable,
+              serializable=op.serializable,
+            )
+            let _ = dom.attach_existing_shadow_root_with_init(
+              host, shadow_root, init,
+            )
           }
           _ => ()
         }
@@ -9111,6 +10487,31 @@ fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
         match resolve_dom_id(id_map, op.id) {
           Some(node_id) => {
             let _ = dom.remove_attribute(node_id, op.name)
+          }
+          None => ()
+        }
+      "setCustomStates" =>
+        match resolve_dom_id(id_map, op.id) {
+          Some(node_id) => {
+            let _ = dom.set_custom_states(
+              node_id,
+              parse_custom_states_value(op.value),
+            )
+          }
+          None => ()
+        }
+      "setFormValue" =>
+        match resolve_dom_id(id_map, op.id) {
+          Some(node_id) => {
+            let form_value = if op.has_name { Some(op.name) } else { None }
+            let form_state_value = if op.has_value {
+              Some(op.value)
+            } else {
+              None
+            }
+            let _ = dom.set_form_associated_state(
+              node_id, form_value, form_state_value,
+            )
           }
           None => ()
         }

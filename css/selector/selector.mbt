@@ -144,6 +144,7 @@ pub enum PseudoClass {
   Is(Array[ComplexSelector])
   Where(Array[ComplexSelector])
   Has(Array[RelativeSelector])
+  State(String)
   // User-action
   Hover
   Active
@@ -202,6 +203,11 @@ pub impl Show for PseudoClass with output(self, logger) {
     Is(_) => logger.write_string(":is(...)")
     Where(_) => logger.write_string(":where(...)")
     Has(_) => logger.write_string(":has(...)")
+    State(state) => {
+      logger.write_string(":state(")
+      logger.write_string(state)
+      logger.write_string(")")
+    }
     Hover => logger.write_string(":hover")
     Active => logger.write_string(":active")
     Focus => logger.write_string(":focus")

@@ -122,3 +122,170 @@ test "serialize_dom_to_html reflects shadow DOM created through JsContext" {
     content="<html><body><div id=\"host\"><p>shadow-text</p></div></body></html>",
   )
 }
+
+///|
+test "serialize_dom_for_mock preserves full shadow root init metadata" {
+  let dom = @dom.DomTree::new()
+  let doc = dom.get_document()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let host = dom.create_element("div")
+  let shadow = dom
+    .attach_shadow_with_init(
+      host,
+      @dom.ShadowRootInit::new(
+        mode="closed",
+        delegates_focus=true,
+        slot_assignment="manual",
+        clonable=true,
+        serializable=true,
+      ),
+    )
+    .unwrap()
+  let inner = dom.create_element("span")
+  let text = dom.create_text("inside")
+
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let _ = dom.append_child(body, host)
+  let _ = dom.append_child(shadow, inner)
+  let _ = dom.append_child(inner, text)
+
+  let js = serialize_dom_for_mock(dom)
+  assert_true(
+    js.contains(
+      "attachShadow({ mode: 'closed', delegatesFocus: true, slotAssignment: 'manual', clonable: true, serializable: true })",
+    ),
+  )
+}
+
+///|
+test "serialize_dom_to_snapshot_html emits serializable shadow roots as declarative templates" {
+  let dom = @dom.DomTree::new()
+  let doc = dom.get_document()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let host = dom.create_element("div")
+  let shadow = dom
+    .attach_shadow_with_init(
+      host,
+      @dom.ShadowRootInit::new(
+        mode="closed",
+        delegates_focus=true,
+        slot_assignment="manual",
+        clonable=true,
+        serializable=true,
+      ),
+    )
+    .unwrap()
+  let shadow_child = dom.create_element("span")
+  let shadow_text = dom.create_text("inside")
+  let light = dom.create_element("em")
+  let light_text = dom.create_text("outside")
+
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let _ = dom.set_attribute(host, "id", "host")
+  let _ = dom.append_child(body, host)
+  let _ = dom.append_child(shadow_child, shadow_text)
+  let _ = dom.append_child(shadow, shadow_child)
+  let _ = dom.append_child(light, light_text)
+  let _ = dom.append_child(host, light)
+
+  inspect(
+    serialize_dom_to_snapshot_html(dom),
+    content="<html><body><div id=\"host\"><template shadowrootmode=\"closed\" shadowrootdelegatesfocus shadowrootslotassignment=\"manual\" shadowrootclonable shadowrootserializable><span>inside</span></template><em>outside</em></div></body></html>",
+  )
+}
+
+///|
+test "serialize_dom_to_html carries custom states through internal render attribute" {
+  let dom = @dom.DomTree::new()
+  let doc = dom.get_document()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let panel = dom.create_element("x-panel")
+  let text = dom.create_text("open")
+
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let _ = dom.set_attribute(panel, "id", "panel")
+  let _ = dom.set_custom_states(panel, ["open", "busy"])
+  let _ = dom.append_child(body, panel)
+  let _ = dom.append_child(panel, text)
+
+  inspect(
+    serialize_dom_to_html(dom),
+    content="<html><body><x-panel id=\"panel\" data-crater-custom-states=\"open busy\">open</x-panel></body></html>",
+  )
+  inspect(
+    serialize_dom_to_snapshot_html(dom),
+    content="<html><body><x-panel id=\"panel\">open</x-panel></body></html>",
+  )
+  let js = serialize_dom_for_mock(dom)
+  assert_true(js.contains("__customStates = new Set(['open', 'busy'])"))
+}
+
+///|
+test "serialize_dom_to_snapshot_html carries form-associated restore state only in snapshot html" {
+  let dom = @dom.DomTree::new()
+  let doc = dom.get_document()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let form = dom.create_element("form")
+  let control = dom.create_element("x-form-control")
+  let text = dom.create_text("draft")
+
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let _ = dom.set_attribute(form, "id", "form")
+  let _ = dom.append_child(body, form)
+  let _ = dom.set_attribute(control, "id", "control")
+  let _ = dom.set_attribute(control, "name", "token")
+  let _ = dom.set_form_associated_state(
+    control,
+    Some("draft-value"),
+    Some("draft-state"),
+  )
+  let _ = dom.append_child(form, control)
+  let _ = dom.append_child(control, text)
+
+  inspect(
+    serialize_dom_to_html(dom),
+    content="<html><body><form id=\"form\"><x-form-control id=\"control\" name=\"token\">draft</x-form-control></form></body></html>",
+  )
+  inspect(
+    serialize_dom_to_snapshot_html(dom),
+    content="<html><body><form id=\"form\"><x-form-control id=\"control\" name=\"token\" data-crater-form-value=\"draft-value\" data-crater-form-state-value=\"draft-state\">draft</x-form-control></form></body></html>",
+  )
+}
+
+///|
+test "create_dom_init_code preserves form-associated restore state for mock reinit" {
+  let dom = @dom.DomTree::new()
+  let doc = dom.get_document()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let form = dom.create_element("form")
+  let control = dom.create_element("x-restore-aware")
+
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let _ = dom.set_attribute(form, "id", "form")
+  let _ = dom.append_child(body, form)
+  let _ = dom.set_attribute(control, "id", "control")
+  let _ = dom.set_attribute(control, "name", "token")
+  let _ = dom.append_child(form, control)
+  let _ = dom.set_form_associated_state(
+    control,
+    Some("draft-value"),
+    Some("draft-state"),
+  )
+
+  let js = create_dom_init_code(dom)
+  assert_true(
+    js.contains(
+      "__craterRestoreFormAssociatedState(el_\{control.to_int()}, true, 'draft-value', true, 'draft-state');",
+    ),
+  )
+}

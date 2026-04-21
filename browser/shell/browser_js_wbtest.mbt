@@ -5,6 +5,7 @@
 test "Browser getter API returns initial state" {
   let browser = Browser::new(800, 600)
   inspect(browser.get_current_url(), content="")
+  inspect(browser.get_last_navigation_url(), content="None")
   inspect(browser.get_viewport_height(), content="600")
   inspect(browser.get_link_count(), content="0")
   inspect(browser.get_focused_link_index(), content="0")
@@ -44,6 +45,105 @@ fn hit_region_of_source_id(
     }
   }
   panic()
+}
+
+///|
+fn link_region_of_source_id(
+  browser : Browser,
+  source_id : String,
+) -> @tui.LinkRegion {
+  for region in browser.link_regions {
+    if region.source_id == source_id {
+      return region
+    }
+  }
+  panic()
+}
+
+///|
+extern "js" fn js_install_fetch_mock(
+  expected_url : String,
+  response_body : String,
+) -> Unit =
+  #| (expectedUrl, responseBody) => {
+  #|   const state = globalThis.__craterTestFetchMock || {
+  #|     originalFetch: globalThis.fetch,
+  #|     calls: [],
+  #|     responses: Object.create(null),
+  #|     installed: false,
+  #|   };
+  #|   globalThis.__craterTestFetchMock = state;
+  #|   if (!state.installed) {
+  #|     globalThis.fetch = async (url, init = {}) => {
+  #|       const method = String(init.method || 'GET').toUpperCase();
+  #|       const headers = Object.fromEntries(new Headers(init.headers || {}).entries());
+  #|       const body =
+  #|         typeof init.body === 'string'
+  #|           ? init.body
+  #|           : init.body == null
+  #|             ? ''
+  #|             : String(init.body);
+  #|       const stringUrl = String(url);
+  #|       state.calls.push({
+  #|         url: stringUrl,
+  #|         method,
+  #|         headers,
+  #|         body,
+  #|       });
+  #|       if (Object.prototype.hasOwnProperty.call(state.responses, stringUrl)) {
+  #|         return new Response(state.responses[stringUrl], {
+  #|           status: 200,
+  #|           headers: { 'content-type': 'text/html' },
+  #|         });
+  #|       }
+  #|       return state.originalFetch(url, init);
+  #|     };
+  #|     state.installed = true;
+  #|   }
+  #|   state.responses[String(expectedUrl)] = responseBody;
+  #| }
+
+///|
+extern "js" fn js_take_last_fetch_mock_call_for_url(
+  expected_url : String,
+) -> String =
+  #| (expectedUrl) => {
+  #|   const state = globalThis.__craterTestFetchMock;
+  #|   if (!state || !state.calls || state.calls.length === 0) {
+  #|     return "null";
+  #|   }
+  #|   for (let i = state.calls.length - 1; i >= 0; i--) {
+  #|     if (String(state.calls[i].url) === expectedUrl) {
+  #|       return JSON.stringify(state.calls[i]);
+  #|     }
+  #|   }
+  #|   return "null";
+  #| }
+
+///|
+extern "js" fn js_restore_fetch_mock() -> Unit =
+  #| () => {
+  #|   return undefined;
+  #| }
+
+///|
+fn extract_fetch_mock_header(
+  call_json : String,
+  header_name : String,
+) -> String? {
+  let parsed = @json.parse(call_json) catch { _ => return None }
+  match parsed {
+    Object(map) =>
+      match map.get("headers") {
+        Some(Object(headers)) =>
+          match headers.get(header_name) {
+            Some(String(value)) => Some(value)
+            _ => None
+          }
+        _ => None
+      }
+    _ => None
+  }
 }
 
 ///|
@@ -235,6 +335,97 @@ test "Browser execute_scripts modifies attributes" {
     }
     None => assert_true(false)
   }
+}
+
+///|
+test "Browser execute_scripts propagates custom states into CSS cascade" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|<style>
+    #|  x-panel { color: black; }
+    #|  x-panel:state(open) { color: red; }
+    #|</style>
+    #|</head>
+    #|<body>
+    #|  <x-panel id="panel">hello</x-panel>
+    #|  <script>
+    #|    class XPanel extends HTMLElement {
+    #|      constructor() {
+    #|        super();
+    #|        this.internals = this.attachInternals();
+    #|        this.internals.states.add('open');
+    #|      }
+    #|    }
+    #|    customElements.define('x-panel', XPanel);
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.set_html_content(html)
+  browser.set_enable_js(true)
+  let executed = browser.execute_scripts()
+  inspect(executed, content="1")
+  assert_true(
+    browser.html_content.contains("data-crater-custom-states=\"open\""),
+  )
+  let styles = @css.discover_all_computed_styles(browser.html_content, ["color"])
+  let panel_styles = styles.get("x-panel#panel").unwrap()
+  assert_eq(panel_styles.get("color").unwrap(), "red")
+}
+
+///|
+test "Browser execute_scripts preserves form-associated restore state across JS runtime reinit" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body>
+    #|  <form id="form">
+    #|    <x-restore-aware id="control" name="token"></x-restore-aware>
+    #|  </form>
+    #|  <script>
+    #|    globalThis.__restoreEvents = [];
+    #|    class RestoreAwareControl extends HTMLElement {
+    #|      static get formAssociated() { return true; }
+    #|      constructor() {
+    #|        super();
+    #|        this.internals = this.attachInternals();
+    #|      }
+    #|      connectedCallback() {
+    #|        if (!this.hasAttribute('data-seeded')) {
+    #|          this.setAttribute('data-seeded', '1');
+    #|          this.internals.setFormValue('draft-value', 'draft-state');
+    #|        }
+    #|      }
+    #|      formStateRestoreCallback(state, mode) {
+    #|        globalThis.__restoreEvents.push([state, mode, this.id]);
+    #|      }
+    #|    }
+    #|    customElements.define('x-restore-aware', RestoreAwareControl);
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.set_html_content(html)
+  browser.set_enable_js(true)
+  let executed = browser.execute_scripts()
+  inspect(executed, content="1")
+  assert_true(
+    browser.source_html.contains("data-crater-form-state-value=\"draft-state\""),
+  )
+  assert_false(browser.html_content.contains("data-crater-form-state-value"))
+
+  browser.dom_tree = None
+  browser.script_executor = None
+
+  let executed_after_reinit = browser.execute_scripts()
+  inspect(executed_after_reinit, content="1")
+  let restored = browser.execute_inline_js(
+    "(function(){ return JSON.stringify([globalThis.__restoreEvents || [], new FormData(document.getElementById('form')).get('token')]); })()",
+  )
+  inspect(
+    restored,
+    content="Some(\"[[[\\\"draft-state\\\",\\\"restore\\\",\\\"control\\\"]],\\\"draft-value\\\"]\")",
+  )
 }
 
 ///|
@@ -1976,6 +2167,1265 @@ async test "Browser activate_at submit preventDefault repaints without navigatio
 }
 
 ///|
+async test "Browser activate_at submit listener sees SubmitEvent.submitter" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form id="form" action="data:text/html,%3Cp%3Enavigated%3C/p%3E" method="get">
+    #|    <button id="btn" name="go" value="Go" type="submit" style="display:block;width:96px;height:32px">Go</button>
+    #|  </form>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    globalThis.__submitterSeen = 'none';
+    #|    document.getElementById('form').addEventListener('submit', function (event) {
+    #|      event.preventDefault();
+    #|      globalThis.__submitterSeen = event.submitter ? event.submitter.id : 'null';
+    #|      document.getElementById('status').textContent = globalThis.__submitterSeen;
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let (col, row) = center_of_hit_source_id(browser, "btn")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  inspect(browser.get_current_url(), content="")
+
+  let submitter_seen = browser.execute_inline_js("globalThis.__submitterSeen")
+  inspect(submitter_seen, content="Some(\"btn\")")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("btn"))
+}
+
+///|
+async test "Browser activate_at submitter formaction overrides form action" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form action="data:text/html,%3Cp%20id%3D%22wrong%22%3Ewrong%3C/p%3E" method="get">
+    #|    <button
+    #|      id="btn"
+    #|      name="go"
+    #|      value="Go"
+    #|      type="submit"
+    #|      formaction="data:text/html,%3Cp%20id%3D%22right%22%3Eright%3C/p%3E"
+    #|      style="display:block;width:96px;height:32px"
+    #|    >Go</button>
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let (col, row) = center_of_hit_source_id(browser, "btn")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22right%22%3Eright%3C/p%3E?go=Go",
+  )
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("right"))
+  assert_true(!rendered.contains("wrong"))
+}
+
+///|
+async test "Browser activate_at submitter formmethod post navigates with form body" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="get">
+    #|    <input type="hidden" name="token" value="1" />
+    #|    <button
+    #|      id="btn"
+    #|      name="go"
+    #|      value="Go"
+    #|      type="submit"
+    #|      formmethod="post"
+    #|      style="display:block;width:96px;height:32px"
+    #|    >Go</button>
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let (col, row) = center_of_hit_source_id(browser, "btn")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E",
+  )
+  match browser.last_navigation_request {
+    Some(req) => {
+      inspect(req.http_method, content="POST")
+      inspect(
+        req.content_type,
+        content="application/x-www-form-urlencoded;charset=UTF-8",
+      )
+      inspect(req.body, content="token=1&go=Go")
+    }
+    None => panic()
+  }
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("done"))
+}
+
+///|
+async test "Browser activate_at submitter formenctype text/plain serializes post body" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="post">
+    #|    <input type="hidden" name="token" value="1" />
+    #|    <textarea name="note">hello world</textarea>
+    #|    <button
+    #|      id="btn"
+    #|      name="go"
+    #|      value="Go"
+    #|      type="submit"
+    #|      formenctype="text/plain"
+    #|      style="display:block;width:96px;height:32px"
+    #|    >Go</button>
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let (col, row) = center_of_hit_source_id(browser, "btn")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E",
+  )
+  match browser.last_navigation_request {
+    Some(req) => {
+      inspect(req.http_method, content="POST")
+      inspect(req.content_type, content="text/plain;charset=UTF-8")
+      inspect(req.body, content="token=1\r\nnote=hello world\r\ngo=Go")
+    }
+    None => panic()
+  }
+}
+
+///|
+async test "Browser activate_at submitter formenctype multipart serializes post body" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="post">
+    #|    <input type="hidden" name="token" value="1" />
+    #|    <textarea name="note">hello world</textarea>
+    #|    <button
+    #|      id="btn"
+    #|      name="go"
+    #|      value="Go"
+    #|      type="submit"
+    #|      formenctype="multipart/form-data"
+    #|      style="display:block;width:96px;height:32px"
+    #|    >Go</button>
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let (col, row) = center_of_hit_source_id(browser, "btn")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E",
+  )
+  match browser.last_navigation_request {
+    Some(req) => {
+      inspect(
+        req.content_type,
+        content="multipart/form-data; boundary=----CraterFormBoundary",
+      )
+      assert_true(req.body.contains("--" + "----CraterFormBoundary" + "\r\n"))
+      assert_true(
+        req.body.contains(
+          "Content-Disposition: form-data; name=\"token\"\r\n\r\n1\r\n",
+        ),
+      )
+      assert_true(
+        req.body.contains(
+          "Content-Disposition: form-data; name=\"note\"\r\n\r\nhello world\r\n",
+        ),
+      )
+      assert_true(
+        req.body.contains(
+          "Content-Disposition: form-data; name=\"go\"\r\n\r\nGo\r\n",
+        ),
+      )
+      assert_true(req.body.contains("--" + "----CraterFormBoundary" + "--\r\n"))
+    }
+    None => panic()
+  }
+}
+
+///|
+async test "Browser activate_at submitter formtarget _blank avoids current navigation" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="get">
+    #|    <button
+    #|      id="btn"
+    #|      type="submit"
+    #|      formtarget="_blank"
+    #|      style="display:block;width:96px;height:32px"
+    #|    >Go</button>
+    #|    <p id="status">before</p>
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let (col, row) = center_of_hit_source_id(browser, "btn")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  inspect(browser.get_current_url(), content="")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("before"))
+  assert_true(!rendered.contains("done"))
+}
+
+///|
+async test "Browser activate_at submitter formtarget _top navigates current page" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="get">
+    #|    <button
+    #|      id="btn"
+    #|      name="go"
+    #|      value="Go"
+    #|      type="submit"
+    #|      formtarget="_top"
+    #|      style="display:block;width:96px;height:32px"
+    #|    >Go</button>
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let (col, row) = center_of_hit_source_id(browser, "btn")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E?go=Go",
+  )
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("done"))
+}
+
+///|
+async test "Browser activate_at invalid required form stays on page" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="get">
+    #|    <input id="field" name="name" required />
+    #|    <button
+    #|      id="btn"
+    #|      type="submit"
+    #|      style="display:block;width:96px;height:32px"
+    #|    >Go</button>
+    #|    <p id="status">before</p>
+    #|    <script>
+    #|      document.getElementById('field').addEventListener('invalid', () => {
+    #|        document.getElementById('status').textContent = 'invalid';
+    #|      });
+    #|    </script>
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let (col, row) = center_of_hit_source_id(browser, "btn")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  inspect(browser.get_current_url(), content="")
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("invalid"))
+  assert_true(!rendered.contains("done"))
+}
+
+///|
+async test "Browser activate_at submitter formnovalidate bypasses required validation" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="get">
+    #|    <input id="field" name="name" required />
+    #|    <button
+    #|      id="btn"
+    #|      type="submit"
+    #|      formnovalidate
+    #|      style="display:block;width:96px;height:32px"
+    #|    >Go</button>
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+  let (col, row) = center_of_hit_source_id(browser, "btn")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E?name=",
+  )
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("done"))
+}
+
+///|
+async test "Browser activate_at image submit appends coordinate pairs" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="get">
+    #|    <input type="hidden" name="token" value="1" />
+    #|    <input
+    #|      id="img"
+    #|      type="image"
+    #|      name="pic"
+    #|      value="ignored"
+    #|      style="display:block;width:96px;height:32px"
+    #|    />
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let region = hit_region_of_source_id(browser, "img")
+  let client_x = region.col * 8 + 4
+  let client_y = region.row * 16 + 8
+
+  let activated = browser.activate_at(region.col, region.row) catch {
+    _ => false
+  }
+  inspect(activated, content="true")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E?token=1&pic.x=" +
+      client_x.to_string() +
+      "&pic.y=" +
+      client_y.to_string(),
+  )
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("done"))
+}
+
+///|
+test "Browser execute_inline_js form.submit bypasses submit listener and navigates data url" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form id="form" action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="get">
+    #|    <input type="hidden" name="token" value="1" />
+    #|  </form>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('form').addEventListener('submit', function () {
+    #|      document.getElementById('status').textContent = 'submitted';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let result = browser.execute_inline_js(
+    "(function(){ document.getElementById('form').submit(); return 'ok'; })()",
+  )
+  inspect(result, content="Some(\"ok\")")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E?token=1",
+  )
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("done"))
+  assert_true(!rendered.contains("submitted"))
+}
+
+///|
+test "Browser execute_inline_js form.requestSubmit uses submitter overrides for data url" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form id="form" action="data:text/html,%3Cp%20id%3D%22wrong%22%3Ewrong%3C/p%3E" method="get">
+    #|    <input type="hidden" name="token" value="1" />
+    #|    <button
+    #|      id="btn"
+    #|      name="go"
+    #|      value="Go"
+    #|      type="submit"
+    #|      formaction="data:text/html,%3Cp%20id%3D%22right%22%3Eright%3C/p%3E"
+    #|    >Go</button>
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let result = browser.execute_inline_js(
+    "(function(){ const form = document.getElementById('form'); const button = document.getElementById('btn'); form.requestSubmit(button); return 'ok'; })()",
+  )
+  inspect(result, content="Some(\"ok\")")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22right%22%3Eright%3C/p%3E?token=1&go=Go",
+  )
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("right"))
+  assert_true(!rendered.contains("wrong"))
+}
+
+///|
+test "Browser execute_inline_js form.requestSubmit preserves post body metadata" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form id="form" action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="get">
+    #|    <input type="hidden" name="token" value="1" />
+    #|    <button
+    #|      id="btn"
+    #|      name="go"
+    #|      value="Go"
+    #|      type="submit"
+    #|      formmethod="post"
+    #|      formenctype="text/plain"
+    #|    >Go</button>
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let result = browser.execute_inline_js(
+    "(function(){ const form = document.getElementById('form'); const button = document.getElementById('btn'); form.requestSubmit(button); return 'ok'; })()",
+  )
+  inspect(result, content="Some(\"ok\")")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E",
+  )
+  match browser.last_navigation_request {
+    Some(req) => {
+      inspect(req.http_method, content="POST")
+      inspect(req.content_type, content="text/plain;charset=UTF-8")
+      inspect(req.body, content="token=1\r\ngo=Go")
+    }
+    None => panic()
+  }
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("done"))
+}
+
+///|
+test "Browser execute_inline_js keeps unsupported sync submit navigation pending" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form id="form" action="https://example.com/after" method="get">
+    #|    <input type="hidden" name="token" value="1" />
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let result = browser.execute_inline_js(
+    "(function(){ document.getElementById('form').submit(); return 'ok'; })()",
+  )
+  inspect(result, content="Some(\"ok\")")
+  inspect(browser.get_current_url(), content="")
+  inspect(
+    browser.execute_inline_js(
+      "String((globalThis.__craterPendingFormSubmissions || []).length)",
+    ),
+    content="Some(\"1\")",
+  )
+}
+
+///|
+test "Browser execute_inline_js requestSubmit queues one submitter-aware external request" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form id="form" action="https://api.test/submit" method="get">
+    #|    <input type="hidden" name="token" value="1" />
+    #|    <button
+    #|      id="btn"
+    #|      name="go"
+    #|      value="Go"
+    #|      type="submit"
+    #|      formmethod="post"
+    #|      formenctype="text/plain"
+    #|    >Go</button>
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let result = browser.execute_inline_js(
+    "(function(){ const form = document.getElementById('form'); const button = document.getElementById('btn'); form.requestSubmit(button); return 'ok'; })()",
+  )
+  inspect(result, content="Some(\"ok\")")
+  inspect(browser.get_current_url(), content="")
+  inspect(
+    browser.execute_inline_js(
+      "String((globalThis.__craterPendingFormSubmissions || []).length)",
+    ),
+    content="Some(\"1\")",
+  )
+  let pending = browser.execute_inline_js(
+    "(function(){ const queue = globalThis.__craterPendingFormSubmissions || []; return queue.length > 0 ? String(queue[0]) : ''; })()",
+  )
+  match pending {
+    Some(request) => {
+      assert_true(request.contains("\"url\":\"https://api.test/submit\""))
+      assert_true(request.contains("\"http_method\":\"POST\""))
+      assert_true(request.contains("token=1"))
+      assert_true(request.contains("go=Go"))
+    }
+    None => panic()
+  }
+}
+
+///|
+async test "Browser execute_inline_js_async form.submit bypasses submit listener and navigates" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form id="form" action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="get">
+    #|    <input type="hidden" name="token" value="1" />
+    #|  </form>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    document.getElementById('form').addEventListener('submit', function () {
+    #|      document.getElementById('status').textContent = 'submitted';
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let result = browser.execute_inline_js_async(
+    "(function(){ document.getElementById('form').submit(); return 'ok'; })()",
+  ) catch {
+    _ => None
+  }
+  inspect(result, content="Some(\"ok\")")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E?token=1",
+  )
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("done"))
+  assert_true(!rendered.contains("submitted"))
+}
+
+///|
+async test "Browser execute_inline_js_async form.requestSubmit uses submitter overrides" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form id="form" action="data:text/html,%3Cp%20id%3D%22wrong%22%3Ewrong%3C/p%3E" method="get">
+    #|    <input type="hidden" name="token" value="1" />
+    #|    <button
+    #|      id="btn"
+    #|      name="go"
+    #|      value="Go"
+    #|      type="submit"
+    #|      formaction="data:text/html,%3Cp%20id%3D%22right%22%3Eright%3C/p%3E"
+    #|    >Go</button>
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  match
+    browser.execute_inline_js(
+      "(function(){ const form = document.getElementById('form'); const button = document.getElementById('btn'); return globalThis.__craterBuildFormNavigationRequest(form, button, 0, 0); })()",
+    ) {
+    Some(request) => assert_true(request.contains("go=Go"))
+    None => panic()
+  }
+  let result = browser.execute_inline_js_async(
+    "(function(){ const form = document.getElementById('form'); const button = document.getElementById('btn'); form.requestSubmit(button); return 'ok'; })()",
+  ) catch {
+    _ => None
+  }
+  inspect(result, content="Some(\"ok\")")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22right%22%3Eright%3C/p%3E?token=1&go=Go",
+  )
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("right"))
+  assert_true(!rendered.contains("wrong"))
+}
+
+///|
+async test "Browser execute_inline_js_async form.requestSubmit preserves post body metadata" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form id="form" action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="get">
+    #|    <input type="hidden" name="token" value="1" />
+    #|    <button
+    #|      id="btn"
+    #|      name="go"
+    #|      value="Go"
+    #|      type="submit"
+    #|      formmethod="post"
+    #|      formenctype="text/plain"
+    #|    >Go</button>
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let result = browser.execute_inline_js_async(
+    "(function(){ const form = document.getElementById('form'); const button = document.getElementById('btn'); form.requestSubmit(button); return 'ok'; })()",
+  ) catch {
+    _ => None
+  }
+  inspect(result, content="Some(\"ok\")")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E",
+  )
+  match browser.last_navigation_request {
+    Some(req) => {
+      inspect(req.http_method, content="POST")
+      inspect(req.content_type, content="text/plain;charset=UTF-8")
+      inspect(req.body, content="token=1\r\ngo=Go")
+    }
+    None => panic()
+  }
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("done"))
+}
+
+///|
+async test "Browser execute_inline_js_async requestSubmit posts body to external fetch" {
+  js_restore_fetch_mock()
+  js_install_fetch_mock(
+    "https://api.test/request-submit-text", "<html><body><p id=\"posted\">posted</p></body></html>",
+  )
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form id="form" action="https://api.test/request-submit-text" method="get">
+    #|    <input type="hidden" name="token" value="1" />
+    #|    <button
+    #|      id="btn"
+    #|      name="go"
+    #|      value="Go"
+    #|      type="submit"
+    #|      formmethod="post"
+    #|      formenctype="text/plain"
+    #|    >Go</button>
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.current_url = "https://example.test/form"
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let result = browser.execute_inline_js_async(
+    "(function(){ const form = document.getElementById('form'); const button = document.getElementById('btn'); form.requestSubmit(button); return 'ok'; })()",
+  ) catch {
+    err => {
+      js_restore_fetch_mock()
+      raise err
+    }
+  }
+  inspect(result, content="Some(\"ok\")")
+  inspect(
+    browser.get_current_url(),
+    content="https://api.test/request-submit-text",
+  )
+  match browser.last_navigation_request {
+    Some(req) => {
+      inspect(req.url, content="https://api.test/request-submit-text")
+      inspect(req.http_method, content="POST")
+      inspect(req.content_type, content="text/plain;charset=UTF-8")
+      inspect(req.body, content="token=1\r\ngo=Go")
+    }
+    None => {
+      js_restore_fetch_mock()
+      panic()
+    }
+  }
+  let call_json = js_take_last_fetch_mock_call_for_url(
+    "https://api.test/request-submit-text",
+  )
+  let parsed = @json.parse(call_json) catch {
+    _ => {
+      js_restore_fetch_mock()
+      panic()
+    }
+  }
+  match parsed {
+    Object(map) => {
+      match map.get("url") {
+        Some(String(url)) =>
+          inspect(url, content="https://api.test/request-submit-text")
+        _ => {
+          js_restore_fetch_mock()
+          panic()
+        }
+      }
+      match map.get("method") {
+        Some(String(http_method)) => inspect(http_method, content="POST")
+        _ => {
+          js_restore_fetch_mock()
+          panic()
+        }
+      }
+      match map.get("body") {
+        Some(String(body)) => inspect(body, content="token=1\r\ngo=Go")
+        _ => {
+          js_restore_fetch_mock()
+          panic()
+        }
+      }
+      inspect(
+        extract_fetch_mock_header(call_json, "content-type"),
+        content="Some(\"text/plain;charset=UTF-8\")",
+      )
+      inspect(
+        extract_fetch_mock_header(call_json, "origin"),
+        content="Some(\"https://example.test\")",
+      )
+    }
+    _ => {
+      js_restore_fetch_mock()
+      panic()
+    }
+  }
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("posted"))
+  js_restore_fetch_mock()
+}
+
+///|
+async test "Browser load_url_request preserves external post body with CRLF" {
+  js_restore_fetch_mock()
+  js_install_fetch_mock(
+    "https://api.test/direct-post-text", "<html><body><p id=\"posted\">posted</p></body></html>",
+  )
+  let browser = Browser::new(800, 600)
+  browser.current_url = "https://example.test/form"
+  let _ = browser.load_url_request({
+    url: "https://api.test/direct-post-text",
+    http_method: "POST",
+    content_type: "text/plain;charset=UTF-8",
+    body: "token=1\r\ngo=Go",
+  }) catch {
+    err => {
+      js_restore_fetch_mock()
+      raise err
+    }
+  }
+  let call_json = js_take_last_fetch_mock_call_for_url(
+    "https://api.test/direct-post-text",
+  )
+  let parsed = @json.parse(call_json) catch {
+    _ => {
+      js_restore_fetch_mock()
+      panic()
+    }
+  }
+  match parsed {
+    Object(map) =>
+      match map.get("body") {
+        Some(String(body)) => inspect(body, content="token=1\r\ngo=Go")
+        _ => {
+          js_restore_fetch_mock()
+          panic()
+        }
+      }
+    _ => {
+      js_restore_fetch_mock()
+      panic()
+    }
+  }
+  js_restore_fetch_mock()
+}
+
+///|
+async test "Browser execute_inline_js_async requestSubmit posts multipart body to external fetch" {
+  js_restore_fetch_mock()
+  js_install_fetch_mock(
+    "https://api.test/request-submit-multipart", "<html><body><p id=\"uploaded\">uploaded</p></body></html>",
+  )
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form id="form" action="https://api.test/request-submit-multipart" method="post">
+    #|    <input type="hidden" name="token" value="1" />
+    #|    <textarea name="note">hello world</textarea>
+    #|    <button
+    #|      id="btn"
+    #|      name="go"
+    #|      value="Go"
+    #|      type="submit"
+    #|      formenctype="multipart/form-data"
+    #|    >Go</button>
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.current_url = "https://example.test/form"
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let result = browser.execute_inline_js_async(
+    "(function(){ const form = document.getElementById('form'); const button = document.getElementById('btn'); form.requestSubmit(button); return 'ok'; })()",
+  ) catch {
+    err => {
+      js_restore_fetch_mock()
+      raise err
+    }
+  }
+  inspect(result, content="Some(\"ok\")")
+  inspect(
+    browser.get_current_url(),
+    content="https://api.test/request-submit-multipart",
+  )
+  let call_json = js_take_last_fetch_mock_call_for_url(
+    "https://api.test/request-submit-multipart",
+  )
+  let parsed = @json.parse(call_json) catch {
+    _ => {
+      js_restore_fetch_mock()
+      panic()
+    }
+  }
+  match parsed {
+    Object(map) => {
+      match map.get("url") {
+        Some(String(url)) =>
+          inspect(url, content="https://api.test/request-submit-multipart")
+        _ => {
+          js_restore_fetch_mock()
+          panic()
+        }
+      }
+      match map.get("method") {
+        Some(String(http_method)) => inspect(http_method, content="POST")
+        _ => {
+          js_restore_fetch_mock()
+          panic()
+        }
+      }
+      match map.get("body") {
+        Some(String(body)) => {
+          assert_true(body.contains("--" + "----CraterFormBoundary" + "\r\n"))
+          assert_true(
+            body.contains(
+              "Content-Disposition: form-data; name=\"token\"\r\n\r\n1\r\n",
+            ),
+          )
+          assert_true(
+            body.contains(
+              "Content-Disposition: form-data; name=\"note\"\r\n\r\nhello world\r\n",
+            ),
+          )
+          assert_true(
+            body.contains(
+              "Content-Disposition: form-data; name=\"go\"\r\n\r\nGo\r\n",
+            ),
+          )
+          assert_true(body.contains("--" + "----CraterFormBoundary" + "--\r\n"))
+        }
+        _ => {
+          js_restore_fetch_mock()
+          panic()
+        }
+      }
+      inspect(
+        extract_fetch_mock_header(call_json, "content-type"),
+        content="Some(\"multipart/form-data; boundary=----CraterFormBoundary\")",
+      )
+      inspect(
+        extract_fetch_mock_header(call_json, "origin"),
+        content="Some(\"https://example.test\")",
+      )
+    }
+    _ => {
+      js_restore_fetch_mock()
+      panic()
+    }
+  }
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("uploaded"))
+  js_restore_fetch_mock()
+}
+
+///|
+async test "Browser execute_inline_js_async form.submit omits submitter field in external post body" {
+  js_restore_fetch_mock()
+  js_install_fetch_mock(
+    "https://api.test/form-submit-post", "<html><body><p id=\"posted\">posted</p></body></html>",
+  )
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form id="form" action="https://api.test/form-submit-post" method="post">
+    #|    <input type="hidden" name="token" value="1" />
+    #|    <button id="btn" name="go" value="Go" type="submit">Go</button>
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.current_url = "https://example.test/form"
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  let result = browser.execute_inline_js_async(
+    "(function(){ document.getElementById('form').submit(); return 'ok'; })()",
+  ) catch {
+    err => {
+      js_restore_fetch_mock()
+      raise err
+    }
+  }
+  inspect(result, content="Some(\"ok\")")
+  inspect(
+    browser.get_current_url(),
+    content="https://api.test/form-submit-post",
+  )
+  let call_json = js_take_last_fetch_mock_call_for_url(
+    "https://api.test/form-submit-post",
+  )
+  let parsed = @json.parse(call_json) catch {
+    _ => {
+      js_restore_fetch_mock()
+      panic()
+    }
+  }
+  match parsed {
+    Object(map) => {
+      match map.get("url") {
+        Some(String(url)) =>
+          inspect(url, content="https://api.test/form-submit-post")
+        _ => {
+          js_restore_fetch_mock()
+          panic()
+        }
+      }
+      match map.get("method") {
+        Some(String(http_method)) => inspect(http_method, content="POST")
+        _ => {
+          js_restore_fetch_mock()
+          panic()
+        }
+      }
+      match map.get("body") {
+        Some(String(body)) => {
+          inspect(body, content="token=1")
+          assert_true(!body.contains("go=Go"))
+        }
+        _ => {
+          js_restore_fetch_mock()
+          panic()
+        }
+      }
+      inspect(
+        extract_fetch_mock_header(call_json, "content-type"),
+        content="Some(\"application/x-www-form-urlencoded;charset=UTF-8\")",
+      )
+      inspect(
+        extract_fetch_mock_header(call_json, "origin"),
+        content="Some(\"https://example.test\")",
+      )
+    }
+    _ => {
+      js_restore_fetch_mock()
+      panic()
+    }
+  }
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("posted"))
+  js_restore_fetch_mock()
+}
+
+///|
+async test "Browser execute_scripts_async drains script-triggered form submission navigation" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form id="form" action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="get">
+    #|    <input type="hidden" name="token" value="1" />
+    #|  </form>
+    #|  <script>
+    #|    document.getElementById('form').submit();
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let executed = browser.execute_scripts_async() catch { _ => 0 }
+  inspect(executed, content="1")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E?token=1",
+  )
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("done"))
+}
+
+///|
+test "Browser execute_scripts drains script-triggered data-url form submission navigation" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form id="form" action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="get">
+    #|    <input type="hidden" name="token" value="1" />
+    #|  </form>
+    #|  <script>
+    #|    document.getElementById('form').submit();
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let executed = browser.execute_scripts()
+  inspect(executed, content="1")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E?token=1",
+  )
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("done"))
+}
+
+///|
+test "Browser tick_js drains queued data-url form submission navigation" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form id="form" action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="get">
+    #|    <input type="hidden" name="token" value="1" />
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  browser.init_js_execution()
+  let _ = @js.enqueue_script(
+    browser.scheduler,
+    "document.getElementById('form').submit();",
+    true,
+  )
+
+  inspect(browser.tick_js(), content="true")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E?token=1",
+  )
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("done"))
+}
+
+///|
+test "Browser tick_js drains queued post form submission metadata" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form id="form" action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="get">
+    #|    <input type="hidden" name="token" value="1" />
+    #|    <button
+    #|      id="btn"
+    #|      name="go"
+    #|      value="Go"
+    #|      type="submit"
+    #|      formmethod="post"
+    #|      formenctype="text/plain"
+    #|    >Go</button>
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  browser.init_js_execution()
+  let _ = @js.enqueue_script(
+    browser.scheduler,
+    "const form = document.getElementById('form'); const button = document.getElementById('btn'); form.requestSubmit(button);",
+    true,
+  )
+
+  inspect(browser.tick_js(), content="true")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E",
+  )
+  match browser.last_navigation_request {
+    Some(req) => {
+      inspect(req.http_method, content="POST")
+      inspect(req.content_type, content="text/plain;charset=UTF-8")
+      inspect(req.body, content="token=1\r\ngo=Go")
+    }
+    None => panic()
+  }
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("done"))
+}
+
+///|
 async test "Browser activate_focused_link submits focused button form" {
   let browser = Browser::new(800, 600)
   let html =
@@ -2000,6 +3450,49 @@ async test "Browser activate_focused_link submits focused button form" {
   inspect(
     browser.get_current_url(),
     content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E",
+  )
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("done"))
+}
+
+///|
+async test "Browser activate_focused_link image submit appends centered coordinates" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <form action="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E" method="get">
+    #|    <input
+    #|      id="img"
+    #|      type="image"
+    #|      name="pic"
+    #|      style="display:block;width:96px;height:32px"
+    #|    />
+    #|  </form>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  browser.focus_source_id("img")
+  let (client_x, client_y) = match
+    browser.get_client_coords_for_source_id("img") {
+    Some(coords) => coords
+    None => panic()
+  }
+
+  let activated = browser.activate_focused_link() catch { _ => false }
+  inspect(activated, content="true")
+  inspect(
+    browser.get_current_url(),
+    content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E?pic.x=" +
+      client_x.to_string() +
+      "&pic.y=" +
+      client_y.to_string(),
   )
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("done"))
@@ -2366,6 +3859,354 @@ async test "Browser sync_render_state_from_dom_tree renders shadow root composed
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("shadow-text"))
   assert_false(rendered.contains("light"))
+}
+
+///|
+async test "Browser sync_render_state_from_dom_tree keeps serializable shadow snapshot separate from render html" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <div id="host"><span id="light">light</span></div>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.dom_snapshot_html = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+  let _ = browser.execute_scripts()
+  let _ = browser.render_output(Text)
+
+  let code =
+    #|(() => {
+    #|  const host = document.getElementById('host');
+    #|  const shadow = host.attachShadow({
+    #|    mode: 'closed',
+    #|    delegatesFocus: true,
+    #|    clonable: true,
+    #|    serializable: true
+    #|  });
+    #|  shadow.innerHTML = '<button id="shadow-btn">shadow-action</button>';
+    #|  return host.shadowRoot === null ? 'closed' : 'open';
+    #|})()
+  let result = browser.execute_inline_js(code)
+  inspect(result, content="Some(\"closed\")")
+
+  let _ = browser.sync_render_state_from_dom_tree()
+  assert_true(browser.html_content.contains("shadow-action"))
+  assert_false(browser.html_content.contains("shadowrootmode"))
+  assert_false(browser.html_content.contains("id=\"light\""))
+  assert_true(
+    browser.dom_snapshot_html.contains(
+      "<template shadowrootmode=\"closed\" shadowrootdelegatesfocus shadowrootclonable shadowrootserializable><button id=\"shadow-btn\">shadow-action</button></template><span id=\"light\">light</span>",
+    ),
+  )
+}
+
+///|
+test "Browser render_output normalizes declarative shadow DOM from initial HTML" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <div id="host">
+    #|    <template shadowrootmode="closed" shadowrootdelegatesfocus shadowrootclonable shadowrootserializable>
+    #|      <p id="shadow-text">shadow-text</p>
+    #|    </template>
+    #|    <span id="light-text">light-text</span>
+    #|  </div>
+    #|</body>
+    #|</html>
+  browser.set_html_content(html)
+
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("shadow-text"))
+  assert_false(rendered.contains("light-text"))
+  assert_true(browser.html_content.contains("shadow-text"))
+  assert_false(browser.html_content.contains("light-text"))
+  assert_false(browser.html_content.contains("shadowrootmode"))
+  assert_true(browser.dom_snapshot_html.contains("shadowrootmode=\"closed\""))
+  assert_true(browser.dom_snapshot_html.contains("shadowrootdelegatesfocus"))
+  assert_true(browser.dom_snapshot_html.contains("shadowrootclonable"))
+  assert_true(browser.dom_snapshot_html.contains("shadowrootserializable"))
+  assert_true(browser.dom_snapshot_html.contains("id=\"shadow-text\""))
+  assert_true(browser.dom_snapshot_html.contains("id=\"light-text\""))
+}
+
+///|
+test "Browser set_html_content eagerly normalizes declarative shadow DOM source" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <div id="host">
+    #|    <template shadowrootmode="closed" shadowrootserializable>
+    #|      <p id="shadow-text">shadow-text</p>
+    #|    </template>
+    #|    <span id="light-text">light-text</span>
+    #|  </div>
+    #|</body>
+    #|</html>
+  browser.set_html_content(html)
+
+  assert_true(browser.html_content.contains("shadow-text"))
+  assert_false(browser.html_content.contains("light-text"))
+  assert_false(browser.html_content.contains("shadowrootmode"))
+  assert_true(browser.dom_snapshot_html.contains("shadowrootmode=\"closed\""))
+  assert_true(browser.dom_snapshot_html.contains("id=\"light-text\""))
+  inspect(browser.parsed_doc is Some(_), content="true")
+}
+
+///|
+test "Browser set_html_content rebuilds link cache from normalized shadow content" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body>
+    #|  <div id="host">
+    #|    <template shadowrootmode="open">
+    #|      <a href="/shadow">shadow link</a>
+    #|    </template>
+    #|    <a href="/light">light link</a>
+    #|  </div>
+    #|</body>
+    #|</html>
+  browser.set_html_content(html)
+
+  inspect(browser.get_link_count(), content="1")
+  inspect(browser.get_focused_link_index(), content="0")
+  inspect(browser.get_focused_link_url(), content="Some(\"/shadow\")")
+}
+
+///|
+test "Browser render_output exposes only shadow link regions and hints from initial HTML" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <div id="host">
+    #|    <template shadowrootmode="open">
+    #|      <a href="data:text/html,%3Cp%20id%3D%22after%22%3Eshadow-done%3C/p%3E">shadow link</a>
+    #|    </template>
+    #|    <a href="data:text/html,%3Cp%20id%3D%22after%22%3Elight-done%3C/p%3E">light link</a>
+    #|  </div>
+    #|</body>
+    #|</html>
+  browser.set_html_content(html)
+
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("shadow link"))
+  assert_false(rendered.contains("light link"))
+  inspect(browser.link_regions.length(), content="1")
+  inspect(browser.link_regions[0].text, content="shadow link")
+  inspect(
+    browser.get_link_at(
+      browser.link_regions[0].col,
+      browser.link_regions[0].row,
+    ),
+    content="Some(\"data:text/html,%3Cp%20id%3D%22after%22%3Eshadow-done%3C/p%3E\")",
+  )
+
+  browser.enter_hint_mode()
+  inspect(browser.is_hint_mode(), content="true")
+  inspect(browser.hints.length(), content="1")
+  inspect(browser.hints[0].text, content="shadow link")
+  inspect(
+    browser.process_hint_char(browser.hints[0].label),
+    content="Some(\"data:text/html,%3Cp%20id%3D%22after%22%3Eshadow-done%3C/p%3E\")",
+  )
+  inspect(browser.is_hint_mode(), content="false")
+}
+
+///|
+test "Browser build_accessibility_tree normalizes declarative shadow DOM from initial HTML" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <div id="host">
+    #|    <template shadowrootmode="open">
+    #|      <button id="shadow-btn">shadow action</button>
+    #|    </template>
+    #|    <button id="light-btn">light action</button>
+    #|  </div>
+    #|</body>
+    #|</html>
+  browser.set_html_content(html)
+  browser.build_accessibility_tree()
+
+  match browser.a11y_tree {
+    Some(tree) => {
+      match tree.find_by_source_id("shadow-btn") {
+        Some(_) => assert_true(true)
+        None => assert_true(false)
+      }
+      match tree.find_by_source_id("light-btn") {
+        Some(_) => assert_true(false)
+        None => assert_true(true)
+      }
+    }
+    None => panic()
+  }
+}
+
+///|
+test "Browser init_js_execution preserves declarative shadow DOM from source HTML" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body>
+    #|  <div id="host">
+    #|    <template shadowrootmode="open">
+    #|      <button id="shadow-btn">shadow action</button>
+    #|    </template>
+    #|    <button id="light-btn">light action</button>
+    #|  </div>
+    #|</body>
+    #|</html>
+  browser.set_html_content(html)
+  browser.set_enable_js(true)
+  browser.init_js_execution()
+
+  let host_has_open_shadow = browser.execute_inline_js(
+    "(() => { const host = document.getElementById('host'); return host && host.shadowRoot ? 'yes' : 'no'; })()",
+  )
+  let shadow_visible = browser.execute_inline_js(
+    "(() => { const host = document.getElementById('host'); return host && host.shadowRoot && host.shadowRoot.querySelector('#shadow-btn') ? 'yes' : 'no'; })()",
+  )
+  let light_visible = browser.execute_inline_js(
+    "document.querySelector('#light-btn') !== null ? 'yes' : 'no'",
+  )
+
+  inspect(host_has_open_shadow, content="Some(\"yes\")")
+  inspect(shadow_visible, content="Some(\"yes\")")
+  inspect(light_visible, content="Some(\"yes\")")
+}
+
+///|
+async test "Browser activate_at navigates shadow link from initial HTML" {
+  let browser = Browser::new(800, 600)
+  let target_url = "data:text/html,%3Cp%20id%3D%22after%22%3Eshadow-done%3C/p%3E"
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <div id="host">
+    #|    <template shadowrootmode="open">
+    #|      <a href="data:text/html,%3Cp%20id%3D%22after%22%3Eshadow-done%3C/p%3E" style="display:block;width:120px;height:24px">shadow link</a>
+    #|    </template>
+    #|    <a href="data:text/html,%3Cp%20id%3D%22after%22%3Elight-done%3C/p%3E">light link</a>
+    #|  </div>
+    #|</body>
+    #|</html>
+  browser.set_html_content(html)
+
+  let _ = browser.render_output(Text)
+  inspect(browser.link_regions.length(), content="1")
+  let region = browser.link_regions[0]
+  let activated = browser.activate_at(region.col, region.row) catch {
+    _ => false
+  }
+  inspect(activated, content="true")
+  inspect(browser.get_current_url(), content=target_url)
+
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("shadow-done"))
+}
+
+///|
+test "Browser shadow link hints resolve duplicate visible link text by source id" {
+  let browser = Browser::new(800, 600)
+  browser.current_url = "https://example.com/base/page.html"
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <a id="outer-link" href="/outer">shared link</a>
+    #|  <div id="host">
+    #|    <template shadowrootmode="open">
+    #|      <a id="shadow-link" href="/shadow">shared link</a>
+    #|    </template>
+    #|  </div>
+    #|</body>
+    #|</html>
+  browser.set_html_content(html)
+
+  let _ = browser.render_output(Text)
+  inspect(browser.link_regions.length(), content="2")
+  let shadow_region = link_region_of_source_id(browser, "shadow-link")
+  inspect(
+    browser.get_link_at(shadow_region.col, shadow_region.row),
+    content="Some(\"/shadow\")",
+  )
+
+  browser.enter_hint_mode()
+  inspect(browser.hints.length(), content="2")
+  let mut shadow_hint_href = ""
+  for hint in browser.hints {
+    if hint.col == shadow_region.col && hint.row == shadow_region.row {
+      shadow_hint_href = hint.href
+    }
+  }
+  inspect(shadow_hint_href, content="https://example.com/shadow")
+}
+
+///|
+test "Browser render_output in no_color mode preserves duplicate link URLs" {
+  let browser = Browser::new(800, 600)
+  browser.current_url = "https://example.com/base/page.html"
+  browser.set_no_color(true)
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <a id="outer-link" href="/outer">shared link</a>
+    #|  <div id="host">
+    #|    <template shadowrootmode="open">
+    #|      <a id="shadow-link" href="/shadow">shared link</a>
+    #|    </template>
+    #|  </div>
+    #|</body>
+    #|</html>
+  browser.set_html_content(html)
+
+  let rendered = browser.render_output(Text)
+  inspect(rendered.contains("https://example.com/outer"), content="true")
+  inspect(rendered.contains("https://example.com/shadow"), content="true")
+}
+
+///|
+async test "Browser activate_focused_link keeps shadow href for duplicate visible link text" {
+  let browser = Browser::new(800, 600)
+  let outer_url = "data:text/html,%3Cp%20id%3D%22after%22%3Eouter-done%3C/p%3E"
+  let shadow_url = "data:text/html,%3Cp%20id%3D%22after%22%3Eshadow-done%3C/p%3E"
+  let html =
+    #|<html>
+    #|<body style="margin:0">
+    #|  <a id="outer-link" href="data:text/html,%3Cp%20id%3D%22after%22%3Eouter-done%3C/p%3E">shared link</a>
+    #|  <div id="host">
+    #|    <template shadowrootmode="open">
+    #|      <a id="shadow-link" href="data:text/html,%3Cp%20id%3D%22after%22%3Eshadow-done%3C/p%3E">shared link</a>
+    #|    </template>
+    #|  </div>
+    #|</body>
+    #|</html>
+  browser.set_html_content(html)
+
+  let _ = browser.render_output(Text)
+  browser.next_link()
+  browser.next_link()
+
+  inspect(
+    browser.get_focused_link_url(),
+    content="Some(\"data:text/html,%3Cp%20id%3D%22after%22%3Eshadow-done%3C/p%3E\")",
+  )
+  let activated = browser.activate_focused_link() catch { _ => false }
+  inspect(activated, content="true")
+  inspect(browser.get_current_url(), content=shadow_url)
+  inspect(browser.get_current_url() == outer_url, content="false")
+
+  let rendered = browser.render_output(Text)
+  assert_true(rendered.contains("shadow-done"))
 }
 
 ///|

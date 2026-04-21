@@ -194,6 +194,14 @@ fn matches_pseudo_class(element : Element, pc : PseudoClass) -> Bool {
       // :has() requires checking descendants/siblings
       // Complex to implement, return false for now
       false
+    State(state) => {
+      for token in element.custom_states {
+        if token == state {
+          return true
+        }
+      }
+      false
+    }
     // User-action pseudo-classes - these depend on runtime state
     // For static matching, we return false (or could check element state)
     Hover | Active | Focus | FocusVisible | FocusWithin => false

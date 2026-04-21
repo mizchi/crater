@@ -52,7 +52,9 @@ pub struct DomTree {
 }
 pub fn DomTree::append_child(Self, NodeId, NodeId) -> Result[Unit, CoreError]
 pub fn DomTree::attach_existing_shadow_root(Self, NodeId, NodeId, String) -> Result[Unit, CoreError]
+pub fn DomTree::attach_existing_shadow_root_with_init(Self, NodeId, NodeId, ShadowRootInit) -> Result[Unit, CoreError]
 pub fn DomTree::attach_shadow(Self, NodeId, String) -> Result[NodeId, CoreError]
+pub fn DomTree::attach_shadow_with_init(Self, NodeId, ShadowRootInit) -> Result[NodeId, CoreError]
 pub fn DomTree::clear_mutations(Self) -> Unit
 pub fn DomTree::create_comment(Self, String) -> NodeId
 pub fn DomTree::create_document_fragment(Self) -> NodeId
@@ -68,9 +70,11 @@ pub fn DomTree::get_cached_rect(Self, NodeId) -> Rect?
 pub fn DomTree::get_children(Self, NodeId) -> Result[Array[NodeId], CoreError]
 pub fn DomTree::get_composed_children(Self, NodeId, shadow_host? : NodeId?) -> Array[NodeId]
 pub fn DomTree::get_ctm(Self, NodeId) -> SVGMatrix?
+pub fn DomTree::get_custom_states(Self, NodeId) -> Result[Array[String], CoreError]
 pub fn DomTree::get_document(Self) -> NodeId
 pub fn DomTree::get_first_child(Self, NodeId) -> Result[NodeId?, CoreError]
 pub fn DomTree::get_focus(Self) -> NodeId?
+pub fn DomTree::get_form_associated_state(Self, NodeId) -> Result[(String?, String?), CoreError]
 pub fn DomTree::get_host(Self, NodeId) -> Result[NodeId?, CoreError]
 pub fn DomTree::get_mutation_queue(Self) -> MutationQueue
 pub fn DomTree::get_next_sibling(Self, NodeId) -> Result[NodeId?, CoreError]
@@ -78,6 +82,7 @@ pub fn DomTree::get_node_info(Self, NodeId) -> Result[NodeInfo, CoreError]
 pub fn DomTree::get_parent(Self, NodeId) -> Result[NodeId?, CoreError]
 pub fn DomTree::get_root_node(Self, NodeId, composed? : Bool) -> Result[NodeId, CoreError]
 pub fn DomTree::get_screen_ctm(Self, NodeId) -> SVGMatrix?
+pub fn DomTree::get_shadow_init(Self, NodeId) -> Result[ShadowRootInit?, CoreError]
 pub fn DomTree::get_shadow_mode(Self, NodeId) -> Result[String?, CoreError]
 pub fn DomTree::get_shadow_root(Self, NodeId) -> Result[NodeId?, CoreError]
 pub fn DomTree::get_tag_name(Self, NodeId) -> Result[String, CoreError]
@@ -94,7 +99,9 @@ pub fn DomTree::remove_attribute(Self, NodeId, String) -> Result[Unit, CoreError
 pub fn DomTree::remove_child(Self, NodeId, NodeId) -> Result[Unit, CoreError]
 pub fn DomTree::set_attribute(Self, NodeId, String, String) -> Result[Unit, CoreError]
 pub fn DomTree::set_cached_rect(Self, NodeId, Rect) -> Unit
+pub fn DomTree::set_custom_states(Self, NodeId, Array[String]) -> Result[Unit, CoreError]
 pub fn DomTree::set_focus(Self, NodeId?) -> Unit
+pub fn DomTree::set_form_associated_state(Self, NodeId, String?, String?) -> Result[Unit, CoreError]
 pub fn DomTree::set_text_content(Self, NodeId, String) -> Result[Unit, CoreError]
 
 pub struct FlushResult {
@@ -337,6 +344,16 @@ pub fn ScrollState::new(Double, Double, Double, Double) -> Self
 pub fn ScrollState::scroll_by(Self, Double, Double) -> Self
 pub fn ScrollState::scroll_to(Self, Double, Double) -> Self
 pub impl Show for ScrollState
+
+pub struct ShadowRootInit {
+  mode : String
+  delegates_focus : Bool
+  slot_assignment : String
+  clonable : Bool
+  serializable : Bool
+} derive(Eq, @debug.Debug)
+pub fn ShadowRootInit::default(mode? : String) -> Self
+pub fn ShadowRootInit::new(mode~ : String, delegates_focus? : Bool, slot_assignment? : String, clonable? : Bool, serializable? : Bool) -> Self
 
 // Type aliases
 

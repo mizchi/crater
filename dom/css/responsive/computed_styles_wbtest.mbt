@@ -89,3 +89,12 @@ test "discover_all_computed_styles returns selector keyed styles for all element
   assert_eq(card_styles.get("display").unwrap(), "flex")
   assert_eq(badge_styles.get("color").unwrap(), "rgb(255, 0, 0)")
 }
+
+///|
+test "discover_all_computed_styles resolves :state from internal render attribute" {
+  let html =
+    #|<html><head><style>x-panel { color: black; } x-panel:state(open) { color: red; }</style></head><body><x-panel id="panel" data-crater-custom-states="open">hello</x-panel></body></html>
+  let result = discover_all_computed_styles(html, ["color"])
+  let panel_styles = result.get("x-panel#panel").unwrap()
+  assert_eq(panel_styles.get("color").unwrap(), "red")
+}

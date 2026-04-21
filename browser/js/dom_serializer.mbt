@@ -5,6 +5,15 @@
 /// This enables scripts to see the actual HTML content.
 
 ///|
+let render_custom_states_attr_name = "data-crater-custom-states"
+
+///|
+let snapshot_form_value_attr_name = "data-crater-form-value"
+
+///|
+let snapshot_form_state_attr_name = "data-crater-form-state-value"
+
+///|
 /// Serialize DomTree to JavaScript object creation code
 /// Returns JS code that reconstructs the DOM tree in the mock DOM
 pub fn serialize_dom_for_mock(dom : @dom.DomTree) -> String {
@@ -57,6 +66,20 @@ fn serialize_node_recursive(
           }
         Err(_) => ()
       }
+      emit_custom_states_for_mock(
+        dom,
+        node_id,
+        buf,
+        indent,
+        "_nodeMap.get(\{id})",
+      )
+      emit_form_associated_state_for_mock(
+        dom,
+        node_id,
+        buf,
+        indent,
+        "_nodeMap.get(\{id})",
+      )
 
       // Process children
       let children = dom.get_children(node_id)
@@ -76,14 +99,11 @@ fn serialize_node_recursive(
       match dom.get_shadow_root(node_id) {
         Ok(Some(shadow_root_id)) => {
           let shadow_int = shadow_root_id.to_int()
-          let mode = dom
-            .get_shadow_mode(shadow_root_id)
-            .unwrap_or(None)
-            .unwrap_or("open")
-          let mode = escape_js_string(mode)
+          let shadow_init = get_shadow_init_or_default(dom, shadow_root_id)
+          let shadow_init_js = serialize_shadow_init_js_object(shadow_init)
           buf.write_string(indent)
           buf.write_string(
-            "_nodeMap.set(\{shadow_int}, _nodeMap.get(\{id}).attachShadow({ mode: '\{mode}' }));\n",
+            "_nodeMap.set(\{shadow_int}, _nodeMap.get(\{id}).attachShadow(\{shadow_init_js}));\n",
           )
           buf.write_string(indent)
           buf.write_string(
@@ -172,6 +192,146 @@ fn escape_js_string(s : String) -> String {
 }
 
 ///|
+fn serialize_shadow_init_js_object(init : @dom.ShadowRootInit) -> String {
+  let buf = StringBuilder::new()
+  buf.write_string("{ mode: '")
+  buf.write_string(escape_js_string(init.mode))
+  buf.write_char('\'')
+  if init.delegates_focus {
+    buf.write_string(", delegatesFocus: true")
+  }
+  if init.slot_assignment != "named" {
+    buf.write_string(", slotAssignment: '")
+    buf.write_string(escape_js_string(init.slot_assignment))
+    buf.write_char('\'')
+  }
+  if init.clonable {
+    buf.write_string(", clonable: true")
+  }
+  if init.serializable {
+    buf.write_string(", serializable: true")
+  }
+  buf.write_string(" }")
+  buf.to_string()
+}
+
+///|
+fn get_shadow_init_or_default(
+  dom : @dom.DomTree,
+  shadow_root_id : @dom.NodeId,
+) -> @dom.ShadowRootInit {
+  dom
+  .get_shadow_init(shadow_root_id)
+  .unwrap_or(None)
+  .unwrap_or_else(fn() {
+    @dom.ShadowRootInit::default(
+      mode=dom.get_shadow_mode(shadow_root_id).unwrap_or(None).unwrap_or("open"),
+    )
+  })
+}
+
+///|
+fn get_render_custom_states_attr_value(
+  dom : @dom.DomTree,
+  node_id : @dom.NodeId,
+) -> String? {
+  match dom.get_custom_states(node_id) {
+    Ok(states) if !states.is_empty() => Some(states.join(" "))
+    _ => None
+  }
+}
+
+///|
+fn emit_custom_states_for_mock(
+  dom : @dom.DomTree,
+  node_id : @dom.NodeId,
+  buf : StringBuilder,
+  indent : String,
+  target_expr : String,
+) -> Unit {
+  match dom.get_custom_states(node_id) {
+    Ok(states) if !states.is_empty() => {
+      let serialized : Array[String] = []
+      for state in states {
+        serialized.push("'" + escape_js_string(state) + "'")
+      }
+      let serialized_states = serialized.join(", ")
+      buf.write_string(indent)
+      buf.write_string(
+        "\{target_expr}.__customStates = new Set([\{serialized_states}]);\n",
+      )
+    }
+    _ => ()
+  }
+}
+
+///|
+fn emit_form_associated_state_for_mock(
+  dom : @dom.DomTree,
+  node_id : @dom.NodeId,
+  buf : StringBuilder,
+  indent : String,
+  target_expr : String,
+) -> Unit {
+  match dom.get_form_associated_state(node_id) {
+    Ok(state) => {
+      let (form_value, form_state_value) = state
+      if form_value == None && form_state_value == None {
+        return
+      }
+      let has_form_value = form_value != None
+      let has_form_state_value = form_state_value != None
+      let serialized_form_value = match form_value {
+        Some(value) => "'" + escape_js_string(value) + "'"
+        None => "null"
+      }
+      let serialized_form_state_value = match form_state_value {
+        Some(value) => "'" + escape_js_string(value) + "'"
+        None => "null"
+      }
+      buf.write_string(indent)
+      buf.write_string(
+        "__craterRestoreFormAssociatedState(\{target_expr}, \{has_form_value.to_string()}, \{serialized_form_value}, \{has_form_state_value.to_string()}, \{serialized_form_state_value});\n",
+      )
+    }
+    _ => ()
+  }
+}
+
+///|
+fn write_snapshot_form_state_attrs(
+  dom : @dom.DomTree,
+  node_id : @dom.NodeId,
+  buf : StringBuilder,
+) -> Unit {
+  match dom.get_form_associated_state(node_id) {
+    Ok((form_value, form_state_value)) => {
+      match form_value {
+        Some(value) => {
+          buf.write_char(' ')
+          buf.write_string(snapshot_form_value_attr_name)
+          buf.write_string("=\"")
+          buf.write_string(escape_html_attr(value))
+          buf.write_char('"')
+        }
+        None => ()
+      }
+      match form_state_value {
+        Some(value) => {
+          buf.write_char(' ')
+          buf.write_string(snapshot_form_state_attr_name)
+          buf.write_string("=\"")
+          buf.write_string(escape_html_attr(value))
+          buf.write_char('"')
+        }
+        None => ()
+      }
+    }
+    _ => ()
+  }
+}
+
+///|
 /// Create initialization code that populates mock DOM from DomTree
 /// This builds the HTML structure (html, head, body) with actual content
 pub fn create_dom_init_code(dom : @dom.DomTree) -> String {
@@ -200,6 +360,135 @@ pub fn serialize_dom_to_html(dom : @dom.DomTree) -> String {
     Err(_) => ()
   }
   buf.to_string()
+}
+
+///|
+pub fn serialize_dom_to_snapshot_html(dom : @dom.DomTree) -> String {
+  let buf = StringBuilder::new()
+  let doc_id = dom.get_document()
+  match dom.get_children(doc_id) {
+    Ok(children) =>
+      for child in children {
+        serialize_node_to_snapshot_html(dom, child, buf)
+      }
+    Err(_) => ()
+  }
+  buf.to_string()
+}
+
+///|
+fn serialize_shadow_root_template(
+  dom : @dom.DomTree,
+  shadow_root_id : @dom.NodeId,
+  buf : StringBuilder,
+) -> Unit {
+  let shadow_init = get_shadow_init_or_default(dom, shadow_root_id)
+  if !shadow_init.serializable {
+    return
+  }
+  buf.write_string("<template shadowrootmode=\"")
+  buf.write_string(escape_html_attr(shadow_init.mode))
+  buf.write_char('"')
+  if shadow_init.delegates_focus {
+    buf.write_string(" shadowrootdelegatesfocus")
+  }
+  if shadow_init.slot_assignment != "named" {
+    buf.write_string(" shadowrootslotassignment=\"")
+    buf.write_string(escape_html_attr(shadow_init.slot_assignment))
+    buf.write_char('"')
+  }
+  if shadow_init.clonable {
+    buf.write_string(" shadowrootclonable")
+  }
+  if shadow_init.serializable {
+    buf.write_string(" shadowrootserializable")
+  }
+  buf.write_char('>')
+  match dom.get_children(shadow_root_id) {
+    Ok(children) =>
+      for child in children {
+        serialize_node_to_snapshot_html(dom, child, buf)
+      }
+    Err(_) => ()
+  }
+  buf.write_string("</template>")
+}
+
+///|
+fn serialize_node_to_snapshot_html(
+  dom : @dom.DomTree,
+  node_id : @dom.NodeId,
+  buf : StringBuilder,
+) -> Unit {
+  let info = dom.get_node_info(node_id)
+  guard info is Ok(info) else { return }
+  match info.node_type {
+    @dom.Document =>
+      match dom.get_children(node_id) {
+        Ok(children) =>
+          for child in children {
+            serialize_node_to_snapshot_html(dom, child, buf)
+          }
+        Err(_) => ()
+      }
+    @dom.DocumentType => {
+      let name = info.node_name.to_lower()
+      if name == "html" {
+        buf.write_string("<!DOCTYPE html>")
+      }
+    }
+    @dom.Text => buf.write_string(escape_html_text(info.node_value))
+    @dom.Comment => {
+      buf.write_string("<!--")
+      buf.write_string(info.node_value)
+      buf.write_string("-->")
+    }
+    @dom.DocumentFragment | @dom.ShadowRoot =>
+      match dom.get_children(node_id) {
+        Ok(children) =>
+          for child in children {
+            serialize_node_to_snapshot_html(dom, child, buf)
+          }
+        Err(_) => ()
+      }
+    @dom.Element => {
+      let tag = info.node_name
+      buf.write_char('<')
+      buf.write_string(tag)
+      match dom.get_attributes(node_id) {
+        Ok(attrs) =>
+          for pair in attrs {
+            let (name, value) = pair
+            buf.write_char(' ')
+            buf.write_string(name)
+            buf.write_string("=\"")
+            buf.write_string(escape_html_attr(value))
+            buf.write_char('"')
+          }
+        Err(_) => ()
+      }
+      write_snapshot_form_state_attrs(dom, node_id, buf)
+      buf.write_char('>')
+      if is_void_html_element(tag) {
+        return
+      }
+      match dom.get_shadow_root(node_id) {
+        Ok(Some(shadow_root_id)) =>
+          serialize_shadow_root_template(dom, shadow_root_id, buf)
+        _ => ()
+      }
+      match dom.get_children(node_id) {
+        Ok(children) =>
+          for child in children {
+            serialize_node_to_snapshot_html(dom, child, buf)
+          }
+        Err(_) => ()
+      }
+      buf.write_string("</")
+      buf.write_string(tag)
+      buf.write_char('>')
+    }
+  }
 }
 
 ///|
@@ -253,6 +542,16 @@ fn serialize_node_to_html_in_context(
             buf.write_char('"')
           }
         Err(_) => ()
+      }
+      match get_render_custom_states_attr_value(dom, node_id) {
+        Some(value) => {
+          buf.write_char(' ')
+          buf.write_string(render_custom_states_attr_name)
+          buf.write_string("=\"")
+          buf.write_string(escape_html_attr(value))
+          buf.write_char('"')
+        }
+        None => ()
       }
       buf.write_char('>')
       if is_void_html_element(tag) {
@@ -422,6 +721,8 @@ fn serialize_element_to_append(
           }
         Err(_) => ()
       }
+      emit_custom_states_for_mock(dom, node_id, buf, "  ", "el_\{id}")
+      emit_form_associated_state_for_mock(dom, node_id, buf, "  ", "el_\{id}")
 
       // Process children
       let children = dom.get_children(node_id)
@@ -436,13 +737,10 @@ fn serialize_element_to_append(
       match dom.get_shadow_root(node_id) {
         Ok(Some(shadow_root_id)) => {
           let shadow_int = shadow_root_id.to_int()
-          let mode = dom
-            .get_shadow_mode(shadow_root_id)
-            .unwrap_or(None)
-            .unwrap_or("open")
-          let mode = escape_js_string(mode)
+          let shadow_init = get_shadow_init_or_default(dom, shadow_root_id)
+          let shadow_init_js = serialize_shadow_init_js_object(shadow_init)
           buf.write_string(
-            "  const shadow_\{shadow_int} = el_\{id}.attachShadow({ mode: '\{mode}' });\n",
+            "  const shadow_\{shadow_int} = el_\{id}.attachShadow(\{shadow_init_js});\n",
           )
           buf.write_string("  shadow_\{shadow_int}._mockId = \{shadow_int};\n")
           match dom.get_children(shadow_root_id) {

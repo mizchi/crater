@@ -210,6 +210,17 @@ test "parse pseudo-class nth-child compact anb form" {
 }
 
 ///|
+test "parse pseudo-class state" {
+  let sel = parse_selector_text("x-panel:state(open)")
+  inspect(sel is Some(_), content="true")
+  let s = sel.unwrap()
+  match s.head.subclasses[0] {
+    PseudoClass(State(name)) => inspect(name, content="open")
+    _ => fail("expected :state pseudo-class")
+  }
+}
+
+///|
 test "parse pseudo-element before" {
   let sel = parse_selector_text("::before")
   inspect(sel is Some(_), content="true")

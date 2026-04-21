@@ -1303,9 +1303,9 @@
      }
    }
  }
- function insertAdjacentNode(target, position, node) {
-   const pos = String(position).toLowerCase();
-   switch (pos) {
+function insertAdjacentNode(target, position, node) {
+  const pos = String(position).toLowerCase();
+  switch (pos) {
      case 'beforebegin':
        if (!target._parent) return null;
        target._parent.insertBefore(node, target);
@@ -1320,6 +1320,36 @@
        if (!target._parent) return null;
        target._parent.insertBefore(node, target.nextSibling);
        return node;
+     default:
+      throw new DOMException("Invalid position: " + position, "SyntaxError");
+  }
+}
+ function insertAdjacentNodes(target, position, nodes) {
+   const pos = String(position).toLowerCase();
+   const list = Array.isArray(nodes) ? nodes : [];
+   switch (pos) {
+     case 'beforebegin':
+       if (!target._parent) return null;
+       for (const node of list) {
+         target._parent.insertBefore(node, target);
+       }
+       return null;
+     case 'afterbegin':
+       for (const node of list) {
+         target.insertBefore(node, target.firstChild);
+       }
+       return null;
+     case 'beforeend':
+       for (const node of list) {
+         target.appendChild(node);
+       }
+       return null;
+     case 'afterend':
+       if (!target._parent) return null;
+       for (const node of list) {
+         target._parent.insertBefore(node, target.nextSibling);
+       }
+       return null;
      default:
        throw new DOMException("Invalid position: " + position, "SyntaxError");
    }
@@ -2108,23 +2138,110 @@
      return named[inner] || ('&' + inner + ';');
    });
  }
- function parseHtmlAttributes(text) {
-   const attrs = [];
-   const re = /([^\s=\/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
-   let m;
+function parseHtmlAttributes(text) {
+  const attrs = [];
+  const re = /([^\s=\/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
+  let m;
    while ((m = re.exec(text)) !== null) {
      const name = m[1];
      const value = m[2] !== undefined ? m[2] : (m[3] !== undefined ? m[3] : (m[4] !== undefined ? m[4] : ''));
      attrs.push({ name, value: decodeHtmlEntities(value) });
-   }
-   return attrs;
+  }
+  return attrs;
+}
+ function serializeHtmlAttribute(attr) {
+   if (!attr) return '';
+   return ' ' + attr.name + '="' + String(attr.value || '') + '"';
  }
- function parseHtmlFragment(html, ownerDoc) {
-   const doc = ownerDoc || document;
-   const frag = doc.createDocumentFragment();
-   const voidTags = {
-     area: true, base: true, br: true, col: true, embed: true, hr: true,
-     img: true, input: true, link: true, meta: true, param: true, source: true,
+ function serializeChildrenForHtml(node, options) {
+   let html = '';
+   const children = getChildNodesArray(node);
+   for (const child of children) {
+     html += serializeNodeForHtml(child, options);
+   }
+   return html;
+ }
+ function serializeShadowRootTemplate(shadowRoot, options) {
+   if (!shadowRoot || !shadowRoot.serializable) return '';
+   if (!(options && options.serializableShadowRoots)) return '';
+   const attrs = [' shadowrootmode="' + String(shadowRoot.mode || 'open') + '"'];
+   if (shadowRoot.delegatesFocus) attrs.push(' shadowrootdelegatesfocus');
+   if (shadowRoot.slotAssignment === 'manual') attrs.push(' shadowrootslotassignment="manual"');
+   if (shadowRoot.clonable) attrs.push(' shadowrootclonable');
+   if (shadowRoot.serializable) attrs.push(' shadowrootserializable');
+   return '<template' + attrs.join('') + '>' + serializeChildrenForHtml(shadowRoot, options) + '</template>';
+ }
+ function serializeNodeForHtml(node, options) {
+   if (!node) return '';
+   if (node._nodeType === 3 || node._nodeType === 4) return node._textContent || '';
+   if (node._nodeType === 8) return '<!--' + (node._textContent || '') + '-->';
+   if (node._nodeType === 11) return serializeChildrenForHtml(node, options);
+   if (node._nodeType !== 1) return '';
+   const attrs = (node._attrList || []).map(serializeHtmlAttribute).join('');
+   const tag = String(node._tagName || node.tagName || '').toLowerCase();
+   const shadowHtml = serializeShadowRootTemplate(node._shadowRoot || null, options);
+   const childHtml = serializeChildrenForHtml(node, options);
+   const textHtml = childHtml === '' ? (node._textContent || '') : '';
+   return '<' + tag + attrs + '>' + shadowHtml + childHtml + textHtml + '</' + tag + '>';
+ }
+ function clearChildNodes(parent) {
+   const removedNodes = parent && parent._children ? parent._children.slice() : [];
+   if (removedNodes.length === 0) return removedNodes;
+   if (isConnectedToDocument(parent)) {
+     const doc = getOwnerDocument(parent);
+     if (doc) {
+       for (const child of removedNodes) {
+         unindexSubtree(child, doc);
+       }
+     }
+   }
+   for (const child of removedNodes) {
+     if (child && child._parent === parent) child._parent = null;
+     if (child && 'parentNode' in child) child.parentNode = null;
+     if (
+       parent &&
+       parent._mockId !== undefined &&
+       child &&
+       child._mockId !== undefined
+     ) {
+       domOps.push({
+         op: 'removeChild',
+         parentId: parent._mockId,
+         childId: child._mockId
+       });
+     }
+   }
+   parent._children = [];
+   return removedNodes;
+ }
+ function setUnsafeHtmlForNode(target, value) {
+   const html = value === null || value === undefined ? '' : String(value);
+   clearChildNodes(target);
+   if (html === '') return;
+   const owner = getOwnerDocument(target) || document;
+   const contextHost = target && target._isShadowRoot ? null : target;
+   const nodes = parseHtmlFragment(html, owner, contextHost);
+   for (const node of nodes) {
+     target.appendChild(node);
+   }
+ }
+ function decorateShadowRoot(shadowRoot) {
+   if (!shadowRoot || shadowRoot.__shadowApisInitialized) return shadowRoot;
+   shadowRoot.__shadowApisInitialized = true;
+   shadowRoot.getHTML = function(options) {
+     return serializeChildrenForHtml(this, options || {});
+   };
+   shadowRoot.setHTMLUnsafe = function(value) {
+     setUnsafeHtmlForNode(this, value);
+   };
+   return shadowRoot;
+ }
+ function parseHtmlFragment(html, ownerDoc, contextHost) {
+  const doc = ownerDoc || document;
+  const frag = doc.createDocumentFragment();
+  const voidTags = {
+    area: true, base: true, br: true, col: true, embed: true, hr: true,
+    img: true, input: true, link: true, meta: true, param: true, source: true,
      track: true, wbr: true
    };
    const stack = [frag];
@@ -2138,35 +2255,73 @@
        current.appendChild(doc.createComment(text));
        continue;
      }
-     if (token.startsWith('</')) {
-       const endName = asciiLowercase(token.slice(2, -1).trim());
-       for (let i = stack.length - 1; i > 0; i--) {
-         const el = stack[i];
-         if (el && el._tagName && asciiLowercase(el._tagName) === endName) {
-           stack.length = i;
-           break;
-         }
-       }
+    if (token.startsWith('</')) {
+      const endName = asciiLowercase(token.slice(2, -1).trim());
+      for (let i = stack.length - 1; i > 0; i--) {
+        const el = stack[i];
+        if (el && el.__declarativeTemplateTagName && asciiLowercase(el.__declarativeTemplateTagName) === endName) {
+          stack.length = i;
+          break;
+        }
+        if (el && el._tagName && asciiLowercase(el._tagName) === endName) {
+          stack.length = i;
+          break;
+        }
+      }
        continue;
      }
      if (token.startsWith('<')) {
        const selfClosing = token.endsWith('/>');
-       const inner = token.slice(1, token.length - (selfClosing ? 2 : 1)).trim();
-       if (!inner) continue;
-       const parts = inner.split(/\s+/, 1);
-       const tagName = parts[0];
-       const attrText = inner.slice(tagName.length);
-       const el = doc.createElement(tagName);
-       const attrs = parseHtmlAttributes(attrText);
-       for (const attr of attrs) {
-         try { el.setAttribute(attr.name, attr.value); } catch (e) {}
-       }
-       current.appendChild(el);
-       const lower = asciiLowercase(tagName);
-       if (!selfClosing && !voidTags[lower]) {
-         stack.push(el);
-       }
-       continue;
+      const inner = token.slice(1, token.length - (selfClosing ? 2 : 1)).trim();
+      if (!inner) continue;
+      const parts = inner.split(/\s+/, 1);
+      const tagName = parts[0];
+      const attrText = inner.slice(tagName.length);
+      const attrs = parseHtmlAttributes(attrText);
+      const lower = asciiLowercase(tagName);
+      const shadowRootModeAttr = attrs.find(attr => asciiLowercase(String(attr.name || '')) === 'shadowrootmode');
+      const shadowRootMode = shadowRootModeAttr ? asciiLowercase(String(shadowRootModeAttr.value || '')) : '';
+      const currentHost = current && current._nodeType === 1 && typeof current.attachShadow === 'function'
+        ? current
+        : (current === frag ? contextHost || null : null);
+      if (
+        lower === 'template' &&
+        currentHost &&
+        !currentHost._shadowRoot &&
+        (shadowRootMode === 'open' || shadowRootMode === 'closed')
+      ) {
+        const delegatesFocusAttr = attrs.find(
+          attr => asciiLowercase(String(attr.name || '')) === 'shadowrootdelegatesfocus'
+        );
+        const slotAssignmentAttr = attrs.find(
+          attr => asciiLowercase(String(attr.name || '')) === 'shadowrootslotassignment'
+        );
+        const clonableAttr = attrs.find(
+          attr => asciiLowercase(String(attr.name || '')) === 'shadowrootclonable'
+        );
+        const serializableAttr = attrs.find(
+          attr => asciiLowercase(String(attr.name || '')) === 'shadowrootserializable'
+        );
+        const shadowRoot = currentHost.attachShadow({
+          mode: shadowRootMode,
+          delegatesFocus: !!delegatesFocusAttr,
+          slotAssignment: slotAssignmentAttr && slotAssignmentAttr.value === 'manual' ? 'manual' : 'named',
+          clonable: !!clonableAttr,
+          serializable: !!serializableAttr,
+        });
+        shadowRoot.__declarativeTemplateTagName = 'template';
+        if (!selfClosing) stack.push(shadowRoot);
+        continue;
+      }
+      const el = doc.createElement(tagName);
+      for (const attr of attrs) {
+        try { el.setAttribute(attr.name, attr.value); } catch (e) {}
+      }
+      current.appendChild(el);
+      if (!selfClosing && !voidTags[lower]) {
+        stack.push(el);
+      }
+      continue;
      }
      const text = decodeHtmlEntities(token);
      if (text !== '') {
@@ -2335,6 +2490,13 @@
        if (pname === 'not') {
          const argSel = pseudo.arg || '';
          if (argSel && matchesSimpleSelector(el, argSel.trim(), scopeRoot)) return false;
+         continue;
+       }
+       if (pname === 'state') {
+         const argState = pseudo.arg ? pseudo.arg.trim() : '';
+         if (!argState) return false;
+         const states = el.__customStates instanceof Set ? el.__customStates : null;
+         if (!states || !states.has(argState)) return false;
          continue;
        }
        if (pname === 'empty') {
@@ -3886,36 +4048,28 @@
          });
        }
      },
-     get innerHTML() { return this._children.map(c => c.outerHTML || c.textContent).join(''); },
-     set innerHTML(v) {
-       const html = (v === null || v === undefined) ? '' : String(v);
-       if (isConnectedToDocument(this)) {
-         const doc = getOwnerDocument(this);
-         if (doc) {
-           for (const child of this._children) {
-             unindexSubtree(child, doc);
-           }
-         }
-       }
-       if (this._children && this._children.length > 0) {
-         for (const child of this._children) {
-           if (child && child._parent === this) child._parent = null;
-           if (child && 'parentNode' in child) child.parentNode = null;
-         }
-       }
-       this._children = [];
-       if (html === '') return;
-       const owner = getOwnerDocument(this) || document;
-       const nodes = parseHtmlFragment(html, owner);
-       for (const node of nodes) {
-         this.appendChild(node);
-       }
-     },
-     get outerHTML() {
-       const attrs = this._attrList.map(function(a) { return ' ' + a.name + '="' + a.value + '"'; }).join('');
-       const inner = this.innerHTML || this._textContent;
-       const tag = this._tagName.toLowerCase();
-       return '<' + tag + attrs + '>' + inner + '</' + tag + '>';
+    get innerHTML() { return this._children.map(c => c.outerHTML || c.textContent).join(''); },
+    set innerHTML(v) {
+      const html = (v === null || v === undefined) ? '' : String(v);
+      clearChildNodes(this);
+      if (html === '') return;
+      const owner = getOwnerDocument(this) || document;
+      const nodes = parseHtmlFragment(html, owner, this);
+      for (const node of nodes) {
+        this.appendChild(node);
+      }
+    },
+    getHTML(options) {
+      return serializeShadowRootTemplate(this._shadowRoot || null, options || {}) + serializeChildrenForHtml(this, options || {});
+    },
+    setHTMLUnsafe(value) {
+      setUnsafeHtmlForNode(this, value);
+    },
+    get outerHTML() {
+      const attrs = this._attrList.map(function(a) { return ' ' + a.name + '="' + a.value + '"'; }).join('');
+      const inner = this.innerHTML || this._textContent;
+      const tag = this._tagName.toLowerCase();
+      return '<' + tag + attrs + '>' + inner + '</' + tag + '>';
      },
      set outerHTML(v) {
        const html = (v === null || v === undefined) ? '' : String(v);
@@ -3929,7 +4083,7 @@
        }
        parent.removeChild(this);
      },
-     appendChild(child) {
+    appendChild(child) {
        if (!isNodeLike(child)) {
          throw new TypeError('Failed to execute appendChild: parameter 1 is not of type Node');
        }
@@ -4170,16 +4324,29 @@
            clone._textContent = el._textContent;
            domOps.push({ op: 'setTextContent', id, value: el._textContent });
          }
-         if (isDeep && el._children) {
-           for (const child of el._children) {
-             const clonedChild = cloneElement(child, true);
-             clone._children.push(clonedChild);
-             clonedChild._parent = clone;
-             domOps.push({ op: 'appendChild', parentId: id, childId: clonedChild._mockId });
-           }
-         }
-         return clone;
-       };
+        if (isDeep && el._children) {
+          for (const child of el._children) {
+            const clonedChild = cloneElement(child, true);
+            clone._children.push(clonedChild);
+            clonedChild._parent = clone;
+            domOps.push({ op: 'appendChild', parentId: id, childId: clonedChild._mockId });
+          }
+        }
+        if (isDeep && el._shadowRoot && el._shadowRoot.clonable && typeof clone.attachShadow === 'function' && !clone._shadowRoot) {
+          const clonedShadow = clone.attachShadow({
+            mode: el._shadowRoot.mode || 'open',
+            delegatesFocus: !!el._shadowRoot.delegatesFocus,
+            slotAssignment: el._shadowRoot.slotAssignment || 'named',
+            clonable: !!el._shadowRoot.clonable,
+            serializable: !!el._shadowRoot.serializable,
+          });
+          for (const child of el._shadowRoot._children || []) {
+            const clonedShadowChild = cloneElement(child, true);
+            clonedShadow.appendChild(clonedShadowChild);
+          }
+        }
+        return clone;
+      };
        return cloneElement(this, !!deep);
      },
      isEqualNode(other) {
@@ -4319,53 +4486,54 @@
        insertAdjacentNode(this, position, node);
        return null;
      },
-     insertAdjacentHTML(position, html) {
-       const temp = document.createElement('template');
-       temp._textContent = html;
-       insertAdjacentNode(this, position, temp);
-     },
-     get shadowRoot() { return this._shadowRoot || null; },
-     attachShadow(init) {
-       if (this._shadowRoot) throw new Error('Already has shadow root');
-       const shadowId = nodeIdCounter++;
-       domOps.push({ op: 'createDocumentFragment', id: shadowId });
-       const shadow = createMockDocumentFragment(shadowId);
-       shadow.mode = init.mode;
-       shadow.host = this;
-       shadow._isShadowRoot = true;
-       shadow._parent = this;
-       shadow._ownerDocument = getOwnerDocument(this);
-       Object.defineProperty(shadow, 'innerHTML', {
-         get() { return this._children.map(c => c.outerHTML || c.textContent).join(''); },
-         set(v) {
-           const html = (v === null || v === undefined) ? '' : String(v);
-           if (isConnectedToDocument(this)) {
-             const doc = getOwnerDocument(this);
-             if (doc) {
-               for (const child of this._children) {
-                 unindexSubtree(child, doc);
-               }
-             }
-           }
-           if (this._children && this._children.length > 0) {
-             for (const child of this._children) {
-               if (child && child._parent === this) child._parent = null;
-               if (child && 'parentNode' in child) child.parentNode = null;
-             }
-           }
-           this._children = [];
-           if (html === '') return;
-           const owner = getOwnerDocument(this) || document;
-           const nodes = parseHtmlFragment(html, owner);
-           for (const node of nodes) {
-             this.appendChild(node);
-           }
-         },
-         configurable: true
-       });
-       this._shadowRoot = shadow;
-       return shadow;
-     },
+    insertAdjacentHTML(position, html) {
+      const pos = String(position).toLowerCase();
+      const owner = getOwnerDocument(this) || document;
+      const contextHost = pos === 'beforeend' || pos === 'afterbegin' ? this : null;
+      const nodes = parseHtmlFragment(html, owner, contextHost);
+      insertAdjacentNodes(this, pos, nodes);
+    },
+    get shadowRoot() {
+      if (this._shadowRootMode === 'closed') return null;
+      return this._shadowRoot || null;
+    },
+    attachShadow(init) {
+      if (this._shadowRoot) throw new Error('Already has shadow root');
+      const mode = String((init && init.mode) || 'open');
+      const slotAssignment = init && init.slotAssignment === 'manual' ? 'manual' : 'named';
+      const shadowId = nodeIdCounter++;
+      domOps.push({ op: 'createDocumentFragment', id: shadowId });
+      domOps.push({
+        op: 'attachShadow',
+        parentId: this._mockId,
+        childId: shadowId,
+        value: mode,
+        delegatesFocus: !!(init && init.delegatesFocus),
+        slotAssignment,
+        clonable: !!(init && init.clonable),
+        serializable: !!(init && init.serializable)
+      });
+      const shadow = decorateShadowRoot(createMockDocumentFragment(shadowId));
+      shadow.mode = mode;
+      shadow.delegatesFocus = !!(init && init.delegatesFocus);
+      shadow.slotAssignment = slotAssignment;
+      shadow.clonable = !!(init && init.clonable);
+      shadow.serializable = !!(init && init.serializable);
+      shadow.host = this;
+      shadow._isShadowRoot = true;
+      shadow._parent = this;
+      shadow._ownerDocument = getOwnerDocument(this);
+      Object.defineProperty(shadow, 'innerHTML', {
+        get() { return this._children.map(c => c.outerHTML || c.textContent).join(''); },
+        set(v) {
+          setUnsafeHtmlForNode(this, v);
+        },
+        configurable: true
+      });
+      this._shadowRoot = shadow;
+      this._shadowRootMode = shadow.mode;
+      return shadow;
+    },
      focus() {},
      blur() {},
      click() {},
@@ -5218,14 +5386,17 @@
        }
        detachNode(child);
        adoptSubtree(child, getOwnerDocument(this));
-       this._children.push(child);
-       child._parent = this;
-       if (isConnectedToDocument(this)) {
-         const doc = getOwnerDocument(this);
-         if (doc) indexSubtree(child, doc);
-       }
-       return child;
-     },
+      this._children.push(child);
+      child._parent = this;
+      if (isConnectedToDocument(this)) {
+        const doc = getOwnerDocument(this);
+        if (doc) indexSubtree(child, doc);
+      }
+      if (this._mockId !== undefined && child && child._mockId !== undefined) {
+        domOps.push({ op: 'appendChild', parentId: this._mockId, childId: child._mockId });
+      }
+      return child;
+    },
      insertBefore(newChild, refChild) {
        if (arguments.length < 2) {
          throw new TypeError('Failed to execute insertBefore: 2 arguments required');
@@ -5260,17 +5431,25 @@
          return this.appendChild(newChild);
        }
        const idx = this._children.indexOf(actualRef);
-       if (idx >= 0) {
-         this._children.splice(idx, 0, newChild);
-         newChild._parent = this;
-         if (isConnectedToDocument(this)) {
-           const doc = getOwnerDocument(this);
-           if (doc) indexSubtree(newChild, doc);
-         }
-       }
-       else { return this.appendChild(newChild); }
-       return newChild;
-     },
+      if (idx >= 0) {
+        this._children.splice(idx, 0, newChild);
+        newChild._parent = this;
+        if (isConnectedToDocument(this)) {
+          const doc = getOwnerDocument(this);
+          if (doc) indexSubtree(newChild, doc);
+        }
+        if (this._mockId !== undefined && newChild && newChild._mockId !== undefined) {
+          domOps.push({
+            op: 'insertBefore',
+            parentId: this._mockId,
+            childId: newChild._mockId,
+            refId: actualRef && actualRef._mockId !== undefined ? actualRef._mockId : 0
+          });
+        }
+      }
+      else { return this.appendChild(newChild); }
+      return newChild;
+    },
      removeChild(child) {
        if (!isNodeLike(child)) {
          throw new TypeError('Failed to execute removeChild: parameter 1 is not of type Node');
@@ -5280,13 +5459,16 @@
          throw new DOMException('The node to be removed is not a child of this node', 'NotFoundError');
        }
        this._children.splice(idx, 1);
-       child._parent = null;
-       if (isConnectedToDocument(this)) {
-         const doc = getOwnerDocument(this);
-         if (doc) unindexSubtree(child, doc);
-       }
-       return child;
-     },
+      child._parent = null;
+      if (isConnectedToDocument(this)) {
+        const doc = getOwnerDocument(this);
+        if (doc) unindexSubtree(child, doc);
+      }
+      if (this._mockId !== undefined && child && child._mockId !== undefined) {
+        domOps.push({ op: 'removeChild', parentId: this._mockId, childId: child._mockId });
+      }
+      return child;
+    },
      replaceChild(newChild, oldChild) {
        if (!isNodeLike(newChild) || !isNodeLike(oldChild)) {
          throw new TypeError('Failed to execute replaceChild: parameters are not of type Node');
@@ -5315,16 +5497,30 @@
        adoptSubtree(newChild, getOwnerDocument(this));
        this._children.splice(idx, 1, newChild);
        oldChild._parent = null;
-       newChild._parent = this;
-       if (isConnectedToDocument(this)) {
-         const doc = getOwnerDocument(this);
-         if (doc) {
-           unindexSubtree(oldChild, doc);
-           indexSubtree(newChild, doc);
-         }
-       }
-       return oldChild;
-     },
+      newChild._parent = this;
+      if (isConnectedToDocument(this)) {
+        const doc = getOwnerDocument(this);
+        if (doc) {
+          unindexSubtree(oldChild, doc);
+          indexSubtree(newChild, doc);
+        }
+      }
+      if (
+        this._mockId !== undefined &&
+        newChild &&
+        newChild._mockId !== undefined &&
+        oldChild &&
+        oldChild._mockId !== undefined
+      ) {
+        domOps.push({
+          op: 'replaceChild',
+          parentId: this._mockId,
+          childId: newChild._mockId,
+          refId: oldChild._mockId
+        });
+      }
+      return oldChild;
+    },
      append(...nodes) {
        parentNodeAppend(this, getOwnerDocument(this) || document, nodes);
      },

@@ -78,6 +78,7 @@ pub(all) enum CredentialsMode {
 pub(all) struct FetchOptions {
   http_method : String
   headers : Map[String, String]
+  body : String
   timeout_ms : Int
   mode : RequestMode
   credentials : CredentialsMode

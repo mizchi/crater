@@ -21,6 +21,8 @@ pub(all) struct Element {
   classes : Array[String]
   /// Other attributes
   attributes : Array[Attribute]
+  /// Custom element states for :state()
+  custom_states : Array[String]
   /// Parent element (for ancestor/parent selectors)
   parent : Element?
   /// Previous sibling (for adjacent/general sibling selectors)
@@ -43,6 +45,7 @@ pub fn Element::new(tag_name : String) -> Element {
     id: None,
     classes: [],
     attributes: [],
+    custom_states: [],
     parent: None,
     prev_sibling: None,
     next_sibling: None,
@@ -60,6 +63,7 @@ pub fn Element::with_id(tag_name : String, id : String) -> Element {
     id: Some(id),
     classes: [],
     attributes: [],
+    custom_states: [],
     parent: None,
     prev_sibling: None,
     next_sibling: None,
@@ -80,6 +84,7 @@ pub fn Element::with_classes(
     id: None,
     classes,
     attributes: [],
+    custom_states: [],
     parent: None,
     prev_sibling: None,
     next_sibling: None,
@@ -145,6 +150,13 @@ pub fn Element::set_attribute(
   let attributes = self.attributes.copy()
   attributes.push({ name, value })
   { ..self, attributes, }
+}
+
+///|
+pub fn Element::add_custom_state(self : Element, state : String) -> Element {
+  let custom_states = self.custom_states.copy()
+  custom_states.push(state)
+  { ..self, custom_states, }
 }
 
 ///|

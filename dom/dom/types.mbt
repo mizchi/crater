@@ -65,6 +65,37 @@ pub struct NodeInfo {
 } derive(Debug)
 
 ///|
+pub struct ShadowRootInit {
+  mode : String
+  delegates_focus : Bool
+  slot_assignment : String
+  clonable : Bool
+  serializable : Bool
+} derive(Eq, Debug)
+
+///|
+pub fn ShadowRootInit::default(mode? : String = "open") -> ShadowRootInit {
+  {
+    mode,
+    delegates_focus: false,
+    slot_assignment: "named",
+    clonable: false,
+    serializable: false,
+  }
+}
+
+///|
+pub fn ShadowRootInit::new(
+  mode~ : String,
+  delegates_focus? : Bool = false,
+  slot_assignment? : String = "named",
+  clonable? : Bool = false,
+  serializable? : Bool = false,
+) -> ShadowRootInit {
+  { mode, delegates_focus, slot_assignment, clonable, serializable }
+}
+
+///|
 /// Core error types
 pub enum CoreError {
   NodeNotFound(node_id~ : NodeId)
