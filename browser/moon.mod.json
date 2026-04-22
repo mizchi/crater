@@ -12,7 +12,7 @@
     },
     "mizchi/crater": {
       "path": "..",
-      "version": "0.16.1"
+      "version": "0.17.0"
     },
     "mizchi/crater-dom": {
       "path": "../dom",
