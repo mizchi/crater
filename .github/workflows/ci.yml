@@ -693,11 +693,13 @@ jobs:
       METRIC_CI_ROOT: ${{ github.workspace }}/metric-ci
     strategy:
       fail-fast: false
-      max-parallel: 4
+      max-parallel: 5
       matrix:
         include:
-          - name: fixtures-a
-            grep: 'fixture: (cards and controls|blog article|navigation bar|pricing cards|footer|login form)'
+          - name: fixtures-a1
+            grep: 'fixture: (cards and controls|pricing cards|login form)'
+          - name: fixtures-a2
+            grep: 'fixture: (blog article|navigation bar|footer)'
           - name: fixtures-b
             grep: 'fixture: (live form state|hackernews-style|canvas background|table with cellpadding and cellspacing|table with cellpadding=10)'
           - name: realworld
