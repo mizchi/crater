@@ -1,5 +1,5 @@
 {
-  "name": "mizchi/crater-browser-js",
+  "name": "mizchi/crater-jsbidi",
   "version": "0.1.0",
   "deps": {
     "mizchi/crater": {

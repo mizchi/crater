@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-component/gen/interface/mizchi/crater/incremental"
+package "mizchi/crater-wasm/gen/interface/mizchi/crater/incremental"
 
 import {
   "mizchi/crater-js",

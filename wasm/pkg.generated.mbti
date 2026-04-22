@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-component"
+package "mizchi/crater-wasm"
 
 import {
-  "mizchi/crater-component/interface/mizchi/crater/types",
   "mizchi/crater-js",
+  "mizchi/crater-wasm/interface/mizchi/crater/types",
 }
 
 // Values

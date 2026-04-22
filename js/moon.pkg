@@ -10,6 +10,7 @@ import {
   "mizchi/crater-layout/style",
   "mizchi/crater-dom/aom",
   "mizchi/crater-dom/html",
+  "mizchi/crater-dom/layout/html_tree" @layout_html_tree,
 }
 
 options(

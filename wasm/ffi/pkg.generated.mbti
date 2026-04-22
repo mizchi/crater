@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-component/ffi"
+package "mizchi/crater-wasm/ffi"
 
 // Values
 pub fn bytes2ptr(FixedArray[Byte]) -> Int

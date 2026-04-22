@@ -42,7 +42,7 @@ describe("resolveBidiServerPath", () => {
     const cwd = mkTempProject();
     const serverPath = path.join(
       cwd,
-      "_build/js/release/build/mizchi/crater-browser-js/bidi_main/bidi_main.js",
+      "_build/js/release/build/mizchi/crater-jsbidi/bidi_main/bidi_main.js",
     );
     touch(serverPath);
 
@@ -60,7 +60,7 @@ describe("resolveBidiServerPath", () => {
   it("prefers browser/jsbidi/_build over legacy paths", () => {
     const cwd = mkTempProject();
     const submodulePath = path.join(cwd, "browser/jsbidi/_build/js/release/build/bidi_main/bidi_main.js");
-    const workspacePath = path.join(cwd, "_build/js/release/build/mizchi/crater-browser-js/bidi_main/bidi_main.js");
+    const workspacePath = path.join(cwd, "_build/js/release/build/mizchi/crater-jsbidi/bidi_main/bidi_main.js");
     const targetPath = path.join(cwd, "browser/target/js/release/build/bidi_main/bidi_main.js");
     const buildPath = path.join(cwd, "browser/_build/js/release/build/bidi_main/bidi_main.js");
     touch(submodulePath);

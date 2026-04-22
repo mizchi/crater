@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-browser-js/font_runtime"
+package "mizchi/crater-jsbidi/font_runtime"
 
 // Values
 pub fn codepointCoverage() -> String

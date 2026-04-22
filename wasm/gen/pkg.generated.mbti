@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-component/gen"
+package "mizchi/crater-wasm/gen"
 
 // Values
 pub fn cabi_realloc(Int, Int, Int, Int) -> Int

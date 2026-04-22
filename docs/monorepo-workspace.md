@@ -44,7 +44,7 @@ The same split now applies to `just` test recipes:
 
 - `just test` / `just test-js` runs the default JS-target MoonBit suite
 - `just test-native` runs the `mizchi/crater-browser-native` smoke tests
-- `just test-wasm-mbt` runs the MoonBit-side `mizchi/crater-component` tests
+- `just test-wasm-mbt` runs the MoonBit-side `mizchi/crater-wasm` tests
 - `just test-wasm` keeps its old meaning and runs the Node/JCO component test
 - `just status`, `just test-baseline`, and `just test-baseline-update` now all
   use the JS-target MoonBit suite as their baseline
@@ -56,7 +56,7 @@ The same split now applies to `just` test recipes:
 Both modules also expose module root packages:
 
 - `mizchi/crater-browser-native` for V8/mock-DOM helpers
-- `mizchi/crater-component` for the typed WASM component facade over the
+- `mizchi/crater-wasm` for the typed WASM component facade over the
   core/renderer/incremental/accessibility/yoga interfaces
 
 ## Target Module Layout
@@ -75,10 +75,10 @@ The intended direction is:
 | `mizchi/crater-painter` | Paint model, SVG/image backends, terminal image output |
 | `mizchi/crater-renderer` | Renderer and VRT/export-oriented integration |
 | `mizchi/crater-browser` | Browser runtime, interaction, TUI, network/cache integration |
-| `mizchi/crater-browser-js` | BiDi / JS-facing browser bindings |
+| `mizchi/crater-jsbidi` | BiDi / JS-facing browser bindings |
 | `mizchi/crater-browser-native` | Native browser host bindings |
 | `mizchi/crater-js` | JS exports for layout/renderer consumers |
-| `mizchi/crater-component` | WASM component packaging |
+| `mizchi/crater-wasm` | WASM component packaging |
 
 We do not need to create all of these at once. The current workspace has
 already extracted `mizchi/crater-layout`, `mizchi/crater-css`,
@@ -244,7 +244,7 @@ The root package now provides a thin facade over the shell/CDP/JS entry points,
 while shell and BiDi consumers stay on browser-local package paths instead of
 reaching back into the root integration module for runtime-facing helpers.
 
-### `mizchi/crater-browser-js`
+### `mizchi/crater-jsbidi`
 
 The JS/BiDi-facing packages are kept in `browser/jsbidi/`:
 
@@ -257,7 +257,7 @@ The root package provides a small facade over the WebDriver helper surface
 without forcing consumers to import the larger `webdriver` package path
 directly.
 
-### `mizchi/crater-component`
+### `mizchi/crater-wasm`
 
 The WASM component module now exposes a root facade in `wasm/`:
 

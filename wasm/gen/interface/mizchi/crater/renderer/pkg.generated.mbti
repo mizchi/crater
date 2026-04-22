@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-component/gen/interface/mizchi/crater/renderer"
+package "mizchi/crater-wasm/gen/interface/mizchi/crater/renderer"
 
 // Values
 pub fn render_html(String, UInt, UInt) -> String

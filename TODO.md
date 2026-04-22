@@ -19,9 +19,9 @@
   - `mizchi/crater-renderer`
   - `mizchi/crater-aomx`
   - `mizchi/crater-browser`
-  - `mizchi/crater-browser-js`
+  - `mizchi/crater-jsbidi`
   - `mizchi/crater-browser-native`
-  - `mizchi/crater-component`
+  - `mizchi/crater-wasm`
 - [x] `browser/native` / `wasm` は local `moon.work` を持つ構成にして、module 単体の `native` / `wasm` command を root workspace から隔離した
 - [x] `just check` / `just info` / `just fmt` / `just prepare` を mixed-target workspace 前提で通る形に揃えた
 - [x] `just test` / `test-native` / `test-wasm-mbt` / `test-pkg*` を target-aware に整理した

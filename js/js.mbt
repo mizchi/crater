@@ -202,15 +202,9 @@ let global_stats : Ref[@tree.CacheStats?] = { val: None }
 /// Create a new layout tree from HTML
 /// Returns tree ID (always 0 for now, single tree)
 pub fn createTree(html : String, width : Int, height : Int) -> Int {
-  let ctx : @renderer.RenderContext = {
-    viewport_width: width.to_double(),
-    viewport_height: height.to_double(),
-    root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
-  }
-  let node = @renderer.render_to_node(html, ctx)
-  let tree = @tree.LayoutTree::from_node(
-    node,
+  let doc = @html.parse_document(html)
+  let tree = @layout_html_tree.layout_tree_from_html_document(
+    doc,
     width.to_double(),
     height.to_double(),
   )

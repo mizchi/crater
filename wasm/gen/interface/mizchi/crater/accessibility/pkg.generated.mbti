@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-component/gen/interface/mizchi/crater/accessibility"
+package "mizchi/crater-wasm/gen/interface/mizchi/crater/accessibility"
 
 // Values
 pub fn extract_main_content(String) -> String

@@ -9,6 +9,62 @@ fn try_parse_double(s : String) -> Double? {
   }
 }
 
+///|
+fn layout_node_id_for_element(element : @html.Element) -> String {
+  let tag = element.tag.to_lower()
+  match element.id {
+    Some(id) => "\{tag}#\{id}"
+    None => tag
+  }
+}
+
+///|
+fn parse_inline_declarations(
+  inline_css : String,
+) -> Array[@css.Declaration] {
+  let declarations : Array[@css.Declaration] = []
+  let pairs = inline_css.split(";")
+  for pair in pairs {
+    let pair_str = pair.to_string().trim().to_string()
+    if pair_str.is_empty() {
+      continue
+    }
+    let mut colon_pos = -1
+    for i in 0..<pair_str.length() {
+      if pair_str[i].to_int().unsafe_to_char() == ':' {
+        colon_pos = i
+        break
+      }
+    }
+    if colon_pos <= 0 {
+      continue
+    }
+    let property = pair_str.unsafe_substring(start=0, end=colon_pos).trim()
+    let raw_value = pair_str
+      .unsafe_substring(start=colon_pos + 1, end=pair_str.length())
+      .trim()
+      .to_string()
+    if property.is_empty() || raw_value.is_empty() {
+      continue
+    }
+    let (value, importance) = if raw_value.has_suffix("!important") {
+      (
+        raw_value[:raw_value.length() - "!important".length()]
+        .to_string()
+        .trim()
+        .to_string(),
+        @css.Importance::Important,
+      )
+    } else {
+      (raw_value, @css.Importance::Normal)
+    }
+    declarations.push(
+      @css.Declaration::from_inline(property.to_string(), value, importance),
+    )
+  }
+  declarations
+}
+
 // =============================================================================
 // HTML Element to LayoutNode Conversion
 // =============================================================================
@@ -19,11 +75,19 @@ pub fn layout_node_from_html_element(
   element : @html.Element,
   computed_styles : @css.CascadedValues,
 ) -> @tree.LayoutNode {
-  let node_id = match element.id {
-    Some(id) => id
-    None => element.tag
-  }
+  let node_id = layout_node_id_for_element(element)
   let node = @tree.LayoutNode::create_with_id(node_id)
+
+  match element.style {
+    Some(inline_style) => {
+      let declarations = parse_inline_declarations(inline_style)
+      if declarations.length() > 0 {
+        let inline_values = @css.cascade_declarations(declarations)
+        let _ = @style_bridge.apply_css_values(node, inline_values)
+      }
+    }
+    None => ()
+  }
 
   let _ = @style_bridge.apply_css_values(node, computed_styles)
 
