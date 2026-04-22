@@ -78,6 +78,32 @@ describe("CI_WPT_VRT_SHARDS", () => {
     );
   });
 
+  it("splits css-box into three contiguous shards", () => {
+    const entries = collectWptVrtTests(loadWptVrtConfig()).filter((entry) =>
+      entry.moduleName === "css-box"
+    );
+    const boxShards = CI_WPT_VRT_SHARDS.filter((shard) =>
+      shard.modules.length === 1 && shard.modules[0] === "css-box"
+    );
+
+    expect(boxShards.map((shard) => shard.name)).toEqual([
+      "box-1",
+      "box-2",
+      "box-3",
+    ]);
+
+    const selectedPathsByShard = boxShards.map((shard) =>
+      selectEntriesForShard(entries, shard).map((entry) => entry.relativePath)
+    );
+    expect(selectedPathsByShard.map((paths) => paths.length)).toEqual([10, 10, 8]);
+    expect(selectedPathsByShard[0]).toContain(
+      "css-box/margin-trim/flex-column-grow.html",
+    );
+    expect(selectedPathsByShard[2]).toContain(
+      "css-box/margin-trim/grid-inline.html",
+    );
+  });
+
   it("publishes a GitHub matrix with the expected shard names", () => {
     const matrix = toGithubMatrix();
     expect(matrix.include.map((row) => row.name)).toEqual([
@@ -88,6 +114,7 @@ describe("CI_WPT_VRT_SHARDS", () => {
       "display-2",
       "box-1",
       "box-2",
+      "box-3",
       "position-1",
       "position-2",
     ]);
