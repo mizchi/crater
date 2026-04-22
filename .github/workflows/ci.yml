@@ -1011,7 +1011,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Restore WPT VRT reference fixtures
+        id: wpt_vrt_reference_cache
+        uses: actions/cache@v4
+        with:
+          path: .cache/wpt-vrt-reference
+          key: wpt-vrt-reference-${{ runner.os }}-${{ hashFiles('tests/wpt-vrt.test.ts', 'tests/helpers/crater-vrt.ts', 'tests/helpers/wpt-vrt-utils.ts', 'scripts/wpt-html-utils.ts', 'scripts/ci/install-compatible-fonts.sh', 'wpt-vrt.json', 'package.json', 'pnpm-lock.yaml') }}
+
       - name: Install Playwright browsers for VRT
+        if: steps.wpt_vrt_reference_cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Install compatible fonts for VRT

@@ -73,3 +73,4 @@ browser/jsbidi/trace.json
 .tornado/
 .bidi-ws-url
 .cache/paint-vrt-reference/
+.cache/wpt-vrt-reference/

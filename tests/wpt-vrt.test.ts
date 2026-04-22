@@ -1,12 +1,13 @@
 import path from "node:path";
-import { expect, test, type Browser } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { createVrtArtifactReportContext } from "../scripts/vrt-report-contract.ts";
 import { CraterBidiPage } from "./helpers/crater-bidi-page";
 import {
-  chromiumPageForVrt,
-  compareChromiumPngToImage,
+  closeReferenceBrowser,
+  compareReferenceFixtureToImage,
   connectCraterPageForVrt,
   renderCraterHtml,
+  resolveChromiumReferenceFixture,
 } from "./helpers/crater-vrt";
 import {
   buildMergedWptVrtResultsReport,
@@ -32,6 +33,7 @@ const OUTPUT_ROOT = path.join(process.cwd(), "output", "playwright", "vrt", "wpt
 const WPT_VRT_SPEC = "tests/wpt-vrt.test.ts";
 const REGRESSION_EPSILON = 0.01;
 const BATCH_SIZE = 5;
+const REFERENCE_FIXTURE_ROOT = path.join(process.cwd(), ".cache", "wpt-vrt-reference");
 const RUN_ID = [
   SHARD_NAME,
   SHARD_MODULES.join(","),
@@ -53,25 +55,27 @@ const batches = createWptVrtBatches(entries, BATCH_SIZE);
 const INTER_TEST_DELAY_MS = 300;
 
 async function runVrtTest(
-  browser: Browser,
   entry: WptVrtTestEntry,
   config: { viewport: { width: number; height: number }; pixelmatchThreshold: number; defaultMaxDiffRatio: number },
 ): Promise<WptVrtTestResult> {
-  let chromiumPage = null as Awaited<ReturnType<typeof chromiumPageForVrt>> | null;
   let craterPage = null as CraterBidiPage | null;
   try {
     const htmlContent = prepareHtmlContent(entry.testPath);
-    chromiumPage = await chromiumPageForVrt(browser, config.viewport);
     craterPage = await connectCraterPageForVrt();
-
-    await chromiumPage.setContent(htmlContent, { waitUntil: "load" });
-    const chromiumPng = await chromiumPage.screenshot({ type: "png" });
+    const reference = await resolveChromiumReferenceFixture({
+      fixtureId: `wpt-${entry.relativePath.replace(/[\\/]/g, "__").replace(/[^a-zA-Z0-9_.-]/g, "_")}`,
+      fixtureRootDir: REFERENCE_FIXTURE_ROOT,
+      html: htmlContent,
+      viewport: config.viewport,
+      title: entry.relativePath,
+      refresh: process.env.WPT_VRT_REFRESH_REFERENCE_FIXTURES === "1",
+    });
     const craterImage = await renderCraterHtml(craterPage, htmlContent, config.viewport);
 
     const testName = entry.relativePath.replace(/\//g, "__").replace(/\.html?$/, "");
     const outputDir = path.join(OUTPUT_ROOT, entry.moduleName, testName);
 
-    const result = await compareChromiumPngToImage(chromiumPage, chromiumPng, craterImage, {
+    const result = await compareReferenceFixtureToImage(reference, craterImage, {
       outputDir,
       threshold: config.pixelmatchThreshold,
       maxDiffRatio: config.defaultMaxDiffRatio,
@@ -103,7 +107,6 @@ async function runVrtTest(
     };
   } finally {
     await craterPage?.close().catch(() => {});
-    await chromiumPage?.close().catch(() => {});
     // Brief pause to let BiDi server settle between tests
     await new Promise(r => setTimeout(r, INTER_TEST_DELAY_MS));
   }
@@ -138,12 +141,16 @@ test.describe("WPT VRT", () => {
     console.log(`WPT VRT: running ${entries.length} tests in ${batches.length} batches (run ${RUN_ID})`);
   });
 
+  test.afterAll(async () => {
+    await closeReferenceBrowser();
+  });
+
   for (const [batchIndex, batchEntries] of batches.entries()) {
-    test(`WPT CSS visual regression batch ${batchIndex + 1}/${batches.length}`, async ({ browser }) => {
+    test(`WPT CSS visual regression batch ${batchIndex + 1}/${batches.length}`, async () => {
       const regressions: string[] = [];
 
       for (const entry of batchEntries) {
-        const result = await runVrtTest(browser, entry, config);
+        const result = await runVrtTest(entry, config);
         results.push(result);
 
         if (baseline && !UPDATE_BASELINE) {

@@ -24,6 +24,9 @@ describe("CI VRT parallelization", () => {
     expect(workflow).toContain("Restore paint VRT reference fixtures");
     expect(workflow).toContain("path: .cache/paint-vrt-reference");
     expect(workflow).toContain("if: steps.paint_vrt_reference_cache.outputs.cache-hit != 'true'");
+    expect(workflow).toContain("Restore WPT VRT reference fixtures");
+    expect(workflow).toContain("path: .cache/wpt-vrt-reference");
+    expect(workflow).toContain("if: steps.wpt_vrt_reference_cache.outputs.cache-hit != 'true'");
     expect(workflow).toContain("paint-vrt-summary:");
     expect(workflow).toContain("pattern: paint-vrt-artifacts-*");
   });

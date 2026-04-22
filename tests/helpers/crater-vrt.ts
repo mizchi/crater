@@ -135,10 +135,14 @@ interface ResolveChromiumReferenceOptions {
   title?: string;
   preparePage?: (page: Page) => Promise<void>;
   fixtureRootDir?: string;
+  refresh?: boolean;
 }
 
 const VRT_REFERENCE_SCHEMA_VERSION = 1 as const;
-const REFRESH_VRT_REFERENCE_FIXTURES = process.env.PAINT_VRT_REFRESH_REFERENCE_FIXTURES === "1";
+const DEFAULT_REFRESH_VRT_REFERENCE_FIXTURES =
+  process.env.PAINT_VRT_REFRESH_REFERENCE_FIXTURES === "1" ||
+  process.env.WPT_VRT_REFRESH_REFERENCE_FIXTURES === "1" ||
+  process.env.REFRESH_VRT_REFERENCE_FIXTURES === "1";
 let referenceBrowserPromise: Promise<Browser> | null = null;
 const require = createRequire(import.meta.url);
 let pngModuleCache: { PNG: { sync: { read(input: Buffer): { width: number; height: number; data: Uint8Array | Buffer }; write(input: { width: number; height: number; data: Buffer }): Buffer } } } | null = null;
@@ -556,7 +560,8 @@ async function captureReferenceFixture(
 export async function resolveChromiumReferenceFixture(
   options: ResolveChromiumReferenceOptions,
 ): Promise<ChromiumReferenceFixture> {
-  const stored = !REFRESH_VRT_REFERENCE_FIXTURES
+  const shouldRefresh = options.refresh ?? DEFAULT_REFRESH_VRT_REFERENCE_FIXTURES;
+  const stored = !shouldRefresh
     ? await readReferenceFixture(options)
     : null;
   if (stored) {
