@@ -4,6 +4,9 @@ import { createVrtArtifactReportContext } from "../../scripts/vrt-report-contrac
 import { summarizeCssRuleUsageRules } from "../../scripts/vrt-css-rule-usage.ts";
 import {
   buildVrtArtifactReportJson,
+  compareReferenceFixtureToImage,
+  decodePng,
+  encodePng,
   renderCraterHtml,
 } from "./crater-vrt.ts";
 
@@ -387,5 +390,73 @@ describe("renderCraterHtml", () => {
       sameAsInitialRules: 0,
       sameAsFallbackRules: 1,
     });
+  });
+});
+
+describe("reference fixtures", () => {
+  it("round-trips png encoding without a browser page", async () => {
+    const image = {
+      width: 2,
+      height: 2,
+      data: Uint8Array.from([
+        255, 0, 0, 255,
+        0, 255, 0, 255,
+        0, 0, 255, 255,
+        255, 255, 255, 255,
+      ]),
+    };
+
+    const png = await encodePng(image);
+    const decoded = await decodePng(png);
+
+    expect(decoded).toEqual(image);
+  });
+
+  it("uses stored visible rects when masking a reference fixture", async () => {
+    const chromiumImage = {
+      width: 2,
+      height: 2,
+      data: Uint8Array.from([
+        255, 255, 255, 255,
+        255, 255, 255, 255,
+        255, 255, 255, 255,
+        255, 255, 255, 255,
+      ]),
+    };
+    const craterImage = {
+      width: 2,
+      height: 2,
+      data: Uint8Array.from([
+        255, 255, 255, 255,
+        0, 0, 0, 255,
+        0, 0, 0, 255,
+        0, 0, 0, 255,
+      ]),
+    };
+    const result = await compareReferenceFixtureToImage({
+      chromiumPng: await encodePng(chromiumImage),
+      chromiumImage,
+      visibleContentRects: [{ x: 0, y: 0, width: 1, height: 1 }],
+      meta: {
+        schemaVersion: 1,
+        fixtureId: "mask-test",
+        generatedAt: "2026-04-22T00:00:00Z",
+        htmlHash: "test",
+        viewport: {
+          width: 2,
+          height: 2,
+        },
+      },
+    }, craterImage, {
+      outputDir: path.join("/tmp", "crater-vrt-mask-test"),
+      threshold: 0.1,
+      maxDiffRatio: 0.1,
+      maskToVisibleContent: true,
+      maskPadding: 0,
+    });
+
+    expect(result.diffPixels).toBe(0);
+    expect(result.maskPixels).toBe(1);
+    expect(result.diffRatio).toBe(0);
   });
 });

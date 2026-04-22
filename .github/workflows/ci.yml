@@ -130,6 +130,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Restore paint VRT reference fixtures
+        id: paint_vrt_reference_cache
+        uses: actions/cache@v4
+        with:
+          path: .cache/paint-vrt-reference
+          key: paint-vrt-reference-${{ runner.os }}-${{ hashFiles('tests/paint-vrt.test.ts', 'tests/helpers/crater-vrt.ts', 'scripts/real-world-snapshot.ts', 'scripts/ci/install-compatible-fonts.sh', 'package.json', 'pnpm-lock.yaml', 'benchmarks/fixtures/**', 'real-world/**/index.html', 'real-world/**/meta.json') }}
+
       - name: Update MoonBit dependencies
         run: |
           moon update
@@ -764,6 +771,7 @@ jobs:
         working-directory: metric-ci
 
       - name: Install Playwright browsers for VRT
+        if: steps.paint_vrt_reference_cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Install compatible fonts for VRT

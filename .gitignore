@@ -72,3 +72,4 @@ browser/jsbidi/trace.json
 .flaker/
 .tornado/
 .bidi-ws-url
+.cache/paint-vrt-reference/

@@ -1,6 +1,9 @@
+import { createHash } from "node:crypto";
+import { createRequire } from "node:module";
+import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { Browser, Page } from "@playwright/test";
+import { chromium, type Browser, type Page } from "@playwright/test";
 import pixelmatchFn from "pixelmatch";
 import {
   createNormalizedVrtArtifactReport,
@@ -17,6 +20,33 @@ export interface DecodedImage {
   height: number;
   data: Uint8Array;
   cssRuleUsage?: VrtCssRuleUsageMetrics;
+}
+
+export interface VrtVisibleContentRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface VrtReferenceFixtureMeta {
+  schemaVersion: 1;
+  fixtureId: string;
+  generatedAt: string;
+  htmlHash: string;
+  viewport: {
+    width: number;
+    height: number;
+  };
+  title?: string;
+  browserVersion?: string;
+}
+
+export interface ChromiumReferenceFixture {
+  chromiumPng: Buffer;
+  chromiumImage: DecodedImage;
+  visibleContentRects: VrtVisibleContentRect[];
+  meta: VrtReferenceFixtureMeta;
 }
 
 export interface VisualDiffOptions {
@@ -91,6 +121,28 @@ type FloatRect = {
   height: number;
 };
 
+interface ReferenceFixturePaths {
+  dir: string;
+  chromiumPath: string;
+  rectsPath: string;
+  metaPath: string;
+}
+
+interface ResolveChromiumReferenceOptions {
+  fixtureId: string;
+  html: string;
+  viewport: { width: number; height: number };
+  title?: string;
+  preparePage?: (page: Page) => Promise<void>;
+  fixtureRootDir?: string;
+}
+
+const VRT_REFERENCE_SCHEMA_VERSION = 1 as const;
+const REFRESH_VRT_REFERENCE_FIXTURES = process.env.PAINT_VRT_REFRESH_REFERENCE_FIXTURES === "1";
+let referenceBrowserPromise: Promise<Browser> | null = null;
+const require = createRequire(import.meta.url);
+let pngModuleCache: { PNG: { sync: { read(input: Buffer): { width: number; height: number; data: Uint8Array | Buffer }; write(input: { width: number; height: number; data: Buffer }): Buffer } } } | null = null;
+
 function resolveReportTitle(options: VisualDiffOptions): string {
   const explicit = options.report?.title?.trim();
   if (explicit) {
@@ -107,6 +159,73 @@ function resolveReportBackend(options: VisualDiffOptions): string | undefined {
   }
   const backend = process.env.CRATER_PAINT_BACKEND?.trim();
   return backend && backend.length > 0 ? backend : "sixel";
+}
+
+function defaultReferenceFixtureRootDir(): string {
+  return path.join(process.cwd(), ".cache", "paint-vrt-reference");
+}
+
+function referenceFixturePaths(
+  fixtureId: string,
+  rootDir = defaultReferenceFixtureRootDir(),
+): ReferenceFixturePaths {
+  const dir = path.join(rootDir, fixtureId);
+  return {
+    dir,
+    chromiumPath: path.join(dir, "chromium.png"),
+    rectsPath: path.join(dir, "visible-content.json"),
+    metaPath: path.join(dir, "meta.json"),
+  };
+}
+
+function hashVrtReferenceHtml(
+  html: string,
+  viewport: { width: number; height: number },
+): string {
+  return createHash("sha256")
+    .update(JSON.stringify({
+      html,
+      viewport,
+    }))
+    .digest("hex");
+}
+
+async function getReferenceBrowser(): Promise<Browser> {
+  if (!referenceBrowserPromise) {
+    referenceBrowserPromise = chromium.launch({
+      headless: true,
+    });
+  }
+  return await referenceBrowserPromise;
+}
+
+export async function closeReferenceBrowser(): Promise<void> {
+  if (!referenceBrowserPromise) {
+    return;
+  }
+  const browser = await referenceBrowserPromise;
+  referenceBrowserPromise = null;
+  await browser.close();
+}
+
+function loadPngModule() {
+  if (pngModuleCache) {
+    return pngModuleCache;
+  }
+  try {
+    pngModuleCache = require("pngjs");
+    return pngModuleCache;
+  } catch {
+    const pnpmDir = path.join(process.cwd(), "node_modules", ".pnpm");
+    const entry = fsSync.existsSync(pnpmDir)
+      ? fsSync.readdirSync(pnpmDir).find((name) => name.startsWith("pngjs@"))
+      : null;
+    if (!entry) {
+      throw new Error("pngjs module not found in node_modules; run pnpm install");
+    }
+    pngModuleCache = require(path.join(pnpmDir, entry, "node_modules", "pngjs"));
+    return pngModuleCache;
+  }
 }
 
 export function buildVrtArtifactReportJson(
@@ -205,58 +324,25 @@ export async function connectCraterPageForVrt(): Promise<CraterBidiPage> {
   return page;
 }
 
-export async function decodePng(page: Page, png: Buffer): Promise<DecodedImage> {
-  const decoded = await page.evaluate(async (base64Png) => {
-    const bytes = Uint8Array.from(atob(base64Png), (char) => char.charCodeAt(0));
-    const blob = new Blob([bytes], { type: "image/png" });
-    const bitmap = await createImageBitmap(blob);
-    const canvas = document.createElement("canvas");
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      throw new Error("2D context unavailable");
-    }
-    ctx.drawImage(bitmap, 0, 0);
-    const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
-    return {
-      width: bitmap.width,
-      height: bitmap.height,
-      data: Array.from(imageData.data),
-    };
-  }, png.toString("base64"));
+export async function decodePng(png: Buffer): Promise<DecodedImage> {
+  const { PNG } = loadPngModule();
+  const decoded = PNG.sync.read(png);
   return {
-    width: decoded.width,
-    height: decoded.height,
+    width: decoded.width >>> 0,
+    height: decoded.height >>> 0,
     data: Uint8Array.from(decoded.data),
   };
 }
 
 export async function encodePng(
-  page: Page,
   image: DecodedImage,
 ): Promise<Buffer> {
-  const base64Png = await page.evaluate(async (payload) => {
-    const canvas = document.createElement("canvas");
-    canvas.width = payload.width;
-    canvas.height = payload.height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      throw new Error("2D context unavailable");
-    }
-    const imageData = new ImageData(
-      Uint8ClampedArray.from(payload.data),
-      payload.width,
-      payload.height,
-    );
-    ctx.putImageData(imageData, 0, 0);
-    return canvas.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
-  }, {
+  const { PNG } = loadPngModule();
+  return PNG.sync.write({
     width: image.width,
     height: image.height,
-    data: Array.from(image.data),
+    data: Buffer.from(image.data),
   });
-  return Buffer.from(base64Png, "base64");
 }
 
 function pixelOffset(width: number, x: number, y: number): number {
@@ -395,6 +481,92 @@ async function collectVisibleContentRects(page: Page): Promise<FloatRect[]> {
   });
 }
 
+async function readReferenceFixture(
+  options: ResolveChromiumReferenceOptions,
+): Promise<ChromiumReferenceFixture | null> {
+  const expectedHtmlHash = hashVrtReferenceHtml(options.html, options.viewport);
+  const paths = referenceFixturePaths(options.fixtureId, options.fixtureRootDir);
+  try {
+    const [chromiumPng, rectsRaw, metaRaw] = await Promise.all([
+      fs.readFile(paths.chromiumPath),
+      fs.readFile(paths.rectsPath, "utf8"),
+      fs.readFile(paths.metaPath, "utf8"),
+    ]);
+    const meta = JSON.parse(metaRaw) as VrtReferenceFixtureMeta;
+    if (
+      meta.schemaVersion !== VRT_REFERENCE_SCHEMA_VERSION ||
+      meta.htmlHash !== expectedHtmlHash ||
+      meta.viewport.width !== options.viewport.width ||
+      meta.viewport.height !== options.viewport.height
+    ) {
+      return null;
+    }
+    return {
+      chromiumPng,
+      chromiumImage: await decodePng(chromiumPng),
+      visibleContentRects: JSON.parse(rectsRaw) as VrtVisibleContentRect[],
+      meta,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function writeReferenceFixture(
+  options: ResolveChromiumReferenceOptions,
+  fixture: ChromiumReferenceFixture,
+): Promise<void> {
+  const paths = referenceFixturePaths(options.fixtureId, options.fixtureRootDir);
+  await fs.mkdir(paths.dir, { recursive: true });
+  await Promise.all([
+    fs.writeFile(paths.chromiumPath, fixture.chromiumPng),
+    fs.writeFile(paths.rectsPath, JSON.stringify(fixture.visibleContentRects, null, 2) + "\n"),
+    fs.writeFile(paths.metaPath, JSON.stringify(fixture.meta, null, 2) + "\n"),
+  ]);
+}
+
+async function captureReferenceFixture(
+  options: ResolveChromiumReferenceOptions,
+): Promise<ChromiumReferenceFixture> {
+  const browser = await getReferenceBrowser();
+  const page = await chromiumPageForVrt(browser, options.viewport);
+  try {
+    await page.setContent(options.html, { waitUntil: "load" });
+    await options.preparePage?.(page);
+    const chromiumPng = await page.screenshot({ type: "png" });
+    return {
+      chromiumPng,
+      chromiumImage: await decodePng(chromiumPng),
+      visibleContentRects: await collectVisibleContentRects(page),
+      meta: {
+        schemaVersion: VRT_REFERENCE_SCHEMA_VERSION,
+        fixtureId: options.fixtureId,
+        generatedAt: new Date().toISOString(),
+        htmlHash: hashVrtReferenceHtml(options.html, options.viewport),
+        viewport: options.viewport,
+        ...(options.title ? { title: options.title } : {}),
+        browserVersion: browser.version(),
+      },
+    };
+  } finally {
+    await page.close();
+  }
+}
+
+export async function resolveChromiumReferenceFixture(
+  options: ResolveChromiumReferenceOptions,
+): Promise<ChromiumReferenceFixture> {
+  const stored = !REFRESH_VRT_REFERENCE_FIXTURES
+    ? await readReferenceFixture(options)
+    : null;
+  if (stored) {
+    return stored;
+  }
+  const fixture = await captureReferenceFixture(options);
+  await writeReferenceFixture(options, fixture);
+  return fixture;
+}
+
 function buildMask(width: number, height: number, rects: FloatRect[], padding = 2): Uint8Array {
   const mask = new Uint8Array(width * height);
   for (const rect of rects) {
@@ -452,13 +624,12 @@ function applyMask(reference: DecodedImage, target: DecodedImage, mask: Uint8Arr
 }
 
 export async function comparePngs(
-  page: Page,
   chromiumPng: Buffer,
   craterPng: Buffer,
   options: VisualDiffOptions,
 ): Promise<VisualDiffResult> {
-  const chromiumImage = await decodePng(page, chromiumPng);
-  const craterImage = await decodePng(page, craterPng);
+  const chromiumImage = await decodePng(chromiumPng);
+  const craterImage = await decodePng(craterPng);
 
   if (
     chromiumImage.width !== craterImage.width ||
@@ -498,7 +669,7 @@ export async function comparePngs(
   const reportPath = path.join(options.outputDir, "report.json");
   await fs.writeFile(chromiumPath, chromiumPng);
   await fs.writeFile(craterPath, craterPng);
-  await fs.writeFile(diffPath, await encodePng(page, diffImage));
+  await fs.writeFile(diffPath, await encodePng(diffImage));
   await fs.writeFile(
     reportPath,
     buildVrtArtifactReportJson(options, {
@@ -526,13 +697,13 @@ export async function comparePngs(
   };
 }
 
-export async function compareChromiumPngToImage(
-  page: Page,
-  chromiumPng: Buffer,
+export async function compareReferenceFixtureToImage(
+  reference: ChromiumReferenceFixture,
   craterImage: DecodedImage,
   options: VisualDiffOptions,
 ): Promise<VisualDiffResult> {
-  const chromiumImage = await decodePng(page, chromiumPng);
+  const chromiumImage = reference.chromiumImage;
+  const chromiumPng = reference.chromiumPng;
 
   if (
     chromiumImage.width !== craterImage.width ||
@@ -555,7 +726,7 @@ export async function compareChromiumPngToImage(
     ? buildMask(
         chromiumImage.width,
         chromiumImage.height,
-        await collectVisibleContentRects(page),
+        reference.visibleContentRects,
         options.maskPadding ?? 2,
       )
     : undefined;
@@ -596,8 +767,8 @@ export async function compareChromiumPngToImage(
   const diffPath = path.join(options.outputDir, "diff.png");
   const reportPath = path.join(options.outputDir, "report.json");
   await fs.writeFile(chromiumPath, chromiumPng);
-  await fs.writeFile(craterPath, await encodePng(page, craterImage));
-  await fs.writeFile(diffPath, await encodePng(page, diffImage));
+  await fs.writeFile(craterPath, await encodePng(craterImage));
+  await fs.writeFile(diffPath, await encodePng(diffImage));
   await fs.writeFile(
     reportPath,
     buildVrtArtifactReportJson(options, {
@@ -629,6 +800,29 @@ export async function compareChromiumPngToImage(
   };
 }
 
+export async function compareChromiumPngToImage(
+  page: Page,
+  chromiumPng: Buffer,
+  craterImage: DecodedImage,
+  options: VisualDiffOptions,
+): Promise<VisualDiffResult> {
+  return await compareReferenceFixtureToImage({
+    chromiumPng,
+    chromiumImage: await decodePng(chromiumPng),
+    visibleContentRects: await collectVisibleContentRects(page),
+    meta: {
+      schemaVersion: VRT_REFERENCE_SCHEMA_VERSION,
+      fixtureId: "live",
+      generatedAt: new Date().toISOString(),
+      htmlHash: "",
+      viewport: {
+        width: craterImage.width,
+        height: craterImage.height,
+      },
+    },
+  }, craterImage, options);
+}
+
 export async function renderCraterHtml(
   page: CraterBidiPage,
   html: string,
@@ -639,6 +833,12 @@ export async function renderCraterHtml(
   }
   await page.setViewport(viewport.width, viewport.height);
   await page.setContentWithScripts(html);
+  return await captureCraterPageImage(page);
+}
+
+export async function captureCraterPageImage(
+  page: CraterBidiPage,
+): Promise<DecodedImage> {
   const image = await page.capturePaintData();
   return {
     ...image,

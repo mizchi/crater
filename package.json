@@ -16,6 +16,7 @@
     "test:preact": "playwright test tests/preact-compat.test.ts",
     "test:playwright": "playwright test tests/playwright-adapter.test.ts",
     "test:vrt": "playwright test tests/paint-vrt.test.ts",
+    "gen:paint-vrt-reference": "PAINT_VRT_REFRESH_REFERENCE_FIXTURES=1 playwright test tests/paint-vrt.test.ts",
     "test:wpt-vrt": "playwright test tests/wpt-vrt.test.ts",
     "bench:playwright": "playwright test tests/playwright-benchmark.test.ts",
     "bench:realworld": "tsx scripts/real-world-paint-bench.ts",

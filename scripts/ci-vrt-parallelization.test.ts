@@ -21,6 +21,9 @@ describe("CI VRT parallelization", () => {
     expect(workflow).toContain("grep: 'fixture: (live form state|hackernews-style|canvas background|table with cellpadding and cellspacing|table with cellpadding=10)'");
     expect(workflow).toContain("grep: 'real-world snapshot:|example-com visual parity'");
     expect(workflow).toContain("grep: 'url snapshot:'");
+    expect(workflow).toContain("Restore paint VRT reference fixtures");
+    expect(workflow).toContain("path: .cache/paint-vrt-reference");
+    expect(workflow).toContain("if: steps.paint_vrt_reference_cache.outputs.cache-hit != 'true'");
     expect(workflow).toContain("paint-vrt-summary:");
     expect(workflow).toContain("pattern: paint-vrt-artifacts-*");
   });

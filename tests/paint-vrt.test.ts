@@ -1,15 +1,17 @@
 import path from "node:path";
-import { expect, test, type Browser } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { createVrtArtifactReportContext } from "../scripts/vrt-report-contract.ts";
 import {
   listRealWorldSnapshotNames,
   loadRealWorldSnapshot,
 } from "../scripts/real-world-snapshot.ts";
 import {
-  chromiumPageForVrt,
-  compareChromiumPngToImage,
+  captureCraterPageImage,
+  closeReferenceBrowser,
+  compareReferenceFixtureToImage,
   connectCraterPageForVrt,
   renderCraterHtml,
+  resolveChromiumReferenceFixture,
 } from "./helpers/crater-vrt";
 import { formatQuarantineSkipMessage } from "./helpers/flaker-quarantine";
 
@@ -25,49 +27,80 @@ function paintVrtReport(title: string) {
   });
 }
 
-async function expectSnapshotWithinBudget(
-  browser: Browser,
-  snapshotName: string,
-  options: { threshold: number; maxDiffRatio: number; reportTitle: string },
+async function expectHtmlWithinBudget(
+  options: {
+    fixtureId: string;
+    html: string;
+    viewport: { width: number; height: number };
+    outputDirName: string;
+    threshold: number;
+    maxDiffRatio: number;
+    reportTitle: string;
+    prepareChromiumPage?: (page: Page) => Promise<void>;
+    prepareCraterPage?: (page: Awaited<ReturnType<typeof connectCraterPageForVrt>>) => Promise<void>;
+  },
 ): Promise<void> {
-  const snapshot = loadRealWorldSnapshot(snapshotName);
-  const chromiumPage = await chromiumPageForVrt(browser, snapshot.viewport);
+  const reference = await resolveChromiumReferenceFixture({
+    fixtureId: options.fixtureId,
+    html: options.html,
+    viewport: options.viewport,
+    title: options.reportTitle,
+    preparePage: options.prepareChromiumPage,
+  });
   const craterPage = await connectCraterPageForVrt();
   try {
-    await chromiumPage.setContent(snapshot.html, { waitUntil: "load" });
-    const chromiumPng = await chromiumPage.screenshot({ type: "png" });
-    const craterImage = await renderCraterHtml(craterPage, snapshot.html, snapshot.viewport);
+    let craterImage;
+    if (options.prepareCraterPage) {
+      await craterPage.setViewport(options.viewport.width, options.viewport.height);
+      await craterPage.setContentWithScripts(options.html);
+      await options.prepareCraterPage(craterPage);
+      craterImage = await captureCraterPageImage(craterPage);
+    } else {
+      craterImage = await renderCraterHtml(craterPage, options.html, options.viewport);
+    }
 
-    const result = await compareChromiumPngToImage(
-      chromiumPage,
-      chromiumPng,
-      craterImage,
-      {
-        outputDir: path.join(OUTPUT_ROOT, snapshot.name),
-        threshold: options.threshold,
-        maxDiffRatio: options.maxDiffRatio,
-        report: paintVrtReport(options.reportTitle),
-        cropToContent: true,
-        contentPadding: 12,
-        backgroundTolerance: 18,
-        maskToVisibleContent: true,
-        maskPadding: 2,
-      },
-    );
+    const result = await compareReferenceFixtureToImage(reference, craterImage, {
+      outputDir: path.join(OUTPUT_ROOT, options.outputDirName),
+      threshold: options.threshold,
+      maxDiffRatio: options.maxDiffRatio,
+      report: paintVrtReport(options.reportTitle),
+      cropToContent: true,
+      contentPadding: 12,
+      backgroundTolerance: 18,
+      maskToVisibleContent: true,
+      maskPadding: 2,
+    });
 
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   } finally {
     await craterPage.close();
-    await chromiumPage.close();
   }
+}
+
+async function expectSnapshotWithinBudget(
+  snapshotName: string,
+  options: { threshold: number; maxDiffRatio: number; reportTitle: string },
+): Promise<void> {
+  const snapshot = loadRealWorldSnapshot(snapshotName);
+  await expectHtmlWithinBudget({
+    fixtureId: snapshot.name,
+    html: snapshot.html,
+    viewport: snapshot.viewport,
+    outputDirName: snapshot.name,
+    threshold: options.threshold,
+    maxDiffRatio: options.maxDiffRatio,
+    reportTitle: options.reportTitle,
+  });
 }
 
 test.describe("Paint VRT", () => {
   test.describe.configure({ timeout: 300_000 });
 
-  test("fixture: cards and controls stay within relaxed visual diff budget", async ({
-    browser,
-  }) => {
+  test.afterAll(async () => {
+    await closeReferenceBrowser();
+  });
+
+  test("fixture: cards and controls stay within relaxed visual diff budget", async () => {
     const viewport = { width: 960, height: 720 };
     const html = `
       <!DOCTYPE html>
@@ -166,78 +199,41 @@ test.describe("Paint VRT", () => {
       </html>
     `;
 
-    const chromiumPage = await chromiumPageForVrt(browser, viewport);
-    const craterPage = await connectCraterPageForVrt();
-    try {
-      await chromiumPage.setContent(html, { waitUntil: "load" });
-      const chromiumPng = await chromiumPage.screenshot({ type: "png" });
-      const craterImage = await renderCraterHtml(craterPage, html, viewport);
-
-      const result = await compareChromiumPngToImage(chromiumPage, chromiumPng, craterImage, {
-        outputDir: path.join(OUTPUT_ROOT, "fixture-cards-controls"),
-        threshold: 0.3,
-        maxDiffRatio: 0.12,
-        report: paintVrtReport("fixture: cards and controls stay within relaxed visual diff budget"),
-        cropToContent: true,
-        contentPadding: 12,
-        backgroundTolerance: 18,
-        maskToVisibleContent: true,
-        maskPadding: 2,
-      });
-
-      expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
-    } finally {
-      await craterPage.close();
-      await chromiumPage.close();
-    }
+    await expectHtmlWithinBudget({
+      fixtureId: "fixture-cards-controls",
+      html,
+      viewport,
+      outputDirName: "fixture-cards-controls",
+      threshold: 0.3,
+      maxDiffRatio: 0.12,
+      reportTitle: "fixture: cards and controls stay within relaxed visual diff budget",
+    });
   });
 
-  test("real-world snapshot: github-mizchi stays within loose visual diff budget", async ({
-    browser,
-  }) => {
+  test("real-world snapshot: github-mizchi stays within loose visual diff budget", async () => {
     test.slow();
-    await expectSnapshotWithinBudget(browser, "github-mizchi", {
+    await expectSnapshotWithinBudget("github-mizchi", {
       threshold: 0.35,
       maxDiffRatio: 0.12,
       reportTitle: "real-world snapshot: github-mizchi stays within loose visual diff budget",
     });
   });
 
-  test("real-world snapshot: example-com visual parity", async ({ browser }) => {
+  test("real-world snapshot: example-com visual parity", async () => {
     const snapshot = loadRealWorldSnapshot("example-com");
-    const chromiumPage = await chromiumPageForVrt(browser, snapshot.viewport);
-    const craterPage = await connectCraterPageForVrt();
-    try {
-      await chromiumPage.setContent(snapshot.html, { waitUntil: "load" });
-      const chromiumPng = await chromiumPage.screenshot({ type: "png" });
-      const craterImage = await renderCraterHtml(craterPage, snapshot.html, snapshot.viewport);
-
-      const result = await compareChromiumPngToImage(chromiumPage, chromiumPng, craterImage, {
-        outputDir: path.join(OUTPUT_ROOT, "example-com"),
-        threshold: 0.3,
-        maxDiffRatio: 1.0,
-        report: paintVrtReport("real-world snapshot: example-com visual parity"),
-        cropToContent: true,
-        contentPadding: 12,
-        backgroundTolerance: 18,
-        maskToVisibleContent: true,
-        maskPadding: 2,
-      });
-
-      console.log(`example-com diffRatio: ${result.diffRatio.toFixed(6)} (${result.diffPixels}/${result.totalPixels} pixels)`);
-      // Target: ≤ 5% with native backend, ≤ 12% with sixel
-      const target = process.env.CRATER_PAINT_BACKEND === "native" ? 0.10 : 0.12;
-      expect(result.diffRatio).toBeLessThanOrEqual(target);
-    } finally {
-      await craterPage.close();
-      await chromiumPage.close();
-    }
+    await expectHtmlWithinBudget({
+      fixtureId: snapshot.name,
+      html: snapshot.html,
+      viewport: snapshot.viewport,
+      outputDirName: "example-com",
+      threshold: 0.3,
+      maxDiffRatio: process.env.CRATER_PAINT_BACKEND === "native" ? 0.10 : 0.12,
+      reportTitle: "real-world snapshot: example-com visual parity",
+    });
   });
 
   for (const snapshotName of ["playwright-intro", "mdn-wasm-text"]) {
-    test(`real-world snapshot: ${snapshotName} stays within loose visual diff budget`, async ({
-      browser,
-    }) => {
+    test(`real-world snapshot: ${snapshotName} stays within loose visual diff budget`, async () => {
       test.slow();
       test.skip(
         !!process.env.CI &&
@@ -262,7 +258,7 @@ test.describe("Paint VRT", () => {
           `${snapshotName} snapshot is not available locally`,
         ),
       );
-      await expectSnapshotWithinBudget(browser, snapshotName, {
+      await expectSnapshotWithinBudget(snapshotName, {
         threshold: 0.35,
         maxDiffRatio: snapshotName === "playwright-intro" ? 0.06 : 0.08,
         reportTitle: `real-world snapshot: ${snapshotName} stays within loose visual diff budget`,
@@ -272,7 +268,7 @@ test.describe("Paint VRT", () => {
 
   // --- Inline real-world page pattern fixtures ---
 
-  test("fixture: blog article page layout", async ({ browser }) => {
+  test("fixture: blog article page layout", async () => {
     const viewport = { width: 960, height: 720 };
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
       :root { color-scheme: light; }
@@ -302,31 +298,18 @@ test.describe("Paint VRT", () => {
       </article>
     </body></html>`;
 
-    const chromiumPage = await chromiumPageForVrt(browser, viewport);
-    const craterPage = await connectCraterPageForVrt();
-    try {
-      await chromiumPage.setContent(html, { waitUntil: "load" });
-      const chromiumPng = await chromiumPage.screenshot({ type: "png" });
-      const craterImage = await renderCraterHtml(craterPage, html, viewport);
-      const result = await compareChromiumPngToImage(chromiumPage, chromiumPng, craterImage, {
-        outputDir: path.join(OUTPUT_ROOT, "fixture-blog-article"),
-        threshold: 0.3,
-        maxDiffRatio: 0.15,
-        report: paintVrtReport("fixture: blog article page layout"),
-        cropToContent: true,
-        contentPadding: 12,
-        backgroundTolerance: 18,
-        maskToVisibleContent: true,
-        maskPadding: 2,
-      });
-      expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
-    } finally {
-      await craterPage.close();
-      await chromiumPage.close();
-    }
+    await expectHtmlWithinBudget({
+      fixtureId: "fixture-blog-article",
+      html,
+      viewport,
+      outputDirName: "fixture-blog-article",
+      threshold: 0.3,
+      maxDiffRatio: 0.15,
+      reportTitle: "fixture: blog article page layout",
+    });
   });
 
-  test("fixture: navigation bar with dropdown-style layout", async ({ browser }) => {
+  test("fixture: navigation bar with dropdown-style layout", async () => {
     const viewport = { width: 1024, height: 200 };
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
       :root { color-scheme: light; }
@@ -364,31 +347,18 @@ test.describe("Paint VRT", () => {
       </div>
     </body></html>`;
 
-    const chromiumPage = await chromiumPageForVrt(browser, viewport);
-    const craterPage = await connectCraterPageForVrt();
-    try {
-      await chromiumPage.setContent(html, { waitUntil: "load" });
-      const chromiumPng = await chromiumPage.screenshot({ type: "png" });
-      const craterImage = await renderCraterHtml(craterPage, html, viewport);
-      const result = await compareChromiumPngToImage(chromiumPage, chromiumPng, craterImage, {
-        outputDir: path.join(OUTPUT_ROOT, "fixture-navbar"),
-        threshold: 0.3,
-        maxDiffRatio: 0.15,
-        report: paintVrtReport("fixture: navigation bar with dropdown-style layout"),
-        cropToContent: true,
-        contentPadding: 12,
-        backgroundTolerance: 18,
-        maskToVisibleContent: true,
-        maskPadding: 2,
-      });
-      expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
-    } finally {
-      await craterPage.close();
-      await chromiumPage.close();
-    }
+    await expectHtmlWithinBudget({
+      fixtureId: "fixture-navbar",
+      html,
+      viewport,
+      outputDirName: "fixture-navbar",
+      threshold: 0.3,
+      maxDiffRatio: 0.15,
+      reportTitle: "fixture: navigation bar with dropdown-style layout",
+    });
   });
 
-  test("fixture: pricing cards grid", async ({ browser }) => {
+  test("fixture: pricing cards grid", async () => {
     const viewport = { width: 1024, height: 600 };
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
       :root { color-scheme: light; }
@@ -431,31 +401,18 @@ test.describe("Paint VRT", () => {
       </div>
     </body></html>`;
 
-    const chromiumPage = await chromiumPageForVrt(browser, viewport);
-    const craterPage = await connectCraterPageForVrt();
-    try {
-      await chromiumPage.setContent(html, { waitUntil: "load" });
-      const chromiumPng = await chromiumPage.screenshot({ type: "png" });
-      const craterImage = await renderCraterHtml(craterPage, html, viewport);
-      const result = await compareChromiumPngToImage(chromiumPage, chromiumPng, craterImage, {
-        outputDir: path.join(OUTPUT_ROOT, "fixture-pricing-cards"),
-        threshold: 0.3,
-        maxDiffRatio: 0.15,
-        report: paintVrtReport("fixture: pricing cards grid"),
-        cropToContent: true,
-        contentPadding: 12,
-        backgroundTolerance: 18,
-        maskToVisibleContent: true,
-        maskPadding: 2,
-      });
-      expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
-    } finally {
-      await craterPage.close();
-      await chromiumPage.close();
-    }
+    await expectHtmlWithinBudget({
+      fixtureId: "fixture-pricing-cards",
+      html,
+      viewport,
+      outputDirName: "fixture-pricing-cards",
+      threshold: 0.3,
+      maxDiffRatio: 0.15,
+      reportTitle: "fixture: pricing cards grid",
+    });
   });
 
-  test("fixture: footer with multi-column links", async ({ browser }) => {
+  test("fixture: footer with multi-column links", async () => {
     const viewport = { width: 960, height: 400 };
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
       :root { color-scheme: light; }
@@ -485,31 +442,18 @@ test.describe("Paint VRT", () => {
       </footer>
     </body></html>`;
 
-    const chromiumPage = await chromiumPageForVrt(browser, viewport);
-    const craterPage = await connectCraterPageForVrt();
-    try {
-      await chromiumPage.setContent(html, { waitUntil: "load" });
-      const chromiumPng = await chromiumPage.screenshot({ type: "png" });
-      const craterImage = await renderCraterHtml(craterPage, html, viewport);
-      const result = await compareChromiumPngToImage(chromiumPage, chromiumPng, craterImage, {
-        outputDir: path.join(OUTPUT_ROOT, "fixture-footer"),
-        threshold: 0.3,
-        maxDiffRatio: 0.15,
-        report: paintVrtReport("fixture: footer with multi-column links"),
-        cropToContent: true,
-        contentPadding: 12,
-        backgroundTolerance: 18,
-        maskToVisibleContent: true,
-        maskPadding: 2,
-      });
-      expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
-    } finally {
-      await craterPage.close();
-      await chromiumPage.close();
-    }
+    await expectHtmlWithinBudget({
+      fixtureId: "fixture-footer",
+      html,
+      viewport,
+      outputDirName: "fixture-footer",
+      threshold: 0.3,
+      maxDiffRatio: 0.15,
+      reportTitle: "fixture: footer with multi-column links",
+    });
   });
 
-  test("fixture: login form centered page", async ({ browser }) => {
+  test("fixture: login form centered page", async () => {
     const viewport = { width: 800, height: 600 };
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
       :root { color-scheme: light; }
@@ -547,31 +491,18 @@ test.describe("Paint VRT", () => {
       </div>
     </body></html>`;
 
-    const chromiumPage = await chromiumPageForVrt(browser, viewport);
-    const craterPage = await connectCraterPageForVrt();
-    try {
-      await chromiumPage.setContent(html, { waitUntil: "load" });
-      const chromiumPng = await chromiumPage.screenshot({ type: "png" });
-      const craterImage = await renderCraterHtml(craterPage, html, viewport);
-      const result = await compareChromiumPngToImage(chromiumPage, chromiumPng, craterImage, {
-        outputDir: path.join(OUTPUT_ROOT, "fixture-login-form"),
-        threshold: 0.3,
-        maxDiffRatio: 0.15,
-        report: paintVrtReport("fixture: login form centered page"),
-        cropToContent: true,
-        contentPadding: 12,
-        backgroundTolerance: 18,
-        maskToVisibleContent: true,
-        maskPadding: 2,
-      });
-      expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
-    } finally {
-      await craterPage.close();
-      await chromiumPage.close();
-    }
+    await expectHtmlWithinBudget({
+      fixtureId: "fixture-login-form",
+      html,
+      viewport,
+      outputDirName: "fixture-login-form",
+      threshold: 0.3,
+      maxDiffRatio: 0.15,
+      reportTitle: "fixture: login form centered page",
+    });
   });
 
-  test("fixture: live form state after scripted save interaction", async ({ browser }) => {
+  test("fixture: live form state after scripted save interaction", async () => {
     const viewport = { width: 960, height: 360 };
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
       :root { color-scheme: light; font-family: Arial, sans-serif; }
@@ -684,42 +615,28 @@ test.describe("Paint VRT", () => {
       </script>
     </body></html>`;
 
-    const chromiumPage = await chromiumPageForVrt(browser, viewport);
-    const craterPage = await connectCraterPageForVrt();
-    try {
-      await chromiumPage.setContent(html, { waitUntil: "load" });
-      await chromiumPage.locator("#name").type("Crater Team");
-      await chromiumPage.locator("#notify").check();
-      await chromiumPage.locator("#save").click();
-      const chromiumPng = await chromiumPage.screenshot({ type: "png" });
-
-      await craterPage.setViewport(viewport.width, viewport.height);
-      await craterPage.setContentWithScripts(html);
-      await craterPage.type("#name", "Crater Team");
-      await craterPage.check("#notify");
-      await craterPage.click("#save");
-      const craterImage = await craterPage.capturePaintData();
-
-      const result = await compareChromiumPngToImage(chromiumPage, chromiumPng, craterImage, {
-        outputDir: path.join(OUTPUT_ROOT, "fixture-live-form-state"),
-        threshold: 0.3,
-        maxDiffRatio: 0.15,
-        report: paintVrtReport("fixture: live form state after scripted save interaction"),
-        cropToContent: true,
-        contentPadding: 12,
-        backgroundTolerance: 18,
-        maskToVisibleContent: true,
-        maskPadding: 2,
-      });
-
-      expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
-    } finally {
-      await craterPage.close();
-      await chromiumPage.close();
-    }
+    await expectHtmlWithinBudget({
+      fixtureId: "fixture-live-form-state",
+      html,
+      viewport,
+      outputDirName: "fixture-live-form-state",
+      threshold: 0.3,
+      maxDiffRatio: 0.15,
+      reportTitle: "fixture: live form state after scripted save interaction",
+      prepareChromiumPage: async (page) => {
+        await page.locator("#name").type("Crater Team");
+        await page.locator("#notify").check();
+        await page.locator("#save").click();
+      },
+      prepareCraterPage: async (page) => {
+        await page.type("#name", "Crater Team");
+        await page.check("#notify");
+        await page.click("#save");
+      },
+    });
   });
 
-  test("fixture: hackernews-style listing page", async ({ browser }) => {
+  test("fixture: hackernews-style listing page", async () => {
     const viewport = { width: 800, height: 600 };
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
       :root { color-scheme: light; }
@@ -769,34 +686,20 @@ test.describe("Paint VRT", () => {
       <div class="more"><a href="#">More</a></div>
     </body></html>`;
 
-    const chromiumPage = await chromiumPageForVrt(browser, viewport);
-    const craterPage = await connectCraterPageForVrt();
-    try {
-      await chromiumPage.setContent(html, { waitUntil: "load" });
-      const chromiumPng = await chromiumPage.screenshot({ type: "png" });
-      const craterImage = await renderCraterHtml(craterPage, html, viewport);
-      const result = await compareChromiumPngToImage(chromiumPage, chromiumPng, craterImage, {
-        outputDir: path.join(OUTPUT_ROOT, "fixture-hackernews"),
-        threshold: 0.3,
-        maxDiffRatio: 0.20,
-        report: paintVrtReport("fixture: hackernews-style listing page"),
-        cropToContent: true,
-        contentPadding: 12,
-        backgroundTolerance: 18,
-        maskToVisibleContent: true,
-        maskPadding: 2,
-      });
-      console.log(`hackernews diffRatio: ${result.diffRatio.toFixed(4)} (${result.diffPixels}/${result.totalPixels} pixels)`);
-      expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
-    } finally {
-      await craterPage.close();
-      await chromiumPage.close();
-    }
+    await expectHtmlWithinBudget({
+      fixtureId: "fixture-hackernews",
+      html,
+      viewport,
+      outputDirName: "fixture-hackernews",
+      threshold: 0.3,
+      maxDiffRatio: 0.20,
+      reportTitle: "fixture: hackernews-style listing page",
+    });
   });
 
   // --- Canvas background propagation (CSS 2.1 §14.2) ---
 
-  test("fixture: canvas background propagates from body to viewport", async ({ browser }) => {
+  test("fixture: canvas background propagates from body to viewport", async () => {
     const viewport = { width: 800, height: 400 };
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
       html { /* transparent background */ }
@@ -811,33 +714,20 @@ test.describe("Paint VRT", () => {
       </div>
     </body></html>`;
 
-    const chromiumPage = await chromiumPageForVrt(browser, viewport);
-    const craterPage = await connectCraterPageForVrt();
-    try {
-      await chromiumPage.setContent(html, { waitUntil: "load" });
-      const chromiumPng = await chromiumPage.screenshot({ type: "png" });
-      const craterImage = await renderCraterHtml(craterPage, html, viewport);
-      const result = await compareChromiumPngToImage(chromiumPage, chromiumPng, craterImage, {
-        outputDir: path.join(OUTPUT_ROOT, "fixture-canvas-background"),
-        threshold: 0.3,
-        maxDiffRatio: 0.10,
-        report: paintVrtReport("fixture: canvas background propagates from body to viewport"),
-        cropToContent: true,
-        contentPadding: 12,
-        backgroundTolerance: 18,
-        maskToVisibleContent: true,
-        maskPadding: 2,
-      });
-      expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
-    } finally {
-      await craterPage.close();
-      await chromiumPage.close();
-    }
+    await expectHtmlWithinBudget({
+      fixtureId: "fixture-canvas-background",
+      html,
+      viewport,
+      outputDirName: "fixture-canvas-background",
+      threshold: 0.3,
+      maxDiffRatio: 0.10,
+      reportTitle: "fixture: canvas background propagates from body to viewport",
+    });
   });
 
   // --- Table attributes: cellpadding, cellspacing, valign ---
 
-  test("fixture: table with cellpadding and cellspacing attributes", async ({ browser }) => {
+  test("fixture: table with cellpadding and cellspacing attributes", async () => {
     const viewport = { width: 800, height: 400 };
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
       body { margin: 0; background: #fff; font-family: Verdana, Geneva, sans-serif; font-size: 10pt; }
@@ -876,31 +766,18 @@ test.describe("Paint VRT", () => {
       </center>
     </body></html>`;
 
-    const chromiumPage = await chromiumPageForVrt(browser, viewport);
-    const craterPage = await connectCraterPageForVrt();
-    try {
-      await chromiumPage.setContent(html, { waitUntil: "load" });
-      const chromiumPng = await chromiumPage.screenshot({ type: "png" });
-      const craterImage = await renderCraterHtml(craterPage, html, viewport);
-      const result = await compareChromiumPngToImage(chromiumPage, chromiumPng, craterImage, {
-        outputDir: path.join(OUTPUT_ROOT, "fixture-table-hn-like"),
-        threshold: 0.3,
-        maxDiffRatio: 0.15,
-        report: paintVrtReport("fixture: table with cellpadding and cellspacing attributes"),
-        cropToContent: true,
-        contentPadding: 12,
-        backgroundTolerance: 18,
-        maskToVisibleContent: true,
-        maskPadding: 2,
-      });
-      expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
-    } finally {
-      await craterPage.close();
-      await chromiumPage.close();
-    }
+    await expectHtmlWithinBudget({
+      fixtureId: "fixture-table-hn-like",
+      html,
+      viewport,
+      outputDirName: "fixture-table-hn-like",
+      threshold: 0.3,
+      maxDiffRatio: 0.15,
+      reportTitle: "fixture: table with cellpadding and cellspacing attributes",
+    });
   });
 
-  test("fixture: table with cellpadding=10 adds visible padding", async ({ browser }) => {
+  test("fixture: table with cellpadding=10 adds visible padding", async () => {
     const viewport = { width: 600, height: 300 };
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
       body { margin: 8px; font-family: Arial, sans-serif; font-size: 14px; }
@@ -912,28 +789,15 @@ test.describe("Paint VRT", () => {
       </table>
     </body></html>`;
 
-    const chromiumPage = await chromiumPageForVrt(browser, viewport);
-    const craterPage = await connectCraterPageForVrt();
-    try {
-      await chromiumPage.setContent(html, { waitUntil: "load" });
-      const chromiumPng = await chromiumPage.screenshot({ type: "png" });
-      const craterImage = await renderCraterHtml(craterPage, html, viewport);
-      const result = await compareChromiumPngToImage(chromiumPage, chromiumPng, craterImage, {
-        outputDir: path.join(OUTPUT_ROOT, "fixture-table-cellpadding"),
-        threshold: 0.3,
-        maxDiffRatio: 0.20,
-        report: paintVrtReport("fixture: table with cellpadding=10 adds visible padding"),
-        cropToContent: true,
-        contentPadding: 12,
-        backgroundTolerance: 18,
-        maskToVisibleContent: true,
-        maskPadding: 2,
-      });
-      expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
-    } finally {
-      await craterPage.close();
-      await chromiumPage.close();
-    }
+    await expectHtmlWithinBudget({
+      fixtureId: "fixture-table-cellpadding",
+      html,
+      viewport,
+      outputDirName: "fixture-table-cellpadding",
+      threshold: 0.3,
+      maxDiffRatio: 0.20,
+      reportTitle: "fixture: table with cellpadding=10 adds visible padding",
+    });
   });
 
   // --- URL VRT snapshots: real websites captured with capture-real-world-snapshot.ts ---
@@ -950,9 +814,7 @@ test.describe("Paint VRT", () => {
   ];
 
   for (const { name: snapshotName, maxDiffRatio } of urlSnapshots) {
-    test(`url snapshot: ${snapshotName} visual diff within budget`, async ({
-      browser,
-    }) => {
+    test(`url snapshot: ${snapshotName} visual diff within budget`, async () => {
       test.slow();
       test.skip(
         !AVAILABLE_REAL_WORLD_SNAPSHOTS.has(snapshotName),
@@ -965,7 +827,7 @@ test.describe("Paint VRT", () => {
           `${snapshotName} snapshot is not available locally`,
         ),
       );
-      await expectSnapshotWithinBudget(browser, snapshotName, {
+      await expectSnapshotWithinBudget(snapshotName, {
         threshold: 0.3,
         maxDiffRatio,
         reportTitle: `url snapshot: ${snapshotName} visual diff within budget`,
