@@ -12,6 +12,15 @@ describe("CI compatible font setup", () => {
     expect(matches).toHaveLength(2);
   });
 
+  test("font install script retries flaky msttcorefonts extraction", () => {
+    const script = readRepoFile("scripts/ci/install-compatible-fonts.sh");
+
+    expect(script).toContain("for attempt in 1 2 3; do");
+    expect(script).toContain("sudo dpkg-reconfigure ttf-mscorefonts-installer || true");
+    expect(script).toContain("sudo rm -f /var/lib/update-notifier/package-data-downloads/partial/* || true");
+    expect(script).toContain("sudo apt-get install -y --reinstall --no-install-recommends ttf-mscorefonts-installer || true");
+  });
+
   test("font resolvers include msttcorefonts file variants", () => {
     const bidiSource = readRepoFile("browser/jsbidi/bidi_main/start-with-font.ts");
     const resolverSource = readRepoFile("scripts/system-font-resolver.ts");
