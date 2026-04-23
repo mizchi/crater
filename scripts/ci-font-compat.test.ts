@@ -12,6 +12,16 @@ describe("CI compatible font setup", () => {
     expect(matches).toHaveLength(2);
   });
 
+  test("restores Playwright browser cache for both VRT workflows", () => {
+    const workflow = readRepoFile(".github/workflows/ci.yml");
+    const matches = workflow.match(/Restore Playwright Chromium browser cache/g) ?? [];
+    expect(matches).toHaveLength(2);
+    expect(workflow).toContain("id: paint_vrt_playwright_cache");
+    expect(workflow).toContain("id: wpt_vrt_playwright_cache");
+    expect(workflow).toContain("if: steps.paint_vrt_playwright_cache.outputs.cache-hit != 'true'");
+    expect(workflow).toContain("if: steps.wpt_vrt_playwright_cache.outputs.cache-hit != 'true'");
+  });
+
   test("font install script retries flaky msttcorefonts extraction", () => {
     const script = readRepoFile("scripts/ci/install-compatible-fonts.sh");
 

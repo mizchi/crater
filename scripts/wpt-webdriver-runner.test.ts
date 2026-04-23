@@ -145,3 +145,12 @@ describe("resolveRequestedTargetPath", () => {
     expect(resolveRequestedTargetPath("script/realm_created/window_open", bidiRoot)).toBe("script/realm_created/window_open.py");
   });
 });
+
+describe("crater_bidi_adapter fixture builder path", () => {
+  it("uses the renamed jsbidi workspace path", () => {
+    const adapter = fs.readFileSync(path.join(process.cwd(), "scripts/crater_bidi_adapter.py"), "utf-8");
+
+    expect(adapter).toContain('root / "_build" / "js" / "release" / "build" / "mizchi" / "crater-jsbidi" / "webdriver_fixture_builder" / "webdriver_fixture_builder.js"');
+    expect(adapter).not.toContain("crater-browser-js");
+  });
+});

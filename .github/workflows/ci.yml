@@ -137,6 +137,13 @@ jobs:
           path: .cache/paint-vrt-reference
           key: paint-vrt-reference-${{ runner.os }}-${{ hashFiles('tests/paint-vrt.test.ts', 'tests/helpers/crater-vrt.ts', 'scripts/real-world-snapshot.ts', 'scripts/ci/install-compatible-fonts.sh', 'package.json', 'pnpm-lock.yaml', 'benchmarks/fixtures/**', 'real-world/**/index.html', 'real-world/**/meta.json') }}
 
+      - name: Restore Playwright Chromium browser cache
+        id: paint_vrt_playwright_cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}
+
       - name: Update MoonBit dependencies
         run: |
           moon update
@@ -771,7 +778,7 @@ jobs:
         working-directory: metric-ci
 
       - name: Install Playwright browsers for VRT
-        if: steps.paint_vrt_reference_cache.outputs.cache-hit != 'true'
+        if: steps.paint_vrt_playwright_cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Install compatible fonts for VRT
@@ -1018,8 +1025,15 @@ jobs:
           path: .cache/wpt-vrt-reference
           key: wpt-vrt-reference-${{ runner.os }}-${{ hashFiles('tests/wpt-vrt.test.ts', 'tests/helpers/crater-vrt.ts', 'tests/helpers/wpt-vrt-utils.ts', 'scripts/wpt-html-utils.ts', 'scripts/ci/install-compatible-fonts.sh', 'wpt-vrt.json', 'package.json', 'pnpm-lock.yaml') }}
 
+      - name: Restore Playwright Chromium browser cache
+        id: wpt_vrt_playwright_cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}
+
       - name: Install Playwright browsers for VRT
-        if: steps.wpt_vrt_reference_cache.outputs.cache-hit != 'true'
+        if: steps.wpt_vrt_playwright_cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Install compatible fonts for VRT
