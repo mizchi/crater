@@ -194,7 +194,7 @@ test "E2E: raw V8 domOps round-trip" {
 ///|
 test "E2E: Preact h() + render() basic component" {
   // Load Preact into V8, then render a simple component
-  let preact_js = preact_bundle_js()
+  let preact_js = @assets.preact_bundle_js()
   let html = "<html><body><div id=\"app\"></div><script>" +
     preact_js +
     "\nconst { h, render } = globalThis.preact;\nrender(h('div', { class: 'greeting' }, h('h1', null, 'Hello'), h('p', null, 'from Preact')), document.getElementById('app'));\n</script></body></html>"
@@ -237,7 +237,7 @@ test "E2E: Preact h() + render() basic component" {
 
 ///|
 test "E2E: Preact useState counter" {
-  let preact_js = preact_bundle_js()
+  let preact_js = @assets.preact_bundle_js()
   let html = "<html><body><div id=\"app\"></div><script>" +
     preact_js +
     "\nconst { h, render } = globalThis.preact;\nconst { useState } = globalThis.preactHooks;\nfunction Counter() {\n  const [count, setCount] = useState(42);\n  return h('div', { id: 'counter' }, h('span', null, String(count)));\n}\nrender(h(Counter), document.getElementById('app'));\n</script></body></html>"
@@ -262,7 +262,7 @@ test "E2E: Preact useState counter" {
 
 ///|
 test "E2E: Preact render → Browser DOM sync → DomTree verification" {
-  let preact_js = preact_bundle_js()
+  let preact_js = @assets.preact_bundle_js()
   let browser = make_v8_browser(
     "<html><body><div id=\"app\"></div><script>" +
     preact_js +
@@ -323,7 +323,7 @@ test "E2E: Preact style object → CSS string" {
 ///|
 test "E2E: Preact click → setState → re-render" {
   // Use raw V8 + DomTree for click simulation (Browser.script_executor is private)
-  let preact_js = preact_bundle_js()
+  let preact_js = @assets.preact_bundle_js()
   let v8 = @js_v8.V8JsRuntime::new_with_mock_dom(@js_v8.full_mock_dom_js())
   let dom = @dom.DomTree::new()
   let html_el = dom.create_element("html")
@@ -378,7 +378,7 @@ fn make_preact_ctx() -> (@js.JsContext, @dom.DomTree) {
   let _ = dom.append_child(body, app)
   let _ = dom.set_attribute(app, "id", "app")
   let ctx = @js.JsContext::new_with_runtime(dom, v8.as_js_runtime())
-  let _ = ctx.execute(preact_bundle_js()) catch {
+  let _ = ctx.execute(@assets.preact_bundle_js()) catch {
     _ => @js.JsResult::new("", [], false)
   }
   (ctx, dom)
@@ -1023,7 +1023,7 @@ fn make_react_ctx() -> (@js.JsContext, @dom.DomTree) {
   let _ = dom.append_child(body, app)
   let _ = dom.set_attribute(app, "id", "root")
   let ctx = @js.JsContext::new_with_runtime(dom, v8.as_js_runtime())
-  let r = ctx.execute(react_bundle_js()) catch {
+  let r = ctx.execute(@assets.react_bundle_js()) catch {
     _ => @js.JsResult::new("", [], false)
   }
   if !r.success {

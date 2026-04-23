@@ -1,5 +1,5 @@
 import {
-  "mizchi/crater-browser-native/e2e_native",
+  "mizchi/crater-browser-native/assets",
   "mizchi/crater-browser-native/js_v8",
 }
 

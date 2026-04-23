@@ -1,10 +1,10 @@
 {
   "name": "mizchi/crater-painter",
-  "version": "0.1.0",
+  "version": "0.17.0",
   "deps": {
     "mizchi/crater-layout": {
       "path": "../layout",
-      "version": "0.1.0"
+      "version": "0.17.0"
     },
     "mizchi/font": "0.7.0",
     "mizchi/svg": "0.2.0",

@@ -3,7 +3,7 @@ package "mizchi/crater-browser/shell"
 
 import {
   "mizchi/crater-browser/http",
-  "mizchi/crater-browser/js",
+  "mizchi/crater-browser/runtime",
   "mizchi/crater-dom/dom",
   "moonbitlang/async/io",
 }
@@ -53,7 +53,7 @@ pub fn Browser::set_enable_cookies(Self, Bool) -> Unit
 pub fn Browser::set_enable_js(Self, Bool) -> Unit
 pub fn Browser::set_html_content(Self, String) -> Unit
 pub fn Browser::set_image_cache_max_bytes(Self, Int) -> Unit
-pub fn Browser::set_js_runtime(Self, &@js.JsRuntime) -> Unit
+pub fn Browser::set_js_runtime(Self, &@runtime.JsRuntime) -> Unit
 pub fn Browser::set_no_color(Self, Bool) -> Unit
 pub fn Browser::set_request_sandbox(Self, @http.RequestSandbox) -> Unit
 pub fn Browser::tick_js(Self) -> Bool

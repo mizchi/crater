@@ -30,24 +30,27 @@
 
 ### 次にやる
 
-- [ ] root compatibility layer (`mizchi/crater`, `mizchi/crater/css`) を長期互換 API として残すか、module 直 import へ段階的に寄せるか決める
-- [ ] module 直 import を推奨する migration note を README / docs に追加する
+- [x] root compatibility layer (`mizchi/crater`, `mizchi/crater/css`) は `0.17.x` では compatibility facade として残し、新規コードは module 直 import を推奨する方針にした
+- [x] module 直 import を推奨する migration note を README / docs に追加した
 - [ ] 残りの CI workflow / scripts でも target-aware recipe を前提に整理し、root で target 未指定の `moon` command を叩かないようにする
-- [ ] `browser/native` の full test が `sqlite3.h` 前提で落ちるので、native smoke test と full test の境界を明文化する
-- [ ] `browser/native` から sqlite 依存 package を切り離せるなら切り離し、native module をより純粋な V8 host module に寄せる
+- [x] `browser/native` の full test が `sqlite3.h` 前提で落ちるので、native smoke test と full test の境界を `just test-native*` と docs で明文化した
+- [ ] `browser/native` から sqlite 依存 package をさらに切り離す
+  - [x] root facade から `e2e_native` を外し、runtime asset helper を `browser/native/assets` に分離した
+  - [x] shared JS runtime contract / serializer を `browser/runtime` に複製し、native packages は `mizchi/crater-browser/runtime` を参照するようにした
+  - [x] `mizchi/crater-browser/runtime` を canonical、`mizchi/crater-browser/js` を `0.17.x` の compatibility facade とする方針を決めた
 - [ ] `test-baseline` / `test-baseline-update` の基準が JS suite であることを CI / docs に明記する
 - [ ] `just status` のような長時間コマンドを lightweight な summary へ差し替えるか、用途を docs に明記する
 - [ ] `taffy_compat` の既存 failure 群を、baseline 管理対象として維持するのか、段階的に潰すのか方針を決める
 - [ ] `moon coverage analyze` の mixed-target 前提の扱いを決める
-- [ ] module ごとの publish / versioning / changelog 方針を決める
+- [x] publishable Moon module は repo と lockstep (`0.17.x`) で versioning する方針にした
 - [ ] `scripts/flaker-*` の整理と並行して、module split 後の task ownership を棚卸しする
-- [ ] `docs/monorepo-workspace.md` を維持管理の canonical doc として、関連 docs から参照を寄せる
+- [x] `docs/monorepo-workspace.md` を維持管理の canonical doc として、README から参照を寄せた
 
 ### 判断待ち
 
-- [ ] `mizchi/crater` facade をいつ deprecated 扱いにするか
+- [ ] `mizchi/crater` facade を `0.18` 以降で doc 上 deprecated 扱いに進めるかを決める
 - [ ] `browser/native` と `wasm` を CI の required check にどこまで含めるか
-- [ ] module release を repo 単位で同期させるか、module ごとに独立 versioning するか
+- [x] module release は repo 単位の lockstep versioning を前提にする
 
 ## Long-term Roadmap (2026-04-02)
 

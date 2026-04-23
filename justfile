@@ -38,6 +38,19 @@ test-all:
 test-native:
     moon -C browser/native test -p mizchi/crater-browser-native --target native -j 1
 
+# Explicit alias for the native facade smoke suite
+test-native-smoke:
+    just test-native
+
+# Run native-target V8 runtime tests without browser shell / sqlite-backed e2e helpers
+test-native-v8:
+    moon -C browser/native test -p mizchi/crater-browser-native/js_v8 --target native -j 1
+
+# Run full native browser e2e tests.
+# This suite pulls browser shell/http and may require libsqlite3 headers on the host.
+test-native-full:
+    moon -C browser/native test -p mizchi/crater-browser-native/e2e_native --target native -j 1
+
 # Run wasm-target MoonBit tests for the wasm component module
 test-wasm-mbt:
     moon -C wasm test --target wasm

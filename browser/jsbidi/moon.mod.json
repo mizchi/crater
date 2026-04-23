@@ -1,6 +1,6 @@
 {
   "name": "mizchi/crater-jsbidi",
-  "version": "0.1.0",
+  "version": "0.17.0",
   "deps": {
     "mizchi/crater": {
       "path": "../..",
@@ -9,23 +9,23 @@
     "mizchi/font": "0.7.0",
     "mizchi/crater-dom": {
       "path": "../../dom",
-      "version": "0.1.0"
+      "version": "0.17.0"
     },
     "mizchi/crater-layout": {
       "path": "../../layout",
-      "version": "0.1.0"
+      "version": "0.17.0"
     },
     "mizchi/crater-painter": {
       "path": "../../painter",
-      "version": "0.1.0"
+      "version": "0.17.0"
     },
     "mizchi/crater-renderer": {
       "path": "../../renderer",
-      "version": "0.1.0"
+      "version": "0.17.0"
     },
     "mizchi/crater-browser": {
       "path": "..",
-      "version": "0.2.0"
+      "version": "0.17.0"
     },
     "mizchi/js": "0.10.13",
     "moonbitlang/async": "0.17.1"

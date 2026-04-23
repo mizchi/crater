@@ -1,7 +1,7 @@
 import {
   "mizchi/crater-browser/cdp",
   "mizchi/crater-browser/http",
-  "mizchi/crater-browser/js",
+  "mizchi/crater-browser/runtime" @js,
   "mizchi/crater-browser/shell",
   "mizchi/crater-dom/dom",
 }

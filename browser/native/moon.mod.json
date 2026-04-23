@@ -1,6 +1,6 @@
 {
   "name": "mizchi/crater-browser-native",
-  "version": "0.1.0",
+  "version": "0.17.0",
   "deps": {
     "mizchi/crater": {
       "path": "../..",
@@ -8,11 +8,11 @@
     },
     "mizchi/crater-browser": {
       "path": "..",
-      "version": "0.2.0"
+      "version": "0.17.0"
     },
     "mizchi/crater-dom": {
       "path": "../../dom",
-      "version": "0.1.0"
+      "version": "0.17.0"
     },
     "mizchi/v8": "0.2.0"
   },

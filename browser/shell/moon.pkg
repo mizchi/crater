@@ -14,7 +14,7 @@ import {
   "mizchi/crater-browser/tui/paint_output" @tui_paint_output,
   "mizchi/crater-browser/tui/paint/plain" @tui_paint_plain,
   "mizchi/crater-browser/tui/paint/runtime" @tui_paint_runtime,
-  "mizchi/crater-browser/js",
+  "mizchi/crater-browser/runtime" @js,
   "mizchi/crater-painter/svg",
   "mizchi/crater-painter/x/image",
   "mizchi/crater-painter/x/kitty",

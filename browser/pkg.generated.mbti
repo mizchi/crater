@@ -4,7 +4,7 @@ package "mizchi/crater-browser"
 import {
   "mizchi/crater-browser/cdp",
   "mizchi/crater-browser/http",
-  "mizchi/crater-browser/js",
+  "mizchi/crater-browser/runtime",
   "mizchi/crater-browser/shell",
   "mizchi/crater-dom/dom",
 }
@@ -25,7 +25,7 @@ pub fn serialize_dom_to_html(@dom.DomTree) -> String
 // Types and methods
 
 // Type aliases
-pub using @js {type AsyncExecutionMode}
+pub using @runtime {type AsyncExecutionMode}
 
 pub using @shell {type Browser}
 
@@ -77,9 +77,9 @@ pub using @http {type HttpResponse}
 
 pub using @cdp {type InputDomain}
 
-pub using @js {type JsContext}
+pub using @runtime {type JsContext}
 
-pub using @js {type JsResult}
+pub using @runtime {type JsResult}
 
 pub using @http {type MemoryCacheBackend}
 
@@ -93,7 +93,7 @@ pub using @http {type RequestMode}
 
 pub using @http {type RequestSandbox}
 
-pub using @js {type ScriptExecutor}
+pub using @runtime {type ScriptExecutor}
 
 // Traits
 

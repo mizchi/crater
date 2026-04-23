@@ -19,9 +19,7 @@ fn layout_node_id_for_element(element : @html.Element) -> String {
 }
 
 ///|
-fn parse_inline_declarations(
-  inline_css : String,
-) -> Array[@css.Declaration] {
+fn parse_inline_declarations(inline_css : String) -> Array[@css.Declaration] {
   let declarations : Array[@css.Declaration] = []
   let pairs = inline_css.split(";")
   for pair in pairs {

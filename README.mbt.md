@@ -244,12 +244,53 @@ moon bench -p html
 ## Documentation
 
 - [API Reference](docs/api.md) - Public interface documentation
+- [Workspace Guide](docs/monorepo-workspace.md) - Canonical module layout, release policy, and migration notes
 
 ## Installation
 
 ```bash
 moon add mizchi/crater
 ```
+
+### Package Selection
+
+For existing users, `mizchi/crater` and `mizchi/crater/css` remain available as
+compatibility facades in the `0.17.x` line.
+
+For new code, prefer importing the narrower module that matches your use case:
+
+```bash
+moon add mizchi/crater-layout
+moon add mizchi/crater-css
+moon add mizchi/crater-dom
+moon add mizchi/crater-renderer
+moon add mizchi/crater-browser
+moon add mizchi/crater-jsbidi
+moon add mizchi/crater-wasm
+```
+
+Use the root module when you explicitly want the historical all-in-one surface.
+Use the split modules when you want a smaller dependency graph or a more stable
+public contract for one subsystem.
+
+For browser runtime internals, `mizchi/crater-browser/runtime` is now the
+canonical shared contract for the JS runtime and DOM serializer. The older
+`mizchi/crater-browser/js` package remains only as a compatibility facade in
+the `0.17.x` line.
+
+For browser runtime internals, `mizchi/crater-browser/runtime` is now the
+canonical shared contract for the JS runtime and DOM serializer. The older
+`mizchi/crater-browser/js` package remains only as a compatibility facade in
+the `0.17.x` line.
+
+### Release Policy
+
+- MoonBit modules in this repository are versioned in lockstep with the repo
+  release line. `0.17.x` is the first workspace-split line.
+- New APIs land in the narrow modules first. The root module keeps compatibility
+  wrappers where practical.
+- Root compatibility imports are documented but are no longer the recommended
+  entry point for new integrations.
 
 ## Usage
 

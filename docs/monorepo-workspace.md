@@ -44,6 +44,9 @@ The same split now applies to `just` test recipes:
 
 - `just test` / `just test-js` runs the default JS-target MoonBit suite
 - `just test-native` runs the `mizchi/crater-browser-native` smoke tests
+- `just test-native-smoke` is an explicit alias for the same native facade smoke suite
+- `just test-native-v8` runs the `mizchi/crater-browser-native/js_v8` runtime parity suite
+- `just test-native-full` runs `mizchi/crater-browser-native/e2e_native` and may require sqlite development headers
 - `just test-wasm-mbt` runs the MoonBit-side `mizchi/crater-wasm` tests
 - `just test-wasm` keeps its old meaning and runs the Node/JCO component test
 - `just status`, `just test-baseline`, and `just test-baseline-update` now all
@@ -97,6 +100,60 @@ The root module now mostly exists as a compatibility layer:
 Implementation-heavy packages have been moved into dedicated modules. The root
 packages keep thin public wrappers and a small set of smoke tests so existing
 imports continue to work while new code can depend on narrower module paths.
+
+## Release Policy
+
+The workspace now follows a lockstep MoonBit versioning policy.
+
+- publishable Moon modules in this repository share the same release line
+- the current workspace-split line is `0.17.x`
+- path dependencies inside the workspace are kept on the same version so
+  publish metadata matches the repo release
+- npm package versions remain independent and may move on a different cadence
+
+This means `mizchi/crater-layout`, `mizchi/crater-dom`, `mizchi/crater-browser`,
+`mizchi/crater-jsbidi`, `mizchi/crater-wasm`, and the other Moon modules are
+expected to ship together from the same repo tag, instead of being versioned
+independently.
+
+## Import Guidance
+
+For new code, prefer the narrowest module that matches the subsystem you need:
+
+| Need | Recommended import |
+| --- | --- |
+| Layout kernel and tree primitives | `mizchi/crater-layout` |
+| CSS parser / selector / cascade | `mizchi/crater-css` |
+| DOM / HTML / AOM / scheduler | `mizchi/crater-dom` |
+| Paint tree / SVG / image output | `mizchi/crater-painter` |
+| Renderer / VRT facade | `mizchi/crater-renderer` |
+| Browser shell / interaction / CDP | `mizchi/crater-browser` |
+| Browser runtime contract / DOM serializer | `mizchi/crater-browser/runtime` |
+| BiDi / WebDriver helper surface | `mizchi/crater-jsbidi` |
+| Native V8 host bindings | `mizchi/crater-browser-native` |
+| JS exports | `mizchi/crater-js` |
+| WASM component facade | `mizchi/crater-wasm` |
+
+Keep using `mizchi/crater` or `mizchi/crater/css` only when you need backwards
+compatibility with older imports or explicitly want the historical all-in-one
+surface.
+
+Within the browser module, `mizchi/crater-browser/runtime` is now the canonical
+shared package for the JS runtime contract and DOM serializer. Keep
+`mizchi/crater-browser/js` only for `0.17.x` compatibility with older import
+paths; new code should not depend on it.
+
+## Compatibility Policy
+
+The root compatibility facades are intentionally still present:
+
+- `mizchi/crater`
+- `mizchi/crater/css`
+
+They remain supported through the `0.17.x` line so existing consumers do not
+need an immediate rewrite. New code should move to direct module imports. The
+root facade is now a compatibility layer, not the default recommendation for
+new integrations.
 
 ## Extracted Modules
 
@@ -239,10 +296,12 @@ The browser-facing packages have been moved into `browser/`:
 
 - `.`
 - `browser_contract`
+- `runtime`
 
 The root package now provides a thin facade over the shell/CDP/JS entry points,
-while shell and BiDi consumers stay on browser-local package paths instead of
-reaching back into the root integration module for runtime-facing helpers.
+while shell/native consumers share `browser/runtime` for the JS runtime
+contract and DOM serializer instead of reaching back into the root integration
+module for runtime-facing helpers.
 
 ### `mizchi/crater-jsbidi`
 
@@ -292,18 +351,18 @@ incremental/accessibility/yoga interfaces.
 - Run `moon work sync` after adding a new member module so member manifests keep
   dependency versions aligned.
 
-## Suggested Next Patch
+## Current Follow-ups
 
-The next implementation patch should continue trimming browser-adjacent helpers
-out of the root integration module:
+The workspace split itself is done. The next work should focus on operation and
+maintenance:
 
-1. move browser-only test and fixture helpers if they no longer serve root users
-2. avoid reintroducing dependencies from browser modules back into root renderer
-   packages
-3. decide whether `benchmarks` and other remaining root-only helpers should stay
-   in root or move into dedicated modules
-4. run `moon info`, `moon check`, and targeted browser/BiDi tests from the
-   workspace root
+1. keep CI and local recipes target-aware so root commands never rely on an
+   implicit target
+2. keep `browser/native` smoke and full-test coverage separate, especially
+   around sqlite-backed packages
+3. document release and migration steps from the repo root so consumers can move
+   from compatibility imports to direct module imports
+4. avoid reintroducing new runtime packages into the root integration layer
 
 That keeps the next split mechanical and avoids mixing protocol/runtime changes
 into the same change.

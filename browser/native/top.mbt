@@ -13,15 +13,15 @@ pub fn minimal_mock_dom_js() -> String {
 
 ///|
 pub fn preact_bundle_js() -> String {
-  @e2e_native.preact_bundle_js()
+  @assets.preact_bundle_js()
 }
 
 ///|
 pub fn react_bundle_js() -> String {
-  @e2e_native.react_bundle_js()
+  @assets.react_bundle_js()
 }
 
 ///|
 pub fn read_file_to_string_via_eval(path : String) -> String? {
-  @e2e_native.read_file_to_string_via_eval(path)
+  @assets.read_file_to_string_via_eval(path)
 }
