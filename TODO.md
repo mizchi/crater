@@ -32,17 +32,23 @@
 
 - [x] root compatibility layer (`mizchi/crater`, `mizchi/crater/css`) は `0.17.x` では compatibility facade として残し、新規コードは module 直 import を推奨する方針にした
 - [x] module 直 import を推奨する migration note を README / docs に追加した
+- [x] module split の評価軸を `canonical library / integration / adapter / internal` に整理し、workspace member を再分類した
+- [ ] `browser` から `benchmarks` への production dependency を外す
+  - `browser/shell` の bench fixture 参照を benchmark/test 専用 package へ逃がす
+  - `mizchi/crater-browser` を public integration module、`mizchi/crater-benchmarks` を internal module として分離する
 - [ ] 残りの CI workflow / scripts でも target-aware recipe を前提に整理し、root で target 未指定の `moon` command を叩かないようにする
 - [x] `browser/native` の full test が `sqlite3.h` 前提で落ちるので、native smoke test と full test の境界を `just test-native*` と docs で明文化した
 - [ ] `browser/native` から sqlite 依存 package をさらに切り離す
   - [x] root facade から `e2e_native` を外し、runtime asset helper を `browser/native/assets` に分離した
   - [x] shared JS runtime contract / serializer を `browser/runtime` に複製し、native packages は `mizchi/crater-browser/runtime` を参照するようにした
   - [x] `mizchi/crater-browser/runtime` を canonical、`mizchi/crater-browser/js` を `0.17.x` の compatibility facade とする方針を決めた
+- [ ] `mizchi/crater-browser/runtime` を package のまま canonical に保つか、将来的に独立 module 化するかを決める
 - [ ] `test-baseline` / `test-baseline-update` の基準が JS suite であることを CI / docs に明記する
 - [ ] `just status` のような長時間コマンドを lightweight な summary へ差し替えるか、用途を docs に明記する
 - [ ] `taffy_compat` の既存 failure 群を、baseline 管理対象として維持するのか、段階的に潰すのか方針を決める
 - [ ] `moon coverage analyze` の mixed-target 前提の扱いを決める
 - [x] publishable Moon module は repo と lockstep (`0.17.x`) で versioning する方針にした
+- [ ] `benchmarks` と `testing` を release / publish ドキュメント上で internal 扱いに寄せる
 - [ ] `scripts/flaker-*` の整理と並行して、module split 後の task ownership を棚卸しする
 - [x] `docs/monorepo-workspace.md` を維持管理の canonical doc として、README から参照を寄せた
 
@@ -51,6 +57,7 @@
 - [ ] `mizchi/crater` facade を `0.18` 以降で doc 上 deprecated 扱いに進めるかを決める
 - [ ] `browser/native` と `wasm` を CI の required check にどこまで含めるか
 - [x] module release は repo 単位の lockstep versioning を前提にする
+- [ ] adapter module (`jsbidi`, `browser-native`, `js`, `wasm`) をどこまで公開サポート対象にするか決める
 
 ## Long-term Roadmap (2026-04-02)
 

@@ -2,7 +2,8 @@
 
 This repository is now bootstrapped as a MoonBit workspace via `moon.work`.
 The immediate goal is to manage existing modules from one root and then split
-the current `mizchi/crater` module into smaller publishable modules.
+the current `mizchi/crater` module into smaller modules with clearer
+responsibility boundaries.
 
 ## Workspace Members
 
@@ -62,26 +63,44 @@ Both modules also expose module root packages:
 - `mizchi/crater-wasm` for the typed WASM component facade over the
   core/renderer/incremental/accessibility/yoga interfaces
 
+## Module Taxonomy
+
+The workspace should not be read as "every member is an equally reusable
+publishable library". The current split works better when viewed in four
+layers:
+
+| Layer | Meaning |
+| --- | --- |
+| Canonical library | Narrow reusable subsystem with a domain-focused API |
+| Integration | Product-level composition over multiple canonical libraries |
+| Adapter | Target/runtime/protocol packaging over the integration/core graph |
+| Internal / dev-only | Test, benchmark, compatibility, or migration support |
+
+This is the main correction to the original split plan. Some workspace members
+exist because they are convenient to build and test in-repo, not because they
+should be the default external reuse boundary.
+
 ## Target Module Layout
 
 The intended direction is:
 
-| Module | Role |
+| Module | Layer | Role |
 | --- | --- |
-| `mizchi/crater-layout` | Layout kernel, tree, shared layout data types |
-| `mizchi/crater-css` | CSS parsing, selector matching, cascade, and computed style engine |
-| `mizchi/crater-dom` | DOM, HTML parsing, scheduler, AOM, and HTML/CSS bridge-analysis packages |
-| `mizchi/crater-aomx` | AOM-derived content extraction, grounding, and structural diff helpers |
-| `mizchi/crater-benchmarks` | Synthetic fixtures and benchmark suites for renderer/browser performance |
-| `mizchi/crater-testing` | WPT runtime and MoonBit integration test packages |
-| `mizchi/crater-webvitals` | Web Vitals metrics such as CLS and LCP helpers |
-| `mizchi/crater-painter` | Paint model, SVG/image backends, terminal image output |
-| `mizchi/crater-renderer` | Renderer and VRT/export-oriented integration |
-| `mizchi/crater-browser` | Browser runtime, interaction, TUI, network/cache integration |
-| `mizchi/crater-jsbidi` | BiDi / JS-facing browser bindings |
-| `mizchi/crater-browser-native` | Native browser host bindings |
-| `mizchi/crater-js` | JS exports for layout/renderer consumers |
-| `mizchi/crater-wasm` | WASM component packaging |
+| `mizchi/crater-layout` | Canonical library | Layout kernel, tree, shared layout data types |
+| `mizchi/crater-css` | Canonical library | CSS parsing, selector matching, cascade, and computed style engine |
+| `mizchi/crater-dom` | Canonical library | DOM, HTML parsing, scheduler, AOM, and HTML/CSS bridge-analysis packages |
+| `mizchi/crater-aomx` | Canonical library | AOM-derived content extraction, grounding, and structural diff helpers |
+| `mizchi/crater-webvitals` | Canonical library | Web Vitals metrics such as CLS and LCP helpers |
+| `mizchi/crater-painter` | Canonical library | Paint model, SVG/image backends, terminal image output |
+| `mizchi/crater-renderer` | Canonical library | Renderer and VRT/export-oriented integration |
+| `mizchi/crater-browser` | Integration | Browser shell, interaction, TUI, network/cache integration |
+| `mizchi/crater-jsbidi` | Adapter | BiDi / JS-facing browser bindings |
+| `mizchi/crater-browser-native` | Adapter | Native browser host bindings |
+| `mizchi/crater-js` | Adapter | JS exports for layout/renderer consumers |
+| `mizchi/crater-wasm` | Adapter | WASM component packaging |
+| `mizchi/crater-benchmarks` | Internal / dev-only | Synthetic fixtures and benchmark suites for renderer/browser performance |
+| `mizchi/crater-testing` | Internal / dev-only | WPT runtime and MoonBit integration test packages |
+| `mizchi/crater` | Internal / compatibility | Historical all-in-one facade for compatibility |
 
 We do not need to create all of these at once. The current workspace has
 already extracted `mizchi/crater-layout`, `mizchi/crater-css`,
@@ -89,6 +108,11 @@ already extracted `mizchi/crater-layout`, `mizchi/crater-css`,
 `mizchi/crater-testing`, `mizchi/crater-webvitals`, `mizchi/crater-painter`, and
 `mizchi/crater-renderer`. The browser-facing split is now underway in
 `mizchi/crater-browser`.
+
+Within `mizchi/crater-browser`, the canonical shared package for runtime
+contract and DOM serializer work is `mizchi/crater-browser/runtime`. The old
+`mizchi/crater-browser/js` package remains only as a `0.17.x` compatibility
+facade.
 
 ## Remaining Root Packages
 
@@ -105,16 +129,16 @@ imports continue to work while new code can depend on narrower module paths.
 
 The workspace now follows a lockstep MoonBit versioning policy.
 
-- publishable Moon modules in this repository share the same release line
+- repo-managed Moon modules in this repository share the same release line
 - the current workspace-split line is `0.17.x`
 - path dependencies inside the workspace are kept on the same version so
   publish metadata matches the repo release
 - npm package versions remain independent and may move on a different cadence
 
-This means `mizchi/crater-layout`, `mizchi/crater-dom`, `mizchi/crater-browser`,
-`mizchi/crater-jsbidi`, `mizchi/crater-wasm`, and the other Moon modules are
-expected to ship together from the same repo tag, instead of being versioned
-independently.
+This means the canonical libraries, integration module, and adapters ship
+together from the same repo tag, instead of being versioned independently.
+Lockstep versioning does not imply that every workspace member is equally
+recommended as a public reuse surface.
 
 ## Import Guidance
 
@@ -138,6 +162,16 @@ Keep using `mizchi/crater` or `mizchi/crater/css` only when you need backwards
 compatibility with older imports or explicitly want the historical all-in-one
 surface.
 
+Prefer the layers in this order:
+
+1. canonical library module
+2. integration module
+3. adapter module
+4. compatibility facade only when migration pressure requires it
+
+In particular, do not treat `mizchi/crater-benchmarks` or
+`mizchi/crater-testing` as default public dependencies for production code.
+
 Within the browser module, `mizchi/crater-browser/runtime` is now the canonical
 shared package for the JS runtime contract and DOM serializer. Keep
 `mizchi/crater-browser/js` only for `0.17.x` compatibility with older import
@@ -154,6 +188,25 @@ They remain supported through the `0.17.x` line so existing consumers do not
 need an immediate rewrite. New code should move to direct module imports. The
 root facade is now a compatibility layer, not the default recommendation for
 new integrations.
+
+## Split Quality Notes
+
+The current split is good enough for workspace management, but not every
+boundary is equally strong from a reuse perspective.
+
+- `layout`, `css`, `dom`, `painter`, `renderer`, `aomx`, and `webvitals` are
+  the strongest reusable boundaries today
+- `browser` is still broad and should be treated as a product-level integration
+  module rather than a narrow library
+- `jsbidi`, `browser-native`, `js`, and `wasm` are target/protocol adapters,
+  not primary domain modules
+- `benchmarks` and `testing` are internal support modules even though they are
+  workspace members
+
+The main follow-up from this review is to keep production/integration code from
+depending on internal benchmark fixtures. In practice, that means continuing to
+remove dependencies such as `mizchi/crater-browser -> mizchi/crater-benchmarks`
+from non-benchmark packages.
 
 ## Extracted Modules
 
