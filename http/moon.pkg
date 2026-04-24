@@ -1,0 +1,23 @@
+import {
+  "moonbitlang/async/http" @async_http,
+  "moonbitlang/async/js_async",
+  "moonbitlang/async/io" @async_io,
+  "moonbitlang/core/double",
+  "moonbitlang/core/json",
+  "moonbitlang/core/string",
+}
+
+warnings = "-unused_package-unused_error_type"
+
+supported_targets = "js+native+wasm+wasm-gc"
+
+options(
+  targets: {
+    "cache_js.mbt": [ "js" ],
+    "cache_native.mbt": [ "native" ],
+    "cache_wasm.mbt": [ "wasm", "wasm-gc" ],
+    "http_js.mbt": [ "js" ],
+    "http_native.mbt": [ "native" ],
+    "http_wasm.mbt": [ "wasm", "wasm-gc" ],
+  },
+)

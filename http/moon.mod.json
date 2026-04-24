@@ -1,0 +1,11 @@
+{
+  "name": "mizchi/crater-browser-http",
+  "version": "0.17.0",
+  "deps": {
+    "moonbitlang/async": "0.17.1"
+  },
+  "repository": "https://github.com/mizchi/crater",
+  "license": "Apache-2.0",
+  "description": "HTTP, cache, cookie, and request sandbox helpers for crater browser",
+  "preferred-target": "js"
+}

@@ -1,6 +1,6 @@
 import {
   "mizchi/crater-renderer/vrt" @vrt,
-  "mizchi/crater-browser/browser_contract",
+  "mizchi/crater-browser-contract" @browser_contract,
   "mizchi/crater/css",
   "mizchi/crater-layout/types",
   "mizchi/crater-browser/cdp",

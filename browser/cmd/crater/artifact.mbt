@@ -127,21 +127,24 @@ fn find_component_element_by_selector(
   if @css.matches_selector_list(selector_element, selector_list) {
     return Some(element)
   }
-  let mut selector_child_index = 0
-  for child in element.children {
-    match child {
-      @html.Node::Element(child_elem) => {
-        let child_selector = selector_element.children[selector_child_index]
-        selector_child_index += 1
-        match
-          find_component_element_by_selector(
-            child_elem, selector_list, child_selector,
-          ) {
-          Some(found) => return Some(found)
-          None => ()
-        }
-      }
-      _ => ()
+  let html_children = child_html_elements(element.children)
+  let mut prev_child_selector : @css.Element? = None
+  for i = 0; i < html_children.length(); i = i + 1 {
+    let child_elem = html_children[i]
+    let child_selector = html_to_selector_element(
+      child_elem,
+      Some(selector_element),
+      i + 1,
+      html_children.length(),
+      prev_child_selector,
+    )
+    prev_child_selector = Some(child_selector)
+    match
+      find_component_element_by_selector(
+        child_elem, selector_list, child_selector,
+      ) {
+      Some(found) => return Some(found)
+      None => ()
     }
   }
   None

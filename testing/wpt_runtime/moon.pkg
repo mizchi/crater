@@ -1,7 +1,7 @@
 import {
   "moonbitlang/core/string",
   "mizchi/crater-renderer/renderer",
-  "mizchi/crater/css",
+  "mizchi/crater-css" @css,
 }
 
 supported_targets = "js+wasm+wasm-gc"

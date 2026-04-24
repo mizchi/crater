@@ -12,8 +12,11 @@ The current workspace members are:
 - `.`
 - `./aomx`
 - `./benchmarks`
+- `./contract`
 - `./testing`
 - `./webvitals`
+- `./http`
+- `./http_sqlite`
 - `./css`
 - `./dom`
 - `./layout`
@@ -47,7 +50,7 @@ The same split now applies to `just` test recipes:
 - `just test-native` runs the `mizchi/crater-browser-native` smoke tests
 - `just test-native-smoke` is an explicit alias for the same native facade smoke suite
 - `just test-native-v8` runs the `mizchi/crater-browser-native/js_v8` runtime parity suite
-- `just test-native-full` runs `mizchi/crater-browser-native/e2e_native` and may require sqlite development headers
+- `just test-native-full` runs `mizchi/crater-testing/native_e2e`
 - `just test-wasm-mbt` runs the MoonBit-side `mizchi/crater-wasm` tests
 - `just test-wasm` keeps its old meaning and runs the Node/JCO component test
 - `just status`, `just test-baseline`, and `just test-baseline-update` now all
@@ -93,26 +96,28 @@ The intended direction is:
 | `mizchi/crater-webvitals` | Canonical library | Web Vitals metrics such as CLS and LCP helpers |
 | `mizchi/crater-painter` | Canonical library | Paint model, SVG/image backends, terminal image output |
 | `mizchi/crater-renderer` | Canonical library | Renderer and VRT/export-oriented integration |
+| `mizchi/crater-browser-contract` | Canonical library | Shared browser-facing render/AOM helper functions for shell and BiDi |
+| `mizchi/crater-browser-runtime` | Canonical library | Shared JS runtime contract and DOM serializer |
+| `mizchi/crater-browser-http-sqlite` | Adapter | Optional JS-only SQLite cache backend for `mizchi/crater-browser-http` |
 | `mizchi/crater-browser` | Integration | Browser shell, interaction, TUI, network/cache integration |
 | `mizchi/crater-jsbidi` | Adapter | BiDi / JS-facing browser bindings |
 | `mizchi/crater-browser-native` | Adapter | Native browser host bindings |
 | `mizchi/crater-js` | Adapter | JS exports for layout/renderer consumers |
 | `mizchi/crater-wasm` | Adapter | WASM component packaging |
 | `mizchi/crater-benchmarks` | Internal / dev-only | Synthetic fixtures and benchmark suites for renderer/browser performance |
-| `mizchi/crater-testing` | Internal / dev-only | WPT runtime and MoonBit integration test packages |
+| `mizchi/crater-testing` | Internal / dev-only | WPT runtime, browser-shell fixtures, and native/browser integration test packages |
 | `mizchi/crater` | Internal / compatibility | Historical all-in-one facade for compatibility |
 
 We do not need to create all of these at once. The current workspace has
 already extracted `mizchi/crater-layout`, `mizchi/crater-css`,
 `mizchi/crater-dom`, `mizchi/crater-aomx`, `mizchi/crater-benchmarks`,
-`mizchi/crater-testing`, `mizchi/crater-webvitals`, `mizchi/crater-painter`, and
-`mizchi/crater-renderer`. The browser-facing split is now underway in
-`mizchi/crater-browser`.
+`mizchi/crater-browser-contract`, `mizchi/crater-testing`,
+`mizchi/crater-webvitals`, `mizchi/crater-painter`, `mizchi/crater-renderer`,
+`mizchi/crater-browser-runtime`, and `mizchi/crater-browser-http-sqlite`. The
+browser-facing split is now underway in `mizchi/crater-browser`.
 
-Within `mizchi/crater-browser`, the canonical shared package for runtime
-contract and DOM serializer work is `mizchi/crater-browser/runtime`. The old
-`mizchi/crater-browser/js` package remains only as a `0.17.x` compatibility
-facade.
+The old `mizchi/crater-browser/js` package remains only as a `0.17.x`
+compatibility facade over the extracted runtime contract.
 
 ## Remaining Root Packages
 
@@ -152,7 +157,7 @@ For new code, prefer the narrowest module that matches the subsystem you need:
 | Paint tree / SVG / image output | `mizchi/crater-painter` |
 | Renderer / VRT facade | `mizchi/crater-renderer` |
 | Browser shell / interaction / CDP | `mizchi/crater-browser` |
-| Browser runtime contract / DOM serializer | `mizchi/crater-browser/runtime` |
+| Browser runtime contract / DOM serializer | `mizchi/crater-browser-runtime` |
 | BiDi / WebDriver helper surface | `mizchi/crater-jsbidi` |
 | Native V8 host bindings | `mizchi/crater-browser-native` |
 | JS exports | `mizchi/crater-js` |
@@ -172,10 +177,10 @@ Prefer the layers in this order:
 In particular, do not treat `mizchi/crater-benchmarks` or
 `mizchi/crater-testing` as default public dependencies for production code.
 
-Within the browser module, `mizchi/crater-browser/runtime` is now the canonical
-shared package for the JS runtime contract and DOM serializer. Keep
-`mizchi/crater-browser/js` only for `0.17.x` compatibility with older import
-paths; new code should not depend on it.
+`mizchi/crater-browser-runtime` is now the canonical shared module for the JS
+runtime contract and DOM serializer. Keep `mizchi/crater-browser/js` only for
+`0.17.x` compatibility with older import paths; new code should not depend on
+it.
 
 ## Compatibility Policy
 
@@ -203,10 +208,11 @@ boundary is equally strong from a reuse perspective.
 - `benchmarks` and `testing` are internal support modules even though they are
   workspace members
 
-The main follow-up from this review is to keep production/integration code from
-depending on internal benchmark fixtures. In practice, that means continuing to
-remove dependencies such as `mizchi/crater-browser -> mizchi/crater-benchmarks`
-from non-benchmark packages.
+One concrete cleanup from this review is already done: production/integration
+code no longer depends on internal benchmark fixtures. In particular,
+`mizchi/crater-browser` no longer depends on `mizchi/crater-benchmarks`;
+browser-specific benchmark suites and benchmark baseline tooling now live under
+the `benchmarks` module.
 
 ## Extracted Modules
 
@@ -323,6 +329,7 @@ them through a dedicated module.
 The WPT runtime and MoonBit test packages have been moved into `testing/`:
 
 - `.`
+- `browser_shell`
 - `wpt_runtime`
 - `layout_css_e2e`
 - `taffy_compat`

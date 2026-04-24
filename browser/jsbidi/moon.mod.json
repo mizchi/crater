@@ -27,6 +27,10 @@
       "path": "..",
       "version": "0.17.0"
     },
+    "mizchi/crater-browser-contract": {
+      "path": "../../contract",
+      "version": "0.17.0"
+    },
     "mizchi/js": "0.10.13",
     "moonbitlang/async": "0.17.1"
   }

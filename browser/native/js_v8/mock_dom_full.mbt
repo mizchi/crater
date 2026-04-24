@@ -568,6 +568,56 @@ pub fn full_mock_dom_js() -> String {
     #|    if (index >= 0) list.splice(index, 1);
     #|    _removePersistedEventListener(target, eventType, listener);
     #|  }
+    #|  function getEventParent(node, event) {
+    #|    if (!node) return null;
+    #|    if (typeof window !== 'undefined' && node === window) return null;
+    #|    if (node._nodeType === 9) {
+    #|      return typeof window !== 'undefined' ? window : null;
+    #|    }
+    #|    if (node._isShadowRoot) {
+    #|      if (event && event.composed && node.host) return node.host;
+    #|      return null;
+    #|    }
+    #|    return getParentNode(node);
+    #|  }
+    #|  function buildEventPath(target, event) {
+    #|    const path = [];
+    #|    let current = target;
+    #|    while (current) {
+    #|      path.push(current);
+    #|      current = getEventParent(current, event);
+    #|    }
+    #|    return path;
+    #|  }
+    #|  function invokeEventListeners(currentTarget, event, eventType, originalTarget) {
+    #|    event._target = originalTarget;
+    #|    event.target = originalTarget;
+    #|    event._currentTarget = currentTarget;
+    #|    event.currentTarget = currentTarget;
+    #|    const propName = 'on' + eventType;
+    #|    const inlineHandler = currentTarget.getAttribute ? currentTarget.getAttribute(propName) : null;
+    #|    if (inlineHandler !== null && inlineHandler !== undefined) {
+    #|      const handler = Function('event', 'with(globalThis){ with(this){ ' + String(inlineHandler) + ' } }');
+    #|      handler.call(currentTarget, event);
+    #|      if (event._immediatePropagationStopped) return;
+    #|    }
+    #|    const propHandler = currentTarget[propName];
+    #|    if (typeof propHandler === 'function') {
+    #|      propHandler.call(currentTarget, event);
+    #|      if (event._immediatePropagationStopped) return;
+    #|    }
+    #|    const listeners = currentTarget._listeners && currentTarget._listeners[eventType]
+    #|      ? currentTarget._listeners[eventType].slice()
+    #|      : [];
+    #|    for (const listener of listeners) {
+    #|      if (typeof listener === 'function') {
+    #|        listener.call(currentTarget, event);
+    #|      } else if (listener && typeof listener.handleEvent === 'function') {
+    #|        listener.handleEvent(event);
+    #|      }
+    #|      if (event._immediatePropagationStopped) return;
+    #|    }
+    #|  }
     #|  function dispatchEventImpl(target, event) {
     #|    if (!event || typeof event !== 'object') {
     #|      throw new TypeError('Failed to execute dispatchEvent: parameter 1 is not of type Event');
@@ -576,26 +626,22 @@ pub fn full_mock_dom_js() -> String {
     #|    event._type = eventType;
     #|    event._target = target;
     #|    event.target = target;
-    #|    event._currentTarget = target;
-    #|    event.currentTarget = target;
-    #|    const propName = 'on' + eventType;
-    #|    const inlineHandler = target.getAttribute ? target.getAttribute(propName) : null;
-    #|    if (inlineHandler !== null && inlineHandler !== undefined) {
-    #|      const handler = Function('event', 'with(globalThis){ with(this){ ' + String(inlineHandler) + ' } }');
-    #|      handler.call(target, event);
-    #|    }
-    #|    const propHandler = target[propName];
-    #|    if (typeof propHandler === 'function') {
-    #|      propHandler.call(target, event);
-    #|    }
-    #|    const listeners = target._listeners && target._listeners[eventType] ? target._listeners[eventType].slice() : [];
-    #|    for (const listener of listeners) {
-    #|      if (typeof listener === 'function') {
-    #|        listener.call(target, event);
-    #|      } else if (listener && typeof listener.handleEvent === 'function') {
-    #|        listener.handleEvent(event);
+    #|    event._propagationStopped = false;
+    #|    event._immediatePropagationStopped = false;
+    #|    event._path = buildEventPath(target, event);
+    #|    event._eventPhase = Event.AT_TARGET;
+    #|    invokeEventListeners(target, event, eventType, target);
+    #|    if (event.bubbles && !event._propagationStopped) {
+    #|      for (let i = 1; i < event._path.length; i++) {
+    #|        event._immediatePropagationStopped = false;
+    #|        event._eventPhase = Event.BUBBLING_PHASE;
+    #|        invokeEventListeners(event._path[i], event, eventType, target);
+    #|        if (event._propagationStopped) break;
     #|      }
     #|    }
+    #|    event._currentTarget = null;
+    #|    event.currentTarget = null;
+    #|    event._eventPhase = Event.NONE;
     #|    return !event.defaultPrevented;
     #|  }
     #|  Node.prototype.addEventListener = function(type, listener, options) { addEventListenerImpl(this, type, listener); };
@@ -4540,7 +4586,12 @@ pub fn full_mock_dom_js() -> String {
     #|     },
     #|      focus() {},
     #|      blur() {},
-    #|      click() {},
+    #|      click() {
+    #|        const event = typeof MouseEvent === 'function'
+    #|          ? new MouseEvent('click', { bubbles: true, cancelable: true, composed: true })
+    #|          : new Event('click', { bubbles: true, cancelable: true });
+    #|        this.dispatchEvent(event);
+    #|      },
     #|      dispatchEvent(event) { return dispatchEventImpl(this, event); },
     #|      addEventListener(type, listener, options) { addEventListenerImpl(this, type, listener); },
     #|      removeEventListener(type, listener, options) { removeEventListenerImpl(this, type, listener); },
@@ -6852,6 +6903,7 @@ pub fn full_mock_dom_js() -> String {
     #|      this.append(...nodes);
     #|    }
     #|  };
+    #|  Object.setPrototypeOf(document, HTMLDocument.prototype);
     #|  document.normalize = function() {
     #|    const nodes = document.childNodes;
     #|    for (let i = 0; i < nodes.length; i++) {

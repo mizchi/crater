@@ -1,0 +1,15 @@
+import {
+  "mizchi/crater-browser/shell" @shell,
+  "mizchi/crater-browser-native/assets" @assets,
+  "mizchi/crater-browser-native/js_v8" @js_v8,
+  "mizchi/crater-browser-runtime" @js,
+  "mizchi/crater-dom/dom" @dom,
+} for "test"
+
+warnings = "-text_segment_excceed"
+
+supported_targets = "+native"
+
+options(
+  link: { "native": { "cc-link-flags": "${build.MIZCHI_V8_CC_LINK_FLAGS}" } },
+)

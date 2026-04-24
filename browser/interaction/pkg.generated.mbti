@@ -2,8 +2,8 @@
 package "mizchi/crater-browser/interaction"
 
 import {
+  "mizchi/crater-browser-http",
   "mizchi/crater-browser/cdp",
-  "mizchi/crater-browser/http",
   "mizchi/crater-browser/shell",
   "mizchi/crater-browser/tui",
 }
@@ -13,13 +13,13 @@ pub fn command_name(InteractionCommand) -> String
 
 pub fn command_of_action(@tui.BrowserAction) -> InteractionCommand
 
-pub async fn dispatch_action(@shell.Browser, @tui.BrowserAction) -> DispatchEffect raise @http.HttpError
+pub async fn dispatch_action(@shell.Browser, @tui.BrowserAction) -> DispatchEffect raise @crater-browser-http.HttpError
 
 pub fn dispatch_cdp_command(@cdp.CdpSession, InteractionCommand) -> Result[Unit, @cdp.CdpError]
 
-pub async fn dispatch_command(@shell.Browser, InteractionCommand) -> DispatchEffect raise @http.HttpError
+pub async fn dispatch_command(@shell.Browser, InteractionCommand) -> DispatchEffect raise @crater-browser-http.HttpError
 
-pub async fn dispatch_key(@shell.Browser, String) -> DispatchEffect raise @http.HttpError
+pub async fn dispatch_key(@shell.Browser, String) -> DispatchEffect raise @crater-browser-http.HttpError
 
 pub fn drag_accept_target(String, String, Bool) -> String
 

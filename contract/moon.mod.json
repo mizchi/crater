@@ -1,0 +1,26 @@
+{
+  "name": "mizchi/crater-browser-contract",
+  "version": "0.17.0",
+  "deps": {
+    "mizchi/crater-renderer": {
+      "path": "../renderer",
+      "version": "0.17.0"
+    },
+    "mizchi/crater-css": {
+      "path": "../css",
+      "version": "0.17.0"
+    },
+    "mizchi/crater-dom": {
+      "path": "../dom",
+      "version": "0.17.0"
+    },
+    "mizchi/crater-aomx": {
+      "path": "../aomx",
+      "version": "0.17.0"
+    }
+  },
+  "repository": "https://github.com/mizchi/crater",
+  "license": "Apache-2.0",
+  "description": "Shared browser integration helpers for crater shell and jsbidi",
+  "preferred-target": "js"
+}

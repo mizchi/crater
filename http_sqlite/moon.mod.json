@@ -1,0 +1,15 @@
+{
+  "name": "mizchi/crater-browser-http-sqlite",
+  "version": "0.17.0",
+  "deps": {
+    "mizchi/crater-browser-http": {
+      "path": "../http",
+      "version": "0.17.0"
+    },
+    "mizchi/sqlite": "0.2.3"
+  },
+  "repository": "https://github.com/mizchi/crater",
+  "license": "Apache-2.0",
+  "description": "Optional SQLite-backed cache backend for crater-browser-http",
+  "preferred-target": "js"
+}

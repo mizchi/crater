@@ -19,23 +19,24 @@ There are now two explicit native test layers:
   - does not require sqlite-backed browser e2e wiring
 
 - `just test-native-full`
-  - package: `mizchi/crater-browser-native/e2e_native`
+  - package: `mizchi/crater-testing/native_e2e`
   - purpose: full native browser e2e coverage
   - includes: browser shell integration, Preact/React bundle helpers, and shell-driven navigation
-  - transitively reaches `mizchi/crater-browser/shell` and `mizchi/crater-browser/http`
-  - may require `libsqlite3-dev` / `sqlite3.h` on the host
+  - lives in the internal `testing` module, not the published native adapter
+  - transitively reaches `mizchi/crater-browser/shell` and `mizchi/crater-browser-http`
+  - no longer requires sqlite headers by default
+  - optional sqlite-backed cache persistence now lives in `mizchi/crater-browser-http-sqlite`
 
 ## CI Policy
 
 - required CI coverage should stay on smoke/V8 layers
-- full native e2e should be treated as an opt-in or separately scoped check until
-  sqlite-backed dependencies are isolated further
+- full native e2e should be treated as an opt-in or separately scoped check
 
 ## Goal
 
 Long-term, `browser/native` should stay a thin V8 host module and pull as little
-browser-shell/storage infrastructure as possible. The `e2e_native` package is
-the current boundary where shell/http/sqlite-heavy integration begins.
+browser-shell/storage infrastructure as possible. The heavy native browser e2e
+coverage now starts in `mizchi/crater-testing/native_e2e`.
 
 The current split is:
 
@@ -43,9 +44,11 @@ The current split is:
   - root facade over `js_v8` and `assets`
 - `mizchi/crater-browser-native/assets`
   - bundled Preact/React sources and lightweight helper functions
-- `mizchi/crater-browser/runtime`
+- `mizchi/crater-browser-runtime`
   - shared JS runtime contract / DOM serializer used by shell and native V8
+- `mizchi/crater-browser-http-sqlite`
+  - optional JS-only sqlite cache backend for `mizchi/crater-browser-http`
 - `mizchi/crater-browser-native/js_v8`
-  - native V8 host runtime over the shared `mizchi/crater-browser/runtime` contract
-- `mizchi/crater-browser-native/e2e_native`
-  - browser shell integration tests and sqlite-adjacent native e2e coverage
+  - native V8 host runtime over the shared `mizchi/crater-browser-runtime` contract
+- `mizchi/crater-testing/native_e2e`
+  - browser shell integration tests and full native browser e2e coverage

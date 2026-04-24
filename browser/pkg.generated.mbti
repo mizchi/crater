@@ -2,9 +2,9 @@
 package "mizchi/crater-browser"
 
 import {
+  "mizchi/crater-browser-http",
+  "mizchi/crater-browser-runtime",
   "mizchi/crater-browser/cdp",
-  "mizchi/crater-browser/http",
-  "mizchi/crater-browser/runtime",
   "mizchi/crater-browser/shell",
   "mizchi/crater-dom/dom",
 }
@@ -25,13 +25,13 @@ pub fn serialize_dom_to_html(@dom.DomTree) -> String
 // Types and methods
 
 // Type aliases
-pub using @runtime {type AsyncExecutionMode}
+pub using @crater-browser-runtime {type AsyncExecutionMode}
 
 pub using @shell {type Browser}
 
-pub using @http {type CacheDirectives}
+pub using @crater-browser-http {type CacheDirectives}
 
-pub using @http {type CacheEntry}
+pub using @crater-browser-http {type CacheEntry}
 
 pub using @cdp {type CdpBoxModel}
 
@@ -65,35 +65,35 @@ pub using @cdp {type CdpResponseError}
 
 pub using @cdp {type CdpSession}
 
-pub using @http {type CookieJar}
+pub using @crater-browser-http {type CookieJar}
 
-pub using @http {type CredentialsMode}
+pub using @crater-browser-http {type CredentialsMode}
 
 pub using @cdp {type DomDomain}
 
-pub using @http {type FetchOptions}
+pub using @crater-browser-http {type FetchOptions}
 
-pub using @http {type HttpResponse}
+pub using @crater-browser-http {type HttpResponse}
 
 pub using @cdp {type InputDomain}
 
-pub using @runtime {type JsContext}
+pub using @crater-browser-runtime {type JsContext}
 
-pub using @runtime {type JsResult}
+pub using @crater-browser-runtime {type JsResult}
 
-pub using @http {type MemoryCacheBackend}
+pub using @crater-browser-http {type MemoryCacheBackend}
 
 pub using @shell {type OutputMode}
 
 pub using @cdp {type PageDomain}
 
-pub using @http {type ParsedCookie}
+pub using @crater-browser-http {type ParsedCookie}
 
-pub using @http {type RequestMode}
+pub using @crater-browser-http {type RequestMode}
 
-pub using @http {type RequestSandbox}
+pub using @crater-browser-http {type RequestSandbox}
 
-pub using @runtime {type ScriptExecutor}
+pub using @crater-browser-runtime {type ScriptExecutor}
 
 // Traits
 

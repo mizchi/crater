@@ -1,0 +1,141 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser-http"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn[CacheBackend : HttpCacheBackend] cached_fetch(url~ : String, options~ : FetchOptions, cache~ : CacheBackend, fetcher~ : (String, FetchOptions) -> HttpResponse raise HttpError) -> HttpResponse raise HttpError
+
+pub async fn[CacheBackend : HttpCacheBackend] cached_fetch_async(url~ : String, options~ : FetchOptions, cache~ : CacheBackend, fetcher~ : async (String, FetchOptions) -> HttpResponse raise HttpError) -> HttpResponse raise HttpError
+
+pub async fn fetch(String, options? : FetchOptions) -> HttpResponse raise HttpError
+
+pub fn headers_to_json(Map[String, String]) -> String
+
+pub fn is_cacheable_status(Int) -> Bool
+
+pub fn is_fresh(CacheEntry, Double) -> Bool
+
+pub fn now_seconds() -> Double
+
+pub fn parse_cache_control(String) -> CacheDirectives
+
+pub fn parse_set_cookie(String, String, String) -> ParsedCookie?
+
+// Errors
+pub suberror HttpError {
+  NetworkError(String)
+  InvalidUrl(String)
+  TimeoutError
+  CorsError(String)
+  SandboxError(String)
+}
+pub impl Show for HttpError
+
+// Types and methods
+pub(all) struct CacheDirectives {
+  max_age : Int?
+  no_cache : Bool
+  no_store : Bool
+  must_revalidate : Bool
+  public_ : Bool
+  private_ : Bool
+  immutable : Bool
+} derive(@debug.Debug)
+pub fn CacheDirectives::default() -> Self
+pub impl Show for CacheDirectives
+
+pub(all) struct CacheEntry {
+  url : String
+  status : Int
+  headers : Map[String, String]
+  body : String
+  etag : String?
+  last_modified : String?
+  directives : CacheDirectives
+  stored_at : Double
+} derive(@debug.Debug)
+
+pub struct CookieJar {
+  cookies : Array[ParsedCookie]
+  enabled : Bool
+}
+pub fn CookieJar::clear(Self) -> Unit
+pub fn CookieJar::get_cookie_header(Self, String, Bool, Bool, site_origin? : String, is_top_level_navigation? : Bool) -> String?
+pub fn CookieJar::new(enabled? : Bool) -> Self
+pub fn CookieJar::size(Self) -> Int
+pub fn CookieJar::store_from_header(Self, String, String, Bool) -> Unit
+
+pub(all) enum CredentialsMode {
+  Omit
+  SameOrigin
+  Include
+} derive(Eq, @debug.Debug)
+
+pub(all) struct FetchOptions {
+  http_method : String
+  headers : Map[String, String]
+  body : String
+  timeout_ms : Int
+  mode : RequestMode
+  credentials : CredentialsMode
+  origin : String
+  sandbox : RequestSandbox
+}
+pub fn FetchOptions::default() -> Self
+
+pub(all) struct HttpResponse {
+  status : Int
+  headers : Map[String, String]
+  body : String
+}
+
+pub(all) struct MemoryCacheBackend {
+  entries : Map[String, CacheEntry]
+  max_entries : Int
+}
+pub fn MemoryCacheBackend::clear(Self) -> Unit
+pub fn MemoryCacheBackend::lookup(Self, String) -> CacheEntry?
+pub fn MemoryCacheBackend::new(max_entries? : Int) -> Self
+pub fn MemoryCacheBackend::remove(Self, String) -> Unit
+pub fn MemoryCacheBackend::store(Self, CacheEntry) -> Unit
+pub impl HttpCacheBackend for MemoryCacheBackend
+
+pub(all) struct ParsedCookie {
+  name : String
+  value : String
+  domain : String
+  path : String
+  secure : Bool
+  http_only : Bool
+  same_site : String
+  max_age : Int?
+  expires : String?
+} derive(@debug.Debug)
+pub impl Show for ParsedCookie
+
+pub(all) enum RequestMode {
+  Navigate
+  SameOrigin
+  NoCors
+  Cors
+} derive(Eq, @debug.Debug)
+
+pub(all) enum RequestSandbox {
+  Open
+  SameOrigin
+  Allowlist(Array[String])
+} derive(@debug.Debug)
+
+// Type aliases
+
+// Traits
+pub(open) trait HttpCacheBackend {
+  lookup(Self, String) -> CacheEntry?
+  store(Self, CacheEntry) -> Unit
+  remove(Self, String) -> Unit
+  clear(Self) -> Unit
+}
+

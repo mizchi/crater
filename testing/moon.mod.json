@@ -2,8 +2,24 @@
   "name": "mizchi/crater-testing",
   "version": "0.17.0",
   "deps": {
-    "mizchi/crater": {
-      "path": "..",
+    "mizchi/crater-browser": {
+      "path": "../browser",
+      "version": "0.17.0"
+    },
+    "mizchi/crater-browser-native": {
+      "path": "../browser/native",
+      "version": "0.17.0"
+    },
+    "mizchi/crater-browser-runtime": {
+      "path": "../runtime",
+      "version": "0.17.0"
+    },
+    "mizchi/crater-css": {
+      "path": "../css",
+      "version": "0.17.0"
+    },
+    "mizchi/crater-dom": {
+      "path": "../dom",
       "version": "0.17.0"
     },
     "mizchi/crater-layout": {
@@ -18,5 +34,6 @@
   "repository": "https://github.com/mizchi/crater",
   "license": "Apache-2.0",
   "description": "WPT runtime and MoonBit test packages for crater",
-  "preferred-target": "js"
+  "preferred-target": "js",
+  "--moonbit-unstable-prebuild": "../browser/scripts/mizchi-v8-consumer-prebuild.mjs"
 }

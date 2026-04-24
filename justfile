@@ -49,7 +49,7 @@ test-native-v8:
 # Run full native browser e2e tests.
 # This suite pulls browser shell/http and may require libsqlite3 headers on the host.
 test-native-full:
-    moon -C browser/native test -p mizchi/crater-browser-native/e2e_native --target native -j 1
+    moon test --manifest-path testing/moon.mod.json -p mizchi/crater-testing/native_e2e --target native -j 1
 
 # Run wasm-target MoonBit tests for the wasm component module
 test-wasm-mbt:
@@ -69,7 +69,7 @@ test-pkg-wasm pkg:
 
 # Run tests for a specific package with auto target selection.
 test-pkg pkg target='auto':
-    if [ "{{target}}" = "auto" ]; then case "{{pkg}}" in mizchi/crater-browser-native*) moon -C browser/native test -p {{pkg}} --target native -j 1 ;; mizchi/crater-wasm*) moon -C wasm test -p {{pkg}} --target wasm -j 1 ;; *) moon test -p {{pkg}} --target js ;; esac; elif [ "{{target}}" = "native" ]; then moon -C browser/native test -p {{pkg}} --target native -j 1; elif [ "{{target}}" = "wasm" ]; then moon -C wasm test -p {{pkg}} --target wasm -j 1; else moon test -p {{pkg}} --target {{target}}; fi
+    if [ "{{target}}" = "auto" ]; then case "{{pkg}}" in mizchi/crater-browser-native*) moon -C browser/native test -p {{pkg}} --target native -j 1 ;; mizchi/crater-testing/native_e2e) moon test --manifest-path testing/moon.mod.json -p {{pkg}} --target native -j 1 ;; mizchi/crater-wasm*) moon -C wasm test -p {{pkg}} --target wasm -j 1 ;; *) moon test -p {{pkg}} --target js ;; esac; elif [ "{{target}}" = "native" ]; then case "{{pkg}}" in mizchi/crater-browser-native*) moon -C browser/native test -p {{pkg}} --target native -j 1 ;; *) moon test --manifest-path testing/moon.mod.json -p {{pkg}} --target native -j 1 ;; esac; elif [ "{{target}}" = "wasm" ]; then moon -C wasm test -p {{pkg}} --target wasm -j 1; else moon test -p {{pkg}} --target {{target}}; fi
 
 # Update test snapshots
 test-update:
@@ -108,13 +108,17 @@ check:
     moon -C wasm info --target wasm
     moon check --manifest-path aomx/moon.mod.json --target js -j 1
     moon check --manifest-path benchmarks/moon.mod.json --target js -j 1
+    moon check --manifest-path contract/moon.mod.json --target js -j 1
     moon check --manifest-path testing/moon.mod.json --target js -j 1
     moon check --manifest-path webvitals/moon.mod.json --target js -j 1
+    moon check --manifest-path http/moon.mod.json --target js -j 1
+    moon check --manifest-path http_sqlite/moon.mod.json --target js -j 1
     moon check --manifest-path css/moon.mod.json --target js -j 1
     moon check --manifest-path dom/moon.mod.json --target js -j 1
     moon check --manifest-path layout/moon.mod.json --target js -j 1
     moon check --manifest-path painter/moon.mod.json --target js -j 1
     moon check --manifest-path renderer/moon.mod.json --target js -j 1
+    moon check --manifest-path runtime/moon.mod.json --target js -j 1
     moon check -j 1 src --target js
     moon check --manifest-path browser/moon.mod.json --target js -j 1
     moon -C browser/native check --target native -j 1
@@ -126,13 +130,17 @@ fmt:
     moon fmt
     moon fmt --manifest-path aomx/moon.mod.json
     moon fmt --manifest-path benchmarks/moon.mod.json
+    moon fmt --manifest-path contract/moon.mod.json
     moon fmt --manifest-path testing/moon.mod.json
     moon fmt --manifest-path webvitals/moon.mod.json
+    moon fmt --manifest-path http/moon.mod.json
+    moon fmt --manifest-path http_sqlite/moon.mod.json
     moon fmt --manifest-path css/moon.mod.json
     moon fmt --manifest-path dom/moon.mod.json
     moon fmt --manifest-path layout/moon.mod.json
     moon fmt --manifest-path painter/moon.mod.json
     moon fmt --manifest-path renderer/moon.mod.json
+    moon fmt --manifest-path runtime/moon.mod.json
     moon fmt --manifest-path browser/moon.mod.json
     moon -C browser/native fmt
     moon fmt --manifest-path js/moon.mod.json

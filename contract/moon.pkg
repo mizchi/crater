@@ -1,0 +1,9 @@
+import {
+  "mizchi/crater-renderer/renderer",
+  "mizchi/crater-css" @css,
+  "mizchi/crater-dom/aom",
+  "mizchi/crater-aomx/arc90",
+  "mizchi/crater-aomx/grounding",
+}
+
+supported_targets = "js+native"

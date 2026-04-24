@@ -2,7 +2,7 @@
 package "mizchi/crater-browser-native/js_v8"
 
 import {
-  "mizchi/crater-browser/runtime",
+  "mizchi/crater-browser-runtime",
   "mizchi/crater-dom/dom",
   "mizchi/v8",
 }
@@ -23,7 +23,7 @@ pub struct V8JsRuntime {
   mock_dom_source : String?
   id_map : Map[Int, @dom.NodeId]
 }
-pub fn V8JsRuntime::as_js_runtime(Self) -> &@runtime.JsRuntime
+pub fn V8JsRuntime::as_js_runtime(Self) -> &@crater-browser-runtime.JsRuntime
 pub fn V8JsRuntime::new() -> Self
 pub fn V8JsRuntime::new_with_mock_dom(String) -> Self
 

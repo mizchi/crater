@@ -29,12 +29,22 @@ function runCrater(args, options = {}) {
 }
 
 test.before(() => {
-  execFileSync("npm", ["run", "build:moon"], {
-    cwd: repoRoot,
+  execFileSync("moon", [
+    "build",
+    "--manifest-path",
+    path.join(repoRoot, "moon.mod.json"),
+    path.join(repoRoot, "cmd", "crater"),
+    "--target",
+    "js",
+    "--release",
+    "-j",
+    "1",
+  ], {
+    cwd: path.resolve(repoRoot, ".."),
     stdio: "pipe",
     encoding: "utf8",
   });
-  execFileSync("npm", ["run", "build:minify:crater"], {
+  execFileSync("pnpm", ["run", "build:minify:crater"], {
     cwd: repoRoot,
     stdio: "pipe",
     encoding: "utf8",

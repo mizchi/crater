@@ -411,6 +411,32 @@ test "V8+FullDOM: Event dispatch" {
 }
 
 ///|
+test "V8+FullDOM: click bubbles to ancestor listeners" {
+  let rt = V8JsRuntime::new_with_mock_dom(full_mock_dom_js())
+  rt.init()
+  let dom = @dom.DomTree::new()
+  let code =
+    #|globalThis.__clickedOrder = [];
+    #|const outer = document.createElement('div');
+    #|const inner = document.createElement('button');
+    #|outer.addEventListener('click', () => globalThis.__clickedOrder.push('outer'));
+    #|inner.addEventListener('click', () => globalThis.__clickedOrder.push('inner'));
+    #|outer.appendChild(inner);
+    #|document.body.appendChild(outer);
+    #|inner.click();
+  let result = rt.execute(0, dom, code, @js.ImmediateFlush)
+  assert_true(result.success)
+  let check = rt.execute(
+    0,
+    dom,
+    "return globalThis.__clickedOrder.join(',')",
+    @js.DeferredFlush,
+  )
+  assert_true(check.success)
+  assert_eq(check.value, "inner,outer")
+}
+
+///|
 test "V8+FullDOM: Promise.resolve chain" {
   let rt = V8JsRuntime::new_with_mock_dom(full_mock_dom_js())
   rt.init()

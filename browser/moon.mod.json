@@ -6,10 +6,6 @@
       "path": "../aomx",
       "version": "0.17.0"
     },
-    "mizchi/crater-benchmarks": {
-      "path": "../benchmarks",
-      "version": "0.17.0"
-    },
     "mizchi/crater": {
       "path": "..",
       "version": "0.17.0"
@@ -30,10 +26,21 @@
       "path": "../renderer",
       "version": "0.17.0"
     },
+    "mizchi/crater-browser-runtime": {
+      "path": "../runtime",
+      "version": "0.17.0"
+    },
+    "mizchi/crater-browser-contract": {
+      "path": "../contract",
+      "version": "0.17.0"
+    },
+    "mizchi/crater-browser-http": {
+      "path": "../http",
+      "version": "0.17.0"
+    },
     "mizchi/x": "0.2.0",
     "moonbitlang/async": "0.17.1",
-    "moonbitlang/x": "0.4.41",
-    "mizchi/sqlite": "0.2.3"
+    "moonbitlang/x": "0.4.41"
   },
   "repository": "https://github.com/mizchi/crater",
   "license": "Apache-2.0",

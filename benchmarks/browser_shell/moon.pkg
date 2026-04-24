@@ -1,0 +1,14 @@
+import {
+  "moonbitlang/core/bench",
+  "mizchi/crater-browser/shell" @shell,
+  "mizchi/crater-browser/tui/paint/plain" @tui_paint_plain,
+  "mizchi/crater-benchmarks" @fixtures,
+  "mizchi/crater/css",
+  "mizchi/crater-painter/x/image",
+  "mizchi/crater-painter/x/kitty",
+  "mizchi/crater-renderer/renderer",
+}
+
+warnings = "-unused_package"
+
+supported_targets = "js"

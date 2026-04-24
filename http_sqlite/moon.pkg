@@ -1,0 +1,10 @@
+import {
+  "moonbitlang/core/json",
+  "moonbitlang/core/string",
+  "mizchi/crater-browser-http" @http,
+  "mizchi/sqlite",
+}
+
+warnings = "-unused_package-unused_error_type"
+
+supported_targets = "js"

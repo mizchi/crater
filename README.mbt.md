@@ -265,6 +265,7 @@ moon add mizchi/crater-css
 moon add mizchi/crater-dom
 moon add mizchi/crater-renderer
 moon add mizchi/crater-browser
+moon add mizchi/crater-browser-runtime
 moon add mizchi/crater-jsbidi
 moon add mizchi/crater-wasm
 ```
@@ -273,12 +274,7 @@ Use the root module when you explicitly want the historical all-in-one surface.
 Use the split modules when you want a smaller dependency graph or a more stable
 public contract for one subsystem.
 
-For browser runtime internals, `mizchi/crater-browser/runtime` is now the
-canonical shared contract for the JS runtime and DOM serializer. The older
-`mizchi/crater-browser/js` package remains only as a compatibility facade in
-the `0.17.x` line.
-
-For browser runtime internals, `mizchi/crater-browser/runtime` is now the
+For browser runtime internals, `mizchi/crater-browser-runtime` is now the
 canonical shared contract for the JS runtime and DOM serializer. The older
 `mizchi/crater-browser/js` package remains only as a compatibility facade in
 the `0.17.x` line.

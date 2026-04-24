@@ -2,6 +2,7 @@
 package "mizchi/crater-browser/runtime"
 
 import {
+  "mizchi/crater-browser-runtime",
   "mizchi/crater-dom/dom",
   "mizchi/crater-dom/scheduler",
 }
@@ -26,64 +27,21 @@ pub fn serialize_dom_to_html(@dom.DomTree) -> String
 pub fn serialize_dom_to_snapshot_html(@dom.DomTree) -> String
 
 // Errors
-pub suberror JsError {
-  NotSupported
-  ExecutionError(String)
-  SyntaxError(String)
-  ReferenceError(String)
-}
-pub fn JsError::execution_error(String) -> Self
-pub impl Show for JsError
 
 // Types and methods
-pub(all) enum AsyncExecutionMode {
-  ImmediateFlush
-  DeferredFlush
-}
-
-pub struct JsContext {
-  context_id : Int
-  async_mode : AsyncExecutionMode
-  dom : @dom.DomTree
-  mut logs : Array[String]
-  runtime : &JsRuntime
-}
-pub fn JsContext::clear_logs(Self) -> Unit
-pub fn JsContext::execute(Self, String) -> JsResult raise JsError
-pub fn JsContext::get_dom(Self) -> @dom.DomTree
-pub fn JsContext::get_logs(Self) -> Array[String]
-pub fn JsContext::new(@dom.DomTree) -> Self
-pub fn JsContext::new_deferred(@dom.DomTree) -> Self
-pub fn JsContext::new_with_runtime(@dom.DomTree, &JsRuntime) -> Self
-pub fn JsContext::new_with_runtime_and_mode(@dom.DomTree, &JsRuntime, AsyncExecutionMode) -> Self
-pub fn JsContext::tick(Self) -> Bool raise JsError
-
-pub struct JsResult {
-  value : String
-  logs : Array[String]
-  success : Bool
-}
-pub fn JsResult::new(String, Array[String], Bool) -> Self
-
-pub struct ScriptExecutor {
-  dom : @dom.DomTree
-  ctx : JsContext
-}
-pub fn ScriptExecutor::clear_logs(Self) -> Unit
-pub fn ScriptExecutor::execute(Self, @scheduler.Task) -> @scheduler.TaskResult
-pub fn ScriptExecutor::execute_source(Self, String) -> JsResult raise JsError
-pub fn ScriptExecutor::get_logs(Self) -> Array[String]
-pub fn ScriptExecutor::new(@dom.DomTree) -> Self
-pub fn ScriptExecutor::new_deferred(@dom.DomTree) -> Self
-pub fn ScriptExecutor::new_with_runtime(@dom.DomTree, &JsRuntime) -> Self
-pub fn ScriptExecutor::tick(Self) -> Bool raise JsError
 
 // Type aliases
+pub using @crater-browser-runtime {type AsyncExecutionMode}
+
+pub using @crater-browser-runtime {type JsContext}
+
+pub using @crater-browser-runtime {type JsError}
+
+pub using @crater-browser-runtime {type JsResult}
+
+pub using @crater-browser-runtime {type ScriptExecutor}
+
+pub using @crater-browser-runtime {trait JsRuntime}
 
 // Traits
-pub(open) trait JsRuntime {
-  init(Self) -> Unit
-  execute(Self, Int, @dom.DomTree, String, AsyncExecutionMode) -> JsResult raise JsError
-  tick(Self, Int, @dom.DomTree) -> JsResult raise JsError
-}
 

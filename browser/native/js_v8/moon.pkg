@@ -1,6 +1,6 @@
 import {
   "mizchi/crater-dom/dom",
-  "mizchi/crater-browser/runtime" @js,
+  "mizchi/crater-browser-runtime" @js,
   "mizchi/v8" @v8,
 }
 

@@ -1,0 +1,16 @@
+import {
+  "moonbitlang/core/bench",
+  "mizchi/crater/css",
+  "mizchi/crater-dom/aom",
+  "mizchi/crater-dom/html",
+  "mizchi/crater-layout" @layout,
+  "mizchi/crater-layout/types",
+  "mizchi/crater-browser/tui/paint/plain" @tui_paint_plain,
+  "mizchi/crater-browser/tui/paint_output" @tui_paint_output,
+  "mizchi/crater-painter/x/image",
+  "mizchi/crater-renderer/renderer",
+}
+
+warnings = "-unused_package"
+
+supported_targets = "js"

@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser-http-sqlite"
+
+import {
+  "mizchi/crater-browser-http",
+  "mizchi/sqlite",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct SqliteCacheBackend {
+  db : @sqlite.Database
+}
+pub fn SqliteCacheBackend::clear(Self) -> Unit
+pub fn SqliteCacheBackend::lookup(Self, String) -> @crater-browser-http.CacheEntry?
+pub fn SqliteCacheBackend::new(String) -> Self
+pub fn SqliteCacheBackend::remove(Self, String) -> Unit
+pub fn SqliteCacheBackend::store(Self, @crater-browser-http.CacheEntry) -> Unit
+pub impl @crater-browser-http.HttpCacheBackend for SqliteCacheBackend
+
+// Type aliases
+
+// Traits
+
