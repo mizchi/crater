@@ -1,6 +1,6 @@
 # TODO
 
-## Workspace / Monorepo Status (2026-04-19)
+## Workspace / Monorepo Status (2026-04-24)
 
 - 入口:
   - workspace 構成: `docs/monorepo-workspace.md`
@@ -9,7 +9,7 @@
 ### 完了
 
 - [x] `moon.work` を導入し、主要 module を workspace 管理に移した
-- [x] `layout`, `css`, `dom`, `painter`, `renderer`, `aomx`, `benchmarks`, `testing`, `webvitals`, `browser`, `browser/jsbidi`, `js` を root module から分離した
+- [x] `layout`, `css`, `dom`, `painter`, `renderer`, `aomx`, `benchmarks`, `testing`, `webvitals`, `browser`, `webdriver`, `js` を root module から分離した
 - [x] `browser/native`, `wasm` も workspace member に復帰した
 - [x] publishable module 側の root facade を揃えた
   - `mizchi/crater-layout`
@@ -19,7 +19,7 @@
   - `mizchi/crater-renderer`
   - `mizchi/crater-aomx`
   - `mizchi/crater-browser`
-  - `mizchi/crater-jsbidi`
+  - `mizchi/crater-webdriver-bidi`
   - `mizchi/crater-browser-native`
   - `mizchi/crater-wasm`
 - [x] `browser/native` / `wasm` は local `moon.work` を持つ構成にして、module 単体の `native` / `wasm` command を root workspace から隔離した
@@ -28,7 +28,7 @@
 - [x] `js` / `wasm` の既知 deprecated warning を一通り解消した
 - [x] `ci.yml` / `browser.yml` を mixed-target workspace 前提に更新した
 
-### 次にやる
+### 構造整理で完了したもの
 
 - [x] root compatibility layer (`mizchi/crater`, `mizchi/crater/css`) は `0.17.x` では compatibility facade として残し、新規コードは module 直 import を推奨する方針にした
 - [x] module 直 import を推奨する migration note を README / docs に追加した
@@ -39,23 +39,29 @@
   - component/CLI benchmark baseline scripts, tests, docs も `benchmarks` 配下へ移し、`browser/package.json` から bench 専用 entrypoint を外した
 - [x] public API だけで書ける browser shell fixture integration wbtest を `testing/browser_shell` に移し、`mizchi/crater-browser` 本体から切り離した
 - [x] shared browser helper を `mizchi/crater-browser-contract` として独立 module 化し、`browser` / `jsbidi` は新 module を直接参照するようにした
-- [ ] 残りの CI workflow / scripts でも target-aware recipe を前提に整理し、root で target 未指定の `moon` command を叩かないようにする
+- [x] 残りの CI workflow / scripts でも target-aware recipe を前提に整理し、root で target 未指定の `moon` command を叩かないようにした
+  - target-sensitive な `moon check` / `moon test` / `moon info` / `moon build` は target-aware recipe に寄せた
+  - root に残る target 未指定 command は `moon update` / `moon fmt` などの target-agnostic なものだけにした
 - [x] `browser/native` の full test が `sqlite3.h` 前提で落ちるので、native smoke test と full test の境界を `just test-native*` と docs で明文化した
-- [ ] `browser/native` から sqlite 依存 package をさらに切り離す
+- [x] `browser/native` から sqlite 依存 package を切り離した
   - [x] root facade から `e2e_native` を外し、runtime asset helper を `browser/native/assets` に分離した
   - [x] shared JS runtime contract / serializer を browser module から切り出す前提で複製し、native packages は共通 runtime contract を参照するようにした
   - [x] `mizchi/crater-browser/js` を `0.17.x` の compatibility facade とし、shared runtime contract は narrow surface を canonical にする方針を決めた
   - [x] shared JS runtime contract / DOM serializer を `mizchi/crater-browser-runtime` として独立 module 化し、`browser` / `browser/native` は新 module を直接参照するようにした
   - [x] sqlite-adjacent full native e2e package を `mizchi/crater-testing/native_e2e` へ移し、`mizchi/crater-browser-native` adapter から外した
   - [x] `mizchi/crater-browser-http` から sqlite backend を `mizchi/crater-browser-http-sqlite` へ分離し、native graph から `mizchi/sqlite` を外した
-- [ ] `test-baseline` / `test-baseline-update` の基準が JS suite であることを CI / docs に明記する
-- [ ] `just status` のような長時間コマンドを lightweight な summary へ差し替えるか、用途を docs に明記する
+- [x] `test-baseline` / `test-baseline-update` の基準が JS suite であることを CI / docs に明記した
+- [x] `just status` は lightweight な JS-target summary に寄せ、用途を docs に明記した
+- [x] publishable Moon module は repo と lockstep (`0.17.x`) で versioning する方針にした
+- [x] `benchmarks` と `testing` を release / publish ドキュメント上で internal 扱いに寄せた
+- [x] `docs/monorepo-workspace.md` を維持管理の canonical doc として、README から参照を寄せた
+
+### 運用残件
+
 - [ ] `taffy_compat` の既存 failure 群を、baseline 管理対象として維持するのか、段階的に潰すのか方針を決める
 - [ ] `moon coverage analyze` の mixed-target 前提の扱いを決める
-- [x] publishable Moon module は repo と lockstep (`0.17.x`) で versioning する方針にした
-- [ ] `benchmarks` と `testing` を release / publish ドキュメント上で internal 扱いに寄せる
 - [ ] `scripts/flaker-*` の整理と並行して、module split 後の task ownership を棚卸しする
-- [x] `docs/monorepo-workspace.md` を維持管理の canonical doc として、README から参照を寄せた
+- [ ] `benchmarks` / `testing` / `adapter` module の release note テンプレートと changelog 粒度を決める
 
 ### 判断待ち
 
@@ -334,10 +340,10 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
 ### 現状整理
 
 - MoonBit 化済みの中核:
-  - `browser/jsbidi/bidi_main/main.mbt`
-  - `browser/jsbidi/webdriver/bidi_protocol.mbt`
-  - `browser/jsbidi/webdriver/bidi_server.mbt`
-  - `browser/jsbidi/webdriver/bidi_storage.mbt`
+  - `webdriver/bidi_main/main.mbt`
+  - `webdriver/webdriver/bidi_protocol.mbt`
+  - `webdriver/webdriver/bidi_server.mbt`
+  - `webdriver/webdriver/bidi_storage.mbt`
 - まだ Python に大きく残っている本実装:
   - `scripts/crater_bidi_adapter.py`
   - `browsingContext` / `session` / `script` / `network` / `storage` / `input` / `browser`
@@ -575,7 +581,7 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
   - `provideResponse` の body override は MoonBit 側へ移行済み
   - `get_element` / `fetch` / `setup_network_test` は MoonBit command ベースに整理済み
   - `get_element` の Python 側 `sharedId` normalize は削除済み
-  - 同期 fixture の `get_test_page` は protocol command ではなく、MoonBit helper package `browser/jsbidi/webdriver_fixture_builder` を subprocess + cache で呼ぶ形に移行済み
+  - 同期 fixture の `get_test_page` は protocol command ではなく、MoonBit helper package `testing/webdriver_fixture_builder` を subprocess + cache で呼ぶ形に移行済み
   - `url` / `inline` / `iframe` / `get_actions_origin_page` も同 helper package 経由に移行済み
   - `compare_png_bidi` / `render_pdf_to_png_bidi` / `assert_pdf_dimensions` も同 helper package 経由に移行済み
   - synthetic print payload に `pages` / `signature` を追加し、`assert_pdf_content` / `assert_pdf_image` も helper package 経由で実動化済み
@@ -618,9 +624,9 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
   - [x] `top_context` / `new_tab` fixture の dict copy unwrap を削除
   - [x] `top_context` / `new_tab` の fallback object を fail-fast helper に置き換えた
   - [x] `get_test_page` の page builder を pure helper に切り出して MoonBit 移植対象を分離した
-  - [x] 同期 fixture 制約に合わせて `browser/jsbidi/webdriver_fixture_builder` を追加し、`get_test_page` の page builder 自体を MoonBit helper に移した
-  - [x] `url` / `inline` / `iframe` / `get_actions_origin_page` も `browser/jsbidi/webdriver_fixture_builder` 経由へ移した
-  - [x] `compare_png_bidi` / `render_pdf_to_png_bidi` / `assert_pdf_dimensions` も `browser/jsbidi/webdriver_fixture_builder` 経由へ移した
+  - [x] 同期 fixture 制約に合わせて `testing/webdriver_fixture_builder` を追加し、`get_test_page` の page builder 自体を MoonBit helper に移した
+  - [x] `url` / `inline` / `iframe` / `get_actions_origin_page` も `testing/webdriver_fixture_builder` 経由へ移した
+  - [x] `compare_png_bidi` / `render_pdf_to_png_bidi` / `assert_pdf_dimensions` も `testing/webdriver_fixture_builder` 経由へ移した
   - [x] synthetic print payload に `pages` / `signature` を追加し、`assert_pdf_content` / `assert_pdf_image` を helper package 経由の実動 assertion に置き換えた
   - [x] `print --quick` (`137/137`) と `--profile strict` (`277/277`) で回帰がないことを確認した
   - [x] `scripts/crater_bidi_adapter.py` を `2212` 行から `2002` 行へ縮めた
@@ -637,26 +643,26 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
   - [x] `server_config` を helper package の `buildServerConfig` 経由に移し、Python 側の static dict を削除した
   - [x] `assert_pdf_image` / `fetch` / `configuration` は top-level helper + `functools.partial` に寄せて fixture ごとの local closure を削った
   - [x] `browsing_context/print --quick` (`137/137`) / `network/add_intercept/url_patterns.py --quick` (`69/69`) / `browsing_context/navigation_committed/navigation_committed.py --quick` (`20/20`) / `network/add_data_collector/user_contexts.py --quick` (`2/2`) / `--profile strict` (`277/277`) で回帰がないことを確認した
-  - [x] `browser/jsbidi/webdriver_fixture_builder` の test は `14/14 pass`
+  - [x] `testing/webdriver_fixture_builder` の test は `14/14 pass`
   - [x] `get_element` / `load_static_test_page` / `assert_file_dialog_{canceled,not_canceled}` / `setup_network_test` は top-level helper + task/collector group に寄せ、fixture 内の local async closure を削った
   - [x] `input/set_files --quick` (`46/46`) / `input/perform_actions/wheel --quick` (`17/17`) / `input/file_dialog_opened --quick` (`8/8`) / `session/capabilities/unhandled_prompt_behavior/file --quick` (`12/12`) / `network/set_extra_headers/contexts.py --quick` (`7/7`) / `--profile strict` (`277/277`) で helper 抽出の回帰がないことを確認した
   - [x] module proxy の `send_command -> await future` 重複を `_CommandProxy._command()` に寄せ、`current_session` / `capabilities` の inline ロジックも top-level helper 化した
   - [x] `browser/create_user_context --quick` (`182/182`) / `browsing_context/get_tree --quick` (`36/36`) / `script/get_realms --quick` (`24/24`) / `network/add_intercept --quick` (`210/210`) / `storage --quick` (`342/342`) / `input/set_files --quick` (`46/46`) / `--profile strict` (`277/277`) で proxy 共通化の回帰がないことを確認した
   - [x] `input.setFiles` の `files -> sourcePaths/displayNames` 変換を protocol 側へ移し、Python から `_normalize_files` / `_display_file_name` を削除した
   - [x] wbtest で `input.setFiles(files=...)` alias と basename 導出 (`path/to/noop.txt`, `C:\\tmp\\noop.txt`) を固定した
-  - [x] `moon -C browser/jsbidi fmt/info/check --target js` / `just build-bidi` / `.venv/bin/python -m py_compile scripts/crater_bidi_adapter.py` / `input/set_files --quick` (`46/46`) / `--profile strict` (`277/277`) で raw forward 化の回帰がないことを確認した
+  - [x] `moon -C webdriver fmt/info/check --target js` / `just build-bidi` / `.venv/bin/python -m py_compile scripts/crater_bidi_adapter.py` / `input/set_files --quick` (`46/46`) / `--profile strict` (`277/277`) で raw forward 化の回帰がないことを確認した
   - [x] `script.fetchForTest` の `requestHeaders/requestData` 生成を protocol 側へ移し、Python から `_synthesize_request_bytes_value` / `_network_header_entries_from_map` を削除した
   - [x] wbtest で `script.fetchForTest(headersJson/postDataJson/postDataMode)` から request body と header が導出されることを固定した
-  - [x] `moon -C browser/jsbidi fmt/info/check --target js` / `just build-bidi` / `.venv/bin/python -m py_compile scripts/crater_bidi_adapter.py` / `network/get_data --quick` (`53/53`) / `network/add_data_collector --quick` (`63/63`) / `network --quick` (`1389/1389`) / `--profile strict` (`277/277`) で fetch request shaping 移行の回帰がないことを確認した
+  - [x] `moon -C webdriver fmt/info/check --target js` / `just build-bidi` / `.venv/bin/python -m py_compile scripts/crater_bidi_adapter.py` / `network/get_data --quick` (`53/53`) / `network/add_data_collector --quick` (`63/63`) / `network --quick` (`1389/1389`) / `--profile strict` (`277/277`) で fetch request shaping 移行の回帰がないことを確認した
   - [x] `load_static_test_page` の `read -> inline -> navigate -> prepare` を `script.loadStaticTestPageForTest` に畳み、public navigate 相当の commit state を protocol 側で適用するようにした
   - [x] wbtest で `script.loadStaticTestPageForTest` が `allEvents` reset と data URL navigation を同時に満たすことを固定した
-  - [x] `moon -C browser/jsbidi fmt/info/check --target js` / `just build-bidi` / `.venv/bin/python -m py_compile scripts/crater_bidi_adapter.py` / `input/set_files --quick` (`46/46`) / `input/perform_actions/wheel --quick` (`17/17`) / `input/release_actions --quick` (`12/12`) / `--profile strict` (`277/277`) で load_static_test_page 1-command 化の回帰がないことを確認した
+  - [x] `moon -C webdriver fmt/info/check --target js` / `just build-bidi` / `.venv/bin/python -m py_compile scripts/crater_bidi_adapter.py` / `input/set_files --quick` (`46/46`) / `input/perform_actions/wheel --quick` (`17/17`) / `input/release_actions --quick` (`12/12`) / `--profile strict` (`277/277`) で load_static_test_page 1-command 化の回帰がないことを確認した
   - [x] adapter に残っていた dead wrapper `ScriptModule.prepare_loaded_static_test_page()` を削除した
   - [x] file dialog helper は `input.isFileDialogCanceledForTest` に寄せて、Python から JS probe / timeout ベースの assertion helper を削除した
   - [x] wbtest で default `ignore` と explicit `dismiss` の file dialog cancel state query を固定した
-  - [x] `moon -C browser/jsbidi fmt/info/check --target js` / `just build-bidi` / `.venv/bin/python -m py_compile scripts/crater_bidi_adapter.py` / `session/capabilities/unhandled_prompt_behavior/file --quick` (`12/12`) / `browser/create_user_context/unhandled_prompt_behavior.py --quick` (`24/24`) / `--profile strict` (`277/277`) で file dialog helper command 化の回帰がないことを確認した
-  - [x] `test_origin` / `test_alt_origin` / `test_page*` / frame page fixture は `browser/jsbidi/webdriver_fixture_builder` の `buildNamedBidiFixture` に寄せて、Python 側の `url` / `inline` 合成を削除した
-  - [x] `moon -C browser/jsbidi test webdriver_fixture_builder --target js` (`17/17`) / `browsing_context/get_tree --quick` (`36/36`) / `script/get_realms --quick` (`24/24`) / `storage/get_cookies/partition.py --quick` (`9/9`) / `network/combined/network_events.py --quick` (`6/6`) / `--profile strict` (`277/277`) で named page builder 化の回帰がないことを確認した
+  - [x] `moon -C webdriver fmt/info/check --target js` / `just build-bidi` / `.venv/bin/python -m py_compile scripts/crater_bidi_adapter.py` / `session/capabilities/unhandled_prompt_behavior/file --quick` (`12/12`) / `browser/create_user_context/unhandled_prompt_behavior.py --quick` (`24/24`) / `--profile strict` (`277/277`) で file dialog helper command 化の回帰がないことを確認した
+  - [x] `test_origin` / `test_alt_origin` / `test_page*` / frame page fixture は `testing/webdriver_fixture_builder` の `buildNamedBidiFixture` に寄せて、Python 側の `url` / `inline` 合成を削除した
+  - [x] `moon -C testing test webdriver_fixture_builder --target js` (`17/17`) / `browsing_context/get_tree --quick` (`36/36`) / `script/get_realms --quick` (`24/24`) / `storage/get_cookies/partition.py --quick` (`9/9`) / `network/combined/network_events.py --quick` (`6/6`) / `--profile strict` (`277/277`) で named page builder 化の回帰がないことを確認した
   - [x] `current_session` / `session` は custom class をやめて `SimpleNamespace(capabilities=...)` の classic harness stub に整理した
   - [x] `session/new/bidi_upgrade.py --quick` (`4/4`) / `input/perform_actions/pointer_mouse_modifier.py --quick` (`10/10`) / `--profile strict` (`277/277`) で classic stub 整理の回帰がないことを確認した
   - [x] `current_session` / `session` / `default_capabilities` / `capabilities` / `modifier_key` / `wait_for_future_safe` / `current_time` は MoonBit 本体ではなく WPT harness compatibility layer として Python に残す方針を固定する

@@ -32,7 +32,7 @@ describe("CI compatible font setup", () => {
   });
 
   test("font resolvers include msttcorefonts file variants", () => {
-    const bidiSource = readRepoFile("browser/jsbidi/bidi_main/start-with-font.ts");
+    const bidiSource = readRepoFile("webdriver/bidi_main/start-with-font.ts");
     const resolverSource = readRepoFile("scripts/system-font-resolver.ts");
 
     for (const source of [bidiSource, resolverSource]) {

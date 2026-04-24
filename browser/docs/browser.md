@@ -8,7 +8,7 @@ The current codebase has three distinct integration surfaces:
 | Surface | Entry Point | Purpose | Status |
 | --- | --- | --- | --- |
 | Terminal CLI | `main/main.mbt` | Interactive browsing and structured extraction | Primary user-facing surface |
-| WebDriver BiDi | `jsbidi/bidi_main/main.mbt`, `jsbidi/webdriver/*` | Automation, WPT-oriented behavior, future Playwright/WebDriver work | Primary automation surface |
+| WebDriver BiDi | `../webdriver/bidi_main/main.mbt`, `../webdriver/webdriver/*` | Automation, WPT-oriented behavior, future Playwright/WebDriver work | Primary automation surface |
 | CDP bridge | `tools/cdp-server.ts`, `cdp/*` | `puppeteer-core` smoke tests and legacy compatibility | Secondary and partial |
 
 The center of gravity is now BiDi-first. CDP still exists, but mainly as a compatibility bridge.
@@ -21,8 +21,8 @@ The center of gravity is now BiDi-first. CDP still exists, but mainly as a compa
 | Browser shell | `shell/browser.mbt` | Owns URL/history state, DOM/AOM/render caches, scheduler, hint mode, selection mode, output generation |
 | Interaction | `interaction/interaction.mbt`, `tui/*` | Maps keyboard and mouse input to browser actions |
 | CDP domains | `cdp/*` | MoonBit-side `Target`, `DOM`, `Page`, `Input`, and related protocol handling |
-| BiDi protocol | `jsbidi/webdriver/bidi_protocol.mbt` | Session state, browsing contexts, subscriptions, script/input/network/storage/emulation modules |
-| BiDi transport | `jsbidi/webdriver/bidi_server.mbt` | Deno WebSocket server and JS runtime bootstrap |
+| BiDi protocol | `../webdriver/webdriver/bidi_protocol.mbt` | Session state, browsing contexts, subscriptions, script/input/network/storage/emulation modules |
+| BiDi transport | `../webdriver/webdriver/bidi_server.mbt` | Deno WebSocket server and JS runtime bootstrap |
 | Test bridges | `tools/cdp-server.ts`, `tools/webdriver-server.ts` | Node-side harnesses used by Puppeteer/WebDriver smoke tests |
 
 ## Terminal Browser Path
@@ -48,14 +48,14 @@ This shell is the shared browser abstraction used by both user-facing rendering 
 
 ## WebDriver BiDi Stack
 
-`jsbidi/` is the primary automation implementation.
+`../webdriver/` is the primary automation implementation.
 
 ### Entry Points
 
-- `jsbidi/bidi_main/main.mbt`: minimal server entry point
-- `jsbidi/bidi_main/start-with-font.ts`: Deno launcher with font loading and text metrics setup
-- `jsbidi/webdriver/bidi_server.mbt`: WebSocket transport and JS runtime bootstrap
-- `jsbidi/webdriver/bidi_protocol.mbt`: main protocol state machine
+- `../webdriver/bidi_main/main.mbt`: minimal server entry point
+- `../webdriver/bidi_main/start-with-font.ts`: Deno launcher with font loading and text metrics setup
+- `../webdriver/webdriver/bidi_server.mbt`: WebSocket transport and JS runtime bootstrap
+- `../webdriver/webdriver/bidi_protocol.mbt`: main protocol state machine
 
 ### Current Coverage
 

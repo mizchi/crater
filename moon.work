@@ -14,7 +14,7 @@ members = [
   "./renderer",
   "./runtime",
   "./browser",
-  "./browser/jsbidi",
+  "./webdriver",
   "./browser/native",
   "./js",
   "./wasm",

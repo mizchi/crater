@@ -30,9 +30,9 @@ afterEach(() => {
 });
 
 describe("resolveBidiServerPath", () => {
-  it("detects server in browser/jsbidi/_build when available", () => {
+  it("detects server in webdriver/_build when available", () => {
     const cwd = mkTempProject();
-    const serverPath = path.join(cwd, "browser/jsbidi/_build/js/release/build/bidi_main/bidi_main.js");
+    const serverPath = path.join(cwd, "webdriver/_build/js/release/build/bidi_main/bidi_main.js");
     touch(serverPath);
 
     expect(resolveBidiServerPath(cwd)).toBe(serverPath);
@@ -42,33 +42,31 @@ describe("resolveBidiServerPath", () => {
     const cwd = mkTempProject();
     const serverPath = path.join(
       cwd,
-      "_build/js/release/build/mizchi/crater-jsbidi/bidi_main/bidi_main.js",
+      "_build/js/release/build/mizchi/crater-webdriver-bidi/bidi_main/bidi_main.js",
     );
     touch(serverPath);
 
     expect(resolveBidiServerPath(cwd)).toBe(serverPath);
   });
 
-  it("detects server in browser/_build when newer submodule build is missing", () => {
+  it("detects server in webdriver target build when workspace build is missing", () => {
     const cwd = mkTempProject();
-    const serverPath = path.join(cwd, "browser/_build/js/release/build/bidi_main/bidi_main.js");
+    const serverPath = path.join(cwd, "webdriver/_build/js/release/build/bidi_main/bidi_main.js");
     touch(serverPath);
 
     expect(resolveBidiServerPath(cwd)).toBe(serverPath);
   });
 
-  it("prefers browser/jsbidi/_build over legacy paths", () => {
+  it("prefers webdriver/_build over legacy paths", () => {
     const cwd = mkTempProject();
-    const submodulePath = path.join(cwd, "browser/jsbidi/_build/js/release/build/bidi_main/bidi_main.js");
-    const workspacePath = path.join(cwd, "_build/js/release/build/mizchi/crater-jsbidi/bidi_main/bidi_main.js");
-    const targetPath = path.join(cwd, "browser/target/js/release/build/bidi_main/bidi_main.js");
-    const buildPath = path.join(cwd, "browser/_build/js/release/build/bidi_main/bidi_main.js");
-    touch(submodulePath);
+    const localBuildPath = path.join(cwd, "webdriver/_build/js/release/build/bidi_main/bidi_main.js");
+    const workspacePath = path.join(cwd, "_build/js/release/build/mizchi/crater-webdriver-bidi/bidi_main/bidi_main.js");
+    const targetPath = path.join(cwd, "webdriver/target/js/release/build/bidi_main/bidi_main.js");
+    touch(localBuildPath);
     touch(workspacePath);
-    touch(buildPath);
     touch(targetPath);
 
-    expect(resolveBidiServerPath(cwd)).toBe(submodulePath);
+    expect(resolveBidiServerPath(cwd)).toBe(localBuildPath);
   });
 
   it("returns null when no server file exists", () => {
@@ -147,10 +145,10 @@ describe("resolveRequestedTargetPath", () => {
 });
 
 describe("crater_bidi_adapter fixture builder path", () => {
-  it("uses the renamed jsbidi workspace path", () => {
+  it("uses the testing workspace path for webdriver fixtures", () => {
     const adapter = fs.readFileSync(path.join(process.cwd(), "scripts/crater_bidi_adapter.py"), "utf-8");
 
-    expect(adapter).toContain('root / "_build" / "js" / "release" / "build" / "mizchi" / "crater-jsbidi" / "webdriver_fixture_builder" / "webdriver_fixture_builder.js"');
-    expect(adapter).not.toContain("crater-browser-js");
+    expect(adapter).toContain('root / "_build" / "js" / "release" / "build" / "mizchi" / "crater-testing" / "webdriver_fixture_builder" / "webdriver_fixture_builder.js"');
+    expect(adapter).toContain('root / "testing" / "_build" / "js" / "release" / "build" / "webdriver_fixture_builder" / "webdriver_fixture_builder.js"');
   });
 });

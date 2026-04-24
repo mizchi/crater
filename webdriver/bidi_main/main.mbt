@@ -1,7 +1,7 @@
 ///|
 /// WebDriver BiDi Server Entry Point
 ///
-/// Run with: deno run -A ../../jsbidi/_build/js/release/build/bidi_main/bidi_main.js
+/// Run with: deno run -A ../../webdriver/_build/js/release/build/bidi_main/bidi_main.js
 fn main {
   // Skip glyph warmup for now — pre-rasterize on first paint instead
   // @webdriver.warmup_glyph_cache()

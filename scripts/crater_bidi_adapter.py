@@ -1720,10 +1720,9 @@ def test_page():
 def _webdriver_fixture_builder_path() -> Path:
     root = Path(__file__).resolve().parent.parent
     candidates = [
-        root / "browser" / "jsbidi" / "_build" / "js" / "release" / "build" / "webdriver_fixture_builder" / "webdriver_fixture_builder.js",
-        root / "_build" / "js" / "release" / "build" / "mizchi" / "crater-jsbidi" / "webdriver_fixture_builder" / "webdriver_fixture_builder.js",
-        root / "browser" / "target" / "js" / "release" / "build" / "webdriver_fixture_builder" / "webdriver_fixture_builder.js",
-        root / "browser" / "_build" / "js" / "release" / "build" / "webdriver_fixture_builder" / "webdriver_fixture_builder.js",
+        root / "testing" / "_build" / "js" / "release" / "build" / "webdriver_fixture_builder" / "webdriver_fixture_builder.js",
+        root / "_build" / "js" / "release" / "build" / "mizchi" / "crater-testing" / "webdriver_fixture_builder" / "webdriver_fixture_builder.js",
+        root / "testing" / "target" / "js" / "release" / "build" / "webdriver_fixture_builder" / "webdriver_fixture_builder.js",
     ]
     for candidate in candidates:
         if candidate.exists():

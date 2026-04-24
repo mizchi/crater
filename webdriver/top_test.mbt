@@ -1,5 +1,5 @@
 ///|
-test "browser-js facade parses api method names" {
+test "webdriver-bidi facade parses api method names" {
   inspect(parse_method("newContext"), content="Some(NewContext)")
   inspect(
     parse_method("Page.navigate"),
@@ -8,7 +8,7 @@ test "browser-js facade parses api method names" {
 }
 
 ///|
-test "browser-js facade handles cdp session queries" {
+test "webdriver-bidi facade handles cdp session queries" {
   let session = @cdp.CdpSession::new("test-session")
   let tree = session.get_tree()
   let doc = tree.get_document()

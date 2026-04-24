@@ -3,10 +3,9 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 export const BIDI_MAIN_BUILD_CANDIDATES = [
-  "browser/jsbidi/_build/js/release/build/bidi_main/bidi_main.js",
-  "_build/js/release/build/mizchi/crater-jsbidi/bidi_main/bidi_main.js",
-  "browser/target/js/release/build/bidi_main/bidi_main.js",
-  "browser/_build/js/release/build/bidi_main/bidi_main.js",
+  "webdriver/_build/js/release/build/bidi_main/bidi_main.js",
+  "_build/js/release/build/mizchi/crater-webdriver-bidi/bidi_main/bidi_main.js",
+  "webdriver/target/js/release/build/bidi_main/bidi_main.js",
 ];
 
 export function resolveBidiMainBuildPath(

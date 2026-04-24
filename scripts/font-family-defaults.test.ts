@@ -21,7 +21,7 @@ describe("font-family defaults", () => {
 
   test("start-with-font routes missing families through the shared default helper", () => {
     const source = readFileSync(
-      new URL("../browser/jsbidi/bidi_main/start-with-font.ts", import.meta.url),
+      new URL("../webdriver/bidi_main/start-with-font.ts", import.meta.url),
       "utf8",
     );
 

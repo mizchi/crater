@@ -1,5 +1,5 @@
 import {
-  "mizchi/crater-jsbidi/webdriver" @webdriver,
+  "mizchi/crater-webdriver-bidi/webdriver" @webdriver,
 }
 
 supported_targets = "js"

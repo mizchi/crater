@@ -23,7 +23,7 @@ The current workspace members are:
 - `./painter`
 - `./renderer`
 - `./browser`
-- `./browser/jsbidi`
+- `./webdriver`
 - `./browser/native`
 - `./js`
 - `./wasm`
@@ -43,6 +43,12 @@ Both directories also keep a local `moon.work` with `members = ["."]` so
 module-scoped commands such as `moon -C browser/native check --target native`
 and `moon -C wasm check --target wasm` stay isolated from the mixed-target root
 workspace graph.
+
+At this point, target-sensitive root commands are expected to stay explicit:
+`moon check`, `moon test`, `moon info`, and `moon build` should always go
+through a target-aware recipe or per-module command. The remaining target-free
+root commands are intentionally target-agnostic ones such as `moon update` and
+`moon fmt`.
 
 The same split now applies to `just` test recipes:
 
@@ -100,7 +106,7 @@ The intended direction is:
 | `mizchi/crater-browser-runtime` | Canonical library | Shared JS runtime contract and DOM serializer |
 | `mizchi/crater-browser-http-sqlite` | Adapter | Optional JS-only SQLite cache backend for `mizchi/crater-browser-http` |
 | `mizchi/crater-browser` | Integration | Browser shell, interaction, TUI, network/cache integration |
-| `mizchi/crater-jsbidi` | Adapter | BiDi / JS-facing browser bindings |
+| `mizchi/crater-webdriver-bidi` | Adapter | WebDriver BiDi server / protocol adapter |
 | `mizchi/crater-browser-native` | Adapter | Native browser host bindings |
 | `mizchi/crater-js` | Adapter | JS exports for layout/renderer consumers |
 | `mizchi/crater-wasm` | Adapter | WASM component packaging |
@@ -145,6 +151,12 @@ together from the same repo tag, instead of being versioned independently.
 Lockstep versioning does not imply that every workspace member is equally
 recommended as a public reuse surface.
 
+For release and support purposes, treat `mizchi/crater-benchmarks` and
+`mizchi/crater-testing` as internal workspace modules. They stay on the same
+version line so the workspace graph remains coherent, but they are not the
+default public support surface and should not be documented as production
+dependencies.
+
 ## Import Guidance
 
 For new code, prefer the narrowest module that matches the subsystem you need:
@@ -158,7 +170,7 @@ For new code, prefer the narrowest module that matches the subsystem you need:
 | Renderer / VRT facade | `mizchi/crater-renderer` |
 | Browser shell / interaction / CDP | `mizchi/crater-browser` |
 | Browser runtime contract / DOM serializer | `mizchi/crater-browser-runtime` |
-| BiDi / WebDriver helper surface | `mizchi/crater-jsbidi` |
+| BiDi / WebDriver helper surface | `mizchi/crater-webdriver-bidi` |
 | Native V8 host bindings | `mizchi/crater-browser-native` |
 | JS exports | `mizchi/crater-js` |
 | WASM component facade | `mizchi/crater-wasm` |
@@ -363,14 +375,17 @@ while shell/native consumers share `browser/runtime` for the JS runtime
 contract and DOM serializer instead of reaching back into the root integration
 module for runtime-facing helpers.
 
-### `mizchi/crater-jsbidi`
+### `mizchi/crater-webdriver-bidi`
 
-The JS/BiDi-facing packages are kept in `browser/jsbidi/`:
+The WebDriver BiDi adapter packages are kept in `webdriver/`:
 
 - `.`
 - `webdriver`
 - `bidi_main`
-- `webdriver_fixture_builder`
+
+The fixture-only builder now lives in the internal `testing/` module:
+
+- `testing/webdriver_fixture_builder`
 
 The root package provides a small facade over the WebDriver helper surface
 without forcing consumers to import the larger `webdriver` package path

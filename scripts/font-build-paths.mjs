@@ -3,9 +3,9 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 export const FONT_RUNTIME_BUILD_CANDIDATES = [
-  "browser/jsbidi/_build/js/release/build/font_runtime/font_runtime.js",
-  "_build/js/release/build/mizchi/crater-jsbidi/font_runtime/font_runtime.js",
-  "browser/jsbidi/target/js/release/build/font_runtime/font_runtime.js",
+  "webdriver/_build/js/release/build/font_runtime/font_runtime.js",
+  "_build/js/release/build/mizchi/crater-webdriver-bidi/font_runtime/font_runtime.js",
+  "webdriver/target/js/release/build/font_runtime/font_runtime.js",
 ];
 
 export function resolveFontRuntimeBuildPath(

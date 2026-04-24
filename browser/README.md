@@ -13,7 +13,7 @@ Crater Browser currently has two main faces:
 - Structured outputs for tooling: `--json`, `--aom`, `--extract-main`, `--arc90`, `--grounding`
 - Interactive navigation with keyboard, mouse, hit-a-hint, dark mode, and selection mode
 - Browser core with DOM, CSS, layout, accessibility tree, scheduler, and JS-backed test/automation paths
-- WebDriver BiDi-first automation stack under `jsbidi/`
+- WebDriver BiDi-first automation stack under `../webdriver/`
 - Partial CDP bridge used for `puppeteer-core` smoke tests
 
 The project is still experimental and should not be treated as a production browser.
@@ -131,10 +131,10 @@ pnpm test:webdriver
 Run the WebDriver BiDi server:
 
 ```bash
-cd jsbidi
+cd ../webdriver
 moon build --target js --release
-cd ..
-deno run -A jsbidi/bidi_main/start-with-font.ts
+cd ../browser
+deno run -A ../webdriver/bidi_main/start-with-font.ts
 ```
 
 ## Architecture Notes
@@ -143,7 +143,7 @@ deno run -A jsbidi/bidi_main/start-with-font.ts
 - `shell/browser.mbt`: browser shell, rendering orchestration, output modes, history, hint mode, selection mode
 - `interaction/interaction.mbt`: keyboard and mouse dispatch
 - `cdp/`: partial MoonBit CDP domains
-- `jsbidi/webdriver/`: WebDriver BiDi protocol, server, synthetic WPT helpers
+- `../webdriver/webdriver/`: WebDriver BiDi protocol, server, synthetic WPT helpers
 - `tools/cdp-server.ts`: Node-side CDP bridge used by Puppeteer tests
 
 ## Limits And Known Gaps

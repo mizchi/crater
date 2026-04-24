@@ -248,17 +248,17 @@ ci-timing-summary input json markdown:
 
 # Build BiDi server
 build-bidi:
-    moon -C browser/jsbidi build font_runtime --target js --release -j 1
-    moon -C browser/jsbidi build bidi_main --target js --release -j 1
-    moon -C browser/jsbidi build webdriver_fixture_builder --target js --release -j 1
+    moon -C webdriver build font_runtime --target js --release -j 1
+    moon -C webdriver build bidi_main --target js --release -j 1
+    moon -C testing build webdriver_fixture_builder --target js --release -j 1
 
 # Start BiDi server (Deno)
 start-bidi:
-    bash -lc 'set -euo pipefail; for candidate in "browser/jsbidi/_build/js/release/build/bidi_main/bidi_main.js" "_build/js/release/build/mizchi/crater-jsbidi/bidi_main/bidi_main.js" "browser/target/js/release/build/bidi_main/bidi_main.js" "browser/_build/js/release/build/bidi_main/bidi_main.js"; do if [ -f "$candidate" ]; then exec deno run -A "$candidate"; fi; done; echo "BiDi server not built. Run: just build-bidi" >&2; exit 1'
+    bash -lc 'set -euo pipefail; for candidate in "webdriver/_build/js/release/build/bidi_main/bidi_main.js" "_build/js/release/build/mizchi/crater-webdriver-bidi/bidi_main/bidi_main.js" "webdriver/target/js/release/build/bidi_main/bidi_main.js"; do if [ -f "$candidate" ]; then exec deno run -A "$candidate"; fi; done; echo "BiDi server not built. Run: just build-bidi" >&2; exit 1'
 
 # Start BiDi server with font metrics (for VRT)
 start-bidi-with-font:
-    deno run -A browser/jsbidi/bidi_main/start-with-font.ts
+    deno run -A webdriver/bidi_main/start-with-font.ts
 
 # === WPT WebDriver BiDi Tests ===
 

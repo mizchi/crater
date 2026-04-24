@@ -1,6 +1,6 @@
 import {
   "mizchi/js/deno",
-  "mizchi/crater-jsbidi/webdriver" @webdriver,
+  "mizchi/crater-webdriver-bidi/webdriver" @webdriver,
   "moonbitlang/core/json",
 }
 

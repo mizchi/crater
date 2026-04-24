@@ -266,7 +266,7 @@ moon add mizchi/crater-dom
 moon add mizchi/crater-renderer
 moon add mizchi/crater-browser
 moon add mizchi/crater-browser-runtime
-moon add mizchi/crater-jsbidi
+moon add mizchi/crater-webdriver-bidi
 moon add mizchi/crater-wasm
 ```
 

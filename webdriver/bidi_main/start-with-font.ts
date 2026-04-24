@@ -3,7 +3,7 @@
  * Loads multiple fonts (Arial, Verdana, etc.) and resolves CSS font-family
  * at runtime for accurate text metrics.
  *
- * Usage: deno run -A browser/jsbidi/bidi_main/start-with-font.ts
+ * Usage: deno run -A webdriver/bidi_main/start-with-font.ts
  */
 import { createTextIntrinsicFnFromMeasureText } from "../../../scripts/text-intrinsic.ts";
 import {

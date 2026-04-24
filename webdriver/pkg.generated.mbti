@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-jsbidi"
+package "mizchi/crater-webdriver-bidi"
 
 import {
   "mizchi/crater-browser/cdp",
-  "mizchi/crater-jsbidi/webdriver",
+  "mizchi/crater-webdriver-bidi/webdriver",
 }
 
 // Values

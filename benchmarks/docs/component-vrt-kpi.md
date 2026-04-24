@@ -200,11 +200,11 @@ The current codebase already has useful building blocks:
 - `mizchi/crater/aom`
   - `build_accessibility_tree_from_element`
   - `find_landmarks`
-- `jsbidi/webdriver/bidi_protocol.mbt`
+- `../webdriver/webdriver/bidi_protocol.mbt`
   - `browsingContext.locateNodes`
   - `browsingContext.captureScreenshotData`
   - `clip.element` and `clip.box`
-- `jsbidi/webdriver/bidi_browsing_context_actual_paint.mbt`
+- `../webdriver/webdriver/bidi_browsing_context_actual_paint.mbt`
   - actual paint timing already split into `render`, `paint`, `fb`, `total`
 
 That means the repository can support both:

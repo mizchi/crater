@@ -14,6 +14,10 @@
       "path": "../runtime",
       "version": "0.17.0"
     },
+    "mizchi/crater-webdriver-bidi": {
+      "path": "../webdriver",
+      "version": "0.17.0"
+    },
     "mizchi/crater-css": {
       "path": "../css",
       "version": "0.17.0"
@@ -29,7 +33,8 @@
     "mizchi/crater-renderer": {
       "path": "../renderer",
       "version": "0.17.0"
-    }
+    },
+    "mizchi/js": "0.10.13"
   },
   "repository": "https://github.com/mizchi/crater",
   "license": "Apache-2.0",
