@@ -1,0 +1,108 @@
+name: Release Moon
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Release action
+        required: true
+        default: check
+        type: choice
+        options:
+          - check
+          - dry-run
+          - publish
+      scope:
+        description: Module selection
+        required: true
+        default: public
+        type: choice
+        options:
+          - public
+          - crater-star
+          - public+internal
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  release-moon:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Install native system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsqlite3-dev
+
+      - name: Set up MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Show release plan
+        run: |
+          args=()
+          case "${{ inputs.scope }}" in
+            crater-star)
+              args+=(--only-crater-star)
+              ;;
+            public+internal)
+              args+=(--include-internal)
+              ;;
+          esac
+          node scripts/moon-publish-workspace.mjs --list "${args[@]}"
+
+      - name: Update MoonBit dependencies
+        run: moon update
+
+      - name: Install Moon credentials
+        if: inputs.mode == 'publish'
+        env:
+          MOON_CREDENTIALS_JSON: ${{ secrets.MOON_CREDENTIALS_JSON }}
+        run: |
+          if [ -z "${MOON_CREDENTIALS_JSON:-}" ]; then
+            echo "Missing repository/environment secret: MOON_CREDENTIALS_JSON" >&2
+            exit 1
+          fi
+          install -d "$HOME/.moon"
+          printf '%s' "$MOON_CREDENTIALS_JSON" > "$HOME/.moon/credentials.json"
+          chmod 600 "$HOME/.moon/credentials.json"
+
+      - name: Run release action
+        run: |
+          args=()
+          case "${{ inputs.scope }}" in
+            crater-star)
+              args+=(--only-crater-star)
+              ;;
+            public+internal)
+              args+=(--include-internal)
+              ;;
+          esac
+
+          case "${{ inputs.mode }}" in
+            check)
+              node scripts/moon-publish-workspace.mjs --check "${args[@]}"
+              ;;
+            dry-run)
+              node scripts/moon-publish-workspace.mjs --dry-run "${args[@]}"
+              ;;
+            publish)
+              node scripts/moon-publish-workspace.mjs --publish "${args[@]}"
+              ;;
+            *)
+              echo "Unknown mode: ${{ inputs.mode }}" >&2
+              exit 1
+              ;;
+          esac

@@ -167,6 +167,8 @@ MoonBit release order is derived from `moon.work` and the workspace-local
 - `just release-moon-dry-run`: on macOS, run safe `moon package` dry-run packaging;
   elsewhere, run `moon publish --dry-run` in publish order
 - `just release-moon`: run the real `moon publish` sequence
+- `.github/workflows/release-moon.yml`: manual Linux release workflow for
+  `check` / `dry-run` / `publish`
 
 The default release set includes public workspace modules plus the root
 compatibility module when it is part of the dependency closure. Internal modules
@@ -184,6 +186,10 @@ using `moon package` as the default dry-run implementation on macOS. Use
 `node scripts/moon-publish-workspace.mjs --dry-run --force-publish-dry-run` only
 when you explicitly want to reproduce the upstream `moon publish --dry-run`
 behavior.
+
+For real publish from GitHub Actions, set `MOON_CREDENTIALS_JSON` as a
+repository or environment secret containing the full `~/.moon/credentials.json`
+payload, then run the manual `Release Moon` workflow on Linux.
 
 ## Import Guidance
 

@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -156,4 +157,17 @@ test('package command formatting mirrors publish order without network-facing dr
     httpCommand.command,
     'moon package --manifest-path http/moon.mod.json --frozen',
   )
+})
+
+test('release workflow exposes manual Moon release actions with credentials secret', () => {
+  const workflow = readFileSync(
+    path.join(rootDir, '.github/workflows/release-moon.yml'),
+    'utf8',
+  )
+
+  assert.match(workflow, /workflow_dispatch:/)
+  assert.match(workflow, /- publish/)
+  assert.match(workflow, /node scripts\/moon-publish-workspace\.mjs --publish/)
+  assert.match(workflow, /MOON_CREDENTIALS_JSON/)
+  assert.match(workflow, /libsqlite3-dev/)
 })
