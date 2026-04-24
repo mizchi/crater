@@ -26,12 +26,17 @@ function findPnpmRolldownCli(pnpmDir) {
 }
 
 export function resolveRolldownCli(searchRoot = BROWSER_ROOT) {
-  try {
-    return require.resolve("rolldown/bin/cli.mjs", { paths: [searchRoot] });
-  } catch {}
-
   let current = path.resolve(searchRoot);
   while (true) {
+    const npmCli = path.join(current, "node_modules", "rolldown", "bin", "cli.mjs");
+    if (fs.existsSync(npmCli)) {
+      return npmCli;
+    }
+
+    try {
+      return require.resolve("rolldown/bin/cli.mjs", { paths: [current] });
+    } catch {}
+
     const pnpmCli = findPnpmRolldownCli(path.join(current, "node_modules", ".pnpm"));
     if (pnpmCli) {
       return pnpmCli;
