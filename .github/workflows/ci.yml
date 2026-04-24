@@ -439,15 +439,18 @@ jobs:
         run: |
           moon update
           moon update --manifest-path browser/moon.mod.json
-          moon update --manifest-path browser/jsbidi/moon.mod.json
+          moon update --manifest-path webdriver/moon.mod.json
+          moon update --manifest-path testing/moon.mod.json
 
       - name: Prefetch BiDi dependencies
-        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path browser/jsbidi/moon.mod.json
+        run: |
+          bash scripts/ci/prefetch-moon-deps.sh --manifest-path webdriver/moon.mod.json
+          bash scripts/ci/prefetch-moon-deps.sh --manifest-path testing/moon.mod.json
 
       - name: Build BiDi server
         run: |
-          bash scripts/ci/run-moon-step.sh bidi-build moon -C browser/jsbidi build bidi_main --target js --release -j 1
-          bash scripts/ci/run-moon-step.sh webdriver-fixture-build moon -C browser/jsbidi build webdriver_fixture_builder --target js --release -j 1
+          bash scripts/ci/run-moon-step.sh bidi-build moon -C webdriver build bidi_main --target js --release -j 1
+          bash scripts/ci/run-moon-step.sh webdriver-fixture-build moon -C testing build webdriver_fixture_builder --target js --release -j 1
 
       - name: Run WebDriver BiDi shard
         run: |
@@ -528,13 +531,13 @@ jobs:
         run: |
           moon update
           moon update --manifest-path browser/moon.mod.json
-          moon update --manifest-path browser/jsbidi/moon.mod.json
+          moon update --manifest-path webdriver/moon.mod.json
 
       - name: Prefetch BiDi dependencies
-        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path browser/jsbidi/moon.mod.json
+        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path webdriver/moon.mod.json
 
       - name: Build BiDi server
-        run: bash scripts/ci/run-moon-step.sh bidi-build moon -C browser/jsbidi build bidi_main --target js --release -j 1
+        run: bash scripts/ci/run-moon-step.sh bidi-build moon -C webdriver build bidi_main --target js --release -j 1
 
       - name: Start BiDi server
         run: |
@@ -788,13 +791,13 @@ jobs:
         run: |
           moon update
           moon update --manifest-path browser/moon.mod.json
-          moon update --manifest-path browser/jsbidi/moon.mod.json
+          moon update --manifest-path webdriver/moon.mod.json
 
       - name: Prefetch BiDi dependencies
-        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path browser/jsbidi/moon.mod.json
+        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path webdriver/moon.mod.json
 
       - name: Build BiDi server
-        run: bash scripts/ci/run-moon-step.sh bidi-build moon -C browser/jsbidi build bidi_main --target js --release -j 1
+        run: bash scripts/ci/run-moon-step.sh bidi-build moon -C webdriver build bidi_main --target js --release -j 1
 
       - name: Run paint VRT with flaker record
         id: paint_vrt_record
@@ -1043,13 +1046,13 @@ jobs:
         run: |
           moon update
           moon update --manifest-path browser/moon.mod.json
-          moon update --manifest-path browser/jsbidi/moon.mod.json
+          moon update --manifest-path webdriver/moon.mod.json
 
       - name: Prefetch BiDi dependencies
-        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path browser/jsbidi/moon.mod.json
+        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path webdriver/moon.mod.json
 
       - name: Build BiDi server
-        run: bash scripts/ci/run-moon-step.sh bidi-build moon -C browser/jsbidi build bidi_main --target js --release -j 1
+        run: bash scripts/ci/run-moon-step.sh bidi-build moon -C webdriver build bidi_main --target js --release -j 1
 
       - name: Run WPT VRT shard
         run: just test-wpt-vrt
