@@ -55,6 +55,9 @@
 - [x] publishable Moon module は repo と lockstep (`0.17.x`) で versioning する方針にした
 - [x] `benchmarks` と `testing` を release / publish ドキュメント上で internal 扱いに寄せた
 - [x] `docs/monorepo-workspace.md` を維持管理の canonical doc として、README から参照を寄せた
+- [x] workspace graph から依存順の `moon publish` / `moon check` plan を生成する release script を追加した
+  - `scripts/moon-publish-workspace.mjs`
+  - `just release-moon-{list,check,dry-run}`
 
 ### 運用残件
 

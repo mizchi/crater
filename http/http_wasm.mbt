@@ -6,5 +6,5 @@ pub fn fetch(
 ) -> HttpResponse raise HttpError {
   let _ = url
   let _ = options
-  raise NotSupported
+  raise NetworkError("HTTP fetch is not available in the WASM environment")
 }

@@ -515,6 +515,24 @@ test-wasm:
 # Full WASM build pipeline
 wasm: build-wasm transpile-wasm test-wasm
 
+# === Release ===
+
+# Print the Moon publish plan for public workspace modules
+release-moon-list:
+    node scripts/moon-publish-workspace.mjs --list
+
+# Run moon check in dependency order for public workspace modules
+release-moon-check:
+    node scripts/moon-publish-workspace.mjs --check
+
+# Run moon publish --dry-run in dependency order for public workspace modules
+release-moon-dry-run:
+    node scripts/moon-publish-workspace.mjs --dry-run
+
+# Publish public workspace modules in dependency order
+release-moon:
+    node scripts/moon-publish-workspace.mjs --publish
+
 # === Utilities ===
 
 # Clean build artifacts

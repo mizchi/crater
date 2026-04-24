@@ -157,6 +157,34 @@ version line so the workspace graph remains coherent, but they are not the
 default public support surface and should not be documented as production
 dependencies.
 
+### Publish Order
+
+MoonBit release order is derived from `moon.work` and the workspace-local
+`moon.mod.json` dependency graph.
+
+- `just release-moon-list`: print the public publish order
+- `just release-moon-check`: run target-aware `moon check` in publish order
+- `just release-moon-dry-run`: on macOS, run safe `moon package` dry-run packaging;
+  elsewhere, run `moon publish --dry-run` in publish order
+- `just release-moon`: run the real `moon publish` sequence
+
+The default release set includes public workspace modules plus the root
+compatibility module when it is part of the dependency closure. Internal modules
+such as `mizchi/crater-benchmarks` and `mizchi/crater-testing` are intentionally
+excluded from the default publish plan.
+
+When you need the adapter-only subset, use
+`node scripts/moon-publish-workspace.mjs --list --only-crater-star`. The script
+warns if the selected subset still depends on excluded workspace modules such as
+`mizchi/crater`.
+
+`moon publish --dry-run` currently panics on this macOS environment in Moon
+CLI's reqwest/system-configuration path. The release script absorbs that by
+using `moon package` as the default dry-run implementation on macOS. Use
+`node scripts/moon-publish-workspace.mjs --dry-run --force-publish-dry-run` only
+when you explicitly want to reproduce the upstream `moon publish --dry-run`
+behavior.
+
 ## Import Guidance
 
 For new code, prefer the narrowest module that matches the subsystem you need:
