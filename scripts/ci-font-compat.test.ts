@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, test } from "vitest";
 
 function readRepoFile(relativePath: string): string {
@@ -42,5 +43,16 @@ describe("CI compatible font setup", () => {
       expect(source).toContain("Georgia_Bold.ttf");
       expect(source).toContain("verdanab.ttf");
     }
+  });
+
+  test("start-with-font resolves helper scripts from the repo root after webdriver split", () => {
+    const bidiPath = new URL("../webdriver/bidi_main/start-with-font.ts", import.meta.url);
+    const textIntrinsicPath = new URL("../../scripts/text-intrinsic.ts", bidiPath);
+    const fontDefaultsPath = new URL("../../scripts/font-family-defaults.ts", bidiPath);
+
+    expect(path.basename(textIntrinsicPath.pathname)).toBe("text-intrinsic.ts");
+    expect(path.basename(fontDefaultsPath.pathname)).toBe("font-family-defaults.ts");
+    expect(textIntrinsicPath.pathname).toContain("/crater/scripts/");
+    expect(fontDefaultsPath.pathname).toContain("/crater/scripts/");
   });
 });

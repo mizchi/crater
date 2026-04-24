@@ -5,17 +5,17 @@
  *
  * Usage: deno run -A webdriver/bidi_main/start-with-font.ts
  */
-import { createTextIntrinsicFnFromMeasureText } from "../../../scripts/text-intrinsic.ts";
+import { createTextIntrinsicFnFromMeasureText } from "../../scripts/text-intrinsic.ts";
 import {
   DEFAULT_TEXT_FONT_FAMILY,
   resolveEffectiveFontFamily,
-} from "../../../scripts/font-family-defaults.ts";
+} from "../../scripts/font-family-defaults.ts";
 import {
   listBundledWptFonts,
   resolveBundledWptFontUrl,
-} from "../../../scripts/wpt-font-utils.ts";
-import { resolveBidiMainBuildUrl } from "../../../scripts/bidi-build-paths.mjs";
-import { resolveFontRuntimeBuildUrl } from "../../../scripts/font-build-paths.mjs";
+} from "../../scripts/wpt-font-utils.ts";
+import { resolveBidiMainBuildUrl } from "../../scripts/bidi-build-paths.mjs";
+import { resolveFontRuntimeBuildUrl } from "../../scripts/font-build-paths.mjs";
 
 const HOME = Deno.env.get("HOME") || "/tmp";
 const fontModuleUrl = resolveFontRuntimeBuildUrl(Deno.cwd());
