@@ -231,6 +231,91 @@ export function shouldUsePackageFallback({
   return action === 'dry-run' && platform === 'darwin' && !forcePublishDryRun
 }
 
+export function shouldRetryRegistryPropagation(output) {
+  return /module was not found in the registry|no version satisfies requirement/i.test(
+    output,
+  )
+}
+
+export function shouldSkipDuplicateVersion(output) {
+  return /duplicated with an existing version/i.test(output)
+}
+
+export function sleepMs(durationMs) {
+  if (durationMs <= 0) return
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, durationMs)
+}
+
+function writeProcessOutput(stdout, stderr, result) {
+  if (result.stdout) process.stdout.write(result.stdout)
+  if (result.stderr) process.stderr.write(result.stderr)
+  if (result.error) stderr(String(result.error))
+}
+
+export function runCommands(
+  commands,
+  {
+    action,
+    cwd,
+    stdout = console,
+    stderr = console.error,
+    spawn = spawnSync,
+    sleep = sleepMs,
+    retryDelayMs = 5000,
+    maxPublishAttempts = 5,
+  } = {},
+) {
+  for (const [index, { module, args, command }] of commands.entries()) {
+    stdout.log(`==> [${index + 1}/${commands.length}] ${module.name}`)
+    stdout.log(`    ${command}`)
+
+    let attempt = 1
+    while (attempt <= maxPublishAttempts) {
+      if (attempt > 1) {
+        stdout.log(`    retry ${attempt}/${maxPublishAttempts}`)
+      }
+      const result = spawn('moon', args, {
+        cwd,
+        encoding: 'utf8',
+      })
+      writeProcessOutput(stdout, stderr, result)
+      const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`
+      if (result.status === 0) break
+
+      if (action === 'publish' && shouldSkipDuplicateVersion(output)) {
+        stderr(
+          `warning: ${module.name} is already published at this version; skipping`,
+        )
+        break
+      }
+
+      const shouldRetry =
+        action === 'publish' &&
+        attempt < maxPublishAttempts &&
+        shouldRetryRegistryPropagation(output)
+      if (!shouldRetry) {
+        return result.status ?? 1
+      }
+
+      stderr(
+        `warning: registry dependency propagation is not ready for ${module.name}; running \`moon update\` and retrying in ${retryDelayMs}ms`,
+      )
+      const updateResult = spawn('moon', ['update'], {
+        cwd,
+        encoding: 'utf8',
+      })
+      writeProcessOutput(stdout, stderr, updateResult)
+      if (updateResult.status !== 0) {
+        return updateResult.status ?? 1
+      }
+      sleep(retryDelayMs)
+      attempt += 1
+    }
+  }
+
+  return 0
+}
+
 export function runCli({
   argv = process.argv.slice(2),
   cwd = process.cwd(),
@@ -333,19 +418,12 @@ export function runCli({
 
   if (action === 'list') return 0
 
-  for (const [index, { module, args, command }] of commands.entries()) {
-    stdout.log(`==> [${index + 1}/${commands.length}] ${module.name}`)
-    stdout.log(`    ${command}`)
-    const result = spawnSync('moon', args, {
-      cwd,
-      stdio: 'inherit',
-    })
-    if (result.status !== 0) {
-      return result.status ?? 1
-    }
-  }
-
-  return 0
+  return runCommands(commands, {
+    action,
+    cwd,
+    stdout,
+    stderr,
+  })
 }
 
 const isEntrypoint =

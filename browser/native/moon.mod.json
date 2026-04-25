@@ -12,6 +12,10 @@
     },
     "mizchi/v8": "0.2.0"
   },
+  "readme": "README.md",
+  "repository": "https://github.com/mizchi/crater",
+  "license": "Apache-2.0",
+  "description": "Native V8 host adapter for crater browser runtime",
   "preferred-target": "native",
   "--moonbit-unstable-prebuild": "../scripts/mizchi-v8-consumer-prebuild.mjs"
 }

@@ -30,5 +30,9 @@
       "path": "../renderer",
       "version": "0.17.0"
     }
-  }
+  },
+  "readme": "README.md",
+  "repository": "https://github.com/mizchi/crater",
+  "license": "Apache-2.0",
+  "description": "JavaScript bindings and compatibility facade for crater"
 }

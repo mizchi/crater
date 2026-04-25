@@ -10,6 +10,7 @@ import {
   formatPackageCommands,
   loadWorkspaceModules,
   parseWorkspaceMembers,
+  runCommands,
   resolveCheckTarget,
   shouldUsePackageFallback,
 } from './moon-publish-workspace.mjs'
@@ -171,4 +172,145 @@ test('release workflow exposes manual Moon release actions with credentials secr
   assert.match(workflow, /MOON_CREDENTIALS_JSON/)
   assert.match(workflow, /if: inputs\.mode != 'check'/)
   assert.match(workflow, /libsqlite3-dev/)
+})
+
+test('publish retries after registry propagation lag', () => {
+  const calls = []
+  const sleeps = []
+  const logs = []
+  const errors = []
+  const commands = [{
+    module: {
+      name: 'mizchi/crater-browser-http-sqlite',
+    },
+    args: ['publish', '--manifest-path', 'http_sqlite/moon.mod.json', '--frozen'],
+    command: 'moon publish --manifest-path http_sqlite/moon.mod.json --frozen',
+  }]
+  let publishAttempts = 0
+
+  const exitCode = runCommands(commands, {
+    action: 'publish',
+    cwd: rootDir,
+    stdout: {
+      log: (message) => logs.push(message),
+    },
+    stderr: (message) => errors.push(message),
+    sleep: (durationMs) => sleeps.push(durationMs),
+    retryDelayMs: 1234,
+    spawn: (_command, args) => {
+      calls.push(args.join(' '))
+      if (args[0] === 'update') {
+        return { status: 0, stdout: 'updated\n', stderr: '' }
+      }
+      publishAttempts += 1
+      if (publishAttempts === 1) {
+        return {
+          status: 255,
+          stdout: '',
+          stderr:
+            'Error: Failed to resolve registry dependency `mizchi/crater-browser-http` for module `mizchi/crater-browser-http-sqlite`: module was not found in the registry\n',
+        }
+      }
+      return {
+        status: 0,
+        stdout: 'published\n',
+        stderr: '',
+      }
+    },
+  })
+
+  assert.equal(exitCode, 0)
+  assert.deepEqual(calls, [
+    'publish --manifest-path http_sqlite/moon.mod.json --frozen',
+    'update',
+    'publish --manifest-path http_sqlite/moon.mod.json --frozen',
+  ])
+  assert.deepEqual(sleeps, [1234])
+  assert.ok(
+    errors.some((message) => message.includes('registry dependency propagation')),
+  )
+  assert.ok(logs.some((message) => message.includes('retry 2/5')))
+})
+
+test('publish retries when registry metadata is present but the version is not satisfiable yet', () => {
+  const calls = []
+  const sleeps = []
+  const commands = [{
+    module: {
+      name: 'mizchi/crater-browser',
+    },
+    args: ['publish', '--manifest-path', 'browser/moon.mod.json', '--frozen'],
+    command: 'moon publish --manifest-path browser/moon.mod.json --frozen',
+  }]
+  let publishAttempts = 0
+
+  const exitCode = runCommands(commands, {
+    action: 'publish',
+    cwd: rootDir,
+    stdout: {
+      log: () => {},
+    },
+    stderr: () => {},
+    sleep: (durationMs) => sleeps.push(durationMs),
+    retryDelayMs: 4321,
+    spawn: (_command, args) => {
+      calls.push(args.join(' '))
+      if (args[0] === 'update') {
+        return { status: 0, stdout: '', stderr: '' }
+      }
+      publishAttempts += 1
+      if (publishAttempts === 1) {
+        return {
+          status: 255,
+          stdout: '',
+          stderr:
+            'Error: Failed to resolve registry dependency `mizchi/crater` for module `mizchi/crater-browser`: no version satisfies requirement `0.17.0`\n',
+        }
+      }
+      return {
+        status: 0,
+        stdout: '',
+        stderr: '',
+      }
+    },
+  })
+
+  assert.equal(exitCode, 0)
+  assert.deepEqual(calls, [
+    'publish --manifest-path browser/moon.mod.json --frozen',
+    'update',
+    'publish --manifest-path browser/moon.mod.json --frozen',
+  ])
+  assert.deepEqual(sleeps, [4321])
+})
+
+test('publish skips duplicate version errors when resuming', () => {
+  const errors = []
+  const commands = [{
+    module: {
+      name: 'mizchi/crater-browser-http',
+    },
+    args: ['publish', '--manifest-path', 'http/moon.mod.json', '--frozen'],
+    command: 'moon publish --manifest-path http/moon.mod.json --frozen',
+  }]
+
+  const exitCode = runCommands(commands, {
+    action: 'publish',
+    cwd: rootDir,
+    stdout: {
+      log: () => {},
+    },
+    stderr: (message) => errors.push(message),
+    spawn: () => ({
+      status: 255,
+      stdout: '',
+      stderr:
+        'Server status: 409 Conflict, detail: Version Error: The version you are attempting to upload (0.17.0) is duplicated with an existing version (0.17.0).\n',
+    }),
+  })
+
+  assert.equal(exitCode, 0)
+  assert.ok(
+    errors.some((message) => message.includes('already published at this version')),
+  )
 })
