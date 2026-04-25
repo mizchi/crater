@@ -33,10 +33,11 @@ describe("CI compatible font setup", () => {
     expect(prefetchMatches).toHaveLength(5);
   });
 
-  test("pins Deno 1 for BiDi and VRT workflows to keep rusty_v8 fallback compatible", () => {
+  test("uses Deno 2 in BiDi and VRT workflows for lockfile v5 compatibility", () => {
     const workflow = readRepoFile(".github/workflows/ci.yml");
-    const matches = workflow.match(/deno-version: v1\.46\.3/g) ?? [];
+    const matches = workflow.match(/deno-version: v2\.x/g) ?? [];
     expect(matches).toHaveLength(4);
+    expect(workflow).not.toContain("deno-version: v1.46.3");
   });
 
   test("font install script retries flaky msttcorefonts extraction", () => {

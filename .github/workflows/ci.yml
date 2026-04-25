@@ -434,7 +434,7 @@ jobs:
       - name: Install Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: v1.46.3
+          deno-version: v2.x
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -540,7 +540,7 @@ jobs:
       - name: Install Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: v1.46.3
+          deno-version: v2.x
 
       - name: Install dependencies
         run: pnpm install
@@ -776,7 +776,7 @@ jobs:
       - name: Install Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: v1.46.3
+          deno-version: v2.x
 
       - name: Install dependencies
         run: pnpm install
@@ -1052,7 +1052,7 @@ jobs:
       - name: Install Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: v1.46.3
+          deno-version: v2.x
 
       - name: Install dependencies
         run: pnpm install
