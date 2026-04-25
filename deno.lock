@@ -1,18 +1,11 @@
 {
   "version": "5",
   "specifiers": {
-    "npm:@bytecodealliance/jco@^1.15.4": "1.15.4",
     "npm:@jitl/quickjs-wasmfile-release-asyncify@*": "0.31.0",
-    "npm:@playwright/test@^1.58.0": "1.58.0",
     "npm:@types/ws@^8.18.1": "8.18.1",
-    "npm:playwright@^1.58.0": "1.58.0",
-    "npm:preact@^10.28.2": "10.28.2",
-    "npm:puppeteer@23": "23.11.1_devtools-protocol@0.0.1367902",
     "npm:quickjs-emscripten@*": "0.31.0",
     "npm:tsx@^4.21.0": "4.21.0",
-    "npm:vitest@3": "3.2.4_vite@7.3.1__tsx@4.21.0__picomatch@4.0.3_tsx@4.21.0",
-    "npm:webidl2@^24.5.0": "24.5.0",
-    "npm:ws@^8.19.0": "8.19.0"
+    "npm:webidl2@^24.5.0": "24.5.0"
   },
   "npm": {
     "@babel/code-frame@7.27.1": {
@@ -1650,17 +1643,17 @@
   "workspace": {
     "packageJson": {
       "dependencies": [
-        "npm:@bytecodealliance/jco@^1.15.4",
-        "npm:@playwright/test@^1.58.0",
+        "npm:@bytecodealliance/jco@^1.17.6",
+        "npm:@playwright/test@^1.59.1",
         "npm:@types/ws@^8.18.1",
         "npm:pixelmatch@^7.1.0",
-        "npm:playwright@^1.58.0",
-        "npm:preact@^10.28.2",
-        "npm:puppeteer@23",
+        "npm:playwright@^1.59.1",
+        "npm:preact@^10.29.1",
+        "npm:puppeteer@^24.40.0",
         "npm:tsx@^4.21.0",
-        "npm:vitest@3",
+        "npm:vitest@^4.1.4",
         "npm:webidl2@^24.5.0",
-        "npm:ws@^8.19.0"
+        "npm:ws@^8.20.0"
       ]
     }
   }
