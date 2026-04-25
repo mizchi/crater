@@ -28,8 +28,9 @@ describe("CI compatible font setup", () => {
     const matches = workflow.match(/Restore rusty_v8 source binding cache/g) ?? [];
     expect(matches).toHaveLength(5);
     expect(workflow).toContain("path: ~/.cargo/.rusty_v8");
-    expect(workflow).toContain("node scripts/prefetch-rusty-v8-source-binding.mjs --module-root browser/native");
-    expect(workflow).toContain("node scripts/prefetch-rusty-v8-source-binding.mjs --module-root webdriver");
+    const prefetchMatches =
+      workflow.match(/node scripts\/prefetch-rusty-v8-source-binding\.mjs --release v146\.8\.0/g) ?? [];
+    expect(prefetchMatches).toHaveLength(5);
   });
 
   test("pins Deno 1 for BiDi and VRT workflows to keep rusty_v8 fallback compatible", () => {

@@ -66,3 +66,10 @@ test("resolve_prefetch_spec reads release from mizchi/v8 module", (t) => {
   assert.equal(spec.url, source_binding_url("v146.8.0", binding_suffix_for(process.platform, process.arch)))
   assert.equal(read_rusty_v8_release(v8_root), "v146.8.0")
 })
+
+test("resolve_prefetch_spec accepts an explicit release without locating mizchi/v8", () => {
+  const spec = resolve_prefetch_spec("/tmp/missing-module-root", undefined, "v146.8.0")
+  assert.equal(spec.v8_root, null)
+  assert.equal(spec.release, "v146.8.0")
+  assert.equal(spec.url, source_binding_url("v146.8.0", binding_suffix_for(process.platform, process.arch)))
+})

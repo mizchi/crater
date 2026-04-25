@@ -40,9 +40,11 @@ export function read_rusty_v8_release(v8_root) {
   return fs.readFileSync(release_path, "utf8").trim()
 }
 
-export function resolve_prefetch_spec(module_root, workspace_root) {
-  const v8_root = resolve_v8_module_root(module_root, [process.cwd(), workspace_root])
-  const release = read_rusty_v8_release(v8_root)
+export function resolve_prefetch_spec(module_root, workspace_root, release_override) {
+  const v8_root = release_override
+    ? null
+    : resolve_v8_module_root(module_root, [process.cwd(), workspace_root])
+  const release = release_override || read_rusty_v8_release(v8_root)
   const binding_suffix = binding_suffix_for(process.platform, process.arch)
   const url = source_binding_url(release, binding_suffix)
   const cache_path = source_binding_cache_path(url)
@@ -55,8 +57,8 @@ export function resolve_prefetch_spec(module_root, workspace_root) {
   }
 }
 
-export function prefetch_source_binding(module_root, workspace_root) {
-  const spec = resolve_prefetch_spec(module_root, workspace_root)
+export function prefetch_source_binding(module_root, workspace_root, release_override) {
+  const spec = resolve_prefetch_spec(module_root, workspace_root, release_override)
   if (fs.existsSync(spec.cache_path) && fs.statSync(spec.cache_path).size > 0) {
     return {
       ...spec,
@@ -104,6 +106,7 @@ export function prefetch_source_binding(module_root, workspace_root) {
 function parse_args(argv) {
   let module_root = "webdriver"
   let workspace_root
+  let release
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
     if (arg === "--module-root") {
@@ -116,14 +119,19 @@ function parse_args(argv) {
       index += 1
       continue
     }
+    if (arg === "--release") {
+      release = argv[index + 1]
+      index += 1
+      continue
+    }
     module_root = arg
   }
-  return { module_root, workspace_root }
+  return { module_root, workspace_root, release }
 }
 
 function main() {
-  const { module_root, workspace_root } = parse_args(process.argv.slice(2))
-  const result = prefetch_source_binding(module_root, workspace_root)
+  const { module_root, workspace_root, release } = parse_args(process.argv.slice(2))
+  const result = prefetch_source_binding(module_root, workspace_root, release)
   process.stdout.write(`${JSON.stringify(result)}\n`)
 }
 
