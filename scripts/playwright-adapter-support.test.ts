@@ -1,0 +1,110 @@
+import { describe, expect, test } from "vitest";
+import {
+  CraterBidiPage,
+  CraterLocator,
+  CRATER_PLAYWRIGHT_API_SUPPORT,
+} from "../webdriver/playwright/adapter.ts";
+
+const expectedPageApis = [
+  "$$eval",
+  "capturePaintData",
+  "capturePaintTree",
+  "captureScreenshot",
+  "check",
+  "click",
+  "close",
+  "connect",
+  "count",
+  "drag",
+  "evaluate",
+  "fill",
+  "getAllComputedStyles",
+  "getAttribute",
+  "getByAltText",
+  "getByLabel",
+  "getByPlaceholder",
+  "getByRole",
+  "getByTestId",
+  "getByText",
+  "getByTitle",
+  "getComputedStyles",
+  "getComputedStylesBySharedId",
+  "getComputedStylesForElement",
+  "getCssRuleUsage",
+  "getCssRuleUsageDetails",
+  "goto",
+  "hover",
+  "innerHTML",
+  "inputValue",
+  "isVisible",
+  "loadPage",
+  "locator",
+  "press",
+  "select",
+  "setContent",
+  "setContentWithScripts",
+  "setViewport",
+  "textContent",
+  "type",
+  "uncheck",
+  "waitForCondition",
+  "waitForLoadState",
+  "waitForNavigation",
+  "waitForNetworkIdle",
+  "waitForSelector",
+  "waitForText",
+];
+
+const expectedLocatorApis = [
+  "click",
+  "count",
+  "fill",
+  "filter",
+  "first",
+  "getAttribute",
+  "getByRole",
+  "getByText",
+  "innerHTML",
+  "inputValue",
+  "isVisible",
+  "last",
+  "locator",
+  "nth",
+  "textContent",
+  "waitFor",
+];
+
+describe("Crater Playwright adapter support table", () => {
+  test("has a stable public page API list", () => {
+    const pageApis = CRATER_PLAYWRIGHT_API_SUPPORT
+      .filter((entry) => entry.owner === "page")
+      .map((entry) => entry.api)
+      .sort();
+    expect(pageApis).toEqual(expectedPageApis);
+  });
+
+  test("has a stable public locator API list", () => {
+    const locatorApis = CRATER_PLAYWRIGHT_API_SUPPORT
+      .filter((entry) => entry.owner === "locator")
+      .map((entry) => entry.api)
+      .sort();
+    expect(locatorApis).toEqual(expectedLocatorApis);
+  });
+
+  test("does not contain duplicate owner/api entries", () => {
+    const keys = CRATER_PLAYWRIGHT_API_SUPPORT.map((entry) => `${entry.owner}.${entry.api}`);
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  test("points every supported page entry at an implemented method", () => {
+    for (const api of expectedPageApis) {
+      expect(typeof CraterBidiPage.prototype[api as keyof CraterBidiPage]).toBe("function");
+    }
+  });
+
+  test("points every supported locator entry at an implemented method", () => {
+    for (const api of expectedLocatorApis) {
+      expect(typeof CraterLocator.prototype[api as keyof CraterLocator]).toBe("function");
+    }
+  });
+});

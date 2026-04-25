@@ -18,6 +18,7 @@ describe("buildFlakerBatchPlan", () => {
     expect(plan.tasks.map((task) => task.id)).toEqual([
       "bidi-e2e",
       "browser-user-scenarios",
+      "crater-playwright-adapter",
       "paint-vrt",
       "paint-vrt-levels",
       "paint-vrt-responsive",

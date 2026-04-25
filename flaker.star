@@ -85,6 +85,15 @@ task(
 )
 
 task(
+  id="crater-playwright-adapter",
+  node="browser",
+  cmd=["pnpm", "exec", "playwright", "test", "tests/crater-playwright-adapter.test.ts"],
+  srcs=["webdriver/playwright/**", "tests/helpers/**", "browser/**", "src/bidi/**", "src/dom/**", "src/js/**"],
+  needs=["playwright-adapter"],
+  trigger="auto",
+)
+
+task(
   id="bidi-e2e",
   node="browser",
   cmd=["pnpm", "exec", "playwright", "test", "tests/bidi-e2e.test.ts"],

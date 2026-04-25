@@ -585,6 +585,7 @@ jobs:
         run: |
           pnpm exec playwright test \
             tests/playwright-adapter.test.ts \
+            tests/crater-playwright-adapter.test.ts \
             tests/bidi-e2e.test.ts \
             tests/website-loading.test.ts \
             tests/browser-user-scenarios.test.ts \
@@ -647,7 +648,7 @@ jobs:
         run: pnpm install
 
       - name: Validate flaker/report tool tests
-        run: pnpm exec vitest run scripts/flaker-cli-path.test.ts scripts/flaker-collected-summary-paths.test.ts scripts/flaker-config.test.ts scripts/flaker-quarantine.test.ts scripts/flaker-task-config.test.ts scripts/flaker-task-run.test.ts scripts/flaker-task-record.test.ts scripts/flaker-task-record-artifacts.test.ts scripts/flaker-task-summary.test.ts scripts/flaker-batch-summary-core.test.ts scripts/flaker-batch-summary-loader.test.ts scripts/flaker-batch-summary.test.ts scripts/playwright-report-summary.test.ts scripts/script-boundary.test.ts scripts/vrt-report-contract.test.ts scripts/vrt-report-loader.test.ts scripts/vrt-report-summary.test.ts scripts/vrt-report-summary-cli.test.ts tests/helpers/crater-vrt.test.ts
+        run: pnpm exec vitest run scripts/flaker-cli-path.test.ts scripts/flaker-collected-summary-paths.test.ts scripts/flaker-config.test.ts scripts/flaker-quarantine.test.ts scripts/flaker-task-config.test.ts scripts/flaker-task-run.test.ts scripts/flaker-task-record.test.ts scripts/flaker-task-record-artifacts.test.ts scripts/flaker-task-summary.test.ts scripts/flaker-batch-summary-core.test.ts scripts/flaker-batch-summary-loader.test.ts scripts/flaker-batch-summary.test.ts scripts/playwright-adapter-support.test.ts scripts/playwright-report-summary.test.ts scripts/script-boundary.test.ts scripts/vrt-report-contract.test.ts scripts/vrt-report-loader.test.ts scripts/vrt-report-summary.test.ts scripts/vrt-report-summary-cli.test.ts tests/helpers/crater-vrt.test.ts
 
       - name: Build flaker config summary
         run: just flaker-report flaker-report
