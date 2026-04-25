@@ -470,10 +470,11 @@ export class CraterBidiPage {
     options: { executeScripts?: boolean } = {},
   ): Promise<{ url: string; status: number; scripts?: unknown[] }> {
     const executeScripts = options.executeScripts !== false;
-    return this.evaluate(
-      `(async () => await __loadPageWithScripts(${jsString(url)}, { executeScripts: ${executeScripts} }))()`,
+    const json = await this.evaluate<string>(
+      `(async () => JSON.stringify(await __loadPageWithScripts(${jsString(url)}, { executeScripts: ${executeScripts} })))()`,
       { awaitPromise: true },
     );
+    return JSON.parse(json) as { url: string; status: number; scripts?: unknown[] };
   }
 
   async setViewport(width: number, height: number): Promise<void> {

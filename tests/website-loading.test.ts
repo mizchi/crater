@@ -5,365 +5,65 @@
  * Uses the BiDi protocol to load pages and verify script execution.
  */
 
-import { test, expect } from "@playwright/test";
-import WebSocket from "ws";
-import { resolveBidiUrl } from "../scripts/bidi-url.ts";
+import { expect, test } from "@playwright/test";
+import { once } from "node:events";
+import { createServer, type Server } from "node:http";
+import { CraterBidiPage as CraterPage } from "../webdriver/playwright/adapter.ts";
 
-interface BidiResponse {
-  id: number;
-  type: "success" | "error";
-  result?: unknown;
-  error?: string;
-  message?: string;
+type FixtureResponse = {
+  body: string;
+  contentType: string;
+};
+
+const fixtureResponses = new Map<string, FixtureResponse>();
+let fixtureServer: Server | null = null;
+let fixtureOrigin = "";
+
+function serveFixture(
+  path: string,
+  body: string,
+  contentType = "text/html; charset=utf-8",
+): string {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  fixtureResponses.set(normalizedPath, { body, contentType });
+  return `${fixtureOrigin}${normalizedPath}`;
 }
 
-interface BidiEvent {
-  type: "event";
-  method: string;
-  params: unknown;
-}
-
-/**
- * Parse Playwright-style selector into a query expression
- */
-function parseLocatorSelector(selector: string): { type: string; value: string; exact?: boolean } {
-  const prefixMatch = selector.match(/^(text|role|placeholder|alt|title|testid|label)=(.+)$/i);
-  if (prefixMatch) {
-    const [, type, value] = prefixMatch;
-    const exactMatch = value.match(/^exact:(.+)$/i);
-    if (exactMatch) {
-      return { type: type.toLowerCase(), value: exactMatch[1], exact: true };
-    }
-    return { type: type.toLowerCase(), value };
-  }
-  return { type: "css", value: selector };
-}
-
-/**
- * Build JavaScript expression to find elements
- */
-function buildSelectorExpr(parsed: { type: string; value: string; exact?: boolean }, method: "first" | "all"): string {
-  const { type, value, exact } = parsed;
-  const escapedValue = value.replace(/'/g, "\\'").replace(/\\/g, "\\\\");
-
-  const getAllElements = `(() => {
-    const all = [];
-    const walk = (node) => {
-      if (node.nodeType === 1) all.push(node);
-      const children = node._children || node.childNodes || [];
-      for (const child of children) walk(child);
-    };
-    walk(document.documentElement || document.body);
-    return all;
-  })()`;
-
-  switch (type) {
-    case "text":
-      if (exact) {
-        return method === "first"
-          ? `${getAllElements}.find(el => {
-              const children = el._children || el.childNodes || [];
-              return Array.from(children).some(n => n.nodeType === 3 && n.textContent && n.textContent.trim() === '${escapedValue}');
-            })`
-          : `${getAllElements}.filter(el => {
-              const children = el._children || el.childNodes || [];
-              return Array.from(children).some(n => n.nodeType === 3 && n.textContent && n.textContent.trim() === '${escapedValue}');
-            })`;
-      }
-      return method === "first"
-        ? `${getAllElements}.find(el => {
-            const children = el._children || el.childNodes || [];
-            const directText = Array.from(children)
-              .filter(n => n.nodeType === 3)
-              .map(n => n.textContent || '')
-              .join('');
-            return directText.includes('${escapedValue}');
-          })`
-        : `${getAllElements}.filter(el => {
-            const children = el._children || el.childNodes || [];
-            const directText = Array.from(children)
-              .filter(n => n.nodeType === 3)
-              .map(n => n.textContent || '')
-              .join('');
-            return directText.includes('${escapedValue}');
-          })`;
-
-    case "role":
-      return method === "first"
-        ? `${getAllElements}.find(el => (el.getAttribute ? el.getAttribute('role') : (el._attrs && el._attrs.role)) === '${escapedValue}')`
-        : `${getAllElements}.filter(el => (el.getAttribute ? el.getAttribute('role') : (el._attrs && el._attrs.role)) === '${escapedValue}')`;
-
-    case "testid":
-      return method === "first"
-        ? `document.querySelector('[data-testid="${escapedValue}"]')`
-        : `Array.from(document.querySelectorAll('[data-testid="${escapedValue}"]'))`;
-
-    case "css":
-    default:
-      return method === "first"
-        ? `document.querySelector('${escapedValue}')`
-        : `Array.from(document.querySelectorAll('${escapedValue}'))`;
-  }
-}
-
-/**
- * BiDi client with page-like API
- */
-class CraterPage {
-  private ws: WebSocket | null = null;
-  private commandId = 0;
-  private pendingCommands = new Map<
-    number,
-    { resolve: (value: BidiResponse) => void; reject: (error: Error) => void }
-  >();
-  private eventHandlers: ((event: BidiEvent) => void)[] = [];
-  private contextId: string | null = null;
-
-  async connect(): Promise<void> {
-    const bidiUrl = await resolveBidiUrl();
-    return new Promise((resolve, reject) => {
-      this.ws = new WebSocket(bidiUrl);
-      this.ws.on("open", async () => {
-        const resp = await this.sendBidi("browsingContext.create", { type: "tab" });
-        this.contextId = (resp.result as { context: string }).context;
-        resolve();
-      });
-      this.ws.on("error", (err) => reject(err));
-      this.ws.on("message", (data) => this.handleMessage(data.toString()));
-    });
-  }
-
-  private handleMessage(data: string): void {
-    const msg = JSON.parse(data);
-    if (msg.type === "event") {
-      for (const handler of this.eventHandlers) {
-        handler(msg as BidiEvent);
-      }
+test.beforeAll(async () => {
+  fixtureServer = createServer((req, res) => {
+    const url = new URL(req.url ?? "/", "http://127.0.0.1");
+    const fixture = fixtureResponses.get(url.pathname);
+    if (!fixture) {
+      res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+      res.end(`fixture not found: ${url.pathname}`);
       return;
     }
-    const pending = this.pendingCommands.get(msg.id);
-    if (pending) {
-      this.pendingCommands.delete(msg.id);
-      pending.resolve(msg as BidiResponse);
-    }
+    res.writeHead(200, { "content-type": fixture.contentType });
+    res.end(fixture.body);
+  });
+  fixtureServer.listen(0, "127.0.0.1");
+  await once(fixtureServer, "listening");
+  const address = fixtureServer.address();
+  if (!address || typeof address === "string") {
+    throw new Error("failed to start fixture server");
   }
+  fixtureOrigin = `http://127.0.0.1:${address.port}`;
+});
 
-  onEvent(handler: (event: BidiEvent) => void): void {
-    this.eventHandlers.push(handler);
+test.afterAll(async () => {
+  if (!fixtureServer) {
+    return;
   }
-
-  private async sendBidi(method: string, params: unknown = {}): Promise<BidiResponse> {
-    if (!this.ws) throw new Error("Not connected");
-    const id = ++this.commandId;
-    const message = JSON.stringify({ id, method, params });
-    return new Promise((resolve, reject) => {
-      this.pendingCommands.set(id, { resolve, reject });
-      this.ws!.send(message);
-      setTimeout(() => {
-        if (this.pendingCommands.has(id)) {
-          this.pendingCommands.delete(id);
-          reject(new Error(`Timeout waiting for response to ${method}`));
-        }
-      }, 10000);
+  await new Promise<void>((resolve, reject) => {
+    fixtureServer!.close((error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve();
     });
-  }
-
-  async goto(url: string): Promise<void> {
-    await this.sendBidi("browsingContext.navigate", {
-      context: this.contextId,
-      url,
-      wait: "complete",
-    });
-  }
-
-  async setContent(html: string): Promise<void> {
-    const dataUrl = `data:text/html;base64,${Buffer.from(html).toString("base64")}`;
-    await this.goto(dataUrl);
-    await this.sendBidi("script.evaluate", {
-      expression: `__loadHTML(${JSON.stringify(html)})`,
-      target: { context: this.contextId },
-      awaitPromise: false,
-    });
-  }
-
-  async setContentWithScripts(html: string): Promise<{ scripts: unknown[] }> {
-    const dataUrl = `data:text/html;base64,${Buffer.from(html).toString("base64")}`;
-    await this.goto(dataUrl);
-    await this.sendBidi("script.evaluate", {
-      expression: `__loadHTML(${JSON.stringify(html)})`,
-      target: { context: this.contextId },
-      awaitPromise: false,
-    });
-    // Execute inline scripts
-    const resp = await this.sendBidi("script.evaluate", {
-      expression: `(async () => await __executeScripts())()`,
-      target: { context: this.contextId },
-      awaitPromise: true,
-    });
-    const result = resp.result as { result?: { value?: unknown[] } };
-    return { scripts: result.result?.value || [] };
-  }
-
-  async loadPage(url: string, options: { executeScripts?: boolean } = {}): Promise<{ url: string; status: number; scripts?: unknown[] }> {
-    const executeScripts = options.executeScripts !== false;
-    const resp = await this.sendBidi("script.evaluate", {
-      expression: `(async () => await __loadPageWithScripts(${JSON.stringify(url)}, { executeScripts: ${executeScripts} }))()`,
-      target: { context: this.contextId },
-      awaitPromise: true,
-    });
-    if (resp.type === "error") {
-      throw new Error(resp.message || resp.error);
-    }
-    const result = resp.result as { result?: { value?: { url: string; status: number; scripts?: unknown[] } } };
-    return result.result?.value || { url, status: 0 };
-  }
-
-  async evaluate<T>(expression: string, options: { awaitPromise?: boolean } = {}): Promise<T> {
-    const isAsync = options.awaitPromise !== undefined
-      ? options.awaitPromise
-      : (expression.includes("await ") || expression.includes("new Promise"));
-
-    const resp = await this.sendBidi("script.evaluate", {
-      expression,
-      target: { context: this.contextId },
-      awaitPromise: isAsync,
-    });
-
-    if (resp.type === "error") {
-      throw new Error(resp.message || resp.error);
-    }
-
-    const result = resp.result as { result?: { value?: T }; exceptionDetails?: unknown };
-    if (result.exceptionDetails) {
-      throw new Error(JSON.stringify(result.exceptionDetails));
-    }
-    return result.result?.value as T;
-  }
-
-  locator(selector: string): Locator {
-    return new Locator(this, selector);
-  }
-
-  getByText(text: string, options: { exact?: boolean } = {}): Locator {
-    const selector = options.exact ? `text=exact:${text}` : `text=${text}`;
-    return this.locator(selector);
-  }
-
-  getByRole(role: string): Locator {
-    return this.locator(`role=${role}`);
-  }
-
-  getByTestId(testId: string): Locator {
-    return this.locator(`testid=${testId}`);
-  }
-
-  async close(): Promise<void> {
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
-    }
-  }
-}
-
-class Locator {
-  constructor(
-    private page: CraterPage,
-    private selector: string,
-    private parentSelector: string | null = null
-  ) {}
-
-  private parsed = parseLocatorSelector(this.selector);
-
-  private queryExpr(method: "querySelector" | "querySelectorAll"): string {
-    const m = method === "querySelector" ? "first" : "all";
-    return buildSelectorExpr(this.parsed, m);
-  }
-
-  locator(selector: string): Locator {
-    const fullParent = this.parentSelector
-      ? `${this.parentSelector} ${this.selector}`.trim()
-      : this.selector;
-    return new Locator(this.page, selector, fullParent);
-  }
-
-  async click(): Promise<void> {
-    await this.page.evaluate(`
-      (() => {
-        const el = ${this.queryExpr("querySelector")};
-        if (!el) throw new Error('Element not found: ${this.selector}');
-        el.click();
-      })()
-    `);
-  }
-
-  async fill(value: string): Promise<void> {
-    await this.page.evaluate(`
-      (() => {
-        const el = ${this.queryExpr("querySelector")};
-        if (!el) throw new Error('Element not found: ${this.selector}');
-        el.value = ${JSON.stringify(value)};
-        el.dispatchEvent(new Event('input', { bubbles: true }));
-        el.dispatchEvent(new Event('change', { bubbles: true }));
-      })()
-    `);
-  }
-
-  async textContent(): Promise<string | null> {
-    return this.page.evaluate(`
-      (() => {
-        const el = ${this.queryExpr("querySelector")};
-        return el ? el.textContent : null;
-      })()
-    `);
-  }
-
-  async innerHTML(): Promise<string> {
-    return this.page.evaluate(`
-      (() => {
-        const el = ${this.queryExpr("querySelector")};
-        return el ? el.innerHTML : '';
-      })()
-    `);
-  }
-
-  async inputValue(): Promise<string> {
-    return this.page.evaluate(`
-      (() => {
-        const el = ${this.queryExpr("querySelector")};
-        return el ? el.value : '';
-      })()
-    `);
-  }
-
-  async getAttribute(name: string): Promise<string | null> {
-    return this.page.evaluate(`
-      (() => {
-        const el = ${this.queryExpr("querySelector")};
-        return el ? el.getAttribute('${name}') : null;
-      })()
-    `);
-  }
-
-  async count(): Promise<number> {
-    return this.page.evaluate(`
-      (() => {
-        const els = ${this.queryExpr("querySelectorAll")};
-        return Array.isArray(els) ? els.length : (els ? els.length : 0);
-      })()
-    `);
-  }
-
-  async isVisible(): Promise<boolean> {
-    return this.page.evaluate(`
-      (() => {
-        const el = ${this.queryExpr("querySelector")};
-        if (!el) return false;
-        const style = window.getComputedStyle ? window.getComputedStyle(el) : el.style;
-        return !el.hidden && style.display !== 'none' && style.visibility !== 'hidden';
-      })()
-    `);
-  }
-}
+  });
+});
 
 test.describe("Website Loading Tests", () => {
   let page: CraterPage;
@@ -389,10 +89,45 @@ test.describe("Website Loading Tests", () => {
       </html>
     `;
 
-    await page.setContentWithScripts(html);
+    const loadResult = await page.loadPage(
+      serveFixture("/inline-script.html", html),
+    );
+    expect(loadResult.status).toBe(200);
 
     const text = await page.locator("#target").textContent();
     expect(text).toBe("Modified by script");
+  });
+
+  test("load page URL resolves relative external classic script", async () => {
+    const scriptUrl = serveFixture(
+      "/assets/url-page.js",
+      `
+        document.getElementById('target').textContent = 'Loaded from relative script';
+        document.body.setAttribute('data-script-origin', 'relative');
+      `,
+      "text/javascript; charset=utf-8",
+    );
+    const html = `
+      <html>
+        <body>
+          <div id="target">Original</div>
+          <script src="/assets/url-page.js"></script>
+        </body>
+      </html>
+    `;
+
+    const loadResult = await page.loadPage(serveFixture("/relative-script.html", html));
+    expect(loadResult.status).toBe(200);
+    expect(loadResult.scripts).toEqual([
+      { executed: true, src: scriptUrl },
+    ]);
+
+    const text = await page.locator("#target").textContent();
+    expect(text).toBe("Loaded from relative script");
+    const origin = await page.evaluate<string>(
+      `document.body.getAttribute('data-script-origin')`,
+    );
+    expect(origin).toBe("relative");
   });
 
   test("load HTML with script that creates elements", async () => {

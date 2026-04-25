@@ -2522,13 +2522,18 @@ extern "js" fn js_evaluate_expression(
   #|         const sourceOrigin = getOrigin(globalThis.__pageUrl || '');
   #|         const targetOrigin = getOrigin(resolvedUrl);
   #|         const mode = (options && options.mode) || 'cors';
-  #|         if (!sandboxAllows(targetOrigin, sourceOrigin)) {
+  #|         const isNavigation = mode === 'navigate';
+  #|         if (!isNavigation && !sandboxAllows(targetOrigin, sourceOrigin)) {
   #|           return Promise.reject(new TypeError('Blocked by request sandbox'));
   #|         }
-  #|         if (mode === 'same-origin' && sourceOrigin && targetOrigin && sourceOrigin !== targetOrigin) {
+  #|         if (!isNavigation && mode === 'same-origin' && sourceOrigin && targetOrigin && sourceOrigin !== targetOrigin) {
   #|           return Promise.reject(new TypeError('Blocked by same-origin policy'));
   #|         }
   #|         let reqOptions = options || {};
+  #|         if (isNavigation && reqOptions && Object.prototype.hasOwnProperty.call(reqOptions, 'mode')) {
+  #|           const { mode: _mode, ...rest } = reqOptions;
+  #|           reqOptions = rest;
+  #|         }
   #|         const headers = new Headers(reqOptions.headers || {});
   #|         if (!headers.has('User-Agent') && globalThis.navigator && globalThis.navigator.userAgent) {
   #|           headers.set('User-Agent', String(globalThis.navigator.userAgent));
@@ -2537,7 +2542,7 @@ extern "js" fn js_evaluate_expression(
   #|           headers.set('Accept-Language', String(globalThis.navigator.language));
   #|         }
   #|         reqOptions = { ...reqOptions, headers };
-  #|         if (enforceCors && (mode === 'cors' || mode === 'same-origin') && sourceOrigin && targetOrigin && sourceOrigin !== targetOrigin) {
+  #|         if (!isNavigation && enforceCors && (mode === 'cors' || mode === 'same-origin') && sourceOrigin && targetOrigin && sourceOrigin !== targetOrigin) {
   #|           if (!headers.has('Origin')) headers.set('Origin', sourceOrigin);
   #|           reqOptions = { ...reqOptions, headers };
   #|         }
@@ -2552,7 +2557,7 @@ extern "js" fn js_evaluate_expression(
   #|         notifyNetworkChange();
   #|         return originalFetch(resolvedUrl, reqOptions)
   #|           .then(response => {
-  #|             if (enforceCors && mode === 'cors' && sourceOrigin && targetOrigin && sourceOrigin !== targetOrigin) {
+  #|             if (!isNavigation && enforceCors && mode === 'cors' && sourceOrigin && targetOrigin && sourceOrigin !== targetOrigin) {
   #|               const allowOrigin = response.headers.get('access-control-allow-origin');
   #|               if (!allowOrigin || (allowOrigin !== '*' && allowOrigin !== sourceOrigin)) {
   #|                 finish();

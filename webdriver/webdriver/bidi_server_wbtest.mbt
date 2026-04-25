@@ -103,6 +103,7 @@ test "runtime navigator patches readonly online surface" {
 
 ///|
 async test "bidi fetch blocked by same-origin sandbox" {
+  reset_runtime_js_state()
   let _ = evaluate_js("0")
   let expr =
     #|(async () => {
@@ -122,7 +123,33 @@ async test "bidi fetch blocked by same-origin sandbox" {
 }
 
 ///|
+async test "bidi loadPage navigation bypasses same-origin sandbox" {
+  reset_runtime_js_state()
+  let _ = evaluate_js("0")
+  let expr =
+    #|(async () => {
+    #|  globalThis.__pageUrl = 'https://previous.test/page';
+    #|  globalThis.__setRequestSandbox({ mode: 'same-origin' });
+    #|  const html = '<!doctype html><html><body><h1>Loaded from navigation</h1></body></html>';
+    #|  const result = await globalThis.__loadPage('data:text/html,' + encodeURIComponent(html));
+    #|  const h1 = document.querySelector('h1');
+    #|  return [
+    #|    'status=' + result.status,
+    #|    'pageUrl=' + globalThis.__pageUrl,
+    #|    'h1=' + (h1 ? h1.textContent : '')
+    #|  ].join(';');
+    #|})()
+  let promise_any = evaluate_js_async(expr)
+  let promise : @js_async.Promise[String] = promise_any.cast()
+  let json = @js_async.Promise::wait(promise)
+  assert_true(json.contains("status=200"))
+  assert_true(json.contains("pageUrl=data:text/html,"))
+  assert_true(json.contains("h1=Loaded from navigation"))
+}
+
+///|
 async test "bidi module import blocked by same-origin sandbox" {
+  reset_runtime_js_state()
   let _ = evaluate_js("0")
   let expr =
     #|(async () => {

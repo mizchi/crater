@@ -47,7 +47,7 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     owner: "page",
     api: "loadPage",
     status: "partial",
-    notes: "Wraps Crater page loading helpers; remote fetch and external module loading are not browser-equivalent yet.",
+    notes: "Fetches a URL through Crater runtime, parses HTML, and executes supported scripts; remote and module loading are still not browser-equivalent.",
   },
   {
     owner: "page",
