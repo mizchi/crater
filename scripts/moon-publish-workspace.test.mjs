@@ -169,5 +169,6 @@ test('release workflow exposes manual Moon release actions with credentials secr
   assert.match(workflow, /- publish/)
   assert.match(workflow, /node scripts\/moon-publish-workspace\.mjs --publish/)
   assert.match(workflow, /MOON_CREDENTIALS_JSON/)
+  assert.match(workflow, /if: inputs\.mode != 'check'/)
   assert.match(workflow, /libsqlite3-dev/)
 })

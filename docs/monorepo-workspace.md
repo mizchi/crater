@@ -187,9 +187,10 @@ using `moon package` as the default dry-run implementation on macOS. Use
 when you explicitly want to reproduce the upstream `moon publish --dry-run`
 behavior.
 
-For real publish from GitHub Actions, set `MOON_CREDENTIALS_JSON` as a
-repository or environment secret containing the full `~/.moon/credentials.json`
-payload, then run the manual `Release Moon` workflow on Linux.
+For Linux `dry-run` and real `publish` from GitHub Actions, set
+`MOON_CREDENTIALS_JSON` as a repository or environment secret containing the
+full `~/.moon/credentials.json` payload, then run the manual `Release Moon`
+workflow.
 
 ## Import Guidance
 

@@ -60,7 +60,7 @@
   - `just release-moon-{list,check,dry-run}`
 - [x] Linux 上で依存順 publish script を実行する manual workflow を追加した
   - `.github/workflows/release-moon.yml`
-  - `MOON_CREDENTIALS_JSON` secret を使って `publish` を回す
+  - `MOON_CREDENTIALS_JSON` secret を使って `dry-run` / `publish` を回す
 
 ### 運用残件
 

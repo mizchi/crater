@@ -67,7 +67,7 @@ jobs:
         run: moon update
 
       - name: Install Moon credentials
-        if: inputs.mode == 'publish'
+        if: inputs.mode != 'check'
         env:
           MOON_CREDENTIALS_JSON: ${{ secrets.MOON_CREDENTIALS_JSON }}
         run: |
