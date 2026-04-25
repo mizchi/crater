@@ -23,6 +23,21 @@ describe("CI compatible font setup", () => {
     expect(workflow).toContain("if: steps.wpt_vrt_playwright_cache.outputs.cache-hit != 'true'");
   });
 
+  test("restores rusty_v8 source binding cache in all native or BiDi jobs", () => {
+    const workflow = readRepoFile(".github/workflows/ci.yml");
+    const matches = workflow.match(/Restore rusty_v8 source binding cache/g) ?? [];
+    expect(matches).toHaveLength(5);
+    expect(workflow).toContain("path: ~/.cargo/.rusty_v8");
+    expect(workflow).toContain("node scripts/prefetch-rusty-v8-source-binding.mjs --module-root browser/native");
+    expect(workflow).toContain("node scripts/prefetch-rusty-v8-source-binding.mjs --module-root webdriver");
+  });
+
+  test("pins Deno 1 for BiDi and VRT workflows to keep rusty_v8 fallback compatible", () => {
+    const workflow = readRepoFile(".github/workflows/ci.yml");
+    const matches = workflow.match(/deno-version: v1\.46\.3/g) ?? [];
+    expect(matches).toHaveLength(4);
+  });
+
   test("font install script retries flaky msttcorefonts extraction", () => {
     const script = readRepoFile("scripts/ci/install-compatible-fonts.sh");
 

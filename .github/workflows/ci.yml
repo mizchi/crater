@@ -61,11 +61,20 @@ jobs:
       - name: Prefetch browser/native dependencies
         run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path browser/native/moon.mod.json
 
+      - name: Restore rusty_v8 source binding cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/.rusty_v8
+          key: rusty-v8-source-binding-${{ runner.os }}-${{ hashFiles('browser/native/moon.mod.json', 'webdriver/moon.mod.json') }}
+
       - name: Update wasm dependencies
         run: moon -C wasm update
 
       - name: Prefetch wasm dependencies
         run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path wasm/moon.mod.json
+
+      - name: Prefetch rusty_v8 source binding
+        run: node scripts/prefetch-rusty-v8-source-binding.mjs --module-root browser/native
 
       - name: Check code
         run: just check
@@ -425,7 +434,7 @@ jobs:
       - name: Install Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.x
+          deno-version: v1.46.3
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -446,6 +455,15 @@ jobs:
         run: |
           bash scripts/ci/prefetch-moon-deps.sh --manifest-path webdriver/moon.mod.json
           bash scripts/ci/prefetch-moon-deps.sh --manifest-path testing/moon.mod.json
+
+      - name: Restore rusty_v8 source binding cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/.rusty_v8
+          key: rusty-v8-source-binding-${{ runner.os }}-${{ hashFiles('browser/native/moon.mod.json', 'webdriver/moon.mod.json') }}
+
+      - name: Prefetch rusty_v8 source binding
+        run: node scripts/prefetch-rusty-v8-source-binding.mjs --module-root webdriver
 
       - name: Build BiDi server
         run: |
@@ -522,7 +540,7 @@ jobs:
       - name: Install Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.x
+          deno-version: v1.46.3
 
       - name: Install dependencies
         run: pnpm install
@@ -535,6 +553,15 @@ jobs:
 
       - name: Prefetch BiDi dependencies
         run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path webdriver/moon.mod.json
+
+      - name: Restore rusty_v8 source binding cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/.rusty_v8
+          key: rusty-v8-source-binding-${{ runner.os }}-${{ hashFiles('browser/native/moon.mod.json', 'webdriver/moon.mod.json') }}
+
+      - name: Prefetch rusty_v8 source binding
+        run: node scripts/prefetch-rusty-v8-source-binding.mjs --module-root webdriver
 
       - name: Build BiDi server
         run: bash scripts/ci/run-moon-step.sh bidi-build moon -C webdriver build bidi_main --target js --release -j 1
@@ -749,7 +776,7 @@ jobs:
       - name: Install Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.x
+          deno-version: v1.46.3
 
       - name: Install dependencies
         run: pnpm install
@@ -795,6 +822,15 @@ jobs:
 
       - name: Prefetch BiDi dependencies
         run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path webdriver/moon.mod.json
+
+      - name: Restore rusty_v8 source binding cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/.rusty_v8
+          key: rusty-v8-source-binding-${{ runner.os }}-${{ hashFiles('browser/native/moon.mod.json', 'webdriver/moon.mod.json') }}
+
+      - name: Prefetch rusty_v8 source binding
+        run: node scripts/prefetch-rusty-v8-source-binding.mjs --module-root webdriver
 
       - name: Build BiDi server
         run: bash scripts/ci/run-moon-step.sh bidi-build moon -C webdriver build bidi_main --target js --release -j 1
@@ -1016,7 +1052,7 @@ jobs:
       - name: Install Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.x
+          deno-version: v1.46.3
 
       - name: Install dependencies
         run: pnpm install
@@ -1050,6 +1086,15 @@ jobs:
 
       - name: Prefetch BiDi dependencies
         run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path webdriver/moon.mod.json
+
+      - name: Restore rusty_v8 source binding cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/.rusty_v8
+          key: rusty-v8-source-binding-${{ runner.os }}-${{ hashFiles('browser/native/moon.mod.json', 'webdriver/moon.mod.json') }}
+
+      - name: Prefetch rusty_v8 source binding
+        run: node scripts/prefetch-rusty-v8-source-binding.mjs --module-root webdriver
 
       - name: Build BiDi server
         run: bash scripts/ci/run-moon-step.sh bidi-build moon -C webdriver build bidi_main --target js --release -j 1

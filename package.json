@@ -21,7 +21,7 @@
     "bench:crater-cli:check-baseline": "node benchmarks/scripts/crater-cli-bench-baseline.mjs check",
     "test:all": "pnpm test:vitest && pnpm test:node",
     "test:vitest": "vitest run --config vitest.config.ts",
-    "test:node": "node --test js/test/yoga-api.test.mjs wasm/test/component.test.mjs browser/scripts/mizchi-v8-consumer-prebuild.test.mjs browser/scripts/run-rolldown.test.mjs browser/tests/crater-cli.test.mjs benchmarks/tests/component-vrt-bench-baseline.test.mjs benchmarks/tests/crater-cli-bench-baseline.test.mjs scripts/moon-publish-workspace.test.mjs",
+    "test:node": "node --test js/test/yoga-api.test.mjs wasm/test/component.test.mjs browser/scripts/mizchi-v8-consumer-prebuild.test.mjs browser/scripts/run-rolldown.test.mjs browser/tests/crater-cli.test.mjs benchmarks/tests/component-vrt-bench-baseline.test.mjs benchmarks/tests/crater-cli-bench-baseline.test.mjs scripts/moon-publish-workspace.test.mjs scripts/prefetch-rusty-v8-source-binding.test.mjs",
     "test:component-vrt:baseline": "node --test benchmarks/tests/component-vrt-bench-baseline.test.mjs",
     "test:crater-cli:baseline": "node --test benchmarks/tests/crater-cli-bench-baseline.test.mjs",
     "test:bidi-e2e": "playwright test tests/bidi-e2e.test.ts",
