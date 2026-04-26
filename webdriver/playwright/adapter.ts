@@ -93,7 +93,16 @@ const keyValue = (key: string): string => SPECIAL_KEYS[key] ?? key;
 
 const jsString = (value: string): string => JSON.stringify(value);
 
+const jsValue = (value: unknown): string => {
+  const serialized = JSON.stringify(value);
+  return serialized === undefined ? "undefined" : serialized;
+};
+
 const domKeyValue = (key: string): string => key === "Space" ? " " : key;
+
+function isEvaluateOptions(value: unknown): value is CraterEvaluateOptions {
+  return !!value && typeof value === "object" && "awaitPromise" in value;
+}
 
 export function parseLocatorSelector(selector: string): ParsedLocatorSelector {
   const prefixMatch = selector.match(/^(text|role|placeholder|alt|title|testid|label)=(.+)$/i);
@@ -430,24 +439,32 @@ export class CraterLocator {
     `);
   }
 
-  async evaluate<T>(fn: (element: Element) => T | Promise<T>): Promise<T> {
+  async evaluate<T, Arg = unknown>(
+    fn: (element: Element, arg: Arg) => T | Promise<T>,
+    arg?: Arg,
+  ): Promise<T> {
     const fnStr = fn.toString();
+    const argExpr = arguments.length >= 2 ? `, ${jsValue(arg)}` : "";
     return this.page.evaluate(
       `(() => {
         const element = ${this.queryExpr("querySelector")};
         if (!element) throw new Error("Element not found: ${this.selectorForError()}");
-        return (${fnStr})(element);
+        return (${fnStr})(element${argExpr});
       })()`,
       { awaitPromise: fn.constructor.name === "AsyncFunction" },
     );
   }
 
-  async evaluateAll<T>(fn: (elements: Element[]) => T | Promise<T>): Promise<T> {
+  async evaluateAll<T, Arg = unknown>(
+    fn: (elements: Element[], arg: Arg) => T | Promise<T>,
+    arg?: Arg,
+  ): Promise<T> {
     const fnStr = fn.toString();
+    const argExpr = arguments.length >= 2 ? `, ${jsValue(arg)}` : "";
     return this.page.evaluate(
       `(() => {
         const elements = ${this.queryExpr("querySelectorAll")};
-        return (${fnStr})(elements);
+        return (${fnStr})(elements${argExpr});
       })()`,
       { awaitPromise: fn.constructor.name === "AsyncFunction" },
     );
@@ -800,13 +817,18 @@ export class CraterBidiPage {
     this.defaultTimeout = timeout;
   }
 
-  async evaluate<T>(
-    expression: string | (() => T | Promise<T>),
+  async evaluate<T, Arg = unknown>(
+    expression: string | ((arg: Arg) => T | Promise<T>),
+    argOrOptions?: Arg | CraterEvaluateOptions,
     options: CraterEvaluateOptions = {},
   ): Promise<T> {
+    const hasFunctionArg = typeof expression === "function" && arguments.length >= 2;
     const expr = typeof expression === "function"
-      ? `(${expression.toString()})()`
+      ? `(${expression.toString()})(${hasFunctionArg ? jsValue(argOrOptions) : ""})`
       : expression;
+    const evaluateOptions = typeof expression === "function"
+      ? options
+      : isEvaluateOptions(argOrOptions) ? argOrOptions : {};
     const isAsync = options.awaitPromise ?? (
       typeof expression === "function"
         ? expression.constructor.name === "AsyncFunction"
@@ -815,7 +837,7 @@ export class CraterBidiPage {
     const resp = await this.sendBidi("script.evaluate", {
       expression: expr,
       target: { context: this.requireContextId() },
-      awaitPromise: isAsync,
+      awaitPromise: evaluateOptions.awaitPromise ?? isAsync,
     });
     if (resp.type === "error") {
       throw new Error(resp.message || resp.error || "script.evaluate failed");

@@ -95,7 +95,7 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     owner: "page",
     api: "evaluate",
     status: "supported",
-    notes: "Runs script.evaluate and unwraps serialized values.",
+    notes: "Runs script.evaluate and unwraps serialized values, with optional JSON-serializable arg support.",
   },
   {
     owner: "page",
@@ -497,13 +497,13 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     owner: "locator",
     api: "evaluate",
     status: "partial",
-    notes: "Evaluates a serializable function against the first matching element.",
+    notes: "Evaluates a serializable function against the first matching element, with optional JSON-serializable arg support.",
   },
   {
     owner: "locator",
     api: "evaluateAll",
     status: "partial",
-    notes: "Evaluates a serializable function against all matching elements.",
+    notes: "Evaluates a serializable function against all matching elements, with optional JSON-serializable arg support.",
   },
   {
     owner: "locator",

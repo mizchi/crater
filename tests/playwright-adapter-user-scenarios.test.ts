@@ -89,6 +89,13 @@ test.describe("Crater Playwright adapter user scenarios", () => {
     await expect(page.content()).resolves.toContain("<title>Crater Dashboard</title>");
 
     const items = page.locator("#items").locator("li");
+    await expect(
+      page.evaluate(
+        (options: { prefix: string }) =>
+          options.prefix + document.getElementById("items")!.querySelectorAll("li").length,
+        { prefix: "count:" },
+      ),
+    ).resolves.toBe("count:3");
     await expect(items.allTextContents()).resolves.toEqual([
       "alpha",
       "beta",
@@ -100,15 +107,17 @@ test.describe("Crater Playwright adapter user scenarios", () => {
       "gamma",
     ]);
     await expect(
-      items.first().evaluate((element) =>
-        Number(element.getAttribute("data-score")),
+      items.first().evaluate((element, multiplier: number) =>
+        Number(element.getAttribute("data-score")) * multiplier,
+      2,
       ),
-    ).resolves.toBe(2);
+    ).resolves.toBe(4);
     await expect(
-      items.evaluateAll((elements) =>
-        elements.map((element) => element.textContent?.trim()).join(","),
+      items.evaluateAll((elements, separator: string) =>
+        elements.map((element) => element.textContent?.trim()).join(separator),
+      "|",
       ),
-    ).resolves.toBe("alpha,beta,gamma");
+    ).resolves.toBe("alpha|beta|gamma");
     await expect(page.locator("#summary").textContent()).resolves.toBe("total:10");
   });
 
