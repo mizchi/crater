@@ -27,6 +27,24 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
   },
   {
     owner: "page",
+    api: "url",
+    status: "supported",
+    notes: "Returns window.location.href from the current Crater runtime.",
+  },
+  {
+    owner: "page",
+    api: "title",
+    status: "supported",
+    notes: "Returns document.title.",
+  },
+  {
+    owner: "page",
+    api: "content",
+    status: "supported",
+    notes: "Returns document.documentElement.outerHTML.",
+  },
+  {
+    owner: "page",
     api: "goto",
     status: "partial",
     notes: "Supports BiDi navigation, including data URLs. Browser-grade network loading is still limited.",
@@ -54,6 +72,24 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     api: "evaluate",
     status: "supported",
     notes: "Runs script.evaluate and unwraps serialized values.",
+  },
+  {
+    owner: "page",
+    api: "$",
+    status: "partial",
+    notes: "Returns a Crater locator for the first matching element, not a Playwright ElementHandle.",
+  },
+  {
+    owner: "page",
+    api: "$$",
+    status: "partial",
+    notes: "Returns Crater locators for matching elements, not Playwright ElementHandles.",
+  },
+  {
+    owner: "page",
+    api: "$eval",
+    status: "partial",
+    notes: "Evaluates a serializable function against the first matching element.",
   },
   {
     owner: "page",
@@ -165,6 +201,12 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
   },
   {
     owner: "page",
+    api: "selectOption",
+    status: "partial",
+    notes: "Playwright-style alias that selects a single option by value.",
+  },
+  {
+    owner: "page",
     api: "textContent",
     status: "supported",
     notes: "Returns querySelector textContent.",
@@ -219,6 +261,12 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
   },
   {
     owner: "page",
+    api: "waitForURL",
+    status: "partial",
+    notes: "Polls current URL against string, RegExp, or URL predicate matchers.",
+  },
+  {
+    owner: "page",
     api: "waitForLoadState",
     status: "partial",
     notes: "load/domcontentloaded are immediate after Crater load; networkidle uses Crater runtime helpers.",
@@ -246,6 +294,12 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     api: "captureScreenshot",
     status: "crater-extension",
     notes: "Crater BiDi screenshot data helper.",
+  },
+  {
+    owner: "page",
+    api: "screenshot",
+    status: "partial",
+    notes: "Playwright-style alias for Crater screenshot capture.",
   },
   {
     owner: "page",
@@ -345,9 +399,87 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
   },
   {
     owner: "locator",
+    api: "hover",
+    status: "partial",
+    notes: "Dispatches pointerenter/mouseover events in the Crater runtime.",
+  },
+  {
+    owner: "locator",
+    api: "focus",
+    status: "partial",
+    notes: "Focuses the element when available and dispatches focus/focusin events.",
+  },
+  {
+    owner: "locator",
     api: "fill",
     status: "supported",
     notes: "Sets value and dispatches input/change events.",
+  },
+  {
+    owner: "locator",
+    api: "clear",
+    status: "supported",
+    notes: "Clears value and dispatches input/change events.",
+  },
+  {
+    owner: "locator",
+    api: "type",
+    status: "partial",
+    notes: "Appends text and dispatches input events; full keyboard semantics are not implemented.",
+  },
+  {
+    owner: "locator",
+    api: "press",
+    status: "partial",
+    notes: "Dispatches keydown/keyup and applies simple text input edits.",
+  },
+  {
+    owner: "locator",
+    api: "dispatchEvent",
+    status: "partial",
+    notes: "Dispatches Event or CustomEvent with serializable init data.",
+  },
+  {
+    owner: "locator",
+    api: "check",
+    status: "supported",
+    notes: "Sets checkbox/radio checked state and dispatches input/change events.",
+  },
+  {
+    owner: "locator",
+    api: "uncheck",
+    status: "supported",
+    notes: "Clears checkbox checked state and dispatches input/change events.",
+  },
+  {
+    owner: "locator",
+    api: "selectOption",
+    status: "partial",
+    notes: "Selects a single option by value and dispatches input/change events.",
+  },
+  {
+    owner: "locator",
+    api: "evaluate",
+    status: "partial",
+    notes: "Evaluates a serializable function against the first matching element.",
+  },
+  {
+    owner: "locator",
+    api: "evaluateAll",
+    status: "partial",
+    notes: "Evaluates a serializable function against all matching elements.",
+  },
+  {
+    owner: "locator",
+    api: "allTextContents",
+    status: "supported",
+    notes: "Returns textContent for all matching elements.",
+  },
+  {
+    owner: "locator",
+    api: "allInnerTexts",
+    status: "partial",
+    notes: "Returns innerText when available, falling back to textContent.",
   },
   {
     owner: "locator",
@@ -372,6 +504,36 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     api: "isVisible",
     status: "partial",
     notes: "Checks hidden/display/visibility.",
+  },
+  {
+    owner: "locator",
+    api: "isHidden",
+    status: "partial",
+    notes: "Inverse of Crater isVisible().",
+  },
+  {
+    owner: "locator",
+    api: "isChecked",
+    status: "supported",
+    notes: "Returns checked state.",
+  },
+  {
+    owner: "locator",
+    api: "isDisabled",
+    status: "partial",
+    notes: "Checks disabled property or attribute.",
+  },
+  {
+    owner: "locator",
+    api: "isEnabled",
+    status: "partial",
+    notes: "Inverse of Crater isDisabled().",
+  },
+  {
+    owner: "locator",
+    api: "isEditable",
+    status: "partial",
+    notes: "Checks simple input/textarea/contenteditable editability.",
   },
   {
     owner: "locator",

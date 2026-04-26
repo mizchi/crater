@@ -11,6 +11,7 @@ export type {
   CraterBidiConnectOptions,
   CraterEvaluateOptions,
   CraterLoadState,
+  CraterUrlMatcher,
   CraterPlaywrightApiEntry,
   CraterPlaywrightApiOwner,
   CraterPlaywrightApiStatus,

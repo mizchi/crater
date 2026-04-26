@@ -586,6 +586,7 @@ jobs:
           pnpm exec playwright test \
             tests/playwright-adapter.test.ts \
             tests/crater-playwright-adapter.test.ts \
+            tests/playwright-adapter-user-scenarios.test.ts \
             tests/bidi-e2e.test.ts \
             tests/website-loading.test.ts \
             tests/browser-user-scenarios.test.ts \

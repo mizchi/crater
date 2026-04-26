@@ -41,6 +41,8 @@ export type CraterLoadState =
   | "networkidle0"
   | "networkidle2";
 
+export type CraterUrlMatcher = string | RegExp | ((url: URL) => boolean);
+
 type PendingCommand = {
   resolve: (value: BidiResponse) => void;
   reject: (error: Error) => void;
@@ -74,6 +76,8 @@ const SPECIAL_KEYS: Record<string, string> = {
 const keyValue = (key: string): string => SPECIAL_KEYS[key] ?? key;
 
 const jsString = (value: string): string => JSON.stringify(value);
+
+const domKeyValue = (key: string): string => key === "Space" ? " " : key;
 
 export function parseLocatorSelector(selector: string): ParsedLocatorSelector {
   const prefixMatch = selector.match(/^(text|role|placeholder|alt|title|testid|label)=(.+)$/i);
@@ -278,6 +282,31 @@ export class CraterLocator {
     `);
   }
 
+  async hover(): Promise<void> {
+    await this.page.evaluate(`
+      (() => {
+        const el = ${this.queryExpr("querySelector")};
+        if (!el) throw new Error("Element not found: ${this.selectorForError()}");
+        el.dispatchEvent(new Event("pointerenter", { bubbles: false }));
+        el.dispatchEvent(new Event("mouseover", { bubbles: true }));
+      })()
+    `);
+  }
+
+  async focus(): Promise<void> {
+    await this.page.evaluate(`
+      (() => {
+        const el = ${this.queryExpr("querySelector")};
+        if (!el) throw new Error("Element not found: ${this.selectorForError()}");
+        if (typeof el.focus === "function") {
+          el.focus();
+        }
+        el.dispatchEvent(new Event("focus", { bubbles: false }));
+        el.dispatchEvent(new Event("focusin", { bubbles: true }));
+      })()
+    `);
+  }
+
   async fill(value: string): Promise<void> {
     await this.page.evaluate(`
       (() => {
@@ -288,6 +317,138 @@ export class CraterLocator {
         el.dispatchEvent(new Event("change", { bubbles: true }));
       })()
     `);
+  }
+
+  async clear(): Promise<void> {
+    await this.fill("");
+  }
+
+  async type(text: string): Promise<void> {
+    await this.page.evaluate(`
+      (() => {
+        const el = ${this.queryExpr("querySelector")};
+        if (!el) throw new Error("Element not found: ${this.selectorForError()}");
+        const current = String(el.value ?? "");
+        el.value = current + ${jsString(text)};
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+      })()
+    `);
+  }
+
+  async press(key: string): Promise<void> {
+    await this.page.evaluate(`
+      (() => {
+        const el = ${this.queryExpr("querySelector")};
+        if (!el) throw new Error("Element not found: ${this.selectorForError()}");
+        const key = ${jsString(domKeyValue(key))};
+        const makeKeyEvent = (type) => {
+          const event = typeof KeyboardEvent === "function"
+            ? new KeyboardEvent(type, { key, bubbles: true })
+            : new Event(type, { bubbles: true });
+          if (event.key !== key) {
+            Object.defineProperty(event, "key", { value: key });
+          }
+          return event;
+        };
+        el.dispatchEvent(makeKeyEvent("keydown"));
+        if (key === "Backspace" && typeof el.value === "string") {
+          el.value = el.value.slice(0, -1);
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+        } else if (key.length === 1 && typeof el.value === "string") {
+          el.value += key;
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        el.dispatchEvent(makeKeyEvent("keyup"));
+      })()
+    `);
+  }
+
+  async dispatchEvent(type: string, eventInit: Record<string, unknown> = {}): Promise<void> {
+    await this.page.evaluate(`
+      (() => {
+        const el = ${this.queryExpr("querySelector")};
+        if (!el) throw new Error("Element not found: ${this.selectorForError()}");
+        const init = ${JSON.stringify(eventInit)};
+        const hasDetail = Object.prototype.hasOwnProperty.call(init, "detail");
+        const event = hasDetail && typeof CustomEvent === "function"
+          ? new CustomEvent(${jsString(type)}, { bubbles: true, cancelable: true, ...init })
+          : new Event(${jsString(type)}, { bubbles: true, cancelable: true, ...init });
+        if (hasDetail && event.detail !== init.detail) {
+          Object.defineProperty(event, "detail", { value: init.detail });
+        }
+        el.dispatchEvent(event);
+      })()
+    `);
+  }
+
+  async check(): Promise<void> {
+    await this.setChecked(true);
+  }
+
+  async uncheck(): Promise<void> {
+    await this.setChecked(false);
+  }
+
+  async selectOption(value: string): Promise<void> {
+    await this.page.evaluate(`
+      (() => {
+        const el = ${this.queryExpr("querySelector")};
+        if (!el) throw new Error("Element not found: ${this.selectorForError()}");
+        const options = Array.from(el.options || el.children || el._children || []).filter((option) => {
+          const tag = String(option?.tagName || option?.nodeName || "").toLowerCase();
+          return tag === "option";
+        });
+        const targetIndex = options.findIndex((option) => {
+          const optionValue = String(option.value ?? option.getAttribute?.("value") ?? option.textContent ?? "");
+          return optionValue === ${jsString(value)};
+        });
+        if (targetIndex < 0) throw new Error(${jsString(`Option not found: ${value}`)});
+        for (let i = 0; i < options.length; i += 1) {
+          options[i].selected = i === targetIndex;
+        }
+        el.selectedIndex = targetIndex;
+        el.value = ${jsString(value)};
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+      })()
+    `);
+  }
+
+  async evaluate<T>(fn: (element: Element) => T | Promise<T>): Promise<T> {
+    const fnStr = fn.toString();
+    return this.page.evaluate(
+      `(() => {
+        const element = ${this.queryExpr("querySelector")};
+        if (!element) throw new Error("Element not found: ${this.selectorForError()}");
+        return (${fnStr})(element);
+      })()`,
+      { awaitPromise: fn.constructor.name === "AsyncFunction" },
+    );
+  }
+
+  async evaluateAll<T>(fn: (elements: Element[]) => T | Promise<T>): Promise<T> {
+    const fnStr = fn.toString();
+    return this.page.evaluate(
+      `(() => {
+        const elements = ${this.queryExpr("querySelectorAll")};
+        return (${fnStr})(elements);
+      })()`,
+      { awaitPromise: fn.constructor.name === "AsyncFunction" },
+    );
+  }
+
+  async allTextContents(): Promise<string[]> {
+    const json = await this.page.evaluate<string>(
+      `JSON.stringify((${this.queryExpr("querySelectorAll")}).map((el) => String(el.textContent || "")))`,
+    );
+    return JSON.parse(json) as string[];
+  }
+
+  async allInnerTexts(): Promise<string[]> {
+    const json = await this.page.evaluate<string>(
+      `JSON.stringify((${this.queryExpr("querySelectorAll")}).map((el) => String(el.innerText ?? el.textContent ?? "")))`,
+    );
+    return JSON.parse(json) as string[];
   }
 
   async textContent(): Promise<string | null> {
@@ -328,6 +489,47 @@ export class CraterLocator {
     `);
   }
 
+  async isHidden(): Promise<boolean> {
+    return !(await this.isVisible());
+  }
+
+  async isChecked(): Promise<boolean> {
+    return this.page.evaluate(`
+      (() => {
+        const el = ${this.queryExpr("querySelector")};
+        return !!(el && el.checked);
+      })()
+    `);
+  }
+
+  async isDisabled(): Promise<boolean> {
+    return this.page.evaluate(`
+      (() => {
+        const el = ${this.queryExpr("querySelector")};
+        return !!(el && (el.disabled || (typeof el.hasAttribute === "function" && el.hasAttribute("disabled"))));
+      })()
+    `);
+  }
+
+  async isEnabled(): Promise<boolean> {
+    return !(await this.isDisabled());
+  }
+
+  async isEditable(): Promise<boolean> {
+    return this.page.evaluate(`
+      (() => {
+        const el = ${this.queryExpr("querySelector")};
+        if (!el) return false;
+        const tag = String(el.tagName || el.nodeName || "").toLowerCase();
+        const editableTag = tag === "input" || tag === "textarea";
+        const contentEditable = String(el.contentEditable || "").toLowerCase() === "true";
+        const disabled = !!(el.disabled || (typeof el.hasAttribute === "function" && el.hasAttribute("disabled")));
+        const readonly = !!(el.readOnly || (typeof el.hasAttribute === "function" && el.hasAttribute("readonly")));
+        return (editableTag || contentEditable) && !disabled && !readonly;
+      })()
+    `);
+  }
+
   async getAttribute(name: string): Promise<string | null> {
     return this.page.evaluate(`
       (() => {
@@ -355,6 +557,27 @@ export class CraterLocator {
       (() => {
         const els = ${this.queryExpr("querySelectorAll")};
         return els ? els.length : 0;
+      })()
+    `);
+  }
+
+  private async setChecked(checked: boolean): Promise<void> {
+    await this.page.evaluate(`
+      (() => {
+        const el = ${this.queryExpr("querySelector")};
+        if (!el) throw new Error("Element not found: ${this.selectorForError()}");
+        if (el.checked === ${checked}) return;
+        if (${checked} && String(el.type || "").toLowerCase() === "radio" && el.name) {
+          const inputs = Array.from(document.querySelectorAll("input"));
+          for (const input of inputs) {
+            if (input !== el && String(input.type || "").toLowerCase() === "radio" && input.name === el.name) {
+              input.checked = false;
+            }
+          }
+        }
+        el.checked = ${checked};
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        el.dispatchEvent(new Event("change", { bubbles: true }));
       })()
     `);
   }
@@ -475,6 +698,31 @@ export class CraterBidiPage {
       { awaitPromise: true },
     );
     return JSON.parse(json) as { url: string; status: number; scripts?: unknown[] };
+  }
+
+  async url(): Promise<string> {
+    return this.evaluate<string>("window.location.href");
+  }
+
+  async title(): Promise<string> {
+    return this.evaluate<string>(
+      "document.title || document.querySelector('title')?.textContent || ''",
+    );
+  }
+
+  async content(): Promise<string> {
+    return this.evaluate<string>(`
+      (() => {
+        const html = document.documentElement;
+        if (!html) return "";
+        if (typeof html.outerHTML === "string") return html.outerHTML;
+        const head = document.querySelector("head");
+        const body = document.body || document.querySelector("body");
+        const headHtml = head ? "<head>" + head.innerHTML + "</head>" : "";
+        const bodyHtml = body ? "<body>" + body.innerHTML + "</body>" : "";
+        return "<html>" + headHtml + bodyHtml + "</html>";
+      })()
+    `);
   }
 
   async setViewport(width: number, height: number): Promise<void> {
@@ -646,6 +894,21 @@ export class CraterBidiPage {
     return this.locator(selector).count();
   }
 
+  async $(selector: string): Promise<CraterLocator | null> {
+    const count = await this.count(selector);
+    return count > 0 ? this.locator(selector) : null;
+  }
+
+  async $$(selector: string): Promise<CraterLocator[]> {
+    const count = await this.count(selector);
+    const locator = this.locator(selector);
+    return Array.from({ length: count }, (_, index) => locator.nth(index));
+  }
+
+  async $eval<T>(selector: string, fn: (element: Element) => T | Promise<T>): Promise<T> {
+    return this.locator(selector).evaluate(fn);
+  }
+
   async $$eval<T>(selector: string, fn: (elements: Element[]) => T): Promise<T> {
     const fnStr = fn.toString();
     return this.evaluate(`
@@ -690,6 +953,14 @@ export class CraterBidiPage {
 
   getByLabel(text: string): CraterLocator {
     return this.locator(`label=${text}`);
+  }
+
+  async selectOption(selector: string, value: string): Promise<void> {
+    await this.locator(selector).selectOption(value);
+  }
+
+  async screenshot(): Promise<Buffer> {
+    return this.captureScreenshot();
   }
 
   async drag(sourceSelector: string, targetSelector: string): Promise<void> {
@@ -737,6 +1008,19 @@ export class CraterBidiPage {
       await new Promise((resolve) => setTimeout(resolve, 30));
     }
     throw new Error(`Timeout waiting for condition: ${expression}`);
+  }
+
+  async waitForURL(expected: CraterUrlMatcher, options: { timeout?: number } = {}): Promise<void> {
+    const timeout = options.timeout ?? 3000;
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      const current = await this.url();
+      if (this.urlMatches(current, expected)) {
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 30));
+    }
+    throw new Error(`Timeout waiting for URL: ${String(expected)}`);
   }
 
   async waitForNavigation(options: { timeout?: number } = {}): Promise<void> {
@@ -1041,6 +1325,16 @@ export class CraterBidiPage {
       throw new Error("No browsing context");
     }
     return this.contextId;
+  }
+
+  private urlMatches(current: string, expected: CraterUrlMatcher): boolean {
+    if (typeof expected === "string") {
+      return current === expected || current.includes(expected);
+    }
+    if (expected instanceof RegExp) {
+      return expected.test(current);
+    }
+    return expected(new URL(current));
   }
 
   private handleMessage(data: string): void {

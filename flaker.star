@@ -94,6 +94,15 @@ task(
 )
 
 task(
+  id="playwright-adapter-user-scenarios",
+  node="browser",
+  cmd=["pnpm", "exec", "playwright", "test", "tests/playwright-adapter-user-scenarios.test.ts"],
+  srcs=["webdriver/playwright/**", "browser/**", "src/bidi/**", "src/dom/**", "src/js/**"],
+  needs=["playwright-adapter"],
+  trigger="auto",
+)
+
+task(
   id="bidi-e2e",
   node="browser",
   cmd=["pnpm", "exec", "playwright", "test", "tests/bidi-e2e.test.ts"],
