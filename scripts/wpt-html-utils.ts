@@ -83,7 +83,7 @@ export function getTestFiles(moduleName: string): string[] {
 
 // --- CSS inlining ---
 
-function isExternalResourceUrl(url: string): boolean {
+export function isExternalResourceUrl(url: string): boolean {
   return url.startsWith('http://') ||
     url.startsWith('https://') ||
     url.startsWith('//') ||
@@ -91,11 +91,11 @@ function isExternalResourceUrl(url: string): boolean {
     url.startsWith('blob:');
 }
 
-function stripQueryAndHash(url: string): string {
+export function stripQueryAndHash(url: string): string {
   return url.split('#')[0].split('?')[0];
 }
 
-function resolveLocalResourcePath(baseDir: string, rawRef: string): string | null {
+export function resolveLocalResourcePath(baseDir: string, rawRef: string): string | null {
   if (isExternalResourceUrl(rawRef)) return null;
   const ref = stripQueryAndHash(rawRef.trim());
   if (!ref) return null;

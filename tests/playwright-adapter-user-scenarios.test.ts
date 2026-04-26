@@ -83,9 +83,9 @@ test.describe("Crater Playwright adapter user scenarios", () => {
       </html>
     `);
 
-    await page.waitForURL(/data:text\/html/);
+    await page.waitForURL("about:blank");
     await expect(page.title()).resolves.toBe("Crater Dashboard");
-    await expect(page.url()).resolves.toContain("data:text/html");
+    await expect(page.url()).resolves.toBe("about:blank");
     await expect(page.content()).resolves.toContain("<title>Crater Dashboard</title>");
 
     const items = page.locator("#items").locator("li");

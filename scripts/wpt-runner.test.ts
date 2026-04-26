@@ -11,6 +11,7 @@ import {
   normalizeComparisonRootToContentBox,
   resolveBuiltinTextAdvanceRatioOverride,
   resolveFocusedComparisonNodeId,
+  resolveImageIntrinsicFn,
   resolveTextIntrinsicFn,
   shouldKeepHtmlRootForComparison,
 } from "./wpt-runner.ts";
@@ -140,6 +141,127 @@ describe("createTextIntrinsicFnFromMeasureText", () => {
 
     expect(result?.maxWidth).toBe(192);
     expect(result?.minWidth).toBe(192);
+  });
+});
+
+describe("resolveImageIntrinsicFn", () => {
+  it("adapts direct function module exports", () => {
+    const fn = resolveImageIntrinsicFn(() => ({ width: 11, height: 13 }));
+
+    expect(fn).not.toBeNull();
+    expect(fn!("asset.png")).toEqual({ width: 11, height: 13 });
+  });
+
+  it("adapts mizchi/image decode_image_stream style modules", () => {
+    const seenBytes: number[][] = [];
+    const fn = resolveImageIntrinsicFn({
+      decode_image_stream: (bytes: Uint8Array) => {
+        seenBytes.push([...bytes]);
+        return { width: 20, height: 10, format: "png" };
+      },
+    });
+
+    expect(fn).not.toBeNull();
+    expect(fn!("data:image/png;base64,AQID")).toEqual({ width: 20, height: 10 });
+    expect(seenBytes).toEqual([[1, 2, 3]]);
+  });
+
+  it("adapts nested image namespace provider exports", () => {
+    const fn = resolveImageIntrinsicFn({
+      default: {
+        image: {
+          getImageSize: () => [32, 18],
+        },
+      },
+    });
+
+    expect(fn).not.toBeNull();
+    expect(fn!("asset.png")).toEqual({ width: 32, height: 18 });
+  });
+
+  it("adapts common sizeOf style provider exports", () => {
+    const fn = resolveImageIntrinsicFn({
+      sizeOf: () => ({ width: 64, height: 48 }),
+    });
+
+    expect(fn).not.toBeNull();
+    expect(fn!("asset.jpg")).toEqual({ width: 64, height: 48 });
+  });
+
+  it("adapts dimensions and metadata style provider exports", () => {
+    const fn = resolveImageIntrinsicFn({
+      default: {
+        metadata: {
+          identify: () => ({ dimensions: { width: 27, height: 14 } }),
+        },
+      },
+    });
+
+    expect(fn).not.toBeNull();
+    expect(fn!("asset.webp")).toEqual({ width: 27, height: 14 });
+  });
+
+  it("normalizes nested and alternate dimension result shapes", () => {
+    const nested = resolveImageIntrinsicFn({
+      getDimensions: () => ({ metadata: { naturalWidth: 50, naturalHeight: 25 } }),
+    });
+    const rowsColumns = resolveImageIntrinsicFn({
+      readHeader: () => ({ columns: "31", rows: "17" }),
+    });
+    const shape = resolveImageIntrinsicFn({
+      imageInfo: () => ({ shape: [19, 37, 4] }),
+    });
+
+    expect(nested!("asset.avif")).toEqual({ width: 50, height: 25 });
+    expect(rowsColumns!("asset.ico")).toEqual({ width: 31, height: 17 });
+    expect(shape!("asset.bmp")).toEqual({ width: 37, height: 19 });
+  });
+
+  it("adapts synchronous callback-style providers", () => {
+    const fn = resolveImageIntrinsicFn({
+      probe: (_input: unknown, callback: (error: unknown, result?: unknown) => void) => {
+        callback(null, { width: 41, height: 23 });
+      },
+    });
+
+    expect(fn).not.toBeNull();
+    expect(fn!("asset.png")).toEqual({ width: 41, height: 23 });
+  });
+
+  it("memoizes provider results by source", () => {
+    let calls = 0;
+    const fn = resolveImageIntrinsicFn({
+      getImageSize: () => {
+        calls += 1;
+        return { width: 12, height: 8 };
+      },
+    });
+
+    expect(fn!("asset.png")).toEqual({ width: 12, height: 8 });
+    expect(fn!("asset.png")).toEqual({ width: 12, height: 8 });
+    expect(calls).toBe(1);
+  });
+
+  it("adapts image-size style providers that expect bytes", () => {
+    const seenInputs: string[] = [];
+    const fn = resolveImageIntrinsicFn({
+      imageSize: (input: unknown) => {
+        if (typeof input === "string") {
+          seenInputs.push("string");
+          throw new Error("string paths are not accepted in this fixture");
+        }
+        if (input instanceof Uint8Array || Buffer.isBuffer(input)) {
+          seenInputs.push(Buffer.isBuffer(input) ? "buffer" : "uint8array");
+          return { width: 9, height: 7 };
+        }
+        return null;
+      },
+    });
+
+    expect(fn).not.toBeNull();
+    expect(fn!("data:image/png;base64,AQID")).toEqual({ width: 9, height: 7 });
+    expect(seenInputs).toContain("string");
+    expect(seenInputs.some((kind) => kind === "buffer" || kind === "uint8array")).toBe(true);
   });
 });
 

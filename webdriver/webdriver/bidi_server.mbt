@@ -1479,6 +1479,7 @@ extern "js" fn js_evaluate_expression(
   #|             const childTag = String(child && child.tagName ? child.tagName : "").toUpperCase();
   #|             const parentTag = String(this && this.tagName ? this.tagName : "").toUpperCase();
   #|             if (
+  #|               !globalThis.__suppressScriptAppendExecution &&
   #|               childTag === "SCRIPT" &&
   #|               (parentTag === "BODY" || parentTag === "HEAD" || parentTag === "HTML")
   #|             ) {
@@ -3437,8 +3438,16 @@ extern "js" fn js_evaluate_expression(
   #|         return nodes;
   #|       };
   #|
-  #|       // Parse and build DOM
-  #|       const parsed = parseHTML(html);
+  #|       // Parse and build DOM. Parser-created script nodes must not execute
+  #|       // through appendChild; callers decide when document scripts run.
+  #|       const previousSuppressScriptAppendExecution = globalThis.__suppressScriptAppendExecution;
+  #|       globalThis.__suppressScriptAppendExecution = true;
+  #|       let parsed;
+  #|       try {
+  #|         parsed = parseHTML(html);
+  #|       } finally {
+  #|         globalThis.__suppressScriptAppendExecution = previousSuppressScriptAppendExecution;
+  #|       }
   #|
   #|       // Find html, head, body elements
   #|       let htmlEl = null, headEl = null, bodyEl = null;
@@ -3587,7 +3596,9 @@ extern "js" fn js_evaluate_expression(
   #|           } else if (src) {
   #|             // External classic script - fetch and execute
   #|             const fullUrl = resolveUrl(src, baseUrl);
-  #|             const fetchFn = globalThis.__fetchInternal || globalThis.fetch;
+  #|             const fetchFn = globalThis.__craterUseObservableFetch
+  #|               ? (globalThis.__craterObservableFetch || globalThis.__fetchInternal || globalThis.fetch)
+  #|               : (globalThis.__fetchInternal || globalThis.fetch);
   #|             const response = await fetchFn(fullUrl, { mode: 'no-cors' });
   #|             if (response.ok) {
   #|               const code = await response.text();

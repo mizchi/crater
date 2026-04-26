@@ -103,6 +103,15 @@ task(
 )
 
 task(
+  id="playwright-adapter-chromium-parity",
+  node="browser",
+  cmd=["pnpm", "exec", "playwright", "test", "tests/playwright-adapter-chromium-parity.test.ts"],
+  srcs=["webdriver/playwright/**", "webdriver/webdriver/**", "browser/**", "src/bidi/**", "src/dom/**", "src/js/**"],
+  needs=["playwright-adapter"],
+  trigger="auto",
+)
+
+task(
   id="bidi-e2e",
   node="browser",
   cmd=["pnpm", "exec", "playwright", "test", "tests/bidi-e2e.test.ts"],

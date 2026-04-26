@@ -26,7 +26,7 @@
     "test:crater-cli:baseline": "node --test benchmarks/tests/crater-cli-bench-baseline.test.mjs",
     "test:bidi-e2e": "playwright test tests/bidi-e2e.test.ts",
     "test:preact": "playwright test tests/preact-compat.test.ts",
-    "test:playwright": "playwright test tests/playwright-adapter.test.ts tests/crater-playwright-adapter.test.ts tests/playwright-adapter-user-scenarios.test.ts",
+    "test:playwright": "playwright test tests/playwright-adapter.test.ts tests/crater-playwright-adapter.test.ts tests/playwright-adapter-user-scenarios.test.ts tests/playwright-adapter-chromium-parity.test.ts",
     "test:vrt": "playwright test tests/paint-vrt.test.ts",
     "gen:paint-vrt-reference": "PAINT_VRT_REFRESH_REFERENCE_FIXTURES=1 playwright test tests/paint-vrt.test.ts",
     "gen:wpt-vrt-reference": "WPT_VRT_REFRESH_REFERENCE_FIXTURES=1 playwright test tests/wpt-vrt.test.ts",

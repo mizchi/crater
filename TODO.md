@@ -752,6 +752,13 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
 - WPT 用の外部 intrinsic provider フックを追加:
   - text: `set_text_metrics_provider`（`wpt-runner` は `CRATER_TEXT_MODULE` または `mizchi/text` を自動探索）
   - image: `set_image_intrinsic_size_provider`（`CRATER_IMAGE_MODULE` または `mizchi/image`）
+    - 対応 export pattern: module 自体が関数, `resolveImageIntrinsicSize`, `getImageSize`, `sizeOf`, `dimensions/getDimensions`, `metadata/identify/probe/readHeader/imageInfo`, `default.image.*`, `default.metadata.*`
+    - `image-size` 系 pattern: provider に `src`, 解決済み local path, `Uint8Array`, `Buffer` を順に渡す
+    - result shape: `{width,height}`, `[width,height]`, `{dimensions:{width,height}}`, `{columns,rows}`, `{shape:[height,width,...]}` を正規化
+    - `mizchi/image` 互換 pattern: `decode_image_stream(bytes)`, `decode_png(bytes)` などの codec export から `{width,height}` を読む
+    - synchronous callback provider と src 単位 cache に対応
+    - 未対応: `sharp().metadata()` / `probe-image-size` のような Promise/stream-only provider（MoonBit bridge が同期呼び出しのため）
+    - TODO: 実 `mizchi/image` が依存に入った時点で smoke test を追加し、JS export と Bytes 入力の形を固定する
   - 画像ローカル寸法解決フォールバックは `CRATER_IMAGE_FILE_RESOLVE=1` のときのみ有効
 
 ### WPT 候補メモ（2026-03-31）
@@ -885,6 +892,112 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
   - `just test-playwright` -> `13 / 13 passed`
   - `just test-playwright-adapter` -> `30 / 30 passed`
   - `just test-preact` -> `49 / 49 passed`
+
+## Playwright adapter support table / 実装計画（2026-04-26）
+
+- 目的:
+  - Crater を「軽量な Playwright 代替」として使える範囲を明文化する
+  - `webdriver/playwright/supported-apis.ts` を開発ゲートにして、互換性 status (`supported` / `partial` / `crater-extension`) と実装形態 (`implemented` / `api-mock`) を分けて追えるようにする
+  - 主要 API は Chromium parity test と Crater user scenario test の両方で固定する
+- 現状:
+  - `pnpm test:playwright` -> `73 / 73 passed`
+  - `pnpm test:website` -> `33 / 33 passed`
+  - `webdriver/playwright/supported-apis.ts`: total `117` (`supported=46`, `partial=59`, `crater-extension=12`)
+  - implementation 別: `implemented=116`, `api-mock=1`
+  - owner 別: `browser=4`, `context=4`, `page=70`, `locator=39`
+  - `scripts/playwright-adapter-support.test.ts` で Browser / Context / Page / Locator の source-level public method と support table / implementation 分類の drift を検出する
+
+### 現状 support matrix
+
+| Area | Status | 使えること | 足りないこと |
+|------|--------|------------|--------------|
+| Page basics | supported | `connect`, `close`, `url`, `title`, `content`, `evaluate` | Playwright `Page` 全体の型互換ではない |
+| URL loading | partial | `goto(http/https/data)`, `loadPage`, redirect follow, 4xx/5xx document load, response headers/statusText, init script before page scripts, relative classic script, `location.assign/replace/reload`, URL-only `history.pushState/replaceState` | referrer, custom headers, document request routing, browser-grade navigation |
+| Browser / Context wrapper | partial | `createCraterBrowser`, `browser.newContext`, `context.newPage`, `browser.contexts`, `context.pages`, `context.storageState`, idempotent close, 複数 page の基本 isolation | storageState preload, cookies API, permissions, context route, viewport/userAgent, context-level option |
+| Locators | partial | CSS, text, role, label, placeholder, alt, title, testid, `filter`, `nth/first/last`, text-like locator `exact` / `RegExp`, label `for` / nested control / `aria-label` / `aria-labelledby`, role accessible name `exact`, hidden exclusion / `includeHidden`, `disabled` option, open shadow DOM traversal | full ARIA name/role, slot-based accessible name, ElementHandle 互換 |
+| Actions / input | partial | click, fill(input/textarea/contenteditable), check/uncheck/radio group, selectOption(value/label/basic descriptor), hover, drag, locator/page keyboard press/type with input/textarea selection, `page.keyboard.insertText`, Backspace/Delete, basic modifier chord, `beforeinput` cancellation, textarea newline, synthetic composition/input dispatch event shapes, locator actionability auto-wait (`attached`, `visible`, `enabled`, stable bbox) | browser-originated native IME composition, clipboard, full keyboard layout/code mapping, complex contenteditable |
+| Network | partial | Crater runtime `fetch()`, document load, external classic script の route / waitForRequest / waitForResponse、style/image request observation | style/image response details, redirect chain, failure details, HAR-like observation |
+| Wait / auto-wait | partial | polling based `waitFor*`, URL matcher, networkidle helper, locator common action auto-wait | full Playwright actionability semantics and diagnostic details |
+| Screenshot / render | partial + crater-extension | Crater screenshot / paint data / paint tree | Playwright screenshot options (`fullPage`, `clip`, `mask`, browser pixel semantics) |
+| Storage / session | partial | open page からの visible cookies / localStorage snapshot (`context.storageState()`) | storageState preload, httpOnly cookie metadata, cookies API, sessionStorage helper |
+| Frames | partial | `frameLocator(...).locator(...)` で `iframe.contentDocument` / synthetic fixture root 配下を操作できる | 独立 iframe browsing context、iframe navigation、Playwright `frame` API |
+| Dialog / download / file chooser | missing | WebDriver BiDi/WPT 側の一部 prompt/file fixture は存在 | Playwright adapter API と user scenario が未定義 |
+
+`implementation=api-mock` は Playwright 互換 API 名を提供するが、ブラウザ相当の実体はなく fixture 用の限定 glue であることを表す。現時点では `page.frameLocator` のみが該当する。`partial + implemented` は実装実体はあるが Playwright と同等ではない範囲を表す。
+
+### TDD 実装順
+
+- [x] P0: support table を Browser / Context まで拡張する
+  - [x] `CraterPlaywrightApiOwner` に `browser` / `context` を追加する
+  - [x] `CraterBrowser`: `newContext`, `newPage`, `contexts`, `close` を table に登録する
+  - [x] `CraterBrowserContext`: `newPage`, `pages`, `close` を table に登録する
+  - [x] `scripts/playwright-adapter-support.test.ts` で Browser / Context / Page / Locator の public API と support table の drift を検出する
+  - [x] README に support matrix の読み方と `partial` の基準を書く
+
+- [x] P1: Browser / Context wrapper の契約を固定する
+  - [x] Red: Chromium と同じ `browser.newContext().newPage()` 形の user scenario を追加する
+  - [x] Red: `context.pages()`, `browser.contexts()`, `context.close()`, `browser.close()` の idempotent close をテストする
+  - [x] Green: transport page をユーザー page と分離し、ユーザーが最初の page を close しても sibling が壊れないようにする
+  - [x] Green: context close 後の page 操作は fail-fast する
+  - [x] Refactor: shared connection を hidden transport page 側に閉じ込め、closed page/context/browser を list から除外する
+
+- [x] P2: URL loading / navigation を Playwright 用途に近づける
+  - [x] Red: redirect, 404/500, response headers, `response.ok()`, `page.url()` の Chromium parity test を追加する
+  - [x] Red: `addInitScript` が document navigation ごとに page scripts より先に走ることを複数 navigation で固定する
+  - [x] Green: `CraterResponse` に headers / statusText / redirected URL / request metadata を載せる
+  - [x] Green: `location.assign/replace/reload` と history state の最小挙動を実装する
+  - [x] Refactor: `goto()` と `loadPage()` の document preparation / script execution pipeline を共有化する
+
+- [x] P3: Network surface を fetch-only から広げる
+  - [x] Red: document load と external script/image/style の request observation parity test を追加する
+  - [x] Green: document / external classic script load を request/response wait queue に流し、style/image は request observation を固定する
+  - [x] Green: route matcher が document / external classic script / runtime `fetch()` に効くことを Chromium parity test で固定し、style/image response details は best-effort と table に明記する
+  - [x] Refactor: network event shape を `CraterRequest` / `CraterResponse` contract に寄せる
+
+- [x] P4: locator / actionability の実用差分を潰す
+  - [x] Red: `getByRole` の accessible name / disabled / hidden / exact option parity test を増やす
+  - [x] Red: locator auto-wait 相当の「後から出る button を click できる」scenario を追加する
+  - [x] Green: basic actionability check (`attached`, `visible`, `enabled`, stable bounding box) を実装する
+  - [x] Green: shadow DOM と composed tree を locator query に統合する
+  - [x] Refactor: locator selector builder を role/text/css ごとに分割し、support table の `partial` 理由と対応させる
+
+- [ ] P5: input / form を Chromium parity で広げる
+  - [x] Red: Playwright upstream `selectors-get-by` / `selectors-text` 由来の getBy label/placeholder/alt/title/testid scenario を Chromium parity として追加する
+  - [x] Green: text-like locator の newline / exact / RegExp と label `aria-label` / `aria-labelledby` を実装する
+  - [x] Red: Playwright upstream `page-fill` / `page-select-option` / `page-check` 由来の input/textarea/contenteditable/select/checkbox/radio scenario を Chromium parity として追加する
+  - [x] Green: contenteditable fill、selectOption の label fallback、radio group の attr fallback を実装する
+  - [x] Red: Playwright upstream `page-keyboard` / `elementhandle-type` 由来の selection range, Backspace/Delete, modifier key, contenteditable, textarea 改行の parity test を追加する
+  - [x] Green: input/textarea の `locator.press/type` を DOM value mutation ではなく BiDi keyboard pipeline に寄せる
+  - [x] Green: `beforeinput` cancellation と `input` event の基本順序を Chromium parity で固定する
+  - [x] Red: `page-dispatchevent` 由来の composition/input event shape parity test を追加する
+  - [x] Green: synthetic IME-style flow として `CompositionEvent` / `InputEvent` の `data`, `inputType`, `isComposing` を固定する
+  - [x] Red: Playwright upstream `page-keyboard` 由来の `page.keyboard.insertText` parity test を追加する
+  - [x] Green: minimal `page.keyboard` (`type` / `press` / `down` / `up` / `insertText`) を追加し、`insertText` は focused editable に key event なしの input-like flow で挿入する
+  - [x] Red: browser-originated native IME composition の採用基準を決める
+    - 現時点では `page.keyboard.insertText` と `dispatchEvent(CompositionEvent/InputEvent)` を IME-like test surface とし、native IME composition は未実装として残す
+    - 実装採用条件: WebDriver BiDi input source か Crater browser shell が `compositionstart/update/end`、`beforeinput/input isComposing`、selection/caret 更新を Chromium と同じ観測順で出せること
+    - Red test は OS IME 依存にせず、driver/runtime が composition source を持った時点で Chromium parity fixture として追加する
+  - [x] Refactor: keyboard / form editable default action (`fill`, contenteditable `type`, `page.keyboard.insertText`) を DOM helper で共有する
+  - [x] Refactor: pointer action 配列と DOM action helper を切り出し、`click` / `hover` / `check` / `selectOption` の default action を共有する
+
+- [ ] P6: Storage / frames / long-tail API の採用基準を決める
+  - [x] `storageState`, cookies, localStorage/sessionStorage helper の要否を user scenario から決める
+    - `context.storageState()` は open page から visible cookies / localStorage を `{ cookies, origins }` 形で snapshot する
+    - sessionStorage は Playwright `storageState()` 互換 surface に含めず、必要なら別 helper として検討する
+    - storageState preload / cookies API / httpOnly cookie metadata は未実装として support table に残す
+  - [x] `frameLocator` / iframe navigation を adapter API に入れるか、BiDi raw API のままにするか決める
+    - `frameLocator(...).locator(...)` は adapter API として採用し、`iframe.contentDocument` / `contentWindow.document` / synthetic fixture root 配下の locator に限定した `api-mock` として分類する
+    - 独立 iframe browsing context と iframe navigation は未実装として support table に残し、現時点では BiDi raw/WPT 側の検証対象にする
+  - [ ] dialog / download / file chooser は WebDriver BiDi 実装済み範囲と Playwright adapter API の境界を決める
+  - [ ] 使わない API は `unsupported` として table に明示し、暗黙の欠落をなくす
+
+### 完了条件
+
+- [ ] support table に `browser` / `context` / `page` / `locator` の public API がすべて載っている
+- [ ] table にない public method を CI の support test が検出する
+- [ ] `partial` entry には必ず「使える範囲」と「足りない範囲」が notes に書かれている
+- [ ] 新規 API は Red -> Green -> Refactor の順で `tests/playwright-adapter-chromium-parity.test.ts` または user scenario test に追加する
+- [ ] `pnpm test:playwright` / `pnpm test:website` / `pnpm test:vitest` / `pnpm test:node` / `moon -C webdriver test -p mizchi/crater-webdriver-bidi/webdriver --target js` を gate にする
 
 ### Browser shell 到達済み surface
 

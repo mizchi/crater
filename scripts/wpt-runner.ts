@@ -18,7 +18,10 @@ import { pathToFileURL } from 'url';
 import { loadWptConfig } from './wpt-config.ts';
 import {
   getTestFiles,
+  isExternalResourceUrl,
   prepareHtmlContent,
+  resolveLocalResourcePath,
+  stripQueryAndHash,
 } from './wpt-html-utils.ts';
 
 // Load config from wpt.json
@@ -87,8 +90,8 @@ type ExternalTextIntrinsicResult =
   | null
   | undefined;
 type ExternalImageIntrinsicResult =
-  | { width?: number; height?: number; w?: number; h?: number }
-  | [number, number]
+  | Record<string, unknown>
+  | [unknown, unknown, ...unknown[]]
   | null
   | undefined;
 type ExternalTextIntrinsicFn = (
@@ -377,6 +380,216 @@ function parseSvgSize(source: string): [number, number] | null {
   return null;
 }
 
+function toPositiveFiniteNumber(value: unknown): number | null {
+  const numberValue = typeof value === 'string' && value.trim() !== ''
+    ? Number(value)
+    : value;
+  return hasFiniteNumber(numberValue) && numberValue > 0 ? numberValue : null;
+}
+
+function normalizeImageIntrinsicResult(
+  result: unknown,
+  depth: number = 3,
+  seen: Set<unknown> = new Set(),
+): ExternalImageIntrinsicResult {
+  if (Array.isArray(result)) {
+    const [width, height] = result;
+    const normalizedWidth = toPositiveFiniteNumber(width);
+    const normalizedHeight = toPositiveFiniteNumber(height);
+    return normalizedWidth && normalizedHeight
+      ? { width: normalizedWidth, height: normalizedHeight }
+      : null;
+  }
+  if (!result || typeof result !== 'object' || seen.has(result)) return null;
+  seen.add(result);
+  const rec = result as Record<string, unknown>;
+  const shape = rec.shape;
+  if (Array.isArray(shape) && shape.length >= 2) {
+    // Tensor/image arrays usually expose shape as [height, width, channels].
+    const height = toPositiveFiniteNumber(shape[0]);
+    const width = toPositiveFiniteNumber(shape[1]);
+    if (width && height) return { width, height };
+  }
+  const width =
+    rec.width ??
+    rec.w ??
+    rec.naturalWidth ??
+    rec.natural_width ??
+    rec.intrinsicWidth ??
+    rec.intrinsic_width ??
+    rec.pixelWidth ??
+    rec.pixel_width ??
+    rec.columns ??
+    rec.cols;
+  const height =
+    rec.height ??
+    rec.h ??
+    rec.naturalHeight ??
+    rec.natural_height ??
+    rec.intrinsicHeight ??
+    rec.intrinsic_height ??
+    rec.pixelHeight ??
+    rec.pixel_height ??
+    rec.rows;
+  const normalizedWidth = toPositiveFiniteNumber(width);
+  const normalizedHeight = toPositiveFiniteNumber(height);
+  if (normalizedWidth && normalizedHeight) {
+    return { width: normalizedWidth, height: normalizedHeight };
+  }
+  if (depth <= 0) return null;
+  for (const key of ['dimensions', 'dimension', 'metadata', 'meta', 'size', 'image', 'info', 'data']) {
+    const nested = normalizeImageIntrinsicResult(rec[key], depth - 1, seen);
+    if (nested) return nested;
+  }
+  return null;
+}
+
+function parseDataUrlBytes(src: string): Uint8Array | null {
+  const match = /^data:([^,]*),(.*)$/is.exec(src);
+  if (!match) return null;
+  const meta = match[1].toLowerCase();
+  const body = match[2];
+  try {
+    if (meta.split(';').includes('base64')) {
+      return new Uint8Array(Buffer.from(body, 'base64'));
+    }
+    return new Uint8Array(Buffer.from(decodeURIComponent(body), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function resolveLocalImagePath(src: string): string | null {
+  const htmlPath = currentCraterHtmlPath;
+  if (!htmlPath) return null;
+  const resolved = resolveLocalResourcePath(path.dirname(htmlPath), src);
+  if (!resolved || !fs.existsSync(resolved)) return null;
+  return resolved;
+}
+
+function readLocalImageBytes(src: string): Uint8Array | null {
+  const resolved = resolveLocalImagePath(src);
+  if (!resolved) return null;
+  try {
+    return new Uint8Array(fs.readFileSync(resolved));
+  } catch {
+    return null;
+  }
+}
+
+function readImageIntrinsicBytes(src: string): Uint8Array | null {
+  if (!src) return null;
+  if (src.startsWith('data:')) {
+    return parseDataUrlBytes(src);
+  }
+  if (isExternalResourceUrl(src)) {
+    return null;
+  }
+  return readLocalImageBytes(src);
+}
+
+function imageIntrinsicProviderInputs(src: string): unknown[] {
+  const inputs: unknown[] = [src];
+  const localPath = src.startsWith('data:') || isExternalResourceUrl(src)
+    ? null
+    : resolveLocalImagePath(src);
+  if (localPath && localPath !== src) {
+    inputs.push(localPath);
+  }
+  const bytes = readImageIntrinsicBytes(src);
+  if (bytes) {
+    inputs.push(bytes);
+    inputs.push(Buffer.from(bytes));
+  }
+  return inputs;
+}
+
+function callImageDecoder(decoder: (...args: unknown[]) => unknown, bytes: Uint8Array): unknown {
+  const onRow = () => {};
+  const attempts: Array<() => unknown> = [
+    () => decoder(bytes),
+    () => decoder(bytes, onRow),
+    () => decoder(bytes, { on_row: onRow, onRow }),
+    () => decoder(Buffer.from(bytes)),
+    () => decoder(Buffer.from(bytes), onRow),
+    () => decoder(Buffer.from(bytes), { on_row: onRow, onRow }),
+  ];
+  for (const attempt of attempts) {
+    try {
+      const result = attempt();
+      if (normalizeImageIntrinsicResult(result)) return result;
+    } catch {
+      // Try the next known MoonBit/JS adapter call shape.
+    }
+  }
+  return null;
+}
+
+function createImageIntrinsicFnFromDecoder(
+  decoder: (...args: unknown[]) => unknown,
+): ExternalImageIntrinsicFn {
+  const cache = new Map<string, ExternalImageIntrinsicResult>();
+  return (src: string) => {
+    if (cache.has(src)) return cache.get(src) ?? null;
+    const bytes = readImageIntrinsicBytes(src);
+    if (!bytes) return null;
+    const normalized = normalizeImageIntrinsicResult(callImageDecoder(decoder, bytes));
+    cache.set(src, normalized);
+    return normalized;
+  };
+}
+
+function callImageProvider(provider: (...args: unknown[]) => unknown, input: unknown): ExternalImageIntrinsicResult {
+  try {
+    const normalized = normalizeImageIntrinsicResult(provider(input));
+    if (normalized) return normalized;
+  } catch {
+    // Some Node-style providers require a callback argument.
+  }
+
+  let callbackResult: unknown = null;
+  let callbackCalled = false;
+  const callback = (...args: unknown[]): void => {
+    const [first, second] = args;
+    if (args.length >= 2) {
+      if (first) return;
+      callbackResult = second;
+    } else {
+      callbackResult = first;
+    }
+    callbackCalled = true;
+  };
+  try {
+    const returned = provider(input, callback);
+    const returnedNormalized = normalizeImageIntrinsicResult(returned);
+    if (returnedNormalized) return returnedNormalized;
+    if (callbackCalled) {
+      return normalizeImageIntrinsicResult(callbackResult);
+    }
+  } catch {
+    // Try the next common provider input shape.
+  }
+  return null;
+}
+
+function createImageIntrinsicFnFromProvider(
+  provider: (...args: unknown[]) => unknown,
+): ExternalImageIntrinsicFn {
+  const cache = new Map<string, ExternalImageIntrinsicResult>();
+  return (src: string) => {
+    if (cache.has(src)) return cache.get(src) ?? null;
+    for (const input of imageIntrinsicProviderInputs(src)) {
+      const normalized = callImageProvider(provider, input);
+      if (normalized) {
+        cache.set(src, normalized);
+        return normalized;
+      }
+    }
+    cache.set(src, null);
+    return null;
+  };
+}
+
 function createFileBackedImageIntrinsicResolver(): ExternalImageIntrinsicFn {
   return (src: string) => {
     if (!src || isExternalResourceUrl(src)) return null;
@@ -481,25 +694,122 @@ export function resolveTextIntrinsicFn(mod: unknown): ExternalTextIntrinsicFn | 
   return null;
 }
 
-function resolveImageIntrinsicFn(mod: unknown): ExternalImageIntrinsicFn | null {
+function collectModuleRecords(mod: unknown): Record<string, unknown>[] {
+  const records: Record<string, unknown>[] = [];
+  const seen = new Set<unknown>();
+  const visit = (value: unknown, depth: number): void => {
+    if (!value || typeof value !== 'object' || seen.has(value)) return;
+    seen.add(value);
+    const rec = value as Record<string, unknown>;
+    records.push(rec);
+    if (depth <= 0) return;
+    for (const key of [
+      'default',
+      'image',
+      'images',
+      'Image',
+      'intrinsic',
+      'size',
+      'dimensions',
+      'metadata',
+      'decoder',
+      'codec',
+      'probe',
+      'imageSize',
+    ]) {
+      visit(rec[key], depth - 1);
+    }
+  };
+  visit(mod, 3);
+  return records;
+}
+
+function findFirstFunction(
+  records: Record<string, unknown>[],
+  names: string[],
+): ((...args: unknown[]) => unknown) | null {
+  for (const rec of records) {
+    for (const name of names) {
+      const value = rec[name];
+      if (typeof value === 'function') {
+        return value as (...args: unknown[]) => unknown;
+      }
+    }
+  }
+  return null;
+}
+
+export function resolveImageIntrinsicFn(mod: unknown): ExternalImageIntrinsicFn | null {
+  if (typeof mod === 'function') {
+    return createImageIntrinsicFnFromProvider(mod as (...args: unknown[]) => unknown);
+  }
   if (!mod || typeof mod !== 'object') return null;
-  const rec = mod as Record<string, unknown>;
-  const direct =
-    rec.resolveImageIntrinsicSize ??
-    rec.resolveIntrinsicSize ??
-    rec.imageIntrinsicSize ??
-    rec.default;
-  if (typeof direct === 'function') return direct as ExternalImageIntrinsicFn;
-  const factory = rec.createImageIntrinsicResolver;
+  const records = collectModuleRecords(mod);
+  const direct = findFirstFunction(records, [
+    'resolveImageIntrinsicSize',
+    'resolveIntrinsicSize',
+    'imageIntrinsicSize',
+    'getImageIntrinsicSize',
+    'getIntrinsicSize',
+    'intrinsicSize',
+    'dimensions',
+    'getDimensions',
+    'getImageDimensions',
+    'getImageSize',
+    'imageSize',
+    'sizeOf',
+    'metadata',
+    'getMetadata',
+    'readMetadata',
+    'identify',
+    'probe',
+    'parse',
+    'parseImage',
+    'decodeImageInfo',
+    'readImageInfo',
+    'imageInfo',
+    'getInfo',
+    'decodeHeader',
+    'readHeader',
+    'default',
+  ]);
+  if (direct) {
+    return createImageIntrinsicFnFromProvider(direct);
+  }
+
+  const factory = findFirstFunction(records, [
+    'createImageIntrinsicResolver',
+    'createImageResolver',
+    'createIntrinsicResolver',
+    'createImageSizeResolver',
+  ]);
   if (typeof factory === 'function') {
     try {
       const built = (factory as () => unknown)();
       if (typeof built === 'function') {
-        return built as ExternalImageIntrinsicFn;
+        return createImageIntrinsicFnFromProvider(built);
       }
+      const nested = resolveImageIntrinsicFn(built);
+      if (nested) return nested;
     } catch {
       return null;
     }
+  }
+
+  const decoder = findFirstFunction(records, [
+    'decode_image_stream',
+    'decodeImageStream',
+    'decode_image',
+    'decodeImage',
+    'decode_png',
+    'decodePng',
+    'decode_jpeg',
+    'decodeJpeg',
+    'decode_bmp',
+    'decodeBmp',
+  ]);
+  if (decoder) {
+    return createImageIntrinsicFnFromDecoder(decoder);
   }
   return null;
 }

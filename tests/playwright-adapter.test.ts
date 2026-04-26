@@ -208,6 +208,22 @@ test.describe("Playwright Adapter Tests", () => {
     expect(result).toBe("delayed result");
   });
 
+  test("evaluate unwraps nested serializable values", async () => {
+    await page.setContent("<html><body></body></html>");
+
+    const result = await page.evaluate(() => ({
+      label: "ok",
+      values: ["a", "b"],
+      nested: { count: 2, enabled: true },
+    }));
+
+    expect(result).toEqual({
+      label: "ok",
+      values: ["a", "b"],
+      nested: { count: 2, enabled: true },
+    });
+  });
+
   test("error handling in evaluate", async () => {
     await page.setContent("<html><body></body></html>");
 

@@ -1,3 +1,4 @@
+import { writeFile } from "node:fs/promises";
 import WebSocket from "ws";
 import { resolveBidiUrl } from "../../scripts/bidi-url.ts";
 export {
@@ -6,6 +7,7 @@ export {
 } from "./supported-apis.ts";
 export type {
   CraterPlaywrightApiEntry,
+  CraterPlaywrightApiImplementation,
   CraterPlaywrightApiOwner,
   CraterPlaywrightApiStatus,
 } from "./supported-apis.ts";
@@ -93,6 +95,54 @@ export type CraterRouteHandler = (
   request: CraterRequest,
 ) => void | Promise<void>;
 
+export type CraterGetByRoleOptions = {
+  name?: string | RegExp;
+  exact?: boolean;
+  includeHidden?: boolean;
+  disabled?: boolean;
+};
+
+export type CraterTextMatcher = string | RegExp;
+
+export type CraterTextMatchOptions = {
+  exact?: boolean;
+};
+
+export type CraterSelectOptionSingle =
+  | string
+  | {
+    value?: string;
+    label?: string;
+    index?: number;
+  };
+
+export type CraterSelectOptionValue = CraterSelectOptionSingle | CraterSelectOptionSingle[];
+
+export type CraterStorageCookie = {
+  name: string;
+  value: string;
+  domain: string;
+  path: string;
+  expires: number;
+  httpOnly: boolean;
+  secure: boolean;
+  sameSite: "Lax" | "None" | "Strict";
+};
+
+export type CraterStorageOrigin = {
+  origin: string;
+  localStorage: Array<{ name: string; value: string }>;
+};
+
+export type CraterStorageState = {
+  cookies: CraterStorageCookie[];
+  origins: CraterStorageOrigin[];
+};
+
+export type CraterStorageStateOptions = {
+  path?: string;
+};
+
 type PendingCommand = {
   resolve: (value: BidiResponse) => void;
   reject: (error: Error) => void;
@@ -113,6 +163,16 @@ type CraterNetworkResponsePayload = {
   headers: Record<string, string>;
   body?: string | null;
   request: CraterNetworkRequestPayload;
+};
+
+type CraterPageLoadResult = {
+  requestedUrl?: string;
+  url: string;
+  status: number;
+  statusText?: string;
+  headers?: Record<string, string>;
+  body?: string | null;
+  scripts?: unknown[];
 };
 
 type CraterNetworkEventPayload =
@@ -158,17 +218,30 @@ type CraterRouteEntry = {
   handler: CraterRouteHandler;
 };
 
+type SharedBidiConnection = {
+  sendBidi(method: string, params: unknown): Promise<BidiResponse>;
+  onEvent(handler: (event: BidiEvent) => void): void;
+};
+
+type CraterPageCloseHandler = (page: CraterBidiPage) => void;
+type CraterContextCloseHandler = (context: CraterBrowserContext) => void;
+
+type CraterTimeoutResolver = (timeout: number | undefined, fallback: number) => number;
+
 type ParsedLocatorSelector = {
   type: string;
   value: string;
   exact?: boolean;
+  regexp?: boolean;
+  flags?: string;
 };
 
 type LocatorFilter = {
-  kind: "hasText" | "hasNotText" | "hasAccessibleName";
+  kind: "hasText" | "hasNotText" | "hasAccessibleName" | "visible" | "disabled";
   value: string;
   flags?: string;
   regexp: boolean;
+  exact?: boolean;
 };
 
 const SPECIAL_KEYS: Record<string, string> = {
@@ -180,18 +253,297 @@ const SPECIAL_KEYS: Record<string, string> = {
   ArrowRight: "\uE014",
   ArrowUp: "\uE013",
   ArrowDown: "\uE015",
+  Shift: "\uE008",
+  Control: "\uE009",
+  Alt: "\uE00A",
+  Meta: "\uE03D",
   Space: " ",
 };
 
 const keyValue = (key: string): string => SPECIAL_KEYS[key] ?? key;
 
+function normalizeModifierKey(key: string): string | null {
+  if (key === "ControlOrMeta") return process.platform === "darwin" ? "Meta" : "Control";
+  if (key === "Control" || key === "Meta" || key === "Shift" || key === "Alt") return key;
+  return null;
+}
+
+function keyPressActions(key: string): Array<Record<string, string>> {
+  const parts = key.includes("+") && key !== "+" ? key.split("+").filter((part) => part !== "") : [key];
+  if (parts.length === 1) {
+    return [
+      { type: "keyDown", value: keyValue(parts[0]) },
+      { type: "keyUp", value: keyValue(parts[0]) },
+    ];
+  }
+
+  const keyPart = parts[parts.length - 1];
+  const modifiers = parts.slice(0, -1).map((part) => normalizeModifierKey(part) ?? part);
+  return [
+    ...modifiers.map((modifier) => ({ type: "keyDown", value: keyValue(modifier) })),
+    { type: "keyDown", value: keyValue(keyPart) },
+    { type: "keyUp", value: keyValue(keyPart) },
+    ...[...modifiers].reverse().map((modifier) => ({ type: "keyUp", value: keyValue(modifier) })),
+  ];
+}
+
 const jsString = (value: string): string => JSON.stringify(value);
 
+function pointerMoveActions(sharedId: string): Array<Record<string, unknown>> {
+  return [
+    {
+      type: "pointerMove",
+      origin: { type: "element", element: { sharedId } },
+      x: 0,
+      y: 0,
+    },
+  ];
+}
+
+function pointerClickActions(sharedId: string): Array<Record<string, unknown>> {
+  return [
+    ...pointerMoveActions(sharedId),
+    { type: "pointerDown", button: 0 },
+    { type: "pointerUp", button: 0 },
+  ];
+}
+
+function adapterDomActionsExpr(): string {
+  return `
+    const __craterAction = (() => {
+      const tagName = (element) => String(element?.tagName || element?.nodeName || "").toLowerCase();
+      const attr = (target, name) => {
+        let value = null;
+        try {
+          if (target && typeof target.getAttribute === "function") value = target.getAttribute(name);
+        } catch (_e) {}
+        if ((value === null || value === undefined) && target && target._attrs) value = target._attrs[name];
+        return value == null ? "" : String(value);
+      };
+      const isContentEditable = (element) =>
+        !!element?.isContentEditable ||
+        String(element?.contentEditable || "").toLowerCase() === "true" ||
+        String(element?.getAttribute?.("contenteditable") || "").toLowerCase() === "true";
+      const focusElement = (element) => {
+        if (typeof element.focus === "function") element.focus();
+        globalThis.__bidiFocusedElement = element;
+      };
+      const makeKeyEvent = (type, key) => {
+        const event = typeof KeyboardEvent === "function"
+          ? new KeyboardEvent(type, { key, bubbles: true, cancelable: true })
+          : new Event(type, { bubbles: true, cancelable: true });
+        if (event.key !== key) Object.defineProperty(event, "key", { value: key });
+        return event;
+      };
+      const makeInputEvent = (type, data) => {
+        const init = {
+          data,
+          inputType: "insertText",
+          bubbles: true,
+          cancelable: type === "beforeinput",
+        };
+        const event = typeof InputEvent === "function"
+          ? new InputEvent(type, init)
+          : new Event(type, init);
+        if (event.data !== data) Object.defineProperty(event, "data", { value: data });
+        if (event.inputType !== "insertText") {
+          Object.defineProperty(event, "inputType", { value: "insertText" });
+        }
+        return event;
+      };
+      const setEditableValue = (element, value) => {
+        const tag = tagName(element);
+        if (isContentEditable(element) && tag !== "input" && tag !== "textarea") {
+          element.textContent = value;
+        } else {
+          element.value = value;
+        }
+      };
+      const dispatchInputChange = (element) => {
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+        element.dispatchEvent(new Event("change", { bubbles: true }));
+      };
+      const clickElement = (element) => {
+        element.click();
+      };
+      const hoverElement = (element) => {
+        element.dispatchEvent(new Event("pointerenter", { bubbles: false }));
+        element.dispatchEvent(new Event("mouseover", { bubbles: true }));
+      };
+      const setChecked = (element, checked) => {
+        if (element.checked === checked) return;
+        const radioName = String(element.name || attr(element, "name") || "");
+        if (checked && String(element.type || attr(element, "type") || "").toLowerCase() === "radio" && radioName) {
+          const inputs = Array.from(document.querySelectorAll("input"));
+          for (const input of inputs) {
+            const inputName = String(input.name || attr(input, "name") || "");
+            if (input !== element && String(input.type || attr(input, "type") || "").toLowerCase() === "radio" && inputName === radioName) {
+              input.checked = false;
+            }
+          }
+        }
+        element.checked = checked;
+        dispatchInputChange(element);
+      };
+      const selectOptions = (element, requestedValue) => {
+        const options = Array.from(element.options || element.children || element._children || []).filter((option) => {
+          return tagName(option) === "option";
+        });
+        const requested = Array.isArray(requestedValue) ? requestedValue : [requestedValue];
+        const normalize = (text) => String(text || "").replace(/\\s+/g, " ").trim();
+        const optionValue = (option) => String(option.value ?? option.getAttribute?.("value") ?? option.textContent ?? "");
+        const optionLabel = (option) => normalize(option.label ?? option.textContent ?? "");
+        const findOne = (entry) => {
+          if (typeof entry === "string") {
+            const byValue = options.findIndex((option) => optionValue(option) === entry);
+            if (byValue >= 0) return byValue;
+            return options.findIndex((option) => optionLabel(option) === entry);
+          }
+          if (!entry || typeof entry !== "object") return -1;
+          if (entry.index !== undefined) {
+            const index = Number(entry.index);
+            return Number.isInteger(index) && index >= 0 && index < options.length ? index : -1;
+          }
+          if (entry.value !== undefined) {
+            return options.findIndex((option) => optionValue(option) === String(entry.value));
+          }
+          if (entry.label !== undefined) {
+            return options.findIndex((option) => optionLabel(option) === String(entry.label));
+          }
+          return -1;
+        };
+        const targetIndexes = requested.map(findOne);
+        const missing = targetIndexes.findIndex((index) => index < 0);
+        if (missing >= 0) throw new Error("Option not found: " + JSON.stringify(requested[missing]));
+        const selectedIndexes = element.multiple ? new Set(targetIndexes) : new Set([targetIndexes[targetIndexes.length - 1]]);
+        for (let i = 0; i < options.length; i += 1) {
+          options[i].selected = selectedIndexes.has(i);
+        }
+        const selectedIndex = targetIndexes[targetIndexes.length - 1];
+        element.selectedIndex = selectedIndex;
+        element.value = selectedIndex >= 0 ? optionValue(options[selectedIndex]) : "";
+        dispatchInputChange(element);
+      };
+      const replaceSelectedValue = (element, text) => {
+        const value = typeof element.value === "string" ? element.value : "";
+        let start = typeof element.selectionStart === "number" ? element.selectionStart : value.length;
+        let end = typeof element.selectionEnd === "number" ? element.selectionEnd : value.length;
+        start = Math.max(0, Math.min(value.length, Number(start)));
+        end = Math.max(0, Math.min(value.length, Number(end)));
+        if (end < start) {
+          const tmp = start;
+          start = end;
+          end = tmp;
+        }
+        element.value = value.slice(0, start) + text + value.slice(end);
+        const caret = start + text.length;
+        try { element.selectionStart = caret; } catch (_e) {}
+        try { element.selectionEnd = caret; } catch (_e) {}
+        element.__bidiSelectionStart = caret;
+        element.__bidiSelectionEnd = caret;
+      };
+      const insertText = (element, text, options = {}) => {
+        const chunks = options.perCharacter ? Array.from(text) : [text];
+        for (const chunk of chunks) {
+          if (options.keyEvents) element.dispatchEvent(makeKeyEvent("keydown", chunk));
+          if (element.dispatchEvent(makeInputEvent("beforeinput", chunk))) {
+            if (typeof element.value === "string" && !options.textContentOnly) {
+              replaceSelectedValue(element, chunk);
+            } else {
+              element.textContent = String(element.textContent || "") + chunk;
+            }
+            element.dispatchEvent(makeInputEvent("input", chunk));
+          }
+          if (options.keyEvents) element.dispatchEvent(makeKeyEvent("keyup", chunk));
+        }
+      };
+      return {
+        clickElement,
+        dispatchInputChange,
+        focusElement,
+        hoverElement,
+        insertText,
+        isContentEditable,
+        selectOptions,
+        setEditableValue,
+        setChecked,
+        tagName,
+      };
+    })();
+  `;
+}
+
 const normalizeLocatorText = (value: string): string => value.replace(/\s+/g, " ").trim();
+const foldLocatorText = (value: string): string => normalizeLocatorText(value).toLowerCase();
+
+function locatorSelector(
+  type: string,
+  value: CraterTextMatcher,
+  options: CraterTextMatchOptions = {},
+): string {
+  if (value instanceof RegExp) {
+    return `${type}=regex:${value.flags}:${value.source}`;
+  }
+  return `${type}=${options.exact ? "exact:" : ""}${String(value)}`;
+}
 
 const jsValue = (value: unknown): string => {
   const serialized = JSON.stringify(value);
   return serialized === undefined ? "undefined" : serialized;
+};
+
+const deserializeBidiValue = (remoteValue: unknown): unknown => {
+  if (!remoteValue || typeof remoteValue !== "object") {
+    return remoteValue;
+  }
+  const record = remoteValue as Record<string, unknown>;
+  const type = record.type;
+  if (typeof type !== "string") {
+    return Object.fromEntries(
+      Object.entries(record).map(([key, value]) => [key, deserializeBidiValue(value)]),
+    );
+  }
+
+  switch (type) {
+    case "undefined":
+      return undefined;
+    case "null":
+      return null;
+    case "string":
+    case "boolean":
+    case "bigint":
+      return record.value;
+    case "number": {
+      if (record.value === "NaN") return Number.NaN;
+      if (record.value === "-0") return -0;
+      if (record.value === "Infinity") return Infinity;
+      if (record.value === "-Infinity") return -Infinity;
+      return record.value;
+    }
+    case "array":
+      return Array.isArray(record.value)
+        ? record.value.map(deserializeBidiValue)
+        : [];
+    case "object": {
+      if (!Array.isArray(record.value)) {
+        return {};
+      }
+      const out: Record<string, unknown> = {};
+      for (const entry of record.value) {
+        if (Array.isArray(entry) && entry.length >= 2) {
+          out[String(deserializeBidiValue(entry[0]))] = deserializeBidiValue(entry[1]);
+        } else if (entry && typeof entry === "object") {
+          const pair = entry as Record<string, unknown>;
+          if ("key" in pair && "value" in pair) {
+            out[String(deserializeBidiValue(pair.key))] = deserializeBidiValue(pair.value);
+          }
+        }
+      }
+      return out;
+    }
+    default:
+      return "value" in record ? deserializeBidiValue(record.value) : remoteValue;
+  }
 };
 
 const domKeyValue = (key: string): string => key === "Space" ? " " : key;
@@ -201,41 +553,299 @@ function isEvaluateOptions(value: unknown): value is CraterEvaluateOptions {
 }
 
 export function parseLocatorSelector(selector: string): ParsedLocatorSelector {
-  const prefixMatch = selector.match(/^(text|role|placeholder|alt|title|testid|label)=(.+)$/i);
+  const prefixMatch = selector.match(/^(text|role|placeholder|alt|title|testid|label)=([\s\S]+)$/i);
   if (prefixMatch) {
     const [, type, value] = prefixMatch;
-    const exactMatch = value.match(/^exact:(.+)$/i);
+    const exactMatch = value.match(/^exact:([\s\S]+)$/i);
     if (exactMatch) {
       return { type: type.toLowerCase(), value: exactMatch[1], exact: true };
+    }
+    const regexpMatch = value.match(/^regex:([a-z]*):([\s\S]*)$/i);
+    if (regexpMatch) {
+      return {
+        type: type.toLowerCase(),
+        value: regexpMatch[2],
+        regexp: true,
+        flags: regexpMatch[1],
+      };
     }
     return { type: type.toLowerCase(), value };
   }
   return { type: "css", value: selector };
 }
 
-function allElementsExpr(rootExpr: string): string {
-  return `(() => {
-    const currentRoot = ${rootExpr};
-    const start = currentRoot && currentRoot.nodeType === 9 ? (currentRoot.documentElement || currentRoot.body) : currentRoot;
-    const all = [];
-    const walk = (node) => {
-      if (!node) return;
-      if (node.nodeType === 1) all.push(node);
-      const children = node._children || node.childNodes || [];
-      for (const child of Array.from(children)) walk(child);
+function composedTreeHelpersExpr(): string {
+  return `
+    const attrOf = (target, name) => {
+      let value = null;
+      try {
+        if (target && typeof target.getAttribute === "function") value = target.getAttribute(name);
+      } catch (_e) {}
+      if ((value === null || value === undefined) && target && target._attrs) value = target._attrs[name];
+      return value == null ? "" : String(value);
     };
-    walk(start);
-    return all;
+    const childrenOf = (node) =>
+      Array.from((node && (node._children || node.children || node.childNodes)) || [])
+        .filter((child) => !(child && child._isShadowRoot));
+    const openShadowRootOf = (node) => {
+      if (!node) return null;
+      let shadowRoot = null;
+      try {
+        shadowRoot = node.shadowRoot || null;
+      } catch (_e) {}
+      if (!shadowRoot && node._shadowRoot) {
+        const mode = String(node._shadowRoot.mode || "open").toLowerCase();
+        if (mode !== "closed") shadowRoot = node._shadowRoot;
+      }
+      return shadowRoot;
+    };
+    const isClosedShadowRoot = (node) =>
+      !!(node && node._isShadowRoot && String(node.mode || "open").toLowerCase() === "closed");
+    const isInsideClosedShadow = (node) => {
+      let current = node;
+      while (current) {
+        if (isClosedShadowRoot(current)) return true;
+        current = current._parent || current.parentNode || null;
+      }
+      return false;
+    };
+    const collectElements = (root, includeRoot = true) => {
+      const all = [];
+      const walk = (node, includeCurrent) => {
+        if (!node) return;
+        if (isClosedShadowRoot(node)) return;
+        if (node.nodeType === 1) {
+          if (isInsideClosedShadow(node)) return;
+          if (includeCurrent) all.push(node);
+          const shadowRoot = openShadowRootOf(node);
+          if (shadowRoot) walk(shadowRoot, false);
+        }
+        for (const child of childrenOf(node)) walk(child, true);
+      };
+      if (!root) return all;
+      if (root.nodeType === 9) {
+        walk(root.documentElement || root.body, true);
+      } else if (root.nodeType === 11 || root._isShadowRoot) {
+        for (const child of childrenOf(root)) walk(child, true);
+      } else {
+        walk(root, includeRoot);
+      }
+      return all;
+    };
+    const textForLocator = (node) => {
+      const read = (current) => {
+        if (!current) return "";
+        if (current.nodeType === 3 || current.nodeType === 4) {
+          return String(current.textContent || "");
+        }
+        if (current.nodeType !== 1 && current.nodeType !== 11 && !current._isShadowRoot) {
+          return "";
+        }
+        return childrenOf(current).map(read).join("");
+      };
+      return read(node);
+    };
+  `;
+}
+
+function allElementsExpr(rootExpr: string, options: { includeRoot?: boolean } = {}): string {
+  const includeRoot = options.includeRoot !== false ? "true" : "false";
+  return `(() => {
+    ${composedTreeHelpersExpr()}
+    return collectElements(${rootExpr}, ${includeRoot});
   })()`;
 }
 
-function attrExpr(rootExpr: string, name: string, value: string, method: "first" | "all"): string {
-  const predicate = `(el) => {
-    const attr = typeof el.getAttribute === "function" ? el.getAttribute(${jsString(name)}) : (el._attrs && el._attrs[${jsString(name)}]);
-    return attr === ${jsString(value)} || (attr && String(attr).includes(${jsString(value)}));
-  }`;
-  const all = `${allElementsExpr(rootExpr)}.filter(${predicate})`;
+function selectorResultExpr(all: string, method: "first" | "all"): string {
   return method === "first" ? `(${all})[0] || null` : all;
+}
+
+function composedElementsFilterExpr(
+  rootExpr: string,
+  predicate: string,
+  method: "first" | "all",
+  options: { includeRoot?: boolean } = {},
+): string {
+  const includeRoot = options.includeRoot !== false ? "true" : "false";
+  const all = `(() => {
+    ${composedTreeHelpersExpr()}
+    return collectElements(${rootExpr}, ${includeRoot}).filter(${predicate});
+  })()`;
+  return selectorResultExpr(all, method);
+}
+
+function attrSelectorExpr(
+  rootExpr: string,
+  name: string,
+  parsed: ParsedLocatorSelector,
+  method: "first" | "all",
+  options: { forceExact?: boolean } = {},
+): string {
+  const normalized = jsString(normalizeLocatorText(parsed.value));
+  const folded = jsString(foldLocatorText(parsed.value));
+  const flags = (parsed.flags ?? "").replace(/g/g, "");
+  const predicate = parsed.regexp
+    ? `(el) => {
+        const attr = String(attrOf(el, ${jsString(name)}) || "").replace(/\\s+/g, " ").trim();
+        return new RegExp(${jsString(parsed.value)}, ${jsString(flags)}).test(attr);
+      }`
+    : parsed.exact || options.forceExact
+    ? `(el) => String(attrOf(el, ${jsString(name)}) || "").replace(/\\s+/g, " ").trim() === ${normalized}`
+    : `(el) => {
+        const attr = String(attrOf(el, ${jsString(name)}) || "").replace(/\\s+/g, " ").trim().toLowerCase();
+        return attr.includes(${folded});
+      }`;
+  return composedElementsFilterExpr(rootExpr, predicate, method);
+}
+
+function cssSelectorExpr(rootExpr: string, selector: string, method: "first" | "all"): string {
+  const quoted = jsString(selector);
+  return composedElementsFilterExpr(rootExpr, `(el) => {
+    try {
+      return typeof el.matches === "function" && el.matches(${quoted});
+    } catch (_e) {
+      return false;
+    }
+  }`, method, { includeRoot: false });
+}
+
+function textSelectorExpr(
+  rootExpr: string,
+  parsed: ParsedLocatorSelector,
+  method: "first" | "all",
+): string {
+  const normalizedQuoted = jsString(normalizeLocatorText(parsed.value));
+  const foldedQuoted = jsString(foldLocatorText(parsed.value));
+  const flags = (parsed.flags ?? "").replace(/g/g, "");
+  const predicate = parsed.regexp
+    ? `(el) => {
+        const normalize = (text) => String(text || "").replace(/\\s+/g, " ").trim();
+        const matches = (node) => new RegExp(${jsString(parsed.value)}, ${jsString(flags)}).test(normalize(textForLocator(node)));
+        if (!matches(el)) return false;
+        const children = Array.from(el._children || el.children || el.childNodes || []);
+        return !children.some((node) => node.nodeType === 1 && matches(node));
+      }`
+    : parsed.exact
+    ? `(el) => {
+        const normalize = (text) => String(text || "").replace(/\\s+/g, " ").trim();
+        const matches = (node) => normalize(textForLocator(node)) === ${normalizedQuoted};
+        if (!matches(el)) return false;
+        const children = Array.from(el._children || el.children || el.childNodes || []);
+        return !children.some((node) => node.nodeType === 1 && matches(node));
+      }`
+    : `(el) => {
+        const normalize = (text) => String(text || "").replace(/\\s+/g, " ").trim();
+        const matches = (node) => normalize(textForLocator(node)).toLowerCase().includes(${foldedQuoted});
+        if (!matches(el)) return false;
+        const children = Array.from(el._children || el.children || el.childNodes || []);
+        return !children.some((node) => node.nodeType === 1 && matches(node));
+      }`;
+  return composedElementsFilterExpr(rootExpr, predicate, method);
+}
+
+function roleSelectorExpr(rootExpr: string, role: string, method: "first" | "all"): string {
+  const quoted = jsString(role);
+  return composedElementsFilterExpr(rootExpr, `(el) => {
+    const explicitRole = attrOf(el, "role").trim();
+    if (explicitRole !== "") return explicitRole === ${quoted};
+    const tag = String(el.localName || el.tagName || el.nodeName || "").toLowerCase();
+    if (/^h[1-6]$/.test(tag)) return ${quoted} === "heading";
+    if (tag === "button") return ${quoted} === "button";
+    if (tag === "a" && attrOf(el, "href") !== "") return ${quoted} === "link";
+    if (tag === "textarea") return ${quoted} === "textbox";
+    if (tag === "select") return ${quoted} === "combobox";
+    if (tag === "img") return ${quoted} === "img";
+    if (tag === "ul" || tag === "ol") return ${quoted} === "list";
+    if (tag === "li") return ${quoted} === "listitem";
+    if (tag === "input") {
+      const type = attrOf(el, "type").trim().toLowerCase() || "text";
+      if (type === "hidden") return false;
+      if (type === "button" || type === "submit" || type === "reset") return ${quoted} === "button";
+      if (type === "checkbox") return ${quoted} === "checkbox";
+      if (type === "radio") return ${quoted} === "radio";
+      if (type === "search") return ${quoted} === "searchbox";
+      if (type === "range") return ${quoted} === "slider";
+      if (type === "number") return ${quoted} === "spinbutton";
+      return ${quoted} === "textbox";
+    }
+    return false;
+  }`, method);
+}
+
+function labelSelectorExpr(
+  rootExpr: string,
+  parsed: ParsedLocatorSelector,
+  method: "first" | "all",
+): string {
+  const normalizedQuoted = jsString(normalizeLocatorText(parsed.value));
+  const foldedQuoted = jsString(foldLocatorText(parsed.value));
+  const flags = (parsed.flags ?? "").replace(/g/g, "");
+  const matchExpr = parsed.regexp
+    ? `(text) => new RegExp(${jsString(parsed.value)}, ${jsString(flags)}).test(normalize(text))`
+    : parsed.exact
+    ? `(text) => normalize(text) === ${normalizedQuoted}`
+    : `(text) => normalize(text).toLowerCase().includes(${foldedQuoted})`;
+  const all = `(() => {
+    ${composedTreeHelpersExpr()}
+    const normalize = (text) => String(text || "").replace(/\\s+/g, " ").trim();
+    const textMatches = ${matchExpr};
+    const rootOf = (node) => {
+      try {
+        if (node && typeof node.getRootNode === "function") return node.getRootNode();
+      } catch (_e) {}
+      let current = node;
+      while (current && current._parent) current = current._parent;
+      return current || document;
+    };
+    const findById = (scope, id) => {
+      if (!scope || !id) return null;
+      try {
+        if (typeof scope.getElementById === "function") {
+          const found = scope.getElementById(id);
+          if (found) return found;
+        }
+      } catch (_e) {}
+      return collectElements(scope, false).find((el) => attrOf(el, "id") === id) || null;
+    };
+    const isLabelable = (el) => {
+      const tag = String(el.localName || el.tagName || el.nodeName || "").toLowerCase();
+      if (tag === "input") return attrOf(el, "type").trim().toLowerCase() !== "hidden";
+      return tag === "button" || tag === "meter" || tag === "output" || tag === "progress" ||
+        tag === "select" || tag === "textarea";
+    };
+    const findControl = (label) => collectElements(label, false).find(isLabelable) || null;
+    const candidates = collectElements(${rootExpr}, true);
+    const labels = candidates
+      .filter((el) => String(el.tagName || el.nodeName || "").toLowerCase() === "label");
+    const results = [];
+    const seen = new Set();
+    const add = (el) => {
+      if (!el || seen.has(el)) return;
+      seen.add(el);
+      results.push(el);
+    };
+    for (const label of labels) {
+      if (!textMatches(textForLocator(label))) continue;
+      const forId = attrOf(label, "for");
+      add(forId ? findById(rootOf(label), forId) : findControl(label));
+    }
+    for (const el of candidates) {
+      if (!isLabelable(el)) continue;
+      const ariaLabelledBy = attrOf(el, "aria-labelledby").trim();
+      if (ariaLabelledBy !== "") {
+        const parts = [];
+        for (const id of ariaLabelledBy.split(/\\s+/)) {
+          const ref = findById(rootOf(el), id);
+          if (ref) parts.push(textForLocator(ref));
+        }
+        if (parts.length > 0 && textMatches(parts.join(" "))) add(el);
+      }
+      const ariaLabel = attrOf(el, "aria-label").trim();
+      if (ariaLabel !== "" && textMatches(ariaLabel)) add(el);
+    }
+    return results;
+  })()`;
+  return selectorResultExpr(all, method);
 }
 
 function buildSelectorExpr(
@@ -243,101 +853,56 @@ function buildSelectorExpr(
   method: "first" | "all",
   rootExpr = "document",
 ): string {
-  const value = parsed.value;
-  const quoted = jsString(value);
-  const normalizedQuoted = jsString(normalizeLocatorText(value));
-  const allElements = allElementsExpr(rootExpr);
-
   switch (parsed.type) {
-    case "text": {
-      const predicate = parsed.exact
-        ? `(el) => {
-            const normalize = (text) => String(text || "").replace(/\\s+/g, " ").trim();
-            const matches = (node) => normalize(node.textContent || "") === ${normalizedQuoted};
-            if (!matches(el)) return false;
-            const children = Array.from(el._children || el.children || el.childNodes || []);
-            return !children.some((node) => node.nodeType === 1 && matches(node));
-          }`
-        : `(el) => {
-            const normalize = (text) => String(text || "").replace(/\\s+/g, " ").trim();
-            const matches = (node) => normalize(node.textContent || "").includes(${normalizedQuoted});
-            if (!matches(el)) return false;
-            const children = Array.from(el._children || el.children || el.childNodes || []);
-            return !children.some((node) => node.nodeType === 1 && matches(node));
-          }`;
-      const all = `${allElements}.filter(${predicate})`;
-      return method === "first" ? `(${all})[0] || null` : all;
-    }
-    case "role": {
-      const all = `${allElements}.filter((el) => {
-        const attr = (name) => {
-          const value = typeof el.getAttribute === "function" ? el.getAttribute(name) : (el._attrs && el._attrs[name]);
-          return value == null ? "" : String(value);
-        };
-        const explicitRole = attr("role").trim();
-        if (explicitRole !== "") return explicitRole === ${quoted};
-        const tag = String(el.localName || el.tagName || el.nodeName || "").toLowerCase();
-        if (/^h[1-6]$/.test(tag)) return ${quoted} === "heading";
-        if (tag === "button") return ${quoted} === "button";
-        if (tag === "a" && attr("href") !== "") return ${quoted} === "link";
-        if (tag === "textarea") return ${quoted} === "textbox";
-        if (tag === "select") return ${quoted} === "combobox";
-        if (tag === "img") return ${quoted} === "img";
-        if (tag === "ul" || tag === "ol") return ${quoted} === "list";
-        if (tag === "li") return ${quoted} === "listitem";
-        if (tag === "input") {
-          const type = attr("type").trim().toLowerCase() || "text";
-          if (type === "hidden") return false;
-          if (type === "button" || type === "submit" || type === "reset") return ${quoted} === "button";
-          if (type === "checkbox") return ${quoted} === "checkbox";
-          if (type === "radio") return ${quoted} === "radio";
-          if (type === "search") return ${quoted} === "searchbox";
-          if (type === "range") return ${quoted} === "slider";
-          if (type === "number") return ${quoted} === "spinbutton";
-          return ${quoted} === "textbox";
-        }
-        return false;
-      })`;
-      return method === "first" ? `(${all})[0] || null` : all;
-    }
+    case "text":
+      return textSelectorExpr(rootExpr, parsed, method);
+    case "role":
+      return roleSelectorExpr(rootExpr, parsed.value, method);
     case "placeholder":
-      return attrExpr(rootExpr, "placeholder", value, method);
+      return attrSelectorExpr(rootExpr, "placeholder", parsed, method);
     case "alt":
-      return attrExpr(rootExpr, "alt", value, method);
+      return attrSelectorExpr(rootExpr, "alt", parsed, method);
     case "title":
-      return attrExpr(rootExpr, "title", value, method);
-    case "testid": {
-      const selector = jsString(`[data-testid="${value.replace(/"/g, '\\"')}"]`);
-      return method === "first"
-        ? `(${rootExpr}).querySelector(${selector})`
-        : `Array.from((${rootExpr}).querySelectorAll(${selector}))`;
-    }
-    case "label": {
-      const all = `(() => {
-        const normalize = (text) => String(text || "").replace(/\\s+/g, " ").trim();
-        const labels = ${allElements}.filter((el) => String(el.tagName || el.nodeName || "").toLowerCase() === "label");
-        return labels.map((label) => {
-          if (!normalize(label.textContent).includes(${normalizedQuoted})) return null;
-          const forId = typeof label.getAttribute === "function" ? label.getAttribute("for") : (label._attrs && label._attrs.for);
-          if (forId) return document.getElementById(forId);
-          return typeof label.querySelector === "function" ? label.querySelector("input, select, textarea") : null;
-        }).filter(Boolean);
-      })()`;
-      return method === "first" ? `(${all})[0] || null` : all;
-    }
+      return attrSelectorExpr(rootExpr, "title", parsed, method);
+    case "testid":
+      return attrSelectorExpr(rootExpr, "data-testid", parsed, method, { forceExact: true });
+    case "label":
+      return labelSelectorExpr(rootExpr, parsed, method);
     case "css":
     default:
-      return method === "first"
-        ? `(${rootExpr}).querySelector(${quoted})`
-        : `Array.from((${rootExpr}).querySelectorAll(${quoted}))`;
+      return cssSelectorExpr(rootExpr, parsed.value, method);
   }
 }
 
-function normalizeLocatorFilter(kind: LocatorFilter["kind"], value: string | RegExp): LocatorFilter {
+function normalizeLocatorFilter(
+  kind: LocatorFilter["kind"],
+  value: string | RegExp,
+  options: { exact?: boolean } = {},
+): LocatorFilter {
   if (value instanceof RegExp) {
     return { kind, value: value.source, flags: value.flags, regexp: true };
   }
-  return { kind, value: String(value), regexp: false };
+  return { kind, value: String(value), regexp: false, exact: options.exact };
+}
+
+function normalizeBooleanLocatorFilter(kind: "visible" | "disabled", value: boolean): LocatorFilter {
+  return { kind, value: value ? "true" : "false", regexp: false };
+}
+
+function roleOptionFilters(options: CraterGetByRoleOptions): LocatorFilter[] {
+  const filters: LocatorFilter[] = [];
+  if (!options.includeHidden) {
+    filters.push(normalizeBooleanLocatorFilter("visible", true));
+  }
+  if (options.disabled !== undefined) {
+    filters.push(normalizeBooleanLocatorFilter("disabled", options.disabled));
+  }
+  if (options.name !== undefined) {
+    filters.push(normalizeLocatorFilter("hasAccessibleName", options.name, {
+      exact: options.exact,
+    }));
+  }
+  return filters;
 }
 
 function accessibleNameExpr(nodeExpr: string): string {
@@ -450,13 +1015,59 @@ function accessibleNameExpr(nodeExpr: string): string {
   })()`;
 }
 
+function elementVisibleExpr(nodeExpr: string): string {
+  return `(() => {
+    const target = ${nodeExpr};
+    if (!target) return false;
+    const styleOf = (node) => window.getComputedStyle ? window.getComputedStyle(node) : node.style;
+    const ownStyle = styleOf(target) || {};
+    if (ownStyle.visibility === "hidden" || ownStyle.visibility === "collapse") return false;
+    let node = target;
+    while (node && node.nodeType === 1) {
+      const style = styleOf(node) || {};
+      if (node.hidden || style.display === "none") return false;
+      node = node.parentElement || node.parentNode || node._parent || null;
+    }
+    return true;
+  })()`;
+}
+
+function elementDisabledExpr(nodeExpr: string): string {
+  return `(() => {
+    const target = ${nodeExpr};
+    if (!target) return false;
+    const attr = (target, name) => {
+      let value = null;
+      try {
+        if (target && typeof target.getAttribute === "function") value = target.getAttribute(name);
+      } catch (_e) {}
+      if ((value === null || value === undefined) && target && target._attrs) value = target._attrs[name];
+      return value == null ? "" : String(value);
+    };
+    if (typeof target.disabled === "boolean") return target.disabled;
+    if (typeof target.hasAttribute === "function" && target.hasAttribute("disabled")) return true;
+    return attr(target, "aria-disabled").trim().toLowerCase() === "true";
+  })()`;
+}
+
 function filterPredicateExpr(filter: LocatorFilter): string {
+  if (filter.kind === "visible") {
+    const visible = elementVisibleExpr("el");
+    return filter.value === "true" ? visible : `!(${visible})`;
+  }
+  if (filter.kind === "disabled") {
+    const disabled = elementDisabledExpr("el");
+    return filter.value === "true" ? disabled : `!(${disabled})`;
+  }
   const textExpr = filter.kind === "hasAccessibleName"
     ? accessibleNameExpr("el")
     : `String(el.textContent || "").replace(/\\s+/g, " ").trim()`;
+  const normalizedTextExpr = `String(${textExpr} ?? "").replace(/\\s+/g, " ").trim()`;
   const testExpr = filter.regexp
-    ? `new RegExp(${jsString(filter.value)}, ${jsString(filter.flags ?? "")}).test(${textExpr})`
-    : `${textExpr}.includes(${jsString(normalizeLocatorText(filter.value))})`;
+    ? `new RegExp(${jsString(filter.value)}, ${jsString(filter.flags ?? "")}).test(${normalizedTextExpr})`
+    : filter.exact
+    ? `${normalizedTextExpr}.toLowerCase() === ${jsString(foldLocatorText(filter.value))}`
+    : `${normalizedTextExpr}.toLowerCase().includes(${jsString(foldLocatorText(filter.value))})`;
   return filter.kind === "hasNotText" ? `!(${testExpr})` : testExpr;
 }
 
@@ -585,11 +1196,45 @@ function routeBodyToString(body: CraterRouteFulfillOptions["body"]): string {
   return JSON.stringify(body);
 }
 
+class CraterKeyboard {
+  constructor(
+    private readonly performActions: (actions: Array<Record<string, string>>) => Promise<void>,
+    private readonly insertFocusedText: (text: string) => Promise<void>,
+  ) {}
+
+  async type(text: string): Promise<void> {
+    for (const char of [...text]) {
+      await this.press(char);
+    }
+  }
+
+  async press(key: string): Promise<void> {
+    await this.performActions(keyPressActions(key));
+  }
+
+  async down(key: string): Promise<void> {
+    await this.performActions([
+      { type: "keyDown", value: keyValue(normalizeModifierKey(key) ?? key) },
+    ]);
+  }
+
+  async up(key: string): Promise<void> {
+    await this.performActions([
+      { type: "keyUp", value: keyValue(normalizeModifierKey(key) ?? key) },
+    ]);
+  }
+
+  async insertText(text: string): Promise<void> {
+    await this.insertFocusedText(text);
+  }
+}
+
 export class CraterLocator {
   private readonly parsed: ParsedLocatorSelector;
   private readonly filters: LocatorFilter[];
   private readonly rootExpression: string | null;
   private readonly index: number | "last" | null;
+  private readonly timeoutResolver: CraterTimeoutResolver;
 
   constructor(
     protected page: CraterBidiPage,
@@ -598,12 +1243,14 @@ export class CraterLocator {
       rootExpression?: string | null;
       filters?: LocatorFilter[];
       index?: number | "last" | null;
+      timeoutResolver?: CraterTimeoutResolver;
     } = {},
   ) {
     this.parsed = parseLocatorSelector(selector);
     this.rootExpression = options.rootExpression ?? null;
     this.filters = options.filters ?? [];
     this.index = options.index ?? null;
+    this.timeoutResolver = options.timeoutResolver ?? ((timeout, fallback) => timeout ?? fallback);
   }
 
   filter(options: { hasText?: string | RegExp; hasNotText?: string | RegExp }): CraterLocator {
@@ -618,36 +1265,55 @@ export class CraterLocator {
       rootExpression: this.rootExpression,
       filters,
       index: this.index,
+      timeoutResolver: this.timeoutResolver,
     });
   }
 
-  filterAccessibleName(name: string | RegExp): CraterLocator {
+  private withAdditionalFilters(filters: LocatorFilter[]): CraterLocator {
+    if (filters.length === 0) {
+      return this;
+    }
     return new CraterLocator(this.page, this.selector, {
       rootExpression: this.rootExpression,
-      filters: [
-        ...this.filters,
-        normalizeLocatorFilter("hasAccessibleName", name),
-      ],
+      filters: [...this.filters, ...filters],
       index: this.index,
+      timeoutResolver: this.timeoutResolver,
     });
   }
 
   locator(selector: string): CraterLocator {
     return new CraterLocator(this.page, selector, {
       rootExpression: this.queryExpr("querySelector"),
+      timeoutResolver: this.timeoutResolver,
     });
   }
 
-  getByText(text: string, options: { exact?: boolean } = {}): CraterLocator {
-    return this.locator(options.exact ? `text=exact:${text}` : `text=${text}`);
+  getByText(text: CraterTextMatcher, options: CraterTextMatchOptions = {}): CraterLocator {
+    return this.locator(locatorSelector("text", text, options));
   }
 
-  getByRole(role: string, options: { name?: string | RegExp } = {}): CraterLocator {
-    const locator = this.locator(`role=${role}`);
-    if (options.name !== undefined) {
-      return locator.filterAccessibleName(options.name);
-    }
-    return locator;
+  getByRole(role: string, options: CraterGetByRoleOptions = {}): CraterLocator {
+    return this.locator(`role=${role}`).withAdditionalFilters(roleOptionFilters(options));
+  }
+
+  getByPlaceholder(text: CraterTextMatcher, options: CraterTextMatchOptions = {}): CraterLocator {
+    return this.locator(locatorSelector("placeholder", text, options));
+  }
+
+  getByAltText(text: CraterTextMatcher, options: CraterTextMatchOptions = {}): CraterLocator {
+    return this.locator(locatorSelector("alt", text, options));
+  }
+
+  getByTitle(text: CraterTextMatcher, options: CraterTextMatchOptions = {}): CraterLocator {
+    return this.locator(locatorSelector("title", text, options));
+  }
+
+  getByTestId(testId: CraterTextMatcher): CraterLocator {
+    return this.locator(locatorSelector("testid", testId));
+  }
+
+  getByLabel(text: CraterTextMatcher, options: CraterTextMatchOptions = {}): CraterLocator {
+    return this.locator(locatorSelector("label", text, options));
   }
 
   first(): CraterLocator {
@@ -655,6 +1321,7 @@ export class CraterLocator {
       rootExpression: this.rootExpression,
       filters: this.filters,
       index: 0,
+      timeoutResolver: this.timeoutResolver,
     });
   }
 
@@ -663,6 +1330,7 @@ export class CraterLocator {
       rootExpression: this.rootExpression,
       filters: this.filters,
       index: "last",
+      timeoutResolver: this.timeoutResolver,
     });
   }
 
@@ -671,31 +1339,36 @@ export class CraterLocator {
       rootExpression: this.rootExpression,
       filters: this.filters,
       index,
+      timeoutResolver: this.timeoutResolver,
     });
   }
 
   async click(): Promise<void> {
+    await this.waitForActionable();
     await this.page.evaluate(`
       (() => {
         const el = ${this.queryExpr("querySelector")};
         if (!el) throw new Error("Element not found: ${this.selectorForError()}");
-        el.click();
+        ${adapterDomActionsExpr()}
+        __craterAction.clickElement(el);
       })()
     `);
   }
 
   async hover(): Promise<void> {
+    await this.waitForActionable();
     await this.page.evaluate(`
       (() => {
         const el = ${this.queryExpr("querySelector")};
         if (!el) throw new Error("Element not found: ${this.selectorForError()}");
-        el.dispatchEvent(new Event("pointerenter", { bubbles: false }));
-        el.dispatchEvent(new Event("mouseover", { bubbles: true }));
+        ${adapterDomActionsExpr()}
+        __craterAction.hoverElement(el);
       })()
     `);
   }
 
   async focus(): Promise<void> {
+    await this.waitForActionable();
     await this.page.evaluate(`
       (() => {
         const el = ${this.queryExpr("querySelector")};
@@ -703,6 +1376,7 @@ export class CraterLocator {
         if (typeof el.focus === "function") {
           el.focus();
         }
+        globalThis.__bidiFocusedElement = el;
         el.dispatchEvent(new Event("focus", { bubbles: false }));
         el.dispatchEvent(new Event("focusin", { bubbles: true }));
       })()
@@ -710,13 +1384,14 @@ export class CraterLocator {
   }
 
   async fill(value: string): Promise<void> {
+    await this.waitForActionable();
     await this.page.evaluate(`
       (() => {
+        ${adapterDomActionsExpr()}
         const el = ${this.queryExpr("querySelector")};
         if (!el) throw new Error("Element not found: ${this.selectorForError()}");
-        el.value = ${jsString(value)};
-        el.dispatchEvent(new Event("input", { bubbles: true }));
-        el.dispatchEvent(new Event("change", { bubbles: true }));
+        __craterAction.setEditableValue(el, ${jsString(value)});
+        __craterAction.dispatchInputChange(el);
       })()
     `);
   }
@@ -726,43 +1401,33 @@ export class CraterLocator {
   }
 
   async type(text: string): Promise<void> {
-    await this.page.evaluate(`
+    await this.waitForActionable();
+    const handled = await this.page.evaluate<boolean>(`
       (() => {
+        ${adapterDomActionsExpr()}
         const el = ${this.queryExpr("querySelector")};
         if (!el) throw new Error("Element not found: ${this.selectorForError()}");
-        const current = String(el.value ?? "");
-        el.value = current + ${jsString(text)};
-        el.dispatchEvent(new Event("input", { bubbles: true }));
+        const tag = __craterAction.tagName(el);
+        if (!__craterAction.isContentEditable(el) || tag === "input" || tag === "textarea") return false;
+        __craterAction.focusElement(el);
+        __craterAction.insertText(el, ${jsString(text)}, {
+          keyEvents: true,
+          perCharacter: true,
+          textContentOnly: true,
+        });
+        return true;
       })()
     `);
+    if (handled) return;
+    await this.focus();
+    for (const char of [...text]) {
+      await this.page.press(char);
+    }
   }
 
   async press(key: string): Promise<void> {
-    await this.page.evaluate(`
-      (() => {
-        const el = ${this.queryExpr("querySelector")};
-        if (!el) throw new Error("Element not found: ${this.selectorForError()}");
-        const key = ${jsString(domKeyValue(key))};
-        const makeKeyEvent = (type) => {
-          const event = typeof KeyboardEvent === "function"
-            ? new KeyboardEvent(type, { key, bubbles: true })
-            : new Event(type, { bubbles: true });
-          if (event.key !== key) {
-            Object.defineProperty(event, "key", { value: key });
-          }
-          return event;
-        };
-        el.dispatchEvent(makeKeyEvent("keydown"));
-        if (key === "Backspace" && typeof el.value === "string") {
-          el.value = el.value.slice(0, -1);
-          el.dispatchEvent(new Event("input", { bubbles: true }));
-        } else if (key.length === 1 && typeof el.value === "string") {
-          el.value += key;
-          el.dispatchEvent(new Event("input", { bubbles: true }));
-        }
-        el.dispatchEvent(makeKeyEvent("keyup"));
-      })()
-    `);
+    await this.focus();
+    await this.page.press(key);
   }
 
   async dispatchEvent(type: string, eventInit: Record<string, unknown> = {}): Promise<void> {
@@ -791,27 +1456,15 @@ export class CraterLocator {
     await this.setChecked(false);
   }
 
-  async selectOption(value: string): Promise<void> {
+  async selectOption(value: CraterSelectOptionValue): Promise<void> {
+    await this.waitForActionable();
+    const requestExpr = jsValue(value);
     await this.page.evaluate(`
       (() => {
+        ${adapterDomActionsExpr()}
         const el = ${this.queryExpr("querySelector")};
         if (!el) throw new Error("Element not found: ${this.selectorForError()}");
-        const options = Array.from(el.options || el.children || el._children || []).filter((option) => {
-          const tag = String(option?.tagName || option?.nodeName || "").toLowerCase();
-          return tag === "option";
-        });
-        const targetIndex = options.findIndex((option) => {
-          const optionValue = String(option.value ?? option.getAttribute?.("value") ?? option.textContent ?? "");
-          return optionValue === ${jsString(value)};
-        });
-        if (targetIndex < 0) throw new Error(${jsString(`Option not found: ${value}`)});
-        for (let i = 0; i < options.length; i += 1) {
-          options[i].selected = i === targetIndex;
-        }
-        el.selectedIndex = targetIndex;
-        el.value = ${jsString(value)};
-        el.dispatchEvent(new Event("input", { bubbles: true }));
-        el.dispatchEvent(new Event("change", { bubbles: true }));
+        __craterAction.selectOptions(el, ${requestExpr});
       })()
     `);
   }
@@ -889,14 +1542,7 @@ export class CraterLocator {
   }
 
   async isVisible(): Promise<boolean> {
-    return this.page.evaluate(`
-      (() => {
-        const el = ${this.queryExpr("querySelector")};
-        if (!el) return false;
-        const style = window.getComputedStyle ? window.getComputedStyle(el) : el.style;
-        return !el.hidden && style.display !== "none" && style.visibility !== "hidden";
-      })()
-    `);
+    return this.page.evaluate(elementVisibleExpr(this.queryExpr("querySelector")));
   }
 
   async isHidden(): Promise<boolean> {
@@ -913,12 +1559,7 @@ export class CraterLocator {
   }
 
   async isDisabled(): Promise<boolean> {
-    return this.page.evaluate(`
-      (() => {
-        const el = ${this.queryExpr("querySelector")};
-        return !!(el && (el.disabled || (typeof el.hasAttribute === "function" && el.hasAttribute("disabled"))));
-      })()
-    `);
+    return this.page.evaluate(elementDisabledExpr(this.queryExpr("querySelector")));
   }
 
   async isEnabled(): Promise<boolean> {
@@ -933,7 +1574,7 @@ export class CraterLocator {
         const tag = String(el.tagName || el.nodeName || "").toLowerCase();
         const editableTag = tag === "input" || tag === "textarea";
         const contentEditable = String(el.contentEditable || "").toLowerCase() === "true";
-        const disabled = !!(el.disabled || (typeof el.hasAttribute === "function" && el.hasAttribute("disabled")));
+        const disabled = ${elementDisabledExpr("el")};
         const readonly = !!(el.readOnly || (typeof el.hasAttribute === "function" && el.hasAttribute("readonly")));
         return (editableTag || contentEditable) && !disabled && !readonly;
       })()
@@ -950,7 +1591,7 @@ export class CraterLocator {
   }
 
   async waitFor(options: { timeout?: number } = {}): Promise<void> {
-    const timeout = this.page.timeoutOrDefault(options.timeout, 5000);
+    const timeout = this.timeoutResolver(options.timeout, 5000);
     const start = Date.now();
     while (Date.now() - start < timeout) {
       const found = await this.page.evaluate<boolean>(`${this.queryExpr("querySelector")} !== null`);
@@ -972,24 +1613,74 @@ export class CraterLocator {
   }
 
   private async setChecked(checked: boolean): Promise<void> {
+    await this.waitForActionable();
     await this.page.evaluate(`
       (() => {
+        ${adapterDomActionsExpr()}
         const el = ${this.queryExpr("querySelector")};
         if (!el) throw new Error("Element not found: ${this.selectorForError()}");
-        if (el.checked === ${checked}) return;
-        if (${checked} && String(el.type || "").toLowerCase() === "radio" && el.name) {
-          const inputs = Array.from(document.querySelectorAll("input"));
-          for (const input of inputs) {
-            if (input !== el && String(input.type || "").toLowerCase() === "radio" && input.name === el.name) {
-              input.checked = false;
-            }
-          }
-        }
-        el.checked = ${checked};
-        el.dispatchEvent(new Event("input", { bubbles: true }));
-        el.dispatchEvent(new Event("change", { bubbles: true }));
+        __craterAction.setChecked(el, ${checked});
       })()
     `);
+  }
+
+  private async waitForActionable(options: { timeout?: number } = {}): Promise<void> {
+    const timeout = this.timeoutResolver(options.timeout, 5000);
+    const start = Date.now();
+    let previousRectKey: string | null | undefined;
+    let lastState: {
+      attached: boolean;
+      visible: boolean;
+      enabled: boolean;
+      rectKey: string | null;
+    } | null = null;
+    while (Date.now() - start < timeout) {
+      const state = await this.page.evaluate<{
+        attached: boolean;
+        visible: boolean;
+        enabled: boolean;
+        rectKey: string | null;
+      }>(`
+        (() => {
+          const el = ${this.queryExpr("querySelector")};
+          const attached = !!el;
+          const visible = ${elementVisibleExpr("el")};
+          const disabled = ${elementDisabledExpr("el")};
+          let rectKey = null;
+          if (el && typeof el.getBoundingClientRect === "function") {
+            try {
+              const rect = el.getBoundingClientRect();
+              const values = [
+                rect.x ?? rect.left ?? 0,
+                rect.y ?? rect.top ?? 0,
+                rect.width ?? ((rect.right ?? 0) - (rect.left ?? 0)),
+                rect.height ?? ((rect.bottom ?? 0) - (rect.top ?? 0)),
+              ];
+              rectKey = values.map((value) => Number(value).toFixed(3)).join(":");
+            } catch (_e) {}
+          }
+          return { attached, visible, enabled: !disabled, rectKey };
+        })()
+      `);
+      lastState = state;
+      if (state.attached && state.visible && state.enabled) {
+        if (state.rectKey === null || previousRectKey === state.rectKey) {
+          return;
+        }
+        previousRectKey = state.rectKey;
+      } else {
+        previousRectKey = undefined;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 30));
+    }
+    const reason = !lastState?.attached
+      ? "not attached"
+      : !lastState.visible
+      ? "not visible"
+      : !lastState.enabled
+      ? "not enabled"
+      : "not stable";
+    throw new Error(`Timeout waiting for actionable selector (${reason}): ${this.selector}`);
   }
 
   protected queryExpr(method: "querySelector" | "querySelectorAll"): string {
@@ -1030,7 +1721,87 @@ export class CraterLocator {
   }
 }
 
+export class CraterFrameLocator {
+  private readonly parsed: ParsedLocatorSelector;
+
+  constructor(
+    private readonly page: CraterBidiPage,
+    private readonly selector: string,
+    private readonly timeoutResolver: CraterTimeoutResolver,
+  ) {
+    this.parsed = parseLocatorSelector(selector);
+  }
+
+  locator(selector: string): CraterLocator {
+    return this.createLocator(selector);
+  }
+
+  getByText(text: CraterTextMatcher, options: CraterTextMatchOptions = {}): CraterLocator {
+    return this.locator(locatorSelector("text", text, options));
+  }
+
+  getByRole(role: string, options: CraterGetByRoleOptions = {}): CraterLocator {
+    return this.createLocator(`role=${role}`, {
+      filters: roleOptionFilters(options),
+    });
+  }
+
+  getByPlaceholder(text: CraterTextMatcher, options: CraterTextMatchOptions = {}): CraterLocator {
+    return this.locator(locatorSelector("placeholder", text, options));
+  }
+
+  getByAltText(text: CraterTextMatcher, options: CraterTextMatchOptions = {}): CraterLocator {
+    return this.locator(locatorSelector("alt", text, options));
+  }
+
+  getByTitle(text: CraterTextMatcher, options: CraterTextMatchOptions = {}): CraterLocator {
+    return this.locator(locatorSelector("title", text, options));
+  }
+
+  getByTestId(testId: CraterTextMatcher): CraterLocator {
+    return this.locator(locatorSelector("testid", testId));
+  }
+
+  getByLabel(text: CraterTextMatcher, options: CraterTextMatchOptions = {}): CraterLocator {
+    return this.locator(locatorSelector("label", text, options));
+  }
+
+  private createLocator(
+    selector: string,
+    options: { filters?: LocatorFilter[] } = {},
+  ): CraterLocator {
+    return new CraterLocator(this.page, selector, {
+      rootExpression: this.frameRootExpression(),
+      filters: options.filters,
+      timeoutResolver: this.timeoutResolver,
+    });
+  }
+
+  private frameRootExpression(): string {
+    const frameExpr = buildSelectorExpr(this.parsed, "first");
+    return `(() => {
+      const frame = ${frameExpr};
+      if (!frame) return null;
+      let frameDocument = null;
+      try {
+        frameDocument = frame.contentDocument || null;
+      } catch (_e) {}
+      if (!frameDocument) {
+        try {
+          frameDocument = (frame.contentWindow && frame.contentWindow.document) || null;
+        } catch (_e) {}
+      }
+      if (!frameDocument) return null;
+      return frameDocument.documentElement || frameDocument.body || frameDocument;
+    })()`;
+  }
+}
+
 export class CraterBidiPage {
+  readonly keyboard = new CraterKeyboard(
+    (actions) => this.performKeyboardActions(actions),
+    (text) => this.insertTextIntoFocusedElement(text),
+  );
   private ws: WebSocket | null = null;
   private commandId = 0;
   private pendingCommands = new Map<number, PendingCommand>();
@@ -1043,8 +1814,24 @@ export class CraterBidiPage {
   private routes: CraterRouteEntry[] = [];
   private routePump: ReturnType<typeof setInterval> | null = null;
   private routePumpBusy = false;
+  private networkHooksInstalled = false;
+  private networkHookInstallPromise: Promise<void> | null = null;
+  private closed = false;
+  private navigationFlushDepth = 0;
+
+  constructor(
+    private readonly sharedConnection: SharedBidiConnection | null = null,
+    private readonly closeHandler: CraterPageCloseHandler | null = null,
+  ) {
+    if (this.sharedConnection) {
+      this.sharedConnection.onEvent((event) => this.handleEventMessage(event));
+    }
+  }
 
   async connect(options: CraterBidiConnectOptions = {}): Promise<void> {
+    if (this.sharedConnection) {
+      throw new Error("Shared CraterBidiPage instances are connected by their browser context");
+    }
     const timeout = options.timeout ?? 15000;
     const retries = options.retries ?? 2;
     let lastError: Error | undefined;
@@ -1069,65 +1856,506 @@ export class CraterBidiPage {
   }
 
   async close(): Promise<void> {
-    if (this.contextId) {
+    if (this.closed) {
+      return;
+    }
+    const contextId = this.contextId;
+    this.contextId = null;
+    if (contextId) {
       try {
-        await this.sendBidi("browsingContext.close", { context: this.contextId });
+        await this.sendBidi("browsingContext.close", { context: contextId });
       } catch {
         // Best-effort close for long-running VRT cases; the socket is closed below regardless.
       }
     }
-    this.contextId = null;
     if (this.routePump) {
       clearInterval(this.routePump);
       this.routePump = null;
     }
     this.routes = [];
-    this.ws?.close();
-    this.ws = null;
+    if (!this.sharedConnection) {
+      this.ws?.close();
+      this.ws = null;
+    }
+    this.closed = true;
+    this.closeHandler?.(this);
   }
 
-  async goto(url: string): Promise<void> {
-    const targetUrl = url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")
+  async createSiblingPage(closeHandler: CraterPageCloseHandler | null = null): Promise<CraterBidiPage> {
+    const page = new CraterBidiPage({
+      sendBidi: (method, params) => this.sendBidi(method, params),
+      onEvent: (handler) => this.onEvent(handler),
+    }, closeHandler);
+    const resp = await this.sendBidi("browsingContext.create", { type: "tab" });
+    page.contextId = (resp.result as { context: string }).context;
+    return page;
+  }
+
+  async goto(url: string): Promise<CraterResponse | null> {
+    const targetUrl = url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:") || url.startsWith("about:")
       ? url
       : `data:text/html;base64,${Buffer.from(url).toString("base64")}`;
+    if (targetUrl.startsWith("http://") || targetUrl.startsWith("https://") || targetUrl.startsWith("data:")) {
+      const result = await this.loadPage(targetUrl);
+      return this.responseFromLoadResult(result, targetUrl);
+    }
     await this.sendBidi("browsingContext.navigate", {
       context: this.requireContextId(),
       url: targetUrl,
       wait: "complete",
     });
+    await this.syncRuntimeLocation(targetUrl);
+    return null;
   }
 
   async setContent(html: string): Promise<void> {
-    const dataUrl = `data:text/html;base64,${Buffer.from(html).toString("base64")}`;
-    await this.goto(dataUrl);
+    await this.syncRuntimeLocation("about:blank");
+    await this.prepareRuntimeDocumentForLoad();
     await this.evaluate(`__loadHTML(${jsString(html)})`);
     await this.runInitScripts();
+    await this.evaluate(`(async () => await __executeScripts())()`, { awaitPromise: true });
   }
 
   async setContentWithScripts(html: string): Promise<void> {
     await this.setContent(html);
-    await this.evaluate(`(async () => await __executeScripts())()`, { awaitPromise: true });
   }
 
   async loadPage(
     url: string,
     options: { executeScripts?: boolean } = {},
-  ): Promise<{ url: string; status: number; scripts?: unknown[] }> {
+  ): Promise<CraterPageLoadResult> {
     const executeScripts = options.executeScripts !== false;
+    await this.prepareRuntimeDocumentForLoad({ resetWindow: true });
+    await this.ensureNetworkHooksReady();
     const json = await this.evaluate<string>(
-      `(async () => JSON.stringify(await __loadPageWithScripts(${jsString(url)}, { executeScripts: false })))()`,
+      `(async () => {
+        const targetUrl = ${jsString(url)};
+        const fetchFn = ${this.networkHooksInstalled ? "true" : "false"}
+          ? (globalThis.__craterObservableFetch || globalThis.__fetchInternal || globalThis.fetch)
+          : (globalThis.__fetchInternal || globalThis.fetch);
+        if (typeof fetchFn !== "function") {
+          throw new Error("fetch is not available in Crater runtime");
+        }
+        const response = await fetchFn(targetUrl, { mode: "navigate" });
+        const headers = {};
+        if (response && response.headers && typeof response.headers.forEach === "function") {
+          response.headers.forEach((value, key) => {
+            headers[String(key).toLowerCase()] = String(value);
+          });
+        }
+        const body = response && typeof response.text === "function"
+          ? await response.text()
+          : "";
+        if (typeof globalThis.__loadHTML === "function") {
+          globalThis.__loadHTML(body);
+        }
+        const finalUrl = response && response.url ? String(response.url) : targetUrl;
+        globalThis.__pageUrl = finalUrl;
+        return JSON.stringify({
+          requestedUrl: targetUrl,
+          url: finalUrl,
+          status: response && typeof response.status === "number" ? response.status : 0,
+          statusText: response && response.statusText ? String(response.statusText) : "",
+          headers,
+          body,
+        });
+      })()`,
       { awaitPromise: true },
     );
+    const result = JSON.parse(json) as CraterPageLoadResult;
+    await this.syncRuntimeLocation(result.url ?? url);
     await this.runInitScripts();
-    const result = JSON.parse(json) as { url: string; status: number; scripts?: unknown[] };
     if (executeScripts) {
-      const scriptsJson = await this.evaluate<string>(
-        `(async () => JSON.stringify(await __executeScripts({ baseUrl: ${jsString(url)} })))()`,
-        { awaitPromise: true },
-      );
-      result.scripts = JSON.parse(scriptsJson) as unknown[];
+      await this.setObservableFetchForScriptExecution(this.networkHooksInstalled);
+      try {
+        const scriptsJson = await this.evaluate<string>(
+          `(async () => JSON.stringify(await __executeScripts({ baseUrl: ${jsString(result.url ?? url)} })))()`,
+          { awaitPromise: true },
+        );
+        result.scripts = JSON.parse(scriptsJson) as unknown[];
+      } finally {
+        await this.setObservableFetchForScriptExecution(false);
+      }
     }
+    await this.observeSubresourceLoads(result.url ?? url);
     return result;
+  }
+
+  private async observeSubresourceLoads(baseUrl: string): Promise<void> {
+    if (!this.networkHooksInstalled) {
+      return;
+    }
+    await this.ensureNetworkHooksReady();
+    await this.evaluate(
+      `(async () => {
+        const resolve = (value) => {
+          const raw = String(value || "");
+          if (!raw) return "";
+          if (globalThis.__resolveUrl) return globalThis.__resolveUrl(raw, ${jsString(baseUrl)});
+          try { return new URL(raw, ${jsString(baseUrl)}).href; } catch (_e) { return raw; }
+        };
+        const resources = [];
+        const seen = new Set();
+        const add = (value) => {
+          const resolved = resolve(value);
+          if (!resolved || seen.has(resolved)) return;
+          seen.add(resolved);
+          resources.push(resolved);
+        };
+        for (const link of Array.from(document.querySelectorAll('link'))) {
+          const rel = String(link.getAttribute('rel') || '').toLowerCase().split(/\\s+/);
+          if (rel.includes('stylesheet')) add(link.getAttribute('href'));
+        }
+        for (const img of Array.from(document.querySelectorAll('img'))) {
+          add(img.getAttribute('src'));
+        }
+        const fetchFn = globalThis.__craterObservableFetch;
+        if (typeof fetchFn !== 'function') return;
+        await Promise.all(resources.map(async (resourceUrl) => {
+          try {
+            const response = await fetchFn(resourceUrl, {});
+            if (response && typeof response.arrayBuffer === 'function') {
+              try { await response.arrayBuffer(); } catch (_e) {}
+            }
+          } catch (_e) {
+            try {
+              const internalFetch = globalThis.__fetchInternal || globalThis.fetch;
+              if (typeof internalFetch !== 'function') return;
+              const response = await internalFetch(resourceUrl, {});
+              const headers = {};
+              if (response && response.headers && typeof response.headers.forEach === 'function') {
+                response.headers.forEach((value, key) => {
+                  headers[String(key).toLowerCase()] = String(value);
+                });
+              }
+              if (globalThis.__craterRecordSyntheticResponse) {
+                globalThis.__craterRecordSyntheticResponse(
+                  resourceUrl,
+                  response && typeof response.status === 'number' ? response.status : 0,
+                  response && response.statusText ? String(response.statusText) : '',
+                  headers,
+                  null,
+                );
+              }
+            } catch (_fallbackError) {}
+          }
+        }));
+      })()`,
+      { awaitPromise: true },
+    );
+  }
+
+  private async setObservableFetchForScriptExecution(enabled: boolean): Promise<void> {
+    await this.evaluate(`
+      (() => {
+        globalThis.__craterUseObservableFetch = ${enabled ? "true" : "false"};
+      })()
+    `);
+  }
+
+  private async ensureNetworkHooksReady(): Promise<void> {
+    if (this.networkHookInstallPromise) {
+      await this.networkHookInstallPromise;
+    }
+  }
+
+  private async prepareRuntimeDocumentForLoad(
+    options: { resetWindow?: boolean } = {},
+  ): Promise<void> {
+    const resetWindow = options.resetWindow === true;
+    await this.evaluate(`
+      (() => {
+        const resetWindow = ${resetWindow ? "true" : "false"};
+        const sourceDoc = globalThis.__craterDocumentFactorySource || globalThis.document;
+        if (!sourceDoc || typeof sourceDoc.createElement !== "function") return false;
+        if (!globalThis.__craterDocumentFactorySource) {
+          globalThis.__craterDocumentFactorySource = sourceDoc;
+        }
+
+        const currentCtx = String(globalThis.__bidiCurrentContext || "default-context");
+        if (!globalThis.__bidiContextWindows) globalThis.__bidiContextWindows = new Map();
+        if (resetWindow || !globalThis.__bidiContextWindows.has(currentCtx)) {
+          const previousWindow = globalThis.__bidiContextWindows.get(currentCtx);
+          const win = { __bidiContextId: currentCtx };
+          win.window = win;
+          win.frames = [];
+          if (previousWindow && previousWindow.navigator) {
+            win.navigator = previousWindow.navigator;
+          } else if (globalThis.navigator) {
+            win.navigator = globalThis.navigator;
+          }
+          globalThis.__bidiContextWindows.set(currentCtx, win);
+        }
+        const contextWindow = globalThis.__bidiContextWindows.get(currentCtx);
+
+        const doc = {
+          nodeType: 9,
+          doctype: null,
+          documentElement: null,
+          head: null,
+          body: null,
+          activeElement: null,
+          _listeners: {},
+          createElement(tag) {
+            const el = sourceDoc.createElement.call(doc, tag);
+            el.ownerDocument = doc;
+            return el;
+          },
+          createTextNode(text) {
+            const node = sourceDoc.createTextNode.call(doc, text);
+            node.ownerDocument = doc;
+            return node;
+          },
+          createComment(text) {
+            const node = typeof sourceDoc.createComment === "function"
+              ? sourceDoc.createComment.call(doc, text)
+              : { nodeType: 8, nodeName: "#comment", textContent: String(text) };
+            node.ownerDocument = doc;
+            return node;
+          },
+          createCDATASection(text) {
+            const node = typeof sourceDoc.createCDATASection === "function"
+              ? sourceDoc.createCDATASection.call(doc, text)
+              : { nodeType: 4, nodeName: "#cdata-section", textContent: String(text) };
+            node.ownerDocument = doc;
+            return node;
+          },
+          createProcessingInstruction(target, data) {
+            const node = typeof sourceDoc.createProcessingInstruction === "function"
+              ? sourceDoc.createProcessingInstruction.call(doc, target, data)
+              : { nodeType: 7, nodeName: String(target), target: String(target), data: String(data) };
+            node.ownerDocument = doc;
+            return node;
+          },
+          createDocumentFragment() {
+            const frag = sourceDoc.createDocumentFragment.call(doc);
+            frag.ownerDocument = doc;
+            return frag;
+          },
+          getElementById(id) {
+            return this.querySelector("#" + String(id));
+          },
+          querySelector(selector) {
+            return this.documentElement && typeof this.documentElement.querySelector === "function"
+              ? this.documentElement.querySelector(selector)
+              : null;
+          },
+          querySelectorAll(selector) {
+            return this.documentElement && typeof this.documentElement.querySelectorAll === "function"
+              ? this.documentElement.querySelectorAll(selector)
+              : [];
+          },
+          getElementsByTagName(tag) {
+            return this.documentElement && typeof this.documentElement.getElementsByTagName === "function"
+              ? this.documentElement.getElementsByTagName(tag)
+              : [];
+          },
+          getElementsByClassName(className) {
+            return this.documentElement && typeof this.documentElement.getElementsByClassName === "function"
+              ? this.documentElement.getElementsByClassName(className)
+              : [];
+          },
+          addEventListener(type, fn) {
+            if (!this._listeners[type]) this._listeners[type] = [];
+            this._listeners[type].push(fn);
+          },
+          removeEventListener(type, fn) {
+            if (!this._listeners[type]) return;
+            this._listeners[type] = this._listeners[type].filter((listener) => listener !== fn);
+          },
+          dispatchEvent(event) {
+            const listeners = this._listeners[event.type] || [];
+            for (const fn of listeners) {
+              try { fn.call(this, event); } catch (_e) {}
+            }
+            return !event.defaultPrevented;
+          },
+          elementFromPoint(x, y) {
+            return typeof sourceDoc.elementFromPoint === "function"
+              ? sourceDoc.elementFromPoint.call(this, x, y)
+              : this.body;
+          },
+          execCommand(command) {
+            return typeof sourceDoc.execCommand === "function"
+              ? sourceDoc.execCommand.call(this, command)
+              : false;
+          },
+        };
+        Object.defineProperty(doc, "childNodes", {
+          configurable: true,
+          enumerable: true,
+          get() {
+            return [this.doctype, this.documentElement].filter(Boolean);
+          },
+        });
+        Object.defineProperty(doc, "scrollingElement", {
+          configurable: true,
+          enumerable: true,
+          get() {
+            return this.documentElement || this.body || null;
+          },
+        });
+
+        const html = doc.createElement("html");
+        const head = doc.createElement("head");
+        const body = doc.createElement("body");
+        html.appendChild(head);
+        html.appendChild(body);
+
+        const sourceDoctype = sourceDoc.doctype || {};
+        const doctype = {
+          nodeType: 10,
+          nodeName: sourceDoctype.nodeName || "html",
+          name: sourceDoctype.name || "html",
+          publicId: sourceDoctype.publicId || "",
+          systemId: sourceDoctype.systemId || "",
+          ownerDocument: doc,
+          parentNode: doc,
+        };
+
+        doc.doctype = doctype;
+        doc.documentElement = html;
+        doc.head = head;
+        doc.body = body;
+        doc.activeElement = body;
+
+        contextWindow.document = doc;
+        contextWindow.window = contextWindow;
+        globalThis.document = doc;
+        globalThis.window = contextWindow;
+        globalThis.self = contextWindow;
+        globalThis.parent = contextWindow;
+        globalThis.top = contextWindow;
+        contextWindow.document = doc;
+        contextWindow.window.document = doc;
+        return true;
+      })()
+    `);
+  }
+
+  private responseFromLoadResult(
+    result: CraterPageLoadResult,
+    fallbackUrl: string,
+  ): CraterResponse {
+    const responseUrl = result.url ?? fallbackUrl;
+    const request = {
+      id: "crater-goto",
+      url: responseUrl,
+      method: "GET",
+      headers: {},
+      postData: null,
+    };
+    return new CraterResponse({
+      url: responseUrl,
+      status: result.status ?? 200,
+      statusText: result.statusText ?? "",
+      headers: { ...(result.headers ?? {}) },
+      body: result.body ?? null,
+      request,
+    });
+  }
+
+  private async flushPendingNavigation(): Promise<void> {
+    if (this.navigationFlushDepth > 0 || this.closed) {
+      return;
+    }
+    this.navigationFlushDepth += 1;
+    try {
+      while (true) {
+        const raw = await this.evaluate<string | null>(`
+          (() => {
+            const pending = globalThis.__craterPendingNavigation || null;
+            globalThis.__craterPendingNavigation = null;
+            return pending ? JSON.stringify(pending) : null;
+          })()
+        `);
+        if (!raw) {
+          return;
+        }
+        const pending = JSON.parse(raw) as { url?: string };
+        if (!pending.url) {
+          continue;
+        }
+        await this.loadPage(pending.url);
+      }
+    } finally {
+      this.navigationFlushDepth -= 1;
+    }
+  }
+
+  private async syncRuntimeLocation(url: string): Promise<void> {
+    await this.evaluate(`
+      (() => {
+        const next = ${jsString(url)};
+        globalThis.__pageUrl = next;
+        const location = globalThis.location || {};
+        const resolve = (value) => {
+          const raw = String(value);
+          if (globalThis.__resolveUrl) return globalThis.__resolveUrl(raw, globalThis.__pageUrl || location.href || "about:blank");
+          try { return new URL(raw, globalThis.__pageUrl || location.href || "about:blank").href; } catch (_e) { return raw; }
+        };
+        const applyUrl = (value) => {
+          const href = resolve(value);
+          let parsed = null;
+          try { parsed = new URL(href, location.href || "about:blank"); } catch (_e) {}
+          location.href = parsed ? parsed.href : href;
+          location.origin = parsed ? parsed.origin : "";
+          location.protocol = parsed ? parsed.protocol : "";
+          location.host = parsed ? parsed.host : "";
+          location.hostname = parsed ? parsed.hostname : "";
+          location.port = parsed ? parsed.port : "";
+          location.pathname = parsed ? parsed.pathname : "";
+          location.search = parsed ? parsed.search : "";
+          location.hash = parsed ? parsed.hash : "";
+          globalThis.__pageUrl = location.href;
+          return location.href;
+        };
+        applyUrl(next);
+        location.assign = function(value) {
+          const href = applyUrl(value);
+          globalThis.__craterPendingNavigation = { url: href, kind: "assign" };
+        };
+        location.replace = function(value) {
+          const href = applyUrl(value);
+          globalThis.__craterPendingNavigation = { url: href, kind: "replace" };
+        };
+        location.reload = function() {
+          const href = applyUrl(location.href || globalThis.__pageUrl || "about:blank");
+          globalThis.__craterPendingNavigation = { url: href, kind: "reload" };
+        };
+        const history = globalThis.history || {};
+        if (!Array.isArray(history.__craterEntries)) {
+          history.__craterEntries = [location.href];
+          history.__craterIndex = 0;
+        }
+        history.state = history.state ?? null;
+        history.pushState = function(state, _title, value) {
+          if (value !== undefined && value !== null) {
+            const href = applyUrl(value);
+            const nextIndex = Number(history.__craterIndex || 0) + 1;
+            history.__craterEntries = history.__craterEntries.slice(0, nextIndex);
+            history.__craterEntries.push(href);
+            history.__craterIndex = nextIndex;
+          }
+          history.state = state ?? null;
+        };
+        history.replaceState = function(state, _title, value) {
+          if (value !== undefined && value !== null) {
+            const href = applyUrl(value);
+            const index = Number(history.__craterIndex || 0);
+            history.__craterEntries[index] = href;
+          }
+          history.state = state ?? null;
+        };
+        history.length = history.__craterEntries.length;
+        globalThis.history = history;
+        globalThis.location = location;
+        if (globalThis.window && typeof globalThis.window === "object") {
+          globalThis.window.location = location;
+          globalThis.window.history = history;
+        }
+      })()
+    `);
   }
 
   async addInitScript(script: string | (() => unknown | Promise<unknown>)): Promise<void> {
@@ -1227,11 +2455,15 @@ export class CraterBidiPage {
     if (resp.type === "error") {
       throw new Error(resp.message || resp.error || "script.evaluate failed");
     }
-    const result = resp.result as { result?: { value?: T }; exceptionDetails?: unknown };
+    const result = resp.result as { result?: unknown; exceptionDetails?: unknown };
     if (result.exceptionDetails) {
       throw new Error(JSON.stringify(result.exceptionDetails));
     }
-    return result.result?.value as T;
+    const value = deserializeBidiValue(result.result) as T;
+    if (this.navigationFlushDepth === 0) {
+      await this.flushPendingNavigation();
+    }
+    return value;
   }
 
   async waitForSelector(selector: string, options: { timeout?: number } = {}): Promise<void> {
@@ -1342,28 +2574,12 @@ export class CraterBidiPage {
 
   async click(selector: string): Promise<void> {
     const sharedId = await this.elementSharedId(selector);
-    await this.performPointer([
-      {
-        type: "pointerMove",
-        origin: { type: "element", element: { sharedId } },
-        x: 0,
-        y: 0,
-      },
-      { type: "pointerDown", button: 0 },
-      { type: "pointerUp", button: 0 },
-    ]);
+    await this.performPointer(pointerClickActions(sharedId));
   }
 
   async hover(selector: string): Promise<void> {
     const sharedId = await this.elementSharedId(selector);
-    await this.performPointer([
-      {
-        type: "pointerMove",
-        origin: { type: "element", element: { sharedId } },
-        x: 0,
-        y: 0,
-      },
-    ]);
+    await this.performPointer(pointerMoveActions(sharedId));
   }
 
   async fill(selector: string, value: string): Promise<void> {
@@ -1372,22 +2588,11 @@ export class CraterBidiPage {
 
   async type(selector: string, text: string): Promise<void> {
     await this.click(selector);
-    const actions = [...text].flatMap((char) => {
-      const value = keyValue(char);
-      return [
-        { type: "keyDown", value },
-        { type: "keyUp", value },
-      ];
-    });
-    await this.performKey(actions);
+    await this.keyboard.type(text);
   }
 
   async press(key: string): Promise<void> {
-    const value = keyValue(key);
-    await this.performKey([
-      { type: "keyDown", value },
-      { type: "keyUp", value },
-    ]);
+    await this.keyboard.press(key);
   }
 
   async check(selector: string): Promise<void> {
@@ -1496,43 +2701,59 @@ export class CraterBidiPage {
     `);
   }
 
+  private createLocator(
+    selector: string,
+    options: { filters?: LocatorFilter[] } = {},
+  ): CraterLocator {
+    return new CraterLocator(this, selector, {
+      filters: options.filters,
+      timeoutResolver: (timeout, fallback) => this.timeoutOrDefault(timeout, fallback),
+    });
+  }
+
   locator(selector: string): CraterLocator {
-    return new CraterLocator(this, selector);
+    return this.createLocator(selector);
   }
 
-  getByText(text: string, options: { exact?: boolean } = {}): CraterLocator {
-    return this.locator(options.exact ? `text=exact:${text}` : `text=${text}`);
+  frameLocator(selector: string): CraterFrameLocator {
+    return new CraterFrameLocator(
+      this,
+      selector,
+      (timeout, fallback) => this.timeoutOrDefault(timeout, fallback),
+    );
   }
 
-  getByRole(role: string, options: { name?: string | RegExp } = {}): CraterLocator {
-    const locator = this.locator(`role=${role}`);
-    if (options.name !== undefined) {
-      return locator.filterAccessibleName(options.name);
-    }
-    return locator;
+  getByText(text: CraterTextMatcher, options: CraterTextMatchOptions = {}): CraterLocator {
+    return this.locator(locatorSelector("text", text, options));
   }
 
-  getByPlaceholder(text: string): CraterLocator {
-    return this.locator(`placeholder=${text}`);
+  getByRole(role: string, options: CraterGetByRoleOptions = {}): CraterLocator {
+    return this.createLocator(`role=${role}`, {
+      filters: roleOptionFilters(options),
+    });
   }
 
-  getByAltText(text: string): CraterLocator {
-    return this.locator(`alt=${text}`);
+  getByPlaceholder(text: CraterTextMatcher, options: CraterTextMatchOptions = {}): CraterLocator {
+    return this.locator(locatorSelector("placeholder", text, options));
   }
 
-  getByTitle(text: string): CraterLocator {
-    return this.locator(`title=${text}`);
+  getByAltText(text: CraterTextMatcher, options: CraterTextMatchOptions = {}): CraterLocator {
+    return this.locator(locatorSelector("alt", text, options));
   }
 
-  getByTestId(testId: string): CraterLocator {
-    return this.locator(`testid=${testId}`);
+  getByTitle(text: CraterTextMatcher, options: CraterTextMatchOptions = {}): CraterLocator {
+    return this.locator(locatorSelector("title", text, options));
   }
 
-  getByLabel(text: string): CraterLocator {
-    return this.locator(`label=${text}`);
+  getByTestId(testId: CraterTextMatcher): CraterLocator {
+    return this.locator(locatorSelector("testid", testId));
   }
 
-  async selectOption(selector: string, value: string): Promise<void> {
+  getByLabel(text: CraterTextMatcher, options: CraterTextMatchOptions = {}): CraterLocator {
+    return this.locator(locatorSelector("label", text, options));
+  }
+
+  async selectOption(selector: string, value: CraterSelectOptionValue): Promise<void> {
     await this.locator(selector).selectOption(value);
   }
 
@@ -1591,6 +2812,7 @@ export class CraterBidiPage {
     const timeout = this.timeoutOrDefault(options.timeout, 3000);
     const start = Date.now();
     while (Date.now() - start < timeout) {
+      await this.flushPendingNavigation();
       const current = await this.url();
       if (this.urlMatches(current, expected)) {
         return;
@@ -1623,6 +2845,7 @@ export class CraterBidiPage {
     state: CraterLoadState = "load",
     options: { timeout?: number } = {},
   ): Promise<void> {
+    await this.flushPendingNavigation();
     const timeout = this.timeoutOrDefault(options.timeout, 30000);
     switch (state) {
       case "networkidle":
@@ -1851,6 +3074,21 @@ export class CraterBidiPage {
     return result.styles ?? {};
   }
 
+  private async performKeyboardActions(actions: Array<Record<string, string>>): Promise<void> {
+    await this.performKey(actions);
+  }
+
+  private async insertTextIntoFocusedElement(text: string): Promise<void> {
+    await this.evaluate(`
+      (() => {
+        ${adapterDomActionsExpr()}
+        const element = globalThis.__bidiFocusedElement || document.activeElement;
+        if (!element) throw new Error("No focused element");
+        __craterAction.insertText(element, ${jsString(text)});
+      })()
+    `);
+  }
+
   private async elementSharedId(selector: string): Promise<string> {
     const resp = await this.sendBidi("script.evaluate", {
       expression: `document.querySelector(${jsString(selector)})`,
@@ -1898,6 +3136,9 @@ export class CraterBidiPage {
   }
 
   private requireContextId(): string {
+    if (this.closed) {
+      throw new Error("Page is closed");
+    }
     if (!this.contextId) {
       throw new Error("No browsing context");
     }
@@ -1906,7 +3147,8 @@ export class CraterBidiPage {
 
   private async installNetworkHooks(options: { routeEnabled?: boolean } = {}): Promise<void> {
     const routeEnabled = options.routeEnabled === true;
-    await this.evaluate(`
+    this.networkHooksInstalled = true;
+    const installPromise = this.evaluate(`
       (() => {
         const root = globalThis;
         const state = root.__craterNetworkState || {
@@ -1987,6 +3229,21 @@ export class CraterBidiPage {
 
         root.__craterNetworkEventCount = () => state.events.length;
         root.__craterNetworkEventsSince = (index) => JSON.stringify(state.events.slice(index));
+        root.__craterRecordSyntheticResponse = (url, status, statusText, headers, body) => {
+          const request = {
+            id: "crater-synthetic-" + (++state.nextId),
+            url: String(url),
+            method: "GET",
+            headers: {},
+            postData: null,
+          };
+          emitResponse(request, {
+            url: String(url),
+            status: Number(status || 0),
+            statusText: String(statusText || ""),
+            headers: headers || {},
+          }, body === undefined ? null : body);
+        };
         root.__craterTakePendingRoutes = () => {
           const pending = state.pendingRoutes.splice(0, state.pendingRoutes.length);
           return JSON.stringify(pending);
@@ -2044,6 +3301,7 @@ export class CraterBidiPage {
               throw error;
             }
           };
+          root.__craterObservableFetch = root.fetch.bind(root);
           state.installed = true;
         }
 
@@ -2053,6 +3311,8 @@ export class CraterBidiPage {
         return true;
       })()
     `);
+    this.networkHookInstallPromise = installPromise.then(() => undefined);
+    await this.networkHookInstallPromise;
     if (options.routeEnabled === false) {
       await this.evaluate(`
         (() => {
@@ -2172,7 +3432,7 @@ export class CraterBidiPage {
     return typeof script === "function" ? `(${script.toString()})()` : script;
   }
 
-  timeoutOrDefault(timeout: number | undefined, fallback: number): number {
+  private timeoutOrDefault(timeout: number | undefined, fallback: number): number {
     return timeout ?? this.defaultTimeout ?? fallback;
   }
 
@@ -2219,16 +3479,7 @@ export class CraterBidiPage {
   private handleMessage(data: string): void {
     const message = JSON.parse(data) as { type?: string; id?: number; method?: string } & Record<string, unknown>;
     if (message.type === "event") {
-      if (message.method === "browsingContext.load" || message.method === "browsingContext.domContentLoaded") {
-        if (this.navigationResolve) {
-          this.navigationResolve();
-          this.navigationResolve = null;
-          this.navigationPromise = null;
-        }
-      }
-      for (const handler of this.eventHandlers) {
-        handler(message as unknown as BidiEvent);
-      }
+      this.handleEventMessage(message as unknown as BidiEvent);
       return;
     }
     const pending = typeof message.id === "number" ? this.pendingCommands.get(message.id) : null;
@@ -2239,7 +3490,23 @@ export class CraterBidiPage {
     pending.resolve(message as unknown as BidiResponse);
   }
 
+  private handleEventMessage(event: BidiEvent): void {
+    if (event.method === "browsingContext.load" || event.method === "browsingContext.domContentLoaded") {
+      if (this.navigationResolve) {
+        this.navigationResolve();
+        this.navigationResolve = null;
+        this.navigationPromise = null;
+      }
+    }
+    for (const handler of this.eventHandlers) {
+      handler(event);
+    }
+  }
+
   private async sendBidi(method: string, params: unknown): Promise<BidiResponse> {
+    if (this.sharedConnection) {
+      return this.sharedConnection.sendBidi(method, params);
+    }
     if (!this.ws) {
       throw new Error("Not connected");
     }
@@ -2257,4 +3524,183 @@ export class CraterBidiPage {
       }, timeoutMs);
     });
   }
+}
+
+export class CraterBrowserContext {
+  private readonly pageList: CraterBidiPage[] = [];
+  private transportPage: CraterBidiPage | null = null;
+  private closed = false;
+
+  constructor(
+    private readonly connectOptions: CraterBidiConnectOptions = {},
+    private readonly closeHandler: CraterContextCloseHandler | null = null,
+  ) {}
+
+  async newPage(options: CraterBidiConnectOptions = {}): Promise<CraterBidiPage> {
+    if (this.closed) {
+      throw new Error("Browser context is closed");
+    }
+    const transport = await this.ensureTransportPage(options);
+    const page = await transport.createSiblingPage((closedPage) => this.removePage(closedPage));
+    this.pageList.push(page);
+    return page;
+  }
+
+  pages(): CraterBidiPage[] {
+    return [...this.pageList];
+  }
+
+  async storageState(options: CraterStorageStateOptions = {}): Promise<CraterStorageState> {
+    if (this.closed) {
+      throw new Error("Browser context is closed");
+    }
+    const state: CraterStorageState = {
+      cookies: [],
+      origins: [],
+    };
+    const cookiesByKey = new Map<string, CraterStorageCookie>();
+    const originsByOrigin = new Map<string, Map<string, string>>();
+    for (const page of this.pageList) {
+      const snapshot = await page.evaluate<string>(`
+        (() => {
+          const origin = location.origin && location.origin !== "null" ? location.origin : location.href;
+          const localStorage = [];
+          try {
+            for (let i = 0; i < globalThis.localStorage.length; i += 1) {
+              const name = globalThis.localStorage.key(i);
+              if (name !== null) {
+                localStorage.push({ name, value: String(globalThis.localStorage.getItem(name) ?? "") });
+              }
+            }
+          } catch (_e) {}
+          const host = String(location.hostname || "");
+          const secure = String(location.protocol || "") === "https:";
+          const cookies = String(document.cookie || "")
+            .split(";")
+            .map((part) => part.trim())
+            .filter(Boolean)
+            .map((part) => {
+              const eq = part.indexOf("=");
+              const name = eq === -1 ? part : part.slice(0, eq);
+              const value = eq === -1 ? "" : part.slice(eq + 1);
+              return { name, value, domain: host, path: "/", expires: -1, httpOnly: false, secure, sameSite: "Lax" };
+            });
+          return JSON.stringify({ origin, localStorage, cookies });
+        })()
+      `);
+      const parsed = JSON.parse(snapshot) as {
+        origin?: string;
+        localStorage?: Array<{ name: string; value: string }>;
+        cookies?: CraterStorageCookie[];
+      };
+      const origin = parsed.origin || "about:blank";
+      if (Array.isArray(parsed.localStorage) && parsed.localStorage.length > 0) {
+        const entries = originsByOrigin.get(origin) ?? new Map<string, string>();
+        for (const entry of parsed.localStorage) {
+          entries.set(entry.name, entry.value);
+        }
+        originsByOrigin.set(origin, entries);
+      }
+      for (const cookie of parsed.cookies ?? []) {
+        const key = `${cookie.domain}\t${cookie.path}\t${cookie.name}`;
+        cookiesByKey.set(key, cookie);
+      }
+    }
+    state.cookies = [...cookiesByKey.values()].sort((a, b) =>
+      `${a.domain}\t${a.path}\t${a.name}`.localeCompare(`${b.domain}\t${b.path}\t${b.name}`)
+    );
+    state.origins = [...originsByOrigin.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([origin, entries]) => ({
+        origin,
+        localStorage: [...entries.entries()]
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([name, value]) => ({ name, value })),
+      }));
+    if (options.path) {
+      await writeFile(options.path, JSON.stringify(state, null, 2));
+    }
+    return state;
+  }
+
+  async close(): Promise<void> {
+    if (this.closed) {
+      return;
+    }
+    this.closed = true;
+    const pages = this.pageList.splice(0, this.pageList.length);
+    const transport = this.transportPage;
+    this.transportPage = null;
+    await Promise.all(pages.map((page) => page.close()));
+    if (transport) {
+      await transport.close();
+    }
+    this.closeHandler?.(this);
+  }
+
+  private async ensureTransportPage(options: CraterBidiConnectOptions): Promise<CraterBidiPage> {
+    if (!this.transportPage) {
+      const transport = new CraterBidiPage();
+      await transport.connect({ ...this.connectOptions, ...options });
+      this.transportPage = transport;
+    }
+    return this.transportPage;
+  }
+
+  private removePage(page: CraterBidiPage): void {
+    const index = this.pageList.indexOf(page);
+    if (index !== -1) {
+      this.pageList.splice(index, 1);
+    }
+  }
+}
+
+export class CraterBrowser {
+  private readonly contextList: CraterBrowserContext[] = [];
+  private closed = false;
+
+  constructor(private readonly connectOptions: CraterBidiConnectOptions = {}) {}
+
+  async newContext(options: CraterBidiConnectOptions = {}): Promise<CraterBrowserContext> {
+    if (this.closed) {
+      throw new Error("Browser is closed");
+    }
+    const context = new CraterBrowserContext(
+      { ...this.connectOptions, ...options },
+      (closedContext) => this.removeContext(closedContext),
+    );
+    this.contextList.push(context);
+    return context;
+  }
+
+  async newPage(options: CraterBidiConnectOptions = {}): Promise<CraterBidiPage> {
+    const context = await this.newContext(options);
+    return context.newPage();
+  }
+
+  contexts(): CraterBrowserContext[] {
+    return [...this.contextList];
+  }
+
+  async close(): Promise<void> {
+    if (this.closed) {
+      return;
+    }
+    this.closed = true;
+    const contexts = this.contextList.splice(0, this.contextList.length);
+    await Promise.all(contexts.map((context) => context.close()));
+  }
+
+  private removeContext(context: CraterBrowserContext): void {
+    const index = this.contextList.indexOf(context);
+    if (index !== -1) {
+      this.contextList.splice(index, 1);
+    }
+  }
+}
+
+export function createCraterBrowser(
+  options: CraterBidiConnectOptions = {},
+): CraterBrowser {
+  return new CraterBrowser(options);
 }

@@ -1,18 +1,80 @@
-export type CraterPlaywrightApiOwner = "page" | "locator";
+export type CraterPlaywrightApiOwner =
+  | "browser"
+  | "context"
+  | "page"
+  | "locator";
 
 export type CraterPlaywrightApiStatus =
   | "supported"
   | "partial"
   | "crater-extension";
 
+export type CraterPlaywrightApiImplementation =
+  | "implemented"
+  | "api-mock";
+
 export type CraterPlaywrightApiEntry = {
   owner: CraterPlaywrightApiOwner;
   api: string;
   status: CraterPlaywrightApiStatus;
+  implementation: CraterPlaywrightApiImplementation;
   notes: string;
 };
 
-export const CRATER_PLAYWRIGHT_API_SUPPORT = [
+type CraterPlaywrightApiSourceEntry =
+  Omit<CraterPlaywrightApiEntry, "implementation"> & {
+    implementation?: CraterPlaywrightApiImplementation;
+  };
+
+const CRATER_PLAYWRIGHT_API_SUPPORT_SOURCE = [
+  {
+    owner: "browser",
+    api: "newContext",
+    status: "partial",
+    notes: "Creates a lightweight Crater context wrapper until browser.close(); Playwright BrowserContext options such as preloaded storageState/cookies are not implemented.",
+  },
+  {
+    owner: "browser",
+    api: "newPage",
+    status: "partial",
+    notes: "Convenience helper that creates a new Crater context and page until browser.close(); browser-process semantics are not implemented.",
+  },
+  {
+    owner: "browser",
+    api: "contexts",
+    status: "supported",
+    notes: "Returns currently open tracked Crater context wrappers; manually closed contexts are removed.",
+  },
+  {
+    owner: "browser",
+    api: "close",
+    status: "partial",
+    notes: "Idempotently closes tracked contexts and pages best-effort over the Crater BiDi transport; the closed browser rejects new contexts.",
+  },
+  {
+    owner: "context",
+    api: "newPage",
+    status: "partial",
+    notes: "Creates an isolated Crater tab over a hidden shared BiDi transport page; context-level storage/session isolation is not implemented.",
+  },
+  {
+    owner: "context",
+    api: "pages",
+    status: "supported",
+    notes: "Returns currently open tracked Crater pages; manually closed pages are removed.",
+  },
+  {
+    owner: "context",
+    api: "storageState",
+    status: "partial",
+    notes: "Snapshots visible cookies and localStorage from currently open Crater pages into Playwright's { cookies, origins } shape; preloading, httpOnly cookie metadata, and sessionStorage are not implemented.",
+  },
+  {
+    owner: "context",
+    api: "close",
+    status: "partial",
+    notes: "Idempotently closes tracked pages and the hidden shared transport best-effort; the closed context rejects new pages.",
+  },
   {
     owner: "page",
     api: "connect",
@@ -24,6 +86,18 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     api: "close",
     status: "supported",
     notes: "Closes the current browsing context and WebSocket.",
+  },
+  {
+    owner: "page",
+    api: "onEvent",
+    status: "crater-extension",
+    notes: "Low-level Crater BiDi event hook used by adapter internals and diagnostics.",
+  },
+  {
+    owner: "page",
+    api: "createSiblingPage",
+    status: "crater-extension",
+    notes: "Low-level helper that creates another tab over the same Crater BiDi transport.",
   },
   {
     owner: "page",
@@ -47,19 +121,19 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     owner: "page",
     api: "goto",
     status: "partial",
-    notes: "Supports BiDi navigation, including data URLs. Browser-grade network loading is still limited.",
+    notes: "Loads http/https/data URLs through Crater runtime, follows fetch redirects, preserves HTTP error documents, runs init scripts before page scripts, and returns response metadata; browser-grade navigation remains limited.",
   },
   {
     owner: "page",
     api: "setContent",
     status: "supported",
-    notes: "Loads HTML into Crater's DOM without executing embedded scripts.",
+    notes: "Loads HTML into an about:blank Crater document and executes inline/classic/module scripts supported by Crater's runtime.",
   },
   {
     owner: "page",
     api: "setContentWithScripts",
     status: "supported",
-    notes: "Loads HTML and executes inline/classic/module scripts supported by Crater's runtime.",
+    notes: "Compatibility alias for setContent().",
   },
   {
     owner: "page",
@@ -69,9 +143,15 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
   },
   {
     owner: "page",
+    api: "keyboard",
+    status: "partial",
+    notes: "Exposes a minimal Playwright-like keyboard object with type/press/down/up/insertText; insertText mutates the focused editable element without key or native composition events.",
+  },
+  {
+    owner: "page",
     api: "loadPage",
     status: "partial",
-    notes: "Fetches a URL through Crater runtime, parses HTML, and executes supported scripts; remote and module loading are still not browser-equivalent.",
+    notes: "Fetches a URL through Crater runtime, parses HTML including 4xx/5xx documents, emits observable document network events when hooks are installed, runs init scripts, and executes supported scripts against the final response URL; remote and module loading are still not browser-equivalent.",
   },
   {
     owner: "page",
@@ -95,7 +175,7 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     owner: "page",
     api: "evaluate",
     status: "supported",
-    notes: "Runs script.evaluate and unwraps serialized values, with optional JSON-serializable arg support.",
+    notes: "Runs script.evaluate and recursively unwraps serializable BiDi values, with optional JSON-serializable arg support.",
   },
   {
     owner: "page",
@@ -125,49 +205,56 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     owner: "page",
     api: "locator",
     status: "partial",
-    notes: "Supports CSS plus text/role/placeholder/alt/title/testid/label selector shorthands.",
+    notes: "Supports CSS plus text/role/placeholder/alt/title/testid/label selector shorthands over Crater's composed traversal for open shadow DOM; XPath locators are not implemented.",
+  },
+  {
+    owner: "page",
+    api: "frameLocator",
+    status: "partial",
+    implementation: "api-mock",
+    notes: "Creates locators rooted at an iframe contentDocument/contentWindow.document or synthetic fixture root; independent iframe browsing contexts and iframe navigation are not implemented.",
   },
   {
     owner: "page",
     api: "getByText",
     status: "partial",
-    notes: "Text locator over Crater DOM direct text nodes with Playwright-style whitespace normalization.",
+    notes: "Text locator over Crater DOM with Playwright-style whitespace normalization, exact/RegExp matching, and open shadow DOM traversal; closed shadow DOM is excluded.",
   },
   {
     owner: "page",
     api: "getByRole",
     status: "partial",
-    notes: "Matches explicit roles, common native implicit roles, and basic accessible names; full ARIA role inference is not implemented.",
+    notes: "Matches explicit roles, common native implicit roles, basic accessible names, default hidden filtering, exact/includeHidden/disabled options, and open shadow DOM traversal; full ARIA role inference and slot-based accessible names are not implemented.",
   },
   {
     owner: "page",
     api: "getByPlaceholder",
     status: "partial",
-    notes: "Matches placeholder attributes.",
+    notes: "Matches placeholder attributes with default substring, exact, or RegExp matching over open shadow DOM traversal.",
   },
   {
     owner: "page",
     api: "getByAltText",
     status: "partial",
-    notes: "Matches alt attributes.",
+    notes: "Matches alt attributes with default substring, exact, or RegExp matching over open shadow DOM traversal.",
   },
   {
     owner: "page",
     api: "getByTitle",
     status: "partial",
-    notes: "Matches title attributes.",
+    notes: "Matches title attributes with default substring, exact, or RegExp matching over open shadow DOM traversal.",
   },
   {
     owner: "page",
     api: "getByTestId",
     status: "supported",
-    notes: "Matches data-testid attributes.",
+    notes: "Matches data-testid attributes by exact string or RegExp over open shadow DOM traversal.",
   },
   {
     owner: "page",
     api: "getByLabel",
     status: "partial",
-    notes: "Matches simple label text and for/input relationships.",
+    notes: "Matches label text, for/nested controls, aria-label, and aria-labelledby with exact/RegExp support in the same tree scope, including open shadow DOM.",
   },
   {
     owner: "page",
@@ -179,7 +266,7 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     owner: "page",
     api: "fill",
     status: "supported",
-    notes: "Sets value and dispatches input/change events.",
+    notes: "Sets input/textarea value or contenteditable textContent and dispatches input/change events.",
   },
   {
     owner: "page",
@@ -191,7 +278,7 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     owner: "page",
     api: "press",
     status: "supported",
-    notes: "Sends one keyDown/keyUp pair.",
+    notes: "Sends a key press through BiDi input.performActions, including basic plus-separated modifier chords.",
   },
   {
     owner: "page",
@@ -227,7 +314,7 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     owner: "page",
     api: "selectOption",
     status: "partial",
-    notes: "Playwright-style alias that selects a single option by value.",
+    notes: "Playwright-style alias that selects option(s) by value, label fallback, or basic { value | label | index } descriptors.",
   },
   {
     owner: "page",
@@ -251,7 +338,7 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     owner: "page",
     api: "isVisible",
     status: "partial",
-    notes: "Checks hidden/display/visibility; full browser visibility semantics are not implemented.",
+    notes: "Checks hidden/display ancestor state and element visibility; full browser visibility semantics are not implemented.",
   },
   {
     owner: "page",
@@ -287,7 +374,7 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     owner: "page",
     api: "route",
     status: "partial",
-    notes: "Intercepts Crater runtime fetch() requests and supports fulfill/continue/abort decisions.",
+    notes: "Intercepts Crater runtime fetch(), document loads, and supported external classic script/subresource loads with fulfill/continue/abort decisions.",
   },
   {
     owner: "page",
@@ -305,25 +392,25 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     owner: "page",
     api: "waitForRequest",
     status: "partial",
-    notes: "Waits for Crater runtime fetch() requests observed by the adapter network hook.",
+    notes: "Waits for Crater runtime fetch(), document, external classic script, and best-effort style/image requests observed by the adapter network hook.",
   },
   {
     owner: "page",
     api: "waitForResponse",
     status: "partial",
-    notes: "Waits for Crater runtime fetch() responses observed by the adapter network hook.",
+    notes: "Waits for Crater runtime fetch(), document, and external classic script responses observed by the adapter network hook; style/image response details are best-effort.",
   },
   {
     owner: "page",
     api: "waitForURL",
     status: "partial",
-    notes: "Polls current URL against string, RegExp, or URL predicate matchers.",
+    notes: "Polls current URL against string, RegExp, or URL predicate matchers and consumes pending Crater location.assign/replace/reload navigation.",
   },
   {
     owner: "page",
     api: "waitForLoadState",
     status: "partial",
-    notes: "load/domcontentloaded are immediate after Crater load; networkidle uses Crater runtime helpers.",
+    notes: "Consumes pending Crater location navigation; load/domcontentloaded are immediate after Crater load; networkidle uses Crater runtime helpers.",
   },
   {
     owner: "page",
@@ -425,13 +512,43 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     owner: "locator",
     api: "getByText",
     status: "partial",
-    notes: "Child text locator.",
+    notes: "Child text locator with whitespace normalization, exact/RegExp matching, and open shadow DOM traversal.",
   },
   {
     owner: "locator",
     api: "getByRole",
     status: "partial",
-    notes: "Child role locator with the same partial role/name support as page.getByRole.",
+    notes: "Child role locator with the same partial role/name/hidden/exact/disabled/open-shadow support as page.getByRole.",
+  },
+  {
+    owner: "locator",
+    api: "getByPlaceholder",
+    status: "partial",
+    notes: "Child placeholder locator with default substring, exact, or RegExp matching over open shadow DOM traversal.",
+  },
+  {
+    owner: "locator",
+    api: "getByAltText",
+    status: "partial",
+    notes: "Child alt-text locator with default substring, exact, or RegExp matching over open shadow DOM traversal.",
+  },
+  {
+    owner: "locator",
+    api: "getByTitle",
+    status: "partial",
+    notes: "Child title locator with default substring, exact, or RegExp matching over open shadow DOM traversal.",
+  },
+  {
+    owner: "locator",
+    api: "getByTestId",
+    status: "supported",
+    notes: "Child test-id locator by exact data-testid string or RegExp over open shadow DOM traversal.",
+  },
+  {
+    owner: "locator",
+    api: "getByLabel",
+    status: "partial",
+    notes: "Child label locator with for/nested controls, aria-label, aria-labelledby, exact/RegExp matching, and open shadow DOM traversal.",
   },
   {
     owner: "locator",
@@ -455,25 +572,25 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     owner: "locator",
     api: "click",
     status: "supported",
-    notes: "Calls element.click() in the Crater runtime.",
+    notes: "Waits for attached/visible/enabled/stable target state, then calls element.click() in the Crater runtime.",
   },
   {
     owner: "locator",
     api: "hover",
     status: "partial",
-    notes: "Dispatches pointerenter/mouseover events in the Crater runtime.",
+    notes: "Waits for attached/visible/enabled/stable target state, then dispatches pointerenter/mouseover events in the Crater runtime.",
   },
   {
     owner: "locator",
     api: "focus",
     status: "partial",
-    notes: "Focuses the element when available and dispatches focus/focusin events.",
+    notes: "Waits for attached/visible/enabled/stable target state, then focuses the element when available and dispatches focus/focusin events.",
   },
   {
     owner: "locator",
     api: "fill",
     status: "supported",
-    notes: "Sets value and dispatches input/change events.",
+    notes: "Waits for attached/visible/enabled/stable target state, then sets input/textarea value or contenteditable textContent and dispatches input/change events.",
   },
   {
     owner: "locator",
@@ -485,49 +602,49 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     owner: "locator",
     api: "type",
     status: "partial",
-    notes: "Appends text and dispatches input events; full keyboard semantics are not implemented.",
+    notes: "Focuses the target and uses the BiDi keyboard pipeline for input/textarea selection, beforeinput, and input events; contenteditable typing is textContent-based and narrower than browser editing.",
   },
   {
     owner: "locator",
     api: "press",
     status: "partial",
-    notes: "Dispatches keydown/keyup and applies simple text input edits.",
+    notes: "Focuses the target and sends a key press through BiDi input.performActions, including basic plus-separated modifier chords.",
   },
   {
     owner: "locator",
     api: "dispatchEvent",
     status: "partial",
-    notes: "Dispatches Event or CustomEvent with serializable init data.",
+    notes: "Dispatches Event or CustomEvent with serializable init data; composition and input event shapes are covered for synthetic IME-style test flows.",
   },
   {
     owner: "locator",
     api: "check",
     status: "supported",
-    notes: "Sets checkbox/radio checked state and dispatches input/change events.",
+    notes: "Waits for attached/visible/enabled/stable target state, then sets checkbox/radio checked state and dispatches input/change events.",
   },
   {
     owner: "locator",
     api: "uncheck",
     status: "supported",
-    notes: "Clears checkbox checked state and dispatches input/change events.",
+    notes: "Waits for attached/visible/enabled/stable target state, then clears checkbox checked state and dispatches input/change events.",
   },
   {
     owner: "locator",
     api: "selectOption",
     status: "partial",
-    notes: "Selects a single option by value and dispatches input/change events.",
+    notes: "Waits for attached/visible/enabled/stable target state, then selects option(s) by value, label fallback, or basic descriptors and dispatches input/change events.",
   },
   {
     owner: "locator",
     api: "evaluate",
     status: "partial",
-    notes: "Evaluates a serializable function against the first matching element, with optional JSON-serializable arg support.",
+    notes: "Evaluates a serializable function against the first matching element and unwraps serializable BiDi values.",
   },
   {
     owner: "locator",
     api: "evaluateAll",
     status: "partial",
-    notes: "Evaluates a serializable function against all matching elements, with optional JSON-serializable arg support.",
+    notes: "Evaluates a serializable function against all matching elements and unwraps serializable BiDi values.",
   },
   {
     owner: "locator",
@@ -563,7 +680,7 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     owner: "locator",
     api: "isVisible",
     status: "partial",
-    notes: "Checks hidden/display/visibility.",
+    notes: "Checks hidden/display ancestor state and element visibility.",
   },
   {
     owner: "locator",
@@ -581,7 +698,7 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     owner: "locator",
     api: "isDisabled",
     status: "partial",
-    notes: "Checks disabled property or attribute.",
+    notes: "Checks disabled property, disabled attribute fallback, and aria-disabled=true.",
   },
   {
     owner: "locator",
@@ -613,7 +730,12 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     status: "supported",
     notes: "Returns match count.",
   },
-] as const satisfies readonly CraterPlaywrightApiEntry[];
+] as const satisfies readonly CraterPlaywrightApiSourceEntry[];
+
+export const CRATER_PLAYWRIGHT_API_SUPPORT = CRATER_PLAYWRIGHT_API_SUPPORT_SOURCE.map((entry) => ({
+  implementation: "implemented" as const,
+  ...entry,
+})) satisfies readonly CraterPlaywrightApiEntry[];
 
 export function craterPlaywrightApisFor(owner: CraterPlaywrightApiOwner) {
   return CRATER_PLAYWRIGHT_API_SUPPORT.filter((entry) => entry.owner === owner);

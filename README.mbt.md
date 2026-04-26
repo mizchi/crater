@@ -119,7 +119,14 @@ CRATER_TEXT_MODULE=/abs/path/to/text-module.js \
 CRATER_TEXT_FONT_PATH=/abs/path/to/font.ttf \
 npx tsx scripts/wpt-runner.ts css-overflow
 
-# Image module (resolveImageIntrinsicSize(src) -> {width,height} or [w,h])
+# Image module patterns:
+# - module itself as function, or resolveImageIntrinsicSize(src) / getImageSize(src) / sizeOf(src)
+# - dimensions/getDimensions/metadata/identify/probe/readHeader/imageInfo style functions
+# - image-size style functions that accept src, resolved local path, Uint8Array, or Buffer
+# - nested namespace exports such as default.image.getImageSize or default.metadata.identify
+# - result shapes: {width,height}, [width,height], {dimensions:{width,height}}, {columns,rows}, {shape:[height,width,...]}
+# - mizchi/image-style decode_image_stream(bytes) / decode_png(bytes)
+# - synchronous callback providers are supported; Promise/stream-only providers are not yet supported
 CRATER_IMAGE_MODULE=/abs/path/to/image-module.js \
 npx tsx scripts/wpt-runner.ts css-contain
 
