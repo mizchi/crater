@@ -118,15 +118,18 @@ type CraterNetworkResponsePayload = {
 type CraterNetworkEventPayload =
   | {
     type: "request";
+    timestamp: number;
     request: CraterNetworkRequestPayload;
   }
   | {
     type: "response";
+    timestamp: number;
     request: CraterNetworkRequestPayload;
     response: CraterNetworkResponsePayload;
   }
   | {
     type: "requestfailed";
+    timestamp: number;
     request: CraterNetworkRequestPayload;
     errorText: string;
   };
@@ -1133,8 +1136,9 @@ export class CraterBidiPage {
     matcher: CraterRequestMatcher,
     options: CraterWaitForNetworkOptions = {},
   ): Promise<CraterRequest> {
+    const startedAt = Date.now();
     await this.installNetworkHooks();
-    const startIndex = await this.networkEventCount();
+    const startIndex = Math.max(0, await this.networkEventCount() - 20);
     const timeout = this.timeoutOrDefault(options.timeout, 3000);
     const polling = options.polling ?? 30;
     const start = Date.now();
@@ -1142,6 +1146,7 @@ export class CraterBidiPage {
       const events = await this.networkEventsSince(startIndex);
       for (const event of events) {
         if (event.type !== "request") continue;
+        if (event.timestamp < startedAt) continue;
         const request = new CraterRequest(event.request);
         if (await this.requestMatches(request, matcher)) {
           return request;
@@ -1156,8 +1161,9 @@ export class CraterBidiPage {
     matcher: CraterResponseMatcher,
     options: CraterWaitForNetworkOptions = {},
   ): Promise<CraterResponse> {
+    const startedAt = Date.now();
     await this.installNetworkHooks();
-    const startIndex = await this.networkEventCount();
+    const startIndex = Math.max(0, await this.networkEventCount() - 20);
     const timeout = this.timeoutOrDefault(options.timeout, 3000);
     const polling = options.polling ?? 30;
     const start = Date.now();
@@ -1165,6 +1171,7 @@ export class CraterBidiPage {
       const events = await this.networkEventsSince(startIndex);
       for (const event of events) {
         if (event.type !== "response") continue;
+        if (event.timestamp < startedAt) continue;
         const response = new CraterResponse(event.response);
         if (await this.responseMatches(response, matcher)) {
           return response;
@@ -1794,11 +1801,12 @@ export class CraterBidiPage {
         };
 
         const emitRequest = (request) => {
-          state.events.push({ type: "request", request });
+          state.events.push({ type: "request", timestamp: Date.now(), request });
         };
         const emitResponse = (request, response, body) => {
           state.events.push({
             type: "response",
+            timestamp: Date.now(),
             request,
             response: {
               url: response && response.url ? String(response.url) : request.url,
@@ -1813,6 +1821,7 @@ export class CraterBidiPage {
         const emitFailure = (request, error) => {
           state.events.push({
             type: "requestfailed",
+            timestamp: Date.now(),
             request,
             errorText: error && error.message ? String(error.message) : String(error),
           });

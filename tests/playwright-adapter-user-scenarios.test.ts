@@ -332,4 +332,51 @@ test.describe("Crater Playwright adapter user scenarios", () => {
       "201:crater:true",
     );
   });
+
+  test("network routing: abort and unroute fixture requests", async () => {
+    const configMatcher = "/api/config";
+    await page.route(configMatcher, async (route) => {
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ mode: "stubbed" }),
+      });
+    });
+    await page.route("/api/fail", async (route) => {
+      await route.abort("blocked-by-test");
+    });
+
+    await page.setContentWithScripts(`
+      <html>
+        <body>
+          <output id="config">pending</output>
+          <output id="failure">pending</output>
+          <script>
+            fetch("/api/config")
+              .then((response) => response.json())
+              .then((data) => {
+                document.getElementById("config").textContent = data.mode;
+              });
+            fetch("/api/fail")
+              .then(() => {
+                document.getElementById("failure").textContent = "unexpected";
+              })
+              .catch((error) => {
+                document.getElementById("failure").textContent = "blocked:" + error.message;
+              });
+          </script>
+        </body>
+      </html>
+    `);
+
+    await page.waitForText("#config", "stubbed");
+    await page.waitForText("#failure", "blocked:blocked-by-test");
+
+    await page.unroute(configMatcher);
+    const requestPromise = page.waitForRequest("/api/config?round=2", { timeout: 500 });
+    await page.evaluate(() => {
+      void fetch("/api/config?round=2").catch(() => undefined);
+    });
+    const request = await requestPromise;
+    expect(request.url()).toContain("/api/config?round=2");
+  });
 });
