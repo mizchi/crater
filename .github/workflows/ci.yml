@@ -545,6 +545,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Restore Playwright Chromium browser cache
+        id: playwright_bidi_playwright_cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}
+
+      - name: Install Playwright Chromium browser
+        if: steps.playwright_bidi_playwright_cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Update MoonBit dependencies
         run: |
           moon update
