@@ -131,13 +131,13 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     owner: "page",
     api: "getByText",
     status: "partial",
-    notes: "Text locator over Crater DOM direct text nodes.",
+    notes: "Text locator over Crater DOM direct text nodes with Playwright-style whitespace normalization.",
   },
   {
     owner: "page",
     api: "getByRole",
     status: "partial",
-    notes: "Matches explicit role attributes only; full ARIA role inference is not implemented.",
+    notes: "Matches explicit roles, common native implicit roles, and basic accessible names; full ARIA role inference is not implemented.",
   },
   {
     owner: "page",
@@ -419,7 +419,7 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     owner: "locator",
     api: "filter",
     status: "partial",
-    notes: "Supports hasText/hasNotText filters.",
+    notes: "Supports hasText/hasNotText filters with Playwright-style whitespace normalization.",
   },
   {
     owner: "locator",
@@ -431,7 +431,7 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     owner: "locator",
     api: "getByRole",
     status: "partial",
-    notes: "Child explicit-role locator.",
+    notes: "Child role locator with the same partial role/name support as page.getByRole.",
   },
   {
     owner: "locator",

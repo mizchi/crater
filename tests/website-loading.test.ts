@@ -437,11 +437,7 @@ test.describe("Website Loading Tests", () => {
     const cardBody = await page.locator(".card-body").textContent();
     expect(cardBody).toBe("Card content goes here");
 
-    // Use evaluate for descendant selector since Mock DOM doesn't support it directly
-    const buttonText = await page.evaluate<string>(`
-      document.querySelector('.card-footer').querySelector('button').textContent
-    `);
-    expect(buttonText).toBe("Action");
+    await expect(page.locator(".card-footer button").textContent()).resolves.toBe("Action");
   });
 
   test("chained locators work correctly", async () => {

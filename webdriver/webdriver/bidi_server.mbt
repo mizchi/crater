@@ -1201,6 +1201,26 @@ extern "js" fn js_evaluate_expression(
   #|           const idx = this._parent._children.indexOf(this);
   #|           return this._parent._children[idx - 1] || null;
   #|         },
+  #|         get nextElementSibling() {
+  #|           let sibling = this.nextSibling;
+  #|           while (sibling && sibling.nodeType !== 1) sibling = sibling.nextSibling;
+  #|           return sibling || null;
+  #|         },
+  #|         get previousElementSibling() {
+  #|           let sibling = this.previousSibling;
+  #|           while (sibling && sibling.nodeType !== 1) sibling = sibling.previousSibling;
+  #|           return sibling || null;
+  #|         },
+  #|         matches(sel) { return matchesSelector(this, String(sel)); },
+  #|         webkitMatchesSelector(sel) { return this.matches(sel); },
+  #|         closest(sel) {
+  #|           let node = this;
+  #|           while (node) {
+  #|             if (node.nodeType === 1 && matchesSelector(node, String(sel))) return node;
+  #|             node = node._parent || node.parentElement || node.parentNode || null;
+  #|           }
+  #|           return null;
+  #|         },
   #|         get textContent() {
   #|           if (this.nodeType === 3) return this._textContent;
   #|           return this._children.map(c => c.textContent).join('');
@@ -1886,8 +1906,8 @@ extern "js" fn js_evaluate_expression(
   #|       return parsed;
   #|     };
   #|
-  #|     // Optimized selector matching using cached parsed selector
-  #|     const matchesSelector = (el, sel) => {
+  #|     // Optimized simple selector matching using cached parsed selector
+  #|     const matchesSimpleSelector = (el, sel) => {
   #|       const p = parseSelector(sel);
   #|       const attrs = el._attrs;
   #|       switch (p.type) {
@@ -1919,6 +1939,175 @@ extern "js" fn js_evaluate_expression(
   #|         }
   #|         case 6: return el.tagName === p.tag;
   #|         case 7: return el.tagName === p.tag && attrs.id === p.id;
+  #|       }
+  #|       return false;
+  #|     };
+  #|
+  #|     const splitSelectorGroups = (sel) => {
+  #|       const groups = [];
+  #|       let buf = "";
+  #|       let inAttr = false;
+  #|       let quote = null;
+  #|       for (let i = 0; i < sel.length; i++) {
+  #|         const ch = sel[i];
+  #|         if (quote) {
+  #|           buf += ch;
+  #|           if (ch === quote) quote = null;
+  #|           continue;
+  #|         }
+  #|         if (ch === "\"" || ch === "'") {
+  #|           quote = ch;
+  #|           buf += ch;
+  #|           continue;
+  #|         }
+  #|         if (ch === "[") inAttr = true;
+  #|         if (ch === "]") inAttr = false;
+  #|         if (!inAttr && ch === ",") {
+  #|           const group = buf.trim();
+  #|           if (group) groups.push(group);
+  #|           buf = "";
+  #|           continue;
+  #|         }
+  #|         buf += ch;
+  #|       }
+  #|       const tail = buf.trim();
+  #|       if (tail) groups.push(tail);
+  #|       return groups;
+  #|     };
+  #|
+  #|     const hasSelectorCombinator = (sel) => {
+  #|       let inAttr = false;
+  #|       let quote = null;
+  #|       for (let i = 0; i < sel.length; i++) {
+  #|         const ch = sel[i];
+  #|         if (quote) {
+  #|           if (ch === quote) quote = null;
+  #|           continue;
+  #|         }
+  #|         if (ch === "\"" || ch === "'") {
+  #|           quote = ch;
+  #|           continue;
+  #|         }
+  #|         if (ch === "[") inAttr = true;
+  #|         if (ch === "]") inAttr = false;
+  #|         if (!inAttr && (ch === ">" || ch === "+" || ch === "~" || /\s/.test(ch))) return true;
+  #|       }
+  #|       return false;
+  #|     };
+  #|
+  #|     const tokenizeSelector = (sel) => {
+  #|       const tokens = [];
+  #|       let buf = "";
+  #|       let combinator = null;
+  #|       let inAttr = false;
+  #|       let quote = null;
+  #|       const push = () => {
+  #|         const selector = buf.trim();
+  #|         if (selector) {
+  #|           tokens.push({ selector, combinator });
+  #|           combinator = null;
+  #|         }
+  #|         buf = "";
+  #|       };
+  #|       for (let i = 0; i < sel.length; i++) {
+  #|         const ch = sel[i];
+  #|         if (quote) {
+  #|           buf += ch;
+  #|           if (ch === quote) quote = null;
+  #|           continue;
+  #|         }
+  #|         if (ch === "\"" || ch === "'") {
+  #|           quote = ch;
+  #|           buf += ch;
+  #|           continue;
+  #|         }
+  #|         if (ch === "[") inAttr = true;
+  #|         if (ch === "]") inAttr = false;
+  #|         if (!inAttr && (ch === ">" || ch === "+" || ch === "~")) {
+  #|           push();
+  #|           combinator = ch;
+  #|           continue;
+  #|         }
+  #|         if (!inAttr && /\s/.test(ch)) {
+  #|           push();
+  #|           if (!combinator) combinator = " ";
+  #|           while (i + 1 < sel.length && /\s/.test(sel[i + 1])) i++;
+  #|           continue;
+  #|         }
+  #|         buf += ch;
+  #|       }
+  #|       push();
+  #|       return tokens;
+  #|     };
+  #|
+  #|     const previousElementSiblingOf = (node) => {
+  #|       let sibling = node ? (node.previousElementSibling || node.previousSibling || null) : null;
+  #|       while (sibling && sibling.nodeType !== 1) sibling = sibling.previousSibling || null;
+  #|       return sibling || null;
+  #|     };
+  #|
+  #|     const matchesSelectorGroup = (el, sel) => {
+  #|       if (!hasSelectorCombinator(sel)) return matchesSimpleSelector(el, sel);
+  #|       const tokens = tokenizeSelector(sel);
+  #|       if (tokens.length === 0) return false;
+  #|       let current = el;
+  #|       for (let i = tokens.length - 1; i >= 0; i--) {
+  #|         const token = tokens[i];
+  #|         if (!current || current.nodeType !== 1) return false;
+  #|         if (!matchesSimpleSelector(current, token.selector)) return false;
+  #|         if (i === 0) return true;
+  #|         const prevToken = tokens[i - 1];
+  #|         const combinator = token.combinator || " ";
+  #|         if (combinator === " ") {
+  #|           let parent = current._parent || current.parentElement || current.parentNode || null;
+  #|           let found = null;
+  #|           while (parent) {
+  #|             if (parent.nodeType === 1 && matchesSimpleSelector(parent, prevToken.selector)) {
+  #|               found = parent;
+  #|               break;
+  #|             }
+  #|             parent = parent._parent || parent.parentElement || parent.parentNode || null;
+  #|           }
+  #|           if (!found) return false;
+  #|           current = found;
+  #|           continue;
+  #|         }
+  #|         if (combinator === ">") {
+  #|           const parent = current._parent || current.parentElement || current.parentNode || null;
+  #|           if (!parent || parent.nodeType !== 1 || !matchesSimpleSelector(parent, prevToken.selector)) return false;
+  #|           current = parent;
+  #|           continue;
+  #|         }
+  #|         if (combinator === "+") {
+  #|           const previous = previousElementSiblingOf(current);
+  #|           if (!previous || !matchesSimpleSelector(previous, prevToken.selector)) return false;
+  #|           current = previous;
+  #|           continue;
+  #|         }
+  #|         if (combinator === "~") {
+  #|           let sibling = previousElementSiblingOf(current);
+  #|           let found = null;
+  #|           while (sibling) {
+  #|             if (matchesSimpleSelector(sibling, prevToken.selector)) {
+  #|               found = sibling;
+  #|               break;
+  #|             }
+  #|             sibling = previousElementSiblingOf(sibling);
+  #|           }
+  #|           if (!found) return false;
+  #|           current = found;
+  #|           continue;
+  #|         }
+  #|         return false;
+  #|       }
+  #|       return true;
+  #|     };
+  #|
+  #|     const matchesSelector = (el, sel) => {
+  #|       const groups = splitSelectorGroups(String(sel || "").trim());
+  #|       if (groups.length === 0) return false;
+  #|       for (let i = 0; i < groups.length; i++) {
+  #|         if (matchesSelectorGroup(el, groups[i])) return true;
   #|       }
   #|       return false;
   #|     };
@@ -3192,7 +3381,6 @@ extern "js" fn js_evaluate_expression(
   #|
   #|           // Parse children
   #|           while (i < len) {
-  #|             skipWhitespace();
   #|             if (i >= len) break;
   #|
   #|             // Check for closing tag

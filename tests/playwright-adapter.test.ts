@@ -295,6 +295,46 @@ test.describe("Playwright Adapter Tests", () => {
     expect(firstItem).toBe("Item 1");
   });
 
+  test("CSS descendant and sibling selectors match Chromium", async () => {
+    await page.setContent(`
+      <html>
+        <body>
+          <section id="panel">
+            <h2>Panel</h2>
+            <ul id="items">
+              <li class="item">Alpha</li>
+              <li class="item featured">Beta</li>
+              <li class="item">Gamma</li>
+            </ul>
+          </section>
+        </body>
+      </html>
+    `);
+
+    await expect(
+      page.evaluate(() => {
+        const first = document.querySelector("li");
+        return [
+          document.querySelectorAll("li").length,
+          document.querySelectorAll("#items li").length,
+          first ? first.matches("#items li") : false,
+          first?.parentElement?.matches("#items") ?? false,
+        ].join("|");
+      }),
+    ).resolves.toBe("3|3|true|true");
+
+    await expect(page.locator("#items li").count()).resolves.toBe(3);
+    await expect(
+      page.locator("#panel > ul > li.featured").textContent(),
+    ).resolves.toBe("Beta");
+    await expect(
+      page.locator("#items li.featured + li").textContent(),
+    ).resolves.toBe("Gamma");
+    await expect(
+      page.evaluate(() => document.querySelectorAll("#items li").length),
+    ).resolves.toBe(3);
+  });
+
   test("locator nth element", async () => {
     await page.setContent(`
       <html>
@@ -443,6 +483,44 @@ test.describe("Playwright Adapter Tests", () => {
     expect(paraText).toBe("Hello World");
   });
 
+  test("getByText normalizes whitespace like Chromium", async () => {
+    await page.setContent(`
+      <html>
+        <body>
+          <p>Checkout
+            complete</p>
+          <button>Save
+            draft</button>
+        </body>
+      </html>
+    `);
+
+    await expect(
+      page.getByText("Checkout complete", { exact: true }).textContent(),
+    ).resolves.toContain("Checkout");
+    await expect(
+      page.getByText("Save draft").textContent(),
+    ).resolves.toContain("Save");
+  });
+
+  test("getByText matches nested composed text like Chromium", async () => {
+    await page.setContent(`
+      <html>
+        <body>
+          <button id="save"><span>Save</span> draft</button>
+          <div id="status"><strong>Build</strong> passed</div>
+        </body>
+      </html>
+    `);
+
+    await expect(
+      page.getByText("Save draft").getAttribute("id"),
+    ).resolves.toBe("save");
+    await expect(
+      page.getByText("Build passed", { exact: true }).getAttribute("id"),
+    ).resolves.toBe("status");
+  });
+
   test("getByRole locator", async () => {
     await page.setContent(`
       <html>
@@ -461,6 +539,86 @@ test.describe("Playwright Adapter Tests", () => {
     const submitBtn = page.getByRole("button", { name: "Submit" });
     const submitText = await submitBtn.textContent();
     expect(submitText).toBe("Submit");
+  });
+
+  test("getByRole matches native implicit roles like Chromium", async () => {
+    await page.setContent(`
+      <html>
+        <body>
+          <button>Save</button>
+          <a href="/docs">Docs</a>
+        </body>
+      </html>
+    `);
+
+    await expect(
+      page.getByRole("button", { name: "Save" }).textContent(),
+    ).resolves.toBe("Save");
+    await expect(
+      page.getByRole("link", { name: "Docs" }).getAttribute("href"),
+    ).resolves.toBe("/docs");
+  });
+
+  test("getByRole matches accessible names like Chromium", async () => {
+    await page.setContent(`
+      <html>
+        <body>
+          <button aria-label="Save"></button>
+          <span id="docs-label">Docs</span>
+          <a href="/docs" aria-labelledby="docs-label"></a>
+        </body>
+      </html>
+    `);
+
+    await expect(
+      page.getByRole("button", { name: "Save" }).getAttribute("aria-label"),
+    ).resolves.toBe("Save");
+    await expect(
+      page.getByRole("link", { name: "Docs" }).getAttribute("href"),
+    ).resolves.toBe("/docs");
+  });
+
+  test("getByRole matches common form and content implicit roles like Chromium", async () => {
+    await page.setContent(`
+      <html>
+        <body>
+          <h1>Settings</h1>
+          <label for="name">Name</label>
+          <input id="name" type="text" value="Ada" />
+          <label for="enabled">Enabled</label>
+          <input id="enabled" type="checkbox" />
+          <label for="theme">Theme</label>
+          <select id="theme"><option>Light</option></select>
+          <label for="bio">Bio</label>
+          <textarea id="bio">Hello</textarea>
+          <img src="/logo.png" alt="Logo" />
+          <ul><li>First</li></ul>
+        </body>
+      </html>
+    `);
+
+    await expect(
+      page.getByRole("heading", { name: "Settings" }).textContent(),
+    ).resolves.toBe("Settings");
+    await expect(
+      page.getByRole("textbox", { name: "Name" }).getAttribute("id"),
+    ).resolves.toBe("name");
+    await expect(
+      page.getByRole("checkbox", { name: "Enabled" }).getAttribute("id"),
+    ).resolves.toBe("enabled");
+    await expect(
+      page.getByRole("combobox", { name: "Theme" }).getAttribute("id"),
+    ).resolves.toBe("theme");
+    await expect(
+      page.getByRole("textbox", { name: "Bio" }).getAttribute("id"),
+    ).resolves.toBe("bio");
+    await expect(
+      page.getByRole("img", { name: "Logo" }).getAttribute("src"),
+    ).resolves.toBe("/logo.png");
+    await expect(page.getByRole("list").count()).resolves.toBe(1);
+    await expect(
+      page.getByRole("listitem", { name: "First" }).textContent(),
+    ).resolves.toBe("First");
   });
 
   test("getByPlaceholder locator", async () => {
@@ -518,6 +676,28 @@ test.describe("Playwright Adapter Tests", () => {
     expect(usernameValue).toBe("john_doe");
   });
 
+  test("getByLabel normalizes label whitespace like Chromium", async () => {
+    await page.setContent(`
+      <html>
+        <body>
+          <label for="full-name">Full
+            name</label>
+          <input type="text" id="full-name" />
+          <label>
+            Secret
+            token
+            <input type="password" id="token" />
+          </label>
+        </body>
+      </html>
+    `);
+
+    await page.getByLabel("Full name").fill("Ada");
+    await expect(page.locator("#full-name").inputValue()).resolves.toBe("Ada");
+    await page.getByLabel("Secret token").fill("rosebud");
+    await expect(page.locator("#token").inputValue()).resolves.toBe("rosebud");
+  });
+
   test("getByAltText locator", async () => {
     await page.setContent(`
       <html>
@@ -566,5 +746,24 @@ test.describe("Playwright Adapter Tests", () => {
     const nonSubmitBtns = page.locator("button").filter({ hasNotText: "Submit" });
     const count = await nonSubmitBtns.count();
     expect(count).toBe(2);
+  });
+
+  test("locator text filters normalize whitespace like Chromium", async () => {
+    await page.setContent(`
+      <html>
+        <body>
+          <button>Submit
+            order</button>
+          <button>Cancel</button>
+        </body>
+      </html>
+    `);
+
+    await expect(
+      page.locator("button").filter({ hasText: "Submit order" }).count(),
+    ).resolves.toBe(1);
+    await expect(
+      page.locator("button").filter({ hasNotText: "Submit order" }).count(),
+    ).resolves.toBe(1);
   });
 });

@@ -164,8 +164,8 @@ type ParsedLocatorSelector = {
   exact?: boolean;
 };
 
-type TextFilter = {
-  kind: "hasText" | "hasNotText";
+type LocatorFilter = {
+  kind: "hasText" | "hasNotText" | "hasAccessibleName";
   value: string;
   flags?: string;
   regexp: boolean;
@@ -186,6 +186,8 @@ const SPECIAL_KEYS: Record<string, string> = {
 const keyValue = (key: string): string => SPECIAL_KEYS[key] ?? key;
 
 const jsString = (value: string): string => JSON.stringify(value);
+
+const normalizeLocatorText = (value: string): string => value.replace(/\s+/g, " ").trim();
 
 const jsValue = (value: unknown): string => {
   const serialized = JSON.stringify(value);
@@ -243,30 +245,58 @@ function buildSelectorExpr(
 ): string {
   const value = parsed.value;
   const quoted = jsString(value);
+  const normalizedQuoted = jsString(normalizeLocatorText(value));
   const allElements = allElementsExpr(rootExpr);
 
   switch (parsed.type) {
     case "text": {
       const predicate = parsed.exact
         ? `(el) => {
-            const children = el._children || el.childNodes || [];
-            return Array.from(children).some((node) => node.nodeType === 3 && node.textContent && node.textContent.trim() === ${quoted});
+            const normalize = (text) => String(text || "").replace(/\\s+/g, " ").trim();
+            const matches = (node) => normalize(node.textContent || "") === ${normalizedQuoted};
+            if (!matches(el)) return false;
+            const children = Array.from(el._children || el.children || el.childNodes || []);
+            return !children.some((node) => node.nodeType === 1 && matches(node));
           }`
         : `(el) => {
-            const children = el._children || el.childNodes || [];
-            const directText = Array.from(children)
-              .filter((node) => node.nodeType === 3)
-              .map((node) => node.textContent || "")
-              .join("");
-            return directText.includes(${quoted});
+            const normalize = (text) => String(text || "").replace(/\\s+/g, " ").trim();
+            const matches = (node) => normalize(node.textContent || "").includes(${normalizedQuoted});
+            if (!matches(el)) return false;
+            const children = Array.from(el._children || el.children || el.childNodes || []);
+            return !children.some((node) => node.nodeType === 1 && matches(node));
           }`;
       const all = `${allElements}.filter(${predicate})`;
       return method === "first" ? `(${all})[0] || null` : all;
     }
     case "role": {
       const all = `${allElements}.filter((el) => {
-        const role = typeof el.getAttribute === "function" ? el.getAttribute("role") : (el._attrs && el._attrs.role);
-        return role === ${quoted};
+        const attr = (name) => {
+          const value = typeof el.getAttribute === "function" ? el.getAttribute(name) : (el._attrs && el._attrs[name]);
+          return value == null ? "" : String(value);
+        };
+        const explicitRole = attr("role").trim();
+        if (explicitRole !== "") return explicitRole === ${quoted};
+        const tag = String(el.localName || el.tagName || el.nodeName || "").toLowerCase();
+        if (/^h[1-6]$/.test(tag)) return ${quoted} === "heading";
+        if (tag === "button") return ${quoted} === "button";
+        if (tag === "a" && attr("href") !== "") return ${quoted} === "link";
+        if (tag === "textarea") return ${quoted} === "textbox";
+        if (tag === "select") return ${quoted} === "combobox";
+        if (tag === "img") return ${quoted} === "img";
+        if (tag === "ul" || tag === "ol") return ${quoted} === "list";
+        if (tag === "li") return ${quoted} === "listitem";
+        if (tag === "input") {
+          const type = attr("type").trim().toLowerCase() || "text";
+          if (type === "hidden") return false;
+          if (type === "button" || type === "submit" || type === "reset") return ${quoted} === "button";
+          if (type === "checkbox") return ${quoted} === "checkbox";
+          if (type === "radio") return ${quoted} === "radio";
+          if (type === "search") return ${quoted} === "searchbox";
+          if (type === "range") return ${quoted} === "slider";
+          if (type === "number") return ${quoted} === "spinbutton";
+          return ${quoted} === "textbox";
+        }
+        return false;
       })`;
       return method === "first" ? `(${all})[0] || null` : all;
     }
@@ -284,9 +314,10 @@ function buildSelectorExpr(
     }
     case "label": {
       const all = `(() => {
+        const normalize = (text) => String(text || "").replace(/\\s+/g, " ").trim();
         const labels = ${allElements}.filter((el) => String(el.tagName || el.nodeName || "").toLowerCase() === "label");
         return labels.map((label) => {
-          if (!label.textContent || !label.textContent.includes(${quoted})) return null;
+          if (!normalize(label.textContent).includes(${normalizedQuoted})) return null;
           const forId = typeof label.getAttribute === "function" ? label.getAttribute("for") : (label._attrs && label._attrs.for);
           if (forId) return document.getElementById(forId);
           return typeof label.querySelector === "function" ? label.querySelector("input, select, textarea") : null;
@@ -302,19 +333,131 @@ function buildSelectorExpr(
   }
 }
 
-function normalizeTextFilter(kind: TextFilter["kind"], value: string | RegExp): TextFilter {
+function normalizeLocatorFilter(kind: LocatorFilter["kind"], value: string | RegExp): LocatorFilter {
   if (value instanceof RegExp) {
     return { kind, value: value.source, flags: value.flags, regexp: true };
   }
   return { kind, value: String(value), regexp: false };
 }
 
-function filterPredicateExpr(filter: TextFilter): string {
-  const textExpr = `String(el.textContent || "")`;
+function accessibleNameExpr(nodeExpr: string): string {
+  return `(() => {
+    const node = ${nodeExpr};
+    if (!node) return "";
+    const attr = (target, name) => {
+      let value = null;
+      try {
+        if (target && typeof target.getAttribute === "function") value = target.getAttribute(name);
+      } catch (_e) {}
+      if ((value === null || value === undefined) && target && target._attrs) value = target._attrs[name];
+      return value == null ? "" : String(value);
+    };
+    const normalize = (text) => String(text ?? "").replace(/\\s+/g, " ").trim();
+    const findById = (doc, id) => {
+      if (!doc || !id) return null;
+      let found = null;
+      try {
+        if (typeof doc.getElementById === "function") found = doc.getElementById(id);
+      } catch (_e) {}
+      if (found) return found;
+      const stack = [doc.documentElement || doc.body || doc];
+      while (stack.length > 0) {
+        const current = stack.pop();
+        if (!current) continue;
+        if (current.nodeType === 1 && attr(current, "id") === id) return current;
+        const children = Array.from(current._children || current.children || current.childNodes || []);
+        for (let i = children.length - 1; i >= 0; i--) stack.push(children[i]);
+      }
+      return null;
+    };
+    const labelledBy = attr(node, "aria-labelledby").trim();
+    if (labelledBy !== "") {
+      const doc = node.ownerDocument || globalThis.document;
+      const parts = [];
+      for (const id of labelledBy.split(/\\s+/)) {
+        if (!id) continue;
+        const ref = findById(doc, id);
+        if (ref) {
+          const text = normalize((ref.innerText !== undefined && ref.innerText !== null && String(ref.innerText) !== "") ? ref.innerText : (ref.textContent || ""));
+          if (text !== "") parts.push(text);
+        }
+      }
+      if (parts.length > 0) return parts.join(" ").trim();
+    }
+    const ariaLabel = attr(node, "aria-label").trim();
+    if (ariaLabel !== "") return ariaLabel;
+    const tag = String(node.localName || node.tagName || node.nodeName || "").toLowerCase();
+    if (tag === "img") {
+      const alt = attr(node, "alt").trim();
+      if (alt !== "") return alt;
+    }
+    const textFrom = (target) => normalize((target && target.innerText !== undefined && target.innerText !== null && String(target.innerText) !== "") ? target.innerText : ((target && target.textContent) || ""));
+    const labelsFor = (target) => {
+      const doc = target.ownerDocument || globalThis.document;
+      const id = attr(target, "id").trim();
+      const labels = [];
+      if (doc) {
+        try {
+          if (typeof doc.querySelectorAll === "function") {
+            labels.push(...Array.from(doc.querySelectorAll("label")));
+          }
+        } catch (_e) {}
+        if (labels.length === 0) {
+          const stack = [doc.documentElement || doc.body || doc];
+          while (stack.length > 0) {
+            const current = stack.pop();
+            if (!current) continue;
+            const currentTag = String(current.localName || current.tagName || current.nodeName || "").toLowerCase();
+            if (current.nodeType === 1 && currentTag === "label") labels.push(current);
+            const children = Array.from(current._children || current.children || current.childNodes || []);
+            for (let i = children.length - 1; i >= 0; i--) stack.push(children[i]);
+          }
+        }
+      }
+      const parts = [];
+      if (id !== "") {
+        for (const label of labels) {
+          if (attr(label, "for") === id) {
+            const text = textFrom(label);
+            if (text !== "") parts.push(text);
+          }
+        }
+      }
+      let parent = target._parent || target.parentElement || target.parentNode || null;
+      while (parent) {
+        const parentTag = String(parent.localName || parent.tagName || parent.nodeName || "").toLowerCase();
+        if (parent.nodeType === 1 && parentTag === "label") {
+          const text = textFrom(parent);
+          if (text !== "") parts.push(text);
+          break;
+        }
+        parent = parent._parent || parent.parentElement || parent.parentNode || null;
+      }
+      return parts.join(" ").trim();
+    };
+    if (tag === "input" || tag === "textarea" || tag === "select") {
+      const label = labelsFor(node);
+      if (label !== "") return label;
+      if (tag === "input") {
+        const type = attr(node, "type").trim().toLowerCase();
+        if (type === "button" || type === "submit" || type === "reset") {
+          const value = attr(node, "value").trim();
+          if (value !== "") return value;
+        }
+      }
+    }
+    return normalize((node.innerText !== undefined && node.innerText !== null && String(node.innerText) !== "") ? node.innerText : (node.textContent || ""));
+  })()`;
+}
+
+function filterPredicateExpr(filter: LocatorFilter): string {
+  const textExpr = filter.kind === "hasAccessibleName"
+    ? accessibleNameExpr("el")
+    : `String(el.textContent || "").replace(/\\s+/g, " ").trim()`;
   const testExpr = filter.regexp
     ? `new RegExp(${jsString(filter.value)}, ${jsString(filter.flags ?? "")}).test(${textExpr})`
-    : `${textExpr}.includes(${jsString(filter.value)})`;
-  return filter.kind === "hasText" ? testExpr : `!(${testExpr})`;
+    : `${textExpr}.includes(${jsString(normalizeLocatorText(filter.value))})`;
+  return filter.kind === "hasNotText" ? `!(${testExpr})` : testExpr;
 }
 
 export class CraterRequest {
@@ -444,7 +587,7 @@ function routeBodyToString(body: CraterRouteFulfillOptions["body"]): string {
 
 export class CraterLocator {
   private readonly parsed: ParsedLocatorSelector;
-  private readonly filters: TextFilter[];
+  private readonly filters: LocatorFilter[];
   private readonly rootExpression: string | null;
   private readonly index: number | "last" | null;
 
@@ -453,7 +596,7 @@ export class CraterLocator {
     protected selector: string,
     options: {
       rootExpression?: string | null;
-      filters?: TextFilter[];
+      filters?: LocatorFilter[];
       index?: number | "last" | null;
     } = {},
   ) {
@@ -466,14 +609,25 @@ export class CraterLocator {
   filter(options: { hasText?: string | RegExp; hasNotText?: string | RegExp }): CraterLocator {
     const filters = [...this.filters];
     if (options.hasText !== undefined) {
-      filters.push(normalizeTextFilter("hasText", options.hasText));
+      filters.push(normalizeLocatorFilter("hasText", options.hasText));
     }
     if (options.hasNotText !== undefined) {
-      filters.push(normalizeTextFilter("hasNotText", options.hasNotText));
+      filters.push(normalizeLocatorFilter("hasNotText", options.hasNotText));
     }
     return new CraterLocator(this.page, this.selector, {
       rootExpression: this.rootExpression,
       filters,
+      index: this.index,
+    });
+  }
+
+  filterAccessibleName(name: string | RegExp): CraterLocator {
+    return new CraterLocator(this.page, this.selector, {
+      rootExpression: this.rootExpression,
+      filters: [
+        ...this.filters,
+        normalizeLocatorFilter("hasAccessibleName", name),
+      ],
       index: this.index,
     });
   }
@@ -488,8 +642,12 @@ export class CraterLocator {
     return this.locator(options.exact ? `text=exact:${text}` : `text=${text}`);
   }
 
-  getByRole(role: string): CraterLocator {
-    return this.locator(`role=${role}`);
+  getByRole(role: string, options: { name?: string | RegExp } = {}): CraterLocator {
+    const locator = this.locator(`role=${role}`);
+    if (options.name !== undefined) {
+      return locator.filterAccessibleName(options.name);
+    }
+    return locator;
   }
 
   first(): CraterLocator {
@@ -1349,7 +1507,7 @@ export class CraterBidiPage {
   getByRole(role: string, options: { name?: string | RegExp } = {}): CraterLocator {
     const locator = this.locator(`role=${role}`);
     if (options.name !== undefined) {
-      return locator.filter({ hasText: options.name });
+      return locator.filterAccessibleName(options.name);
     }
     return locator;
   }
