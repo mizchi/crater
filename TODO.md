@@ -897,15 +897,19 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
 
 - 目的:
   - Crater を「軽量な Playwright 代替」として使える範囲を明文化する
-  - `webdriver/playwright/supported-apis.ts` を開発ゲートにして、互換性 status (`supported` / `partial` / `crater-extension`) と実装形態 (`implemented` / `api-mock`) を分けて追えるようにする
+  - `webdriver/playwright/supported-apis.ts` を開発ゲートにして、互換性 status (`supported` / `partial` / `crater-extension` / `unsupported`) と実装形態 (`implemented` / `api-mock` / `unsupported`) を分けて追えるようにする
   - 主要 API は Chromium parity test と Crater user scenario test の両方で固定する
 - 現状:
   - `pnpm test:playwright` -> `73 / 73 passed`
   - `pnpm test:website` -> `33 / 33 passed`
+  - `pnpm test:vitest` -> `334 / 334 passed`
+  - `pnpm test:node` -> `86 / 86 passed`
+  - `moon -C webdriver test -p mizchi/crater-webdriver-bidi/webdriver --target js` -> `347 / 347 passed`
   - `webdriver/playwright/supported-apis.ts`: total `121` (`supported=46`, `partial=59`, `crater-extension=12`, `unsupported=4`)
   - implementation 別: `implemented=116`, `api-mock=1`, `unsupported=4`
   - owner 別: `browser=4`, `context=4`, `page=73`, `locator=40`
-  - `scripts/playwright-adapter-support.test.ts` で Browser / Context / Page / Locator の source-level public method と support table / implementation 分類の drift を検出する
+  - `scripts/playwright-adapter-support.test.ts` -> `12 / 12 passed`
+  - support test で Browser / Context / Page / Locator の source-level public method と support table / implementation 分類の drift を検出する
 
 ### 現状 support matrix
 
@@ -961,7 +965,7 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
   - [x] Green: shadow DOM と composed tree を locator query に統合する
   - [x] Refactor: locator selector builder を role/text/css ごとに分割し、support table の `partial` 理由と対応させる
 
-- [ ] P5: input / form を Chromium parity で広げる
+- [x] P5: input / form を Chromium parity で広げる
   - [x] Red: Playwright upstream `selectors-get-by` / `selectors-text` 由来の getBy label/placeholder/alt/title/testid scenario を Chromium parity として追加する
   - [x] Green: text-like locator の newline / exact / RegExp と label `aria-label` / `aria-labelledby` を実装する
   - [x] Red: Playwright upstream `page-fill` / `page-select-option` / `page-check` 由来の input/textarea/contenteditable/select/checkbox/radio scenario を Chromium parity として追加する
@@ -980,7 +984,7 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
   - [x] Refactor: keyboard / form editable default action (`fill`, contenteditable `type`, `page.keyboard.insertText`) を DOM helper で共有する
   - [x] Refactor: pointer action 配列と DOM action helper を切り出し、`click` / `hover` / `check` / `selectOption` の default action を共有する
 
-- [ ] P6: Storage / frames / long-tail API の採用基準を決める
+- [x] P6: Storage / frames / long-tail API の採用基準を決める
   - [x] `storageState`, cookies, localStorage/sessionStorage helper の要否を user scenario から決める
     - `context.storageState()` は open page から visible cookies / localStorage を `{ cookies, origins }` 形で snapshot する
     - sessionStorage は Playwright `storageState()` 互換 surface に含めず、必要なら別 helper として検討する
@@ -996,11 +1000,11 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
 
 ### 完了条件
 
-- [ ] support table に `browser` / `context` / `page` / `locator` の public API がすべて載っている
-- [ ] table にない public method を CI の support test が検出する
-- [ ] `partial` entry には必ず「使える範囲」と「足りない範囲」が notes に書かれている
-- [ ] 新規 API は Red -> Green -> Refactor の順で `tests/playwright-adapter-chromium-parity.test.ts` または user scenario test に追加する
-- [ ] `pnpm test:playwright` / `pnpm test:website` / `pnpm test:vitest` / `pnpm test:node` / `moon -C webdriver test -p mizchi/crater-webdriver-bidi/webdriver --target js` を gate にする
+- [x] support table に `browser` / `context` / `page` / `locator` の public API と明示的な unsupported API が載っている
+- [x] table にない public method を CI の support test が検出する
+- [x] `partial` entry には必ず「使える範囲」と「足りない範囲」が notes に書かれている
+- [x] 新規 API / unsupported 分類は Red -> Green -> Refactor の順で Chromium parity test、user scenario test、または support contract test に追加する
+- [x] `pnpm test:playwright` / `pnpm test:website` / `pnpm test:vitest` / `pnpm test:node` / `moon -C webdriver test -p mizchi/crater-webdriver-bidi/webdriver --target js` を gate にする
 
 ### Browser shell 到達済み surface
 
