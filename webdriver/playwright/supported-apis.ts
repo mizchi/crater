@@ -7,11 +7,13 @@ export type CraterPlaywrightApiOwner =
 export type CraterPlaywrightApiStatus =
   | "supported"
   | "partial"
-  | "crater-extension";
+  | "crater-extension"
+  | "unsupported";
 
 export type CraterPlaywrightApiImplementation =
   | "implemented"
-  | "api-mock";
+  | "api-mock"
+  | "unsupported";
 
 export type CraterPlaywrightApiEntry = {
   owner: CraterPlaywrightApiOwner;
@@ -213,6 +215,27 @@ const CRATER_PLAYWRIGHT_API_SUPPORT_SOURCE = [
     status: "partial",
     implementation: "api-mock",
     notes: "Creates locators rooted at an iframe contentDocument/contentWindow.document or synthetic fixture root; independent iframe browsing contexts and iframe navigation are not implemented.",
+  },
+  {
+    owner: "page",
+    api: "on",
+    status: "unsupported",
+    implementation: "unsupported",
+    notes: "Playwright's EventEmitter-style page.on() API is not implemented; dialog/download/filechooser events are intentionally unsupported at the adapter layer for now.",
+  },
+  {
+    owner: "page",
+    api: "waitForEvent",
+    status: "unsupported",
+    implementation: "unsupported",
+    notes: "Playwright waitForEvent() is not implemented; dialog/download/filechooser flows should stay in WebDriver BiDi/WPT coverage until an adapter user scenario is defined.",
+  },
+  {
+    owner: "page",
+    api: "setInputFiles",
+    status: "unsupported",
+    implementation: "unsupported",
+    notes: "Playwright page.setInputFiles() is not implemented; WebDriver BiDi input.setFiles coverage exists, but there is no Playwright adapter wrapper yet.",
   },
   {
     owner: "page",
@@ -633,6 +656,13 @@ const CRATER_PLAYWRIGHT_API_SUPPORT_SOURCE = [
     api: "selectOption",
     status: "partial",
     notes: "Waits for attached/visible/enabled/stable target state, then selects option(s) by value, label fallback, or basic descriptors and dispatches input/change events.",
+  },
+  {
+    owner: "locator",
+    api: "setInputFiles",
+    status: "unsupported",
+    implementation: "unsupported",
+    notes: "Playwright locator.setInputFiles() is not implemented; file chooser and file input upload scenarios are not exposed through the adapter yet.",
   },
   {
     owner: "locator",

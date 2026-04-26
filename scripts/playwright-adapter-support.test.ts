@@ -168,9 +168,9 @@ function sourcePublicApiNames(className: string): string[] {
   return [...methods].sort();
 }
 
-function supportApisFor(owner: "browser" | "context" | "page" | "locator"): string[] {
+function publicApisFor(owner: "browser" | "context" | "page" | "locator"): string[] {
   return CRATER_PLAYWRIGHT_API_SUPPORT
-    .filter((entry) => entry.owner === owner)
+    .filter((entry) => entry.owner === owner && entry.status !== "unsupported")
     .map((entry) => entry.api)
     .sort();
 }
@@ -187,19 +187,19 @@ function supportEntryFor(owner: "browser" | "context" | "page" | "locator", api:
 
 describe("Crater Playwright adapter support table", () => {
   test("has a stable public browser API list", () => {
-    expect(supportApisFor("browser")).toEqual(expectedBrowserApis);
+    expect(publicApisFor("browser")).toEqual(expectedBrowserApis);
   });
 
   test("has a stable public context API list", () => {
-    expect(supportApisFor("context")).toEqual(expectedContextApis);
+    expect(publicApisFor("context")).toEqual(expectedContextApis);
   });
 
   test("has a stable public page API list", () => {
-    expect(supportApisFor("page")).toEqual(expectedPageApis);
+    expect(publicApisFor("page")).toEqual(expectedPageApis);
   });
 
   test("has a stable public locator API list", () => {
-    expect(supportApisFor("locator")).toEqual(expectedLocatorApis);
+    expect(publicApisFor("locator")).toEqual(expectedLocatorApis);
   });
 
   test("does not contain duplicate owner/api entries", () => {
@@ -211,18 +211,36 @@ describe("Crater Playwright adapter support table", () => {
     const implementations = new Set(
       CRATER_PLAYWRIGHT_API_SUPPORT.map((entry) => entry.implementation),
     );
-    expect([...implementations].sort()).toEqual(["api-mock", "implemented"]);
+    expect([...implementations].sort()).toEqual(["api-mock", "implemented", "unsupported"]);
 
     for (const entry of CRATER_PLAYWRIGHT_API_SUPPORT) {
-      expect(["api-mock", "implemented"]).toContain(entry.implementation);
+      expect(["api-mock", "implemented", "unsupported"]).toContain(entry.implementation);
       if (entry.implementation === "api-mock") {
         expect(entry.status).toBe("partial");
+      }
+      if (entry.implementation === "unsupported") {
+        expect(entry.status).toBe("unsupported");
       }
     }
 
     expect(supportEntryFor("page", "frameLocator").implementation).toBe("api-mock");
     expect(supportEntryFor("context", "storageState").implementation).toBe("implemented");
     expect(supportEntryFor("page", "keyboard").implementation).toBe("implemented");
+  });
+
+  test("explicitly lists unsupported long-tail Playwright event and file APIs", () => {
+    const unsupported = [
+      supportEntryFor("page", "on"),
+      supportEntryFor("page", "waitForEvent"),
+      supportEntryFor("page", "setInputFiles"),
+      supportEntryFor("locator", "setInputFiles"),
+    ];
+
+    for (const entry of unsupported) {
+      expect(entry.status).toBe("unsupported");
+      expect(entry.implementation).toBe("unsupported");
+      expect(entry.notes).toMatch(/not implemented|unsupported/i);
+    }
   });
 
   test("lists every source-level public method in the support table", () => {

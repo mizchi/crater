@@ -902,9 +902,9 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
 - 現状:
   - `pnpm test:playwright` -> `73 / 73 passed`
   - `pnpm test:website` -> `33 / 33 passed`
-  - `webdriver/playwright/supported-apis.ts`: total `117` (`supported=46`, `partial=59`, `crater-extension=12`)
-  - implementation 別: `implemented=116`, `api-mock=1`
-  - owner 別: `browser=4`, `context=4`, `page=70`, `locator=39`
+  - `webdriver/playwright/supported-apis.ts`: total `121` (`supported=46`, `partial=59`, `crater-extension=12`, `unsupported=4`)
+  - implementation 別: `implemented=116`, `api-mock=1`, `unsupported=4`
+  - owner 別: `browser=4`, `context=4`, `page=73`, `locator=40`
   - `scripts/playwright-adapter-support.test.ts` で Browser / Context / Page / Locator の source-level public method と support table / implementation 分類の drift を検出する
 
 ### 現状 support matrix
@@ -921,9 +921,9 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
 | Screenshot / render | partial + crater-extension | Crater screenshot / paint data / paint tree | Playwright screenshot options (`fullPage`, `clip`, `mask`, browser pixel semantics) |
 | Storage / session | partial | open page からの visible cookies / localStorage snapshot (`context.storageState()`) | storageState preload, httpOnly cookie metadata, cookies API, sessionStorage helper |
 | Frames | partial | `frameLocator(...).locator(...)` で `iframe.contentDocument` / synthetic fixture root 配下を操作できる | 独立 iframe browsing context、iframe navigation、Playwright `frame` API |
-| Dialog / download / file chooser | missing | WebDriver BiDi/WPT 側の一部 prompt/file fixture は存在 | Playwright adapter API と user scenario が未定義 |
+| Dialog / download / file chooser | unsupported | WebDriver BiDi/WPT 側の prompt/file fixture coverage は維持する | Playwright adapter では `page.on`, `waitForEvent`, `setInputFiles`, `locator.setInputFiles` を未採用として明示 |
 
-`implementation=api-mock` は Playwright 互換 API 名を提供するが、ブラウザ相当の実体はなく fixture 用の限定 glue であることを表す。現時点では `page.frameLocator` のみが該当する。`partial + implemented` は実装実体はあるが Playwright と同等ではない範囲を表す。
+`implementation=api-mock` は Playwright 互換 API 名を提供するが、ブラウザ相当の実体はなく fixture 用の限定 glue であることを表す。現時点では `page.frameLocator` のみが該当する。`partial + implemented` は実装実体はあるが Playwright と同等ではない範囲を表す。`unsupported` は Playwright API 名を support table に載せるが、adapter の public method としては公開しない明示的な不採用 API を表す。
 
 ### TDD 実装順
 
@@ -988,8 +988,11 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
   - [x] `frameLocator` / iframe navigation を adapter API に入れるか、BiDi raw API のままにするか決める
     - `frameLocator(...).locator(...)` は adapter API として採用し、`iframe.contentDocument` / `contentWindow.document` / synthetic fixture root 配下の locator に限定した `api-mock` として分類する
     - 独立 iframe browsing context と iframe navigation は未実装として support table に残し、現時点では BiDi raw/WPT 側の検証対象にする
-  - [ ] dialog / download / file chooser は WebDriver BiDi 実装済み範囲と Playwright adapter API の境界を決める
-  - [ ] 使わない API は `unsupported` として table に明示し、暗黙の欠落をなくす
+  - [x] dialog / download / file chooser は WebDriver BiDi 実装済み範囲と Playwright adapter API の境界を決める
+    - Playwright adapter では event emitter / file upload surface を採用せず、`page.on`, `page.waitForEvent`, `page.setInputFiles`, `locator.setInputFiles` を `unsupported` として明示する
+    - WebDriver BiDi/WPT の prompt/file fixture coverage は adapter とは別の protocol compliance として維持する
+  - [x] 使わない API は `unsupported` として table に明示し、暗黙の欠落をなくす
+    - `scripts/playwright-adapter-support.test.ts` で `unsupported` entry は source-level public method list から除外しつつ、`implementation=unsupported` として分類されることを固定する
 
 ### 完了条件
 
