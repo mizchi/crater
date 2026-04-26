@@ -2954,6 +2954,9 @@ extern "js" fn js_evaluate_expression(
   #|       const html = await response.text();
   #|       globalThis.__loadHTML(html);
   #|       globalThis.__pageUrl = url;
+  #|       if (globalThis.location && typeof globalThis.location === 'object') {
+  #|         try { globalThis.location.href = String(url); } catch (_e) {}
+  #|       }
   #|       return { url, status: response.status };
   #|     };
   #|

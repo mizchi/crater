@@ -43,6 +43,17 @@ export type CraterLoadState =
 
 export type CraterUrlMatcher = string | RegExp | ((url: URL) => boolean);
 
+export type CraterAddScriptTagOptions = {
+  content?: string;
+  url?: string;
+  type?: string;
+};
+
+export type CraterAddStyleTagOptions = {
+  content?: string;
+  url?: string;
+};
+
 type PendingCommand = {
   resolve: (value: BidiResponse) => void;
   reject: (error: Error) => void;
@@ -628,6 +639,7 @@ export class CraterBidiPage {
   private contextId: string | null = null;
   private navigationPromise: Promise<void> | null = null;
   private navigationResolve: (() => void) | null = null;
+  private initScripts: string[] = [];
 
   async connect(options: CraterBidiConnectOptions = {}): Promise<void> {
     const timeout = options.timeout ?? 15000;
@@ -681,6 +693,7 @@ export class CraterBidiPage {
     const dataUrl = `data:text/html;base64,${Buffer.from(html).toString("base64")}`;
     await this.goto(dataUrl);
     await this.evaluate(`__loadHTML(${jsString(html)})`);
+    await this.runInitScripts();
   }
 
   async setContentWithScripts(html: string): Promise<void> {
@@ -694,10 +707,52 @@ export class CraterBidiPage {
   ): Promise<{ url: string; status: number; scripts?: unknown[] }> {
     const executeScripts = options.executeScripts !== false;
     const json = await this.evaluate<string>(
-      `(async () => JSON.stringify(await __loadPageWithScripts(${jsString(url)}, { executeScripts: ${executeScripts} })))()`,
+      `(async () => JSON.stringify(await __loadPageWithScripts(${jsString(url)}, { executeScripts: false })))()`,
       { awaitPromise: true },
     );
-    return JSON.parse(json) as { url: string; status: number; scripts?: unknown[] };
+    await this.runInitScripts();
+    const result = JSON.parse(json) as { url: string; status: number; scripts?: unknown[] };
+    if (executeScripts) {
+      const scriptsJson = await this.evaluate<string>(
+        `(async () => JSON.stringify(await __executeScripts({ baseUrl: ${jsString(url)} })))()`,
+        { awaitPromise: true },
+      );
+      result.scripts = JSON.parse(scriptsJson) as unknown[];
+    }
+    return result;
+  }
+
+  async addInitScript(script: string | (() => unknown | Promise<unknown>)): Promise<void> {
+    this.initScripts.push(this.scriptSource(script));
+  }
+
+  async addScriptTag(options: CraterAddScriptTagOptions): Promise<CraterLocator> {
+    const content = await this.resolveInjectableContent(options, "script");
+    await this.evaluate(
+      `(async () => {
+        const script = document.createElement("script");
+        if (${jsString(options.type ?? "")}) script.setAttribute("type", ${jsString(options.type ?? "")});
+        if (${jsString(options.url ?? "")}) script.setAttribute("src", ${jsString(options.url ?? "")});
+        script.textContent = ${jsString(content)};
+        (document.head || document.querySelector("head") || document.body || document.documentElement).appendChild(script);
+        (0, eval)(${jsString(content)});
+      })()`,
+      { awaitPromise: true },
+    );
+    return this.locator("script").last();
+  }
+
+  async addStyleTag(options: CraterAddStyleTagOptions): Promise<CraterLocator> {
+    const content = await this.resolveInjectableContent(options, "style");
+    await this.evaluate(`
+      (() => {
+        const style = document.createElement("style");
+        if (${jsString(options.url ?? "")}) style.setAttribute("data-crater-source", ${jsString(options.url ?? "")});
+        style.textContent = ${jsString(content)};
+        (document.head || document.querySelector("head") || document.body || document.documentElement).appendChild(style);
+      })()
+    `);
+    return this.locator("style").last();
   }
 
   async url(): Promise<string> {
@@ -1325,6 +1380,34 @@ export class CraterBidiPage {
       throw new Error("No browsing context");
     }
     return this.contextId;
+  }
+
+  private scriptSource(script: string | (() => unknown | Promise<unknown>)): string {
+    return typeof script === "function" ? `(${script.toString()})()` : script;
+  }
+
+  private async runInitScripts(): Promise<void> {
+    for (const script of this.initScripts) {
+      await this.evaluate(script, {
+        awaitPromise: script.includes("await ") || script.includes("new Promise") || script.includes(".then("),
+      });
+    }
+  }
+
+  private async resolveInjectableContent(
+    options: CraterAddScriptTagOptions | CraterAddStyleTagOptions,
+    kind: "script" | "style",
+  ): Promise<string> {
+    if (options.content !== undefined) {
+      return options.content;
+    }
+    if (options.url) {
+      return this.evaluate<string>(
+        `(async () => await (await fetch(${jsString(options.url!)})).text())()`,
+        { awaitPromise: true },
+      );
+    }
+    throw new Error(`add${kind === "script" ? "Script" : "Style"}Tag requires content or url`);
   }
 
   private urlMatches(current: string, expected: CraterUrlMatcher): boolean {

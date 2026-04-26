@@ -8,6 +8,8 @@ export {
 export type {
   BidiEvent,
   BidiResponse,
+  CraterAddScriptTagOptions,
+  CraterAddStyleTagOptions,
   CraterBidiConnectOptions,
   CraterEvaluateOptions,
   CraterLoadState,

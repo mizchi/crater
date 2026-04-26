@@ -136,6 +136,7 @@ async test "bidi loadPage navigation bypasses same-origin sandbox" {
     #|  return [
     #|    'status=' + result.status,
     #|    'pageUrl=' + globalThis.__pageUrl,
+    #|    'location=' + (globalThis.location ? globalThis.location.href : ''),
     #|    'h1=' + (h1 ? h1.textContent : '')
     #|  ].join(';');
     #|})()
@@ -144,6 +145,7 @@ async test "bidi loadPage navigation bypasses same-origin sandbox" {
   let json = @js_async.Promise::wait(promise)
   assert_true(json.contains("status=200"))
   assert_true(json.contains("pageUrl=data:text/html,"))
+  assert_true(json.contains("location=data:text/html,"))
   assert_true(json.contains("h1=Loaded from navigation"))
 }
 

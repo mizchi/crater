@@ -46,6 +46,8 @@ The adapter is expected to support headless test flows where a user:
 - Uses Playwright-style page aliases such as `$`, `$$`, `$eval`,
   `selectOption()`, and `screenshot()` where Crater can provide equivalent
   headless behavior.
+- Injects setup scripts and fixture assets with `addInitScript()`,
+  `addScriptTag()`, and `addStyleTag()`.
 - Waits for app state through `waitForText()` / `waitForLoadState()` instead of
   fixed sleeps.
 - Inspects Crater-specific rendering/debug data through the documented extension

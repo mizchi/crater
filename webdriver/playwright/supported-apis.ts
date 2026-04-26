@@ -69,6 +69,24 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
   },
   {
     owner: "page",
+    api: "addInitScript",
+    status: "partial",
+    notes: "Stores serializable init scripts and runs them before Crater executes page scripts.",
+  },
+  {
+    owner: "page",
+    api: "addScriptTag",
+    status: "partial",
+    notes: "Injects a script tag and executes content/url text in the Crater runtime.",
+  },
+  {
+    owner: "page",
+    api: "addStyleTag",
+    status: "partial",
+    notes: "Injects a style tag with content or fetched url text.",
+  },
+  {
+    owner: "page",
     api: "evaluate",
     status: "supported",
     notes: "Runs script.evaluate and unwraps serialized values.",

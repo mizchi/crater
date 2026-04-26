@@ -217,4 +217,40 @@ test.describe("Crater Playwright adapter user scenarios", () => {
     expect(Buffer.isBuffer(screenshot)).toBe(true);
     expect(screenshot.length).toBeGreaterThan(0);
   });
+
+  test("script and style injection: run init scripts before page scripts", async () => {
+    await page.addInitScript(() => {
+      globalThis.__craterInitValue = "ready";
+    });
+
+    await page.setContentWithScripts(`
+      <html>
+        <head></head>
+        <body>
+          <div id="status">pending</div>
+          <script>
+            document.getElementById("status").textContent = globalThis.__craterInitValue || "missing";
+          </script>
+        </body>
+      </html>
+    `);
+
+    await expect(page.locator("#status").textContent()).resolves.toBe("ready");
+
+    await page.addScriptTag({
+      content: `
+        document.getElementById("status").textContent = "script-tag";
+        document.body.setAttribute("data-script-tag", "executed");
+      `,
+    });
+    await expect(page.locator("#status").textContent()).resolves.toBe("script-tag");
+    await expect(page.getAttribute("body", "data-script-tag")).resolves.toBe("executed");
+
+    await page.addStyleTag({
+      content: "#status { color: rgb(1, 2, 3); }",
+    });
+    await expect(page.locator("style").textContent()).resolves.toContain(
+      "rgb(1, 2, 3)",
+    );
+  });
 });
