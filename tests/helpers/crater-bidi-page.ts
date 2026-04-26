@@ -14,6 +14,7 @@ export type {
   CraterEvaluateOptions,
   CraterLoadState,
   CraterUrlMatcher,
+  CraterWaitForFunctionOptions,
   CraterPlaywrightApiEntry,
   CraterPlaywrightApiOwner,
   CraterPlaywrightApiStatus,

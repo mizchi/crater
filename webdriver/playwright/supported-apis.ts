@@ -63,6 +63,12 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
   },
   {
     owner: "page",
+    api: "setDefaultTimeout",
+    status: "partial",
+    notes: "Overrides timeout defaults for Crater polling-based wait helpers.",
+  },
+  {
+    owner: "page",
     api: "loadPage",
     status: "partial",
     notes: "Fetches a URL through Crater runtime, parses HTML, and executes supported scripts; remote and module loading are still not browser-equivalent.",
@@ -279,6 +285,12 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
   },
   {
     owner: "page",
+    api: "waitForFunction",
+    status: "partial",
+    notes: "Polls a serializable expression/function until it returns a truthy serialized value.",
+  },
+  {
+    owner: "page",
     api: "waitForURL",
     status: "partial",
     notes: "Polls current URL against string, RegExp, or URL predicate matchers.",
@@ -294,6 +306,12 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
     api: "waitForNetworkIdle",
     status: "partial",
     notes: "Uses Crater runtime network-idle helpers.",
+  },
+  {
+    owner: "page",
+    api: "waitForTimeout",
+    status: "supported",
+    notes: "Resolves after the requested host-side timeout.",
   },
   {
     owner: "page",

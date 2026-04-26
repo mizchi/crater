@@ -54,6 +54,11 @@ export type CraterAddStyleTagOptions = {
   url?: string;
 };
 
+export type CraterWaitForFunctionOptions = {
+  timeout?: number;
+  polling?: number;
+};
+
 type PendingCommand = {
   resolve: (value: BidiResponse) => void;
   reject: (error: Error) => void;
@@ -551,7 +556,7 @@ export class CraterLocator {
   }
 
   async waitFor(options: { timeout?: number } = {}): Promise<void> {
-    const timeout = options.timeout ?? 5000;
+    const timeout = this.page.timeoutOrDefault(options.timeout, 5000);
     const start = Date.now();
     while (Date.now() - start < timeout) {
       const found = await this.page.evaluate<boolean>(`${this.queryExpr("querySelector")} !== null`);
@@ -640,6 +645,7 @@ export class CraterBidiPage {
   private navigationPromise: Promise<void> | null = null;
   private navigationResolve: (() => void) | null = null;
   private initScripts: string[] = [];
+  private defaultTimeout: number | null = null;
 
   async connect(options: CraterBidiConnectOptions = {}): Promise<void> {
     const timeout = options.timeout ?? 15000;
@@ -787,6 +793,13 @@ export class CraterBidiPage {
     });
   }
 
+  setDefaultTimeout(timeout: number): void {
+    if (!Number.isFinite(timeout) || timeout < 0) {
+      throw new Error(`Invalid timeout: ${timeout}`);
+    }
+    this.defaultTimeout = timeout;
+  }
+
   async evaluate<T>(
     expression: string | (() => T | Promise<T>),
     options: CraterEvaluateOptions = {},
@@ -816,6 +829,37 @@ export class CraterBidiPage {
 
   async waitForSelector(selector: string, options: { timeout?: number } = {}): Promise<void> {
     await this.locator(selector).waitFor(options);
+  }
+
+  async waitForTimeout(timeout: number): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, timeout));
+  }
+
+  async waitForFunction<T>(
+    pageFunction: string | (() => T | Promise<T>),
+    options: CraterWaitForFunctionOptions = {},
+  ): Promise<T> {
+    const timeout = this.timeoutOrDefault(options.timeout, 3000);
+    const polling = options.polling ?? 30;
+    const expression = this.waitForFunctionExpression(pageFunction);
+    const start = Date.now();
+    let lastError: Error | null = null;
+    while (Date.now() - start < timeout) {
+      try {
+        const value = await this.evaluate<T>(
+          `(async () => await ${expression})()`,
+          { awaitPromise: true },
+        );
+        if (value) {
+          return value;
+        }
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+      }
+      await this.waitForTimeout(polling);
+    }
+    const suffix = lastError ? ` Last error: ${lastError.message}` : "";
+    throw new Error(`Timeout waiting for function.${suffix}`);
   }
 
   async click(selector: string): Promise<void> {
@@ -1040,7 +1084,7 @@ export class CraterBidiPage {
   }
 
   async waitForText(selector: string, expected: string, options: { timeout?: number } = {}): Promise<void> {
-    const timeout = options.timeout ?? 3000;
+    const timeout = this.timeoutOrDefault(options.timeout, 3000);
     const start = Date.now();
     while (Date.now() - start < timeout) {
       const text = await this.textContent(selector);
@@ -1053,7 +1097,7 @@ export class CraterBidiPage {
   }
 
   async waitForCondition(expression: string, options: { timeout?: number } = {}): Promise<void> {
-    const timeout = options.timeout ?? 3000;
+    const timeout = this.timeoutOrDefault(options.timeout, 3000);
     const start = Date.now();
     while (Date.now() - start < timeout) {
       const ok = await this.evaluate<boolean>(expression);
@@ -1066,7 +1110,7 @@ export class CraterBidiPage {
   }
 
   async waitForURL(expected: CraterUrlMatcher, options: { timeout?: number } = {}): Promise<void> {
-    const timeout = options.timeout ?? 3000;
+    const timeout = this.timeoutOrDefault(options.timeout, 3000);
     const start = Date.now();
     while (Date.now() - start < timeout) {
       const current = await this.url();
@@ -1079,7 +1123,7 @@ export class CraterBidiPage {
   }
 
   async waitForNavigation(options: { timeout?: number } = {}): Promise<void> {
-    const timeout = options.timeout ?? 10000;
+    const timeout = this.timeoutOrDefault(options.timeout, 10000);
     await this.sendBidi("session.subscribe", {
       events: ["browsingContext.load", "browsingContext.domContentLoaded"],
       contexts: [this.requireContextId()],
@@ -1101,7 +1145,7 @@ export class CraterBidiPage {
     state: CraterLoadState = "load",
     options: { timeout?: number } = {},
   ): Promise<void> {
-    const timeout = options.timeout ?? 30000;
+    const timeout = this.timeoutOrDefault(options.timeout, 30000);
     switch (state) {
       case "networkidle":
       case "networkidle0":
@@ -1121,7 +1165,7 @@ export class CraterBidiPage {
   async waitForNetworkIdle(
     options: { timeout?: number; idleTime?: number; maxInflight?: number } = {},
   ): Promise<void> {
-    const timeout = options.timeout ?? 30000;
+    const timeout = this.timeoutOrDefault(options.timeout, 30000);
     const idleTime = options.idleTime ?? 500;
     const maxInflight = options.maxInflight ?? 0;
     await this.evaluate(
@@ -1384,6 +1428,16 @@ export class CraterBidiPage {
 
   private scriptSource(script: string | (() => unknown | Promise<unknown>)): string {
     return typeof script === "function" ? `(${script.toString()})()` : script;
+  }
+
+  timeoutOrDefault(timeout: number | undefined, fallback: number): number {
+    return timeout ?? this.defaultTimeout ?? fallback;
+  }
+
+  private waitForFunctionExpression<T>(pageFunction: string | (() => T | Promise<T>)): string {
+    return typeof pageFunction === "function"
+      ? `(${pageFunction.toString()})()`
+      : `(${pageFunction})`;
   }
 
   private async runInitScripts(): Promise<void> {

@@ -52,6 +52,7 @@ const expectedPageApis = [
   "selectOption",
   "setContent",
   "setContentWithScripts",
+  "setDefaultTimeout",
   "setViewport",
   "textContent",
   "title",
@@ -59,11 +60,13 @@ const expectedPageApis = [
   "uncheck",
   "url",
   "waitForCondition",
+  "waitForFunction",
   "waitForLoadState",
   "waitForNavigation",
   "waitForNetworkIdle",
   "waitForSelector",
   "waitForText",
+  "waitForTimeout",
   "waitForURL",
 ];
 

@@ -253,4 +253,29 @@ test.describe("Crater Playwright adapter user scenarios", () => {
       "rgb(1, 2, 3)",
     );
   });
+
+  test("async waits: wait for function state without fixed sleeps", async () => {
+    page.setDefaultTimeout(1000);
+
+    await page.setContentWithScripts(`
+      <html>
+        <body data-ready="no">
+          <output id="status">pending</output>
+          <script>
+            setTimeout(() => {
+              document.body.setAttribute("data-ready", "yes");
+              document.getElementById("status").textContent = "ready";
+            }, 20);
+          </script>
+        </body>
+      </html>
+    `);
+
+    await expect(
+      page.waitForFunction(() => document.body.getAttribute("data-ready") === "yes"),
+    ).resolves.toBe(true);
+    await expect(page.locator("#status").textContent()).resolves.toBe("ready");
+
+    await page.waitForTimeout(1);
+  });
 });

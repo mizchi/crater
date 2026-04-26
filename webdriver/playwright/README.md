@@ -48,8 +48,8 @@ The adapter is expected to support headless test flows where a user:
   headless behavior.
 - Injects setup scripts and fixture assets with `addInitScript()`,
   `addScriptTag()`, and `addStyleTag()`.
-- Waits for app state through `waitForText()` / `waitForLoadState()` instead of
-  fixed sleeps.
+- Waits for app state through `waitForFunction()`, `waitForText()`, and
+  `waitForLoadState()`, with `setDefaultTimeout()` for polling defaults.
 - Inspects Crater-specific rendering/debug data through the documented extension
   APIs when Playwright's browser-native semantics are not available.
 
