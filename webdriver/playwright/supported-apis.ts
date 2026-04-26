@@ -285,9 +285,33 @@ export const CRATER_PLAYWRIGHT_API_SUPPORT = [
   },
   {
     owner: "page",
+    api: "route",
+    status: "partial",
+    notes: "Intercepts Crater runtime fetch() requests and supports fulfill/continue/abort decisions.",
+  },
+  {
+    owner: "page",
+    api: "unroute",
+    status: "partial",
+    notes: "Removes Crater runtime fetch() route handlers by matcher identity or clears all handlers.",
+  },
+  {
+    owner: "page",
     api: "waitForFunction",
     status: "partial",
     notes: "Polls a serializable expression/function until it returns a truthy serialized value.",
+  },
+  {
+    owner: "page",
+    api: "waitForRequest",
+    status: "partial",
+    notes: "Waits for Crater runtime fetch() requests observed by the adapter network hook.",
+  },
+  {
+    owner: "page",
+    api: "waitForResponse",
+    status: "partial",
+    notes: "Waits for Crater runtime fetch() responses observed by the adapter network hook.",
   },
   {
     owner: "page",

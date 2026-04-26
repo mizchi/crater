@@ -43,6 +43,16 @@ export type CraterLoadState =
 
 export type CraterUrlMatcher = string | RegExp | ((url: URL) => boolean);
 
+export type CraterRequestMatcher =
+  | string
+  | RegExp
+  | ((request: CraterRequest) => boolean | Promise<boolean>);
+
+export type CraterResponseMatcher =
+  | string
+  | RegExp
+  | ((response: CraterResponse) => boolean | Promise<boolean>);
+
 export type CraterAddScriptTagOptions = {
   content?: string;
   url?: string;
@@ -59,9 +69,90 @@ export type CraterWaitForFunctionOptions = {
   polling?: number;
 };
 
+export type CraterWaitForNetworkOptions = {
+  timeout?: number;
+  polling?: number;
+};
+
+export type CraterRouteFulfillOptions = {
+  status?: number;
+  headers?: Record<string, string>;
+  contentType?: string;
+  body?: string | Buffer | Uint8Array | Record<string, unknown> | unknown[];
+};
+
+export type CraterRouteContinueOptions = {
+  url?: string;
+  method?: string;
+  headers?: Record<string, string>;
+  postData?: string;
+};
+
+export type CraterRouteHandler = (
+  route: CraterRoute,
+  request: CraterRequest,
+) => void | Promise<void>;
+
 type PendingCommand = {
   resolve: (value: BidiResponse) => void;
   reject: (error: Error) => void;
+};
+
+type CraterNetworkRequestPayload = {
+  id: string;
+  url: string;
+  method: string;
+  headers: Record<string, string>;
+  postData?: string | null;
+};
+
+type CraterNetworkResponsePayload = {
+  url: string;
+  status: number;
+  statusText?: string;
+  headers: Record<string, string>;
+  body?: string | null;
+  request: CraterNetworkRequestPayload;
+};
+
+type CraterNetworkEventPayload =
+  | {
+    type: "request";
+    request: CraterNetworkRequestPayload;
+  }
+  | {
+    type: "response";
+    request: CraterNetworkRequestPayload;
+    response: CraterNetworkResponsePayload;
+  }
+  | {
+    type: "requestfailed";
+    request: CraterNetworkRequestPayload;
+    errorText: string;
+  };
+
+type CraterRouteDecision =
+  | {
+    action: "fulfill";
+    status: number;
+    headers: Record<string, string>;
+    body: string;
+  }
+  | {
+    action: "continue";
+    url?: string;
+    method?: string;
+    headers?: Record<string, string>;
+    postData?: string;
+  }
+  | {
+    action: "abort";
+    errorCode?: string;
+  };
+
+type CraterRouteEntry = {
+  matcher: CraterRequestMatcher;
+  handler: CraterRouteHandler;
 };
 
 type ParsedLocatorSelector = {
@@ -221,6 +312,131 @@ function filterPredicateExpr(filter: TextFilter): string {
     ? `new RegExp(${jsString(filter.value)}, ${jsString(filter.flags ?? "")}).test(${textExpr})`
     : `${textExpr}.includes(${jsString(filter.value)})`;
   return filter.kind === "hasText" ? testExpr : `!(${testExpr})`;
+}
+
+export class CraterRequest {
+  constructor(private readonly data: CraterNetworkRequestPayload) {}
+
+  url(): string {
+    return this.data.url;
+  }
+
+  method(): string {
+    return this.data.method;
+  }
+
+  headers(): Record<string, string> {
+    return { ...this.data.headers };
+  }
+
+  postData(): string | null {
+    return this.data.postData ?? null;
+  }
+
+  payload(): CraterNetworkRequestPayload {
+    return this.data;
+  }
+}
+
+export class CraterResponse {
+  private readonly requestValue: CraterRequest;
+
+  constructor(private readonly data: CraterNetworkResponsePayload) {
+    this.requestValue = new CraterRequest(data.request);
+  }
+
+  url(): string {
+    return this.data.url;
+  }
+
+  status(): number {
+    return this.data.status;
+  }
+
+  statusText(): string {
+    return this.data.statusText ?? "";
+  }
+
+  ok(): boolean {
+    return this.status() >= 200 && this.status() <= 299;
+  }
+
+  headers(): Record<string, string> {
+    return { ...this.data.headers };
+  }
+
+  request(): CraterRequest {
+    return this.requestValue;
+  }
+
+  async text(): Promise<string> {
+    return this.data.body ?? "";
+  }
+}
+
+export class CraterRoute {
+  private handledValue = false;
+
+  constructor(
+    private readonly requestValue: CraterRequest,
+    private readonly resolveDecision: (decision: CraterRouteDecision) => Promise<void>,
+  ) {}
+
+  request(): CraterRequest {
+    return this.requestValue;
+  }
+
+  handled(): boolean {
+    return this.handledValue;
+  }
+
+  async fulfill(options: CraterRouteFulfillOptions = {}): Promise<void> {
+    const headers = { ...(options.headers ?? {}) };
+    if (options.contentType && !headers["content-type"]) {
+      headers["content-type"] = options.contentType;
+    }
+    await this.resolveOnce({
+      action: "fulfill",
+      status: options.status ?? 200,
+      headers,
+      body: routeBodyToString(options.body),
+    });
+  }
+
+  async continue(options: CraterRouteContinueOptions = {}): Promise<void> {
+    await this.resolveOnce({
+      action: "continue",
+      ...options,
+    });
+  }
+
+  async abort(errorCode = "failed"): Promise<void> {
+    await this.resolveOnce({ action: "abort", errorCode });
+  }
+
+  private async resolveOnce(decision: CraterRouteDecision): Promise<void> {
+    if (this.handledValue) {
+      throw new Error("Route is already handled");
+    }
+    this.handledValue = true;
+    await this.resolveDecision(decision);
+  }
+}
+
+function routeBodyToString(body: CraterRouteFulfillOptions["body"]): string {
+  if (body === undefined || body === null) {
+    return "";
+  }
+  if (typeof body === "string") {
+    return body;
+  }
+  if (Buffer.isBuffer(body)) {
+    return body.toString();
+  }
+  if (body instanceof Uint8Array) {
+    return Buffer.from(body).toString();
+  }
+  return JSON.stringify(body);
 }
 
 export class CraterLocator {
@@ -663,6 +879,9 @@ export class CraterBidiPage {
   private navigationResolve: (() => void) | null = null;
   private initScripts: string[] = [];
   private defaultTimeout: number | null = null;
+  private routes: CraterRouteEntry[] = [];
+  private routePump: ReturnType<typeof setInterval> | null = null;
+  private routePumpBusy = false;
 
   async connect(options: CraterBidiConnectOptions = {}): Promise<void> {
     const timeout = options.timeout ?? 15000;
@@ -697,6 +916,11 @@ export class CraterBidiPage {
       }
     }
     this.contextId = null;
+    if (this.routePump) {
+      clearInterval(this.routePump);
+      this.routePump = null;
+    }
+    this.routes = [];
     this.ws?.close();
     this.ws = null;
   }
@@ -882,6 +1106,73 @@ export class CraterBidiPage {
     }
     const suffix = lastError ? ` Last error: ${lastError.message}` : "";
     throw new Error(`Timeout waiting for function.${suffix}`);
+  }
+
+  async route(matcher: CraterRequestMatcher, handler: CraterRouteHandler): Promise<void> {
+    this.routes.push({ matcher, handler });
+    await this.installNetworkHooks({ routeEnabled: true });
+    this.startRoutePump();
+  }
+
+  async unroute(matcher?: CraterRequestMatcher): Promise<void> {
+    if (matcher === undefined) {
+      this.routes = [];
+    } else {
+      this.routes = this.routes.filter((entry) => entry.matcher !== matcher);
+    }
+    if (this.routes.length === 0) {
+      await this.installNetworkHooks({ routeEnabled: false });
+      if (this.routePump) {
+        clearInterval(this.routePump);
+        this.routePump = null;
+      }
+    }
+  }
+
+  async waitForRequest(
+    matcher: CraterRequestMatcher,
+    options: CraterWaitForNetworkOptions = {},
+  ): Promise<CraterRequest> {
+    await this.installNetworkHooks();
+    const startIndex = await this.networkEventCount();
+    const timeout = this.timeoutOrDefault(options.timeout, 3000);
+    const polling = options.polling ?? 30;
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      const events = await this.networkEventsSince(startIndex);
+      for (const event of events) {
+        if (event.type !== "request") continue;
+        const request = new CraterRequest(event.request);
+        if (await this.requestMatches(request, matcher)) {
+          return request;
+        }
+      }
+      await this.waitForTimeout(polling);
+    }
+    throw new Error(`Timeout waiting for request: ${String(matcher)}`);
+  }
+
+  async waitForResponse(
+    matcher: CraterResponseMatcher,
+    options: CraterWaitForNetworkOptions = {},
+  ): Promise<CraterResponse> {
+    await this.installNetworkHooks();
+    const startIndex = await this.networkEventCount();
+    const timeout = this.timeoutOrDefault(options.timeout, 3000);
+    const polling = options.polling ?? 30;
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      const events = await this.networkEventsSince(startIndex);
+      for (const event of events) {
+        if (event.type !== "response") continue;
+        const response = new CraterResponse(event.response);
+        if (await this.responseMatches(response, matcher)) {
+          return response;
+        }
+      }
+      await this.waitForTimeout(polling);
+    }
+    throw new Error(`Timeout waiting for response: ${String(matcher)}`);
   }
 
   async click(selector: string): Promise<void> {
@@ -1446,6 +1737,268 @@ export class CraterBidiPage {
       throw new Error("No browsing context");
     }
     return this.contextId;
+  }
+
+  private async installNetworkHooks(options: { routeEnabled?: boolean } = {}): Promise<void> {
+    const routeEnabled = options.routeEnabled === true;
+    await this.evaluate(`
+      (() => {
+        const root = globalThis;
+        const state = root.__craterNetworkState || {
+          installed: false,
+          events: [],
+          pendingRoutes: [],
+          resolvers: Object.create(null),
+          nextId: 0,
+          routeEnabled: false,
+          baseFetch: null,
+        };
+        root.__craterNetworkState = state;
+
+        const headersToObject = (headers) => {
+          const out = {};
+          if (!headers) return out;
+          try {
+            new Headers(headers).forEach((value, key) => {
+              out[String(key).toLowerCase()] = String(value);
+            });
+          } catch (_error) {
+            if (typeof headers === "object") {
+              for (const key of Object.keys(headers)) {
+                out[String(key).toLowerCase()] = String(headers[key]);
+              }
+            }
+          }
+          return out;
+        };
+
+        const normalizeRequest = (input, options) => {
+          const rawUrl = typeof input === "string" || input instanceof URL
+            ? String(input)
+            : input && input.url ? String(input.url) : String(input);
+          const url = root.__resolveUrl ? root.__resolveUrl(rawUrl, root.__pageUrl) : rawUrl;
+          const method = String(
+            options && options.method ? options.method : input && input.method ? input.method : "GET"
+          ).toUpperCase();
+          const headers = headersToObject(options && options.headers ? options.headers : input && input.headers);
+          const body = options && Object.prototype.hasOwnProperty.call(options, "body")
+            ? options.body
+            : null;
+          return {
+            id: "crater-route-" + (++state.nextId),
+            url,
+            method,
+            headers,
+            postData: body === null || body === undefined ? null : String(body),
+          };
+        };
+
+        const emitRequest = (request) => {
+          state.events.push({ type: "request", request });
+        };
+        const emitResponse = (request, response, body) => {
+          state.events.push({
+            type: "response",
+            request,
+            response: {
+              url: response && response.url ? String(response.url) : request.url,
+              status: response && typeof response.status === "number" ? response.status : 0,
+              statusText: response && response.statusText ? String(response.statusText) : "",
+              headers: response ? headersToObject(response.headers) : {},
+              body: body === undefined ? null : body,
+              request,
+            },
+          });
+        };
+        const emitFailure = (request, error) => {
+          state.events.push({
+            type: "requestfailed",
+            request,
+            errorText: error && error.message ? String(error.message) : String(error),
+          });
+        };
+
+        root.__craterNetworkEventCount = () => state.events.length;
+        root.__craterNetworkEventsSince = (index) => JSON.stringify(state.events.slice(index));
+        root.__craterTakePendingRoutes = () => {
+          const pending = state.pendingRoutes.splice(0, state.pendingRoutes.length);
+          return JSON.stringify(pending);
+        };
+        root.__craterResolveRoute = (id, decision) => {
+          const resolver = state.resolvers[id];
+          if (!resolver) return false;
+          delete state.resolvers[id];
+          resolver(decision || { action: "continue" });
+          return true;
+        };
+        root.__craterSetRouteEnabled = (enabled) => {
+          state.routeEnabled = !!enabled;
+          return state.routeEnabled;
+        };
+
+        if (!state.installed) {
+          if (typeof root.fetch !== "function") {
+            throw new Error("fetch is not available in Crater runtime");
+          }
+          state.baseFetch = root.fetch.bind(root);
+          root.fetch = async function(input, options) {
+            const request = normalizeRequest(input, options || {});
+            emitRequest(request);
+            let decision = { action: "continue" };
+            if (state.routeEnabled) {
+              decision = await new Promise((resolve) => {
+                state.resolvers[request.id] = resolve;
+                state.pendingRoutes.push(request);
+              });
+            }
+            try {
+              if (decision.action === "abort") {
+                throw new Error(decision.errorCode || "aborted");
+              }
+              if (decision.action === "fulfill") {
+                const response = new Response(decision.body || "", {
+                  status: decision.status || 200,
+                  headers: decision.headers || {},
+                });
+                emitResponse(request, response, decision.body || "");
+                return response;
+              }
+              const nextOptions = { ...(options || {}) };
+              if (decision.method) nextOptions.method = decision.method;
+              if (decision.headers) nextOptions.headers = decision.headers;
+              if (Object.prototype.hasOwnProperty.call(decision, "postData")) {
+                nextOptions.body = decision.postData;
+              }
+              const response = await state.baseFetch(decision.url || request.url, nextOptions);
+              emitResponse(request, response, null);
+              return response;
+            } catch (error) {
+              emitFailure(request, error);
+              throw error;
+            }
+          };
+          state.installed = true;
+        }
+
+        if (${routeEnabled ? "true" : "false"}) {
+          state.routeEnabled = true;
+        }
+        return true;
+      })()
+    `);
+    if (options.routeEnabled === false) {
+      await this.evaluate(`
+        (() => {
+          if (globalThis.__craterSetRouteEnabled) {
+            globalThis.__craterSetRouteEnabled(false);
+          }
+        })()
+      `);
+    }
+  }
+
+  private startRoutePump(): void {
+    if (this.routePump) {
+      return;
+    }
+    this.routePump = setInterval(() => {
+      void this.drainRouteRequests().catch(() => {
+        // The page may be closing; the next explicit command will surface real failures.
+      });
+    }, 10);
+  }
+
+  private async drainRouteRequests(): Promise<void> {
+    if (this.routePumpBusy || !this.ws) {
+      return;
+    }
+    this.routePumpBusy = true;
+    try {
+      const raw = await this.evaluate<string>(
+        `globalThis.__craterTakePendingRoutes ? globalThis.__craterTakePendingRoutes() : "[]"`,
+      );
+      const pending = JSON.parse(raw) as CraterNetworkRequestPayload[];
+      for (const payload of pending) {
+        const request = new CraterRequest(payload);
+        const route = new CraterRoute(request, (decision) =>
+          this.resolveRoute(payload.id, decision)
+        );
+        const entry = await this.matchRoute(request);
+        if (entry) {
+          try {
+            await entry.handler(route, request);
+          } catch (error) {
+            if (!route.handled()) {
+              const message = error instanceof Error ? error.message : String(error);
+              await route.abort(message);
+            }
+            continue;
+          }
+          if (!route.handled()) {
+            await route.continue();
+          }
+        } else {
+          await route.continue();
+        }
+      }
+    } finally {
+      this.routePumpBusy = false;
+    }
+  }
+
+  private async resolveRoute(id: string, decision: CraterRouteDecision): Promise<void> {
+    await this.evaluate(
+      `globalThis.__craterResolveRoute(${jsString(id)}, ${jsValue(decision)})`,
+    );
+  }
+
+  private async matchRoute(request: CraterRequest): Promise<CraterRouteEntry | null> {
+    for (const entry of this.routes) {
+      if (await this.requestMatches(request, entry.matcher)) {
+        return entry;
+      }
+    }
+    return null;
+  }
+
+  private async networkEventCount(): Promise<number> {
+    await this.installNetworkHooks();
+    return this.evaluate<number>(
+      `globalThis.__craterNetworkEventCount ? globalThis.__craterNetworkEventCount() : 0`,
+    );
+  }
+
+  private async networkEventsSince(index: number): Promise<CraterNetworkEventPayload[]> {
+    const raw = await this.evaluate<string>(
+      `globalThis.__craterNetworkEventsSince ? globalThis.__craterNetworkEventsSince(${index}) : "[]"`,
+    );
+    return JSON.parse(raw) as CraterNetworkEventPayload[];
+  }
+
+  private async requestMatches(
+    request: CraterRequest,
+    matcher: CraterRequestMatcher,
+  ): Promise<boolean> {
+    if (typeof matcher === "string") {
+      return request.url().includes(matcher);
+    }
+    if (matcher instanceof RegExp) {
+      return matcher.test(request.url());
+    }
+    return await matcher(request);
+  }
+
+  private async responseMatches(
+    response: CraterResponse,
+    matcher: CraterResponseMatcher,
+  ): Promise<boolean> {
+    if (typeof matcher === "string") {
+      return response.url().includes(matcher);
+    }
+    if (matcher instanceof RegExp) {
+      return matcher.test(response.url());
+    }
+    return await matcher(response);
   }
 
   private scriptSource(script: string | (() => unknown | Promise<unknown>)): string {

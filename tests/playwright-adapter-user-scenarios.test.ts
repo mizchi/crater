@@ -287,4 +287,49 @@ test.describe("Crater Playwright adapter user scenarios", () => {
 
     await page.waitForTimeout(1);
   });
+
+  test("network routing: fulfill fixture requests and wait for request/response", async () => {
+    await page.route("/api/config", async (route) => {
+      await route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify({ name: "crater", routed: true }),
+      });
+    });
+
+    const requestPromise = page.waitForRequest("/api/config");
+    const responsePromise = page.waitForResponse((response) =>
+      response.url().includes("/api/config") && response.status() === 201
+    );
+
+    await page.setContentWithScripts(`
+      <html>
+        <body>
+          <output id="status">pending</output>
+          <script>
+            fetch("/api/config")
+              .then(async (response) => {
+                const data = await response.json();
+                document.getElementById("status").textContent =
+                  response.status + ":" + data.name + ":" + data.routed;
+              })
+              .catch((error) => {
+                document.getElementById("status").textContent = "error:" + error.message;
+              });
+          </script>
+        </body>
+      </html>
+    `);
+
+    const request = await requestPromise;
+    expect(request.url()).toContain("/api/config");
+    expect(request.method()).toBe("GET");
+
+    const response = await responsePromise;
+    expect(response.ok()).toBe(true);
+    expect(response.request().url()).toContain("/api/config");
+    await expect(page.locator("#status").textContent()).resolves.toBe(
+      "201:crater:true",
+    );
+  });
 });
