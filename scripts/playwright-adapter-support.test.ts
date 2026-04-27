@@ -66,6 +66,7 @@ const expectedPageApis = [
   "keyboard",
   "loadPage",
   "locator",
+  "on",
   "onEvent",
   "press",
   "route",
@@ -75,6 +76,7 @@ const expectedPageApis = [
   "setContent",
   "setContentWithScripts",
   "setDefaultTimeout",
+  "setInputFiles",
   "setViewport",
   "textContent",
   "title",
@@ -83,6 +85,7 @@ const expectedPageApis = [
   "unroute",
   "url",
   "waitForCondition",
+  "waitForEvent",
   "waitForFunction",
   "waitForLoadState",
   "waitForNavigation",
@@ -131,6 +134,7 @@ const expectedLocatorApis = [
   "nth",
   "press",
   "selectOption",
+  "setInputFiles",
   "textContent",
   "type",
   "uncheck",
@@ -211,7 +215,7 @@ describe("Crater Playwright adapter support table", () => {
     const implementations = new Set(
       CRATER_PLAYWRIGHT_API_SUPPORT.map((entry) => entry.implementation),
     );
-    expect([...implementations].sort()).toEqual(["api-mock", "implemented", "unsupported"]);
+    expect([...implementations].sort()).toEqual(["api-mock", "implemented"]);
 
     for (const entry of CRATER_PLAYWRIGHT_API_SUPPORT) {
       expect(["api-mock", "implemented", "unsupported"]).toContain(entry.implementation);
@@ -228,18 +232,14 @@ describe("Crater Playwright adapter support table", () => {
     expect(supportEntryFor("page", "keyboard").implementation).toBe("implemented");
   });
 
-  test("explicitly lists unsupported long-tail Playwright event and file APIs", () => {
-    const unsupported = [
+  test("documents partial Playwright event API coverage", () => {
+    for (const entry of [
       supportEntryFor("page", "on"),
       supportEntryFor("page", "waitForEvent"),
-      supportEntryFor("page", "setInputFiles"),
-      supportEntryFor("locator", "setInputFiles"),
-    ];
-
-    for (const entry of unsupported) {
-      expect(entry.status).toBe("unsupported");
-      expect(entry.implementation).toBe("unsupported");
-      expect(entry.notes).toMatch(/not implemented|unsupported/i);
+    ]) {
+      expect(entry.status).toBe("partial");
+      expect(entry.implementation).toBe("implemented");
+      expect(entry.notes).toMatch(/request|response|load|close/i);
     }
   });
 

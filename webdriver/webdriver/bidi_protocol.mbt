@@ -7472,7 +7472,7 @@ fn BidiProtocol::build_script_fetch_headers_echo_payload(
       Some(value) => value
       None => continue
     }
-    headers[name] = Json::string(value)
+    headers[name] = Json::array([Json::string(value)])
   }
   make_object({ "headers": make_object(headers) }).stringify()
 }

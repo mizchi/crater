@@ -356,7 +356,7 @@ test "bidi script fetchForTest resolves relative URLs against requested navigati
   let json = proto.take_messages()[0].to_json()
   assert_true(json.contains("\"type\":\"success\""))
   assert_true(json.contains("\"type\":\"string\""))
-  assert_true(json.contains("\\\"x-test\\\":\\\"ok\\\""))
+  assert_true(json.contains("\\\"x-test\\\":[\\\"ok\\\"]"))
 }
 
 ///|

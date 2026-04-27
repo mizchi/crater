@@ -96,6 +96,28 @@ test "bidi network buildHeadersEchoPayload uses extra header scopes" {
 }
 
 ///|
+test "bidi script fetchForTest headers echo uses WPT header arrays" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"network.setExtraHeaders\",\"params\":{\"contexts\":[\"session-1\"],\"headers\":[{\"name\":\"x-context-only\",\"value\":{\"type\":\"string\",\"value\":\"c\"}}]}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.fetchForTest\",\"params\":{\"context\":\"session-1\",\"url\":\"http://localhost:8000/webdriver/tests/support/http_handlers/headers_echo.py\",\"method\":\"GET\",\"requestHeaders\":[{\"name\":\"x-request-only\",\"value\":{\"type\":\"string\",\"value\":\"r\"}}]}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\\\"x-context-only\\\":[\\\"c\\\"]"))
+  assert_true(json.contains("\\\"x-request-only\\\":[\\\"r\\\"]"))
+}
+
+///|
 test "bidi network buildResponseEvent applies response overrides" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
@@ -811,6 +833,46 @@ test "bidi network continueBlockedRequest handles navigation in protocol" {
   )
   let body_json = proto.take_messages()[0].to_json()
   assert_true(body_json.contains("\"value\":\"redirect\""))
+}
+
+///|
+test "bidi network continueBlockedRequest accepts camelCase blocked navigation metadata" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+
+  let initial_url = "data:text/html,<div id='from-initial'>initial</div>"
+  let redirect_url = "data:text/html,<div id='from-redirect'>redirect</div>"
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"network.rememberBlockedRequest\",\"params\":{\"request\":\"request-19b\",\"blockedRequest\":{\"phase\":\"beforeRequestSent\",\"context_id\":\"session-1\",\"url\":\"" +
+    initial_url +
+    "\",\"method\":\"GET\",\"request_headers\":{},\"navigation\":\"navigation-19b\",\"destination\":\"document\",\"isNavigation\":true}}}",
+  )
+  ignore(proto.take_messages())
+
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.continueBlockedRequest\",\"params\":{\"request\":\"request-19b\",\"url\":\"" +
+    redirect_url +
+    "\"}}",
+  )
+  let continue_json = proto.take_messages()[0].to_json()
+  assert_true(continue_json.contains("\"type\":\"success\""))
+  assert_true(continue_json.contains("\"responseStartedEvent\""))
+
+  let current_url = match proto.manager.get_session("session-1") {
+    Some(session) => session.get_url()
+    None => ""
+  }
+  assert_eq(current_url, redirect_url)
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"window.location.href\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let href_json = proto.take_messages()[0].to_json()
+  assert_true(href_json.contains("\"result\"") == false)
+  assert_true(href_json.contains("\"value\":\"" + initial_url + "\""))
 }
 
 ///|

@@ -118,6 +118,16 @@ export type CraterSelectOptionSingle =
 
 export type CraterSelectOptionValue = CraterSelectOptionSingle | CraterSelectOptionSingle[];
 
+export type CraterSetInputFilePayload = {
+  name: string;
+  mimeType?: string;
+  buffer: Buffer | Uint8Array | ArrayBuffer | string;
+};
+
+export type CraterSetInputFile = string | CraterSetInputFilePayload;
+
+export type CraterSetInputFilesValue = CraterSetInputFile | CraterSetInputFile[];
+
 export type CraterStorageCookie = {
   name: string;
   value: string;
@@ -193,6 +203,72 @@ type CraterNetworkEventPayload =
     request: CraterNetworkRequestPayload;
     errorText: string;
   };
+
+type CraterFileChooserEventPayload = {
+  selector: string;
+  multiple: boolean;
+};
+
+export type CraterDialogType = "alert" | "beforeunload" | "confirm" | "prompt";
+
+type CraterDialogEventPayload = {
+  context: string;
+  type: CraterDialogType;
+  message: string;
+  defaultValue?: string;
+};
+
+type CraterDownloadWillBeginPayload = {
+  context: string;
+  navigation: string | null;
+  suggestedFilename: string;
+  url: string;
+};
+
+type CraterDownloadEndPayload = {
+  context: string;
+  navigation: string | null;
+  status: string;
+  filepath: string | null;
+  url: string;
+};
+
+type CraterPendingDownload = {
+  download: CraterDownload;
+  resolveEnd: (end: CraterDownloadEndPayload) => void;
+};
+
+export type CraterPageEventMap = {
+  request: CraterRequest;
+  response: CraterResponse;
+  requestfailed: CraterRequestFailure;
+  filechooser: CraterFileChooser;
+  dialog: CraterDialog;
+  download: CraterDownload;
+  load: CraterBidiPage;
+  domcontentloaded: CraterBidiPage;
+  close: CraterBidiPage;
+};
+
+export type CraterPageEventName = keyof CraterPageEventMap;
+
+export type CraterPageEventPayload = CraterPageEventMap[CraterPageEventName];
+
+export type CraterPageEventHandler<T = CraterPageEventPayload> = (event: T) => void;
+
+export type CraterWaitForEventOptions<T = CraterPageEventPayload> = {
+  timeout?: number;
+  predicate?: (event: T) => boolean | Promise<boolean>;
+};
+
+type CraterPageEventWaiter = {
+  eventName: string;
+  predicate?: (event: CraterPageEventPayload) => boolean | Promise<boolean>;
+  resolve: (event: CraterPageEventPayload) => void;
+  reject: (error: Error) => void;
+  timer: ReturnType<typeof setTimeout>;
+  settled: boolean;
+};
 
 type CraterRouteDecision =
   | {
@@ -289,6 +365,70 @@ function keyPressActions(key: string): Array<Record<string, string>> {
 
 const jsString = (value: string): string => JSON.stringify(value);
 
+type CraterNormalizedInputFile = {
+  sourcePath: string;
+  name: string;
+  type: string;
+  size: number;
+};
+
+function inputFileDisplayName(sourcePath: string): string {
+  const parts = sourcePath.split(/[\\/]/);
+  return parts[parts.length - 1] ?? sourcePath;
+}
+
+function inputFilePayloadSize(buffer: CraterSetInputFilePayload["buffer"]): number {
+  if (typeof buffer === "string") {
+    return Buffer.byteLength(buffer);
+  }
+  if (buffer instanceof ArrayBuffer) {
+    return buffer.byteLength;
+  }
+  if (ArrayBuffer.isView(buffer)) {
+    return buffer.byteLength;
+  }
+  return 0;
+}
+
+function normalizeInputFiles(files: CraterSetInputFilesValue): CraterNormalizedInputFile[] {
+  const values = Array.isArray(files) ? files : [files];
+  return values.map((file) => {
+    if (typeof file === "string") {
+      return {
+        sourcePath: file,
+        name: inputFileDisplayName(file),
+        type: "",
+        size: 0,
+      };
+    }
+    const name = String(file.name);
+    const type = String(file.mimeType ?? "");
+    const size = inputFilePayloadSize(file.buffer);
+    return {
+      sourcePath: `payload:${name}:${type}:${size}`,
+      name,
+      type,
+      size,
+    };
+  });
+}
+
+function isNetworkPageEvent(eventName: string): eventName is "request" | "response" | "requestfailed" {
+  return eventName === "request" || eventName === "response" || eventName === "requestfailed";
+}
+
+function isFileChooserPageEvent(eventName: string): eventName is "filechooser" {
+  return eventName === "filechooser";
+}
+
+function isDialogPageEvent(eventName: string): eventName is "dialog" {
+  return eventName === "dialog";
+}
+
+function isDownloadPageEvent(eventName: string): eventName is "download" {
+  return eventName === "download";
+}
+
 function pointerMoveActions(sharedId: string): Array<Record<string, unknown>> {
   return [
     {
@@ -363,7 +503,31 @@ function adapterDomActionsExpr(): string {
         element.dispatchEvent(new Event("input", { bubbles: true }));
         element.dispatchEvent(new Event("change", { bubbles: true }));
       };
+      const recordFileChooser = (element) => {
+        if (tagName(element) !== "input") return;
+        const inputType = String(element.type || attr(element, "type") || "").toLowerCase();
+        if (inputType !== "file") return;
+        let chooserId = attr(element, "data-crater-filechooser-id");
+        if (!chooserId) {
+          chooserId = "fc" + Math.random().toString(36).slice(2);
+          if (typeof element.setAttribute === "function") {
+            element.setAttribute("data-crater-filechooser-id", chooserId);
+          } else {
+            element.__craterFileChooserId = chooserId;
+          }
+        }
+        if (!Array.isArray(globalThis.__craterFileChooserEvents)) {
+          globalThis.__craterFileChooserEvents = [];
+        }
+        globalThis.__craterFileChooserEvents.push({
+          selector: "[data-crater-filechooser-id=\\"" + chooserId + "\\"]",
+          multiple: Boolean(element.multiple) ||
+            (typeof element.hasAttribute === "function" && element.hasAttribute("multiple")) ||
+            attr(element, "multiple") !== "",
+        });
+      };
       const clickElement = (element) => {
+        recordFileChooser(element);
         element.click();
       };
       const hoverElement = (element) => {
@@ -1131,6 +1295,121 @@ export class CraterResponse {
   }
 }
 
+export class CraterFileChooser {
+  constructor(
+    private readonly pageValue: CraterBidiPage,
+    private readonly selector: string,
+    private readonly multipleValue: boolean,
+  ) {}
+
+  page(): CraterBidiPage {
+    return this.pageValue;
+  }
+
+  isMultiple(): boolean {
+    return this.multipleValue;
+  }
+
+  async setFiles(files: CraterSetInputFilesValue): Promise<void> {
+    await this.pageValue.setInputFiles(this.selector, files);
+  }
+}
+
+export class CraterDialog {
+  private handled = false;
+
+  constructor(
+    private readonly pageValue: CraterBidiPage,
+    private readonly data: CraterDialogEventPayload,
+    private readonly handlePrompt: (
+      context: string,
+      accept: boolean,
+      promptText?: string,
+    ) => Promise<void>,
+  ) {}
+
+  page(): CraterBidiPage {
+    return this.pageValue;
+  }
+
+  type(): CraterDialogType {
+    return this.data.type;
+  }
+
+  message(): string {
+    return this.data.message;
+  }
+
+  defaultValue(): string {
+    return this.data.defaultValue ?? "";
+  }
+
+  async accept(promptText?: string): Promise<void> {
+    await this.handle(true, promptText);
+  }
+
+  async dismiss(): Promise<void> {
+    await this.handle(false);
+  }
+
+  private async handle(accept: boolean, promptText?: string): Promise<void> {
+    if (this.handled) {
+      throw new Error("Dialog has already been handled");
+    }
+    this.handled = true;
+    await this.handlePrompt(this.data.context, accept, promptText);
+  }
+}
+
+export class CraterDownload {
+  constructor(
+    private readonly pageValue: CraterBidiPage,
+    private readonly start: CraterDownloadWillBeginPayload,
+    private readonly endPromise: Promise<CraterDownloadEndPayload>,
+  ) {}
+
+  page(): CraterBidiPage {
+    return this.pageValue;
+  }
+
+  url(): string {
+    return this.start.url;
+  }
+
+  suggestedFilename(): string {
+    return this.start.suggestedFilename;
+  }
+
+  async path(): Promise<string | null> {
+    const end = await this.endPromise;
+    return end.status === "complete" ? end.filepath : null;
+  }
+
+  async failure(): Promise<string | null> {
+    const end = await this.endPromise;
+    return end.status === "complete" ? null : end.status;
+  }
+}
+
+export class CraterRequestFailure {
+  private readonly requestValue: CraterRequest;
+
+  constructor(private readonly data: {
+    request: CraterNetworkRequestPayload;
+    errorText: string;
+  }) {
+    this.requestValue = new CraterRequest(data.request);
+  }
+
+  request(): CraterRequest {
+    return this.requestValue;
+  }
+
+  errorText(): string {
+    return this.data.errorText;
+  }
+}
+
 export class CraterRoute {
   private handledValue = false;
 
@@ -1465,6 +1744,70 @@ export class CraterLocator {
         const el = ${this.queryExpr("querySelector")};
         if (!el) throw new Error("Element not found: ${this.selectorForError()}");
         __craterAction.selectOptions(el, ${requestExpr});
+      })()
+    `);
+  }
+
+  async setInputFiles(files: CraterSetInputFilesValue): Promise<void> {
+    await this.waitFor();
+    const inputFiles = normalizeInputFiles(files);
+    const sourcePaths = inputFiles.map((file) => file.sourcePath);
+    const syntheticFiles = inputFiles.map((file) => ({
+      name: file.name,
+      type: file.type,
+      size: file.size,
+    }));
+    await this.page.evaluate(`
+      (() => {
+        const input = ${this.queryExpr("querySelector")};
+        if (!input) throw new Error("Element not found: ${this.selectorForError()}");
+        const sourcePaths = ${jsValue(sourcePaths)};
+        const syntheticFiles = ${jsValue(syntheticFiles)};
+        const attr = (name) => {
+          try {
+            if (typeof input.getAttribute === "function") return input.getAttribute(name);
+          } catch (_e) {}
+          return input._attrs ? input._attrs[name] : null;
+        };
+        const tag = String(input.localName || input.tagName || input.nodeName || "").toLowerCase();
+        const type = tag === "input" ? String(input.type || attr("type") || "").toLowerCase() : "";
+        const disabled = Boolean(input.disabled) || attr("disabled") !== null;
+        const multiple = Boolean(input.multiple) || attr("multiple") !== null;
+        if (tag !== "input" || type !== "file") {
+          throw new Error("Target is not a file input: ${this.selectorForError()}");
+        }
+        if (disabled || (!multiple && sourcePaths.length > 1)) {
+          throw new Error("Unable to set file input: ${this.selectorForError()}");
+        }
+        const previousSourcePaths = Array.isArray(input.__craterSyntheticSourcePaths)
+          ? input.__craterSyntheticSourcePaths.slice()
+          : [];
+        const sameSelection = previousSourcePaths.length === sourcePaths.length &&
+          previousSourcePaths.every((path, index) => path === sourcePaths[index]);
+        try {
+          Object.defineProperty(input, "files", {
+            configurable: true,
+            get: () => syntheticFiles,
+          });
+        } catch (_e) {
+          input.files = syntheticFiles;
+        }
+        input.__craterSyntheticSourcePaths = sourcePaths.slice();
+        const emit = (type) => {
+          if (typeof Event === "function") {
+            input.dispatchEvent(new Event(type, { bubbles: true }));
+          } else if (document && typeof document.createEvent === "function") {
+            const event = document.createEvent("Event");
+            event.initEvent(type, true, false);
+            input.dispatchEvent(event);
+          }
+        };
+        if (sameSelection) {
+          emit("cancel");
+          return;
+        }
+        emit("input");
+        emit("change");
       })()
     `);
   }
@@ -1816,8 +2159,22 @@ export class CraterBidiPage {
   private routePumpBusy = false;
   private networkHooksInstalled = false;
   private networkHookInstallPromise: Promise<void> | null = null;
+  private networkEventPump: ReturnType<typeof setInterval> | null = null;
+  private networkEventPumpStarting: Promise<void> | null = null;
+  private networkEventPumpBusy = false;
+  private networkEventEmitIndex = 0;
+  private fileChooserEventPump: ReturnType<typeof setInterval> | null = null;
+  private fileChooserEventPumpBusy = false;
+  private fileChooserEventEmitIndex = 0;
+  private dialogSubscribed = false;
+  private dialogSubscribePromise: Promise<void> | null = null;
+  private downloadSubscribed = false;
+  private downloadSubscribePromise: Promise<void> | null = null;
+  private pendingDownloads = new Map<string, CraterPendingDownload>();
   private closed = false;
   private navigationFlushDepth = 0;
+  private pageEventHandlers = new Map<string, Set<CraterPageEventHandler>>();
+  private pageEventWaiters: CraterPageEventWaiter[] = [];
 
   constructor(
     private readonly sharedConnection: SharedBidiConnection | null = null,
@@ -1855,6 +2212,47 @@ export class CraterBidiPage {
     this.eventHandlers.push(handler);
   }
 
+  on<K extends CraterPageEventName>(
+    eventName: K,
+    handler: CraterPageEventHandler<CraterPageEventMap[K]>,
+  ): this {
+    const handlers = this.pageEventHandlers.get(eventName) ?? new Set();
+    handlers.add(handler as CraterPageEventHandler);
+    this.pageEventHandlers.set(eventName, handlers);
+    if (isNetworkPageEvent(eventName)) {
+      void this.startNetworkEventPump();
+    }
+    if (isFileChooserPageEvent(eventName)) {
+      this.startFileChooserEventPump();
+    }
+    if (isDialogPageEvent(eventName)) {
+      void this.ensureDialogSubscription();
+    }
+    if (isDownloadPageEvent(eventName)) {
+      void this.ensureDownloadSubscription();
+    }
+    return this;
+  }
+
+  async waitForEvent<K extends CraterPageEventName>(
+    eventName: K,
+    options: CraterWaitForEventOptions<CraterPageEventMap[K]> = {},
+  ): Promise<CraterPageEventMap[K]> {
+    if (isNetworkPageEvent(eventName)) {
+      return await this.waitForNetworkPageEvent(eventName, options as CraterWaitForEventOptions) as CraterPageEventMap[K];
+    }
+    if (isFileChooserPageEvent(eventName)) {
+      return await this.waitForFileChooserEvent(options as CraterWaitForEventOptions) as CraterPageEventMap[K];
+    }
+    if (isDialogPageEvent(eventName)) {
+      await this.ensureDialogSubscription();
+    }
+    if (isDownloadPageEvent(eventName)) {
+      await this.ensureDownloadSubscription();
+    }
+    return await this.waitForLocalPageEvent(eventName, options as CraterWaitForEventOptions) as CraterPageEventMap[K];
+  }
+
   async close(): Promise<void> {
     if (this.closed) {
       return;
@@ -1872,6 +2270,14 @@ export class CraterBidiPage {
       clearInterval(this.routePump);
       this.routePump = null;
     }
+    if (this.networkEventPump) {
+      clearInterval(this.networkEventPump);
+      this.networkEventPump = null;
+    }
+    if (this.fileChooserEventPump) {
+      clearInterval(this.fileChooserEventPump);
+      this.fileChooserEventPump = null;
+    }
     this.routes = [];
     if (!this.sharedConnection) {
       this.ws?.close();
@@ -1879,6 +2285,7 @@ export class CraterBidiPage {
     }
     this.closed = true;
     this.closeHandler?.(this);
+    this.emitPageEvent("close", this);
   }
 
   async createSiblingPage(closeHandler: CraterPageCloseHandler | null = null): Promise<CraterBidiPage> {
@@ -1905,6 +2312,8 @@ export class CraterBidiPage {
       wait: "complete",
     });
     await this.syncRuntimeLocation(targetUrl);
+    this.emitPageEvent("domcontentloaded", this);
+    this.emitPageEvent("load", this);
     return null;
   }
 
@@ -1914,6 +2323,8 @@ export class CraterBidiPage {
     await this.evaluate(`__loadHTML(${jsString(html)})`);
     await this.runInitScripts();
     await this.evaluate(`(async () => await __executeScripts())()`, { awaitPromise: true });
+    this.emitPageEvent("domcontentloaded", this);
+    this.emitPageEvent("load", this);
   }
 
   async setContentWithScripts(html: string): Promise<void> {
@@ -1978,6 +2389,8 @@ export class CraterBidiPage {
       }
     }
     await this.observeSubresourceLoads(result.url ?? url);
+    this.emitPageEvent("domcontentloaded", this);
+    this.emitPageEvent("load", this);
     return result;
   }
 
@@ -2757,6 +3170,10 @@ export class CraterBidiPage {
     await this.locator(selector).selectOption(value);
   }
 
+  async setInputFiles(selector: string, files: CraterSetInputFilesValue): Promise<void> {
+    await this.locator(selector).setInputFiles(files);
+  }
+
   async screenshot(): Promise<Buffer> {
     return this.captureScreenshot();
   }
@@ -3324,6 +3741,126 @@ export class CraterBidiPage {
     }
   }
 
+  private async startNetworkEventPump(): Promise<void> {
+    if (this.networkEventPump) {
+      return;
+    }
+    if (this.networkEventPumpStarting) {
+      await this.networkEventPumpStarting;
+      return;
+    }
+    this.networkEventPumpStarting = (async () => {
+      await this.installNetworkHooks();
+      this.networkEventPump = setInterval(() => {
+        void this.drainNetworkPageEvents().catch(() => {
+          // Best-effort EventEmitter compatibility; explicit waits surface failures.
+        });
+      }, 10);
+    })();
+    try {
+      await this.networkEventPumpStarting;
+    } finally {
+      this.networkEventPumpStarting = null;
+    }
+  }
+
+  private async drainNetworkPageEvents(): Promise<void> {
+    if (this.networkEventPumpBusy || this.closed) {
+      return;
+    }
+    this.networkEventPumpBusy = true;
+    try {
+      const events = await this.networkEventsSince(this.networkEventEmitIndex);
+      this.networkEventEmitIndex += events.length;
+      for (const event of events) {
+        this.emitNetworkPageEvent(event);
+      }
+    } finally {
+      this.networkEventPumpBusy = false;
+    }
+  }
+
+  private startFileChooserEventPump(): void {
+    if (this.fileChooserEventPump) {
+      return;
+    }
+    this.fileChooserEventPump = setInterval(() => {
+      void this.drainFileChooserPageEvents().catch(() => {
+        // Best-effort EventEmitter compatibility; explicit waits surface failures.
+      });
+    }, 10);
+  }
+
+  private async drainFileChooserPageEvents(): Promise<void> {
+    if (this.fileChooserEventPumpBusy || this.closed) {
+      return;
+    }
+    this.fileChooserEventPumpBusy = true;
+    try {
+      const events = await this.fileChooserEventsSince(this.fileChooserEventEmitIndex);
+      this.fileChooserEventEmitIndex += events.length;
+      for (const event of events) {
+        this.emitPageEvent("filechooser", this.fileChooserPageEventPayload(event));
+      }
+    } finally {
+      this.fileChooserEventPumpBusy = false;
+    }
+  }
+
+  private async ensureDialogSubscription(): Promise<void> {
+    if (this.dialogSubscribed) {
+      return;
+    }
+    if (this.dialogSubscribePromise) {
+      await this.dialogSubscribePromise;
+      return;
+    }
+    this.dialogSubscribePromise = (async () => {
+      const resp = await this.sendBidi("session.subscribe", {
+        events: ["browsingContext.userPromptOpened"],
+        contexts: [this.requireContextId()],
+      });
+      if (resp.type === "error") {
+        throw new Error(resp.message || resp.error || "session.subscribe failed");
+      }
+      this.dialogSubscribed = true;
+    })();
+    try {
+      await this.dialogSubscribePromise;
+    } finally {
+      if (!this.dialogSubscribed) {
+        this.dialogSubscribePromise = null;
+      }
+    }
+  }
+
+  private async ensureDownloadSubscription(): Promise<void> {
+    if (this.downloadSubscribed) {
+      return;
+    }
+    if (this.downloadSubscribePromise) {
+      await this.downloadSubscribePromise;
+      return;
+    }
+    this.downloadSubscribePromise = (async () => {
+      const resp = await this.sendBidi("session.subscribe", {
+        events: ["browsingContext.downloadWillBegin", "browsingContext.downloadEnd"],
+        contexts: [this.requireContextId()],
+      });
+      if (resp.type === "error") {
+        throw new Error(resp.message || resp.error || "session.subscribe failed");
+      }
+      this.downloadSubscribed = true;
+    })();
+    try {
+      await this.downloadSubscribePromise;
+    } finally {
+      if (!this.downloadSubscribed) {
+        this.downloadSubscribePromise = null;
+      }
+    }
+  }
+
   private startRoutePump(): void {
     if (this.routePump) {
       return;
@@ -3386,6 +3923,253 @@ export class CraterBidiPage {
       }
     }
     return null;
+  }
+
+  private async waitForNetworkPageEvent(
+    eventName: "request" | "response" | "requestfailed",
+    options: CraterWaitForEventOptions,
+  ): Promise<CraterPageEventPayload> {
+    await this.installNetworkHooks();
+    const startIndex = 0;
+    const timeout = this.timeoutOrDefault(options.timeout, 3000);
+    const polling = 30;
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      const events = await this.networkEventsSince(startIndex);
+      for (const event of events) {
+        if (event.type !== eventName) continue;
+        const payload = this.networkPageEventPayload(event);
+        if (!payload) continue;
+        if (!options.predicate || await options.predicate(payload)) {
+          return payload;
+        }
+      }
+      await this.waitForTimeout(polling);
+    }
+    throw new Error(`Timeout waiting for event: ${eventName}`);
+  }
+
+  private async waitForFileChooserEvent(
+    options: CraterWaitForEventOptions,
+  ): Promise<CraterFileChooser> {
+    const startIndex = 0;
+    const timeout = this.timeoutOrDefault(options.timeout, 3000);
+    const polling = 30;
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      const events = await this.fileChooserEventsSince(startIndex);
+      for (const event of events) {
+        const payload = this.fileChooserPageEventPayload(event);
+        if (!options.predicate || await options.predicate(payload)) {
+          return payload;
+        }
+      }
+      await this.waitForTimeout(polling);
+    }
+    throw new Error("Timeout waiting for event: filechooser");
+  }
+
+  private waitForLocalPageEvent(
+    eventName: Exclude<CraterPageEventName, "request" | "response" | "requestfailed" | "filechooser">,
+    options: CraterWaitForEventOptions,
+  ): Promise<CraterPageEventPayload> {
+    const timeout = this.timeoutOrDefault(options.timeout, 3000);
+    return new Promise((resolve, reject) => {
+      const waiter: CraterPageEventWaiter = {
+        eventName,
+        predicate: options.predicate,
+        resolve,
+        reject,
+        settled: false,
+        timer: setTimeout(() => {
+          if (waiter.settled) return;
+          waiter.settled = true;
+          this.pageEventWaiters = this.pageEventWaiters.filter((entry) => entry !== waiter);
+          reject(new Error(`Timeout waiting for event: ${eventName}`));
+        }, timeout),
+      };
+      this.pageEventWaiters.push(waiter);
+    });
+  }
+
+  private emitNetworkPageEvent(event: CraterNetworkEventPayload): void {
+    const payload = this.networkPageEventPayload(event);
+    if (!payload) {
+      return;
+    }
+    this.emitPageEvent(event.type, payload);
+  }
+
+  private networkPageEventPayload(event: CraterNetworkEventPayload): CraterPageEventPayload | null {
+    if (event.type === "request") {
+      return new CraterRequest(event.request);
+    }
+    if (event.type === "response") {
+      return new CraterResponse(event.response);
+    }
+    return new CraterRequestFailure({
+      request: event.request,
+      errorText: event.errorText,
+    });
+  }
+
+  private fileChooserPageEventPayload(event: CraterFileChooserEventPayload): CraterFileChooser {
+    return new CraterFileChooser(this, event.selector, event.multiple);
+  }
+
+  private dialogPageEventPayload(params: unknown): CraterDialog | null {
+    if (!params || typeof params !== "object") {
+      return null;
+    }
+    const record = params as Record<string, unknown>;
+    const context = typeof record.context === "string" ? record.context : "";
+    if (!context || context !== this.contextId) {
+      return null;
+    }
+    const rawType = typeof record.type === "string" ? record.type : "alert";
+    const type: CraterDialogType =
+      rawType === "beforeunload" || rawType === "confirm" || rawType === "prompt"
+        ? rawType
+        : "alert";
+    const message = typeof record.message === "string" ? record.message : "";
+    const defaultValue = typeof record.defaultValue === "string" ? record.defaultValue : undefined;
+    return new CraterDialog(
+      this,
+      {
+        context,
+        type,
+        message,
+        defaultValue,
+      },
+      (dialogContext, accept, promptText) =>
+        this.handleDialog(dialogContext, accept, promptText),
+    );
+  }
+
+  private downloadWillBeginPayload(params: unknown): CraterDownloadWillBeginPayload | null {
+    if (!params || typeof params !== "object") {
+      return null;
+    }
+    const record = params as Record<string, unknown>;
+    const context = typeof record.context === "string" ? record.context : "";
+    if (!context || context !== this.contextId) {
+      return null;
+    }
+    const url = typeof record.url === "string" ? record.url : "";
+    if (!url) {
+      return null;
+    }
+    return {
+      context,
+      navigation: typeof record.navigation === "string" ? record.navigation : null,
+      suggestedFilename: typeof record.suggestedFilename === "string"
+        ? record.suggestedFilename
+        : "",
+      url,
+    };
+  }
+
+  private downloadEndPayload(params: unknown): CraterDownloadEndPayload | null {
+    if (!params || typeof params !== "object") {
+      return null;
+    }
+    const record = params as Record<string, unknown>;
+    const context = typeof record.context === "string" ? record.context : "";
+    if (!context || context !== this.contextId) {
+      return null;
+    }
+    const url = typeof record.url === "string" ? record.url : "";
+    if (!url) {
+      return null;
+    }
+    return {
+      context,
+      navigation: typeof record.navigation === "string" ? record.navigation : null,
+      status: typeof record.status === "string" ? record.status : "canceled",
+      filepath: typeof record.filepath === "string" ? record.filepath : null,
+      url,
+    };
+  }
+
+  private downloadEventKey(event: { context: string; navigation: string | null; url: string }): string {
+    return `${event.context}\0${event.navigation ?? event.url}`;
+  }
+
+  private emitDownloadWillBegin(params: unknown): void {
+    const payload = this.downloadWillBeginPayload(params);
+    if (!payload) {
+      return;
+    }
+    let resolveEnd!: (end: CraterDownloadEndPayload) => void;
+    const endPromise = new Promise<CraterDownloadEndPayload>((resolve) => {
+      resolveEnd = resolve;
+    });
+    const download = new CraterDownload(this, payload, endPromise);
+    this.pendingDownloads.set(this.downloadEventKey(payload), { download, resolveEnd });
+    this.emitPageEvent("download", download);
+  }
+
+  private resolveDownloadEnd(params: unknown): void {
+    const payload = this.downloadEndPayload(params);
+    if (!payload) {
+      return;
+    }
+    const key = this.downloadEventKey(payload);
+    const pending = this.pendingDownloads.get(key);
+    if (!pending) {
+      return;
+    }
+    this.pendingDownloads.delete(key);
+    pending.resolveEnd(payload);
+  }
+
+  private async fileChooserEventsSince(index: number): Promise<CraterFileChooserEventPayload[]> {
+    const raw = await this.evaluate<string>(
+      `(() => {
+        const events = Array.isArray(globalThis.__craterFileChooserEvents)
+          ? globalThis.__craterFileChooserEvents
+          : [];
+        return JSON.stringify(events.slice(${index}));
+      })()`,
+    );
+    return JSON.parse(raw) as CraterFileChooserEventPayload[];
+  }
+
+  private async handleDialog(context: string, accept: boolean, promptText?: string): Promise<void> {
+    const params: Record<string, unknown> = { context, accept };
+    if (promptText !== undefined) {
+      params.userText = promptText;
+    }
+    const resp = await this.sendBidi("browsingContext.handleUserPrompt", params);
+    if (resp.type === "error") {
+      throw new Error(resp.message || resp.error || "handleUserPrompt failed");
+    }
+  }
+
+  private emitPageEvent(eventName: CraterPageEventName, payload: CraterPageEventPayload): void {
+    const handlers = this.pageEventHandlers.get(eventName);
+    if (handlers) {
+      for (const handler of handlers) {
+        handler(payload);
+      }
+    }
+    const waiters = this.pageEventWaiters.filter((waiter) => waiter.eventName === eventName);
+    for (const waiter of waiters) {
+      if (waiter.settled) continue;
+      void Promise.resolve(waiter.predicate ? waiter.predicate(payload) : true).then((matched) => {
+        if (!matched || waiter.settled) return;
+        waiter.settled = true;
+        clearTimeout(waiter.timer);
+        this.pageEventWaiters = this.pageEventWaiters.filter((entry) => entry !== waiter);
+        waiter.resolve(payload);
+      }).catch((error) => {
+        if (waiter.settled) return;
+        waiter.settled = true;
+        clearTimeout(waiter.timer);
+        this.pageEventWaiters = this.pageEventWaiters.filter((entry) => entry !== waiter);
+        waiter.reject(error instanceof Error ? error : new Error(String(error)));
+      });
+    }
   }
 
   private async networkEventCount(): Promise<number> {
@@ -3491,12 +4275,28 @@ export class CraterBidiPage {
   }
 
   private handleEventMessage(event: BidiEvent): void {
+    if (event.method === "browsingContext.userPromptOpened") {
+      const dialog = this.dialogPageEventPayload(event.params);
+      if (dialog) {
+        this.emitPageEvent("dialog", dialog);
+      }
+    }
+    if (event.method === "browsingContext.downloadWillBegin") {
+      this.emitDownloadWillBegin(event.params);
+    }
+    if (event.method === "browsingContext.downloadEnd") {
+      this.resolveDownloadEnd(event.params);
+    }
     if (event.method === "browsingContext.load" || event.method === "browsingContext.domContentLoaded") {
       if (this.navigationResolve) {
         this.navigationResolve();
         this.navigationResolve = null;
         this.navigationPromise = null;
       }
+      this.emitPageEvent(
+        event.method === "browsingContext.load" ? "load" : "domcontentloaded",
+        this,
+      );
     }
     for (const handler of this.eventHandlers) {
       handler(event);

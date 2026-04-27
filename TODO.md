@@ -900,7 +900,7 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
   - `webdriver/playwright/supported-apis.ts` を開発ゲートにして、互換性 status (`supported` / `partial` / `crater-extension` / `unsupported`) と実装形態 (`implemented` / `api-mock` / `unsupported`) を分けて追えるようにする
   - 主要 API は Chromium parity test と Crater user scenario test の両方で固定する
 - 現状:
-  - `pnpm test:playwright` -> `73 / 73 passed`
+  - `pnpm test:playwright` -> `77 / 77 passed`
   - `pnpm test:website` -> `33 / 33 passed`
   - `pnpm test:vitest` -> `334 / 334 passed`
   - `pnpm test:node` -> `86 / 86 passed`
@@ -925,7 +925,7 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
 | Screenshot / render | partial + crater-extension | Crater screenshot / paint data / paint tree | Playwright screenshot options (`fullPage`, `clip`, `mask`, browser pixel semantics) |
 | Storage / session | partial | open page からの visible cookies / localStorage snapshot (`context.storageState()`) | storageState preload, httpOnly cookie metadata, cookies API, sessionStorage helper |
 | Frames | partial | `frameLocator(...).locator(...)` で `iframe.contentDocument` / synthetic fixture root 配下を操作できる | 独立 iframe browsing context、iframe navigation、Playwright `frame` API |
-| Dialog / download / file chooser | unsupported | WebDriver BiDi/WPT 側の prompt/file fixture coverage は維持する | Playwright adapter では `page.on`, `waitForEvent`, `setInputFiles`, `locator.setInputFiles` を未採用として明示 |
+| Dialog / download / file chooser | partial | `page.on` / `page.waitForEvent` の `dialog` / `download`、`page.setInputFiles`、`locator.setInputFiles`、`filechooser.setFiles` | native file picker UI、click 起点の汎用 download 検出、download stream/saveAs/delete/cancel |
 
 `implementation=api-mock` は Playwright 互換 API 名を提供するが、ブラウザ相当の実体はなく fixture 用の限定 glue であることを表す。現時点では `page.frameLocator` のみが該当する。`partial + implemented` は実装実体はあるが Playwright と同等ではない範囲を表す。`unsupported` は Playwright API 名を support table に載せるが、adapter の public method としては公開しない明示的な不採用 API を表す。
 

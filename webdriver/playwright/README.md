@@ -120,8 +120,8 @@ that only provide a limited fixture-facing shape.
 |-------|---------|---------------|
 | `browser` | 4 | Lightweight `newContext()`, `newPage()`, `contexts()`, idempotent `close()` wrapper. |
 | `context` | 4 | Lightweight `newPage()`, `pages()`, best-effort `storageState()`, idempotent `close()` over a hidden transport page. |
-| `page` | 73 | Core page, locator/frame-locator factory, navigation, keyboard, wait, network, Crater render/debug helpers, and explicit unsupported event/file APIs. |
-| `locator` | 40 | Locator chaining, nested locator factories, actions, state checks, evaluation, text extraction, and explicit unsupported file upload API. |
+| `page` | 73 | Core page, locator/frame-locator factory, navigation, keyboard, wait, partial event APIs, network, file input upload, and Crater render/debug helpers. |
+| `locator` | 40 | Locator chaining, nested locator factories, actions, state checks, evaluation, text extraction, and file input upload. |
 
 The supported API contract is maintained in `supported-apis.ts` and checked by
 CI via `scripts/playwright-adapter-support.test.ts`. Entries marked `partial`
@@ -132,8 +132,9 @@ Entries marked `implementation: "api-mock"` expose a Playwright-like API name
 without a browser-equivalent implementation body. Currently this applies to
 `page.frameLocator()`, which only roots locators at `iframe.contentDocument`,
 `contentWindow.document`, or a synthetic fixture root.
-Entries marked `unsupported` are explicit non-goals rather than accidental
-omissions. Dialog, download, and file chooser Playwright surfaces such as
-`page.on()`, `page.waitForEvent()`, `page.setInputFiles()`, and
-`locator.setInputFiles()` stay unsupported in the adapter while their WebDriver
-BiDi/WPT protocol coverage remains separate.
+`page.on()` and `page.waitForEvent()` currently cover request, response,
+requestfailed, filechooser, dialog, download, load, domcontentloaded, and close.
+Dialogs are backed by WebDriver BiDi user prompts and support `type()`,
+`message()`, `defaultValue()`, `page()`, `accept()`, and `dismiss()`. Downloads
+are backed by WebDriver BiDi download lifecycle events and expose `url()`,
+`suggestedFilename()`, `page()`, `path()`, and `failure()`.

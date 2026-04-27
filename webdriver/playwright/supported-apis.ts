@@ -219,23 +219,20 @@ const CRATER_PLAYWRIGHT_API_SUPPORT_SOURCE = [
   {
     owner: "page",
     api: "on",
-    status: "unsupported",
-    implementation: "unsupported",
-    notes: "Playwright's EventEmitter-style page.on() API is not implemented; dialog/download/filechooser events are intentionally unsupported at the adapter layer for now.",
+    status: "partial",
+    notes: "Registers EventEmitter-style listeners for request, response, requestfailed, filechooser, dialog, download, load, domcontentloaded, and close.",
   },
   {
     owner: "page",
     api: "waitForEvent",
-    status: "unsupported",
-    implementation: "unsupported",
-    notes: "Playwright waitForEvent() is not implemented; dialog/download/filechooser flows should stay in WebDriver BiDi/WPT coverage until an adapter user scenario is defined.",
+    status: "partial",
+    notes: "Waits for request, response, requestfailed, filechooser, dialog, download, load, domcontentloaded, and close with an optional predicate.",
   },
   {
     owner: "page",
     api: "setInputFiles",
-    status: "unsupported",
-    implementation: "unsupported",
-    notes: "Playwright page.setInputFiles() is not implemented; WebDriver BiDi input.setFiles coverage exists, but there is no Playwright adapter wrapper yet.",
+    status: "partial",
+    notes: "Sets attached file inputs from string paths or FilePayload-style objects and dispatches input/change/cancel events; file chooser UI is not implemented.",
   },
   {
     owner: "page",
@@ -660,9 +657,8 @@ const CRATER_PLAYWRIGHT_API_SUPPORT_SOURCE = [
   {
     owner: "locator",
     api: "setInputFiles",
-    status: "unsupported",
-    implementation: "unsupported",
-    notes: "Playwright locator.setInputFiles() is not implemented; file chooser and file input upload scenarios are not exposed through the adapter yet.",
+    status: "partial",
+    notes: "Resolves an attached locator target and sets file inputs from string paths or FilePayload-style objects with synthetic input/change/cancel events; file chooser UI is not implemented.",
   },
   {
     owner: "locator",
