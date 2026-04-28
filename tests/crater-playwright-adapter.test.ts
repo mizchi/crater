@@ -1,3 +1,6 @@
+import { access, mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import {
   CraterBidiPage,
@@ -254,8 +257,44 @@ test.describe("Crater Playwright adapter package", () => {
     expect(download.url()).toBe("data:text/plain,hello");
     expect(download.suggestedFilename()).toBe("hello.txt");
     await expect(download.failure()).resolves.toBeNull();
-    await expect(download.path()).resolves.toContain("hello.txt");
+    const downloadPath = await download.path();
+    expect(downloadPath).toContain("hello.txt");
     expect(download.page()).toBe(page);
+
+    const outputDir = await mkdtemp(join(tmpdir(), "crater-download-"));
+    try {
+      const savedPath = join(outputDir, "saved.txt");
+      await download.saveAs(savedPath);
+      await expect(readFile(savedPath, "utf8")).resolves.toBe("hello");
+
+      await download.cancel();
+      await expect(download.failure()).resolves.toBeNull();
+
+      await download.delete();
+      await expect(access(downloadPath!)).rejects.toThrow();
+    } finally {
+      await rm(outputDir, { force: true, recursive: true });
+    }
+  });
+
+  test("supports console events from evaluated page code", async () => {
+    const observed: string[] = [];
+    page.on("console", (message) => {
+      observed.push(`${message.type()}:${message.text()}`);
+    });
+
+    const consolePromise = page.waitForEvent("console", {
+      predicate: (message) => message.text().includes("ready"),
+    });
+    await page.evaluate(() => {
+      console.log("adapter", "ready");
+    });
+
+    const message = await consolePromise;
+    expect(message.type()).toBe("log");
+    expect(message.text()).toBe("adapter ready");
+    expect(message.page()).toBe(page);
+    expect(observed).toEqual(["log:adapter ready"]);
   });
 });
 
@@ -347,6 +386,369 @@ test.describe("Crater browser/context wrapper", () => {
           { name: "theme", value: "dark" },
           { name: "token", value: "abc" },
         ],
+      });
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test("supports context cookies through the storage backend", async () => {
+    const browser = createCraterBrowser();
+    const context = await browser.newContext();
+    try {
+      const page = await context.newPage();
+      await page.setContent("<html><body>cookies</body></html>");
+      await page.evaluate(() => {
+        history.pushState({}, "", "https://example.test/app");
+      });
+
+      await context.addCookies([
+        {
+          name: "sid",
+          value: "abc",
+          domain: "example.test",
+          path: "/",
+          expires: -1,
+          httpOnly: false,
+          secure: true,
+          sameSite: "Lax",
+        },
+        {
+          name: "scoped",
+          value: "from-url",
+          url: "https://example.test/app/page",
+          sameSite: "Lax",
+        },
+      ]);
+
+      await expect(context.cookies()).resolves.toMatchObject([
+        {
+          name: "sid",
+          value: "abc",
+          domain: "example.test",
+          path: "/",
+          secure: true,
+          sameSite: "Lax",
+        },
+        {
+          name: "scoped",
+          value: "from-url",
+          domain: "example.test",
+          path: "/app",
+          secure: true,
+          sameSite: "Lax",
+        },
+      ]);
+      await expect(context.cookies("https://example.test/app/page")).resolves.toMatchObject([
+        { name: "sid" },
+        { name: "scoped" },
+      ]);
+      await expect(context.cookies("https://example.test/other")).resolves.toMatchObject([
+        { name: "sid" },
+      ]);
+      await expect(page.evaluate<string>("document.cookie")).resolves.toContain("sid=abc");
+
+      await context.clearCookies({ name: "sid" });
+      await expect(context.cookies()).resolves.toMatchObject([
+        { name: "scoped", value: "from-url" },
+      ]);
+
+      await context.clearCookies({ domain: /example\.test/, path: "/app" });
+      await expect(context.cookies()).resolves.toEqual([]);
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test("preloads storageState when creating a browser context", async () => {
+    const browser = createCraterBrowser();
+    const context = await browser.newContext({
+      storageState: {
+        cookies: [
+          {
+            name: "sid",
+            value: "from-state",
+            domain: "example.test",
+            path: "/",
+            expires: -1,
+            httpOnly: false,
+            secure: true,
+            sameSite: "Lax",
+          },
+        ],
+        origins: [
+          {
+            origin: "about:blank",
+            localStorage: [{ name: "theme", value: "dark" }],
+          },
+        ],
+      },
+    });
+    try {
+      const page = await context.newPage();
+      await page.setContent("<html><body>storage preload</body></html>");
+
+      await expect(page.evaluate<string>("localStorage.getItem('theme')")).resolves.toBe("dark");
+
+      await page.evaluate(() => {
+        history.pushState({}, "", "https://example.test/app");
+      });
+      await expect(page.evaluate<string>("document.cookie")).resolves.toContain("sid=from-state");
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test("round-trips storageState through a file path", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "crater-storage-state-"));
+    const storagePath = join(dir, "state.json");
+    const browser = createCraterBrowser();
+    try {
+      const context = await browser.newContext({
+        storageState: {
+          cookies: [
+            {
+              name: "sid",
+              value: "file-state",
+              domain: "example.test",
+              path: "/",
+              expires: -1,
+              httpOnly: false,
+              secure: true,
+              sameSite: "Lax",
+            },
+          ],
+          origins: [
+            {
+              origin: "about:blank",
+              localStorage: [{ name: "theme", value: "file" }],
+            },
+          ],
+        },
+      });
+      await context.storageState({ path: storagePath });
+      await context.close();
+
+      const saved = JSON.parse(await readFile(storagePath, "utf8"));
+      expect(saved.cookies).toMatchObject([{ name: "sid", value: "file-state" }]);
+      expect(saved.origins).toContainEqual({
+        origin: "about:blank",
+        localStorage: [{ name: "theme", value: "file" }],
+      });
+
+      const restoredContext = await browser.newContext({ storageState: storagePath });
+      const page = await restoredContext.newPage();
+      await page.setContent("<html><body>storage path</body></html>");
+      await expect(page.evaluate<string>("localStorage.getItem('theme')")).resolves.toBe("file");
+      await page.evaluate(() => {
+        history.pushState({}, "", "https://example.test/app");
+      });
+      await expect(page.evaluate<string>("document.cookie")).resolves.toContain("sid=file-state");
+    } finally {
+      await browser.close();
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("supports context route for existing and future pages", async () => {
+    const browser = createCraterBrowser();
+    const context = await browser.newContext();
+    const renderFetchResult = async (page: CraterBidiPage, selector: string) => {
+      const id = selector.slice(1);
+      await page.setContentWithScripts(`
+        <html>
+          <body>
+            <div id="${id}">pending</div>
+            <script>
+              const setResult = (text) => {
+                const target = document.getElementById(${JSON.stringify(id)});
+                if (target) target.textContent = text;
+              };
+              fetch("/api/context-route")
+                .then((response) => response.text())
+                .then(setResult)
+                .catch((error) => setResult("error:" + error.message));
+            </script>
+          </body>
+        </html>
+      `);
+      await page.waitForText(selector, "context-routed");
+      return page.locator(selector).textContent();
+    };
+
+    try {
+      const firstPage = await context.newPage();
+      await context.route("/api/context-route", async (route) => {
+        await route.fulfill({
+          contentType: "text/plain",
+          body: "context-routed",
+        });
+      });
+
+      await expect(renderFetchResult(firstPage, "#first")).resolves.toBe("context-routed");
+      await firstPage.close();
+
+      const secondPage = await context.newPage();
+      await expect(renderFetchResult(secondPage, "#second")).resolves.toBe("context-routed");
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test("applies viewport and userAgent options to context pages", async () => {
+    const browser = createCraterBrowser();
+    const context = await browser.newContext({
+      viewport: { width: 360, height: 240 },
+      userAgent: "CraterTest/1.0",
+    });
+    try {
+      const page = await context.newPage();
+      await expect(page.evaluate<number>("window.innerWidth")).resolves.toBe(360);
+      await expect(page.evaluate<number>("window.innerHeight")).resolves.toBe(240);
+      await expect(page.evaluate<string>("navigator.userAgent")).resolves.toBe("CraterTest/1.0");
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test("supports context addInitScript for existing and future pages", async () => {
+    const browser = createCraterBrowser();
+    const context = await browser.newContext();
+    try {
+      const existingPage = await context.newPage();
+      await context.addInitScript("globalThis.__contextInit = 'ready'");
+
+      await existingPage.setContentWithScripts(`
+        <html>
+          <body>
+            <output id="status">pending</output>
+            <script>
+              document.getElementById("status").textContent = globalThis.__contextInit || "missing";
+            </script>
+          </body>
+        </html>
+      `);
+      await expect(existingPage.locator("#status").textContent()).resolves.toBe("ready");
+
+      const futurePage = await context.newPage();
+      await futurePage.setContentWithScripts(`
+        <html>
+          <body>
+            <output id="status">pending</output>
+            <script>
+              document.getElementById("status").textContent = globalThis.__contextInit || "missing";
+            </script>
+          </body>
+        </html>
+      `);
+      await expect(futurePage.locator("#status").textContent()).resolves.toBe("ready");
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test("propagates context default timeout to existing and future pages", async () => {
+    const browser = createCraterBrowser();
+    const context = await browser.newContext();
+    try {
+      const existingPage = await context.newPage();
+      context.setDefaultTimeout(50);
+
+      const startedExisting = Date.now();
+      await expect(existingPage.waitForText("#missing", "ready")).rejects.toThrow(/Timeout/);
+      expect(Date.now() - startedExisting).toBeLessThan(1000);
+
+      const futurePage = await context.newPage();
+      const startedFuture = Date.now();
+      await expect(futurePage.waitForText("#missing", "ready")).rejects.toThrow(/Timeout/);
+      expect(Date.now() - startedFuture).toBeLessThan(1000);
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test("applies locale option to context pages", async () => {
+    const browser = createCraterBrowser();
+    const context = await browser.newContext({ locale: "fr-ca" });
+    try {
+      const page = await context.newPage();
+      await expect(page.evaluate<string>("navigator.language")).resolves.toBe("fr-CA");
+      await expect(page.evaluate<string>("navigator.languages[0]")).resolves.toBe("fr-CA");
+      await expect(
+        page.evaluate<string>("new Intl.DateTimeFormat().resolvedOptions().locale"),
+      ).resolves.toBe("fr-CA");
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test("supports context offline override for existing and future pages", async () => {
+    const browser = createCraterBrowser();
+    const context = await browser.newContext({ offline: true });
+    try {
+      const firstPage = await context.newPage();
+      await expect(firstPage.evaluate<boolean>("navigator.onLine")).resolves.toBe(false);
+
+      await context.setOffline(false);
+      await expect(firstPage.evaluate<boolean>("navigator.onLine")).resolves.toBe(true);
+
+      await context.setOffline(true);
+      const secondPage = await context.newPage();
+      await expect(secondPage.evaluate<boolean>("navigator.onLine")).resolves.toBe(false);
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test("supports context permissions and geolocation for existing and future pages", async () => {
+    const browser = createCraterBrowser();
+    const context = await browser.newContext({
+      geolocation: { latitude: 35.1, longitude: 139.2, accuracy: 7 },
+      permissions: ["geolocation"],
+    });
+    const queryGeolocationPermission = (target: CraterBidiPage) =>
+      target.evaluate<string>(
+        "navigator.permissions.query({ name: 'geolocation' }).then((status) => status.state)",
+        { awaitPromise: true },
+      );
+    const currentPosition = (target: CraterBidiPage) =>
+      target.evaluate<Record<string, number>>(
+        `new Promise((resolve) => navigator.geolocation.getCurrentPosition(
+          (position) => resolve(position.coords.toJSON()),
+          (error) => resolve({ code: error.code }),
+          { timeout: 500 }
+        ))`,
+        { awaitPromise: true },
+      );
+    try {
+      const firstPage = await context.newPage();
+      await firstPage.goto("data:text/html,geolocation");
+      await expect(queryGeolocationPermission(firstPage)).resolves.toBe("granted");
+      await expect(currentPosition(firstPage)).resolves.toMatchObject({
+        latitude: 35.1,
+        longitude: 139.2,
+        accuracy: 7,
+      });
+
+      await context.clearPermissions();
+      await expect(queryGeolocationPermission(firstPage)).resolves.toBe("prompt");
+      await expect(currentPosition(firstPage)).resolves.toMatchObject({ code: 1 });
+
+      await context.grantPermissions(["geolocation"], { origin: "http://localhost:8000" });
+      await context.setGeolocation({ latitude: 10, longitude: 20, accuracy: 3 });
+      await expect(currentPosition(firstPage)).resolves.toMatchObject({
+        latitude: 10,
+        longitude: 20,
+        accuracy: 3,
+      });
+
+      const secondPage = await context.newPage();
+      await secondPage.goto("data:text/html,geolocation-future");
+      await expect(queryGeolocationPermission(secondPage)).resolves.toBe("granted");
+      await expect(currentPosition(secondPage)).resolves.toMatchObject({
+        latitude: 10,
+        longitude: 20,
+        accuracy: 3,
       });
     } finally {
       await browser.close();

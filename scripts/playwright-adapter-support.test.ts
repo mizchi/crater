@@ -16,10 +16,21 @@ const expectedBrowserApis = [
 ];
 
 const expectedContextApis = [
+  "addCookies",
+  "addInitScript",
+  "clearCookies",
+  "clearPermissions",
   "close",
+  "cookies",
+  "grantPermissions",
   "newPage",
   "pages",
+  "route",
+  "setDefaultTimeout",
+  "setGeolocation",
+  "setOffline",
   "storageState",
+  "unroute",
 ];
 
 const expectedPageApis = [
