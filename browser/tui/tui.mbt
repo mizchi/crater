@@ -54,17 +54,17 @@ pub fn key_to_action(key : String) -> BrowserAction? {
       // "MouseUp:col,row", "MouseMove:col,row",
       // "MouseScrollUp:col,row", or "MouseScrollDown:col,row"
       if key.has_prefix("MouseScrollUp:") {
-        parse_mouse_scroll_up(key)
+        parse_mouse_action(key, "MouseScrollUp:", MouseScrollUpKind)
       } else if key.has_prefix("MouseScrollDown:") {
-        parse_mouse_scroll_down(key)
+        parse_mouse_action(key, "MouseScrollDown:", MouseScrollDownKind)
       } else if key.has_prefix("MouseDown:") {
-        parse_mouse_down(key)
+        parse_mouse_action(key, "MouseDown:", MouseDownKind)
       } else if key.has_prefix("MouseUp:") {
-        parse_mouse_up(key)
+        parse_mouse_action(key, "MouseUp:", MouseUpKind)
       } else if key.has_prefix("MouseMove:") {
-        parse_mouse_move(key)
+        parse_mouse_action(key, "MouseMove:", MouseMoveKind)
       } else if key.has_prefix("Mouse:") {
-        parse_mouse_click(key)
+        parse_mouse_action(key, "Mouse:", MouseClickKind)
       } else {
         None
       }
@@ -93,28 +93,38 @@ pub fn key_to_hint_action(key : String) -> BrowserAction? {
 }
 
 ///|
-/// Parse mouse click event "Mouse:col,row" into MouseClick action
-fn parse_mouse_click(key : String) -> BrowserAction? {
-  // Format: "Mouse:col,row"
-  let parts = key.unsafe_substring(start=6, end=key.length())
-  match parts.find(",") {
-    Some(comma_idx) => {
-      let col_str = parts.unsafe_substring(start=0, end=comma_idx)
-      let row_str = parts.unsafe_substring(
-        start=comma_idx + 1,
-        end=parts.length(),
-      )
-      let col = @string.parse_int(col_str) catch { _ => return None }
-      let row = @string.parse_int(row_str) catch { _ => return None }
-      Some(MouseClick(col, row))
-    }
-    None => None
+priv enum MouseActionKind {
+  MouseClickKind
+  MouseDownKind
+  MouseUpKind
+  MouseMoveKind
+  MouseScrollUpKind
+  MouseScrollDownKind
+}
+
+///|
+fn MouseActionKind::to_action(
+  self : MouseActionKind,
+  col : Int,
+  row : Int,
+) -> BrowserAction {
+  match self {
+    MouseClickKind => MouseClick(col, row)
+    MouseDownKind => MouseDown(col, row)
+    MouseUpKind => MouseUp(col, row)
+    MouseMoveKind => MouseMove(col, row)
+    MouseScrollUpKind => MouseScrollUp(col, row)
+    MouseScrollDownKind => MouseScrollDown(col, row)
   }
 }
 
 ///|
-fn parse_mouse_down(key : String) -> BrowserAction? {
-  let parts = key.unsafe_substring(start=10, end=key.length())
+fn parse_mouse_action(
+  key : String,
+  prefix : String,
+  kind : MouseActionKind,
+) -> BrowserAction? {
+  let parts = key.unsafe_substring(start=prefix.length(), end=key.length())
   match parts.find(",") {
     Some(comma_idx) => {
       let col_str = parts.unsafe_substring(start=0, end=comma_idx)
@@ -124,83 +134,7 @@ fn parse_mouse_down(key : String) -> BrowserAction? {
       )
       let col = @string.parse_int(col_str) catch { _ => return None }
       let row = @string.parse_int(row_str) catch { _ => return None }
-      Some(MouseDown(col, row))
-    }
-    None => None
-  }
-}
-
-///|
-fn parse_mouse_up(key : String) -> BrowserAction? {
-  let parts = key.unsafe_substring(start=8, end=key.length())
-  match parts.find(",") {
-    Some(comma_idx) => {
-      let col_str = parts.unsafe_substring(start=0, end=comma_idx)
-      let row_str = parts.unsafe_substring(
-        start=comma_idx + 1,
-        end=parts.length(),
-      )
-      let col = @string.parse_int(col_str) catch { _ => return None }
-      let row = @string.parse_int(row_str) catch { _ => return None }
-      Some(MouseUp(col, row))
-    }
-    None => None
-  }
-}
-
-///|
-fn parse_mouse_move(key : String) -> BrowserAction? {
-  let parts = key.unsafe_substring(start=10, end=key.length())
-  match parts.find(",") {
-    Some(comma_idx) => {
-      let col_str = parts.unsafe_substring(start=0, end=comma_idx)
-      let row_str = parts.unsafe_substring(
-        start=comma_idx + 1,
-        end=parts.length(),
-      )
-      let col = @string.parse_int(col_str) catch { _ => return None }
-      let row = @string.parse_int(row_str) catch { _ => return None }
-      Some(MouseMove(col, row))
-    }
-    None => None
-  }
-}
-
-///|
-/// Parse mouse scroll up event "MouseScrollUp:col,row"
-fn parse_mouse_scroll_up(key : String) -> BrowserAction? {
-  // Format: "MouseScrollUp:col,row"
-  let parts = key.unsafe_substring(start=14, end=key.length())
-  match parts.find(",") {
-    Some(comma_idx) => {
-      let col_str = parts.unsafe_substring(start=0, end=comma_idx)
-      let row_str = parts.unsafe_substring(
-        start=comma_idx + 1,
-        end=parts.length(),
-      )
-      let col = @string.parse_int(col_str) catch { _ => return None }
-      let row = @string.parse_int(row_str) catch { _ => return None }
-      Some(MouseScrollUp(col, row))
-    }
-    None => None
-  }
-}
-
-///|
-/// Parse mouse scroll down event "MouseScrollDown:col,row"
-fn parse_mouse_scroll_down(key : String) -> BrowserAction? {
-  // Format: "MouseScrollDown:col,row"
-  let parts = key.unsafe_substring(start=16, end=key.length())
-  match parts.find(",") {
-    Some(comma_idx) => {
-      let col_str = parts.unsafe_substring(start=0, end=comma_idx)
-      let row_str = parts.unsafe_substring(
-        start=comma_idx + 1,
-        end=parts.length(),
-      )
-      let col = @string.parse_int(col_str) catch { _ => return None }
-      let row = @string.parse_int(row_str) catch { _ => return None }
-      Some(MouseScrollDown(col, row))
+      Some(kind.to_action(col, row))
     }
     None => None
   }

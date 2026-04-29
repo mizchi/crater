@@ -201,6 +201,47 @@ pub fn CharBuffer::get_row_text(self : CharBuffer, row : Int) -> String {
 }
 
 ///|
+fn CharBuffer::styled_cell_at(
+  self : CharBuffer,
+  x : Int,
+  y : Int,
+  c : Char,
+  style : TextStyle,
+) -> CharCell {
+  let bg = if style.bg.is_transparent() {
+    self.get_cell(x, y).bg
+  } else {
+    style.bg
+  }
+  {
+    char: c,
+    fg: style.fg,
+    bg,
+    bold: style.bold,
+    underline: style.underline,
+    reverse: false,
+  }
+}
+
+///|
+fn CharBuffer::write_styled_char(
+  self : CharBuffer,
+  x : Int,
+  y : Int,
+  c : Char,
+  style : TextStyle,
+  end_x : Int,
+) -> Int {
+  let width = char_display_width(c)
+  self.set_cell(x, y, self.styled_cell_at(x, y, c, style))
+  // For wide characters, fill next cell with a placeholder.
+  if width == 2 && x + 1 < end_x {
+    self.set_cell(x + 1, y, self.styled_cell_at(x + 1, y, '\u0000', style))
+  }
+  width
+}
+
+///|
 /// Write text at position with style
 /// Returns the number of columns written
 /// Note: If style.bg is transparent, preserves existing cell background
@@ -228,41 +269,7 @@ pub fn CharBuffer::write_text(
     if cur_x + width > end_x {
       break
     }
-    // Determine background: preserve existing if style.bg is transparent
-    let bg = if style.bg.is_transparent() {
-      self.get_cell(cur_x, y).bg
-    } else {
-      style.bg
-    }
-    // Write the character
-    let cell : CharCell = {
-      char: c,
-      fg: style.fg,
-      bg,
-      bold: style.bold,
-      underline: style.underline,
-      reverse: false,
-    }
-    self.set_cell(cur_x, y, cell)
-    // For wide characters, fill next cell with a placeholder
-    if width == 2 && cur_x + 1 < end_x {
-      let next_bg = if style.bg.is_transparent() {
-        self.get_cell(cur_x + 1, y).bg
-      } else {
-        style.bg
-      }
-      // Use a special marker for the second half of wide char
-      let placeholder : CharCell = {
-        char: '\u0000', // Null as placeholder for wide char continuation
-        fg: style.fg,
-        bg: next_bg,
-        bold: style.bold,
-        underline: style.underline,
-        reverse: false,
-      }
-      self.set_cell(cur_x + 1, y, placeholder)
-    }
-    cur_x = cur_x + width
+    cur_x += self.write_styled_char(cur_x, y, c, style, end_x)
   }
   cur_x - x
 }
@@ -311,40 +318,7 @@ pub fn CharBuffer::write_text_pre(
     if cur_x + width > end_x {
       continue // Skip characters that don't fit
     }
-    // Determine background: preserve existing if style.bg is transparent
-    let bg = if style.bg.is_transparent() {
-      self.get_cell(cur_x, cur_y).bg
-    } else {
-      style.bg
-    }
-    // Write the character
-    let cell : CharCell = {
-      char: c,
-      fg: style.fg,
-      bg,
-      bold: style.bold,
-      underline: style.underline,
-      reverse: false,
-    }
-    self.set_cell(cur_x, cur_y, cell)
-    // For wide characters, fill next cell with a placeholder
-    if width == 2 && cur_x + 1 < end_x {
-      let next_bg = if style.bg.is_transparent() {
-        self.get_cell(cur_x + 1, cur_y).bg
-      } else {
-        style.bg
-      }
-      let placeholder : CharCell = {
-        char: '\u0000',
-        fg: style.fg,
-        bg: next_bg,
-        bold: style.bold,
-        underline: style.underline,
-        reverse: false,
-      }
-      self.set_cell(cur_x + 1, cur_y, placeholder)
-    }
-    cur_x = cur_x + width
+    cur_x += self.write_styled_char(cur_x, cur_y, c, style, end_x)
   }
   cur_y - y + 1
 }
@@ -389,39 +363,7 @@ pub fn CharBuffer::write_text_wrapped(
         break
       }
     }
-    // Determine background: preserve existing if style.bg is transparent
-    let bg = if style.bg.is_transparent() {
-      self.get_cell(cur_x, cur_y).bg
-    } else {
-      style.bg
-    }
-    // Write the character
-    let cell : CharCell = {
-      char: c,
-      fg: style.fg,
-      bg,
-      bold: style.bold,
-      underline: style.underline,
-      reverse: false,
-    }
-    self.set_cell(cur_x, cur_y, cell)
-    if width == 2 && cur_x + 1 < end_x {
-      let next_bg = if style.bg.is_transparent() {
-        self.get_cell(cur_x + 1, cur_y).bg
-      } else {
-        style.bg
-      }
-      let placeholder : CharCell = {
-        char: '\u0000',
-        fg: style.fg,
-        bg: next_bg,
-        bold: style.bold,
-        underline: style.underline,
-        reverse: false,
-      }
-      self.set_cell(cur_x + 1, cur_y, placeholder)
-    }
-    cur_x = cur_x + width
+    cur_x += self.write_styled_char(cur_x, cur_y, c, style, end_x)
   }
   cur_y - y + 1
 }

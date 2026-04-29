@@ -92,13 +92,71 @@ pub fn ansi_bg_color(color : @types.Color) -> String {
 }
 
 ///|
+priv struct AnsiStyleState {
+  mut fg : Int
+  mut bg : Int
+  mut bold : Bool
+  mut underline : Bool
+}
+
+///|
+fn AnsiStyleState::new() -> AnsiStyleState {
+  { fg: -1, bg: -1, bold: false, underline: false }
+}
+
+///|
+fn AnsiStyleState::reset(self : AnsiStyleState) -> Unit {
+  self.fg = -1
+  self.bg = -1
+  self.bold = false
+  self.underline = false
+}
+
+///|
+fn AnsiStyleState::write_cell_style(
+  self : AnsiStyleState,
+  sb : StringBuilder,
+  cell : CharCell,
+) -> Unit {
+  let fg_idx = if cell.fg.is_transparent() {
+    7 // Default white
+  } else {
+    color_to_256(cell.fg)
+  }
+  let bg_idx = if cell.bg.is_transparent() {
+    -1 // No background
+  } else {
+    color_to_256(cell.bg)
+  }
+  let need_reset = (self.bold && !cell.bold) ||
+    (self.underline && !cell.underline)
+  if need_reset {
+    sb.write_string(ansi_reset())
+    self.reset()
+  }
+  if cell.bold && !self.bold {
+    sb.write_string(ansi_bold())
+    self.bold = true
+  }
+  if cell.underline && !self.underline {
+    sb.write_string(ansi_underline())
+    self.underline = true
+  }
+  if fg_idx != self.fg {
+    sb.write_string(ansi_fg_256(fg_idx))
+    self.fg = fg_idx
+  }
+  if bg_idx >= 0 && bg_idx != self.bg {
+    sb.write_string(ansi_bg_256(bg_idx))
+    self.bg = bg_idx
+  }
+}
+
+///|
 /// Convert CharBuffer to ANSI-encoded string
 pub fn buffer_to_ansi(buf : CharBuffer, max_cols? : Int = 0) -> String {
   let sb = StringBuilder::new()
-  let mut last_fg = -1
-  let mut last_bg = -1
-  let mut last_bold = false
-  let mut last_underline = false
+  let style_state = AnsiStyleState::new()
   let cols = if max_cols > 0 && max_cols < buf.width {
     max_cols
   } else {
@@ -113,48 +171,7 @@ pub fn buffer_to_ansi(buf : CharBuffer, max_cols? : Int = 0) -> String {
       if cell.char == '\u0000' {
         continue
       }
-      // Calculate new colors
-      let fg_idx = if cell.fg.is_transparent() {
-        7 // Default white
-      } else {
-        color_to_256(cell.fg)
-      }
-      let bg_idx = if cell.bg.is_transparent() {
-        -1 // No background
-      } else {
-        color_to_256(cell.bg)
-      }
-      // Check if we need to change attributes
-      let need_reset = (last_bold && !cell.bold) ||
-        (last_underline && !cell.underline)
-      if need_reset {
-        sb.write_string(ansi_reset())
-        last_fg = -1
-        last_bg = -1
-        last_bold = false
-        last_underline = false
-      }
-      // Set bold if needed
-      if cell.bold && !last_bold {
-        sb.write_string(ansi_bold())
-        last_bold = true
-      }
-      // Set underline if needed
-      if cell.underline && !last_underline {
-        sb.write_string(ansi_underline())
-        last_underline = true
-      }
-      // Set foreground if changed
-      if fg_idx != last_fg {
-        sb.write_string(ansi_fg_256(fg_idx))
-        last_fg = fg_idx
-      }
-      // Set background if changed
-      if bg_idx >= 0 && bg_idx != last_bg {
-        sb.write_string(ansi_bg_256(bg_idx))
-        last_bg = bg_idx
-      }
-      // Write the character
+      style_state.write_cell_style(sb, cell)
       sb.write_char(cell.char)
     }
   }
@@ -173,10 +190,7 @@ pub fn buffer_diff_to_ansi(
   let sb = StringBuilder::new()
   let mut last_row = -1
   let mut last_col = -1
-  let mut last_fg = -1
-  let mut last_bg = -1
-  let mut last_bold = false
-  let mut last_underline = false
+  let style_state = AnsiStyleState::new()
   let cols = if max_cols > 0 && max_cols < current.width {
     max_cols
   } else {
@@ -198,42 +212,7 @@ pub fn buffer_diff_to_ansi(
       if row != last_row || col != last_col + 1 {
         sb.write_string(ansi_move_to(row + 1, col + 1))
       }
-      // Apply styles and write character (same as buffer_to_ansi)
-      let fg_idx = if cell.fg.is_transparent() {
-        7
-      } else {
-        color_to_256(cell.fg)
-      }
-      let bg_idx = if cell.bg.is_transparent() {
-        -1
-      } else {
-        color_to_256(cell.bg)
-      }
-      let need_reset = (last_bold && !cell.bold) ||
-        (last_underline && !cell.underline)
-      if need_reset {
-        sb.write_string(ansi_reset())
-        last_fg = -1
-        last_bg = -1
-        last_bold = false
-        last_underline = false
-      }
-      if cell.bold && !last_bold {
-        sb.write_string(ansi_bold())
-        last_bold = true
-      }
-      if cell.underline && !last_underline {
-        sb.write_string(ansi_underline())
-        last_underline = true
-      }
-      if fg_idx != last_fg {
-        sb.write_string(ansi_fg_256(fg_idx))
-        last_fg = fg_idx
-      }
-      if bg_idx >= 0 && bg_idx != last_bg {
-        sb.write_string(ansi_bg_256(bg_idx))
-        last_bg = bg_idx
-      }
+      style_state.write_cell_style(sb, cell)
       sb.write_char(cell.char)
       last_row = row
       last_col = col
@@ -266,10 +245,7 @@ pub fn buffer_diff_to_ansi_rects(
   let sb = StringBuilder::new()
   let mut last_row = -1
   let mut last_col = -1
-  let mut last_fg = -1
-  let mut last_bg = -1
-  let mut last_bold = false
-  let mut last_underline = false
+  let style_state = AnsiStyleState::new()
   let clip_width = if max_cols > 0 && max_cols < current.width {
     max_cols
   } else {
@@ -318,41 +294,7 @@ pub fn buffer_diff_to_ansi_rects(
         if row != last_row || col != last_col + 1 {
           sb.write_string(ansi_move_to(row + 1, col + 1))
         }
-        let fg_idx = if cell.fg.is_transparent() {
-          7
-        } else {
-          color_to_256(cell.fg)
-        }
-        let bg_idx = if cell.bg.is_transparent() {
-          -1
-        } else {
-          color_to_256(cell.bg)
-        }
-        let need_reset = (last_bold && !cell.bold) ||
-          (last_underline && !cell.underline)
-        if need_reset {
-          sb.write_string(ansi_reset())
-          last_fg = -1
-          last_bg = -1
-          last_bold = false
-          last_underline = false
-        }
-        if cell.bold && !last_bold {
-          sb.write_string(ansi_bold())
-          last_bold = true
-        }
-        if cell.underline && !last_underline {
-          sb.write_string(ansi_underline())
-          last_underline = true
-        }
-        if fg_idx != last_fg {
-          sb.write_string(ansi_fg_256(fg_idx))
-          last_fg = fg_idx
-        }
-        if bg_idx >= 0 && bg_idx != last_bg {
-          sb.write_string(ansi_bg_256(bg_idx))
-          last_bg = bg_idx
-        }
+        style_state.write_cell_style(sb, cell)
         sb.write_char(cell.char)
         last_row = row
         last_col = col
@@ -395,32 +337,14 @@ pub fn ansi_hyperlink_end() -> String {
 /// Preserves underline attribute for links
 pub fn buffer_to_plain(buf : CharBuffer) -> String {
   let sb = StringBuilder::new()
-  let mut last_underline = false
+  let style_state = PlainStyleState::new()
   for row = 0; row < buf.height; row = row + 1 {
     // Move to start of row (1-indexed)
     sb.write_string(ansi_move_to(row + 1, 1))
     for col = 0; col < buf.width; col = col + 1 {
-      let cell = buf.get_cell(col, row)
-      // Skip wide char placeholder
-      if cell.char == '\u0000' {
-        continue
-      }
-      // Handle underline toggle (for links)
-      if cell.underline && !last_underline {
-        sb.write_string(ansi_underline())
-        last_underline = true
-      } else if !cell.underline && last_underline {
-        sb.write_string(ansi_reset())
-        last_underline = false
-      }
-      // Write the character (no color codes)
-      sb.write_char(cell.char)
+      style_state.write_cell(sb, buf.get_cell(col, row))
     }
-    // Reset underline at end of row if still active
-    if last_underline {
-      sb.write_string(ansi_reset())
-      last_underline = false
-    }
+    style_state.reset_underline(sb)
   }
   sb.to_string()
 }
@@ -432,6 +356,49 @@ pub(all) struct PlainLink {
   row : Int
   width : Int
   url : String
+}
+
+///|
+priv struct PlainStyleState {
+  mut underline : Bool
+}
+
+///|
+fn PlainStyleState::new() -> PlainStyleState {
+  { underline: false }
+}
+
+///|
+fn PlainStyleState::reset_underline(
+  self : PlainStyleState,
+  sb : StringBuilder,
+) -> Unit {
+  if self.underline {
+    sb.write_string(ansi_reset())
+    self.underline = false
+  }
+}
+
+///|
+fn PlainStyleState::write_cell(
+  self : PlainStyleState,
+  sb : StringBuilder,
+  cell : CharCell,
+) -> Unit {
+  // Skip wide char placeholder
+  if cell.char == '\u0000' {
+    return
+  }
+  // Handle underline toggle (for links)
+  if cell.underline && !self.underline {
+    sb.write_string(ansi_underline())
+    self.underline = true
+  } else if !cell.underline && self.underline {
+    sb.write_string(ansi_reset())
+    self.underline = false
+  }
+  // Write the character (no color codes)
+  sb.write_char(cell.char)
 }
 
 ///|
@@ -452,7 +419,7 @@ pub fn buffer_to_plain_with_links(
     link_ends.set(end_key, true)
   }
   let sb = StringBuilder::new()
-  let mut last_underline = false
+  let style_state = PlainStyleState::new()
   let mut in_hyperlink = false
   for row = 0; row < buf.height; row = row + 1 {
     // Move to start of row (1-indexed)
@@ -473,31 +440,14 @@ pub fn buffer_to_plain_with_links(
         }
         None => ()
       }
-      // Skip wide char placeholder
-      if cell.char == '\u0000' {
-        continue
-      }
-      // Handle underline toggle (for links)
-      if cell.underline && !last_underline {
-        sb.write_string(ansi_underline())
-        last_underline = true
-      } else if !cell.underline && last_underline {
-        sb.write_string(ansi_reset())
-        last_underline = false
-      }
-      // Write the character (no color codes)
-      sb.write_char(cell.char)
+      style_state.write_cell(sb, cell)
     }
     // End hyperlink at end of row if still active
     if in_hyperlink {
       sb.write_string(ansi_hyperlink_end())
       in_hyperlink = false
     }
-    // Reset underline at end of row if still active
-    if last_underline {
-      sb.write_string(ansi_reset())
-      last_underline = false
-    }
+    style_state.reset_underline(sb)
   }
   sb.to_string()
 }

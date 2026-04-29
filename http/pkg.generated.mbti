@@ -10,7 +10,7 @@ pub fn[CacheBackend : HttpCacheBackend] cached_fetch(url~ : String, options~ : F
 
 pub async fn[CacheBackend : HttpCacheBackend] cached_fetch_async(url~ : String, options~ : FetchOptions, cache~ : CacheBackend, fetcher~ : async (String, FetchOptions) -> HttpResponse raise HttpError) -> HttpResponse raise HttpError
 
-pub fn fetch(String, options? : FetchOptions) -> HttpResponse raise HttpError
+pub async fn fetch(String, options? : FetchOptions) -> HttpResponse raise HttpError
 
 pub fn headers_to_json(Map[String, String]) -> String
 

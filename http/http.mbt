@@ -187,6 +187,7 @@ fn sandbox_allows(
 
 ///|
 /// Prepare fetch options (sandbox checks + Origin header injection)
+#warnings("-unused_value")
 fn prepare_fetch_options(
   url : String,
   options : FetchOptions,
@@ -295,6 +296,7 @@ fn filter_cors_headers(
 
 ///|
 /// Enforce CORS based on response headers
+#warnings("-unused_value")
 fn enforce_cors_response(
   url : String,
   options : FetchOptions,

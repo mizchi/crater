@@ -35,6 +35,9 @@ pub async fn[CacheBackend : HttpCacheBackend] cached_fetch_async(
 }
 
 ///|
+/// Preserve the async facade even when the selected target resolves the
+/// implementation package to its synchronous WASM stub.
+#warnings("-unused_async")
 pub async fn fetch(
   url : String,
   options? : FetchOptions,
