@@ -106,8 +106,10 @@ The adapter is expected to support headless test flows where a user:
 - Injects setup scripts and fixture assets with `addInitScript()`,
   `context.addInitScript()`, `addScriptTag()`, and `addStyleTag()`.
 - Waits for app state through `waitForFunction()`, `waitForText()`, and
-  `waitForLoadState()`, with page/context `setDefaultTimeout()` for polling
-  defaults.
+  `waitForLoadState()`, and waits for selector/locator
+  `attached`/`detached`/`visible`/`hidden` states, with page/context
+  `setDefaultTimeout()` for polling defaults. `page.waitForSelector()` returns
+  a Crater locator or `null`, not a Playwright `ElementHandle`.
 - Toggles basic offline state with `context.setOffline()` and observes the
   resulting `navigator.onLine` state in Crater pages.
 - Grants and clears synthetic `geolocation` / `storage-access` permissions with

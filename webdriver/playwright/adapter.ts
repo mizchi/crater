@@ -89,6 +89,13 @@ export type CraterWaitForFunctionOptions = {
   polling?: number;
 };
 
+export type CraterWaitForSelectorState = "attached" | "detached" | "visible" | "hidden";
+
+export type CraterWaitForSelectorOptions = {
+  timeout?: number;
+  state?: CraterWaitForSelectorState;
+};
+
 export type CraterWaitForNetworkOptions = {
   timeout?: number;
   polling?: number;
@@ -314,6 +321,11 @@ export type CraterPageEventMap = {
 export type CraterPageEventName = keyof CraterPageEventMap;
 
 export type CraterPageEventPayload = CraterPageEventMap[CraterPageEventName];
+
+type CraterLocalPageEventName = Exclude<
+  CraterPageEventName,
+  "request" | "response" | "requestfailed" | "filechooser"
+>;
 
 export type CraterPageEventHandler<T = CraterPageEventPayload> = (event: T) => void;
 
@@ -2082,17 +2094,32 @@ export class CraterLocator {
     `);
   }
 
-  async waitFor(options: { timeout?: number } = {}): Promise<void> {
+  async waitFor(options: CraterWaitForSelectorOptions = {}): Promise<void> {
+    const state = this.normalizeWaitForState(options.state ?? "attached");
     const timeout = this.timeoutResolver(options.timeout, 5000);
     const start = Date.now();
+    let lastState: { attached: boolean; visible: boolean } | null = null;
     while (Date.now() - start < timeout) {
-      const found = await this.page.evaluate<boolean>(`${this.queryExpr("querySelector")} !== null`);
-      if (found) {
+      const current = await this.page.evaluate<{
+        attached: boolean;
+        visible: boolean;
+      }>(`
+        (() => {
+          const el = ${this.queryExpr("querySelector")};
+          return {
+            attached: !!el,
+            visible: ${elementVisibleExpr("el")},
+          };
+        })()
+      `);
+      lastState = current;
+      if (this.waitForStateMatches(state, current)) {
         return;
       }
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 30));
     }
-    throw new Error(`Timeout waiting for selector: ${this.selector}`);
+    const suffix = lastState ? ` (last state: ${this.describeWaitForState(lastState)})` : "";
+    throw new Error(`Timeout waiting for selector state ${state}: ${this.selector}${suffix}`);
   }
 
   async count(): Promise<number> {
@@ -2173,6 +2200,40 @@ export class CraterLocator {
       ? "not enabled"
       : "not stable";
     throw new Error(`Timeout waiting for actionable selector (${reason}): ${this.selector}`);
+  }
+
+  private waitForStateMatches(
+    state: CraterWaitForSelectorState,
+    current: { attached: boolean; visible: boolean },
+  ): boolean {
+    switch (state) {
+      case "attached":
+        return current.attached;
+      case "detached":
+        return !current.attached;
+      case "visible":
+        return current.attached && current.visible;
+      case "hidden":
+        return !current.attached || !current.visible;
+      default:
+        throw new Error(`Unsupported waitFor state: ${String(state)}`);
+    }
+  }
+
+  private normalizeWaitForState(state: string): CraterWaitForSelectorState {
+    switch (state) {
+      case "attached":
+      case "detached":
+      case "visible":
+      case "hidden":
+        return state;
+      default:
+        throw new Error(`Unsupported waitFor state: ${state}`);
+    }
+  }
+
+  private describeWaitForState(current: { attached: boolean; visible: boolean }): string {
+    return `${current.attached ? "attached" : "detached"} ${current.visible ? "visible" : "hidden"}`;
   }
 
   protected queryExpr(method: "querySelector" | "querySelectorAll"): string {
@@ -2399,16 +2460,20 @@ export class CraterBidiPage {
     if (isFileChooserPageEvent(eventName)) {
       return await this.waitForFileChooserEvent(options as CraterWaitForEventOptions) as CraterPageEventMap[K];
     }
+    const eventPromise = this.waitForLocalPageEvent(
+      eventName as CraterLocalPageEventName,
+      options as CraterWaitForEventOptions,
+    ) as Promise<CraterPageEventMap[K]>;
     if (isDialogPageEvent(eventName)) {
-      await this.ensureDialogSubscription();
+      await this.ensureSubscribedBeforeReturning(eventPromise, () => this.ensureDialogSubscription());
     }
     if (isDownloadPageEvent(eventName)) {
-      await this.ensureDownloadSubscription();
+      await this.ensureSubscribedBeforeReturning(eventPromise, () => this.ensureDownloadSubscription());
     }
     if (isConsolePageEvent(eventName)) {
-      await this.ensureConsoleSubscription();
+      await this.ensureSubscribedBeforeReturning(eventPromise, () => this.ensureConsoleSubscription());
     }
-    return await this.waitForLocalPageEvent(eventName, options as CraterWaitForEventOptions) as CraterPageEventMap[K];
+    return await eventPromise;
   }
 
   async close(): Promise<void> {
@@ -3053,8 +3118,14 @@ export class CraterBidiPage {
     return value;
   }
 
-  async waitForSelector(selector: string, options: { timeout?: number } = {}): Promise<void> {
-    await this.locator(selector).waitFor(options);
+  async waitForSelector(
+    selector: string,
+    options: CraterWaitForSelectorOptions = {},
+  ): Promise<CraterLocator | null> {
+    const locator = this.locator(selector);
+    await locator.waitFor(options);
+    const state = options.state ?? "attached";
+    return state === "hidden" || state === "detached" ? null : locator;
   }
 
   async waitForTimeout(timeout: number): Promise<void> {
@@ -4189,7 +4260,7 @@ export class CraterBidiPage {
   }
 
   private waitForLocalPageEvent(
-    eventName: Exclude<CraterPageEventName, "request" | "response" | "requestfailed" | "filechooser">,
+    eventName: CraterLocalPageEventName,
     options: CraterWaitForEventOptions,
   ): Promise<CraterPageEventPayload> {
     const timeout = this.timeoutOrDefault(options.timeout, 3000);
@@ -4209,6 +4280,18 @@ export class CraterBidiPage {
       };
       this.pageEventWaiters.push(waiter);
     });
+  }
+
+  private async ensureSubscribedBeforeReturning<T>(
+    eventPromise: Promise<T>,
+    subscribe: () => Promise<void>,
+  ): Promise<void> {
+    try {
+      await subscribe();
+    } catch (error) {
+      eventPromise.catch(() => undefined);
+      throw error;
+    }
   }
 
   private emitNetworkPageEvent(event: CraterNetworkEventPayload): void {

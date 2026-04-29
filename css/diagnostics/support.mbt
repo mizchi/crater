@@ -220,7 +220,8 @@ pub fn get_support_level(property : String) -> SupportLevel {
     "orphans" | "widows" => UnsupportedLayout
     "shape-outside" | "shape-margin" | "shape-image-threshold" =>
       UnsupportedLayout
-    "clip-path" => UnsupportedLayout
+    "clip-path" =>
+      Partial("basic shapes plus path M/L/H/V/Q/T/C/S/A/Z polygon subset")
     // === NOT SUPPORTED - VISUAL ONLY ===
     // Background
     "background"
@@ -248,7 +249,8 @@ pub fn get_support_level(property : String) -> SupportLevel {
     // Text Shadow
     "text-shadow" => UnsupportedVisual
     // Transforms
-    "transform" => Partial("translate only, no rotate/scale/skew")
+    "transform" =>
+      Partial("translate/scale/2D rotate/skew/matrix/matrix3d 2D projection")
     "transform-origin"
     | "transform-style"
     | "perspective"

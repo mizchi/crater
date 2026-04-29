@@ -268,12 +268,22 @@ pub(all) enum TranslateValue {
 
 ///|
 /// CSS transform property - list of transform functions
-/// Supports translate and scale for layout purposes
+/// Supports a 2D subset for visual hit testing.
 pub(all) struct Transform {
   translate_x : TranslateValue // translateX or first arg of translate()
   translate_y : TranslateValue // translateY or second arg of translate()
   scale_x : Double // scaleX or first arg of scale() (default 1.0)
   scale_y : Double // scaleY or second arg of scale() (default 1.0)
+  rotate_degrees : Double // rotate() angle in degrees
+  skew_x_degrees : Double // skewX() angle in degrees
+  skew_y_degrees : Double // skewY() angle in degrees
+  has_matrix : Bool // matrix() is explicitly present
+  matrix_a : Double // 2D affine matrix a
+  matrix_b : Double // 2D affine matrix b
+  matrix_c : Double // 2D affine matrix c
+  matrix_d : Double // 2D affine matrix d
+  matrix_e : Double // 2D affine matrix e
+  matrix_f : Double // 2D affine matrix f
 } derive(Debug, Eq)
 
 ///|
@@ -284,6 +294,16 @@ pub fn Transform::none() -> Transform {
     translate_y: TranslateValue::Length(0.0),
     scale_x: 1.0,
     scale_y: 1.0,
+    rotate_degrees: 0.0,
+    skew_x_degrees: 0.0,
+    skew_y_degrees: 0.0,
+    has_matrix: false,
+    matrix_a: 1.0,
+    matrix_b: 0.0,
+    matrix_c: 0.0,
+    matrix_d: 1.0,
+    matrix_e: 0.0,
+    matrix_f: 0.0,
   }
 }
 
@@ -296,13 +316,57 @@ pub fn Transform::is_none(self : Transform) -> Bool {
     _ => false
   }
   let scale_none = self.scale_x == 1.0 && self.scale_y == 1.0
-  translate_none && scale_none
+  let rotate_none = self.rotate_degrees == 0.0
+  let skew_none = self.skew_x_degrees == 0.0 && self.skew_y_degrees == 0.0
+  let matrix_none = !self.has_matrix ||
+    (
+      self.matrix_a == 1.0 &&
+      self.matrix_b == 0.0 &&
+      self.matrix_c == 0.0 &&
+      self.matrix_d == 1.0 &&
+      self.matrix_e == 0.0 &&
+      self.matrix_f == 0.0
+    )
+  translate_none && scale_none && rotate_none && skew_none && matrix_none
 }
 
 ///|
 /// Check if transform has scale applied
 pub fn Transform::has_scale(self : Transform) -> Bool {
   self.scale_x != 1.0 || self.scale_y != 1.0
+}
+
+///|
+/// Check if transform has skew applied
+pub fn Transform::has_skew(self : Transform) -> Bool {
+  self.skew_x_degrees != 0.0 || self.skew_y_degrees != 0.0
+}
+
+///|
+/// Check if transform has an explicit non-identity matrix applied
+pub fn Transform::has_affine_matrix(self : Transform) -> Bool {
+  self.has_matrix &&
+  !(self.matrix_a == 1.0 &&
+  self.matrix_b == 0.0 &&
+  self.matrix_c == 0.0 &&
+  self.matrix_d == 1.0 &&
+  self.matrix_e == 0.0 &&
+  self.matrix_f == 0.0)
+}
+
+///|
+/// Return a quarter-turn rotation count (0..3), or -1 for other angles.
+pub fn Transform::quarter_turns(self : Transform) -> Int {
+  let raw_turns = (self.rotate_degrees / 90.0).round().to_int()
+  let snapped_degrees = raw_turns.to_double() * 90.0
+  if (self.rotate_degrees - snapped_degrees).abs() > 0.0001 {
+    return -1
+  }
+  let mut turns = raw_turns % 4
+  if turns < 0 {
+    turns = turns + 4
+  }
+  turns
 }
 
 ///|
@@ -327,6 +391,24 @@ pub fn Transform::compute_translate_y(
     TranslateValue::Length(v) => v
     TranslateValue::Percent(p) => element_height * p
   }
+}
+
+///|
+/// CSS clip-path property subset used by paint and hit testing.
+/// Shape values are pixels; negative values encode percentages as fractions.
+pub(all) enum ClipPath {
+  None
+  Inset(Double, Double, Double, Double) // top, right, bottom, left
+  Rect(Double, Double, Double, Double) // top, right, bottom, left coordinates
+  Xywh(Double, Double, Double, Double) // x, y, width, height
+  Circle(Double, Double, Double) // radius, center-x, center-y
+  Ellipse(Double, Double, Double, Double) // radius-x, radius-y, center-x, center-y
+  Polygon(Array[(Double, Double)])
+} derive(Debug, Eq)
+
+///|
+pub fn ClipPath::none() -> ClipPath {
+  ClipPath::None
 }
 
 ///|
@@ -676,6 +758,27 @@ pub impl Show for Transform with output(self, logger) {
   logger.write_string(self.scale_x.to_string())
   logger.write_string(", scale_y: ")
   logger.write_string(self.scale_y.to_string())
+  logger.write_string(", rotate_degrees: ")
+  logger.write_string(self.rotate_degrees.to_string())
+  logger.write_string(", skew_x_degrees: ")
+  logger.write_string(self.skew_x_degrees.to_string())
+  logger.write_string(", skew_y_degrees: ")
+  logger.write_string(self.skew_y_degrees.to_string())
+  logger.write_string(", has_matrix: ")
+  logger.write_string(self.has_matrix.to_string())
+  logger.write_string(", matrix: [")
+  logger.write_string(self.matrix_a.to_string())
+  logger.write_string(", ")
+  logger.write_string(self.matrix_b.to_string())
+  logger.write_string(", ")
+  logger.write_string(self.matrix_c.to_string())
+  logger.write_string(", ")
+  logger.write_string(self.matrix_d.to_string())
+  logger.write_string(", ")
+  logger.write_string(self.matrix_e.to_string())
+  logger.write_string(", ")
+  logger.write_string(self.matrix_f.to_string())
+  logger.write_string("]")
   logger.write_string("}")
 }
 
@@ -820,6 +923,8 @@ pub(all) struct Style {
   mut vertical_align : VerticalAlign
   // Clip (legacy, deprecated but widely used for a11y)
   mut clip : @types.ClipRect
+  // Clip path (minimum paint/hit-test subset)
+  mut clip_path : ClipPath
   // Paint properties (visual, not layout)
   mut visibility : Visibility
   mut pointer_events : PointerEvents
@@ -959,6 +1064,7 @@ pub fn Style::default() -> Style {
     direction: Ltr,
     vertical_align: Baseline,
     clip: @types.ClipRect::Auto,
+    clip_path: ClipPath::none(),
     visibility: Visible,
     pointer_events: PointerEvents::Auto,
     z_index: Auto,

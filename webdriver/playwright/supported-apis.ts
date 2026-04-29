@@ -441,8 +441,8 @@ const CRATER_PLAYWRIGHT_API_SUPPORT_SOURCE = [
   {
     owner: "page",
     api: "waitForSelector",
-    status: "supported",
-    notes: "Polls querySelector until found.",
+    status: "partial",
+    notes: "Polls a selector until the requested attached/detached/visible/hidden state matches and returns a Crater locator for attached/visible states or null for hidden/detached; it is not a Playwright ElementHandle.",
   },
   {
     owner: "page",
@@ -814,7 +814,7 @@ const CRATER_PLAYWRIGHT_API_SUPPORT_SOURCE = [
     owner: "locator",
     api: "waitFor",
     status: "supported",
-    notes: "Polls until a matching element exists.",
+    notes: "Polls until the requested attached/detached/visible/hidden state matches.",
   },
   {
     owner: "locator",

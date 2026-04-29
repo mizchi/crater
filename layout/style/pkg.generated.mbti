@@ -61,6 +61,17 @@ pub(all) enum CaptionSide {
 } derive(Eq, @debug.Debug)
 pub impl Show for CaptionSide
 
+pub(all) enum ClipPath {
+  None
+  Inset(Double, Double, Double, Double)
+  Rect(Double, Double, Double, Double)
+  Xywh(Double, Double, Double, Double)
+  Circle(Double, Double, Double)
+  Ellipse(Double, Double, Double, Double)
+  Polygon(Array[(Double, Double)])
+} derive(Eq, @debug.Debug)
+pub fn ClipPath::none() -> Self
+
 pub(all) enum ColumnFill {
   Balance
   Auto
@@ -210,6 +221,7 @@ pub(all) struct Style {
   mut direction : Direction
   mut vertical_align : VerticalAlign
   mut clip : @types.ClipRect
+  mut clip_path : ClipPath
   mut visibility : Visibility
   mut pointer_events : PointerEvents
   mut z_index : ZIndex
@@ -278,12 +290,25 @@ pub(all) struct Transform {
   translate_y : TranslateValue
   scale_x : Double
   scale_y : Double
+  rotate_degrees : Double
+  skew_x_degrees : Double
+  skew_y_degrees : Double
+  has_matrix : Bool
+  matrix_a : Double
+  matrix_b : Double
+  matrix_c : Double
+  matrix_d : Double
+  matrix_e : Double
+  matrix_f : Double
 } derive(Eq, @debug.Debug)
 pub fn Transform::compute_translate_x(Self, Double) -> Double
 pub fn Transform::compute_translate_y(Self, Double) -> Double
+pub fn Transform::has_affine_matrix(Self) -> Bool
 pub fn Transform::has_scale(Self) -> Bool
+pub fn Transform::has_skew(Self) -> Bool
 pub fn Transform::is_none(Self) -> Bool
 pub fn Transform::none() -> Self
+pub fn Transform::quarter_turns(Self) -> Int
 pub impl Show for Transform
 
 pub(all) enum TranslateValue {

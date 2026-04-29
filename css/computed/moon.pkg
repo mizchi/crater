@@ -1,5 +1,6 @@
 import {
   "moonbitlang/core/cmp",
+  "moonbitlang/core/math",
   "moonbitlang/core/string",
   "mizchi/crater-css/cascade",
   "mizchi/crater-css/parser",

@@ -1034,6 +1034,265 @@ test "compute_inline clip auto" {
 }
 
 ///|
+test "compute_inline transform scale" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("transform: scaleX(2)", ctx)
+  inspect(style.transform.scale_x, content="2")
+  inspect(style.transform.scale_y, content="1")
+}
+
+///|
+test "compute_inline transform rotate quarter turn" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("transform: rotate(90deg)", ctx)
+  inspect(style.transform.rotate_degrees, content="90")
+  inspect(style.transform.quarter_turns(), content="1")
+}
+
+///|
+test "compute_inline transform skew" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "transform: skewX(45deg) skewY(-15deg)", ctx,
+  )
+  inspect(style.transform.skew_x_degrees, content="45")
+  inspect(style.transform.skew_y_degrees, content="-15")
+}
+
+///|
+test "compute_inline transform matrix" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "transform: matrix(1, 0, -1, 1, 64, 0)", ctx,
+  )
+  inspect(style.transform.has_matrix, content="true")
+  inspect(
+    [
+      style.transform.matrix_a,
+      style.transform.matrix_b,
+      style.transform.matrix_c,
+      style.transform.matrix_d,
+      style.transform.matrix_e,
+      style.transform.matrix_f,
+    ],
+    content="[1, 0, -1, 1, 64, 0]",
+  )
+}
+
+///|
+test "compute_inline transform matrix3d as 2D affine matrix" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "transform: matrix3d(1, 0, 0, 0, -1, 1, 0, 0, 0, 0, 1, 0, 64, 0, 0, 1)", ctx,
+  )
+  inspect(style.transform.has_matrix, content="true")
+  inspect(
+    [
+      style.transform.matrix_a,
+      style.transform.matrix_b,
+      style.transform.matrix_c,
+      style.transform.matrix_d,
+      style.transform.matrix_e,
+      style.transform.matrix_f,
+    ],
+    content="[1, 0, -1, 1, 64, 0]",
+  )
+}
+
+///|
+test "parse_clip_path - inset" {
+  let clip_path = @computed.parse_clip_path("inset(16px 0 25% 4px)")
+  match clip_path {
+    @style.ClipPath::Inset(top, right, bottom, left) =>
+      inspect([top, right, bottom, left], content="[16, 0, -0.25, 4]")
+    _ => fail("expected inset clip-path")
+  }
+}
+
+///|
+test "parse_clip_path - rect" {
+  let clip_path = @computed.parse_clip_path("rect(16px 128px 64px 16px)")
+  match clip_path {
+    @style.ClipPath::Rect(top, right, bottom, left) =>
+      inspect([top, right, bottom, left], content="[16, 128, 64, 16]")
+    _ => fail("expected rect clip-path")
+  }
+}
+
+///|
+test "parse_clip_path - xywh" {
+  let clip_path = @computed.parse_clip_path("xywh(16px 16px 112px 48px)")
+  match clip_path {
+    @style.ClipPath::Xywh(x, y, width, height) =>
+      inspect([x, y, width, height], content="[16, 16, 112, 48]")
+    _ => fail("expected xywh clip-path")
+  }
+}
+
+///|
+test "parse_clip_path - circle" {
+  let clip_path = @computed.parse_clip_path("circle(24px at 24px 24px)")
+  match clip_path {
+    @style.ClipPath::Circle(radius, center_x, center_y) =>
+      inspect([radius, center_x, center_y], content="[24, 24, 24]")
+    _ => fail("expected circle clip-path")
+  }
+}
+
+///|
+test "parse_clip_path - ellipse" {
+  let clip_path = @computed.parse_clip_path("ellipse(24px 16px at 32px 32px)")
+  match clip_path {
+    @style.ClipPath::Ellipse(radius_x, radius_y, center_x, center_y) =>
+      inspect(
+        [radius_x, radius_y, center_x, center_y],
+        content="[24, 16, 32, 32]",
+      )
+    _ => fail("expected ellipse clip-path")
+  }
+}
+
+///|
+test "parse_clip_path - polygon" {
+  let clip_path = @computed.parse_clip_path(
+    "polygon(32px 0, 64px 64px, 0 64px)",
+  )
+  match clip_path {
+    @style.ClipPath::Polygon(points) => {
+      inspect(points.length(), content="3")
+      let (x0, y0) = points[0]
+      let (x1, y1) = points[1]
+      let (x2, y2) = points[2]
+      inspect([x0, y0, x1, y1, x2, y2], content="[32, 0, 64, 64, 0, 64]")
+    }
+    _ => fail("expected polygon clip-path")
+  }
+}
+
+///|
+test "parse_clip_path - path as polygon" {
+  let clip_path = @computed.parse_clip_path("path(\"M 32 0 L 64 64 L 0 64 Z\")")
+  match clip_path {
+    @style.ClipPath::Polygon(points) => {
+      inspect(points.length(), content="3")
+      let (x0, y0) = points[0]
+      let (x1, y1) = points[1]
+      let (x2, y2) = points[2]
+      inspect([x0, y0, x1, y1, x2, y2], content="[32, 0, 64, 64, 0, 64]")
+    }
+    _ => fail("expected path clip-path polygon")
+  }
+}
+
+///|
+test "parse_clip_path - quadratic path as polygon" {
+  let clip_path = @computed.parse_clip_path("path(\"M 0 64 Q 32 0 64 64 Z\")")
+  match clip_path {
+    @style.ClipPath::Polygon(points) => {
+      inspect(points.length(), content="9")
+      let (x0, y0) = points[0]
+      let (x4, y4) = points[4]
+      let (x8, y8) = points[8]
+      inspect([x0, y0, x4, y4, x8, y8], content="[0, 64, 32, 32, 64, 64]")
+    }
+    _ => fail("expected quadratic path clip-path polygon")
+  }
+}
+
+///|
+test "parse_clip_path - cubic path as polygon" {
+  let clip_path = @computed.parse_clip_path(
+    "path(\"M 0 64 C 0 0 64 0 64 64 Z\")",
+  )
+  match clip_path {
+    @style.ClipPath::Polygon(points) => {
+      inspect(points.length(), content="9")
+      let (x0, y0) = points[0]
+      let (x4, y4) = points[4]
+      let (x8, y8) = points[8]
+      inspect([x0, y0, x4, y4, x8, y8], content="[0, 64, 32, 16, 64, 64]")
+    }
+    _ => fail("expected cubic path clip-path polygon")
+  }
+}
+
+///|
+test "parse_clip_path - smooth quadratic path as polygon" {
+  let clip_path = @computed.parse_clip_path(
+    "path(\"M 0 64 Q 16 0 32 64 T 64 64 Z\")",
+  )
+  match clip_path {
+    @style.ClipPath::Polygon(points) => {
+      inspect(points.length(), content="17")
+      let (x0, y0) = points[0]
+      let (x4, y4) = points[4]
+      let (x8, y8) = points[8]
+      let (x12, y12) = points[12]
+      let (x16, y16) = points[16]
+      inspect(
+        [x0, y0, x4, y4, x8, y8, x12, y12, x16, y16],
+        content="[0, 64, 16, 32, 32, 64, 48, 96, 64, 64]",
+      )
+    }
+    _ => fail("expected smooth quadratic path clip-path polygon")
+  }
+}
+
+///|
+test "parse_clip_path - smooth cubic path as polygon" {
+  let clip_path = @computed.parse_clip_path(
+    "path(\"M 0 64 C 0 0 32 0 32 64 S 64 128 64 64 Z\")",
+  )
+  match clip_path {
+    @style.ClipPath::Polygon(points) => {
+      inspect(points.length(), content="17")
+      let (x0, y0) = points[0]
+      let (x8, y8) = points[8]
+      let (x12, y12) = points[12]
+      let (x16, y16) = points[16]
+      inspect(
+        [x0, y0, x8, y8, x12, y12, x16, y16],
+        content="[0, 64, 32, 64, 48, 112, 64, 64]",
+      )
+    }
+    _ => fail("expected smooth cubic path clip-path polygon")
+  }
+}
+
+///|
+test "parse_clip_path - arc path as polygon" {
+  let clip_path = @computed.parse_clip_path(
+    "path(\"M 0 64 A 32 32 0 0 1 64 64 Z\")",
+  )
+  match clip_path {
+    @style.ClipPath::Polygon(points) => {
+      inspect(points.length(), content="9")
+      let (x0, y0) = points[0]
+      let (x4, y4) = points[4]
+      let (x8, y8) = points[8]
+      assert_true((x0 - 0.0).abs() < 0.001)
+      assert_true((y0 - 64.0).abs() < 0.001)
+      assert_true((x4 - 32.0).abs() < 0.001)
+      assert_true((y4 - 32.0).abs() < 0.001)
+      assert_true((x8 - 64.0).abs() < 0.001)
+      assert_true((y8 - 64.0).abs() < 0.001)
+    }
+    _ => fail("expected arc path clip-path polygon")
+  }
+}
+
+///|
+test "compute_inline clip-path property" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline("clip-path: inset(16px 0 0 16px)", ctx)
+  match style.clip_path {
+    @style.ClipPath::Inset(top, right, bottom, left) =>
+      inspect([top, right, bottom, left], content="[16, 0, 0, 16]")
+    _ => fail("expected inset clip-path")
+  }
+}
+
+///|
 test "compute_inline border-collapse" {
   let ctx = @computed.ComputeContext::new()
   let style = @computed.compute_inline("border-collapse: collapse", ctx)

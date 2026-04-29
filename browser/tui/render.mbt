@@ -87,7 +87,7 @@ fn get_local_clip_rect(
   abs_x : Double,
   abs_y : Double,
 ) -> (Double, Double, Double, Double)? {
-  match node.clip {
+  let legacy_clip = match node.clip {
     @types.ClipRect::Rect(top~, right~, bottom~, left~) =>
       Some((abs_x + left, abs_y + top, right - left, bottom - top))
     @types.ClipRect::Auto =>
@@ -95,6 +95,97 @@ fn get_local_clip_rect(
         (@types.Visible, @types.Visible) => None
         _ => Some((abs_x, abs_y, node.width, node.height))
       }
+  }
+  let clip_path = match node.paint.clip_path {
+    @style.ClipPath::None => None
+    @style.ClipPath::Inset(top, right, bottom, left) => {
+      let inset_top = resolve_clip_path_inset(top, node.height)
+      let inset_right = resolve_clip_path_inset(right, node.width)
+      let inset_bottom = resolve_clip_path_inset(bottom, node.height)
+      let inset_left = resolve_clip_path_inset(left, node.width)
+      let clip_left = abs_x + inset_left
+      let clip_top = abs_y + inset_top
+      let clip_right = abs_x + node.width - inset_right
+      let clip_bottom = abs_y + node.height - inset_bottom
+      if clip_right <= clip_left || clip_bottom <= clip_top {
+        None
+      } else {
+        Some(
+          (clip_left, clip_top, clip_right - clip_left, clip_bottom - clip_top),
+        )
+      }
+    }
+    @style.ClipPath::Rect(top, right, bottom, left) =>
+      resolve_clip_path_rect(
+        top,
+        right,
+        bottom,
+        left,
+        abs_x,
+        abs_y,
+        node.width,
+        node.height,
+      )
+    @style.ClipPath::Xywh(x, y, width, height) =>
+      resolve_clip_path_xywh(
+        x,
+        y,
+        width,
+        height,
+        abs_x,
+        abs_y,
+        node.width,
+        node.height,
+      )
+    @style.ClipPath::Circle(radius, center_x, center_y) => {
+      let (cx, cy, r) = resolve_clip_path_circle(
+        radius,
+        center_x,
+        center_y,
+        abs_x,
+        abs_y,
+        node.width,
+        node.height,
+      )
+      if r <= 0.0 {
+        None
+      } else {
+        Some((cx - r, cy - r, r * 2.0, r * 2.0))
+      }
+    }
+    @style.ClipPath::Ellipse(radius_x, radius_y, center_x, center_y) => {
+      let (cx, cy, rx, ry) = resolve_clip_path_ellipse(
+        radius_x,
+        radius_y,
+        center_x,
+        center_y,
+        abs_x,
+        abs_y,
+        node.width,
+        node.height,
+      )
+      if rx <= 0.0 || ry <= 0.0 {
+        None
+      } else {
+        Some((cx - rx, cy - ry, rx * 2.0, ry * 2.0))
+      }
+    }
+    @style.ClipPath::Polygon(points) => {
+      let resolved = resolve_clip_path_polygon(
+        points,
+        abs_x,
+        abs_y,
+        node.width,
+        node.height,
+      )
+      polygon_bounding_rect(resolved)
+    }
+  }
+  match (legacy_clip, clip_path) {
+    (Some(a), Some(b)) => intersect_pixel_rects(a, b)
+    (Some(a), None) => Some(a)
+    (None, Some(b)) => Some(b)
+    (None, None) => None
   }
 }
 
@@ -108,6 +199,211 @@ fn combine_clip_rects(
     (Some(a), None) => Some(a)
     (None, Some(b)) => Some(b)
     (None, None) => None
+  }
+}
+
+///|
+fn polygon_bounding_rect(
+  points : Array[(Double, Double)],
+) -> (Double, Double, Double, Double)? {
+  if points.length() < 3 {
+    return None
+  }
+  let (first_x, first_y) = points[0]
+  let mut min_x = first_x
+  let mut max_x = first_x
+  let mut min_y = first_y
+  let mut max_y = first_y
+  for i in 1..<points.length() {
+    let (x, y) = points[i]
+    min_x = min_double(min_x, x)
+    max_x = max_double(max_x, x)
+    min_y = min_double(min_y, y)
+    max_y = max_double(max_y, y)
+  }
+  if max_x <= min_x || max_y <= min_y {
+    None
+  } else {
+    Some((min_x, min_y, max_x - min_x, max_y - min_y))
+  }
+}
+
+///|
+fn resolve_clip_path_position(value : Double, size : Double) -> Double {
+  if value < 0.0 {
+    -value * size
+  } else {
+    value
+  }
+}
+
+///|
+fn resolve_clip_path_axis_radius(value : Double, size : Double) -> Double {
+  let raw = if value < 0.0 { -value * size } else { value }
+  if raw <= 0.0 {
+    0.0
+  } else {
+    raw
+  }
+}
+
+///|
+fn resolve_clip_path_radius(
+  value : Double,
+  width : Double,
+  height : Double,
+) -> Double {
+  let reference = min_double(width, height)
+  let raw = if value < 0.0 { -value * reference } else { value }
+  if raw <= 0.0 {
+    0.0
+  } else {
+    raw
+  }
+}
+
+///|
+fn resolve_clip_path_polygon(
+  points : Array[(Double, Double)],
+  abs_x : Double,
+  abs_y : Double,
+  width : Double,
+  height : Double,
+) -> Array[(Double, Double)] {
+  let resolved : Array[(Double, Double)] = []
+  for point in points {
+    let (x, y) = point
+    resolved.push(
+      (
+        abs_x + resolve_clip_path_position(x, width),
+        abs_y + resolve_clip_path_position(y, height),
+      ),
+    )
+  }
+  resolved
+}
+
+///|
+fn resolve_clip_path_ellipse(
+  radius_x : Double,
+  radius_y : Double,
+  center_x : Double,
+  center_y : Double,
+  abs_x : Double,
+  abs_y : Double,
+  width : Double,
+  height : Double,
+) -> (Double, Double, Double, Double) {
+  (
+    abs_x + resolve_clip_path_position(center_x, width),
+    abs_y + resolve_clip_path_position(center_y, height),
+    resolve_clip_path_axis_radius(radius_x, width),
+    resolve_clip_path_axis_radius(radius_y, height),
+  )
+}
+
+///|
+fn resolve_clip_path_circle(
+  radius : Double,
+  center_x : Double,
+  center_y : Double,
+  abs_x : Double,
+  abs_y : Double,
+  width : Double,
+  height : Double,
+) -> (Double, Double, Double) {
+  (
+    abs_x + resolve_clip_path_position(center_x, width),
+    abs_y + resolve_clip_path_position(center_y, height),
+    resolve_clip_path_radius(radius, width, height),
+  )
+}
+
+///|
+fn resolve_clip_path_rect(
+  top : Double,
+  right : Double,
+  bottom : Double,
+  left : Double,
+  abs_x : Double,
+  abs_y : Double,
+  width : Double,
+  height : Double,
+) -> (Double, Double, Double, Double)? {
+  let clip_top = abs_y + resolve_clip_path_position(top, height)
+  let clip_right = abs_x + resolve_clip_path_position(right, width)
+  let clip_bottom = abs_y + resolve_clip_path_position(bottom, height)
+  let clip_left = abs_x + resolve_clip_path_position(left, width)
+  if clip_right <= clip_left || clip_bottom <= clip_top {
+    None
+  } else {
+    Some((clip_left, clip_top, clip_right - clip_left, clip_bottom - clip_top))
+  }
+}
+
+///|
+fn resolve_clip_path_xywh(
+  x : Double,
+  y : Double,
+  clip_width : Double,
+  clip_height : Double,
+  abs_x : Double,
+  abs_y : Double,
+  width : Double,
+  height : Double,
+) -> (Double, Double, Double, Double)? {
+  let clip_left = abs_x + resolve_clip_path_position(x, width)
+  let clip_top = abs_y + resolve_clip_path_position(y, height)
+  let resolved_width = resolve_clip_path_axis_radius(clip_width, width)
+  let resolved_height = resolve_clip_path_axis_radius(clip_height, height)
+  if resolved_width <= 0.0 || resolved_height <= 0.0 {
+    None
+  } else {
+    Some((clip_left, clip_top, resolved_width, resolved_height))
+  }
+}
+
+///|
+fn resolve_visual_polygon(
+  points : Array[(Double, Double)],
+  abs_x : Double,
+  abs_y : Double,
+) -> Array[(Double, Double)] {
+  let resolved : Array[(Double, Double)] = []
+  for point in points {
+    let (x, y) = point
+    resolved.push((abs_x + x, abs_y + y))
+  }
+  resolved
+}
+
+///|
+fn resolve_clip_path_inset(value : Double, size : Double) -> Double {
+  let raw = if value < 0.0 { -value * size } else { value }
+  if raw <= 0.0 {
+    0.0
+  } else if raw > size {
+    size
+  } else {
+    raw
+  }
+}
+
+///|
+fn resolve_hit_radius(
+  value : Double,
+  width : Double,
+  height : Double,
+) -> Double {
+  let reference = min_double(width, height)
+  let raw = if value < 0.0 { -value * reference } else { value }
+  let max_radius = reference / 2.0
+  if raw <= 0.0 {
+    0.0
+  } else if raw > max_radius {
+    max_radius
+  } else {
+    raw
   }
 }
 
@@ -162,15 +458,242 @@ pub(all) struct HitRegion {
   row : Int
   width : Int
   height : Int
+  pixel_x : Double
+  pixel_y : Double
+  pixel_width : Double
+  pixel_height : Double
+  shape_x : Double
+  shape_y : Double
+  shape_width : Double
+  shape_height : Double
+  radius_top_left : Double
+  radius_top_right : Double
+  radius_bottom_right : Double
+  radius_bottom_left : Double
+  scroll_y : Int
+  visual_shape : HitClipShape
+  clip_shape : HitClipShape
   source_id : String
 }
 
 ///|
+pub(all) enum HitClipShape {
+  Rect
+  Circle(Double, Double, Double) // center-x, center-y, radius
+  Ellipse(Double, Double, Double, Double) // center-x, center-y, radius-x, radius-y
+  Polygon(Array[(Double, Double)])
+} derive(Debug, Eq)
+
+///|
+fn point_in_rounded_corner(
+  pixel_x : Double,
+  pixel_y : Double,
+  center_x : Double,
+  center_y : Double,
+  radius : Double,
+) -> Bool {
+  let dx = pixel_x - center_x
+  let dy = pixel_y - center_y
+  dx * dx + dy * dy <= radius * radius
+}
+
+///|
+fn point_in_rounded_rect(
+  pixel_x : Double,
+  pixel_y : Double,
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+  radius_top_left : Double,
+  radius_top_right : Double,
+  radius_bottom_right : Double,
+  radius_bottom_left : Double,
+) -> Bool {
+  if pixel_x < x || pixel_x >= x + width || pixel_y < y || pixel_y >= y + height {
+    return false
+  }
+  if radius_top_left > 0.0 &&
+    pixel_x < x + radius_top_left &&
+    pixel_y < y + radius_top_left {
+    return point_in_rounded_corner(
+      pixel_x,
+      pixel_y,
+      x + radius_top_left,
+      y + radius_top_left,
+      radius_top_left,
+    )
+  }
+  if radius_top_right > 0.0 &&
+    pixel_x >= x + width - radius_top_right &&
+    pixel_y < y + radius_top_right {
+    return point_in_rounded_corner(
+      pixel_x,
+      pixel_y,
+      x + width - radius_top_right,
+      y + radius_top_right,
+      radius_top_right,
+    )
+  }
+  if radius_bottom_right > 0.0 &&
+    pixel_x >= x + width - radius_bottom_right &&
+    pixel_y >= y + height - radius_bottom_right {
+    return point_in_rounded_corner(
+      pixel_x,
+      pixel_y,
+      x + width - radius_bottom_right,
+      y + height - radius_bottom_right,
+      radius_bottom_right,
+    )
+  }
+  if radius_bottom_left > 0.0 &&
+    pixel_x < x + radius_bottom_left &&
+    pixel_y >= y + height - radius_bottom_left {
+    return point_in_rounded_corner(
+      pixel_x,
+      pixel_y,
+      x + radius_bottom_left,
+      y + height - radius_bottom_left,
+      radius_bottom_left,
+    )
+  }
+  true
+}
+
+///|
+fn point_in_hit_clip_shape(
+  pixel_x : Double,
+  pixel_y : Double,
+  shape : HitClipShape,
+) -> Bool {
+  match shape {
+    Rect => true
+    Circle(cx, cy, r) => {
+      let dx = pixel_x - cx
+      let dy = pixel_y - cy
+      dx * dx + dy * dy <= r * r
+    }
+    Ellipse(cx, cy, rx, ry) =>
+      if rx <= 0.0 || ry <= 0.0 {
+        false
+      } else {
+        let dx = pixel_x - cx
+        let dy = pixel_y - cy
+        dx * dx / (rx * rx) + dy * dy / (ry * ry) <= 1.0
+      }
+    Polygon(points) => point_in_polygon(pixel_x, pixel_y, points)
+  }
+}
+
+///|
+fn point_in_polygon(
+  pixel_x : Double,
+  pixel_y : Double,
+  points : Array[(Double, Double)],
+) -> Bool {
+  if points.length() < 3 {
+    return false
+  }
+  let mut inside = false
+  let mut j = points.length() - 1
+  for i in 0..<points.length() {
+    let (xi, yi) = points[i]
+    let (xj, yj) = points[j]
+    if (yi > pixel_y) != (yj > pixel_y) {
+      let intersect_x = (xj - xi) * (pixel_y - yi) / (yj - yi) + xi
+      if pixel_x < intersect_x {
+        inside = !inside
+      }
+    }
+    j = i
+  }
+  inside
+}
+
+///|
+fn HitRegion::contains_pixel(
+  self : HitRegion,
+  pixel_x : Double,
+  pixel_y : Double,
+) -> Bool {
+  pixel_x >= self.pixel_x &&
+  pixel_x < self.pixel_x + self.pixel_width &&
+  pixel_y >= self.pixel_y &&
+  pixel_y < self.pixel_y + self.pixel_height &&
+  point_in_rounded_rect(
+    pixel_x,
+    pixel_y,
+    self.shape_x,
+    self.shape_y,
+    self.shape_width,
+    self.shape_height,
+    self.radius_top_left,
+    self.radius_top_right,
+    self.radius_bottom_right,
+    self.radius_bottom_left,
+  ) &&
+  point_in_hit_clip_shape(pixel_x, pixel_y, self.visual_shape) &&
+  point_in_hit_clip_shape(pixel_x, pixel_y, self.clip_shape)
+}
+
+///|
+fn HitRegion::has_cell_coverage(self : HitRegion, col : Int, row : Int) -> Bool {
+  if !self.allows_cell_coverage_sampling() {
+    return false
+  }
+  let cell_x = col.to_double() * font_width
+  let cell_y = (row + self.scroll_y).to_double() * font_height
+  let overlap_left = max_double(cell_x, self.pixel_x)
+  let overlap_top = max_double(cell_y, self.pixel_y)
+  let overlap_right = min_double(
+    cell_x + font_width,
+    self.pixel_x + self.pixel_width,
+  )
+  let overlap_bottom = min_double(
+    cell_y + font_height,
+    self.pixel_y + self.pixel_height,
+  )
+  if overlap_right <= overlap_left || overlap_bottom <= overlap_top {
+    return false
+  }
+  let samples_per_axis = 4
+  let required_hits = 4
+  let step_x = font_width / samples_per_axis.to_double()
+  let step_y = font_height / samples_per_axis.to_double()
+  let mut hits = 0
+  for y in 0..<samples_per_axis {
+    let sample_y = cell_y + (y.to_double() + 0.5) * step_y
+    for x in 0..<samples_per_axis {
+      let sample_x = cell_x + (x.to_double() + 0.5) * step_x
+      if self.contains_pixel(sample_x, sample_y) {
+        hits += 1
+        if hits >= required_hits {
+          return true
+        }
+      }
+    }
+  }
+  false
+}
+
+///|
+fn HitRegion::allows_cell_coverage_sampling(self : HitRegion) -> Bool {
+  self.radius_top_left == 0.0 &&
+  self.radius_top_right == 0.0 &&
+  self.radius_bottom_right == 0.0 &&
+  self.radius_bottom_left == 0.0 &&
+  self.visual_shape == HitClipShape::Rect
+}
+
+///|
 pub fn HitRegion::contains(self : HitRegion, col : Int, row : Int) -> Bool {
-  col >= self.col &&
-  col < self.col + self.width &&
-  row >= self.row &&
-  row < self.row + self.height
+  let pixel_x = col.to_double() * font_width + font_width / 2.0
+  let pixel_y = (row + self.scroll_y).to_double() * font_height +
+    font_height / 2.0
+  if self.contains_pixel(pixel_x, pixel_y) {
+    return true
+  }
+  self.has_cell_coverage(col, row)
 }
 
 ///|
@@ -361,11 +884,91 @@ fn render_paint_node(
         node.paint.pointer_events != @style.PointerEvents::None &&
         visible_w > 0.0 &&
         visible_h > 0.0 {
+        let radius_top_left = resolve_hit_radius(
+          node.paint.border_top_left_radius,
+          node.width,
+          node.height,
+        )
+        let radius_top_right = resolve_hit_radius(
+          node.paint.border_top_right_radius,
+          node.width,
+          node.height,
+        )
+        let radius_bottom_right = resolve_hit_radius(
+          node.paint.border_bottom_right_radius,
+          node.width,
+          node.height,
+        )
+        let radius_bottom_left = resolve_hit_radius(
+          node.paint.border_bottom_left_radius,
+          node.width,
+          node.height,
+        )
+        let visual_shape = if node.visual_polygon.is_empty() {
+          HitClipShape::Rect
+        } else {
+          HitClipShape::Polygon(
+            resolve_visual_polygon(node.visual_polygon, abs_x, abs_y),
+          )
+        }
+        let clip_shape = match node.paint.clip_path {
+          @style.ClipPath::Circle(radius, center_x, center_y) => {
+            let (cx, cy, r) = resolve_clip_path_circle(
+              radius,
+              center_x,
+              center_y,
+              abs_x,
+              abs_y,
+              node.width,
+              node.height,
+            )
+            HitClipShape::Circle(cx, cy, r)
+          }
+          @style.ClipPath::Ellipse(radius_x, radius_y, center_x, center_y) => {
+            let (cx, cy, rx, ry) = resolve_clip_path_ellipse(
+              radius_x,
+              radius_y,
+              center_x,
+              center_y,
+              abs_x,
+              abs_y,
+              node.width,
+              node.height,
+            )
+            HitClipShape::Ellipse(cx, cy, rx, ry)
+          }
+          @style.ClipPath::Polygon(points) =>
+            HitClipShape::Polygon(
+              resolve_clip_path_polygon(
+                points,
+                abs_x,
+                abs_y,
+                node.width,
+                node.height,
+              ),
+            )
+          _ => HitClipShape::Rect
+        }
         ctx.hit_regions.push({
           col: px_to_col(visible_x),
           row: px_to_row(visible_y) - ctx.scroll_y,
           width: px_to_col_width(visible_w),
           height: px_to_row_height(visible_h),
+          pixel_x: visible_x,
+          pixel_y: visible_y,
+          pixel_width: visible_w,
+          pixel_height: visible_h,
+          shape_x: abs_x,
+          shape_y: abs_y,
+          shape_width: node.width,
+          shape_height: node.height,
+          radius_top_left,
+          radius_top_right,
+          radius_bottom_right,
+          radius_bottom_left,
+          scroll_y: ctx.scroll_y,
+          visual_shape,
+          clip_shape,
           source_id,
         })
       }

@@ -15,6 +15,7 @@ pub(all) struct PaintProperties {
   font_size : Double
   is_bold : Bool
   font_family : String
+  clip_path : @style.ClipPath
   border_top_left_radius : Double
   border_top_right_radius : Double
   border_bottom_right_radius : Double
@@ -48,6 +49,7 @@ pub fn PaintProperties::default() -> PaintProperties {
     font_size: 16.0,
     is_bold: false,
     font_family: "",
+    clip_path: @style.ClipPath::none(),
     border_top_left_radius: 0.0,
     border_top_right_radius: 0.0,
     border_bottom_right_radius: 0.0,
@@ -82,6 +84,7 @@ pub fn PaintProperties::from_style(style : @style.Style) -> PaintProperties {
     font_size: style.font_size,
     is_bold: is_bold_weight(style.font_weight),
     font_family: style.font_family,
+    clip_path: style.clip_path,
     border_top_left_radius: style.border_top_left_radius,
     border_top_right_radius: style.border_top_right_radius,
     border_bottom_right_radius: style.border_bottom_right_radius,
@@ -165,6 +168,7 @@ pub(all) struct PaintNode {
   stacking_order : Int
   text : String?
   src : String?
+  visual_polygon : Array[(Double, Double)] // local points relative to node x/y; empty means rect
   children : Array[PaintNode]
 }
 
@@ -185,6 +189,7 @@ pub fn PaintNode::new(
   scroll_width? : Double = 0.0,
   scroll_height? : Double = 0.0,
   clip? : @types.ClipRect = @types.ClipRect::Auto,
+  visual_polygon? : Array[(Double, Double)] = [],
 ) -> PaintNode {
   {
     id,
@@ -210,6 +215,7 @@ pub fn PaintNode::new(
     stacking_order: paint.z_index_value(),
     text,
     src,
+    visual_polygon,
     children,
   }
 }

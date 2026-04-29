@@ -192,6 +192,7 @@ priv struct StyleBuilder {
   mut vertical_align : @style.VerticalAlign
   // Clip (legacy)
   mut clip : @types.ClipRect
+  mut clip_path : @style.ClipPath
   // Paint properties
   mut visibility : @style.Visibility
   mut pointer_events : @style.PointerEvents
@@ -321,6 +322,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     direction: @style.Direction::Ltr,
     vertical_align: @style.VerticalAlign::Baseline,
     clip: @types.ClipRect::Auto,
+    clip_path: @style.ClipPath::none(),
     visibility: @style.Visibility::Visible,
     pointer_events: @style.PointerEvents::Auto,
     z_index: @style.ZIndex::Auto,
@@ -443,6 +445,7 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     direction: style.direction,
     vertical_align: style.vertical_align,
     clip: style.clip,
+    clip_path: style.clip_path,
     visibility: style.visibility,
     pointer_events: style.pointer_events,
     z_index: style.z_index,
@@ -576,6 +579,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     direction: self.direction,
     vertical_align: self.vertical_align,
     clip: self.clip,
+    clip_path: self.clip_path,
     visibility: self.visibility,
     pointer_events: self.pointer_events,
     z_index: self.z_index,
@@ -2061,6 +2065,7 @@ fn apply_property(
       }
     // Clip (legacy, deprecated but widely used for a11y)
     "clip" => builder.clip = parse_clip(value)
+    "clip-path" => builder.clip_path = parse_clip_path(value)
     // Paint properties (visual, not layout)
     "visibility" => builder.visibility = parse_visibility(value)
     "pointer-events" => builder.pointer_events = parse_pointer_events(value)
@@ -3574,7 +3579,7 @@ fn is_pure_number(s : String) -> Bool {
 
 ///|
 /// Parse CSS transform property
-/// Supports translate(x, y), translateX(x), translateY(y), scale(x, y), scaleX(x), scaleY(y)
+/// Supports translate, scale, rotate, and skew in the 2D hit-test subset.
 fn parse_transform(value : String) -> @style.Transform {
   let v = value.trim().to_lower()
   // Handle none
@@ -3585,6 +3590,16 @@ fn parse_transform(value : String) -> @style.Transform {
   let mut translate_y = @style.TranslateValue::Length(0.0)
   let mut scale_x = 1.0
   let mut scale_y = 1.0
+  let mut rotate_degrees = 0.0
+  let mut skew_x_degrees = 0.0
+  let mut skew_y_degrees = 0.0
+  let mut has_matrix = false
+  let mut matrix_a = 1.0
+  let mut matrix_b = 0.0
+  let mut matrix_c = 0.0
+  let mut matrix_d = 1.0
+  let mut matrix_e = 0.0
+  let mut matrix_f = 0.0
   // Parse transform functions
   // We handle each function in sequence
   let chars = v.to_array()
@@ -3674,10 +3689,87 @@ fn parse_transform(value : String) -> @style.Transform {
           scale_y = scale_y * parse_scale_value(args[1])
         }
       }
-      _ => () // Ignore unsupported functions like rotate, skew, etc.
+      "rotate" =>
+        rotate_degrees = rotate_degrees + parse_rotate_degrees(args_str)
+      "skewx" => skew_x_degrees += parse_rotate_degrees(args_str)
+      "skewy" => skew_y_degrees += parse_rotate_degrees(args_str)
+      "skew" => {
+        let args = split_by_comma(args_str)
+        if args.length() >= 1 {
+          skew_x_degrees += parse_rotate_degrees(args[0])
+        }
+        if args.length() >= 2 {
+          skew_y_degrees += parse_rotate_degrees(args[1])
+        }
+      }
+      "matrix" => {
+        let args = split_by_comma(args_str)
+        if args.length() >= 6 {
+          has_matrix = true
+          matrix_a = parse_scale_value(args[0])
+          matrix_b = parse_scale_value(args[1])
+          matrix_c = parse_scale_value(args[2])
+          matrix_d = parse_scale_value(args[3])
+          matrix_e = parse_scale_value(args[4])
+          matrix_f = parse_scale_value(args[5])
+        }
+      }
+      "matrix3d" => {
+        let args = split_by_comma(args_str)
+        if args.length() >= 16 {
+          has_matrix = true
+          matrix_a = parse_scale_value(args[0])
+          matrix_b = parse_scale_value(args[1])
+          matrix_c = parse_scale_value(args[4])
+          matrix_d = parse_scale_value(args[5])
+          matrix_e = parse_scale_value(args[12])
+          matrix_f = parse_scale_value(args[13])
+        }
+      }
+      _ => () // Ignore unsupported functions like matrix/perspective.
     }
   }
-  { translate_x, translate_y, scale_x, scale_y }
+  {
+    translate_x,
+    translate_y,
+    scale_x,
+    scale_y,
+    rotate_degrees,
+    skew_x_degrees,
+    skew_y_degrees,
+    has_matrix,
+    matrix_a,
+    matrix_b,
+    matrix_c,
+    matrix_d,
+    matrix_e,
+    matrix_f,
+  }
+}
+
+///|
+fn parse_rotate_degrees(value : String) -> Double {
+  let v = value.trim()
+  if v.is_empty() {
+    return 0.0
+  }
+  if v.has_suffix("deg") {
+    let num_str = view_to_string(v.view(end_offset=v.length() - 3))
+    return @string.parse_double(num_str.trim()) catch { _ => 0.0 }
+  }
+  if v.has_suffix("turn") {
+    let num_str = view_to_string(v.view(end_offset=v.length() - 4))
+    let turns = @string.parse_double(num_str.trim()) catch { _ => return 0.0 }
+    return turns * 360.0
+  }
+  if v.has_suffix("rad") {
+    let num_str = view_to_string(v.view(end_offset=v.length() - 3))
+    let radians = @string.parse_double(num_str.trim()) catch { _ => return 0.0 }
+    return radians * 57.29577951308232
+  }
+  @string.parse_double(v) catch {
+    _ => 0.0
+  }
 }
 
 ///|

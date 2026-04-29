@@ -288,6 +288,48 @@ test.describe("Crater Playwright adapter user scenarios", () => {
     await page.waitForTimeout(1);
   });
 
+  test("async waits: wait for selector state transitions without fixed sleeps", async () => {
+    page.setDefaultTimeout(1000);
+
+    await page.setContentWithScripts(`
+      <html>
+        <body>
+          <output id="loading">loading</output>
+          <output id="ready" style="display: none">ready</output>
+          <output id="still-hidden" style="display: none">still hidden</output>
+          <script>
+            setTimeout(() => {
+              const toast = document.createElement("output");
+              toast.id = "toast";
+              toast.textContent = "saved";
+              document.body.appendChild(toast);
+            }, 10);
+            setTimeout(() => {
+              document.getElementById("loading").hidden = true;
+              document.getElementById("ready").style.display = "";
+            }, 20);
+            setTimeout(() => {
+              const toast = document.getElementById("toast");
+              if (toast && toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+              }
+            }, 40);
+          </script>
+        </body>
+      </html>
+    `);
+
+    await page.locator("#toast").waitFor({ state: "attached" });
+    await page.locator("#ready").waitFor({ state: "visible" });
+    await page.locator("#loading").waitFor({ state: "hidden" });
+    await page.waitForSelector("#toast", { state: "detached" });
+
+    await expect(page.locator("#ready").textContent()).resolves.toBe("ready");
+    await expect(
+      page.locator("#still-hidden").waitFor({ state: "visible", timeout: 80 }),
+    ).rejects.toThrow(/state visible.*attached hidden/);
+  });
+
   test("network routing: fulfill fixture requests and wait for request/response", async () => {
     await page.route("/api/config", async (route) => {
       await route.fulfill({

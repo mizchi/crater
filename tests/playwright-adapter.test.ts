@@ -466,6 +466,27 @@ test.describe("Playwright Adapter Tests", () => {
     expect(text).toBe("Ready");
   });
 
+  test("waitForSelector returns a locator for attached targets and null for gone targets", async () => {
+    await page.setContent(`
+      <html>
+        <body>
+          <p id="ready">Ready</p>
+          <p id="gone">Gone</p>
+          <script>
+            setTimeout(() => {
+              const gone = document.getElementById("gone");
+              gone.parentNode.removeChild(gone);
+            }, 20);
+          </script>
+        </body>
+      </html>
+    `);
+
+    const ready = await page.waitForSelector("#ready");
+    await expect(ready?.textContent()).resolves.toBe("Ready");
+    await expect(page.waitForSelector("#gone", { state: "detached" })).resolves.toBeNull();
+  });
+
   test("network request tracking", async () => {
     await page.setContent("<html><body></body></html>");
 

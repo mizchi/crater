@@ -6554,6 +6554,47 @@ test "persisted drag listeners survive later execution" {
 }
 
 ///|
+test "persisted clipboard listeners survive later execution" {
+  let dom = @dom.DomTree::new()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let doc = dom.get_document()
+  let _ = dom.append_child(doc, html)
+  let _ = dom.append_child(html, body)
+  let ctx = JsContext::new(dom)
+  let setup =
+    #|const target = document.createElement('div');
+    #|target.id = 'target';
+    #|document.body.appendChild(target);
+    #|for (const type of ['copy', 'cut', 'paste']) {
+    #|  target.addEventListener(type, function (event) {
+    #|    const current = document.body.getAttribute('data-status') || '';
+    #|    const data = event.clipboardData ? event.clipboardData.getData('text/plain') : 'none';
+    #|    if (type === 'copy' && event.clipboardData) event.clipboardData.setData('text/plain', 'copied');
+    #|    const suffix = type + ':' + data;
+    #|    document.body.setAttribute('data-status', current ? current + '|' + suffix : suffix);
+    #|  });
+    #|}
+    #|'ok'
+  let setup_result = ctx.execute(setup)
+  inspect(setup_result.success, content="true")
+
+  let run =
+    #|(function () {
+    #|  const target = document.getElementById('target');
+    #|  const clipboardData = new DataTransfer();
+    #|  clipboardData.setData('text/plain', 'seed');
+    #|  for (const type of ['copy', 'cut', 'paste']) {
+    #|    target.dispatchEvent(new ClipboardEvent(type, { bubbles: true, cancelable: true, clipboardData }));
+    #|  }
+    #|  return document.body.getAttribute('data-status') + '|' + clipboardData.getData('text/plain');
+    #|})()
+  let run_result = ctx.execute(run)
+  inspect(run_result.success, content="true")
+  inspect(run_result.value, content="copy:seed|cut:copied|paste:copied|copied")
+}
+
+///|
 test "DataTransfer stores and clears string data" {
   let dom = @dom.DomTree::new()
   let html = dom.create_element("html")

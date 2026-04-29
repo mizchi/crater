@@ -321,14 +321,23 @@ fn from_node_and_layout_with_viewport_inner(
   let transform = node.style.transform
   let translate_x = transform.compute_translate_x(layout.width)
   let translate_y = transform.compute_translate_y(layout.height)
+  let scaled_width = layout.width * transform.scale_x.abs()
+  let scaled_height = layout.height * transform.scale_y.abs()
+  let (paint_x, paint_y, paint_width, paint_height, visual_polygon) = visual_transform_bounds(
+    layout.x + translate_x,
+    layout.y + translate_y,
+    scaled_width,
+    scaled_height,
+    transform,
+  )
   Some(
     @model.PaintNode::new(
       node.id,
       tag,
-      layout.x + translate_x,
-      layout.y + translate_y,
-      layout.width,
-      layout.height,
+      paint_x,
+      paint_y,
+      paint_width,
+      paint_height,
       paint,
       children,
       text=layout.text,
@@ -336,6 +345,198 @@ fn from_node_and_layout_with_viewport_inner(
       overflow_x=layout.overflow_x,
       overflow_y=layout.overflow_y,
       clip=node.style.clip,
+      visual_polygon~,
     ),
   )
+}
+
+///|
+fn visual_transform_bounds(
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+  transform : @style.Transform,
+) -> (Double, Double, Double, Double, Array[(Double, Double)]) {
+  if transform.has_skew() || transform.has_affine_matrix() {
+    visual_affine_transform_bounds(x, y, width, height, transform)
+  } else {
+    match transform.quarter_turns() {
+      0 | 2 => (x, y, width, height, [])
+      1 | 3 =>
+        (
+          x + (width - height) / 2.0,
+          y + (height - width) / 2.0,
+          height,
+          width,
+          [],
+        )
+      _ => visual_affine_transform_bounds(x, y, width, height, transform)
+    }
+  }
+}
+
+///|
+fn visual_affine_transform_bounds(
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+  transform : @style.Transform,
+) -> (Double, Double, Double, Double, Array[(Double, Double)]) {
+  if width <= 0.0 || height <= 0.0 {
+    return (x, y, width, height, [])
+  }
+  let radians = transform.rotate_degrees * 3.14159265358979323846 / 180.0
+  let cos_a = @math.cos(radians)
+  let sin_a = @math.sin(radians)
+  let skew_x = @math.tan(
+    transform.skew_x_degrees * 3.14159265358979323846 / 180.0,
+  )
+  let skew_y = @math.tan(
+    transform.skew_y_degrees * 3.14159265358979323846 / 180.0,
+  )
+  let matrix_a = if transform.has_matrix { transform.matrix_a } else { 1.0 }
+  let matrix_b = if transform.has_matrix { transform.matrix_b } else { 0.0 }
+  let matrix_c = if transform.has_matrix { transform.matrix_c } else { 0.0 }
+  let matrix_d = if transform.has_matrix { transform.matrix_d } else { 1.0 }
+  let matrix_e = if transform.has_matrix { transform.matrix_e } else { 0.0 }
+  let matrix_f = if transform.has_matrix { transform.matrix_f } else { 0.0 }
+  let center_x = x + width / 2.0
+  let center_y = y + height / 2.0
+  let points : Array[(Double, Double)] = [
+    transform_point(
+      x, y, center_x, center_y, cos_a, sin_a, skew_x, skew_y, matrix_a, matrix_b,
+      matrix_c, matrix_d, matrix_e, matrix_f,
+    ),
+    transform_point(
+      x + width,
+      y,
+      center_x,
+      center_y,
+      cos_a,
+      sin_a,
+      skew_x,
+      skew_y,
+      matrix_a,
+      matrix_b,
+      matrix_c,
+      matrix_d,
+      matrix_e,
+      matrix_f,
+    ),
+    transform_point(
+      x + width,
+      y + height,
+      center_x,
+      center_y,
+      cos_a,
+      sin_a,
+      skew_x,
+      skew_y,
+      matrix_a,
+      matrix_b,
+      matrix_c,
+      matrix_d,
+      matrix_e,
+      matrix_f,
+    ),
+    transform_point(
+      x,
+      y + height,
+      center_x,
+      center_y,
+      cos_a,
+      sin_a,
+      skew_x,
+      skew_y,
+      matrix_a,
+      matrix_b,
+      matrix_c,
+      matrix_d,
+      matrix_e,
+      matrix_f,
+    ),
+  ]
+  let (min_x, min_y, bbox_width, bbox_height) = polygon_bounds(points)
+  let local_points : Array[(Double, Double)] = []
+  for point in points {
+    let (px, py) = point
+    local_points.push(
+      (snap_near_integer(px - min_x), snap_near_integer(py - min_y)),
+    )
+  }
+  (
+    snap_near_integer(min_x),
+    snap_near_integer(min_y),
+    snap_near_integer(bbox_width),
+    snap_near_integer(bbox_height),
+    local_points,
+  )
+}
+
+///|
+fn transform_point(
+  x : Double,
+  y : Double,
+  center_x : Double,
+  center_y : Double,
+  cos_a : Double,
+  sin_a : Double,
+  skew_x : Double,
+  skew_y : Double,
+  matrix_a : Double,
+  matrix_b : Double,
+  matrix_c : Double,
+  matrix_d : Double,
+  matrix_e : Double,
+  matrix_f : Double,
+) -> (Double, Double) {
+  let dx = x - center_x
+  let dy = y - center_y
+  let matrix_x = matrix_a * dx + matrix_c * dy + matrix_e
+  let matrix_y = matrix_b * dx + matrix_d * dy + matrix_f
+  let skewed_x = matrix_x + skew_x * matrix_y
+  let skewed_y = skew_y * matrix_x + matrix_y
+  (
+    snap_near_integer(center_x + skewed_x * cos_a - skewed_y * sin_a),
+    snap_near_integer(center_y + skewed_x * sin_a + skewed_y * cos_a),
+  )
+}
+
+///|
+fn polygon_bounds(
+  points : Array[(Double, Double)],
+) -> (Double, Double, Double, Double) {
+  let (first_x, first_y) = points[0]
+  let mut min_x = first_x
+  let mut max_x = first_x
+  let mut min_y = first_y
+  let mut max_y = first_y
+  for i in 1..<points.length() {
+    let (px, py) = points[i]
+    if px < min_x {
+      min_x = px
+    }
+    if px > max_x {
+      max_x = px
+    }
+    if py < min_y {
+      min_y = py
+    }
+    if py > max_y {
+      max_y = py
+    }
+  }
+  (min_x, min_y, max_x - min_x, max_y - min_y)
+}
+
+///|
+fn snap_near_integer(value : Double) -> Double {
+  let rounded = value.round()
+  if (value - rounded).abs() < 0.000001 {
+    rounded
+  } else {
+    value
+  }
 }
