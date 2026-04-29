@@ -2265,6 +2265,64 @@ fn create_input_measure(
 }
 
 ///|
+fn is_text_like_input_type(input_type : String) -> Bool {
+  match input_type {
+    "text" | "password" | "search" | "email" | "url" | "tel" | "number" => true
+    _ => false
+  }
+}
+
+///|
+fn mask_password_value(value : String) -> String {
+  let masked = StringBuilder::new()
+  for _ in value {
+    masked.write_char('*')
+  }
+  masked.to_string()
+}
+
+///|
+fn resolve_input_paint_text(
+  input_type : String,
+  attributes : Map[String, String],
+) -> String? {
+  if !is_text_like_input_type(input_type) {
+    return None
+  }
+  match attributes.get("value") {
+    Some(value) if !value.is_empty() =>
+      if input_type == "password" {
+        Some(mask_password_value(value))
+      } else {
+        Some(value)
+      }
+    _ =>
+      match attributes.get("placeholder") {
+        Some(placeholder) if !placeholder.is_empty() => Some(placeholder)
+        _ => None
+      }
+  }
+}
+
+///|
+fn input_uses_placeholder_text(
+  input_type : String,
+  attributes : Map[String, String],
+) -> Bool {
+  if !is_text_like_input_type(input_type) {
+    return false
+  }
+  match attributes.get("value") {
+    Some(value) if !value.is_empty() => false
+    _ =>
+      match attributes.get("placeholder") {
+        Some(placeholder) => !placeholder.is_empty()
+        None => false
+      }
+  }
+}
+
+///|
 fn inset_is_definite(dim : @types.Dimension) -> Bool {
   match dim {
     @types.Length(_) | @types.Percent(_) => true
@@ -3247,7 +3305,19 @@ let viewport_cutoff : Ref[Double] = { val: 1.0e10 }
 let viewport_skeleton_count : Ref[Int] = { val: 0 }
 
 ///|
+let viewport_full_node_count : Ref[Int] = { val: 0 }
+
+///|
+let viewport_full_node_cutoff : Ref[Int] = { val: 300 }
+
+///|
 let empty_indexed_stylesheets : Ref[Array[@css.IndexedStylesheet]] = { val: [] }
+
+///|
+fn should_use_viewport_skeleton() -> Bool {
+  viewport_estimated_y.val > viewport_cutoff.val ||
+  viewport_full_node_count.val > viewport_full_node_cutoff.val
+}
 
 ///|
 /// Advance the viewport culling heuristic only for in-flow block containers.
@@ -3515,15 +3585,17 @@ pub fn build_render_root_node(
   current_cellpadding.val = -1.0 // Reset cellpadding for new render
   // Viewport culling: skip expensive processing for below-fold elements
   viewport_estimated_y.val = 0.0
-  // Keep viewport culling conservative. Small-to-medium fixtures with many
-  // block descendants should still receive full stylesheet cascade.
-  let conservative_cutoff = ctx.viewport_height * 8.0
-  viewport_cutoff.val = if conservative_cutoff > 8192.0 {
+  // Keep several screens of full cascade, then switch long pages to skeleton
+  // nodes. Real-world VRT captures only the viewport, and large docs pages can
+  // otherwise spend minutes styling content far below the fold.
+  let conservative_cutoff = ctx.viewport_height * 4.0
+  viewport_cutoff.val = if conservative_cutoff > 4096.0 {
     conservative_cutoff
   } else {
-    8192.0
+    4096.0
   }
   viewport_skeleton_count.val = 0
+  viewport_full_node_count.val = 0
   let root = if prepared.body_uses_document_root_style {
     let body_selector = if prepared.indexed_stylesheets.length() == 0 {
       html_to_selector_element_minimal(
@@ -3587,7 +3659,9 @@ pub fn build_render_root_node(
     " cutoff=" +
     viewport_cutoff.val.to_int().to_string() +
     " skeleton=" +
-    viewport_skeleton_count.val.to_string(),
+    viewport_skeleton_count.val.to_string() +
+    " full_nodes=" +
+    viewport_full_node_count.val.to_string(),
   )
   root
 }
@@ -5307,7 +5381,7 @@ fn element_to_node_with_styles(
   incoming_counters : Map[String, CounterEntry],
   owner_id : String,
 ) -> @node.Node {
-  let below_viewport = viewport_estimated_y.val > viewport_cutoff.val
+  let below_viewport = should_use_viewport_skeleton()
   // Convert HTML element to selector element for matching
   let effective_sheets = if below_viewport {
     empty_indexed_stylesheets.val
@@ -5330,6 +5404,7 @@ fn element_to_node_with_styles(
     None, // Root element has no parent style
     css_vars,
   )
+  viewport_full_node_count.val += 1
 
   let cell_tag = elem.tag.to_lower()
   let parent_is_svg = selector_parent_is_svg(selector_elem)
@@ -5645,7 +5720,7 @@ fn element_to_node_with_styles_internal(
   owner_id : String,
 ) -> @node.Node {
   // Viewport culling: skeleton mode for below-fold elements
-  let below_viewport = viewport_estimated_y.val > viewport_cutoff.val
+  let below_viewport = should_use_viewport_skeleton()
   if below_viewport {
     viewport_skeleton_count.val += 1
     // Fast path: create minimal skeleton node with inherited style
@@ -5727,6 +5802,7 @@ fn element_to_node_with_styles_internal(
     parent_style,
     css_vars,
   )
+  viewport_full_node_count.val += 1
   // HTML hidden attribute → display: none (UA default per spec)
   if elem.attributes.contains("hidden") {
     computed_style.display = @types.Display::None
@@ -6171,6 +6247,14 @@ fn element_to_node_with_styles_internal(
             }
           None => 20.0
         }
+        let padding_h = resolve_dimension_to_px(style.padding.left) +
+          resolve_dimension_to_px(style.padding.right)
+        let padding_v = resolve_dimension_to_px(style.padding.top) +
+          resolve_dimension_to_px(style.padding.bottom)
+        let border_h = resolve_dimension_to_px(style.border.left) +
+          resolve_dimension_to_px(style.border.right)
+        let border_v = resolve_dimension_to_px(style.border.top) +
+          resolve_dimension_to_px(style.border.bottom)
         let control_extra_width = if control_font_size <= 13.0 {
           control_font_size
         } else {
@@ -6181,9 +6265,19 @@ fn element_to_node_with_styles_internal(
         } else {
           control_font_size * 0.35
         }
+        let input_extra_width = if padding_h > 0.0 {
+          padding_h + border_h
+        } else {
+          control_extra_width
+        }
+        let input_extra_height = if padding_v > 0.0 {
+          padding_v + border_v
+        } else {
+          control_extra_height
+        }
         (
-          size_chars * char_width + control_extra_width,
-          control_line_height + control_extra_height,
+          size_chars * char_width + input_extra_width,
+          control_line_height + input_extra_height,
         )
       }
       // text, password, email, url, tel, search, number, date, etc.
@@ -6192,8 +6286,18 @@ fn element_to_node_with_styles_internal(
     let measure = create_input_measure(intrinsic_width, intrinsic_height)
     let preserve_auto_width = should_preserve_auto_replaced_width(style)
     let preserve_auto_height = should_preserve_auto_replaced_height(style)
+    let input_text = resolve_input_paint_text(input_type, elem.attributes)
+    let placeholder_text = input_uses_placeholder_text(
+      input_type,
+      elem.attributes,
+    )
     let input_style : @style.Style = {
       ..style,
+      color: if placeholder_text {
+        @types.Color::rgb(117, 117, 117)
+      } else {
+        style.color
+      },
       width: if style.width == @types.Auto && !preserve_auto_width {
         @types.Length(intrinsic_width)
       } else {
@@ -6205,7 +6309,11 @@ fn element_to_node_with_styles_internal(
         style.height
       },
     }
-    return @node.Node::with_measure(node_id, input_style, measure)
+    match input_text {
+      Some(text) =>
+        return @node.Node::with_measure(node_id, input_style, measure, text~)
+      None => return @node.Node::with_measure(node_id, input_style, measure)
+    }
   }
   let style = if tag_lower == "button" &&
     !style.contain.size &&
@@ -7081,12 +7189,12 @@ fn get_ua_default_style(tag : String) -> @style.Style {
       {
         // p has 1em margin-top and margin-bottom
         ..default_style,
-        margin: @types.Rect::new(
-          @types.Length(16.0),
-          @types.Auto,
-          @types.Length(16.0),
-          @types.Auto,
-        ),
+        margin: {
+          left: @types.Length(0.0),
+          right: @types.Length(0.0),
+          top: @types.Length(16.0),
+          bottom: @types.Length(16.0),
+        },
       }
     "h1" =>
       {
@@ -7107,36 +7215,36 @@ fn get_ua_default_style(tag : String) -> @style.Style {
         // h2 has 0.83em margin
         ..default_style,
         font_weight: 700.0,
-        margin: @types.Rect::new(
-          @types.Length(13.3),
-          @types.Auto,
-          @types.Length(13.3),
-          @types.Auto,
-        ),
+        margin: {
+          left: @types.Length(0.0),
+          right: @types.Length(0.0),
+          top: @types.Length(13.3),
+          bottom: @types.Length(13.3),
+        },
       }
     "h3" =>
       {
         // h3 has 1em margin
         ..default_style,
         font_weight: 700.0,
-        margin: @types.Rect::new(
-          @types.Length(16.0),
-          @types.Auto,
-          @types.Length(16.0),
-          @types.Auto,
-        ),
+        margin: {
+          left: @types.Length(0.0),
+          right: @types.Length(0.0),
+          top: @types.Length(16.0),
+          bottom: @types.Length(16.0),
+        },
       }
     "h4" | "h5" | "h6" =>
       {
         // h4-h6 have 1.33em margin
         ..default_style,
         font_weight: 700.0,
-        margin: @types.Rect::new(
-          @types.Length(21.3),
-          @types.Auto,
-          @types.Length(21.3),
-          @types.Auto,
-        ),
+        margin: {
+          left: @types.Length(0.0),
+          right: @types.Length(0.0),
+          top: @types.Length(21.3),
+          bottom: @types.Length(21.3),
+        },
       }
     "ul" | "ol" =>
       // Lists: margin-block 1em; padding-inline-start 40px.
@@ -7167,12 +7275,12 @@ fn get_ua_default_style(tag : String) -> @style.Style {
       {
         // blockquote has 1em margin and 40px horizontal margins
         ..default_style,
-        margin: @types.Rect::new(
-          @types.Length(16.0),
-          @types.Length(40.0),
-          @types.Length(16.0),
-          @types.Length(40.0),
-        ),
+        margin: {
+          left: @types.Length(40.0),
+          right: @types.Length(40.0),
+          top: @types.Length(16.0),
+          bottom: @types.Length(16.0),
+        },
       }
     "fieldset" =>
       {
@@ -7218,12 +7326,12 @@ fn get_ua_default_style(tag : String) -> @style.Style {
         ..default_style,
         display: @types.Block,
         overflow_x: @types.Hidden,
-        margin: @types.Rect::new(
-          @types.Length(16.0),
-          @types.Auto,
-          @types.Length(16.0),
-          @types.Auto,
-        ),
+        margin: {
+          left: @types.Length(0.0),
+          right: @types.Length(0.0),
+          top: @types.Length(16.0),
+          bottom: @types.Length(16.0),
+        },
       }
     // Link element - blue color (standard browser UA style)
     "a" =>

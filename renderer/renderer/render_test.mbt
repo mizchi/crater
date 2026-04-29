@@ -4299,6 +4299,29 @@ test "input_button_like_intrinsic_width_uses_value_length" {
 }
 
 ///|
+test "text_input_auto_height_includes_explicit_padding_and_border" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|input {
+    #|  font-size: 14px;
+    #|  line-height: normal;
+    #|  padding: 10px 12px;
+    #|  border: 1px solid #d1d5db;
+    #|}
+    #|</style>
+    #|<input id="email" type="email" placeholder="you@example.com">
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let input = layout.children[0]
+  guard input.height >= 36.0 && input.height <= 40.0 else {
+    fail(
+      "text input auto height should include explicit vertical padding and border",
+    )
+  }
+}
+
+///|
 test "vertical writing table keeps intrinsic max-width in computed style" {
   let html =
     #|<!doctype html>
@@ -5941,6 +5964,30 @@ test "ua_default_h1_uses_larger_heading_metrics" {
 }
 
 ///|
+test "ua_block_defaults_apply_margins_on_the_correct_axis" {
+  let html_str =
+    #|<!doctype html>
+    #|<style>html, body { margin: 0; padding: 0; } div { width: 400px; }</style>
+    #|<div>
+    #|  <p>Paragraph</p>
+    #|  <pre>Preformatted</pre>
+    #|  <blockquote>Quoted</blockquote>
+    #|</div>
+  let layout_root = @renderer.render(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let wrapper = layout_root.children[0]
+  let p = wrapper.children[0]
+  let pre = wrapper.children[1]
+  let quote = wrapper.children[2]
+
+  inspect(p.x, content="0")
+  inspect(pre.x, content="0")
+  inspect(quote.x, content="40")
+}
+
+///|
 test "intrinsic_ratio_replaced_box_sizing_like_first_case" {
   let html_str =
     #|<!DOCTYPE html>
@@ -6821,6 +6868,69 @@ test "cellpadding_attribute_sets_cell_padding" {
     }
     None => inspect(false, content="td not found")
   }
+}
+
+///|
+test "nested_table_cell_height_ignores_surrounding_whitespace" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body {
+    #|  margin: 0;
+    #|  font-family: Verdana, Geneva, sans-serif;
+    #|  font-size: 10pt;
+    #|  color: #828282;
+    #|}
+    #|td {
+    #|  font-family: Verdana, Geneva, sans-serif;
+    #|  font-size: 10pt;
+    #|  color: #828282;
+    #|}
+    #|.pagetop {
+    #|  font-family: Verdana, Geneva, sans-serif;
+    #|  font-size: 10pt;
+    #|  color: #222;
+    #|  line-height: 12px;
+    #|}
+    #|.hnname { margin-left: 1px; margin-right: 5px; }
+    #|a:link { color: #000; text-decoration: none; }
+    #|</style>
+    #|<table id="hnmain" border="0" cellpadding="0" cellspacing="0" width="85%" bgcolor="#f6f6ef">
+    #|  <tbody>
+    #|    <tr id="outer-row">
+    #|      <td id="outer-cell" bgcolor="#ff6600">
+    #|        <table id="inner" border="0" cellpadding="0" cellspacing="0" width="100%" style="padding:2px">
+    #|          <tbody>
+    #|            <tr id="inner-row">
+    #|              <td id="logo" style="width:18px;padding-right:4px">
+    #|                <a><img src="missing.svg" width="18" height="18" style="border:1px white solid;display:block"></a>
+    #|              </td>
+    #|              <td id="nav" style="line-height:12pt;height:10px">
+    #|                <span class="pagetop"><b class="hnname"><a>Hacker News</a></b><a>new</a> | <a>past</a></span>
+    #|              </td>
+    #|              <td id="login" style="text-align:right;padding-right:4px">
+    #|                <span class="pagetop"><a>login</a></span>
+    #|              </td>
+    #|            </tr>
+    #|          </tbody>
+    #|        </table>
+    #|      </td>
+    #|    </tr>
+    #|  </tbody>
+    #|</table>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let table = layout.children[0]
+  let tbody = table.children[0]
+  let outer_row = tbody.children[0]
+  let outer_cell = outer_row.children[0]
+  let inner_table = outer_cell.children[0]
+  let inner_tbody = inner_table.children[0]
+  let inner_row = inner_tbody.children[0]
+  inspect(table.height, content="22")
+  inspect(outer_row.height, content="22")
+  inspect(outer_cell.height, content="22")
+  inspect(inner_table.height, content="22")
+  inspect(inner_row.height, content="18")
 }
 
 ///|

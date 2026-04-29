@@ -1793,6 +1793,7 @@ export class CraterLocator {
         __craterAction.clickElement(el);
       })()
     `);
+    await this.page.markLiveDomCaptureNeeded();
   }
 
   async hover(): Promise<void> {
@@ -1805,6 +1806,7 @@ export class CraterLocator {
         __craterAction.hoverElement(el);
       })()
     `);
+    await this.page.markLiveDomCaptureNeeded();
   }
 
   async focus(): Promise<void> {
@@ -1834,6 +1836,7 @@ export class CraterLocator {
         __craterAction.dispatchInputChange(el);
       })()
     `);
+    await this.page.markLiveDomCaptureNeeded();
   }
 
   async clear(): Promise<void> {
@@ -1858,16 +1861,21 @@ export class CraterLocator {
         return true;
       })()
     `);
-    if (handled) return;
+    if (handled) {
+      await this.page.markLiveDomCaptureNeeded();
+      return;
+    }
     await this.focus();
     for (const char of [...text]) {
       await this.page.press(char);
     }
+    await this.page.markLiveDomCaptureNeeded();
   }
 
   async press(key: string): Promise<void> {
     await this.focus();
     await this.page.press(key);
+    await this.page.markLiveDomCaptureNeeded();
   }
 
   async dispatchEvent(type: string, eventInit: Record<string, unknown> = {}): Promise<void> {
@@ -1886,6 +1894,7 @@ export class CraterLocator {
         el.dispatchEvent(event);
       })()
     `);
+    await this.page.markLiveDomCaptureNeeded();
   }
 
   async check(): Promise<void> {
@@ -1907,6 +1916,7 @@ export class CraterLocator {
         __craterAction.selectOptions(el, ${requestExpr});
       })()
     `);
+    await this.page.markLiveDomCaptureNeeded();
   }
 
   async setInputFiles(files: CraterSetInputFilesValue): Promise<void> {
@@ -2141,6 +2151,7 @@ export class CraterLocator {
         __craterAction.setChecked(el, ${checked});
       })()
     `);
+    await this.page.markLiveDomCaptureNeeded();
   }
 
   private async waitForActionable(options: { timeout?: number } = {}): Promise<void> {
@@ -2544,6 +2555,7 @@ export class CraterBidiPage {
     await this.syncRuntimeLocation("about:blank");
     await this.prepareRuntimeDocumentForLoad();
     await this.evaluate(`__loadHTML(${jsString(html)})`);
+    await this.evaluate(`globalThis.__craterPaintCaptureSource = "original"`);
     await this.reinstallNetworkHooksForDocument();
     await this.runInitScripts();
     await this.setObservableFetchForScriptExecution(this.networkHooksInstalled);
@@ -2558,6 +2570,10 @@ export class CraterBidiPage {
 
   async setContentWithScripts(html: string): Promise<void> {
     await this.setContent(html);
+  }
+
+  async markLiveDomCaptureNeeded(): Promise<void> {
+    await this.evaluate(`globalThis.__craterPaintCaptureSource = "live"`);
   }
 
   async loadPage(
@@ -3233,6 +3249,7 @@ export class CraterBidiPage {
   async click(selector: string): Promise<void> {
     const sharedId = await this.elementSharedId(selector);
     await this.performPointer(pointerClickActions(sharedId));
+    await this.markLiveDomCaptureNeeded();
   }
 
   async hover(selector: string): Promise<void> {
@@ -3247,10 +3264,12 @@ export class CraterBidiPage {
   async type(selector: string, text: string): Promise<void> {
     await this.click(selector);
     await this.keyboard.type(text);
+    await this.markLiveDomCaptureNeeded();
   }
 
   async press(key: string): Promise<void> {
     await this.keyboard.press(key);
+    await this.markLiveDomCaptureNeeded();
   }
 
   async check(selector: string): Promise<void> {

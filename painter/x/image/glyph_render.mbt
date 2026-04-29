@@ -53,6 +53,114 @@ let glyph_cache : Ref[Map[String, (Array[@svg.PathCommand], Double)]] = {
 }
 
 ///|
+let text_wrap_tolerance : Double = 10.0
+
+///|
+fn resolve_text_wrap_tolerance(max_width : Int, font_size : Double) -> Double {
+  if max_width <= 0 {
+    return text_wrap_tolerance
+  }
+  let width_tolerance = max_width.to_double() * 0.2
+  let font_tolerance = if font_size > 0.0 {
+    font_size * 1.5
+  } else {
+    text_wrap_tolerance
+  }
+  let capped = if width_tolerance < font_tolerance {
+    width_tolerance
+  } else {
+    font_tolerance
+  }
+  if capped > text_wrap_tolerance {
+    capped
+  } else {
+    text_wrap_tolerance
+  }
+}
+
+///|
+fn insert_sorted_double(values : Array[Double], value : Double) -> Unit {
+  let mut index = 0
+  while index < values.length() && values[index] <= value {
+    index = index + 1
+  }
+  values.insert(index, value)
+}
+
+///|
+fn scanline_intersections_even_odd(
+  polylines : Array[Array[(Double, Double)]],
+  py : Double,
+) -> Array[Double] {
+  let intersections : Array[Double] = []
+  for polyline in polylines {
+    if polyline.length() < 3 {
+      continue
+    }
+    let mut j = polyline.length() - 1
+    for i = 0; i < polyline.length(); i = i + 1 {
+      let (xi, yi) = polyline[i]
+      let (xj, yj) = polyline[j]
+      let crosses = (yi > py && yj <= py) || (yj > py && yi <= py)
+      if crosses {
+        let x_at_y = xi + (py - yi) * (xj - xi) / (yj - yi)
+        insert_sorted_double(intersections, x_at_y)
+      }
+      j = i
+    }
+  }
+  intersections
+}
+
+///|
+fn rasterize_compound_path_even_odd_to_pixels(
+  commands : Array[@svg.PathCommand],
+  offset_x : Int,
+  offset_y : Int,
+  ss : Int,
+  ss_width : Int,
+  ss_height : Int,
+) -> Array[Bool] {
+  let pixels = Array::make(ss_width * ss_height, false)
+  let polylines = @svg.path_to_polylines(commands, 0.5)
+  let sample_scale = ss.to_double()
+  for y = 0; y < ss_height; y = y + 1 {
+    let py = offset_y.to_double() + (y.to_double() + 0.5) / sample_scale
+    let intersections = scanline_intersections_even_odd(polylines, py)
+    let mut i = 0
+    while i + 1 < intersections.length() {
+      let start = ((intersections[i] - offset_x.to_double()) * sample_scale -
+        0.5)
+        .ceil()
+        .to_int()
+      let end = ((intersections[i + 1] - offset_x.to_double()) * sample_scale -
+        0.5)
+        .ceil()
+        .to_int()
+      let clamped_start = if start < 0 {
+        0
+      } else if start > ss_width {
+        ss_width
+      } else {
+        start
+      }
+      let clamped_end = if end < 0 {
+        0
+      } else if end > ss_width {
+        ss_width
+      } else {
+        end
+      }
+      for x = clamped_start; x < clamped_end; x = x + 1 {
+        pixels[y * ss_width + x] = true
+      }
+      i = i + 2
+    }
+  }
+  pixels
+}
+
+///|
 /// Rasterize a glyph to a bitmap. Called once per unique glyph.
 fn rasterize_glyph_to_bitmap(
   commands : Array[@svg.PathCommand],
@@ -176,55 +284,9 @@ fn rasterize_glyph_to_bitmap(
   let ss = 4 // supersample factor
   let ss_width = width * ss
   let ss_height = height * ss
-  let ss_pixels = Array::make(ss_width * ss_height, false)
-  // Scale path commands by supersample factor
-  let ss_commands : Array[@svg.PathCommand] = []
-  for cmd in commands {
-    let scaled = match cmd {
-      MoveTo(x, y) =>
-        @svg.PathCommand::MoveTo(
-          x * ss.to_double() - offset_x.to_double() * (ss - 1).to_double(),
-          y * ss.to_double() - offset_y.to_double() * (ss - 1).to_double(),
-        )
-      LineTo(x, y) =>
-        @svg.PathCommand::LineTo(
-          x * ss.to_double() - offset_x.to_double() * (ss - 1).to_double(),
-          y * ss.to_double() - offset_y.to_double() * (ss - 1).to_double(),
-        )
-      CurveTo(cx1, cy1, cx2, cy2, x, y) =>
-        @svg.PathCommand::CurveTo(
-          cx1 * ss.to_double() - offset_x.to_double() * (ss - 1).to_double(),
-          cy1 * ss.to_double() - offset_y.to_double() * (ss - 1).to_double(),
-          cx2 * ss.to_double() - offset_x.to_double() * (ss - 1).to_double(),
-          cy2 * ss.to_double() - offset_y.to_double() * (ss - 1).to_double(),
-          x * ss.to_double() - offset_x.to_double() * (ss - 1).to_double(),
-          y * ss.to_double() - offset_y.to_double() * (ss - 1).to_double(),
-        )
-      QuadraticCurveTo(cx, cy, x, y) =>
-        @svg.PathCommand::QuadraticCurveTo(
-          cx * ss.to_double() - offset_x.to_double() * (ss - 1).to_double(),
-          cy * ss.to_double() - offset_y.to_double() * (ss - 1).to_double(),
-          x * ss.to_double() - offset_x.to_double() * (ss - 1).to_double(),
-          y * ss.to_double() - offset_y.to_double() * (ss - 1).to_double(),
-        )
-      ClosePath => @svg.PathCommand::ClosePath
-      _ => cmd // Pass through other commands
-    }
-    ss_commands.push(scaled)
-  }
-  let ss_offset_x = offset_x * ss
-  let ss_offset_y = offset_y * ss
-  let setter : @svg.PixelSetter = {
-    set: fn(px, py, _c) {
-      let lx = px - ss_offset_x
-      let ly = py - ss_offset_y
-      if lx >= 0 && lx < ss_width && ly >= 0 && ly < ss_height {
-        ss_pixels[ly * ss_width + lx] = true
-      }
-    },
-  }
-  let white = @svg.Color::rgb(255, 255, 255)
-  @svg.raster_path(ss_commands, Some(white), None, 0.0, setter)
+  let ss_pixels = rasterize_compound_path_even_odd_to_pixels(
+    commands, offset_x, offset_y, ss, ss_width, ss_height,
+  )
   // Downsample: count coverage in each ss×ss block → 0..ss*ss levels
   // Store as coverage (0=transparent, 1-3=partial, 4=full) in pixels array
   // We encode coverage as: false=0, true=4 for backward compat,
@@ -283,7 +345,7 @@ fn glyph_cache_key(
 pub fn set_glyph_provider(provider : GlyphProvider) -> Unit {
   glyph_provider_override.val = Some(provider)
   glyph_cache.val = {}
-  // Keep bitmap cache — same fonts produce same bitmaps across provider resets
+  glyph_bitmap_cache.val = {}
 }
 
 ///|
@@ -332,7 +394,7 @@ pub fn pre_rasterize_glyphs(
 pub fn clear_glyph_provider() -> Unit {
   glyph_provider_override.val = None
   glyph_cache.val = {}
-  // Keep bitmap cache — same font produces same bitmaps across sessions
+  glyph_bitmap_cache.val = {}
 }
 
 ///|
@@ -395,147 +457,21 @@ pub fn glyph_provider_from_bytes(data : Bytes) -> GlyphProvider? {
 }
 
 ///|
-/// Draw text using the glyph provider (SVG path rendering).
-/// Handles word-wrapping within max_width and baseline positioning.
-/// Returns the total height used.
-fn draw_text_with_glyphs(
-  fb : Framebuffer,
-  palette : DynamicPalette,
-  provider : GlyphProvider,
-  x : Int,
-  y : Int,
-  text : String,
-  max_width : Int,
-  color : @svg.Color,
-  font_size : Double,
-  line_height : Double,
-  is_bold : Bool,
-  font_family? : String = "",
-) -> Int {
-  let setter : @svg.PixelSetter = {
-    set: fn(px, py, c) {
-      if px >= 0 && px < fb.width && py >= 0 && py < fb.height {
-        let sixel_color = { r: c.r, g: c.g, b: c.b }
-        let idx = palette.get_or_add(sixel_color)
-        fb.set_pixel(px, py, idx)
-      }
-    },
-  }
-  let effective_line_height = if line_height > 0.0 {
-    line_height
-  } else {
-    font_size
-  }
-  // Baseline offset: glyphs have Y=0 at baseline, negative Y for ascenders
-  let baseline_offset = match provider.get_ascent_for_family {
-    Some(get_ascent) if font_family.length() > 0 =>
-      get_ascent(font_family) * font_size
-    _ => provider.ascent_ratio * font_size
-  }
-  let max_x_limit = if max_width > 0 {
-    (x + max_width).to_double()
-  } else {
-    fb.width.to_double()
-  }
-  // Word-wrap using Regular font metrics (matching layout engine),
-  // then render glyphs with the actual weight (bold or regular).
-  let words = split_text_into_words(text)
-  let mut cur_x = x.to_double()
-  let mut cur_y = y.to_double()
-  let mut max_y_seen = y.to_double() + effective_line_height
-  // Use regular (non-bold) metrics for wrapping to match layout engine
-  let space_advance_layout = get_advance(
-    provider,
-    ' '.to_int(),
-    font_size,
-    false,
-  )
-  for i, word in words {
-    if word == "\n" {
-      cur_x = x.to_double()
-      cur_y = cur_y + effective_line_height
-      max_y_seen = cur_y + effective_line_height
-      continue
-    }
-    // Measure word with Regular font (matching layout)
-    let word_width = measure_word_width(
-      provider,
-      word,
-      font_size,
-      false,
-      font_family~,
-    )
-    // Calculate space before word (except at line start)
-    let mut space_width = 0.0
-    if i > 0 && word != "\n" && cur_x > x.to_double() + 0.01 {
-      space_width = space_advance_layout
-    }
-    // Wrap if needed (considering space + word width)
-    if max_width > 0 {
-      let total_width = space_width + word_width
-      if cur_x + total_width > max_x_limit && cur_x > x.to_double() + 0.01 {
-        cur_x = x.to_double()
-        cur_y = cur_y + effective_line_height
-        max_y_seen = cur_y + effective_line_height
-        // After line break, no space before word
-        space_width = 0.0
-      }
-    }
-    // Add space before word (except at line start)
-    cur_x = cur_x + space_width
-    // Render each character with actual weight and kerning
-    let mut prev_cp = 0
-    for c in word {
-      let cp = c.to_int()
-      let (commands, advance) = match provider.get_glyph_for_family {
-        Some(glyph_fn) if font_family.length() > 0 =>
-          match glyph_fn(cp, font_size, is_bold, font_family) {
-            Some(result) => result
-            None => (provider.get_glyph)(cp, font_size, is_bold)
-          }
-        _ => (provider.get_glyph)(cp, font_size, is_bold)
-      }
-      let kern = if prev_cp != 0 {
-        match provider.get_kern_for_family {
-          Some(kern_fn) if font_family.length() > 0 =>
-            kern_fn(prev_cp, cp, font_size, is_bold, font_family)
-          _ => (provider.get_kern)(prev_cp, cp, font_size, is_bold)
-        }
-      } else {
-        0.0
-      }
-      let mut draw_x = cur_x + kern
-      if max_width > 0 &&
-        draw_x + advance > max_x_limit &&
-        cur_x > x.to_double() + 0.01 {
-        cur_x = x.to_double()
-        cur_y = cur_y + effective_line_height
-        max_y_seen = cur_y + effective_line_height
-        draw_x = cur_x
-      }
-      if commands.length() > 0 {
-        let translated = translate_path_commands(
-          commands,
-          draw_x,
-          cur_y + baseline_offset,
-        )
-        @svg.raster_path(translated, Some(color), None, 0.0, setter)
-      }
-      cur_x = draw_x + advance
-      prev_cp = cp
-    }
-  }
-  (max_y_seen - y.to_double()).to_int()
-}
-
-///|
 fn get_advance(
   provider : GlyphProvider,
   codepoint : Int,
   font_size : Double,
   is_bold : Bool,
+  font_family? : String = "",
 ) -> Double {
-  let (_, advance) = (provider.get_glyph)(codepoint, font_size, is_bold)
+  let (_, advance) = match provider.get_glyph_for_family {
+    Some(glyph_fn) if font_family.length() > 0 =>
+      match glyph_fn(codepoint, font_size, is_bold, font_family) {
+        Some(r) => r
+        None => (provider.get_glyph)(codepoint, font_size, is_bold)
+      }
+    _ => (provider.get_glyph)(codepoint, font_size, is_bold)
+  }
   advance
 }
 
@@ -559,10 +495,47 @@ fn measure_word_width(
       }
       w = w + kern
     }
-    w = w + get_advance(provider, cp, font_size, is_bold)
+    w = w + get_advance(provider, cp, font_size, is_bold, font_family~)
     prev_cp = cp
   }
   w
+}
+
+///|
+fn clamp_opacity(value : Double) -> Double {
+  if value < 0.0 {
+    0.0
+  } else if value > 1.0 {
+    1.0
+  } else {
+    value
+  }
+}
+
+///|
+fn blend_color_over_pixel_alpha(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  px : Int,
+  py : Int,
+  color : Color,
+  alpha : Double,
+) -> Unit {
+  let clamped = clamp_opacity(alpha)
+  if clamped <= 0.0 {
+    return
+  }
+  if clamped >= 1.0 {
+    let idx = palette.get_or_add(color)
+    fb.set_pixel(px, py, idx)
+    return
+  }
+  let bg_idx = fb.pixels[py * fb.width + px]
+  let bg_color = palette_color_at(palette, bg_idx)
+  let a_byte = (clamped * 255.0).to_int()
+  let blended = color.blend(bg_color, a_byte)
+  let idx = palette.get_or_add(blended)
+  fb.set_pixel(px, py, idx)
 }
 
 ///|
@@ -644,23 +617,9 @@ fn draw_text_with_glyphs_clipped(
   is_bold : Bool,
   clip : ClipRect?,
   font_family? : String = "",
+  opacity? : Double = 1.0,
 ) -> Int {
-  if clip is None {
-    return draw_text_with_glyphs(
-      fb,
-      palette,
-      provider,
-      x,
-      y,
-      text,
-      max_width,
-      color,
-      font_size,
-      line_height,
-      is_bold,
-      font_family~,
-    )
-  }
+  let text_opacity = clamp_opacity(opacity) * color.a.to_double() / 255.0
   let effective_line_height = if line_height > 0.0 {
     line_height
   } else {
@@ -671,8 +630,9 @@ fn draw_text_with_glyphs_clipped(
       get_ascent(font_family) * font_size
     _ => provider.ascent_ratio * font_size
   }
+  let wrap_tolerance = resolve_text_wrap_tolerance(max_width, font_size)
   let max_x_limit = if max_width > 0 {
-    (x + max_width).to_double()
+    (x + max_width).to_double() + wrap_tolerance
   } else {
     fb.width.to_double()
   }
@@ -684,7 +644,8 @@ fn draw_text_with_glyphs_clipped(
     provider,
     ' '.to_int(),
     font_size,
-    false,
+    is_bold,
+    font_family~,
   )
   for i, word in words {
     if word == "\n" {
@@ -697,9 +658,15 @@ fn draw_text_with_glyphs_clipped(
       provider,
       word,
       font_size,
-      false,
+      is_bold,
       font_family~,
     )
+    let hard_wrap_limit = if max_width > 0 &&
+      word_width > max_width.to_double() + wrap_tolerance {
+      (x + max_width).to_double()
+    } else {
+      max_x_limit
+    }
     let mut space_width = 0.0
     if i > 0 && word != "\n" && cur_x > x.to_double() + 0.01 {
       space_width = space_advance_layout
@@ -715,7 +682,8 @@ fn draw_text_with_glyphs_clipped(
     }
     cur_x = cur_x + space_width
     // Pre-compute palette index for this word's color (constant per word)
-    let color_idx = palette.get_or_add({ r: color.r, g: color.g, b: color.b })
+    let sixel_color = { r: color.r, g: color.g, b: color.b }
+    let color_idx = palette.get_or_add(sixel_color)
     let mut prev_cp = 0
     for c in word {
       let cp = c.to_int()
@@ -751,7 +719,7 @@ fn draw_text_with_glyphs_clipped(
       }
       let mut draw_x = cur_x + kern
       if max_width > 0 &&
-        draw_x + bitmap.advance > max_x_limit &&
+        draw_x + bitmap.advance > hard_wrap_limit &&
         cur_x > x.to_double() + 0.01 {
         cur_x = x.to_double()
         cur_y = cur_y + effective_line_height
@@ -785,28 +753,28 @@ fn draw_text_with_glyphs_clipped(
                   let max_cov = bitmap.ss_factor * bitmap.ss_factor
                   if cov >= max_cov {
                     // Full coverage: solid pixel
-                    fb.set_pixel(px, py, color_idx)
+                    if text_opacity >= 1.0 {
+                      fb.set_pixel(px, py, color_idx)
+                    } else {
+                      blend_color_over_pixel_alpha(
+                        fb, palette, px, py, sixel_color, text_opacity,
+                      )
+                    }
                   } else {
                     // Partial coverage: blend with background
-                    let alpha = cov.to_double() / max_cov.to_double()
-                    let bg_idx = fb.pixels[py * fb.width + px]
-                    let bg_color = palette_color_at(palette, bg_idx)
-                    let fg_color = palette_color_at(palette, color_idx)
-                    let blended_r = (fg_color.r.to_double() * alpha +
-                    bg_color.r.to_double() * (1.0 - alpha)).to_int()
-                    let blended_g = (fg_color.g.to_double() * alpha +
-                    bg_color.g.to_double() * (1.0 - alpha)).to_int()
-                    let blended_b = (fg_color.b.to_double() * alpha +
-                    bg_color.b.to_double() * (1.0 - alpha)).to_int()
-                    let blended_idx = palette.get_or_add({
-                      r: blended_r,
-                      g: blended_g,
-                      b: blended_b,
-                    })
-                    fb.set_pixel(px, py, blended_idx)
+                    let alpha = cov.to_double() /
+                      max_cov.to_double() *
+                      text_opacity
+                    blend_color_over_pixel_alpha(
+                      fb, palette, px, py, sixel_color, alpha,
+                    )
                   }
-                } else {
+                } else if text_opacity >= 1.0 {
                   fb.set_pixel(px, py, color_idx)
+                } else {
+                  blend_color_over_pixel_alpha(
+                    fb, palette, px, py, sixel_color, text_opacity,
+                  )
                 }
               }
             }

@@ -53,6 +53,27 @@ describe("createTextIntrinsicFnFromMeasureText", () => {
     expect(result?.maxHeight).toBe(20);
   });
 
+  it("memoizes repeated intrinsic and word measurements", () => {
+    let calls = 0;
+    const fn = createTextIntrinsicFnFromMeasureText((text) => {
+      calls += 1;
+      return text.length * 10;
+    });
+    const args = [
+      "alpha beta alpha",
+      16,
+      20,
+      "normal",
+      "horizontal-tb",
+      "Inter",
+      100,
+      600,
+    ] as const;
+
+    expect(fn(...args)).toEqual(fn(...args));
+    expect(calls).toBe(4);
+  });
+
   it("collapses newline-only whitespace into a single visual line in normal mode", () => {
     const fn = createTextIntrinsicFnFromMeasureText((text) => text.length * 10);
     const result = fn(

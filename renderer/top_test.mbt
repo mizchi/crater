@@ -94,6 +94,38 @@ test "renderer facade propagates font weight and text decoration" {
 }
 
 ///|
+test "renderer facade exposes text input value and placeholder to paint tree" {
+  let placeholder_html =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; } input { font: 14px Arial; }</style>
+    #|<input id="placeholder" type="email" placeholder="you@example.com">
+  let placeholder_tree = render_html_to_paint_tree(
+    placeholder_html,
+    @types.Size::new(320.0, 120.0),
+  )
+  match find_text_node(placeholder_tree, "you@example.com") {
+    Some(text_node) => {
+      inspect(text_node.paint.color.r, content="117")
+      inspect(text_node.paint.color.g, content="117")
+      inspect(text_node.paint.color.b, content="117")
+    }
+    None => fail("placeholder text not found")
+  }
+  let value_html =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; } input { font: 14px Arial; }</style>
+    #|<input id="value" type="text" value="Ada">
+  let value_tree = render_html_to_paint_tree(
+    value_html,
+    @types.Size::new(320.0, 120.0),
+  )
+  match find_text_node(value_tree, "Ada") {
+    Some(_) => ()
+    None => fail("input value text not found")
+  }
+}
+
+///|
 test "renderer facade reports layout and paint changes" {
   let baseline =
     #|<!DOCTYPE html>
@@ -175,6 +207,38 @@ test "renderer facade applies semantic inline defaults" {
     Some(text_node) =>
       inspect(text_node.paint.text_decoration_line_through, content="true")
     None => fail("strike text node not found")
+  }
+}
+
+///|
+test "renderer facade preserves nested inline link paint color" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.title { color: #828282; }
+    #|a:link { color: #000000; text-decoration: none; }
+    #|</style>
+    #|<span class="title"><span class="titleline"><a href="#">Black title</a><span> gray site</span></span></span>
+  let paint_tree = render_html_to_paint_tree(
+    html,
+    @types.Size::new(320.0, 80.0),
+  )
+  match find_text_node(paint_tree, "Black title") {
+    Some(text_node) => {
+      inspect(text_node.paint.color.r, content="0")
+      inspect(text_node.paint.color.g, content="0")
+      inspect(text_node.paint.color.b, content="0")
+    }
+    None => fail("nested link text node not found")
+  }
+  match find_text_node(paint_tree, " gray site") {
+    Some(text_node) => {
+      inspect(text_node.paint.color.r, content="130")
+      inspect(text_node.paint.color.g, content="130")
+      inspect(text_node.paint.color.b, content="130")
+    }
+    None => fail("sibling inline text node not found")
   }
 }
 

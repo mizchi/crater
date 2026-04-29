@@ -205,8 +205,12 @@ fn matches_pseudo_class(element : Element, pc : PseudoClass) -> Bool {
     // User-action pseudo-classes - these depend on runtime state
     // For static matching, we return false (or could check element state)
     Hover | Active | Focus | FocusVisible | FocusWithin => false
-    // Link pseudo-classes
-    Link | Visited | AnyLink => element.tag_name == "a"
+    // Link pseudo-classes. Static rendering has no visited-history state, so
+    // :visited must not match by default; otherwise later visited rules override
+    // normal link styling.
+    Link | AnyLink =>
+      element.tag_name == "a" && element.get_attribute("href") is Some(_)
+    Visited => false
     // Form pseudo-classes - would need form element state
     Enabled
     | Disabled

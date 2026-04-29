@@ -615,9 +615,7 @@ fn BidiProtocol::resolve_capture_paint_data(
 
   let width = self.resolve_effective_viewport_width(ctx_id)
   let height = self.resolve_effective_viewport_height(ctx_id)
-  // Use original HTML from __lastHTML (preserves <html> attributes like class)
-  // __loadHTML stores the original HTML string in globalThis.__lastHTML
-  let html_json = evaluate_js("globalThis.__lastHTML || ''")
+  let html_json = evaluate_js(capture_paint_source_html_expr())
   let html = extract_string_value_from_evaluate_result(html_json)
   let ctx = @browser_contract.create_render_context(width, height, false)
   let t0 = js_now_ms()
@@ -659,6 +657,23 @@ fn BidiProtocol::resolve_capture_paint_data(
       "height": Json::number(height.to_double()),
       "data": Json::string(data),
     }),
+  )
+}
+
+///|
+fn capture_paint_source_html_expr() -> String {
+  (
+    #|(() => {
+    #|  if (globalThis.__craterPaintCaptureSource === "live") {
+    #|    const live =
+  ) +
+  serialize_live_document_html_expr() +
+  (
+    #|;
+    #|    if (live) return live;
+    #|  }
+    #|  return globalThis.__lastHTML || '';
+    #|})()
   )
 }
 

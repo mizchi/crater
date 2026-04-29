@@ -231,6 +231,14 @@ test "match :state pseudo-class" {
 }
 
 ///|
+test "static link pseudo classes do not match visited links" {
+  let link = Element::new("a").set_attribute("href", "https://example.com")
+  inspect(matches_selector_text(link, "a:link"), content="true")
+  inspect(matches_selector_text(link, "a:any-link"), content="true")
+  inspect(matches_selector_text(link, "a:visited"), content="false")
+}
+
+///|
 test "match :not with class - body:not(.hidden) div matches div under body without hidden class" {
   let body = Element::new("body")
   let div = Element::new("div").set_parent(body)

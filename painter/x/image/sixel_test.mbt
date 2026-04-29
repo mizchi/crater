@@ -138,7 +138,7 @@ test "render_paint_node_to_framebuffer does not add debug border for block" {
 test "render_paint_node_to_framebuffer blends semi transparent background" {
   let style = @style.Style::default()
   style.background_color = @types.Color::rgba(255, 0, 0, 0.5)
-  let node = @paint_model.PaintNode::new(
+  let child = @paint_model.PaintNode::new(
     "div",
     "div",
     0.0,
@@ -147,6 +147,16 @@ test "render_paint_node_to_framebuffer blends semi transparent background" {
     4.0,
     @paint_model.PaintProperties::from_style(style),
     [],
+  )
+  let node = @paint_model.PaintNode::new(
+    "root",
+    "div",
+    0.0,
+    0.0,
+    4.0,
+    4.0,
+    @paint_model.PaintProperties::default(),
+    [child],
   )
   let fb = @image.Framebuffer::new(4, 4)
   let palette = @image.DynamicPalette::new()
@@ -157,15 +167,54 @@ test "render_paint_node_to_framebuffer blends semi transparent background" {
   inspect(
     color.g > 100,
     content=(
-      #|false
+      #|true
     ),
   )
   inspect(
     color.b > 100,
     content=(
-      #|false
+      #|true
     ),
   )
+}
+
+///|
+test "render_paint_node_to_framebuffer blends semi transparent rounded background" {
+  let style = @style.Style::default()
+  style.background_color = @types.Color::rgba(0, 0, 0, 0.2)
+  style.border_top_left_radius = 4.0
+  style.border_top_right_radius = 4.0
+  style.border_bottom_right_radius = 4.0
+  style.border_bottom_left_radius = 4.0
+  let child = @paint_model.PaintNode::new(
+    "div",
+    "div",
+    0.0,
+    0.0,
+    12.0,
+    12.0,
+    @paint_model.PaintProperties::from_style(style),
+    [],
+  )
+  let node = @paint_model.PaintNode::new(
+    "root",
+    "div",
+    0.0,
+    0.0,
+    12.0,
+    12.0,
+    @paint_model.PaintProperties::default(),
+    [child],
+  )
+  let fb = @image.Framebuffer::new(12, 12)
+  let palette = @image.DynamicPalette::new()
+  @image.render_paint_node_to_framebuffer(node, fb, palette)
+
+  let color = palette.colors[fb.get_pixel(6, 6)]
+  inspect(color.r, content="204")
+  inspect(color.r > 180, content="true")
+  inspect(color.g > 180, content="true")
+  inspect(color.b > 180, content="true")
 }
 
 ///|
@@ -231,6 +280,105 @@ test "render_paint_node_to_framebuffer draws overline and line_through beyond gl
 }
 
 ///|
+test "render_paint_node_to_framebuffer blends glyph text opacity from parent" {
+  @image.set_glyph_provider({
+    get_glyph: fn(_codepoint, font_size, _is_bold) {
+      let commands : Array[@svg.PathCommand] = [
+        MoveTo(0.0, -font_size),
+        LineTo(font_size, -font_size),
+        LineTo(font_size, 0.0),
+        LineTo(0.0, 0.0),
+        ClosePath,
+      ]
+      (commands, font_size)
+    },
+    get_kern: fn(_left, _right, _font_size, _is_bold) { 0.0 },
+    ascent_ratio: 1.0,
+    get_glyph_for_family: None,
+    get_kern_for_family: None,
+    get_ascent_for_family: None,
+  })
+
+  let parent_style = @style.Style::default()
+  parent_style.opacity = 0.5
+  let text_style = @style.Style::default()
+  text_style.color = @types.Color::rgb(0, 0, 0)
+  text_style.font_size = 10.0
+  let text_node = @paint_model.PaintNode::new(
+    "#text",
+    "#text",
+    0.0,
+    0.0,
+    12.0,
+    12.0,
+    @paint_model.PaintProperties::from_style(text_style),
+    [],
+    text=Some("A"),
+  )
+  let parent_node = @paint_model.PaintNode::new(
+    "div",
+    "div",
+    0.0,
+    0.0,
+    12.0,
+    12.0,
+    @paint_model.PaintProperties::from_style(parent_style),
+    [text_node],
+  )
+  let fb = @image.Framebuffer::new(12, 12)
+  let palette = @image.DynamicPalette::new()
+  @image.render_paint_node_to_framebuffer(parent_node, fb, palette)
+  let color = palette.colors[fb.get_pixel(5, 5)]
+  inspect(color.r > 100 && color.r < 200, content="true")
+  inspect(color.g > 100 && color.g < 200, content="true")
+  inspect(color.b > 100 && color.b < 200, content="true")
+  @image.clear_glyph_provider()
+}
+
+///|
+test "render_paint_node_to_framebuffer insets input text inside control" {
+  @image.set_glyph_provider({
+    get_glyph: fn(_codepoint, font_size, _is_bold) {
+      let commands : Array[@svg.PathCommand] = [
+        MoveTo(0.0, -font_size),
+        LineTo(font_size, -font_size),
+        LineTo(font_size, 0.0),
+        LineTo(0.0, 0.0),
+        ClosePath,
+      ]
+      (commands, font_size)
+    },
+    get_kern: fn(_left, _right, _font_size, _is_bold) { 0.0 },
+    ascent_ratio: 1.0,
+    get_glyph_for_family: None,
+    get_kern_for_family: None,
+    get_ascent_for_family: None,
+  })
+
+  let style = @style.Style::default()
+  style.color = @types.Color::rgb(0, 0, 0)
+  style.font_size = 10.0
+  let node = @paint_model.PaintNode::new(
+    "input#email",
+    "input",
+    0.0,
+    0.0,
+    30.0,
+    20.0,
+    @paint_model.PaintProperties::from_style(style),
+    [],
+    text=Some("A"),
+  )
+  let fb = @image.Framebuffer::new(40, 24)
+  let palette = @image.DynamicPalette::new()
+  @image.render_paint_node_to_framebuffer(node, fb, palette)
+
+  inspect(fb.get_pixel(1, 5), content="0")
+  inspect(fb.get_pixel(9, 8) > 0, content="true")
+  @image.clear_glyph_provider()
+}
+
+///|
 test "render_paint_node_to_framebuffer draws box shadow outside element bounds" {
   let style = @style.Style::default()
   style.background_color = @types.Color::rgb(240, 240, 240)
@@ -264,4 +412,40 @@ test "render_paint_node_to_framebuffer draws box shadow outside element bounds" 
   inspect(outside_shadow.r < untouched.r, content="true")
   inspect(outside_shadow.g < untouched.g, content="true")
   inspect(outside_shadow.b < untouched.b, content="true")
+}
+
+///|
+test "render_paint_node_to_framebuffer extends blurred box shadow beyond sharp bounds" {
+  let style = @style.Style::default()
+  style.background_color = @types.Color::rgb(255, 255, 255)
+  style.box_shadows = [
+    @style.BoxShadow::new(
+      false,
+      0.0,
+      4.0,
+      8.0,
+      0.0,
+      @types.Color::rgba(0, 0, 0, 0.5),
+    ),
+  ]
+  let node = @paint_model.PaintNode::new(
+    "box",
+    "div",
+    10.0,
+    10.0,
+    10.0,
+    10.0,
+    @paint_model.PaintProperties::from_style(style),
+    [],
+  )
+  let fb = @image.Framebuffer::new(40, 40)
+  let palette = @image.DynamicPalette::new()
+  @image.render_paint_node_to_framebuffer(node, fb, palette)
+
+  let outside_blur = palette.colors[fb.get_pixel(15, 27)]
+  let untouched = palette.colors[fb.get_pixel(1, 1)]
+
+  inspect(outside_blur.r < untouched.r, content="true")
+  inspect(outside_blur.g < untouched.g, content="true")
+  inspect(outside_blur.b < untouched.b, content="true")
 }

@@ -806,6 +806,9 @@ fn measure_cell_content_width(
   let mut has_inline_flow = false
   let mut inline_only = true
   for child in cell.children {
+    if is_whitespace_only_table_text_node(child) {
+      continue
+    }
     if !is_in_flow_intrinsic_child(child) {
       continue
     }
@@ -1587,6 +1590,105 @@ fn calculate_column_widths(
 }
 
 ///|
+fn should_use_child_extent_for_cell_content(cell : @node.Node) -> Bool {
+  let mut has_in_flow_child = false
+  for child in cell.children {
+    if is_whitespace_only_table_text_node(child) {
+      continue
+    }
+    if !is_in_flow_intrinsic_child(child) {
+      continue
+    }
+    has_in_flow_child = true
+    if is_inline_intrinsic_child(child) {
+      return false
+    }
+  }
+  has_in_flow_child
+}
+
+///|
+fn child_layout_extent_bounds(
+  children : Array[@types.Layout],
+  table_layouts_only? : Bool = false,
+) -> (Double, Double, Bool) {
+  let mut top = 0.0
+  let mut bottom = 0.0
+  let mut saw_box = false
+  for child in children {
+    if child.id.has_prefix("#text") {
+      continue
+    }
+    if table_layouts_only && !is_table_container_layout_id(child.id) {
+      continue
+    }
+    if !saw_box {
+      top = child.y
+      bottom = child.y + child.height
+      saw_box = true
+      continue
+    }
+    if child.y < top {
+      top = child.y
+    }
+    let child_bottom = child.y + child.height
+    if child_bottom > bottom {
+      bottom = child_bottom
+    }
+  }
+  (top, bottom, saw_box)
+}
+
+///|
+fn is_table_container_layout_id(id : String) -> Bool {
+  id == "table" || id.has_prefix("table#") || id.has_prefix("table.")
+}
+
+///|
+fn is_table_container_display(display : @types.Display) -> Bool {
+  match display {
+    @types.Table | @types.InlineTable => true
+    _ => false
+  }
+}
+
+///|
+fn has_only_table_container_cell_content(cell : @node.Node) -> Bool {
+  let mut has_in_flow_child = false
+  for child in cell.children {
+    if is_whitespace_only_table_text_node(child) {
+      continue
+    }
+    if !is_in_flow_intrinsic_child(child) {
+      continue
+    }
+    has_in_flow_child = true
+    if !is_table_container_display(child.style.display) {
+      return false
+    }
+  }
+  has_in_flow_child
+}
+
+///|
+fn table_cell_content_children_for_layout(
+  cell : @node.Node,
+  block_only_content : Bool,
+) -> Array[@node.Node] {
+  if !block_only_content {
+    return cell.children
+  }
+  let children : Array[@node.Node] = []
+  for child in cell.children {
+    if is_whitespace_only_table_text_node(child) {
+      continue
+    }
+    children.push(child)
+  }
+  children
+}
+
+///|
 /// Layout a single table cell
 /// border_collapse: whether border-collapse is enabled (borders included in cell dimensions)
 fn layout_cell(
@@ -1652,6 +1754,10 @@ fn layout_cell(
     @types.Length(0.0),
     @types.Length(0.0),
   )
+  let block_only_content = should_use_child_extent_for_cell_content(cell)
+  let content_children = table_cell_content_children_for_layout(
+    cell, block_only_content,
+  )
   let anon_content_style : @style.Style = {
     ..style,
     display: @types.Block,
@@ -1667,14 +1773,37 @@ fn layout_cell(
     position: @types.Static,
   }
   let anon_content = @node.Node::new(
-    "__anon-table-cell-content",
-    anon_content_style,
-    cell.children,
+    "__anon-table-cell-content", anon_content_style, content_children,
   )
   let @node.DispatchFn(dispatch_fn) = dispatch
   let content_layout = dispatch_fn(anon_content, child_ctx, dispatch)
+  let table_only_content = has_only_table_container_cell_content(cell)
+  let (child_extent_top, child_extent_bottom, saw_child_extent) = child_layout_extent_bounds(
+    content_layout.children,
+    table_layouts_only=table_only_content,
+  )
+  let content_top_adjust = if block_only_content &&
+    table_only_content &&
+    saw_child_extent &&
+    child_extent_top > 0.0 {
+    child_extent_top
+  } else {
+    0.0
+  }
+  let content_height = if block_only_content {
+    if saw_child_extent {
+      max(0.0, child_extent_bottom - content_top_adjust)
+    } else {
+      content_layout.height
+    }
+  } else {
+    content_layout.height
+  }
   let child_layouts : Array[@types.Layout] = []
   for child_layout in content_layout.children {
+    if table_only_content && !is_table_container_layout_id(child_layout.id) {
+      continue
+    }
     let centered_x = if style.writing_mode.is_vertical() {
       let free_space = content_width - child_layout.width
       if free_space > 0.0 {
@@ -1688,13 +1817,13 @@ fn layout_cell(
     child_layouts.push({
       ..child_layout,
       x: centered_x + padding.left + border.left,
-      y: child_layout.y + padding.top + border.top,
+      y: child_layout.y - content_top_adjust + padding.top + border.top,
     })
   }
 
   // Add padding/border to height.
   // Note: In border-collapse mode, border is already 0.
-  let total_height = content_layout.height +
+  let total_height = content_height +
     padding.vertical_sum() +
     border.vertical_sum()
 
@@ -2241,6 +2370,9 @@ fn compute_cell_height_for_row(
     _ => None
   }
   fn child_intrinsic_height(child : @node.Node) -> Double {
+    if is_table_container_display(child.style.display) {
+      return compute_intrinsic_size(child, false)
+    }
     match (child.style.height, explicit_height) {
       (@types.Percent(p), Some(cell_h)) if p > 0.0 => {
         let child_padding = @types.resolve_rect_intrinsic(child.style.padding)
@@ -2269,6 +2401,9 @@ fn compute_cell_height_for_row(
   let mut has_inline_flow = false
   let mut inline_only = true
   for child in cell.children {
+    if is_whitespace_only_table_text_node(child) {
+      continue
+    }
     if !is_in_flow_intrinsic_child(child) {
       continue
     }
@@ -2283,6 +2418,9 @@ fn compute_cell_height_for_row(
   if inline_only && has_inline_flow {
     let mut current_line_height = 0.0
     for child in cell.children {
+      if is_whitespace_only_table_text_node(child) {
+        continue
+      }
       if !is_in_flow_intrinsic_child(child) {
         continue
       }
@@ -2299,6 +2437,9 @@ fn compute_cell_height_for_row(
     total_height = total_height + current_line_height
   } else {
     for child in cell.children {
+      if is_whitespace_only_table_text_node(child) {
+        continue
+      }
       if !is_in_flow_intrinsic_child(child) {
         continue
       }
@@ -2417,6 +2558,9 @@ fn compute_cell_intrinsic_height(cell : @node.Node) -> Double {
   }
 
   fn child_intrinsic_height(child : @node.Node) -> Double {
+    if is_table_container_display(child.style.display) {
+      return compute_intrinsic_size(child, false)
+    }
     match (child.style.height, explicit_height) {
       (@types.Percent(p), Some(cell_h)) if p > 0.0 => {
         let child_padding = @types.resolve_rect_intrinsic(child.style.padding)
@@ -2444,6 +2588,9 @@ fn compute_cell_intrinsic_height(cell : @node.Node) -> Double {
   let mut has_inline_flow = false
   let mut inline_only = true
   for child in cell.children {
+    if is_whitespace_only_table_text_node(child) {
+      continue
+    }
     if !is_in_flow_intrinsic_child(child) {
       continue
     }
@@ -2458,6 +2605,9 @@ fn compute_cell_intrinsic_height(cell : @node.Node) -> Double {
   if inline_only && has_inline_flow {
     let mut current_line_height = 0.0
     for child in cell.children {
+      if is_whitespace_only_table_text_node(child) {
+        continue
+      }
       if !is_in_flow_intrinsic_child(child) {
         continue
       }
@@ -2474,6 +2624,9 @@ fn compute_cell_intrinsic_height(cell : @node.Node) -> Double {
     total_height = total_height + current_line_height
   } else {
     for child in cell.children {
+      if is_whitespace_only_table_text_node(child) {
+        continue
+      }
       if !is_in_flow_intrinsic_child(child) {
         continue
       }
@@ -2933,19 +3086,6 @@ pub fn compute(
     distribute_rowspan_heights(
       base_heights, rowspan_cells, border_spacing_y, collapsed_rows,
     )
-
-    // Step 3.5: Table padding contributes to the row grid edges.
-    // Put top/bottom padding into first/last row so row-group/cell sizes
-    // keep matching table growth behavior.
-    if base_heights.length() > 0 {
-      if padding.top > 0.0 {
-        base_heights[0] = base_heights[0] + padding.top
-      }
-      if padding.bottom > 0.0 {
-        let last = base_heights.length() - 1
-        base_heights[last] = base_heights[last] + padding.bottom
-      }
-    }
 
     // Step 4: If table has explicit/min height, ensure rows fill it
     match target_table_height {

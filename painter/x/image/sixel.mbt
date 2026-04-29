@@ -1176,16 +1176,50 @@ fn draw_text_decoration_line(
   y : Int,
   w : Int,
   color : @types.Color,
+  opacity : Double,
   clip : ClipRect?,
 ) -> Unit {
   if y < 0 || y >= fb.height {
     return
   }
-  let line_color = palette.get_or_add(types_color_to_sixel(color))
   for px = x; px < x + w && px < fb.width; px = px + 1 {
     if px >= 0 && pixel_in_clip(clip, px, y) {
-      fb.set_pixel(px, y, line_color)
+      blend_types_color_over_pixel(fb, palette, px, y, color, opacity)
     }
+  }
+}
+
+///|
+fn resolve_text_render_box(
+  node : @paint_model.PaintNode,
+  x : Int,
+  y : Int,
+  w : Int,
+  h : Int,
+) -> (Int, Int, Int) {
+  if node.tag == "input" {
+    let inset = @cmp.maximum(2, (node.paint.font_size * 0.75).round().to_int())
+    let vertical_offset = @cmp.maximum(
+      0,
+      ((h.to_double() - node.paint.font_size) / 2.0).round().to_int(),
+    )
+    (x + inset, y + vertical_offset, @cmp.maximum(0, w - inset * 2))
+  } else {
+    (x, y, w)
+  }
+}
+
+///|
+fn resolve_glyph_text_wrap_width(
+  w : Int,
+  h : Int,
+  font_size : Double,
+  text : String,
+) -> Int {
+  if h.to_double() <= font_size * 1.3 && text.length() <= 72 {
+    0
+  } else {
+    w
   }
 }
 
@@ -1256,6 +1290,65 @@ fn fill_box_shadow_clipped(
     )
   } else {
     fill_rect_clipped(fb, palette, x, y, w, h, color, opacity, clip)
+  }
+}
+
+///|
+fn blurred_shadow_layer_count(blur : Int) -> Int {
+  let by_radius = blur / 8 + 4
+  if by_radius < 4 {
+    4
+  } else if by_radius > 12 {
+    12
+  } else {
+    by_radius
+  }
+}
+
+///|
+fn fill_blurred_box_shadow_clipped(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  x : Int,
+  y : Int,
+  w : Int,
+  h : Int,
+  color : @types.Color,
+  opacity : Double,
+  clip : ClipRect?,
+  spread : Int,
+  blur : Int,
+  tl : Int,
+  tr : Int,
+  br : Int,
+  bl : Int,
+) -> Unit {
+  if blur <= 0 {
+    fill_box_shadow_clipped(
+      fb, palette, x, y, w, h, color, opacity, clip, spread, tl, tr, br, bl,
+    )
+    return
+  }
+  let steps = blurred_shadow_layer_count(blur)
+  let layer_opacity = opacity / steps.to_double()
+  for i = steps; i > 0; i = i - 1 {
+    let expansion = (blur.to_double() * i.to_double() / steps.to_double()).to_int()
+    fill_box_shadow_clipped(
+      fb,
+      palette,
+      x - expansion,
+      y - expansion,
+      w + expansion * 2,
+      h + expansion * 2,
+      color,
+      layer_opacity,
+      clip,
+      spread + expansion,
+      tl,
+      tr,
+      br,
+      bl,
+    )
   }
 }
 
@@ -1390,7 +1483,7 @@ fn fill_rounded_rect_clipped(
         if cov <= 0.0 {
           continue
         }
-        let effective_alpha = cov * opacity
+        let effective_alpha = cov * opacity * color.a
         if effective_alpha >= 1.0 {
           fb.set_pixel(px, py, idx)
         } else if effective_alpha > 0.0 {
@@ -1643,11 +1736,12 @@ fn render_paint_node_clipped(
       continue
     }
     let spread = shadow.spread_radius.to_int()
+    let blur = shadow.blur_radius.to_int()
     let shadow_x = x + shadow.offset_x.to_int() - spread
     let shadow_y = y + shadow.offset_y.to_int() - spread
     let shadow_w = w + spread * 2
     let shadow_h = h + spread * 2
-    fill_box_shadow_clipped(
+    fill_blurred_box_shadow_clipped(
       fb,
       palette,
       shadow_x,
@@ -1658,6 +1752,7 @@ fn render_paint_node_clipped(
       node.paint.opacity,
       clip,
       spread,
+      blur,
       tl_r,
       tr_r,
       br_r,
@@ -1791,7 +1886,8 @@ fn render_paint_node_clipped(
   }
   // Draw text if this is a text node
   match node.text {
-    Some(text_content) =>
+    Some(text_content) => {
+      let (text_x, text_y, text_w) = resolve_text_render_box(node, x, y, w, h)
       match glyph_provider_override.val {
         Some(provider) => {
           let svg_color = @svg.Color::rgb(
@@ -1800,20 +1896,24 @@ fn render_paint_node_clipped(
             node.paint.color.b,
           )
           let font_size = node.paint.font_size
+          let wrap_width = resolve_glyph_text_wrap_width(
+            text_w, h, font_size, text_content,
+          )
           let _ = draw_text_with_glyphs_clipped(
             fb,
             palette,
             provider,
-            x,
-            y,
+            text_x,
+            text_y,
             text_content,
-            w,
+            wrap_width,
             svg_color,
             font_size,
             font_size,
             node.paint.is_bold,
             clip,
             font_family=node.paint.font_family,
+            opacity=node.paint.opacity,
           )
         }
         None => {
@@ -1822,10 +1922,11 @@ fn render_paint_node_clipped(
           )
           let scale = 1
           let _ = draw_text_clipped(
-            fb, x, y, text_content, w, text_idx, scale, clip,
+            fb, text_x, text_y, text_content, text_w, text_idx, scale, clip,
           )
         }
       }
+    }
     None => ()
   }
   // Draw text decorations
@@ -1840,6 +1941,7 @@ fn render_paint_node_clipped(
           y + (font_size * 0.15).to_int(),
           w,
           node.paint.color,
+          node.paint.opacity,
           clip,
         )
       }
@@ -1851,6 +1953,7 @@ fn render_paint_node_clipped(
           y + (font_size * 0.6).to_int(),
           w,
           node.paint.color,
+          node.paint.opacity,
           clip,
         )
       }
@@ -1862,6 +1965,7 @@ fn render_paint_node_clipped(
           y + (font_size * 1.1).to_int(),
           w,
           node.paint.color,
+          node.paint.opacity,
           clip,
         )
       }

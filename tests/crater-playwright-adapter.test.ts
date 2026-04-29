@@ -47,6 +47,47 @@ test.describe("Crater Playwright adapter package", () => {
     expect(items).toBe("one,two");
   });
 
+  test("captures live DOM after page-level scripted interactions", async () => {
+    await page.setViewport(120, 80);
+    await page.setContent(`
+      <html>
+        <body style="margin:0">
+          <div id="box" style="width:60px;height:60px;background:#000"></div>
+          <button id="save" type="button">Save</button>
+          <script>
+            document.getElementById("save").addEventListener("click", () => {
+              document.getElementById("box").setAttribute("style", "width:60px;height:60px;background:#fff");
+            });
+          </script>
+        </body>
+      </html>
+    `);
+
+    await page.click("#save");
+    const image = await page.capturePaintData();
+    const offset = (10 * image.width + 10) * 4;
+
+    expect(Array.from(image.data.slice(offset, offset + 4))).toEqual([255, 255, 255, 255]);
+  });
+
+  test("capture paint tree serializes live form control property state", async () => {
+    await page.setViewport(240, 100);
+    await page.setContent(`
+      <html>
+        <body>
+          <input id="name" type="text" value="" style="font:14px Arial" />
+          <input id="notify" type="checkbox" />
+        </body>
+      </html>
+    `);
+
+    await page.type("#name", "Crater Team");
+    await page.check("#notify");
+    const result = await page.capturePaintTree();
+
+    expect(result.paintTree).toContain("Crater Team");
+  });
+
   test("supports frameLocator traversal for fixture iframe contentDocument roots", async () => {
     await page.setContent(`
       <html>

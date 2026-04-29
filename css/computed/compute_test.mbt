@@ -1426,3 +1426,21 @@ test "compute_inline box-shadow parses multiple and inset shadows" {
   inspect(second.color.g, content="34")
   inspect(second.color.b, content="51")
 }
+
+///|
+test "compute_inline box-shadow parses rgba color with spaced commas" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "box-shadow: 0 20px 60px rgba(15, 23, 42, 0.18)", ctx,
+  )
+
+  inspect(style.box_shadows.length(), content="1")
+  let shadow = style.box_shadows[0]
+  inspect(shadow.offset_x, content="0")
+  inspect(shadow.offset_y, content="20")
+  inspect(shadow.blur_radius, content="60")
+  inspect(shadow.color.r, content="15")
+  inspect(shadow.color.g, content="23")
+  inspect(shadow.color.b, content="42")
+  inspect(shadow.color.a, content="0.18")
+}
