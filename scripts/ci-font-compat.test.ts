@@ -13,13 +13,15 @@ describe("CI compatible font setup", () => {
     expect(matches).toHaveLength(2);
   });
 
-  test("restores Playwright browser cache for both VRT workflows", () => {
+  test("restores Playwright browser cache for browser-backed workflows", () => {
     const workflow = readRepoFile(".github/workflows/ci.yml");
     const matches = workflow.match(/Restore Playwright Chromium browser cache/g) ?? [];
-    expect(matches).toHaveLength(2);
+    expect(matches).toHaveLength(3);
     expect(workflow).toContain("id: paint_vrt_playwright_cache");
+    expect(workflow).toContain("id: playwright_bidi_playwright_cache");
     expect(workflow).toContain("id: wpt_vrt_playwright_cache");
     expect(workflow).toContain("if: steps.paint_vrt_playwright_cache.outputs.cache-hit != 'true'");
+    expect(workflow).toContain("if: steps.playwright_bidi_playwright_cache.outputs.cache-hit != 'true'");
     expect(workflow).toContain("if: steps.wpt_vrt_playwright_cache.outputs.cache-hit != 'true'");
   });
 

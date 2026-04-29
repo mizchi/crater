@@ -5,6 +5,7 @@ import {
   "mizchi/crater-layout/node",
   "mizchi/crater-layout/types",
   "mizchi/crater-painter/paint/scroll",
+  "moonbitlang/core/debug",
 }
 
 // Values
@@ -224,11 +225,33 @@ pub(all) struct HintData {
   row : Int
 }
 
+pub(all) enum HitClipShape {
+  Rect
+  Circle(Double, Double, Double)
+  Ellipse(Double, Double, Double, Double)
+  Polygon(Array[(Double, Double)])
+} derive(Eq, @debug.Debug)
+
 pub(all) struct HitRegion {
   col : Int
   row : Int
   width : Int
   height : Int
+  pixel_x : Double
+  pixel_y : Double
+  pixel_width : Double
+  pixel_height : Double
+  shape_x : Double
+  shape_y : Double
+  shape_width : Double
+  shape_height : Double
+  radius_top_left : Double
+  radius_top_right : Double
+  radius_bottom_right : Double
+  radius_bottom_left : Double
+  scroll_y : Int
+  visual_shape : HitClipShape
+  clip_shape : HitClipShape
   source_id : String
 }
 pub fn HitRegion::contains(Self, Int, Int) -> Bool

@@ -61,10 +61,14 @@ The adapter is expected to support headless test flows where a user:
 - Loads a local fixture URL with `goto()` or `loadPage()` when relative assets
   matter.
 - Creates lightweight isolated pages through `createCraterBrowser()`,
-  `newContext()`, and `newPage()`.
+  `newContext()`, and `newPage()`, with partial context-level `viewport` and
+  `userAgent`, `locale`, `offline`, `geolocation`, and `permissions` option
+  support.
 - Snapshots open-page localStorage and visible cookies through
-  `context.storageState()` for simple fixture reuse. Preloading storage state is
-  not implemented.
+  `context.storageState()` for simple fixture reuse, preloads that state with
+  `browser.newContext({ storageState })`, and uses
+  `context.addCookies()`, `context.cookies()`, and `context.clearCookies()` for
+  BiDi-backed visible cookie setup with basic URL/filter support.
 - Traverses fixture iframe roots with `frameLocator(...).locator(...)` when
   `iframe.contentDocument`, `contentWindow.document`, or a synthetic fixture root
   is available. Independent iframe navigation is not implemented.
@@ -82,6 +86,8 @@ The adapter is expected to support headless test flows where a user:
   targets before common interactions.
 - Reads page state through `url()`, `title()`, `content()`, and waits for URL
   state with `waitForURL(...)`.
+- Observes `console.*` calls with `page.on("console", ...)` or
+  `page.waitForEvent("console")`.
 - Inspects element collections with `locator.evaluate(...)`,
   `locator.evaluateAll(...)`, `allTextContents()`, and `allInnerTexts()`.
 - Uses common locator actions and state checks such as `clear()`, `focus()`,
@@ -98,12 +104,22 @@ The adapter is expected to support headless test flows where a user:
   `selectOption()`, and `screenshot()` where Crater can provide equivalent
   headless behavior.
 - Injects setup scripts and fixture assets with `addInitScript()`,
-  `addScriptTag()`, and `addStyleTag()`.
+  `context.addInitScript()`, `addScriptTag()`, and `addStyleTag()`.
 - Waits for app state through `waitForFunction()`, `waitForText()`, and
-  `waitForLoadState()`, with `setDefaultTimeout()` for polling defaults.
+  `waitForLoadState()`, and waits for selector/locator
+  `attached`/`detached`/`visible`/`hidden` states, with page/context
+  `setDefaultTimeout()` for polling defaults. `page.waitForSelector()` returns
+  a Crater locator or `null`, not a Playwright `ElementHandle`.
+- Toggles basic offline state with `context.setOffline()` and observes the
+  resulting `navigator.onLine` state in Crater pages.
+- Grants and clears synthetic `geolocation` / `storage-access` permissions with
+  `context.grantPermissions()` and `context.clearPermissions()`, and overrides
+  synthetic geolocation with `context.setGeolocation()`.
 - Stubs fixture network calls with `route(...)` and waits for Crater runtime
   `fetch()`, document, external script, and best-effort style/image traffic with
   `waitForRequest()` / `waitForResponse()`.
+- Registers fixture network stubs at context scope with `context.route(...)`
+  for existing pages and later pages when only one routed page is active.
 - Inspects Crater-specific rendering/debug data through the documented extension
   APIs when Playwright's browser-native semantics are not available.
 
@@ -118,10 +134,10 @@ that only provide a limited fixture-facing shape.
 
 | Owner | Entries | Current scope |
 |-------|---------|---------------|
-| `browser` | 4 | Lightweight `newContext()`, `newPage()`, `contexts()`, idempotent `close()` wrapper. |
-| `context` | 4 | Lightweight `newPage()`, `pages()`, best-effort `storageState()`, idempotent `close()` over a hidden transport page. |
-| `page` | 73 | Core page, locator/frame-locator factory, navigation, keyboard, wait, network, Crater render/debug helpers, and explicit unsupported event/file APIs. |
-| `locator` | 40 | Locator chaining, nested locator factories, actions, state checks, evaluation, text extraction, and explicit unsupported file upload API. |
+| `browser` | 4 | Lightweight `newContext()`, `newPage()`, `contexts()`, idempotent `close()` wrapper, with partial `storageState`, `viewport`, `userAgent`, `locale`, `offline`, `geolocation`, and `permissions` option support on `newContext()`. |
+| `context` | 15 | Lightweight `newPage()`, `pages()`, best-effort `storageState()` snapshot/path writing, visible cookie APIs, context init scripts/default timeout/offline/geolocation/permission overrides, delegated `route()`/`unroute()`, idempotent `close()` over a hidden transport page. |
+| `page` | 73 | Core page, locator/frame-locator factory, navigation, keyboard, wait, partial event APIs, network, file input upload, and Crater render/debug helpers. |
+| `locator` | 40 | Locator chaining, nested locator factories, actions, state checks, evaluation, text extraction, and file input upload. |
 
 The supported API contract is maintained in `supported-apis.ts` and checked by
 CI via `scripts/playwright-adapter-support.test.ts`. Entries marked `partial`
@@ -132,8 +148,11 @@ Entries marked `implementation: "api-mock"` expose a Playwright-like API name
 without a browser-equivalent implementation body. Currently this applies to
 `page.frameLocator()`, which only roots locators at `iframe.contentDocument`,
 `contentWindow.document`, or a synthetic fixture root.
-Entries marked `unsupported` are explicit non-goals rather than accidental
-omissions. Dialog, download, and file chooser Playwright surfaces such as
-`page.on()`, `page.waitForEvent()`, `page.setInputFiles()`, and
-`locator.setInputFiles()` stay unsupported in the adapter while their WebDriver
-BiDi/WPT protocol coverage remains separate.
+`page.on()` and `page.waitForEvent()` currently cover request, response,
+requestfailed, filechooser, dialog, download, console, load, domcontentloaded,
+and close.
+Dialogs are backed by WebDriver BiDi user prompts and support `type()`,
+`message()`, `defaultValue()`, `page()`, `accept()`, and `dismiss()`. Downloads
+are backed by WebDriver BiDi download lifecycle events and expose `url()`,
+`suggestedFilename()`, `page()`, `path()`, `failure()`, `saveAs()`, `delete()`,
+and completion-safe `cancel()`.

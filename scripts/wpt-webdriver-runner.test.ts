@@ -151,4 +151,13 @@ describe("crater_bidi_adapter fixture builder path", () => {
     expect(adapter).toContain('root / "_build" / "js" / "release" / "build" / "mizchi" / "crater-testing" / "webdriver_fixture_builder" / "webdriver_fixture_builder.js"');
     expect(adapter).toContain('root / "testing" / "_build" / "js" / "release" / "build" / "webdriver_fixture_builder" / "webdriver_fixture_builder.js"');
   });
+
+  it("does not mirror blocked network request state in Python", () => {
+    const adapter = fs.readFileSync(path.join(process.cwd(), "scripts/crater_bidi_adapter.py"), "utf-8");
+
+    expect(adapter).not.toContain("getBlockedRequestPhaseValue");
+    expect(adapter).not.toContain("getBlockedRequestNavigationValue");
+    expect(adapter).not.toContain("blocked_request_phase");
+    expect(adapter).not.toContain("blocked_request_navigation");
+  });
 });

@@ -48,6 +48,25 @@ fn hit_region_of_source_id(
 }
 
 ///|
+fn first_shared_hit_cell(a : @tui.HitRegion, b : @tui.HitRegion) -> (Int, Int) {
+  let left = a.col.max(b.col)
+  let top = a.row.max(b.row)
+  let right = (a.col + a.width).min(b.col + b.width)
+  let bottom = (a.row + a.height).min(b.row + b.height)
+  if right <= left || bottom <= top {
+    panic()
+  }
+  for row in top..<bottom {
+    for col in left..<right {
+      if a.contains(col, row) && b.contains(col, row) {
+        return (col, row)
+      }
+    }
+  }
+  panic()
+}
+
+///|
 fn link_region_of_source_id(
   browser : Browser,
   source_id : String,
@@ -1080,17 +1099,7 @@ async test "Browser activate_at prefers topmost overlapping painted element" {
     }
   }
   let (col, row) = match (top_region, bottom_region) {
-    (Some(top), Some(bottom)) => {
-      let overlap_left = top.col.max(bottom.col)
-      let overlap_top = top.row.max(bottom.row)
-      let overlap_right = (top.col + top.width).min(bottom.col + bottom.width)
-      let overlap_bottom = (top.row + top.height).min(
-        bottom.row + bottom.height,
-      )
-      assert_true(overlap_right > overlap_left)
-      assert_true(overlap_bottom > overlap_top)
-      (overlap_left, overlap_top)
-    }
+    (Some(top), Some(bottom)) => first_shared_hit_cell(top, bottom)
     _ => panic()
   }
 
@@ -1369,17 +1378,7 @@ async test "Browser activate_at prefers transformed topmost element at visual po
     }
   }
   let (col, row) = match (top_region, bottom_region) {
-    (Some(top), Some(bottom)) => {
-      let overlap_left = top.col.max(bottom.col)
-      let overlap_top = top.row.max(bottom.row)
-      let overlap_right = (top.col + top.width).min(bottom.col + bottom.width)
-      let overlap_bottom = (top.row + top.height).min(
-        bottom.row + bottom.height,
-      )
-      assert_true(overlap_right > overlap_left)
-      assert_true(overlap_bottom > overlap_top)
-      (overlap_left, overlap_top)
-    }
+    (Some(top), Some(bottom)) => first_shared_hit_cell(top, bottom)
     _ => panic()
   }
 
@@ -1390,6 +1389,1150 @@ async test "Browser activate_at prefers transformed topmost element at visual po
     "(function(){ return document.getElementById('status').textContent; })()",
   )
   inspect(status, content="Some(\"top\")")
+}
+
+///|
+async test "Browser activate_at uses scaled transform visual bounds" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 160px; height: 48px; background: #ccc; }
+    #|    #top { position: absolute; left: 0; top: 0; width: 64px; height: 32px; background: #999; z-index: 1; transform: scaleX(2); }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 64px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let bottom = hit_region_of_source_id(browser, "bottom")
+  let col = bottom.col + 10
+  let row = bottom.row + 1
+  inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(status, content="Some(\"top\")")
+}
+
+///|
+async test "Browser activate_at uses quarter-turn rotate visual bounds" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 128px; height: 64px; background: #ccc; }
+    #|    #top { position: absolute; left: 64px; top: 0; width: 32px; height: 64px; background: #999; z-index: 1; transform: rotate(90deg); }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 80px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let bottom = hit_region_of_source_id(browser, "bottom")
+  let col = bottom.col + 6
+  let row = bottom.row + 1
+  inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(status, content="Some(\"top\")")
+}
+
+///|
+async test "Browser activate_at uses arbitrary-angle rotate visual bounds" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 128px; height: 96px; background: #ccc; }
+    #|    #top { position: absolute; left: 32px; top: 0; width: 64px; height: 64px; background: #999; z-index: 1; transform: rotate(45deg); }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 112px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let col = 3
+  let row = 2
+  inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(status, content="Some(\"top\")")
+}
+
+///|
+async test "Browser activate_at excludes arbitrary-angle rotate bbox corners" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 128px; height: 96px; background: #ccc; }
+    #|    #top { position: absolute; left: 32px; top: 0; width: 64px; height: 64px; background: #999; z-index: 1; transform: rotate(45deg); }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 112px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let bottom = hit_region_of_source_id(browser, "bottom")
+  let col = bottom.col + 2
+  let row = bottom.row
+  inspect(browser.get_source_id_at(col, row), content="Some(\"bottom\")")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(status, content="Some(\"bottom\")")
+}
+
+///|
+async test "Browser activate_at uses skew transform visual bounds" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 128px; height: 96px; background: #ccc; }
+    #|    #top { position: absolute; left: 32px; top: 0; width: 64px; height: 64px; background: #999; z-index: 1; transform: skewX(45deg); }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 112px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let bottom = hit_region_of_source_id(browser, "bottom")
+  let col = bottom.col + 2
+  let row = bottom.row
+  inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(status, content="Some(\"top\")")
+}
+
+///|
+async test "Browser activate_at excludes skew transform bbox corners" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 128px; height: 96px; background: #ccc; }
+    #|    #top { position: absolute; left: 32px; top: 0; width: 64px; height: 64px; background: #999; z-index: 1; transform: skewX(45deg); }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 112px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let bottom = hit_region_of_source_id(browser, "bottom")
+  let col = bottom.col
+  let row = bottom.row
+  inspect(browser.get_source_id_at(col, row), content="Some(\"bottom\")")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(status, content="Some(\"bottom\")")
+}
+
+///|
+async test "Browser activate_at uses matrix transform visual bounds" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 224px; height: 96px; background: #ccc; }
+    #|    #top { position: absolute; left: 32px; top: 0; width: 64px; height: 64px; background: #999; z-index: 1; transform: matrix(1, 0, -1, 1, 64, 0); }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 112px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let bottom = hit_region_of_source_id(browser, "bottom")
+  let col = bottom.col + 18
+  let row = bottom.row
+  inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(status, content="Some(\"top\")")
+}
+
+///|
+async test "Browser activate_at excludes matrix transform bbox corners" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 224px; height: 96px; background: #ccc; }
+    #|    #top { position: absolute; left: 32px; top: 0; width: 64px; height: 64px; background: #999; z-index: 1; transform: matrix(1, 0, -1, 1, 64, 0); }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 112px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let bottom = hit_region_of_source_id(browser, "bottom")
+  let col = bottom.col + 8
+  let row = bottom.row
+  inspect(browser.get_source_id_at(col, row), content="Some(\"bottom\")")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(status, content="Some(\"bottom\")")
+}
+
+///|
+async test "Browser activate_at uses matrix3d transform visual bounds" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 224px; height: 96px; background: #ccc; }
+    #|    #top { position: absolute; left: 32px; top: 0; width: 64px; height: 64px; background: #999; z-index: 1; transform: matrix3d(1, 0, 0, 0, -1, 1, 0, 0, 0, 0, 1, 0, 64, 0, 0, 1); }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 112px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let bottom = hit_region_of_source_id(browser, "bottom")
+  let col = bottom.col + 18
+  let row = bottom.row
+  inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(status, content="Some(\"top\")")
+}
+
+///|
+async test "Browser activate_at excludes matrix3d transform bbox corners" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 224px; height: 96px; background: #ccc; }
+    #|    #top { position: absolute; left: 32px; top: 0; width: 64px; height: 64px; background: #999; z-index: 1; transform: matrix3d(1, 0, 0, 0, -1, 1, 0, 0, 0, 0, 1, 0, 64, 0, 0, 1); }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 112px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let bottom = hit_region_of_source_id(browser, "bottom")
+  let col = bottom.col + 8
+  let row = bottom.row
+  inspect(browser.get_source_id_at(col, row), content="Some(\"bottom\")")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(status, content="Some(\"bottom\")")
+}
+
+///|
+async test "Browser activate_at uses cell center for sub-cell hit testing" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 160px; height: 48px; background: #ccc; }
+    #|    #top { position: absolute; left: 0; top: 0; width: 1px; height: 48px; background: #999; z-index: 1; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 64px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let mut top_region : @tui.HitRegion? = None
+  for region in browser.hit_regions {
+    if region.source_id == "top" {
+      top_region = Some(region)
+    }
+  }
+  let (col, row) = match top_region {
+    Some(region) => (region.col, region.row)
+    None => panic()
+  }
+
+  inspect(browser.get_source_id_at(col, row), content="Some(\"bottom\")")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(status, content="Some(\"bottom\")")
+}
+
+///|
+async test "Browser activate_at uses sub-pixel coverage for anti-aliased hit testing" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 160px; height: 48px; background: #ccc; }
+    #|    #top { position: absolute; left: 0; top: 0; width: 64px; height: 6px; background: #999; z-index: 1; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 64px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let mut top_region : @tui.HitRegion? = None
+  for region in browser.hit_regions {
+    if region.source_id == "top" {
+      top_region = Some(region)
+    }
+  }
+  let (col, row) = match top_region {
+    Some(region) => (region.col, region.row)
+    None => panic()
+  }
+
+  inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
+  let activated = browser.activate_at(col, row) catch { _ => false }
+  inspect(activated, content="true")
+  let status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(status, content="Some(\"top\")")
+}
+
+///|
+async test "Browser activate_at samples non-rect clip-path cell coverage" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 64px; height: 64px; background: #ccc; }
+    #|    #top { position: absolute; left: 0; top: 0; width: 64px; height: 64px; background: #999; clip-path: polygon(0 0, 4px 0, 4px 64px, 0 64px); z-index: 1; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 80px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let top = hit_region_of_source_id(browser, "top")
+  let outside_col = top.col + 1
+  inspect(
+    browser.get_source_id_at(outside_col, top.row),
+    content="Some(\"bottom\")",
+  )
+  let outside_activated = browser.activate_at(outside_col, top.row) catch {
+    _ => false
+  }
+  inspect(outside_activated, content="true")
+  let outside_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(outside_status, content="Some(\"bottom\")")
+
+  inspect(browser.get_source_id_at(top.col, top.row), content="Some(\"top\")")
+  let edge_activated = browser.activate_at(top.col, top.row) catch {
+    _ => false
+  }
+  inspect(edge_activated, content="true")
+  let edge_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(edge_status, content="Some(\"top\")")
+}
+
+///|
+async test "Browser activate_at respects border-radius hit shape" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 160px; height: 48px; background: #ccc; }
+    #|    #top { position: absolute; left: 0; top: 0; width: 160px; height: 48px; background: #999; border-radius: 24px; z-index: 1; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 64px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let top = hit_region_of_source_id(browser, "top")
+  inspect(
+    browser.get_source_id_at(top.col, top.row),
+    content="Some(\"bottom\")",
+  )
+  let corner_activated = browser.activate_at(top.col, top.row) catch {
+    _ => false
+  }
+  inspect(corner_activated, content="true")
+  let corner_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(corner_status, content="Some(\"bottom\")")
+
+  let inside_col = top.col + 4
+  inspect(
+    browser.get_source_id_at(inside_col, top.row),
+    content="Some(\"top\")",
+  )
+  let inside_activated = browser.activate_at(inside_col, top.row) catch {
+    _ => false
+  }
+  inspect(inside_activated, content="true")
+  let inside_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(inside_status, content="Some(\"top\")")
+}
+
+///|
+async test "Browser activate_at respects clip-path inset hit region" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 160px; height: 64px; background: #ccc; }
+    #|    #top { position: absolute; left: 0; top: 0; width: 160px; height: 64px; background: #999; clip-path: inset(16px 0 0 16px); z-index: 1; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 80px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let bottom = hit_region_of_source_id(browser, "bottom")
+  inspect(
+    browser.get_source_id_at(bottom.col, bottom.row),
+    content="Some(\"bottom\")",
+  )
+  let clipped_activated = browser.activate_at(bottom.col, bottom.row) catch {
+    _ => false
+  }
+  inspect(clipped_activated, content="true")
+  let clipped_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(clipped_status, content="Some(\"bottom\")")
+
+  let inside_col = bottom.col + 3
+  let inside_row = bottom.row + 2
+  inspect(
+    browser.get_source_id_at(inside_col, inside_row),
+    content="Some(\"top\")",
+  )
+  let inside_activated = browser.activate_at(inside_col, inside_row) catch {
+    _ => false
+  }
+  inspect(inside_activated, content="true")
+  let inside_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(inside_status, content="Some(\"top\")")
+}
+
+///|
+async test "Browser activate_at respects clip-path rect hit region" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 160px; height: 64px; background: #ccc; }
+    #|    #top { position: absolute; left: 0; top: 0; width: 160px; height: 64px; background: #999; clip-path: rect(16px 128px 64px 16px); z-index: 1; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 80px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let bottom = hit_region_of_source_id(browser, "bottom")
+  inspect(
+    browser.get_source_id_at(bottom.col, bottom.row),
+    content="Some(\"bottom\")",
+  )
+  let clipped_activated = browser.activate_at(bottom.col, bottom.row) catch {
+    _ => false
+  }
+  inspect(clipped_activated, content="true")
+  let clipped_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(clipped_status, content="Some(\"bottom\")")
+
+  let inside_col = bottom.col + 3
+  let inside_row = bottom.row + 2
+  inspect(
+    browser.get_source_id_at(inside_col, inside_row),
+    content="Some(\"top\")",
+  )
+  let inside_activated = browser.activate_at(inside_col, inside_row) catch {
+    _ => false
+  }
+  inspect(inside_activated, content="true")
+  let inside_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(inside_status, content="Some(\"top\")")
+}
+
+///|
+async test "Browser activate_at respects clip-path xywh hit region" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 160px; height: 64px; background: #ccc; }
+    #|    #top { position: absolute; left: 0; top: 0; width: 160px; height: 64px; background: #999; clip-path: xywh(16px 16px 112px 48px); z-index: 1; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 80px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let bottom = hit_region_of_source_id(browser, "bottom")
+  inspect(
+    browser.get_source_id_at(bottom.col, bottom.row),
+    content="Some(\"bottom\")",
+  )
+  let clipped_activated = browser.activate_at(bottom.col, bottom.row) catch {
+    _ => false
+  }
+  inspect(clipped_activated, content="true")
+  let clipped_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(clipped_status, content="Some(\"bottom\")")
+
+  let inside_col = bottom.col + 3
+  let inside_row = bottom.row + 2
+  inspect(
+    browser.get_source_id_at(inside_col, inside_row),
+    content="Some(\"top\")",
+  )
+  let inside_activated = browser.activate_at(inside_col, inside_row) catch {
+    _ => false
+  }
+  inspect(inside_activated, content="true")
+  let inside_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(inside_status, content="Some(\"top\")")
+}
+
+///|
+async test "Browser activate_at respects clip-path circle hit region" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 64px; height: 64px; background: #ccc; }
+    #|    #top { position: absolute; left: 0; top: 0; width: 64px; height: 64px; background: #999; clip-path: circle(24px at 32px 32px); z-index: 1; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 80px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let bottom = hit_region_of_source_id(browser, "bottom")
+  inspect(
+    browser.get_source_id_at(bottom.col, bottom.row),
+    content="Some(\"bottom\")",
+  )
+  let clipped_activated = browser.activate_at(bottom.col, bottom.row) catch {
+    _ => false
+  }
+  inspect(clipped_activated, content="true")
+  let clipped_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(clipped_status, content="Some(\"bottom\")")
+
+  let inside_col = bottom.col + 2
+  let inside_row = bottom.row + 2
+  inspect(
+    browser.get_source_id_at(inside_col, inside_row),
+    content="Some(\"top\")",
+  )
+  let inside_activated = browser.activate_at(inside_col, inside_row) catch {
+    _ => false
+  }
+  inspect(inside_activated, content="true")
+  let inside_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(inside_status, content="Some(\"top\")")
+}
+
+///|
+async test "Browser activate_at respects clip-path ellipse hit region" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 64px; height: 64px; background: #ccc; }
+    #|    #top { position: absolute; left: 0; top: 0; width: 64px; height: 64px; background: #999; clip-path: ellipse(24px 16px at 32px 32px); z-index: 1; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 80px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let bottom = hit_region_of_source_id(browser, "bottom")
+  inspect(
+    browser.get_source_id_at(bottom.col, bottom.row),
+    content="Some(\"bottom\")",
+  )
+  let clipped_activated = browser.activate_at(bottom.col, bottom.row) catch {
+    _ => false
+  }
+  inspect(clipped_activated, content="true")
+  let clipped_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(clipped_status, content="Some(\"bottom\")")
+
+  let inside_col = bottom.col + 2
+  let inside_row = bottom.row + 2
+  inspect(
+    browser.get_source_id_at(inside_col, inside_row),
+    content="Some(\"top\")",
+  )
+  let inside_activated = browser.activate_at(inside_col, inside_row) catch {
+    _ => false
+  }
+  inspect(inside_activated, content="true")
+  let inside_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(inside_status, content="Some(\"top\")")
+}
+
+///|
+async test "Browser activate_at respects clip-path polygon hit region" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 64px; height: 64px; background: #ccc; }
+    #|    #top { position: absolute; left: 0; top: 0; width: 64px; height: 64px; background: #999; clip-path: polygon(32px 0, 64px 64px, 0 64px); z-index: 1; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 80px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let bottom = hit_region_of_source_id(browser, "bottom")
+  inspect(
+    browser.get_source_id_at(bottom.col, bottom.row),
+    content="Some(\"bottom\")",
+  )
+  let clipped_activated = browser.activate_at(bottom.col, bottom.row) catch {
+    _ => false
+  }
+  inspect(clipped_activated, content="true")
+  let clipped_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(clipped_status, content="Some(\"bottom\")")
+
+  let inside_col = bottom.col + 4
+  let inside_row = bottom.row + 2
+  inspect(
+    browser.get_source_id_at(inside_col, inside_row),
+    content="Some(\"top\")",
+  )
+  let inside_activated = browser.activate_at(inside_col, inside_row) catch {
+    _ => false
+  }
+  inspect(inside_activated, content="true")
+  let inside_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(inside_status, content="Some(\"top\")")
+}
+
+///|
+async test "Browser activate_at respects clip-path path hit region" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 64px; height: 64px; background: #ccc; }
+    #|    #top { position: absolute; left: 0; top: 0; width: 64px; height: 64px; background: #999; clip-path: path("M 32 0 L 64 64 L 0 64 Z"); z-index: 1; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 80px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let bottom = hit_region_of_source_id(browser, "bottom")
+  inspect(
+    browser.get_source_id_at(bottom.col, bottom.row),
+    content="Some(\"bottom\")",
+  )
+  let clipped_activated = browser.activate_at(bottom.col, bottom.row) catch {
+    _ => false
+  }
+  inspect(clipped_activated, content="true")
+  let clipped_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(clipped_status, content="Some(\"bottom\")")
+
+  let inside_col = bottom.col + 4
+  let inside_row = bottom.row + 2
+  inspect(
+    browser.get_source_id_at(inside_col, inside_row),
+    content="Some(\"top\")",
+  )
+  let inside_activated = browser.activate_at(inside_col, inside_row) catch {
+    _ => false
+  }
+  inspect(inside_activated, content="true")
+  let inside_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(inside_status, content="Some(\"top\")")
+}
+
+///|
+async test "Browser activate_at respects quadratic clip-path path hit region" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 64px; height: 64px; background: #ccc; }
+    #|    #top { position: absolute; left: 0; top: 0; width: 64px; height: 64px; background: #999; clip-path: path("M 0 64 Q 32 0 64 64 Z"); z-index: 1; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 80px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let bottom = hit_region_of_source_id(browser, "bottom")
+  let outside_col = bottom.col + 4
+  let outside_row = bottom.row
+  inspect(
+    browser.get_source_id_at(outside_col, outside_row),
+    content="Some(\"bottom\")",
+  )
+  let clipped_activated = browser.activate_at(outside_col, outside_row) catch {
+    _ => false
+  }
+  inspect(clipped_activated, content="true")
+  let clipped_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(clipped_status, content="Some(\"bottom\")")
+
+  let inside_col = bottom.col + 4
+  let inside_row = bottom.row + 2
+  inspect(
+    browser.get_source_id_at(inside_col, inside_row),
+    content="Some(\"top\")",
+  )
+  let inside_activated = browser.activate_at(inside_col, inside_row) catch {
+    _ => false
+  }
+  inspect(inside_activated, content="true")
+  let inside_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(inside_status, content="Some(\"top\")")
+}
+
+///|
+async test "Browser activate_at respects smooth clip-path path hit region" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 64px; height: 64px; background: #ccc; }
+    #|    #top { position: absolute; left: 0; top: 0; width: 64px; height: 64px; background: #999; clip-path: path("M 0 64 Q 16 0 32 64 T 64 64 Z"); z-index: 1; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 80px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let bottom = hit_region_of_source_id(browser, "bottom")
+  let outside_col = bottom.col + 4
+  let outside_row = bottom.row
+  inspect(
+    browser.get_source_id_at(outside_col, outside_row),
+    content="Some(\"bottom\")",
+  )
+  let clipped_activated = browser.activate_at(outside_col, outside_row) catch {
+    _ => false
+  }
+  inspect(clipped_activated, content="true")
+  let clipped_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(clipped_status, content="Some(\"bottom\")")
+
+  let inside_col = bottom.col + 2
+  let inside_row = bottom.row + 2
+  inspect(
+    browser.get_source_id_at(inside_col, inside_row),
+    content="Some(\"top\")",
+  )
+  let inside_activated = browser.activate_at(inside_col, inside_row) catch {
+    _ => false
+  }
+  inspect(inside_activated, content="true")
+  let inside_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(inside_status, content="Some(\"top\")")
+}
+
+///|
+async test "Browser activate_at respects arc clip-path path hit region" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; position: relative; }
+    #|    #bottom { position: absolute; left: 0; top: 0; width: 64px; height: 64px; background: #ccc; }
+    #|    #top { position: absolute; left: 0; top: 0; width: 64px; height: 64px; background: #999; clip-path: path("M 0 64 A 32 32 0 0 1 64 64 Z"); z-index: 1; }
+    #|  </style>
+    #|</head>
+    #|<body>
+    #|  <div id="bottom" onclick="document.getElementById('status').textContent='bottom';"></div>
+    #|  <div id="top" onclick="document.getElementById('status').textContent='top';"></div>
+    #|  <div style="height: 80px"></div>
+    #|  <p id="status">before</p>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.render_output(Text)
+  let bottom = hit_region_of_source_id(browser, "bottom")
+  let outside_col = bottom.col + 4
+  let outside_row = bottom.row
+  inspect(
+    browser.get_source_id_at(outside_col, outside_row),
+    content="Some(\"bottom\")",
+  )
+  let clipped_activated = browser.activate_at(outside_col, outside_row) catch {
+    _ => false
+  }
+  inspect(clipped_activated, content="true")
+  let clipped_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(clipped_status, content="Some(\"bottom\")")
+
+  let inside_col = bottom.col + 4
+  let inside_row = bottom.row + 2
+  inspect(
+    browser.get_source_id_at(inside_col, inside_row),
+    content="Some(\"top\")",
+  )
+  let inside_activated = browser.activate_at(inside_col, inside_row) catch {
+    _ => false
+  }
+  inspect(inside_activated, content="true")
+  let inside_status = browser.execute_inline_js(
+    "(function(){ return document.getElementById('status').textContent; })()",
+  )
+  inspect(inside_status, content="Some(\"top\")")
 }
 
 ///|
@@ -1456,6 +2599,62 @@ async test "Browser activate_at dispatches persisted generic addEventListener cl
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("after"))
   assert_true(!rendered.contains("before"))
+}
+
+///|
+test "Browser reinit restores clipboard addEventListener handlers" {
+  let browser = Browser::new(800, 600)
+  let html =
+    #|<html>
+    #|<body>
+    #|  <div id="target">Clipboard target</div>
+    #|  <p id="status">before</p>
+    #|  <script>
+    #|    const target = document.getElementById('target');
+    #|    target.addEventListener('copy', function (event) {
+    #|      const data = event.clipboardData ? event.clipboardData.getData('text/plain') : 'none';
+    #|      if (event.clipboardData) event.clipboardData.setData('text/plain', 'copied');
+    #|      document.getElementById('status').textContent += 'copy:' + data + '|';
+    #|    });
+    #|    target.addEventListener('cut', function (event) {
+    #|      const data = event.clipboardData ? event.clipboardData.getData('text/plain') : 'none';
+    #|      document.getElementById('status').textContent += 'cut:' + data + '|';
+    #|    });
+    #|    target.addEventListener('paste', function (event) {
+    #|      const data = event.clipboardData ? event.clipboardData.getData('text/plain') : 'none';
+    #|      document.getElementById('status').textContent += 'paste:' + data;
+    #|    });
+    #|  </script>
+    #|</body>
+    #|</html>
+  browser.html_content = html
+  browser.parsed_doc = Some(
+    @html.assign_synthetic_ids(@html.parse_document(html)),
+  )
+  browser.set_enable_js(true)
+
+  let _ = browser.execute_scripts()
+  browser.dom_tree = None
+  browser.script_executor = None
+
+  let dispatch_clipboard_events =
+    #|(function () {
+    #|  const target = document.getElementById('target');
+    #|  const status = document.getElementById('status');
+    #|  status.textContent = '';
+    #|  const clipboardData = new DataTransfer();
+    #|  clipboardData.setData('text/plain', 'seed');
+    #|  for (const type of ['copy', 'cut', 'paste']) {
+    #|    target.dispatchEvent(new ClipboardEvent(type, {
+    #|      bubbles: true,
+    #|      cancelable: true,
+    #|      clipboardData
+    #|    }));
+    #|  }
+    #|  return status.textContent + ':' + clipboardData.getData('text/plain');
+    #|})()
+  let status = browser.execute_inline_js(dispatch_clipboard_events)
+  inspect(status, content="Some(\"copy:seed|cut:copied|paste:copied:copied\")")
 }
 
 ///|
@@ -2075,17 +3274,7 @@ async test "Browser activate_at prefers topmost persisted addEventListener eleme
     }
   }
   let (col, row) = match (top_region, bottom_region) {
-    (Some(top), Some(bottom)) => {
-      let overlap_left = top.col.max(bottom.col)
-      let overlap_top = top.row.max(bottom.row)
-      let overlap_right = (top.col + top.width).min(bottom.col + bottom.width)
-      let overlap_bottom = (top.row + top.height).min(
-        bottom.row + bottom.height,
-      )
-      assert_true(overlap_right > overlap_left)
-      assert_true(overlap_bottom > overlap_top)
-      (overlap_left, overlap_top)
-    }
+    (Some(top), Some(bottom)) => first_shared_hit_cell(top, bottom)
     _ => panic()
   }
 

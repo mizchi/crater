@@ -3,6 +3,7 @@ import {
   "mizchi/crater-painter/paint/model" @model,
   "mizchi/crater-layout/style" @style,
   "mizchi/crater-layout/types",
+  "moonbitlang/core/math",
 }
 
 import {

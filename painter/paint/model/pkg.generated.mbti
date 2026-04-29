@@ -27,6 +27,7 @@ pub(all) struct PaintNode {
   stacking_order : Int
   text : String?
   src : String?
+  visual_polygon : Array[(Double, Double)]
   children : Array[PaintNode]
 }
 pub fn PaintNode::clips_content(Self) -> Bool
@@ -37,7 +38,7 @@ pub fn PaintNode::has_horizontal_scrollbar(Self) -> Bool
 pub fn PaintNode::has_legacy_clip(Self) -> Bool
 pub fn PaintNode::has_vertical_scrollbar(Self) -> Bool
 pub fn PaintNode::is_scrollable(Self) -> Bool
-pub fn PaintNode::new(String, String, Double, Double, Double, Double, PaintProperties, Array[Self], text? : String?, src? : String?, overflow_x? : @types.Overflow, overflow_y? : @types.Overflow, scroll_width? : Double, scroll_height? : Double, clip? : @types.ClipRect) -> Self
+pub fn PaintNode::new(String, String, Double, Double, Double, Double, PaintProperties, Array[Self], text? : String?, src? : String?, overflow_x? : @types.Overflow, overflow_y? : @types.Overflow, scroll_width? : Double, scroll_height? : Double, clip? : @types.ClipRect, visual_polygon? : Array[(Double, Double)]) -> Self
 pub fn PaintNode::to_json_string(Self) -> String
 pub impl Show for PaintNode
 
@@ -53,6 +54,7 @@ pub(all) struct PaintProperties {
   font_size : Double
   is_bold : Bool
   font_family : String
+  clip_path : @style.ClipPath
   border_top_left_radius : Double
   border_top_right_radius : Double
   border_bottom_right_radius : Double

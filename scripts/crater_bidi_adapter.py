@@ -138,7 +138,12 @@ class CraterBidiSession:
                             exc = bidi_error.from_error_details(error_code, error_msg, stacktrace)
                             future.set_exception(exc)
                         else:
-                            future.set_result(data.get("result", {}))
+                            if "result" in data:
+                                future.set_result(data["result"])
+                            elif "value" in data:
+                                future.set_result({"value": data["value"]})
+                            else:
+                                future.set_result({})
                         self._pending_print_commands.pop(cmd_id, None)
                 else:
                     # Event
@@ -345,24 +350,6 @@ class CraterBidiSession:
             "cookie": cookie_assignment,
         })
         await future
-
-    async def blocked_request_phase(self, request_id: str) -> str | None:
-        if not isinstance(request_id, str) or request_id == "":
-            return None
-        result = await self.command(
-            "network.getBlockedRequestPhaseValue",
-            {"request": request_id},
-        )
-        return result if isinstance(result, str) else None
-
-    async def blocked_request_navigation(self, request_id: str) -> str | None:
-        if not isinstance(request_id, str) or request_id == "":
-            return None
-        result = await self.command(
-            "network.getBlockedRequestNavigationValue",
-            {"request": request_id},
-        )
-        return result if isinstance(result, str) else None
 
     def add_event_listener(self, event_name: str, handler):
         """Add an event listener."""
@@ -913,16 +900,10 @@ class NetworkModule(_CommandProxy):
 
     async def continue_request(self, request: str, **kwargs):
         request_id = self._validate_request_id(request)
-        blocked_phase = await self._session.blocked_request_phase(request_id)
-        if not isinstance(blocked_phase, str):
-            raise bidi_error.NoSuchRequestException("Unknown request")
         params: dict[str, Any] = {"request": request_id}
         for key, value in kwargs.items():
             params[key] = value
 
-        navigation_id = await self._session.blocked_request_navigation(request_id)
-        if isinstance(navigation_id, str) and "navigation" not in params:
-            params["navigation"] = navigation_id
         await self._command("network.continueBlockedRequest", params)
         return {}
 
@@ -954,9 +935,6 @@ class NetworkModule(_CommandProxy):
 
     async def provide_response(self, request: str, **kwargs):
         request_id = self._validate_request_id(request)
-        blocked_phase = await self._session.blocked_request_phase(request_id)
-        if not isinstance(blocked_phase, str):
-            raise bidi_error.NoSuchRequestException("Unknown request")
         params: dict[str, Any] = {
             "request": request_id,
             "mode": "provideResponse",

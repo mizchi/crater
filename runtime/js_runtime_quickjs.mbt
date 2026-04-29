@@ -534,7 +534,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       return target._listeners;
   #|     }
   #|     const _persistedListenerAttrPrefix = 'data-crater-listeners-';
-  #|     const _persistedListenerTypes = ['click', 'beforeinput', 'input', 'change', 'submit', 'keydown', 'keypress', 'keyup', 'focus', 'blur', 'focusin', 'focusout', 'pointerdown', 'pointermove', 'pointerup', 'pointerover', 'pointerout', 'pointerenter', 'pointerleave', 'mousedown', 'mousemove', 'mouseup', 'mouseover', 'mouseout', 'mouseenter', 'mouseleave', 'dragstart', 'drag', 'dragenter', 'dragover', 'dragleave', 'drop', 'dragend', 'compositionstart', 'compositionupdate', 'compositionend'];
+  #|     const _persistedListenerTypes = ['click', 'beforeinput', 'input', 'change', 'submit', 'copy', 'cut', 'paste', 'keydown', 'keypress', 'keyup', 'focus', 'blur', 'focusin', 'focusout', 'pointerdown', 'pointermove', 'pointerup', 'pointerover', 'pointerout', 'pointerenter', 'pointerleave', 'mousedown', 'mousemove', 'mouseup', 'mouseover', 'mouseout', 'mouseenter', 'mouseleave', 'dragstart', 'drag', 'dragenter', 'dragover', 'dragleave', 'drop', 'dragend', 'compositionstart', 'compositionupdate', 'compositionend'];
   #|     function _shouldPersistListener(target, eventType, listener) {
   #|       return _persistedListenerTypes.includes(eventType) &&
   #|         target &&
@@ -8427,6 +8427,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         const eventMap = {
   #|           'beforeunloadevent': BeforeUnloadEvent,
   #|           'compositionevent': CompositionEvent,
+  #|           'clipboardevent': ClipboardEvent,
   #|           'customevent': CustomEvent,
   #|           'devicemotionevent': DeviceMotionEvent,
   #|           'deviceorientationevent': DeviceOrientationEvent,
@@ -9006,6 +9007,13 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       }
   #|       get dataTransfer() { return this._dataTransfer; }
   #|     }
+  #|     class ClipboardEvent extends Event {
+  #|       constructor(type, options = {}) {
+  #|         super(type, options);
+  #|         this._clipboardData = options.clipboardData || null;
+  #|       }
+  #|       get clipboardData() { return this._clipboardData; }
+  #|     }
   #|     class DeviceMotionEvent extends Event {}
   #|     class DeviceOrientationEvent extends Event {}
   #|     class TextEvent extends UIEvent {
@@ -9040,6 +9048,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       MessageEvent: MessageEvent,
   #|       StorageEvent: StorageEvent,
   #|       DragEvent: DragEvent,
+  #|       ClipboardEvent: ClipboardEvent,
   #|       DataTransfer: DataTransfer,
   #|       DeviceMotionEvent: DeviceMotionEvent,
   #|       DeviceOrientationEvent: DeviceOrientationEvent,

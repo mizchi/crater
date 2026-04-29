@@ -556,7 +556,8 @@ fn BidiProtocol::handle_network_continue_blocked_request(
   let mut input = base_input
   let mut synthetic_location_href : String? = None
   let mut completed_navigation_url : String? = None
-  let is_navigation = match blocked_request.get("is_navigation") {
+  let is_navigation = match
+    get_map_field_with_alias(blocked_request, "isNavigation", "is_navigation") {
     Some(True) => true
     Some(False) => false
     _ => false

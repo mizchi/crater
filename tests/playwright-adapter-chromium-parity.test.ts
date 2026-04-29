@@ -682,6 +682,50 @@ async function collectLocatorActionabilitySnapshot(page: ChromiumOrCraterPage) {
   };
 }
 
+async function collectLocatorWaitForStateSnapshot(page: ChromiumOrCraterPage) {
+  await page.setContent(`
+    <html>
+      <body>
+        <button id="late-visible" style="display: none">Late visible</button>
+        <button id="late-hidden">Late hidden</button>
+        <button id="late-detached">Late detached</button>
+        <script>
+          setTimeout(() => {
+            document.getElementById("late-visible").style.display = "";
+          }, 20);
+          setTimeout(() => {
+            document.getElementById("late-hidden").style.display = "none";
+          }, 30);
+          setTimeout(() => {
+            const target = document.getElementById("late-detached");
+            target.parentNode.removeChild(target);
+          }, 40);
+        </script>
+      </body>
+    </html>
+  `);
+
+  await page.locator("#late-visible").waitFor({ state: "visible" });
+  const pageWaitTarget = await page.waitForSelector("#late-visible", { state: "visible" });
+  const visibleAfterWait = await page.locator("#late-visible").isVisible();
+
+  await page.locator("#late-hidden").waitFor({ state: "hidden" });
+  const hiddenAfterWait = await page.locator("#late-hidden").isHidden();
+
+  await page.locator("#late-detached").waitFor({ state: "detached" });
+  const detachedCount = await page.locator("#late-detached").count();
+
+  const detachedResult = await page.waitForSelector("#never-attached", { state: "detached" });
+
+  return {
+    pageWaitText: await pageWaitTarget?.textContent(),
+    visibleAfterWait,
+    hiddenAfterWait,
+    detachedCount,
+    detachedResult,
+  };
+}
+
 async function collectShadowDomLocatorSnapshot(page: ChromiumOrCraterPage) {
   await page.setContent(`
     <html>
@@ -867,6 +911,13 @@ test.describe("Crater Playwright adapter Chromium parity", () => {
   test("locator click waits for attached visible and enabled targets like Chromium", async ({ browser }) => {
     const chromium = await runWithChromium(browser, collectLocatorActionabilitySnapshot);
     const crater = await runWithCrater(collectLocatorActionabilitySnapshot);
+
+    expect(crater).toEqual(chromium);
+  });
+
+  test("locator and page waitFor state options match Chromium basics", async ({ browser }) => {
+    const chromium = await runWithChromium(browser, collectLocatorWaitForStateSnapshot);
+    const crater = await runWithCrater(collectLocatorWaitForStateSnapshot);
 
     expect(crater).toEqual(chromium);
   });

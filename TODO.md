@@ -900,14 +900,14 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
   - `webdriver/playwright/supported-apis.ts` を開発ゲートにして、互換性 status (`supported` / `partial` / `crater-extension` / `unsupported`) と実装形態 (`implemented` / `api-mock` / `unsupported`) を分けて追えるようにする
   - 主要 API は Chromium parity test と Crater user scenario test の両方で固定する
 - 現状:
-  - `pnpm test:playwright` -> `73 / 73 passed`
+  - `pnpm test:playwright` -> `91 / 91 passed`
   - `pnpm test:website` -> `33 / 33 passed`
-  - `pnpm test:vitest` -> `334 / 334 passed`
+  - `pnpm test:vitest` -> `335 / 335 passed`
   - `pnpm test:node` -> `86 / 86 passed`
-  - `moon -C webdriver test -p mizchi/crater-webdriver-bidi/webdriver --target js` -> `347 / 347 passed`
-  - `webdriver/playwright/supported-apis.ts`: total `121` (`supported=46`, `partial=59`, `crater-extension=12`, `unsupported=4`)
-  - implementation 別: `implemented=116`, `api-mock=1`, `unsupported=4`
-  - owner 別: `browser=4`, `context=4`, `page=73`, `locator=40`
+  - `moon -C webdriver test -p mizchi/crater-webdriver-bidi/webdriver --target js` -> `349 / 349 passed`
+  - `webdriver/playwright/supported-apis.ts`: total `132` (`supported=45`, `partial=75`, `crater-extension=12`, `unsupported=0`)
+  - implementation 別: `implemented=131`, `api-mock=1`, `unsupported=0`
+  - owner 別: `browser=4`, `context=15`, `page=73`, `locator=40`
   - `scripts/playwright-adapter-support.test.ts` -> `12 / 12 passed`
   - support test で Browser / Context / Page / Locator の source-level public method と support table / implementation 分類の drift を検出する
 
@@ -917,15 +917,15 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
 |------|--------|------------|--------------|
 | Page basics | supported | `connect`, `close`, `url`, `title`, `content`, `evaluate` | Playwright `Page` 全体の型互換ではない |
 | URL loading | partial | `goto(http/https/data)`, `loadPage`, redirect follow, 4xx/5xx document load, response headers/statusText, init script before page scripts, relative classic script, `location.assign/replace/reload`, URL-only `history.pushState/replaceState` | referrer, custom headers, document request routing, browser-grade navigation |
-| Browser / Context wrapper | partial | `createCraterBrowser`, `browser.newContext`, `context.newPage`, `browser.contexts`, `context.pages`, `context.storageState`, idempotent close, 複数 page の基本 isolation | storageState preload, cookies API, permissions, context route, viewport/userAgent, context-level option |
+| Browser / Context wrapper | partial | `createCraterBrowser`, `browser.newContext`, `context.newPage`, `browser.contexts`, `context.pages`, `context.storageState`, `browser.newContext({ storageState, viewport, userAgent, locale, offline, geolocation, permissions })`, `context.cookies(urls)`, `context.addCookies({ url })`, `context.clearCookies({ name/domain/path })`, `context.addInitScript`, `context.setDefaultTimeout`, `context.setOffline`, `context.grantPermissions/clearPermissions`, `context.setGeolocation`, `context.route/unroute`, idempotent close, 複数 page の基本 isolation | broad permission names, native geolocation provider などの context-level option |
 | Locators | partial | CSS, text, role, label, placeholder, alt, title, testid, `filter`, `nth/first/last`, text-like locator `exact` / `RegExp`, label `for` / nested control / `aria-label` / `aria-labelledby`, role accessible name `exact`, hidden exclusion / `includeHidden`, `disabled` option, open shadow DOM traversal | full ARIA name/role, slot-based accessible name, ElementHandle 互換 |
 | Actions / input | partial | click, fill(input/textarea/contenteditable), check/uncheck/radio group, selectOption(value/label/basic descriptor), hover, drag, locator/page keyboard press/type with input/textarea selection, `page.keyboard.insertText`, Backspace/Delete, basic modifier chord, `beforeinput` cancellation, textarea newline, synthetic composition/input dispatch event shapes, locator actionability auto-wait (`attached`, `visible`, `enabled`, stable bbox) | browser-originated native IME composition, clipboard, full keyboard layout/code mapping, complex contenteditable |
-| Network | partial | Crater runtime `fetch()`, document load, external classic script の route / waitForRequest / waitForResponse、style/image request observation | style/image response details, redirect chain, failure details, HAR-like observation |
-| Wait / auto-wait | partial | polling based `waitFor*`, URL matcher, networkidle helper, locator common action auto-wait | full Playwright actionability semantics and diagnostic details |
+| Network | partial | Crater runtime `fetch()`, document load, external classic script の page/context route / waitForRequest / waitForResponse、style/image request observation | style/image response details, redirect chain, failure details, HAR-like observation, concurrent multi-page context routing, browser-grade context routing |
+| Wait / auto-wait | partial | polling based `waitFor*`, selector/locator `attached` / `detached` / `visible` / `hidden` state waits, URL matcher, networkidle helper, locator common action auto-wait | full Playwright actionability semantics and diagnostic details |
 | Screenshot / render | partial + crater-extension | Crater screenshot / paint data / paint tree | Playwright screenshot options (`fullPage`, `clip`, `mask`, browser pixel semantics) |
-| Storage / session | partial | open page からの visible cookies / localStorage snapshot (`context.storageState()`) | storageState preload, httpOnly cookie metadata, cookies API, sessionStorage helper |
+| Storage / session | partial | open page からの visible cookies / localStorage snapshot (`context.storageState()`)、`storageState({ path })` と `browser.newContext({ storageState })` の往復、BiDi storage backend 経由の visible cookie setup、cookie URL/filter basics | cross-origin localStorage preload, sessionStorage helper |
 | Frames | partial | `frameLocator(...).locator(...)` で `iframe.contentDocument` / synthetic fixture root 配下を操作できる | 独立 iframe browsing context、iframe navigation、Playwright `frame` API |
-| Dialog / download / file chooser | unsupported | WebDriver BiDi/WPT 側の prompt/file fixture coverage は維持する | Playwright adapter では `page.on`, `waitForEvent`, `setInputFiles`, `locator.setInputFiles` を未採用として明示 |
+| Dialog / download / file chooser / console | partial | `page.on` / `page.waitForEvent` の `dialog` / `download` / `console`、`page.setInputFiles`、`locator.setInputFiles`、`filechooser.setFiles`、`download.saveAs/delete/cancel` | native file picker UI、click 起点の汎用 download 検出、download stream、pre-completion download cancel |
 
 `implementation=api-mock` は Playwright 互換 API 名を提供するが、ブラウザ相当の実体はなく fixture 用の限定 glue であることを表す。現時点では `page.frameLocator` のみが該当する。`partial + implemented` は実装実体はあるが Playwright と同等ではない範囲を表す。`unsupported` は Playwright API 名を support table に載せるが、adapter の public method としては公開しない明示的な不採用 API を表す。
 
@@ -986,15 +986,17 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
 
 - [x] P6: Storage / frames / long-tail API の採用基準を決める
   - [x] `storageState`, cookies, localStorage/sessionStorage helper の要否を user scenario から決める
-    - `context.storageState()` は open page から visible cookies / localStorage を `{ cookies, origins }` 形で snapshot する
+    - `context.storageState()` は open page から visible cookies / localStorage を `{ cookies, origins }` 形で snapshot し、`path` 書き出しも行う
+    - `browser.newContext({ storageState })` は object / path から cookies と current-origin localStorage を preload する
+    - `context.cookies/addCookies/clearCookies` は BiDi storage backend 経由で visible cookie setup を扱う
     - sessionStorage は Playwright `storageState()` 互換 surface に含めず、必要なら別 helper として検討する
-    - storageState preload / cookies API / httpOnly cookie metadata は未実装として support table に残す
+    - cookie URL/filter options と cross-origin localStorage preload は未実装として support table に残す
   - [x] `frameLocator` / iframe navigation を adapter API に入れるか、BiDi raw API のままにするか決める
     - `frameLocator(...).locator(...)` は adapter API として採用し、`iframe.contentDocument` / `contentWindow.document` / synthetic fixture root 配下の locator に限定した `api-mock` として分類する
     - 独立 iframe browsing context と iframe navigation は未実装として support table に残し、現時点では BiDi raw/WPT 側の検証対象にする
-  - [x] dialog / download / file chooser は WebDriver BiDi 実装済み範囲と Playwright adapter API の境界を決める
-    - Playwright adapter では event emitter / file upload surface を採用せず、`page.on`, `page.waitForEvent`, `page.setInputFiles`, `locator.setInputFiles` を `unsupported` として明示する
-    - WebDriver BiDi/WPT の prompt/file fixture coverage は adapter とは別の protocol compliance として維持する
+  - [x] dialog / download / file chooser / console は WebDriver BiDi 実装済み範囲を Playwright adapter API に接続する
+    - `page.on` / `page.waitForEvent` は `dialog`, `download`, `console` を採用し、file upload は `page.setInputFiles`, `locator.setInputFiles`, `filechooser.setFiles` を採用する
+    - WebDriver BiDi/WPT の prompt/download/file/log fixture coverage は adapter と protocol compliance の両方で維持する
   - [x] 使わない API は `unsupported` として table に明示し、暗黙の欠落をなくす
     - `scripts/playwright-adapter-support.test.ts` で `unsupported` entry は source-level public method list から除外しつつ、`implementation=unsupported` として分類されることを固定する
 
@@ -1019,7 +1021,7 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
   - `MutationObserver-*` は WPT green
 - event/listener:
   - `onclick` attribute
-  - `addEventListener("click" | "input" | "change" | "submit" | "keydown" | "keypress" | "keyup" | "focus" | "blur" | "focusin" | "focusout" | "pointerdown" | "pointermove" | "pointerup" | "compositionstart" | "compositionupdate" | "compositionend", ...)`
+  - `addEventListener("click" | "input" | "change" | "submit" | "beforeinput" | "copy" | "cut" | "paste" | "keydown" | "keypress" | "keyup" | "focus" | "blur" | "focusin" | "focusout" | pointer / mouse / drag / composition 系, ...)`
   - listener は DOM 再実行を跨いで persisted restore
 - browser shell default action:
   - `Tab` focus 移動
@@ -1037,7 +1039,7 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
   - `tick_js()` -> DOM sync -> repaint
   - clip-aware topmost hit-test
   - `pointer-events: none`
-  - `transform: translate(...)` 後の hit-test は fixture で確認済み
+  - `transform: translate(...)` / `scale(...)` / 2D `rotate(...)` / `skew(...)` / `matrix(...)` 後の hit-test は fixture で確認済み
 - browser integration:
   - composed tree serialize による render / a11y / jsbidi / CDP の観測面
   - shadow root start node を起点にした `locateNodes(css|innerText|accessibility|xpath)`
@@ -1057,12 +1059,28 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
   - `browser/src/shell/browser_fixture_wbtest.mbt` の
     `fixture requestAnimationFrame advances across browser ticks`
     で `click -> tick -> tick` の段階描画を固定
-- [ ] event persistence の一般化
-  - 今は `click/input/change/submit/keydown/keypress/keyup/focus/blur/focusin/focusout/pointerdown/pointermove/pointerup/compositionstart/compositionupdate/compositionend` まで
-  - drag 系 / clipboard 系 / `beforeinput` は未対応
-- [ ] visual hit-test の厳密化
-  - `pointer-events` は `none` のみ
-  - complex transform / shape / clip-path / pixel-perfect hit-test は未対応
+- [x] event persistence の一般化
+  - `click/input/change/submit/beforeinput/copy/cut/paste/keydown/keypress/keyup/focus/blur/focusin/focusout/pointer* / mouse* / drag* / composition*` まで listener restore を固定済み
+  - `browser/js` runtime、Browser shell reinit、native V8 mock DOM で clipboard event surface を確認済み
+- [x] visual hit-test の厳密化
+  - [x] paint-order hit region はセル矩形ではなくセル中心の pixel bounds で判定する
+  - [x] `border-radius` の rounded rect 形状は hit-test へ反映済み
+  - [x] `clip-path: inset(...)` は paint clip / hit-test へ反映済み
+  - [x] `clip-path: rect(...)` は paint clip / hit-test へ反映済み
+  - [x] `clip-path: xywh(...)` は paint clip / hit-test へ反映済み
+  - [x] `clip-path: circle(...)` は hit-test へ反映済み
+  - [x] `clip-path: ellipse(...)` は hit-test へ反映済み
+  - [x] `clip-path: polygon(...)` は hit-test へ反映済み
+  - [x] `clip-path: path(...)` の `M/L/H/V/Q/T/C/S/A/Z` polygon subset は hit-test へ反映済み
+  - [x] `transform: scale(...)` の visual bounds は hit-test へ反映済み
+  - [x] quarter-turn `transform: rotate(...)` の visual bounds は hit-test へ反映済み
+  - [x] arbitrary-angle `transform: rotate(...)` の visual polygon は hit-test へ反映済み
+  - [x] `transform: skewX(...)` / `skewY(...)` の visual polygon は hit-test へ反映済み
+  - [x] 2D `transform: matrix(...)` の visual polygon は hit-test へ反映済み
+  - [x] `transform: matrix3d(...)` の 2D projection visual polygon は hit-test へ反映済み
+  - [x] `pointer-events: none` / inherited none / child auto override は固定済み
+  - [x] 矩形 hit region の sub-pixel coverage sampling は hit-test へ反映済み
+  - [x] 非矩形 clip shape の sub-pixel coverage sampling は hit-test へ反映済み
 - [ ] control default action の残件
   - `select` popup UI
   - blur 時 `change` の細かい spec 差分

@@ -610,6 +610,32 @@ test "V8+FullDOM: :state() matches and querySelector reflect CustomStateSet chan
   assert_eq(result.value, "[true,true,true,true,1]|[true,true,0]")
 }
 
+///|
+test "V8+FullDOM: ClipboardEvent exposes shared DataTransfer state" {
+  let rt = V8JsRuntime::new_with_mock_dom(full_mock_dom_js())
+  rt.init()
+  let dom = @dom.DomTree::new()
+  let source =
+    #|const target = document.createElement('div');
+    #|document.body.appendChild(target);
+    #|const clipboardData = new DataTransfer();
+    #|clipboardData.setData('text/plain', 'seed');
+    #|let log = [];
+    #|target.addEventListener('copy', function (event) {
+    #|  log.push('copy:' + event.clipboardData.getData('text/plain'));
+    #|  event.clipboardData.setData('text/plain', 'copied');
+    #|});
+    #|target.addEventListener('paste', function (event) {
+    #|  log.push('paste:' + event.clipboardData.getData('text/plain'));
+    #|});
+    #|target.dispatchEvent(new ClipboardEvent('copy', { bubbles: true, clipboardData }));
+    #|target.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, clipboardData }));
+    #|return log.join('|') + '|' + clipboardData.getData('text/plain');
+  let result = rt.execute(0, dom, source, @js.ImmediateFlush)
+  assert_true(result.success)
+  assert_eq(result.value, "copy:seed|paste:copied|copied")
+}
+
 // ============================================================
 // Basic tests (no mock DOM)
 // ============================================================

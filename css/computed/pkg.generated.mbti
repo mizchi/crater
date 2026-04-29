@@ -44,6 +44,8 @@ pub fn parse_clear_with_direction(String, @style.Direction) -> @types.Clear
 
 pub fn parse_clip(String) -> @types.ClipRect
 
+pub fn parse_clip_path(String) -> @style.ClipPath
+
 pub fn parse_color(String) -> CssColorValue
 
 pub fn parse_color_with_ctx(String, ComputeContext) -> CssColorValue

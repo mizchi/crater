@@ -1,4 +1,5 @@
-import { writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
 import WebSocket from "ws";
 import { resolveBidiUrl } from "../../scripts/bidi-url.ts";
 export {
@@ -32,9 +33,26 @@ export type CraterBidiConnectOptions = {
   url?: string;
 };
 
+export type CraterViewportSize = {
+  width: number;
+  height: number;
+};
+
+export type CraterBrowserContextOptions = CraterBidiConnectOptions & {
+  storageState?: CraterStorageState | string;
+  viewport?: CraterViewportSize | null;
+  userAgent?: string;
+  locale?: string;
+  offline?: boolean;
+  geolocation?: CraterGeolocation | null;
+  permissions?: string[];
+};
+
 export type CraterEvaluateOptions = {
   awaitPromise?: boolean;
 };
+
+export type CraterInitScript = string | (() => unknown | Promise<unknown>);
 
 export type CraterLoadState =
   | "load"
@@ -69,6 +87,13 @@ export type CraterAddStyleTagOptions = {
 export type CraterWaitForFunctionOptions = {
   timeout?: number;
   polling?: number;
+};
+
+export type CraterWaitForSelectorState = "attached" | "detached" | "visible" | "hidden";
+
+export type CraterWaitForSelectorOptions = {
+  timeout?: number;
+  state?: CraterWaitForSelectorState;
 };
 
 export type CraterWaitForNetworkOptions = {
@@ -118,15 +143,26 @@ export type CraterSelectOptionSingle =
 
 export type CraterSelectOptionValue = CraterSelectOptionSingle | CraterSelectOptionSingle[];
 
+export type CraterSetInputFilePayload = {
+  name: string;
+  mimeType?: string;
+  buffer: Buffer | Uint8Array | ArrayBuffer | string;
+};
+
+export type CraterSetInputFile = string | CraterSetInputFilePayload;
+
+export type CraterSetInputFilesValue = CraterSetInputFile | CraterSetInputFile[];
+
 export type CraterStorageCookie = {
   name: string;
   value: string;
-  domain: string;
-  path: string;
-  expires: number;
-  httpOnly: boolean;
-  secure: boolean;
-  sameSite: "Lax" | "None" | "Strict";
+  url?: string;
+  domain?: string;
+  path?: string;
+  expires?: number;
+  httpOnly?: boolean;
+  secure?: boolean;
+  sameSite?: "Lax" | "None" | "Strict";
 };
 
 export type CraterStorageOrigin = {
@@ -141,6 +177,40 @@ export type CraterStorageState = {
 
 export type CraterStorageStateOptions = {
   path?: string;
+};
+
+export type CraterCookieUrlFilter = string | string[];
+
+export type CraterClearCookiesOptions = {
+  name?: string | RegExp;
+  domain?: string | RegExp;
+  path?: string | RegExp;
+};
+
+export type CraterGeolocation = {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+  altitude?: number;
+  altitudeAccuracy?: number;
+  heading?: number;
+  speed?: number;
+};
+
+export type CraterGrantPermissionsOptions = {
+  origin?: string;
+};
+
+type CraterStorageCookieValue = {
+  type?: string;
+  value?: string;
+};
+
+type CraterPermissionState = "granted" | "denied" | "prompt";
+
+type CraterPermissionGrant = {
+  permissions: string[];
+  origin?: string;
 };
 
 type PendingCommand = {
@@ -194,6 +264,85 @@ type CraterNetworkEventPayload =
     errorText: string;
   };
 
+type CraterFileChooserEventPayload = {
+  selector: string;
+  multiple: boolean;
+};
+
+export type CraterDialogType = "alert" | "beforeunload" | "confirm" | "prompt";
+
+type CraterDialogEventPayload = {
+  context: string;
+  type: CraterDialogType;
+  message: string;
+  defaultValue?: string;
+};
+
+type CraterDownloadWillBeginPayload = {
+  context: string;
+  navigation: string | null;
+  suggestedFilename: string;
+  url: string;
+};
+
+type CraterDownloadEndPayload = {
+  context: string;
+  navigation: string | null;
+  status: string;
+  filepath: string | null;
+  url: string;
+};
+
+type CraterConsoleEventPayload = {
+  type: string;
+  text: string;
+  args: string[];
+  timestamp: number;
+};
+
+type CraterPendingDownload = {
+  download: CraterDownload;
+  resolveEnd: (end: CraterDownloadEndPayload) => void;
+};
+
+export type CraterPageEventMap = {
+  request: CraterRequest;
+  response: CraterResponse;
+  requestfailed: CraterRequestFailure;
+  filechooser: CraterFileChooser;
+  dialog: CraterDialog;
+  download: CraterDownload;
+  console: CraterConsoleMessage;
+  load: CraterBidiPage;
+  domcontentloaded: CraterBidiPage;
+  close: CraterBidiPage;
+};
+
+export type CraterPageEventName = keyof CraterPageEventMap;
+
+export type CraterPageEventPayload = CraterPageEventMap[CraterPageEventName];
+
+type CraterLocalPageEventName = Exclude<
+  CraterPageEventName,
+  "request" | "response" | "requestfailed" | "filechooser"
+>;
+
+export type CraterPageEventHandler<T = CraterPageEventPayload> = (event: T) => void;
+
+export type CraterWaitForEventOptions<T = CraterPageEventPayload> = {
+  timeout?: number;
+  predicate?: (event: T) => boolean | Promise<boolean>;
+};
+
+type CraterPageEventWaiter = {
+  eventName: string;
+  predicate?: (event: CraterPageEventPayload) => boolean | Promise<boolean>;
+  resolve: (event: CraterPageEventPayload) => void;
+  reject: (error: Error) => void;
+  timer: ReturnType<typeof setTimeout>;
+  settled: boolean;
+};
+
 type CraterRouteDecision =
   | {
     action: "fulfill";
@@ -244,6 +393,8 @@ type LocatorFilter = {
   exact?: boolean;
 };
 
+let sharedRoutePumpQueue: Promise<void> = Promise.resolve();
+
 const SPECIAL_KEYS: Record<string, string> = {
   Enter: "\uE006",
   Tab: "\uE004",
@@ -288,6 +439,74 @@ function keyPressActions(key: string): Array<Record<string, string>> {
 }
 
 const jsString = (value: string): string => JSON.stringify(value);
+
+type CraterNormalizedInputFile = {
+  sourcePath: string;
+  name: string;
+  type: string;
+  size: number;
+};
+
+function inputFileDisplayName(sourcePath: string): string {
+  const parts = sourcePath.split(/[\\/]/);
+  return parts[parts.length - 1] ?? sourcePath;
+}
+
+function inputFilePayloadSize(buffer: CraterSetInputFilePayload["buffer"]): number {
+  if (typeof buffer === "string") {
+    return Buffer.byteLength(buffer);
+  }
+  if (buffer instanceof ArrayBuffer) {
+    return buffer.byteLength;
+  }
+  if (ArrayBuffer.isView(buffer)) {
+    return buffer.byteLength;
+  }
+  return 0;
+}
+
+function normalizeInputFiles(files: CraterSetInputFilesValue): CraterNormalizedInputFile[] {
+  const values = Array.isArray(files) ? files : [files];
+  return values.map((file) => {
+    if (typeof file === "string") {
+      return {
+        sourcePath: file,
+        name: inputFileDisplayName(file),
+        type: "",
+        size: 0,
+      };
+    }
+    const name = String(file.name);
+    const type = String(file.mimeType ?? "");
+    const size = inputFilePayloadSize(file.buffer);
+    return {
+      sourcePath: `payload:${name}:${type}:${size}`,
+      name,
+      type,
+      size,
+    };
+  });
+}
+
+function isNetworkPageEvent(eventName: string): eventName is "request" | "response" | "requestfailed" {
+  return eventName === "request" || eventName === "response" || eventName === "requestfailed";
+}
+
+function isFileChooserPageEvent(eventName: string): eventName is "filechooser" {
+  return eventName === "filechooser";
+}
+
+function isDialogPageEvent(eventName: string): eventName is "dialog" {
+  return eventName === "dialog";
+}
+
+function isDownloadPageEvent(eventName: string): eventName is "download" {
+  return eventName === "download";
+}
+
+function isConsolePageEvent(eventName: string): eventName is "console" {
+  return eventName === "console";
+}
 
 function pointerMoveActions(sharedId: string): Array<Record<string, unknown>> {
   return [
@@ -363,7 +582,31 @@ function adapterDomActionsExpr(): string {
         element.dispatchEvent(new Event("input", { bubbles: true }));
         element.dispatchEvent(new Event("change", { bubbles: true }));
       };
+      const recordFileChooser = (element) => {
+        if (tagName(element) !== "input") return;
+        const inputType = String(element.type || attr(element, "type") || "").toLowerCase();
+        if (inputType !== "file") return;
+        let chooserId = attr(element, "data-crater-filechooser-id");
+        if (!chooserId) {
+          chooserId = "fc" + Math.random().toString(36).slice(2);
+          if (typeof element.setAttribute === "function") {
+            element.setAttribute("data-crater-filechooser-id", chooserId);
+          } else {
+            element.__craterFileChooserId = chooserId;
+          }
+        }
+        if (!Array.isArray(globalThis.__craterFileChooserEvents)) {
+          globalThis.__craterFileChooserEvents = [];
+        }
+        globalThis.__craterFileChooserEvents.push({
+          selector: "[data-crater-filechooser-id=\\"" + chooserId + "\\"]",
+          multiple: Boolean(element.multiple) ||
+            (typeof element.hasAttribute === "function" && element.hasAttribute("multiple")) ||
+            attr(element, "multiple") !== "",
+        });
+      };
       const clickElement = (element) => {
+        recordFileChooser(element);
         element.click();
       };
       const hoverElement = (element) => {
@@ -491,6 +734,33 @@ const jsValue = (value: unknown): string => {
   const serialized = JSON.stringify(value);
   return serialized === undefined ? "undefined" : serialized;
 };
+
+const CRATER_SUPPORTED_PERMISSIONS = new Set(["geolocation", "storage-access"]);
+
+const stripLeadingDot = (value: string): string => value.replace(/^\.+/, "");
+
+function storageSameSite(value: CraterStorageCookie["sameSite"] | string | undefined): string {
+  const normalized = String(value ?? "Lax").toLowerCase();
+  if (normalized === "none" || normalized === "strict") {
+    return normalized;
+  }
+  return "lax";
+}
+
+function playwrightSameSite(value: string | undefined): CraterStorageCookie["sameSite"] {
+  const normalized = String(value ?? "lax").toLowerCase();
+  if (normalized === "none") return "None";
+  if (normalized === "strict") return "Strict";
+  return "Lax";
+}
+
+function storageCookieValue(value: unknown): string {
+  if (value && typeof value === "object" && "value" in value) {
+    const payload = value as CraterStorageCookieValue;
+    return String(payload.value ?? "");
+  }
+  return String(value ?? "");
+}
 
 const deserializeBidiValue = (remoteValue: unknown): unknown => {
   if (!remoteValue || typeof remoteValue !== "object") {
@@ -1131,6 +1401,176 @@ export class CraterResponse {
   }
 }
 
+export class CraterFileChooser {
+  constructor(
+    private readonly pageValue: CraterBidiPage,
+    private readonly selector: string,
+    private readonly multipleValue: boolean,
+  ) {}
+
+  page(): CraterBidiPage {
+    return this.pageValue;
+  }
+
+  isMultiple(): boolean {
+    return this.multipleValue;
+  }
+
+  async setFiles(files: CraterSetInputFilesValue): Promise<void> {
+    await this.pageValue.setInputFiles(this.selector, files);
+  }
+}
+
+export class CraterDialog {
+  private handled = false;
+
+  constructor(
+    private readonly pageValue: CraterBidiPage,
+    private readonly data: CraterDialogEventPayload,
+    private readonly handlePrompt: (
+      context: string,
+      accept: boolean,
+      promptText?: string,
+    ) => Promise<void>,
+  ) {}
+
+  page(): CraterBidiPage {
+    return this.pageValue;
+  }
+
+  type(): CraterDialogType {
+    return this.data.type;
+  }
+
+  message(): string {
+    return this.data.message;
+  }
+
+  defaultValue(): string {
+    return this.data.defaultValue ?? "";
+  }
+
+  async accept(promptText?: string): Promise<void> {
+    await this.handle(true, promptText);
+  }
+
+  async dismiss(): Promise<void> {
+    await this.handle(false);
+  }
+
+  private async handle(accept: boolean, promptText?: string): Promise<void> {
+    if (this.handled) {
+      throw new Error("Dialog has already been handled");
+    }
+    this.handled = true;
+    await this.handlePrompt(this.data.context, accept, promptText);
+  }
+}
+
+export class CraterDownload {
+  constructor(
+    private readonly pageValue: CraterBidiPage,
+    private readonly start: CraterDownloadWillBeginPayload,
+    private readonly endPromise: Promise<CraterDownloadEndPayload>,
+  ) {}
+
+  page(): CraterBidiPage {
+    return this.pageValue;
+  }
+
+  url(): string {
+    return this.start.url;
+  }
+
+  suggestedFilename(): string {
+    return this.start.suggestedFilename;
+  }
+
+  async path(): Promise<string | null> {
+    const end = await this.endPromise;
+    return end.status === "complete" ? end.filepath : null;
+  }
+
+  async saveAs(path: string): Promise<void> {
+    const sourcePath = await this.path();
+    if (!sourcePath) {
+      throw new Error(`Cannot save failed download: ${await this.failure() ?? "unknown"}`);
+    }
+    await mkdir(dirname(path), { recursive: true });
+    await copyFile(sourcePath, path);
+  }
+
+  async failure(): Promise<string | null> {
+    const end = await this.endPromise;
+    return end.status === "complete" ? null : end.status;
+  }
+
+  async cancel(): Promise<void> {
+    await this.endPromise;
+  }
+
+  async delete(): Promise<void> {
+    const sourcePath = await this.path();
+    if (!sourcePath) {
+      return;
+    }
+    try {
+      await unlink(sourcePath);
+    } catch (error) {
+      if (
+        !error ||
+        typeof error !== "object" ||
+        !("code" in error) ||
+        (error as { code?: string }).code !== "ENOENT"
+      ) {
+        throw error;
+      }
+    }
+  }
+}
+
+export class CraterConsoleMessage {
+  constructor(
+    private readonly pageValue: CraterBidiPage,
+    private readonly data: CraterConsoleEventPayload,
+  ) {}
+
+  page(): CraterBidiPage {
+    return this.pageValue;
+  }
+
+  type(): string {
+    return this.data.type;
+  }
+
+  text(): string {
+    return this.data.text;
+  }
+
+  args(): string[] {
+    return [...this.data.args];
+  }
+}
+
+export class CraterRequestFailure {
+  private readonly requestValue: CraterRequest;
+
+  constructor(private readonly data: {
+    request: CraterNetworkRequestPayload;
+    errorText: string;
+  }) {
+    this.requestValue = new CraterRequest(data.request);
+  }
+
+  request(): CraterRequest {
+    return this.requestValue;
+  }
+
+  errorText(): string {
+    return this.data.errorText;
+  }
+}
+
 export class CraterRoute {
   private handledValue = false;
 
@@ -1469,6 +1909,70 @@ export class CraterLocator {
     `);
   }
 
+  async setInputFiles(files: CraterSetInputFilesValue): Promise<void> {
+    await this.waitFor();
+    const inputFiles = normalizeInputFiles(files);
+    const sourcePaths = inputFiles.map((file) => file.sourcePath);
+    const syntheticFiles = inputFiles.map((file) => ({
+      name: file.name,
+      type: file.type,
+      size: file.size,
+    }));
+    await this.page.evaluate(`
+      (() => {
+        const input = ${this.queryExpr("querySelector")};
+        if (!input) throw new Error("Element not found: ${this.selectorForError()}");
+        const sourcePaths = ${jsValue(sourcePaths)};
+        const syntheticFiles = ${jsValue(syntheticFiles)};
+        const attr = (name) => {
+          try {
+            if (typeof input.getAttribute === "function") return input.getAttribute(name);
+          } catch (_e) {}
+          return input._attrs ? input._attrs[name] : null;
+        };
+        const tag = String(input.localName || input.tagName || input.nodeName || "").toLowerCase();
+        const type = tag === "input" ? String(input.type || attr("type") || "").toLowerCase() : "";
+        const disabled = Boolean(input.disabled) || attr("disabled") !== null;
+        const multiple = Boolean(input.multiple) || attr("multiple") !== null;
+        if (tag !== "input" || type !== "file") {
+          throw new Error("Target is not a file input: ${this.selectorForError()}");
+        }
+        if (disabled || (!multiple && sourcePaths.length > 1)) {
+          throw new Error("Unable to set file input: ${this.selectorForError()}");
+        }
+        const previousSourcePaths = Array.isArray(input.__craterSyntheticSourcePaths)
+          ? input.__craterSyntheticSourcePaths.slice()
+          : [];
+        const sameSelection = previousSourcePaths.length === sourcePaths.length &&
+          previousSourcePaths.every((path, index) => path === sourcePaths[index]);
+        try {
+          Object.defineProperty(input, "files", {
+            configurable: true,
+            get: () => syntheticFiles,
+          });
+        } catch (_e) {
+          input.files = syntheticFiles;
+        }
+        input.__craterSyntheticSourcePaths = sourcePaths.slice();
+        const emit = (type) => {
+          if (typeof Event === "function") {
+            input.dispatchEvent(new Event(type, { bubbles: true }));
+          } else if (document && typeof document.createEvent === "function") {
+            const event = document.createEvent("Event");
+            event.initEvent(type, true, false);
+            input.dispatchEvent(event);
+          }
+        };
+        if (sameSelection) {
+          emit("cancel");
+          return;
+        }
+        emit("input");
+        emit("change");
+      })()
+    `);
+  }
+
   async evaluate<T, Arg = unknown>(
     fn: (element: Element, arg: Arg) => T | Promise<T>,
     arg?: Arg,
@@ -1590,17 +2094,32 @@ export class CraterLocator {
     `);
   }
 
-  async waitFor(options: { timeout?: number } = {}): Promise<void> {
+  async waitFor(options: CraterWaitForSelectorOptions = {}): Promise<void> {
+    const state = this.normalizeWaitForState(options.state ?? "attached");
     const timeout = this.timeoutResolver(options.timeout, 5000);
     const start = Date.now();
+    let lastState: { attached: boolean; visible: boolean } | null = null;
     while (Date.now() - start < timeout) {
-      const found = await this.page.evaluate<boolean>(`${this.queryExpr("querySelector")} !== null`);
-      if (found) {
+      const current = await this.page.evaluate<{
+        attached: boolean;
+        visible: boolean;
+      }>(`
+        (() => {
+          const el = ${this.queryExpr("querySelector")};
+          return {
+            attached: !!el,
+            visible: ${elementVisibleExpr("el")},
+          };
+        })()
+      `);
+      lastState = current;
+      if (this.waitForStateMatches(state, current)) {
         return;
       }
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 30));
     }
-    throw new Error(`Timeout waiting for selector: ${this.selector}`);
+    const suffix = lastState ? ` (last state: ${this.describeWaitForState(lastState)})` : "";
+    throw new Error(`Timeout waiting for selector state ${state}: ${this.selector}${suffix}`);
   }
 
   async count(): Promise<number> {
@@ -1681,6 +2200,40 @@ export class CraterLocator {
       ? "not enabled"
       : "not stable";
     throw new Error(`Timeout waiting for actionable selector (${reason}): ${this.selector}`);
+  }
+
+  private waitForStateMatches(
+    state: CraterWaitForSelectorState,
+    current: { attached: boolean; visible: boolean },
+  ): boolean {
+    switch (state) {
+      case "attached":
+        return current.attached;
+      case "detached":
+        return !current.attached;
+      case "visible":
+        return current.attached && current.visible;
+      case "hidden":
+        return !current.attached || !current.visible;
+      default:
+        throw new Error(`Unsupported waitFor state: ${String(state)}`);
+    }
+  }
+
+  private normalizeWaitForState(state: string): CraterWaitForSelectorState {
+    switch (state) {
+      case "attached":
+      case "detached":
+      case "visible":
+      case "hidden":
+        return state;
+      default:
+        throw new Error(`Unsupported waitFor state: ${state}`);
+    }
+  }
+
+  private describeWaitForState(current: { attached: boolean; visible: boolean }): string {
+    return `${current.attached ? "attached" : "detached"} ${current.visible ? "visible" : "hidden"}`;
   }
 
   protected queryExpr(method: "querySelector" | "querySelectorAll"): string {
@@ -1814,10 +2367,27 @@ export class CraterBidiPage {
   private routes: CraterRouteEntry[] = [];
   private routePump: ReturnType<typeof setInterval> | null = null;
   private routePumpBusy = false;
+  private routePumpQueued = false;
   private networkHooksInstalled = false;
   private networkHookInstallPromise: Promise<void> | null = null;
+  private networkEventPump: ReturnType<typeof setInterval> | null = null;
+  private networkEventPumpStarting: Promise<void> | null = null;
+  private networkEventPumpBusy = false;
+  private networkEventEmitIndex = 0;
+  private fileChooserEventPump: ReturnType<typeof setInterval> | null = null;
+  private fileChooserEventPumpBusy = false;
+  private fileChooserEventEmitIndex = 0;
+  private dialogSubscribed = false;
+  private dialogSubscribePromise: Promise<void> | null = null;
+  private downloadSubscribed = false;
+  private downloadSubscribePromise: Promise<void> | null = null;
+  private pendingDownloads = new Map<string, CraterPendingDownload>();
+  private consoleSubscribed = false;
+  private consoleSubscribePromise: Promise<void> | null = null;
   private closed = false;
   private navigationFlushDepth = 0;
+  private pageEventHandlers = new Map<string, Set<CraterPageEventHandler>>();
+  private pageEventWaiters: CraterPageEventWaiter[] = [];
 
   constructor(
     private readonly sharedConnection: SharedBidiConnection | null = null,
@@ -1855,6 +2425,57 @@ export class CraterBidiPage {
     this.eventHandlers.push(handler);
   }
 
+  on<K extends CraterPageEventName>(
+    eventName: K,
+    handler: CraterPageEventHandler<CraterPageEventMap[K]>,
+  ): this {
+    const handlers = this.pageEventHandlers.get(eventName) ?? new Set();
+    handlers.add(handler as CraterPageEventHandler);
+    this.pageEventHandlers.set(eventName, handlers);
+    if (isNetworkPageEvent(eventName)) {
+      void this.startNetworkEventPump();
+    }
+    if (isFileChooserPageEvent(eventName)) {
+      this.startFileChooserEventPump();
+    }
+    if (isDialogPageEvent(eventName)) {
+      void this.ensureDialogSubscription();
+    }
+    if (isDownloadPageEvent(eventName)) {
+      void this.ensureDownloadSubscription();
+    }
+    if (isConsolePageEvent(eventName)) {
+      void this.ensureConsoleSubscription();
+    }
+    return this;
+  }
+
+  async waitForEvent<K extends CraterPageEventName>(
+    eventName: K,
+    options: CraterWaitForEventOptions<CraterPageEventMap[K]> = {},
+  ): Promise<CraterPageEventMap[K]> {
+    if (isNetworkPageEvent(eventName)) {
+      return await this.waitForNetworkPageEvent(eventName, options as CraterWaitForEventOptions) as CraterPageEventMap[K];
+    }
+    if (isFileChooserPageEvent(eventName)) {
+      return await this.waitForFileChooserEvent(options as CraterWaitForEventOptions) as CraterPageEventMap[K];
+    }
+    const eventPromise = this.waitForLocalPageEvent(
+      eventName as CraterLocalPageEventName,
+      options as CraterWaitForEventOptions,
+    ) as Promise<CraterPageEventMap[K]>;
+    if (isDialogPageEvent(eventName)) {
+      await this.ensureSubscribedBeforeReturning(eventPromise, () => this.ensureDialogSubscription());
+    }
+    if (isDownloadPageEvent(eventName)) {
+      await this.ensureSubscribedBeforeReturning(eventPromise, () => this.ensureDownloadSubscription());
+    }
+    if (isConsolePageEvent(eventName)) {
+      await this.ensureSubscribedBeforeReturning(eventPromise, () => this.ensureConsoleSubscription());
+    }
+    return await eventPromise;
+  }
+
   async close(): Promise<void> {
     if (this.closed) {
       return;
@@ -1872,6 +2493,14 @@ export class CraterBidiPage {
       clearInterval(this.routePump);
       this.routePump = null;
     }
+    if (this.networkEventPump) {
+      clearInterval(this.networkEventPump);
+      this.networkEventPump = null;
+    }
+    if (this.fileChooserEventPump) {
+      clearInterval(this.fileChooserEventPump);
+      this.fileChooserEventPump = null;
+    }
     this.routes = [];
     if (!this.sharedConnection) {
       this.ws?.close();
@@ -1879,6 +2508,7 @@ export class CraterBidiPage {
     }
     this.closed = true;
     this.closeHandler?.(this);
+    this.emitPageEvent("close", this);
   }
 
   async createSiblingPage(closeHandler: CraterPageCloseHandler | null = null): Promise<CraterBidiPage> {
@@ -1905,6 +2535,8 @@ export class CraterBidiPage {
       wait: "complete",
     });
     await this.syncRuntimeLocation(targetUrl);
+    this.emitPageEvent("domcontentloaded", this);
+    this.emitPageEvent("load", this);
     return null;
   }
 
@@ -1912,8 +2544,16 @@ export class CraterBidiPage {
     await this.syncRuntimeLocation("about:blank");
     await this.prepareRuntimeDocumentForLoad();
     await this.evaluate(`__loadHTML(${jsString(html)})`);
+    await this.reinstallNetworkHooksForDocument();
     await this.runInitScripts();
-    await this.evaluate(`(async () => await __executeScripts())()`, { awaitPromise: true });
+    await this.setObservableFetchForScriptExecution(this.networkHooksInstalled);
+    try {
+      await this.evaluate(`(async () => await __executeScripts())()`, { awaitPromise: true });
+    } finally {
+      await this.setObservableFetchForScriptExecution(false);
+    }
+    this.emitPageEvent("domcontentloaded", this);
+    this.emitPageEvent("load", this);
   }
 
   async setContentWithScripts(html: string): Promise<void> {
@@ -1978,6 +2618,8 @@ export class CraterBidiPage {
       }
     }
     await this.observeSubresourceLoads(result.url ?? url);
+    this.emitPageEvent("domcontentloaded", this);
+    this.emitPageEvent("load", this);
     return result;
   }
 
@@ -2056,6 +2698,16 @@ export class CraterBidiPage {
   private async ensureNetworkHooksReady(): Promise<void> {
     if (this.networkHookInstallPromise) {
       await this.networkHookInstallPromise;
+    }
+  }
+
+  private async reinstallNetworkHooksForDocument(): Promise<void> {
+    if (!this.networkHooksInstalled && this.routes.length === 0) {
+      return;
+    }
+    await this.installNetworkHooks(this.routes.length > 0 ? { routeEnabled: true } : {});
+    if (this.routes.length > 0) {
+      this.startRoutePump();
     }
   }
 
@@ -2358,7 +3010,7 @@ export class CraterBidiPage {
     `);
   }
 
-  async addInitScript(script: string | (() => unknown | Promise<unknown>)): Promise<void> {
+  async addInitScript(script: CraterInitScript): Promise<void> {
     this.initScripts.push(this.scriptSource(script));
   }
 
@@ -2466,8 +3118,14 @@ export class CraterBidiPage {
     return value;
   }
 
-  async waitForSelector(selector: string, options: { timeout?: number } = {}): Promise<void> {
-    await this.locator(selector).waitFor(options);
+  async waitForSelector(
+    selector: string,
+    options: CraterWaitForSelectorOptions = {},
+  ): Promise<CraterLocator | null> {
+    const locator = this.locator(selector);
+    await locator.waitFor(options);
+    const state = options.state ?? "attached";
+    return state === "hidden" || state === "detached" ? null : locator;
   }
 
   async waitForTimeout(timeout: number): Promise<void> {
@@ -2755,6 +3413,10 @@ export class CraterBidiPage {
 
   async selectOption(selector: string, value: CraterSelectOptionValue): Promise<void> {
     await this.locator(selector).selectOption(value);
+  }
+
+  async setInputFiles(selector: string, files: CraterSetInputFilesValue): Promise<void> {
+    await this.locator(selector).setInputFiles(files);
   }
 
   async screenshot(): Promise<Buffer> {
@@ -3324,19 +3986,184 @@ export class CraterBidiPage {
     }
   }
 
+  private async startNetworkEventPump(): Promise<void> {
+    if (this.networkEventPump) {
+      return;
+    }
+    if (this.networkEventPumpStarting) {
+      await this.networkEventPumpStarting;
+      return;
+    }
+    this.networkEventPumpStarting = (async () => {
+      await this.installNetworkHooks();
+      this.networkEventPump = setInterval(() => {
+        void this.drainNetworkPageEvents().catch(() => {
+          // Best-effort EventEmitter compatibility; explicit waits surface failures.
+        });
+      }, 10);
+    })();
+    try {
+      await this.networkEventPumpStarting;
+    } finally {
+      this.networkEventPumpStarting = null;
+    }
+  }
+
+  private async drainNetworkPageEvents(): Promise<void> {
+    if (this.networkEventPumpBusy || this.closed) {
+      return;
+    }
+    this.networkEventPumpBusy = true;
+    try {
+      const events = await this.networkEventsSince(this.networkEventEmitIndex);
+      this.networkEventEmitIndex += events.length;
+      for (const event of events) {
+        this.emitNetworkPageEvent(event);
+      }
+    } finally {
+      this.networkEventPumpBusy = false;
+    }
+  }
+
+  private startFileChooserEventPump(): void {
+    if (this.fileChooserEventPump) {
+      return;
+    }
+    this.fileChooserEventPump = setInterval(() => {
+      void this.drainFileChooserPageEvents().catch(() => {
+        // Best-effort EventEmitter compatibility; explicit waits surface failures.
+      });
+    }, 10);
+  }
+
+  private async drainFileChooserPageEvents(): Promise<void> {
+    if (this.fileChooserEventPumpBusy || this.closed) {
+      return;
+    }
+    this.fileChooserEventPumpBusy = true;
+    try {
+      const events = await this.fileChooserEventsSince(this.fileChooserEventEmitIndex);
+      this.fileChooserEventEmitIndex += events.length;
+      for (const event of events) {
+        this.emitPageEvent("filechooser", this.fileChooserPageEventPayload(event));
+      }
+    } finally {
+      this.fileChooserEventPumpBusy = false;
+    }
+  }
+
+  private async ensureDialogSubscription(): Promise<void> {
+    if (this.dialogSubscribed) {
+      return;
+    }
+    if (this.dialogSubscribePromise) {
+      await this.dialogSubscribePromise;
+      return;
+    }
+    this.dialogSubscribePromise = (async () => {
+      const resp = await this.sendBidi("session.subscribe", {
+        events: ["browsingContext.userPromptOpened"],
+        contexts: [this.requireContextId()],
+      });
+      if (resp.type === "error") {
+        throw new Error(resp.message || resp.error || "session.subscribe failed");
+      }
+      this.dialogSubscribed = true;
+    })();
+    try {
+      await this.dialogSubscribePromise;
+    } finally {
+      if (!this.dialogSubscribed) {
+        this.dialogSubscribePromise = null;
+      }
+    }
+  }
+
+  private async ensureDownloadSubscription(): Promise<void> {
+    if (this.downloadSubscribed) {
+      return;
+    }
+    if (this.downloadSubscribePromise) {
+      await this.downloadSubscribePromise;
+      return;
+    }
+    this.downloadSubscribePromise = (async () => {
+      const resp = await this.sendBidi("session.subscribe", {
+        events: ["browsingContext.downloadWillBegin", "browsingContext.downloadEnd"],
+        contexts: [this.requireContextId()],
+      });
+      if (resp.type === "error") {
+        throw new Error(resp.message || resp.error || "session.subscribe failed");
+      }
+      this.downloadSubscribed = true;
+    })();
+    try {
+      await this.downloadSubscribePromise;
+    } finally {
+      if (!this.downloadSubscribed) {
+        this.downloadSubscribePromise = null;
+      }
+    }
+  }
+
+  private async ensureConsoleSubscription(): Promise<void> {
+    if (this.consoleSubscribed) {
+      return;
+    }
+    if (this.consoleSubscribePromise) {
+      await this.consoleSubscribePromise;
+      return;
+    }
+    this.consoleSubscribePromise = (async () => {
+      const resp = await this.sendBidi("session.subscribe", {
+        events: ["log.entryAdded"],
+        contexts: [this.requireContextId()],
+      });
+      if (resp.type === "error") {
+        throw new Error(resp.message || resp.error || "session.subscribe failed");
+      }
+      this.consoleSubscribed = true;
+    })();
+    try {
+      await this.consoleSubscribePromise;
+    } finally {
+      if (!this.consoleSubscribed) {
+        this.consoleSubscribePromise = null;
+      }
+    }
+  }
+
   private startRoutePump(): void {
     if (this.routePump) {
       return;
     }
     this.routePump = setInterval(() => {
-      void this.drainRouteRequests().catch(() => {
-        // The page may be closing; the next explicit command will surface real failures.
-      });
+      this.enqueueRoutePumpDrain();
     }, 10);
   }
 
+  private enqueueRoutePumpDrain(): void {
+    if (this.routePumpQueued) {
+      return;
+    }
+    this.routePumpQueued = true;
+    sharedRoutePumpQueue = sharedRoutePumpQueue
+      .catch(() => undefined)
+      .then(async () => {
+        try {
+          await this.drainRouteRequests();
+        } finally {
+          this.routePumpQueued = false;
+        }
+      })
+      .catch(() => {
+        this.routePumpQueued = false;
+        // The page may be closing; the next explicit command will surface real failures.
+      });
+  }
+
   private async drainRouteRequests(): Promise<void> {
-    if (this.routePumpBusy || !this.ws) {
+    if (this.routePumpBusy || this.closed || !this.contextId) {
       return;
     }
     this.routePumpBusy = true;
@@ -3386,6 +4213,312 @@ export class CraterBidiPage {
       }
     }
     return null;
+  }
+
+  private async waitForNetworkPageEvent(
+    eventName: "request" | "response" | "requestfailed",
+    options: CraterWaitForEventOptions,
+  ): Promise<CraterPageEventPayload> {
+    await this.installNetworkHooks();
+    const startIndex = 0;
+    const timeout = this.timeoutOrDefault(options.timeout, 3000);
+    const polling = 30;
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      const events = await this.networkEventsSince(startIndex);
+      for (const event of events) {
+        if (event.type !== eventName) continue;
+        const payload = this.networkPageEventPayload(event);
+        if (!payload) continue;
+        if (!options.predicate || await options.predicate(payload)) {
+          return payload;
+        }
+      }
+      await this.waitForTimeout(polling);
+    }
+    throw new Error(`Timeout waiting for event: ${eventName}`);
+  }
+
+  private async waitForFileChooserEvent(
+    options: CraterWaitForEventOptions,
+  ): Promise<CraterFileChooser> {
+    const startIndex = 0;
+    const timeout = this.timeoutOrDefault(options.timeout, 3000);
+    const polling = 30;
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      const events = await this.fileChooserEventsSince(startIndex);
+      for (const event of events) {
+        const payload = this.fileChooserPageEventPayload(event);
+        if (!options.predicate || await options.predicate(payload)) {
+          return payload;
+        }
+      }
+      await this.waitForTimeout(polling);
+    }
+    throw new Error("Timeout waiting for event: filechooser");
+  }
+
+  private waitForLocalPageEvent(
+    eventName: CraterLocalPageEventName,
+    options: CraterWaitForEventOptions,
+  ): Promise<CraterPageEventPayload> {
+    const timeout = this.timeoutOrDefault(options.timeout, 3000);
+    return new Promise((resolve, reject) => {
+      const waiter: CraterPageEventWaiter = {
+        eventName,
+        predicate: options.predicate,
+        resolve,
+        reject,
+        settled: false,
+        timer: setTimeout(() => {
+          if (waiter.settled) return;
+          waiter.settled = true;
+          this.pageEventWaiters = this.pageEventWaiters.filter((entry) => entry !== waiter);
+          reject(new Error(`Timeout waiting for event: ${eventName}`));
+        }, timeout),
+      };
+      this.pageEventWaiters.push(waiter);
+    });
+  }
+
+  private async ensureSubscribedBeforeReturning<T>(
+    eventPromise: Promise<T>,
+    subscribe: () => Promise<void>,
+  ): Promise<void> {
+    try {
+      await subscribe();
+    } catch (error) {
+      eventPromise.catch(() => undefined);
+      throw error;
+    }
+  }
+
+  private emitNetworkPageEvent(event: CraterNetworkEventPayload): void {
+    const payload = this.networkPageEventPayload(event);
+    if (!payload) {
+      return;
+    }
+    this.emitPageEvent(event.type, payload);
+  }
+
+  private networkPageEventPayload(event: CraterNetworkEventPayload): CraterPageEventPayload | null {
+    if (event.type === "request") {
+      return new CraterRequest(event.request);
+    }
+    if (event.type === "response") {
+      return new CraterResponse(event.response);
+    }
+    return new CraterRequestFailure({
+      request: event.request,
+      errorText: event.errorText,
+    });
+  }
+
+  private fileChooserPageEventPayload(event: CraterFileChooserEventPayload): CraterFileChooser {
+    return new CraterFileChooser(this, event.selector, event.multiple);
+  }
+
+  private consolePageEventPayload(event: CraterConsoleEventPayload): CraterConsoleMessage {
+    return new CraterConsoleMessage(this, event);
+  }
+
+  private consolePageEventPayloadFromLogEntry(params: unknown): CraterConsoleMessage | null {
+    if (!params || typeof params !== "object") {
+      return null;
+    }
+    const record = params as Record<string, unknown>;
+    if (record.type !== "console") {
+      return null;
+    }
+    const source = record.source && typeof record.source === "object"
+      ? record.source as Record<string, unknown>
+      : {};
+    if (source.context !== this.contextId) {
+      return null;
+    }
+    const args = Array.isArray(record.args)
+      ? record.args.map((arg) => this.consoleArgText(arg))
+      : [];
+    const text = typeof record.text === "string" ? record.text : args.join(" ");
+    const type = typeof record.method === "string" ? record.method : "log";
+    const timestamp = typeof record.timestamp === "number" ? record.timestamp : Date.now();
+    return new CraterConsoleMessage(this, {
+      type,
+      text,
+      args,
+      timestamp,
+    });
+  }
+
+  private consoleArgText(arg: unknown): string {
+    const value = deserializeBidiValue(arg);
+    if (value === undefined) return "undefined";
+    if (value === null) return "null";
+    if (typeof value === "string") return value;
+    if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+      return String(value);
+    }
+    try {
+      const json = JSON.stringify(value);
+      if (json !== undefined) return json;
+    } catch (_e) {}
+    return String(value);
+  }
+
+  private dialogPageEventPayload(params: unknown): CraterDialog | null {
+    if (!params || typeof params !== "object") {
+      return null;
+    }
+    const record = params as Record<string, unknown>;
+    const context = typeof record.context === "string" ? record.context : "";
+    if (!context || context !== this.contextId) {
+      return null;
+    }
+    const rawType = typeof record.type === "string" ? record.type : "alert";
+    const type: CraterDialogType =
+      rawType === "beforeunload" || rawType === "confirm" || rawType === "prompt"
+        ? rawType
+        : "alert";
+    const message = typeof record.message === "string" ? record.message : "";
+    const defaultValue = typeof record.defaultValue === "string" ? record.defaultValue : undefined;
+    return new CraterDialog(
+      this,
+      {
+        context,
+        type,
+        message,
+        defaultValue,
+      },
+      (dialogContext, accept, promptText) =>
+        this.handleDialog(dialogContext, accept, promptText),
+    );
+  }
+
+  private downloadWillBeginPayload(params: unknown): CraterDownloadWillBeginPayload | null {
+    if (!params || typeof params !== "object") {
+      return null;
+    }
+    const record = params as Record<string, unknown>;
+    const context = typeof record.context === "string" ? record.context : "";
+    if (!context || context !== this.contextId) {
+      return null;
+    }
+    const url = typeof record.url === "string" ? record.url : "";
+    if (!url) {
+      return null;
+    }
+    return {
+      context,
+      navigation: typeof record.navigation === "string" ? record.navigation : null,
+      suggestedFilename: typeof record.suggestedFilename === "string"
+        ? record.suggestedFilename
+        : "",
+      url,
+    };
+  }
+
+  private downloadEndPayload(params: unknown): CraterDownloadEndPayload | null {
+    if (!params || typeof params !== "object") {
+      return null;
+    }
+    const record = params as Record<string, unknown>;
+    const context = typeof record.context === "string" ? record.context : "";
+    if (!context || context !== this.contextId) {
+      return null;
+    }
+    const url = typeof record.url === "string" ? record.url : "";
+    if (!url) {
+      return null;
+    }
+    return {
+      context,
+      navigation: typeof record.navigation === "string" ? record.navigation : null,
+      status: typeof record.status === "string" ? record.status : "canceled",
+      filepath: typeof record.filepath === "string" ? record.filepath : null,
+      url,
+    };
+  }
+
+  private downloadEventKey(event: { context: string; navigation: string | null; url: string }): string {
+    return `${event.context}\0${event.navigation ?? event.url}`;
+  }
+
+  private emitDownloadWillBegin(params: unknown): void {
+    const payload = this.downloadWillBeginPayload(params);
+    if (!payload) {
+      return;
+    }
+    let resolveEnd!: (end: CraterDownloadEndPayload) => void;
+    const endPromise = new Promise<CraterDownloadEndPayload>((resolve) => {
+      resolveEnd = resolve;
+    });
+    const download = new CraterDownload(this, payload, endPromise);
+    this.pendingDownloads.set(this.downloadEventKey(payload), { download, resolveEnd });
+    this.emitPageEvent("download", download);
+  }
+
+  private resolveDownloadEnd(params: unknown): void {
+    const payload = this.downloadEndPayload(params);
+    if (!payload) {
+      return;
+    }
+    const key = this.downloadEventKey(payload);
+    const pending = this.pendingDownloads.get(key);
+    if (!pending) {
+      return;
+    }
+    this.pendingDownloads.delete(key);
+    pending.resolveEnd(payload);
+  }
+
+  private async fileChooserEventsSince(index: number): Promise<CraterFileChooserEventPayload[]> {
+    const raw = await this.evaluate<string>(
+      `(() => {
+        const events = Array.isArray(globalThis.__craterFileChooserEvents)
+          ? globalThis.__craterFileChooserEvents
+          : [];
+        return JSON.stringify(events.slice(${index}));
+      })()`,
+    );
+    return JSON.parse(raw) as CraterFileChooserEventPayload[];
+  }
+
+  private async handleDialog(context: string, accept: boolean, promptText?: string): Promise<void> {
+    const params: Record<string, unknown> = { context, accept };
+    if (promptText !== undefined) {
+      params.userText = promptText;
+    }
+    const resp = await this.sendBidi("browsingContext.handleUserPrompt", params);
+    if (resp.type === "error") {
+      throw new Error(resp.message || resp.error || "handleUserPrompt failed");
+    }
+  }
+
+  private emitPageEvent(eventName: CraterPageEventName, payload: CraterPageEventPayload): void {
+    const handlers = this.pageEventHandlers.get(eventName);
+    if (handlers) {
+      for (const handler of handlers) {
+        handler(payload);
+      }
+    }
+    const waiters = this.pageEventWaiters.filter((waiter) => waiter.eventName === eventName);
+    for (const waiter of waiters) {
+      if (waiter.settled) continue;
+      void Promise.resolve(waiter.predicate ? waiter.predicate(payload) : true).then((matched) => {
+        if (!matched || waiter.settled) return;
+        waiter.settled = true;
+        clearTimeout(waiter.timer);
+        this.pageEventWaiters = this.pageEventWaiters.filter((entry) => entry !== waiter);
+        waiter.resolve(payload);
+      }).catch((error) => {
+        if (waiter.settled) return;
+        waiter.settled = true;
+        clearTimeout(waiter.timer);
+        this.pageEventWaiters = this.pageEventWaiters.filter((entry) => entry !== waiter);
+        waiter.reject(error instanceof Error ? error : new Error(String(error)));
+      });
+    }
   }
 
   private async networkEventCount(): Promise<number> {
@@ -3491,12 +4624,34 @@ export class CraterBidiPage {
   }
 
   private handleEventMessage(event: BidiEvent): void {
+    if (event.method === "browsingContext.userPromptOpened") {
+      const dialog = this.dialogPageEventPayload(event.params);
+      if (dialog) {
+        this.emitPageEvent("dialog", dialog);
+      }
+    }
+    if (event.method === "browsingContext.downloadWillBegin") {
+      this.emitDownloadWillBegin(event.params);
+    }
+    if (event.method === "browsingContext.downloadEnd") {
+      this.resolveDownloadEnd(event.params);
+    }
+    if (event.method === "log.entryAdded") {
+      const message = this.consolePageEventPayloadFromLogEntry(event.params);
+      if (message) {
+        this.emitPageEvent("console", message);
+      }
+    }
     if (event.method === "browsingContext.load" || event.method === "browsingContext.domContentLoaded") {
       if (this.navigationResolve) {
         this.navigationResolve();
         this.navigationResolve = null;
         this.navigationPromise = null;
       }
+      this.emitPageEvent(
+        event.method === "browsingContext.load" ? "load" : "domcontentloaded",
+        this,
+      );
     }
     for (const handler of this.eventHandlers) {
       handler(event);
@@ -3528,21 +4683,49 @@ export class CraterBidiPage {
 
 export class CraterBrowserContext {
   private readonly pageList: CraterBidiPage[] = [];
+  private readonly cookieStore: CraterStorageCookie[] = [];
+  private readonly localStorageStore = new Map<string, Map<string, string>>();
+  private readonly initScripts: CraterInitScript[] = [];
+  private readonly permissionGrants: CraterPermissionGrant[] = [];
+  private readonly appliedPermissionKeys = new Set<string>();
+  private routes: CraterRouteEntry[] = [];
+  private defaultTimeout: number | undefined;
+  private offlineOverride: boolean | undefined;
+  private geolocationOverride: CraterGeolocation | null | undefined;
+  private initialStorageStateLoaded = false;
   private transportPage: CraterBidiPage | null = null;
   private closed = false;
 
   constructor(
-    private readonly connectOptions: CraterBidiConnectOptions = {},
+    private readonly contextOptions: CraterBrowserContextOptions = {},
     private readonly closeHandler: CraterContextCloseHandler | null = null,
-  ) {}
+  ) {
+    this.offlineOverride = contextOptions.offline;
+    this.geolocationOverride = contextOptions.geolocation;
+    if (contextOptions.permissions && contextOptions.permissions.length > 0) {
+      this.permissionGrants.push({
+        permissions: this.normalizePermissions(contextOptions.permissions),
+      });
+    }
+  }
 
   async newPage(options: CraterBidiConnectOptions = {}): Promise<CraterBidiPage> {
     if (this.closed) {
       throw new Error("Browser context is closed");
     }
+    await this.ensureInitialStorageStateLoaded();
     const transport = await this.ensureTransportPage(options);
     const page = await transport.createSiblingPage((closedPage) => this.removePage(closedPage));
     this.pageList.push(page);
+    this.attachContextPageHooks(page);
+    await this.installLocalStorageInitScript(page);
+    await this.applyInitScriptsToPage(page);
+    await this.applyStoredCookiesToPage(page);
+    await this.applyStoredLocalStorageToPage(page);
+    await this.applyRoutesToPage(page);
+    await this.applyContextOptionsToPage(page);
+    await this.applyPermissionGrantsToPage(page);
+    this.applyDefaultTimeoutToPage(page);
     return page;
   }
 
@@ -3550,16 +4733,185 @@ export class CraterBrowserContext {
     return [...this.pageList];
   }
 
+  async cookies(urls?: CraterCookieUrlFilter): Promise<CraterStorageCookie[]> {
+    if (this.closed) {
+      throw new Error("Browser context is closed");
+    }
+    const cookies = await this.collectCookies();
+    return this.filterCookiesByUrls(cookies, urls);
+  }
+
+  async addCookies(cookies: CraterStorageCookie[]): Promise<void> {
+    if (this.closed) {
+      throw new Error("Browser context is closed");
+    }
+    await this.ensureInitialStorageStateLoaded();
+    for (const cookie of cookies) {
+      const normalized = this.normalizeCookie(cookie);
+      this.upsertStoredCookie(normalized);
+      for (const page of this.pageList) {
+        await this.setStorageCookieForPage(page, normalized);
+      }
+    }
+  }
+
+  async clearCookies(options: CraterClearCookiesOptions = {}): Promise<void> {
+    if (this.closed) {
+      throw new Error("Browser context is closed");
+    }
+    await this.ensureInitialStorageStateLoaded();
+    const cookiesToDelete = (await this.collectCookies()).filter((cookie) =>
+      this.cookieMatchesClearOptions(cookie, options)
+    );
+    const deleteKeys = new Set(cookiesToDelete.map((cookie) => this.cookieKey(cookie)));
+    for (let index = this.cookieStore.length - 1; index >= 0; index -= 1) {
+      if (deleteKeys.has(this.cookieKey(this.cookieStore[index]))) {
+        this.cookieStore.splice(index, 1);
+      }
+    }
+    for (const page of this.pageList) {
+      for (const cookie of cookiesToDelete) {
+        await this.deleteCookieForPage(page, cookie);
+      }
+    }
+  }
+
+  async grantPermissions(
+    permissions: string[],
+    options: CraterGrantPermissionsOptions = {},
+  ): Promise<void> {
+    if (this.closed) {
+      throw new Error("Browser context is closed");
+    }
+    const grant: CraterPermissionGrant = {
+      permissions: this.normalizePermissions(permissions),
+      origin: options.origin === undefined
+        ? undefined
+        : this.normalizePermissionOrigin(options.origin),
+    };
+    for (const page of this.pageList) {
+      await this.applyPermissionGrantToPage(page, grant);
+    }
+    this.permissionGrants.push(grant);
+  }
+
+  async clearPermissions(): Promise<void> {
+    if (this.closed) {
+      throw new Error("Browser context is closed");
+    }
+    const keys = new Set(this.appliedPermissionKeys);
+    const permissionNames = new Set<string>();
+    for (const page of this.pageList) {
+      const origin = await this.permissionOriginForPage(page);
+      for (const grant of this.permissionGrants) {
+        for (const permission of grant.permissions) {
+          permissionNames.add(permission);
+          keys.add(this.permissionKey(permission, grant.origin ?? origin));
+        }
+      }
+    }
+    this.permissionGrants.splice(0, this.permissionGrants.length);
+    for (const key of keys) {
+      const [permission, origin] = key.split("\0");
+      if (permission && origin !== undefined) {
+        await this.setPermissionState(permission, "prompt", origin);
+      }
+    }
+    for (const page of this.pageList) {
+      for (const permission of permissionNames) {
+        await this.setPermissionRuntimeStateForPage(page, permission, "prompt");
+      }
+    }
+    this.appliedPermissionKeys.clear();
+  }
+
+  async setGeolocation(geolocation: CraterGeolocation | null): Promise<void> {
+    if (this.closed) {
+      throw new Error("Browser context is closed");
+    }
+    this.geolocationOverride = geolocation === null
+      ? null
+      : this.normalizeGeolocation(geolocation);
+    for (const page of this.pageList) {
+      await this.applyGeolocationToPage(page);
+    }
+  }
+
+  async route(matcher: CraterRequestMatcher, handler: CraterRouteHandler): Promise<void> {
+    if (this.closed) {
+      throw new Error("Browser context is closed");
+    }
+    const entry = { matcher, handler };
+    this.routes.push(entry);
+    for (const page of this.pageList) {
+      await page.route(matcher, handler);
+    }
+  }
+
+  async addInitScript(script: CraterInitScript): Promise<void> {
+    if (this.closed) {
+      throw new Error("Browser context is closed");
+    }
+    this.initScripts.push(script);
+    for (const page of this.pageList) {
+      await page.addInitScript(script);
+    }
+  }
+
+  setDefaultTimeout(timeout: number): void {
+    if (this.closed) {
+      throw new Error("Browser context is closed");
+    }
+    if (!Number.isFinite(timeout) || timeout < 0) {
+      throw new Error(`Invalid timeout: ${timeout}`);
+    }
+    this.defaultTimeout = timeout;
+    for (const page of this.pageList) {
+      page.setDefaultTimeout(timeout);
+    }
+  }
+
+  async setOffline(offline: boolean): Promise<void> {
+    if (this.closed) {
+      throw new Error("Browser context is closed");
+    }
+    this.offlineOverride = offline;
+    for (const page of this.pageList) {
+      await this.applyOfflineToPage(page);
+    }
+  }
+
+  async unroute(matcher?: CraterRequestMatcher): Promise<void> {
+    if (this.closed) {
+      throw new Error("Browser context is closed");
+    }
+    if (matcher === undefined) {
+      this.routes = [];
+    } else {
+      this.routes = this.routes.filter((entry) => entry.matcher !== matcher);
+    }
+    for (const page of this.pageList) {
+      await page.unroute(matcher);
+    }
+  }
+
   async storageState(options: CraterStorageStateOptions = {}): Promise<CraterStorageState> {
     if (this.closed) {
       throw new Error("Browser context is closed");
     }
+    await this.ensureInitialStorageStateLoaded();
     const state: CraterStorageState = {
       cookies: [],
       origins: [],
     };
     const cookiesByKey = new Map<string, CraterStorageCookie>();
     const originsByOrigin = new Map<string, Map<string, string>>();
+    for (const cookie of this.cookieStore) {
+      cookiesByKey.set(this.cookieKey(cookie), cookie);
+    }
+    for (const [origin, entries] of this.localStorageStore) {
+      originsByOrigin.set(origin, new Map(entries));
+    }
     for (const page of this.pageList) {
       const snapshot = await page.evaluate<string>(`
         (() => {
@@ -3641,10 +4993,59 @@ export class CraterBrowserContext {
   private async ensureTransportPage(options: CraterBidiConnectOptions): Promise<CraterBidiPage> {
     if (!this.transportPage) {
       const transport = new CraterBidiPage();
-      await transport.connect({ ...this.connectOptions, ...options });
+      await transport.connect({ ...this.connectionOptions(), ...options });
       this.transportPage = transport;
     }
     return this.transportPage;
+  }
+
+  private connectionOptions(): CraterBidiConnectOptions {
+    const {
+      storageState: _storageState,
+      viewport: _viewport,
+      userAgent: _userAgent,
+      locale: _locale,
+      offline: _offline,
+      geolocation: _geolocation,
+      permissions: _permissions,
+      ...options
+    } = this.contextOptions;
+    return options;
+  }
+
+  private async ensureInitialStorageStateLoaded(): Promise<void> {
+    if (this.initialStorageStateLoaded) {
+      return;
+    }
+    this.initialStorageStateLoaded = true;
+    const state = await this.resolveInitialStorageState();
+    if (!state) {
+      return;
+    }
+    for (const cookie of state.cookies ?? []) {
+      this.upsertStoredCookie(this.normalizeCookie(cookie));
+    }
+    for (const origin of state.origins ?? []) {
+      if (!origin || typeof origin.origin !== "string") {
+        continue;
+      }
+      const entries = this.localStorageStore.get(origin.origin) ?? new Map<string, string>();
+      for (const entry of origin.localStorage ?? []) {
+        entries.set(String(entry.name), String(entry.value));
+      }
+      this.localStorageStore.set(origin.origin, entries);
+    }
+  }
+
+  private async resolveInitialStorageState(): Promise<CraterStorageState | null> {
+    const source = this.contextOptions.storageState;
+    if (!source) {
+      return null;
+    }
+    if (typeof source === "string") {
+      return JSON.parse(await readFile(source, "utf8")) as CraterStorageState;
+    }
+    return source;
   }
 
   private removePage(page: CraterBidiPage): void {
@@ -3652,6 +5053,548 @@ export class CraterBrowserContext {
     if (index !== -1) {
       this.pageList.splice(index, 1);
     }
+  }
+
+  private async collectCookies(): Promise<CraterStorageCookie[]> {
+    await this.ensureInitialStorageStateLoaded();
+    const cookiesByKey = new Map<string, CraterStorageCookie>();
+    for (const cookie of this.cookieStore) {
+      cookiesByKey.set(this.cookieKey(cookie), cookie);
+    }
+    for (const page of this.pageList) {
+      const resp = await this.sendBidi("storage.getCookies", {
+        partition: { type: "context", context: this.pageContextId(page) },
+      });
+      const rawCookies = (resp.result as { cookies?: unknown[] } | undefined)?.cookies ?? [];
+      for (const rawCookie of rawCookies) {
+        const cookie = this.cookieFromStorage(rawCookie);
+        if (cookie) {
+          cookiesByKey.set(this.cookieKey(cookie), cookie);
+        }
+      }
+    }
+    return [...cookiesByKey.values()].sort((a, b) =>
+      `${a.domain}\t${a.path}\t${a.name}`.localeCompare(`${b.domain}\t${b.path}\t${b.name}`)
+    );
+  }
+
+  private filterCookiesByUrls(
+    cookies: CraterStorageCookie[],
+    urls: CraterCookieUrlFilter | undefined,
+  ): CraterStorageCookie[] {
+    if (urls === undefined) {
+      return cookies;
+    }
+    const urlList = Array.isArray(urls) ? urls : [urls];
+    return cookies.filter((cookie) =>
+      urlList.some((url) => this.cookieMatchesUrl(cookie, url))
+    );
+  }
+
+  private cookieMatchesUrl(cookie: CraterStorageCookie, url: string): boolean {
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      return false;
+    }
+    const domain = stripLeadingDot(String(cookie.domain ?? "")).toLowerCase();
+    const host = parsed.hostname.toLowerCase();
+    if (domain && host !== domain && !host.endsWith(`.${domain}`)) {
+      return false;
+    }
+    const path = String(cookie.path || "/");
+    if (!parsed.pathname.startsWith(path)) {
+      return false;
+    }
+    if (cookie.secure && parsed.protocol !== "https:") {
+      return false;
+    }
+    return true;
+  }
+
+  private cookieMatchesClearOptions(
+    cookie: CraterStorageCookie,
+    options: CraterClearCookiesOptions,
+  ): boolean {
+    return this.cookieFieldMatches(cookie.name, options.name) &&
+      this.cookieFieldMatches(String(cookie.domain ?? ""), options.domain) &&
+      this.cookieFieldMatches(String(cookie.path ?? "/"), options.path);
+  }
+
+  private cookieFieldMatches(value: string, matcher: string | RegExp | undefined): boolean {
+    if (matcher === undefined) {
+      return true;
+    }
+    return typeof matcher === "string" ? value === matcher : matcher.test(value);
+  }
+
+  private attachContextPageHooks(page: CraterBidiPage): void {
+    page.on("load", () => {
+      void this.applyOriginlessPermissionGrantsToPage(page).catch(() => {});
+    });
+  }
+
+  private async applyStoredCookiesToPage(page: CraterBidiPage): Promise<void> {
+    for (const cookie of this.cookieStore) {
+      await this.setStorageCookieForPage(page, cookie);
+    }
+  }
+
+  private async installLocalStorageInitScript(page: CraterBidiPage): Promise<void> {
+    if (this.localStorageStore.size === 0) {
+      return;
+    }
+    await page.addInitScript(this.localStoragePreloadScript());
+  }
+
+  private async applyInitScriptsToPage(page: CraterBidiPage): Promise<void> {
+    for (const script of this.initScripts) {
+      await page.addInitScript(script);
+    }
+  }
+
+  private async applyStoredLocalStorageToPage(page: CraterBidiPage): Promise<void> {
+    if (this.localStorageStore.size === 0) {
+      return;
+    }
+    await page.evaluate(this.localStoragePreloadScript());
+  }
+
+  private async applyRoutesToPage(page: CraterBidiPage): Promise<void> {
+    for (const route of this.routes) {
+      await page.route(route.matcher, route.handler);
+    }
+  }
+
+  private async applyContextOptionsToPage(page: CraterBidiPage): Promise<void> {
+    const viewport = this.contextOptions.viewport;
+    if (viewport) {
+      await page.setViewport(viewport.width, viewport.height);
+    }
+    if (this.contextOptions.userAgent !== undefined) {
+      await this.sendBidi("emulation.setUserAgentOverride", {
+        contexts: [this.pageContextId(page)],
+        userAgent: this.contextOptions.userAgent,
+      });
+    }
+    if (this.contextOptions.locale !== undefined) {
+      await this.sendBidi("emulation.setLocaleOverride", {
+        contexts: [this.pageContextId(page)],
+        locale: this.contextOptions.locale,
+      });
+    }
+    await this.applyOfflineToPage(page);
+    await this.applyGeolocationToPage(page);
+  }
+
+  private applyDefaultTimeoutToPage(page: CraterBidiPage): void {
+    if (this.defaultTimeout !== undefined) {
+      page.setDefaultTimeout(this.defaultTimeout);
+    }
+  }
+
+  private async applyOfflineToPage(page: CraterBidiPage): Promise<void> {
+    if (this.offlineOverride === undefined) {
+      return;
+    }
+    await this.sendBidi("emulation.setNetworkConditions", {
+      contexts: [this.pageContextId(page)],
+      networkConditions: this.offlineOverride ? { type: "offline" } : null,
+    });
+  }
+
+  private async applyGeolocationToPage(page: CraterBidiPage): Promise<void> {
+    if (this.geolocationOverride === undefined) {
+      return;
+    }
+    await this.sendBidi("emulation.setGeolocationOverride", {
+      contexts: [this.pageContextId(page)],
+      coordinates: this.geolocationOverride === null ? null : this.geolocationOverride,
+    });
+    await this.setGeolocationRuntimeStateForPage(page, this.geolocationOverride);
+  }
+
+  private async applyPermissionGrantsToPage(page: CraterBidiPage): Promise<void> {
+    for (const grant of this.permissionGrants) {
+      await this.applyPermissionGrantToPage(page, grant);
+    }
+  }
+
+  private async applyOriginlessPermissionGrantsToPage(page: CraterBidiPage): Promise<void> {
+    if (this.closed) {
+      return;
+    }
+    for (const grant of this.permissionGrants) {
+      if (grant.origin === undefined) {
+        await this.applyPermissionGrantToPage(page, grant);
+      }
+    }
+  }
+
+  private async applyPermissionGrantToPage(
+    page: CraterBidiPage,
+    grant: CraterPermissionGrant,
+  ): Promise<void> {
+    const origin = grant.origin ?? await this.permissionOriginForPage(page);
+    for (const permission of grant.permissions) {
+      await this.setPermissionState(permission, "granted", origin);
+      await this.setPermissionRuntimeStateForPage(page, permission, "granted");
+    }
+  }
+
+  private async setPermissionState(
+    permission: string,
+    state: CraterPermissionState,
+    origin: string,
+  ): Promise<void> {
+    const normalizedOrigin = this.normalizePermissionOrigin(origin);
+    await this.sendBidi("permissions.setPermission", {
+      descriptor: { name: permission },
+      state,
+      origin: normalizedOrigin,
+    });
+    if (state === "prompt") {
+      this.appliedPermissionKeys.delete(this.permissionKey(permission, normalizedOrigin));
+    } else {
+      this.appliedPermissionKeys.add(this.permissionKey(permission, normalizedOrigin));
+    }
+  }
+
+  private async permissionOriginForPage(page: CraterBidiPage): Promise<string> {
+    const resp = await this.sendBidi("browsingContext.getRequestedNavigationUrl", {
+      context: this.pageContextId(page),
+    });
+    const url = (resp.result as { url?: unknown } | undefined)?.url;
+    return this.permissionOriginFromUrl(typeof url === "string" ? url : "about:blank");
+  }
+
+  private permissionOriginFromUrl(url: string): string {
+    if (url.startsWith("about:")) {
+      return "null";
+    }
+    if (url.startsWith("data:")) {
+      return url.includes("#domain=alt")
+        ? "http://alt.localhost:8000"
+        : "http://localhost:8000";
+    }
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      try {
+        return new URL(url).origin;
+      } catch {
+        return "null";
+      }
+    }
+    return "null";
+  }
+
+  private normalizePermissionOrigin(origin: string): string {
+    if (origin === "null") {
+      return "null";
+    }
+    try {
+      return new URL(origin).origin;
+    } catch {
+      return origin.replace(/\/$/, "");
+    }
+  }
+
+  private permissionKey(permission: string, origin: string): string {
+    return `${permission}\0${this.normalizePermissionOrigin(origin)}`;
+  }
+
+  private normalizePermissions(permissions: string[]): string[] {
+    if (!Array.isArray(permissions)) {
+      throw new Error("permissions must be an array");
+    }
+    const normalized = permissions.map((permission) => String(permission));
+    const unsupported = normalized.filter((permission) => !CRATER_SUPPORTED_PERMISSIONS.has(permission));
+    if (unsupported.length > 0) {
+      throw new Error(`Unsupported permissions: ${unsupported.join(", ")}`);
+    }
+    return normalized;
+  }
+
+  private normalizeGeolocation(geolocation: CraterGeolocation): CraterGeolocation {
+    return {
+      latitude: Number(geolocation.latitude),
+      longitude: Number(geolocation.longitude),
+      ...(geolocation.accuracy === undefined ? {} : { accuracy: Number(geolocation.accuracy) }),
+      ...(geolocation.altitude === undefined ? {} : { altitude: Number(geolocation.altitude) }),
+      ...(geolocation.altitudeAccuracy === undefined
+        ? {}
+        : { altitudeAccuracy: Number(geolocation.altitudeAccuracy) }),
+      ...(geolocation.heading === undefined ? {} : { heading: Number(geolocation.heading) }),
+      ...(geolocation.speed === undefined ? {} : { speed: Number(geolocation.speed) }),
+    };
+  }
+
+  private async setPermissionRuntimeStateForPage(
+    page: CraterBidiPage,
+    permission: string,
+    state: CraterPermissionState,
+  ): Promise<void> {
+    await this.installRuntimeOverrideStubs(page);
+    await page.evaluate(
+      `(() => {
+        globalThis.__craterPlaywrightPermissions[${jsValue(permission)}] = ${jsValue(state)};
+      })()`,
+    );
+  }
+
+  private async setGeolocationRuntimeStateForPage(
+    page: CraterBidiPage,
+    geolocation: CraterGeolocation | null,
+  ): Promise<void> {
+    await this.installRuntimeOverrideStubs(page);
+    await page.evaluate(
+      `(() => {
+        globalThis.__craterPlaywrightGeolocation = ${jsValue(geolocation)};
+      })()`,
+    );
+  }
+
+  private async installRuntimeOverrideStubs(page: CraterBidiPage): Promise<void> {
+    await page.evaluate(`
+      (() => {
+        if (!globalThis.__craterPlaywrightPermissions) {
+          globalThis.__craterPlaywrightPermissions = {};
+        }
+        if (!("navigator" in globalThis) || !globalThis.navigator) {
+          globalThis.navigator = {};
+        }
+        const navigator = globalThis.navigator;
+        if (!navigator.permissions) {
+          navigator.permissions = {};
+        }
+        navigator.permissions.query = (descriptor) => {
+          const name = descriptor && descriptor.name ? String(descriptor.name) : "";
+          const state = globalThis.__craterPlaywrightPermissions[name] || "prompt";
+          return Promise.resolve({
+            name,
+            state,
+            onchange: null,
+            addEventListener() {},
+            removeEventListener() {},
+            dispatchEvent() { return true; },
+          });
+        };
+        if (!navigator.geolocation) {
+          navigator.geolocation = {};
+        }
+        if (!globalThis.__craterPlaywrightGeolocationWatchIds) {
+          globalThis.__craterPlaywrightGeolocationWatchIds = new Map();
+          globalThis.__craterPlaywrightNextGeolocationWatchId = 1;
+        }
+        const defaultCoordinates = {
+          latitude: 35.6895,
+          longitude: 139.6917,
+          accuracy: 1,
+        };
+        const currentCoordinates = () => (
+          globalThis.__craterPlaywrightGeolocation || defaultCoordinates
+        );
+        const currentPosition = () => {
+          const raw = currentCoordinates();
+          const coords = {
+            latitude: Number(raw.latitude),
+            longitude: Number(raw.longitude),
+            accuracy: raw.accuracy === undefined ? 1 : Number(raw.accuracy),
+          };
+          for (const key of ["altitude", "altitudeAccuracy", "heading", "speed"]) {
+            if (raw[key] !== undefined) coords[key] = Number(raw[key]);
+          }
+          coords.toJSON = () => {
+            const json = {};
+            for (const key of ["latitude", "longitude", "accuracy", "altitude", "altitudeAccuracy", "heading", "speed"]) {
+              if (coords[key] !== undefined) json[key] = coords[key];
+            }
+            return json;
+          };
+          return { coords, timestamp: Date.now() };
+        };
+        const deniedError = () => ({
+          code: 1,
+          message: "User denied Geolocation",
+          PERMISSION_DENIED: 1,
+          POSITION_UNAVAILABLE: 2,
+          TIMEOUT: 3,
+        });
+        navigator.geolocation.getCurrentPosition = (success, error) => {
+          if (globalThis.__craterPlaywrightPermissions.geolocation !== "granted") {
+            if (typeof error === "function") error(deniedError());
+            return;
+          }
+          if (typeof success === "function") success(currentPosition());
+        };
+        navigator.geolocation.watchPosition = (success, error) => {
+          const id = Number(globalThis.__craterPlaywrightNextGeolocationWatchId || 1);
+          globalThis.__craterPlaywrightNextGeolocationWatchId = id + 1;
+          const emit = () => {
+            if (globalThis.__craterPlaywrightPermissions.geolocation !== "granted") {
+              if (typeof error === "function") error(deniedError());
+              return;
+            }
+            if (typeof success === "function") success(currentPosition());
+          };
+          const timer = setTimeout(emit, 0);
+          globalThis.__craterPlaywrightGeolocationWatchIds.set(id, timer);
+          return id;
+        };
+        navigator.geolocation.clearWatch = (id) => {
+          const timer = globalThis.__craterPlaywrightGeolocationWatchIds.get(Number(id));
+          if (timer !== undefined) clearTimeout(timer);
+          globalThis.__craterPlaywrightGeolocationWatchIds.delete(Number(id));
+        };
+      })()
+    `);
+  }
+
+  private localStoragePreloadScript(): string {
+    const stores = Object.fromEntries(
+      [...this.localStorageStore.entries()].map(([origin, entries]) => [
+        origin,
+        Object.fromEntries(entries),
+      ]),
+    );
+    return `
+      (() => {
+        const stores = ${JSON.stringify(stores)};
+        const origin = location.origin && location.origin !== "null" ? location.origin : location.href;
+        const entries = stores[origin] || stores[location.href] || stores["about:blank"];
+        if (!entries) return;
+        for (const [name, value] of Object.entries(entries)) {
+          localStorage.setItem(name, String(value));
+        }
+      })()
+    `;
+  }
+
+  private async setStorageCookieForPage(page: CraterBidiPage, cookie: CraterStorageCookie): Promise<void> {
+    const storageCookie: Record<string, unknown> = {
+      name: cookie.name,
+      value: { type: "string", value: cookie.value },
+      domain: stripLeadingDot(String(cookie.domain ?? "localhost")),
+      path: cookie.path || "/",
+      httpOnly: cookie.httpOnly === true,
+      secure: cookie.secure === true,
+      sameSite: storageSameSite(cookie.sameSite),
+    };
+    if (Number.isFinite(cookie.expires) && cookie.expires >= 0) {
+      storageCookie.expiry = cookie.expires;
+    }
+    await this.sendBidi("storage.setCookie", {
+      cookie: storageCookie,
+      partition: { type: "context", context: this.pageContextId(page) },
+    });
+  }
+
+  private async deleteCookieForPage(page: CraterBidiPage, cookie: CraterStorageCookie): Promise<void> {
+    await this.sendBidi("storage.deleteCookies", {
+      filter: {
+        name: cookie.name,
+        domain: stripLeadingDot(String(cookie.domain ?? "")).toLowerCase(),
+        path: cookie.path || "/",
+      },
+      partition: { type: "context", context: this.pageContextId(page) },
+    });
+  }
+
+  private async sendBidi(method: string, params: unknown): Promise<BidiResponse> {
+    const transport = await this.ensureTransportPage({});
+    const send = (transport as unknown as {
+      sendBidi(method: string, params: unknown): Promise<BidiResponse>;
+    }).sendBidi.bind(transport);
+    const resp = await send(method, params);
+    if (resp.type === "error") {
+      throw new Error(resp.message || resp.error || `${method} failed`);
+    }
+    return resp;
+  }
+
+  private pageContextId(page: CraterBidiPage): string {
+    const contextId = (page as unknown as { contextId: string | null }).contextId;
+    if (!contextId) {
+      throw new Error("No browsing context");
+    }
+    return contextId;
+  }
+
+  private normalizeCookie(cookie: CraterStorageCookie): CraterStorageCookie {
+    const defaults = cookie.url ? this.cookieDefaultsFromUrl(cookie.url) : null;
+    return {
+      name: String(cookie.name),
+      value: String(cookie.value),
+      domain: stripLeadingDot(String(cookie.domain || defaults?.domain || "localhost")).toLowerCase(),
+      path: String(cookie.path || defaults?.path || "/"),
+      expires: Number.isFinite(cookie.expires) ? Number(cookie.expires) : -1,
+      httpOnly: Boolean(cookie.httpOnly),
+      secure: cookie.secure === undefined ? Boolean(defaults?.secure) : Boolean(cookie.secure),
+      sameSite: playwrightSameSite(cookie.sameSite),
+    };
+  }
+
+  private cookieDefaultsFromUrl(url: string): { domain: string; path: string; secure: boolean } {
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      throw new Error(`Invalid cookie url: ${url}`);
+    }
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      throw new Error(`Cookie url must be http or https: ${url}`);
+    }
+    return {
+      domain: parsed.hostname,
+      path: this.cookieDefaultPath(parsed.pathname),
+      secure: parsed.protocol === "https:",
+    };
+  }
+
+  private cookieDefaultPath(pathname: string): string {
+    if (!pathname || pathname[0] !== "/" || pathname === "/") {
+      return "/";
+    }
+    const slash = pathname.lastIndexOf("/");
+    if (slash <= 0) {
+      return "/";
+    }
+    return pathname.slice(0, slash);
+  }
+
+  private cookieFromStorage(rawCookie: unknown): CraterStorageCookie | null {
+    if (!rawCookie || typeof rawCookie !== "object") {
+      return null;
+    }
+    const cookie = rawCookie as Record<string, unknown>;
+    const name = typeof cookie.name === "string" ? cookie.name : "";
+    if (!name) {
+      return null;
+    }
+    return {
+      name,
+      value: storageCookieValue(cookie.value),
+      domain: stripLeadingDot(String(cookie.domain ?? "localhost")).toLowerCase(),
+      path: typeof cookie.path === "string" && cookie.path ? cookie.path : "/",
+      expires: typeof cookie.expiry === "number" ? cookie.expiry : -1,
+      httpOnly: cookie.httpOnly === true,
+      secure: cookie.secure === true,
+      sameSite: playwrightSameSite(typeof cookie.sameSite === "string" ? cookie.sameSite : undefined),
+    };
+  }
+
+  private upsertStoredCookie(cookie: CraterStorageCookie): void {
+    const key = this.cookieKey(cookie);
+    const index = this.cookieStore.findIndex((entry) => this.cookieKey(entry) === key);
+    if (index === -1) {
+      this.cookieStore.push(cookie);
+    } else {
+      this.cookieStore[index] = cookie;
+    }
+  }
+
+  private cookieKey(cookie: CraterStorageCookie): string {
+    return `${stripLeadingDot(cookie.domain).toLowerCase()}\t${cookie.path || "/"}\t${cookie.name}`;
   }
 }
 
@@ -3661,7 +5604,7 @@ export class CraterBrowser {
 
   constructor(private readonly connectOptions: CraterBidiConnectOptions = {}) {}
 
-  async newContext(options: CraterBidiConnectOptions = {}): Promise<CraterBrowserContext> {
+  async newContext(options: CraterBrowserContextOptions = {}): Promise<CraterBrowserContext> {
     if (this.closed) {
       throw new Error("Browser is closed");
     }
