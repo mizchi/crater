@@ -51,7 +51,8 @@ describe("CI VRT parallelization", () => {
     const combined = `${ciWorkflow}\n${dailyWorkflow}`;
 
     expect(combined).not.toContain("pnpm add --no-save @mizchi/flaker@latest");
-    expect(ciWorkflow).toContain("pnpm add --save-dev @mizchi/flaker@latest");
-    expect(dailyWorkflow).toContain("pnpm add --save-dev @mizchi/flaker@latest");
+    expect(combined).not.toContain("@mizchi/flaker@latest");
+    expect(ciWorkflow).toContain("pnpm add --save-dev --save-exact @mizchi/flaker@0.10.6");
+    expect(dailyWorkflow).toContain("pnpm add --save-dev --save-exact @mizchi/flaker@0.10.6");
   });
 });
