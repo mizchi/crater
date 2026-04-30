@@ -2279,8 +2279,11 @@ fn compute_grid_layout_internal(
       @types.Auto => true
       _ => false
     }
+    let has_horizontal_auto_margin = margin_left_auto || margin_right_auto
     let has_vertical_auto_margin = margin_top_auto || margin_bottom_auto
-    let should_stretch_width = width_is_auto && justify == @types.Stretch
+    let should_stretch_width = width_is_auto &&
+      justify == @types.Stretch &&
+      !has_horizontal_auto_margin
     let should_stretch_height = height_is_auto &&
       align == @types.Stretch &&
       !has_vertical_auto_margin
@@ -4231,15 +4234,25 @@ fn resolve_tracks_with_implicit(
           max_content,
           size_is_definite~,
         )
-        // Base size depends on whether max is flexible or finite
+        let percent_max_overflows_available = match max_track {
+          @types.MaxTrackSizing::Percent(_) =>
+            size_is_definite &&
+            available_size > 0.0 &&
+            max_size > available_size &&
+            min_size <= available_size
+          _ => false
+        }
+        // Finite max tracks use their max as the base, except percentage max
+        // tracks that would otherwise inflate a definite axis beyond the
+        // available size while the minimum still fits.
         let base = if max_size < 1.0e9 {
-          // Finite max: use it as base, clamped to min
-          if max_size > min_size {
+          if percent_max_overflows_available {
+            min_size
+          } else if max_size > min_size {
             max_size
           } else {
             min_size
           }
-          // Infinite max (fr/auto): use max-content as base, clamped to min
         } else if max_content > min_size {
           max_content
         } else {
@@ -5885,6 +5898,13 @@ fn compute_child_layout(
     // For intrinsic sizing (1.0e10), use MaxContent mode to get actual size
     let is_intrinsic_width = available_width >= 1.0e9
     let is_intrinsic_height = available_height >= 1.0e9
+    let child_width_is_auto = match child.style.width {
+      @types.Auto => true
+      _ => false
+    }
+    let auto_used_width_is_definite = child_width_is_auto &&
+      !is_intrinsic_width &&
+      width < 1.0e9
     let sizing_mode = if is_intrinsic_width || is_intrinsic_height {
       @types.SizingMode::MaxContent
     } else {
@@ -5896,7 +5916,7 @@ fn compute_child_layout(
       sizing_mode,
       viewport_width: available_width,
       viewport_height: available_height,
-      stretch_width,
+      stretch_width: stretch_width || auto_used_width_is_definite,
       stretch_height,
     }
     // Use dispatcher for cache support
@@ -6115,6 +6135,7 @@ fn apply_alignment(
     @types.Auto => true
     _ => false
   }
+  let has_horizontal_auto_margin = margin_left_is_auto || margin_right_is_auto
   let uses_default_auto_columns = container_style.grid_template_columns.length() ==
     0
 
@@ -6152,6 +6173,7 @@ fn apply_alignment(
         child_layout.width > available_width {
         child_layout.width
       } else if justify == @types.Alignment::Stretch &&
+        !has_horizontal_auto_margin &&
         !replaced_with_definite_height &&
         !(is_replaced_leaf && child_layout.width <= 0.0) {
         // Stretch to fill available width

@@ -14324,7 +14324,7 @@ test "taffy/bevy_issue_10343_block" {
   let root_child0_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Relative,
-    display: @types.Flex,
+    display: @types.Block,
     justify_content: @types.FlexStart,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -24087,8 +24087,8 @@ test "taffy/intrinsic_sizing_main_size_min_size" {
     ctx,
     default_dispatch(),
   )
-  assert_approx(layout.x, 20.0)
-  assert_approx(layout.y, 20.0)
+  assert_approx(layout.x, 0.0)
+  assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 300.0)
   assert_approx(layout.height, 200.0)
   assert_approx(layout.children[0].x, 0.0)

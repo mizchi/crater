@@ -211,6 +211,11 @@ pub fn compute_node_baseline(node : @node.Node, node_height : Double) -> Double 
   let children = node.children
   let style = node.style
 
+  match fieldset_non_legend_baseline(node, node_height) {
+    Some(fieldset_baseline) => return fieldset_baseline
+    None => ()
+  }
+
   // contain:layout suppresses baseline participation and synthesizes one from
   // the element border box when containment actually applies.
   if containment_layout_applies_to_baseline(node) {
@@ -276,14 +281,10 @@ pub fn compute_node_baseline(node : @node.Node, node_height : Double) -> Double 
           }
       }
     @types.Block | @types.FlowRoot | @types.Grid | @types.InlineGrid =>
-      match fieldset_non_legend_baseline(node, node_height) {
-        Some(fieldset_baseline) => fieldset_baseline
-        None =>
-          // For block-like containers with children: use first in-flow child's baseline
-          match first_in_flow_child_baseline(children, node_height) {
-            Some(child_baseline) => child_baseline
-            None => node_height
-          }
+      // For block-like containers with children: use first in-flow child's baseline
+      match first_in_flow_child_baseline(children, node_height) {
+        Some(child_baseline) => child_baseline
+        None => node_height
       }
     @types.Table
     | @types.InlineTable

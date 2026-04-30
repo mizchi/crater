@@ -193,6 +193,19 @@ fn has_percent_width_table_descendant(node : @node.Node) -> Bool {
 }
 
 ///|
+fn has_flex_grow_descendant(node : @node.Node) -> Bool {
+  for child in node.children {
+    if child.style.flex_grow > 0.0 {
+      return true
+    }
+    if has_flex_grow_descendant(child) {
+      return true
+    }
+  }
+  false
+}
+
+///|
 /// Reset resolved style cache
 pub fn reset_resolved_cache() -> Unit {
   global_resolved_cache.val = {}
@@ -1095,6 +1108,13 @@ fn first_row_flex_line_baseline_override(
 }
 
 ///|
+fn is_fieldset_flex_item(node : @node.Node) -> Bool {
+  node.id == "fieldset" ||
+  node.id.has_prefix("fieldset#") ||
+  node.id.has_prefix("fieldset.")
+}
+
+///|
 fn compute_row_flex_item_baseline(
   node : @node.Node,
   main_size : Double,
@@ -1104,7 +1124,12 @@ fn compute_row_flex_item_baseline(
     Some(baseline) => baseline
     None =>
       match node.style.display {
-        @types.Block | @types.FlowRoot => cross_size
+        @types.Block | @types.FlowRoot =>
+          if is_fieldset_flex_item(node) {
+            @baseline.compute_node_baseline(node, cross_size)
+          } else {
+            cross_size
+          }
         _ =>
           @baseline.compute_node_baseline(node, cross_size) +
           column_flex_percent_margin_baseline_delta(node, main_size)
@@ -2060,7 +2085,7 @@ fn compute_min_content_flex_main_size(
   dispatch : @node.DispatchFn,
 ) -> Double {
   let style = node.style
-  let children = node.children
+  let flattened = flatten_children_for_flex(node)
 
   // Check if this flex container is row or column
   // Account for writing-mode: vertical modes swap row/column
@@ -2123,8 +2148,8 @@ fn compute_min_content_flex_main_size(
   if compute_main_axis {
     // For min-content on main axis: sum of min-content sizes (no wrapping)
     let mut total_main = 0.0
-    for i = 0; i < children.length(); i = i + 1 {
-      let child = children[i]
+    for i = 0; i < flattened.length(); i = i + 1 {
+      let child = flattened[i].node
       let child_style = child.style
       if child_style.display == @types.Display::None {
         continue
@@ -2204,8 +2229,8 @@ fn compute_min_content_flex_main_size(
   } else {
     // Cross axis: max of min-content sizes
     let mut max_cross = 0.0
-    for i = 0; i < children.length(); i = i + 1 {
-      let child = children[i]
+    for i = 0; i < flattened.length(); i = i + 1 {
+      let child = flattened[i].node
       let child_style = child.style
       if child_style.display == @types.Display::None {
         continue
@@ -2264,7 +2289,7 @@ fn compute_min_content_grid_main_size(
   dispatch : @node.DispatchFn,
 ) -> Double {
   let style = node.style
-  let children = node.children
+  let flattened = flatten_children_for_flex(node)
   let available_width = match available_cross {
     Some(w) if !parent_is_row => w
     _ =>
@@ -2280,8 +2305,8 @@ fn compute_min_content_grid_main_size(
   if parent_is_row {
     // Approximate grid min-content width by max of item min-content widths.
     let mut max_width = 0.0
-    for i = 0; i < children.length(); i = i + 1 {
-      let child = children[i]
+    for i = 0; i < flattened.length(); i = i + 1 {
+      let child = flattened[i].node
       let child_style = child.style
       if child_style.display == @types.Display::None {
         continue
@@ -2524,7 +2549,7 @@ fn compute_intrinsic_flex_main_size(
   dispatch : @node.DispatchFn,
 ) -> Double {
   let style = node.style
-  let children = node.children
+  let flattened = flatten_children_for_flex(node)
 
   // Check if this flex container is row or column
   // Account for writing-mode: vertical modes swap row/column
@@ -2605,8 +2630,8 @@ fn compute_intrinsic_flex_main_size(
     let mut total_main_margins = 0.0
     let mut has_flex_grow = false
     let mut item_count = 0
-    for i = 0; i < children.length(); i = i + 1 {
-      let child = children[i]
+    for i = 0; i < flattened.length(); i = i + 1 {
+      let child = flattened[i].node
       let child_style = child.style
       if child_style.display == @types.Display::None {
         continue
@@ -2821,7 +2846,7 @@ fn compute_intrinsic_flex_main_size(
     if item_count > 1 {
       total_main = total_main + main_gap * (item_count - 1).to_double()
     }
-    let has_container_main_structure = children.length() > 1 ||
+    let has_container_main_structure = flattened.length() > 1 ||
       padding.vertical_sum() + border.vertical_sum() > 0.0
     if !parent_is_row && has_flex_grow && has_container_main_structure {
       match container_inline {
@@ -2883,8 +2908,8 @@ fn compute_intrinsic_flex_main_size(
 
     // Collect items with their sizes
     let items : Array[(Double, Double)] = [] // (main_size, cross_size)
-    for i = 0; i < children.length(); i = i + 1 {
-      let child = children[i]
+    for i = 0; i < flattened.length(); i = i + 1 {
+      let child = flattened[i].node
       let child_style = child.style
       if child_style.display == @types.Display::None {
         continue
@@ -4644,6 +4669,11 @@ fn compute_internal(
                     } else if has_percent_width_table_descendant(child) {
                       // Percentage width tables inside this flex item resolve
                       // against the post-flex used main size.
+                      content_width
+                    } else if flattened.length() == 1 &&
+                      content_width > 0.0 &&
+                      child_style.flex_direction == @types.Column &&
+                      has_flex_grow_descendant(child) {
                       content_width
                     } else {
                       // Compute intrinsic width from children
@@ -7338,6 +7368,14 @@ fn compute_internal(
           @types.Grid | @types.InlineGrid => true
           _ => false
         }
+        let child_is_sized_block_flow = match child.style.display {
+          @types.Block | @types.FlowRoot =>
+            match child.style.width {
+              @types.Length(_) | @types.Percent(_) => true
+              _ => false
+            }
+          _ => false
+        }
         let child_is_table = match child.style.display {
           @types.Table | @types.InlineTable => true
           _ => false
@@ -7355,7 +7393,10 @@ fn compute_internal(
           // Flex main-axis result is a definite used size for the item.
           // Grid and table descendants need this flag to treat auto sizing as
           // extrinsically definite on the flex main axis.
-          stretch_width: (child_is_grid && is_row) || child_is_table,
+          stretch_width: (
+            is_row && (child_is_grid || child_is_sized_block_flow)
+          ) ||
+          child_is_table,
           stretch_height: (child_is_grid && !is_row) ||
           child_is_table ||
           nested_height_is_definite,

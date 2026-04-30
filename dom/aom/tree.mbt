@@ -1189,12 +1189,17 @@ fn extract_bounds_recursive(
 ) -> Unit {
   // Add bounds for this node if it has a non-empty id
   if !node.id.is_empty() {
-    bounds_map[node.id] = Bounds::new(
+    let bounds = Bounds::new(
       node.computed_x,
       node.computed_y,
       node.computed_width,
       node.computed_height,
     )
+    bounds_map[node.id] = bounds
+    let source_id = extract_element_id(node.id)
+    if !source_id.is_empty() {
+      bounds_map[source_id] = bounds
+    }
   }
   // Recurse into children
   for child in node.children {

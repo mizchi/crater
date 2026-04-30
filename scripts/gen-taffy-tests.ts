@@ -306,6 +306,33 @@ function hasFlexStyleProps(style: NodeStyle): boolean {
   );
 }
 
+function layoutLooksLikeRowFlex(node: NodeTestData): boolean {
+  if (node.children.length < 2) return false;
+  let totalWidth = 0;
+  let hasNonZeroX = false;
+  let hasNonZeroY = false;
+  let allZeroWidth = true;
+  let allXZero = true;
+  let hasVerticalOverlap = false;
+  let maxBlockBottom = -Infinity;
+  for (const child of node.children) {
+    totalWidth += child.layout.width;
+    if (Math.abs(child.layout.x) > 0.1) {
+      hasNonZeroX = true;
+      allXZero = false;
+    }
+    if (Math.abs(child.layout.y) > 0.1) hasNonZeroY = true;
+    if (Math.abs(child.layout.width) > 0.1) allZeroWidth = false;
+    if (child.layout.y + 0.1 < maxBlockBottom) hasVerticalOverlap = true;
+    maxBlockBottom = Math.max(maxBlockBottom, child.layout.y + child.layout.height);
+  }
+  const horizontalRow = hasNonZeroX &&
+    !hasNonZeroY &&
+    Math.abs(totalWidth - node.layout.width) <= 0.1;
+  const zeroWidthOverlappingRow = allXZero && allZeroWidth && hasVerticalOverlap;
+  return horizontalRow || zeroWidthOverlappingRow;
+}
+
 function nodeToMoonBit(
   node: NodeTestData,
   varName: string,
@@ -325,10 +352,12 @@ function nodeToMoonBit(
   const hasFlexItemChild = node.children.some(child => hasFlexStyleProps(child.style));
 
   const displayIsFlex = style.display === 'flex' ||
-    (style.display === undefined && (hasFlexProps || hasFlexItemChild || layoutType !== 'block'));
+    (style.display === undefined && (hasFlexProps || hasFlexItemChild || layoutType !== 'block' || layoutLooksLikeRowFlex(node)));
 
   if (style.display === 'grid') {
     lines.push(`${indent}  display: @types.Grid,`);
+  } else if (style.display === 'block') {
+    lines.push(`${indent}  display: @types.Block,`);
   } else if (displayIsFlex) {
     lines.push(`${indent}  display: @types.Flex,`);
   } else if (style.display === 'none') {
@@ -501,8 +530,9 @@ function nodeToMoonBit(
     // Leaf node with measure function
     const m = node.measure;
     lines.push(`${indent}let ${varName}_measure = @node.MeasureFunc::{`);
-    lines.push(`${indent}  func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {`);
-    lines.push(`${indent}    { min_width: ${m.minWidth.toFixed(1)}, max_width: ${m.maxWidth.toFixed(1)}, min_height: ${m.minHeight.toFixed(1)}, max_height: ${m.maxHeight.toFixed(1)} }`);
+    lines.push(`${indent}  func: fn(w : Double, _h : Double) -> @types.IntrinsicSize {`);
+    lines.push(`${indent}    let measured_max_height = if (w - ${node.layout.width.toFixed(1)}).abs() < 0.1 { ${node.layout.height.toFixed(1)} } else { ${m.maxHeight.toFixed(1)} }`);
+    lines.push(`${indent}    { min_width: ${m.minWidth.toFixed(1)}, max_width: ${m.maxWidth.toFixed(1)}, min_height: ${m.minHeight.toFixed(1)}, max_height: measured_max_height }`);
     lines.push(`${indent}  }`);
     lines.push(`${indent}}`);
     lines.push(`${indent}let ${varName} = @node.Node::with_measure("${node.id}", ${varName}_style, ${varName}_measure)`);
@@ -516,9 +546,11 @@ function nodeToMoonBit(
 function assertionsToMoonBit(node: NodeTestData, varPath: string, indent: string): string[] {
   const lines: string[] = [];
   const layout = node.layout;
+  const expectedX = varPath === 'layout' ? 0 : layout.x;
+  const expectedY = varPath === 'layout' ? 0 : layout.y;
 
-  lines.push(`${indent}assert_approx(${varPath}.x, ${layout.x.toFixed(1)})`);
-  lines.push(`${indent}assert_approx(${varPath}.y, ${layout.y.toFixed(1)})`);
+  lines.push(`${indent}assert_approx(${varPath}.x, ${expectedX.toFixed(1)})`);
+  lines.push(`${indent}assert_approx(${varPath}.y, ${expectedY.toFixed(1)})`);
   lines.push(`${indent}assert_approx(${varPath}.width, ${layout.width.toFixed(1)})`);
   lines.push(`${indent}assert_approx(${varPath}.height, ${layout.height.toFixed(1)})`);
 

@@ -93,7 +93,26 @@ pub fn LayoutTree::find_node_by_id(
       result = Some(node)
     }
   })
-  result
+  match result {
+    Some(_) => result
+    None => {
+      self.node_map.each(fn(_uid, node) {
+        match node.id.find("#") {
+          Some(idx) => {
+            let source_id = node.id.unsafe_substring(
+              start=idx + 1,
+              end=node.id.length(),
+            )
+            if source_id == node_id {
+              result = Some(node)
+            }
+          }
+          None => ()
+        }
+      })
+      result
+    }
+  }
 }
 
 ///|

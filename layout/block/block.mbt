@@ -46,6 +46,65 @@ fn collapse_margins(m1 : Double, m2 : Double) -> Double {
 }
 
 ///|
+/// CSS margin collapse over more than two margins is not associative when
+/// positive and negative margins are mixed. Keep the strongest positive and
+/// strongest negative components until the collapsed value is needed.
+priv struct CollapsedMargin {
+  max_positive : Double
+  min_negative : Double
+}
+
+///|
+fn collapsed_margin_zero() -> CollapsedMargin {
+  { max_positive: 0.0, min_negative: 0.0 }
+}
+
+///|
+fn collapsed_margin_of(value : Double) -> CollapsedMargin {
+  if value >= 0.0 {
+    { max_positive: value, min_negative: 0.0 }
+  } else {
+    { max_positive: 0.0, min_negative: value }
+  }
+}
+
+///|
+fn collapsed_margin_value(margin : CollapsedMargin) -> Double {
+  margin.max_positive + margin.min_negative
+}
+
+///|
+fn collapsed_margin_merge(
+  left : CollapsedMargin,
+  right : CollapsedMargin,
+) -> CollapsedMargin {
+  {
+    max_positive: @types.max(left.max_positive, right.max_positive),
+    min_negative: @types.min(left.min_negative, right.min_negative),
+  }
+}
+
+///|
+fn collapsed_margin_merge_optional(
+  own_margin : Double,
+  escaped : CollapsedMargin?,
+) -> CollapsedMargin {
+  let own = collapsed_margin_of(own_margin)
+  match escaped {
+    Some(escaped_margin) => collapsed_margin_merge(own, escaped_margin)
+    None => own
+  }
+}
+
+///|
+fn collapsed_margin_from_optional(value : Double?) -> CollapsedMargin? {
+  match value {
+    Some(v) => Some(collapsed_margin_of(v))
+    None => None
+  }
+}
+
+///|
 /// Resolve a dimension to pixels for intrinsic sizing
 /// Percentages resolve to 0 in intrinsic sizing mode
 fn resolve_dimension_intrinsic(dim : @types.Dimension) -> Double {
@@ -105,8 +164,8 @@ fn has_percent_sized_descendant(node : @node.Node) -> Bool {
 ///|
 /// Collapsed margins that escape from a child element
 priv struct CollapsedMargins {
-  top : Double? // Margin that escapes upward
-  bottom : Double? // Margin that escapes downward
+  top : CollapsedMargin? // Margin that escapes upward
+  bottom : CollapsedMargin? // Margin that escapes downward
 }
 
 ///|
@@ -1016,9 +1075,9 @@ fn is_simple_block_stack_child(style : @style.Style) -> Bool {
 priv struct SimpleBlockStackResult {
   child_layouts : Array[@types.Layout]
   current_pos : Double
-  prev_margin_end : Double
-  escaped_top : Double?
-  escaped_bottom : Double?
+  prev_margin_end : CollapsedMargin
+  escaped_top : CollapsedMargin?
+  escaped_bottom : CollapsedMargin?
 }
 
 ///|
@@ -1032,11 +1091,11 @@ fn layout_simple_block_stack(
 ) -> SimpleBlockStackResult {
   let child_layouts : Array[@types.Layout] = []
   let mut current_pos = 0.0
-  let mut prev_margin_end = 0.0
-  let mut escaped_top : Double? = None
-  let mut escaped_bottom : Double? = None
+  let mut prev_margin_end = collapsed_margin_zero()
+  let mut escaped_top : CollapsedMargin? = None
+  let mut escaped_bottom : CollapsedMargin? = None
   let mut leading_collapse_chain_active = false
-  let mut leading_chain_margin = 0.0
+  let mut leading_chain_margin = collapsed_margin_zero()
   for i = 0; i < flow_children.length(); i = i + 1 {
     let child_result = flow_children[i]
     let child_layout = child_result.layout
@@ -1045,14 +1104,17 @@ fn layout_simple_block_stack(
     let is_first = i == 0
     let is_last = i == flow_children.length() - 1
 
-    let effective_margin_top = match child_collapsed.top {
-      Some(escaped) => collapse_margins(child_layout.margin.top, escaped)
-      None => child_layout.margin.top
-    }
-    let effective_margin_bottom = match child_collapsed.bottom {
-      Some(escaped) => collapse_margins(child_layout.margin.bottom, escaped)
-      None => child_layout.margin.bottom
-    }
+    let effective_margin_top = collapsed_margin_merge_optional(
+      child_layout.margin.top,
+      child_collapsed.top,
+    )
+    let effective_margin_bottom = collapsed_margin_merge_optional(
+      child_layout.margin.bottom,
+      child_collapsed.bottom,
+    )
+    let effective_margin_top_value = collapsed_margin_value(
+      effective_margin_top,
+    )
     let child_establishes_bfc = block_flow_establishes_bfc(child_style)
     let child_has_aspect_ratio = match child_style.aspect_ratio {
       Some(_) => true
@@ -1072,7 +1134,7 @@ fn layout_simple_block_stack(
       if can_collapse_top {
         if collapses_through {
           leading_collapse_chain_active = true
-          leading_chain_margin = collapse_margins(
+          leading_chain_margin = collapsed_margin_merge(
             effective_margin_top, effective_margin_bottom,
           )
           escaped_top = Some(leading_chain_margin)
@@ -1084,22 +1146,22 @@ fn layout_simple_block_stack(
         padding.top + border.top
       } else {
         if collapses_through {
-          prev_margin_end = collapse_margins(
+          prev_margin_end = collapsed_margin_merge(
             effective_margin_top, effective_margin_bottom,
           )
           current_pos = 0.0
         } else {
           prev_margin_end = effective_margin_bottom
-          current_pos = effective_margin_top
+          current_pos = effective_margin_top_value
         }
-        effective_margin_top + padding.top + border.top
+        effective_margin_top_value + padding.top + border.top
       }
     } else if leading_collapse_chain_active {
-      let collapsed_with_chain = collapse_margins(
+      let collapsed_with_chain = collapsed_margin_merge(
         leading_chain_margin, effective_margin_top,
       )
       if collapses_through {
-        leading_chain_margin = collapse_margins(
+        leading_chain_margin = collapsed_margin_merge(
           collapsed_with_chain, effective_margin_bottom,
         )
       } else {
@@ -1109,17 +1171,22 @@ fn layout_simple_block_stack(
       prev_margin_end = effective_margin_bottom
       padding.top + border.top
     } else if collapses_through {
-      let collapsed_for_position = collapse_margins(
+      let collapsed_for_position = collapsed_margin_merge(
         prev_margin_end, effective_margin_top,
       )
-      let all_collapsed = collapse_margins(
+      let all_collapsed = collapsed_margin_merge(
         collapsed_for_position, effective_margin_bottom,
       )
       prev_margin_end = all_collapsed
-      current_pos + collapsed_for_position + padding.top + border.top
+      current_pos +
+      collapsed_margin_value(collapsed_for_position) +
+      padding.top +
+      border.top
     } else {
-      let collapsed = collapse_margins(prev_margin_end, effective_margin_top)
-      current_pos = current_pos + collapsed
+      let collapsed = collapsed_margin_merge(
+        prev_margin_end, effective_margin_top,
+      )
+      current_pos = current_pos + collapsed_margin_value(collapsed)
       prev_margin_end = effective_margin_bottom
       current_pos + padding.top + border.top
     }
@@ -1134,7 +1201,7 @@ fn layout_simple_block_stack(
       if is_first && can_collapse_top {
         current_pos = child_layout.height
       } else if is_first {
-        current_pos = effective_margin_top + child_layout.height
+        current_pos = effective_margin_top_value + child_layout.height
       } else {
         current_pos = current_pos + child_layout.height
       }
@@ -2099,6 +2166,7 @@ fn place_absolute_children_at_static_y(
   box_width : Double,
   box_height : Double,
   border : @types.Rect[Double],
+  padding : @types.Rect[Double],
   static_y : Double,
   warnings : Array[@types.LayoutWarning],
   dispatch : @node.DispatchFn,
@@ -2108,7 +2176,7 @@ fn place_absolute_children_at_static_y(
     let child = node.children[i]
     if child.style.position == @types.Absolute {
       let abs_layout = layout_absolute_child(
-        child, box_width, box_height, border, static_y, warnings, dispatch,
+        child, box_width, box_height, border, padding, static_y, warnings, dispatch,
       )
       layout_map[i] = abs_layout
     }
@@ -2216,7 +2284,8 @@ fn compute_root_layout(
   } else {
     // For non-body roots, preserve escaped margin behavior used by internal layout tests.
     match result.collapsed.top {
-      Some(escaped_margin) =>
+      Some(escaped_margin_set) => {
+        let escaped_margin = collapsed_margin_value(escaped_margin_set)
         if layout.children.length() > 0 {
           let adjusted_children : Array[@types.Layout] = []
           for i = 0; i < layout.children.length(); i = i + 1 {
@@ -2239,7 +2308,7 @@ fn compute_root_layout(
             })
           }
           let escaped_bottom = match result.collapsed.bottom {
-            Some(m) => m
+            Some(m) => collapsed_margin_value(m)
             None => 0.0
           }
           let new_height = @types.max(
@@ -2265,9 +2334,11 @@ fn compute_root_layout(
         } else {
           layout
         }
+      }
       None =>
         match result.collapsed.bottom {
-          Some(escaped_margin) =>
+          Some(escaped_margin_set) => {
+            let escaped_margin = collapsed_margin_value(escaped_margin_set)
             {
               id: layout.id,
               x: layout.x,
@@ -2284,6 +2355,7 @@ fn compute_root_layout(
               children: layout.children,
               text: layout.text,
             }
+          }
           None => layout
         }
     }
@@ -2439,6 +2511,7 @@ fn compute_with_collapse(
           ctx.available_width,
           ctx.available_height.unwrap_or(0.0),
           @types.Rect::zero(),
+          @types.Rect::zero(),
           0.0,
           warnings,
           dispatch,
@@ -2547,8 +2620,8 @@ fn compute_with_collapse(
       },
       // Pass through the first child's margin for collapse with siblings
       collapsed: {
-        top: mixed_result.escaped_top,
-        bottom: mixed_result.escaped_bottom,
+        top: collapsed_margin_from_optional(mixed_result.escaped_top),
+        bottom: collapsed_margin_from_optional(mixed_result.escaped_bottom),
       },
     }
   }
@@ -2761,6 +2834,27 @@ fn compute_with_collapse(
         } else {
           (box_width, box_height)
         }
+        let has_auto_max_height = match style.max_height {
+          @types.Auto => true
+          _ => false
+        }
+        let has_inline_max_constraint = match style.max_width {
+          @types.Length(_) | @types.Percent(_) => true
+          _ => false
+        }
+        let (box_width, box_height) = if width_is_auto &&
+          height_is_auto &&
+          has_inline_max_constraint &&
+          has_auto_max_height &&
+          style.aspect_ratio is Some(_) {
+          let measured = (mf.func)(box_width, available_h)
+          let measured_height = measured.max_height +
+            padding.vertical_sum() +
+            border.vertical_sum()
+          (box_width, @types.clamp(measured_height, min_height, max_height))
+        } else {
+          (box_width, box_height)
+        }
         return {
           layout: {
             id: node.id,
@@ -2917,7 +3011,16 @@ fn compute_with_collapse(
     Some(w) => w
     None =>
       match style.width {
-        @types.Length(w) => w
+        @types.Length(w) =>
+          match ctx.sizing_mode {
+            @types.Definite =>
+              if ctx.stretch_width && parent_width < w {
+                parent_width
+              } else {
+                w
+              }
+            @types.MaxContent => w
+          }
         @types.Percent(p) => parent_width * p
         @types.Auto =>
           if use_max_content {
@@ -4252,7 +4355,8 @@ fn compute_with_collapse(
       }
     }
     place_absolute_children_at_static_y(
-      node, box_width, box_height, border, content_height, warnings, dispatch, layout_map,
+      node, box_width, box_height, border, padding, content_height, warnings, dispatch,
+      layout_map,
     )
     place_fixed_children_for_parent(
       node,
@@ -4415,7 +4519,8 @@ fn compute_with_collapse(
       }
     }
     place_absolute_children_at_static_y(
-      node, box_width, box_height, border, content_height, warnings, dispatch, layout_map,
+      node, box_width, box_height, border, padding, content_height, warnings, dispatch,
+      layout_map,
     )
     place_fixed_children_for_parent(
       node,
@@ -4460,8 +4565,8 @@ fn compute_with_collapse(
     return {
       layout,
       collapsed: {
-        top: mixed_result.escaped_top,
-        bottom: mixed_result.escaped_bottom,
+        top: collapsed_margin_from_optional(mixed_result.escaped_top),
+        bottom: collapsed_margin_from_optional(mixed_result.escaped_bottom),
       },
     }
   }
@@ -4665,7 +4770,11 @@ fn compute_with_collapse(
     } else if can_collapse_bottom {
       @types.max(0.0, simple_result.current_pos)
     } else {
-      @types.max(0.0, simple_result.current_pos + simple_result.prev_margin_end)
+      @types.max(
+        0.0,
+        simple_result.current_pos +
+        collapsed_margin_value(simple_result.prev_margin_end),
+      )
     }
     let mut content_height = flow_content_height
     if style.height == @types.Auto {
@@ -5004,8 +5113,8 @@ fn compute_with_collapse(
   }
 
   // Track escaped margins for parent
-  let mut escaped_top : Double? = None
-  let mut escaped_bottom : Double? = None
+  let mut escaped_top : CollapsedMargin? = None
+  let mut escaped_bottom : CollapsedMargin? = None
 
   // Check for vertical writing mode - affects block flow direction
   let is_vertical_writing = style.writing_mode.is_vertical()
@@ -5015,9 +5124,9 @@ fn compute_with_collapse(
   // In horizontal mode: tracks y position. In vertical mode: tracks x position.
   let flow_y_positions : Array[Double] = []
   let mut current_pos = 0.0 // y in horizontal, x in vertical
-  let mut prev_margin_end = 0.0
+  let mut prev_margin_end = collapsed_margin_zero()
   let mut leading_collapse_chain_active = false
-  let mut leading_chain_margin = 0.0
+  let mut leading_chain_margin = collapsed_margin_zero()
   let mut next_float_index = 0
   let float_start_positions : Map[Int, Double] = {}
   let mut vertical_multicol_simple_width_override : Double? = None
@@ -5050,7 +5159,7 @@ fn compute_with_collapse(
     inline_run_height = 0.0
     inline_run_align_offset = 0.0
     inline_run_trailing_whitespace_adjust = 0.0
-    prev_margin_end = 0.0
+    prev_margin_end = collapsed_margin_zero()
   }
   fn flush_inline_run_state() -> Unit {
     current_pos = current_pos + inline_run_height
@@ -5176,14 +5285,31 @@ fn compute_with_collapse(
         next_inline_run_height,
         next_inline_run_align_offset,
       ) = process_multicol_flow_child(
-        i, current_pos, prev_margin_end, inline_run_active, inline_run_x, inline_run_height,
-        inline_run_align_offset, padding, border, style, flow_children, flow_styles,
-        flow_nodes, flow_indices, multicol_column_count, multicol_column_width, multicol_column_gap,
-        multicol_height_limit, multicol_fragment_contained, default_text_align, layout_map,
+        i,
+        current_pos,
+        collapsed_margin_value(prev_margin_end),
+        inline_run_active,
+        inline_run_x,
+        inline_run_height,
+        inline_run_align_offset,
+        padding,
+        border,
+        style,
+        flow_children,
+        flow_styles,
+        flow_nodes,
+        flow_indices,
+        multicol_column_count,
+        multicol_column_width,
+        multicol_column_gap,
+        multicol_height_limit,
+        multicol_fragment_contained,
+        default_text_align,
+        layout_map,
         flow_y_positions,
       )
       current_pos = next_current_pos
-      prev_margin_end = next_prev_margin_end
+      prev_margin_end = collapsed_margin_of(next_prev_margin_end)
       inline_run_active = next_inline_run_active
       inline_run_x = next_inline_run_x
       inline_run_height = next_inline_run_height
@@ -5235,21 +5361,27 @@ fn compute_with_collapse(
           deferred_clear_y = clear_y
         } else if clear_y > current_pos {
           current_pos = clear_y
-          prev_margin_end = 0.0 // Reset margin collapse after clear
+          prev_margin_end = collapsed_margin_zero() // Reset margin collapse after clear
         }
       }
       @types.Clear::None => ()
     }
 
     // Get effective margins (including any that escaped from grandchildren)
-    let effective_margin_top = match child_collapsed.top {
-      Some(escaped) => collapse_margins(child_layout.margin.top, escaped)
-      None => child_layout.margin.top
-    }
-    let effective_margin_bottom = match child_collapsed.bottom {
-      Some(escaped) => collapse_margins(child_layout.margin.bottom, escaped)
-      None => child_layout.margin.bottom
-    }
+    let effective_margin_top = collapsed_margin_merge_optional(
+      child_layout.margin.top,
+      child_collapsed.top,
+    )
+    let effective_margin_bottom = collapsed_margin_merge_optional(
+      child_layout.margin.bottom,
+      child_collapsed.bottom,
+    )
+    let effective_margin_top_value = collapsed_margin_value(
+      effective_margin_top,
+    )
+    let effective_margin_bottom_value = collapsed_margin_value(
+      effective_margin_bottom,
+    )
 
     let child_establishes_bfc = block_flow_establishes_bfc(child_style)
     if !is_vertical_writing &&
@@ -5356,8 +5488,8 @@ fn compute_with_collapse(
         child_layout.margin.left +
         child_layout.margin.right
       let required_height = child_layout.height +
-        effective_margin_top +
-        effective_margin_bottom
+        effective_margin_top_value +
+        effective_margin_bottom_value
       let start_y = @types.max(0.0, current_pos)
       let clear_to_y = float_ctx.find_y_with_space(
         start_y,
@@ -5377,7 +5509,7 @@ fn compute_with_collapse(
         // First child margin escapes to parent
         if collapses_through {
           leading_collapse_chain_active = true
-          leading_chain_margin = collapse_margins(
+          leading_chain_margin = collapsed_margin_merge(
             effective_margin_top, effective_margin_bottom,
           )
           escaped_top = Some(leading_chain_margin)
@@ -5392,23 +5524,23 @@ fn compute_with_collapse(
         if collapses_through {
           // Empty first child with collapsing margins contributes only the
           // collapsed margin amount, not top+bottom separately.
-          prev_margin_end = collapse_margins(
+          prev_margin_end = collapsed_margin_merge(
             effective_margin_top, effective_margin_bottom,
           )
           current_pos = 0.0
         } else {
           prev_margin_end = effective_margin_bottom
-          current_pos = effective_margin_top
+          current_pos = effective_margin_top_value
         }
-        effective_margin_top + padding.top + border.top
+        effective_margin_top_value + padding.top + border.top
       }
     } else if leading_collapse_chain_active {
       // Leading self-collapsing chain keeps collapsing into parent block-start.
-      let collapsed_with_chain = collapse_margins(
+      let collapsed_with_chain = collapsed_margin_merge(
         leading_chain_margin, effective_margin_top,
       )
       if collapses_through {
-        leading_chain_margin = collapse_margins(
+        leading_chain_margin = collapsed_margin_merge(
           collapsed_with_chain, effective_margin_bottom,
         )
       } else {
@@ -5420,18 +5552,23 @@ fn compute_with_collapse(
       // Sibling collapse
     } else if collapses_through {
       // Collapse-through: element positioned after collapsed margin gap
-      let collapsed_for_position = collapse_margins(
+      let collapsed_for_position = collapsed_margin_merge(
         prev_margin_end, effective_margin_top,
       )
-      let all_collapsed = collapse_margins(
+      let all_collapsed = collapsed_margin_merge(
         collapsed_for_position, effective_margin_bottom,
       )
       prev_margin_end = all_collapsed
       // Position at the same y as where next sibling would be
-      current_pos + collapsed_for_position + padding.top + border.top
+      current_pos +
+      collapsed_margin_value(collapsed_for_position) +
+      padding.top +
+      border.top
     } else {
-      let collapsed = collapse_margins(prev_margin_end, effective_margin_top)
-      current_pos = current_pos + collapsed
+      let collapsed = collapsed_margin_merge(
+        prev_margin_end, effective_margin_top,
+      )
+      current_pos = current_pos + collapsed_margin_value(collapsed)
       prev_margin_end = effective_margin_bottom
       current_pos + padding.top + border.top
     }
@@ -5450,7 +5587,9 @@ fn compute_with_collapse(
         1.0
       }
       let probe_height = if child_establishes_bfc {
-        probe_height + effective_margin_top + effective_margin_bottom
+        probe_height +
+        effective_margin_top_value +
+        effective_margin_bottom_value
       } else {
         probe_height
       }
@@ -5870,7 +6009,7 @@ fn compute_with_collapse(
         if is_first && can_collapse_top {
           current_pos = effective_size
         } else if is_first {
-          current_pos = effective_margin_top + effective_size
+          current_pos = effective_margin_top_value + effective_size
         } else {
           current_pos = current_pos + effective_size
         }
@@ -5887,7 +6026,7 @@ fn compute_with_collapse(
     }
     if defer_inline_clear && deferred_clear_y > current_pos {
       current_pos = deferred_clear_y
-      prev_margin_end = 0.0
+      prev_margin_end = collapsed_margin_zero()
     }
 
     // Record y position after this flow child (for absolute static positioning)
@@ -6093,7 +6232,7 @@ fn compute_with_collapse(
   } else if can_collapse_bottom {
     @types.max(0.0, current_pos) // Don't include escaped bottom margin
   } else {
-    @types.max(0.0, current_pos + prev_margin_end)
+    @types.max(0.0, current_pos + collapsed_margin_value(prev_margin_end))
   }
   let content_height = @types.max(flow_content_height, float_height)
   let mut content_height_for_auto = content_height
@@ -6237,7 +6376,7 @@ fn compute_with_collapse(
         None => content_height // Default to end of flow content
       }
       let abs_layout = layout_absolute_child(
-        child, box_width, box_height, border, static_y, warnings, dispatch,
+        child, box_width, box_height, border, padding, static_y, warnings, dispatch,
       )
       layout_map[i] = abs_layout
     }
@@ -6440,7 +6579,14 @@ fn layout_fixed_child_for_parent(
   if establishes_fixed_containing_block(parent_style) {
     // Transform/filter/backdrop-filter/perspective/containment establish CB for fixed descendants.
     return layout_absolute_child(
-      child, container_width, container_height, parent_border, 0.0, warnings, dispatch,
+      child,
+      container_width,
+      container_height,
+      parent_border,
+      @types.Rect::zero(),
+      0.0,
+      warnings,
+      dispatch,
     )
   }
   let fixed_layout = layout_fixed_child(
@@ -6464,6 +6610,7 @@ fn layout_absolute_child(
   container_width : Double,
   container_height : Double,
   parent_border : @types.Rect[Double],
+  parent_padding : @types.Rect[Double],
   static_y : Double, // Y position where the element would be in normal flow
   warnings : Array[@types.LayoutWarning],
   dispatch : @node.DispatchFn,
@@ -6788,7 +6935,8 @@ fn layout_absolute_child(
     (Some(l), None) => l + params.margin_left + parent_border.left
     (None, Some(r)) =>
       parent_border.left + cb_width - child_width - r - params.margin_right
-    (None, None) => params.margin_left + parent_border.left
+    (None, None) =>
+      params.margin_left + parent_border.left + parent_padding.left
   }
   let child_y = match (params.inset_top, params.inset_bottom) {
     (Some(t), Some(b)) =>
@@ -6818,7 +6966,8 @@ fn layout_absolute_child(
     (Some(t), None) => t + params.margin_top + parent_border.top
     (None, Some(b)) =>
       parent_border.top + cb_height - child_height - b - params.margin_bottom
-    (None, None) => static_y + params.margin_top + parent_border.top
+    (None, None) =>
+      static_y + params.margin_top + parent_border.top + parent_padding.top
   }
   let child_margin = @types.resolve_rect(child_style.margin, cb_width)
   {

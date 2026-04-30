@@ -7,7 +7,7 @@
 test "accname: A button using aria-owns to specify its label" {
   let html =
     #|<div>
-    #|  <div hidden><span id="play">Play</span></div>
+    #|  <div aria-hidden="true"><span id="play">Play</span></div>
     #|  <button aria-owns="play" > <div aria-hidden="true"> <span id="play">Play</span> <span id="pause">Pause</span> </div> </button>
     #|</div>
   let doc = @html.parse_document(html)
@@ -27,7 +27,7 @@ test "accname: A button using aria-owns to specify its label" {
 test "accname: A link using aria-owns to concatenate extra text" {
   let html =
     #|<div>
-    #|  <div hidden><span id="new-window-warning-1"> (opens in a new window)</span></div>
+    #|  <div aria-hidden="true"><span id="new-window-warning-1"> (opens in a new window)</span></div>
     #|  <a href="https://www.w3.org/" target="_blank" aria-owns="new-window-warning-1" > World Wide Web Consortium </a>
     #|</div>
   let doc = @html.parse_document(html)

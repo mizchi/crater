@@ -1437,14 +1437,18 @@ fn process_multicol_flow_child(
       }
     }
   }
-  let effective_margin_top = match child_collapsed.top {
-    Some(escaped) => collapse_margins(child_layout.margin.top, escaped)
-    None => child_layout.margin.top
-  }
-  let effective_margin_bottom = match child_collapsed.bottom {
-    Some(escaped) => collapse_margins(child_layout.margin.bottom, escaped)
-    None => child_layout.margin.bottom
-  }
+  let effective_margin_top = collapsed_margin_value(
+    collapsed_margin_merge_optional(
+      child_layout.margin.top,
+      child_collapsed.top,
+    ),
+  )
+  let effective_margin_bottom = collapsed_margin_value(
+    collapsed_margin_merge_optional(
+      child_layout.margin.bottom,
+      child_collapsed.bottom,
+    ),
+  )
   let visual_margin_top = if effective_margin_top < child_layout.margin.top {
     child_layout.margin.top
   } else {

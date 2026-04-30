@@ -2828,6 +2828,7 @@ test "taffy/block_absolute_padding_border_overrides_size" {
 test "taffy/block_absolute_resolved_insets" {
   let root_style = {
     ..@style.Style::default(),
+    display: @types.Flex,
     position: @types.Position::Relative,
   }
   let root_children : Array[@node.Node] = []
@@ -3755,12 +3756,17 @@ test "taffy/block_aspect_ratio_fill_max_height" {
     aspect_ratio: Some(2.0000),
   }
   let root_child0_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+    func: fn(w : Double, _h : Double) -> @types.IntrinsicSize {
+      let measured_max_height = if (w - 40.0).abs() < 0.1 {
+        60.0
+      } else {
+        110.0
+      }
       {
         min_width: 20.0,
         max_width: 220.0,
         min_height: 110.0,
-        max_height: 110.0,
+        max_height: measured_max_height,
       }
     },
   }
@@ -6315,6 +6321,7 @@ test "taffy/block_margin_y_collapse_complex" {
   let root_child1_style = {
     ..@style.Style::default(),
     position: @types.Position::Relative,
+    display: @types.Flex,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -10845,6 +10852,7 @@ test "taffy/block_margin_y_sibling_collapse_negative" {
   let root_child1_style = {
     ..@style.Style::default(),
     position: @types.Position::Relative,
+    display: @types.Flex,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -10938,6 +10946,7 @@ test "taffy/block_margin_y_sibling_collapse_negative_percentage" {
   let root_child1_style = {
     ..@style.Style::default(),
     position: @types.Position::Relative,
+    display: @types.Flex,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11920,6 +11929,7 @@ test "taffy/block_margin_y_total_collapse_complex" {
   let root_child1_style = {
     ..@style.Style::default(),
     position: @types.Position::Relative,
+    display: @types.Flex,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),

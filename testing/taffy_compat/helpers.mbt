@@ -5,9 +5,7 @@
 pub fn default_dispatch() -> @node.DispatchFn {
   @node.DispatchFn(fn(node, ctx, dispatch) {
     match node.style.display {
-      // Taffy defaults to Flex layout when display is not explicit.
-      // Treat Block as Flex for compat tests to match taffy fixtures.
-      @types.Flex | @types.InlineFlex | @types.Block =>
+      @types.Flex | @types.InlineFlex =>
         @node.compute_flex_layout_with_dispatch(node, ctx, dispatch)
       @types.Grid | @types.InlineGrid =>
         @node.compute_grid_layout_in_context(node, ctx, dispatch)
