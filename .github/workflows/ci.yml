@@ -817,7 +817,7 @@ jobs:
         continue-on-error: true
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: pnpm add --no-save @mizchi/flaker@latest
+        run: pnpm add --save-dev @mizchi/flaker@latest
 
       - name: Checkout metric-ci source fallback
         if: steps.metric_ci_package.outcome == 'failure'
