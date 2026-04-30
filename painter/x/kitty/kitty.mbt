@@ -10,6 +10,12 @@ let base64_chars : String = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxy
 let kitty_chunk_size = 4096
 
 ///|
+let kitty_pixels_per_chunk : Int = kitty_chunk_size / 4
+
+///|
+let kitty_white_triplet = "////"
+
+///|
 fn write_base64_triplet(
   buf : StringBuilder,
   b0 : Int,
@@ -27,14 +33,33 @@ fn write_base64_triplet(
 }
 
 ///|
-fn kitty_palette_color_at(
+fn encode_base64_triplet(b0 : Int, b1 : Int, b2 : Int) -> String {
+  let buf = StringBuilder::new()
+  write_base64_triplet(buf, b0, b1, b2)
+  buf.to_string()
+}
+
+///|
+fn build_kitty_palette_triplets(
   palette : @image.DynamicPalette,
-  idx : Int,
-) -> @image.Color {
-  if idx >= 0 && idx < palette.colors.length() {
-    palette.colors[idx]
+) -> Array[String] {
+  let triplets : Array[String] = []
+  for color in palette.colors {
+    triplets.push(encode_base64_triplet(color.r, color.g, color.b))
+  }
+  triplets
+}
+
+///|
+fn write_kitty_pixel_triplet(
+  buf : StringBuilder,
+  triplets : Array[String],
+  color_idx : Int,
+) -> Unit {
+  if color_idx >= 0 && color_idx < triplets.length() {
+    buf.write_string(triplets[color_idx])
   } else {
-    @image.Color::white()
+    buf.write_string(kitty_white_triplet)
   }
 }
 
@@ -103,28 +128,30 @@ pub fn to_kitty(
   palette : @image.DynamicPalette,
 ) -> String {
   let buf = StringBuilder::new()
-  let mut chunk = StringBuilder::new()
-  let mut chunk_len = 0
+  let triplets = build_kitty_palette_triplets(palette)
   let mut first_chunk = true
   let pixel_count = fb.width * fb.height
-  for pixel_index in 0..<pixel_count {
-    if chunk_len + 4 > kitty_chunk_size {
-      write_kitty_chunk_header(buf, fb.width, fb.height, first_chunk, true)
-      buf.write_string(chunk.to_string())
-      buf.write_string("\u001b\\")
-      chunk = StringBuilder::new()
-      chunk_len = 0
-      first_chunk = false
+  let mut pixel_index = 0
+  while pixel_index < pixel_count {
+    let remaining = pixel_count - pixel_index
+    let chunk_pixels = if remaining > kitty_pixels_per_chunk {
+      kitty_pixels_per_chunk
+    } else {
+      remaining
     }
-    let color = kitty_palette_color_at(palette, fb.pixels[pixel_index])
-    write_base64_triplet(chunk, color.r, color.g, color.b)
-    chunk_len += 4
+    let has_more = pixel_index + chunk_pixels < pixel_count
+    write_kitty_chunk_header(buf, fb.width, fb.height, first_chunk, has_more)
+    for _ in 0..<chunk_pixels {
+      write_kitty_pixel_triplet(buf, triplets, fb.pixels[pixel_index])
+      pixel_index += 1
+    }
+    buf.write_string("\u001b\\")
+    first_chunk = false
   }
-  write_kitty_chunk_header(buf, fb.width, fb.height, first_chunk, false)
-  if chunk_len > 0 {
-    buf.write_string(chunk.to_string())
+  if pixel_count == 0 {
+    write_kitty_chunk_header(buf, fb.width, fb.height, true, false)
+    buf.write_string("\u001b\\")
   }
-  buf.write_string("\u001b\\")
   buf.to_string()
 }
 
@@ -134,6 +161,7 @@ pub async fn[T : @io.Writer] write_kitty(
   fb : @image.Framebuffer,
   palette : @image.DynamicPalette,
 ) -> Unit {
+  let triplets = build_kitty_palette_triplets(palette)
   let mut chunk = StringBuilder::new()
   let mut chunk_len = 0
   let mut first_chunk = true
@@ -157,8 +185,7 @@ pub async fn[T : @io.Writer] write_kitty(
       chunk_len = 0
       first_chunk = false
     }
-    let color = kitty_palette_color_at(palette, fb.pixels[pixel_index])
-    write_base64_triplet(chunk, color.r, color.g, color.b)
+    write_kitty_pixel_triplet(chunk, triplets, fb.pixels[pixel_index])
     chunk_len += 4
   }
   write_kitty_chunk_header_to(writer, fb.width, fb.height, first_chunk, false)
