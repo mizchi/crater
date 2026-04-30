@@ -11,6 +11,17 @@ import { parseFlakerStar } from "./flaker-config.ts";
 const REPO_ROOT = path.resolve(import.meta.dirname, "..");
 const FLAKER_STAR = fs.readFileSync(path.join(REPO_ROOT, "flaker.star"), "utf8");
 
+describe("repo flaker.toml", () => {
+  it("uses flaker 0.10.7 config key names", () => {
+    const toml = fs.readFileSync(path.join(REPO_ROOT, "flaker.toml"), "utf8");
+
+    expect(toml).toContain("flaky_rate_threshold_percentage = 30");
+    expect(toml).toContain("detection_threshold_ratio = 0.02");
+    expect(toml).not.toMatch(/^flaky_rate_threshold\s*=/m);
+    expect(toml).not.toMatch(/^detection_threshold\s*=/m);
+  });
+});
+
 describe("parseFlakerTaskConfigArgs", () => {
   it("parses task and output options", () => {
     const args = parseFlakerTaskConfigArgs([
@@ -49,6 +60,10 @@ describe("buildFlakerTaskConfigToml", () => {
     expect(toml).toContain('task_id = "paint-vrt"');
     expect(toml).toContain("runtime_apply = true");
     expect(toml).toContain('path = ".flaker/data"');
+    expect(toml).toContain("flaky_rate_threshold_percentage = 30");
+    expect(toml).toContain("detection_threshold_ratio = 0.02");
+    expect(toml).not.toMatch(/^flaky_rate_threshold\s*=/m);
+    expect(toml).not.toMatch(/^detection_threshold\s*=/m);
   });
 
   it("preserves grep filters for describe-split tasks", () => {

@@ -52,7 +52,12 @@ describe("CI VRT parallelization", () => {
 
     expect(combined).not.toContain("pnpm add --no-save @mizchi/flaker@latest");
     expect(combined).not.toContain("@mizchi/flaker@latest");
-    expect(ciWorkflow).toContain("pnpm add --save-dev --save-exact @mizchi/flaker@0.10.6");
-    expect(dailyWorkflow).toContain("pnpm add --save-dev --save-exact @mizchi/flaker@0.10.6");
+    expect(combined).not.toContain("@mizchi/flaker@0.10.6");
+    expect(ciWorkflow).toContain(
+      "pnpm add --save-dev --save-exact --allow-build=duckdb @mizchi/flaker@0.10.7",
+    );
+    expect(dailyWorkflow).toContain(
+      "pnpm add --save-dev --save-exact --allow-build=duckdb @mizchi/flaker@0.10.7",
+    );
   });
 });

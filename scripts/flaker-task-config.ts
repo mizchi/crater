@@ -222,7 +222,7 @@ export function buildFlakerTaskConfigToml(
     "",
     "[quarantine]",
     "auto = true",
-    "flaky_rate_threshold = 0.3",
+    "flaky_rate_threshold_percentage = 30",
     "min_runs = 5",
     `manifest = "${tomlEscape(manifestPath)}"`,
     `task_id = "${tomlEscape(task.id)}"`,
@@ -230,7 +230,7 @@ export function buildFlakerTaskConfigToml(
     "",
     "[flaky]",
     "window_days = 14",
-    "detection_threshold = 0.1",
+    "detection_threshold_ratio = 0.02",
     "",
   ].join("\n");
 }

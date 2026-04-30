@@ -817,7 +817,7 @@ jobs:
         continue-on-error: true
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: pnpm add --save-dev --save-exact @mizchi/flaker@0.10.6
+        run: pnpm add --save-dev --save-exact --allow-build=duckdb @mizchi/flaker@0.10.7
 
       - name: Checkout metric-ci source fallback
         if: steps.metric_ci_package.outcome == 'failure'
