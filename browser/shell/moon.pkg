@@ -33,6 +33,7 @@ options(
   targets: {
     "browser_js_wbtest.mbt": [ "js" ],
     "perf_js.mbt": [ "js" ],
+    "perf_js_wbtest.mbt": [ "js" ],
     "perf_native.mbt": [ "native" ],
   },
 )
