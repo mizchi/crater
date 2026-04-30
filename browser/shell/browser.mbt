@@ -958,13 +958,18 @@ fn Browser::render(self : Browser) -> String {
   if self.html_content.length() == 0 {
     return ""
   }
-  @renderer.render_to_sixel_with_css(
+  let installed_provider = self.install_sixel_image_provider()
+  let output = @renderer.render_to_sixel_with_css(
     self.html_content,
     self.viewport_width,
     self.viewport_height,
     self.scroll_y,
     self.external_css,
   )
+  if installed_provider {
+    @image.clear_image_provider()
+  }
+  output
 }
 
 ///|
@@ -973,13 +978,20 @@ fn Browser::render_kitty(self : Browser) -> String {
   if self.html_content.length() == 0 {
     return ""
   }
-  @renderer.render_to_kitty_with_css(
+  let base = @renderer.render_to_kitty_with_css(
     self.html_content,
     self.viewport_width,
     self.viewport_height,
     self.scroll_y,
     self.external_css,
   )
+  self.collect_graphics_image_regions()
+  let overlay = self.build_kitty_image_overlay()
+  if overlay.length() > 0 {
+    base + overlay
+  } else {
+    base
+  }
 }
 
 ///|
@@ -998,6 +1010,13 @@ async fn[T : @io.Writer] Browser::write_kitty_output(
     self.scroll_y,
     self.external_css,
   )
+  self.collect_graphics_image_regions()
+  let overlay = self.build_kitty_image_overlay()
+  if overlay.length() > 0 {
+    writer.write(overlay) catch {
+      _ => ()
+    }
+  }
 }
 
 ///|
@@ -1215,6 +1234,74 @@ fn Browser::render_text(self : Browser) -> String {
     "[perf:render] node+layout_build=\{(rt1 - rt0).to_int()}ms layout_compute=\{(rt2 - rt1).to_int()}ms tui_buffer=\{(rt3 - rt2).to_int()}ms ansi=\{(rt4 - rt3).to_int()}ms total=\{(rt4 - rt0).to_int()}ms",
   )
   final_output
+}
+
+///|
+fn Browser::collect_graphics_image_regions(self : Browser) -> Unit {
+  if self.html_content.length() == 0 {
+    self.image_regions = []
+    return
+  }
+  let ctx = @browser_contract.create_render_context(
+    self.viewport_width,
+    self.viewport_height,
+    self.dark_mode,
+  )
+  let render_node = match (self.render_node, self.layout_tree) {
+    (Some(node), Some(_tree)) => node
+    _ => {
+      let n = match self.parsed_doc {
+        Some(doc) =>
+          @renderer.render_to_node_with_document(doc, ctx, self.external_css)
+        None =>
+          @renderer.render_to_node_with_external_css(
+            self.html_content,
+            ctx,
+            self.external_css,
+          )
+      }
+      let tree = @layout.LayoutTree::from_node(
+        n,
+        self.viewport_width.to_double(),
+        self.viewport_height.to_double(),
+      )
+      self.render_node = Some(n)
+      self.layout_tree = Some(tree)
+      n
+    }
+  }
+  let layout = match self.layout_tree {
+    Some(tree) => {
+      let l = tree.compute_incremental()
+      tree.mark_all_layouts_seen()
+      self.layout_tree = Some(tree)
+      l
+    }
+    None => {
+      let tree = @layout.LayoutTree::from_node(
+        render_node,
+        self.viewport_width.to_double(),
+        self.viewport_height.to_double(),
+      )
+      let l = tree.compute_incremental()
+      tree.mark_all_layouts_seen()
+      self.layout_tree = Some(tree)
+      l
+    }
+  }
+  let char_width = self.viewport_width / 8
+  let char_height = self.viewport_height / 16
+  let char_scroll_y = self.scroll_y / 16
+  let focused_element_name = self.get_focused_element_name()
+  let buffer_result = @tui.render_to_buffer(
+    render_node,
+    layout,
+    char_width,
+    char_height,
+    char_scroll_y,
+    focused_element_name~,
+  )
+  self.image_regions = buffer_result.image_regions
 }
 
 ///|
@@ -1511,7 +1598,13 @@ async fn Browser::prefetch_images(self : Browser) -> Unit {
   }
   let srcs = extract_img_srcs(self.html_content)
   for src in srcs {
-    if src.has_prefix("data:") || self.image_cache.contains(src) {
+    if self.image_cache.contains(src) {
+      continue
+    }
+    if self.cache_data_image_src(src) {
+      continue
+    }
+    if src.to_lower().has_prefix("data:") {
       continue
     }
     let abs_url = resolve_url(self.current_url, src)
@@ -1548,44 +1641,327 @@ async fn Browser::prefetch_images(self : Browser) -> Unit {
 }
 
 ///|
+fn Browser::cache_data_image_src(self : Browser, src : String) -> Bool {
+  match data_image_src_to_kitty_cache(src) {
+    Some(cached_data) => {
+      self.cache_image_data(src, cached_data)
+      true
+    }
+    None => false
+  }
+}
+
+///|
+fn data_url_payload_end(chars : Array[Char], start : Int) -> Int {
+  let mut end = chars.length()
+  for i = start; i < chars.length(); i = i + 1 {
+    if chars[i] == '?' || chars[i] == '#' {
+      end = i
+      break
+    }
+  }
+  end
+}
+
+///|
+fn remove_ascii_whitespace(s : String) -> String {
+  let buf = StringBuilder::new()
+  for c in s {
+    if !c.is_ascii_whitespace() {
+      buf.write_char(c)
+    }
+  }
+  buf.to_string()
+}
+
+///|
+fn data_image_src_to_kitty_cache(src : String) -> String? {
+  if !src.to_lower().has_prefix("data:") {
+    return None
+  }
+  let chars = src.to_array()
+  let mut comma_idx = -1
+  for i = 5; i < chars.length(); i = i + 1 {
+    if chars[i] == ',' {
+      comma_idx = i
+      break
+    }
+  }
+  if comma_idx < 0 {
+    return None
+  }
+  let header = make_substr(chars, 5, comma_idx).to_lower()
+  if !header.has_prefix("image/") {
+    return None
+  }
+  let payload_end = data_url_payload_end(chars, comma_idx + 1)
+  let payload = make_substr(chars, comma_idx + 1, payload_end)
+  if header.has_prefix("image/svg+xml") {
+    if header.contains(";base64") {
+      return None
+    }
+    return Some("svg:" + percent_decode_data_url_payload(payload))
+  }
+  if !header.contains(";base64") {
+    return None
+  }
+  if header.has_prefix("image/png") ||
+    header.has_prefix("image/jpeg") ||
+    header.has_prefix("image/jpg") ||
+    header.has_prefix("image/gif") ||
+    header.has_prefix("image/webp") {
+    Some(prepare_raster_image_for_kitty_cache(remove_ascii_whitespace(payload)))
+  } else {
+    None
+  }
+}
+
+///|
+fn decode_base64_char(c : Char) -> Int? {
+  let cp = c.to_int()
+  if cp >= 'A'.to_int() && cp <= 'Z'.to_int() {
+    Some(cp - 'A'.to_int())
+  } else if cp >= 'a'.to_int() && cp <= 'z'.to_int() {
+    Some(cp - 'a'.to_int() + 26)
+  } else if cp >= '0'.to_int() && cp <= '9'.to_int() {
+    Some(cp - '0'.to_int() + 52)
+  } else if c == '+' {
+    Some(62)
+  } else if c == '/' {
+    Some(63)
+  } else {
+    None
+  }
+}
+
+///|
+fn decode_base64_bytes(encoded : String) -> Array[Int]? {
+  let bytes : Array[Int] = []
+  let quartet : Array[Int] = []
+  for c in encoded {
+    if c.is_ascii_whitespace() {
+      continue
+    }
+    if c == '=' {
+      quartet.push(-1)
+    } else {
+      match decode_base64_char(c) {
+        Some(v) => quartet.push(v)
+        None => return None
+      }
+    }
+    if quartet.length() == 4 {
+      let v0 = quartet[0]
+      let v1 = quartet[1]
+      let v2 = quartet[2]
+      let v3 = quartet[3]
+      if v0 < 0 || v1 < 0 {
+        return None
+      }
+      bytes.push(((v0 << 2) | (v1 >> 4)) & 0xFF)
+      if v2 >= 0 {
+        bytes.push((((v1 & 0x0F) << 4) | (v2 >> 2)) & 0xFF)
+      }
+      if v2 >= 0 && v3 >= 0 {
+        bytes.push((((v2 & 0x03) << 6) | v3) & 0xFF)
+      }
+      if v2 < 0 || v3 < 0 {
+        break
+      }
+      quartet.clear()
+    }
+  }
+  Some(bytes)
+}
+
+///|
+fn rgba_cache_entry_to_resolved_image(entry : String) -> @image.ResolvedImage? {
+  match parse_kitty_rgba_cache_entry(entry) {
+    Some((width, height, rgba_b64)) =>
+      match decode_base64_bytes(rgba_b64) {
+        Some(rgba) =>
+          if rgba.length() >= width * height * 4 {
+            Some(@image.ResolvedImage::Raster({ width, height, rgba }))
+          } else {
+            None
+          }
+        None => None
+      }
+    None => None
+  }
+}
+
+///|
+fn raster_base64_to_resolved_image(
+  image_format : String,
+  b64_data : String,
+) -> @image.ResolvedImage? {
+  match decode_raster_image_to_rgba_base64(image_format, b64_data) {
+    Some(entry) => rgba_cache_entry_to_resolved_image(entry)
+    None => None
+  }
+}
+
+///|
+fn cached_image_data_to_resolved_image(
+  cached_data : String,
+) -> @image.ResolvedImage? {
+  if cached_data.has_prefix("svg:") {
+    let svg_text = cached_data.unsafe_substring(
+      start=4,
+      end=cached_data.length(),
+    )
+    Some(@image.ResolvedImage::Svg(svg_text))
+  } else if cached_data.has_prefix("img_rgba:") {
+    rgba_cache_entry_to_resolved_image(
+      cached_data.unsafe_substring(start=9, end=cached_data.length()),
+    )
+  } else if cached_data.has_prefix("img_png:") {
+    raster_base64_to_resolved_image(
+      "png",
+      cached_data.unsafe_substring(start=8, end=cached_data.length()),
+    )
+  } else if cached_data.has_prefix("img:") {
+    let b64_data = cached_data.unsafe_substring(
+      start=4,
+      end=cached_data.length(),
+    )
+    raster_base64_to_resolved_image(
+      detect_raster_image_format_from_base64(b64_data),
+      b64_data,
+    )
+  } else {
+    None
+  }
+}
+
+///|
+fn Browser::install_sixel_image_provider(self : Browser) -> Bool {
+  if self.image_cache.is_empty() {
+    return false
+  }
+  @image.set_image_provider({
+    resolve: fn(src) {
+      match self.image_cache.get(src) {
+        Some(cached_data) => cached_image_data_to_resolved_image(cached_data)
+        None => None
+      }
+    },
+  })
+  true
+}
+
+///|
+fn ascii_eq_ignore_case(lhs : Char, rhs : Char) -> Bool {
+  lhs.to_ascii_lowercase() == rhs.to_ascii_lowercase()
+}
+
+///|
+fn is_img_tag_start(chars : Array[Char], i : Int) -> Bool {
+  if i + 4 >= chars.length() {
+    return false
+  }
+  chars[i] == '<' &&
+  ascii_eq_ignore_case(chars[i + 1], 'i') &&
+  ascii_eq_ignore_case(chars[i + 2], 'm') &&
+  ascii_eq_ignore_case(chars[i + 3], 'g') &&
+  (
+    chars[i + 4].is_ascii_whitespace() ||
+    chars[i + 4] == '>' ||
+    chars[i + 4] == '/'
+  )
+}
+
+///|
+fn is_html_attr_name_char(c : Char) -> Bool {
+  !(c.is_ascii_whitespace() || c == '=' || c == '>' || c == '/')
+}
+
+///|
+fn is_src_attr_name(chars : Array[Char], start : Int, end : Int) -> Bool {
+  end - start == 3 &&
+  ascii_eq_ignore_case(chars[start], 's') &&
+  ascii_eq_ignore_case(chars[start + 1], 'r') &&
+  ascii_eq_ignore_case(chars[start + 2], 'c')
+}
+
+///|
+fn read_html_attr_value(chars : Array[Char], start : Int) -> (String, Int)? {
+  if start >= chars.length() {
+    return None
+  }
+  let quote = chars[start]
+  if quote == '"' || quote == '\'' {
+    let value_start = start + 1
+    for i = value_start; i < chars.length(); i = i + 1 {
+      if chars[i] == quote {
+        return Some((make_substr(chars, value_start, i), i + 1))
+      }
+    }
+    None
+  } else {
+    let mut value_end = start
+    while value_end < chars.length() &&
+          !chars[value_end].is_ascii_whitespace() &&
+          chars[value_end] != '>' {
+      value_end = value_end + 1
+    }
+    if value_end > start {
+      Some((make_substr(chars, start, value_end), value_end))
+    } else {
+      None
+    }
+  }
+}
+
+///|
 /// Extract img src attributes from HTML (lightweight, no full parsing)
 fn extract_img_srcs(html : String) -> Array[String] {
   let srcs : Array[String] = []
   let chars = html.to_array()
   let len = chars.length()
-  for i = 0; i < len - 10; i = i + 1 {
-    // Look for <img
-    if chars[i] == '<' &&
-      (chars[i + 1] == 'i' || chars[i + 1] == 'I') &&
-      (chars[i + 2] == 'm' || chars[i + 2] == 'M') &&
-      (chars[i + 3] == 'g' || chars[i + 3] == 'G') &&
-      (chars[i + 4] == ' ' || chars[i + 4] == '\t') {
-      // Find src="..." within this tag
-      for j = i + 4; j < len - 5; j = j + 1 {
-        if chars[j] == '>' {
+  let mut i = 0
+  while i < len {
+    if is_img_tag_start(chars, i) {
+      let mut j = i + 4
+      while j < len && chars[j] != '>' {
+        while j < len && chars[j].is_ascii_whitespace() {
+          j = j + 1
+        }
+        if j >= len || chars[j] == '>' {
           break
         }
-        if chars[j] == 's' &&
-          chars[j + 1] == 'r' &&
-          chars[j + 2] == 'c' &&
-          chars[j + 3] == '=' {
-          let quote = chars[j + 4]
-          if quote == '"' || quote == '\'' {
-            let start = j + 5
-            for k = start; k < len; k = k + 1 {
-              if chars[k] == quote {
-                let buf = StringBuilder::new()
-                for ci = start; ci < k; ci = ci + 1 {
-                  buf.write_char(chars[ci])
-                }
-                srcs.push(buf.to_string())
-                break
-              }
-            }
+        if chars[j] == '/' {
+          j = j + 1
+          continue
+        }
+        let name_start = j
+        while j < len && is_html_attr_name_char(chars[j]) {
+          j = j + 1
+        }
+        let name_end = j
+        while j < len && chars[j].is_ascii_whitespace() {
+          j = j + 1
+        }
+        if j < len && chars[j] == '=' {
+          j = j + 1
+          while j < len && chars[j].is_ascii_whitespace() {
+            j = j + 1
           }
-          break
+          match read_html_attr_value(chars, j) {
+            Some((value, next_idx)) => {
+              if is_src_attr_name(chars, name_start, name_end) {
+                srcs.push(value)
+              }
+              j = next_idx
+            }
+            None => ()
+          }
         }
       }
+      i = j
+    } else {
+      i = i + 1
     }
   }
   srcs
@@ -1757,14 +2133,40 @@ extern "js" fn js_decode_raster_image_to_rgba_base64(
   #|       return '';
   #|     }
   #|     const format = String(imageFormat || '').toLowerCase();
-  #|     if (format !== 'jpeg' && format !== 'gif') {
+  #|     if (format !== 'png' && format !== 'jpeg' && format !== 'gif') {
   #|       return '';
   #|     }
   #|     const fs = require('node:fs');
   #|     const os = require('node:os');
   #|     const path = require('node:path');
   #|     const { execFileSync } = require('node:child_process');
-  #|     const { PNG } = require('pngjs');
+  #|     function loadPng() {
+  #|       try {
+  #|         return require('pngjs').PNG;
+  #|       } catch (_) {
+  #|         const candidates = [
+  #|           path.join(process.cwd(), 'node_modules', 'pngjs'),
+  #|           path.join(process.cwd(), 'browser', 'node_modules', 'pngjs'),
+  #|         ];
+  #|         for (const candidate of candidates) {
+  #|           try {
+  #|             return require(candidate).PNG;
+  #|           } catch (_) {}
+  #|         }
+  #|         throw new Error('pngjs not found');
+  #|       }
+  #|     }
+  #|     const PNG = loadPng();
+  #|     if (format === 'png') {
+  #|       const decoded = PNG.sync.read(Buffer.from(String(b64Data || ''), 'base64'));
+  #|       return (
+  #|         String(decoded.width) +
+  #|         ':' +
+  #|         String(decoded.height) +
+  #|         ':' +
+  #|         Buffer.from(decoded.data).toString('base64')
+  #|       );
+  #|     }
   #|     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'crater-kitty-'));
   #|     const inputExt = format === 'jpeg' ? 'jpg' : 'gif';
   #|     const inputPath = path.join(dir, 'input.' + inputExt);

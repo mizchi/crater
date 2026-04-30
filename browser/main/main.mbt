@@ -114,6 +114,14 @@ fn is_text_output_mode(mode : @shell.OutputMode) -> Bool {
 }
 
 ///|
+fn is_graphics_output_mode(mode : @shell.OutputMode) -> Bool {
+  match mode {
+    @shell.OutputMode::Sixel | @shell.OutputMode::Kitty => true
+    _ => false
+  }
+}
+
+///|
 fn fallback_output_notice(
   options : Options,
   resolved_mode : @shell.OutputMode,
@@ -583,6 +591,9 @@ async fn main {
     viewport_height,
     terminal_cols~,
   )
+  if is_graphics_output_mode(resolved_output_mode) {
+    let _ = @font_provider.install_system_glyph_provider()
+  }
   // Set dark mode if requested
   if options.dark {
     browser.set_dark_mode(true)

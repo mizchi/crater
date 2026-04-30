@@ -85,6 +85,14 @@ test "resolve_requested_output_mode falls back from kitty to text when no graphi
 }
 
 ///|
+test "graphics output modes require system glyph provider setup" {
+  inspect(is_graphics_output_mode(@shell.OutputMode::Kitty), content="true")
+  inspect(is_graphics_output_mode(@shell.OutputMode::Sixel), content="true")
+  inspect(is_graphics_output_mode(@shell.OutputMode::Text), content="false")
+  inspect(is_graphics_output_mode(@shell.OutputMode::Json), content="false")
+}
+
+///|
 #cfg(target="js")
 test "detect_terminal_graphics_support recognizes kitty envs" {
   let env : Map[String, String] = {}

@@ -12,6 +12,8 @@ import {
 // Values
 pub fn clear_glyph_provider() -> Unit
 
+pub fn clear_image_provider() -> Unit
+
 pub fn create_svg_demo_scene() -> @svg.Scene
 
 pub let font_height : Int
@@ -63,6 +65,8 @@ pub fn render_with_styles(@node.Node, @types.Layout, Int, Int) -> String
 pub fn render_with_styles_scrolled(@node.Node, @types.Layout, Int, Int, Int) -> String
 
 pub fn set_glyph_provider(GlyphProvider) -> Unit
+
+pub fn set_image_provider(ImageProvider) -> Unit
 
 pub fn to_sixel(Framebuffer) -> String
 
@@ -121,6 +125,21 @@ pub(all) struct GlyphProvider {
   get_glyph_for_family : ((Int, Double, Bool, String) -> (Array[@svg.PathCommand], Double)?)?
   get_kern_for_family : ((Int, Int, Double, Bool, String) -> Double)?
   get_ascent_for_family : ((String) -> Double)?
+}
+
+pub(all) struct ImageProvider {
+  resolve : (String) -> ResolvedImage?
+}
+
+pub(all) struct RasterImage {
+  width : Int
+  height : Int
+  rgba : Array[Int]
+}
+
+pub(all) enum ResolvedImage {
+  Raster(RasterImage)
+  Svg(String)
 }
 
 // Type aliases

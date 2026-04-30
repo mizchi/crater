@@ -1,0 +1,6 @@
+import {
+  "mizchi/crater-painter/x/image",
+  "mizchi/crater-painter/svg",
+}
+
+supported_targets = "js+native"

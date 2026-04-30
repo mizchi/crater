@@ -52,6 +52,37 @@ pub fn Color::black() -> Color {
 }
 
 ///|
+pub(all) struct RasterImage {
+  width : Int
+  height : Int
+  rgba : Array[Int]
+}
+
+///|
+pub(all) enum ResolvedImage {
+  Raster(RasterImage)
+  Svg(String)
+}
+
+///|
+pub(all) struct ImageProvider {
+  resolve : (String) -> ResolvedImage?
+}
+
+///|
+let image_provider_override : Ref[ImageProvider?] = { val: None }
+
+///|
+pub fn set_image_provider(provider : ImageProvider) -> Unit {
+  image_provider_override.val = Some(provider)
+}
+
+///|
+pub fn clear_image_provider() -> Unit {
+  image_provider_override.val = None
+}
+
+///|
 /// Get color by depth level
 pub fn get_depth_color(depth : Int) -> Color {
   let colors = [
@@ -1036,6 +1067,31 @@ fn blend_types_color_over_pixel(
 }
 
 ///|
+fn blend_sixel_color_over_pixel(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  x : Int,
+  y : Int,
+  color : Color,
+  alpha : Int,
+) -> Unit {
+  let a = clamp_byte(alpha)
+  if a <= 0 {
+    return
+  }
+  if a >= 255 {
+    let idx = palette.get_or_add(color)
+    fb.set_pixel(x, y, idx)
+    return
+  }
+  let dst_idx = fb.get_pixel(x, y)
+  let dst = palette_color_at(palette, dst_idx)
+  let blended = color.blend(dst, a)
+  let idx = palette.get_or_add(blended)
+  fb.set_pixel(x, y, idx)
+}
+
+///|
 fn fill_rect_with_types_color(
   fb : Framebuffer,
   palette : DynamicPalette,
@@ -1871,106 +1927,115 @@ fn render_paint_node_clipped(
     )
   }
 
-  // Draw inline SVG image if this is an <img> with SVG data URI src
-  if node.tag == "img" && w > 0 && h > 0 {
+  // Draw resolved image content before alt fallback text.
+  let drew_replaced_image = if node.tag == "img" && w > 0 && h > 0 {
     match node.src {
       Some(src) =>
-        if src.has_prefix("data:image/svg+xml") {
-          let svg_text = decode_svg_data_uri(src)
-          if svg_text.length() > 0 {
-            render_svg_into_region(fb, palette, svg_text, x, y, w, h, clip)
+        render_image_src_into_region(
+          fb,
+          palette,
+          src,
+          x,
+          y,
+          w,
+          h,
+          clip,
+          node.paint.opacity,
+        )
+      None => false
+    }
+  } else {
+    false
+  }
+  if !drew_replaced_image {
+    // Draw text if this is a text node
+    match node.text {
+      Some(text_content) => {
+        let (text_x, text_y, text_w) = resolve_text_render_box(node, x, y, w, h)
+        match glyph_provider_override.val {
+          Some(provider) => {
+            let svg_color = @svg.Color::rgb(
+              node.paint.color.r,
+              node.paint.color.g,
+              node.paint.color.b,
+            )
+            let font_size = node.paint.font_size
+            let wrap_width = resolve_glyph_text_wrap_width(
+              text_w, h, font_size, text_content,
+            )
+            let _ = draw_text_with_glyphs_clipped(
+              fb,
+              palette,
+              provider,
+              text_x,
+              text_y,
+              text_content,
+              wrap_width,
+              svg_color,
+              font_size,
+              font_size,
+              node.paint.is_bold,
+              clip,
+              font_family=node.paint.font_family,
+              opacity=node.paint.opacity,
+            )
+          }
+          None => {
+            let text_idx = palette.get_or_add(
+              types_color_to_sixel(node.paint.color),
+            )
+            let scale = 1
+            let _ = draw_text_clipped(
+              fb, text_x, text_y, text_content, text_w, text_idx, scale, clip,
+            )
           }
         }
+      }
       None => ()
     }
-  }
-  // Draw text if this is a text node
-  match node.text {
-    Some(text_content) => {
-      let (text_x, text_y, text_w) = resolve_text_render_box(node, x, y, w, h)
-      match glyph_provider_override.val {
-        Some(provider) => {
-          let svg_color = @svg.Color::rgb(
-            node.paint.color.r,
-            node.paint.color.g,
-            node.paint.color.b,
-          )
-          let font_size = node.paint.font_size
-          let wrap_width = resolve_glyph_text_wrap_width(
-            text_w, h, font_size, text_content,
-          )
-          let _ = draw_text_with_glyphs_clipped(
+    // Draw text decorations
+    match node.text {
+      Some(_) => {
+        let font_size = node.paint.font_size
+        if node.paint.text_decoration_overline {
+          draw_text_decoration_line(
             fb,
             palette,
-            provider,
-            text_x,
-            text_y,
-            text_content,
-            wrap_width,
-            svg_color,
-            font_size,
-            font_size,
-            node.paint.is_bold,
+            x,
+            y + (font_size * 0.15).to_int(),
+            w,
+            node.paint.color,
+            node.paint.opacity,
             clip,
-            font_family=node.paint.font_family,
-            opacity=node.paint.opacity,
           )
         }
-        None => {
-          let text_idx = palette.get_or_add(
-            types_color_to_sixel(node.paint.color),
+        if node.paint.text_decoration_line_through {
+          draw_text_decoration_line(
+            fb,
+            palette,
+            x,
+            y + (font_size * 0.6).to_int(),
+            w,
+            node.paint.color,
+            node.paint.opacity,
+            clip,
           )
-          let scale = 1
-          let _ = draw_text_clipped(
-            fb, text_x, text_y, text_content, text_w, text_idx, scale, clip,
+        }
+        if node.paint.text_decoration_underline {
+          draw_text_decoration_line(
+            fb,
+            palette,
+            x,
+            y + (font_size * 1.1).to_int(),
+            w,
+            node.paint.color,
+            node.paint.opacity,
+            clip,
           )
         }
       }
+      None => ()
     }
-    None => ()
-  }
-  // Draw text decorations
-  match node.text {
-    Some(_) => {
-      let font_size = node.paint.font_size
-      if node.paint.text_decoration_overline {
-        draw_text_decoration_line(
-          fb,
-          palette,
-          x,
-          y + (font_size * 0.15).to_int(),
-          w,
-          node.paint.color,
-          node.paint.opacity,
-          clip,
-        )
-      }
-      if node.paint.text_decoration_line_through {
-        draw_text_decoration_line(
-          fb,
-          palette,
-          x,
-          y + (font_size * 0.6).to_int(),
-          w,
-          node.paint.color,
-          node.paint.opacity,
-          clip,
-        )
-      }
-      if node.paint.text_decoration_underline {
-        draw_text_decoration_line(
-          fb,
-          palette,
-          x,
-          y + (font_size * 1.1).to_int(),
-          w,
-          node.paint.color,
-          node.paint.opacity,
-          clip,
-        )
-      }
-    }
-    None => ()
   }
 
   // Compute child clip: if this node clips content, intersect with current clip
@@ -2010,6 +2075,124 @@ fn render_paint_node_clipped(
       render_paint_node_clipped(fb, palette, child, abs_x, abs_y, child_clip)
     }
   }
+}
+
+///|
+fn resolve_image_src(src : String) -> ResolvedImage? {
+  match image_provider_override.val {
+    Some(provider) =>
+      match (provider.resolve)(src) {
+        Some(image) => Some(image)
+        None =>
+          if src.has_prefix("data:image/svg+xml") {
+            let svg_text = decode_svg_data_uri(src)
+            if svg_text.length() > 0 {
+              Some(ResolvedImage::Svg(svg_text))
+            } else {
+              None
+            }
+          } else {
+            None
+          }
+      }
+    None =>
+      if src.has_prefix("data:image/svg+xml") {
+        let svg_text = decode_svg_data_uri(src)
+        if svg_text.length() > 0 {
+          Some(ResolvedImage::Svg(svg_text))
+        } else {
+          None
+        }
+      } else {
+        None
+      }
+  }
+}
+
+///|
+fn render_image_src_into_region(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  src : String,
+  x : Int,
+  y : Int,
+  w : Int,
+  h : Int,
+  clip : ClipRect?,
+  opacity : Double,
+) -> Bool {
+  match resolve_image_src(src) {
+    Some(ResolvedImage::Raster(image)) =>
+      render_raster_image_into_region(
+        fb, palette, image, x, y, w, h, clip, opacity,
+      )
+    Some(ResolvedImage::Svg(svg_text)) =>
+      if svg_text.length() > 0 {
+        render_svg_into_region(fb, palette, svg_text, x, y, w, h, clip)
+        true
+      } else {
+        false
+      }
+    None => false
+  }
+}
+
+///|
+fn render_raster_image_into_region(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  image : RasterImage,
+  x : Int,
+  y : Int,
+  w : Int,
+  h : Int,
+  clip : ClipRect?,
+  opacity : Double,
+) -> Bool {
+  if image.width <= 0 ||
+    image.height <= 0 ||
+    w <= 0 ||
+    h <= 0 ||
+    image.rgba.length() < image.width * image.height * 4 {
+    return false
+  }
+  for py = 0; py < h; py = py + 1 {
+    let dst_y = y + py
+    if dst_y < 0 || dst_y >= fb.height {
+      continue
+    }
+    let src_y = (py * image.height / h).min(image.height - 1)
+    for px = 0; px < w; px = px + 1 {
+      let dst_x = x + px
+      if dst_x < 0 || dst_x >= fb.width {
+        continue
+      }
+      if !pixel_in_clip(clip, dst_x, dst_y) {
+        continue
+      }
+      let src_x = (px * image.width / w).min(image.width - 1)
+      let idx = (src_y * image.width + src_x) * 4
+      let alpha = clamp_byte(
+        (image.rgba[idx + 3].to_double() * opacity).to_int(),
+      )
+      if alpha <= 0 {
+        continue
+      }
+      blend_sixel_color_over_pixel(
+        fb,
+        palette,
+        dst_x,
+        dst_y,
+        {
+          r: clamp_byte(image.rgba[idx]),
+          g: clamp_byte(image.rgba[idx + 1]),
+          b: clamp_byte(image.rgba[idx + 2]),
+        },
+        alpha,
+      )
+    }
+  }
+  true
 }
 
 ///|

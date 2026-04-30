@@ -135,6 +135,47 @@ test "render_paint_node_to_framebuffer does not add debug border for block" {
 }
 
 ///|
+test "image provider draws raster img instead of alt text" {
+  let style = @style.Style::default()
+  style.color = @types.Color::rgb(0, 0, 0)
+  @image.set_image_provider({
+    resolve: fn(src) {
+      if src == "logo.png" {
+        Some(
+          @image.ResolvedImage::Raster({
+            width: 1,
+            height: 1,
+            rgba: [255, 0, 0, 255],
+          }),
+        )
+      } else {
+        None
+      }
+    },
+  })
+  let node = @paint_model.PaintNode::new(
+    "img#logo",
+    "img",
+    0.0,
+    0.0,
+    4.0,
+    4.0,
+    @paint_model.PaintProperties::from_style(style),
+    [],
+    text=Some("Logo Alt"),
+    src=Some("logo.png"),
+  )
+  let fb = @image.Framebuffer::new(4, 4)
+  let palette = @image.DynamicPalette::new()
+  @image.render_paint_node_to_framebuffer(node, fb, palette)
+  let color = palette.colors[fb.get_pixel(0, 0)]
+  inspect(color.r, content="255")
+  inspect(color.g, content="0")
+  inspect(color.b, content="0")
+  @image.clear_image_provider()
+}
+
+///|
 test "render_paint_node_to_framebuffer blends semi transparent background" {
   let style = @style.Style::default()
   style.background_color = @types.Color::rgba(255, 0, 0, 0.5)

@@ -4,9 +4,9 @@ import {
   "mizchi/crater-layout" @node,
   "mizchi/crater-layout/types",
   "mizchi/crater/css",
-  "mizchi/crater-painter/x/image",
   "mizchi/crater-dom/aom",
   "mizchi/crater-browser/tui",
+  "mizchi/crater-browser/font_provider",
   "mizchi/crater-browser/tui/paint_png" @tui_paint_png,
   "mizchi/crater-browser/tui/paint/plain" @tui_paint_plain,
 }

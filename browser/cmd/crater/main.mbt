@@ -58,11 +58,8 @@ fn main {
     }
     None => ()
   }
-  // Prefer a regular/bold system font pair when available.
-  match load_system_glyph_provider() {
-    Some(provider) => @image.set_glyph_provider(provider)
-    None => ()
-  }
+  // Prefer system outline fonts over the ASCII bitmap fallback.
+  let _ = @font_provider.install_system_glyph_provider()
   match load_request(options) {
     Ok(request) =>
       match render_artifact_or_error(request, options.artifact) {

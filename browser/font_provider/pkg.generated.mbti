@@ -1,0 +1,20 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser/font_provider"
+
+import {
+  "mizchi/crater-painter/x/image",
+}
+
+// Values
+pub fn install_system_glyph_provider() -> Bool
+
+pub fn load_system_glyph_provider() -> @image.GlyphProvider?
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+
