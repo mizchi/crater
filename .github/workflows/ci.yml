@@ -141,20 +141,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Restore paint VRT reference fixtures
-        id: paint_vrt_reference_cache
-        uses: actions/cache@v4
-        with:
-          path: .cache/paint-vrt-reference
-          key: paint-vrt-reference-${{ runner.os }}-${{ hashFiles('tests/paint-vrt.test.ts', 'tests/helpers/crater-vrt.ts', 'scripts/real-world-snapshot.ts', 'scripts/ci/install-compatible-fonts.sh', 'package.json', 'pnpm-lock.yaml', 'benchmarks/fixtures/**', 'real-world/**/index.html', 'real-world/**/meta.json') }}
-
-      - name: Restore Playwright Chromium browser cache
-        id: paint_vrt_playwright_cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}
-
       - name: Update MoonBit dependencies
         run: |
           moon update
@@ -812,6 +798,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Restore paint VRT reference fixtures
+        id: paint_vrt_reference_cache
+        uses: actions/cache@v4
+        with:
+          path: .cache/paint-vrt-reference
+          key: paint-vrt-reference-${{ runner.os }}-${{ hashFiles('tests/paint-vrt.test.ts', 'tests/helpers/crater-vrt.ts', 'scripts/real-world-snapshot.ts', 'scripts/ci/install-compatible-fonts.sh', 'package.json', 'pnpm-lock.yaml', 'benchmarks/fixtures/**', 'real-world/**/index.html', 'real-world/**/meta.json') }}
+
+      - name: Restore Playwright Chromium browser cache
+        id: paint_vrt_playwright_cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}
+
       - name: Install metric-ci CLI package
         id: metric_ci_package
         continue-on-error: true
@@ -1283,7 +1283,8 @@ jobs:
           npx tsx scripts/ci-timing-summary.ts \
             --input ci-timing/jobs.json \
             --json ci-timing/summary.json \
-            --markdown ci-timing/summary.md
+            --markdown ci-timing/summary.md \
+            --max-shard-duration-sec 600
 
       - name: Publish CI timing summary
         run: cat ci-timing/summary.md >> "$GITHUB_STEP_SUMMARY"

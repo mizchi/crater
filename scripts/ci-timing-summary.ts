@@ -33,6 +33,13 @@ export interface TimingGroup {
   durationSec: number;
 }
 
+export interface TimingWarning {
+  name: string;
+  group: string;
+  durationSec: number;
+  maxDurationSec: number;
+}
+
 export interface TimingSummary {
   schemaVersion: 1;
   runId?: number;
@@ -48,12 +55,21 @@ export interface TimingSummary {
   };
   rows: TimingRow[];
   byGroup: TimingGroup[];
+  warnings: {
+    maxShardDurationSec?: number;
+    slowShards: TimingWarning[];
+  };
 }
 
 interface CliOptions {
   input: string;
   jsonOutput?: string;
   markdownOutput?: string;
+  maxShardDurationSec?: number;
+}
+
+interface TimingSummaryOptions {
+  maxShardDurationSec?: number;
 }
 
 const DEFAULT_INPUT = "ci-timing/jobs.json";
@@ -69,6 +85,7 @@ function usage(): string {
     `  --input <file>      Input jobs json (default: ${DEFAULT_INPUT})`,
     "  --json <file>       Output summary json",
     "  --markdown <file>   Output summary markdown",
+    "  --max-shard-duration-sec <n>  Warn when a VRT/WPT shard exceeds this run duration",
   ].join("\n");
 }
 
@@ -91,6 +108,15 @@ function parseCliArgs(args: string[]): CliOptions {
     }
     if (arg === "--markdown") {
       options.markdownOutput = args[++i];
+      continue;
+    }
+    if (arg === "--max-shard-duration-sec") {
+      const raw = args[++i] ?? "";
+      const parsed = Number(raw);
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        throw new Error("--max-shard-duration-sec must be a positive number");
+      }
+      options.maxShardDurationSec = Math.round(parsed);
       continue;
     }
     throw new Error(`Unknown argument: ${arg}`);
@@ -121,6 +147,12 @@ function jobGroup(name: string): string {
   return name;
 }
 
+function isTimedShard(row: TimingRow): boolean {
+  if (!row.name.includes("(") || !row.name.includes(")")) return false;
+  const group = jobGroup(row.name);
+  return group === "paint-vrt" || group === "wpt-vrt" || group === "wpt-css";
+}
+
 function normalizeJobTimes(job: GithubJobLike): { createdMs: number; startedMs: number; completedMs: number } {
   return {
     createdMs: toTimestamp(job.createdAt ?? job.created_at),
@@ -129,7 +161,30 @@ function normalizeJobTimes(job: GithubJobLike): { createdMs: number; startedMs: 
   };
 }
 
-export function buildTimingSummary(jobs: GithubJobLike[], runId?: number): TimingSummary {
+function buildTimingWarnings(
+  rows: TimingRow[],
+  options: TimingSummaryOptions = {},
+): TimingSummary["warnings"] {
+  const maxShardDurationSec = options.maxShardDurationSec;
+  if (!maxShardDurationSec) {
+    return { slowShards: [] };
+  }
+  const slowShards = rows
+    .filter((row) => isTimedShard(row) && row.durationSec > maxShardDurationSec)
+    .map((row) => ({
+      name: row.name,
+      group: jobGroup(row.name),
+      durationSec: row.durationSec,
+      maxDurationSec: maxShardDurationSec,
+    }));
+  return { maxShardDurationSec, slowShards };
+}
+
+export function buildTimingSummary(
+  jobs: GithubJobLike[],
+  runId?: number,
+  options: TimingSummaryOptions = {},
+): TimingSummary {
   const rows: TimingRow[] = jobs.map((job) => {
     const { createdMs, startedMs, completedMs } = normalizeJobTimes(job);
     return {
@@ -200,6 +255,7 @@ export function buildTimingSummary(jobs: GithubJobLike[], runId?: number): Timin
 
   const byGroup = [...byGroupMap.values()].sort((a, b) => b.durationSec - a.durationSec);
   const elapsedSec = diffSec(minCreated, maxCompleted);
+  const warnings = buildTimingWarnings(rows, options);
 
   return {
     schemaVersion: 1,
@@ -216,6 +272,7 @@ export function buildTimingSummary(jobs: GithubJobLike[], runId?: number): Timin
     },
     rows,
     byGroup,
+    warnings,
   };
 }
 
@@ -263,6 +320,23 @@ export function renderTimingMarkdown(summary: TimingSummary): string {
   }
   lines.push("");
 
+  if (summary.warnings.slowShards.length > 0) {
+    lines.push("## Shard Duration Warnings");
+    lines.push("");
+    if (summary.warnings.maxShardDurationSec) {
+      lines.push("- Target max shard run (s): " + summary.warnings.maxShardDurationSec);
+      lines.push("");
+    }
+    lines.push("| Job | Group | Run (s) | Target (s) |");
+    lines.push("| --- | --- | ---: | ---: |");
+    for (const warning of summary.warnings.slowShards) {
+      lines.push(
+        `| ${warning.name} | ${warning.group} | ${fmtSec(warning.durationSec)} | ${fmtSec(warning.maxDurationSec)} |`
+      );
+    }
+    lines.push("");
+  }
+
   return lines.join("\n");
 }
 
@@ -292,7 +366,9 @@ function loadJobsFromFile(filePath: string): { runId?: number; jobs: GithubJobLi
 export async function main(): Promise<number> {
   const options = parseCliArgs(process.argv.slice(2));
   const { jobs, runId } = loadJobsFromFile(options.input);
-  const summary = buildTimingSummary(jobs, runId);
+  const summary = buildTimingSummary(jobs, runId, {
+    maxShardDurationSec: options.maxShardDurationSec,
+  });
   const markdown = renderTimingMarkdown(summary);
 
   if (options.jsonOutput) {

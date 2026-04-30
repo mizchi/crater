@@ -68,7 +68,7 @@ describe("buildTimingSummary", () => {
       }),
     ];
 
-    const summary = buildTimingSummary(jobs, 123);
+    const summary = buildTimingSummary(jobs, 123, { maxShardDurationSec: 95 });
     expect(summary.rows[0]?.name).toBe("wpt-vrt (position)");
     expect(summary.rows[0]?.durationSec).toBe(200);
     expect(summary.rows[0]?.queueSec).toBe(11);
@@ -77,6 +77,13 @@ describe("buildTimingSummary", () => {
     expect(summary.byGroup.find((g) => g.group === "wpt-css")?.durationSec).toBe(120);
     expect(summary.byGroup.find((g) => g.group === "wpt-vrt")?.durationSec).toBe(380);
     expect(summary.byGroup.find((g) => g.group === "paint-vrt")?.durationSec).toBe(190);
+    expect(summary.warnings.maxShardDurationSec).toBe(95);
+    expect(summary.warnings.slowShards.map((row) => row.name)).toEqual([
+      "wpt-vrt (position)",
+      "wpt-vrt (box)",
+      "wpt-css (css-flexbox)",
+      "paint-vrt (shard-2)",
+    ]);
   });
 });
 
@@ -97,5 +104,30 @@ describe("renderTimingMarkdown", () => {
     expect(markdown).toContain("# CI Timing Summary");
     expect(markdown).toContain("| Job | Status | Conclusion | Queue (s) | Run (s) |");
     expect(markdown).toContain("| Group | Jobs | Completed | Failed | Queue Total (s) | Run Total (s) |");
+  });
+
+  it("renders slow shard warnings when a max duration is configured", () => {
+    const jobs: GithubJobLike[] = [
+      makeJob({
+        name: "paint-vrt (fixtures-b)",
+        startedAt: "2026-02-25T15:00:00Z",
+        completedAt: "2026-02-25T15:10:05Z",
+      }),
+      makeJob({
+        name: "test",
+        startedAt: "2026-02-25T15:00:00Z",
+        completedAt: "2026-02-25T15:20:00Z",
+      }),
+    ];
+    const summary = buildTimingSummary(jobs, undefined, { maxShardDurationSec: 600 });
+    const markdown = renderTimingMarkdown(summary);
+
+    expect(summary.warnings.slowShards.map((row) => row.name)).toEqual([
+      "paint-vrt (fixtures-b)",
+    ]);
+    expect(markdown).toContain("## Shard Duration Warnings");
+    expect(markdown).toContain("- Target max shard run (s): 600");
+    expect(markdown).toContain("| paint-vrt (fixtures-b) | paint-vrt | 605 | 600 |");
+    expect(markdown.slice(markdown.indexOf("## Shard Duration Warnings"))).not.toContain("| test |");
   });
 });
