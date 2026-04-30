@@ -1,34 +1,34 @@
 {
   "name": "mizchi/crater-js",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "deps": {
     "mizchi/crater-aomx": {
       "path": "../aomx",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater": {
       "path": "..",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-css": {
       "path": "../css",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-dom": {
       "path": "../dom",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-layout": {
       "path": "../layout",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-painter": {
       "path": "../painter",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-renderer": {
       "path": "../renderer",
-      "version": "0.17.0"
+      "version": "0.17.1"
     }
   },
   "readme": "README.md",

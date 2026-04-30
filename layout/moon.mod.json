@@ -1,6 +1,6 @@
 {
   "name": "mizchi/crater-layout",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "description": "Layout kernel for crater CSS layout engine",
   "deps": {
     "mizchi/layout": "0.2.0"

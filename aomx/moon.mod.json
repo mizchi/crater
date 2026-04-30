@@ -1,14 +1,14 @@
 {
   "name": "mizchi/crater-aomx",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "deps": {
     "mizchi/crater-dom": {
       "path": "../dom",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-layout": {
       "path": "../layout",
-      "version": "0.17.0"
+      "version": "0.17.1"
     }
   },
   "repository": "https://github.com/mizchi/crater",

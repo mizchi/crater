@@ -1,35 +1,35 @@
 {
   "name": "mizchi/crater-webdriver-bidi",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "deps": {
     "mizchi/crater": {
       "path": "..",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/font": "0.7.0",
     "mizchi/crater-dom": {
       "path": "../dom",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-layout": {
       "path": "../layout",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-painter": {
       "path": "../painter",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-renderer": {
       "path": "../renderer",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-browser": {
       "path": "../browser",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-browser-contract": {
       "path": "../contract",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/js": "0.10.13",
     "moonbitlang/async": "0.17.1"

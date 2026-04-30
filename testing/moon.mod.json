@@ -1,38 +1,38 @@
 {
   "name": "mizchi/crater-testing",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "deps": {
     "mizchi/crater-browser": {
       "path": "../browser",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-browser-native": {
       "path": "../browser/native",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-browser-runtime": {
       "path": "../runtime",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-webdriver-bidi": {
       "path": "../webdriver",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-css": {
       "path": "../css",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-dom": {
       "path": "../dom",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-layout": {
       "path": "../layout",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-renderer": {
       "path": "../renderer",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/js": "0.10.13"
   },

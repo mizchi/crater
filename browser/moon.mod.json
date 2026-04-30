@@ -1,42 +1,42 @@
 {
   "name": "mizchi/crater-browser",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "deps": {
     "mizchi/crater-aomx": {
       "path": "../aomx",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater": {
       "path": "..",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-dom": {
       "path": "../dom",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-layout": {
       "path": "../layout",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-painter": {
       "path": "../painter",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-renderer": {
       "path": "../renderer",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-browser-runtime": {
       "path": "../runtime",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-browser-contract": {
       "path": "../contract",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-browser-http": {
       "path": "../http",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/x": "0.2.0",
     "moonbitlang/async": "0.17.1",

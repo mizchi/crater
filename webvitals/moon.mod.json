@@ -1,10 +1,10 @@
 {
   "name": "mizchi/crater-webvitals",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "deps": {
     "mizchi/crater-layout": {
       "path": "../layout",
-      "version": "0.17.0"
+      "version": "0.17.1"
     }
   },
   "repository": "https://github.com/mizchi/crater",

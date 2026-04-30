@@ -1,10 +1,10 @@
 {
   "name": "mizchi/crater-browser-http-sqlite",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "deps": {
     "mizchi/crater-browser-http": {
       "path": "../http",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/sqlite": "0.2.3"
   },

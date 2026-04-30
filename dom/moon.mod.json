@@ -1,14 +1,14 @@
 {
   "name": "mizchi/crater-dom",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "deps": {
     "mizchi/crater-css": {
       "path": "../css",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-layout": {
       "path": "../layout",
-      "version": "0.17.0"
+      "version": "0.17.1"
     }
   },
   "repository": "https://github.com/mizchi/crater",

@@ -1,22 +1,22 @@
 {
   "name": "mizchi/crater-browser-contract",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "deps": {
     "mizchi/crater-renderer": {
       "path": "../renderer",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-css": {
       "path": "../css",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-dom": {
       "path": "../dom",
-      "version": "0.17.0"
+      "version": "0.17.1"
     },
     "mizchi/crater-aomx": {
       "path": "../aomx",
-      "version": "0.17.0"
+      "version": "0.17.1"
     }
   },
   "repository": "https://github.com/mizchi/crater",

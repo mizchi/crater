@@ -1,6 +1,6 @@
 {
   "name": "mizchi/crater-browser-http",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "deps": {
     "moonbitlang/async": "0.17.1"
   },
