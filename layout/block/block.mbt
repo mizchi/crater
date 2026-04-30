@@ -930,6 +930,16 @@ fn block_flow_establishes_bfc(style : @style.Style) -> Bool {
     (@types.Overflow::Visible, @types.Overflow::Visible) => false
     _ => true
   }
+  let display_establishes_bfc = match style.display {
+    @types.Flex
+    | @types.InlineFlex
+    | @types.Grid
+    | @types.InlineGrid
+    | @types.InlineBlock
+    | @types.Table
+    | @types.InlineTable => true
+    _ => false
+  }
   let non_normal_block_alignment = match style.align_content {
     @types.Stretch => false
     _ => true
@@ -937,6 +947,7 @@ fn block_flow_establishes_bfc(style : @style.Style) -> Bool {
   let containment_establishes_bfc = containment_applies(style.display) &&
     (style.contain.layout || style.contain.paint || style.contain.size)
   overflow_blocks ||
+  display_establishes_bfc ||
   non_normal_block_alignment ||
   style.display == @types.FlowRoot ||
   containment_establishes_bfc
@@ -1047,13 +1058,15 @@ fn layout_simple_block_stack(
       Some(_) => true
       None => false
     }
+    let child_has_measure = flow_nodes[i].measure is Some(_)
     let collapses_through = can_collapse_through(
         child_layout.height,
         child_layout.border,
         child_layout.padding,
       ) &&
       !child_establishes_bfc &&
-      !child_has_aspect_ratio
+      !child_has_aspect_ratio &&
+      !child_has_measure
 
     let child_y : Double = if is_first {
       if can_collapse_top {
@@ -2229,7 +2242,10 @@ fn compute_root_layout(
             Some(m) => m
             None => 0.0
           }
-          let new_height = layout.height + escaped_margin + escaped_bottom
+          let new_height = @types.max(
+            0.0,
+            layout.height + escaped_margin + escaped_bottom,
+          )
           {
             id: layout.id,
             x: layout.x,
@@ -2257,7 +2273,7 @@ fn compute_root_layout(
               x: layout.x,
               y: layout.y,
               width: layout.width,
-              height: layout.height + escaped_margin,
+              height: @types.max(0.0, layout.height + escaped_margin),
               margin: layout.margin,
               padding: layout.padding,
               border: layout.border,
@@ -2603,6 +2619,15 @@ fn compute_with_collapse(
           @types.Length(_) | @types.Percent(_) => true
           _ => false
         }
+        let definite_height_for_auto_width = match style.height {
+          @types.Length(h) => h
+          @types.Percent(p) =>
+            match parent_height_opt {
+              Some(ph) => ph * p
+              None => 0.0
+            }
+          _ => 0.0
+        }
 
         // Calculate initial width
         // For replaced elements with aspect_ratio:
@@ -2612,8 +2637,19 @@ fn compute_with_collapse(
           @types.Percent(p) => Some(parent_width * p)
           @types.Auto =>
             // If aspect_ratio is set and height is definite, use None to let aspect_ratio calculate
-            if ratio_for_auto is Some(_) && height_is_definite {
+            if ratio_for_auto is Some(_) &&
+              height_is_definite &&
+              definite_height_for_auto_width > 0.0 {
               None
+            } else if style.display == @types.Block &&
+              ctx.sizing_mode == @types.Definite &&
+              !suppress_inline_intrinsic {
+              Some(
+                @types.max(
+                  parent_width,
+                  padding.horizontal_sum() + border.horizontal_sum(),
+                ),
+              )
             } else {
               let content_width = intrinsic_width +
                 padding.horizontal_sum() +
@@ -2708,7 +2744,8 @@ fn compute_with_collapse(
                     box_width,
                     @types.clamp(box_width / ratio, min_height, max_height),
                   )
-                } else if height_scale + 0.0001 < width_scale {
+                } else if height_scale + 0.0001 < width_scale &&
+                  box_height > 0.0 {
                   (
                     @types.clamp(box_height * ratio, min_width, max_width),
                     box_height,
@@ -4932,7 +4969,10 @@ fn compute_with_collapse(
 
     // Get child dimensions
     let final_width = child_inner.width
-    let final_height = child_inner.height
+    let final_height = match child_style.height {
+      @types.Length(h) => h
+      _ => child_inner.height
+    }
 
     // Place the float using float context
     let (float_x, float_y) = float_ctx.place_float(
@@ -5287,6 +5327,7 @@ fn compute_with_collapse(
       Some(_) => true
       None => false
     }
+    let child_has_measure = child_node.measure is Some(_)
     // For display: contents, use children's height for collapse check
     let effective_height_for_collapse = if child_style.display ==
       @types.Contents {
@@ -5300,7 +5341,8 @@ fn compute_with_collapse(
         child_layout.padding,
       ) &&
       !child_establishes_bfc &&
-      !child_has_aspect_ratio
+      !child_has_aspect_ratio &&
+      !child_has_measure
 
     // BFC-establishing normal-flow blocks are shifted downward until their
     // margin box can fit alongside preceding floats.
@@ -5542,7 +5584,23 @@ fn compute_with_collapse(
             match explicit_justify_self {
               @types.Alignment::End => free_space
               @types.Alignment::Center => free_space / 2.0
-              @types.Alignment::Start | @types.Alignment::Stretch => 0.0
+              @types.Alignment::Start | @types.Alignment::Stretch =>
+                match child_style.justify_self {
+                  @types.AlignSelf::Auto =>
+                    if default_text_align {
+                      0.0
+                    } else {
+                      resolve_text_align_offset(
+                        style.text_align,
+                        style.direction,
+                        child_available_width,
+                        positioned_child_width +
+                        child_layout.margin.left +
+                        child_layout.margin.right,
+                      )
+                    }
+                  _ => 0.0
+                }
               _ => 0.0
             }
           }
@@ -5557,12 +5615,7 @@ fn compute_with_collapse(
     let (raw_final_x, raw_final_y) = if child_style.position == @types.Relative {
       let height_context = match child_available_height {
         Some(h) => Some(h + padding.vertical_sum() + border.vertical_sum())
-        None =>
-          if style.position == @types.Relative {
-            ctx.available_height
-          } else {
-            None
-          }
+        None => None
       }
       let (x_offset, y_offset) = @core.resolve_relative_inset_offsets(
         child_style.inset,
@@ -6261,6 +6314,7 @@ fn compute_with_collapse(
         let child_style = child_node.style
         let skip_out_of_flow = child_style.position == @types.Absolute ||
           child_style.position == @types.Fixed ||
+          child_style.position == @types.Relative ||
           child_style.float != @types.Float::None
         if !skip_out_of_flow {
           let descendant_h = get_child_descendant_flow_extent_for_auto_height(
@@ -6733,7 +6787,7 @@ fn layout_absolute_child(
       }
     (Some(l), None) => l + params.margin_left + parent_border.left
     (None, Some(r)) =>
-      cb_width - child_width - r - params.margin_right - parent_border.right
+      parent_border.left + cb_width - child_width - r - params.margin_right
     (None, None) => params.margin_left + parent_border.left
   }
   let child_y = match (params.inset_top, params.inset_bottom) {
@@ -6763,7 +6817,7 @@ fn layout_absolute_child(
       }
     (Some(t), None) => t + params.margin_top + parent_border.top
     (None, Some(b)) =>
-      cb_height - child_height - b - params.margin_bottom - parent_border.bottom
+      parent_border.top + cb_height - child_height - b - params.margin_bottom
     (None, None) => static_y + params.margin_top + parent_border.top
   }
   let child_margin = @types.resolve_rect(child_style.margin, cb_width)

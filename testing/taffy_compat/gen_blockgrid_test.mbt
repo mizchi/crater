@@ -6,11 +6,17 @@
 test "taffy/blockgrid_block_in_grid_auto" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.TrackSizingFunction::Auto],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -20,11 +26,16 @@ test "taffy/blockgrid_block_in_grid_auto" {
     "node", root_child0_style, root_child0_measure,
   )
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = @node.compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_root_layout_size(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -43,11 +54,17 @@ test "taffy/blockgrid_block_in_grid_auto" {
 test "taffy/blockgrid_block_in_grid_fixed_fit_content_larger" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.FitContentLength(50.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -57,11 +74,16 @@ test "taffy/blockgrid_block_in_grid_fixed_fit_content_larger" {
     "node", root_child0_style, root_child0_measure,
   )
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = @node.compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_root_layout_size(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -80,11 +102,17 @@ test "taffy/blockgrid_block_in_grid_fixed_fit_content_larger" {
 test "taffy/blockgrid_block_in_grid_fixed_fit_content_middle" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.FitContentLength(30.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -94,11 +122,16 @@ test "taffy/blockgrid_block_in_grid_fixed_fit_content_middle" {
     "node", root_child0_style, root_child0_measure,
   )
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = @node.compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_root_layout_size(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 30.0)
@@ -117,11 +150,17 @@ test "taffy/blockgrid_block_in_grid_fixed_fit_content_middle" {
 test "taffy/blockgrid_block_in_grid_fixed_fit_content_smaller" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.FitContentLength(10.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -131,11 +170,16 @@ test "taffy/blockgrid_block_in_grid_fixed_fit_content_smaller" {
     "node", root_child0_style, root_child0_measure,
   )
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = @node.compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_root_layout_size(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -154,11 +198,17 @@ test "taffy/blockgrid_block_in_grid_fixed_fit_content_smaller" {
 test "taffy/blockgrid_block_in_grid_fixed_larger" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.TrackSizingFunction::Length(50.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -168,11 +218,16 @@ test "taffy/blockgrid_block_in_grid_fixed_larger" {
     "node", root_child0_style, root_child0_measure,
   )
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = @node.compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_root_layout_size(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -191,11 +246,17 @@ test "taffy/blockgrid_block_in_grid_fixed_larger" {
 test "taffy/blockgrid_block_in_grid_fixed_middle" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.TrackSizingFunction::Length(30.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -205,11 +266,16 @@ test "taffy/blockgrid_block_in_grid_fixed_middle" {
     "node", root_child0_style, root_child0_measure,
   )
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = @node.compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_root_layout_size(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 30.0)
@@ -228,11 +294,17 @@ test "taffy/blockgrid_block_in_grid_fixed_middle" {
 test "taffy/blockgrid_block_in_grid_fixed_smaller" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.TrackSizingFunction::Length(10.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -242,11 +314,16 @@ test "taffy/blockgrid_block_in_grid_fixed_smaller" {
     "node", root_child0_style, root_child0_measure,
   )
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = @node.compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_root_layout_size(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 10.0)
@@ -265,11 +342,17 @@ test "taffy/blockgrid_block_in_grid_fixed_smaller" {
 test "taffy/blockgrid_block_in_grid_fr" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.TrackSizingFunction::Fr(1.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -279,11 +362,16 @@ test "taffy/blockgrid_block_in_grid_fr" {
     "node", root_child0_style, root_child0_measure,
   )
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = @node.compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_root_layout_size(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 40.0)
@@ -302,11 +390,17 @@ test "taffy/blockgrid_block_in_grid_fr" {
 test "taffy/blockgrid_block_in_grid_max_content" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.TrackSizingFunction::MinContent],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -316,11 +410,16 @@ test "taffy/blockgrid_block_in_grid_max_content" {
     "node", root_child0_style, root_child0_measure,
   )
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = @node.compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_root_layout_size(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -339,11 +438,17 @@ test "taffy/blockgrid_block_in_grid_max_content" {
 test "taffy/blockgrid_block_in_grid_min_content" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.TrackSizingFunction::MinContent],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -353,11 +458,16 @@ test "taffy/blockgrid_block_in_grid_min_content" {
     "node", root_child0_style, root_child0_measure,
   )
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = @node.compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_root_layout_size(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -374,12 +484,23 @@ test "taffy/blockgrid_block_in_grid_min_content" {
 
 ///|
 test "taffy/blockgrid_grid_in_block" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(200.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(200.0),
+  }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default(), display: @types.Grid }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Grid,
+  }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -391,13 +512,16 @@ test "taffy/blockgrid_grid_in_block" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = @node.compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_root_layout_size(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -418,10 +542,17 @@ test "taffy/blockgrid_grid_in_block" {
 
 ///|
 test "taffy/blockgrid_margin_y_collapse_through_blocked_by_grid" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     height: @types.Length(10.0),
     margin: {
       left: @types.Auto,
@@ -434,6 +565,7 @@ test "taffy/blockgrid_margin_y_collapse_through_blocked_by_grid" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     margin: {
       left: @types.Auto,
@@ -446,6 +578,9 @@ test "taffy/blockgrid_margin_y_collapse_through_blocked_by_grid" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     height: @types.Length(10.0),
     margin: {
       left: @types.Auto,
@@ -457,7 +592,7 @@ test "taffy/blockgrid_margin_y_collapse_through_blocked_by_grid" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = @node.compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_root_layout_size(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -478,10 +613,15 @@ test "taffy/blockgrid_margin_y_collapse_through_blocked_by_grid" {
 
 ///|
 test "taffy/blockgrid_margin_y_first_child_collapse_blocked_by_grid" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     margin: {
       left: @types.Auto,
@@ -493,6 +633,9 @@ test "taffy/blockgrid_margin_y_first_child_collapse_blocked_by_grid" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     margin: {
       left: @types.Auto,
       right: @types.Auto,
@@ -503,6 +646,9 @@ test "taffy/blockgrid_margin_y_first_child_collapse_blocked_by_grid" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -518,7 +664,7 @@ test "taffy/blockgrid_margin_y_first_child_collapse_blocked_by_grid" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = @node.compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_root_layout_size(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -539,10 +685,15 @@ test "taffy/blockgrid_margin_y_first_child_collapse_blocked_by_grid" {
 
 ///|
 test "taffy/blockgrid_margin_y_last_child_collapse_blocked_by_grid" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     margin: {
       left: @types.Auto,
@@ -554,6 +705,9 @@ test "taffy/blockgrid_margin_y_last_child_collapse_blocked_by_grid" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     margin: {
       left: @types.Auto,
       right: @types.Auto,
@@ -564,6 +718,9 @@ test "taffy/blockgrid_margin_y_last_child_collapse_blocked_by_grid" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -579,7 +736,7 @@ test "taffy/blockgrid_margin_y_last_child_collapse_blocked_by_grid" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = @node.compute_grid_layout(root, 800.0, 600.0)
+  let layout = compute_root_layout_size(root, 800.0, 600.0)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)

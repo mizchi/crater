@@ -14,6 +14,7 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
   let root_child0_style = {
     ..@style.Style::default(),
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     position: @types.Position::Absolute,
     inset: {
       left: @types.Length(50.0),
@@ -26,6 +27,9 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(200.0),
     height: @types.Length(10.0),
   }
@@ -33,6 +37,9 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Percent(1.0000),
     height: @types.Length(10.0),
   }
@@ -40,13 +47,18 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Percent(1.0000),
     height: @types.Length(10.0),
   }
   let root_child0_child2_children : Array[@node.Node] = []
   let root_child0_child2_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
   }
@@ -94,6 +106,7 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
 test "taffy/chrome_issue_325928327" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Percent(1.0000),
     height: @types.Length(40.0),
@@ -102,11 +115,17 @@ test "taffy/chrome_issue_325928327" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     height: @types.Percent(1.0000),
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     height: @types.Percent(1.0000),
     aspect_ratio: Some(1.0000),
   }
@@ -136,6 +155,7 @@ test "taffy/chrome_issue_325928327" {
 test "taffy/grid_absolute_align_self_sized_all" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -154,6 +174,7 @@ test "taffy/grid_absolute_align_self_sized_all" {
   let root_child0_style = {
     ..@style.Style::default(),
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     position: @types.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
@@ -164,6 +185,7 @@ test "taffy/grid_absolute_align_self_sized_all" {
   let root_child1_style = {
     ..@style.Style::default(),
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
@@ -174,6 +196,7 @@ test "taffy/grid_absolute_align_self_sized_all" {
   let root_child2_style = {
     ..@style.Style::default(),
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     position: @types.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
@@ -184,6 +207,7 @@ test "taffy/grid_absolute_align_self_sized_all" {
   let root_child3_style = {
     ..@style.Style::default(),
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
@@ -194,6 +218,7 @@ test "taffy/grid_absolute_align_self_sized_all" {
   let root_child4_style = {
     ..@style.Style::default(),
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     position: @types.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
@@ -204,6 +229,7 @@ test "taffy/grid_absolute_align_self_sized_all" {
   let root_child5_style = {
     ..@style.Style::default(),
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
@@ -214,6 +240,7 @@ test "taffy/grid_absolute_align_self_sized_all" {
   let root_child6_style = {
     ..@style.Style::default(),
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     position: @types.Position::Absolute,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
@@ -224,6 +251,7 @@ test "taffy/grid_absolute_align_self_sized_all" {
   let root_child7_style = {
     ..@style.Style::default(),
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     position: @types.Position::Absolute,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
@@ -275,6 +303,7 @@ test "taffy/grid_absolute_align_self_sized_all" {
 test "taffy/grid_absolute_column_end" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -297,6 +326,8 @@ test "taffy/grid_absolute_column_end" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Auto,
       end: @types.GridPlacement::Line(1),
@@ -326,6 +357,7 @@ test "taffy/grid_absolute_column_end" {
 test "taffy/grid_absolute_column_start" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -348,6 +380,8 @@ test "taffy/grid_absolute_column_start" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -377,6 +411,7 @@ test "taffy/grid_absolute_column_start" {
 test "taffy/grid_absolute_container_bottom_left" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -399,6 +434,8 @@ test "taffy/grid_absolute_container_bottom_left" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     inset: {
       left: @types.Length(0.0),
       right: @types.Auto,
@@ -408,28 +445,68 @@ test "taffy/grid_absolute_container_bottom_left" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -480,6 +557,7 @@ test "taffy/grid_absolute_container_bottom_left" {
 test "taffy/grid_absolute_container_bottom_left_margin" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -502,6 +580,8 @@ test "taffy/grid_absolute_container_bottom_left_margin" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
     margin: {
@@ -519,28 +599,68 @@ test "taffy/grid_absolute_container_bottom_left_margin" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -591,6 +711,7 @@ test "taffy/grid_absolute_container_bottom_left_margin" {
 test "taffy/grid_absolute_container_left_overrides_right" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -613,6 +734,8 @@ test "taffy/grid_absolute_container_left_overrides_right" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(10.0),
     inset: {
       left: @types.Length(5.0),
@@ -623,28 +746,68 @@ test "taffy/grid_absolute_container_left_overrides_right" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -695,6 +858,7 @@ test "taffy/grid_absolute_container_left_overrides_right" {
 test "taffy/grid_absolute_container_left_right" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -717,6 +881,8 @@ test "taffy/grid_absolute_container_left_right" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     inset: {
       left: @types.Length(5.0),
       right: @types.Length(2.0),
@@ -726,28 +892,68 @@ test "taffy/grid_absolute_container_left_right" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -798,6 +1004,7 @@ test "taffy/grid_absolute_container_left_right" {
 test "taffy/grid_absolute_container_left_right_margin" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -820,6 +1027,8 @@ test "taffy/grid_absolute_container_left_right_margin" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     margin: {
       left: @types.Length(4.0),
       right: @types.Length(2.0),
@@ -835,28 +1044,68 @@ test "taffy/grid_absolute_container_left_right_margin" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -907,6 +1156,7 @@ test "taffy/grid_absolute_container_left_right_margin" {
 test "taffy/grid_absolute_container_negative_position" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -929,6 +1179,8 @@ test "taffy/grid_absolute_container_negative_position" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     inset: {
       left: @types.Auto,
       right: @types.Length(-15.0),
@@ -941,6 +1193,8 @@ test "taffy/grid_absolute_container_negative_position" {
   let root_child1_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     inset: {
       left: @types.Length(-35.0),
       right: @types.Auto,
@@ -950,25 +1204,60 @@ test "taffy/grid_absolute_container_negative_position" {
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -1019,6 +1308,7 @@ test "taffy/grid_absolute_container_negative_position" {
 test "taffy/grid_absolute_container_negative_position_margin" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -1041,6 +1331,8 @@ test "taffy/grid_absolute_container_negative_position_margin" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     margin: {
       left: @types.Length(4.0),
       right: @types.Length(2.0),
@@ -1059,6 +1351,8 @@ test "taffy/grid_absolute_container_negative_position_margin" {
   let root_child1_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     margin: {
       left: @types.Length(4.0),
       right: @types.Length(2.0),
@@ -1074,25 +1368,60 @@ test "taffy/grid_absolute_container_negative_position_margin" {
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -1143,6 +1472,7 @@ test "taffy/grid_absolute_container_negative_position_margin" {
 test "taffy/grid_absolute_container_top_bottom" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -1165,6 +1495,8 @@ test "taffy/grid_absolute_container_top_bottom" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     inset: {
       left: @types.Auto,
       right: @types.Auto,
@@ -1174,28 +1506,68 @@ test "taffy/grid_absolute_container_top_bottom" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -1246,6 +1618,7 @@ test "taffy/grid_absolute_container_top_bottom" {
 test "taffy/grid_absolute_container_top_bottom_margin" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -1268,6 +1641,8 @@ test "taffy/grid_absolute_container_top_bottom_margin" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     margin: {
       left: @types.Length(4.0),
       right: @types.Length(2.0),
@@ -1283,28 +1658,68 @@ test "taffy/grid_absolute_container_top_bottom_margin" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -1355,6 +1770,7 @@ test "taffy/grid_absolute_container_top_bottom_margin" {
 test "taffy/grid_absolute_container_top_right" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -1377,6 +1793,8 @@ test "taffy/grid_absolute_container_top_right" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     inset: {
       left: @types.Auto,
       right: @types.Length(0.0),
@@ -1386,28 +1804,68 @@ test "taffy/grid_absolute_container_top_right" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -1458,6 +1916,7 @@ test "taffy/grid_absolute_container_top_right" {
 test "taffy/grid_absolute_container_top_right_margin" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -1480,6 +1939,8 @@ test "taffy/grid_absolute_container_top_right_margin" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     margin: {
       left: @types.Length(4.0),
       right: @types.Length(2.0),
@@ -1495,28 +1956,68 @@ test "taffy/grid_absolute_container_top_right_margin" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -1567,6 +2068,7 @@ test "taffy/grid_absolute_container_top_right_margin" {
 test "taffy/grid_absolute_justify_self_sized_all" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -1585,6 +2087,8 @@ test "taffy/grid_absolute_justify_self_sized_all" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     justify_self: @types.AlignSelf::Start,
@@ -1594,6 +2098,8 @@ test "taffy/grid_absolute_justify_self_sized_all" {
   let root_child1_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     justify_self: @types.AlignSelf::Start,
@@ -1603,6 +2109,8 @@ test "taffy/grid_absolute_justify_self_sized_all" {
   let root_child2_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     justify_self: @types.AlignSelf::End,
@@ -1612,6 +2120,8 @@ test "taffy/grid_absolute_justify_self_sized_all" {
   let root_child3_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     justify_self: @types.AlignSelf::End,
@@ -1621,6 +2131,8 @@ test "taffy/grid_absolute_justify_self_sized_all" {
   let root_child4_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     justify_self: @types.AlignSelf::Center,
@@ -1630,6 +2142,8 @@ test "taffy/grid_absolute_justify_self_sized_all" {
   let root_child5_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     justify_self: @types.AlignSelf::Center,
@@ -1639,6 +2153,8 @@ test "taffy/grid_absolute_justify_self_sized_all" {
   let root_child6_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     justify_self: @types.AlignSelf::Stretch,
@@ -1648,6 +2164,8 @@ test "taffy/grid_absolute_justify_self_sized_all" {
   let root_child7_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     justify_self: @types.AlignSelf::Stretch,
@@ -1698,6 +2216,7 @@ test "taffy/grid_absolute_justify_self_sized_all" {
 test "taffy/grid_absolute_layout_within_border" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -1718,6 +2237,8 @@ test "taffy/grid_absolute_layout_within_border" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     inset: {
@@ -1732,6 +2253,8 @@ test "taffy/grid_absolute_layout_within_border" {
   let root_child1_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     inset: {
@@ -1746,6 +2269,8 @@ test "taffy/grid_absolute_layout_within_border" {
   let root_child2_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -1766,6 +2291,8 @@ test "taffy/grid_absolute_layout_within_border" {
   let root_child3_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -1811,6 +2338,7 @@ test "taffy/grid_absolute_layout_within_border" {
 test "taffy/grid_absolute_layout_within_border_static" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -1831,6 +2359,7 @@ test "taffy/grid_absolute_layout_within_border_static" {
   let root_child0_style = {
     ..@style.Style::default(),
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -1842,6 +2371,7 @@ test "taffy/grid_absolute_layout_within_border_static" {
   let root_child1_style = {
     ..@style.Style::default(),
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -1853,6 +2383,7 @@ test "taffy/grid_absolute_layout_within_border_static" {
   let root_child2_style = {
     ..@style.Style::default(),
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -1870,6 +2401,7 @@ test "taffy/grid_absolute_layout_within_border_static" {
   let root_child3_style = {
     ..@style.Style::default(),
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     position: @types.Position::Absolute,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -1910,7 +2442,12 @@ test "taffy/grid_absolute_layout_within_border_static" {
 
 ///|
 test "taffy/grid_absolute_resolved_insets" {
-  let root_style = { ..@style.Style::default() }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
@@ -1935,6 +2472,8 @@ test "taffy/grid_absolute_resolved_insets" {
   let root_child0_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     inset: {
       left: @types.Auto,
       right: @types.Auto,
@@ -1947,6 +2486,8 @@ test "taffy/grid_absolute_resolved_insets" {
   let root_child0_child1_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     inset: {
       left: @types.Length(0.0),
       right: @types.Auto,
@@ -1959,6 +2500,8 @@ test "taffy/grid_absolute_resolved_insets" {
   let root_child0_child2_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     inset: {
       left: @types.Percent(1.0000),
       right: @types.Auto,
@@ -1971,6 +2514,8 @@ test "taffy/grid_absolute_resolved_insets" {
   let root_child0_child3_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     inset: {
       left: @types.Auto,
       right: @types.Percent(1.0000),
@@ -1983,6 +2528,8 @@ test "taffy/grid_absolute_resolved_insets" {
   let root_child0_child4_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     inset: {
       left: @types.Length(30.0),
       right: @types.Auto,
@@ -1995,6 +2542,8 @@ test "taffy/grid_absolute_resolved_insets" {
   let root_child0_child5_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Percent(1.0000),
     height: @types.Percent(1.0000),
     inset: {
@@ -2035,6 +2584,8 @@ test "taffy/grid_absolute_resolved_insets" {
   let root_child1_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     inset: {
       left: @types.Auto,
       right: @types.Auto,
@@ -2047,6 +2598,8 @@ test "taffy/grid_absolute_resolved_insets" {
   let root_child1_child1_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     inset: {
       left: @types.Length(0.0),
       right: @types.Auto,
@@ -2059,6 +2612,8 @@ test "taffy/grid_absolute_resolved_insets" {
   let root_child1_child2_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     inset: {
       left: @types.Percent(1.0000),
       right: @types.Auto,
@@ -2071,6 +2626,8 @@ test "taffy/grid_absolute_resolved_insets" {
   let root_child1_child3_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     inset: {
       left: @types.Auto,
       right: @types.Percent(1.0000),
@@ -2083,6 +2640,8 @@ test "taffy/grid_absolute_resolved_insets" {
   let root_child1_child4_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     inset: {
       left: @types.Length(30.0),
       right: @types.Auto,
@@ -2095,6 +2654,8 @@ test "taffy/grid_absolute_resolved_insets" {
   let root_child1_child5_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Percent(1.0000),
     height: @types.Percent(1.0000),
     inset: {
@@ -2178,6 +2739,7 @@ test "taffy/grid_absolute_resolved_insets" {
 test "taffy/grid_absolute_row_end" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -2200,6 +2762,8 @@ test "taffy/grid_absolute_row_end" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_row: {
       start: @types.GridPlacement::Auto,
       end: @types.GridPlacement::Line(1),
@@ -2229,6 +2793,7 @@ test "taffy/grid_absolute_row_end" {
 test "taffy/grid_absolute_row_start" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -2251,6 +2816,8 @@ test "taffy/grid_absolute_row_start" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_row: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -2280,6 +2847,7 @@ test "taffy/grid_absolute_row_start" {
 test "taffy/grid_absolute_top_overrides_bottom" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -2302,6 +2870,8 @@ test "taffy/grid_absolute_top_overrides_bottom" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     height: @types.Length(10.0),
     inset: {
       left: @types.Auto,
@@ -2312,28 +2882,68 @@ test "taffy/grid_absolute_top_overrides_bottom" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -2384,6 +2994,7 @@ test "taffy/grid_absolute_top_overrides_bottom" {
 test "taffy/grid_absolute_with_padding" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -2406,6 +3017,8 @@ test "taffy/grid_absolute_with_padding" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     inset: {
       left: @types.Auto,
       right: @types.Length(0.0),
@@ -2418,6 +3031,8 @@ test "taffy/grid_absolute_with_padding" {
   let root_child1_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     inset: {
       left: @types.Length(10.0),
       right: @types.Auto,
@@ -2427,25 +3042,60 @@ test "taffy/grid_absolute_with_padding" {
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -2496,6 +3146,7 @@ test "taffy/grid_absolute_with_padding" {
 test "taffy/grid_absolute_with_padding_and_margin" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -2518,6 +3169,8 @@ test "taffy/grid_absolute_with_padding_and_margin" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     margin: {
       left: @types.Length(4.0),
       right: @types.Length(2.0),
@@ -2536,6 +3189,8 @@ test "taffy/grid_absolute_with_padding_and_margin" {
   let root_child1_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     margin: {
       left: @types.Length(4.0),
       right: @types.Length(2.0),
@@ -2551,25 +3206,60 @@ test "taffy/grid_absolute_with_padding_and_margin" {
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -2620,6 +3310,7 @@ test "taffy/grid_absolute_with_padding_and_margin" {
 test "taffy/grid_align_content_center" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -2636,31 +3327,76 @@ test "taffy/grid_align_content_center" {
     align_content: @types.Center,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -2711,6 +3447,7 @@ test "taffy/grid_align_content_center" {
 test "taffy/grid_align_content_center_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
@@ -2724,6 +3461,7 @@ test "taffy/grid_align_content_center_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -2743,31 +3481,76 @@ test "taffy/grid_align_content_center_negative_space_gap" {
     align_content: @types.Center,
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
-  let root_child0_child1_style = { ..@style.Style::default() }
+  let root_child0_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child1 = @node.Node::leaf("node", root_child0_child1_style)
   root_child0_children.push(root_child0_child1)
-  let root_child0_child2_style = { ..@style.Style::default() }
+  let root_child0_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child2 = @node.Node::leaf("node", root_child0_child2_style)
   root_child0_children.push(root_child0_child2)
-  let root_child0_child3_style = { ..@style.Style::default() }
+  let root_child0_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child3 = @node.Node::leaf("node", root_child0_child3_style)
   root_child0_children.push(root_child0_child3)
-  let root_child0_child4_style = { ..@style.Style::default() }
+  let root_child0_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child4 = @node.Node::leaf("node", root_child0_child4_style)
   root_child0_children.push(root_child0_child4)
-  let root_child0_child5_style = { ..@style.Style::default() }
+  let root_child0_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child5 = @node.Node::leaf("node", root_child0_child5_style)
   root_child0_children.push(root_child0_child5)
-  let root_child0_child6_style = { ..@style.Style::default() }
+  let root_child0_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child6 = @node.Node::leaf("node", root_child0_child6_style)
   root_child0_children.push(root_child0_child6)
-  let root_child0_child7_style = { ..@style.Style::default() }
+  let root_child0_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child7 = @node.Node::leaf("node", root_child0_child7_style)
   root_child0_children.push(root_child0_child7)
-  let root_child0_child8_style = { ..@style.Style::default() }
+  let root_child0_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child8 = @node.Node::leaf("node", root_child0_child8_style)
   root_child0_children.push(root_child0_child8)
   let root_child0 = @node.Node::new(
@@ -2826,6 +3609,7 @@ test "taffy/grid_align_content_center_negative_space_gap" {
 test "taffy/grid_align_content_end" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -2842,31 +3626,76 @@ test "taffy/grid_align_content_end" {
     align_content: @types.End,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -2917,6 +3746,7 @@ test "taffy/grid_align_content_end" {
 test "taffy/grid_align_content_end_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
@@ -2930,6 +3760,7 @@ test "taffy/grid_align_content_end_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -2949,31 +3780,76 @@ test "taffy/grid_align_content_end_negative_space_gap" {
     align_content: @types.End,
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
-  let root_child0_child1_style = { ..@style.Style::default() }
+  let root_child0_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child1 = @node.Node::leaf("node", root_child0_child1_style)
   root_child0_children.push(root_child0_child1)
-  let root_child0_child2_style = { ..@style.Style::default() }
+  let root_child0_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child2 = @node.Node::leaf("node", root_child0_child2_style)
   root_child0_children.push(root_child0_child2)
-  let root_child0_child3_style = { ..@style.Style::default() }
+  let root_child0_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child3 = @node.Node::leaf("node", root_child0_child3_style)
   root_child0_children.push(root_child0_child3)
-  let root_child0_child4_style = { ..@style.Style::default() }
+  let root_child0_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child4 = @node.Node::leaf("node", root_child0_child4_style)
   root_child0_children.push(root_child0_child4)
-  let root_child0_child5_style = { ..@style.Style::default() }
+  let root_child0_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child5 = @node.Node::leaf("node", root_child0_child5_style)
   root_child0_children.push(root_child0_child5)
-  let root_child0_child6_style = { ..@style.Style::default() }
+  let root_child0_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child6 = @node.Node::leaf("node", root_child0_child6_style)
   root_child0_children.push(root_child0_child6)
-  let root_child0_child7_style = { ..@style.Style::default() }
+  let root_child0_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child7 = @node.Node::leaf("node", root_child0_child7_style)
   root_child0_children.push(root_child0_child7)
-  let root_child0_child8_style = { ..@style.Style::default() }
+  let root_child0_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child8 = @node.Node::leaf("node", root_child0_child8_style)
   root_child0_children.push(root_child0_child8)
   let root_child0 = @node.Node::new(
@@ -3032,6 +3908,7 @@ test "taffy/grid_align_content_end_negative_space_gap" {
 test "taffy/grid_align_content_end_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -3060,31 +3937,76 @@ test "taffy/grid_align_content_end_with_padding_border" {
     align_content: @types.End,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -3135,6 +4057,7 @@ test "taffy/grid_align_content_end_with_padding_border" {
 test "taffy/grid_align_content_space_around" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -3151,31 +4074,76 @@ test "taffy/grid_align_content_space_around" {
     align_content: @types.SpaceAround,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -3226,6 +4194,7 @@ test "taffy/grid_align_content_space_around" {
 test "taffy/grid_align_content_space_around_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
@@ -3239,6 +4208,7 @@ test "taffy/grid_align_content_space_around_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -3258,31 +4228,76 @@ test "taffy/grid_align_content_space_around_negative_space_gap" {
     align_content: @types.SpaceAround,
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
-  let root_child0_child1_style = { ..@style.Style::default() }
+  let root_child0_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child1 = @node.Node::leaf("node", root_child0_child1_style)
   root_child0_children.push(root_child0_child1)
-  let root_child0_child2_style = { ..@style.Style::default() }
+  let root_child0_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child2 = @node.Node::leaf("node", root_child0_child2_style)
   root_child0_children.push(root_child0_child2)
-  let root_child0_child3_style = { ..@style.Style::default() }
+  let root_child0_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child3 = @node.Node::leaf("node", root_child0_child3_style)
   root_child0_children.push(root_child0_child3)
-  let root_child0_child4_style = { ..@style.Style::default() }
+  let root_child0_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child4 = @node.Node::leaf("node", root_child0_child4_style)
   root_child0_children.push(root_child0_child4)
-  let root_child0_child5_style = { ..@style.Style::default() }
+  let root_child0_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child5 = @node.Node::leaf("node", root_child0_child5_style)
   root_child0_children.push(root_child0_child5)
-  let root_child0_child6_style = { ..@style.Style::default() }
+  let root_child0_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child6 = @node.Node::leaf("node", root_child0_child6_style)
   root_child0_children.push(root_child0_child6)
-  let root_child0_child7_style = { ..@style.Style::default() }
+  let root_child0_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child7 = @node.Node::leaf("node", root_child0_child7_style)
   root_child0_children.push(root_child0_child7)
-  let root_child0_child8_style = { ..@style.Style::default() }
+  let root_child0_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child8 = @node.Node::leaf("node", root_child0_child8_style)
   root_child0_children.push(root_child0_child8)
   let root_child0 = @node.Node::new(
@@ -3341,6 +4356,7 @@ test "taffy/grid_align_content_space_around_negative_space_gap" {
 test "taffy/grid_align_content_space_around_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -3369,31 +4385,76 @@ test "taffy/grid_align_content_space_around_with_padding_border" {
     align_content: @types.SpaceAround,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -3444,6 +4505,7 @@ test "taffy/grid_align_content_space_around_with_padding_border" {
 test "taffy/grid_align_content_space_between" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -3460,31 +4522,76 @@ test "taffy/grid_align_content_space_between" {
     align_content: @types.SpaceBetween,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -3535,6 +4642,7 @@ test "taffy/grid_align_content_space_between" {
 test "taffy/grid_align_content_space_between_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
@@ -3548,6 +4656,7 @@ test "taffy/grid_align_content_space_between_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -3567,31 +4676,76 @@ test "taffy/grid_align_content_space_between_negative_space_gap" {
     align_content: @types.SpaceBetween,
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
-  let root_child0_child1_style = { ..@style.Style::default() }
+  let root_child0_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child1 = @node.Node::leaf("node", root_child0_child1_style)
   root_child0_children.push(root_child0_child1)
-  let root_child0_child2_style = { ..@style.Style::default() }
+  let root_child0_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child2 = @node.Node::leaf("node", root_child0_child2_style)
   root_child0_children.push(root_child0_child2)
-  let root_child0_child3_style = { ..@style.Style::default() }
+  let root_child0_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child3 = @node.Node::leaf("node", root_child0_child3_style)
   root_child0_children.push(root_child0_child3)
-  let root_child0_child4_style = { ..@style.Style::default() }
+  let root_child0_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child4 = @node.Node::leaf("node", root_child0_child4_style)
   root_child0_children.push(root_child0_child4)
-  let root_child0_child5_style = { ..@style.Style::default() }
+  let root_child0_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child5 = @node.Node::leaf("node", root_child0_child5_style)
   root_child0_children.push(root_child0_child5)
-  let root_child0_child6_style = { ..@style.Style::default() }
+  let root_child0_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child6 = @node.Node::leaf("node", root_child0_child6_style)
   root_child0_children.push(root_child0_child6)
-  let root_child0_child7_style = { ..@style.Style::default() }
+  let root_child0_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child7 = @node.Node::leaf("node", root_child0_child7_style)
   root_child0_children.push(root_child0_child7)
-  let root_child0_child8_style = { ..@style.Style::default() }
+  let root_child0_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child8 = @node.Node::leaf("node", root_child0_child8_style)
   root_child0_children.push(root_child0_child8)
   let root_child0 = @node.Node::new(
@@ -3650,6 +4804,7 @@ test "taffy/grid_align_content_space_between_negative_space_gap" {
 test "taffy/grid_align_content_space_between_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -3678,31 +4833,76 @@ test "taffy/grid_align_content_space_between_with_padding_border" {
     align_content: @types.SpaceBetween,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -3753,6 +4953,7 @@ test "taffy/grid_align_content_space_between_with_padding_border" {
 test "taffy/grid_align_content_space_evenly" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -3769,31 +4970,76 @@ test "taffy/grid_align_content_space_evenly" {
     align_content: @types.SpaceEvenly,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -3844,6 +5090,7 @@ test "taffy/grid_align_content_space_evenly" {
 test "taffy/grid_align_content_space_evenly_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
@@ -3857,6 +5104,7 @@ test "taffy/grid_align_content_space_evenly_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -3876,31 +5124,76 @@ test "taffy/grid_align_content_space_evenly_negative_space_gap" {
     align_content: @types.SpaceBetween,
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
-  let root_child0_child1_style = { ..@style.Style::default() }
+  let root_child0_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child1 = @node.Node::leaf("node", root_child0_child1_style)
   root_child0_children.push(root_child0_child1)
-  let root_child0_child2_style = { ..@style.Style::default() }
+  let root_child0_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child2 = @node.Node::leaf("node", root_child0_child2_style)
   root_child0_children.push(root_child0_child2)
-  let root_child0_child3_style = { ..@style.Style::default() }
+  let root_child0_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child3 = @node.Node::leaf("node", root_child0_child3_style)
   root_child0_children.push(root_child0_child3)
-  let root_child0_child4_style = { ..@style.Style::default() }
+  let root_child0_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child4 = @node.Node::leaf("node", root_child0_child4_style)
   root_child0_children.push(root_child0_child4)
-  let root_child0_child5_style = { ..@style.Style::default() }
+  let root_child0_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child5 = @node.Node::leaf("node", root_child0_child5_style)
   root_child0_children.push(root_child0_child5)
-  let root_child0_child6_style = { ..@style.Style::default() }
+  let root_child0_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child6 = @node.Node::leaf("node", root_child0_child6_style)
   root_child0_children.push(root_child0_child6)
-  let root_child0_child7_style = { ..@style.Style::default() }
+  let root_child0_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child7 = @node.Node::leaf("node", root_child0_child7_style)
   root_child0_children.push(root_child0_child7)
-  let root_child0_child8_style = { ..@style.Style::default() }
+  let root_child0_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child8 = @node.Node::leaf("node", root_child0_child8_style)
   root_child0_children.push(root_child0_child8)
   let root_child0 = @node.Node::new(
@@ -3959,6 +5252,7 @@ test "taffy/grid_align_content_space_evenly_negative_space_gap" {
 test "taffy/grid_align_content_space_evenly_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -3987,31 +5281,76 @@ test "taffy/grid_align_content_space_evenly_with_padding_border" {
     align_content: @types.SpaceEvenly,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -4062,6 +5401,7 @@ test "taffy/grid_align_content_space_evenly_with_padding_border" {
 test "taffy/grid_align_content_start" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -4078,31 +5418,76 @@ test "taffy/grid_align_content_start" {
     align_content: @types.Start,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -4153,6 +5538,7 @@ test "taffy/grid_align_content_start" {
 test "taffy/grid_align_content_start_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
@@ -4166,6 +5552,7 @@ test "taffy/grid_align_content_start_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -4185,31 +5572,76 @@ test "taffy/grid_align_content_start_negative_space_gap" {
     align_content: @types.Start,
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
-  let root_child0_child1_style = { ..@style.Style::default() }
+  let root_child0_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child1 = @node.Node::leaf("node", root_child0_child1_style)
   root_child0_children.push(root_child0_child1)
-  let root_child0_child2_style = { ..@style.Style::default() }
+  let root_child0_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child2 = @node.Node::leaf("node", root_child0_child2_style)
   root_child0_children.push(root_child0_child2)
-  let root_child0_child3_style = { ..@style.Style::default() }
+  let root_child0_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child3 = @node.Node::leaf("node", root_child0_child3_style)
   root_child0_children.push(root_child0_child3)
-  let root_child0_child4_style = { ..@style.Style::default() }
+  let root_child0_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child4 = @node.Node::leaf("node", root_child0_child4_style)
   root_child0_children.push(root_child0_child4)
-  let root_child0_child5_style = { ..@style.Style::default() }
+  let root_child0_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child5 = @node.Node::leaf("node", root_child0_child5_style)
   root_child0_children.push(root_child0_child5)
-  let root_child0_child6_style = { ..@style.Style::default() }
+  let root_child0_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child6 = @node.Node::leaf("node", root_child0_child6_style)
   root_child0_children.push(root_child0_child6)
-  let root_child0_child7_style = { ..@style.Style::default() }
+  let root_child0_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child7 = @node.Node::leaf("node", root_child0_child7_style)
   root_child0_children.push(root_child0_child7)
-  let root_child0_child8_style = { ..@style.Style::default() }
+  let root_child0_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child8 = @node.Node::leaf("node", root_child0_child8_style)
   root_child0_children.push(root_child0_child8)
   let root_child0 = @node.Node::new(
@@ -4268,6 +5700,7 @@ test "taffy/grid_align_content_start_negative_space_gap" {
 test "taffy/grid_align_content_start_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -4296,31 +5729,76 @@ test "taffy/grid_align_content_start_with_padding_border" {
     align_content: @types.Start,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -4371,6 +5849,7 @@ test "taffy/grid_align_content_start_with_padding_border" {
 test "taffy/grid_align_items_baseline" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -4379,6 +5858,7 @@ test "taffy/grid_align_items_baseline" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -4387,6 +5867,7 @@ test "taffy/grid_align_items_baseline" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
@@ -4413,6 +5894,7 @@ test "taffy/grid_align_items_baseline" {
 test "taffy/grid_align_items_baseline_child" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -4421,6 +5903,7 @@ test "taffy/grid_align_items_baseline_child" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -4429,6 +5912,7 @@ test "taffy/grid_align_items_baseline_child" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
@@ -4436,6 +5920,7 @@ test "taffy/grid_align_items_baseline_child" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
@@ -4470,6 +5955,7 @@ test "taffy/grid_align_items_baseline_child" {
 test "taffy/grid_align_items_baseline_child_margin" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -4478,6 +5964,7 @@ test "taffy/grid_align_items_baseline_child_margin" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -4492,6 +5979,7 @@ test "taffy/grid_align_items_baseline_child_margin" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
@@ -4499,6 +5987,7 @@ test "taffy/grid_align_items_baseline_child_margin" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
@@ -4539,6 +6028,7 @@ test "taffy/grid_align_items_baseline_child_margin" {
 test "taffy/grid_align_items_baseline_child_margin_percent" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -4547,6 +6037,7 @@ test "taffy/grid_align_items_baseline_child_margin_percent" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -4561,6 +6052,7 @@ test "taffy/grid_align_items_baseline_child_margin_percent" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
@@ -4568,6 +6060,7 @@ test "taffy/grid_align_items_baseline_child_margin_percent" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
@@ -4608,6 +6101,7 @@ test "taffy/grid_align_items_baseline_child_margin_percent" {
 test "taffy/grid_align_items_baseline_child_multiline" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     align_items: @types.Baseline,
@@ -4615,6 +6109,7 @@ test "taffy/grid_align_items_baseline_child_multiline" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(60.0),
@@ -4623,6 +6118,7 @@ test "taffy/grid_align_items_baseline_child_multiline" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     grid_template_columns: [
@@ -4634,6 +6130,7 @@ test "taffy/grid_align_items_baseline_child_multiline" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(20.0),
@@ -4642,6 +6139,7 @@ test "taffy/grid_align_items_baseline_child_multiline" {
   root_child1_children.push(root_child1_child0)
   let root_child1_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(10.0),
@@ -4650,6 +6148,7 @@ test "taffy/grid_align_items_baseline_child_multiline" {
   root_child1_children.push(root_child1_child1)
   let root_child1_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(20.0),
@@ -4658,6 +6157,7 @@ test "taffy/grid_align_items_baseline_child_multiline" {
   root_child1_children.push(root_child1_child2)
   let root_child1_child3_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(10.0),
@@ -4704,6 +6204,7 @@ test "taffy/grid_align_items_baseline_child_multiline" {
 test "taffy/grid_align_items_baseline_child_multiline_no_override_on_secondline" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -4712,6 +6213,7 @@ test "taffy/grid_align_items_baseline_child_multiline_no_override_on_secondline"
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(60.0),
@@ -4720,6 +6222,7 @@ test "taffy/grid_align_items_baseline_child_multiline_no_override_on_secondline"
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(25.0),
@@ -4731,6 +6234,7 @@ test "taffy/grid_align_items_baseline_child_multiline_no_override_on_secondline"
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(20.0),
@@ -4739,6 +6243,7 @@ test "taffy/grid_align_items_baseline_child_multiline_no_override_on_secondline"
   root_child1_children.push(root_child1_child0)
   let root_child1_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(10.0),
@@ -4747,6 +6252,7 @@ test "taffy/grid_align_items_baseline_child_multiline_no_override_on_secondline"
   root_child1_children.push(root_child1_child1)
   let root_child1_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(20.0),
@@ -4755,6 +6261,7 @@ test "taffy/grid_align_items_baseline_child_multiline_no_override_on_secondline"
   root_child1_children.push(root_child1_child2)
   let root_child1_child3_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(10.0),
@@ -4802,6 +6309,7 @@ test "taffy/grid_align_items_baseline_child_multiline_no_override_on_secondline"
 test "taffy/grid_align_items_baseline_child_multiline_override" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -4810,6 +6318,7 @@ test "taffy/grid_align_items_baseline_child_multiline_override" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(60.0),
@@ -4818,6 +6327,7 @@ test "taffy/grid_align_items_baseline_child_multiline_override" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(25.0),
@@ -4829,6 +6339,7 @@ test "taffy/grid_align_items_baseline_child_multiline_override" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(20.0),
@@ -4837,6 +6348,7 @@ test "taffy/grid_align_items_baseline_child_multiline_override" {
   root_child1_children.push(root_child1_child0)
   let root_child1_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(10.0),
@@ -4846,6 +6358,7 @@ test "taffy/grid_align_items_baseline_child_multiline_override" {
   root_child1_children.push(root_child1_child1)
   let root_child1_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(20.0),
@@ -4854,6 +6367,7 @@ test "taffy/grid_align_items_baseline_child_multiline_override" {
   root_child1_children.push(root_child1_child2)
   let root_child1_child3_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(25.0),
     height: @types.Length(10.0),
@@ -4901,6 +6415,7 @@ test "taffy/grid_align_items_baseline_child_multiline_override" {
 test "taffy/grid_align_items_baseline_child_padding" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -4915,6 +6430,7 @@ test "taffy/grid_align_items_baseline_child_padding" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -4923,6 +6439,7 @@ test "taffy/grid_align_items_baseline_child_padding" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
@@ -4936,6 +6453,7 @@ test "taffy/grid_align_items_baseline_child_padding" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
@@ -4970,6 +6488,7 @@ test "taffy/grid_align_items_baseline_child_padding" {
 test "taffy/grid_align_items_baseline_child_top" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -4978,6 +6497,7 @@ test "taffy/grid_align_items_baseline_child_top" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -4992,6 +6512,7 @@ test "taffy/grid_align_items_baseline_child_top" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
@@ -4999,6 +6520,7 @@ test "taffy/grid_align_items_baseline_child_top" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
@@ -5033,6 +6555,7 @@ test "taffy/grid_align_items_baseline_child_top" {
 test "taffy/grid_align_items_baseline_child_top2" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -5041,6 +6564,7 @@ test "taffy/grid_align_items_baseline_child_top2" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -5049,6 +6573,7 @@ test "taffy/grid_align_items_baseline_child_top2" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
@@ -5062,6 +6587,7 @@ test "taffy/grid_align_items_baseline_child_top2" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
@@ -5096,6 +6622,7 @@ test "taffy/grid_align_items_baseline_child_top2" {
 test "taffy/grid_align_items_baseline_complex" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -5114,6 +6641,9 @@ test "taffy/grid_align_items_baseline_complex" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
   }
@@ -5121,12 +6651,18 @@ test "taffy/grid_align_items_baseline_complex" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     height: @types.Length(10.0),
   }
   let root_child1_child0 = @node.Node::leaf("node", root_child1_child0_style)
@@ -5137,12 +6673,18 @@ test "taffy/grid_align_items_baseline_complex" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
   }
   let root_child2_children : Array[@node.Node] = []
   let root_child2_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     height: @types.Length(10.0),
   }
   let root_child2_child0 = @node.Node::leaf("node", root_child2_child0_style)
@@ -5153,6 +6695,9 @@ test "taffy/grid_align_items_baseline_complex" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
   }
@@ -5160,6 +6705,9 @@ test "taffy/grid_align_items_baseline_complex" {
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
   }
@@ -5167,6 +6715,9 @@ test "taffy/grid_align_items_baseline_complex" {
   root_children.push(root_child4)
   let root_child5_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
   }
@@ -5174,12 +6725,18 @@ test "taffy/grid_align_items_baseline_complex" {
   root_children.push(root_child5)
   let root_child6_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
   }
   let root_child6_children : Array[@node.Node] = []
   let root_child6_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     height: @types.Length(10.0),
   }
   let root_child6_child0 = @node.Node::leaf("node", root_child6_child0_style)
@@ -5190,12 +6747,18 @@ test "taffy/grid_align_items_baseline_complex" {
   root_children.push(root_child6)
   let root_child7_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
   }
   let root_child7_children : Array[@node.Node] = []
   let root_child7_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     height: @types.Length(5.0),
   }
   let root_child7_child0 = @node.Node::leaf("node", root_child7_child0_style)
@@ -5206,6 +6769,9 @@ test "taffy/grid_align_items_baseline_complex" {
   root_children.push(root_child7)
   let root_child8_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
   }
@@ -5275,6 +6841,7 @@ test "taffy/grid_align_items_baseline_complex" {
 test "taffy/grid_align_items_baseline_double_nested_child" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -5283,6 +6850,7 @@ test "taffy/grid_align_items_baseline_double_nested_child" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -5290,6 +6858,7 @@ test "taffy/grid_align_items_baseline_double_nested_child" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
@@ -5302,6 +6871,7 @@ test "taffy/grid_align_items_baseline_double_nested_child" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
@@ -5309,6 +6879,7 @@ test "taffy/grid_align_items_baseline_double_nested_child" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(15.0),
@@ -5347,6 +6918,7 @@ test "taffy/grid_align_items_baseline_double_nested_child" {
 test "taffy/grid_align_items_baseline_multiline" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -5359,6 +6931,7 @@ test "taffy/grid_align_items_baseline_multiline" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -5367,6 +6940,7 @@ test "taffy/grid_align_items_baseline_multiline" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
@@ -5374,6 +6948,7 @@ test "taffy/grid_align_items_baseline_multiline" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
@@ -5386,6 +6961,7 @@ test "taffy/grid_align_items_baseline_multiline" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
@@ -5393,6 +6969,7 @@ test "taffy/grid_align_items_baseline_multiline" {
   let root_child2_children : Array[@node.Node] = []
   let root_child2_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
@@ -5405,6 +6982,7 @@ test "taffy/grid_align_items_baseline_multiline" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -5447,6 +7025,7 @@ test "taffy/grid_align_items_baseline_multiline" {
 test "taffy/grid_align_items_baseline_multiline_column" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -5459,6 +7038,7 @@ test "taffy/grid_align_items_baseline_multiline_column" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -5467,6 +7047,7 @@ test "taffy/grid_align_items_baseline_multiline_column" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(30.0),
     height: @types.Length(50.0),
@@ -5474,6 +7055,7 @@ test "taffy/grid_align_items_baseline_multiline_column" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
@@ -5486,6 +7068,7 @@ test "taffy/grid_align_items_baseline_multiline_column" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(40.0),
     height: @types.Length(70.0),
@@ -5493,6 +7076,7 @@ test "taffy/grid_align_items_baseline_multiline_column" {
   let root_child2_children : Array[@node.Node] = []
   let root_child2_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
@@ -5505,6 +7089,7 @@ test "taffy/grid_align_items_baseline_multiline_column" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
@@ -5547,6 +7132,7 @@ test "taffy/grid_align_items_baseline_multiline_column" {
 test "taffy/grid_align_items_baseline_multiline_row_and_column" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -5559,6 +7145,7 @@ test "taffy/grid_align_items_baseline_multiline_row_and_column" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -5567,6 +7154,7 @@ test "taffy/grid_align_items_baseline_multiline_row_and_column" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -5574,6 +7162,7 @@ test "taffy/grid_align_items_baseline_multiline_row_and_column" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
@@ -5586,6 +7175,7 @@ test "taffy/grid_align_items_baseline_multiline_row_and_column" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
@@ -5593,6 +7183,7 @@ test "taffy/grid_align_items_baseline_multiline_row_and_column" {
   let root_child2_children : Array[@node.Node] = []
   let root_child2_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
@@ -5605,6 +7196,7 @@ test "taffy/grid_align_items_baseline_multiline_row_and_column" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
@@ -5647,6 +7239,7 @@ test "taffy/grid_align_items_baseline_multiline_row_and_column" {
 test "taffy/grid_align_items_baseline_nested_column" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -5655,16 +7248,22 @@ test "taffy/grid_align_items_baseline_nested_column" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(60.0),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default(), display: @types.Grid }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Grid,
+  }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(80.0),
@@ -5672,6 +7271,7 @@ test "taffy/grid_align_items_baseline_nested_column" {
   let root_child1_child0_children : Array[@node.Node] = []
   let root_child1_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(30.0),
@@ -5682,6 +7282,7 @@ test "taffy/grid_align_items_baseline_nested_column" {
   root_child1_child0_children.push(root_child1_child0_child0)
   let root_child1_child0_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(40.0),
@@ -5730,6 +7331,7 @@ test "taffy/grid_align_items_baseline_nested_column" {
 test "taffy/grid_align_items_sized_center" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -5748,6 +7350,9 @@ test "taffy/grid_align_items_sized_center" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     grid_column: {
@@ -5764,6 +7369,9 @@ test "taffy/grid_align_items_sized_center" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     grid_column: {
@@ -5798,6 +7406,7 @@ test "taffy/grid_align_items_sized_center" {
 test "taffy/grid_align_items_sized_end" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -5816,6 +7425,9 @@ test "taffy/grid_align_items_sized_end" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     grid_column: {
@@ -5832,6 +7444,9 @@ test "taffy/grid_align_items_sized_end" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     grid_column: {
@@ -5866,6 +7481,7 @@ test "taffy/grid_align_items_sized_end" {
 test "taffy/grid_align_items_sized_start" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -5884,6 +7500,9 @@ test "taffy/grid_align_items_sized_start" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     grid_column: {
@@ -5900,6 +7519,9 @@ test "taffy/grid_align_items_sized_start" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     grid_column: {
@@ -5934,6 +7556,7 @@ test "taffy/grid_align_items_sized_start" {
 test "taffy/grid_align_items_sized_stretch" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -5952,6 +7575,9 @@ test "taffy/grid_align_items_sized_stretch" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     grid_column: {
@@ -5968,6 +7594,9 @@ test "taffy/grid_align_items_sized_stretch" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     grid_column: {
@@ -6002,6 +7631,7 @@ test "taffy/grid_align_items_sized_stretch" {
 test "taffy/grid_align_self_sized_all" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -6019,7 +7649,9 @@ test "taffy/grid_align_self_sized_all" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     align_self: @types.AlignSelf::Start,
@@ -6028,7 +7660,9 @@ test "taffy/grid_align_self_sized_all" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     align_self: @types.AlignSelf::Start,
@@ -6037,7 +7671,9 @@ test "taffy/grid_align_self_sized_all" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     align_self: @types.AlignSelf::End,
@@ -6046,7 +7682,9 @@ test "taffy/grid_align_self_sized_all" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     align_self: @types.AlignSelf::End,
@@ -6055,7 +7693,9 @@ test "taffy/grid_align_self_sized_all" {
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     align_self: @types.AlignSelf::Center,
@@ -6064,7 +7704,9 @@ test "taffy/grid_align_self_sized_all" {
   root_children.push(root_child4)
   let root_child5_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     align_self: @types.AlignSelf::Center,
@@ -6073,7 +7715,9 @@ test "taffy/grid_align_self_sized_all" {
   root_children.push(root_child5)
   let root_child6_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     align_self: @types.AlignSelf::Stretch,
@@ -6082,7 +7726,9 @@ test "taffy/grid_align_self_sized_all" {
   root_children.push(root_child6)
   let root_child7_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     align_self: @types.AlignSelf::Stretch,
@@ -6133,6 +7779,7 @@ test "taffy/grid_align_self_sized_all" {
 test "taffy/grid_aspect_ratio_absolute_aspect_ratio_overrides_height_of_full_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
@@ -6141,6 +7788,8 @@ test "taffy/grid_aspect_ratio_absolute_aspect_ratio_overrides_height_of_full_ins
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     inset: {
       left: @types.Percent(0.0500),
       right: @types.Percent(0.0500),
@@ -6167,6 +7816,7 @@ test "taffy/grid_aspect_ratio_absolute_aspect_ratio_overrides_height_of_full_ins
 test "taffy/grid_aspect_ratio_absolute_fill_height_from_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
@@ -6175,6 +7825,8 @@ test "taffy/grid_aspect_ratio_absolute_fill_height_from_inset" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     inset: {
       left: @types.Percent(0.1000),
       right: @types.Percent(0.1000),
@@ -6201,7 +7853,9 @@ test "taffy/grid_aspect_ratio_absolute_fill_height_from_inset" {
 test "taffy/grid_aspect_ratio_absolute_fill_width_from_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
@@ -6209,6 +7863,8 @@ test "taffy/grid_aspect_ratio_absolute_fill_width_from_inset" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     inset: {
       left: @types.Auto,
       right: @types.Auto,
@@ -6235,7 +7891,9 @@ test "taffy/grid_aspect_ratio_absolute_fill_width_from_inset" {
 test "taffy/grid_aspect_ratio_absolute_height_overrides_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
@@ -6243,6 +7901,8 @@ test "taffy/grid_aspect_ratio_absolute_height_overrides_inset" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     height: @types.Percent(0.1000),
     inset: {
       left: @types.Auto,
@@ -6270,6 +7930,7 @@ test "taffy/grid_aspect_ratio_absolute_height_overrides_inset" {
 test "taffy/grid_aspect_ratio_absolute_width_overrides_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
@@ -6278,6 +7939,8 @@ test "taffy/grid_aspect_ratio_absolute_width_overrides_inset" {
   let root_child0_style = {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Percent(0.4000),
     inset: {
       left: @types.Percent(0.1000),
@@ -6303,10 +7966,17 @@ test "taffy/grid_aspect_ratio_absolute_width_overrides_inset" {
 
 ///|
 test "taffy/grid_aspect_ratio_child_fill_content_height" {
-  let root_style = { ..@style.Style::default(), display: @types.Grid }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Grid,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     aspect_ratio: Some(0.5000),
   }
   let root_child0_measure = @types.MeasureFunc::{
@@ -6320,6 +7990,9 @@ test "taffy/grid_aspect_ratio_child_fill_content_height" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     height: @types.Length(20.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -6342,10 +8015,17 @@ test "taffy/grid_aspect_ratio_child_fill_content_height" {
 
 ///|
 test "taffy/grid_aspect_ratio_child_fill_content_width" {
-  let root_style = { ..@style.Style::default(), display: @types.Grid }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Grid,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     aspect_ratio: Some(2.0000),
   }
   let root_child0_measure = @types.MeasureFunc::{
@@ -6359,6 +8039,9 @@ test "taffy/grid_aspect_ratio_child_fill_content_width" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     height: @types.Length(20.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -6383,6 +8066,7 @@ test "taffy/grid_aspect_ratio_child_fill_content_width" {
 test "taffy/grid_aspect_ratio_fill_child_height" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -6390,6 +8074,9 @@ test "taffy/grid_aspect_ratio_fill_child_height" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(50.0),
     aspect_ratio: Some(2.0000),
   }
@@ -6411,6 +8098,7 @@ test "taffy/grid_aspect_ratio_fill_child_height" {
 test "taffy/grid_aspect_ratio_fill_child_max_height" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -6418,6 +8106,9 @@ test "taffy/grid_aspect_ratio_fill_child_max_height" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     max_width: @types.Length(40.0),
     aspect_ratio: Some(2.0000),
   }
@@ -6451,6 +8142,7 @@ test "taffy/grid_aspect_ratio_fill_child_max_height" {
 test "taffy/grid_aspect_ratio_fill_child_max_width" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -6458,6 +8150,9 @@ test "taffy/grid_aspect_ratio_fill_child_max_width" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     max_height: @types.Length(20.0),
     aspect_ratio: Some(2.0000),
   }
@@ -6486,6 +8181,7 @@ test "taffy/grid_aspect_ratio_fill_child_max_width" {
 test "taffy/grid_aspect_ratio_fill_child_min_height" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -6493,6 +8189,9 @@ test "taffy/grid_aspect_ratio_fill_child_min_height" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     min_width: @types.Length(50.0),
     aspect_ratio: Some(2.0000),
   }
@@ -6514,6 +8213,7 @@ test "taffy/grid_aspect_ratio_fill_child_min_height" {
 test "taffy/grid_aspect_ratio_fill_child_width" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -6521,6 +8221,9 @@ test "taffy/grid_aspect_ratio_fill_child_width" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     height: @types.Length(50.0),
     aspect_ratio: Some(2.0000),
   }
@@ -6542,6 +8245,7 @@ test "taffy/grid_aspect_ratio_fill_child_width" {
 test "taffy/grid_aspect_ratio_overridden_by_explicit_sizes" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -6549,6 +8253,9 @@ test "taffy/grid_aspect_ratio_overridden_by_explicit_sizes" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     aspect_ratio: Some(2.0000),
@@ -6571,6 +8278,7 @@ test "taffy/grid_aspect_ratio_overridden_by_explicit_sizes" {
 test "taffy/grid_aspect_ratio_overridden_by_explicit_sizes_flex" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -6578,6 +8286,9 @@ test "taffy/grid_aspect_ratio_overridden_by_explicit_sizes_flex" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     aspect_ratio: Some(2.0000),
@@ -6600,6 +8311,7 @@ test "taffy/grid_aspect_ratio_overridden_by_explicit_sizes_flex" {
 test "taffy/grid_auto_columns" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.TrackSizingFunction::Length(40.0)],
     grid_template_rows: [@types.TrackSizingFunction::Length(100.0)],
@@ -6613,6 +8325,9 @@ test "taffy/grid_auto_columns" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(-3),
       end: @types.GridPlacement::Auto,
@@ -6620,25 +8335,60 @@ test "taffy/grid_auto_columns" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -6685,6 +8435,7 @@ test "taffy/grid_auto_columns" {
 test "taffy/grid_auto_columns_fixed_width" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -6702,52 +8453,132 @@ test "taffy/grid_auto_columns_fixed_width" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
-  let root_child9_style = { ..@style.Style::default() }
+  let root_child9_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child9 = @node.Node::leaf("node", root_child9_style)
   root_children.push(root_child9)
-  let root_child10_style = { ..@style.Style::default() }
+  let root_child10_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child10 = @node.Node::leaf("node", root_child10_style)
   root_children.push(root_child10)
-  let root_child11_style = { ..@style.Style::default() }
+  let root_child11_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child11 = @node.Node::leaf("node", root_child11_style)
   root_children.push(root_child11)
-  let root_child12_style = { ..@style.Style::default() }
+  let root_child12_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child12 = @node.Node::leaf("node", root_child12_style)
   root_children.push(root_child12)
-  let root_child13_style = { ..@style.Style::default() }
+  let root_child13_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child13 = @node.Node::leaf("node", root_child13_style)
   root_children.push(root_child13)
-  let root_child14_style = { ..@style.Style::default() }
+  let root_child14_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child14 = @node.Node::leaf("node", root_child14_style)
   root_children.push(root_child14)
-  let root_child15_style = { ..@style.Style::default() }
+  let root_child15_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child15 = @node.Node::leaf("node", root_child15_style)
   root_children.push(root_child15)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -6826,6 +8657,7 @@ test "taffy/grid_auto_columns_fixed_width" {
 test "taffy/grid_auto_fill_fixed_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -6840,31 +8672,76 @@ test "taffy/grid_auto_fill_fixed_size" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -6915,6 +8792,7 @@ test "taffy/grid_auto_fill_fixed_size" {
 test "taffy/grid_auto_fill_with_empty_auto_track" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -6929,10 +8807,20 @@ test "taffy/grid_auto_fill_with_empty_auto_track" {
     justify_content: @types.SpaceEvenly,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -6955,12 +8843,16 @@ test "taffy/grid_auto_fill_with_empty_auto_track" {
 test "taffy/grid_auto_fit_definite_percentage" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(730.0),
     height: @types.Length(300.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Percent(1.0000),
     height: @types.Percent(1.0000),
@@ -6982,28 +8874,68 @@ test "taffy/grid_auto_fit_definite_percentage" {
     column_gap: @types.Length(10.0),
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
-  let root_child0_child1_style = { ..@style.Style::default() }
+  let root_child0_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child1 = @node.Node::leaf("node", root_child0_child1_style)
   root_child0_children.push(root_child0_child1)
-  let root_child0_child2_style = { ..@style.Style::default() }
+  let root_child0_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child2 = @node.Node::leaf("node", root_child0_child2_style)
   root_child0_children.push(root_child0_child2)
-  let root_child0_child3_style = { ..@style.Style::default() }
+  let root_child0_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child3 = @node.Node::leaf("node", root_child0_child3_style)
   root_child0_children.push(root_child0_child3)
-  let root_child0_child4_style = { ..@style.Style::default() }
+  let root_child0_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child4 = @node.Node::leaf("node", root_child0_child4_style)
   root_child0_children.push(root_child0_child4)
-  let root_child0_child5_style = { ..@style.Style::default() }
+  let root_child0_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child5 = @node.Node::leaf("node", root_child0_child5_style)
   root_child0_children.push(root_child0_child5)
-  let root_child0_child6_style = { ..@style.Style::default() }
+  let root_child0_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child6 = @node.Node::leaf("node", root_child0_child6_style)
   root_child0_children.push(root_child0_child6)
-  let root_child0_child7_style = { ..@style.Style::default() }
+  let root_child0_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child7 = @node.Node::leaf("node", root_child0_child7_style)
   root_child0_children.push(root_child0_child7)
   let root_child0 = @node.Node::new(
@@ -7058,6 +8990,7 @@ test "taffy/grid_auto_fit_definite_percentage" {
 test "taffy/grid_auto_fit_with_empty_auto_track" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -7072,10 +9005,20 @@ test "taffy/grid_auto_fit_with_empty_auto_track" {
     justify_content: @types.SpaceEvenly,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -7098,6 +9041,7 @@ test "taffy/grid_auto_fit_with_empty_auto_track" {
 test "taffy/grid_auto_rows" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.TrackSizingFunction::Length(100.0)],
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
@@ -7110,6 +9054,9 @@ test "taffy/grid_auto_rows" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_row: {
       start: @types.GridPlacement::Line(-4),
       end: @types.GridPlacement::Auto,
@@ -7117,25 +9064,60 @@ test "taffy/grid_auto_rows" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -7182,6 +9164,7 @@ test "taffy/grid_auto_rows" {
 test "taffy/grid_auto_single_item" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Length(40.0),
@@ -7195,34 +9178,77 @@ test "taffy/grid_auto_single_item" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(100.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -7273,6 +9299,7 @@ test "taffy/grid_auto_single_item" {
 test "taffy/grid_auto_single_item_fixed_width" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     grid_template_columns: [
@@ -7287,34 +9314,77 @@ test "taffy/grid_auto_single_item_fixed_width" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     min_width: @types.Length(100.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -7365,6 +9435,7 @@ test "taffy/grid_auto_single_item_fixed_width" {
 test "taffy/grid_auto_single_item_fixed_width_with_definite_width" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     grid_template_columns: [
@@ -7379,34 +9450,77 @@ test "taffy/grid_auto_single_item_fixed_width_with_definite_width" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(100.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -7457,6 +9571,7 @@ test "taffy/grid_auto_single_item_fixed_width_with_definite_width" {
 test "taffy/grid_auto_takes_precedence_over_fr" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -7467,10 +9582,20 @@ test "taffy/grid_auto_takes_precedence_over_fr" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -7493,6 +9618,7 @@ test "taffy/grid_auto_takes_precedence_over_fr" {
 test "taffy/grid_available_space_greater_than_max_content" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Auto,
@@ -7500,7 +9626,12 @@ test "taffy/grid_available_space_greater_than_max_content" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
@@ -7510,7 +9641,12 @@ test "taffy/grid_available_space_greater_than_max_content" {
     "node", root_child0_style, root_child0_measure,
   )
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
@@ -7540,6 +9676,7 @@ test "taffy/grid_available_space_greater_than_max_content" {
 test "taffy/grid_available_space_smaller_than_max_content" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Auto,
@@ -7547,7 +9684,12 @@ test "taffy/grid_available_space_smaller_than_max_content" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
@@ -7557,7 +9699,12 @@ test "taffy/grid_available_space_smaller_than_max_content" {
     "node", root_child0_style, root_child0_measure,
   )
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
@@ -7568,7 +9715,16 @@ test "taffy/grid_available_space_smaller_than_max_content" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = @node.compute_grid_layout(root, 800.0, 600.0)
+  let ctx : @types.LayoutContext = {
+    available_width: 80.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 80.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -7587,6 +9743,7 @@ test "taffy/grid_available_space_smaller_than_max_content" {
 test "taffy/grid_available_space_smaller_than_min_content" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Auto,
@@ -7594,7 +9751,12 @@ test "taffy/grid_available_space_smaller_than_min_content" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
@@ -7604,7 +9766,12 @@ test "taffy/grid_available_space_smaller_than_min_content" {
     "node", root_child0_style, root_child0_measure,
   )
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
@@ -7615,7 +9782,16 @@ test "taffy/grid_available_space_smaller_than_min_content" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let layout = @node.compute_grid_layout(root, 800.0, 600.0)
+  let ctx : @types.LayoutContext = {
+    available_width: 80.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 80.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 80.0)
@@ -7634,6 +9810,7 @@ test "taffy/grid_available_space_smaller_than_min_content" {
 test "taffy/grid_basic" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -7649,31 +9826,76 @@ test "taffy/grid_basic" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -7724,16 +9946,25 @@ test "taffy/grid_basic" {
 test "taffy/grid_basic_implicit_tracks" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.TrackSizingFunction::Length(40.0)],
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(35.0),
     height: @types.Length(35.0),
   }
@@ -7759,6 +9990,7 @@ test "taffy/grid_basic_implicit_tracks" {
 test "taffy/grid_basic_with_overflow" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -7774,34 +10006,84 @@ test "taffy/grid_basic_with_overflow" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
-  let root_child9_style = { ..@style.Style::default() }
+  let root_child9_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child9 = @node.Node::leaf("node", root_child9_style)
   root_children.push(root_child9)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -7856,6 +10138,7 @@ test "taffy/grid_basic_with_overflow" {
 test "taffy/grid_basic_with_padding" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -7875,31 +10158,76 @@ test "taffy/grid_basic_with_padding" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -7950,6 +10278,7 @@ test "taffy/grid_basic_with_padding" {
 test "taffy/grid_display_none_fixed_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -7957,13 +10286,16 @@ test "taffy/grid_display_none_fixed_size" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     flex_grow: 1.0,
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Display::None,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
@@ -7990,13 +10322,19 @@ test "taffy/grid_display_none_fixed_size" {
 test "taffy/grid_fit_content_percent_definite_argument" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(60.0),
     grid_template_columns: [@types.FitContentPercent(0.5000)],
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -8022,13 +10360,19 @@ test "taffy/grid_fit_content_percent_definite_argument" {
 test "taffy/grid_fit_content_percent_definite_max_content" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(60.0),
     grid_template_columns: [@types.FitContentPercent(0.5000)],
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
@@ -8054,13 +10398,19 @@ test "taffy/grid_fit_content_percent_definite_max_content" {
 test "taffy/grid_fit_content_percent_definite_min_content" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(60.0),
     grid_template_columns: [@types.FitContentPercent(0.5000)],
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
@@ -8086,12 +10436,18 @@ test "taffy/grid_fit_content_percent_definite_min_content" {
 test "taffy/grid_fit_content_percent_indefinite_argument" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.FitContentPercent(0.5000)],
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
@@ -8117,12 +10473,18 @@ test "taffy/grid_fit_content_percent_indefinite_argument" {
 test "taffy/grid_fit_content_percent_indefinite_max_content" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.FitContentPercent(0.5000)],
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
@@ -8148,6 +10510,7 @@ test "taffy/grid_fit_content_percent_indefinite_max_content" {
 test "taffy/grid_fit_content_percent_indefinite_max_content_hidden" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.FitContentPercent(0.5000)],
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
@@ -8155,6 +10518,9 @@ test "taffy/grid_fit_content_percent_indefinite_max_content_hidden" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     overflow_x: @types.Overflow::Hidden,
     overflow_y: @types.Overflow::Hidden,
   }
@@ -8183,12 +10549,18 @@ test "taffy/grid_fit_content_percent_indefinite_max_content_hidden" {
 test "taffy/grid_fit_content_percent_indefinite_min_content" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.FitContentPercent(0.5000)],
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
@@ -8214,6 +10586,7 @@ test "taffy/grid_fit_content_percent_indefinite_min_content" {
 test "taffy/grid_fit_content_percent_indefinite_min_content_hidden" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.FitContentPercent(0.5000)],
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
@@ -8221,6 +10594,9 @@ test "taffy/grid_fit_content_percent_indefinite_min_content_hidden" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     overflow_x: @types.Overflow::Hidden,
     overflow_y: @types.Overflow::Hidden,
   }
@@ -8249,12 +10625,18 @@ test "taffy/grid_fit_content_percent_indefinite_min_content_hidden" {
 test "taffy/grid_fit_content_points_argument" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.FitContentLength(30.0)],
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -8280,12 +10662,18 @@ test "taffy/grid_fit_content_points_argument" {
 test "taffy/grid_fit_content_points_max_content" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.FitContentLength(30.0)],
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
@@ -8311,12 +10699,18 @@ test "taffy/grid_fit_content_points_max_content" {
 test "taffy/grid_fit_content_points_min_content" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.FitContentLength(30.0)],
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
@@ -8342,6 +10736,7 @@ test "taffy/grid_fit_content_points_min_content" {
 test "taffy/grid_fit_content_points_min_content_hidden" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.FitContentLength(30.0)],
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
@@ -8349,6 +10744,9 @@ test "taffy/grid_fit_content_points_min_content_hidden" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     overflow_x: @types.Overflow::Hidden,
     overflow_y: @types.Overflow::Hidden,
   }
@@ -8377,6 +10775,7 @@ test "taffy/grid_fit_content_points_min_content_hidden" {
 test "taffy/grid_fr_fixed_size_no_content_proportions" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     grid_template_columns: [
@@ -8387,13 +10786,28 @@ test "taffy/grid_fr_fixed_size_no_content_proportions" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -8420,6 +10834,7 @@ test "taffy/grid_fr_fixed_size_no_content_proportions" {
 test "taffy/grid_fr_fixed_size_no_content_proportions_sub_1_sum" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     grid_template_columns: [
@@ -8429,10 +10844,20 @@ test "taffy/grid_fr_fixed_size_no_content_proportions_sub_1_sum" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -8455,6 +10880,7 @@ test "taffy/grid_fr_fixed_size_no_content_proportions_sub_1_sum" {
 test "taffy/grid_fr_fixed_size_single_item" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -8470,34 +10896,77 @@ test "taffy/grid_fr_fixed_size_single_item" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(100.0),
   }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -8548,6 +11017,7 @@ test "taffy/grid_fr_fixed_size_single_item" {
 test "taffy/grid_fr_no_sized_items_indefinite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Length(40.0),
@@ -8561,31 +11031,76 @@ test "taffy/grid_fr_no_sized_items_indefinite" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -8636,6 +11151,7 @@ test "taffy/grid_fr_no_sized_items_indefinite" {
 test "taffy/grid_fr_single_item_indefinite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Auto,
     height: @types.Auto,
@@ -8651,34 +11167,77 @@ test "taffy/grid_fr_single_item_indefinite" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(100.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -8729,6 +11288,7 @@ test "taffy/grid_fr_single_item_indefinite" {
 test "taffy/grid_fr_span_2_proportion" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Fr(1.0),
@@ -8742,6 +11302,9 @@ test "taffy/grid_fr_span_2_proportion" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     grid_column: {
       start: @types.GridPlacement::Span(2),
@@ -8750,10 +11313,20 @@ test "taffy/grid_fr_span_2_proportion" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -8780,6 +11353,7 @@ test "taffy/grid_fr_span_2_proportion" {
 test "taffy/grid_fr_span_2_proportion_sub_1_sum" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Fr(0.2),
@@ -8793,6 +11367,9 @@ test "taffy/grid_fr_span_2_proportion_sub_1_sum" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     grid_column: {
       start: @types.GridPlacement::Span(2),
@@ -8801,10 +11378,20 @@ test "taffy/grid_fr_span_2_proportion_sub_1_sum" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -8831,6 +11418,7 @@ test "taffy/grid_fr_span_2_proportion_sub_1_sum" {
 test "taffy/grid_fr_span_2_proportion_with_non_spanned_track" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Fr(1.0),
@@ -8845,6 +11433,9 @@ test "taffy/grid_fr_span_2_proportion_with_non_spanned_track" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     grid_column: {
       start: @types.GridPlacement::Span(2),
@@ -8853,16 +11444,36 @@ test "taffy/grid_fr_span_2_proportion_with_non_spanned_track" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -8897,6 +11508,7 @@ test "taffy/grid_fr_span_2_proportion_with_non_spanned_track" {
 test "taffy/grid_fr_span_2_proportion_zero_sum" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Fr(0.0),
@@ -8910,6 +11522,9 @@ test "taffy/grid_fr_span_2_proportion_zero_sum" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     grid_column: {
       start: @types.GridPlacement::Span(2),
@@ -8918,10 +11533,20 @@ test "taffy/grid_fr_span_2_proportion_zero_sum" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -8948,6 +11573,7 @@ test "taffy/grid_fr_span_2_proportion_zero_sum" {
 test "taffy/grid_fr_span_2_proportion_zero_sum_with_non_spanned_track" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Fr(0.0),
@@ -8962,6 +11588,9 @@ test "taffy/grid_fr_span_2_proportion_zero_sum_with_non_spanned_track" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     grid_column: {
       start: @types.GridPlacement::Span(2),
@@ -8970,16 +11599,36 @@ test "taffy/grid_fr_span_2_proportion_zero_sum_with_non_spanned_track" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -9014,6 +11663,7 @@ test "taffy/grid_fr_span_2_proportion_zero_sum_with_non_spanned_track" {
 test "taffy/grid_gap" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -9031,31 +11681,76 @@ test "taffy/grid_gap" {
     column_gap: @types.Length(40.0),
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -9106,6 +11801,7 @@ test "taffy/grid_gap" {
 test "taffy/grid_hidden" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -9121,40 +11817,73 @@ test "taffy/grid_hidden" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Display::None,
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Display::None,
   }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root_child6_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Display::None,
   }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -9205,6 +11934,7 @@ test "taffy/grid_hidden" {
 test "taffy/grid_justify_content_center" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -9221,31 +11951,76 @@ test "taffy/grid_justify_content_center" {
     justify_content: @types.Center,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -9296,6 +12071,7 @@ test "taffy/grid_justify_content_center" {
 test "taffy/grid_justify_content_center_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
@@ -9309,6 +12085,7 @@ test "taffy/grid_justify_content_center_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -9328,31 +12105,76 @@ test "taffy/grid_justify_content_center_negative_space_gap" {
     align_content: @types.Center,
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
-  let root_child0_child1_style = { ..@style.Style::default() }
+  let root_child0_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child1 = @node.Node::leaf("node", root_child0_child1_style)
   root_child0_children.push(root_child0_child1)
-  let root_child0_child2_style = { ..@style.Style::default() }
+  let root_child0_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child2 = @node.Node::leaf("node", root_child0_child2_style)
   root_child0_children.push(root_child0_child2)
-  let root_child0_child3_style = { ..@style.Style::default() }
+  let root_child0_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child3 = @node.Node::leaf("node", root_child0_child3_style)
   root_child0_children.push(root_child0_child3)
-  let root_child0_child4_style = { ..@style.Style::default() }
+  let root_child0_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child4 = @node.Node::leaf("node", root_child0_child4_style)
   root_child0_children.push(root_child0_child4)
-  let root_child0_child5_style = { ..@style.Style::default() }
+  let root_child0_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child5 = @node.Node::leaf("node", root_child0_child5_style)
   root_child0_children.push(root_child0_child5)
-  let root_child0_child6_style = { ..@style.Style::default() }
+  let root_child0_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child6 = @node.Node::leaf("node", root_child0_child6_style)
   root_child0_children.push(root_child0_child6)
-  let root_child0_child7_style = { ..@style.Style::default() }
+  let root_child0_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child7 = @node.Node::leaf("node", root_child0_child7_style)
   root_child0_children.push(root_child0_child7)
-  let root_child0_child8_style = { ..@style.Style::default() }
+  let root_child0_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child8 = @node.Node::leaf("node", root_child0_child8_style)
   root_child0_children.push(root_child0_child8)
   let root_child0 = @node.Node::new(
@@ -9411,6 +12233,7 @@ test "taffy/grid_justify_content_center_negative_space_gap" {
 test "taffy/grid_justify_content_center_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -9439,31 +12262,76 @@ test "taffy/grid_justify_content_center_with_padding_border" {
     justify_content: @types.Center,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -9514,6 +12382,7 @@ test "taffy/grid_justify_content_center_with_padding_border" {
 test "taffy/grid_justify_content_end" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -9530,31 +12399,76 @@ test "taffy/grid_justify_content_end" {
     justify_content: @types.End,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -9605,6 +12519,7 @@ test "taffy/grid_justify_content_end" {
 test "taffy/grid_justify_content_end_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
@@ -9618,6 +12533,7 @@ test "taffy/grid_justify_content_end_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -9637,31 +12553,76 @@ test "taffy/grid_justify_content_end_negative_space_gap" {
     align_content: @types.Center,
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
-  let root_child0_child1_style = { ..@style.Style::default() }
+  let root_child0_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child1 = @node.Node::leaf("node", root_child0_child1_style)
   root_child0_children.push(root_child0_child1)
-  let root_child0_child2_style = { ..@style.Style::default() }
+  let root_child0_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child2 = @node.Node::leaf("node", root_child0_child2_style)
   root_child0_children.push(root_child0_child2)
-  let root_child0_child3_style = { ..@style.Style::default() }
+  let root_child0_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child3 = @node.Node::leaf("node", root_child0_child3_style)
   root_child0_children.push(root_child0_child3)
-  let root_child0_child4_style = { ..@style.Style::default() }
+  let root_child0_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child4 = @node.Node::leaf("node", root_child0_child4_style)
   root_child0_children.push(root_child0_child4)
-  let root_child0_child5_style = { ..@style.Style::default() }
+  let root_child0_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child5 = @node.Node::leaf("node", root_child0_child5_style)
   root_child0_children.push(root_child0_child5)
-  let root_child0_child6_style = { ..@style.Style::default() }
+  let root_child0_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child6 = @node.Node::leaf("node", root_child0_child6_style)
   root_child0_children.push(root_child0_child6)
-  let root_child0_child7_style = { ..@style.Style::default() }
+  let root_child0_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child7 = @node.Node::leaf("node", root_child0_child7_style)
   root_child0_children.push(root_child0_child7)
-  let root_child0_child8_style = { ..@style.Style::default() }
+  let root_child0_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child8 = @node.Node::leaf("node", root_child0_child8_style)
   root_child0_children.push(root_child0_child8)
   let root_child0 = @node.Node::new(
@@ -9720,6 +12681,7 @@ test "taffy/grid_justify_content_end_negative_space_gap" {
 test "taffy/grid_justify_content_end_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -9748,31 +12710,76 @@ test "taffy/grid_justify_content_end_with_padding_border" {
     justify_content: @types.End,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -9823,6 +12830,7 @@ test "taffy/grid_justify_content_end_with_padding_border" {
 test "taffy/grid_justify_content_space_around" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -9839,31 +12847,76 @@ test "taffy/grid_justify_content_space_around" {
     justify_content: @types.SpaceAround,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -9914,6 +12967,7 @@ test "taffy/grid_justify_content_space_around" {
 test "taffy/grid_justify_content_space_around_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
@@ -9927,6 +12981,7 @@ test "taffy/grid_justify_content_space_around_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -9946,31 +13001,76 @@ test "taffy/grid_justify_content_space_around_negative_space_gap" {
     align_content: @types.Center,
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
-  let root_child0_child1_style = { ..@style.Style::default() }
+  let root_child0_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child1 = @node.Node::leaf("node", root_child0_child1_style)
   root_child0_children.push(root_child0_child1)
-  let root_child0_child2_style = { ..@style.Style::default() }
+  let root_child0_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child2 = @node.Node::leaf("node", root_child0_child2_style)
   root_child0_children.push(root_child0_child2)
-  let root_child0_child3_style = { ..@style.Style::default() }
+  let root_child0_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child3 = @node.Node::leaf("node", root_child0_child3_style)
   root_child0_children.push(root_child0_child3)
-  let root_child0_child4_style = { ..@style.Style::default() }
+  let root_child0_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child4 = @node.Node::leaf("node", root_child0_child4_style)
   root_child0_children.push(root_child0_child4)
-  let root_child0_child5_style = { ..@style.Style::default() }
+  let root_child0_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child5 = @node.Node::leaf("node", root_child0_child5_style)
   root_child0_children.push(root_child0_child5)
-  let root_child0_child6_style = { ..@style.Style::default() }
+  let root_child0_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child6 = @node.Node::leaf("node", root_child0_child6_style)
   root_child0_children.push(root_child0_child6)
-  let root_child0_child7_style = { ..@style.Style::default() }
+  let root_child0_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child7 = @node.Node::leaf("node", root_child0_child7_style)
   root_child0_children.push(root_child0_child7)
-  let root_child0_child8_style = { ..@style.Style::default() }
+  let root_child0_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child8 = @node.Node::leaf("node", root_child0_child8_style)
   root_child0_children.push(root_child0_child8)
   let root_child0 = @node.Node::new(
@@ -10029,6 +13129,7 @@ test "taffy/grid_justify_content_space_around_negative_space_gap" {
 test "taffy/grid_justify_content_space_around_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -10057,31 +13158,76 @@ test "taffy/grid_justify_content_space_around_with_padding_border" {
     justify_content: @types.SpaceAround,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -10132,6 +13278,7 @@ test "taffy/grid_justify_content_space_around_with_padding_border" {
 test "taffy/grid_justify_content_space_between" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -10148,31 +13295,76 @@ test "taffy/grid_justify_content_space_between" {
     justify_content: @types.SpaceBetween,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -10223,6 +13415,7 @@ test "taffy/grid_justify_content_space_between" {
 test "taffy/grid_justify_content_space_between_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
@@ -10236,6 +13429,7 @@ test "taffy/grid_justify_content_space_between_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -10255,31 +13449,76 @@ test "taffy/grid_justify_content_space_between_negative_space_gap" {
     align_content: @types.Center,
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
-  let root_child0_child1_style = { ..@style.Style::default() }
+  let root_child0_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child1 = @node.Node::leaf("node", root_child0_child1_style)
   root_child0_children.push(root_child0_child1)
-  let root_child0_child2_style = { ..@style.Style::default() }
+  let root_child0_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child2 = @node.Node::leaf("node", root_child0_child2_style)
   root_child0_children.push(root_child0_child2)
-  let root_child0_child3_style = { ..@style.Style::default() }
+  let root_child0_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child3 = @node.Node::leaf("node", root_child0_child3_style)
   root_child0_children.push(root_child0_child3)
-  let root_child0_child4_style = { ..@style.Style::default() }
+  let root_child0_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child4 = @node.Node::leaf("node", root_child0_child4_style)
   root_child0_children.push(root_child0_child4)
-  let root_child0_child5_style = { ..@style.Style::default() }
+  let root_child0_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child5 = @node.Node::leaf("node", root_child0_child5_style)
   root_child0_children.push(root_child0_child5)
-  let root_child0_child6_style = { ..@style.Style::default() }
+  let root_child0_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child6 = @node.Node::leaf("node", root_child0_child6_style)
   root_child0_children.push(root_child0_child6)
-  let root_child0_child7_style = { ..@style.Style::default() }
+  let root_child0_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child7 = @node.Node::leaf("node", root_child0_child7_style)
   root_child0_children.push(root_child0_child7)
-  let root_child0_child8_style = { ..@style.Style::default() }
+  let root_child0_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child8 = @node.Node::leaf("node", root_child0_child8_style)
   root_child0_children.push(root_child0_child8)
   let root_child0 = @node.Node::new(
@@ -10338,6 +13577,7 @@ test "taffy/grid_justify_content_space_between_negative_space_gap" {
 test "taffy/grid_justify_content_space_between_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -10366,31 +13606,76 @@ test "taffy/grid_justify_content_space_between_with_padding_border" {
     justify_content: @types.SpaceBetween,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -10441,6 +13726,7 @@ test "taffy/grid_justify_content_space_between_with_padding_border" {
 test "taffy/grid_justify_content_space_evenly" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -10457,31 +13743,76 @@ test "taffy/grid_justify_content_space_evenly" {
     justify_content: @types.SpaceEvenly,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -10532,6 +13863,7 @@ test "taffy/grid_justify_content_space_evenly" {
 test "taffy/grid_justify_content_space_evenly_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
@@ -10545,6 +13877,7 @@ test "taffy/grid_justify_content_space_evenly_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -10564,31 +13897,76 @@ test "taffy/grid_justify_content_space_evenly_negative_space_gap" {
     align_content: @types.Center,
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
-  let root_child0_child1_style = { ..@style.Style::default() }
+  let root_child0_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child1 = @node.Node::leaf("node", root_child0_child1_style)
   root_child0_children.push(root_child0_child1)
-  let root_child0_child2_style = { ..@style.Style::default() }
+  let root_child0_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child2 = @node.Node::leaf("node", root_child0_child2_style)
   root_child0_children.push(root_child0_child2)
-  let root_child0_child3_style = { ..@style.Style::default() }
+  let root_child0_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child3 = @node.Node::leaf("node", root_child0_child3_style)
   root_child0_children.push(root_child0_child3)
-  let root_child0_child4_style = { ..@style.Style::default() }
+  let root_child0_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child4 = @node.Node::leaf("node", root_child0_child4_style)
   root_child0_children.push(root_child0_child4)
-  let root_child0_child5_style = { ..@style.Style::default() }
+  let root_child0_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child5 = @node.Node::leaf("node", root_child0_child5_style)
   root_child0_children.push(root_child0_child5)
-  let root_child0_child6_style = { ..@style.Style::default() }
+  let root_child0_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child6 = @node.Node::leaf("node", root_child0_child6_style)
   root_child0_children.push(root_child0_child6)
-  let root_child0_child7_style = { ..@style.Style::default() }
+  let root_child0_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child7 = @node.Node::leaf("node", root_child0_child7_style)
   root_child0_children.push(root_child0_child7)
-  let root_child0_child8_style = { ..@style.Style::default() }
+  let root_child0_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child8 = @node.Node::leaf("node", root_child0_child8_style)
   root_child0_children.push(root_child0_child8)
   let root_child0 = @node.Node::new(
@@ -10647,6 +14025,7 @@ test "taffy/grid_justify_content_space_evenly_negative_space_gap" {
 test "taffy/grid_justify_content_space_evenly_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -10675,31 +14054,76 @@ test "taffy/grid_justify_content_space_evenly_with_padding_border" {
     justify_content: @types.SpaceEvenly,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -10750,6 +14174,7 @@ test "taffy/grid_justify_content_space_evenly_with_padding_border" {
 test "taffy/grid_justify_content_start" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -10766,31 +14191,76 @@ test "taffy/grid_justify_content_start" {
     justify_content: @types.Start,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -10841,6 +14311,7 @@ test "taffy/grid_justify_content_start" {
 test "taffy/grid_justify_content_start_negative_space_gap" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(240.0),
     height: @types.Length(240.0),
@@ -10854,6 +14325,7 @@ test "taffy/grid_justify_content_start_negative_space_gap" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -10873,31 +14345,76 @@ test "taffy/grid_justify_content_start_negative_space_gap" {
     align_content: @types.Center,
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
-  let root_child0_child1_style = { ..@style.Style::default() }
+  let root_child0_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child1 = @node.Node::leaf("node", root_child0_child1_style)
   root_child0_children.push(root_child0_child1)
-  let root_child0_child2_style = { ..@style.Style::default() }
+  let root_child0_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child2 = @node.Node::leaf("node", root_child0_child2_style)
   root_child0_children.push(root_child0_child2)
-  let root_child0_child3_style = { ..@style.Style::default() }
+  let root_child0_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child3 = @node.Node::leaf("node", root_child0_child3_style)
   root_child0_children.push(root_child0_child3)
-  let root_child0_child4_style = { ..@style.Style::default() }
+  let root_child0_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child4 = @node.Node::leaf("node", root_child0_child4_style)
   root_child0_children.push(root_child0_child4)
-  let root_child0_child5_style = { ..@style.Style::default() }
+  let root_child0_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child5 = @node.Node::leaf("node", root_child0_child5_style)
   root_child0_children.push(root_child0_child5)
-  let root_child0_child6_style = { ..@style.Style::default() }
+  let root_child0_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child6 = @node.Node::leaf("node", root_child0_child6_style)
   root_child0_children.push(root_child0_child6)
-  let root_child0_child7_style = { ..@style.Style::default() }
+  let root_child0_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child7 = @node.Node::leaf("node", root_child0_child7_style)
   root_child0_children.push(root_child0_child7)
-  let root_child0_child8_style = { ..@style.Style::default() }
+  let root_child0_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child8 = @node.Node::leaf("node", root_child0_child8_style)
   root_child0_children.push(root_child0_child8)
   let root_child0 = @node.Node::new(
@@ -10956,6 +14473,7 @@ test "taffy/grid_justify_content_start_negative_space_gap" {
 test "taffy/grid_justify_content_start_with_padding_border" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -10984,31 +14502,76 @@ test "taffy/grid_justify_content_start_with_padding_border" {
     justify_content: @types.Start,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -11059,6 +14622,7 @@ test "taffy/grid_justify_content_start_with_padding_border" {
 test "taffy/grid_justify_items_sized_center" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -11077,6 +14641,9 @@ test "taffy/grid_justify_items_sized_center" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     grid_column: {
@@ -11093,6 +14660,9 @@ test "taffy/grid_justify_items_sized_center" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     grid_column: {
@@ -11127,6 +14697,7 @@ test "taffy/grid_justify_items_sized_center" {
 test "taffy/grid_justify_items_sized_end" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -11145,6 +14716,9 @@ test "taffy/grid_justify_items_sized_end" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     grid_column: {
@@ -11161,6 +14735,9 @@ test "taffy/grid_justify_items_sized_end" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     grid_column: {
@@ -11195,6 +14772,7 @@ test "taffy/grid_justify_items_sized_end" {
 test "taffy/grid_justify_items_sized_start" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -11213,6 +14791,9 @@ test "taffy/grid_justify_items_sized_start" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     grid_column: {
@@ -11229,6 +14810,9 @@ test "taffy/grid_justify_items_sized_start" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     grid_column: {
@@ -11263,6 +14847,7 @@ test "taffy/grid_justify_items_sized_start" {
 test "taffy/grid_justify_items_sized_stretch" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -11281,6 +14866,9 @@ test "taffy/grid_justify_items_sized_stretch" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     grid_column: {
@@ -11297,6 +14885,9 @@ test "taffy/grid_justify_items_sized_stretch" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     grid_column: {
@@ -11331,6 +14922,7 @@ test "taffy/grid_justify_items_sized_stretch" {
 test "taffy/grid_justify_self_sized_all" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -11348,6 +14940,9 @@ test "taffy/grid_justify_self_sized_all" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     justify_self: @types.AlignSelf::Start,
@@ -11356,6 +14951,9 @@ test "taffy/grid_justify_self_sized_all" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     justify_self: @types.AlignSelf::Start,
@@ -11364,6 +14962,9 @@ test "taffy/grid_justify_self_sized_all" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     justify_self: @types.AlignSelf::End,
@@ -11372,6 +14973,9 @@ test "taffy/grid_justify_self_sized_all" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     justify_self: @types.AlignSelf::End,
@@ -11380,6 +14984,9 @@ test "taffy/grid_justify_self_sized_all" {
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     justify_self: @types.AlignSelf::Center,
@@ -11388,6 +14995,9 @@ test "taffy/grid_justify_self_sized_all" {
   root_children.push(root_child4)
   let root_child5_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     justify_self: @types.AlignSelf::Center,
@@ -11396,6 +15006,9 @@ test "taffy/grid_justify_self_sized_all" {
   root_children.push(root_child5)
   let root_child6_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     justify_self: @types.AlignSelf::Stretch,
@@ -11404,6 +15017,9 @@ test "taffy/grid_justify_self_sized_all" {
   root_children.push(root_child6)
   let root_child7_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(60.0),
     height: @types.Length(60.0),
     justify_self: @types.AlignSelf::Stretch,
@@ -11454,6 +15070,7 @@ test "taffy/grid_justify_self_sized_all" {
 test "taffy/grid_margins_auto_margins" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -11473,14 +15090,27 @@ test "taffy/grid_margins_auto_margins" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     margin: {
       left: @types.Auto,
@@ -11492,12 +15122,19 @@ test "taffy/grid_margins_auto_margins" {
   }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     height: @types.Length(20.0),
     margin: {
       left: @types.Length(0.0),
@@ -11509,12 +15146,19 @@ test "taffy/grid_margins_auto_margins" {
   }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root_child6_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -11528,10 +15172,20 @@ test "taffy/grid_margins_auto_margins" {
   }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -11582,6 +15236,7 @@ test "taffy/grid_margins_auto_margins" {
 test "taffy/grid_margins_auto_margins_override_stretch" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -11601,27 +15256,59 @@ test "taffy/grid_margins_auto_margins_override_stretch" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root_child6_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     margin: {
       left: @types.Auto,
       right: @types.Auto,
@@ -11640,10 +15327,20 @@ test "taffy/grid_margins_auto_margins_override_stretch" {
     "node", root_child6_style, root_child6_measure,
   )
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -11694,6 +15391,7 @@ test "taffy/grid_margins_auto_margins_override_stretch" {
 test "taffy/grid_margins_fixed_center" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -11715,7 +15413,9 @@ test "taffy/grid_margins_fixed_center" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -11729,19 +15429,44 @@ test "taffy/grid_margins_fixed_center" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -11780,6 +15505,7 @@ test "taffy/grid_margins_fixed_center" {
 test "taffy/grid_margins_fixed_end" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -11801,7 +15527,9 @@ test "taffy/grid_margins_fixed_end" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -11815,19 +15543,44 @@ test "taffy/grid_margins_fixed_end" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -11866,6 +15619,7 @@ test "taffy/grid_margins_fixed_end" {
 test "taffy/grid_margins_fixed_start" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -11887,7 +15641,9 @@ test "taffy/grid_margins_fixed_start" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -11901,19 +15657,44 @@ test "taffy/grid_margins_fixed_start" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -11952,6 +15733,7 @@ test "taffy/grid_margins_fixed_start" {
 test "taffy/grid_margins_fixed_stretch" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(40.0),
@@ -11973,7 +15755,9 @@ test "taffy/grid_margins_fixed_stretch" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -11987,19 +15771,44 @@ test "taffy/grid_margins_fixed_stretch" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -12038,6 +15847,7 @@ test "taffy/grid_margins_fixed_stretch" {
 test "taffy/grid_margins_percent_center" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Length(20.0),
@@ -12053,7 +15863,9 @@ test "taffy/grid_margins_percent_center" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -12067,19 +15879,44 @@ test "taffy/grid_margins_percent_center" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -12118,6 +15955,7 @@ test "taffy/grid_margins_percent_center" {
 test "taffy/grid_margins_percent_end" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Length(20.0),
@@ -12133,7 +15971,9 @@ test "taffy/grid_margins_percent_end" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -12147,19 +15987,44 @@ test "taffy/grid_margins_percent_end" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -12198,6 +16063,7 @@ test "taffy/grid_margins_percent_end" {
 test "taffy/grid_margins_percent_start" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Length(20.0),
@@ -12213,7 +16079,9 @@ test "taffy/grid_margins_percent_start" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -12227,19 +16095,44 @@ test "taffy/grid_margins_percent_start" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -12278,6 +16171,7 @@ test "taffy/grid_margins_percent_start" {
 test "taffy/grid_margins_percent_stretch" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Length(20.0),
@@ -12293,7 +16187,9 @@ test "taffy/grid_margins_percent_stretch" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     margin: {
@@ -12307,19 +16203,44 @@ test "taffy/grid_margins_percent_stretch" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -12358,6 +16279,7 @@ test "taffy/grid_margins_percent_stretch" {
 test "taffy/grid_max_content_maximum_single_item" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Length(40.0),
@@ -12374,10 +16296,20 @@ test "taffy/grid_max_content_maximum_single_item" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -12387,25 +16319,60 @@ test "taffy/grid_max_content_maximum_single_item" {
     "node", root_child1_style, root_child1_measure,
   )
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -12456,6 +16423,7 @@ test "taffy/grid_max_content_maximum_single_item" {
 test "taffy/grid_max_content_single_item" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Length(40.0),
@@ -12469,10 +16437,20 @@ test "taffy/grid_max_content_single_item" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -12482,25 +16460,60 @@ test "taffy/grid_max_content_single_item" {
     "node", root_child1_style, root_child1_measure,
   )
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -12551,6 +16564,7 @@ test "taffy/grid_max_content_single_item" {
 test "taffy/grid_max_content_single_item_margin_auto" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Length(40.0),
@@ -12564,11 +16578,19 @@ test "taffy/grid_max_content_single_item_margin_auto" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     margin: {
       left: @types.Auto,
       right: @types.Auto,
@@ -12585,25 +16607,60 @@ test "taffy/grid_max_content_single_item_margin_auto" {
     "node", root_child1_style, root_child1_measure,
   )
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -12654,6 +16711,7 @@ test "taffy/grid_max_content_single_item_margin_auto" {
 test "taffy/grid_max_content_single_item_margin_fixed" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Length(40.0),
@@ -12667,11 +16725,19 @@ test "taffy/grid_max_content_single_item_margin_fixed" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     margin: {
       left: @types.Length(20.0),
       right: @types.Length(10.0),
@@ -12688,25 +16754,60 @@ test "taffy/grid_max_content_single_item_margin_fixed" {
     "node", root_child1_style, root_child1_measure,
   )
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -12757,6 +16858,7 @@ test "taffy/grid_max_content_single_item_margin_fixed" {
 test "taffy/grid_max_content_single_item_margin_percent" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Length(40.0),
@@ -12770,11 +16872,19 @@ test "taffy/grid_max_content_single_item_margin_percent" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     margin: {
       left: @types.Percent(0.2000),
       right: @types.Percent(0.1000),
@@ -12791,25 +16901,60 @@ test "taffy/grid_max_content_single_item_margin_percent" {
     "node", root_child1_style, root_child1_measure,
   )
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -12860,6 +17005,7 @@ test "taffy/grid_max_content_single_item_margin_percent" {
 test "taffy/grid_max_content_single_item_span_2" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Length(40.0),
@@ -12873,11 +17019,19 @@ test "taffy/grid_max_content_single_item_span_2" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Span(2),
       end: @types.GridPlacement::Auto,
@@ -12892,25 +17046,60 @@ test "taffy/grid_max_content_single_item_span_2" {
     "node", root_child1_style, root_child1_measure,
   )
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -12961,6 +17150,7 @@ test "taffy/grid_max_content_single_item_span_2" {
 test "taffy/grid_max_content_single_item_span_2_gap_fixed" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Length(40.0),
@@ -12975,11 +17165,19 @@ test "taffy/grid_max_content_single_item_span_2_gap_fixed" {
     column_gap: @types.Length(20.0),
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Span(2),
       end: @types.GridPlacement::Auto,
@@ -12994,25 +17192,60 @@ test "taffy/grid_max_content_single_item_span_2_gap_fixed" {
     "node", root_child1_style, root_child1_measure,
   )
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -13063,6 +17296,7 @@ test "taffy/grid_max_content_single_item_span_2_gap_fixed" {
 test "taffy/grid_max_content_single_item_span_2_gap_percent_definite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     grid_template_columns: [
@@ -13078,11 +17312,19 @@ test "taffy/grid_max_content_single_item_span_2_gap_percent_definite" {
     column_gap: @types.Percent(0.2000),
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Span(2),
       end: @types.GridPlacement::Auto,
@@ -13097,25 +17339,60 @@ test "taffy/grid_max_content_single_item_span_2_gap_percent_definite" {
     "node", root_child1_style, root_child1_measure,
   )
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -13166,6 +17443,7 @@ test "taffy/grid_max_content_single_item_span_2_gap_percent_definite" {
 test "taffy/grid_max_content_single_item_span_2_gap_percent_indefinite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Length(40.0),
@@ -13180,11 +17458,19 @@ test "taffy/grid_max_content_single_item_span_2_gap_percent_indefinite" {
     column_gap: @types.Percent(0.2000),
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Span(2),
       end: @types.GridPlacement::Auto,
@@ -13199,25 +17485,60 @@ test "taffy/grid_max_content_single_item_span_2_gap_percent_indefinite" {
     "node", root_child1_style, root_child1_measure,
   )
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -13268,12 +17589,14 @@ test "taffy/grid_max_content_single_item_span_2_gap_percent_indefinite" {
 test "taffy/grid_max_width_greater_than_max_content" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.TrackSizingFunction::MaxContent],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     max_width: @types.Length(400.0),
     grid_template_columns: [
@@ -13282,7 +17605,12 @@ test "taffy/grid_max_width_greater_than_max_content" {
     ],
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
@@ -13292,7 +17620,12 @@ test "taffy/grid_max_width_greater_than_max_content" {
     "node", root_child0_child0_style, root_child0_child0_measure,
   )
   root_child0_children.push(root_child0_child0)
-  let root_child0_child1_style = { ..@style.Style::default() }
+  let root_child0_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child1_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
@@ -13330,12 +17663,14 @@ test "taffy/grid_max_width_greater_than_max_content" {
 test "taffy/grid_max_width_less_than_max_content_with_min_content" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.TrackSizingFunction::MinContent],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     max_width: @types.Length(80.0),
     grid_template_columns: [
@@ -13344,7 +17679,12 @@ test "taffy/grid_max_width_less_than_max_content_with_min_content" {
     ],
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
@@ -13354,7 +17694,12 @@ test "taffy/grid_max_width_less_than_max_content_with_min_content" {
     "node", root_child0_child0_style, root_child0_child0_measure,
   )
   root_child0_children.push(root_child0_child0)
-  let root_child0_child1_style = { ..@style.Style::default() }
+  let root_child0_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child1_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
@@ -13392,12 +17737,14 @@ test "taffy/grid_max_width_less_than_max_content_with_min_content" {
 test "taffy/grid_max_width_smaller_than_max_content" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.TrackSizingFunction::MaxContent],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     max_width: @types.Length(80.0),
     grid_template_columns: [
@@ -13406,7 +17753,12 @@ test "taffy/grid_max_width_smaller_than_max_content" {
     ],
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
@@ -13416,7 +17768,12 @@ test "taffy/grid_max_width_smaller_than_max_content" {
     "node", root_child0_child0_style, root_child0_child0_measure,
   )
   root_child0_children.push(root_child0_child0)
-  let root_child0_child1_style = { ..@style.Style::default() }
+  let root_child0_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child1_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
@@ -13454,12 +17811,14 @@ test "taffy/grid_max_width_smaller_than_max_content" {
 test "taffy/grid_max_width_smaller_than_min_content" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.TrackSizingFunction::MaxContent],
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     max_width: @types.Length(60.0),
     grid_template_columns: [
@@ -13468,7 +17827,12 @@ test "taffy/grid_max_width_smaller_than_min_content" {
     ],
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
@@ -13478,7 +17842,12 @@ test "taffy/grid_max_width_smaller_than_min_content" {
     "node", root_child0_child0_style, root_child0_child0_measure,
   )
   root_child0_children.push(root_child0_child0)
-  let root_child0_child1_style = { ..@style.Style::default() }
+  let root_child0_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child1_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
@@ -13516,6 +17885,7 @@ test "taffy/grid_max_width_smaller_than_min_content" {
 test "taffy/grid_min_content_flex_column" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.TrackSizingFunction::MinContent],
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
@@ -13523,11 +17893,18 @@ test "taffy/grid_min_content_flex_column" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     flex_direction: @types.Column,
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -13537,7 +17914,12 @@ test "taffy/grid_min_content_flex_column" {
     "node", root_child0_child0_style, root_child0_child0_measure,
   )
   root_child0_children.push(root_child0_child0)
-  let root_child0_child1_style = { ..@style.Style::default() }
+  let root_child0_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child1_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -13547,7 +17929,12 @@ test "taffy/grid_min_content_flex_column" {
     "node", root_child0_child1_style, root_child0_child1_measure,
   )
   root_child0_children.push(root_child0_child1)
-  let root_child0_child2_style = { ..@style.Style::default() }
+  let root_child0_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child2_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -13589,6 +17976,7 @@ test "taffy/grid_min_content_flex_column" {
 test "taffy/grid_min_content_flex_row" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.TrackSizingFunction::MinContent],
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
@@ -13596,11 +17984,18 @@ test "taffy/grid_min_content_flex_row" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     flex_direction: @types.Row,
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -13610,7 +18005,12 @@ test "taffy/grid_min_content_flex_row" {
     "node", root_child0_child0_style, root_child0_child0_measure,
   )
   root_child0_children.push(root_child0_child0)
-  let root_child0_child1_style = { ..@style.Style::default() }
+  let root_child0_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child1_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -13620,7 +18020,12 @@ test "taffy/grid_min_content_flex_row" {
     "node", root_child0_child1_style, root_child0_child1_measure,
   )
   root_child0_children.push(root_child0_child1)
-  let root_child0_child2_style = { ..@style.Style::default() }
+  let root_child0_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child2_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -13662,6 +18067,7 @@ test "taffy/grid_min_content_flex_row" {
 test "taffy/grid_min_content_flex_single_item" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Length(40.0),
@@ -13675,23 +18081,44 @@ test "taffy/grid_min_content_flex_single_item" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     min_width: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Span(2),
       end: @types.GridPlacement::Auto,
@@ -13706,13 +18133,28 @@ test "taffy/grid_min_content_flex_single_item" {
     "node", root_child4_style, root_child4_measure,
   )
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -13759,6 +18201,7 @@ test "taffy/grid_min_content_flex_single_item" {
 test "taffy/grid_min_content_flex_single_item_margin_auto" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Length(40.0),
@@ -13772,11 +18215,19 @@ test "taffy/grid_min_content_flex_single_item_margin_auto" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     min_width: @types.Length(10.0),
     margin: {
       left: @types.Auto,
@@ -13787,14 +18238,27 @@ test "taffy/grid_min_content_flex_single_item_margin_auto" {
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     margin: {
       left: @types.Auto,
       right: @types.Auto,
@@ -13815,13 +18279,28 @@ test "taffy/grid_min_content_flex_single_item_margin_auto" {
     "node", root_child4_style, root_child4_measure,
   )
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -13868,6 +18347,7 @@ test "taffy/grid_min_content_flex_single_item_margin_auto" {
 test "taffy/grid_min_content_flex_single_item_margin_fixed" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Length(40.0),
@@ -13881,11 +18361,19 @@ test "taffy/grid_min_content_flex_single_item_margin_fixed" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     min_width: @types.Length(10.0),
     margin: {
       left: @types.Length(20.0),
@@ -13896,14 +18384,27 @@ test "taffy/grid_min_content_flex_single_item_margin_fixed" {
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     margin: {
       left: @types.Length(20.0),
       right: @types.Length(10.0),
@@ -13924,13 +18425,28 @@ test "taffy/grid_min_content_flex_single_item_margin_fixed" {
     "node", root_child4_style, root_child4_measure,
   )
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -13977,6 +18493,7 @@ test "taffy/grid_min_content_flex_single_item_margin_fixed" {
 test "taffy/grid_min_content_flex_single_item_margin_percent" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Length(40.0),
@@ -13990,11 +18507,19 @@ test "taffy/grid_min_content_flex_single_item_margin_percent" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     min_width: @types.Length(10.0),
     margin: {
       left: @types.Percent(0.2000),
@@ -14005,14 +18530,27 @@ test "taffy/grid_min_content_flex_single_item_margin_percent" {
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     margin: {
       left: @types.Percent(0.2000),
       right: @types.Percent(0.1000),
@@ -14033,13 +18571,28 @@ test "taffy/grid_min_content_flex_single_item_margin_percent" {
     "node", root_child4_style, root_child4_measure,
   )
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -14086,6 +18639,7 @@ test "taffy/grid_min_content_flex_single_item_margin_percent" {
 test "taffy/grid_min_content_maximum_single_item" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Length(40.0),
@@ -14102,10 +18656,20 @@ test "taffy/grid_min_content_maximum_single_item" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -14115,25 +18679,60 @@ test "taffy/grid_min_content_maximum_single_item" {
     "node", root_child1_style, root_child1_measure,
   )
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -14184,6 +18783,7 @@ test "taffy/grid_min_content_maximum_single_item" {
 test "taffy/grid_min_content_single_item" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Length(40.0),
@@ -14197,10 +18797,20 @@ test "taffy/grid_min_content_single_item" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -14210,25 +18820,60 @@ test "taffy/grid_min_content_single_item" {
     "node", root_child1_style, root_child1_measure,
   )
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -14279,6 +18924,7 @@ test "taffy/grid_min_content_single_item" {
 test "taffy/grid_minmax_auto_fixed_10px" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.MinMax(
@@ -14289,7 +18935,12 @@ test "taffy/grid_minmax_auto_fixed_10px" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -14315,6 +18966,7 @@ test "taffy/grid_minmax_auto_fixed_10px" {
 test "taffy/grid_minmax_auto_max_content" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.MinMax(
@@ -14325,7 +18977,12 @@ test "taffy/grid_minmax_auto_max_content" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -14351,6 +19008,7 @@ test "taffy/grid_minmax_auto_max_content" {
 test "taffy/grid_minmax_auto_min_content" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.MinMax(
@@ -14361,7 +19019,12 @@ test "taffy/grid_minmax_auto_min_content" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -14387,6 +19050,7 @@ test "taffy/grid_minmax_auto_min_content" {
 test "taffy/grid_minmax_auto_percent_definite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     grid_template_columns: [
@@ -14398,7 +19062,12 @@ test "taffy/grid_minmax_auto_percent_definite" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -14424,6 +19093,7 @@ test "taffy/grid_minmax_auto_percent_definite" {
 test "taffy/grid_minmax_auto_percent_indefinite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.MinMax(
@@ -14434,7 +19104,12 @@ test "taffy/grid_minmax_auto_percent_indefinite" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -14460,6 +19135,7 @@ test "taffy/grid_minmax_auto_percent_indefinite" {
 test "taffy/grid_minmax_column_fixed_width_above_range" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(140.0),
     grid_template_columns: [
@@ -14477,31 +19153,76 @@ test "taffy/grid_minmax_column_fixed_width_above_range" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -14552,6 +19273,7 @@ test "taffy/grid_minmax_column_fixed_width_above_range" {
 test "taffy/grid_minmax_column_fixed_width_below_range" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(90.0),
     grid_template_columns: [
@@ -14569,31 +19291,76 @@ test "taffy/grid_minmax_column_fixed_width_below_range" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -14644,6 +19411,7 @@ test "taffy/grid_minmax_column_fixed_width_below_range" {
 test "taffy/grid_minmax_column_fixed_width_within_range" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(110.0),
     grid_template_columns: [
@@ -14661,31 +19429,76 @@ test "taffy/grid_minmax_column_fixed_width_within_range" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -14736,6 +19549,7 @@ test "taffy/grid_minmax_column_fixed_width_within_range" {
 test "taffy/grid_minmax_column_indefinite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Length(40.0),
@@ -14752,31 +19566,76 @@ test "taffy/grid_minmax_column_indefinite" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -14827,6 +19686,7 @@ test "taffy/grid_minmax_column_indefinite" {
 test "taffy/grid_minmax_column_with_auto_fixed" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(60.0),
     grid_template_columns: [
@@ -14839,10 +19699,20 @@ test "taffy/grid_minmax_column_with_auto_fixed" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -14865,6 +19735,7 @@ test "taffy/grid_minmax_column_with_auto_fixed" {
 test "taffy/grid_minmax_column_with_fr_fixed" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(60.0),
     grid_template_columns: [
@@ -14877,10 +19748,20 @@ test "taffy/grid_minmax_column_with_fr_fixed" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -14903,6 +19784,7 @@ test "taffy/grid_minmax_column_with_fr_fixed" {
 test "taffy/grid_minmax_max_content_1fr" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.MinMax(
@@ -14913,7 +19795,12 @@ test "taffy/grid_minmax_max_content_1fr" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -14939,6 +19826,7 @@ test "taffy/grid_minmax_max_content_1fr" {
 test "taffy/grid_minmax_max_content_auto" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.MinMax(
@@ -14949,7 +19837,12 @@ test "taffy/grid_minmax_max_content_auto" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -14975,6 +19868,7 @@ test "taffy/grid_minmax_max_content_auto" {
 test "taffy/grid_minmax_max_content_fixed_10px" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.MinMax(
@@ -14985,7 +19879,12 @@ test "taffy/grid_minmax_max_content_fixed_10px" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -15011,6 +19910,7 @@ test "taffy/grid_minmax_max_content_fixed_10px" {
 test "taffy/grid_minmax_max_content_min_content" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.MinMax(
@@ -15021,7 +19921,12 @@ test "taffy/grid_minmax_max_content_min_content" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -15047,6 +19952,7 @@ test "taffy/grid_minmax_max_content_min_content" {
 test "taffy/grid_minmax_max_content_percent_definite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     grid_template_columns: [
@@ -15058,7 +19964,12 @@ test "taffy/grid_minmax_max_content_percent_definite" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -15084,6 +19995,7 @@ test "taffy/grid_minmax_max_content_percent_definite" {
 test "taffy/grid_minmax_max_content_percent_indefinite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.MinMax(
@@ -15094,7 +20006,12 @@ test "taffy/grid_minmax_max_content_percent_indefinite" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -15120,6 +20037,7 @@ test "taffy/grid_minmax_max_content_percent_indefinite" {
 test "taffy/grid_minmax_min_content_1fr" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.MinMax(
@@ -15130,7 +20048,12 @@ test "taffy/grid_minmax_min_content_1fr" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -15156,6 +20079,7 @@ test "taffy/grid_minmax_min_content_1fr" {
 test "taffy/grid_minmax_min_content_auto" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.MinMax(
@@ -15166,7 +20090,12 @@ test "taffy/grid_minmax_min_content_auto" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -15192,6 +20121,7 @@ test "taffy/grid_minmax_min_content_auto" {
 test "taffy/grid_minmax_min_content_fixed_10px" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.MinMax(
@@ -15202,7 +20132,12 @@ test "taffy/grid_minmax_min_content_fixed_10px" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -15228,6 +20163,7 @@ test "taffy/grid_minmax_min_content_fixed_10px" {
 test "taffy/grid_minmax_min_content_max_content" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.MinMax(
@@ -15238,7 +20174,12 @@ test "taffy/grid_minmax_min_content_max_content" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -15264,6 +20205,7 @@ test "taffy/grid_minmax_min_content_max_content" {
 test "taffy/grid_minmax_min_content_percent_definite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     grid_template_columns: [
@@ -15275,7 +20217,12 @@ test "taffy/grid_minmax_min_content_percent_definite" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -15301,6 +20248,7 @@ test "taffy/grid_minmax_min_content_percent_definite" {
 test "taffy/grid_minmax_min_content_percent_indefinite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.MinMax(
@@ -15311,7 +20259,12 @@ test "taffy/grid_minmax_min_content_percent_indefinite" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
@@ -15337,6 +20290,7 @@ test "taffy/grid_minmax_min_content_percent_indefinite" {
 test "taffy/grid_out_of_order_items" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -15353,14 +20307,27 @@ test "taffy/grid_out_of_order_items" {
     grid_auto_flow: @types.GridAutoFlow::Row,
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(35.0),
     height: @types.Length(35.0),
     grid_column: {
@@ -15370,14 +20337,27 @@ test "taffy/grid_out_of_order_items" {
   }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
   let root_child5_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
     grid_column: {
@@ -15392,11 +20372,19 @@ test "taffy/grid_out_of_order_items" {
   }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
   let root_child7_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
     grid_row: {
@@ -15406,7 +20394,12 @@ test "taffy/grid_out_of_order_items" {
   }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -15457,6 +20450,7 @@ test "taffy/grid_out_of_order_items" {
 test "taffy/grid_overflow_inline_axis_hidden" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -15464,6 +20458,9 @@ test "taffy/grid_overflow_inline_axis_hidden" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     overflow_x: @types.Overflow::Hidden,
     overflow_y: @types.Overflow::Hidden,
   }
@@ -15492,6 +20489,7 @@ test "taffy/grid_overflow_inline_axis_hidden" {
 test "taffy/grid_overflow_inline_axis_scroll" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -15499,6 +20497,9 @@ test "taffy/grid_overflow_inline_axis_scroll" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     overflow_x: @types.Overflow::Scroll,
     overflow_y: @types.Overflow::Scroll,
   }
@@ -15527,12 +20528,18 @@ test "taffy/grid_overflow_inline_axis_scroll" {
 test "taffy/grid_overflow_inline_axis_visible" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 100.0, max_width: 100.0, min_height: 10.0, max_height: 10.0 }
@@ -15558,6 +20565,7 @@ test "taffy/grid_overflow_inline_axis_visible" {
 test "taffy/grid_overflow_rows" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MinContent,
@@ -15573,6 +20581,9 @@ test "taffy/grid_overflow_rows" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Span(4),
@@ -15587,19 +20598,44 @@ test "taffy/grid_overflow_rows" {
     "node", root_child0_style, root_child0_measure,
   )
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -15638,6 +20674,7 @@ test "taffy/grid_overflow_rows" {
 test "taffy/grid_overflow_scrollbars_overridden_by_available_space" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(2.0),
     height: @types.Length(4.0),
@@ -15645,12 +20682,18 @@ test "taffy/grid_overflow_scrollbars_overridden_by_available_space" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     overflow_x: @types.Overflow::Scroll,
     overflow_y: @types.Overflow::Scroll,
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
   let root_child0 = @node.Node::new(
@@ -15677,6 +20720,7 @@ test "taffy/grid_overflow_scrollbars_overridden_by_available_space" {
 test "taffy/grid_overflow_scrollbars_overridden_by_max_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     overflow_x: @types.Overflow::Scroll,
     overflow_y: @types.Overflow::Scroll,
@@ -15684,7 +20728,12 @@ test "taffy/grid_overflow_scrollbars_overridden_by_max_size" {
     max_height: @types.Length(4.0),
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -15703,6 +20752,7 @@ test "taffy/grid_overflow_scrollbars_overridden_by_max_size" {
 test "taffy/grid_overflow_scrollbars_overridden_by_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     overflow_x: @types.Overflow::Scroll,
     overflow_y: @types.Overflow::Scroll,
@@ -15710,7 +20760,12 @@ test "taffy/grid_overflow_scrollbars_overridden_by_size" {
     height: @types.Length(4.0),
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -15729,6 +20784,7 @@ test "taffy/grid_overflow_scrollbars_overridden_by_size" {
 test "taffy/grid_overflow_scrollbars_take_up_space_both_axis" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     overflow_x: @types.Overflow::Scroll,
     overflow_y: @types.Overflow::Scroll,
@@ -15736,7 +20792,12 @@ test "taffy/grid_overflow_scrollbars_take_up_space_both_axis" {
     height: @types.Length(50.0),
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -15755,13 +20816,19 @@ test "taffy/grid_overflow_scrollbars_take_up_space_both_axis" {
 test "taffy/grid_overflow_scrollbars_take_up_space_x_axis" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     overflow_x: @types.Overflow::Scroll,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -15780,13 +20847,19 @@ test "taffy/grid_overflow_scrollbars_take_up_space_x_axis" {
 test "taffy/grid_overflow_scrollbars_take_up_space_y_axis" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     overflow_y: @types.Overflow::Scroll,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -15805,6 +20878,7 @@ test "taffy/grid_overflow_scrollbars_take_up_space_y_axis" {
 test "taffy/grid_padding_border_overrides_container_max_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     max_width: @types.Length(12.0),
     max_height: @types.Length(12.0),
@@ -15822,7 +20896,12 @@ test "taffy/grid_padding_border_overrides_container_max_size" {
     },
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -15841,6 +20920,7 @@ test "taffy/grid_padding_border_overrides_container_max_size" {
 test "taffy/grid_padding_border_overrides_container_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(12.0),
     height: @types.Length(12.0),
@@ -15858,7 +20938,12 @@ test "taffy/grid_padding_border_overrides_container_size" {
     },
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -15875,10 +20960,17 @@ test "taffy/grid_padding_border_overrides_container_size" {
 
 ///|
 test "taffy/grid_padding_border_overrides_max_size" {
-  let root_style = { ..@style.Style::default(), display: @types.Grid }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Grid,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     max_width: @types.Length(12.0),
     max_height: @types.Length(12.0),
     padding: {
@@ -15910,10 +21002,17 @@ test "taffy/grid_padding_border_overrides_max_size" {
 
 ///|
 test "taffy/grid_padding_border_overrides_min_size" {
-  let root_style = { ..@style.Style::default(), display: @types.Grid }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Grid,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     min_width: @types.Length(0.0),
     min_height: @types.Length(0.0),
     padding: {
@@ -15945,10 +21044,17 @@ test "taffy/grid_padding_border_overrides_min_size" {
 
 ///|
 test "taffy/grid_padding_border_overrides_size" {
-  let root_style = { ..@style.Style::default(), display: @types.Grid }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Grid,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(12.0),
     height: @types.Length(12.0),
     padding: {
@@ -15982,15 +21088,21 @@ test "taffy/grid_padding_border_overrides_size" {
 test "taffy/grid_percent_item_inside_stretch_item" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default(), display: @types.Grid }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Grid,
+  }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Percent(0.5000),
   }
@@ -16020,14 +21132,20 @@ test "taffy/grid_percent_item_inside_stretch_item" {
 test "taffy/grid_percent_items_nested_inside_stretch_alignment" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default(), display: @types.Grid }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Grid,
+  }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     padding: {
       left: @types.Length(0.0),
@@ -16062,6 +21180,7 @@ test "taffy/grid_percent_items_nested_inside_stretch_alignment" {
 test "taffy/grid_percent_items_nested_moderate" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     padding: {
@@ -16074,6 +21193,7 @@ test "taffy/grid_percent_items_nested_moderate" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Percent(0.5000),
     margin: {
@@ -16092,6 +21212,9 @@ test "taffy/grid_percent_items_nested_moderate" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Percent(0.4500),
     margin: {
       left: @types.Percent(0.0500),
@@ -16132,18 +21255,23 @@ test "taffy/grid_percent_items_nested_moderate" {
 test "taffy/grid_percent_items_nested_with_margin" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Percent(0.5000),
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Percent(0.4500),
     margin: {
       left: @types.Percent(0.0500),
@@ -16178,6 +21306,7 @@ test "taffy/grid_percent_items_nested_with_margin" {
 test "taffy/grid_percent_items_nested_with_padding_margin" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -16189,6 +21318,7 @@ test "taffy/grid_percent_items_nested_with_padding_margin" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     min_width: @types.Percent(0.6000),
     margin: {
@@ -16207,6 +21337,7 @@ test "taffy/grid_percent_items_nested_with_padding_margin" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Percent(0.5000),
     margin: {
@@ -16225,6 +21356,9 @@ test "taffy/grid_percent_items_nested_with_padding_margin" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Percent(0.4500),
     margin: {
       left: @types.Percent(0.0500),
@@ -16251,7 +21385,12 @@ test "taffy/grid_percent_items_nested_with_padding_margin" {
     "node", root_child0_style, root_child0_children,
   )
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -16282,6 +21421,7 @@ test "taffy/grid_percent_items_nested_with_padding_margin" {
 test "taffy/grid_percent_items_width_and_margin" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     padding: {
@@ -16294,6 +21434,9 @@ test "taffy/grid_percent_items_width_and_margin" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Percent(0.4500),
     margin: {
       left: @types.Percent(0.0500),
@@ -16326,12 +21469,16 @@ test "taffy/grid_percent_items_width_and_margin" {
 test "taffy/grid_percent_items_width_and_padding" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Percent(0.5000),
     padding: {
       left: @types.Percent(0.0300),
@@ -16358,6 +21505,7 @@ test "taffy/grid_percent_items_width_and_padding" {
 test "taffy/grid_percent_tracks_definite_overflow" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(60.0),
@@ -16372,22 +21520,52 @@ test "taffy/grid_percent_tracks_definite_overflow" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -16426,6 +21604,7 @@ test "taffy/grid_percent_tracks_definite_overflow" {
 test "taffy/grid_percent_tracks_definite_underflow" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(60.0),
@@ -16440,22 +21619,52 @@ test "taffy/grid_percent_tracks_definite_underflow" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -16494,6 +21703,7 @@ test "taffy/grid_percent_tracks_definite_underflow" {
 test "taffy/grid_percent_tracks_indefinite_only" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Percent(0.1000),
@@ -16506,22 +21716,52 @@ test "taffy/grid_percent_tracks_indefinite_only" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -16560,6 +21800,7 @@ test "taffy/grid_percent_tracks_indefinite_only" {
 test "taffy/grid_percent_tracks_indefinite_with_content_overflow" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Percent(0.4000),
@@ -16574,6 +21815,9 @@ test "taffy/grid_percent_tracks_indefinite_with_content_overflow" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     grid_column: {
@@ -16590,6 +21834,9 @@ test "taffy/grid_percent_tracks_indefinite_with_content_overflow" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -16602,19 +21849,44 @@ test "taffy/grid_percent_tracks_indefinite_with_content_overflow" {
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -16657,6 +21929,7 @@ test "taffy/grid_percent_tracks_indefinite_with_content_overflow" {
 test "taffy/grid_percent_tracks_indefinite_with_content_underflow" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::Percent(0.1000),
@@ -16671,6 +21944,9 @@ test "taffy/grid_percent_tracks_indefinite_with_content_underflow" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     grid_column: {
@@ -16687,6 +21963,9 @@ test "taffy/grid_percent_tracks_indefinite_with_content_underflow" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -16699,19 +21978,44 @@ test "taffy/grid_percent_tracks_indefinite_with_content_underflow" {
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -16754,6 +22058,7 @@ test "taffy/grid_percent_tracks_indefinite_with_content_underflow" {
 test "taffy/grid_placement_auto_negative" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -16769,6 +22074,9 @@ test "taffy/grid_placement_auto_negative" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(-5),
       end: @types.GridPlacement::Auto,
@@ -16781,11 +22089,19 @@ test "taffy/grid_placement_auto_negative" {
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_row: {
       start: @types.GridPlacement::Line(2),
       end: @types.GridPlacement::Auto,
@@ -16817,6 +22133,7 @@ test "taffy/grid_placement_auto_negative" {
 test "taffy/grid_placement_definite_in_secondary_axis_with_fully_definite_negative" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -16832,6 +22149,9 @@ test "taffy/grid_placement_definite_in_secondary_axis_with_fully_definite_negati
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_row: {
       start: @types.GridPlacement::Line(2),
       end: @types.GridPlacement::Auto,
@@ -16841,6 +22161,9 @@ test "taffy/grid_placement_definite_in_secondary_axis_with_fully_definite_negati
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(-4),
       end: @types.GridPlacement::Auto,
@@ -16855,6 +22178,9 @@ test "taffy/grid_placement_definite_in_secondary_axis_with_fully_definite_negati
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_row: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -16886,6 +22212,7 @@ test "taffy/grid_placement_definite_in_secondary_axis_with_fully_definite_negati
 test "taffy/grid_placement_definite_primary" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
@@ -16897,6 +22224,9 @@ test "taffy/grid_placement_definite_primary" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -16906,6 +22236,9 @@ test "taffy/grid_placement_definite_primary" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(2),
       end: @types.GridPlacement::Auto,
@@ -16915,6 +22248,9 @@ test "taffy/grid_placement_definite_primary" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -16924,6 +22260,9 @@ test "taffy/grid_placement_definite_primary" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(2),
       end: @types.GridPlacement::Auto,
@@ -16933,6 +22272,9 @@ test "taffy/grid_placement_definite_primary" {
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -16972,6 +22314,7 @@ test "taffy/grid_placement_definite_primary" {
 test "taffy/grid_relative_all_sides" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
@@ -16979,6 +22322,9 @@ test "taffy/grid_relative_all_sides" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(40.0),
     inset: {
       left: @types.Length(10.0),
@@ -17005,12 +22351,18 @@ test "taffy/grid_relative_all_sides" {
 test "taffy/grid_relayout_vertical_text" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [@types.TrackSizingFunction::MinContent],
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 10.0, max_width: 10.0, min_height: 140.0, max_height: 140.0 }
@@ -17020,7 +22372,12 @@ test "taffy/grid_relayout_vertical_text" {
     "node", root_child0_style, root_child0_measure,
   )
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1_measure = @types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
       { min_width: 20.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
@@ -17050,6 +22407,7 @@ test "taffy/grid_relayout_vertical_text" {
 test "taffy/grid_repeat_integer" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -17061,31 +22419,76 @@ test "taffy/grid_repeat_integer" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -17136,6 +22539,7 @@ test "taffy/grid_repeat_integer" {
 test "taffy/grid_repeat_mixed" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -17151,31 +22555,76 @@ test "taffy/grid_repeat_mixed" {
     ],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -17226,6 +22675,7 @@ test "taffy/grid_repeat_mixed" {
 test "taffy/grid_size_child_fixed_tracks" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(120.0),
     height: @types.Length(120.0),
@@ -17243,7 +22693,9 @@ test "taffy/grid_size_child_fixed_tracks" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     align_self: @types.AlignSelf::Start,
     justify_self: @types.AlignSelf::Start,
   }
@@ -17258,7 +22710,9 @@ test "taffy/grid_size_child_fixed_tracks" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     align_self: @types.AlignSelf::Start,
     justify_self: @types.AlignSelf::Start,
   }
@@ -17273,7 +22727,9 @@ test "taffy/grid_size_child_fixed_tracks" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     align_self: @types.AlignSelf::Start,
     justify_self: @types.AlignSelf::Start,
   }
@@ -17288,7 +22744,9 @@ test "taffy/grid_size_child_fixed_tracks" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(20.0),
     align_self: @types.AlignSelf::Start,
     justify_self: @types.AlignSelf::Start,
@@ -17304,7 +22762,9 @@ test "taffy/grid_size_child_fixed_tracks" {
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     max_width: @types.Length(30.0),
     align_self: @types.AlignSelf::Start,
     justify_self: @types.AlignSelf::Start,
@@ -17350,6 +22810,7 @@ test "taffy/grid_size_child_fixed_tracks" {
 test "taffy/grid_span_13_most_non_flex_with_minmax_indefinite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MinContent,
@@ -17395,6 +22856,9 @@ test "taffy/grid_span_13_most_non_flex_with_minmax_indefinite" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Span(13),
@@ -17409,43 +22873,108 @@ test "taffy/grid_span_13_most_non_flex_with_minmax_indefinite" {
     "node", root_child0_style, root_child0_measure,
   )
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
-  let root_child9_style = { ..@style.Style::default() }
+  let root_child9_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child9 = @node.Node::leaf("node", root_child9_style)
   root_children.push(root_child9)
-  let root_child10_style = { ..@style.Style::default() }
+  let root_child10_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child10 = @node.Node::leaf("node", root_child10_style)
   root_children.push(root_child10)
-  let root_child11_style = { ..@style.Style::default() }
+  let root_child11_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child11 = @node.Node::leaf("node", root_child11_style)
   root_children.push(root_child11)
-  let root_child12_style = { ..@style.Style::default() }
+  let root_child12_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child12 = @node.Node::leaf("node", root_child12_style)
   root_children.push(root_child12)
-  let root_child13_style = { ..@style.Style::default() }
+  let root_child13_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child13 = @node.Node::leaf("node", root_child13_style)
   root_children.push(root_child13)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -17516,6 +23045,7 @@ test "taffy/grid_span_13_most_non_flex_with_minmax_indefinite" {
 test "taffy/grid_span_13_most_non_flex_with_minmax_indefinite_hidden" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MinContent,
@@ -17561,6 +23091,9 @@ test "taffy/grid_span_13_most_non_flex_with_minmax_indefinite_hidden" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     overflow_x: @types.Overflow::Hidden,
     overflow_y: @types.Overflow::Hidden,
     grid_column: {
@@ -17577,43 +23110,108 @@ test "taffy/grid_span_13_most_non_flex_with_minmax_indefinite_hidden" {
     "node", root_child0_style, root_child0_measure,
   )
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
-  let root_child9_style = { ..@style.Style::default() }
+  let root_child9_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child9 = @node.Node::leaf("node", root_child9_style)
   root_children.push(root_child9)
-  let root_child10_style = { ..@style.Style::default() }
+  let root_child10_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child10 = @node.Node::leaf("node", root_child10_style)
   root_children.push(root_child10)
-  let root_child11_style = { ..@style.Style::default() }
+  let root_child11_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child11 = @node.Node::leaf("node", root_child11_style)
   root_children.push(root_child11)
-  let root_child12_style = { ..@style.Style::default() }
+  let root_child12_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child12 = @node.Node::leaf("node", root_child12_style)
   root_children.push(root_child12)
-  let root_child13_style = { ..@style.Style::default() }
+  let root_child13_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child13 = @node.Node::leaf("node", root_child13_style)
   root_children.push(root_child13)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -17684,6 +23282,7 @@ test "taffy/grid_span_13_most_non_flex_with_minmax_indefinite_hidden" {
 test "taffy/grid_span_2_max_content_auto_indefinite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MaxContent,
@@ -17694,6 +23293,9 @@ test "taffy/grid_span_2_max_content_auto_indefinite" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -17708,6 +23310,9 @@ test "taffy/grid_span_2_max_content_auto_indefinite" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(2),
       end: @types.GridPlacement::Auto,
@@ -17722,6 +23327,9 @@ test "taffy/grid_span_2_max_content_auto_indefinite" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Span(2),
@@ -17765,6 +23373,7 @@ test "taffy/grid_span_2_max_content_auto_indefinite" {
 test "taffy/grid_span_2_max_content_auto_indefinite_hidden" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MaxContent,
@@ -17775,6 +23384,9 @@ test "taffy/grid_span_2_max_content_auto_indefinite_hidden" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -17789,6 +23401,9 @@ test "taffy/grid_span_2_max_content_auto_indefinite_hidden" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(2),
       end: @types.GridPlacement::Auto,
@@ -17821,6 +23436,7 @@ test "taffy/grid_span_2_max_content_auto_indefinite_hidden" {
 test "taffy/grid_span_2_max_content_fit_content_10px_indefinite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MaxContent,
@@ -17831,6 +23447,9 @@ test "taffy/grid_span_2_max_content_fit_content_10px_indefinite" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -17845,6 +23464,9 @@ test "taffy/grid_span_2_max_content_fit_content_10px_indefinite" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(2),
       end: @types.GridPlacement::Auto,
@@ -17859,6 +23481,9 @@ test "taffy/grid_span_2_max_content_fit_content_10px_indefinite" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Span(2),
@@ -17902,6 +23527,7 @@ test "taffy/grid_span_2_max_content_fit_content_10px_indefinite" {
 test "taffy/grid_span_2_max_content_fit_content_10px_indefinite_hidden" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MaxContent,
@@ -17912,6 +23538,9 @@ test "taffy/grid_span_2_max_content_fit_content_10px_indefinite_hidden" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -17926,6 +23555,9 @@ test "taffy/grid_span_2_max_content_fit_content_10px_indefinite_hidden" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(2),
       end: @types.GridPlacement::Auto,
@@ -17940,6 +23572,9 @@ test "taffy/grid_span_2_max_content_fit_content_10px_indefinite_hidden" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     overflow_x: @types.Overflow::Hidden,
     overflow_y: @types.Overflow::Hidden,
     grid_column: {
@@ -17985,6 +23620,7 @@ test "taffy/grid_span_2_max_content_fit_content_10px_indefinite_hidden" {
 test "taffy/grid_span_2_max_content_fit_content_80px_indefinite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MaxContent,
@@ -17995,6 +23631,9 @@ test "taffy/grid_span_2_max_content_fit_content_80px_indefinite" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -18009,6 +23648,9 @@ test "taffy/grid_span_2_max_content_fit_content_80px_indefinite" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(2),
       end: @types.GridPlacement::Auto,
@@ -18023,6 +23665,9 @@ test "taffy/grid_span_2_max_content_fit_content_80px_indefinite" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Span(2),
@@ -18066,6 +23711,7 @@ test "taffy/grid_span_2_max_content_fit_content_80px_indefinite" {
 test "taffy/grid_span_2_max_content_fit_content_80px_indefinite_hidden" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MaxContent,
@@ -18076,6 +23722,9 @@ test "taffy/grid_span_2_max_content_fit_content_80px_indefinite_hidden" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -18090,6 +23739,9 @@ test "taffy/grid_span_2_max_content_fit_content_80px_indefinite_hidden" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(2),
       end: @types.GridPlacement::Auto,
@@ -18104,6 +23756,9 @@ test "taffy/grid_span_2_max_content_fit_content_80px_indefinite_hidden" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     overflow_x: @types.Overflow::Hidden,
     overflow_y: @types.Overflow::Hidden,
     grid_column: {
@@ -18149,6 +23804,7 @@ test "taffy/grid_span_2_max_content_fit_content_80px_indefinite_hidden" {
 test "taffy/grid_span_2_max_content_max_content_indefinite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MaxContent,
@@ -18159,6 +23815,9 @@ test "taffy/grid_span_2_max_content_max_content_indefinite" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -18173,6 +23832,9 @@ test "taffy/grid_span_2_max_content_max_content_indefinite" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(2),
       end: @types.GridPlacement::Auto,
@@ -18187,6 +23849,9 @@ test "taffy/grid_span_2_max_content_max_content_indefinite" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Span(2),
@@ -18230,6 +23895,7 @@ test "taffy/grid_span_2_max_content_max_content_indefinite" {
 test "taffy/grid_span_2_min_content_auto_indefinite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MinContent,
@@ -18238,14 +23904,27 @@ test "taffy/grid_span_2_min_content_auto_indefinite" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Span(2),
@@ -18284,6 +23963,7 @@ test "taffy/grid_span_2_min_content_auto_indefinite" {
 test "taffy/grid_span_2_min_content_auto_indefinite_hidden" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MinContent,
@@ -18292,14 +23972,27 @@ test "taffy/grid_span_2_min_content_auto_indefinite_hidden" {
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     overflow_x: @types.Overflow::Hidden,
     overflow_y: @types.Overflow::Hidden,
     grid_column: {
@@ -18340,6 +24033,7 @@ test "taffy/grid_span_2_min_content_auto_indefinite_hidden" {
 test "taffy/grid_span_2_min_content_fit_content_10px_indefinite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MinContent,
@@ -18350,6 +24044,9 @@ test "taffy/grid_span_2_min_content_fit_content_10px_indefinite" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -18364,6 +24061,9 @@ test "taffy/grid_span_2_min_content_fit_content_10px_indefinite" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(2),
       end: @types.GridPlacement::Auto,
@@ -18378,6 +24078,9 @@ test "taffy/grid_span_2_min_content_fit_content_10px_indefinite" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Span(2),
@@ -18421,6 +24124,7 @@ test "taffy/grid_span_2_min_content_fit_content_10px_indefinite" {
 test "taffy/grid_span_2_min_content_fit_content_10px_indefinite_hidden" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MinContent,
@@ -18431,6 +24135,9 @@ test "taffy/grid_span_2_min_content_fit_content_10px_indefinite_hidden" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -18445,6 +24152,9 @@ test "taffy/grid_span_2_min_content_fit_content_10px_indefinite_hidden" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(2),
       end: @types.GridPlacement::Auto,
@@ -18459,6 +24169,9 @@ test "taffy/grid_span_2_min_content_fit_content_10px_indefinite_hidden" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     overflow_x: @types.Overflow::Hidden,
     overflow_y: @types.Overflow::Hidden,
     grid_column: {
@@ -18504,6 +24217,7 @@ test "taffy/grid_span_2_min_content_fit_content_10px_indefinite_hidden" {
 test "taffy/grid_span_2_min_content_fit_content_30px_indefinite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MinContent,
@@ -18514,6 +24228,9 @@ test "taffy/grid_span_2_min_content_fit_content_30px_indefinite" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -18528,6 +24245,9 @@ test "taffy/grid_span_2_min_content_fit_content_30px_indefinite" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(2),
       end: @types.GridPlacement::Auto,
@@ -18542,6 +24262,9 @@ test "taffy/grid_span_2_min_content_fit_content_30px_indefinite" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Span(2),
@@ -18585,6 +24308,7 @@ test "taffy/grid_span_2_min_content_fit_content_30px_indefinite" {
 test "taffy/grid_span_2_min_content_fit_content_30px_indefinite_hidden" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MinContent,
@@ -18595,6 +24319,9 @@ test "taffy/grid_span_2_min_content_fit_content_30px_indefinite_hidden" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -18609,6 +24336,9 @@ test "taffy/grid_span_2_min_content_fit_content_30px_indefinite_hidden" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(2),
       end: @types.GridPlacement::Auto,
@@ -18623,6 +24353,9 @@ test "taffy/grid_span_2_min_content_fit_content_30px_indefinite_hidden" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     overflow_x: @types.Overflow::Hidden,
     overflow_y: @types.Overflow::Hidden,
     grid_column: {
@@ -18668,6 +24401,7 @@ test "taffy/grid_span_2_min_content_fit_content_30px_indefinite_hidden" {
 test "taffy/grid_span_2_min_content_fit_content_80px_indefinite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MinContent,
@@ -18678,6 +24412,9 @@ test "taffy/grid_span_2_min_content_fit_content_80px_indefinite" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -18692,6 +24429,9 @@ test "taffy/grid_span_2_min_content_fit_content_80px_indefinite" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(2),
       end: @types.GridPlacement::Auto,
@@ -18706,6 +24446,9 @@ test "taffy/grid_span_2_min_content_fit_content_80px_indefinite" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Span(2),
@@ -18749,6 +24492,7 @@ test "taffy/grid_span_2_min_content_fit_content_80px_indefinite" {
 test "taffy/grid_span_2_min_content_fit_content_80px_indefinite_hidden" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MinContent,
@@ -18759,6 +24503,9 @@ test "taffy/grid_span_2_min_content_fit_content_80px_indefinite_hidden" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -18773,6 +24520,9 @@ test "taffy/grid_span_2_min_content_fit_content_80px_indefinite_hidden" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(2),
       end: @types.GridPlacement::Auto,
@@ -18787,6 +24537,9 @@ test "taffy/grid_span_2_min_content_fit_content_80px_indefinite_hidden" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     overflow_x: @types.Overflow::Hidden,
     overflow_y: @types.Overflow::Hidden,
     grid_column: {
@@ -18832,6 +24585,7 @@ test "taffy/grid_span_2_min_content_fit_content_80px_indefinite_hidden" {
 test "taffy/grid_span_2_min_content_max_content_indefinite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MinContent,
@@ -18842,6 +24596,9 @@ test "taffy/grid_span_2_min_content_max_content_indefinite" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -18856,6 +24613,9 @@ test "taffy/grid_span_2_min_content_max_content_indefinite" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(2),
       end: @types.GridPlacement::Auto,
@@ -18870,6 +24630,9 @@ test "taffy/grid_span_2_min_content_max_content_indefinite" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Span(2),
@@ -18913,6 +24676,7 @@ test "taffy/grid_span_2_min_content_max_content_indefinite" {
 test "taffy/grid_span_2_min_content_min_content_indefinite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MinContent,
@@ -18923,6 +24687,9 @@ test "taffy/grid_span_2_min_content_min_content_indefinite" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Auto,
@@ -18937,6 +24704,9 @@ test "taffy/grid_span_2_min_content_min_content_indefinite" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(2),
       end: @types.GridPlacement::Auto,
@@ -18951,6 +24721,9 @@ test "taffy/grid_span_2_min_content_min_content_indefinite" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Span(2),
@@ -18994,6 +24767,7 @@ test "taffy/grid_span_2_min_content_min_content_indefinite" {
 test "taffy/grid_span_6_all_non_flex_indefinite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MinContent,
@@ -19011,6 +24785,9 @@ test "taffy/grid_span_6_all_non_flex_indefinite" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Span(6),
@@ -19025,22 +24802,52 @@ test "taffy/grid_span_6_all_non_flex_indefinite" {
     "node", root_child0_style, root_child0_measure,
   )
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -19083,6 +24890,7 @@ test "taffy/grid_span_6_all_non_flex_indefinite" {
 test "taffy/grid_span_6_all_non_flex_indefinite_hidden" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MinContent,
@@ -19100,6 +24908,9 @@ test "taffy/grid_span_6_all_non_flex_indefinite_hidden" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     overflow_x: @types.Overflow::Hidden,
     overflow_y: @types.Overflow::Hidden,
     grid_column: {
@@ -19116,22 +24927,52 @@ test "taffy/grid_span_6_all_non_flex_indefinite_hidden" {
     "node", root_child0_style, root_child0_measure,
   )
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -19174,6 +25015,7 @@ test "taffy/grid_span_6_all_non_flex_indefinite_hidden" {
 test "taffy/grid_span_8_all_track_types_indefinite" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     grid_template_columns: [
       @types.TrackSizingFunction::MinContent,
@@ -19193,6 +25035,9 @@ test "taffy/grid_span_8_all_track_types_indefinite" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     grid_column: {
       start: @types.GridPlacement::Line(1),
       end: @types.GridPlacement::Span(8),
@@ -19207,28 +25052,68 @@ test "taffy/grid_span_8_all_track_types_indefinite" {
     "node", root_child0_style, root_child0_measure,
   )
   root_children.push(root_child0)
-  let root_child1_style = { ..@style.Style::default() }
+  let root_child1_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
-  let root_child2_style = { ..@style.Style::default() }
+  let root_child2_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
-  let root_child3_style = { ..@style.Style::default() }
+  let root_child3_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
-  let root_child4_style = { ..@style.Style::default() }
+  let root_child4_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child4 = @node.Node::leaf("node", root_child4_style)
   root_children.push(root_child4)
-  let root_child5_style = { ..@style.Style::default() }
+  let root_child5_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child5 = @node.Node::leaf("node", root_child5_style)
   root_children.push(root_child5)
-  let root_child6_style = { ..@style.Style::default() }
+  let root_child6_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
-  let root_child7_style = { ..@style.Style::default() }
+  let root_child7_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child7 = @node.Node::leaf("node", root_child7_style)
   root_children.push(root_child7)
-  let root_child8_style = { ..@style.Style::default() }
+  let root_child8_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
+  }
   let root_child8 = @node.Node::leaf("node", root_child8_style)
   root_children.push(root_child8)
   let root = @node.Node::new("test-root", root_style, root_children)
@@ -19279,6 +25164,7 @@ test "taffy/grid_span_8_all_track_types_indefinite" {
 test "taffy/grid_taffy_issue_624" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Grid,
     width: @types.Length(320.0),
     height: @types.Length(640.0),
@@ -19299,6 +25185,9 @@ test "taffy/grid_taffy_issue_624" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(100.0),
     height: @types.Length(50.0),
     grid_column: {
@@ -19315,6 +25204,9 @@ test "taffy/grid_taffy_issue_624" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(40.0),
     height: @types.Length(30.0),
     grid_column: {
@@ -19331,6 +25223,9 @@ test "taffy/grid_taffy_issue_624" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(120.0),
     height: @types.Length(20.0),
     grid_column: {

@@ -73,6 +73,8 @@ interface NodeStyle {
   alignSelf?: string;
   justifyItems?: string;
   justifySelf?: string;
+  textAlign?: string;
+  text_align?: string;
   flexGrow?: number;
   flexShrink?: number;
   flexBasis?: Dimension;
@@ -145,143 +147,171 @@ function insetEdgesToMoonBit(edges: Edges | undefined): string {
 
 function trackSizingToMoonBit(track: TrackSizing): string {
   switch (track.type) {
-    case 'length': return `@style.Length(${track.value!.toFixed(1)})`;
-    case 'percent': return `@style.Percent(${track.value!.toFixed(4)})`;
-    case 'fr': return `@style.Fr(${track.value!.toFixed(1)})`;
-    case 'auto': return '@style.Auto';
-    case 'min-content': return '@style.MinContent';
-    case 'max-content': return '@style.MaxContent';
-    case 'fit-content-length': return `@style.FitContentLength(${track.value!.toFixed(1)})`;
-    case 'fit-content-percent': return `@style.FitContentPercent(${track.value!.toFixed(4)})`;
+    case 'length': return `@types.TrackSizingFunction::Length(${track.value!.toFixed(1)})`;
+    case 'percent': return `@types.TrackSizingFunction::Percent(${track.value!.toFixed(4)})`;
+    case 'fr': return `@types.TrackSizingFunction::Fr(${track.value!.toFixed(1)})`;
+    case 'auto': return '@types.TrackSizingFunction::Auto';
+    case 'min-content': return '@types.TrackSizingFunction::MinContent';
+    case 'max-content': return '@types.TrackSizingFunction::MaxContent';
+    case 'fit-content-length': return `@types.FitContentLength(${track.value!.toFixed(1)})`;
+    case 'fit-content-percent': return `@types.FitContentPercent(${track.value!.toFixed(4)})`;
     case 'minmax':
       const min = minTrackToMoonBit(track.min!);
       const max = maxTrackToMoonBit(track.max!);
-      return `@style.MinMax(${min}, ${max})`;
+      return `@types.TrackSizingFunction::MinMax(${min}, ${max})`;
     case 'repeat':
-      const count = track.repeatCount === 'auto-fill' ? '@style.AutoFill' :
-                    track.repeatCount === 'auto-fit' ? '@style.AutoFit' :
-                    `@style.Count(${track.repeatCount})`;
+      const count = track.repeatCount === 'auto-fill' ? '@types.RepeatCount::AutoFill' :
+                    track.repeatCount === 'auto-fit' ? '@types.RepeatCount::AutoFit' :
+                    `@types.RepeatCount::Count(${track.repeatCount})`;
       const innerTracks = track.tracks!.map(t => singleTrackToMoonBit(t)).join(', ');
-      return `@style.Repeat(${count}, [${innerTracks}])`;
+      return `@types.TrackSizingFunction::Repeat(${count}, [${innerTracks}])`;
     default:
-      return '@style.Auto';
+      return '@types.TrackSizingFunction::Auto';
   }
 }
 
 function singleTrackToMoonBit(track: TrackSizing): string {
   switch (track.type) {
-    case 'length': return `@style.SingleTrackSizing::Length(${track.value!.toFixed(1)})`;
-    case 'percent': return `@style.SingleTrackSizing::Percent(${track.value!.toFixed(4)})`;
-    case 'fr': return `@style.SingleTrackSizing::Fr(${track.value!.toFixed(1)})`;
-    case 'auto': return '@style.SingleTrackSizing::Auto';
-    case 'min-content': return '@style.SingleTrackSizing::MinContent';
-    case 'max-content': return '@style.SingleTrackSizing::MaxContent';
-    case 'fit-content-length': return `@style.SingleTrackSizing::FitContentLength(${track.value!.toFixed(1)})`;
-    case 'fit-content-percent': return `@style.SingleTrackSizing::FitContentPercent(${track.value!.toFixed(4)})`;
+    case 'length': return `@types.SingleTrackSizing::Length(${track.value!.toFixed(1)})`;
+    case 'percent': return `@types.SingleTrackSizing::Percent(${track.value!.toFixed(4)})`;
+    case 'fr': return `@types.SingleTrackSizing::Fr(${track.value!.toFixed(1)})`;
+    case 'auto': return '@types.SingleTrackSizing::Auto';
+    case 'min-content': return '@types.SingleTrackSizing::MinContent';
+    case 'max-content': return '@types.SingleTrackSizing::MaxContent';
+    case 'fit-content-length': return `@types.SingleTrackSizing::FitContentLength(${track.value!.toFixed(1)})`;
+    case 'fit-content-percent': return `@types.SingleTrackSizing::FitContentPercent(${track.value!.toFixed(4)})`;
     case 'minmax':
       const min = minTrackToMoonBit(track.min!);
       const max = maxTrackToMoonBit(track.max!);
-      return `@style.SingleTrackSizing::MinMax(${min}, ${max})`;
+      return `@types.SingleTrackSizing::MinMax(${min}, ${max})`;
     default:
-      return '@style.SingleTrackSizing::Auto';
+      return '@types.SingleTrackSizing::Auto';
   }
 }
 
 function minTrackToMoonBit(track: TrackSizing): string {
   switch (track.type) {
-    case 'length': return `@style.MinTrackSizing::Length(${track.value!.toFixed(1)})`;
-    case 'percent': return `@style.MinTrackSizing::Percent(${track.value!.toFixed(4)})`;
-    case 'auto': return '@style.MinTrackSizing::Auto';
-    case 'min-content': return '@style.MinTrackSizing::MinContent';
-    case 'max-content': return '@style.MinTrackSizing::MaxContent';
+    case 'length': return `@types.MinTrackSizing::Length(${track.value!.toFixed(1)})`;
+    case 'percent': return `@types.MinTrackSizing::Percent(${track.value!.toFixed(4)})`;
+    case 'auto': return '@types.MinTrackSizing::Auto';
+    case 'min-content': return '@types.MinTrackSizing::MinContent';
+    case 'max-content': return '@types.MinTrackSizing::MaxContent';
     default:
-      return '@style.MinTrackSizing::Auto';
+      return '@types.MinTrackSizing::Auto';
   }
 }
 
 function maxTrackToMoonBit(track: TrackSizing): string {
   switch (track.type) {
-    case 'length': return `@style.MaxTrackSizing::Length(${track.value!.toFixed(1)})`;
-    case 'percent': return `@style.MaxTrackSizing::Percent(${track.value!.toFixed(4)})`;
-    case 'fr': return `@style.MaxTrackSizing::Fr(${track.value!.toFixed(1)})`;
-    case 'auto': return '@style.MaxTrackSizing::Auto';
-    case 'min-content': return '@style.MaxTrackSizing::MinContent';
-    case 'max-content': return '@style.MaxTrackSizing::MaxContent';
+    case 'length': return `@types.MaxTrackSizing::Length(${track.value!.toFixed(1)})`;
+    case 'percent': return `@types.MaxTrackSizing::Percent(${track.value!.toFixed(4)})`;
+    case 'fr': return `@types.MaxTrackSizing::Fr(${track.value!.toFixed(1)})`;
+    case 'auto': return '@types.MaxTrackSizing::Auto';
+    case 'min-content': return '@types.MaxTrackSizing::MinContent';
+    case 'max-content': return '@types.MaxTrackSizing::MaxContent';
     default:
-      return '@style.MaxTrackSizing::Auto';
+      return '@types.MaxTrackSizing::Auto';
   }
 }
 
 function gridPlacementToMoonBit(placement: GridPlacement | undefined): string {
-  if (!placement || placement.type === 'auto') return '@style.Auto';
-  if (placement.type === 'line') return `@style.Line(${placement.value})`;
-  if (placement.type === 'span') return `@style.Span(${placement.value})`;
-  return '@style.Auto';
+  if (!placement || placement.type === 'auto') return '@types.GridPlacement::Auto';
+  if (placement.type === 'line') return `@types.GridPlacement::Line(${placement.value})`;
+  if (placement.type === 'span') return `@types.GridPlacement::Span(${placement.value})`;
+  return '@types.GridPlacement::Auto';
 }
 
 function gridLineToMoonBit(line: GridLine | undefined): string {
-  if (!line) return '{ start: @style.Auto, end: @style.Auto }';
+  if (!line) return '{ start: @types.GridPlacement::Auto, end: @types.GridPlacement::Auto }';
   return `{ start: ${gridPlacementToMoonBit(line.start)}, end: ${gridPlacementToMoonBit(line.end)} }`;
 }
 
 function alignmentToMoonBit(value: string | undefined): string {
-  if (!value) return '@style.Start';
+  if (!value) return '@types.Start';
   switch (value) {
-    case 'flex-start':
-    case 'start': return '@style.Start';
-    case 'flex-end':
-    case 'end': return '@style.End';
-    case 'center': return '@style.Center';
-    case 'space-between': return '@style.SpaceBetween';
-    case 'space-around': return '@style.SpaceAround';
-    case 'space-evenly': return '@style.SpaceEvenly';
-    case 'stretch': return '@style.Stretch';
-    case 'baseline': return '@style.Baseline';
-    default: return '@style.Start';
+    case 'flex-start': return '@types.FlexStart';
+    case 'start': return '@types.Start';
+    case 'flex-end': return '@types.FlexEnd';
+    case 'end': return '@types.End';
+    case 'center': return '@types.Center';
+    case 'space-between': return '@types.SpaceBetween';
+    case 'space-around': return '@types.SpaceAround';
+    case 'space-evenly': return '@types.SpaceEvenly';
+    case 'stretch': return '@types.Stretch';
+    case 'baseline': return '@types.Baseline';
+    default: return '@types.Start';
   }
 }
 
 function alignSelfToMoonBit(value: string | undefined): string {
-  if (!value) return '@style.AlignSelf::Auto';
+  if (!value) return '@types.AlignSelf::Auto';
   switch (value) {
-    case 'auto': return '@style.AlignSelf::Auto';
+    case 'auto': return '@types.AlignSelf::Auto';
     case 'flex-start':
-    case 'start': return '@style.AlignSelf::Start';
+    case 'start': return '@types.AlignSelf::Start';
     case 'flex-end':
-    case 'end': return '@style.AlignSelf::End';
-    case 'center': return '@style.AlignSelf::Center';
-    case 'stretch': return '@style.AlignSelf::Stretch';
-    case 'baseline': return '@style.AlignSelf::Baseline';
-    default: return '@style.AlignSelf::Auto';
+    case 'end': return '@types.AlignSelf::End';
+    case 'center': return '@types.AlignSelf::Center';
+    case 'stretch': return '@types.AlignSelf::Stretch';
+    case 'baseline': return '@types.AlignSelf::Baseline';
+    default: return '@types.AlignSelf::Auto';
+  }
+}
+
+function textAlignToMoonBit(value: string | undefined): string {
+  if (!value) return '@style.TextAlign::Start';
+  const normalized = value.toLowerCase().replace('_', '-');
+  switch (normalized) {
+    case 'center': return '@style.TextAlign::Center';
+    case 'right': return '@style.TextAlign::Right';
+    case 'left': return '@style.TextAlign::Left';
+    case 'end': return '@style.TextAlign::End';
+    case 'justify': return '@style.TextAlign::Justify';
+    default: return '@style.TextAlign::Start';
   }
 }
 
 function gridAutoFlowToMoonBit(value: string | undefined): string {
-  if (!value) return '@style.GridAutoFlow::Row';
+  if (!value) return '@types.GridAutoFlow::Row';
   switch (value) {
-    case 'row': return '@style.GridAutoFlow::Row';
-    case 'column': return '@style.GridAutoFlow::Column';
-    case 'row dense': return '@style.GridAutoFlow::RowDense';
-    case 'column dense': return '@style.GridAutoFlow::ColumnDense';
-    default: return '@style.GridAutoFlow::Row';
+    case 'row': return '@types.GridAutoFlow::Row';
+    case 'column': return '@types.GridAutoFlow::Column';
+    case 'row dense': return '@types.GridAutoFlow::RowDense';
+    case 'column dense': return '@types.GridAutoFlow::ColumnDense';
+    default: return '@types.GridAutoFlow::Row';
   }
 }
 
 function positionToMoonBit(value: string | undefined): string {
-  if (!value || value === 'relative') return '@style.Position::Relative';
-  if (value === 'absolute') return '@style.Position::Absolute';
-  return '@style.Position::Relative';
+  if (!value || value === 'relative') return '@types.Position::Relative';
+  if (value === 'absolute') return '@types.Position::Absolute';
+  return '@types.Position::Relative';
 }
 
 function overflowToMoonBit(value: string | undefined): string {
-  if (!value || value === 'visible') return '@style.Overflow::Visible';
-  if (value === 'hidden') return '@style.Overflow::Hidden';
-  if (value === 'scroll') return '@style.Overflow::Scroll';
-  if (value === 'auto') return '@style.Overflow::Auto';
-  return '@style.Overflow::Visible';
+  if (!value || value === 'visible') return '@types.Overflow::Visible';
+  if (value === 'hidden') return '@types.Overflow::Hidden';
+  if (value === 'scroll') return '@types.Overflow::Scroll';
+  if (value === 'auto') return '@types.Overflow::Auto';
+  return '@types.Overflow::Visible';
 }
 
-function nodeToMoonBit(node: NodeTestData, varName: string, indent: string): string[] {
+function hasFlexStyleProps(style: NodeStyle): boolean {
+  return !!(
+    style.flexDirection || style.flexWrap ||
+    style.flexGrow !== undefined || style.flexShrink !== undefined ||
+    style.flexBasis || style.justifyContent || style.alignItems ||
+    style.alignContent || style.alignSelf || style.gap ||
+    style.rowGap || style.columnGap
+  );
+}
+
+function nodeToMoonBit(
+  node: NodeTestData,
+  varName: string,
+  indent: string,
+  layoutType: 'grid' | 'flex' | 'block',
+): string[] {
   const lines: string[] = [];
   const style = node.style;
 
@@ -291,23 +321,24 @@ function nodeToMoonBit(node: NodeTestData, varName: string, indent: string): str
 
   // Determine display type
   // If flex-related properties exist, imply display: flex
-  const hasFlexProps = style.flexDirection || style.flexWrap ||
-    style.flexGrow !== undefined || style.flexShrink !== undefined ||
-    style.flexBasis || style.justifyContent || style.alignItems ||
-    style.alignContent || style.alignSelf || style.gap ||
-    style.rowGap || style.columnGap;
+  const hasFlexProps = hasFlexStyleProps(style);
+  const hasFlexItemChild = node.children.some(child => hasFlexStyleProps(child.style));
+
+  const displayIsFlex = style.display === 'flex' ||
+    (style.display === undefined && (hasFlexProps || hasFlexItemChild || layoutType !== 'block'));
 
   if (style.display === 'grid') {
-    lines.push(`${indent}  display: @style.Grid,`);
-  } else if (style.display === 'flex' || (style.display === undefined && hasFlexProps)) {
-    lines.push(`${indent}  display: @style.Flex,`);
+    lines.push(`${indent}  display: @types.Grid,`);
+  } else if (displayIsFlex) {
+    lines.push(`${indent}  display: @types.Flex,`);
   } else if (style.display === 'none') {
-    lines.push(`${indent}  display: @style.None,`);
+    lines.push(`${indent}  display: @types.Display::None,`);
   }
 
-  if (style.position) {
-    lines.push(`${indent}  position: ${positionToMoonBit(style.position)},`);
-  }
+  // Taffy defaults to position: relative, while Crater's CSS style default is
+  // position: static. Emit the position explicitly so regenerated compat tests
+  // preserve Taffy's coordinate model even when the fixture omits it.
+  lines.push(`${indent}  position: ${positionToMoonBit(style.position)},`);
 
   // Overflow - handle shorthand 'overflow' and individual overflowX/overflowY
   const overflowX = style.overflowX || style.overflow;
@@ -395,6 +426,8 @@ function nodeToMoonBit(node: NodeTestData, varName: string, indent: string): str
   // Alignment
   if (style.justifyContent) {
     lines.push(`${indent}  justify_content: ${alignmentToMoonBit(style.justifyContent)},`);
+  } else if (displayIsFlex) {
+    lines.push(`${indent}  justify_content: @types.FlexStart,`);
   }
   if (style.alignItems) {
     lines.push(`${indent}  align_items: ${alignmentToMoonBit(style.alignItems)},`);
@@ -411,6 +444,10 @@ function nodeToMoonBit(node: NodeTestData, varName: string, indent: string): str
   if (style.justifySelf) {
     lines.push(`${indent}  justify_self: ${alignSelfToMoonBit(style.justifySelf)},`);
   }
+  const textAlign = style.textAlign || style.text_align;
+  if (textAlign) {
+    lines.push(`${indent}  text_align: ${textAlignToMoonBit(textAlign)},`);
+  }
 
   // Inset
   if (style.inset) {
@@ -420,16 +457,16 @@ function nodeToMoonBit(node: NodeTestData, varName: string, indent: string): str
   // Flex container properties
   if (style.flexDirection) {
     const dir = style.flexDirection;
-    if (dir === 'row') lines.push(`${indent}  flex_direction: @style.Row,`);
-    else if (dir === 'row-reverse') lines.push(`${indent}  flex_direction: @style.RowReverse,`);
-    else if (dir === 'column') lines.push(`${indent}  flex_direction: @style.Column,`);
-    else if (dir === 'column-reverse') lines.push(`${indent}  flex_direction: @style.ColumnReverse,`);
+    if (dir === 'row') lines.push(`${indent}  flex_direction: @types.Row,`);
+    else if (dir === 'row-reverse') lines.push(`${indent}  flex_direction: @types.RowReverse,`);
+    else if (dir === 'column') lines.push(`${indent}  flex_direction: @types.Column,`);
+    else if (dir === 'column-reverse') lines.push(`${indent}  flex_direction: @types.ColumnReverse,`);
   }
   if (style.flexWrap) {
     const wrap = style.flexWrap;
-    if (wrap === 'wrap') lines.push(`${indent}  flex_wrap: @style.Wrap,`);
-    else if (wrap === 'wrap-reverse') lines.push(`${indent}  flex_wrap: @style.WrapReverse,`);
-    else if (wrap === 'nowrap') lines.push(`${indent}  flex_wrap: @style.NoWrap,`);
+    if (wrap === 'wrap') lines.push(`${indent}  flex_wrap: @types.Wrap,`);
+    else if (wrap === 'wrap-reverse') lines.push(`${indent}  flex_wrap: @types.WrapReverse,`);
+    else if (wrap === 'nowrap') lines.push(`${indent}  flex_wrap: @types.NoWrap,`);
   }
 
   // Flex item properties
@@ -456,7 +493,7 @@ function nodeToMoonBit(node: NodeTestData, varName: string, indent: string): str
     for (let i = 0; i < node.children.length; i++) {
       const child = node.children[i];
       const childVar = `${varName}_child${i}`;
-      lines.push(...nodeToMoonBit(child, childVar, indent));
+      lines.push(...nodeToMoonBit(child, childVar, indent, layoutType));
       lines.push(`${indent}${varName}_children.push(${childVar})`);
     }
     lines.push(`${indent}let ${varName} = @node.Node::new("${node.id}", ${varName}_style, ${varName}_children)`);
@@ -464,7 +501,7 @@ function nodeToMoonBit(node: NodeTestData, varName: string, indent: string): str
     // Leaf node with measure function
     const m = node.measure;
     lines.push(`${indent}let ${varName}_measure = @node.MeasureFunc::{`);
-    lines.push(`${indent}  func: fn(_w : Double, _h : Double) -> @node.IntrinsicSize {`);
+    lines.push(`${indent}  func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {`);
     lines.push(`${indent}    { min_width: ${m.minWidth.toFixed(1)}, max_width: ${m.maxWidth.toFixed(1)}, min_height: ${m.minHeight.toFixed(1)}, max_height: ${m.maxHeight.toFixed(1)} }`);
     lines.push(`${indent}  }`);
     lines.push(`${indent}}`);
@@ -499,18 +536,18 @@ function testCaseToMoonBit(tc: TestCase, layoutType: 'grid' | 'flex' | 'block' =
   lines.push(`test "taffy/${tc.name}" {`);
 
   // Build node tree
-  lines.push(...nodeToMoonBit(tc.root, 'root', '  '));
+  lines.push(...nodeToMoonBit(tc.root, 'root', '  ', layoutType));
 
   // Compute layout
   lines.push('');
   if (layoutType === 'flex') {
-    lines.push(`  let ctx : @node.LayoutContext = { available_width: ${tc.viewport.width.toFixed(1)}, available_height: Some(${tc.viewport.height.toFixed(1)}), sizing_mode: @node.MaxContent, viewport_width: ${tc.viewport.width.toFixed(1)}, viewport_height: ${tc.viewport.height.toFixed(1)} }`);
-    lines.push(`  let layout = compute(root, ctx)`);
+    lines.push(`  let ctx : @types.LayoutContext = { available_width: ${tc.viewport.width.toFixed(1)}, available_height: Some(${tc.viewport.height.toFixed(1)}), sizing_mode: @types.MaxContent, viewport_width: ${tc.viewport.width.toFixed(1)}, viewport_height: ${tc.viewport.height.toFixed(1)}, stretch_width: false, stretch_height: false }`);
+    lines.push(`  let layout = @node.compute_flex_layout_with_dispatch(root, ctx, default_dispatch())`);
   } else if (layoutType === 'block') {
-    lines.push(`  let ctx : @node.LayoutContext = { available_width: ${tc.viewport.width.toFixed(1)}, available_height: Some(${tc.viewport.height.toFixed(1)}), sizing_mode: @node.MaxContent, viewport_width: ${tc.viewport.width.toFixed(1)}, viewport_height: ${tc.viewport.height.toFixed(1)} }`);
-    lines.push(`  let layout = compute(root, ctx)`);
+    lines.push(`  let ctx : @types.LayoutContext = { available_width: ${tc.viewport.width.toFixed(1)}, available_height: Some(${tc.viewport.height.toFixed(1)}), sizing_mode: @types.MaxContent, viewport_width: ${tc.viewport.width.toFixed(1)}, viewport_height: ${tc.viewport.height.toFixed(1)}, stretch_width: false, stretch_height: false }`);
+    lines.push(`  let layout = compute_root_layout(root, ctx)`);
   } else {
-    lines.push(`  let layout = compute_layout(root, ${tc.viewport.width.toFixed(1)}, ${tc.viewport.height.toFixed(1)})`);
+    lines.push(`  let layout = compute_root_layout_size(root, ${tc.viewport.width.toFixed(1)}, ${tc.viewport.height.toFixed(1)})`);
   }
   lines.push('');
 

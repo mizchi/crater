@@ -13,6 +13,7 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
   let root_child0_style = {
     ..@style.Style::default(),
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     position: @types.Position::Absolute,
     inset: {
       left: @types.Length(50.0),
@@ -25,6 +26,7 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(10.0),
   }
@@ -32,6 +34,7 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Percent(1.0000),
     height: @types.Length(10.0),
   }
@@ -39,13 +42,16 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Percent(1.0000),
     height: @types.Length(10.0),
   }
   let root_child0_child2_children : Array[@node.Node] = []
   let root_child0_child2_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(10.0),
     height: @types.Length(10.0),
   }
@@ -71,11 +77,7 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 300.0)
@@ -106,6 +108,7 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
 test "taffy/block_absolute_aspect_ratio_aspect_ratio_overrides_height_of_full_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
@@ -133,11 +136,7 @@ test "taffy/block_absolute_aspect_ratio_aspect_ratio_overrides_height_of_full_in
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -152,6 +151,7 @@ test "taffy/block_absolute_aspect_ratio_aspect_ratio_overrides_height_of_full_in
 test "taffy/block_absolute_aspect_ratio_fill_height" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
@@ -180,11 +180,7 @@ test "taffy/block_absolute_aspect_ratio_fill_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -199,6 +195,7 @@ test "taffy/block_absolute_aspect_ratio_fill_height" {
 test "taffy/block_absolute_aspect_ratio_fill_height_from_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
@@ -226,11 +223,7 @@ test "taffy/block_absolute_aspect_ratio_fill_height_from_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -245,6 +238,7 @@ test "taffy/block_absolute_aspect_ratio_fill_height_from_inset" {
 test "taffy/block_absolute_aspect_ratio_fill_max_height" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
@@ -279,11 +273,7 @@ test "taffy/block_absolute_aspect_ratio_fill_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -298,6 +288,7 @@ test "taffy/block_absolute_aspect_ratio_fill_max_height" {
 test "taffy/block_absolute_aspect_ratio_fill_max_width" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
@@ -332,11 +323,7 @@ test "taffy/block_absolute_aspect_ratio_fill_max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -351,6 +338,7 @@ test "taffy/block_absolute_aspect_ratio_fill_max_width" {
 test "taffy/block_absolute_aspect_ratio_fill_min_height" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
@@ -373,11 +361,7 @@ test "taffy/block_absolute_aspect_ratio_fill_min_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -392,6 +376,7 @@ test "taffy/block_absolute_aspect_ratio_fill_min_height" {
 test "taffy/block_absolute_aspect_ratio_fill_min_width" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
@@ -414,11 +399,7 @@ test "taffy/block_absolute_aspect_ratio_fill_min_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -433,6 +414,7 @@ test "taffy/block_absolute_aspect_ratio_fill_min_width" {
 test "taffy/block_absolute_aspect_ratio_fill_width" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
@@ -461,11 +443,7 @@ test "taffy/block_absolute_aspect_ratio_fill_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -480,6 +458,7 @@ test "taffy/block_absolute_aspect_ratio_fill_width" {
 test "taffy/block_absolute_aspect_ratio_fill_width_from_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
@@ -507,11 +486,7 @@ test "taffy/block_absolute_aspect_ratio_fill_width_from_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -526,6 +501,7 @@ test "taffy/block_absolute_aspect_ratio_fill_width_from_inset" {
 test "taffy/block_absolute_aspect_ratio_height_overrides_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
@@ -554,11 +530,7 @@ test "taffy/block_absolute_aspect_ratio_height_overrides_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -573,6 +545,7 @@ test "taffy/block_absolute_aspect_ratio_height_overrides_inset" {
 test "taffy/block_absolute_aspect_ratio_width_overrides_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   }
@@ -601,11 +574,7 @@ test "taffy/block_absolute_aspect_ratio_width_overrides_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 400.0)
@@ -620,6 +589,7 @@ test "taffy/block_absolute_aspect_ratio_width_overrides_inset" {
 test "taffy/block_absolute_child_with_margin_x" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(20.0),
     height: @types.Length(37.0),
   }
@@ -676,11 +646,7 @@ test "taffy/block_absolute_child_with_margin_x" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -703,6 +669,7 @@ test "taffy/block_absolute_child_with_margin_x" {
 test "taffy/block_absolute_child_with_margin_y" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(20.0),
     height: @types.Length(37.0),
   }
@@ -759,11 +726,7 @@ test "taffy/block_absolute_child_with_margin_y" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 20.0)
@@ -786,6 +749,7 @@ test "taffy/block_absolute_child_with_margin_y" {
 test "taffy/block_absolute_child_with_max_height" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(200.0),
   }
@@ -804,6 +768,7 @@ test "taffy/block_absolute_child_with_max_height" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(150.0),
   }
@@ -823,11 +788,7 @@ test "taffy/block_absolute_child_with_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -846,6 +807,7 @@ test "taffy/block_absolute_child_with_max_height" {
 test "taffy/block_absolute_layout_child_order" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(110.0),
     height: @types.Length(100.0),
     justify_content: @types.Center,
@@ -854,6 +816,7 @@ test "taffy/block_absolute_layout_child_order" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(60.0),
     height: @types.Length(40.0),
   }
@@ -869,6 +832,7 @@ test "taffy/block_absolute_layout_child_order" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(60.0),
     height: @types.Length(40.0),
   }
@@ -884,11 +848,7 @@ test "taffy/block_absolute_layout_child_order" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 110.0)
@@ -911,6 +871,7 @@ test "taffy/block_absolute_layout_child_order" {
 test "taffy/block_absolute_layout_no_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -931,11 +892,7 @@ test "taffy/block_absolute_layout_no_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -950,6 +907,7 @@ test "taffy/block_absolute_layout_no_size" {
 test "taffy/block_absolute_layout_percentage_bottom_based_on_parent_height" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(200.0),
   }
@@ -1005,11 +963,7 @@ test "taffy/block_absolute_layout_percentage_bottom_based_on_parent_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1032,6 +986,7 @@ test "taffy/block_absolute_layout_percentage_bottom_based_on_parent_height" {
 test "taffy/block_absolute_layout_percentage_height" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(100.0),
   }
@@ -1060,11 +1015,7 @@ test "taffy/block_absolute_layout_percentage_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -1079,6 +1030,7 @@ test "taffy/block_absolute_layout_percentage_height" {
 test "taffy/block_absolute_layout_row_width_height_end_bottom" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -1107,11 +1059,7 @@ test "taffy/block_absolute_layout_row_width_height_end_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1126,6 +1074,7 @@ test "taffy/block_absolute_layout_row_width_height_end_bottom" {
 test "taffy/block_absolute_layout_start_top_end_bottom" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -1152,11 +1101,7 @@ test "taffy/block_absolute_layout_start_top_end_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1171,6 +1116,7 @@ test "taffy/block_absolute_layout_start_top_end_bottom" {
 test "taffy/block_absolute_layout_width_height_end_bottom" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -1199,11 +1145,7 @@ test "taffy/block_absolute_layout_width_height_end_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1218,6 +1160,7 @@ test "taffy/block_absolute_layout_width_height_end_bottom" {
 test "taffy/block_absolute_layout_width_height_start_top" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -1246,11 +1189,7 @@ test "taffy/block_absolute_layout_width_height_start_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1265,6 +1204,7 @@ test "taffy/block_absolute_layout_width_height_start_top" {
 test "taffy/block_absolute_layout_width_height_start_top_end_bottom" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -1293,11 +1233,7 @@ test "taffy/block_absolute_layout_width_height_start_top_end_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1312,6 +1248,7 @@ test "taffy/block_absolute_layout_width_height_start_top_end_bottom" {
 test "taffy/block_absolute_layout_within_border" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     padding: {
@@ -1406,11 +1343,7 @@ test "taffy/block_absolute_layout_within_border" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -1437,6 +1370,7 @@ test "taffy/block_absolute_layout_within_border" {
 test "taffy/block_absolute_margin_auto_bottom_and_top_with_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
   }
@@ -1471,11 +1405,7 @@ test "taffy/block_absolute_margin_auto_bottom_and_top_with_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -1490,6 +1420,7 @@ test "taffy/block_absolute_margin_auto_bottom_and_top_with_inset" {
 test "taffy/block_absolute_margin_auto_bottom_and_top_without_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
   }
@@ -1518,11 +1449,7 @@ test "taffy/block_absolute_margin_auto_bottom_and_top_without_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -1537,6 +1464,7 @@ test "taffy/block_absolute_margin_auto_bottom_and_top_without_inset" {
 test "taffy/block_absolute_margin_auto_bottom_with_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     align_items: @types.Center,
@@ -1572,11 +1500,7 @@ test "taffy/block_absolute_margin_auto_bottom_with_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -1591,6 +1515,7 @@ test "taffy/block_absolute_margin_auto_bottom_with_inset" {
 test "taffy/block_absolute_margin_auto_bottom_without_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     align_items: @types.Center,
@@ -1620,11 +1545,7 @@ test "taffy/block_absolute_margin_auto_bottom_without_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -1639,6 +1560,7 @@ test "taffy/block_absolute_margin_auto_bottom_without_inset" {
 test "taffy/block_absolute_margin_auto_left_and_right_with_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
   }
@@ -1673,11 +1595,7 @@ test "taffy/block_absolute_margin_auto_left_and_right_with_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -1692,6 +1610,7 @@ test "taffy/block_absolute_margin_auto_left_and_right_with_inset" {
 test "taffy/block_absolute_margin_auto_left_and_right_without_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
   }
@@ -1720,11 +1639,7 @@ test "taffy/block_absolute_margin_auto_left_and_right_without_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -1739,6 +1654,7 @@ test "taffy/block_absolute_margin_auto_left_and_right_without_inset" {
 test "taffy/block_absolute_margin_auto_left_child_bigger_than_parent_with_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(52.0),
     height: @types.Length(52.0),
   }
@@ -1773,11 +1689,7 @@ test "taffy/block_absolute_margin_auto_left_child_bigger_than_parent_with_inset"
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -1792,6 +1704,7 @@ test "taffy/block_absolute_margin_auto_left_child_bigger_than_parent_with_inset"
 test "taffy/block_absolute_margin_auto_left_child_bigger_than_parent_without_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(52.0),
     height: @types.Length(52.0),
   }
@@ -1820,11 +1733,7 @@ test "taffy/block_absolute_margin_auto_left_child_bigger_than_parent_without_ins
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -1839,6 +1748,7 @@ test "taffy/block_absolute_margin_auto_left_child_bigger_than_parent_without_ins
 test "taffy/block_absolute_margin_auto_left_fix_right_child_bigger_than_parent_with_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(52.0),
     height: @types.Length(52.0),
   }
@@ -1873,11 +1783,7 @@ test "taffy/block_absolute_margin_auto_left_fix_right_child_bigger_than_parent_w
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -1892,6 +1798,7 @@ test "taffy/block_absolute_margin_auto_left_fix_right_child_bigger_than_parent_w
 test "taffy/block_absolute_margin_auto_left_fix_right_child_bigger_than_parent_without_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(52.0),
     height: @types.Length(52.0),
   }
@@ -1920,11 +1827,7 @@ test "taffy/block_absolute_margin_auto_left_fix_right_child_bigger_than_parent_w
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -1939,6 +1842,7 @@ test "taffy/block_absolute_margin_auto_left_fix_right_child_bigger_than_parent_w
 test "taffy/block_absolute_margin_auto_left_right_child_bigger_than_parent_with_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(52.0),
     height: @types.Length(52.0),
   }
@@ -1973,11 +1877,7 @@ test "taffy/block_absolute_margin_auto_left_right_child_bigger_than_parent_with_
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -1992,6 +1892,7 @@ test "taffy/block_absolute_margin_auto_left_right_child_bigger_than_parent_with_
 test "taffy/block_absolute_margin_auto_left_right_child_bigger_than_parent_without_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(52.0),
     height: @types.Length(52.0),
   }
@@ -2020,11 +1921,7 @@ test "taffy/block_absolute_margin_auto_left_right_child_bigger_than_parent_witho
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -2039,6 +1936,7 @@ test "taffy/block_absolute_margin_auto_left_right_child_bigger_than_parent_witho
 test "taffy/block_absolute_margin_auto_left_with_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
   }
@@ -2073,11 +1971,7 @@ test "taffy/block_absolute_margin_auto_left_with_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -2092,6 +1986,7 @@ test "taffy/block_absolute_margin_auto_left_with_inset" {
 test "taffy/block_absolute_margin_auto_left_without_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
   }
@@ -2120,11 +2015,7 @@ test "taffy/block_absolute_margin_auto_left_without_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -2139,6 +2030,7 @@ test "taffy/block_absolute_margin_auto_left_without_inset" {
 test "taffy/block_absolute_margin_auto_multiple_children_with_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     align_items: @types.Center,
@@ -2195,11 +2087,7 @@ test "taffy/block_absolute_margin_auto_multiple_children_with_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -2218,6 +2106,7 @@ test "taffy/block_absolute_margin_auto_multiple_children_with_inset" {
 test "taffy/block_absolute_margin_auto_multiple_children_without_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     align_items: @types.Center,
@@ -2262,11 +2151,7 @@ test "taffy/block_absolute_margin_auto_multiple_children_without_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -2285,6 +2170,7 @@ test "taffy/block_absolute_margin_auto_multiple_children_without_inset" {
 test "taffy/block_absolute_margin_auto_right_with_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     align_items: @types.Center,
@@ -2320,11 +2206,7 @@ test "taffy/block_absolute_margin_auto_right_with_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -2339,6 +2221,7 @@ test "taffy/block_absolute_margin_auto_right_with_inset" {
 test "taffy/block_absolute_margin_auto_right_without_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     align_items: @types.Center,
@@ -2368,11 +2251,7 @@ test "taffy/block_absolute_margin_auto_right_without_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -2387,6 +2266,7 @@ test "taffy/block_absolute_margin_auto_right_without_inset" {
 test "taffy/block_absolute_margin_auto_top_with_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     align_items: @types.Center,
@@ -2422,11 +2302,7 @@ test "taffy/block_absolute_margin_auto_top_with_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -2441,6 +2317,7 @@ test "taffy/block_absolute_margin_auto_top_with_inset" {
 test "taffy/block_absolute_margin_auto_top_without_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     align_items: @types.Center,
@@ -2470,11 +2347,7 @@ test "taffy/block_absolute_margin_auto_top_without_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -2489,6 +2362,7 @@ test "taffy/block_absolute_margin_auto_top_without_inset" {
 test "taffy/block_absolute_margin_bottom_left_with_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -2523,11 +2397,7 @@ test "taffy/block_absolute_margin_bottom_left_with_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2542,6 +2412,7 @@ test "taffy/block_absolute_margin_bottom_left_with_inset" {
 test "taffy/block_absolute_margin_bottom_left_without_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -2570,11 +2441,7 @@ test "taffy/block_absolute_margin_bottom_left_without_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2589,6 +2456,7 @@ test "taffy/block_absolute_margin_bottom_left_without_inset" {
 test "taffy/block_absolute_minmax_bottom_right_max" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -2619,11 +2487,7 @@ test "taffy/block_absolute_minmax_bottom_right_max" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2638,6 +2502,7 @@ test "taffy/block_absolute_minmax_bottom_right_max" {
 test "taffy/block_absolute_minmax_bottom_right_min_max" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -2668,11 +2533,7 @@ test "taffy/block_absolute_minmax_bottom_right_min_max" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2687,6 +2548,7 @@ test "taffy/block_absolute_minmax_bottom_right_min_max" {
 test "taffy/block_absolute_minmax_bottom_right_min_max_preferred" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -2719,11 +2581,7 @@ test "taffy/block_absolute_minmax_bottom_right_min_max_preferred" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2738,6 +2596,7 @@ test "taffy/block_absolute_minmax_bottom_right_min_max_preferred" {
 test "taffy/block_absolute_minmax_top_left_bottom_right_max" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -2766,11 +2625,7 @@ test "taffy/block_absolute_minmax_top_left_bottom_right_max" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2785,6 +2640,7 @@ test "taffy/block_absolute_minmax_top_left_bottom_right_max" {
 test "taffy/block_absolute_minmax_top_left_bottom_right_min_max" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -2815,11 +2671,7 @@ test "taffy/block_absolute_minmax_top_left_bottom_right_min_max" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -2832,10 +2684,14 @@ test "taffy/block_absolute_minmax_top_left_bottom_right_min_max" {
 
 ///|
 test "taffy/block_absolute_no_styles" {
-  let root_style = { ..@style.Style::default() }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
   }
@@ -2857,11 +2713,7 @@ test "taffy/block_absolute_no_styles" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -2878,7 +2730,10 @@ test "taffy/block_absolute_no_styles" {
 
 ///|
 test "taffy/block_absolute_padding_border_overrides_max_size" {
-  let root_style = { ..@style.Style::default() }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
@@ -2910,11 +2765,7 @@ test "taffy/block_absolute_padding_border_overrides_max_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -2927,7 +2778,10 @@ test "taffy/block_absolute_padding_border_overrides_max_size" {
 
 ///|
 test "taffy/block_absolute_padding_border_overrides_size" {
-  let root_style = { ..@style.Style::default() }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
@@ -2959,11 +2813,7 @@ test "taffy/block_absolute_padding_border_overrides_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -2976,7 +2826,10 @@ test "taffy/block_absolute_padding_border_overrides_size" {
 
 ///|
 test "taffy/block_absolute_resolved_insets" {
-  let root_style = { ..@style.Style::default() }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
@@ -3195,6 +3048,7 @@ test "taffy/block_absolute_resolved_insets" {
   let root_child2_children : Array[@node.Node] = []
   let root_child2_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
   }
@@ -3226,11 +3080,7 @@ test "taffy/block_absolute_resolved_insets" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 600.0)
@@ -3309,7 +3159,9 @@ test "taffy/block_absolute_resolved_insets" {
 test "taffy/block_align_baseline_child" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     align_items: @types.Baseline,
@@ -3318,6 +3170,7 @@ test "taffy/block_align_baseline_child" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -3325,12 +3178,14 @@ test "taffy/block_align_baseline_child" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
   }
@@ -3350,11 +3205,7 @@ test "taffy/block_align_baseline_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3377,7 +3228,9 @@ test "taffy/block_align_baseline_child" {
 test "taffy/block_align_baseline_child_margin" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     align_items: @types.Baseline,
@@ -3386,6 +3239,7 @@ test "taffy/block_align_baseline_child_margin" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -3399,12 +3253,14 @@ test "taffy/block_align_baseline_child_margin" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
     margin: {
@@ -3430,11 +3286,7 @@ test "taffy/block_align_baseline_child_margin" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3457,7 +3309,9 @@ test "taffy/block_align_baseline_child_margin" {
 test "taffy/block_align_baseline_child_margin_percent" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     align_items: @types.Baseline,
@@ -3466,6 +3320,7 @@ test "taffy/block_align_baseline_child_margin_percent" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -3479,12 +3334,14 @@ test "taffy/block_align_baseline_child_margin_percent" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
     margin: {
@@ -3510,11 +3367,7 @@ test "taffy/block_align_baseline_child_margin_percent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3537,7 +3390,9 @@ test "taffy/block_align_baseline_child_margin_percent" {
 test "taffy/block_align_baseline_child_padding" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     padding: {
@@ -3552,6 +3407,7 @@ test "taffy/block_align_baseline_child_padding" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -3559,6 +3415,7 @@ test "taffy/block_align_baseline_child_padding" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
     padding: {
@@ -3571,6 +3428,7 @@ test "taffy/block_align_baseline_child_padding" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
   }
@@ -3590,11 +3448,7 @@ test "taffy/block_align_baseline_child_padding" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3617,7 +3471,9 @@ test "taffy/block_align_baseline_child_padding" {
 test "taffy/block_align_baseline_child_top" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     align_items: @types.Baseline,
@@ -3626,6 +3482,7 @@ test "taffy/block_align_baseline_child_top" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     inset: {
@@ -3639,12 +3496,14 @@ test "taffy/block_align_baseline_child_top" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
   }
@@ -3664,11 +3523,7 @@ test "taffy/block_align_baseline_child_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3691,7 +3546,9 @@ test "taffy/block_align_baseline_child_top" {
 test "taffy/block_align_baseline_child_top2" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     align_items: @types.Baseline,
@@ -3700,6 +3557,7 @@ test "taffy/block_align_baseline_child_top2" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -3707,6 +3565,7 @@ test "taffy/block_align_baseline_child_top2" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
     inset: {
@@ -3719,6 +3578,7 @@ test "taffy/block_align_baseline_child_top2" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
   }
@@ -3738,11 +3598,7 @@ test "taffy/block_align_baseline_child_top2" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3765,7 +3621,9 @@ test "taffy/block_align_baseline_child_top2" {
 test "taffy/block_align_baseline_double_nested_child" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
     align_items: @types.Baseline,
@@ -3774,12 +3632,14 @@ test "taffy/block_align_baseline_double_nested_child" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
   }
@@ -3791,12 +3651,14 @@ test "taffy/block_align_baseline_double_nested_child" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(20.0),
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(15.0),
   }
@@ -3816,11 +3678,7 @@ test "taffy/block_align_baseline_double_nested_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3847,12 +3705,14 @@ test "taffy/block_align_baseline_double_nested_child" {
 test "taffy/block_aspect_ratio_fill_height" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(40.0),
     aspect_ratio: Some(2.0000),
   }
@@ -3868,11 +3728,7 @@ test "taffy/block_aspect_ratio_fill_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3887,12 +3743,14 @@ test "taffy/block_aspect_ratio_fill_height" {
 test "taffy/block_aspect_ratio_fill_max_height" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     max_width: @types.Length(40.0),
     aspect_ratio: Some(2.0000),
   }
@@ -3920,11 +3778,7 @@ test "taffy/block_aspect_ratio_fill_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3939,12 +3793,14 @@ test "taffy/block_aspect_ratio_fill_max_height" {
 test "taffy/block_aspect_ratio_fill_max_width" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     max_height: @types.Length(20.0),
     aspect_ratio: Some(2.0000),
   }
@@ -3967,11 +3823,7 @@ test "taffy/block_aspect_ratio_fill_max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -3986,12 +3838,14 @@ test "taffy/block_aspect_ratio_fill_max_width" {
 test "taffy/block_aspect_ratio_fill_min_height" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     min_width: @types.Length(40.0),
     aspect_ratio: Some(2.0000),
   }
@@ -4007,11 +3861,7 @@ test "taffy/block_aspect_ratio_fill_min_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4026,12 +3876,14 @@ test "taffy/block_aspect_ratio_fill_min_height" {
 test "taffy/block_aspect_ratio_fill_min_width" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     min_height: @types.Length(40.0),
     aspect_ratio: Some(2.0000),
   }
@@ -4047,11 +3899,7 @@ test "taffy/block_aspect_ratio_fill_min_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4066,12 +3914,14 @@ test "taffy/block_aspect_ratio_fill_min_width" {
 test "taffy/block_aspect_ratio_fill_width" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(40.0),
     aspect_ratio: Some(2.0000),
   }
@@ -4087,11 +3937,7 @@ test "taffy/block_aspect_ratio_fill_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4104,16 +3950,22 @@ test "taffy/block_aspect_ratio_fill_width" {
 
 ///|
 test "taffy/block_basic" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -4128,11 +3980,7 @@ test "taffy/block_basic" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -4151,6 +3999,7 @@ test "taffy/block_basic" {
 test "taffy/block_border_fixed_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     border: {
@@ -4163,12 +4012,14 @@ test "taffy/block_border_fixed_size" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -4183,11 +4034,7 @@ test "taffy/block_border_fixed_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -4206,6 +4053,7 @@ test "taffy/block_border_fixed_size" {
 test "taffy/block_border_intrinsic_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     border: {
       left: @types.Length(8.0),
       right: @types.Length(4.0),
@@ -4216,6 +4064,7 @@ test "taffy/block_border_intrinsic_size" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
   }
@@ -4223,6 +4072,7 @@ test "taffy/block_border_intrinsic_size" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -4237,11 +4087,7 @@ test "taffy/block_border_intrinsic_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 62.0)
@@ -4260,14 +4106,19 @@ test "taffy/block_border_intrinsic_size" {
 test "taffy/block_border_percentage_fixed_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
@@ -4286,11 +4137,7 @@ test "taffy/block_border_percentage_fixed_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -4307,12 +4154,19 @@ test "taffy/block_border_percentage_fixed_size" {
 
 ///|
 test "taffy/block_border_percentage_intrinsic_size" {
-  let root_style = { ..@style.Style::default() }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_children : Array[@node.Node] = []
-  let root_child0_style = { ..@style.Style::default() }
+  let root_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
@@ -4331,11 +4185,7 @@ test "taffy/block_border_percentage_intrinsic_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -4352,16 +4202,22 @@ test "taffy/block_border_percentage_intrinsic_size" {
 
 ///|
 test "taffy/block_display_none" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Display::None,
     height: @types.Length(10.0),
   }
@@ -4369,6 +4225,7 @@ test "taffy/block_display_none" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
@@ -4383,11 +4240,7 @@ test "taffy/block_display_none" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -4410,23 +4263,27 @@ test "taffy/block_display_none" {
 test "taffy/block_display_none_with_child" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Display::None,
   }
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(20.0),
     height: @types.Length(10.0),
   }
@@ -4438,6 +4295,7 @@ test "taffy/block_display_none_with_child" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child2 = @node.Node::leaf("node", root_child2_style)
@@ -4452,11 +4310,7 @@ test "taffy/block_display_none_with_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4483,18 +4337,21 @@ test "taffy/block_display_none_with_child" {
 test "taffy/block_display_none_with_inset" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Display::None,
     height: @types.Length(10.0),
     inset: {
@@ -4516,11 +4373,7 @@ test "taffy/block_display_none_with_inset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4539,12 +4392,14 @@ test "taffy/block_display_none_with_inset" {
 test "taffy/block_display_none_with_margin" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Display::None,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
@@ -4559,6 +4414,7 @@ test "taffy/block_display_none_with_margin" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -4573,11 +4429,7 @@ test "taffy/block_display_none_with_margin" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4596,6 +4448,7 @@ test "taffy/block_display_none_with_margin" {
 test "taffy/block_display_none_with_position_absolute" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
@@ -4619,11 +4472,7 @@ test "taffy/block_display_none_with_position_absolute" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4636,10 +4485,15 @@ test "taffy/block_display_none_with_position_absolute" {
 
 ///|
 test "taffy/block_inset_fixed" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     inset: {
       left: @types.Length(2.0),
@@ -4652,6 +4506,7 @@ test "taffy/block_inset_fixed" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     inset: {
       left: @types.Auto,
@@ -4664,6 +4519,7 @@ test "taffy/block_inset_fixed" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     inset: {
       left: @types.Length(2.0),
@@ -4684,11 +4540,7 @@ test "taffy/block_inset_fixed" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -4709,10 +4561,15 @@ test "taffy/block_inset_fixed" {
 
 ///|
 test "taffy/block_inset_percentage" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     inset: {
       left: @types.Percent(0.0200),
@@ -4725,6 +4582,7 @@ test "taffy/block_inset_percentage" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     inset: {
       left: @types.Auto,
@@ -4737,6 +4595,7 @@ test "taffy/block_inset_percentage" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     inset: {
       left: @types.Percent(0.0200),
@@ -4757,11 +4616,7 @@ test "taffy/block_inset_percentage" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -4782,10 +4637,14 @@ test "taffy/block_inset_percentage" {
 
 ///|
 test "taffy/block_intrinsic_width" {
-  let root_style = { ..@style.Style::default() }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
   }
@@ -4793,6 +4652,7 @@ test "taffy/block_intrinsic_width" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -4807,11 +4667,7 @@ test "taffy/block_intrinsic_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -4830,12 +4686,14 @@ test "taffy/block_intrinsic_width" {
 test "taffy/block_item_max_width" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(50.0),
     max_width: @types.Length(100.0),
   }
@@ -4843,6 +4701,7 @@ test "taffy/block_item_max_width" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(50.0),
     max_width: @types.Length(300.0),
   }
@@ -4858,11 +4717,7 @@ test "taffy/block_item_max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -4881,12 +4736,14 @@ test "taffy/block_item_max_width" {
 test "taffy/block_item_min_width_overrides_max_width" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(100.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(50.0),
     min_width: @types.Length(200.0),
     max_width: @types.Length(50.0),
@@ -4903,11 +4760,7 @@ test "taffy/block_item_min_width_overrides_max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -4922,12 +4775,15 @@ test "taffy/block_item_min_width_overrides_max_width" {
 test "taffy/block_item_text_align_center" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
+    text_align: @style.TextAlign::Center,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(50.0),
     max_width: @types.Length(100.0),
   }
@@ -4935,6 +4791,7 @@ test "taffy/block_item_text_align_center" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(50.0),
     max_width: @types.Length(300.0),
   }
@@ -4950,11 +4807,7 @@ test "taffy/block_item_text_align_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -4973,12 +4826,14 @@ test "taffy/block_item_text_align_center" {
 test "taffy/block_item_text_align_left" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(50.0),
     max_width: @types.Length(100.0),
   }
@@ -4986,6 +4841,7 @@ test "taffy/block_item_text_align_left" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(50.0),
     max_width: @types.Length(300.0),
   }
@@ -5001,11 +4857,7 @@ test "taffy/block_item_text_align_left" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -5024,12 +4876,15 @@ test "taffy/block_item_text_align_left" {
 test "taffy/block_item_text_align_right" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
+    text_align: @style.TextAlign::Right,
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(50.0),
     max_width: @types.Length(100.0),
   }
@@ -5037,6 +4892,7 @@ test "taffy/block_item_text_align_right" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(50.0),
     max_width: @types.Length(300.0),
   }
@@ -5052,11 +4908,7 @@ test "taffy/block_item_text_align_right" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -5075,6 +4927,7 @@ test "taffy/block_item_text_align_right" {
 test "taffy/block_margin_auto_bottom" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     align_items: @types.Center,
@@ -5082,6 +4935,7 @@ test "taffy/block_margin_auto_bottom" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -5095,6 +4949,7 @@ test "taffy/block_margin_auto_bottom" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -5110,11 +4965,7 @@ test "taffy/block_margin_auto_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -5133,12 +4984,14 @@ test "taffy/block_margin_auto_bottom" {
 test "taffy/block_margin_auto_bottom_and_top" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -5152,6 +5005,7 @@ test "taffy/block_margin_auto_bottom_and_top" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -5167,11 +5021,7 @@ test "taffy/block_margin_auto_bottom_and_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -5190,12 +5040,14 @@ test "taffy/block_margin_auto_bottom_and_top" {
 test "taffy/block_margin_auto_left" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -5209,6 +5061,7 @@ test "taffy/block_margin_auto_left" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -5224,11 +5077,7 @@ test "taffy/block_margin_auto_left" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -5247,12 +5096,14 @@ test "taffy/block_margin_auto_left" {
 test "taffy/block_margin_auto_left_and_right" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -5266,6 +5117,7 @@ test "taffy/block_margin_auto_left_and_right" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -5281,11 +5133,7 @@ test "taffy/block_margin_auto_left_and_right" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -5304,12 +5152,14 @@ test "taffy/block_margin_auto_left_and_right" {
 test "taffy/block_margin_auto_left_and_right_with_auto_width" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Auto,
     height: @types.Length(50.0),
     max_width: @types.Length(100.0),
@@ -5332,11 +5182,7 @@ test "taffy/block_margin_auto_left_and_right_with_auto_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -5351,12 +5197,14 @@ test "taffy/block_margin_auto_left_and_right_with_auto_width" {
 test "taffy/block_margin_auto_left_child_bigger_than_parent" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(52.0),
     height: @types.Length(52.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(72.0),
     height: @types.Length(72.0),
     margin: {
@@ -5378,11 +5226,7 @@ test "taffy/block_margin_auto_left_child_bigger_than_parent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -5397,12 +5241,14 @@ test "taffy/block_margin_auto_left_child_bigger_than_parent" {
 test "taffy/block_margin_auto_left_fix_right_child_bigger_than_parent" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(52.0),
     height: @types.Length(52.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(72.0),
     height: @types.Length(72.0),
     margin: {
@@ -5424,11 +5270,7 @@ test "taffy/block_margin_auto_left_fix_right_child_bigger_than_parent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -5443,12 +5285,14 @@ test "taffy/block_margin_auto_left_fix_right_child_bigger_than_parent" {
 test "taffy/block_margin_auto_left_right_child_bigger_than_parent" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(52.0),
     height: @types.Length(52.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(72.0),
     height: @types.Length(72.0),
     margin: {
@@ -5470,11 +5314,7 @@ test "taffy/block_margin_auto_left_right_child_bigger_than_parent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 52.0)
@@ -5489,6 +5329,7 @@ test "taffy/block_margin_auto_left_right_child_bigger_than_parent" {
 test "taffy/block_margin_auto_multiple_children" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     align_items: @types.Center,
@@ -5497,6 +5338,7 @@ test "taffy/block_margin_auto_multiple_children" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(50.0),
     margin: {
@@ -5510,6 +5352,7 @@ test "taffy/block_margin_auto_multiple_children" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -5523,6 +5366,7 @@ test "taffy/block_margin_auto_multiple_children" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -5538,11 +5382,7 @@ test "taffy/block_margin_auto_multiple_children" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -5565,6 +5405,7 @@ test "taffy/block_margin_auto_multiple_children" {
 test "taffy/block_margin_auto_right" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     align_items: @types.Center,
@@ -5572,6 +5413,7 @@ test "taffy/block_margin_auto_right" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -5585,6 +5427,7 @@ test "taffy/block_margin_auto_right" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -5600,11 +5443,7 @@ test "taffy/block_margin_auto_right" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -5623,6 +5462,7 @@ test "taffy/block_margin_auto_right" {
 test "taffy/block_margin_auto_top" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(200.0),
     height: @types.Length(200.0),
     align_items: @types.Center,
@@ -5630,6 +5470,7 @@ test "taffy/block_margin_auto_top" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     margin: {
@@ -5643,6 +5484,7 @@ test "taffy/block_margin_auto_top" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
@@ -5658,11 +5500,7 @@ test "taffy/block_margin_auto_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 200.0)
@@ -5679,10 +5517,15 @@ test "taffy/block_margin_auto_top" {
 
 ///|
 test "taffy/block_margin_x_fixed_auto_bottom" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(20.0),
     height: @types.Length(10.0),
     margin: {
@@ -5696,6 +5539,7 @@ test "taffy/block_margin_x_fixed_auto_bottom" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -5710,11 +5554,7 @@ test "taffy/block_margin_x_fixed_auto_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -5731,10 +5571,15 @@ test "taffy/block_margin_x_fixed_auto_bottom" {
 
 ///|
 test "taffy/block_margin_x_fixed_auto_left" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(20.0),
     height: @types.Length(10.0),
     margin: {
@@ -5748,6 +5593,7 @@ test "taffy/block_margin_x_fixed_auto_left" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -5762,11 +5608,7 @@ test "taffy/block_margin_x_fixed_auto_left" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -5783,10 +5625,15 @@ test "taffy/block_margin_x_fixed_auto_left" {
 
 ///|
 test "taffy/block_margin_x_fixed_auto_left_and_right" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(20.0),
     height: @types.Length(10.0),
     margin: {
@@ -5800,6 +5647,7 @@ test "taffy/block_margin_x_fixed_auto_left_and_right" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -5814,11 +5662,7 @@ test "taffy/block_margin_x_fixed_auto_left_and_right" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -5835,10 +5679,15 @@ test "taffy/block_margin_x_fixed_auto_left_and_right" {
 
 ///|
 test "taffy/block_margin_x_fixed_auto_right" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(20.0),
     height: @types.Length(10.0),
     margin: {
@@ -5852,6 +5701,7 @@ test "taffy/block_margin_x_fixed_auto_right" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -5866,11 +5716,7 @@ test "taffy/block_margin_x_fixed_auto_right" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -5887,10 +5733,15 @@ test "taffy/block_margin_x_fixed_auto_right" {
 
 ///|
 test "taffy/block_margin_x_fixed_auto_top" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(20.0),
     height: @types.Length(10.0),
     margin: {
@@ -5904,6 +5755,7 @@ test "taffy/block_margin_x_fixed_auto_top" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -5918,11 +5770,7 @@ test "taffy/block_margin_x_fixed_auto_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -5939,10 +5787,15 @@ test "taffy/block_margin_x_fixed_auto_top" {
 
 ///|
 test "taffy/block_margin_x_fixed_size_negative" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(-10.0),
@@ -5955,6 +5808,7 @@ test "taffy/block_margin_x_fixed_size_negative" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -5969,11 +5823,7 @@ test "taffy/block_margin_x_fixed_size_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -5990,10 +5840,15 @@ test "taffy/block_margin_x_fixed_size_negative" {
 
 ///|
 test "taffy/block_margin_x_fixed_size_positive" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(10.0),
@@ -6006,6 +5861,7 @@ test "taffy/block_margin_x_fixed_size_positive" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -6020,11 +5876,7 @@ test "taffy/block_margin_x_fixed_size_positive" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -6041,10 +5893,14 @@ test "taffy/block_margin_x_fixed_size_positive" {
 
 ///|
 test "taffy/block_margin_x_intrinsic_size_negative" {
-  let root_style = { ..@style.Style::default() }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(-10.0),
@@ -6057,6 +5913,7 @@ test "taffy/block_margin_x_intrinsic_size_negative" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -6071,11 +5928,7 @@ test "taffy/block_margin_x_intrinsic_size_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -6092,10 +5945,14 @@ test "taffy/block_margin_x_intrinsic_size_negative" {
 
 ///|
 test "taffy/block_margin_x_intrinsic_size_positive" {
-  let root_style = { ..@style.Style::default() }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(10.0),
@@ -6108,6 +5965,7 @@ test "taffy/block_margin_x_intrinsic_size_positive" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -6122,11 +5980,7 @@ test "taffy/block_margin_x_intrinsic_size_positive" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 15.0)
@@ -6143,10 +5997,15 @@ test "taffy/block_margin_x_intrinsic_size_positive" {
 
 ///|
 test "taffy/block_margin_x_percentage_fixed_size_negative" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Percent(-0.2000),
@@ -6159,6 +6018,7 @@ test "taffy/block_margin_x_percentage_fixed_size_negative" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -6173,11 +6033,7 @@ test "taffy/block_margin_x_percentage_fixed_size_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -6194,10 +6050,15 @@ test "taffy/block_margin_x_percentage_fixed_size_negative" {
 
 ///|
 test "taffy/block_margin_x_percentage_fixed_size_positive" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Percent(0.2000),
@@ -6210,6 +6071,7 @@ test "taffy/block_margin_x_percentage_fixed_size_positive" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -6224,11 +6086,7 @@ test "taffy/block_margin_x_percentage_fixed_size_positive" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -6245,10 +6103,14 @@ test "taffy/block_margin_x_percentage_fixed_size_positive" {
 
 ///|
 test "taffy/block_margin_x_percentage_intrinsic_size_other_negative" {
-  let root_style = { ..@style.Style::default() }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Percent(-0.2000),
@@ -6261,6 +6123,7 @@ test "taffy/block_margin_x_percentage_intrinsic_size_other_negative" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(10.0),
   }
@@ -6276,11 +6139,7 @@ test "taffy/block_margin_x_percentage_intrinsic_size_other_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -6297,10 +6156,14 @@ test "taffy/block_margin_x_percentage_intrinsic_size_other_negative" {
 
 ///|
 test "taffy/block_margin_x_percentage_intrinsic_size_other_positive" {
-  let root_style = { ..@style.Style::default() }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Percent(0.2000),
@@ -6313,6 +6176,7 @@ test "taffy/block_margin_x_percentage_intrinsic_size_other_positive" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(10.0),
   }
@@ -6328,11 +6192,7 @@ test "taffy/block_margin_x_percentage_intrinsic_size_other_positive" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -6349,10 +6209,14 @@ test "taffy/block_margin_x_percentage_intrinsic_size_other_positive" {
 
 ///|
 test "taffy/block_margin_x_percentage_intrinsic_size_self_negative" {
-  let root_style = { ..@style.Style::default() }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(10.0),
     margin: {
@@ -6374,11 +6238,7 @@ test "taffy/block_margin_x_percentage_intrinsic_size_self_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -6391,10 +6251,14 @@ test "taffy/block_margin_x_percentage_intrinsic_size_self_negative" {
 
 ///|
 test "taffy/block_margin_x_percentage_intrinsic_size_self_positive" {
-  let root_style = { ..@style.Style::default() }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(100.0),
     height: @types.Length(10.0),
     margin: {
@@ -6416,11 +6280,7 @@ test "taffy/block_margin_x_percentage_intrinsic_size_self_positive" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 100.0)
@@ -6433,10 +6293,15 @@ test "taffy/block_margin_x_percentage_intrinsic_size_self_positive" {
 
 ///|
 test "taffy/block_margin_y_collapse_complex" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -6449,6 +6314,7 @@ test "taffy/block_margin_y_collapse_complex" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -6460,6 +6326,7 @@ test "taffy/block_margin_y_collapse_complex" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -6472,6 +6339,7 @@ test "taffy/block_margin_y_collapse_complex" {
   root_child1_children.push(root_child1_child0)
   let root_child1_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -6484,6 +6352,7 @@ test "taffy/block_margin_y_collapse_complex" {
   root_child1_children.push(root_child1_child1)
   let root_child1_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -6500,6 +6369,7 @@ test "taffy/block_margin_y_collapse_complex" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -6512,6 +6382,7 @@ test "taffy/block_margin_y_collapse_complex" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -6532,11 +6403,7 @@ test "taffy/block_margin_y_collapse_complex" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -6573,10 +6440,15 @@ test "taffy/block_margin_y_collapse_complex" {
 
 ///|
 test "taffy/block_margin_y_collapse_through_blocked_by_aspect_ratio" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -6589,6 +6461,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_aspect_ratio" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -6601,6 +6474,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_aspect_ratio" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -6621,11 +6495,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_aspect_ratio" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -6646,10 +6516,15 @@ test "taffy/block_margin_y_collapse_through_blocked_by_aspect_ratio" {
 
 ///|
 test "taffy/block_margin_y_collapse_through_blocked_by_border_bottom" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -6662,6 +6537,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_border_bottom" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -6673,6 +6549,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_border_bottom" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -6693,11 +6570,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_border_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -6718,10 +6591,15 @@ test "taffy/block_margin_y_collapse_through_blocked_by_border_bottom" {
 
 ///|
 test "taffy/block_margin_y_collapse_through_blocked_by_border_top" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -6734,6 +6612,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_border_top" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -6745,6 +6624,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_border_top" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -6765,11 +6645,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_border_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -6790,10 +6666,15 @@ test "taffy/block_margin_y_collapse_through_blocked_by_border_top" {
 
 ///|
 test "taffy/block_margin_y_collapse_through_blocked_by_height" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -6806,6 +6687,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_height" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(1.0),
     margin: {
       left: @types.Length(0.0),
@@ -6818,6 +6700,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_height" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -6838,11 +6721,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -6863,10 +6742,15 @@ test "taffy/block_margin_y_collapse_through_blocked_by_height" {
 
 ///|
 test "taffy/block_margin_y_collapse_through_blocked_by_line_box" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -6879,6 +6763,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_line_box" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -6897,6 +6782,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_line_box" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -6917,11 +6803,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_line_box" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -6942,10 +6824,15 @@ test "taffy/block_margin_y_collapse_through_blocked_by_line_box" {
 
 ///|
 test "taffy/block_margin_y_collapse_through_blocked_by_line_box_with_height_zero" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -6958,6 +6845,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_line_box_with_height_zero
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(0.0),
     margin: {
       left: @types.Length(0.0),
@@ -6977,6 +6865,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_line_box_with_height_zero
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -6997,11 +6886,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_line_box_with_height_zero
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7022,10 +6907,15 @@ test "taffy/block_margin_y_collapse_through_blocked_by_line_box_with_height_zero
 
 ///|
 test "taffy/block_margin_y_collapse_through_blocked_by_line_box_with_max_height_zero" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7038,6 +6928,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_line_box_with_max_height_
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     max_height: @types.Length(0.0),
     margin: {
       left: @types.Length(0.0),
@@ -7057,6 +6948,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_line_box_with_max_height_
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7077,11 +6969,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_line_box_with_max_height_
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7102,10 +6990,15 @@ test "taffy/block_margin_y_collapse_through_blocked_by_line_box_with_max_height_
 
 ///|
 test "taffy/block_margin_y_collapse_through_blocked_by_min_height" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7118,6 +7011,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_min_height" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     min_height: @types.Length(1.0),
     margin: {
       left: @types.Length(0.0),
@@ -7130,6 +7024,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_min_height" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7150,11 +7045,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_min_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7175,10 +7066,15 @@ test "taffy/block_margin_y_collapse_through_blocked_by_min_height" {
 
 ///|
 test "taffy/block_margin_y_collapse_through_blocked_by_overflow_x_hidden" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7191,6 +7087,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_x_hidden" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     overflow_x: @types.Overflow::Hidden,
     margin: {
       left: @types.Length(0.0),
@@ -7203,6 +7100,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_x_hidden" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7223,11 +7121,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_x_hidden" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7248,10 +7142,15 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_x_hidden" {
 
 ///|
 test "taffy/block_margin_y_collapse_through_blocked_by_overflow_x_scroll" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7264,6 +7163,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_x_scroll" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     overflow_x: @types.Overflow::Scroll,
     margin: {
       left: @types.Length(0.0),
@@ -7276,6 +7176,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_x_scroll" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7296,11 +7197,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_x_scroll" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7321,10 +7218,15 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_x_scroll" {
 
 ///|
 test "taffy/block_margin_y_collapse_through_blocked_by_overflow_y_hidden" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7337,6 +7239,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_y_hidden" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     overflow_y: @types.Overflow::Hidden,
     margin: {
       left: @types.Length(0.0),
@@ -7349,6 +7252,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_y_hidden" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7369,11 +7273,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_y_hidden" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7394,10 +7294,15 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_y_hidden" {
 
 ///|
 test "taffy/block_margin_y_collapse_through_blocked_by_overflow_y_scroll" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7410,6 +7315,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_y_scroll" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     overflow_y: @types.Overflow::Scroll,
     margin: {
       left: @types.Length(0.0),
@@ -7422,6 +7328,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_y_scroll" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7442,11 +7349,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_y_scroll" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7467,10 +7370,15 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_y_scroll" {
 
 ///|
 test "taffy/block_margin_y_collapse_through_blocked_by_padding_bottom" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7483,6 +7391,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_padding_bottom" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -7500,6 +7409,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_padding_bottom" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7520,11 +7430,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_padding_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7545,10 +7451,15 @@ test "taffy/block_margin_y_collapse_through_blocked_by_padding_bottom" {
 
 ///|
 test "taffy/block_margin_y_collapse_through_blocked_by_padding_top" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7561,6 +7472,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_padding_top" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -7578,6 +7490,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_padding_top" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7598,11 +7511,7 @@ test "taffy/block_margin_y_collapse_through_blocked_by_padding_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7623,10 +7532,15 @@ test "taffy/block_margin_y_collapse_through_blocked_by_padding_top" {
 
 ///|
 test "taffy/block_margin_y_collapse_through_negative" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7639,6 +7553,7 @@ test "taffy/block_margin_y_collapse_through_negative" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -7650,6 +7565,7 @@ test "taffy/block_margin_y_collapse_through_negative" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7670,11 +7586,7 @@ test "taffy/block_margin_y_collapse_through_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7695,10 +7607,15 @@ test "taffy/block_margin_y_collapse_through_negative" {
 
 ///|
 test "taffy/block_margin_y_collapse_through_positive" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7711,6 +7628,7 @@ test "taffy/block_margin_y_collapse_through_positive" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -7722,6 +7640,7 @@ test "taffy/block_margin_y_collapse_through_positive" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7742,11 +7661,7 @@ test "taffy/block_margin_y_collapse_through_positive" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7767,10 +7682,15 @@ test "taffy/block_margin_y_collapse_through_positive" {
 
 ///|
 test "taffy/block_margin_y_collapse_through_positive_and_negative" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7783,6 +7703,7 @@ test "taffy/block_margin_y_collapse_through_positive_and_negative" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -7794,6 +7715,7 @@ test "taffy/block_margin_y_collapse_through_positive_and_negative" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7814,11 +7736,7 @@ test "taffy/block_margin_y_collapse_through_positive_and_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7839,10 +7757,15 @@ test "taffy/block_margin_y_collapse_through_positive_and_negative" {
 
 ///|
 test "taffy/block_margin_y_collapse_through_with_absolute_child" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7855,6 +7778,7 @@ test "taffy/block_margin_y_collapse_through_with_absolute_child" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -7882,6 +7806,7 @@ test "taffy/block_margin_y_collapse_through_with_absolute_child" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -7902,11 +7827,7 @@ test "taffy/block_margin_y_collapse_through_with_absolute_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -7931,10 +7852,15 @@ test "taffy/block_margin_y_collapse_through_with_absolute_child" {
 
 ///|
 test "taffy/block_margin_y_first_child_collapse_blocked_by_border_top" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -7945,6 +7871,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_border_top" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -7955,6 +7882,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_border_top" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -7979,11 +7907,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_border_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8004,10 +7928,15 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_border_top" {
 
 ///|
 test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_x_hidden" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     overflow_x: @types.Overflow::Hidden,
     margin: {
       left: @types.Length(0.0),
@@ -8019,6 +7948,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_x_hidden" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8029,6 +7959,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_x_hidden" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -8053,11 +7984,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_x_hidden" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8078,10 +8005,15 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_x_hidden" {
 
 ///|
 test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_x_scroll" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     overflow_x: @types.Overflow::Scroll,
     margin: {
       left: @types.Length(0.0),
@@ -8093,6 +8025,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_x_scroll" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8103,6 +8036,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_x_scroll" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -8127,11 +8061,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_x_scroll" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8152,10 +8082,15 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_x_scroll" {
 
 ///|
 test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_y_hidden" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     overflow_y: @types.Overflow::Hidden,
     margin: {
       left: @types.Length(0.0),
@@ -8167,6 +8102,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_y_hidden" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8177,6 +8113,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_y_hidden" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -8201,11 +8138,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_y_hidden" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8226,10 +8159,15 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_y_hidden" {
 
 ///|
 test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_y_scroll" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     overflow_y: @types.Overflow::Scroll,
     margin: {
       left: @types.Length(0.0),
@@ -8241,6 +8179,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_y_scroll" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8251,6 +8190,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_y_scroll" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -8275,11 +8215,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_y_scroll" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8300,10 +8236,15 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_y_scroll" {
 
 ///|
 test "taffy/block_margin_y_first_child_collapse_blocked_by_padding_top" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8320,6 +8261,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_padding_top" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8330,6 +8272,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_padding_top" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -8354,11 +8297,7 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_padding_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8379,10 +8318,15 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_padding_top" {
 
 ///|
 test "taffy/block_margin_y_first_child_collapse_negative_equal" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8393,6 +8337,7 @@ test "taffy/block_margin_y_first_child_collapse_negative_equal" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8403,6 +8348,7 @@ test "taffy/block_margin_y_first_child_collapse_negative_equal" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -8427,11 +8373,7 @@ test "taffy/block_margin_y_first_child_collapse_negative_equal" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8452,10 +8394,15 @@ test "taffy/block_margin_y_first_child_collapse_negative_equal" {
 
 ///|
 test "taffy/block_margin_y_first_child_collapse_negative_parent_larger" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8466,6 +8413,7 @@ test "taffy/block_margin_y_first_child_collapse_negative_parent_larger" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8476,6 +8424,7 @@ test "taffy/block_margin_y_first_child_collapse_negative_parent_larger" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -8500,11 +8449,7 @@ test "taffy/block_margin_y_first_child_collapse_negative_parent_larger" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8525,10 +8470,15 @@ test "taffy/block_margin_y_first_child_collapse_negative_parent_larger" {
 
 ///|
 test "taffy/block_margin_y_first_child_collapse_negative_parent_smaller" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8539,6 +8489,7 @@ test "taffy/block_margin_y_first_child_collapse_negative_parent_smaller" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8549,6 +8500,7 @@ test "taffy/block_margin_y_first_child_collapse_negative_parent_smaller" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -8573,11 +8525,7 @@ test "taffy/block_margin_y_first_child_collapse_negative_parent_smaller" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8598,10 +8546,15 @@ test "taffy/block_margin_y_first_child_collapse_negative_parent_smaller" {
 
 ///|
 test "taffy/block_margin_y_first_child_collapse_not_blocked_by_border_bottom" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8612,6 +8565,7 @@ test "taffy/block_margin_y_first_child_collapse_not_blocked_by_border_bottom" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8622,6 +8576,7 @@ test "taffy/block_margin_y_first_child_collapse_not_blocked_by_border_bottom" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -8646,11 +8601,7 @@ test "taffy/block_margin_y_first_child_collapse_not_blocked_by_border_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8671,10 +8622,15 @@ test "taffy/block_margin_y_first_child_collapse_not_blocked_by_border_bottom" {
 
 ///|
 test "taffy/block_margin_y_first_child_collapse_not_blocked_by_padding_bottom" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8691,6 +8647,7 @@ test "taffy/block_margin_y_first_child_collapse_not_blocked_by_padding_bottom" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8701,6 +8658,7 @@ test "taffy/block_margin_y_first_child_collapse_not_blocked_by_padding_bottom" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -8725,11 +8683,7 @@ test "taffy/block_margin_y_first_child_collapse_not_blocked_by_padding_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8750,10 +8704,15 @@ test "taffy/block_margin_y_first_child_collapse_not_blocked_by_padding_bottom" {
 
 ///|
 test "taffy/block_margin_y_first_child_collapse_positive_and_negative" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8764,6 +8723,7 @@ test "taffy/block_margin_y_first_child_collapse_positive_and_negative" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8774,6 +8734,7 @@ test "taffy/block_margin_y_first_child_collapse_positive_and_negative" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -8790,6 +8751,7 @@ test "taffy/block_margin_y_first_child_collapse_positive_and_negative" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8800,6 +8762,7 @@ test "taffy/block_margin_y_first_child_collapse_positive_and_negative" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8810,6 +8773,7 @@ test "taffy/block_margin_y_first_child_collapse_positive_and_negative" {
   let root_child1_child0_children : Array[@node.Node] = []
   let root_child1_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1_child0_child0 = @node.Node::leaf(
@@ -8826,6 +8790,7 @@ test "taffy/block_margin_y_first_child_collapse_positive_and_negative" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8836,6 +8801,7 @@ test "taffy/block_margin_y_first_child_collapse_positive_and_negative" {
   let root_child2_children : Array[@node.Node] = []
   let root_child2_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8846,6 +8812,7 @@ test "taffy/block_margin_y_first_child_collapse_positive_and_negative" {
   let root_child2_child0_children : Array[@node.Node] = []
   let root_child2_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child2_child0_child0 = @node.Node::leaf(
@@ -8870,11 +8837,7 @@ test "taffy/block_margin_y_first_child_collapse_positive_and_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8919,10 +8882,15 @@ test "taffy/block_margin_y_first_child_collapse_positive_and_negative" {
 
 ///|
 test "taffy/block_margin_y_first_child_collapse_positive_equal" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8933,6 +8901,7 @@ test "taffy/block_margin_y_first_child_collapse_positive_equal" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -8943,6 +8912,7 @@ test "taffy/block_margin_y_first_child_collapse_positive_equal" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -8967,11 +8937,7 @@ test "taffy/block_margin_y_first_child_collapse_positive_equal" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -8992,10 +8958,15 @@ test "taffy/block_margin_y_first_child_collapse_positive_equal" {
 
 ///|
 test "taffy/block_margin_y_first_child_collapse_positive_parent_larger" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9006,6 +8977,7 @@ test "taffy/block_margin_y_first_child_collapse_positive_parent_larger" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9016,6 +8988,7 @@ test "taffy/block_margin_y_first_child_collapse_positive_parent_larger" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -9040,11 +9013,7 @@ test "taffy/block_margin_y_first_child_collapse_positive_parent_larger" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9065,10 +9034,15 @@ test "taffy/block_margin_y_first_child_collapse_positive_parent_larger" {
 
 ///|
 test "taffy/block_margin_y_first_child_collapse_positive_parent_smaller" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9079,6 +9053,7 @@ test "taffy/block_margin_y_first_child_collapse_positive_parent_smaller" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9089,6 +9064,7 @@ test "taffy/block_margin_y_first_child_collapse_positive_parent_smaller" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -9113,11 +9089,7 @@ test "taffy/block_margin_y_first_child_collapse_positive_parent_smaller" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9138,10 +9110,15 @@ test "taffy/block_margin_y_first_child_collapse_positive_parent_smaller" {
 
 ///|
 test "taffy/block_margin_y_first_granchild_collapse_positive_and_negative" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9152,6 +9129,7 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_and_negative" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9162,6 +9140,7 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_and_negative" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9172,6 +9151,7 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_and_negative" {
   let root_child0_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0_child0 = @node.Node::leaf(
@@ -9192,6 +9172,7 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_and_negative" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9202,6 +9183,7 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_and_negative" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9212,6 +9194,7 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_and_negative" {
   let root_child1_child0_children : Array[@node.Node] = []
   let root_child1_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9222,6 +9205,7 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_and_negative" {
   let root_child1_child0_child0_children : Array[@node.Node] = []
   let root_child1_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1_child0_child0_child0 = @node.Node::leaf(
@@ -9242,6 +9226,7 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_and_negative" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9252,6 +9237,7 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_and_negative" {
   let root_child2_children : Array[@node.Node] = []
   let root_child2_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9262,6 +9248,7 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_and_negative" {
   let root_child2_child0_children : Array[@node.Node] = []
   let root_child2_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9272,6 +9259,7 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_and_negative" {
   let root_child2_child0_child0_children : Array[@node.Node] = []
   let root_child2_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child2_child0_child0_child0 = @node.Node::leaf(
@@ -9300,11 +9288,7 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_and_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9379,10 +9363,15 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_and_negative" {
 
 ///|
 test "taffy/block_margin_y_first_granchild_collapse_positive_equal" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9393,6 +9382,7 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_equal" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9403,6 +9393,7 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_equal" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9413,6 +9404,7 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_equal" {
   let root_child0_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0_child0 = @node.Node::leaf(
@@ -9441,11 +9433,7 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_equal" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9476,10 +9464,15 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_equal" {
 
 ///|
 test "taffy/block_margin_y_last_child_collapse_blocked_by_border_bottom" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9490,6 +9483,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_border_bottom" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9500,6 +9494,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_border_bottom" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -9524,11 +9519,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_border_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9549,10 +9540,15 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_border_bottom" {
 
 ///|
 test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_x_hidden" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     overflow_x: @types.Overflow::Hidden,
     margin: {
       left: @types.Length(0.0),
@@ -9564,6 +9560,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_x_hidden" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9574,6 +9571,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_x_hidden" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -9598,11 +9596,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_x_hidden" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9623,10 +9617,15 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_x_hidden" {
 
 ///|
 test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_x_scroll" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     overflow_x: @types.Overflow::Scroll,
     margin: {
       left: @types.Length(0.0),
@@ -9638,6 +9637,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_x_scroll" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9648,6 +9648,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_x_scroll" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -9672,11 +9673,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_x_scroll" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9697,10 +9694,15 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_x_scroll" {
 
 ///|
 test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_y_hidden" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     overflow_y: @types.Overflow::Hidden,
     margin: {
       left: @types.Length(0.0),
@@ -9712,6 +9714,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_y_hidden" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9722,6 +9725,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_y_hidden" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -9746,11 +9750,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_y_hidden" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9771,10 +9771,15 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_y_hidden" {
 
 ///|
 test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_y_scroll" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     overflow_y: @types.Overflow::Scroll,
     margin: {
       left: @types.Length(0.0),
@@ -9786,6 +9791,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_y_scroll" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9796,6 +9802,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_y_scroll" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -9820,11 +9827,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_y_scroll" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9845,10 +9848,15 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_y_scroll" {
 
 ///|
 test "taffy/block_margin_y_last_child_collapse_blocked_by_padding_bottom" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9865,6 +9873,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_padding_bottom" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9875,6 +9884,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_padding_bottom" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -9899,11 +9909,7 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_padding_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9924,10 +9930,15 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_padding_bottom" {
 
 ///|
 test "taffy/block_margin_y_last_child_collapse_negative_equal" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9938,6 +9949,7 @@ test "taffy/block_margin_y_last_child_collapse_negative_equal" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -9948,6 +9960,7 @@ test "taffy/block_margin_y_last_child_collapse_negative_equal" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -9972,11 +9985,7 @@ test "taffy/block_margin_y_last_child_collapse_negative_equal" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -9997,10 +10006,15 @@ test "taffy/block_margin_y_last_child_collapse_negative_equal" {
 
 ///|
 test "taffy/block_margin_y_last_child_collapse_negative_parent_larger" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10011,6 +10025,7 @@ test "taffy/block_margin_y_last_child_collapse_negative_parent_larger" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10021,6 +10036,7 @@ test "taffy/block_margin_y_last_child_collapse_negative_parent_larger" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -10045,11 +10061,7 @@ test "taffy/block_margin_y_last_child_collapse_negative_parent_larger" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10070,10 +10082,15 @@ test "taffy/block_margin_y_last_child_collapse_negative_parent_larger" {
 
 ///|
 test "taffy/block_margin_y_last_child_collapse_negative_parent_smaller" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10084,6 +10101,7 @@ test "taffy/block_margin_y_last_child_collapse_negative_parent_smaller" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10094,6 +10112,7 @@ test "taffy/block_margin_y_last_child_collapse_negative_parent_smaller" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -10118,11 +10137,7 @@ test "taffy/block_margin_y_last_child_collapse_negative_parent_smaller" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10143,10 +10158,15 @@ test "taffy/block_margin_y_last_child_collapse_negative_parent_smaller" {
 
 ///|
 test "taffy/block_margin_y_last_child_collapse_not_blocked_by_border_top" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10157,6 +10177,7 @@ test "taffy/block_margin_y_last_child_collapse_not_blocked_by_border_top" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10167,6 +10188,7 @@ test "taffy/block_margin_y_last_child_collapse_not_blocked_by_border_top" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -10191,11 +10213,7 @@ test "taffy/block_margin_y_last_child_collapse_not_blocked_by_border_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10216,10 +10234,15 @@ test "taffy/block_margin_y_last_child_collapse_not_blocked_by_border_top" {
 
 ///|
 test "taffy/block_margin_y_last_child_collapse_not_blocked_by_padding_top" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10236,6 +10259,7 @@ test "taffy/block_margin_y_last_child_collapse_not_blocked_by_padding_top" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10246,6 +10270,7 @@ test "taffy/block_margin_y_last_child_collapse_not_blocked_by_padding_top" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -10270,11 +10295,7 @@ test "taffy/block_margin_y_last_child_collapse_not_blocked_by_padding_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10295,10 +10316,15 @@ test "taffy/block_margin_y_last_child_collapse_not_blocked_by_padding_top" {
 
 ///|
 test "taffy/block_margin_y_last_child_collapse_positive_and_negative" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10309,6 +10335,7 @@ test "taffy/block_margin_y_last_child_collapse_positive_and_negative" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10319,6 +10346,7 @@ test "taffy/block_margin_y_last_child_collapse_positive_and_negative" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -10335,6 +10363,7 @@ test "taffy/block_margin_y_last_child_collapse_positive_and_negative" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10345,6 +10374,7 @@ test "taffy/block_margin_y_last_child_collapse_positive_and_negative" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10355,6 +10385,7 @@ test "taffy/block_margin_y_last_child_collapse_positive_and_negative" {
   let root_child1_child0_children : Array[@node.Node] = []
   let root_child1_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1_child0_child0 = @node.Node::leaf(
@@ -10371,6 +10402,7 @@ test "taffy/block_margin_y_last_child_collapse_positive_and_negative" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10381,6 +10413,7 @@ test "taffy/block_margin_y_last_child_collapse_positive_and_negative" {
   let root_child2_children : Array[@node.Node] = []
   let root_child2_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10391,6 +10424,7 @@ test "taffy/block_margin_y_last_child_collapse_positive_and_negative" {
   let root_child2_child0_children : Array[@node.Node] = []
   let root_child2_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child2_child0_child0 = @node.Node::leaf(
@@ -10415,11 +10449,7 @@ test "taffy/block_margin_y_last_child_collapse_positive_and_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10464,10 +10494,15 @@ test "taffy/block_margin_y_last_child_collapse_positive_and_negative" {
 
 ///|
 test "taffy/block_margin_y_last_child_collapse_positive_equal" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10478,6 +10513,7 @@ test "taffy/block_margin_y_last_child_collapse_positive_equal" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10488,6 +10524,7 @@ test "taffy/block_margin_y_last_child_collapse_positive_equal" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -10512,11 +10549,7 @@ test "taffy/block_margin_y_last_child_collapse_positive_equal" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10537,10 +10570,15 @@ test "taffy/block_margin_y_last_child_collapse_positive_equal" {
 
 ///|
 test "taffy/block_margin_y_last_child_collapse_positive_parent_larger" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10551,6 +10589,7 @@ test "taffy/block_margin_y_last_child_collapse_positive_parent_larger" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10561,6 +10600,7 @@ test "taffy/block_margin_y_last_child_collapse_positive_parent_larger" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -10585,11 +10625,7 @@ test "taffy/block_margin_y_last_child_collapse_positive_parent_larger" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10610,10 +10646,15 @@ test "taffy/block_margin_y_last_child_collapse_positive_parent_larger" {
 
 ///|
 test "taffy/block_margin_y_last_child_collapse_positive_parent_smaller" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10624,6 +10665,7 @@ test "taffy/block_margin_y_last_child_collapse_positive_parent_smaller" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10634,6 +10676,7 @@ test "taffy/block_margin_y_last_child_collapse_positive_parent_smaller" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0 = @node.Node::leaf(
@@ -10658,11 +10701,7 @@ test "taffy/block_margin_y_last_child_collapse_positive_parent_smaller" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10683,10 +10722,15 @@ test "taffy/block_margin_y_last_child_collapse_positive_parent_smaller" {
 
 ///|
 test "taffy/block_margin_y_last_granchild_collapse_positive_equal" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10697,6 +10741,7 @@ test "taffy/block_margin_y_last_granchild_collapse_positive_equal" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10707,6 +10752,7 @@ test "taffy/block_margin_y_last_granchild_collapse_positive_equal" {
   let root_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -10717,6 +10763,7 @@ test "taffy/block_margin_y_last_granchild_collapse_positive_equal" {
   let root_child0_child0_child0_children : Array[@node.Node] = []
   let root_child0_child0_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0_child0_child0 = @node.Node::leaf(
@@ -10745,11 +10792,7 @@ test "taffy/block_margin_y_last_granchild_collapse_positive_equal" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10780,10 +10823,15 @@ test "taffy/block_margin_y_last_granchild_collapse_positive_equal" {
 
 ///|
 test "taffy/block_margin_y_sibling_collapse_negative" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -10796,6 +10844,7 @@ test "taffy/block_margin_y_sibling_collapse_negative" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -10808,6 +10857,7 @@ test "taffy/block_margin_y_sibling_collapse_negative" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -10820,6 +10870,7 @@ test "taffy/block_margin_y_sibling_collapse_negative" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -10840,11 +10891,7 @@ test "taffy/block_margin_y_sibling_collapse_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10869,10 +10916,15 @@ test "taffy/block_margin_y_sibling_collapse_negative" {
 
 ///|
 test "taffy/block_margin_y_sibling_collapse_negative_percentage" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -10885,6 +10937,7 @@ test "taffy/block_margin_y_sibling_collapse_negative_percentage" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -10897,6 +10950,7 @@ test "taffy/block_margin_y_sibling_collapse_negative_percentage" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -10909,6 +10963,7 @@ test "taffy/block_margin_y_sibling_collapse_negative_percentage" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -10929,11 +10984,7 @@ test "taffy/block_margin_y_sibling_collapse_negative_percentage" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -10958,10 +11009,15 @@ test "taffy/block_margin_y_sibling_collapse_negative_percentage" {
 
 ///|
 test "taffy/block_margin_y_sibling_collapse_positive" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -10974,6 +11030,7 @@ test "taffy/block_margin_y_sibling_collapse_positive" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -10986,6 +11043,7 @@ test "taffy/block_margin_y_sibling_collapse_positive" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -10998,6 +11056,7 @@ test "taffy/block_margin_y_sibling_collapse_positive" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11018,11 +11077,7 @@ test "taffy/block_margin_y_sibling_collapse_positive" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -11047,10 +11102,15 @@ test "taffy/block_margin_y_sibling_collapse_positive" {
 
 ///|
 test "taffy/block_margin_y_sibling_collapse_positive_and_negative" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11063,6 +11123,7 @@ test "taffy/block_margin_y_sibling_collapse_positive_and_negative" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11075,6 +11136,7 @@ test "taffy/block_margin_y_sibling_collapse_positive_and_negative" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11087,6 +11149,7 @@ test "taffy/block_margin_y_sibling_collapse_positive_and_negative" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11099,6 +11162,7 @@ test "taffy/block_margin_y_sibling_collapse_positive_and_negative" {
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11111,6 +11175,7 @@ test "taffy/block_margin_y_sibling_collapse_positive_and_negative" {
   root_children.push(root_child4)
   let root_child5_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11123,6 +11188,7 @@ test "taffy/block_margin_y_sibling_collapse_positive_and_negative" {
   root_children.push(root_child5)
   let root_child6_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11143,11 +11209,7 @@ test "taffy/block_margin_y_sibling_collapse_positive_and_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -11184,10 +11246,15 @@ test "taffy/block_margin_y_sibling_collapse_positive_and_negative" {
 
 ///|
 test "taffy/block_margin_y_sibling_collapse_positive_and_negative_percentage" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11200,6 +11267,7 @@ test "taffy/block_margin_y_sibling_collapse_positive_and_negative_percentage" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11212,6 +11280,7 @@ test "taffy/block_margin_y_sibling_collapse_positive_and_negative_percentage" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11224,6 +11293,7 @@ test "taffy/block_margin_y_sibling_collapse_positive_and_negative_percentage" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11236,6 +11306,7 @@ test "taffy/block_margin_y_sibling_collapse_positive_and_negative_percentage" {
   root_children.push(root_child3)
   let root_child4_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11248,6 +11319,7 @@ test "taffy/block_margin_y_sibling_collapse_positive_and_negative_percentage" {
   root_children.push(root_child4)
   let root_child5_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11260,6 +11332,7 @@ test "taffy/block_margin_y_sibling_collapse_positive_and_negative_percentage" {
   root_children.push(root_child5)
   let root_child6_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11280,11 +11353,7 @@ test "taffy/block_margin_y_sibling_collapse_positive_and_negative_percentage" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -11321,10 +11390,15 @@ test "taffy/block_margin_y_sibling_collapse_positive_and_negative_percentage" {
 
 ///|
 test "taffy/block_margin_y_sibling_collapse_positive_percentage" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11337,6 +11411,7 @@ test "taffy/block_margin_y_sibling_collapse_positive_percentage" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11349,6 +11424,7 @@ test "taffy/block_margin_y_sibling_collapse_positive_percentage" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11361,6 +11437,7 @@ test "taffy/block_margin_y_sibling_collapse_positive_percentage" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11381,11 +11458,7 @@ test "taffy/block_margin_y_sibling_collapse_positive_percentage" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -11410,10 +11483,15 @@ test "taffy/block_margin_y_sibling_collapse_positive_percentage" {
 
 ///|
 test "taffy/block_margin_y_simple_negative" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11426,6 +11504,7 @@ test "taffy/block_margin_y_simple_negative" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -11440,11 +11519,7 @@ test "taffy/block_margin_y_simple_negative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -11461,10 +11536,15 @@ test "taffy/block_margin_y_simple_negative" {
 
 ///|
 test "taffy/block_margin_y_simple_negative_percentage_other" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11477,6 +11557,7 @@ test "taffy/block_margin_y_simple_negative_percentage_other" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
   }
@@ -11492,11 +11573,7 @@ test "taffy/block_margin_y_simple_negative_percentage_other" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -11513,10 +11590,15 @@ test "taffy/block_margin_y_simple_negative_percentage_other" {
 
 ///|
 test "taffy/block_margin_y_simple_negative_percentage_self" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
     margin: {
@@ -11530,6 +11612,7 @@ test "taffy/block_margin_y_simple_negative_percentage_self" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -11544,11 +11627,7 @@ test "taffy/block_margin_y_simple_negative_percentage_self" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -11565,10 +11644,15 @@ test "taffy/block_margin_y_simple_negative_percentage_self" {
 
 ///|
 test "taffy/block_margin_y_simple_positive" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11581,6 +11665,7 @@ test "taffy/block_margin_y_simple_positive" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -11595,11 +11680,7 @@ test "taffy/block_margin_y_simple_positive" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -11616,10 +11697,14 @@ test "taffy/block_margin_y_simple_positive" {
 
 ///|
 test "taffy/block_margin_y_simple_positive_percentage_other" {
-  let root_style = { ..@style.Style::default() }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11632,6 +11717,7 @@ test "taffy/block_margin_y_simple_positive_percentage_other" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
   }
@@ -11647,11 +11733,7 @@ test "taffy/block_margin_y_simple_positive_percentage_other" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -11668,10 +11750,14 @@ test "taffy/block_margin_y_simple_positive_percentage_other" {
 
 ///|
 test "taffy/block_margin_y_simple_positive_percentage_self" {
-  let root_style = { ..@style.Style::default() }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
     margin: {
@@ -11685,6 +11771,7 @@ test "taffy/block_margin_y_simple_positive_percentage_self" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -11699,11 +11786,7 @@ test "taffy/block_margin_y_simple_positive_percentage_self" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -11720,10 +11803,15 @@ test "taffy/block_margin_y_simple_positive_percentage_self" {
 
 ///|
 test "taffy/block_margin_y_total_collapse" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11735,6 +11823,7 @@ test "taffy/block_margin_y_total_collapse" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11747,6 +11836,7 @@ test "taffy/block_margin_y_total_collapse" {
   root_child0_children.push(root_child0_child0)
   let root_child0_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     margin: {
       left: @types.Length(0.0),
       right: @types.Length(0.0),
@@ -11758,6 +11848,7 @@ test "taffy/block_margin_y_total_collapse" {
   root_child0_children.push(root_child0_child1)
   let root_child0_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11782,11 +11873,7 @@ test "taffy/block_margin_y_total_collapse" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -11811,10 +11898,15 @@ test "taffy/block_margin_y_total_collapse" {
 
 ///|
 test "taffy/block_margin_y_total_collapse_complex" {
-  let root_style = { ..@style.Style::default(), width: @types.Length(50.0) }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+    width: @types.Length(50.0),
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11827,6 +11919,7 @@ test "taffy/block_margin_y_total_collapse_complex" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11838,6 +11931,7 @@ test "taffy/block_margin_y_total_collapse_complex" {
   let root_child1_children : Array[@node.Node] = []
   let root_child1_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11850,6 +11944,7 @@ test "taffy/block_margin_y_total_collapse_complex" {
   root_child1_children.push(root_child1_child0)
   let root_child1_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11862,6 +11957,7 @@ test "taffy/block_margin_y_total_collapse_complex" {
   root_child1_children.push(root_child1_child1)
   let root_child1_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11878,6 +11974,7 @@ test "taffy/block_margin_y_total_collapse_complex" {
   root_children.push(root_child1)
   let root_child2_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11890,6 +11987,7 @@ test "taffy/block_margin_y_total_collapse_complex" {
   root_children.push(root_child2)
   let root_child3_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
     margin: {
       left: @types.Length(0.0),
@@ -11910,11 +12008,7 @@ test "taffy/block_margin_y_total_collapse_complex" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -11953,12 +12047,14 @@ test "taffy/block_margin_y_total_collapse_complex" {
 test "taffy/block_overflow_scrollbars_overridden_by_available_space" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(2.0),
     height: @types.Length(4.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     overflow_x: @types.Overflow::Scroll,
     overflow_y: @types.Overflow::Scroll,
   }
@@ -11989,11 +12085,7 @@ test "taffy/block_overflow_scrollbars_overridden_by_available_space" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 2.0)
@@ -12012,6 +12104,7 @@ test "taffy/block_overflow_scrollbars_overridden_by_available_space" {
 test "taffy/block_overflow_scrollbars_overridden_by_max_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     overflow_x: @types.Overflow::Scroll,
     overflow_y: @types.Overflow::Scroll,
     max_width: @types.Length(2.0),
@@ -12040,11 +12133,7 @@ test "taffy/block_overflow_scrollbars_overridden_by_max_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -12059,6 +12148,7 @@ test "taffy/block_overflow_scrollbars_overridden_by_max_size" {
 test "taffy/block_overflow_scrollbars_overridden_by_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     overflow_x: @types.Overflow::Scroll,
     overflow_y: @types.Overflow::Scroll,
     width: @types.Length(2.0),
@@ -12087,11 +12177,7 @@ test "taffy/block_overflow_scrollbars_overridden_by_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 2.0)
@@ -12106,6 +12192,7 @@ test "taffy/block_overflow_scrollbars_overridden_by_size" {
 test "taffy/block_overflow_scrollbars_take_up_space_both_axis" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     overflow_x: @types.Overflow::Scroll,
     overflow_y: @types.Overflow::Scroll,
     width: @types.Length(50.0),
@@ -12134,11 +12221,7 @@ test "taffy/block_overflow_scrollbars_take_up_space_both_axis" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -12153,6 +12236,7 @@ test "taffy/block_overflow_scrollbars_take_up_space_both_axis" {
 test "taffy/block_overflow_scrollbars_take_up_space_cross_axis" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     overflow_y: @types.Overflow::Scroll,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -12180,11 +12264,7 @@ test "taffy/block_overflow_scrollbars_take_up_space_cross_axis" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -12199,6 +12279,7 @@ test "taffy/block_overflow_scrollbars_take_up_space_cross_axis" {
 test "taffy/block_overflow_scrollbars_take_up_space_main_axis" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     overflow_x: @types.Overflow::Scroll,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
@@ -12226,11 +12307,7 @@ test "taffy/block_overflow_scrollbars_take_up_space_main_axis" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -12245,6 +12322,7 @@ test "taffy/block_overflow_scrollbars_take_up_space_main_axis" {
 test "taffy/block_padding_border_fixed_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     padding: {
@@ -12263,12 +12341,14 @@ test "taffy/block_padding_border_fixed_size" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -12283,11 +12363,7 @@ test "taffy/block_padding_border_fixed_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -12306,6 +12382,7 @@ test "taffy/block_padding_border_fixed_size" {
 test "taffy/block_padding_border_intrinsic_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     padding: {
       left: @types.Length(7.0),
       right: @types.Length(3.0),
@@ -12322,6 +12399,7 @@ test "taffy/block_padding_border_intrinsic_size" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
   }
@@ -12329,6 +12407,7 @@ test "taffy/block_padding_border_intrinsic_size" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -12343,11 +12422,7 @@ test "taffy/block_padding_border_intrinsic_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 72.0)
@@ -12364,10 +12439,14 @@ test "taffy/block_padding_border_intrinsic_size" {
 
 ///|
 test "taffy/block_padding_border_overrides_max_size" {
-  let root_style = { ..@style.Style::default() }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     max_width: @types.Length(12.0),
     max_height: @types.Length(12.0),
     padding: {
@@ -12384,7 +12463,10 @@ test "taffy/block_padding_border_overrides_max_size" {
     },
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
   let root_child0 = @node.Node::new(
@@ -12401,11 +12483,7 @@ test "taffy/block_padding_border_overrides_max_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 22.0)
@@ -12422,10 +12500,14 @@ test "taffy/block_padding_border_overrides_max_size" {
 
 ///|
 test "taffy/block_padding_border_overrides_min_size" {
-  let root_style = { ..@style.Style::default() }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     min_width: @types.Length(0.0),
     min_height: @types.Length(0.0),
     padding: {
@@ -12442,7 +12524,10 @@ test "taffy/block_padding_border_overrides_min_size" {
     },
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
   let root_child0 = @node.Node::new(
@@ -12459,11 +12544,7 @@ test "taffy/block_padding_border_overrides_min_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 22.0)
@@ -12480,10 +12561,14 @@ test "taffy/block_padding_border_overrides_min_size" {
 
 ///|
 test "taffy/block_padding_border_overrides_size" {
-  let root_style = { ..@style.Style::default() }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(12.0),
     height: @types.Length(12.0),
     padding: {
@@ -12500,7 +12585,10 @@ test "taffy/block_padding_border_overrides_size" {
     },
   }
   let root_child0_children : Array[@node.Node] = []
-  let root_child0_child0_style = { ..@style.Style::default() }
+  let root_child0_child0_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
   root_child0_children.push(root_child0_child0)
   let root_child0 = @node.Node::new(
@@ -12517,11 +12605,7 @@ test "taffy/block_padding_border_overrides_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 22.0)
@@ -12540,12 +12624,14 @@ test "taffy/block_padding_border_overrides_size" {
 test "taffy/block_padding_border_percentage_fixed_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     padding: {
       left: @types.Percent(0.0400),
       right: @types.Percent(0.0200),
@@ -12556,6 +12642,7 @@ test "taffy/block_padding_border_percentage_fixed_size" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
@@ -12574,11 +12661,7 @@ test "taffy/block_padding_border_percentage_fixed_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -12595,10 +12678,14 @@ test "taffy/block_padding_border_percentage_fixed_size" {
 
 ///|
 test "taffy/block_padding_border_percentage_intrinsic_size" {
-  let root_style = { ..@style.Style::default() }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     padding: {
       left: @types.Percent(0.0400),
       right: @types.Percent(0.0200),
@@ -12609,6 +12696,7 @@ test "taffy/block_padding_border_percentage_intrinsic_size" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
@@ -12627,11 +12715,7 @@ test "taffy/block_padding_border_percentage_intrinsic_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)
@@ -12650,6 +12734,7 @@ test "taffy/block_padding_border_percentage_intrinsic_size" {
 test "taffy/block_padding_fixed_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
     padding: {
@@ -12662,12 +12747,14 @@ test "taffy/block_padding_fixed_size" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -12682,11 +12769,7 @@ test "taffy/block_padding_fixed_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -12705,6 +12788,7 @@ test "taffy/block_padding_fixed_size" {
 test "taffy/block_padding_intrinsic_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     padding: {
       left: @types.Length(8.0),
       right: @types.Length(4.0),
@@ -12715,6 +12799,7 @@ test "taffy/block_padding_intrinsic_size" {
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(10.0),
   }
@@ -12722,6 +12807,7 @@ test "taffy/block_padding_intrinsic_size" {
   root_children.push(root_child0)
   let root_child1_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child1 = @node.Node::leaf("node", root_child1_style)
@@ -12736,11 +12822,7 @@ test "taffy/block_padding_intrinsic_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 62.0)
@@ -12759,12 +12841,14 @@ test "taffy/block_padding_intrinsic_size" {
 test "taffy/block_padding_percentage_fixed_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     width: @types.Length(50.0),
     height: @types.Length(50.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     padding: {
       left: @types.Percent(0.0400),
       right: @types.Percent(0.0200),
@@ -12775,6 +12859,7 @@ test "taffy/block_padding_percentage_fixed_size" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
@@ -12793,11 +12878,7 @@ test "taffy/block_padding_percentage_fixed_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 50.0)
@@ -12814,10 +12895,14 @@ test "taffy/block_padding_percentage_fixed_size" {
 
 ///|
 test "taffy/block_padding_percentage_intrinsic_size" {
-  let root_style = { ..@style.Style::default() }
+  let root_style = {
+    ..@style.Style::default(),
+    position: @types.Position::Relative,
+  }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     padding: {
       left: @types.Percent(0.0400),
       right: @types.Percent(0.0200),
@@ -12828,6 +12913,7 @@ test "taffy/block_padding_percentage_intrinsic_size" {
   let root_child0_children : Array[@node.Node] = []
   let root_child0_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     height: @types.Length(10.0),
   }
   let root_child0_child0 = @node.Node::leaf("node", root_child0_child0_style)
@@ -12846,11 +12932,7 @@ test "taffy/block_padding_percentage_intrinsic_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = @node.compute_block_layout_with_dispatch(
-    root,
-    ctx,
-    default_dispatch(),
-  )
+  let layout = compute_root_layout(root, ctx)
   assert_approx(layout.x, 0.0)
   assert_approx(layout.y, 0.0)
   assert_approx(layout.width, 0.0)

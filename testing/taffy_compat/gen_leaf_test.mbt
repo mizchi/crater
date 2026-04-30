@@ -6,6 +6,9 @@
 test "taffy/leaf_overflow_scrollbars_affect_available_space_x_axis" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     overflow_x: @types.Overflow::Scroll,
     width: @types.Length(45.0),
     height: @types.Length(45.0),
@@ -27,6 +30,9 @@ test "taffy/leaf_overflow_scrollbars_affect_available_space_x_axis" {
 test "taffy/leaf_overflow_scrollbars_affect_available_space_y_axis" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     overflow_y: @types.Overflow::Scroll,
     width: @types.Length(45.0),
     height: @types.Length(45.0),
@@ -48,13 +54,18 @@ test "taffy/leaf_overflow_scrollbars_affect_available_space_y_axis" {
 test "taffy/leaf_overflow_scrollbars_overridden_by_available_space" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(2.0),
     height: @types.Length(4.0),
   }
   let root_children : Array[@node.Node] = []
   let root_child0_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
     display: @types.Flex,
+    justify_content: @types.FlexStart,
     overflow_x: @types.Overflow::Scroll,
     overflow_y: @types.Overflow::Scroll,
     flex_grow: 1.0,
@@ -77,6 +88,9 @@ test "taffy/leaf_overflow_scrollbars_overridden_by_available_space" {
 test "taffy/leaf_overflow_scrollbars_overridden_by_max_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     overflow_x: @types.Overflow::Scroll,
     overflow_y: @types.Overflow::Scroll,
     max_width: @types.Length(2.0),
@@ -94,6 +108,9 @@ test "taffy/leaf_overflow_scrollbars_overridden_by_max_size" {
 test "taffy/leaf_overflow_scrollbars_overridden_by_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     overflow_x: @types.Overflow::Scroll,
     overflow_y: @types.Overflow::Scroll,
     width: @types.Length(2.0),
@@ -111,6 +128,9 @@ test "taffy/leaf_overflow_scrollbars_overridden_by_size" {
 test "taffy/leaf_overflow_scrollbars_take_up_space_both_axis" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     overflow_x: @types.Overflow::Scroll,
     overflow_y: @types.Overflow::Scroll,
   }
@@ -131,6 +151,9 @@ test "taffy/leaf_overflow_scrollbars_take_up_space_both_axis" {
 test "taffy/leaf_overflow_scrollbars_take_up_space_x_axis" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     overflow_x: @types.Overflow::Scroll,
   }
   let root_measure = @types.MeasureFunc::{
@@ -150,6 +173,9 @@ test "taffy/leaf_overflow_scrollbars_take_up_space_x_axis" {
 test "taffy/leaf_overflow_scrollbars_take_up_space_y_axis" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     overflow_y: @types.Overflow::Scroll,
   }
   let root_measure = @types.MeasureFunc::{
@@ -169,6 +195,9 @@ test "taffy/leaf_overflow_scrollbars_take_up_space_y_axis" {
 test "taffy/leaf_padding_border_overrides_max_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     max_width: @types.Length(12.0),
     max_height: @types.Length(12.0),
     padding: {
@@ -196,6 +225,9 @@ test "taffy/leaf_padding_border_overrides_max_size" {
 test "taffy/leaf_padding_border_overrides_min_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     min_width: @types.Length(0.0),
     min_height: @types.Length(0.0),
     padding: {
@@ -223,6 +255,9 @@ test "taffy/leaf_padding_border_overrides_min_size" {
 test "taffy/leaf_padding_border_overrides_size" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     width: @types.Length(12.0),
     height: @types.Length(12.0),
     padding: {
@@ -250,6 +285,9 @@ test "taffy/leaf_padding_border_overrides_size" {
 test "taffy/leaf_with_content_and_border" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     border: {
       left: @types.Length(8.0),
       right: @types.Length(4.0),
@@ -274,6 +312,9 @@ test "taffy/leaf_with_content_and_border" {
 test "taffy/leaf_with_content_and_padding" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     padding: {
       left: @types.Length(8.0),
       right: @types.Length(4.0),
@@ -298,6 +339,9 @@ test "taffy/leaf_with_content_and_padding" {
 test "taffy/leaf_with_content_and_padding_border" {
   let root_style = {
     ..@style.Style::default(),
+    position: @types.Position::Relative,
+    display: @types.Flex,
+    justify_content: @types.FlexStart,
     padding: {
       left: @types.Length(8.0),
       right: @types.Length(4.0),

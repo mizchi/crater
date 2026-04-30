@@ -3,12 +3,19 @@ package "mizchi/crater-testing/taffy_compat"
 
 import {
   "mizchi/crater-layout/node",
+  "mizchi/crater-layout/types",
 }
 
 // Values
 pub fn assert_approx(Double, Double) -> Unit raise
 
+pub fn compute_root_layout(@node.Node, @types.LayoutContext) -> @types.Layout
+
+pub fn compute_root_layout_size(@node.Node, Double, Double) -> @types.Layout
+
 pub fn default_dispatch() -> @node.DispatchFn
+
+pub fn exact_display_dispatch() -> @node.DispatchFn
 
 // Errors
 
