@@ -11,6 +11,7 @@ Crater Browser currently has two main faces:
 
 - Terminal rendering in `--text` (default), `--kitty`, and `--sixel`
 - Structured outputs for tooling: `--json`, `--aom`, `--extract-main`, `--arc90`, `--grounding`
+- Local text-to-speech output with `--tts`
 - Interactive navigation with keyboard, mouse, hit-a-hint, dark mode, and selection mode
 - Browser core with DOM, CSS, layout, accessibility tree, scheduler, and JS-backed test/automation paths
 - WebDriver BiDi-first automation stack under `../webdriver/`
@@ -53,6 +54,7 @@ Examples:
 ```bash
 crater-browser https://example.com
 crater-browser --aom https://example.com
+crater-browser --tts https://example.com
 crater-browser --headless=viewport https://example.com
 crater-browser --dark --no-color https://example.com
 ```
@@ -66,6 +68,7 @@ crater-browser --dark --no-color https://example.com
 - `--aom`: output the accessibility tree as Playwright-style YAML
 - `--arc90`: run Arc90 content extraction
 - `--grounding`: run the visual grounding demo
+- `--tts`: speak extracted main content with a local TTS command (`say` on macOS, `spd-say` / `espeak-ng` / `espeak` on Linux)
 - `--extract-main`: extract main content text only
 - `--debug`: print the layout tree
 

@@ -190,6 +190,7 @@ struct Options {
   aom : Bool // AOM YAML snapshot output
   arc90 : Bool // Arc90 content extraction
   grounding : Bool // Visual grounding demo
+  tts : Bool // Speak extracted main content with a local TTS command
   dark : Bool // Start in dark mode
   no_color : Bool // Disable color output (text layout only)
   extract_main : Bool // Extract main content text only
@@ -223,6 +224,98 @@ async fn write_stderr_io(s : String) -> Unit {
 }
 
 ///|
+#cfg(target="js")
+extern "js" fn speak_text_with_local_tts(text : String) -> String =
+  #| (text) => {
+  #|   const input = String(text || '').replace(/\s+/g, ' ').trim();
+  #|   if (!input) return 'empty';
+  #|   let childProcess;
+  #|   try {
+  #|     childProcess = require('node:child_process');
+  #|   } catch (_error) {
+  #|     return 'unsupported:node-child-process-unavailable';
+  #|   }
+  #|   const maxChunk = 2800;
+  #|   const chunks = [];
+  #|   for (let start = 0; start < input.length;) {
+  #|     let end = Math.min(input.length, start + maxChunk);
+  #|     if (end < input.length) {
+  #|       const boundary = Math.max(
+  #|         input.lastIndexOf('. ', end),
+  #|         input.lastIndexOf('。', end),
+  #|         input.lastIndexOf('\n', end),
+  #|         input.lastIndexOf(' ', end),
+  #|       );
+  #|       if (boundary > start + 200) end = boundary + 1;
+  #|     }
+  #|     chunks.push(input.slice(start, end).trim());
+  #|     start = end;
+  #|   }
+  #|   const candidates = process.platform === 'darwin'
+  #|     ? [['say', []]]
+  #|     : [['spd-say', []], ['espeak-ng', []], ['espeak', []]];
+  #|   for (const [command, baseArgs] of candidates) {
+  #|     let usable = true;
+  #|     for (const chunk of chunks) {
+  #|       if (!chunk) continue;
+  #|       const result = childProcess.spawnSync(command, [...baseArgs, chunk], {
+  #|         stdio: 'ignore',
+  #|       });
+  #|       if (result.error) {
+  #|         if (result.error.code === 'ENOENT') {
+  #|           usable = false;
+  #|           break;
+  #|         }
+  #|         return 'error:' + command + ':' + result.error.message;
+  #|       }
+  #|       if (result.status !== 0) {
+  #|         return 'error:' + command + ':exit-' + String(result.status);
+  #|       }
+  #|     }
+  #|     if (usable) return 'ok:' + command;
+  #|   }
+  #|   return 'unsupported:no-local-tts-command';
+  #| }
+
+///|
+#cfg(not(target="js"))
+fn speak_text_with_local_tts(_text : String) -> String {
+  "unsupported:js-target-required"
+}
+
+///|
+fn tts_status_message(status : String) -> String? {
+  if status.has_prefix("ok:") {
+    None
+  } else if status == "empty" {
+    Some("TTS: no readable text found.")
+  } else if status == "unsupported:no-local-tts-command" {
+    Some("TTS: no local speech command found.")
+  } else if status == "unsupported:js-target-required" {
+    Some("TTS: only the JavaScript CLI target is supported.")
+  } else if status == "unsupported:node-child-process-unavailable" {
+    Some("TTS: node:child_process is unavailable.")
+  } else if status.has_prefix("error:") {
+    Some("TTS failed: " + status)
+  } else {
+    Some("TTS failed: " + status)
+  }
+}
+
+///|
+async fn speak_rendered_text(text : String) -> Unit {
+  match tts_status_message(speak_text_with_local_tts(text)) {
+    Some(message) => write_stderr_io(message + "\n")
+    None => ()
+  }
+}
+
+///|
+fn needs_rendered_content_output(options : Options) -> Bool {
+  options.arc90 || options.grounding || options.extract_main || options.tts
+}
+
+///|
 /// Render and display the current page
 async fn render_page(
   browser : @shell.Browser,
@@ -241,6 +334,10 @@ async fn render_page(
     // Extract main content text only
     let main_text = browser.render_output(@shell.OutputMode::ExtractMain)
     println(main_text)
+  } else if options.tts {
+    // Speak extracted main content through the local platform TTS command.
+    let main_text = browser.render_output(@shell.OutputMode::ExtractMain)
+    speak_rendered_text(main_text)
   } else if options.arc90 {
     // Arc90 content extraction
     let arc90_output = browser.render_output(@shell.OutputMode::Arc90)
@@ -319,6 +416,7 @@ fn print_help() -> Unit {
   )
   println("    --arc90           Run Arc90 content extraction")
   println("    --grounding       Run visual grounding demo")
+  println("    --tts             Speak extracted main content with local TTS")
   println("    --extract-main    Extract main content text only")
   println("    --debug           Print layout tree for debugging")
   println("")
@@ -374,6 +472,7 @@ fn parse_args_list(args : Array[String]) -> Options {
   let mut aom = false
   let mut arc90 = false
   let mut grounding = false
+  let mut tts = false
   let mut dark = false
   let mut no_color = false
   let mut extract_main = false
@@ -398,6 +497,8 @@ fn parse_args_list(args : Array[String]) -> Options {
       arc90 = true
     } else if arg == "--grounding" {
       grounding = true
+    } else if arg == "--tts" {
+      tts = true
     } else if arg == "--json" {
       json = true
     } else if arg == "--aom" {
@@ -425,6 +526,7 @@ fn parse_args_list(args : Array[String]) -> Options {
     !aom &&
     !arc90 &&
     !grounding &&
+    !tts &&
     !extract_main {
     true
   } else {
@@ -440,6 +542,7 @@ fn parse_args_list(args : Array[String]) -> Options {
     aom,
     arc90,
     grounding,
+    tts,
     dark,
     no_color,
     extract_main,
@@ -498,8 +601,8 @@ async fn main {
     render_page(browser, options, resolved_output_mode)
     return
   }
-  // For Arc90/Grounding/ExtractMain modes, still need full rendering for bounds info
-  if options.arc90 || options.grounding || options.extract_main {
+  // For Arc90/Grounding/ExtractMain/TTS modes, still need full rendering for bounds info
+  if needs_rendered_content_output(options) {
     try {
       let _ = browser.navigate(options.url)
     } catch {

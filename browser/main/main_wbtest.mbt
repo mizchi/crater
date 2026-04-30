@@ -32,6 +32,29 @@ test "parse_args_list defaults to text when no output mode is provided" {
 }
 
 ///|
+test "parse_args_list enables tts output mode" {
+  let options = parse_args_list(["--tts", "https://example.com"])
+  inspect(options.tts, content="true")
+  inspect(options.text, content="false")
+  inspect(options.url, content="https://example.com")
+}
+
+///|
+test "tts output requires full rendered content" {
+  let options = parse_args_list(["--tts", "https://example.com"])
+  inspect(needs_rendered_content_output(options), content="true")
+}
+
+///|
+test "tts status message maps unsupported command" {
+  inspect(
+    tts_status_message("unsupported:no-local-tts-command"),
+    content="Some(\"TTS: no local speech command found.\")",
+  )
+  inspect(tts_status_message("ok:say"), content="None")
+}
+
+///|
 test "resolve_requested_output_mode keeps kitty when supported" {
   let options = parse_args_list(["--kitty", "https://example.com"])
   let support = { kitty: true, sixel: true }
