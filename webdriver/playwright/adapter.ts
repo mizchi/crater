@@ -1636,6 +1636,10 @@ function routeBodyToString(body: CraterRouteFulfillOptions["body"]): string {
   return JSON.stringify(body);
 }
 
+async function markLiveDomCaptureNeeded(page: CraterBidiPage): Promise<void> {
+  await page.evaluate(`globalThis.__craterPaintCaptureSource = "live"`);
+}
+
 class CraterKeyboard {
   constructor(
     private readonly performActions: (actions: Array<Record<string, string>>) => Promise<void>,
@@ -1793,7 +1797,7 @@ export class CraterLocator {
         __craterAction.clickElement(el);
       })()
     `);
-    await this.page.markLiveDomCaptureNeeded();
+    await markLiveDomCaptureNeeded(this.page);
   }
 
   async hover(): Promise<void> {
@@ -1806,7 +1810,7 @@ export class CraterLocator {
         __craterAction.hoverElement(el);
       })()
     `);
-    await this.page.markLiveDomCaptureNeeded();
+    await markLiveDomCaptureNeeded(this.page);
   }
 
   async focus(): Promise<void> {
@@ -1836,7 +1840,7 @@ export class CraterLocator {
         __craterAction.dispatchInputChange(el);
       })()
     `);
-    await this.page.markLiveDomCaptureNeeded();
+    await markLiveDomCaptureNeeded(this.page);
   }
 
   async clear(): Promise<void> {
@@ -1862,20 +1866,20 @@ export class CraterLocator {
       })()
     `);
     if (handled) {
-      await this.page.markLiveDomCaptureNeeded();
+      await markLiveDomCaptureNeeded(this.page);
       return;
     }
     await this.focus();
     for (const char of [...text]) {
       await this.page.press(char);
     }
-    await this.page.markLiveDomCaptureNeeded();
+    await markLiveDomCaptureNeeded(this.page);
   }
 
   async press(key: string): Promise<void> {
     await this.focus();
     await this.page.press(key);
-    await this.page.markLiveDomCaptureNeeded();
+    await markLiveDomCaptureNeeded(this.page);
   }
 
   async dispatchEvent(type: string, eventInit: Record<string, unknown> = {}): Promise<void> {
@@ -1894,7 +1898,7 @@ export class CraterLocator {
         el.dispatchEvent(event);
       })()
     `);
-    await this.page.markLiveDomCaptureNeeded();
+    await markLiveDomCaptureNeeded(this.page);
   }
 
   async check(): Promise<void> {
@@ -1916,7 +1920,7 @@ export class CraterLocator {
         __craterAction.selectOptions(el, ${requestExpr});
       })()
     `);
-    await this.page.markLiveDomCaptureNeeded();
+    await markLiveDomCaptureNeeded(this.page);
   }
 
   async setInputFiles(files: CraterSetInputFilesValue): Promise<void> {
@@ -2151,7 +2155,7 @@ export class CraterLocator {
         __craterAction.setChecked(el, ${checked});
       })()
     `);
-    await this.page.markLiveDomCaptureNeeded();
+    await markLiveDomCaptureNeeded(this.page);
   }
 
   private async waitForActionable(options: { timeout?: number } = {}): Promise<void> {
@@ -2570,10 +2574,6 @@ export class CraterBidiPage {
 
   async setContentWithScripts(html: string): Promise<void> {
     await this.setContent(html);
-  }
-
-  async markLiveDomCaptureNeeded(): Promise<void> {
-    await this.evaluate(`globalThis.__craterPaintCaptureSource = "live"`);
   }
 
   async loadPage(
@@ -3208,11 +3208,13 @@ export class CraterBidiPage {
     const start = Date.now();
     while (Date.now() - start < timeout) {
       const events = await this.networkEventsSince(startIndex);
-      for (const event of events) {
+      for (let i = 0; i < events.length; i += 1) {
+        const event = events[i];
         if (event.type !== "request") continue;
         if (event.timestamp < startedAt) continue;
         const request = new CraterRequest(event.request);
         if (await this.requestMatches(request, matcher)) {
+          await this.drainNetworkPageEventsUpTo(startIndex + i + 1);
           return request;
         }
       }
@@ -3233,11 +3235,13 @@ export class CraterBidiPage {
     const start = Date.now();
     while (Date.now() - start < timeout) {
       const events = await this.networkEventsSince(startIndex);
-      for (const event of events) {
+      for (let i = 0; i < events.length; i += 1) {
+        const event = events[i];
         if (event.type !== "response") continue;
         if (event.timestamp < startedAt) continue;
         const response = new CraterResponse(event.response);
         if (await this.responseMatches(response, matcher)) {
+          await this.drainNetworkPageEventsUpTo(startIndex + i + 1);
           return response;
         }
       }
@@ -3249,7 +3253,7 @@ export class CraterBidiPage {
   async click(selector: string): Promise<void> {
     const sharedId = await this.elementSharedId(selector);
     await this.performPointer(pointerClickActions(sharedId));
-    await this.markLiveDomCaptureNeeded();
+    await markLiveDomCaptureNeeded(this);
   }
 
   async hover(selector: string): Promise<void> {
@@ -3264,12 +3268,12 @@ export class CraterBidiPage {
   async type(selector: string, text: string): Promise<void> {
     await this.click(selector);
     await this.keyboard.type(text);
-    await this.markLiveDomCaptureNeeded();
+    await markLiveDomCaptureNeeded(this);
   }
 
   async press(key: string): Promise<void> {
     await this.keyboard.press(key);
-    await this.markLiveDomCaptureNeeded();
+    await markLiveDomCaptureNeeded(this);
   }
 
   async check(selector: string): Promise<void> {
@@ -4029,15 +4033,52 @@ export class CraterBidiPage {
   }
 
   private async drainNetworkPageEvents(): Promise<void> {
-    if (this.networkEventPumpBusy || this.closed) {
+    await this.drainNetworkPageEventsUpTo();
+  }
+
+  private async drainNetworkPageEventsUpTo(endIndexExclusive?: number): Promise<void> {
+    if (this.closed) {
+      return;
+    }
+    while (this.networkEventPumpBusy) {
+      if (
+        endIndexExclusive !== undefined &&
+        this.networkEventEmitIndex >= endIndexExclusive
+      ) {
+        return;
+      }
+      await this.waitForTimeout(1);
+    }
+    if (
+      endIndexExclusive !== undefined &&
+      this.networkEventEmitIndex >= endIndexExclusive
+    ) {
       return;
     }
     this.networkEventPumpBusy = true;
     try {
-      const events = await this.networkEventsSince(this.networkEventEmitIndex);
-      this.networkEventEmitIndex += events.length;
-      for (const event of events) {
-        this.emitNetworkPageEvent(event);
+      while (!this.closed) {
+        if (
+          endIndexExclusive !== undefined &&
+          this.networkEventEmitIndex >= endIndexExclusive
+        ) {
+          break;
+        }
+        const events = await this.networkEventsSince(this.networkEventEmitIndex);
+        if (events.length === 0) {
+          break;
+        }
+        const limit = endIndexExclusive === undefined
+          ? events.length
+          : Math.min(events.length, endIndexExclusive - this.networkEventEmitIndex);
+        if (limit <= 0) {
+          break;
+        }
+        const eventsToEmit = events.slice(0, limit);
+        this.networkEventEmitIndex += eventsToEmit.length;
+        for (const event of eventsToEmit) {
+          this.emitNetworkPageEvent(event);
+        }
       }
     } finally {
       this.networkEventPumpBusy = false;
@@ -4245,11 +4286,14 @@ export class CraterBidiPage {
     const start = Date.now();
     while (Date.now() - start < timeout) {
       const events = await this.networkEventsSince(startIndex);
-      for (const event of events) {
+      for (let i = 0; i < events.length; i += 1) {
+        const event = events[i];
         if (event.type !== eventName) continue;
+        const eventIndex = startIndex + i;
         const payload = this.networkPageEventPayload(event);
         if (!payload) continue;
         if (!options.predicate || await options.predicate(payload)) {
+          await this.drainNetworkPageEventsUpTo(eventIndex + 1);
           return payload;
         }
       }
