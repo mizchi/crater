@@ -167,14 +167,19 @@ fn setup_canvas_node(node : @tree.LayoutNode, element : @html.Element) -> Unit {
   }
 
   node.set_intrinsic_resolved(width, height)
-
-  match node.style.width {
-    @types.Auto => node.style.width = @types.Length(width)
-    _ => ()
+  match node.style.aspect_ratio {
+    Some(_) => ()
+    None => if height > 0.0 { node.style.aspect_ratio = Some(width / height) }
   }
-  match node.style.height {
-    @types.Auto => node.style.height = @types.Length(height)
-    _ => ()
+
+  match (node.style.width, node.style.height) {
+    (@types.Auto, @types.Auto) => {
+      node.style.width = @types.Length(width)
+      node.style.height = @types.Length(height)
+    }
+    (@types.Auto, _) => ()
+    (_, @types.Auto) => ()
+    (_, _) => ()
   }
 }
 

@@ -3233,6 +3233,56 @@ test "min_content_block_width_uses_stretched_aspect_ratio_flex_child" {
 }
 
 ///|
+test "inline_flex_intrinsic_width_uses_stretched_canvas_percent_height" {
+  // Mirrors css-flexbox/aspect-ratio-intrinsic-size-001.html:
+  // inline-flex has a definite height, its auto-height flex item stretches,
+  // and a replaced child with height:100% transfers intrinsic aspect-ratio
+  // into the flex container's intrinsic width.
+  let default_style = @style.Style::default()
+  let canvas_measure : @types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+      { min_width: 10.0, max_width: 10.0, min_height: 10.0, max_height: 10.0 }
+    },
+  }
+  let canvas = @node.Node::with_measure(
+    "canvas",
+    {
+      ..default_style,
+      display: @types.Inline,
+      height: @types.Percent(1.0),
+      aspect_ratio: Some(1.0),
+    },
+    canvas_measure,
+  )
+  let item = @node.Node::new("item", default_style, [canvas])
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      display: @types.InlineFlex,
+      height: @types.Length(100.0),
+    },
+    [item],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.width, content="100")
+  inspect(layout.height, content="100")
+  inspect(layout.children[0].width, content="100")
+  inspect(layout.children[0].height, content="100")
+  inspect(layout.children[0].children[0].width, content="100")
+  inspect(layout.children[0].children[0].height, content="100")
+}
+
+///|
 test "inline_flex_min_content_includes_child_border_box" {
   // Mirrors the first case in flex-container-min-content-002.tentative.html
   // Renderer normalizes content-box lengths to border-box before layout.

@@ -2673,13 +2673,45 @@ fn compute_intrinsic_flex_main_size(
             }
           _ => None
         }
+        let child_has_aspect_ratio = match child_style.aspect_ratio {
+          Some(ratio) => ratio > 0.0
+          None => false
+        }
+        let child_effective_align = @alignment.resolve_align_self(
+          child_style.align_self,
+          style.align_items,
+        )
+        let child_stretches_cross = match child_effective_align {
+          @types.Stretch => true
+          _ => false
+        }
+        let intrinsic_cross_for_child : Double? = match
+          intrinsic_cross_for_aspect {
+          Some(cross) =>
+            match child_style.height {
+              @types.Length(h) => Some(h)
+              @types.Percent(_) => Some(cross)
+              @types.Auto
+              | @types.MinContent
+              | @types.MaxContent
+              | @types.FitContent(_) =>
+                if child_has_aspect_ratio || child_stretches_cross {
+                  Some(max(0.0, cross - child_margin.top - child_margin.bottom))
+                } else {
+                  None
+                }
+            }
+          None => None
+        }
         // Main axis is width
         let base_width = match child_style.flex_basis {
           @types.Length(b) =>
             if child.children.length() > 0 {
               max(
                 b,
-                compute_intrinsic_main_size(child, true, None, cache, dispatch),
+                compute_intrinsic_main_size(
+                  child, true, intrinsic_cross_for_child, cache, dispatch,
+                ),
               )
             } else {
               match child_style.width {
@@ -2691,7 +2723,9 @@ fn compute_intrinsic_flex_main_size(
             if has_definite_inline {
               content_width_for_children * p
             } else {
-              compute_intrinsic_main_size(child, true, None, cache, dispatch)
+              compute_intrinsic_main_size(
+                child, true, intrinsic_cross_for_child, cache, dispatch,
+              )
             }
           @types.Auto =>
             match child_style.width {
@@ -2701,33 +2735,22 @@ fn compute_intrinsic_flex_main_size(
                   content_width_for_children * p
                 } else {
                   compute_intrinsic_main_size(
-                    child,
-                    true,
-                    None,
-                    cache,
-                    dispatch,
+                    child, true, intrinsic_cross_for_child, cache, dispatch,
                   )
                 }
               @types.Auto =>
-                match child_style.aspect_ratio {
-                  Some(ratio) if ratio > 0.0 =>
-                    compute_intrinsic_main_size(
-                      child, true, intrinsic_cross_for_aspect, cache, dispatch,
-                    )
-                  _ =>
-                    compute_intrinsic_main_size(
-                      child,
-                      true,
-                      None,
-                      cache,
-                      dispatch,
-                    )
-                }
+                compute_intrinsic_main_size(
+                  child, true, intrinsic_cross_for_child, cache, dispatch,
+                )
               @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
-                compute_intrinsic_main_size(child, true, None, cache, dispatch)
+                compute_intrinsic_main_size(
+                  child, true, intrinsic_cross_for_child, cache, dispatch,
+                )
             }
           @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
-            compute_intrinsic_main_size(child, true, None, cache, dispatch)
+            compute_intrinsic_main_size(
+              child, true, intrinsic_cross_for_child, cache, dispatch,
+            )
         }
         let mut effective_width = base_width
         match child_style.max_width {
