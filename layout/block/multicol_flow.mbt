@@ -1489,6 +1489,15 @@ fn process_multicol_flow_child(
   let keep_unfragmented_for_monolithic = child_style.contain.size ||
     child_style.break_inside == @style.BreakInside::Avoid ||
     has_break_inside_avoid_descendant(child_node.children)
+  let child_has_fragment_start_margin_wrapper = has_single_child_block_wrapper_for_multicol_reflow(
+      child_layout, child_style,
+    ) &&
+    child_layout.children[0].margin.top > 0.0
+  let keep_unfragmented_for_fragment_start = keep_unfragmented_for_monolithic ||
+    child_has_fragment_start_margin_wrapper
+  let keep_unfragmented_for_placement = keep_unfragmented_for_monolithic ||
+    is_unbreakable_fragment_unit(child_node, child_layout) ||
+    child_has_fragment_start_margin_wrapper
   let child_has_direct_inflow_float = has_direct_inflow_float(
     child_node.children,
   )
@@ -1562,7 +1571,7 @@ fn process_multicol_flow_child(
     Some(limit) if limit > 0.0 =>
       if child_style.column_span != @style.ColumnSpan::All &&
         !multicol_participates_in_inline_run &&
-        keep_unfragmented_for_monolithic &&
+        keep_unfragmented_for_fragment_start &&
         !force_column_break_before &&
         fragment_start_outer_height <= limit &&
         effective_pos > 0.0 {
@@ -1660,7 +1669,7 @@ fn process_multicol_flow_child(
         match break_group_outer_height {
           Some(group_height) =>
             if child_style.column_span != @style.ColumnSpan::All &&
-              keep_unfragmented_for_monolithic &&
+              keep_unfragmented_for_placement &&
               !force_column_break_before &&
               group_height <= limit &&
               effective_pos > 0.0 {
@@ -1675,7 +1684,7 @@ fn process_multicol_flow_child(
         }
         if child_style.column_span != @style.ColumnSpan::All &&
           !multicol_participates_in_inline_run &&
-          keep_unfragmented_for_monolithic &&
+          keep_unfragmented_for_fragment_start &&
           !force_column_break_before &&
           style.column_fill == @style.ColumnFill::Auto &&
           effective_child_outer_height <= limit &&
@@ -1695,7 +1704,7 @@ fn process_multicol_flow_child(
         }
         if child_style.column_span != @style.ColumnSpan::All &&
           !multicol_participates_in_inline_run &&
-          keep_unfragmented_for_monolithic &&
+          keep_unfragmented_for_placement &&
           !force_column_break_before &&
           following_reserved_height > 0.0 &&
           following_reserved_height < limit &&

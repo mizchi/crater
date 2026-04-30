@@ -575,6 +575,15 @@ test "bench_render_to_node_large_2k5" (b : @bench.T) {
 }
 
 ///|
+test "bench_render_to_node_scrollable_1000" (b : @bench.T) {
+  let html = scrollable_list(1000, 64)
+  let ctx = default_ctx()
+  b.bench(name="node_only_scroll_1k", fn() {
+    b.keep(@renderer.render_to_node(html, ctx))
+  })
+}
+
+///|
 test "bench_node_build_large_2k5" (b : @bench.T) {
   let doc = large_2k5_node_build_bench_doc()
   let ctx = large_2k5_node_build_bench_ctx()
@@ -602,6 +611,16 @@ test "bench_node_build_large_2k5_node_assembly" (b : @bench.T) {
   let prepared = @renderer.prepare_render_document(doc, ctx, external_css)
   b.bench(name="node_build_large_2k5_node_assembly", fn() {
     b.keep(@renderer.build_render_root_node(doc, ctx, prepared))
+  })
+}
+
+///|
+test "bench_node_build_scrollable_1000" (b : @bench.T) {
+  let doc = @html.parse_document(scrollable_list(1000, 64))
+  let ctx = default_ctx()
+  let external_css : Array[String] = []
+  b.bench(name="node_build_scroll_1k", fn() {
+    b.keep(@renderer.render_to_node_with_document(doc, ctx, external_css))
   })
 }
 

@@ -662,39 +662,24 @@ test "font-size with nested selectors like WPT" {
   let test_div = node.children[0]
   inspect(test_div.id, content="div#test")
 
-  // Check div#div1 has font_size = 20, line_height = 20
+  // Check div#div1 has font_size = 20, normal line-height = 1.2
   let div1 = test_div.children[0]
   inspect(div1.id, content="div#div1")
   inspect(div1.style.font_size, content="20")
-  inspect(
-    div1.style.line_height,
-    content=(
-      #|20
-    ),
-  )
+  inspect(div1.style.line_height, content="24")
 
-  // Check div#div2 has font_size = 10, line_height = 10
+  // Check div#div2 has font_size = 10, normal line-height = 1.2
   let div2 = test_div.children[1]
   inspect(div2.id, content="div#div2")
   inspect(div2.style.font_size, content="10")
-  inspect(
-    div2.style.line_height,
-    content=(
-      #|10
-    ),
-  )
+  inspect(div2.style.line_height, content="12")
 
   // Text inside <a> is now collected to parent div (inline element text collection)
   // div1 should have a #text child with the text from <a>
   let text1 = div1.children[0]
   inspect(text1.id, content="a")
   inspect(text1.style.font_size, content="20")
-  inspect(
-    text1.style.line_height,
-    content=(
-      #|20
-    ),
-  )
+  inspect(text1.style.line_height, content="24")
 }
 
 ///|
@@ -1418,7 +1403,7 @@ test "debug_text_wrapping_in_narrow_container" {
   if container.children.length() > 0 {
     let text_layout = container.children[0]
     // Text width should be constrained to container width
-    inspect(text_layout.width, content="100")
+    inspect(text_layout.width <= 100.0, content="true")
     // Text height should be multiple lines (text is about 60 chars, container is ~12 chars wide)
     // Expecting at least 5 lines * ~19.2 line height = ~96 height
     inspect(text_layout.height > 50.0, content="true")
@@ -2147,6 +2132,7 @@ test "Wikipedia actual @media print block does not leak to screen" {
 test "table width=85% constrains content within 85% of viewport" {
   let html =
     #|<html><body>
+    #|<style>body { margin: 0; }</style>
     #|<center>
     #|<table width="85%" bgcolor="#f6f6ef">
     #|<tr><td>

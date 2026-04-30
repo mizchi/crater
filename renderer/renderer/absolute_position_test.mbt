@@ -32,6 +32,7 @@ test "absolute_position_in_relative_parent" {
 test "edit_this_page_style" {
   // Simulate the Edit this Page element structure
   let html =
+    #|<style>body { margin: 0; }</style>
     #|<div style="position: relative; width: 100%; max-width: 800px;">
     #|  <a style="position: absolute; right: 10px; top: 10px;">Edit this Page</a>
     #|</div>

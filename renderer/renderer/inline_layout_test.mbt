@@ -97,16 +97,11 @@ test "inline_block_very_narrow_text_wraps" {
   let text_layout = container.children[0]
   let address_layout = container.children[2]
   // Text should start at row 0
-  let text_row = (text_layout.y / 16.0).to_int()
+  let text_row = (text_layout.y / 19.2).to_int()
   inspect(text_row, content="0")
   // Address should be after text (row 2 since text takes 2 rows)
-  let address_row = (address_layout.y / 16.0).to_int()
-  inspect(
-    address_row,
-    content=(
-      #|1
-    ),
-  )
+  let address_row = (address_layout.y / 19.2).to_int()
+  inspect(address_row, content="2")
 }
 
 ///|

@@ -3320,6 +3320,100 @@ fn should_use_viewport_skeleton() -> Bool {
 }
 
 ///|
+fn parse_skeleton_px_length(value : String) -> Double? {
+  let lower = value.trim().to_string().to_lower()
+  if lower.is_empty() || lower == "auto" {
+    return None
+  }
+  let raw = if lower.has_suffix("px") {
+    lower.unsafe_substring(start=0, end=lower.length() - 2).trim().to_string()
+  } else {
+    lower
+  }
+  let parsed = @string.parse_double(raw) catch { _ => return None }
+  if parsed >= 0.0 {
+    Some(parsed)
+  } else {
+    None
+  }
+}
+
+///|
+fn apply_skeleton_inline_style_hints(
+  style : @style.Style,
+  inline_css : String,
+) -> @style.Style {
+  let result = apply_skeleton_inline_display_hint(style, inline_css)
+  apply_skeleton_inline_height_hint(result, inline_css)
+}
+
+///|
+fn apply_skeleton_inline_display_hint(
+  style : @style.Style,
+  inline_css : String,
+) -> @style.Style {
+  let result = style
+  match get_cached_inline_style_display(inline_css) {
+    Some(@types.Display::None) => result.display = @types.Display::None
+    Some(_) | None => ()
+  }
+  result
+}
+
+///|
+fn apply_skeleton_inline_height_hint(
+  style : @style.Style,
+  inline_css : String,
+) -> @style.Style {
+  let result = style
+  for declaration in parse_inline_declarations_cached(inline_css) {
+    let (prop, value) = declaration
+    if prop == "height" {
+      match parse_skeleton_px_length(value) {
+        Some(height) => result.height = @types.Length(height)
+        None => ()
+      }
+    }
+  }
+  result
+}
+
+///|
+fn viewport_skeleton_advance(style : @style.Style) -> Double {
+  match style.height {
+    @types.Length(height) => height
+    _ => style.line_height
+  }
+}
+
+///|
+fn skeleton_parent_allows_explicit_size_hints(
+  parent_style : @style.Style?,
+) -> Bool {
+  match parent_style {
+    Some(style) =>
+      match (style.overflow_x, style.overflow_y) {
+        (@types.Scroll | @types.Auto, _) | (_, @types.Scroll | @types.Auto) =>
+          true
+        _ => false
+      }
+    None => false
+  }
+}
+
+///|
+fn should_collapse_viewport_skeleton_subtree(style : @style.Style) -> Bool {
+  match style.display {
+    @types.Display::None | @types.Contents => false
+    _ =>
+      match style.height {
+        @types.Length(_) => true
+        _ => false
+      }
+  }
+}
+
+///|
 /// Advance the viewport culling heuristic only for in-flow block containers.
 /// Counting floated descendants as vertical progress causes small tables with
 /// many float-based fixtures to enter skeleton mode too early.
@@ -5734,6 +5828,18 @@ fn element_to_node_with_styles_internal(
       }
       None => @style.Style::default()
     }
+    let allow_size_hints = skeleton_parent_allows_explicit_size_hints(
+      parent_style,
+    )
+    let skeleton_style = match elem.style {
+      Some(inline_css) =>
+        if allow_size_hints {
+          apply_skeleton_inline_style_hints(skeleton_style, inline_css)
+        } else {
+          apply_skeleton_inline_display_hint(skeleton_style, inline_css)
+        }
+      None => skeleton_style
+    }
     // Check hidden/dialog (important for correct scroll height)
     if elem.attributes.contains("hidden") {
       skeleton_style.display = @types.Display::None
@@ -5742,22 +5848,16 @@ fn element_to_node_with_styles_internal(
     if tag_lower == "dialog" && !elem.attributes.contains("open") {
       skeleton_style.display = @types.Display::None
     }
-    // Check inline style display override
-    match elem.style {
-      Some(inline_css) => {
-        let lower = inline_css.to_lower()
-        if lower.contains("display:none") || lower.contains("display: none") {
-          skeleton_style.display = @types.Display::None
-        }
-      }
-      None => ()
-    }
     if skeleton_style.display == @types.Display::None {
       return @node.Node::leaf(make_node_id(elem), skeleton_style)
     }
     // Estimate height for scroll
     if should_advance_viewport_estimate(skeleton_style) {
-      viewport_estimated_y.val += skeleton_style.line_height
+      viewport_estimated_y.val += viewport_skeleton_advance(skeleton_style)
+    }
+    if allow_size_hints &&
+      should_collapse_viewport_skeleton_subtree(skeleton_style) {
+      return @node.Node::leaf(make_node_id(elem), skeleton_style)
     }
     // Process children in skeleton mode (recursive)
     let children : Array[@node.Node] = []
@@ -7605,7 +7705,13 @@ fn compute_element_style_indexed(
 
   // Start with default style
   let default_style = @style.Style::default()
-  let mut style = default_style
+  let mut style = {
+    ..default_style
+    // CSS `normal` behaves as flex-start for flex layout. The lower-level
+    // layout default stays logical Start for direct layout tests.
+    ,
+    justify_content: @types.FlexStart,
+  }
 
   // Inherit properties from parent first
   match parent_style {

@@ -3105,6 +3105,7 @@ fn compute_with_collapse(
               // uses viewport-height as the percentage basis in practice.
               Some(available_h) if style.writing_mode.is_vertical() ||
                 node.id == "body" ||
+                has_percent_sized_replaced_descendant(node) ||
                 (
                   ctx.sizing_mode == @types.Definite &&
                   has_percent_sized_descendant(node)
@@ -3123,6 +3124,7 @@ fn compute_with_collapse(
       match ctx.available_height {
         Some(available_h) if style.writing_mode.is_vertical() ||
           node.id == "body" ||
+          has_percent_sized_replaced_descendant(node) ||
           (
             ctx.sizing_mode == @types.Definite &&
             has_percent_sized_descendant(node)

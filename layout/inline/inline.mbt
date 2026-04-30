@@ -2102,7 +2102,14 @@ fn compute_inline_child(
           Some(ah) => ah * p
           None => padding.vertical_sum() + border.vertical_sum()
         }
-      _ => padding.vertical_sum() + border.vertical_sum()
+      _ =>
+        if id_matches_tag(node.id, "source") {
+          text_glyph_height_from_style(style) +
+          padding.vertical_sum() +
+          border.vertical_sum()
+        } else {
+          padding.vertical_sum() + border.vertical_sum()
+        }
     }
     return {
       id: node.id,

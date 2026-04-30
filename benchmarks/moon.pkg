@@ -10,6 +10,8 @@ import {
   "mizchi/crater-painter/paint/traversal" @paint_traversal,
   "mizchi/crater-painter/paint/render_bridge" @paint_render,
   "mizchi/crater-painter/paint/diff" @paint_diff,
+  "mizchi/crater-painter/x/image",
+  "mizchi/crater-painter/svg",
 }
 
 import {

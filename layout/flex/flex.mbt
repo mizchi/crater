@@ -392,6 +392,17 @@ fn flex_text_char_display_width(c : Char) -> Int {
 }
 
 ///|
+fn flex_text_char_width(style : @style.Style) -> Double {
+  let font_size = if style.font_size > 0.0 { style.font_size } else { 16.0 }
+  let ratio = if style.font_family.to_lower().contains("ahem") {
+    1.0
+  } else {
+    0.5
+  }
+  font_size * ratio
+}
+
+///|
 fn estimate_flex_text_columns(
   text : String,
   white_space : @style.WhiteSpace,
@@ -482,7 +493,7 @@ fn estimate_flex_text_intrinsic_main_size(
   } else {
     font_size * 1.2
   }
-  let char_width = font_size * 0.5
+  let char_width = flex_text_char_width(node.style)
   let main_axis_is_inline = if node.style.writing_mode.is_vertical() {
     !is_row
   } else {
@@ -527,7 +538,7 @@ fn estimate_flex_text_min_main_size(
   } else {
     font_size * 1.2
   }
-  let char_width = font_size * 0.5
+  let char_width = flex_text_char_width(node.style)
   let main_axis_is_inline = if node.style.writing_mode.is_vertical() {
     !is_row
   } else {
