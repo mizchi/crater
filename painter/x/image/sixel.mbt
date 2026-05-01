@@ -2216,11 +2216,13 @@ fn render_paint_node_clipped(
               wrap_width,
               svg_color,
               font_size,
-              font_size,
+              node.paint.line_height,
               node.paint.is_bold,
               clip,
               font_family=node.paint.font_family,
               opacity=node.paint.opacity,
+              letter_spacing=node.paint.letter_spacing,
+              word_spacing=node.paint.word_spacing,
             )
           }
           None => {

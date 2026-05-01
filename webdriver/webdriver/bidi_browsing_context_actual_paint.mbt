@@ -588,11 +588,14 @@ fn BidiProtocol::build_actual_paint_frame(
   let (node, layout) = @renderer.render_to_node_and_layout(html, ctx)
   let t1 = js_now_ms()
   let paint_node = match
-    @tui_paint_viewport.from_node_and_layout_with_viewport(
+    @tui_paint_viewport.from_node_and_layout_with_viewport_rect(
       node,
       layout,
       0.0,
+      0.0,
+      width.to_double(),
       height.to_double(),
+      0.0,
       0.0,
     ) {
     Some(node) => node
@@ -928,11 +931,14 @@ fn BidiProtocol::resolve_capture_paint_tree(
   let ctx = @browser_contract.create_render_context(width, height, false)
   let (node, layout) = @renderer.render_to_node_and_layout(html, ctx)
   let paint_node = match
-    @tui_paint_viewport.from_node_and_layout_with_viewport(
+    @tui_paint_viewport.from_node_and_layout_with_viewport_rect(
       node,
       layout,
       0.0,
+      0.0,
+      width.to_double(),
       height.to_double(),
+      0.0,
       0.0,
     ) {
     Some(node) => node

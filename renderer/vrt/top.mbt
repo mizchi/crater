@@ -29,11 +29,14 @@ pub fn render_html_to_paint_tree_with_external_css(
     external_css,
   )
   match
-    @paint_render.from_node_and_layout_with_viewport(
+    @paint_render.from_node_and_layout_with_viewport_rect(
       node,
       layout,
       0.0,
+      0.0,
+      viewport.width,
       viewport.height,
+      0.0,
       0.0,
     ) {
     Some(paint_tree) => paint_tree
@@ -150,11 +153,14 @@ pub fn render_html_batch_variants(
       doc, ctx, external_css,
     )
     let paint_tree = match
-      @paint_render.from_node_and_layout_with_viewport(
+      @paint_render.from_node_and_layout_with_viewport_rect(
         node,
         layout,
         0.0,
+        0.0,
+        viewport.width,
         viewport.height,
+        0.0,
         0.0,
       ) {
       Some(pt) => pt

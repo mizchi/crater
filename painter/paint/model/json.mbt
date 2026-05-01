@@ -54,6 +54,18 @@ fn write_paint_props_json(buf : StringBuilder, p : PaintProperties) -> Unit {
   write_color_json(buf, p.background_color)
   buf.write_string(",\"fs\":")
   write_json_double(buf, p.font_size)
+  if p.line_height != p.font_size {
+    buf.write_string(",\"lh\":")
+    write_json_double(buf, p.line_height)
+  }
+  if p.letter_spacing != 0.0 {
+    buf.write_string(",\"ls\":")
+    write_json_double(buf, p.letter_spacing)
+  }
+  if p.word_spacing != 0.0 {
+    buf.write_string(",\"ws\":")
+    write_json_double(buf, p.word_spacing)
+  }
   if p.is_bold {
     buf.write_string(",\"b\":true")
   }

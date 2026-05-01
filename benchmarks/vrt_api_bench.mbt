@@ -53,11 +53,14 @@ fn build_vrt_paint_tree(
   viewport : @types.Size[Double],
 ) -> @paint_model.PaintNode {
   match
-    @paint_render.from_node_and_layout_with_viewport(
+    @paint_render.from_node_and_layout_with_viewport_rect(
       node,
       layout,
       0.0,
+      0.0,
+      viewport.width,
       viewport.height,
+      0.0,
       0.0,
     ) {
     Some(paint_tree) => paint_tree

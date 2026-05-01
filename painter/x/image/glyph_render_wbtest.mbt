@@ -196,6 +196,40 @@ test "draw_text_with_glyphs_clipped keeps tiny metric overflow on the same line"
 }
 
 ///|
+test "draw_text_with_glyphs_clipped uses word spacing for wrapping" {
+  glyph_bitmap_cache.val = {}
+  let provider = {
+    get_glyph: fn(codepoint, _font_size, _is_bold) {
+      let advance = if codepoint == ' '.to_int() { 2.0 } else { 5.0 }
+      (([] : Array[@svg.PathCommand]), advance)
+    },
+    get_kern: fn(_left, _right, _font_size, _is_bold) { 0.0 },
+    ascent_ratio: 0.8,
+    get_glyph_for_family: None,
+    get_kern_for_family: None,
+    get_ascent_for_family: None,
+  }
+  let fb = Framebuffer::new(80, 64)
+  let palette = DynamicPalette::new()
+  let used_height = draw_text_with_glyphs_clipped(
+    fb,
+    palette,
+    provider,
+    0,
+    0,
+    "AA AA",
+    18,
+    @svg.Color::rgb(0, 0, 0),
+    12.0,
+    10.0,
+    false,
+    None,
+    word_spacing=8.0,
+  )
+  inspect(used_height, content="20")
+}
+
+///|
 test "draw_text_with_glyphs_clipped tolerates font-sized metric drift" {
   glyph_bitmap_cache.val = {}
   let provider = {

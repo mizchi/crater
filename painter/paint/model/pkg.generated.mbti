@@ -52,6 +52,9 @@ pub(all) struct PaintProperties {
   background_image : @types.BackgroundImage
   box_shadows : Array[@style.BoxShadow]
   font_size : Double
+  line_height : Double
+  letter_spacing : Double
+  word_spacing : Double
   is_bold : Bool
   font_family : String
   clip_path : @style.ClipPath

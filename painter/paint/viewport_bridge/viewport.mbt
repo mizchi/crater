@@ -159,7 +159,10 @@ fn apply_text_overflow_ellipsis_to_subtree(
 
 ///|
 priv struct ExtentNode {
-  relative_extent : Double
+  relative_left : Double
+  relative_top : Double
+  relative_right : Double
+  relative_bottom : Double
   children : Array[ExtentNode]
 }
 
@@ -168,16 +171,219 @@ fn precompute_extent_tree(layout : @types.Layout) -> ExtentNode {
   let children : Array[ExtentNode] = Array::new(
     capacity=layout.children.length(),
   )
-  let mut max_extent = layout.height
+  let mut left = 0.0
+  let mut top = 0.0
+  let mut right = layout.width
+  let mut bottom = layout.height
   for child in layout.children {
     let child_node = precompute_extent_tree(child)
-    let child_extent = child.y + child_node.relative_extent
-    if child_extent > max_extent {
-      max_extent = child_extent
+    let child_left = child.x + child_node.relative_left
+    let child_top = child.y + child_node.relative_top
+    let child_right = child.x + child_node.relative_right
+    let child_bottom = child.y + child_node.relative_bottom
+    if child_left < left {
+      left = child_left
+    }
+    if child_top < top {
+      top = child_top
+    }
+    if child_right > right {
+      right = child_right
+    }
+    if child_bottom > bottom {
+      bottom = child_bottom
     }
     children.push(child_node)
   }
-  { relative_extent: max_extent, children }
+  {
+    relative_left: left,
+    relative_top: top,
+    relative_right: right,
+    relative_bottom: bottom,
+    children,
+  }
+}
+
+///|
+priv struct CullRect {
+  left : Double
+  top : Double
+  right : Double
+  bottom : Double
+}
+
+///|
+fn cull_rect_intersects(a : CullRect, b : CullRect) -> Bool {
+  a.right > b.left && a.left < b.right && a.bottom > b.top && a.top < b.bottom
+}
+
+///|
+fn cull_rect_intersection(a : CullRect, b : CullRect) -> CullRect? {
+  let left = if a.left > b.left { a.left } else { b.left }
+  let top = if a.top > b.top { a.top } else { b.top }
+  let right = if a.right < b.right { a.right } else { b.right }
+  let bottom = if a.bottom < b.bottom { a.bottom } else { b.bottom }
+  if right > left && bottom > top {
+    Some({ left, top, right, bottom })
+  } else {
+    None
+  }
+}
+
+///|
+fn layout_overflow_clips(layout : @types.Layout) -> Bool {
+  match (layout.overflow_x, layout.overflow_y) {
+    (@types.Visible, @types.Visible) => false
+    _ => true
+  }
+}
+
+///|
+fn node_clip_rect(
+  abs_x : Double,
+  abs_y : Double,
+  layout : @types.Layout,
+  clip : @types.ClipRect,
+) -> CullRect? {
+  let overflow_clip = if layout_overflow_clips(layout) {
+    Some({
+      left: abs_x,
+      top: abs_y,
+      right: abs_x + layout.width,
+      bottom: abs_y + layout.height,
+    })
+  } else {
+    None
+  }
+  let legacy_clip = match clip {
+    @types.ClipRect::Auto => None
+    @types.ClipRect::Rect(top~, right~, bottom~, left~) =>
+      Some({
+        left: abs_x + left,
+        top: abs_y + top,
+        right: abs_x + right,
+        bottom: abs_y + bottom,
+      })
+  }
+  match (overflow_clip, legacy_clip) {
+    (Some(a), Some(b)) => cull_rect_intersection(a, b)
+    (Some(a), None) => Some(a)
+    (None, Some(b)) => Some(b)
+    (None, None) => None
+  }
+}
+
+///|
+fn subtree_rect(
+  layout : @types.Layout,
+  extent : ExtentNode,
+  parent_x : Double,
+  parent_y : Double,
+) -> CullRect {
+  let abs_x = parent_x + layout.x
+  let abs_y = parent_y + layout.y
+  {
+    left: abs_x + extent.relative_left,
+    top: abs_y + extent.relative_top,
+    right: abs_x + extent.relative_right,
+    bottom: abs_y + extent.relative_bottom,
+  }
+}
+
+///|
+fn paint_node_rect(node : @model.PaintNode) -> CullRect {
+  {
+    left: node.x,
+    top: node.y,
+    right: node.x + node.width,
+    bottom: node.y + node.height,
+  }
+}
+
+///|
+fn cull_rect_covers(cover : CullRect, target : CullRect) -> Bool {
+  let eps = 0.001
+  cover.left <= target.left + eps &&
+  cover.top <= target.top + eps &&
+  cover.right + eps >= target.right &&
+  cover.bottom + eps >= target.bottom
+}
+
+///|
+fn node_has_square_corners(node : @model.PaintNode) -> Bool {
+  node.paint.border_top_left_radius <= 0.0 &&
+  node.paint.border_top_right_radius <= 0.0 &&
+  node.paint.border_bottom_right_radius <= 0.0 &&
+  node.paint.border_bottom_left_radius <= 0.0
+}
+
+///|
+fn node_has_no_clip_path(node : @model.PaintNode) -> Bool {
+  match node.paint.clip_path {
+    @style.ClipPath::None => true
+    _ => false
+  }
+}
+
+///|
+fn node_accepts_pointer_events(node : @model.PaintNode) -> Bool {
+  match node.paint.pointer_events {
+    @style.PointerEvents::Auto => true
+    @style.PointerEvents::None => false
+  }
+}
+
+///|
+fn node_paints_opaque_rect(node : @model.PaintNode) -> Bool {
+  node.paint.opacity >= 1.0 &&
+  node.paint.background_color.is_opaque() &&
+  node.paint.box_shadows.length() == 0 &&
+  node.visual_polygon.length() == 0 &&
+  node_has_square_corners(node) &&
+  node_has_no_clip_path(node) &&
+  node_accepts_pointer_events(node) &&
+  !node.has_legacy_clip() &&
+  node.width > 0.0 &&
+  node.height > 0.0
+}
+
+///|
+fn node_can_be_pruned_when_covered(node : @model.PaintNode) -> Bool {
+  node.children.length() == 0 &&
+  node.paint.box_shadows.length() == 0 &&
+  node.visual_polygon.length() == 0 &&
+  node.width > 0.0 &&
+  node.height > 0.0
+}
+
+///|
+fn prune_fully_covered_children(
+  children : Array[@model.PaintNode],
+) -> Array[@model.PaintNode] {
+  if children.length() <= 1 {
+    return children
+  }
+  let pruned : Array[@model.PaintNode] = []
+  for i = 0; i < children.length(); i = i + 1 {
+    let child = children[i]
+    let mut covered = false
+    if node_can_be_pruned_when_covered(child) {
+      let child_rect = paint_node_rect(child)
+      for j = i + 1; j < children.length(); j = j + 1 {
+        let cover = children[j]
+        if cover.stacking_order >= child.stacking_order &&
+          node_paints_opaque_rect(cover) &&
+          cull_rect_covers(paint_node_rect(cover), child_rect) {
+          covered = true
+          break
+        }
+      }
+    }
+    if !covered {
+      pruned.push(child)
+    }
+  }
+  pruned
 }
 
 ///|
@@ -188,9 +394,39 @@ pub fn from_node_and_layout_with_viewport(
   viewport_bottom : Double,
   parent_y : Double,
 ) -> @model.PaintNode? {
+  let wide = 1000000000.0
+  from_node_and_layout_with_viewport_rect(
+    node,
+    layout,
+    -wide,
+    viewport_top,
+    wide,
+    viewport_bottom,
+    0.0,
+    parent_y,
+  )
+}
+
+///|
+pub fn from_node_and_layout_with_viewport_rect(
+  node : @layout.Node,
+  layout : @types.Layout,
+  viewport_left : Double,
+  viewport_top : Double,
+  viewport_right : Double,
+  viewport_bottom : Double,
+  parent_x : Double,
+  parent_y : Double,
+) -> @model.PaintNode? {
   let extent_tree = precompute_extent_tree(layout)
+  let viewport = {
+    left: viewport_left,
+    top: viewport_top,
+    right: viewport_right,
+    bottom: viewport_bottom,
+  }
   from_node_and_layout_with_viewport_inner(
-    node, layout, extent_tree, viewport_top, viewport_bottom, parent_y,
+    node, layout, extent_tree, viewport, parent_x, parent_y,
   )
 }
 
@@ -199,15 +435,18 @@ fn from_node_and_layout_with_viewport_inner(
   node : @layout.Node,
   layout : @types.Layout,
   extent : ExtentNode,
-  viewport_top : Double,
-  viewport_bottom : Double,
+  clip_rect : CullRect,
+  parent_x : Double,
   parent_y : Double,
 ) -> @model.PaintNode? {
-  let abs_y = parent_y + layout.y
-  let effective_bottom = abs_y + extent.relative_extent
-  if effective_bottom < viewport_top || abs_y > viewport_bottom {
+  if !cull_rect_intersects(
+      subtree_rect(layout, extent, parent_x, parent_y),
+      clip_rect,
+    ) {
     return None
   }
+  let abs_x = parent_x + layout.x
+  let abs_y = parent_y + layout.y
   let mut paint = @model.PaintProperties::from_style(node.style)
   paint = {
     ..paint,
@@ -218,6 +457,10 @@ fn from_node_and_layout_with_viewport_inner(
   }
   let tag = extract_tag_from_id(node.id)
   let children : Array[@model.PaintNode] = []
+  let child_clip = match node_clip_rect(abs_x, abs_y, layout, node.style.clip) {
+    Some(node_clip) => cull_rect_intersection(clip_rect, node_clip)
+    None => Some(clip_rect)
+  }
 
   let extent_count = extent.children.length()
   let mut node_index = 0
@@ -233,57 +476,67 @@ fn from_node_and_layout_with_viewport_inner(
     let child_extent = if layout_index < extent_count {
       extent.children[layout_index]
     } else {
-      { relative_extent: child_layout.height, children: [] }
+      {
+        relative_left: 0.0,
+        relative_top: 0.0,
+        relative_right: child_layout.width,
+        relative_bottom: child_layout.height,
+        children: [],
+      }
     }
-    match
-      from_node_and_layout_with_viewport_inner(
-        child_node, child_layout, child_extent, viewport_top, viewport_bottom, abs_y,
-      ) {
-      Some(child) => {
-        let mut current = {
-          ..child,
-          paint: inherit_text_paint(paint, child.paint),
-        }
-        let child_tag = extract_tag_from_id(child_node.id)
-        if child_tag == "li" {
-          match generate_list_marker(tag, layout_index) {
-            Some(marker_text) => {
-              let marker_paint = {
-                ..current.paint,
-                font_size: current.paint.font_size,
-              }
-              let marker_node = @model.PaintNode::new(
-                "#list-marker",
-                "#text",
-                -current.paint.font_size * 1.2,
-                0.0,
-                current.paint.font_size * 1.2,
-                current.paint.font_size,
-                marker_paint,
-                [],
-                text=Some(marker_text),
-              )
-              current = {
-                ..current,
-                children: {
-                  let new_children = current.children.copy()
-                  new_children.push(marker_node)
-                  new_children
-                },
+    match child_clip {
+      Some(active_clip) =>
+        match
+          from_node_and_layout_with_viewport_inner(
+            child_node, child_layout, child_extent, active_clip, abs_x, abs_y,
+          ) {
+          Some(child) => {
+            let mut current = {
+              ..child,
+              paint: inherit_text_paint(paint, child.paint),
+            }
+            let child_tag = extract_tag_from_id(child_node.id)
+            if child_tag == "li" {
+              match generate_list_marker(tag, layout_index) {
+                Some(marker_text) => {
+                  let marker_paint = {
+                    ..current.paint,
+                    font_size: current.paint.font_size,
+                  }
+                  let marker_node = @model.PaintNode::new(
+                    "#list-marker",
+                    "#text",
+                    -current.paint.font_size * 1.2,
+                    0.0,
+                    current.paint.font_size * 1.2,
+                    current.paint.font_size,
+                    marker_paint,
+                    [],
+                    text=Some(marker_text),
+                  )
+                  current = {
+                    ..current,
+                    children: {
+                      let new_children = current.children.copy()
+                      new_children.push(marker_node)
+                      new_children
+                    },
+                  }
+                }
+                None => ()
               }
             }
-            None => ()
+            if should_apply_text_overflow_ellipsis(node.style, layout) {
+              current = apply_text_overflow_ellipsis_to_subtree(
+                current,
+                child_node,
+                layout.width,
+              )
+            }
+            children.push(current)
           }
+          None => ()
         }
-        if should_apply_text_overflow_ellipsis(node.style, layout) {
-          current = apply_text_overflow_ellipsis_to_subtree(
-            current,
-            child_node,
-            layout.width,
-          )
-        }
-        children.push(current)
-      }
       None => ()
     }
     node_index += 1
@@ -330,6 +583,7 @@ fn from_node_and_layout_with_viewport_inner(
     scaled_height,
     transform,
   )
+  let paint_children = prune_fully_covered_children(children)
   Some(
     @model.PaintNode::new(
       node.id,
@@ -339,7 +593,7 @@ fn from_node_and_layout_with_viewport_inner(
       paint_width,
       paint_height,
       paint,
-      children,
+      paint_children,
       text=layout.text,
       src=node.src,
       overflow_x=layout.overflow_x,

@@ -482,12 +482,15 @@ fn measure_word_width(
   font_size : Double,
   is_bold : Bool,
   font_family? : String = "",
+  letter_spacing? : Double = 0.0,
+  word_spacing? : Double = 0.0,
 ) -> Double {
   let mut w = 0.0
   let mut prev_cp = 0
   for c in word {
     let cp = c.to_int()
     if prev_cp != 0 {
+      w = w + letter_spacing
       let kern = match provider.get_kern_for_family {
         Some(kern_fn) if font_family.length() > 0 =>
           kern_fn(prev_cp, cp, font_size, is_bold, font_family)
@@ -496,9 +499,26 @@ fn measure_word_width(
       w = w + kern
     }
     w = w + get_advance(provider, cp, font_size, is_bold, font_family~)
+    if cp == ' '.to_int() {
+      w = w + word_spacing
+    }
     prev_cp = cp
   }
   w
+}
+
+///|
+fn collapsed_space_advance(
+  provider : GlyphProvider,
+  font_size : Double,
+  is_bold : Bool,
+  font_family : String,
+  letter_spacing : Double,
+  word_spacing : Double,
+) -> Double {
+  get_advance(provider, ' '.to_int(), font_size, is_bold, font_family~) +
+  word_spacing +
+  letter_spacing * 2.0
 }
 
 ///|
@@ -618,6 +638,8 @@ fn draw_text_with_glyphs_clipped(
   clip : ClipRect?,
   font_family? : String = "",
   opacity? : Double = 1.0,
+  letter_spacing? : Double = 0.0,
+  word_spacing? : Double = 0.0,
 ) -> Int {
   let text_opacity = clamp_opacity(opacity) * color.a.to_double() / 255.0
   let effective_line_height = if line_height > 0.0 {
@@ -640,12 +662,8 @@ fn draw_text_with_glyphs_clipped(
   let mut cur_x = x.to_double()
   let mut cur_y = y.to_double()
   let mut max_y_seen = y.to_double() + effective_line_height
-  let space_advance_layout = get_advance(
-    provider,
-    ' '.to_int(),
-    font_size,
-    is_bold,
-    font_family~,
+  let space_advance_layout = collapsed_space_advance(
+    provider, font_size, is_bold, font_family, letter_spacing, word_spacing,
   )
   for i, word in words {
     if word == "\n" {
@@ -660,6 +678,8 @@ fn draw_text_with_glyphs_clipped(
       font_size,
       is_bold,
       font_family~,
+      letter_spacing~,
+      word_spacing~,
     )
     let hard_wrap_limit = if max_width > 0 &&
       word_width > max_width.to_double() + wrap_tolerance {
@@ -717,7 +737,8 @@ fn draw_text_with_glyphs_clipped(
       } else {
         0.0
       }
-      let mut draw_x = cur_x + kern
+      let spacing = if prev_cp != 0 { letter_spacing } else { 0.0 }
+      let mut draw_x = cur_x + spacing + kern
       if max_width > 0 &&
         draw_x + bitmap.advance > hard_wrap_limit &&
         cur_x > x.to_double() + 0.01 {
@@ -725,6 +746,7 @@ fn draw_text_with_glyphs_clipped(
         cur_y = cur_y + effective_line_height
         max_y_seen = cur_y + effective_line_height
         draw_x = cur_x
+        prev_cp = 0
       }
       let line_top = cur_y.to_int()
       let line_bottom = (cur_y + effective_line_height).to_int()

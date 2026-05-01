@@ -270,6 +270,30 @@ fn compare_paint_properties(
     after.font_size,
     changes,
   )
+  compare_double_property(
+    path,
+    node_id,
+    "line_height",
+    before.line_height,
+    after.line_height,
+    changes,
+  )
+  compare_double_property(
+    path,
+    node_id,
+    "letter_spacing",
+    before.letter_spacing,
+    after.letter_spacing,
+    changes,
+  )
+  compare_double_property(
+    path,
+    node_id,
+    "word_spacing",
+    before.word_spacing,
+    after.word_spacing,
+    changes,
+  )
   compare_bool_property(
     path,
     node_id,

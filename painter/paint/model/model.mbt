@@ -13,6 +13,9 @@ pub(all) struct PaintProperties {
   background_image : @types.BackgroundImage
   box_shadows : Array[@style.BoxShadow]
   font_size : Double
+  line_height : Double
+  letter_spacing : Double
+  word_spacing : Double
   is_bold : Bool
   font_family : String
   clip_path : @style.ClipPath
@@ -47,6 +50,9 @@ pub fn PaintProperties::default() -> PaintProperties {
     background_image: @types.None,
     box_shadows: [],
     font_size: 16.0,
+    line_height: 16.0,
+    letter_spacing: 0.0,
+    word_spacing: 0.0,
     is_bold: false,
     font_family: "",
     clip_path: @style.ClipPath::none(),
@@ -82,6 +88,9 @@ pub fn PaintProperties::from_style(style : @style.Style) -> PaintProperties {
     background_image: style.background_image,
     box_shadows: style.box_shadows,
     font_size: style.font_size,
+    line_height: style.line_height,
+    letter_spacing: style.letter_spacing,
+    word_spacing: style.word_spacing,
     is_bold: is_bold_weight(style.font_weight),
     font_family: style.font_family,
     clip_path: style.clip_path,

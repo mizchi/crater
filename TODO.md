@@ -267,6 +267,7 @@
   - native: `crater_paint/main_native.mbt` の `split_words` + `font.measure_text`
   - layout: `scripts/text-intrinsic.ts` の `createTextIntrinsicFnFromMeasureText` (JS) / `wpt_runtime/providers_js.mbt` (MoonBit FFI)
   - 改善策: layout と同じロジック（スペース考慮の行幅累積）を paint 側にも実装
+  - [x] crater paint: `line-height` / `letter-spacing` / `word-spacing` を PaintProperties へ通し、glyph wrap の幅判定へ反映
 - [x] `b`, `strong` タグの `font-weight` は crater 側の paint tree まで反映する
   - block 親配下の inline flatten でも `font-weight` を落とさないようにした
   - semantic default / author override は `src/vrt_api_semantic_test.mbt` で固定
@@ -1203,7 +1204,8 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
   - [x] `captureScreenshotData` を `paint tree build` / `raster` / `PNG encode` に分解して timer を仕込む
   - [x] PNG ではなく raw RGBA か PPM を返す debug path を追加して、encode cost を分離する
   - [x] screenshot benchmark に visual sanity check を追加して、blank だが速い出力を除外する
-  - [ ] viewport 単位の clip / occlusion pruning を paint tree 生成前に入れる
+  - [x] viewport 単位の clip / occlusion pruning を paint tree 生成前に入れる
+    - viewport rect API、overflow/clip 伝搬、保守的な sibling opaque occlusion prune を追加
   - [ ] repeated screenshot で再利用できる display list / clipped paint subtree cache を検討する
 
 ## css-flexbox WPT 進捗（2026-03-10）

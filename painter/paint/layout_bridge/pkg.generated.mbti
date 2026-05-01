@@ -14,6 +14,8 @@ pub fn from_node_and_layout(@node.Node, @types.Layout) -> @model.PaintNode
 
 pub fn from_node_and_layout_with_viewport(@node.Node, @types.Layout, Double, Double, Double) -> @model.PaintNode?
 
+pub fn from_node_and_layout_with_viewport_rect(@node.Node, @types.Layout, Double, Double, Double, Double, Double, Double) -> @model.PaintNode?
+
 // Errors
 
 // Types and methods

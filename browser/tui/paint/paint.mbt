@@ -30,6 +30,23 @@ pub fn from_node_and_layout_with_viewport(
 }
 
 ///|
+pub fn from_node_and_layout_with_viewport_rect(
+  node : @node.Node,
+  layout : @types.Layout,
+  viewport_left : Double,
+  viewport_top : Double,
+  viewport_right : Double,
+  viewport_bottom : Double,
+  parent_x : Double,
+  parent_y : Double,
+) -> PaintNode? {
+  @paint_viewport.from_node_and_layout_with_viewport_rect(
+    node, layout, viewport_left, viewport_top, viewport_right, viewport_bottom, parent_x,
+    parent_y,
+  )
+}
+
+///|
 pub fn prepare_viewport_paint(
   node : @node.Node,
   layout : @types.Layout,
