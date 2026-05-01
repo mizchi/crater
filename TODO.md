@@ -1200,9 +1200,9 @@ kagura の TextRenderer/wgpu 変更 → crater_paint のビルドに即反映
   - [x] `src/x/kitty/kitty_bench_wbtest.mbt` に pure encode benchmark を追加する
   - [ ] palette definition の文字列生成と band ごとの固定ヘッダ書き込みを削る
   - [ ] browser shell bench より振れの少ない target か測定手順を決めて、kitty encode の比較を安定化する
-  - [ ] `captureScreenshotData` を `paint tree build` / `raster` / `PNG encode` に分解して timer を仕込む
-  - [ ] PNG ではなく raw RGBA か PPM を返す debug path を追加して、encode cost を分離する
-  - [ ] screenshot benchmark に visual sanity check を追加して、blank だが速い出力を除外する
+  - [x] `captureScreenshotData` を `paint tree build` / `raster` / `PNG encode` に分解して timer を仕込む
+  - [x] PNG ではなく raw RGBA か PPM を返す debug path を追加して、encode cost を分離する
+  - [x] screenshot benchmark に visual sanity check を追加して、blank だが速い出力を除外する
   - [ ] viewport 単位の clip / occlusion pruning を paint tree 生成前に入れる
   - [ ] repeated screenshot で再利用できる display list / clipped paint subtree cache を検討する
 

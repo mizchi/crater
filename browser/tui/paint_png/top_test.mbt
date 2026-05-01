@@ -1,4 +1,15 @@
 ///|
+extern "js" fn js_png_color_type(encoded : String) -> Int =
+  #| (encoded) => {
+  #|   try {
+  #|     const buf = Buffer.from(String(encoded || ""), "base64");
+  #|     return buf.length > 25 ? (buf[25] | 0) : -1;
+  #|   } catch (_) {
+  #|     return -1;
+  #|   }
+  #| }
+
+///|
 test "tui paint png output exports png" {
   let style = @style.Style::default()
   let node = @node.Node::new("root", style, [])
@@ -27,4 +38,5 @@ test "tui paint png output exports png" {
   let paint_node = @paint_plain.from_node_and_layout(node, layout)
   let png = raster_to_png_base64(paint_node, 8, 4)
   inspect(png.length() > 0, content="true")
+  inspect(js_png_color_type(png), content="3")
 }

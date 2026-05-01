@@ -25,23 +25,6 @@ extern "js" fn framebuffer_to_png_base64_js(
   #|    }
   #|    globalThis.__craterPngCrcTable = crcTable;
   #|  }
-  #|  const raw = Buffer.allocUnsafe(height * (width * 4 + 1));
-  #|  let src = 0;
-  #|  let dst = 0;
-  #|  for (let y = 0; y < height; y++) {
-  #|    raw[dst++] = 0;
-  #|    for (let x = 0; x < width; x++) {
-  #|      const idx = pixels[src++] | 0;
-  #|      raw[dst++] = idx >= 0 && idx < pr.length ? (pr[idx] | 0) : 255;
-  #|      raw[dst++] = idx >= 0 && idx < pg.length ? (pg[idx] | 0) : 255;
-  #|      raw[dst++] = idx >= 0 && idx < pb.length ? (pb[idx] | 0) : 255;
-  #|      raw[dst++] = 255;
-  #|    }
-  #|  }
-  #|  const compressed = zlib.deflateSync(raw, {
-  #|    level: 1,
-  #|    strategy: zlib.constants.Z_RLE,
-  #|  });
   #|  function crc32(typeBuf, dataBuf) {
   #|    let crc = 0xffffffff;
   #|    for (let i = 0; i < typeBuf.length; i++) {
@@ -61,23 +44,71 @@ extern "js" fn framebuffer_to_png_base64_js(
   #|    out.writeUInt32BE(crc32(typeBuf, data), 8 + data.length);
   #|    return out;
   #|  }
+  #|  function encodeIndexed() {
+  #|    const paletteLen = pr.length;
+  #|    if (paletteLen <= 0 || paletteLen > 256) return null;
+  #|    const raw = Buffer.allocUnsafe(height * (width + 1));
+  #|    let src = 0;
+  #|    let dst = 0;
+  #|    for (let y = 0; y < height; y++) {
+  #|      raw[dst++] = 0;
+  #|      for (let x = 0; x < width; x++) {
+  #|        const idx = pixels[src++] | 0;
+  #|        raw[dst++] = idx >= 0 && idx < paletteLen ? idx : 0;
+  #|      }
+  #|    }
+  #|    const plte = Buffer.allocUnsafe(paletteLen * 3);
+  #|    for (let i = 0, p = 0; i < paletteLen; i++) {
+  #|      plte[p++] = pr[i] | 0;
+  #|      plte[p++] = pg[i] | 0;
+  #|      plte[p++] = pb[i] | 0;
+  #|    }
+  #|    const compressed = zlib.deflateSync(raw, {
+  #|      level: 1,
+  #|      strategy: zlib.constants.Z_RLE,
+  #|    });
+  #|    return { colorType: 3, compressed, plte };
+  #|  }
+  #|  function encodeRgba() {
+  #|    const raw = Buffer.allocUnsafe(height * (width * 4 + 1));
+  #|    let src = 0;
+  #|    let dst = 0;
+  #|    for (let y = 0; y < height; y++) {
+  #|      raw[dst++] = 0;
+  #|      for (let x = 0; x < width; x++) {
+  #|        const idx = pixels[src++] | 0;
+  #|        raw[dst++] = idx >= 0 && idx < pr.length ? (pr[idx] | 0) : 255;
+  #|        raw[dst++] = idx >= 0 && idx < pg.length ? (pg[idx] | 0) : 255;
+  #|        raw[dst++] = idx >= 0 && idx < pb.length ? (pb[idx] | 0) : 255;
+  #|        raw[dst++] = 255;
+  #|      }
+  #|    }
+  #|    const compressed = zlib.deflateSync(raw, {
+  #|      level: 1,
+  #|      strategy: zlib.constants.Z_RLE,
+  #|    });
+  #|    return { colorType: 6, compressed, plte: null };
+  #|  }
   #|  const signature =
   #|    globalThis.__craterPngSignature ||
   #|    (globalThis.__craterPngSignature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+  #|  const encoded = encodeIndexed() || encodeRgba();
   #|  const ihdr = Buffer.allocUnsafe(13);
   #|  ihdr.writeUInt32BE(width >>> 0, 0);
   #|  ihdr.writeUInt32BE(height >>> 0, 4);
   #|  ihdr[8] = 8;
-  #|  ihdr[9] = 6;
+  #|  ihdr[9] = encoded.colorType;
   #|  ihdr[10] = 0;
   #|  ihdr[11] = 0;
   #|  ihdr[12] = 0;
-  #|  const png = Buffer.concat([
+  #|  const chunks = [
   #|    signature,
   #|    chunk("IHDR", ihdr),
-  #|    chunk("IDAT", compressed),
-  #|    chunk("IEND", Buffer.alloc(0)),
-  #|  ]);
+  #|  ];
+  #|  if (encoded.plte) chunks.push(chunk("PLTE", encoded.plte));
+  #|  chunks.push(chunk("IDAT", encoded.compressed));
+  #|  chunks.push(chunk("IEND", globalThis.__craterPngEmpty || (globalThis.__craterPngEmpty = Buffer.alloc(0))));
+  #|  const png = Buffer.concat(chunks);
   #|  return png.toString("base64");
   #|}
 

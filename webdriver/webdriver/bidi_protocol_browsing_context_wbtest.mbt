@@ -21,6 +21,88 @@ extern "js" fn js_test_png_dimensions(encoded : String) -> String =
   #| }
 
 ///|
+extern "js" fn js_test_png_pixel_meta(
+  encoded : String,
+  x : Int,
+  y : Int,
+) -> String =
+  #| (encoded, x, y) => {
+  #|   try {
+  #|     const zlib = require("node:zlib");
+  #|     const buf = Buffer.from(String(encoded || ""), "base64");
+  #|     if (buf.length < 33 || buf.readUInt32BE(16) <= 0 || buf.readUInt32BE(20) <= 0) return "{}";
+  #|     const width = buf.readUInt32BE(16);
+  #|     const height = buf.readUInt32BE(20);
+  #|     const colorType = buf[25];
+  #|     let offset = 8;
+  #|     const idat = [];
+  #|     let plte = null;
+  #|     while (offset + 8 <= buf.length) {
+  #|       const len = buf.readUInt32BE(offset);
+  #|       const type = buf.toString("ascii", offset + 4, offset + 8);
+  #|       const start = offset + 8;
+  #|       const end = start + len;
+  #|       if (end > buf.length) break;
+  #|       if (type === "IDAT") idat.push(buf.subarray(start, end));
+  #|       if (type === "PLTE") plte = buf.subarray(start, end);
+  #|       offset = end + 4;
+  #|       if (type === "IEND") break;
+  #|     }
+  #|     const raw = zlib.inflateSync(Buffer.concat(idat));
+  #|     const px = Math.max(0, Math.min(width - 1, Number(x) | 0));
+  #|     const py = Math.max(0, Math.min(height - 1, Number(y) | 0));
+  #|     let nonWhite = 0;
+  #|     let r = -1, g = -1, b = -1, a = 255;
+  #|     if (colorType === 6) {
+  #|       const rowStride = width * 4 + 1;
+  #|       const idx = py * rowStride + 1 + px * 4;
+  #|       for (let row = 0; row < height; row++) {
+  #|         const base = row * rowStride + 1;
+  #|         for (let col = 0; col < width; col++) {
+  #|           const p = base + col * 4;
+  #|           if (raw[p] !== 255 || raw[p + 1] !== 255 || raw[p + 2] !== 255) nonWhite++;
+  #|         }
+  #|       }
+  #|       r = raw[idx] ?? -1;
+  #|       g = raw[idx + 1] ?? -1;
+  #|       b = raw[idx + 2] ?? -1;
+  #|       a = raw[idx + 3] ?? -1;
+  #|     } else if (colorType === 3 && plte) {
+  #|       const rowStride = width + 1;
+  #|       const idx = py * rowStride + 1 + px;
+  #|       for (let row = 0; row < height; row++) {
+  #|         const base = row * rowStride + 1;
+  #|         for (let col = 0; col < width; col++) {
+  #|           const p = (raw[base + col] | 0) * 3;
+  #|           const pr = plte[p] ?? 255;
+  #|           const pg = plte[p + 1] ?? 255;
+  #|           const pb = plte[p + 2] ?? 255;
+  #|           if (pr !== 255 || pg !== 255 || pb !== 255) nonWhite++;
+  #|         }
+  #|       }
+  #|       const p = (raw[idx] | 0) * 3;
+  #|       r = plte[p] ?? -1;
+  #|       g = plte[p + 1] ?? -1;
+  #|       b = plte[p + 2] ?? -1;
+  #|     } else {
+  #|       return "{}";
+  #|     }
+  #|     return JSON.stringify({
+  #|       width,
+  #|       height,
+  #|       colorType,
+  #|       r,
+  #|       g,
+  #|       b,
+  #|       a,
+  #|       nonWhite,
+  #|     });
+  #|   } catch (_err) {
+  #|     return "{}";
+  #|   }
+  #| }
+
+///|
 extern "js" fn js_test_pdf_meta(encoded : String) -> String =
   #| (encoded) => {
   #|   try {
@@ -98,6 +180,21 @@ fn png_dimensions_from_base64(encoded : String) -> (Int, Int) {
       (width, height)
     }
     _ => (0, 0)
+  }
+}
+
+///|
+fn png_pixel_meta_from_base64(
+  encoded : String,
+  x : Int,
+  y : Int,
+) -> Map[String, Json] {
+  let parsed = @json.parse(js_test_png_pixel_meta(encoded, x, y)) catch {
+    _ => make_object({})
+  }
+  match parsed {
+    Object(map) => map
+    _ => {}
   }
 }
 
@@ -235,6 +332,101 @@ test "bidi capturePaintData returns actual viewport rgba payload" {
   let white_meta = rgba_meta_from_base64(data, width, 200, 200)
   match red_meta.get("length") {
     Some(Number(value, ..)) => assert_eq(value.to_int(), width * height * 4)
+    _ => assert_true(false)
+  }
+  match red_meta.get("r") {
+    Some(Number(value, ..)) => assert_true(value > 200)
+    _ => assert_true(false)
+  }
+  match red_meta.get("g") {
+    Some(Number(value, ..)) => assert_true(value < 80)
+    _ => assert_true(false)
+  }
+  match red_meta.get("b") {
+    Some(Number(value, ..)) => assert_true(value < 80)
+    _ => assert_true(false)
+  }
+  match white_meta.get("r") {
+    Some(Number(value, ..)) => assert_true(value > 200)
+    _ => assert_true(false)
+  }
+  match white_meta.get("g") {
+    Some(Number(value, ..)) => assert_true(value > 200)
+    _ => assert_true(false)
+  }
+  match white_meta.get("b") {
+    Some(Number(value, ..)) => assert_true(value > 200)
+    _ => assert_true(false)
+  }
+  match result.get("timing") {
+    Some(Object(timing)) => {
+      assert_true(timing.get("paintTreeMs") != None)
+      assert_true(timing.get("rasterMs") != None)
+      assert_true(timing.get("totalMs") != None)
+    }
+    _ => assert_true(false)
+  }
+  match result.get("visual") {
+    Some(Object(visual)) => {
+      match visual.get("nonWhitePixels") {
+        Some(Number(value, ..)) => assert_true(value > 0)
+        _ => assert_true(false)
+      }
+      match visual.get("isBlank") {
+        Some(False) => ()
+        _ => assert_true(false)
+      }
+    }
+    _ => assert_true(false)
+  }
+}
+
+///|
+test "bidi captureScreenshotData uses actual paint png for viewport" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":2,\"method\":\"browsingContext.setViewport\",\"params\":{\"context\":\"session-1\",\"viewport\":{\"width\":320,\"height\":240}}}",
+    ),
+  )
+  ignore(proto.take_messages())
+  let html = "<!DOCTYPE html><html><body style='margin:0;background:#ffffff'><div style='width:120px;height:90px;background:#ff0000'></div></body></html>"
+  let navigate_message = "{\"id\":3,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"" +
+    js_test_build_html_data_url(html) +
+    "\",\"wait\":\"complete\"}}"
+  ignore(proto.process_message(navigate_message))
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":4,\"method\":\"browsingContext.captureScreenshotData\",\"params\":{\"context\":\"session-1\",\"origin\":\"viewport\"}}",
+    ),
+  )
+  let json = proto.take_messages()[0].to_json()
+  let parsed = @json.parse(json) catch { _ => make_object({}) }
+  let png_data = match parsed {
+    Object(map) =>
+      match map.get("result") {
+        Some(String(value)) => value
+        _ => ""
+      }
+    _ => ""
+  }
+  let red_meta = png_pixel_meta_from_base64(png_data, 40, 40)
+  let white_meta = png_pixel_meta_from_base64(png_data, 200, 200)
+  match red_meta.get("width") {
+    Some(Number(value, ..)) => assert_eq(value.to_int(), 320)
+    _ => assert_true(false)
+  }
+  match red_meta.get("height") {
+    Some(Number(value, ..)) => assert_eq(value.to_int(), 240)
+    _ => assert_true(false)
+  }
+  match red_meta.get("nonWhite") {
+    Some(Number(value, ..)) => assert_true(value > 0)
     _ => assert_true(false)
   }
   match red_meta.get("r") {

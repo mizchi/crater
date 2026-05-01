@@ -41,6 +41,19 @@ test "framebuffer fill_rect" {
 }
 
 ///|
+test "framebuffer fill_rect clips to framebuffer bounds" {
+  let fb = @image.Framebuffer::new(4, 3)
+  fb.fill_rect(-1, -1, 3, 3, 7)
+  inspect(fb.pixels[0], content="7")
+  inspect(fb.pixels[1], content="7")
+  inspect(fb.pixels[2], content="0")
+  inspect(fb.pixels[4], content="7")
+  inspect(fb.pixels[5], content="7")
+  inspect(fb.pixels[6], content="0")
+  inspect(fb.pixels[8], content="0")
+}
+
+///|
 test "to_sixel basic output" {
   let fb = @image.Framebuffer::new(4, 6)
   fb.fill_rect(0, 0, 4, 6, 1) // Fill with color 1 (blue)
@@ -115,7 +128,7 @@ test "color blend" {
 test "render_paint_node_to_framebuffer does not add debug border for block" {
   let style = @style.Style::default()
   style.background_color = @types.Color::rgb(220, 30, 30)
-  let node = @paint_model.PaintNode::new(
+  let child = @paint_model.PaintNode::new(
     "div",
     "div",
     0.0,
@@ -125,13 +138,32 @@ test "render_paint_node_to_framebuffer does not add debug border for block" {
     @paint_model.PaintProperties::from_style(style),
     [],
   )
+  let node = @paint_model.PaintNode::new(
+    "root",
+    "div",
+    0.0,
+    0.0,
+    12.0,
+    12.0,
+    @paint_model.PaintProperties::default(),
+    [child],
+  )
   let fb = @image.Framebuffer::new(6, 6)
   let palette = @image.DynamicPalette::new()
   @image.render_paint_node_to_framebuffer(node, fb, palette)
 
-  inspect(fb.get_pixel(0, 0), content="1")
-  inspect(fb.get_pixel(1, 1), content="1")
-  inspect(fb.get_pixel(5, 5), content="1")
+  let corner = palette.colors[fb.get_pixel(0, 0)]
+  let inner = palette.colors[fb.get_pixel(1, 1)]
+  let edge = palette.colors[fb.get_pixel(5, 5)]
+  inspect(corner.r, content="220")
+  inspect(corner.g, content="30")
+  inspect(corner.b, content="30")
+  inspect(inner.r, content="220")
+  inspect(inner.g, content="30")
+  inspect(inner.b, content="30")
+  inspect(edge.r, content="220")
+  inspect(edge.g, content="30")
+  inspect(edge.b, content="30")
 }
 
 ///|
@@ -256,6 +288,47 @@ test "render_paint_node_to_framebuffer blends semi transparent rounded backgroun
   inspect(color.r > 180, content="true")
   inspect(color.g > 180, content="true")
   inspect(color.b > 180, content="true")
+}
+
+///|
+test "render_paint_node_to_framebuffer clips solid rounded background corners" {
+  let style = @style.Style::default()
+  style.background_color = @types.Color::rgb(255, 0, 0)
+  style.border_top_left_radius = 4.0
+  style.border_top_right_radius = 4.0
+  style.border_bottom_right_radius = 4.0
+  style.border_bottom_left_radius = 4.0
+  let child = @paint_model.PaintNode::new(
+    "div",
+    "div",
+    0.0,
+    0.0,
+    12.0,
+    12.0,
+    @paint_model.PaintProperties::from_style(style),
+    [],
+  )
+  let node = @paint_model.PaintNode::new(
+    "root",
+    "div",
+    0.0,
+    0.0,
+    12.0,
+    12.0,
+    @paint_model.PaintProperties::default(),
+    [child],
+  )
+  let fb = @image.Framebuffer::new(12, 12)
+  let palette = @image.DynamicPalette::new()
+  @image.render_paint_node_to_framebuffer(node, fb, palette)
+  let corner = palette.colors[fb.get_pixel(0, 0)]
+  let center = palette.colors[fb.get_pixel(6, 6)]
+  inspect(corner.r, content="255")
+  inspect(corner.g, content="255")
+  inspect(corner.b, content="255")
+  inspect(center.r, content="255")
+  inspect(center.g, content="0")
+  inspect(center.b, content="0")
 }
 
 ///|

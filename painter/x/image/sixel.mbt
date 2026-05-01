@@ -265,6 +265,28 @@ fn Framebuffer::set_pixel(
 }
 
 ///|
+fn Framebuffer::fill_span(
+  self : Framebuffer,
+  y : Int,
+  x1 : Int,
+  x2 : Int,
+  color : Int,
+) -> Unit {
+  if y < 0 || y >= self.height {
+    return
+  }
+  let cx1 = @cmp.maximum(x1, 0)
+  let cx2 = @cmp.minimum(x2, self.width)
+  if cx2 <= cx1 {
+    return
+  }
+  let row = y * self.width
+  for px = cx1; px < cx2; px = px + 1 {
+    self.pixels[row + px] = color
+  }
+}
+
+///|
 pub fn Framebuffer::get_pixel(self : Framebuffer, x : Int, y : Int) -> Int {
   if x >= 0 && x < self.width && y >= 0 && y < self.height {
     self.pixels[y * self.width + x]
@@ -283,9 +305,20 @@ pub fn Framebuffer::fill_rect(
   h : Int,
   color : Int,
 ) -> Unit {
-  for py = y; py < y + h; py = py + 1 {
-    for px = x; px < x + w; px = px + 1 {
-      self.set_pixel(px, py, color)
+  if w <= 0 || h <= 0 {
+    return
+  }
+  let x1 = @cmp.maximum(x, 0)
+  let y1 = @cmp.maximum(y, 0)
+  let x2 = @cmp.minimum(x + w, self.width)
+  let y2 = @cmp.minimum(y + h, self.height)
+  if x2 <= x1 || y2 <= y1 {
+    return
+  }
+  for py = y1; py < y2; py = py + 1 {
+    let row = py * self.width
+    for px = x1; px < x2; px = px + 1 {
+      self.pixels[row + px] = color
     }
   }
 }
@@ -931,8 +964,11 @@ pub struct DynamicPalette {
 pub fn DynamicPalette::new() -> DynamicPalette {
   let colors : Array[Color] = []
   // Reserve index 0 for transparent/white background
-  colors.push(Color::white())
-  { colors, color_map: {} }
+  let white = Color::white()
+  colors.push(white)
+  let color_map : Map[Int, Int] = {}
+  color_map.set(color_hash(white), 0)
+  { colors, color_map }
 }
 
 ///|
@@ -1092,6 +1128,76 @@ fn blend_sixel_color_over_pixel(
 }
 
 ///|
+fn ensure_blend_cache_size(cache : Array[Int], idx : Int) -> Unit {
+  while idx >= cache.length() {
+    cache.push(-1)
+  }
+}
+
+///|
+fn cached_blended_index(
+  palette : DynamicPalette,
+  color : Color,
+  alpha : Int,
+  dst_idx : Int,
+  cache : Array[Int],
+) -> Int {
+  if dst_idx < 0 {
+    let dst = Color::white()
+    let blended = color.blend(dst, alpha)
+    return palette.get_or_add(blended)
+  }
+  ensure_blend_cache_size(cache, dst_idx)
+  match cache[dst_idx] {
+    cached if cached >= 0 => cached
+    _ => {
+      let dst = palette_color_at(palette, dst_idx)
+      let blended = color.blend(dst, alpha)
+      let idx = palette.get_or_add(blended)
+      cache[dst_idx] = idx
+      idx
+    }
+  }
+}
+
+///|
+fn blend_span_with_sixel_color(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  y : Int,
+  x1 : Int,
+  x2 : Int,
+  color : Color,
+  alpha : Int,
+  cache : Array[Int],
+) -> Unit {
+  let a = clamp_byte(alpha)
+  if a <= 0 {
+    return
+  }
+  if a >= 255 {
+    let idx = palette.get_or_add(color)
+    fb.fill_span(y, x1, x2, idx)
+    return
+  }
+  if y < 0 || y >= fb.height {
+    return
+  }
+  let cx1 = @cmp.maximum(x1, 0)
+  let cx2 = @cmp.minimum(x2, fb.width)
+  if cx2 <= cx1 {
+    return
+  }
+  let row = y * fb.width
+  for px = cx1; px < cx2; px = px + 1 {
+    let pos = row + px
+    let dst_idx = fb.pixels[pos]
+    let blended_idx = cached_blended_index(palette, color, a, dst_idx, cache)
+    fb.pixels[pos] = blended_idx
+  }
+}
+
+///|
 fn fill_rect_with_types_color(
   fb : Framebuffer,
   palette : DynamicPalette,
@@ -1111,10 +1217,17 @@ fn fill_rect_with_types_color(
     fb.fill_rect(x, y, w, h, idx)
     return
   }
-  for py = y; py < y + h; py = py + 1 {
-    for px = x; px < x + w; px = px + 1 {
-      blend_types_color_over_pixel(fb, palette, px, py, color, opacity)
-    }
+  let x1 = @cmp.maximum(x, 0)
+  let y1 = @cmp.maximum(y, 0)
+  let x2 = @cmp.minimum(x + w, fb.width)
+  let y2 = @cmp.minimum(y + h, fb.height)
+  if x2 <= x1 || y2 <= y1 {
+    return
+  }
+  let src = types_color_to_sixel(color)
+  let cache = Array::make(palette.colors.length(), -1)
+  for py = y1; py < y2; py = py + 1 {
+    blend_span_with_sixel_color(fb, palette, py, x1, x2, src, alpha, cache)
   }
 }
 
@@ -1162,32 +1275,6 @@ fn DynamicPalette::get_or_add(self : DynamicPalette, c : Color) -> Int {
         }
       }
     }
-  }
-}
-
-///|
-/// Collect all colors from PaintNode tree
-fn collect_colors(
-  palette : DynamicPalette,
-  node : @paint_model.PaintNode,
-) -> Unit {
-  // Add background color if not transparent
-  if !node.paint.background_color.is_transparent() {
-    let _ = palette.get_or_add(
-      types_color_to_sixel(node.paint.background_color),
-    )
-  }
-  for shadow in node.paint.box_shadows {
-    if !shadow.color.is_transparent() {
-      let _ = palette.get_or_add(types_color_to_sixel(shadow.color))
-    }
-  }
-  // Add text color
-  let _ = palette.get_or_add(types_color_to_sixel(node.paint.color))
-
-  // Process children
-  for child in node.children {
-    collect_colors(palette, child)
   }
 }
 
@@ -1488,6 +1575,184 @@ fn rounded_corner_coverage(
 }
 
 ///|
+fn fill_rounded_corner_pixels_fast(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  rect_x : Int,
+  rect_y : Int,
+  rect_w : Int,
+  rect_h : Int,
+  x1 : Int,
+  y1 : Int,
+  x2 : Int,
+  y2 : Int,
+  idx : Int,
+  src : Color,
+  alpha : Int,
+  tl : Int,
+  tr : Int,
+  br : Int,
+  bl : Int,
+  corner_x : Int,
+  corner_y : Int,
+  radius : Int,
+) -> Unit {
+  if radius <= 0 {
+    return
+  }
+  let cx1 = @cmp.maximum(corner_x, x1)
+  let cy1 = @cmp.maximum(corner_y, y1)
+  let cx2 = @cmp.minimum(corner_x + radius, x2)
+  let cy2 = @cmp.minimum(corner_y + radius, y2)
+  if cx2 <= cx1 || cy2 <= cy1 {
+    return
+  }
+  for py = cy1; py < cy2; py = py + 1 {
+    for px = cx1; px < cx2; px = px + 1 {
+      let cov = rounded_corner_coverage(
+        px, py, rect_x, rect_y, rect_w, rect_h, tl, tr, br, bl,
+      )
+      if cov >= 1.0 {
+        if alpha >= 255 {
+          fb.set_pixel(px, py, idx)
+        } else {
+          blend_sixel_color_over_pixel(fb, palette, px, py, src, alpha)
+        }
+      } else if cov > 0.0 {
+        blend_sixel_color_over_pixel(
+          fb,
+          palette,
+          px,
+          py,
+          src,
+          (cov * alpha.to_double()).to_int(),
+        )
+      }
+    }
+  }
+}
+
+///|
+fn fill_rounded_rect_fast(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  x : Int,
+  y : Int,
+  w : Int,
+  h : Int,
+  x1 : Int,
+  y1 : Int,
+  x2 : Int,
+  y2 : Int,
+  src : Color,
+  alpha : Int,
+  tl : Int,
+  tr : Int,
+  br : Int,
+  bl : Int,
+) -> Unit {
+  let idx = palette.get_or_add(src)
+  let cache = Array::make(palette.colors.length(), -1)
+  for py = y1; py < y2; py = py + 1 {
+    let mut row_x1 = x
+    let mut row_x2 = x + w
+    if tl > 0 && py < y + tl {
+      row_x1 = @cmp.maximum(row_x1, x + tl)
+    }
+    if bl > 0 && py >= y + h - bl {
+      row_x1 = @cmp.maximum(row_x1, x + bl)
+    }
+    if tr > 0 && py < y + tr {
+      row_x2 = @cmp.minimum(row_x2, x + w - tr)
+    }
+    if br > 0 && py >= y + h - br {
+      row_x2 = @cmp.minimum(row_x2, x + w - br)
+    }
+    let cx1 = @cmp.maximum(row_x1, x1)
+    let cx2 = @cmp.minimum(row_x2, x2)
+    if cx2 > cx1 {
+      if alpha >= 255 {
+        fb.fill_span(py, cx1, cx2, idx)
+      } else {
+        blend_span_with_sixel_color(
+          fb, palette, py, cx1, cx2, src, alpha, cache,
+        )
+      }
+    }
+  }
+  fill_rounded_corner_pixels_fast(
+    fb, palette, x, y, w, h, x1, y1, x2, y2, idx, src, alpha, tl, tr, br, bl, x,
+    y, tl,
+  )
+  fill_rounded_corner_pixels_fast(
+    fb,
+    palette,
+    x,
+    y,
+    w,
+    h,
+    x1,
+    y1,
+    x2,
+    y2,
+    idx,
+    src,
+    alpha,
+    tl,
+    tr,
+    br,
+    bl,
+    x + w - tr,
+    y,
+    tr,
+  )
+  fill_rounded_corner_pixels_fast(
+    fb,
+    palette,
+    x,
+    y,
+    w,
+    h,
+    x1,
+    y1,
+    x2,
+    y2,
+    idx,
+    src,
+    alpha,
+    tl,
+    tr,
+    br,
+    bl,
+    x + w - br,
+    y + h - br,
+    br,
+  )
+  fill_rounded_corner_pixels_fast(
+    fb,
+    palette,
+    x,
+    y,
+    w,
+    h,
+    x1,
+    y1,
+    x2,
+    y2,
+    idx,
+    src,
+    alpha,
+    tl,
+    tr,
+    br,
+    bl,
+    x,
+    y + h - bl,
+    bl,
+  )
+}
+
+///|
 /// Fill a rounded rect (with optional clip)
 fn fill_rounded_rect_clipped(
   fb : Framebuffer,
@@ -1531,40 +1796,18 @@ fn fill_rounded_rect_clipped(
   }
   let has_radius = tl > 0 || tr > 0 || br > 0 || bl > 0
   if has_radius {
-    // Antialiased rounded corners: use coverage-based blending
-    let idx = palette.get_or_add(src)
-    for py = y1; py < y2; py = py + 1 {
-      for px = x1; px < x2; px = px + 1 {
-        let cov = rounded_corner_coverage(px, py, x, y, w, h, tl, tr, br, bl)
-        if cov <= 0.0 {
-          continue
-        }
-        let effective_alpha = cov * opacity * color.a
-        if effective_alpha >= 1.0 {
-          fb.set_pixel(px, py, idx)
-        } else if effective_alpha > 0.0 {
-          // Blend foreground with background using coverage
-          let dst_idx = fb.get_pixel(px, py)
-          let dst = palette_color_at(palette, dst_idx)
-          let a_byte = (effective_alpha * 255.0).to_int()
-          let blended = src.blend(dst, a_byte)
-          let blended_idx = palette.get_or_add(blended)
-          fb.set_pixel(px, py, blended_idx)
-        }
-      }
-    }
+    fill_rounded_rect_fast(
+      fb, palette, x, y, w, h, x1, y1, x2, y2, src, alpha, tl, tr, br, bl,
+    )
   } else if alpha >= 255 {
     let idx = palette.get_or_add(src)
     for py = y1; py < y2; py = py + 1 {
-      for px = x1; px < x2; px = px + 1 {
-        fb.set_pixel(px, py, idx)
-      }
+      fb.fill_span(py, x1, x2, idx)
     }
   } else {
+    let cache = Array::make(palette.colors.length(), -1)
     for py = y1; py < y2; py = py + 1 {
-      for px = x1; px < x2; px = px + 1 {
-        blend_types_color_over_pixel(fb, palette, px, py, color, opacity)
-      }
+      blend_span_with_sixel_color(fb, palette, py, x1, x2, src, alpha, cache)
     }
   }
 }
@@ -2377,9 +2620,6 @@ pub fn render_paint_node_to_sixel(
   // Sort by stacking order (z-index) for correct rendering
   let sorted_node = @paint_traversal.sort_tree_by_stacking_order(node)
 
-  // Collect all colors first
-  collect_colors(palette, sorted_node)
-
   // Render the tree
   render_paint_node(fb, palette, sorted_node, 0.0, 0.0)
 
@@ -2426,8 +2666,6 @@ pub fn render_paint_node_to_framebuffer_scrolled(
   fb.fill_rect(0, 0, fb.width, fb.height, 0)
   // Sort by stacking order (z-index) for correct rendering
   let sorted_node = @paint_traversal.sort_tree_by_stacking_order(node)
-  // Collect all colors first
-  collect_colors(palette, sorted_node)
   // CSS canvas background propagation (CSS 2.1 §14.2):
   // If root (<html>) background is transparent, use <body> background instead
   let mut canvas_bg = sorted_node.paint.background_color
@@ -2470,8 +2708,6 @@ pub fn render_paint_node_to_framebuffer(
 ) -> Unit {
   // Sort by stacking order (z-index) for correct rendering
   let sorted_node = @paint_traversal.sort_tree_by_stacking_order(node)
-  // Collect all colors first
-  collect_colors(palette, sorted_node)
   // CSS canvas background propagation (CSS 2.1 §14.2):
   // If root (<html>) background is transparent, use <body> background instead
   let mut canvas_bg = sorted_node.paint.background_color

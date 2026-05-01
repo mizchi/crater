@@ -9,6 +9,8 @@ import {
 // Values
 pub fn framebuffer_to_rgba_base64(@image.Framebuffer, @image.DynamicPalette) -> String
 
+pub fn framebuffer_visual_stats(@image.Framebuffer, @image.DynamicPalette) -> VisualStats
+
 pub fn raster_to_framebuffer(@model.PaintNode, Int, Int) -> (@image.Framebuffer, @image.DynamicPalette)
 
 pub fn raster_to_rgba_base64(@model.PaintNode, Int, Int) -> String
@@ -18,6 +20,12 @@ pub fn to_json_string(@model.PaintNode) -> String
 // Errors
 
 // Types and methods
+pub(all) struct VisualStats {
+  pixel_count : Int
+  non_white_pixels : Int
+  distinct_colors : Int
+  is_blank : Bool
+}
 
 // Type aliases
 pub using @image {type DynamicPalette}

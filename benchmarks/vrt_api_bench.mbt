@@ -193,3 +193,113 @@ test "bench_vrt_phase_diff_component" (b : @bench.T) {
     b.keep(@paint_diff.diff_trees(baseline, mutated))
   })
 }
+
+///|
+fn capture_screenshot_fixture() -> String {
+  dashboard(12, 16)
+}
+
+///|
+fn capture_screenshot_viewport() -> @types.Size[Double] {
+  @types.Size::new(960.0, 640.0)
+}
+
+///|
+fn capture_screenshot_node_layout(
+  html : String,
+  viewport : @types.Size[Double],
+) -> (@tree.Node, @types.Layout) {
+  @renderer.render_to_node_and_layout_with_external_css(
+    html,
+    vrt_render_context(viewport),
+    [],
+  )
+}
+
+///|
+fn capture_screenshot_paint_tree(
+  html : String,
+  viewport : @types.Size[Double],
+) -> @paint_model.PaintNode {
+  let (node, layout) = capture_screenshot_node_layout(html, viewport)
+  build_vrt_paint_tree(node, layout, viewport)
+}
+
+///|
+test "capture screenshot dashboard visual sanity is non-blank" {
+  let viewport = capture_screenshot_viewport()
+  let paint_tree = capture_screenshot_paint_tree(
+    capture_screenshot_fixture(),
+    viewport,
+  )
+  let (fb, palette) = @tui_paint_output.raster_to_framebuffer(
+    paint_tree,
+    viewport.width.to_int(),
+    viewport.height.to_int(),
+  )
+  let stats = @tui_paint_output.framebuffer_visual_stats(fb, palette)
+  assert_false(stats.is_blank)
+  assert_true(stats.non_white_pixels > 0)
+}
+
+///|
+test "bench_capture_screenshot_phase_paint_tree_dashboard" (b : @bench.T) {
+  let html = capture_screenshot_fixture()
+  let viewport = capture_screenshot_viewport()
+  let (node, layout) = capture_screenshot_node_layout(html, viewport)
+  b.bench(name="capture_screenshot_phase_paint_tree_dashboard", fn() {
+    b.keep(build_vrt_paint_tree(node, layout, viewport))
+  })
+}
+
+///|
+test "bench_capture_screenshot_phase_raster_dashboard" (b : @bench.T) {
+  let viewport = capture_screenshot_viewport()
+  let paint_tree = capture_screenshot_paint_tree(
+    capture_screenshot_fixture(),
+    viewport,
+  )
+  b.bench(name="capture_screenshot_phase_raster_dashboard", fn() {
+    b.keep(
+      @tui_paint_output.raster_to_framebuffer(
+        paint_tree,
+        viewport.width.to_int(),
+        viewport.height.to_int(),
+      ),
+    )
+  })
+}
+
+///|
+test "bench_capture_screenshot_phase_png_encode_dashboard" (b : @bench.T) {
+  let viewport = capture_screenshot_viewport()
+  let paint_tree = capture_screenshot_paint_tree(
+    capture_screenshot_fixture(),
+    viewport,
+  )
+  let (fb, palette) = @tui_paint_output.raster_to_framebuffer(
+    paint_tree,
+    viewport.width.to_int(),
+    viewport.height.to_int(),
+  )
+  b.bench(name="capture_screenshot_phase_png_encode_dashboard", fn() {
+    b.keep(@tui_paint_png.framebuffer_to_png_base64(fb, palette))
+  })
+}
+
+///|
+test "bench_capture_screenshot_phase_visual_sanity_dashboard" (b : @bench.T) {
+  let viewport = capture_screenshot_viewport()
+  let paint_tree = capture_screenshot_paint_tree(
+    capture_screenshot_fixture(),
+    viewport,
+  )
+  let (fb, palette) = @tui_paint_output.raster_to_framebuffer(
+    paint_tree,
+    viewport.width.to_int(),
+    viewport.height.to_int(),
+  )
+  b.bench(name="capture_screenshot_phase_visual_sanity_dashboard", fn() {
+    b.keep(@tui_paint_output.framebuffer_visual_stats(fb, palette))
+  })
+}

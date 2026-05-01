@@ -434,6 +434,26 @@ extern "js" fn js_log_stderr(msg : String) -> Unit =
   #|(msg) => { console.error("[paint] " + msg); }
 
 ///|
+priv struct PaintCaptureTiming {
+  node_layout_ms : Int
+  paint_tree_ms : Int
+  raster_ms : Int
+  png_encode_ms : Int
+  rgba_encode_ms : Int
+  total_ms : Int
+}
+
+///|
+priv struct PaintCaptureFrame {
+  width : Int
+  height : Int
+  framebuffer : @tui_paint_output.Framebuffer
+  palette : @tui_paint_output.DynamicPalette
+  timing : PaintCaptureTiming
+  visual : @tui_paint_output.VisualStats?
+}
+
+///|
 /// Set up MoonBit TextMetricsProvider from JS globalThis.__craterMeasureTextIntrinsic.
 /// The JS-side provider is set up by start-with-font.ts at BiDi server startup.
 fn ensure_paint_provider_initialized() -> Unit {
@@ -524,6 +544,95 @@ fn ensure_paint_provider_initialized() -> Unit {
 }
 
 ///|
+fn capture_timing_to_json(timing : PaintCaptureTiming) -> Json {
+  make_object({
+    "nodeLayoutMs": Json::number(timing.node_layout_ms.to_double()),
+    "paintTreeMs": Json::number(timing.paint_tree_ms.to_double()),
+    "rasterMs": Json::number(timing.raster_ms.to_double()),
+    "pngEncodeMs": Json::number(timing.png_encode_ms.to_double()),
+    "rgbaEncodeMs": Json::number(timing.rgba_encode_ms.to_double()),
+    "totalMs": Json::number(timing.total_ms.to_double()),
+  })
+}
+
+///|
+fn capture_visual_to_json(visual : @tui_paint_output.VisualStats) -> Json {
+  make_object({
+    "pixelCount": Json::number(visual.pixel_count.to_double()),
+    "nonWhitePixels": Json::number(visual.non_white_pixels.to_double()),
+    "distinctColors": Json::number(visual.distinct_colors.to_double()),
+    "isBlank": Json::boolean(visual.is_blank),
+  })
+}
+
+///|
+fn capture_current_paint_html() -> String {
+  let html_json = evaluate_js(capture_paint_source_html_expr())
+  extract_string_value_from_evaluate_result(html_json)
+}
+
+///|
+fn BidiProtocol::build_actual_paint_frame(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  html : String,
+  send_errors? : Bool = true,
+  measure_visual? : Bool = false,
+) -> PaintCaptureFrame? {
+  ensure_paint_provider_initialized()
+  let width = self.resolve_effective_viewport_width(ctx_id)
+  let height = self.resolve_effective_viewport_height(ctx_id)
+  let ctx = @browser_contract.create_render_context(width, height, false)
+  let t0 = js_now_ms()
+  let (node, layout) = @renderer.render_to_node_and_layout(html, ctx)
+  let t1 = js_now_ms()
+  let paint_node = match
+    @tui_paint_viewport.from_node_and_layout_with_viewport(
+      node,
+      layout,
+      0.0,
+      height.to_double(),
+      0.0,
+    ) {
+    Some(node) => node
+    None => {
+      if send_errors {
+        self.send_error(
+          request_id, "unknown error", "Failed to build paint tree for current context",
+        )
+      }
+      return None
+    }
+  }
+  let t2 = js_now_ms()
+  let (fb, palette) = @tui_paint_output.raster_to_framebuffer(
+    paint_node, width, height,
+  )
+  let visual = if measure_visual {
+    Some(@tui_paint_output.framebuffer_visual_stats(fb, palette))
+  } else {
+    None
+  }
+  let t3 = js_now_ms()
+  Some({
+    width,
+    height,
+    framebuffer: fb,
+    palette,
+    timing: {
+      node_layout_ms: t1 - t0,
+      paint_tree_ms: t2 - t1,
+      raster_ms: t3 - t2,
+      png_encode_ms: 0,
+      rgba_encode_ms: 0,
+      total_ms: t3 - t0,
+    },
+    visual,
+  })
+}
+
+///|
 /// Pre-rasterize common ASCII glyphs. Initializes providers if needed.
 pub fn warmup_glyph_cache() -> Unit {
   ensure_paint_provider_initialized()
@@ -610,54 +719,141 @@ fn BidiProtocol::resolve_capture_paint_data(
     }
   }
 
-  // Set up MoonBit-side text metrics provider if JS-side is available (lazy init)
-  ensure_paint_provider_initialized()
-
-  let width = self.resolve_effective_viewport_width(ctx_id)
-  let height = self.resolve_effective_viewport_height(ctx_id)
-  let html_json = evaluate_js(capture_paint_source_html_expr())
-  let html = extract_string_value_from_evaluate_result(html_json)
-  let ctx = @browser_contract.create_render_context(width, height, false)
-  let t0 = js_now_ms()
-  let (node, layout) = @renderer.render_to_node_and_layout(html, ctx)
-  let t1 = js_now_ms()
-  let paint_node = match
-    @tui_paint_viewport.from_node_and_layout_with_viewport(
-      node,
-      layout,
-      0.0,
-      height.to_double(),
-      0.0,
+  let html = capture_current_paint_html()
+  let frame = match
+    self.build_actual_paint_frame(
+      request_id,
+      ctx_id,
+      html,
+      send_errors=true,
+      measure_visual=true,
     ) {
-    Some(node) => node
-    None => {
-      self.send_error(
-        request_id, "unknown error", "Failed to build paint tree for current context",
-      )
-      return None
-    }
+    Some(frame) => frame
+    None => return None
   }
-  let t2 = js_now_ms()
-  let data = @tui_paint_output.raster_to_rgba_base64(paint_node, width, height)
-  let t3 = js_now_ms()
+  let visual = match frame.visual {
+    Some(visual) => visual
+    None =>
+      @tui_paint_output.framebuffer_visual_stats(
+        frame.framebuffer,
+        frame.palette,
+      )
+  }
+  let t_encode0 = js_now_ms()
+  let data = @tui_paint_output.framebuffer_to_rgba_base64(
+    frame.framebuffer,
+    frame.palette,
+  )
+  let t_encode1 = js_now_ms()
+  let timing : PaintCaptureTiming = {
+    ..frame.timing,
+    rgba_encode_ms: t_encode1 - t_encode0,
+    total_ms: frame.timing.total_ms + (t_encode1 - t_encode0),
+  }
   js_log_stderr(
-    "capturePaintData: render=" +
-    (t1 - t0).to_string() +
-    "ms paint=" +
-    (t2 - t1).to_string() +
-    "ms fb=" +
-    (t3 - t2).to_string() +
+    "capturePaintData: node_layout=" +
+    timing.node_layout_ms.to_string() +
+    "ms paint_tree=" +
+    timing.paint_tree_ms.to_string() +
+    "ms raster=" +
+    timing.raster_ms.to_string() +
+    "ms rgba_encode=" +
+    timing.rgba_encode_ms.to_string() +
     "ms total=" +
-    (t3 - t0).to_string() +
-    "ms",
+    timing.total_ms.to_string() +
+    "ms non_white=" +
+    visual.non_white_pixels.to_string() +
+    " distinct=" +
+    visual.distinct_colors.to_string(),
   )
   Some(
     make_object({
-      "width": Json::number(width.to_double()),
-      "height": Json::number(height.to_double()),
+      "width": Json::number(frame.width.to_double()),
+      "height": Json::number(frame.height.to_double()),
       "data": Json::string(data),
+      "timing": capture_timing_to_json(timing),
+      "visual": capture_visual_to_json(visual),
     }),
   )
+}
+
+///|
+fn capture_screenshot_data_can_use_actual_paint(
+  params : Map[String, Json],
+) -> Bool {
+  match params.get("backend") {
+    Some(String("synthetic")) => return false
+    _ => ()
+  }
+  match params.get("origin") {
+    None | Some(String("viewport")) => ()
+    _ => return false
+  }
+  match params.get("clip") {
+    None => ()
+    _ => return false
+  }
+  match params.get("format") {
+    None => true
+    Some(Object(format)) =>
+      match format.get("type") {
+        None | Some(String("image/png")) => true
+        _ => false
+      }
+    _ => false
+  }
+}
+
+///|
+fn BidiProtocol::try_resolve_actual_capture_screenshot_data(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  params : Map[String, Json],
+) -> String? {
+  if !capture_screenshot_data_can_use_actual_paint(params) {
+    return None
+  }
+  let html = capture_current_paint_html()
+  if html.trim().length() == 0 {
+    return None
+  }
+  let frame = match
+    self.build_actual_paint_frame(
+      request_id,
+      ctx_id,
+      html,
+      send_errors=false,
+      measure_visual=false,
+    ) {
+    Some(frame) => frame
+    None => return None
+  }
+  let t_encode0 = js_now_ms()
+  let data = @tui_paint_png.framebuffer_to_png_base64(
+    frame.framebuffer,
+    frame.palette,
+  )
+  let t_encode1 = js_now_ms()
+  let timing : PaintCaptureTiming = {
+    ..frame.timing,
+    png_encode_ms: t_encode1 - t_encode0,
+    total_ms: frame.timing.total_ms + (t_encode1 - t_encode0),
+  }
+  js_log_stderr(
+    "captureScreenshotData: node_layout=" +
+    timing.node_layout_ms.to_string() +
+    "ms paint_tree=" +
+    timing.paint_tree_ms.to_string() +
+    "ms raster=" +
+    timing.raster_ms.to_string() +
+    "ms png_encode=" +
+    timing.png_encode_ms.to_string() +
+    "ms total=" +
+    timing.total_ms.to_string() +
+    "ms",
+  )
+  Some(data)
 }
 
 ///|

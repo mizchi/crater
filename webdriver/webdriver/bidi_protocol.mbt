@@ -4879,6 +4879,12 @@ fn BidiProtocol::resolve_capture_screenshot_data(
     }
   }
 
+  match
+    self.try_resolve_actual_capture_screenshot_data(request_id, ctx_id, params) {
+    Some(data) => return Some(data)
+    None => ()
+  }
+
   match self.build_synthetic_capture_screenshot_result(ctx_id, raw_params) {
     Some(Object(result_map)) =>
       match result_map.get("error") {
