@@ -187,9 +187,15 @@ const CRATER_PLAYWRIGHT_API_SUPPORT_SOURCE = [
   },
   {
     owner: "page",
+    api: "ariaSnapshot",
+    status: "partial",
+    notes: "Returns a lightweight accessibility tree object with common roles, names, and states for inspection parity; Playwright's full ARIA YAML format and browser accessibility tree semantics are not implemented.",
+  },
+  {
+    owner: "page",
     api: "goto",
     status: "partial",
-    notes: "Loads http/https/data URLs through Crater runtime, follows fetch redirects, preserves HTTP error documents, runs init scripts before page scripts, and returns response metadata; browser-grade navigation remains limited.",
+    notes: "Loads http/https/data URLs through Crater runtime, accepts waitUntil/timeout options, follows fetch redirects, preserves HTTP error documents, runs init scripts before page scripts, and returns response metadata; browser-grade navigation remains limited.",
   },
   {
     owner: "page",
@@ -532,7 +538,7 @@ const CRATER_PLAYWRIGHT_API_SUPPORT_SOURCE = [
     owner: "page",
     api: "screenshot",
     status: "partial",
-    notes: "Playwright-style alias for Crater screenshot capture with timeout, fullPage/document-origin, clip, type, quality, and path options; the alias uses synthetic PNG/JPEG generation until full actual-paint screenshot parity is available.",
+    notes: "Playwright-style alias for Crater screenshot capture with timeout, fullPage/document-origin, clip, type, quality, and path options; PNG viewport/document captures prefer actual paint and fall back to synthetic generation for unsupported clip/JPEG cases.",
   },
   {
     owner: "page",

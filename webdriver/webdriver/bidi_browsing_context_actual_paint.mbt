@@ -572,17 +572,113 @@ fn capture_current_paint_html() -> String {
 }
 
 ///|
+extern "js" fn js_actual_paint_document_metrics(
+  viewport_width : Int,
+  viewport_height : Int,
+) -> String =
+  #|(viewportWidthArg, viewportHeightArg) => {
+  #|  try {
+  #|    const doc = globalThis.document;
+  #|    const win = globalThis.window || globalThis;
+  #|    let width = Math.max(1, Number(viewportWidthArg || win.innerWidth || globalThis.innerWidth || 1));
+  #|    let height = Math.max(1, Number(viewportHeightArg || win.innerHeight || globalThis.innerHeight || 1));
+  #|    const px = (value) => {
+  #|      const parsed = Number.parseFloat(String(value ?? ""));
+  #|      return Number.isFinite(parsed) ? parsed : 0;
+  #|    };
+  #|    const visit = (el) => {
+  #|      if (!el) return;
+  #|      width = Math.max(
+  #|        width,
+  #|        Number(el.scrollWidth || 0),
+  #|        Number(el.clientWidth || 0),
+  #|        Number(el.offsetWidth || 0),
+  #|      );
+  #|      height = Math.max(
+  #|        height,
+  #|        Number(el.scrollHeight || 0),
+  #|        Number(el.clientHeight || 0),
+  #|        Number(el.offsetHeight || 0),
+  #|      );
+  #|      const style = el.style || {};
+  #|      let left = px(style.left) + px(style.marginLeft);
+  #|      let top = px(style.top) + px(style.marginTop);
+  #|      let rectWidth = px(style.width);
+  #|      let rectHeight = px(style.height);
+  #|      if (typeof el.getBoundingClientRect === "function") {
+  #|        try {
+  #|          const rect = el.getBoundingClientRect();
+  #|          left = Number(rect.left ?? rect.x ?? left) || left;
+  #|          top = Number(rect.top ?? rect.y ?? top) || top;
+  #|          rectWidth = Number(rect.width ?? ((rect.right ?? 0) - (rect.left ?? 0))) || rectWidth;
+  #|          rectHeight = Number(rect.height ?? ((rect.bottom ?? 0) - (rect.top ?? 0))) || rectHeight;
+  #|        } catch (_err) {}
+  #|      }
+  #|      width = Math.max(width, left + Math.max(0, rectWidth));
+  #|      height = Math.max(height, top + Math.max(0, rectHeight));
+  #|    };
+  #|    if (doc) {
+  #|      const root = doc.scrollingElement || doc.documentElement || doc.body;
+  #|      visit(root);
+  #|      visit(doc.documentElement);
+  #|      visit(doc.body);
+  #|      if (doc.body && typeof doc.querySelectorAll === "function") {
+  #|        for (const el of Array.from(doc.querySelectorAll("body *"))) {
+  #|          visit(el);
+  #|        }
+  #|      }
+  #|    }
+  #|    return `${Math.max(1, Math.ceil(width))},${Math.max(1, Math.ceil(height))}`;
+  #|  } catch (_err) {
+  #|    return `${Math.max(1, Number(viewportWidthArg) || 1)},${Math.max(1, Number(viewportHeightArg) || 1)}`;
+  #|  }
+  #|}
+
+///|
+fn parse_actual_paint_dimension_pair(
+  payload : String,
+  fallback_width : Int,
+  fallback_height : Int,
+) -> (Int, Int) {
+  let parts = payload.split(",").collect()
+  if parts.length() < 2 {
+    return (fallback_width.max(1), fallback_height.max(1))
+  }
+  let width = @string.parse_int(parts[0].trim()) catch { _ => fallback_width }
+  let height = @string.parse_int(parts[1].trim()) catch { _ => fallback_height }
+  (width.max(1), height.max(1))
+}
+
+///|
+fn BidiProtocol::resolve_actual_paint_dimensions(
+  self : BidiProtocol,
+  ctx_id : String,
+  origin : String,
+) -> (Int, Int) {
+  let viewport_width = self.resolve_effective_viewport_width(ctx_id)
+  let viewport_height = self.resolve_effective_viewport_height(ctx_id)
+  if origin != "document" {
+    return (viewport_width, viewport_height)
+  }
+  parse_actual_paint_dimension_pair(
+    js_actual_paint_document_metrics(viewport_width, viewport_height),
+    viewport_width,
+    viewport_height,
+  )
+}
+
+///|
 fn BidiProtocol::build_actual_paint_frame(
   self : BidiProtocol,
   request_id : Int,
   ctx_id : String,
   html : String,
+  origin? : String = "viewport",
   send_errors? : Bool = true,
   measure_visual? : Bool = false,
 ) -> PaintCaptureFrame? {
   ensure_paint_provider_initialized()
-  let width = self.resolve_effective_viewport_width(ctx_id)
-  let height = self.resolve_effective_viewport_height(ctx_id)
+  let (width, height) = self.resolve_actual_paint_dimensions(ctx_id, origin)
   let ctx = @browser_contract.create_render_context(width, height, false)
   let t0 = js_now_ms()
   let (node, layout) = @renderer.render_to_node_and_layout(html, ctx)
@@ -789,7 +885,7 @@ fn capture_screenshot_data_can_use_actual_paint(
     _ => ()
   }
   match params.get("origin") {
-    None | Some(String("viewport")) => ()
+    None | Some(String("viewport")) | Some(String("document")) => ()
     _ => return false
   }
   match params.get("clip") {
@@ -821,11 +917,16 @@ fn BidiProtocol::try_resolve_actual_capture_screenshot_data(
   if html.trim().length() == 0 {
     return None
   }
+  let origin = match params.get("origin") {
+    Some(String("document")) => "document"
+    _ => "viewport"
+  }
   let frame = match
     self.build_actual_paint_frame(
       request_id,
       ctx_id,
       html,
+      origin~,
       send_errors=false,
       measure_visual=false,
     ) {

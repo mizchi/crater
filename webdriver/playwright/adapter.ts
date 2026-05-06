@@ -61,6 +61,13 @@ export type CraterLoadState =
   | "networkidle0"
   | "networkidle2";
 
+export type CraterGotoWaitUntil = CraterLoadState | "commit";
+
+export type CraterGotoOptions = {
+  timeout?: number;
+  waitUntil?: CraterGotoWaitUntil;
+};
+
 export type CraterUrlMatcher = string | RegExp | ((url: URL) => boolean);
 
 export type CraterRequestMatcher =
@@ -107,6 +114,25 @@ export type CraterScreenshotOptions = {
   type?: "png" | "jpeg";
   quality?: number;
   path?: string;
+};
+
+export type CraterAriaSnapshotOptions = {
+  mode?: string;
+  depth?: number;
+  timeout?: number;
+};
+
+export type CraterA11ySnapshotNode = {
+  role: string;
+  name?: string;
+  value?: string | number;
+  description?: string;
+  modal?: boolean;
+  expanded?: boolean;
+  checked?: boolean | "mixed";
+  disabled?: boolean;
+  selected?: boolean;
+  children?: CraterA11ySnapshotNode[];
 };
 
 export type CraterWaitForSelectorState = "attached" | "detached" | "visible" | "hidden";
@@ -2496,6 +2522,7 @@ export class CraterBidiPage {
   private consoleSubscribed = false;
   private consoleSubscribePromise: Promise<void> | null = null;
   private closed = false;
+  private currentUrl = "about:blank";
   private navigationFlushDepth = 0;
   private pageEventHandlers = new Map<string, Set<CraterPageEventHandler>>();
   private pageEventWaiters: CraterPageEventWaiter[] = [];
@@ -2632,23 +2659,61 @@ export class CraterBidiPage {
     return page;
   }
 
-  async goto(url: string): Promise<CraterResponse | null> {
+  async goto(url: string, options: CraterGotoOptions = {}): Promise<CraterResponse | null> {
+    return await this.withOperationTimeout(
+      this.gotoInternal(url, options),
+      options.timeout,
+      "page.goto",
+    );
+  }
+
+  private async gotoInternal(
+    url: string,
+    options: CraterGotoOptions,
+  ): Promise<CraterResponse | null> {
     const targetUrl = url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:") || url.startsWith("about:")
       ? url
       : `data:text/html;base64,${Buffer.from(url).toString("base64")}`;
     if (targetUrl.startsWith("http://") || targetUrl.startsWith("https://") || targetUrl.startsWith("data:")) {
       const result = await this.loadPage(targetUrl);
+      await this.waitForGotoLoadState(options);
       return this.responseFromLoadResult(result, targetUrl);
     }
+    const wait = this.gotoBidiWaitMode(options.waitUntil);
     await this.sendBidi("browsingContext.navigate", {
       context: this.requireContextId(),
       url: targetUrl,
-      wait: "complete",
+      wait,
     });
     await this.syncRuntimeLocation(targetUrl);
     this.emitPageEvent("domcontentloaded", this);
     this.emitPageEvent("load", this);
+    await this.waitForGotoLoadState(options);
     return null;
+  }
+
+  private gotoBidiWaitMode(waitUntil: CraterGotoWaitUntil | undefined): "none" | "interactive" | "complete" {
+    switch (waitUntil) {
+      case "commit":
+        return "none";
+      case "domcontentloaded":
+        return "interactive";
+      case "networkidle":
+      case "networkidle0":
+      case "networkidle2":
+      case "load":
+      case undefined:
+      default:
+        return "complete";
+    }
+  }
+
+  private async waitForGotoLoadState(options: CraterGotoOptions): Promise<void> {
+    const waitUntil = options.waitUntil ?? "load";
+    if (waitUntil === "commit") {
+      return;
+    }
+    await this.waitForLoadState(waitUntil, { timeout: options.timeout });
   }
 
   async setContent(html: string): Promise<void> {
@@ -3042,7 +3107,9 @@ export class CraterBidiPage {
           };
           installInstanceConstructor("HTMLElement", (value) => Boolean(value && value.nodeType === 1));
           installInstanceConstructor("HTMLInputElement", (value) => elementTagName(value) === "INPUT");
+          installInstanceConstructor("HTMLSelectElement", (value) => elementTagName(value) === "SELECT");
           installInstanceConstructor("HTMLTextAreaElement", (value) => elementTagName(value) === "TEXTAREA");
+          installInstanceConstructor("HTMLDialogElement", (value) => elementTagName(value) === "DIALOG");
           installInstanceConstructor("HTMLImageElement", (value) => elementTagName(value) === "IMG");
           installInstanceConstructor("HTMLMediaElement", (value) => {
             const tagName = elementTagName(value);
@@ -3112,6 +3179,54 @@ export class CraterBidiPage {
           globalThis.scrollTo = scrollTo;
           globalThis.scrollBy = scrollBy;
 
+          const setElementStyle = (element, property, value) => {
+            if (!element) return;
+            const trimmedProperty = String(property || "").trim();
+            if (!trimmedProperty) return;
+            const trimmedValue = String(value || "").replace(/!important\\b/g, "").trim();
+            if (!element._style) element._style = {};
+            const camelProperty = trimmedProperty.replace(/-([a-z])/g, (_, ch) => ch.toUpperCase());
+            element._style[trimmedProperty] = trimmedValue;
+            element._style[camelProperty] = trimmedValue;
+            if (element.style) {
+              try { element.style[trimmedProperty] = trimmedValue; } catch (_error) {}
+              try { element.style[camelProperty] = trimmedValue; } catch (_error) {}
+            }
+          };
+          const applyStyleText = (cssText) => {
+            const source = String(cssText || "").replace(/\\/\\*[\\s\\S]*?\\*\\//g, "");
+            const ruleRegex = /([^{}]+)\\{([^{}]+)\\}/g;
+            let match;
+            while ((match = ruleRegex.exec(source))) {
+              const selectors = match[1].split(",").map((part) => part.trim()).filter(Boolean);
+              const declarations = match[2].split(";")
+                .map((part) => part.trim())
+                .filter(Boolean)
+                .map((part) => {
+                  const colon = part.indexOf(":");
+                  if (colon < 0) return null;
+                  return [part.slice(0, colon).trim(), part.slice(colon + 1).trim()];
+                })
+                .filter(Boolean);
+              for (const selector of selectors) {
+                let elements = [];
+                try {
+                  elements = Array.from(targetDocument.querySelectorAll(selector) || []);
+                } catch (_error) {
+                  continue;
+                }
+                for (const element of elements) {
+                  for (const [property, value] of declarations) {
+                    setElementStyle(element, property, value);
+                  }
+                }
+              }
+            }
+          };
+          const applyStyleElement = (element) => {
+            if (elementTagName(element) !== "STYLE") return;
+            applyStyleText(element.textContent || "");
+          };
           const imageElements = () => {
             const nodes = typeof targetDocument.getElementsByTagName === "function"
               ? Array.from(targetDocument.getElementsByTagName("img") || [])
@@ -3218,6 +3333,17 @@ export class CraterBidiPage {
             element.__craterScrollingPatched = true;
             patchImageElement(element);
             patchMediaElement(element);
+            applyStyleElement(element);
+            if (typeof element.appendChild === "function" && !element.__craterStyleAppendWrapped) {
+              const originalAppendChild = element.appendChild;
+              element.appendChild = function(child) {
+                const result = originalAppendChild.call(this, child);
+                patchElementTree(child);
+                applyStyleElement(child);
+                return result;
+              };
+              element.__craterStyleAppendWrapped = true;
+            }
             if (element.scrollLeft === undefined) element.scrollLeft = 0;
             if (element.scrollTop === undefined) element.scrollTop = 0;
             element.scrollTo = function(first, second) {
@@ -3359,6 +3485,7 @@ export class CraterBidiPage {
   }
 
   private async syncRuntimeLocation(url: string): Promise<void> {
+    this.currentUrl = url;
     await this.evaluate(`
       (() => {
         const next = ${jsString(url)};
@@ -3433,6 +3560,30 @@ export class CraterBidiPage {
     `);
   }
 
+  private async refreshCurrentUrl(): Promise<void> {
+    if (!this.contextId) {
+      return;
+    }
+    try {
+      const resp = await this.sendBidi("script.evaluate", {
+        expression: "globalThis.location && globalThis.location.href || globalThis.__pageUrl || 'about:blank'",
+        target: { context: this.contextId },
+        awaitPromise: false,
+      });
+      if (resp.type !== "success") {
+        return;
+      }
+      const result = resp.result as { result?: unknown; exceptionDetails?: unknown };
+      if (result.exceptionDetails) {
+        return;
+      }
+      const value = deserializeBidiValue(result.result);
+      if (typeof value === "string" && value) {
+        this.currentUrl = value;
+      }
+    } catch (_error) {}
+  }
+
   async addInitScript(script: CraterInitScript): Promise<void> {
     this.initScripts.push(this.scriptSource(script));
   }
@@ -3466,8 +3617,8 @@ export class CraterBidiPage {
     return this.locator("style").last();
   }
 
-  async url(): Promise<string> {
-    return this.evaluate<string>("window.location.href");
+  url(): string {
+    return this.currentUrl;
   }
 
   async title(): Promise<string> {
@@ -3540,6 +3691,7 @@ export class CraterBidiPage {
     if (this.navigationFlushDepth === 0) {
       await this.flushPendingNavigation();
     }
+    await this.refreshCurrentUrl();
     return value;
   }
 
@@ -3858,7 +4010,27 @@ export class CraterBidiPage {
   }
 
   async screenshot(options: CraterScreenshotOptions = {}): Promise<Buffer> {
-    return await this.captureScreenshotWithBackend(options, "synthetic");
+    return await this.captureScreenshotWithBackend(options, null);
+  }
+
+  async ariaSnapshot(options: CraterAriaSnapshotOptions = {}): Promise<CraterA11ySnapshotNode | null> {
+    const depth = Number.isFinite(options.depth)
+      ? Math.max(0, Math.floor(Number(options.depth)))
+      : 8;
+    const timeout = this.timeoutOrDefault(options.timeout, 5000);
+    const payload = await this.withOperationTimeout(
+      this.evaluate<string>(this.ariaSnapshotExpression(depth)),
+      timeout,
+      "page.ariaSnapshot",
+    );
+    try {
+      const parsed = JSON.parse(payload) as CraterA11ySnapshotNode | null;
+      return parsed && typeof parsed === "object" && typeof parsed.role === "string"
+        ? parsed
+        : null;
+    } catch {
+      return null;
+    }
   }
 
   async drag(sourceSelector: string, targetSelector: string): Promise<void> {
@@ -5133,7 +5305,9 @@ export class CraterBidiPage {
     if (backend) {
       params.backend = backend;
     }
-    const clip = options.clip ?? (options.fullPage ? await this.fullPageScreenshotClip() : null);
+    const clip = options.clip ?? (
+      options.fullPage && backend === "synthetic" ? await this.fullPageScreenshotClip() : null
+    );
     if (clip) {
       params.clip = {
         type: "box",
@@ -5153,6 +5327,218 @@ export class CraterBidiPage {
       params.format = format;
     }
     return params;
+  }
+
+  private ariaSnapshotExpression(depth: number): string {
+    const safeDepth = Math.max(0, Math.min(64, Math.floor(depth)));
+    return `(() => {
+      const maxDepth = ${safeDepth};
+      const normalize = (value) => String(value ?? "").replace(/\\s+/g, " ").trim();
+      const attr = (target, name) => {
+        let value = null;
+        try {
+          if (target && typeof target.getAttribute === "function") value = target.getAttribute(name);
+        } catch (_error) {}
+        if ((value === null || value === undefined) && target && target._attrs) value = target._attrs[name];
+        return value == null ? "" : String(value);
+      };
+      const hasAttr = (target, name) => {
+        try {
+          if (target && typeof target.hasAttribute === "function" && target.hasAttribute(name)) return true;
+        } catch (_error) {}
+        return Boolean(target && target._attrs && Object.prototype.hasOwnProperty.call(target._attrs, name));
+      };
+      const tagOf = (node) => String(node?.localName || node?.tagName || node?.nodeName || "").toLowerCase();
+      const childrenOf = (node) => Array.from(node?._children || node?.children || node?.childNodes || [])
+        .filter((child) => child && child.nodeType === 1);
+      const textOf = (node) => normalize(
+        node && node.innerText !== undefined && node.innerText !== null && String(node.innerText) !== ""
+          ? node.innerText
+          : node?.textContent || ""
+      );
+      const findById = (doc, id) => {
+        if (!doc || !id) return null;
+        try {
+          if (typeof doc.getElementById === "function") {
+            const found = doc.getElementById(id);
+            if (found) return found;
+          }
+        } catch (_error) {}
+        const stack = [doc.documentElement || doc.body || doc];
+        while (stack.length > 0) {
+          const current = stack.pop();
+          if (!current) continue;
+          if (current.nodeType === 1 && attr(current, "id") === id) return current;
+          const children = Array.from(current._children || current.children || current.childNodes || []);
+          for (let i = children.length - 1; i >= 0; i--) stack.push(children[i]);
+        }
+        return null;
+      };
+      const labelsFor = (target) => {
+        const doc = target?.ownerDocument || globalThis.document;
+        const id = attr(target, "id").trim();
+        const labels = [];
+        if (doc) {
+          try {
+            if (typeof doc.querySelectorAll === "function") {
+              labels.push(...Array.from(doc.querySelectorAll("label")));
+            }
+          } catch (_error) {}
+        }
+        const parts = [];
+        if (id) {
+          for (const label of labels) {
+            if (attr(label, "for") === id) {
+              const text = textOf(label);
+              if (text) parts.push(text);
+            }
+          }
+        }
+        let parent = target?._parent || target?.parentElement || target?.parentNode || null;
+        while (parent) {
+          if (parent.nodeType === 1 && tagOf(parent) === "label") {
+            const text = textOf(parent);
+            if (text) parts.push(text);
+            break;
+          }
+          parent = parent._parent || parent.parentElement || parent.parentNode || null;
+        }
+        return parts.join(" ").trim();
+      };
+      const explicitRole = (node) => {
+        const role = attr(node, "role").trim().split(/\\s+/).find(Boolean) || "";
+        return role === "none" || role === "presentation" ? "" : role;
+      };
+      const implicitRole = (node) => {
+        const tag = tagOf(node);
+        if (tag === "a" && attr(node, "href").trim() !== "") return "link";
+        if (tag === "button") return "button";
+        if (tag === "textarea") return "textbox";
+        if (tag === "select") return "combobox";
+        if (tag === "option") return "option";
+        if (tag === "img") return attr(node, "alt").trim() === "" ? "generic" : "img";
+        if (tag === "main") return "main";
+        if (tag === "nav") return "navigation";
+        if (tag === "header") return "banner";
+        if (tag === "footer") return "contentinfo";
+        if (tag === "aside") return "complementary";
+        if (tag === "article") return "article";
+        if (tag === "form") return "form";
+        if (tag === "dialog") return "dialog";
+        if (tag === "ul" || tag === "ol") return "list";
+        if (tag === "li") return "listitem";
+        if (tag === "table") return "table";
+        if (tag === "tr") return "row";
+        if (tag === "td") return "cell";
+        if (tag === "th") return "columnheader";
+        if (/^h[1-6]$/.test(tag)) return "heading";
+        if (tag === "input") {
+          const type = attr(node, "type").trim().toLowerCase() || "text";
+          if (type === "hidden") return "generic";
+          if (type === "checkbox") return "checkbox";
+          if (type === "radio") return "radio";
+          if (type === "range") return "slider";
+          if (type === "button" || type === "submit" || type === "reset") return "button";
+          if (type === "search") return "searchbox";
+          return "textbox";
+        }
+        if (tag === "progress") return "progressbar";
+        if (tag === "meter") return "meter";
+        if (tag === "section" && accessibleName(node, "region") !== "") return "region";
+        return "generic";
+      };
+      const roleOf = (node) => explicitRole(node) || implicitRole(node);
+      function accessibleName(node, role) {
+        const labelledBy = attr(node, "aria-labelledby").trim();
+        if (labelledBy) {
+          const doc = node.ownerDocument || globalThis.document;
+          const parts = [];
+          for (const id of labelledBy.split(/\\s+/)) {
+            const ref = findById(doc, id);
+            const text = ref ? textOf(ref) : "";
+            if (text) parts.push(text);
+          }
+          if (parts.length > 0) return parts.join(" ").trim();
+        }
+        const ariaLabel = attr(node, "aria-label").trim();
+        if (ariaLabel) return ariaLabel;
+        const tag = tagOf(node);
+        if (tag === "img") return attr(node, "alt").trim();
+        if (tag === "input" || tag === "textarea" || tag === "select") {
+          const label = labelsFor(node);
+          if (label) return label;
+          const type = attr(node, "type").trim().toLowerCase();
+          if (role === "button" && (type === "button" || type === "submit" || type === "reset")) {
+            const value = attr(node, "value").trim();
+            if (value) return value;
+          }
+        }
+        if (role === "button" || role === "link" || role === "heading" || role === "listitem" || role === "option") {
+          return textOf(node);
+        }
+        return "";
+      }
+      const isHidden = (node) => {
+        if (!node || node.nodeType !== 1) return true;
+        if (attr(node, "aria-hidden").trim().toLowerCase() === "true") return true;
+        if (node.hidden || hasAttr(node, "hidden")) return true;
+        let current = node;
+        while (current && current.nodeType === 1) {
+          const style = current.style || {};
+          if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse") return true;
+          current = current.parentElement || current.parentNode || current._parent || null;
+        }
+        return false;
+      };
+      const boolAttr = (node, name) => attr(node, name).trim().toLowerCase() === "true";
+      const isDisabled = (node) => Boolean(node?.disabled) || hasAttr(node, "disabled") || boolAttr(node, "aria-disabled");
+      const buildElement = (node, currentDepth) => {
+        if (!node || node.nodeType !== 1 || isHidden(node)) return [];
+        const role = roleOf(node);
+        const name = accessibleName(node, role);
+        const result = { role };
+        if (name) result.name = name;
+        const description = attr(node, "aria-description").trim() || attr(node, "title").trim();
+        if (description) result.description = description;
+        const ariaExpanded = attr(node, "aria-expanded").trim().toLowerCase();
+        if (ariaExpanded === "true" || ariaExpanded === "false") result.expanded = ariaExpanded === "true";
+        const ariaChecked = attr(node, "aria-checked").trim().toLowerCase();
+        if (ariaChecked === "mixed") result.checked = "mixed";
+        else if (ariaChecked === "true" || ariaChecked === "false") result.checked = ariaChecked === "true";
+        else if (role === "checkbox" || role === "radio") result.checked = Boolean(node.checked) || hasAttr(node, "checked");
+        if (isDisabled(node)) result.disabled = true;
+        const ariaSelected = attr(node, "aria-selected").trim().toLowerCase();
+        if (ariaSelected === "true" || ariaSelected === "false") result.selected = ariaSelected === "true";
+        else if (role === "option" && (Boolean(node.selected) || hasAttr(node, "selected"))) result.selected = true;
+        if (boolAttr(node, "aria-modal")) result.modal = true;
+        if (role === "textbox" || role === "searchbox" || role === "slider" || role === "progressbar") {
+          const value = normalize(node.value !== undefined ? node.value : attr(node, "value"));
+          if (value) result.value = value;
+        }
+        const childSnapshots = [];
+        if (currentDepth < maxDepth) {
+          for (const child of childrenOf(node)) {
+            childSnapshots.push(...buildElement(child, currentDepth + 1));
+          }
+        }
+        if (childSnapshots.length > 0) result.children = childSnapshots;
+        const hasState = result.value !== undefined || result.description !== undefined ||
+          result.modal !== undefined || result.expanded !== undefined ||
+          result.checked !== undefined || result.disabled !== undefined ||
+          result.selected !== undefined;
+        if (role === "generic" && !name && !hasState) {
+          return childSnapshots;
+        }
+        return [result];
+      };
+      const rootElement = document.body || document.documentElement;
+      const root = { role: "document" };
+      const title = normalize(document.title || "");
+      if (title) root.name = title;
+      const children = rootElement ? buildElement(rootElement, 0) : [];
+      if (children.length > 0) root.children = children;
+      return JSON.stringify(root);
+    })()`;
   }
 
   private async fullPageScreenshotClip(): Promise<CraterScreenshotClip> {

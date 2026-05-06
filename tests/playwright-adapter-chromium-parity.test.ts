@@ -958,7 +958,7 @@ test.describe("Crater Playwright adapter Chromium parity", () => {
       await page.addInitScript(() => {
         (window as Window & Record<string, unknown>).__gotoInit = "ready";
       });
-      const response = await page.goto(pageUrl);
+      const response = await page.goto(pageUrl, { waitUntil: "commit", timeout: 30000 });
       await page.waitForURL(pageUrl);
       await page.locator("#status").waitFor();
       return {

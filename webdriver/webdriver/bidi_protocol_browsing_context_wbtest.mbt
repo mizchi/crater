@@ -456,6 +456,76 @@ test "bidi captureScreenshotData uses actual paint png for viewport" {
 }
 
 ///|
+test "bidi captureScreenshotData uses actual paint png for document origin" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":2,\"method\":\"browsingContext.setViewport\",\"params\":{\"context\":\"session-1\",\"viewport\":{\"width\":320,\"height\":240}}}",
+    ),
+  )
+  ignore(proto.take_messages())
+  let html = "<!DOCTYPE html><html><body style='margin:0;background:#ffffff;height:410px;position:relative'><div style='position:absolute;left:0;top:0;width:120px;height:80px;background:#ff0000'></div><div style='position:absolute;left:0;top:340px;width:90px;height:70px;background:#00aa00'></div></body></html>"
+  let navigate_message = "{\"id\":3,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"" +
+    js_test_build_html_data_url(html) +
+    "\",\"wait\":\"complete\"}}"
+  ignore(proto.process_message(navigate_message))
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":4,\"method\":\"browsingContext.captureScreenshotData\",\"params\":{\"context\":\"session-1\",\"origin\":\"document\"}}",
+    ),
+  )
+  let json = proto.take_messages()[0].to_json()
+  let parsed = @json.parse(json) catch { _ => make_object({}) }
+  let png_data = match parsed {
+    Object(map) =>
+      match map.get("result") {
+        Some(String(value)) => value
+        _ => ""
+      }
+    _ => ""
+  }
+  let top_meta = png_pixel_meta_from_base64(png_data, 40, 40)
+  let lower_meta = png_pixel_meta_from_base64(png_data, 40, 360)
+  match top_meta.get("width") {
+    Some(Number(value, ..)) => assert_eq(value.to_int(), 320)
+    _ => assert_true(false)
+  }
+  match top_meta.get("height") {
+    Some(Number(value, ..)) => assert_true(value.to_int() > 240)
+    _ => assert_true(false)
+  }
+  match top_meta.get("r") {
+    Some(Number(value, ..)) => assert_true(value > 200)
+    _ => assert_true(false)
+  }
+  match top_meta.get("g") {
+    Some(Number(value, ..)) => assert_true(value < 80)
+    _ => assert_true(false)
+  }
+  match top_meta.get("b") {
+    Some(Number(value, ..)) => assert_true(value < 80)
+    _ => assert_true(false)
+  }
+  match lower_meta.get("r") {
+    Some(Number(value, ..)) => assert_true(value < 80)
+    _ => assert_true(false)
+  }
+  match lower_meta.get("g") {
+    Some(Number(value, ..)) => assert_true(value > 120)
+    _ => assert_true(false)
+  }
+  match lower_meta.get("b") {
+    Some(Number(value, ..)) => assert_true(value < 80)
+    _ => assert_true(false)
+  }
+}
+
+///|
 test "bidi getResponsiveBreakpoints returns canonical breakpoint metadata" {
   let proto = BidiProtocol::new()
   ignore(

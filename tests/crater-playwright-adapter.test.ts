@@ -6,6 +6,7 @@ import {
   CraterBidiPage,
   createCraterBrowser,
 } from "../webdriver/playwright/adapter.ts";
+import { decodePng } from "./helpers/crater-vrt.ts";
 
 test.describe("Crater Playwright adapter package", () => {
   let page: CraterBidiPage;
@@ -212,6 +213,11 @@ test.describe("Crater Playwright adapter package", () => {
 
     const fullPage = await page.screenshot({ fullPage: true, timeout: 1000, type: "png" });
     expect(dimensions(fullPage).height).toBeGreaterThan(100);
+    const fullPageImage = await decodePng(fullPage);
+    const lowerPixelOffset = (200 * fullPageImage.width + 20) * 4;
+    expect(fullPageImage.data[lowerPixelOffset]).toBeLessThan(50);
+    expect(fullPageImage.data[lowerPixelOffset + 1]).toBeLessThan(50);
+    expect(fullPageImage.data[lowerPixelOffset + 2]).toBeLessThan(50);
 
     const clipped = await page.screenshot({
       clip: { x: 0, y: 0, width: 50, height: 40 },
@@ -219,6 +225,55 @@ test.describe("Crater Playwright adapter package", () => {
       type: "png",
     });
     expect(dimensions(clipped)).toEqual({ width: 50, height: 40 });
+  });
+
+  test("ariaSnapshot returns a lightweight accessibility tree for inspection parity", async () => {
+    await page.setContent(`
+      <html>
+        <head><title>Inspection</title></head>
+        <body>
+          <main>
+            <h1>Dashboard</h1>
+            <nav aria-label="Main nav"><a href="/home">Home</a></nav>
+            <label for="email">Email</label>
+            <input id="email" value="mizchi@example.test" />
+            <label><input id="accept" type="checkbox" checked />Accept terms</label>
+            <button aria-expanded="false">Menu</button>
+            <button aria-label="Save" disabled>Ignored text</button>
+          </main>
+        </body>
+      </html>
+    `);
+
+    const snapshot = await page.ariaSnapshot({ depth: 8, timeout: 1000 });
+    const nodes: Array<Record<string, unknown>> = [];
+    const visit = (node: Record<string, unknown> | null | undefined) => {
+      if (!node) return;
+      nodes.push(node);
+      for (const child of (node.children as Array<Record<string, unknown>> | undefined) || []) {
+        visit(child);
+      }
+    };
+    visit(snapshot as Record<string, unknown> | null);
+    const lines = nodes.map((node) =>
+      [
+        node.role,
+        node.name,
+        node.value,
+        node.expanded === false ? "expanded=false" : "",
+        node.checked === true ? "checked=true" : "",
+        node.disabled === true ? "disabled=true" : "",
+      ].filter((part) => part !== undefined && part !== "").join("|")
+    );
+
+    expect(lines).toContain("document");
+    expect(lines).toContain("heading|Dashboard");
+    expect(lines).toContain("navigation|Main nav");
+    expect(lines).toContain("link|Home");
+    expect(lines).toContain("textbox|Email|mizchi@example.test");
+    expect(lines).toContain("checkbox|Accept terms|checked=true");
+    expect(lines).toContain("button|Menu|expanded=false");
+    expect(lines).toContain("button|Save|disabled=true");
   });
 
   test("provides browser-side stabilization stubs used by capture scripts", async () => {
@@ -343,7 +398,7 @@ test.describe("Crater Playwright adapter package", () => {
       const image = document.querySelector("#hero") as HTMLImageElement;
       const events: string[] = [];
       image.addEventListener("load", () => events.push("load"));
-      for (const lazyImage of Array.from(document.images).filter((candidate) => candidate.loading === "lazy")) {
+      for (const lazyImage of Array.from(document.querySelectorAll("img[loading='lazy']")) as HTMLImageElement[]) {
         lazyImage.loading = "eager";
       }
       image.src = "https://example.test/hero-2.png";
@@ -409,6 +464,8 @@ test.describe("Crater Playwright adapter package", () => {
           <div id="box"></div>
           <input id="name" />
           <textarea id="bio"></textarea>
+          <select id="mode"></select>
+          <dialog id="confirm"></dialog>
         </body>
       </html>
     `);
@@ -417,15 +474,21 @@ test.describe("Crater Playwright adapter package", () => {
       const box = document.querySelector("#box")!;
       const input = document.querySelector("#name")!;
       const textarea = document.querySelector("#bio")!;
+      const select = document.querySelector("#mode")!;
+      const dialog = document.querySelector("#confirm")!;
       return JSON.stringify({
         boxIsHTMLElement: box instanceof HTMLElement,
         constructors: {
+          HTMLDialogElement: typeof HTMLDialogElement,
           HTMLElement: typeof HTMLElement,
           HTMLInputElement: typeof HTMLInputElement,
+          HTMLSelectElement: typeof HTMLSelectElement,
           HTMLTextAreaElement: typeof HTMLTextAreaElement,
         },
+        dialogIsDialog: dialog instanceof HTMLDialogElement,
         inputIsHTMLElement: input instanceof HTMLElement,
         inputIsInput: input instanceof HTMLInputElement,
+        selectIsSelect: select instanceof HTMLSelectElement,
         textareaIsInput: textarea instanceof HTMLInputElement,
         textareaIsTextarea: textarea instanceof HTMLTextAreaElement,
       });
@@ -434,14 +497,61 @@ test.describe("Crater Playwright adapter package", () => {
     expect(JSON.parse(snapshot)).toEqual({
       boxIsHTMLElement: true,
       constructors: {
+        HTMLDialogElement: "function",
         HTMLElement: "function",
         HTMLInputElement: "function",
+        HTMLSelectElement: "function",
         HTMLTextAreaElement: "function",
       },
+      dialogIsDialog: true,
       inputIsHTMLElement: true,
       inputIsInput: true,
+      selectIsSelect: true,
       textareaIsInput: false,
       textareaIsTextarea: true,
+    });
+  });
+
+  test("applies appended style elements for browser-side stabilization scripts", async () => {
+    await page.setContent(`
+      <html>
+        <body>
+          <div id="box" class="capture-target disabled"></div>
+        </body>
+      </html>
+    `);
+
+    const snapshot = await page.evaluate(() => {
+      const box = document.querySelector("#box") as HTMLElement;
+      const style = document.createElement("style");
+      style.textContent = `
+        .capture-target {
+          width: 80px;
+          height: 24px;
+        }
+        #box {
+          left: 12px;
+          top: 8px;
+        }
+      `;
+      document.head.appendChild(style);
+      box.classList.remove("disabled");
+      const rect = box.getBoundingClientRect();
+      return JSON.stringify({
+        className: box.className,
+        height: rect.height,
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+      });
+    });
+
+    expect(JSON.parse(snapshot)).toEqual({
+      className: "capture-target",
+      height: 24,
+      left: 12,
+      top: 8,
+      width: 80,
     });
   });
 

@@ -41,6 +41,7 @@ const expectedPageApis = [
   "addInitScript",
   "addScriptTag",
   "addStyleTag",
+  "ariaSnapshot",
   "capturePaintData",
   "capturePaintTree",
   "captureScreenshot",

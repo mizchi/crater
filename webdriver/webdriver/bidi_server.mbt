@@ -1882,14 +1882,14 @@ extern "js" fn js_evaluate_expression(
   #|       } else if (c0 === 46 && sel.indexOf('[') === -1) { // .
   #|         parsed = { type: 2, classes: sel.slice(1).split('.') };
   #|       } else if (c0 === 91) { // [
-  #|         const m = sel.match(/^\[([a-zA-Z\-]+)(?:(\*)?="([^"]*)")?\]$/);
-  #|         if (m) parsed = { type: 3, attr: m[1], contains: !!m[2], value: m[3] };
+  #|         const m = sel.match(/^\[([\w:-]+)(?:\s*(\*)?=\s*(?:"([^"]*)"|'([^']*)'|([^\]\s]+)))?\]$/);
+  #|         if (m) parsed = { type: 3, attr: m[1], contains: !!m[2], value: m[3] ?? m[4] ?? m[5] };
   #|       }
   #|       if (!parsed) {
-  #|         const compoundAttrMatch = sel.match(/^([a-zA-Z]+)?\[([a-zA-Z\-]+)(?:(\*)?="([^"]*)")?\]$/);
+  #|         const compoundAttrMatch = sel.match(/^([a-zA-Z][\w-]*)?\[([\w:-]+)(?:\s*(\*)?=\s*(?:"([^"]*)"|'([^']*)'|([^\]\s]+)))?\]$/);
   #|         if (compoundAttrMatch) {
   #|           parsed = { type: 4, tag: compoundAttrMatch[1] ? compoundAttrMatch[1].toUpperCase() : null,
-  #|             attr: compoundAttrMatch[2], contains: !!compoundAttrMatch[3], value: compoundAttrMatch[4] };
+  #|             attr: compoundAttrMatch[2], contains: !!compoundAttrMatch[3], value: compoundAttrMatch[4] ?? compoundAttrMatch[5] ?? compoundAttrMatch[6] };
   #|         } else {
   #|           const tagIdMatch = sel.match(/^([a-zA-Z][a-zA-Z0-9_-]*)#([a-zA-Z][\w-]*)$/);
   #|           if (tagIdMatch) {
