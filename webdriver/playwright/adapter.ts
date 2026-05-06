@@ -3052,12 +3052,48 @@ export class CraterBidiPage {
             targetDocument.getAnimations = () => [];
           }
           const host = targetWindow || globalThis;
+          const craterPerformanceEntryTypes = [
+            "element",
+            "largest-contentful-paint",
+            "layout-shift",
+            "mark",
+            "measure",
+            "navigation",
+            "paint",
+            "resource",
+          ];
+          const makeEntryList = (entries) => ({
+            getEntries: () => entries.slice(),
+            getEntriesByName: (name) => entries.filter((entry) => entry.name === name),
+            getEntriesByType: (type) => entries.filter((entry) => entry.entryType === type),
+          });
+          const defineObserverProperty = (observerCtor, name, value, enumerable = false) => {
+            try {
+              Object.defineProperty(observerCtor, name, {
+                configurable: true,
+                enumerable,
+                value,
+              });
+            } catch (_error) {
+              try { observerCtor[name] = value; } catch (_assignError) {}
+            }
+          };
+          const normalizePerformanceObserverSupport = (observerCtor) => {
+            if (!observerCtor || (typeof observerCtor !== "function" && typeof observerCtor !== "object")) {
+              return observerCtor;
+            }
+            const existing = Array.isArray(observerCtor.supportedEntryTypes)
+              ? observerCtor.supportedEntryTypes
+              : [];
+            const supportedEntryTypes = Array.from(new Set([
+              ...existing,
+              ...craterPerformanceEntryTypes,
+            ]));
+            defineObserverProperty(observerCtor, "supportedEntryTypes", supportedEntryTypes, true);
+            defineObserverProperty(observerCtor, "__craterMakeEntryList", makeEntryList);
+            return observerCtor;
+          };
           if (typeof globalThis.PerformanceObserver !== "function") {
-            const makeEntryList = (entries) => ({
-              getEntries: () => entries.slice(),
-              getEntriesByName: (name) => entries.filter((entry) => entry.name === name),
-              getEntriesByType: (type) => entries.filter((entry) => entry.entryType === type),
-            });
             class CraterPerformanceObserver {
               constructor(callback) {
                 this._callback = typeof callback === "function" ? callback : () => {};
@@ -3073,20 +3109,12 @@ export class CraterBidiPage {
                 return records;
               }
             }
-            CraterPerformanceObserver.supportedEntryTypes = [
-              "element",
-              "largest-contentful-paint",
-              "layout-shift",
-              "mark",
-              "measure",
-              "navigation",
-              "paint",
-              "resource",
-            ];
-            CraterPerformanceObserver.__craterMakeEntryList = makeEntryList;
+            CraterPerformanceObserver.supportedEntryTypes = craterPerformanceEntryTypes.slice();
             globalThis.PerformanceObserver = CraterPerformanceObserver;
           }
+          normalizePerformanceObserverSupport(globalThis.PerformanceObserver);
           host.PerformanceObserver = globalThis.PerformanceObserver;
+          normalizePerformanceObserverSupport(host.PerformanceObserver);
 
           const elementTagName = (value) =>
             String(value && (value.tagName || value.localName || value.nodeName || "")).toUpperCase();

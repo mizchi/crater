@@ -310,6 +310,28 @@ test.describe("Crater Playwright adapter package", () => {
     });
   });
 
+  test("normalizes existing PerformanceObserver entry type support", async () => {
+    await page.evaluate(() => {
+      class ExistingPerformanceObserver {
+        static supportedEntryTypes = ["mark"];
+        constructor(_callback: PerformanceObserverCallback) {}
+        observe() {}
+        takeRecords() {
+          return [];
+        }
+        disconnect() {}
+      }
+      (globalThis as unknown as { PerformanceObserver: typeof PerformanceObserver }).PerformanceObserver =
+        ExistingPerformanceObserver as unknown as typeof PerformanceObserver;
+    });
+    await page.setContent("<html><body><main>ready</main></body></html>");
+
+    const supported = await page.evaluate(() => PerformanceObserver.supportedEntryTypes.slice());
+
+    expect(supported).toContain("mark");
+    expect(supported).toContain("largest-contentful-paint");
+  });
+
   test("provides browser-side scrolling primitives used by capture scripts", async () => {
     await page.setViewport(320, 200);
     await page.setContent(`
