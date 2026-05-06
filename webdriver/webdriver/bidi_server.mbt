@@ -127,6 +127,104 @@ extern "js" fn reset_runtime_js_state() -> Unit =
   #|     globalThis.__bidiCurrentContext = "default-context";
   #|     globalThis.__bidiContextWindows = new Map();
   #|     globalThis.__bidiContextViewportState = new Map();
+  #|     const installWindowGlobalSync = () => {
+  #|       if (typeof globalThis.__bidiSyncWindowPropertiesToGlobal === "function") return;
+  #|       const reserved = new Set([
+  #|         "window", "self", "parent", "top", "frames",
+  #|         "document", "location", "navigator",
+  #|         "screen", "matchMedia",
+  #|         "innerWidth", "innerHeight", "outerWidth", "outerHeight",
+  #|         "devicePixelRatio", "pageXOffset", "pageYOffset",
+  #|         "localStorage", "sessionStorage",
+  #|         "alert", "confirm", "prompt",
+  #|         "setTimeout", "clearTimeout", "setInterval", "clearInterval",
+  #|         "requestAnimationFrame", "cancelAnimationFrame", "queueMicrotask",
+  #|         "fetch", "Response", "Request", "Headers", "Blob", "FormData",
+  #|         "URL", "URLSearchParams",
+  #|       ]);
+  #|       globalThis.__bidiSyncWindowPropertiesToGlobal = (win) => {
+  #|         const source = win && typeof win === "object" ? win : globalThis.window;
+  #|         if (!source || source === globalThis || typeof source !== "object") return;
+  #|         for (const key of Object.keys(source)) {
+  #|           if (reserved.has(key) || String(key).startsWith("__bidi")) continue;
+  #|           let value;
+  #|           try { value = source[key]; } catch (_e) { continue; }
+  #|           try {
+  #|             Object.defineProperty(globalThis, key, {
+  #|               configurable: true,
+  #|               enumerable: true,
+  #|               writable: true,
+  #|               value,
+  #|             });
+  #|           } catch (_e) {
+  #|             try { globalThis[key] = value; } catch (_e2) {}
+  #|           }
+  #|         }
+  #|       };
+  #|     };
+  #|     installWindowGlobalSync();
+  #|     const installContextWindowApi = () => {
+  #|       if (typeof globalThis.__bidiInstallContextWindowApi === "function") return;
+  #|       const nativeTimers = globalThis.__bidiNativeWindowTimers || {
+  #|         setTimeout: typeof globalThis.setTimeout === "function" ? globalThis.setTimeout : undefined,
+  #|         clearTimeout: typeof globalThis.clearTimeout === "function" ? globalThis.clearTimeout : undefined,
+  #|         setInterval: typeof globalThis.setInterval === "function" ? globalThis.setInterval : undefined,
+  #|         clearInterval: typeof globalThis.clearInterval === "function" ? globalThis.clearInterval : undefined,
+  #|         queueMicrotask: typeof globalThis.queueMicrotask === "function" ? globalThis.queueMicrotask : undefined,
+  #|         requestAnimationFrame: typeof globalThis.requestAnimationFrame === "function" ? globalThis.requestAnimationFrame : undefined,
+  #|         cancelAnimationFrame: typeof globalThis.cancelAnimationFrame === "function" ? globalThis.cancelAnimationFrame : undefined,
+  #|       };
+  #|       globalThis.__bidiNativeWindowTimers = nativeTimers;
+  #|       const nativeFetch = globalThis.__bidiNativeWindowFetch || (
+  #|         typeof globalThis.fetch === "function" ? globalThis.fetch : undefined
+  #|       );
+  #|       globalThis.__bidiNativeWindowFetch = nativeFetch;
+  #|       const bindNative = (name, fallback) => {
+  #|         const fn = nativeTimers[name];
+  #|         return typeof fn === "function" ? fn.bind(globalThis) : fallback;
+  #|       };
+  #|       globalThis.__bidiInstallContextWindowApi = (win) => {
+  #|         if (!win || typeof win !== "object") return win;
+  #|         win.window = win;
+  #|         win.self = win;
+  #|         if (!win.parent) win.parent = win;
+  #|         if (!win.top) win.top = win;
+  #|         win.setTimeout = bindNative("setTimeout", (handler, timeout) => {
+  #|           if (typeof handler === "function") handler();
+  #|           return 0;
+  #|         });
+  #|         win.clearTimeout = bindNative("clearTimeout", (_id) => undefined);
+  #|         win.setInterval = bindNative("setInterval", win.setTimeout);
+  #|         win.clearInterval = bindNative("clearInterval", win.clearTimeout);
+  #|         win.queueMicrotask = bindNative("queueMicrotask", (callback) => Promise.resolve().then(callback));
+  #|         win.requestAnimationFrame = bindNative("requestAnimationFrame", (callback) =>
+  #|           win.setTimeout(() => {
+  #|             if (typeof callback === "function") callback(Date.now());
+  #|           }, 16)
+  #|         );
+  #|         win.cancelAnimationFrame = bindNative("cancelAnimationFrame", win.clearTimeout);
+  #|         win.fetch = function(url, options) {
+  #|           const fetchFn = globalThis.__craterUseObservableFetch
+  #|             ? (globalThis.__craterObservableFetch || globalThis.__fetchInternal)
+  #|             : globalThis.__fetchInternal;
+  #|           const fallback = globalThis.fetch !== win.fetch ? globalThis.fetch : nativeFetch;
+  #|           const target = fetchFn || fallback;
+  #|           if (typeof target !== "function") return Promise.reject(new TypeError("fetch is not available"));
+  #|           return target.call(globalThis, url, options);
+  #|         };
+  #|         for (const name of [
+  #|           "Response", "Request", "Headers", "Blob", "FormData", "URL", "URLSearchParams",
+  #|           "getComputedStyle", "matchMedia", "Event", "UIEvent", "MouseEvent", "PointerEvent",
+  #|           "FocusEvent", "KeyboardEvent", "InputEvent", "CompositionEvent", "CustomEvent",
+  #|           "MessageEvent", "StorageEvent", "DragEvent", "ClipboardEvent", "DataTransfer",
+  #|           "DOMParser", "DOMException", "Node", "Attr", "Element", "HTMLElement", "Document",
+  #|         ]) {
+  #|           if (win[name] === undefined && globalThis[name] !== undefined) win[name] = globalThis[name];
+  #|         }
+  #|         return win;
+  #|       };
+  #|     };
+  #|     installContextWindowApi();
   #|     globalThis.__bidiPatchNavigatorTarget = (target, patch) => {
   #|       if (!target || typeof target !== "object") return null;
   #|       const current = target.navigator && typeof target.navigator === "object"
@@ -696,6 +794,7 @@ extern "js" fn js_evaluate_expression(
   #|   globalThis.__bidiPushJavascriptErrorEntry = pushJavascriptErrorEntry;
   #|   if (captureConsole) {
   #|     originalConsole = {
+  #|       target: console,
   #|       log: console.log,
   #|       warn: console.warn,
   #|       error: console.error,
@@ -739,7 +838,6 @@ extern "js" fn js_evaluate_expression(
   #|     // Intercept console calls
   #|     const makeInterceptor = (level, method) => (...args) => {
   #|       pushConsoleEntry(level, method, args);
-  #|       originalConsole[method](...args);
   #|     };
   #|
   #|     console.log = makeInterceptor('info', 'log');
@@ -755,15 +853,12 @@ extern "js" fn js_evaluate_expression(
   #|       }
   #|       const textArgs = args.length > 1 ? args.slice(1) : ["Assertion failed"];
   #|       pushConsoleEntry("error", "assert", textArgs);
-  #|       originalConsole.assert(...args);
   #|     };
   #|     console.time = (...args) => {
-  #|       originalConsole.time(...args);
   #|     };
   #|     console.timeEnd = (...args) => {
   #|       const textArgs = args.length > 0 ? args : ["default"];
   #|       pushConsoleEntry("info", "timeEnd", textArgs);
-  #|       originalConsole.timeEnd(...args);
   #|     };
   #|   }
   #|
@@ -809,7 +904,112 @@ extern "js" fn js_evaluate_expression(
   #|         return false;
   #|       };
   #|     }
+  #|     if (globalThis.document && typeof globalThis.__bidiEnsureDocumentRange === "function") {
+  #|       globalThis.__bidiEnsureDocumentRange(globalThis.document);
+  #|       if (globalThis.window && typeof globalThis.window === "object") {
+  #|         globalThis.window.document = globalThis.document;
+  #|       }
+  #|     }
   #|   };
+  #|
+  #|   const installWindowGlobalSync = () => {
+  #|     if (typeof globalThis.__bidiSyncWindowPropertiesToGlobal === "function") return;
+  #|     const reserved = new Set([
+  #|       "window", "self", "parent", "top", "frames",
+  #|       "document", "location", "navigator",
+  #|       "screen", "matchMedia",
+  #|       "innerWidth", "innerHeight", "outerWidth", "outerHeight",
+  #|       "devicePixelRatio", "pageXOffset", "pageYOffset",
+  #|       "localStorage", "sessionStorage",
+  #|       "alert", "confirm", "prompt",
+  #|       "setTimeout", "clearTimeout", "setInterval", "clearInterval",
+  #|       "requestAnimationFrame", "cancelAnimationFrame", "queueMicrotask",
+  #|       "fetch", "Response", "Request", "Headers", "Blob", "FormData",
+  #|       "URL", "URLSearchParams",
+  #|     ]);
+  #|     globalThis.__bidiSyncWindowPropertiesToGlobal = (win) => {
+  #|       const source = win && typeof win === "object" ? win : globalThis.window;
+  #|       if (!source || source === globalThis || typeof source !== "object") return;
+  #|       for (const key of Object.keys(source)) {
+  #|         if (reserved.has(key) || String(key).startsWith("__bidi")) continue;
+  #|         let value;
+  #|         try { value = source[key]; } catch (_e) { continue; }
+  #|         try {
+  #|           Object.defineProperty(globalThis, key, {
+  #|             configurable: true,
+  #|             enumerable: true,
+  #|             writable: true,
+  #|             value,
+  #|           });
+  #|         } catch (_e) {
+  #|           try { globalThis[key] = value; } catch (_e2) {}
+  #|         }
+  #|       }
+  #|     };
+  #|   };
+  #|   installWindowGlobalSync();
+  #|   const installContextWindowApi = () => {
+  #|     if (typeof globalThis.__bidiInstallContextWindowApi === "function") return;
+  #|     const nativeTimers = globalThis.__bidiNativeWindowTimers || {
+  #|       setTimeout: typeof globalThis.setTimeout === "function" ? globalThis.setTimeout : undefined,
+  #|       clearTimeout: typeof globalThis.clearTimeout === "function" ? globalThis.clearTimeout : undefined,
+  #|       setInterval: typeof globalThis.setInterval === "function" ? globalThis.setInterval : undefined,
+  #|       clearInterval: typeof globalThis.clearInterval === "function" ? globalThis.clearInterval : undefined,
+  #|       queueMicrotask: typeof globalThis.queueMicrotask === "function" ? globalThis.queueMicrotask : undefined,
+  #|       requestAnimationFrame: typeof globalThis.requestAnimationFrame === "function" ? globalThis.requestAnimationFrame : undefined,
+  #|       cancelAnimationFrame: typeof globalThis.cancelAnimationFrame === "function" ? globalThis.cancelAnimationFrame : undefined,
+  #|     };
+  #|     globalThis.__bidiNativeWindowTimers = nativeTimers;
+  #|     const nativeFetch = globalThis.__bidiNativeWindowFetch || (
+  #|       typeof globalThis.fetch === "function" ? globalThis.fetch : undefined
+  #|     );
+  #|     globalThis.__bidiNativeWindowFetch = nativeFetch;
+  #|     const bindNative = (name, fallback) => {
+  #|       const fn = nativeTimers[name];
+  #|       return typeof fn === "function" ? fn.bind(globalThis) : fallback;
+  #|     };
+  #|     globalThis.__bidiInstallContextWindowApi = (win) => {
+  #|       if (!win || typeof win !== "object") return win;
+  #|       win.window = win;
+  #|       win.self = win;
+  #|       if (!win.parent) win.parent = win;
+  #|       if (!win.top) win.top = win;
+  #|       win.setTimeout = bindNative("setTimeout", (handler, timeout) => {
+  #|         if (typeof handler === "function") handler();
+  #|         return 0;
+  #|       });
+  #|       win.clearTimeout = bindNative("clearTimeout", (_id) => undefined);
+  #|       win.setInterval = bindNative("setInterval", win.setTimeout);
+  #|       win.clearInterval = bindNative("clearInterval", win.clearTimeout);
+  #|       win.queueMicrotask = bindNative("queueMicrotask", (callback) => Promise.resolve().then(callback));
+  #|       win.requestAnimationFrame = bindNative("requestAnimationFrame", (callback) =>
+  #|         win.setTimeout(() => {
+  #|           if (typeof callback === "function") callback(Date.now());
+  #|         }, 16)
+  #|       );
+  #|       win.cancelAnimationFrame = bindNative("cancelAnimationFrame", win.clearTimeout);
+  #|       win.fetch = function(url, options) {
+  #|         const fetchFn = globalThis.__craterUseObservableFetch
+  #|           ? (globalThis.__craterObservableFetch || globalThis.__fetchInternal)
+  #|           : globalThis.__fetchInternal;
+  #|         const fallback = globalThis.fetch !== win.fetch ? globalThis.fetch : nativeFetch;
+  #|         const target = fetchFn || fallback;
+  #|         if (typeof target !== "function") return Promise.reject(new TypeError("fetch is not available"));
+  #|         return target.call(globalThis, url, options);
+  #|       };
+  #|       for (const name of [
+  #|         "Response", "Request", "Headers", "Blob", "FormData", "URL", "URLSearchParams",
+  #|         "getComputedStyle", "matchMedia", "Event", "UIEvent", "MouseEvent", "PointerEvent",
+  #|         "FocusEvent", "KeyboardEvent", "InputEvent", "CompositionEvent", "CustomEvent",
+  #|         "MessageEvent", "StorageEvent", "DragEvent", "ClipboardEvent", "DataTransfer",
+  #|         "DOMParser", "DOMException", "Node", "Attr", "Element", "HTMLElement", "Document",
+  #|       ]) {
+  #|         if (win[name] === undefined && globalThis[name] !== undefined) win[name] = globalThis[name];
+  #|       }
+  #|       return win;
+  #|     };
+  #|   };
+  #|   installContextWindowApi();
   #|
   #|   // Setup Mock DOM if not already present
   #|   if (!globalThis.document) {
@@ -1191,6 +1391,7 @@ extern "js" fn js_evaluate_expression(
   #|         get children() { return this._children.filter(c => c.nodeType === 1); },
   #|         get firstChild() { return this._children[0] || null; },
   #|         get lastChild() { return this._children[this._children.length - 1] || null; },
+  #|         hasChildNodes() { return this._children.length > 0; },
   #|         get nextSibling() {
   #|           if (!this._parent) return null;
   #|           const idx = this._parent._children.indexOf(this);
@@ -1298,6 +1499,8 @@ extern "js" fn js_evaluate_expression(
   #|         set checked(v) { this._attrs.checked = v; },
   #|         get type() { return this._attrs.type || ''; },
   #|         set type(v) { this._attrs.type = v; },
+  #|         get src() { return this._attrs.src || ''; },
+  #|         set src(v) { this._attrs.src = String(v); },
   #|         get hidden() { return 'hidden' in this._attrs; },
   #|         set hidden(v) { if (v) this._attrs.hidden = ''; else delete this._attrs.hidden; },
   #|         get clientWidth() {
@@ -1458,6 +1661,7 @@ extern "js" fn js_evaluate_expression(
   #|           );
   #|         },
   #|         getAttribute(name) { return this._attrs[name] ?? null; },
+  #|         getAttributeNames() { return Object.keys(this._attrs); },
   #|         removeAttribute(name) {
   #|           const oldValue = this._attrs[name];
   #|           delete this._attrs[name];
@@ -1478,22 +1682,33 @@ extern "js" fn js_evaluate_expression(
   #|           try {
   #|             const childTag = String(child && child.tagName ? child.tagName : "").toUpperCase();
   #|             const parentTag = String(this && this.tagName ? this.tagName : "").toUpperCase();
-  #|             if (
-  #|               !globalThis.__suppressScriptAppendExecution &&
-  #|               childTag === "SCRIPT" &&
-  #|               (parentTag === "BODY" || parentTag === "HEAD" || parentTag === "HTML")
-  #|             ) {
-  #|               const code = String(child.textContent || "");
-  #|               if (code.trim() !== "") {
-  #|                 try {
-  #|                   (0, eval)(code);
-  #|                 } catch (scriptError) {
-  #|                   const pushError = globalThis.__bidiPushJavascriptErrorEntry;
-  #|                   if (typeof pushError === "function") {
-  #|                     pushError(scriptError);
+  #|             if (!globalThis.__suppressScriptAppendExecution && childTag === "SCRIPT") {
+  #|               const src = typeof child.getAttribute === "function"
+  #|                 ? child.getAttribute("src")
+  #|                 : child.src;
+  #|               if (src) {
+  #|                 const fireScriptLoad = () => {
+  #|                   try {
+  #|                     if (typeof child.dispatchEvent === "function") {
+  #|                       child.dispatchEvent(new Event("load"));
+  #|                     }
+  #|                   } catch (_eventError) {}
+  #|                 };
+  #|                 if (typeof queueMicrotask === "function") queueMicrotask(fireScriptLoad);
+  #|                 else if (typeof setTimeout === "function") setTimeout(fireScriptLoad, 0);
+  #|               } else if (parentTag === "BODY" || parentTag === "HEAD" || parentTag === "HTML") {
+  #|                 const code = String(child.textContent || "");
+  #|                 if (code.trim() !== "") {
+  #|                   try {
+  #|                     (0, eval)(code);
+  #|                   } catch (scriptError) {
+  #|                     const pushError = globalThis.__bidiPushJavascriptErrorEntry;
+  #|                     if (typeof pushError === "function") {
+  #|                       pushError(scriptError);
+  #|                     }
   #|                   }
   #|                 }
-  #|               }
+  #|             }
   #|             }
   #|           } catch (_e) {}
   #|           return child;
@@ -1542,6 +1757,35 @@ extern "js" fn js_evaluate_expression(
   #|             notifyMutation(createMutationRecord('childList', this, { removedNodes: [child], previousSibling: prevSibling, nextSibling }));
   #|           }
   #|           return child;
+  #|         },
+  #|         remove() {
+  #|           const parent = this._parent || this.parentNode || this.parentElement || null;
+  #|           if (parent && typeof parent.removeChild === "function") {
+  #|             parent.removeChild(this);
+  #|           }
+  #|         },
+  #|         insertAdjacentElement(position, element) {
+  #|           if (!element || typeof element !== "object") {
+  #|             throw new TypeError("Failed to execute insertAdjacentElement: parameter 2 is not of type Element");
+  #|           }
+  #|           const pos = String(position || "").toLowerCase();
+  #|           if (pos === "beforebegin") {
+  #|             const parent = this._parent || this.parentNode || this.parentElement || null;
+  #|             if (!parent || typeof parent.insertBefore !== "function") return null;
+  #|             return parent.insertBefore(element, this);
+  #|           }
+  #|           if (pos === "afterend") {
+  #|             const parent = this._parent || this.parentNode || this.parentElement || null;
+  #|             if (!parent || typeof parent.insertBefore !== "function") return null;
+  #|             return parent.insertBefore(element, this.nextSibling || null);
+  #|           }
+  #|           if (pos === "afterbegin") {
+  #|             return this.insertBefore(element, this.firstChild || null);
+  #|           }
+  #|           if (pos === "beforeend") {
+  #|             return this.appendChild(element);
+  #|           }
+  #|           throw new DOMException("Invalid insertAdjacentElement position", "SyntaxError");
   #|         },
   #|         replaceChild(newChild, oldChild) {
   #|           const idx = this._children.indexOf(oldChild);
@@ -1743,6 +1987,17 @@ extern "js" fn js_evaluate_expression(
   #|       get nodeValue() { return this._textContent; },
   #|       set nodeValue(v) { this._textContent = String(v); },
   #|       get parentNode() { return this._parent; },
+  #|       get nextSibling() {
+  #|         if (!this._parent) return null;
+  #|         const siblings = this._parent._children || [];
+  #|         return siblings[siblings.indexOf(this) + 1] || null;
+  #|       },
+  #|       get previousSibling() {
+  #|         if (!this._parent) return null;
+  #|         const siblings = this._parent._children || [];
+  #|         return siblings[siblings.indexOf(this) - 1] || null;
+  #|       },
+  #|       hasChildNodes() { return false; },
   #|       cloneNode() { return createMockTextNode(this._textContent); }
   #|     });
   #|
@@ -1757,6 +2012,17 @@ extern "js" fn js_evaluate_expression(
   #|       get nodeValue() { return this._textContent; },
   #|       set nodeValue(v) { this._textContent = String(v); },
   #|       get parentNode() { return this._parent; },
+  #|       get nextSibling() {
+  #|         if (!this._parent) return null;
+  #|         const siblings = this._parent._children || [];
+  #|         return siblings[siblings.indexOf(this) + 1] || null;
+  #|       },
+  #|       get previousSibling() {
+  #|         if (!this._parent) return null;
+  #|         const siblings = this._parent._children || [];
+  #|         return siblings[siblings.indexOf(this) - 1] || null;
+  #|       },
+  #|       hasChildNodes() { return false; },
   #|       cloneNode() { return createMockCommentNode(this._textContent); }
   #|     });
   #|
@@ -1771,6 +2037,17 @@ extern "js" fn js_evaluate_expression(
   #|       get nodeValue() { return this._textContent; },
   #|       set nodeValue(v) { this._textContent = String(v); },
   #|       get parentNode() { return this._parent; },
+  #|       get nextSibling() {
+  #|         if (!this._parent) return null;
+  #|         const siblings = this._parent._children || [];
+  #|         return siblings[siblings.indexOf(this) + 1] || null;
+  #|       },
+  #|       get previousSibling() {
+  #|         if (!this._parent) return null;
+  #|         const siblings = this._parent._children || [];
+  #|         return siblings[siblings.indexOf(this) - 1] || null;
+  #|       },
+  #|       hasChildNodes() { return false; },
   #|       cloneNode() { return createMockCDataNode(this._textContent); }
   #|     });
   #|
@@ -1787,6 +2064,17 @@ extern "js" fn js_evaluate_expression(
   #|       get nodeValue() { return this._textContent; },
   #|       set nodeValue(v) { this._textContent = String(v); this.data = String(v); },
   #|       get parentNode() { return this._parent; },
+  #|       get nextSibling() {
+  #|         if (!this._parent) return null;
+  #|         const siblings = this._parent._children || [];
+  #|         return siblings[siblings.indexOf(this) + 1] || null;
+  #|       },
+  #|       get previousSibling() {
+  #|         if (!this._parent) return null;
+  #|         const siblings = this._parent._children || [];
+  #|         return siblings[siblings.indexOf(this) - 1] || null;
+  #|       },
+  #|       hasChildNodes() { return false; },
   #|       cloneNode() { return createMockProcessingInstruction(this.target, this.data); }
   #|     });
   #|
@@ -2225,6 +2513,165 @@ extern "js" fn js_evaluate_expression(
   #|       };
   #|     }
   #|
+  #|     const createDocumentFragmentFor = (ownerDocument) => {
+  #|       const frag = createMockElement('fragment');
+  #|       frag.nodeType = 11;
+  #|       frag.nodeName = '#document-fragment';
+  #|       frag.ownerDocument = ownerDocument || null;
+  #|       return frag;
+  #|     };
+  #|
+  #|     const appendFragmentChild = (fragment, node) => {
+  #|       if (!fragment || !node) return node;
+  #|       if (typeof fragment.appendChild === "function") {
+  #|         return fragment.appendChild(node);
+  #|       }
+  #|       const children = Array.isArray(fragment._children)
+  #|         ? fragment._children
+  #|         : (Array.isArray(fragment.childNodes) ? fragment.childNodes : []);
+  #|       children.push(node);
+  #|       fragment._children = children;
+  #|       fragment.childNodes = children;
+  #|       node._parent = fragment;
+  #|       node.parentNode = fragment;
+  #|       return node;
+  #|     };
+  #|
+  #|     const ensureDocumentFragmentFactory = (doc) => {
+  #|       if (!doc || typeof doc !== "object") return;
+  #|       let needsPatch = typeof doc.createDocumentFragment !== "function";
+  #|       if (!needsPatch) {
+  #|         try {
+  #|           const probe = doc.createDocumentFragment();
+  #|           needsPatch = !probe || typeof probe.appendChild !== "function";
+  #|         } catch (_e) {
+  #|           needsPatch = true;
+  #|         }
+  #|       }
+  #|       if (needsPatch) {
+  #|         doc.createDocumentFragment = function() {
+  #|           return createDocumentFragmentFor(this);
+  #|         };
+  #|       }
+  #|     };
+  #|
+  #|     const createRangeForDocument = (ownerDocument) => {
+  #|       const doc = ownerDocument || globalThis.document;
+  #|       ensureDocumentFragmentFactory(doc);
+  #|       const getNodeIndex = (node) => {
+  #|         const parent = node && (node._parent || node.parentNode);
+  #|         if (!parent) return 0;
+  #|         const children = parent._children || parent.childNodes || [];
+  #|         for (let i = 0; i < children.length; i++) {
+  #|           if (children[i] === node) return i;
+  #|         }
+  #|         return 0;
+  #|       };
+  #|       const range = {
+  #|         startContainer: doc,
+  #|         startOffset: 0,
+  #|         endContainer: doc,
+  #|         endOffset: 0,
+  #|         collapsed: true,
+  #|         _updateCollapsed() {
+  #|           this.collapsed = this.startContainer === this.endContainer &&
+  #|             this.startOffset === this.endOffset;
+  #|         },
+  #|         setStart(node, offset) {
+  #|           this.startContainer = node;
+  #|           this.startOffset = Number(offset) || 0;
+  #|           this._updateCollapsed();
+  #|         },
+  #|         setEnd(node, offset) {
+  #|           this.endContainer = node;
+  #|           this.endOffset = Number(offset) || 0;
+  #|           this._updateCollapsed();
+  #|         },
+  #|         selectNode(node) {
+  #|           const parent = node && (node._parent || node.parentNode);
+  #|           if (parent) {
+  #|             const index = getNodeIndex(node);
+  #|             this.startContainer = parent;
+  #|             this.startOffset = index;
+  #|             this.endContainer = parent;
+  #|             this.endOffset = index + 1;
+  #|           } else {
+  #|             this.startContainer = node;
+  #|             this.startOffset = 0;
+  #|             this.endContainer = node;
+  #|             this.endOffset = (node && (node._children || node.childNodes) || []).length;
+  #|           }
+  #|           this._updateCollapsed();
+  #|         },
+  #|         selectNodeContents(node) {
+  #|           this.startContainer = node;
+  #|           this.startOffset = 0;
+  #|           this.endContainer = node;
+  #|           this.endOffset = (node && (node._children || node.childNodes) || []).length;
+  #|           this._updateCollapsed();
+  #|         },
+  #|         createContextualFragment(html) {
+  #|           const fragment = doc.createDocumentFragment();
+  #|           const previousSuppressScriptAppendExecution = globalThis.__suppressScriptAppendExecution;
+  #|           globalThis.__suppressScriptAppendExecution = true;
+  #|           try {
+  #|             const nodes = parseHTMLFragment(String(html || ""), doc);
+  #|             for (const node of nodes) appendFragmentChild(fragment, node);
+  #|           } finally {
+  #|             globalThis.__suppressScriptAppendExecution = previousSuppressScriptAppendExecution;
+  #|           }
+  #|           return fragment;
+  #|         },
+  #|         cloneContents() { return doc.createDocumentFragment(); },
+  #|         extractContents() { return doc.createDocumentFragment(); },
+  #|         deleteContents() {},
+  #|         insertNode(node) {
+  #|           const container = this.startContainer;
+  #|           if (container && typeof container.insertBefore === "function") {
+  #|             const children = container._children || container.childNodes || [];
+  #|             container.insertBefore(node, children[this.startOffset] || null);
+  #|           }
+  #|         },
+  #|         collapse(toStart) {
+  #|           if (toStart) {
+  #|             this.endContainer = this.startContainer;
+  #|             this.endOffset = this.startOffset;
+  #|           } else {
+  #|             this.startContainer = this.endContainer;
+  #|             this.startOffset = this.endOffset;
+  #|           }
+  #|           this.collapsed = true;
+  #|         },
+  #|         cloneRange() {
+  #|           const cloned = createRangeForDocument(doc);
+  #|           cloned.startContainer = this.startContainer;
+  #|           cloned.startOffset = this.startOffset;
+  #|           cloned.endContainer = this.endContainer;
+  #|           cloned.endOffset = this.endOffset;
+  #|           cloned.collapsed = this.collapsed;
+  #|           return cloned;
+  #|         },
+  #|         detach() {},
+  #|         toString() { return ""; },
+  #|         getClientRects() { return []; },
+  #|         getBoundingClientRect() {
+  #|           return { x: 0, y: 0, width: 0, height: 0, top: 0, right: 0, bottom: 0, left: 0 };
+  #|         },
+  #|       };
+  #|       return range;
+  #|     };
+  #|
+  #|     globalThis.__bidiEnsureDocumentRange = (doc) => {
+  #|       if (!doc || typeof doc !== "object") return doc;
+  #|       ensureDocumentFragmentFactory(doc);
+  #|       if (typeof doc.createRange !== "function") {
+  #|         doc.createRange = function() {
+  #|           return createRangeForDocument(this);
+  #|         };
+  #|       }
+  #|       return doc;
+  #|     };
+  #|
   #|     // Create document
   #|     const html = createMockElement('html');
   #|     const head = createMockElement('head');
@@ -2258,6 +2705,20 @@ extern "js" fn js_evaluate_expression(
   #|         el.ownerDocument = this;
   #|         return el;
   #|       },
+  #|       createElementNS(namespaceURI, qualifiedName) {
+  #|         const ns = String(namespaceURI || "");
+  #|         const name = String(qualifiedName || "div");
+  #|         const el = createMockElement(name);
+  #|         el.ownerDocument = this;
+  #|         el.namespaceURI = ns;
+  #|         if (ns === "http://www.w3.org/2000/svg") {
+  #|           const localName = name.includes(":") ? name.split(":").pop() : name;
+  #|           el.tagName = localName;
+  #|           el.nodeName = localName;
+  #|           el._tagName = localName;
+  #|         }
+  #|         return el;
+  #|       },
   #|       createTextNode(text) {
   #|         const node = createMockTextNode(text);
   #|         node.ownerDocument = this;
@@ -2284,6 +2745,110 @@ extern "js" fn js_evaluate_expression(
   #|         frag.nodeName = '#document-fragment';
   #|         frag.ownerDocument = this;
   #|         return frag;
+  #|       },
+  #|       createRange() {
+  #|         const ownerDocument = this;
+  #|         const getNodeIndex = (node) => {
+  #|           const parent = node && (node._parent || node.parentNode);
+  #|           if (!parent) return 0;
+  #|           const children = parent._children || parent.childNodes || [];
+  #|           for (let i = 0; i < children.length; i++) {
+  #|             if (children[i] === node) return i;
+  #|           }
+  #|           return 0;
+  #|         };
+  #|         const range = {
+  #|           startContainer: ownerDocument,
+  #|           startOffset: 0,
+  #|           endContainer: ownerDocument,
+  #|           endOffset: 0,
+  #|           collapsed: true,
+  #|           _updateCollapsed() {
+  #|             this.collapsed = this.startContainer === this.endContainer &&
+  #|               this.startOffset === this.endOffset;
+  #|           },
+  #|           setStart(node, offset) {
+  #|             this.startContainer = node;
+  #|             this.startOffset = Number(offset) || 0;
+  #|             this._updateCollapsed();
+  #|           },
+  #|           setEnd(node, offset) {
+  #|             this.endContainer = node;
+  #|             this.endOffset = Number(offset) || 0;
+  #|             this._updateCollapsed();
+  #|           },
+  #|           selectNode(node) {
+  #|             const parent = node && (node._parent || node.parentNode);
+  #|             if (parent) {
+  #|               const index = getNodeIndex(node);
+  #|               this.startContainer = parent;
+  #|               this.startOffset = index;
+  #|               this.endContainer = parent;
+  #|               this.endOffset = index + 1;
+  #|             } else {
+  #|               this.startContainer = node;
+  #|               this.startOffset = 0;
+  #|               this.endContainer = node;
+  #|               this.endOffset = (node && (node._children || node.childNodes) || []).length;
+  #|             }
+  #|             this._updateCollapsed();
+  #|           },
+  #|           selectNodeContents(node) {
+  #|             this.startContainer = node;
+  #|             this.startOffset = 0;
+  #|             this.endContainer = node;
+  #|             this.endOffset = (node && (node._children || node.childNodes) || []).length;
+  #|             this._updateCollapsed();
+  #|           },
+  #|           createContextualFragment(html) {
+  #|             const fragment = ownerDocument.createDocumentFragment();
+  #|             const previousSuppressScriptAppendExecution = globalThis.__suppressScriptAppendExecution;
+  #|             globalThis.__suppressScriptAppendExecution = true;
+  #|             try {
+  #|               const nodes = parseHTMLFragment(String(html || ""), ownerDocument);
+  #|               for (const node of nodes) fragment.appendChild(node);
+  #|             } finally {
+  #|               globalThis.__suppressScriptAppendExecution = previousSuppressScriptAppendExecution;
+  #|             }
+  #|             return fragment;
+  #|           },
+  #|           cloneContents() { return ownerDocument.createDocumentFragment(); },
+  #|           extractContents() { return ownerDocument.createDocumentFragment(); },
+  #|           deleteContents() {},
+  #|           insertNode(node) {
+  #|             const container = this.startContainer;
+  #|             if (container && typeof container.insertBefore === "function") {
+  #|               const children = container._children || container.childNodes || [];
+  #|               container.insertBefore(node, children[this.startOffset] || null);
+  #|             }
+  #|           },
+  #|           collapse(toStart) {
+  #|             if (toStart) {
+  #|               this.endContainer = this.startContainer;
+  #|               this.endOffset = this.startOffset;
+  #|             } else {
+  #|               this.startContainer = this.endContainer;
+  #|               this.startOffset = this.endOffset;
+  #|             }
+  #|             this.collapsed = true;
+  #|           },
+  #|           cloneRange() {
+  #|             const cloned = ownerDocument.createRange();
+  #|             cloned.startContainer = this.startContainer;
+  #|             cloned.startOffset = this.startOffset;
+  #|             cloned.endContainer = this.endContainer;
+  #|             cloned.endOffset = this.endOffset;
+  #|             cloned.collapsed = this.collapsed;
+  #|             return cloned;
+  #|           },
+  #|           detach() {},
+  #|           toString() { return ""; },
+  #|           getClientRects() { return []; },
+  #|           getBoundingClientRect() {
+  #|             return { x: 0, y: 0, width: 0, height: 0, top: 0, right: 0, bottom: 0, left: 0 };
+  #|           },
+  #|         };
+  #|         return range;
   #|       },
   #|       getElementById(id) {
   #|         return querySelect(html, '#' + id, false);
@@ -2396,7 +2961,125 @@ extern "js" fn js_evaluate_expression(
   #|     globalThis.self = globalThis;
   #|     globalThis.parent = globalThis;
   #|     globalThis.top = globalThis;
-  #|     globalThis.HTMLElement = globalThis.HTMLElement || class HTMLElement {};
+  #|     if (!globalThis._listeners || typeof globalThis._listeners !== "object") {
+  #|       globalThis._listeners = {};
+  #|     }
+  #|     globalThis.addEventListener = function(type, listener) {
+  #|       if (!listener) return;
+  #|       const eventType = String(type);
+  #|       if (!this._listeners[eventType]) this._listeners[eventType] = [];
+  #|       if (!this._listeners[eventType].includes(listener)) {
+  #|         this._listeners[eventType].push(listener);
+  #|       }
+  #|     };
+  #|     globalThis.removeEventListener = function(type, listener) {
+  #|       const eventType = String(type);
+  #|       if (!this._listeners[eventType]) return;
+  #|       this._listeners[eventType] = this._listeners[eventType].filter((entry) => entry !== listener);
+  #|     };
+  #|     globalThis.dispatchEvent = function(event) {
+  #|       if (!event || !event.type) {
+  #|         throw new TypeError("Failed to execute dispatchEvent: parameter 1 is not of type Event");
+  #|       }
+  #|       prepareEventForCurrentTarget(event, this);
+  #|       if (event.__retargetSuppressed) return !event.defaultPrevented;
+  #|       const listeners = this._listeners[String(event.type)] || [];
+  #|       const previousEvent = globalThis.event;
+  #|       globalThis.event = event;
+  #|       try {
+  #|         for (const listener of listeners.slice()) {
+  #|           try {
+  #|             if (typeof listener === "function") listener.call(this, event);
+  #|             else if (listener && typeof listener.handleEvent === "function") listener.handleEvent(event);
+  #|           } catch (_listenerError) {}
+  #|         }
+  #|       } finally {
+  #|         globalThis.event = previousEvent;
+  #|       }
+  #|       return !event.defaultPrevented;
+  #|     };
+  #|     if (!globalThis.HTMLElement) {
+  #|       globalThis.HTMLElement = function HTMLElement() {
+  #|         const doc = globalThis.document;
+  #|         if (doc && typeof doc.createElement === "function") {
+  #|           try {
+  #|             const element = doc.createElement("div");
+  #|             Object.defineProperties(this, Object.getOwnPropertyDescriptors(element));
+  #|           } catch (_e) {}
+  #|         }
+  #|       };
+  #|       try {
+  #|         Object.defineProperty(globalThis.HTMLElement, Symbol.hasInstance, {
+  #|           configurable: true,
+  #|           value(value) {
+  #|             return !!(value && value.nodeType === 1);
+  #|           }
+  #|         });
+  #|       } catch (_e) {}
+  #|     }
+  #|     if (!globalThis.HTMLScriptElement) {
+  #|       globalThis.HTMLScriptElement = function HTMLScriptElement() {
+  #|         const doc = globalThis.document;
+  #|         if (doc && typeof doc.createElement === "function") {
+  #|           try {
+  #|             const element = doc.createElement("script");
+  #|             Object.defineProperties(this, Object.getOwnPropertyDescriptors(element));
+  #|           } catch (_e) {}
+  #|         }
+  #|       };
+  #|       try {
+  #|         Object.defineProperty(globalThis.HTMLScriptElement, Symbol.hasInstance, {
+  #|           configurable: true,
+  #|           value(value) {
+  #|             return !!(value && value.nodeType === 1 && String(value.tagName || "").toUpperCase() === "SCRIPT");
+  #|           }
+  #|         });
+  #|       } catch (_e) {}
+  #|     }
+  #|     if (!globalThis.SVGElement) {
+  #|       globalThis.SVGElement = class SVGElement {};
+  #|       try {
+  #|         Object.defineProperty(globalThis.SVGElement, Symbol.hasInstance, {
+  #|           configurable: true,
+  #|           value(value) {
+  #|             return !!(value && value.nodeType === 1 && value.namespaceURI === "http://www.w3.org/2000/svg");
+  #|           }
+  #|         });
+  #|       } catch (_e) {}
+  #|     }
+  #|     if (!globalThis.SVGSVGElement) globalThis.SVGSVGElement = globalThis.SVGElement;
+  #|     if (!globalThis.SVGPathElement) globalThis.SVGPathElement = globalThis.SVGElement;
+  #|     const cssEscape = (value) => {
+  #|       const input = String(value);
+  #|       return input.replace(/[\0-\x1f\x7f]|^-?\d|^-$|[^\w-]/gu, (match) => {
+  #|         if (match === "\0") return "\uFFFD";
+  #|         if (/^-?\d/u.test(match)) {
+  #|           return match.replace(/\d/u, (digit) => `\\${digit} `);
+  #|         }
+  #|         return `\\${match}`;
+  #|       });
+  #|     };
+  #|     if (!globalThis.CSS || typeof globalThis.CSS !== "object") globalThis.CSS = {};
+  #|     globalThis.CSS.supports = function(property, value) {
+  #|       const source = arguments.length > 1
+  #|         ? `${String(property)}: ${String(value)}`
+  #|         : String(property || "");
+  #|       const normalized = source.trim().toLowerCase();
+  #|       if (!normalized) return false;
+  #|       if (
+  #|         normalized.includes("animation-timeline") ||
+  #|         normalized.includes("scroll-timeline") ||
+  #|         normalized.includes("view-timeline") ||
+  #|         normalized.includes("timeline-scope")
+  #|       ) {
+  #|         return true;
+  #|       }
+  #|       if (arguments.length > 1) {
+  #|         return String(property || "").trim().length > 0 && String(value || "").trim().length > 0;
+  #|       }
+  #|       return normalized.includes(":");
+  #|     };
+  #|     globalThis.CSS.escape = cssEscape;
   #|     if (!globalThis.customElements) {
   #|       const registry = new Map();
   #|       globalThis.customElements = {
@@ -3364,6 +4047,23 @@ extern "js" fn js_evaluate_expression(
   #|             return el;
   #|           }
   #|
+  #|           if (tagName === 'noscript') {
+  #|             const endTag = '</noscript';
+  #|             const endIdx = getLowerHtml().indexOf(endTag, i);
+  #|             if (endIdx >= 0) {
+  #|               const content = htmlStr.slice(i, endIdx);
+  #|               if (content.trim()) {
+  #|                 el.appendChild(globalThis.document.createTextNode(content));
+  #|               }
+  #|               i = endIdx + endTag.length;
+  #|               while (i < len && htmlStr[i] !== '>') i++;
+  #|               i++; // skip >
+  #|             } else {
+  #|               i = len;
+  #|             }
+  #|             return el;
+  #|           }
+  #|
   #|           // Parse children for script/style (raw text)
   #|           if (tagName === 'script' || tagName === 'style') {
   #|             const endTag = '</' + tagName;
@@ -3528,6 +4228,18 @@ extern "js" fn js_evaluate_expression(
   #|       }
   #|       globalThis.__lastHTML = html;
   #|       globalThis.__lastParsed = { headNodes: headCache, bodyNodes: bodyCache };
+  #|       try {
+  #|         const ctxId = String(globalThis.__bidiCurrentContext || "default-context");
+  #|         if (globalThis.__bidiContextWindows && globalThis.__bidiContextWindows.has(ctxId)) {
+  #|           const contextWindow = globalThis.__bidiContextWindows.get(ctxId);
+  #|           if (contextWindow && typeof contextWindow === "object") {
+  #|             contextWindow.document = globalThis.document;
+  #|           }
+  #|         }
+  #|         if (globalThis.window && typeof globalThis.window === "object") {
+  #|           globalThis.window.document = globalThis.document;
+  #|         }
+  #|       } catch (_e) {}
   #|
   #|       return true;
   #|     };
@@ -3548,8 +4260,17 @@ extern "js" fn js_evaluate_expression(
   #|       const baseUrl = options.baseUrl || globalThis.__pageUrl || '';
   #|       const scripts = Array.from(globalThis.document.querySelectorAll('script'));
   #|       const results = [];
+  #|       const syncWindowGlobals = () => {
+  #|         try {
+  #|           if (typeof globalThis.__bidiSyncWindowPropertiesToGlobal === "function") {
+  #|             globalThis.__bidiSyncWindowPropertiesToGlobal(globalThis.window);
+  #|           }
+  #|         } catch (_e) {}
+  #|       };
+  #|       syncWindowGlobals();
   #|
   #|       for (const script of scripts) {
+  #|         syncWindowGlobals();
   #|         const src = script.getAttribute('src');
   #|         const type = script.getAttribute('type') || 'text/javascript';
   #|
@@ -3618,6 +4339,7 @@ extern "js" fn js_evaluate_expression(
   #|         } catch (e) {
   #|           results.push({ error: true, message: String(e), src: src || 'inline' });
   #|         }
+  #|         syncWindowGlobals();
   #|       }
   #|
   #|       return results;
@@ -3698,12 +4420,21 @@ extern "js" fn js_evaluate_expression(
   #|       }
   #|       return !event.defaultPrevented;
   #|     };
+  #|     if (typeof globalThis.__bidiInstallContextWindowApi === "function") {
+  #|       globalThis.__bidiInstallContextWindowApi(win);
+  #|     }
   #|     globalThis.__bidiContextWindows.set(currentCtx, win);
   #|   }
   #|   const contextWindow = globalThis.__bidiContextWindows.get(currentCtx);
+  #|   if (typeof globalThis.__bidiInstallContextWindowApi === "function") {
+  #|     globalThis.__bidiInstallContextWindowApi(contextWindow);
+  #|   }
   #|   if (!contextWindow.window) contextWindow.window = contextWindow;
   #|   const frameWindows = Array.isArray(contextWindow.frames) ? contextWindow.frames : [];
   #|   globalThis.window = contextWindow;
+  #|   globalThis.self = contextWindow;
+  #|   globalThis.parent = contextWindow.parent || contextWindow;
+  #|   globalThis.top = contextWindow.top || contextWindow;
   #|   globalThis.frames = frameWindows;
   #|   if (contextWindow.navigator && typeof contextWindow.navigator === 'object') {
   #|     globalThis.navigator = contextWindow.navigator;
@@ -3736,6 +4467,9 @@ extern "js" fn js_evaluate_expression(
   #|     };
   #|     globalThis.location = contextWindow.location;
   #|     globalThis.__pageUrl = locationHref;
+  #|   }
+  #|   if (typeof globalThis.__bidiSyncWindowPropertiesToGlobal === "function") {
+  #|     globalThis.__bidiSyncWindowPropertiesToGlobal(contextWindow);
   #|   }
   #|   if (!globalThis.__bidiProxyInstances) globalThis.__bidiProxyInstances = new WeakSet();
   #|   if (!globalThis.__bidiNativeProxy && typeof globalThis.Proxy === "function") {
@@ -4092,7 +4826,13 @@ extern "js" fn js_evaluate_expression(
   #|   }
   #|
   #|   try {
+  #|     if (typeof globalThis.__bidiSyncWindowPropertiesToGlobal === "function") {
+  #|       globalThis.__bidiSyncWindowPropertiesToGlobal(globalThis.window);
+  #|     }
   #|     let result = (0, eval)(expression);  // Indirect eval for global scope
+  #|     if (typeof globalThis.__bidiSyncWindowPropertiesToGlobal === "function") {
+  #|       globalThis.__bidiSyncWindowPropertiesToGlobal(globalThis.window);
+  #|     }
   #|     if (result instanceof Promise) {
   #|       // Avoid process-level unhandled rejection when awaitPromise=false.
   #|       result.catch(() => {});
@@ -4123,16 +4863,17 @@ extern "js" fn js_evaluate_expression(
   #|     // Restore original console (for sync path)
   #|     // Note: For async path, cleanup is in .finally()
   #|     if (captureConsole && originalConsole) {
-  #|       console.log = originalConsole.log;
-  #|       console.warn = originalConsole.warn;
-  #|       console.error = originalConsole.error;
-  #|       console.info = originalConsole.info;
-  #|       console.debug = originalConsole.debug;
-  #|       console.assert = originalConsole.assert;
-  #|       console.table = originalConsole.table;
-  #|       console.trace = originalConsole.trace;
-  #|       console.time = originalConsole.time;
-  #|       console.timeEnd = originalConsole.timeEnd;
+  #|       const restoreConsole = originalConsole.target || console;
+  #|       restoreConsole.log = originalConsole.log;
+  #|       restoreConsole.warn = originalConsole.warn;
+  #|       restoreConsole.error = originalConsole.error;
+  #|       restoreConsole.info = originalConsole.info;
+  #|       restoreConsole.debug = originalConsole.debug;
+  #|       restoreConsole.assert = originalConsole.assert;
+  #|       restoreConsole.table = originalConsole.table;
+  #|       restoreConsole.trace = originalConsole.trace;
+  #|       restoreConsole.time = originalConsole.time;
+  #|       restoreConsole.timeEnd = originalConsole.timeEnd;
   #|     }
   #|   }
   #| }
@@ -4179,6 +4920,12 @@ extern "js" fn js_evaluate_expression_fast(
   #|       if (cmd === 'copy') return !!globalThis.__bidiUserActivation;
   #|       return false;
   #|     };
+  #|   }
+  #|   if (globalThis.document && typeof globalThis.__bidiEnsureDocumentRange === "function") {
+  #|     globalThis.__bidiEnsureDocumentRange(globalThis.document);
+  #|     if (globalThis.window && typeof globalThis.window === "object") {
+  #|       globalThis.window.document = globalThis.document;
+  #|     }
   #|   }
   #|
   #|   function getNodeSharedId(node) {
@@ -4382,7 +5129,13 @@ extern "js" fn js_evaluate_expression_fast(
   #|   const wrapResult = (valueJson) =>
   #|     `{"id":${id},"type":"success","result":{"realm":${JSON.stringify(realm)},"result":${valueJson}}}`;
   #|   try {
+  #|     if (typeof globalThis.__bidiSyncWindowPropertiesToGlobal === "function") {
+  #|       globalThis.__bidiSyncWindowPropertiesToGlobal(globalThis.window);
+  #|     }
   #|     const result = (0, eval)(expression);
+  #|     if (typeof globalThis.__bidiSyncWindowPropertiesToGlobal === "function") {
+  #|       globalThis.__bidiSyncWindowPropertiesToGlobal(globalThis.window);
+  #|     }
   #|     if (result instanceof Promise) {
   #|       // Avoid process-level unhandled rejection when awaitPromise=false.
   #|       result.catch(() => {});
@@ -4469,6 +5222,7 @@ extern "js" fn js_evaluate_expression_async(
   #|   const consoleEntries = [];
   #|   const captureConsole = true;
   #|   const originalConsole = {
+  #|     target: console,
   #|     log: console.log,
   #|     warn: console.warn,
   #|     error: console.error,
@@ -4504,7 +5258,6 @@ extern "js" fn js_evaluate_expression_async(
   #|
   #|   const makeInterceptor = (level, method) => (...args) => {
   #|     pushConsoleEntry(level, method, args);
-  #|     originalConsole[method](...args);
   #|   };
   #|
   #|   console.log = makeInterceptor('info', 'log');
@@ -4520,15 +5273,12 @@ extern "js" fn js_evaluate_expression_async(
   #|     }
   #|     const textArgs = args.length > 1 ? args.slice(1) : ["Assertion failed"];
   #|     pushConsoleEntry("error", "assert", textArgs);
-  #|     originalConsole.assert(...args);
   #|   };
   #|   console.time = (...args) => {
-  #|     originalConsole.time(...args);
   #|   };
   #|   console.timeEnd = (...args) => {
   #|     const textArgs = args.length > 0 ? args : ["default"];
   #|     pushConsoleEntry("info", "timeEnd", textArgs);
-  #|     originalConsole.timeEnd(...args);
   #|   };
   #|
   #|   const isActive = !!userActivation;
@@ -4672,6 +5422,10 @@ extern "js" fn js_evaluate_expression_async(
   #|       if (cmd === 'copy') return !!globalThis.__bidiUserActivation;
   #|       return false;
   #|     };
+  #|   }
+  #|   if (globalThis.document && typeof globalThis.__bidiEnsureDocumentRange === "function") {
+  #|     globalThis.__bidiEnsureDocumentRange(globalThis.document);
+  #|     contextWindow.document = globalThis.document;
   #|   }
   #|
   #|   function getNodeSharedId(node) {
@@ -4870,7 +5624,13 @@ extern "js" fn js_evaluate_expression_async(
   #|   }
   #|
   #|   try {
+  #|     if (typeof globalThis.__bidiSyncWindowPropertiesToGlobal === "function") {
+  #|       globalThis.__bidiSyncWindowPropertiesToGlobal(globalThis.window);
+  #|     }
   #|     let result = (0, eval)(expression);
+  #|     if (typeof globalThis.__bidiSyncWindowPropertiesToGlobal === "function") {
+  #|       globalThis.__bidiSyncWindowPropertiesToGlobal(globalThis.window);
+  #|     }
   #|     // Await if result is a Promise
   #|     if (result instanceof Promise) {
   #|       result = await result;
@@ -4891,16 +5651,17 @@ extern "js" fn js_evaluate_expression_async(
   #|     });
   #|   } finally {
   #|     if (captureConsole && originalConsole) {
-  #|       console.log = originalConsole.log;
-  #|       console.warn = originalConsole.warn;
-  #|       console.error = originalConsole.error;
-  #|       console.info = originalConsole.info;
-  #|       console.debug = originalConsole.debug;
-  #|       console.assert = originalConsole.assert;
-  #|       console.table = originalConsole.table;
-  #|       console.trace = originalConsole.trace;
-  #|       console.time = originalConsole.time;
-  #|       console.timeEnd = originalConsole.timeEnd;
+  #|       const restoreConsole = originalConsole.target || console;
+  #|       restoreConsole.log = originalConsole.log;
+  #|       restoreConsole.warn = originalConsole.warn;
+  #|       restoreConsole.error = originalConsole.error;
+  #|       restoreConsole.info = originalConsole.info;
+  #|       restoreConsole.debug = originalConsole.debug;
+  #|       restoreConsole.assert = originalConsole.assert;
+  #|       restoreConsole.table = originalConsole.table;
+  #|       restoreConsole.trace = originalConsole.trace;
+  #|       restoreConsole.time = originalConsole.time;
+  #|       restoreConsole.timeEnd = originalConsole.timeEnd;
   #|     }
   #|   }
   #| }
@@ -4936,6 +5697,7 @@ extern "js" fn js_eval_and_send_async(
   #|   let originalConsole = null;
   #|   if (captureConsole) {
   #|     originalConsole = {
+  #|       target: console,
   #|       log: console.log, warn: console.warn, error: console.error,
   #|       info: console.info, debug: console.debug,
   #|       assert: console.assert, table: console.table, trace: console.trace,
@@ -4964,7 +5726,6 @@ extern "js" fn js_eval_and_send_async(
   #|
   #|     const makeInterceptor = (level, method) => (...args) => {
   #|       pushConsoleEntry(level, method, args);
-  #|       originalConsole[method](...args);
   #|     };
   #|
   #|     console.log = makeInterceptor('info', 'log');
@@ -4980,15 +5741,12 @@ extern "js" fn js_eval_and_send_async(
   #|       }
   #|       const textArgs = args.length > 1 ? args.slice(1) : ["Assertion failed"];
   #|       pushConsoleEntry("error", "assert", textArgs);
-  #|       originalConsole.assert(...args);
   #|     };
   #|     console.time = (...args) => {
-  #|       originalConsole.time(...args);
   #|     };
   #|     console.timeEnd = (...args) => {
   #|       const textArgs = args.length > 0 ? args : ["default"];
   #|       pushConsoleEntry("info", "timeEnd", textArgs);
-  #|       originalConsole.timeEnd(...args);
   #|     };
   #|   }
   #|
@@ -5132,6 +5890,10 @@ extern "js" fn js_eval_and_send_async(
   #|     };
   #|   }
   #|   if (globalThis.document && !contextWindow.document) {
+  #|     contextWindow.document = globalThis.document;
+  #|   }
+  #|   if (globalThis.document && typeof globalThis.__bidiEnsureDocumentRange === "function") {
+  #|     globalThis.__bidiEnsureDocumentRange(globalThis.document);
   #|     contextWindow.document = globalThis.document;
   #|   }
   #|
@@ -5358,7 +6120,13 @@ extern "js" fn js_eval_and_send_async(
   #|       // unless the expression explicitly opts into strict mode.
   #|       return (0, eval)(code);
   #|     };
+  #|     if (typeof globalThis.__bidiSyncWindowPropertiesToGlobal === "function") {
+  #|       globalThis.__bidiSyncWindowPropertiesToGlobal(globalThis.window);
+  #|     }
   #|     let result = runInContext(expression);
+  #|     if (typeof globalThis.__bidiSyncWindowPropertiesToGlobal === "function") {
+  #|       globalThis.__bidiSyncWindowPropertiesToGlobal(globalThis.window);
+  #|     }
   #|     // Await if result is a Promise
   #|     if (result instanceof Promise) {
   #|       result = await result;
@@ -5392,16 +6160,17 @@ extern "js" fn js_eval_and_send_async(
   #|     };
   #|   } finally {
   #|     if (captureConsole && originalConsole) {
-  #|       console.log = originalConsole.log;
-  #|       console.warn = originalConsole.warn;
-  #|       console.error = originalConsole.error;
-  #|       console.info = originalConsole.info;
-  #|       console.debug = originalConsole.debug;
-  #|       console.assert = originalConsole.assert;
-  #|       console.table = originalConsole.table;
-  #|       console.trace = originalConsole.trace;
-  #|       console.time = originalConsole.time;
-  #|       console.timeEnd = originalConsole.timeEnd;
+  #|       const restoreConsole = originalConsole.target || console;
+  #|       restoreConsole.log = originalConsole.log;
+  #|       restoreConsole.warn = originalConsole.warn;
+  #|       restoreConsole.error = originalConsole.error;
+  #|       restoreConsole.info = originalConsole.info;
+  #|       restoreConsole.debug = originalConsole.debug;
+  #|       restoreConsole.assert = originalConsole.assert;
+  #|       restoreConsole.table = originalConsole.table;
+  #|       restoreConsole.trace = originalConsole.trace;
+  #|       restoreConsole.time = originalConsole.time;
+  #|       restoreConsole.timeEnd = originalConsole.timeEnd;
   #|     }
   #|   }
   #|
@@ -5592,10 +6361,16 @@ extern "js" fn js_set_runtime_context(ctx_id : String) -> Unit =
   #|       }
   #|       return !event.defaultPrevented;
   #|     };
+  #|     if (typeof globalThis.__bidiInstallContextWindowApi === "function") {
+  #|       globalThis.__bidiInstallContextWindowApi(win);
+  #|     }
   #|     globalThis.__bidiContextWindows.set(ctxId, win);
   #|   }
   #|   const contextWindow = globalThis.__bidiContextWindows.get(ctxId);
   #|   if (contextWindow) {
+  #|     if (typeof globalThis.__bidiInstallContextWindowApi === "function") {
+  #|       globalThis.__bidiInstallContextWindowApi(contextWindow);
+  #|     }
   #|     if (!contextWindow.window) contextWindow.window = contextWindow;
   #|     contextWindow.innerWidth = metrics.width;
   #|     contextWindow.innerHeight = metrics.height;
@@ -5605,6 +6380,9 @@ extern "js" fn js_set_runtime_context(ctx_id : String) -> Unit =
   #|     const screen = ensureScreenObject(contextWindow, screenOrientationState, screenAreaState);
   #|     const frameWindows = Array.isArray(contextWindow.frames) ? contextWindow.frames : [];
   #|     globalThis.window = contextWindow;
+  #|     globalThis.self = contextWindow;
+  #|     globalThis.parent = contextWindow.parent || contextWindow;
+  #|     globalThis.top = contextWindow.top || contextWindow;
   #|     contextWindow.matchMedia = globalThis.matchMedia;
   #|     globalThis.frames = frameWindows;
   #|     globalThis.screen = screen;
@@ -5668,6 +6446,10 @@ extern "js" fn js_set_runtime_context(ctx_id : String) -> Unit =
   #|     if (contextWindow.document && typeof contextWindow.document === "object") {
   #|       globalThis.document = contextWindow.document;
   #|     } else if (globalThis.document && typeof globalThis.document === "object") {
+  #|       contextWindow.document = globalThis.document;
+  #|     }
+  #|     if (globalThis.document && typeof globalThis.__bidiEnsureDocumentRange === "function") {
+  #|       globalThis.__bidiEnsureDocumentRange(globalThis.document);
   #|       contextWindow.document = globalThis.document;
   #|     }
   #|     if (contextWindow.location && typeof contextWindow.location === "object") {
@@ -8654,6 +9436,9 @@ extern "js" fn js_sync_runtime_html_async(
   #|     globalThis.self = contextWindow;
   #|     globalThis.parent = contextWindow;
   #|     globalThis.top = contextWindow;
+  #|     if (typeof globalThis.__bidiSyncWindowPropertiesToGlobal === "function") {
+  #|       globalThis.__bidiSyncWindowPropertiesToGlobal(contextWindow);
+  #|     }
   #|   };
   #|   if (typeof globalThis.__loadHTML !== "function") {
   #|     return "missing-loader";
@@ -8706,6 +9491,9 @@ extern "js" fn js_sync_runtime_page_async(url : String) -> @core.Any =
   #|     globalThis.self = contextWindow;
   #|     globalThis.parent = contextWindow;
   #|     globalThis.top = contextWindow;
+  #|     if (typeof globalThis.__bidiSyncWindowPropertiesToGlobal === "function") {
+  #|       globalThis.__bidiSyncWindowPropertiesToGlobal(contextWindow);
+  #|     }
   #|   };
   #|   const persistContextRuntime = () => {
   #|     const contextWindow = ensureContextWindow();

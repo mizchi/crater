@@ -1,4 +1,6 @@
 import { access, mkdtemp, readFile, rm } from "node:fs/promises";
+import { once } from "node:events";
+import { createServer, type Server } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
@@ -7,6 +9,63 @@ import {
   createCraterBrowser,
 } from "../webdriver/playwright/adapter.ts";
 import { decodePng } from "./helpers/crater-vrt.ts";
+
+type LocalFixtureResponse = {
+  body: string;
+  contentType?: string;
+  headers?: Record<string, string>;
+  status?: number;
+};
+
+type LocalFixtureServer = {
+  origin: string;
+  serve(path: string, response: LocalFixtureResponse | string): string;
+  close(): Promise<void>;
+};
+
+async function createLocalFixtureServer(): Promise<LocalFixtureServer> {
+  const fixtures = new Map<string, LocalFixtureResponse>();
+  const server: Server = createServer((req, res) => {
+    const url = new URL(req.url ?? "/", "http://127.0.0.1");
+    const fixture = fixtures.get(url.pathname);
+    if (!fixture) {
+      res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+      res.end(`fixture not found: ${url.pathname}`);
+      return;
+    }
+    res.writeHead(fixture.status ?? 200, {
+      "content-type": fixture.contentType ?? "text/html; charset=utf-8",
+      ...(fixture.headers ?? {}),
+    });
+    res.end(fixture.body);
+  });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const address = server.address();
+  if (!address || typeof address === "string") {
+    throw new Error("failed to start local fixture server");
+  }
+  const origin = `http://127.0.0.1:${address.port}`;
+  return {
+    origin,
+    serve(path, response) {
+      const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+      fixtures.set(normalizedPath, typeof response === "string" ? { body: response } : response);
+      return `${origin}${normalizedPath}`;
+    },
+    close() {
+      return new Promise<void>((resolve, reject) => {
+        server.close((error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          resolve();
+        });
+      });
+    },
+  };
+}
 
 test.describe("Crater Playwright adapter package", () => {
   let page: CraterBidiPage;
@@ -87,6 +146,26 @@ test.describe("Crater Playwright adapter package", () => {
     const result = await page.capturePaintTree();
 
     expect(result.paintTree).toContain("Crater Team");
+  });
+
+  test("capture paint tree accepts document origin", async () => {
+    await page.setViewport(120, 80);
+    await page.setContent(`
+      <html>
+        <body style="margin:0">
+          <div style="width:120px;height:260px;background:#000"></div>
+        </body>
+      </html>
+    `);
+
+    await expect(page.capturePaintTree()).resolves.toMatchObject({
+      width: 120,
+      height: 80,
+    });
+    const documentTree = await page.capturePaintTree({ origin: "document" });
+
+    expect(documentTree.width).toBe(120);
+    expect(documentTree.height).toBeGreaterThan(80);
   });
 
   test("supports frameLocator traversal for fixture iframe contentDocument roots", async () => {
@@ -227,6 +306,179 @@ test.describe("Crater Playwright adapter package", () => {
     expect(dimensions(clipped)).toEqual({ width: 50, height: 40 });
   });
 
+  test("fullPage screenshot keeps viewport layout when document is horizontally scrollable", async () => {
+    await page.setViewport(320, 180);
+    const blocks = Array.from(
+      { length: 18 },
+      (_, index) =>
+        `<span style="display:inline-block;width:100px;height:40px;background:${
+          ["#ff0000", "#00ff00", "#0000ff"][index % 3]
+        }"></span>`,
+    ).join("");
+    await page.setContent(`
+      <html>
+        <body style="margin:0;background:#fff">
+          <div style="width:800px;height:20px;background:#000"></div>
+          <div>${blocks}</div>
+        </body>
+      </html>
+    `);
+
+    const screenshot = await page.screenshot({ fullPage: true, timeout: 1000, type: "png" });
+
+    expect({
+      width: screenshot.readUInt32BE(16),
+      height: screenshot.readUInt32BE(20),
+    }).toEqual({
+      width: 800,
+      height: expect.any(Number),
+    });
+    expect(screenshot.readUInt32BE(20)).toBeGreaterThan(180);
+  });
+
+  test("loadPage screenshot reflects script-mutated live DOM", async () => {
+    const server = await createLocalFixtureServer();
+    try {
+      await page.setViewport(200, 100);
+      const url = server.serve(
+        "/mutated-live-dom.html",
+        `<!doctype html>
+        <html>
+          <body style="margin:0;background:#fff">
+            <div id="initial" style="width:200px;height:100px;background:#fff"></div>
+            <script>
+              document.getElementById("initial").setAttribute("style", "width:200px;height:100px;background:#000");
+            </script>
+          </body>
+        </html>`,
+      );
+
+      await page.loadPage(url);
+      const screenshot = await page.screenshot({ timeout: 1000, type: "png" });
+      const image = await decodePng(screenshot);
+      const pixelOffset = (20 * image.width + 20) * 4;
+
+      expect(image.data[pixelOffset]).toBeLessThan(50);
+      expect(image.data[pixelOffset + 1]).toBeLessThan(50);
+      expect(image.data[pixelOffset + 2]).toBeLessThan(50);
+    } finally {
+      await server.close();
+    }
+  });
+
+  test("loadPage fullPage screenshot ignores live style and script text", async () => {
+    const server = await createLocalFixtureServer();
+    try {
+      await page.setViewport(320, 180);
+      const url = server.serve(
+        "/live-style-script-text.html",
+        `<!doctype html>
+        <html>
+          <body style="margin:0;background:#fff">
+            <div id="box" class="box"></div>
+            <script>
+              const style = document.createElement("style");
+              style.textContent = ".box{width:120px;height:90px;background:#000}" + "/*" + "x".repeat(8000) + "*/";
+              document.body.insertBefore(style, document.body.firstChild);
+              const script = document.createElement("script");
+              script.textContent = "globalThis.__ignored_script_text = '" + "y".repeat(8000) + "'";
+              document.body.insertBefore(script, document.body.firstChild);
+            </script>
+          </body>
+        </html>`,
+      );
+
+      await page.loadPage(url);
+      const screenshot = await page.screenshot({ fullPage: true, timeout: 1000, type: "png" });
+      const image = await decodePng(screenshot);
+      const pixelOffset = (20 * image.width + 20) * 4;
+
+      expect({
+        width: screenshot.readUInt32BE(16),
+        height: screenshot.readUInt32BE(20),
+      }).toEqual({
+        width: 320,
+        height: 180,
+      });
+      expect(image.data[pixelOffset]).toBeLessThan(50);
+      expect(image.data[pixelOffset + 1]).toBeLessThan(50);
+      expect(image.data[pixelOffset + 2]).toBeLessThan(50);
+    } finally {
+      await server.close();
+    }
+  });
+
+  test("location stringifies like browser Location objects", async () => {
+    await page.setContent("<html><body>Location</body></html>");
+
+    const location = await page.evaluate(() => ({
+      href: window.location.href,
+      stringified: String(window.location),
+      templated: `${window.location}`,
+      urlHref: new URL(window.location as unknown as string).href,
+      documentLocationSame: document.location === window.location,
+    }));
+
+    expect(location).toEqual({
+      href: "about:blank",
+      stringified: "about:blank",
+      templated: "about:blank",
+      urlHref: "about:blank",
+      documentLocationSame: true,
+    });
+  });
+
+  test("document.cookie defaults to a browser-like string", async () => {
+    await page.setContent("<html><body>Cookie</body></html>");
+
+    const initial = await page.evaluate(() => ({
+      cookie: document.cookie,
+      type: typeof document.cookie,
+      cookieEnabled: navigator.cookieEnabled,
+    }));
+    expect(initial).toEqual({
+      cookie: "",
+      type: "string",
+      cookieEnabled: true,
+    });
+
+    const updated = await page.evaluate(() => {
+      document.cookie = "sid=abc; Path=/";
+      document.cookie = "theme=dark; Path=/";
+      return document.cookie;
+    });
+    expect(updated).toContain("sid=abc");
+    expect(updated).toContain("theme=dark");
+  });
+
+  test("page scripts can fetch CORS-allowed cross-origin resources", async () => {
+    const pageServer = await createLocalFixtureServer();
+    const apiServer = await createLocalFixtureServer();
+    try {
+      const dataUrl = apiServer.serve("/data.json", {
+        body: JSON.stringify({ ok: true }),
+        contentType: "application/json; charset=utf-8",
+        headers: {
+          "access-control-allow-origin": pageServer.origin,
+        },
+      });
+      const pageUrl = pageServer.serve(
+        "/cors-fetch.html",
+        "<!doctype html><html><body><main>CORS fetch</main></body></html>",
+      );
+
+      await page.loadPage(pageUrl);
+      const result = await page.evaluate(async (url) => {
+        const response = await fetch(url);
+        return `${response.status}:${await response.text()}`;
+      }, dataUrl);
+
+      expect(result).toBe('200:{"ok":true}');
+    } finally {
+      await Promise.all([pageServer.close(), apiServer.close()]);
+    }
+  });
+
   test("ariaSnapshot returns a lightweight accessibility tree for inspection parity", async () => {
     await page.setContent(`
       <html>
@@ -307,6 +559,57 @@ test.describe("Crater Playwright adapter package", () => {
       observed: [],
       records: 0,
       supported: true,
+    });
+  });
+
+  test("exposes timer APIs on the page window for loaded scripts", async () => {
+    await page.setContent(`
+      <html>
+        <body>
+          <script>
+            window.__timerProbe = {};
+            try {
+              window.__timerProbe = {
+                setTimeout: typeof window.setTimeout,
+                clearTimeout: typeof window.clearTimeout,
+                setInterval: typeof window.setInterval,
+                clearInterval: typeof window.clearInterval,
+                requestAnimationFrame: typeof window.requestAnimationFrame,
+                cancelAnimationFrame: typeof window.cancelAnimationFrame,
+                selfIsWindow: window.self === window,
+              };
+              window.setTimeout(() => {
+                document.body.dataset.timer = "done";
+              }, 0);
+            } catch (error) {
+              window.__timerProbe.error = String(error);
+            }
+          </script>
+        </body>
+      </html>
+    `);
+
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 0)));
+
+    const snapshot = await page.evaluate(() => {
+      const win = window as typeof window & { __timerProbe?: unknown };
+      return JSON.stringify({
+        probe: win.__timerProbe,
+        timer: document.body.dataset.timer ?? "",
+      });
+    });
+
+    expect(JSON.parse(snapshot)).toEqual({
+      probe: {
+        setTimeout: "function",
+        clearTimeout: "function",
+        setInterval: "function",
+        clearInterval: "function",
+        requestAnimationFrame: "function",
+        cancelAnimationFrame: "function",
+        selfIsWindow: true,
+      },
+      timer: "done",
     });
   });
 
@@ -425,25 +728,64 @@ test.describe("Crater Playwright adapter package", () => {
       }
       image.src = "https://example.test/hero-2.png";
       await image.decode();
+      const constructed = new Image(32, 24);
+      let constructedOnload = false;
+      constructed.addEventListener("load", () => events.push("constructed-load"));
+      constructed.onload = () => {
+        constructedOnload = true;
+      };
+      constructed.src = "data:image/webp;base64,stub";
+      const probe = new Image();
+      let probeOnload = false;
+      probe.onload = () => {
+        probeOnload = true;
+      };
+      probe.src = "data:image/webp;base64,stub";
       await new Promise((resolve) => setTimeout(resolve, 0));
       return JSON.stringify({
         complete: image.complete,
+        constructed: {
+          height: constructed.height,
+          instance: constructed instanceof HTMLImageElement,
+          naturalHeight: constructed.naturalHeight,
+          naturalWidth: constructed.naturalWidth,
+          onload: constructedOnload,
+          width: constructed.width,
+        },
         decode: typeof image.decode,
         events,
         imagesLength: document.images.length,
         loading: image.loading,
         loadingAttr: image.getAttribute("loading"),
+        probe: {
+          height: probe.height,
+          onload: probeOnload,
+          width: probe.width,
+        },
         src: image.src,
       });
     });
 
     expect(JSON.parse(snapshot)).toEqual({
       complete: true,
+      constructed: {
+        height: 24,
+        instance: true,
+        naturalHeight: 24,
+        naturalWidth: 32,
+        onload: true,
+        width: 32,
+      },
       decode: "function",
-      events: ["load"],
+      events: ["load", "constructed-load"],
       imagesLength: 2,
       loading: "eager",
       loadingAttr: "eager",
+      probe: {
+        height: 1,
+        onload: true,
+        width: 1,
+      },
       src: "https://example.test/hero-2.png",
     });
   });
@@ -479,6 +821,85 @@ test.describe("Crater Playwright adapter package", () => {
     });
   });
 
+  test("provides IntersectionObserver callbacks for page hydration code", async () => {
+    await page.setViewport(240, 120);
+    await page.setContent(`
+      <html>
+        <body style="margin:0">
+          <div id="hero" style="width:120px;height:60px"></div>
+        </body>
+      </html>
+    `);
+
+    const snapshot = await page.evaluate(async () => {
+      return await new Promise<string>((resolve) => {
+        const target = document.querySelector("#hero")!;
+        const observer = new IntersectionObserver((entries) => {
+          const entry = entries[0];
+          const pending = observer.takeRecords();
+          observer.unobserve(target);
+          observer.disconnect();
+          resolve(JSON.stringify({
+            callbackCount: entries.length,
+            ctor: typeof IntersectionObserver,
+            isIntersecting: entry.isIntersecting,
+            ratio: entry.intersectionRatio,
+            targetMatches: entry.target === target,
+            width: entry.boundingClientRect.width,
+            pending: pending.length,
+            rootMargin: observer.rootMargin,
+            thresholds: observer.thresholds,
+          }));
+        }, { threshold: [0, 0.5], rootMargin: "0px" });
+        observer.observe(target);
+      });
+    });
+
+    expect(JSON.parse(snapshot)).toEqual({
+      callbackCount: 1,
+      ctor: "function",
+      isIntersecting: true,
+      ratio: 1,
+      targetMatches: true,
+      width: 120,
+      pending: 0,
+      rootMargin: "0px",
+      thresholds: [0, 0.5],
+    });
+  });
+
+  test("provides DOMParser text/html documents for rich text hydration", async () => {
+    await page.setContent("<html><body>DOMParser host</body></html>");
+
+    const snapshot = await page.evaluate(() => {
+      const parsed = new DOMParser().parseFromString(
+        '<!doctype html><html><head><title>Parsed</title></head><body><p id="lead">Hello <strong>Crater</strong></p></body></html>',
+        "text/html",
+      );
+      const lead = parsed.querySelector("#lead");
+      const strong = parsed.querySelector("strong");
+      return JSON.stringify({
+        ctor: typeof DOMParser,
+        contentType: parsed.contentType,
+        documentElement: parsed.documentElement.tagName,
+        title: parsed.querySelector("title")?.textContent,
+        leadText: lead?.textContent,
+        strongText: strong?.textContent,
+        bodyChildCount: parsed.body.children.length,
+      });
+    });
+
+    expect(JSON.parse(snapshot)).toEqual({
+      ctor: "function",
+      contentType: "text/html",
+      documentElement: "HTML",
+      title: "Parsed",
+      leadText: "Hello Crater",
+      strongText: "Crater",
+      bodyChildCount: 1,
+    });
+  });
+
   test("provides browser-side element constructors used by capture scripts", async () => {
     await page.setContent(`
       <html>
@@ -498,37 +919,75 @@ test.describe("Crater Playwright adapter package", () => {
       const textarea = document.querySelector("#bio")!;
       const select = document.querySelector("#mode")!;
       const dialog = document.querySelector("#confirm")!;
+      const text = document.createTextNode("text");
+      const comment = document.createComment("comment");
       return JSON.stringify({
+        bodyIsDocumentNode: document instanceof Document,
         boxIsHTMLElement: box instanceof HTMLElement,
+        boxIsElement: box instanceof Element,
+        boxIsNode: box instanceof Node,
+        commentIsComment: comment instanceof Comment,
+        commentIsNode: comment instanceof Node,
         constructors: {
+          Comment: typeof Comment,
+          Document: typeof Document,
+          Element: typeof Element,
           HTMLDialogElement: typeof HTMLDialogElement,
           HTMLElement: typeof HTMLElement,
           HTMLInputElement: typeof HTMLInputElement,
           HTMLSelectElement: typeof HTMLSelectElement,
           HTMLTextAreaElement: typeof HTMLTextAreaElement,
+          Node: typeof Node,
+          Text: typeof Text,
         },
         dialogIsDialog: dialog instanceof HTMLDialogElement,
         inputIsHTMLElement: input instanceof HTMLElement,
         inputIsInput: input instanceof HTMLInputElement,
+        nodeConstants: {
+          element: Node.ELEMENT_NODE,
+          text: Node.TEXT_NODE,
+          comment: Node.COMMENT_NODE,
+          document: Node.DOCUMENT_NODE,
+        },
         selectIsSelect: select instanceof HTMLSelectElement,
+        textIsNode: text instanceof Node,
+        textIsText: text instanceof Text,
         textareaIsInput: textarea instanceof HTMLInputElement,
         textareaIsTextarea: textarea instanceof HTMLTextAreaElement,
       });
     });
 
     expect(JSON.parse(snapshot)).toEqual({
+      bodyIsDocumentNode: true,
       boxIsHTMLElement: true,
+      boxIsElement: true,
+      boxIsNode: true,
+      commentIsComment: true,
+      commentIsNode: true,
       constructors: {
+        Comment: "function",
+        Document: "function",
+        Element: "function",
         HTMLDialogElement: "function",
         HTMLElement: "function",
         HTMLInputElement: "function",
         HTMLSelectElement: "function",
         HTMLTextAreaElement: "function",
+        Node: "function",
+        Text: "function",
       },
       dialogIsDialog: true,
       inputIsHTMLElement: true,
       inputIsInput: true,
+      nodeConstants: {
+        element: 1,
+        text: 3,
+        comment: 8,
+        document: 9,
+      },
       selectIsSelect: true,
+      textIsNode: true,
+      textIsText: true,
       textareaIsInput: false,
       textareaIsTextarea: true,
     });
@@ -575,6 +1034,138 @@ test.describe("Crater Playwright adapter package", () => {
       top: 8,
       width: 80,
     });
+  });
+
+  test("supports Element.remove used by Vite-injected CSS modules", async () => {
+    await page.setContentWithScripts(`
+      <html>
+        <head>
+          <link href="/_nuxt/assets/css/_transition.scss">
+          <link href="/_nuxt/assets/css/_variables.scss">
+        </head>
+        <body>
+          <script>
+            document
+              .querySelectorAll('link[href="/_nuxt/assets/css/_transition.scss"]')
+              .forEach((item) => item.remove());
+            const lastInsertedStyle = document.querySelector('link[href="/_nuxt/assets/css/_variables.scss"]');
+            const style = document.createElement("style");
+            style.id = "vite-css-module";
+            lastInsertedStyle.insertAdjacentElement("afterend", style);
+            document.body.setAttribute("data-links", String(document.querySelectorAll("link").length));
+            document.body.setAttribute(
+              "data-head-order",
+              Array.from(document.head.children).map((item) => item.id || item.tagName).join(",")
+            );
+            let windowEventCount = 0;
+            const listener = () => windowEventCount += 1;
+            window.addEventListener("vite:css-ready", listener);
+            window.dispatchEvent(new Event("vite:css-ready"));
+            window.removeEventListener("vite:css-ready", listener);
+            window.dispatchEvent(new Event("vite:css-ready"));
+            document.body.setAttribute("data-window-events", String(windowEventCount));
+          </script>
+        </body>
+      </html>
+    `);
+
+    await expect(page.locator("body").getAttribute("data-links")).resolves.toBe("1");
+    await expect(page.locator("body").getAttribute("data-head-order")).resolves.toBe("LINK,vite-css-module");
+    await expect(page.locator("body").getAttribute("data-window-events")).resolves.toBe("1");
+  });
+
+  test("preserves window event target APIs after navigation document reset", async () => {
+    await page.route("https://example.test/vite-window-events.html", async (route) => {
+      await route.fulfill({
+        contentType: "text/html; charset=utf-8",
+        body: `
+          <html>
+            <body>
+              <script>
+                let count = 0;
+                const listener = () => count += 1;
+                window.addEventListener("vite:css-ready", listener);
+                window.dispatchEvent(new Event("vite:css-ready"));
+                window.removeEventListener("vite:css-ready", listener);
+                window.dispatchEvent(new Event("vite:css-ready"));
+                document.body.setAttribute("data-window-events", String(count));
+              </script>
+            </body>
+          </html>
+        `,
+      });
+    });
+
+    await page.goto("https://example.test/vite-window-events.html", {
+      waitUntil: "commit",
+      timeout: 1000,
+    });
+
+    await expect(page.locator("body").getAttribute("data-window-events")).resolves.toBe("1");
+  });
+
+  test("provides CSS and SVG DOM APIs needed by Nuxt preview startup", async () => {
+    await page.route("https://example.test/nuxt-preview-apis.html", async (route) => {
+      await route.fulfill({
+        contentType: "text/html; charset=utf-8",
+        body: `
+          <html>
+            <body>
+              <script>
+                const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                const start = document.createComment("[");
+                const middle = document.createElement("span");
+                const end = document.createComment("]");
+                path.setAttribute("d", "M0 0L1 1");
+                svg.setAttribute("data-probe", "yes");
+                svg.appendChild(path);
+                document.body.appendChild(start);
+                document.body.appendChild(middle);
+                document.body.appendChild(end);
+                document.body.appendChild(svg);
+                document.body.setAttribute("data-css-supports", String(CSS.supports("animation-timeline", "scroll()")));
+                document.body.setAttribute("data-css-escape", CSS.escape("a b#c"));
+                document.body.setAttribute("data-svg-instance", String(svg instanceof SVGElement));
+                document.body.setAttribute("data-svg-ns", svg.namespaceURI);
+                document.body.setAttribute("data-path-tag", path.tagName);
+                document.body.setAttribute("data-comment-next", String(start.nextSibling === middle && middle.nextSibling === end));
+                document.body.setAttribute("data-has-children", String(document.body.hasChildNodes()));
+                document.body.setAttribute("data-attr-names", JSON.stringify(svg.getAttributeNames()));
+                class PreviewInspector extends HTMLElement {
+                  constructor() {
+                    super();
+                    this._dirty = false;
+                  }
+                }
+                const inspector = new PreviewInspector();
+                inspector.setAttribute("id", "preview-inspector");
+                document.body.appendChild(inspector);
+                document.body.setAttribute(
+                  "data-custom-element",
+                  String(inspector instanceof HTMLElement) + ":" + String(inspector._dirty) + ":" + typeof inspector.attachShadow
+                );
+              </script>
+            </body>
+          </html>
+        `,
+      });
+    });
+
+    await page.goto("https://example.test/nuxt-preview-apis.html", {
+      waitUntil: "commit",
+      timeout: 1000,
+    });
+
+    await expect(page.locator("body").getAttribute("data-css-supports")).resolves.toBe("true");
+    await expect(page.locator("body").getAttribute("data-css-escape")).resolves.toBe("a\\ b\\#c");
+    await expect(page.locator("body").getAttribute("data-svg-instance")).resolves.toBe("true");
+    await expect(page.locator("body").getAttribute("data-svg-ns")).resolves.toBe("http://www.w3.org/2000/svg");
+    await expect(page.locator("body").getAttribute("data-path-tag")).resolves.toBe("path");
+    await expect(page.locator("body").getAttribute("data-comment-next")).resolves.toBe("true");
+    await expect(page.locator("body").getAttribute("data-has-children")).resolves.toBe("true");
+    await expect(page.locator("body").getAttribute("data-attr-names")).resolves.toBe("[\"data-probe\"]");
+    await expect(page.locator("body").getAttribute("data-custom-element")).resolves.toBe("true:false:function");
   });
 
   test("supports page and locator setInputFiles for file inputs", async () => {
@@ -923,6 +1514,72 @@ test.describe("Crater browser/context wrapper", () => {
           { name: "token", value: "abc" },
         ],
       });
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test("isolates localStorage between browser contexts", async () => {
+    const browser = createCraterBrowser();
+    try {
+      const firstContext = await browser.newContext();
+      const firstPage = await firstContext.newPage();
+      await firstPage.setContent("<html><body>first</body></html>");
+      await firstPage.evaluate(() => {
+        localStorage.setItem("__VUE_DEVTOOLS_NEXT_PLUGIN_SETTINGS__dev.esm.pinia__", "{}");
+      });
+      await firstContext.close();
+
+      const secondContext = await browser.newContext();
+      const secondPage = await secondContext.newPage();
+      await secondPage.setContent("<html><body>second</body></html>");
+      await secondPage.evaluate(() => {
+        localStorage.setItem("theme", "dark");
+      });
+      const state = await secondContext.storageState();
+
+      expect(state.origins).toContainEqual({
+        origin: "about:blank",
+        localStorage: [{ name: "theme", value: "dark" }],
+      });
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test("keeps multiple live browser contexts on one shared BiDi session", async () => {
+    const browser = createCraterBrowser();
+    try {
+      const previewContext = await browser.newContext();
+      const hrcContext = await browser.newContext();
+      const previewPage = await previewContext.newPage();
+      const hrcPage = await hrcContext.newPage();
+
+      await Promise.all([
+        previewPage.route(/blocked-preview/, (route) => route.abort()),
+        hrcPage.route(/blocked-hrc/, (route) => route.abort()),
+      ]);
+
+      await Promise.all([
+        previewPage.setContent("<html><body><main id='value'>preview</main></body></html>"),
+        hrcPage.setContent("<html><body><main id='value'>hrc</main></body></html>"),
+      ]);
+
+      const [previewText, hrcText] = await Promise.all([
+        previewPage.evaluate(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 25));
+          return document.querySelector("#value")?.textContent ?? "";
+        }),
+        hrcPage.evaluate(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 5));
+          return document.querySelector("#value")?.textContent ?? "";
+        }),
+      ]);
+
+      expect(previewText).toBe("preview");
+      expect(hrcText).toBe("hrc");
+      await expect(previewPage.locator("#value").textContent()).resolves.toBe("preview");
+      await expect(hrcPage.locator("#value").textContent()).resolves.toBe("hrc");
     } finally {
       await browser.close();
     }

@@ -1,6 +1,11 @@
 import { copyFile, mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import WebSocket from "ws";
+import {
+  ensureCraterBidiServer,
+  type CraterBidiServerHandle,
+  type EnsureCraterBidiServerOptions,
+} from "../../scripts/crater-bidi-server.ts";
 import { resolveBidiUrl } from "../../scripts/bidi-url.ts";
 export {
   CRATER_PLAYWRIGHT_API_SUPPORT,
@@ -31,6 +36,28 @@ export type CraterBidiConnectOptions = {
   timeout?: number;
   retries?: number;
   url?: string;
+};
+
+export type CraterLaunchOptions = CraterBidiConnectOptions & {
+  autoStartBidi?: boolean;
+  craterRoot?: string;
+  denoBin?: string;
+  env?: NodeJS.ProcessEnv;
+  headless?: boolean;
+  args?: string[];
+  executablePath?: string;
+  serverTimeoutMs?: number;
+  pollIntervalMs?: number;
+  statusTimeoutMs?: number;
+  statusUrl?: string;
+  stdio?: EnsureCraterBidiServerOptions["stdio"];
+  shutdownTimeoutMs?: number;
+};
+
+export type CraterBrowserTypeDependencies = {
+  ensureBidiServer?: (
+    options?: EnsureCraterBidiServerOptions,
+  ) => Promise<CraterBidiServerHandle>;
 };
 
 export type CraterViewportSize = {
@@ -430,6 +457,7 @@ type SharedBidiConnection = {
 
 type CraterPageCloseHandler = (page: CraterBidiPage) => void;
 type CraterContextCloseHandler = (context: CraterBrowserContext) => void;
+type CraterTransportProvider = (options: CraterBidiConnectOptions) => Promise<CraterBidiPage>;
 
 type CraterTimeoutResolver = (timeout: number | undefined, fallback: number) => number;
 
@@ -448,8 +476,6 @@ type LocatorFilter = {
   regexp: boolean;
   exact?: boolean;
 };
-
-let sharedRoutePumpQueue: Promise<void> = Promise.resolve();
 
 const SPECIAL_KEYS: Record<string, string> = {
   Enter: "\uE006",
@@ -881,6 +907,59 @@ function isEvaluateOptions(value: unknown): value is CraterEvaluateOptions {
 function isWaitForFunctionOptions(value: unknown): value is CraterWaitForFunctionOptions {
   return !!value && typeof value === "object" &&
     ("timeout" in value || "polling" in value);
+}
+
+function summarizeBidiExpression(expression: unknown, limit = 180): string {
+  if (typeof expression !== "string") {
+    return "";
+  }
+  const normalized = expression.replace(/\s+/g, " ").trim();
+  if (normalized.length <= limit) {
+    return normalized;
+  }
+  return `${normalized.slice(0, limit - 3)}...`;
+}
+
+function bidiCommandTimeoutLabel(method: string, params: unknown): string {
+  if (!params || typeof params !== "object") {
+    return method;
+  }
+  const record = params as Record<string, unknown>;
+  if (method === "script.evaluate" && "expression" in record) {
+    const summary = summarizeBidiExpression(record.expression);
+    return summary ? `${method}: ${summary}` : method;
+  }
+  return method;
+}
+
+function bidiCommandContext(method: string, params: unknown): string | null {
+  if (!params || typeof params !== "object") {
+    return null;
+  }
+  const record = params as Record<string, unknown>;
+  if (typeof record.context === "string") {
+    return record.context;
+  }
+  if (method === "script.evaluate") {
+    const target = record.target;
+    if (target && typeof target === "object") {
+      const context = (target as Record<string, unknown>).context;
+      return typeof context === "string" ? context : null;
+    }
+  }
+  const partition = record.partition;
+  if (partition && typeof partition === "object") {
+    const context = (partition as Record<string, unknown>).context;
+    return typeof context === "string" ? context : null;
+  }
+  return null;
+}
+
+function isAwaitedScriptEvaluate(method: string, params: unknown): boolean {
+  return method === "script.evaluate" &&
+    !!params &&
+    typeof params === "object" &&
+    (params as Record<string, unknown>).awaitPromise === true;
 }
 
 export function parseLocatorSelector(selector: string): ParsedLocatorSelector {
@@ -2497,6 +2576,10 @@ export class CraterBidiPage {
   private pendingCommands = new Map<number, PendingCommand>();
   private eventHandlers: ((event: BidiEvent) => void)[] = [];
   private contextId: string | null = null;
+  private runtimeLockContext: string | null = null;
+  private runtimeLockCount = 0;
+  private runtimeLockSettled: Promise<void> = Promise.resolve();
+  private runtimeLockRelease: (() => void) | null = null;
   private navigationPromise: Promise<void> | null = null;
   private navigationResolve: (() => void) | null = null;
   private initScripts: string[] = [];
@@ -2717,8 +2800,8 @@ export class CraterBidiPage {
   }
 
   async setContent(html: string): Promise<void> {
-    await this.syncRuntimeLocation("about:blank");
     await this.prepareRuntimeDocumentForLoad();
+    await this.syncRuntimeLocation("about:blank");
     await this.evaluate(`__loadHTML(${jsString(html)})`);
     await this.evaluate(`globalThis.__craterInstallScrollingStubs && globalThis.__craterInstallScrollingStubs()`);
     await this.evaluate(`globalThis.__craterPaintCaptureSource = "original"`);
@@ -2801,6 +2884,7 @@ export class CraterBidiPage {
         await this.setObservableFetchForScriptExecution(false);
       }
     }
+    await this.evaluate(`globalThis.__craterPaintCaptureSource = "live"`);
     await this.observeSubresourceLoads(result.url ?? url);
     this.emitPageEvent("domcontentloaded", this);
     this.emitPageEvent("load", this);
@@ -2902,6 +2986,11 @@ export class CraterBidiPage {
     await this.evaluate(`
       (() => {
         const resetWindow = ${resetWindow ? "true" : "false"};
+        // The Playwright adapter should behave like a browser page: send
+        // cross-origin requests, then enforce CORS at the response boundary.
+        if (typeof globalThis.__setRequestSandbox === "function") {
+          globalThis.__setRequestSandbox({ mode: "open" });
+        }
         const sourceDoc = globalThis.__craterDocumentFactorySource || globalThis.document;
         if (!sourceDoc || typeof sourceDoc.createElement !== "function") return false;
         if (!globalThis.__craterDocumentFactorySource) {
@@ -2910,6 +2999,46 @@ export class CraterBidiPage {
 
         const currentCtx = String(globalThis.__bidiCurrentContext || "default-context");
         if (!globalThis.__bidiContextWindows) globalThis.__bidiContextWindows = new Map();
+        const installWindowEventTarget = (target) => {
+          if (!target || typeof target !== "object") return;
+          if (!target._listeners || typeof target._listeners !== "object") {
+            target._listeners = {};
+          }
+          target.addEventListener = function(type, listener) {
+            if (!listener) return;
+            const eventType = String(type);
+            if (!this._listeners[eventType]) this._listeners[eventType] = [];
+            if (!this._listeners[eventType].includes(listener)) {
+              this._listeners[eventType].push(listener);
+            }
+          };
+          target.removeEventListener = function(type, listener) {
+            const eventType = String(type);
+            if (!this._listeners[eventType]) return;
+            this._listeners[eventType] = this._listeners[eventType].filter((entry) => entry !== listener);
+          };
+          target.dispatchEvent = function(event) {
+            if (!event || !event.type) {
+              throw new TypeError("Failed to execute dispatchEvent: parameter 1 is not of type Event");
+            }
+            try { event.target = this; } catch (_error) {}
+            try { event.currentTarget = this; } catch (_error) {}
+            const previousEvent = globalThis.event;
+            globalThis.event = event;
+            try {
+              const listeners = (this._listeners && this._listeners[String(event.type)]) || [];
+              for (const listener of listeners.slice()) {
+                try {
+                  if (typeof listener === "function") listener.call(this, event);
+                  else if (listener && typeof listener.handleEvent === "function") listener.handleEvent(event);
+                } catch (_listenerError) {}
+              }
+            } finally {
+              globalThis.event = previousEvent;
+            }
+            return !event.defaultPrevented;
+          };
+        };
         if (resetWindow || !globalThis.__bidiContextWindows.has(currentCtx)) {
           const previousWindow = globalThis.__bidiContextWindows.get(currentCtx);
           const win = { __bidiContextId: currentCtx };
@@ -2923,6 +3052,25 @@ export class CraterBidiPage {
           globalThis.__bidiContextWindows.set(currentCtx, win);
         }
         const contextWindow = globalThis.__bidiContextWindows.get(currentCtx);
+        if (!contextWindow.navigator && globalThis.navigator) {
+          contextWindow.navigator = globalThis.navigator;
+        }
+        for (const nav of [contextWindow.navigator, globalThis.navigator]) {
+          if (!nav || typeof nav !== "object") continue;
+          try {
+            Object.defineProperty(nav, "cookieEnabled", {
+              configurable: true,
+              enumerable: true,
+              value: true,
+            });
+          } catch (_e) {
+            nav.cookieEnabled = true;
+          }
+        }
+        installWindowEventTarget(contextWindow);
+        globalThis.addEventListener = contextWindow.addEventListener.bind(contextWindow);
+        globalThis.removeEventListener = contextWindow.removeEventListener.bind(contextWindow);
+        globalThis.dispatchEvent = contextWindow.dispatchEvent.bind(contextWindow);
 
         const doc = {
           nodeType: 9,
@@ -2935,6 +3083,22 @@ export class CraterBidiPage {
           createElement(tag) {
             const el = sourceDoc.createElement.call(doc, tag);
             el.ownerDocument = doc;
+            return el;
+          },
+          createElementNS(namespaceURI, qualifiedName) {
+            const ns = String(namespaceURI || "");
+            const name = String(qualifiedName || "div");
+            const el = typeof sourceDoc.createElementNS === "function"
+              ? sourceDoc.createElementNS.call(doc, ns, name)
+              : sourceDoc.createElement.call(doc, name);
+            el.ownerDocument = doc;
+            el.namespaceURI = ns;
+            if (ns === "http://www.w3.org/2000/svg") {
+              const localName = name.includes(":") ? name.split(":").pop() : name;
+              el.tagName = localName;
+              el.nodeName = localName;
+              el._tagName = localName;
+            }
             return el;
           },
           createTextNode(text) {
@@ -3031,6 +3195,27 @@ export class CraterBidiPage {
             return this.documentElement || this.body || null;
           },
         });
+        if (!contextWindow.__craterCookieJar) {
+          contextWindow.__craterCookieJar = new Map();
+        }
+        Object.defineProperty(doc, "cookie", {
+          configurable: true,
+          enumerable: true,
+          get() {
+            return Array.from(contextWindow.__craterCookieJar.entries())
+              .map(([name, value]) => String(name) + "=" + String(value))
+              .join("; ");
+          },
+          set(value) {
+            const pair = String(value ?? "").split(";")[0] || "";
+            const eq = pair.indexOf("=");
+            if (eq <= 0) return;
+            const name = pair.slice(0, eq).trim();
+            const cookieValue = pair.slice(eq + 1).trim();
+            if (!name) return;
+            contextWindow.__craterCookieJar.set(name, cookieValue);
+          },
+        });
         const installCaptureStabilizationStubs = (targetWindow, targetDocument) => {
           if (!targetDocument.fonts) {
             const fontSet = {
@@ -3115,9 +3300,381 @@ export class CraterBidiPage {
           normalizePerformanceObserverSupport(globalThis.PerformanceObserver);
           host.PerformanceObserver = globalThis.PerformanceObserver;
           normalizePerformanceObserverSupport(host.PerformanceObserver);
+          if (typeof globalThis.IntersectionObserver !== "function") {
+            const makeRect = (source) => {
+              const left = Number(source && (source.left ?? source.x) || 0);
+              const top = Number(source && (source.top ?? source.y) || 0);
+              const width = Math.max(0, Number(source && source.width || 0));
+              const height = Math.max(0, Number(source && source.height || 0));
+              const rect = {
+                x: left,
+                y: top,
+                left,
+                top,
+                width,
+                height,
+                right: left + width,
+                bottom: top + height,
+              };
+              rect.toJSON = () => ({
+                x: rect.x,
+                y: rect.y,
+                left: rect.left,
+                top: rect.top,
+                width: rect.width,
+                height: rect.height,
+                right: rect.right,
+                bottom: rect.bottom,
+              });
+              return rect;
+            };
+            const viewportRect = () => makeRect({
+              x: 0,
+              y: 0,
+              width: Number(host.innerWidth || globalThis.innerWidth || 0),
+              height: Number(host.innerHeight || globalThis.innerHeight || 0),
+            });
+            const normalizeThresholds = (threshold) => {
+              const values = Array.isArray(threshold) ? threshold : [threshold ?? 0];
+              return values
+                .map((value) => Number(value))
+                .filter((value) => Number.isFinite(value))
+                .map((value) => Math.min(1, Math.max(0, value)))
+                .sort((a, b) => a - b);
+            };
+            class CraterIntersectionObserver {
+              constructor(callback, options) {
+                if (typeof callback !== "function") {
+                  throw new TypeError("IntersectionObserver callback must be a function");
+                }
+                this._callback = callback;
+                this._targets = new Set();
+                this._records = [];
+                this._scheduled = false;
+                this.root = options && options.root ? options.root : null;
+                this.rootMargin = options && options.rootMargin !== undefined ? String(options.rootMargin) : "0px";
+                this.thresholds = normalizeThresholds(options && options.threshold);
+              }
+              observe(target) {
+                if (!target || typeof target !== "object") {
+                  throw new TypeError("IntersectionObserver.observe target must be an Element");
+                }
+                this._targets.add(target);
+                this._queue(target);
+              }
+              unobserve(target) {
+                this._targets.delete(target);
+              }
+              disconnect() {
+                this._targets.clear();
+                this._records = [];
+              }
+              takeRecords() {
+                const records = this._records.slice();
+                this._records = [];
+                return records;
+              }
+              _queue(target) {
+                this._records.push(this._entryFor(target));
+                if (this._scheduled) return;
+                this._scheduled = true;
+                setTimeout(() => {
+                  this._scheduled = false;
+                  const records = this.takeRecords();
+                  if (records.length > 0) {
+                    this._callback(records, this);
+                  }
+                }, 0);
+              }
+              _entryFor(target) {
+                const targetRect = makeRect(
+                  target && typeof target.getBoundingClientRect === "function"
+                    ? target.getBoundingClientRect()
+                    : {},
+                );
+                const rootBounds = this.root && typeof this.root.getBoundingClientRect === "function"
+                  ? makeRect(this.root.getBoundingClientRect())
+                  : viewportRect();
+                const left = Math.max(targetRect.left, rootBounds.left);
+                const top = Math.max(targetRect.top, rootBounds.top);
+                const right = Math.min(targetRect.right, rootBounds.right);
+                const bottom = Math.min(targetRect.bottom, rootBounds.bottom);
+                const intersectionRect = makeRect({
+                  x: left,
+                  y: top,
+                  width: Math.max(0, right - left),
+                  height: Math.max(0, bottom - top),
+                });
+                const targetArea = targetRect.width * targetRect.height;
+                const intersectionArea = intersectionRect.width * intersectionRect.height;
+                const isIntersecting = intersectionArea > 0;
+                return {
+                  time: Date.now(),
+                  rootBounds,
+                  boundingClientRect: targetRect,
+                  intersectionRect,
+                  isIntersecting,
+                  intersectionRatio: targetArea > 0 ? intersectionArea / targetArea : (isIntersecting ? 1 : 0),
+                  target,
+                };
+              }
+            }
+            globalThis.IntersectionObserver = CraterIntersectionObserver;
+          }
+          host.IntersectionObserver = globalThis.IntersectionObserver;
+          if (typeof globalThis.DOMParser !== "function") {
+            class CraterDOMParser {
+              parseFromString(markup, contentType) {
+                const normalizedType = String(contentType || "text/html").toLowerCase();
+                const parsedDoc = {
+                  nodeType: 9,
+                  contentType: normalizedType,
+                  doctype: null,
+                  documentElement: null,
+                  head: null,
+                  body: null,
+                  activeElement: null,
+                  createElement(tag) {
+                    const el = targetDocument.createElement(String(tag || "div"));
+                    el.ownerDocument = parsedDoc;
+                    return el;
+                  },
+                  createElementNS(namespaceURI, qualifiedName) {
+                    const el = typeof targetDocument.createElementNS === "function"
+                      ? targetDocument.createElementNS(String(namespaceURI || ""), String(qualifiedName || "div"))
+                      : targetDocument.createElement(String(qualifiedName || "div"));
+                    el.ownerDocument = parsedDoc;
+                    return el;
+                  },
+                  createTextNode(text) {
+                    const node = targetDocument.createTextNode(String(text ?? ""));
+                    node.ownerDocument = parsedDoc;
+                    return node;
+                  },
+                  createComment(text) {
+                    const node = typeof targetDocument.createComment === "function"
+                      ? targetDocument.createComment(String(text ?? ""))
+                      : { nodeType: 8, nodeName: "#comment", textContent: String(text ?? "") };
+                    node.ownerDocument = parsedDoc;
+                    return node;
+                  },
+                  createDocumentFragment() {
+                    const node = targetDocument.createDocumentFragment();
+                    node.ownerDocument = parsedDoc;
+                    return node;
+                  },
+                  getElementById(id) {
+                    return this.querySelector("#" + String(id));
+                  },
+                  querySelector(selector) {
+                    return this.documentElement && typeof this.documentElement.querySelector === "function"
+                      ? this.documentElement.querySelector(selector)
+                      : null;
+                  },
+                  querySelectorAll(selector) {
+                    return this.documentElement && typeof this.documentElement.querySelectorAll === "function"
+                      ? this.documentElement.querySelectorAll(selector)
+                      : [];
+                  },
+                  getElementsByTagName(tag) {
+                    return this.documentElement && typeof this.documentElement.getElementsByTagName === "function"
+                      ? this.documentElement.getElementsByTagName(tag)
+                      : [];
+                  },
+                };
+                Object.defineProperty(parsedDoc, "childNodes", {
+                  configurable: true,
+                  enumerable: true,
+                  get() {
+                    return [this.doctype, this.documentElement].filter(Boolean);
+                  },
+                });
+                Object.defineProperty(parsedDoc, "scrollingElement", {
+                  configurable: true,
+                  enumerable: true,
+                  get() {
+                    return this.documentElement || this.body || null;
+                  },
+                });
+                const html = parsedDoc.createElement("html");
+                const head = parsedDoc.createElement("head");
+                const body = parsedDoc.createElement("body");
+                html.appendChild(head);
+                html.appendChild(body);
+                parsedDoc.documentElement = html;
+                parsedDoc.head = head;
+                parsedDoc.body = body;
+                parsedDoc.activeElement = body;
+
+                const assignOwner = (node) => {
+                  if (!node || typeof node !== "object") return;
+                  node.ownerDocument = parsedDoc;
+                  const children = node.childNodes || node._children || [];
+                  for (const child of Array.from(children)) assignOwner(child);
+                };
+                const copyAttributes = (from, to) => {
+                  const attrs = from && from._attrs ? from._attrs : {};
+                  for (const [name, value] of Object.entries(attrs)) {
+                    if (typeof to.setAttribute === "function") to.setAttribute(name, value);
+                  }
+                };
+                const moveChildren = (from, to) => {
+                  for (const child of Array.from(from && from.childNodes || [])) {
+                    to.appendChild(child);
+                    assignOwner(child);
+                  }
+                };
+                const container = parsedDoc.createElement("div");
+                if (normalizedType === "text/html") {
+                  container.innerHTML = String(markup ?? "");
+                } else {
+                  container.textContent = String(markup ?? "");
+                }
+                const nodes = Array.from(container.childNodes || []);
+                const htmlNode = nodes.find((node) => node && node.tagName === "HTML") || null;
+                if (htmlNode) {
+                  copyAttributes(htmlNode, html);
+                  for (const child of Array.from(htmlNode.childNodes || [])) {
+                    if (child && child.tagName === "HEAD") {
+                      moveChildren(child, head);
+                    } else if (child && child.tagName === "BODY") {
+                      copyAttributes(child, body);
+                      moveChildren(child, body);
+                    } else {
+                      body.appendChild(child);
+                      assignOwner(child);
+                    }
+                  }
+                } else {
+                  for (const node of nodes) {
+                    if (node && node.tagName === "HEAD") {
+                      moveChildren(node, head);
+                    } else if (node && node.tagName === "BODY") {
+                      copyAttributes(node, body);
+                      moveChildren(node, body);
+                    } else {
+                      body.appendChild(node);
+                      assignOwner(node);
+                    }
+                  }
+                }
+                return parsedDoc;
+              }
+            }
+            globalThis.DOMParser = CraterDOMParser;
+          }
+          host.DOMParser = globalThis.DOMParser;
+
+          const installPageConsole = (target) => {
+            if (!target || typeof target !== "object") return;
+            const entries = Array.isArray(globalThis.__craterAsyncConsoleEntries)
+              ? globalThis.__craterAsyncConsoleEntries
+              : [];
+            globalThis.__craterAsyncConsoleEntries = entries;
+            const textOf = (arg) => {
+              if (typeof arg === "string") return arg.length > 512 ? arg.slice(0, 512) + "..." : arg;
+              if (arg === undefined) return "undefined";
+              if (arg === null) return "null";
+              if (typeof arg === "number" || typeof arg === "boolean" || typeof arg === "bigint") return String(arg);
+              const tag = Object.prototype.toString.call(arg);
+              return tag === "[object Object]" ? "[object Object]" : tag;
+            };
+            const push = (level, method, args) => {
+              entries.push({
+                level,
+                method,
+                text: Array.from(args).map(textOf).join(" "),
+                timestamp: Date.now(),
+              });
+              if (entries.length > 200) entries.splice(0, entries.length - 200);
+            };
+            const pageConsole = {
+              log: (...args) => push("info", "log", args),
+              warn: (...args) => push("warn", "warn", args),
+              error: (...args) => push("error", "error", args),
+              info: (...args) => push("info", "info", args),
+              debug: (...args) => push("debug", "debug", args),
+              table: (...args) => push("info", "table", args),
+              trace: (...args) => push("debug", "trace", args),
+              assert: (...args) => {
+                if (args.length > 0 && args[0]) return;
+                push("error", "assert", args.length > 1 ? args.slice(1) : ["Assertion failed"]);
+              },
+              time: () => {},
+              timeEnd: (...args) => push("info", "timeEnd", args.length > 0 ? args : ["default"]),
+            };
+            globalThis.console = pageConsole;
+            target.console = pageConsole;
+          };
+          installPageConsole(host);
+
+          const cssEscape = (value) => {
+            const input = String(value);
+            const escapePrefix = String.fromCharCode(92);
+            return input.replace(/[\\0-\\x1f\\x7f]|^-?\\d|^-$|[^\\w-]/gu, (match) => {
+              if (match.charCodeAt(0) === 0) return "\\uFFFD";
+              if (/^-?\\d/u.test(match)) {
+                return match.replace(/\\d/u, (digit) => escapePrefix + digit + " ");
+              }
+              return escapePrefix + match;
+            });
+          };
+          const installCssObject = (target) => {
+            if (!target || typeof target !== "object") return null;
+            const css = target.CSS && typeof target.CSS === "object"
+              ? target.CSS
+              : (globalThis.CSS && typeof globalThis.CSS === "object" ? globalThis.CSS : {});
+            css.supports = function(property, value) {
+              const source = arguments.length > 1
+                ? String(property) + ": " + String(value)
+                : String(property || "");
+              const normalized = source.trim().toLowerCase();
+              if (!normalized) return false;
+              if (
+                normalized.includes("animation-timeline") ||
+                normalized.includes("scroll-timeline") ||
+                normalized.includes("view-timeline") ||
+                normalized.includes("timeline-scope")
+              ) {
+                return true;
+              }
+              if (arguments.length > 1) {
+                return String(property || "").trim().length > 0 && String(value || "").trim().length > 0;
+              }
+              return normalized.includes(":");
+            };
+            css.escape = cssEscape;
+            target.CSS = css;
+            return css;
+          };
+          const cssObject = installCssObject(host) || {};
+          globalThis.CSS = cssObject;
+          host.CSS = cssObject;
 
           const elementTagName = (value) =>
             String(value && (value.tagName || value.localName || value.nodeName || "")).toUpperCase();
+          const isSvgElement = (value) =>
+            Boolean(value && value.nodeType === 1 && value.namespaceURI === "http://www.w3.org/2000/svg");
+          const installHTMLElementConstructor = () => {
+            const ctor = function HTMLElement() {
+              const docForElement = globalThis.document || targetDocument;
+              if (!docForElement || typeof docForElement.createElement !== "function") return;
+              try {
+                const element = docForElement.createElement("div");
+                Object.defineProperties(this, Object.getOwnPropertyDescriptors(element));
+              } catch (_error) {}
+            };
+            Object.defineProperty(ctor, "name", {
+              configurable: true,
+              value: "HTMLElement",
+            });
+            Object.defineProperty(ctor, Symbol.hasInstance, {
+              configurable: true,
+              value: (value) => Boolean(value && value.nodeType === 1),
+            });
+            globalThis.HTMLElement = ctor;
+            host.HTMLElement = ctor;
+          };
           const installInstanceConstructor = (name, predicate) => {
             const ctor = function() {
               throw new TypeError("Illegal constructor");
@@ -3133,7 +3690,53 @@ export class CraterBidiPage {
             globalThis[name] = ctor;
             host[name] = ctor;
           };
-          installInstanceConstructor("HTMLElement", (value) => Boolean(value && value.nodeType === 1));
+          const installNodeConstructor = () => {
+            const ctor = function Node() {
+              throw new TypeError("Illegal constructor");
+            };
+            Object.defineProperty(ctor, "name", {
+              configurable: true,
+              value: "Node",
+            });
+            Object.defineProperty(ctor, Symbol.hasInstance, {
+              configurable: true,
+              value: (value) => Boolean(value && typeof value.nodeType === "number"),
+            });
+            const constants = {
+              ELEMENT_NODE: 1,
+              ATTRIBUTE_NODE: 2,
+              TEXT_NODE: 3,
+              CDATA_SECTION_NODE: 4,
+              ENTITY_REFERENCE_NODE: 5,
+              ENTITY_NODE: 6,
+              PROCESSING_INSTRUCTION_NODE: 7,
+              COMMENT_NODE: 8,
+              DOCUMENT_NODE: 9,
+              DOCUMENT_TYPE_NODE: 10,
+              DOCUMENT_FRAGMENT_NODE: 11,
+              NOTATION_NODE: 12,
+            };
+            for (const [name, value] of Object.entries(constants)) {
+              Object.defineProperty(ctor, name, {
+                configurable: true,
+                enumerable: true,
+                value,
+              });
+              Object.defineProperty(ctor.prototype, name, {
+                configurable: true,
+                enumerable: true,
+                value,
+              });
+            }
+            globalThis.Node = ctor;
+            host.Node = ctor;
+          };
+          installNodeConstructor();
+          installInstanceConstructor("Element", (value) => Boolean(value && value.nodeType === 1));
+          installInstanceConstructor("Document", (value) => Boolean(value && value.nodeType === 9));
+          installInstanceConstructor("Text", (value) => Boolean(value && value.nodeType === 3));
+          installInstanceConstructor("Comment", (value) => Boolean(value && value.nodeType === 8));
+          installHTMLElementConstructor();
           installInstanceConstructor("HTMLInputElement", (value) => elementTagName(value) === "INPUT");
           installInstanceConstructor("HTMLSelectElement", (value) => elementTagName(value) === "SELECT");
           installInstanceConstructor("HTMLTextAreaElement", (value) => elementTagName(value) === "TEXTAREA");
@@ -3145,6 +3748,9 @@ export class CraterBidiPage {
           });
           installInstanceConstructor("HTMLAudioElement", (value) => elementTagName(value) === "AUDIO");
           installInstanceConstructor("HTMLVideoElement", (value) => elementTagName(value) === "VIDEO");
+          installInstanceConstructor("SVGElement", isSvgElement);
+          installInstanceConstructor("SVGSVGElement", (value) => isSvgElement(value) && elementTagName(value) === "SVG");
+          installInstanceConstructor("SVGPathElement", (value) => isSvgElement(value) && elementTagName(value) === "PATH");
 
           const numberOr = (value, fallback) => {
             const num = Number(value);
@@ -3280,6 +3886,9 @@ export class CraterBidiPage {
                 ? createEvent("load", { bubbles: false, cancelable: false })
                 : { type: "load", bubbles: false, cancelable: false };
               try { element.dispatchEvent(event); } catch (_error) {}
+              if (typeof element.onload === "function") {
+                try { element.onload.call(element, event); } catch (_error) {}
+              }
             });
           };
           const patchImageElement = (element) => {
@@ -3311,6 +3920,12 @@ export class CraterBidiPage {
               },
               set(value) {
                 if (typeof this.setAttribute === "function") this.setAttribute("src", String(value));
+                const nextWidth = Math.max(1, numberOr(this.width ?? this.naturalWidth, 1));
+                const nextHeight = Math.max(1, numberOr(this.height ?? this.naturalHeight, 1));
+                if (!numberOr(this.width, 0)) this.width = nextWidth;
+                if (!numberOr(this.height, 0)) this.height = nextHeight;
+                if (!numberOr(this.naturalWidth, 0)) this.naturalWidth = numberOr(this.width, nextWidth);
+                if (!numberOr(this.naturalHeight, 0)) this.naturalHeight = numberOr(this.height, nextHeight);
                 dispatchImageLoad(this);
               },
             });
@@ -3320,6 +3935,27 @@ export class CraterBidiPage {
             if (element.naturalWidth === undefined) element.naturalWidth = 0;
             if (element.naturalHeight === undefined) element.naturalHeight = 0;
           };
+          if (typeof globalThis.Image !== "function") {
+            const ImageConstructor = function Image(width, height) {
+              const image = targetDocument.createElement("img");
+              patchImageElement(image);
+              if (width !== undefined) {
+                image.width = Math.max(0, numberOr(width, 0));
+                if (typeof image.setAttribute === "function") image.setAttribute("width", String(image.width));
+              }
+              if (height !== undefined) {
+                image.height = Math.max(0, numberOr(height, 0));
+                if (typeof image.setAttribute === "function") image.setAttribute("height", String(image.height));
+              }
+              return image;
+            };
+            Object.defineProperty(ImageConstructor, "name", {
+              configurable: true,
+              value: "Image",
+            });
+            globalThis.Image = ImageConstructor;
+          }
+          host.Image = globalThis.Image;
           const patchMediaElement = (element) => {
             const tagName = String(element && (element.tagName || element.localName || "")).toUpperCase();
             if ((tagName !== "VIDEO" && tagName !== "AUDIO") || element.__craterMediaPatched) return;
@@ -3540,17 +4176,61 @@ export class CraterBidiPage {
           globalThis.__pageUrl = location.href;
           return location.href;
         };
+        const installLocationStringifier = () => {
+          const asHref = function() {
+            return String(this && this.href ? this.href : globalThis.__pageUrl || "about:blank");
+          };
+          try {
+            Object.defineProperty(location, "toString", {
+              configurable: true,
+              value: asHref,
+            });
+          } catch (_e) {
+            location.toString = asHref;
+          }
+          try {
+            Object.defineProperty(location, "valueOf", {
+              configurable: true,
+              value: asHref,
+            });
+          } catch (_e) {
+            location.valueOf = asHref;
+          }
+          if (typeof Symbol !== "undefined" && Symbol.toPrimitive) {
+            try {
+              Object.defineProperty(location, Symbol.toPrimitive, {
+                configurable: true,
+                value: asHref,
+              });
+            } catch (_e) {}
+          }
+          if (globalThis.document && typeof globalThis.document === "object") {
+            try {
+              Object.defineProperty(globalThis.document, "location", {
+                configurable: true,
+                enumerable: true,
+                value: location,
+              });
+            } catch (_e) {
+              globalThis.document.location = location;
+            }
+          }
+        };
         applyUrl(next);
+        installLocationStringifier();
         location.assign = function(value) {
           const href = applyUrl(value);
+          installLocationStringifier();
           globalThis.__craterPendingNavigation = { url: href, kind: "assign" };
         };
         location.replace = function(value) {
           const href = applyUrl(value);
+          installLocationStringifier();
           globalThis.__craterPendingNavigation = { url: href, kind: "replace" };
         };
         location.reload = function() {
           const href = applyUrl(location.href || globalThis.__pageUrl || "about:blank");
+          installLocationStringifier();
           globalThis.__craterPendingNavigation = { url: href, kind: "reload" };
         };
         const history = globalThis.history || {};
@@ -3584,6 +4264,7 @@ export class CraterBidiPage {
           globalThis.window.location = location;
           globalThis.window.history = history;
         }
+        installLocationStringifier();
       })()
     `);
   }
@@ -3696,7 +4377,7 @@ export class CraterBidiPage {
     const evaluateOptions = typeof expression === "function"
       ? options
       : isEvaluateOptions(argOrOptions) ? argOrOptions : {};
-    const isAsync = options.awaitPromise ?? (
+    const shouldAwaitPromise = evaluateOptions.awaitPromise ?? (
       typeof expression === "function"
         ? expression.constructor.name === "AsyncFunction"
         : expr.includes("await ") || expr.includes("new Promise") || expr.includes(".then(")
@@ -3704,7 +4385,7 @@ export class CraterBidiPage {
     const resp = await this.sendBidi("script.evaluate", {
       expression: expr,
       target: { context: this.requireContextId() },
-      awaitPromise: evaluateOptions.awaitPromise ?? isAsync,
+      awaitPromise: shouldAwaitPromise,
     });
     if (resp.type === "error") {
       throw new Error(resp.message || resp.error || "script.evaluate failed");
@@ -4218,9 +4899,12 @@ export class CraterBidiPage {
     };
   }
 
-  async capturePaintTree(): Promise<{ width: number; height: number; paintTree: string }> {
+  async capturePaintTree(
+    options: { origin?: "viewport" | "document" } = {},
+  ): Promise<{ width: number; height: number; paintTree: string }> {
     const resp = await this.sendBidi("browsingContext.capturePaintTree", {
       context: this.requireContextId(),
+      origin: options.origin ?? "viewport",
     });
     if (resp.type === "error") {
       throw new Error(resp.message || resp.error || "capturePaintTree failed");
@@ -4835,18 +5519,12 @@ export class CraterBidiPage {
       return;
     }
     this.routePumpQueued = true;
-    sharedRoutePumpQueue = sharedRoutePumpQueue
-      .catch(() => undefined)
-      .then(async () => {
-        try {
-          await this.drainRouteRequests();
-        } finally {
-          this.routePumpQueued = false;
-        }
-      })
+    void this.drainRouteRequests()
       .catch(() => {
-        this.routePumpQueued = false;
         // The page may be closing; the next explicit command will surface real failures.
+      })
+      .finally(() => {
+        this.routePumpQueued = false;
       });
   }
 
@@ -5742,19 +6420,59 @@ export class CraterBidiPage {
     if (!this.ws) {
       throw new Error("Not connected");
     }
+    const releaseRuntimeLock = await this.acquireRuntimeLock(method, params);
     const id = ++this.commandId;
     const payload = JSON.stringify({ id, method, params });
-    return await new Promise<BidiResponse>((resolve, reject) => {
-      this.pendingCommands.set(id, { resolve, reject });
-      this.ws!.send(payload);
-      const timeoutMs = method === "browsingContext.capturePaintData" ? 300000 : 10000;
-      setTimeout(() => {
-        if (this.pendingCommands.has(id)) {
-          this.pendingCommands.delete(id);
-          reject(new Error(`Timeout waiting for response to ${method}`));
-        }
-      }, timeoutMs);
-    });
+    try {
+      return await new Promise<BidiResponse>((resolve, reject) => {
+        this.pendingCommands.set(id, { resolve, reject });
+        this.ws!.send(payload);
+        const timeoutMs = method === "browsingContext.capturePaintData" ? 300000 : 10000;
+        const timeoutLabel = bidiCommandTimeoutLabel(method, params);
+        setTimeout(() => {
+          if (this.pendingCommands.has(id)) {
+            this.pendingCommands.delete(id);
+            reject(new Error(`Timeout waiting for response to ${timeoutLabel}`));
+          }
+        }, timeoutMs);
+      });
+    } finally {
+      releaseRuntimeLock();
+    }
+  }
+
+  private async acquireRuntimeLock(method: string, params: unknown): Promise<() => void> {
+    const context = bidiCommandContext(method, params);
+    while (
+      this.runtimeLockContext !== null &&
+      (context === null || this.runtimeLockContext !== context)
+    ) {
+      await this.runtimeLockSettled;
+    }
+    if (!isAwaitedScriptEvaluate(method, params) || context === null) {
+      return () => {};
+    }
+    if (this.runtimeLockContext === null) {
+      this.runtimeLockContext = context;
+      this.runtimeLockSettled = new Promise<void>((resolve) => {
+        this.runtimeLockRelease = resolve;
+      });
+    }
+    this.runtimeLockCount += 1;
+    let released = false;
+    return () => {
+      if (released) {
+        return;
+      }
+      released = true;
+      this.runtimeLockCount = Math.max(0, this.runtimeLockCount - 1);
+      if (this.runtimeLockCount === 0 && this.runtimeLockContext === context) {
+        this.runtimeLockContext = null;
+        const release = this.runtimeLockRelease;
+        this.runtimeLockRelease = null;
+        release?.();
+      }
+    };
   }
 }
 
@@ -5776,6 +6494,7 @@ export class CraterBrowserContext {
   constructor(
     private readonly contextOptions: CraterBrowserContextOptions = {},
     private readonly closeHandler: CraterContextCloseHandler | null = null,
+    private readonly transportProvider: CraterTransportProvider | null = null,
   ) {
     this.offlineOverride = contextOptions.offline;
     this.geolocationOverride = contextOptions.geolocation;
@@ -5792,7 +6511,11 @@ export class CraterBrowserContext {
     }
     await this.ensureInitialStorageStateLoaded();
     const transport = await this.ensureTransportPage(options);
+    const shouldResetRuntimeStorage = this.pageList.length === 0;
     const page = await transport.createSiblingPage((closedPage) => this.removePage(closedPage));
+    if (shouldResetRuntimeStorage) {
+      await this.resetRuntimeStorageForPage(page);
+    }
     this.pageList.push(page);
     this.attachContextPageHooks(page);
     await this.installLocalStorageInitScript(page);
@@ -6058,7 +6781,7 @@ export class CraterBrowserContext {
     }
     this.closed = true;
     const pages = this.pageList.splice(0, this.pageList.length);
-    const transport = this.transportPage;
+    const transport = this.transportProvider ? null : this.transportPage;
     this.transportPage = null;
     await Promise.all(pages.map((page) => page.close()));
     if (transport) {
@@ -6068,6 +6791,9 @@ export class CraterBrowserContext {
   }
 
   private async ensureTransportPage(options: CraterBidiConnectOptions): Promise<CraterBidiPage> {
+    if (this.transportProvider) {
+      return await this.transportProvider({ ...this.connectionOptions(), ...options });
+    }
     if (!this.transportPage) {
       const transport = new CraterBidiPage();
       await transport.connect({ ...this.connectionOptions(), ...options });
@@ -6236,6 +6962,15 @@ export class CraterBrowserContext {
       return;
     }
     await page.evaluate(this.localStoragePreloadScript());
+  }
+
+  private async resetRuntimeStorageForPage(page: CraterBidiPage): Promise<void> {
+    await page.evaluate(`
+      (() => {
+        try { globalThis.localStorage && globalThis.localStorage.clear(); } catch (_e) {}
+        try { globalThis.sessionStorage && globalThis.sessionStorage.clear(); } catch (_e) {}
+      })()
+    `);
   }
 
   private async applyRoutesToPage(page: CraterBidiPage): Promise<void> {
@@ -6677,6 +7412,8 @@ export class CraterBrowserContext {
 
 export class CraterBrowser {
   private readonly contextList: CraterBrowserContext[] = [];
+  private transportPage: CraterBidiPage | null = null;
+  private transportConnectPromise: Promise<CraterBidiPage> | null = null;
   private closed = false;
 
   constructor(private readonly connectOptions: CraterBidiConnectOptions = {}) {}
@@ -6688,6 +7425,7 @@ export class CraterBrowser {
     const context = new CraterBrowserContext(
       { ...this.connectOptions, ...options },
       (closedContext) => this.removeContext(closedContext),
+      (transportOptions) => this.ensureTransportPage(transportOptions),
     );
     this.contextList.push(context);
     return context;
@@ -6709,12 +7447,111 @@ export class CraterBrowser {
     this.closed = true;
     const contexts = this.contextList.splice(0, this.contextList.length);
     await Promise.all(contexts.map((context) => context.close()));
+    const transport = this.transportPage;
+    this.transportPage = null;
+    this.transportConnectPromise = null;
+    if (transport) {
+      await transport.close();
+    }
   }
 
   private removeContext(context: CraterBrowserContext): void {
     const index = this.contextList.indexOf(context);
     if (index !== -1) {
       this.contextList.splice(index, 1);
+    }
+  }
+
+  private async ensureTransportPage(options: CraterBidiConnectOptions): Promise<CraterBidiPage> {
+    if (this.closed) {
+      throw new Error("Browser is closed");
+    }
+    if (this.transportPage) {
+      return this.transportPage;
+    }
+    if (!this.transportConnectPromise) {
+      this.transportConnectPromise = (async () => {
+        const transport = new CraterBidiPage();
+        try {
+          await transport.connect({ ...this.connectOptions, ...options });
+          this.transportPage = transport;
+          return transport;
+        } catch (error) {
+          await transport.close().catch(() => undefined);
+          throw error;
+        }
+      })().finally(() => {
+        this.transportConnectPromise = null;
+      });
+    }
+    return await this.transportConnectPromise;
+  }
+}
+
+export class CraterBrowserType {
+  constructor(
+    private readonly browserName = "chromium",
+    private readonly dependencies: CraterBrowserTypeDependencies = {},
+  ) {}
+
+  name(): string {
+    return this.browserName;
+  }
+
+  async launch(options: CraterLaunchOptions = {}): Promise<CraterBrowser> {
+    const {
+      autoStartBidi,
+      craterRoot,
+      denoBin,
+      env,
+      headless: _headless,
+      args: _args,
+      executablePath: _executablePath,
+      serverTimeoutMs,
+      pollIntervalMs,
+      statusTimeoutMs,
+      statusUrl,
+      stdio,
+      shutdownTimeoutMs,
+      ...connectOptions
+    } = options;
+    const shouldStartServer = autoStartBidi ?? !connectOptions.url;
+    if (!shouldStartServer) {
+      return new CraterBrowser(connectOptions);
+    }
+
+    const ensureServer = this.dependencies.ensureBidiServer ?? ensureCraterBidiServer;
+    const server = await ensureServer({
+      craterRoot,
+      denoBin,
+      env,
+      timeoutMs: serverTimeoutMs ?? connectOptions.timeout,
+      pollIntervalMs,
+      statusTimeoutMs,
+      statusUrl,
+      stdio,
+      shutdownTimeoutMs,
+    });
+    return new CraterLaunchedBrowser(
+      { ...connectOptions, url: server.url },
+      server,
+    );
+  }
+}
+
+class CraterLaunchedBrowser extends CraterBrowser {
+  constructor(
+    connectOptions: CraterBidiConnectOptions,
+    private readonly server: CraterBidiServerHandle,
+  ) {
+    super(connectOptions);
+  }
+
+  override async close(): Promise<void> {
+    try {
+      await super.close();
+    } finally {
+      await this.server.close();
     }
   }
 }
@@ -6724,3 +7561,11 @@ export function createCraterBrowser(
 ): CraterBrowser {
   return new CraterBrowser(options);
 }
+
+export function createCraterBrowserType(
+  dependencies: CraterBrowserTypeDependencies = {},
+): CraterBrowserType {
+  return new CraterBrowserType("chromium", dependencies);
+}
+
+export const chromium = createCraterBrowserType();
