@@ -262,7 +262,16 @@ type CraterPageLoadResult = {
   statusText?: string;
   headers?: Record<string, string>;
   body?: string | null;
-  scripts?: unknown[];
+  scripts?: CraterScriptExecutionResult[];
+};
+
+type CraterScriptExecutionResult = {
+  error?: boolean;
+  message?: string;
+  src?: string;
+  status?: number;
+  inline?: boolean;
+  module?: boolean;
 };
 
 type CraterNetworkEventPayload =
@@ -333,6 +342,7 @@ export type CraterPageEventMap = {
   dialog: CraterDialog;
   download: CraterDownload;
   console: CraterConsoleMessage;
+  pageerror: Error;
   load: CraterBidiPage;
   domcontentloaded: CraterBidiPage;
   close: CraterBidiPage;
@@ -2645,12 +2655,17 @@ export class CraterBidiPage {
     await this.syncRuntimeLocation("about:blank");
     await this.prepareRuntimeDocumentForLoad();
     await this.evaluate(`__loadHTML(${jsString(html)})`);
+    await this.evaluate(`globalThis.__craterInstallScrollingStubs && globalThis.__craterInstallScrollingStubs()`);
     await this.evaluate(`globalThis.__craterPaintCaptureSource = "original"`);
     await this.reinstallNetworkHooksForDocument();
     await this.runInitScripts();
     await this.setObservableFetchForScriptExecution(this.networkHooksInstalled);
     try {
-      await this.evaluate(`(async () => await __executeScripts())()`, { awaitPromise: true });
+      const scriptsJson = await this.evaluate<string>(
+        `(async () => JSON.stringify(await __executeScripts()))()`,
+        { awaitPromise: true },
+      );
+      this.emitPageErrorsFromScriptResults(JSON.parse(scriptsJson) as CraterScriptExecutionResult[]);
     } finally {
       await this.setObservableFetchForScriptExecution(false);
     }
@@ -2705,6 +2720,7 @@ export class CraterBidiPage {
       { awaitPromise: true },
     );
     const result = JSON.parse(json) as CraterPageLoadResult;
+    await this.evaluate(`globalThis.__craterInstallScrollingStubs && globalThis.__craterInstallScrollingStubs()`);
     await this.syncRuntimeLocation(result.url ?? url);
     await this.runInitScripts();
     if (executeScripts) {
@@ -2714,7 +2730,8 @@ export class CraterBidiPage {
           `(async () => JSON.stringify(await __executeScripts({ baseUrl: ${jsString(result.url ?? url)} })))()`,
           { awaitPromise: true },
         );
-        result.scripts = JSON.parse(scriptsJson) as unknown[];
+        result.scripts = JSON.parse(scriptsJson) as CraterScriptExecutionResult[];
+        this.emitPageErrorsFromScriptResults(result.scripts);
       } finally {
         await this.setObservableFetchForScriptExecution(false);
       }
@@ -3005,6 +3022,252 @@ export class CraterBidiPage {
             globalThis.PerformanceObserver = CraterPerformanceObserver;
           }
           host.PerformanceObserver = globalThis.PerformanceObserver;
+
+          const elementTagName = (value) =>
+            String(value && (value.tagName || value.localName || value.nodeName || "")).toUpperCase();
+          const installInstanceConstructor = (name, predicate) => {
+            const ctor = function() {
+              throw new TypeError("Illegal constructor");
+            };
+            Object.defineProperty(ctor, "name", {
+              configurable: true,
+              value: name,
+            });
+            Object.defineProperty(ctor, Symbol.hasInstance, {
+              configurable: true,
+              value: predicate,
+            });
+            globalThis[name] = ctor;
+            host[name] = ctor;
+          };
+          installInstanceConstructor("HTMLElement", (value) => Boolean(value && value.nodeType === 1));
+          installInstanceConstructor("HTMLInputElement", (value) => elementTagName(value) === "INPUT");
+          installInstanceConstructor("HTMLTextAreaElement", (value) => elementTagName(value) === "TEXTAREA");
+          installInstanceConstructor("HTMLImageElement", (value) => elementTagName(value) === "IMG");
+          installInstanceConstructor("HTMLMediaElement", (value) => {
+            const tagName = elementTagName(value);
+            return tagName === "AUDIO" || tagName === "VIDEO";
+          });
+          installInstanceConstructor("HTMLAudioElement", (value) => elementTagName(value) === "AUDIO");
+          installInstanceConstructor("HTMLVideoElement", (value) => elementTagName(value) === "VIDEO");
+
+          const numberOr = (value, fallback) => {
+            const num = Number(value);
+            return Number.isFinite(num) ? num : fallback;
+          };
+          const currentScrollLeft = () => numberOr(host.scrollX ?? globalThis.scrollX ?? host.pageXOffset ?? globalThis.pageXOffset, 0);
+          const currentScrollTop = () => numberOr(host.scrollY ?? globalThis.scrollY ?? host.pageYOffset ?? globalThis.pageYOffset, 0);
+          const rootScroller = () =>
+            targetDocument.scrollingElement || targetDocument.documentElement || targetDocument.body || null;
+          const dispatchScrollEvent = (target) => {
+            if (!target || typeof target.dispatchEvent !== "function") return;
+            const createEvent = globalThis.__bidiCreateEvent;
+            const event = typeof createEvent === "function"
+              ? createEvent("scroll", { bubbles: false, cancelable: false })
+              : { type: "scroll", bubbles: false, cancelable: false };
+            try { target.dispatchEvent(event); } catch (_error) {}
+          };
+          const setViewportScroll = (left, top) => {
+            const nextLeft = Math.max(0, numberOr(left, currentScrollLeft()));
+            const nextTop = Math.max(0, numberOr(top, currentScrollTop()));
+            host.scrollX = nextLeft;
+            host.scrollY = nextTop;
+            host.pageXOffset = nextLeft;
+            host.pageYOffset = nextTop;
+            globalThis.scrollX = nextLeft;
+            globalThis.scrollY = nextTop;
+            globalThis.pageXOffset = nextLeft;
+            globalThis.pageYOffset = nextTop;
+            const scroller = rootScroller();
+            if (scroller) {
+              scroller.scrollLeft = nextLeft;
+              scroller.scrollTop = nextTop;
+            }
+            dispatchScrollEvent(host);
+          };
+          const scrollArgs = (first, second, currentLeft, currentTop) => {
+            if (first && typeof first === "object") {
+              return {
+                left: first.left === undefined ? currentLeft : numberOr(first.left, currentLeft),
+                top: first.top === undefined ? currentTop : numberOr(first.top, currentTop),
+              };
+            }
+            return {
+              left: numberOr(first, currentLeft),
+              top: numberOr(second, currentTop),
+            };
+          };
+          const scrollTo = function(first, second) {
+            const next = scrollArgs(first, second, currentScrollLeft(), currentScrollTop());
+            setViewportScroll(next.left, next.top);
+          };
+          const scrollBy = function(first, second) {
+            const currentLeft = currentScrollLeft();
+            const currentTop = currentScrollTop();
+            const delta = scrollArgs(first, second, 0, 0);
+            setViewportScroll(currentLeft + delta.left, currentTop + delta.top);
+          };
+          host.scrollTo = scrollTo;
+          host.scrollBy = scrollBy;
+          globalThis.scrollTo = scrollTo;
+          globalThis.scrollBy = scrollBy;
+
+          const imageElements = () => {
+            const nodes = typeof targetDocument.getElementsByTagName === "function"
+              ? Array.from(targetDocument.getElementsByTagName("img") || [])
+              : Array.from(targetDocument.querySelectorAll ? targetDocument.querySelectorAll("img") : []);
+            nodes.item = function(index) {
+              return this[index] || null;
+            };
+            return nodes;
+          };
+          if (!targetDocument.__craterImagesPatched) {
+            Object.defineProperty(targetDocument, "images", {
+              configurable: true,
+              enumerable: true,
+              get: imageElements,
+            });
+            targetDocument.__craterImagesPatched = true;
+          }
+          const dispatchImageLoad = (element) => {
+            Promise.resolve().then(() => {
+              if (!element || typeof element.dispatchEvent !== "function") return;
+              const createEvent = globalThis.__bidiCreateEvent;
+              const event = typeof createEvent === "function"
+                ? createEvent("load", { bubbles: false, cancelable: false })
+                : { type: "load", bubbles: false, cancelable: false };
+              try { element.dispatchEvent(event); } catch (_error) {}
+            });
+          };
+          const patchImageElement = (element) => {
+            const tagName = String(element && (element.tagName || element.localName || "")).toUpperCase();
+            if (tagName !== "IMG" || element.__craterImagePatched) return;
+            element.__craterImagePatched = true;
+            Object.defineProperty(element, "complete", {
+              configurable: true,
+              enumerable: true,
+              get() {
+                return true;
+              },
+            });
+            Object.defineProperty(element, "loading", {
+              configurable: true,
+              enumerable: true,
+              get() {
+                return typeof this.getAttribute === "function" ? this.getAttribute("loading") || "" : "";
+              },
+              set(value) {
+                if (typeof this.setAttribute === "function") this.setAttribute("loading", String(value));
+              },
+            });
+            Object.defineProperty(element, "src", {
+              configurable: true,
+              enumerable: true,
+              get() {
+                return typeof this.getAttribute === "function" ? this.getAttribute("src") || "" : "";
+              },
+              set(value) {
+                if (typeof this.setAttribute === "function") this.setAttribute("src", String(value));
+                dispatchImageLoad(this);
+              },
+            });
+            element.decode = function() {
+              return Promise.resolve();
+            };
+            if (element.naturalWidth === undefined) element.naturalWidth = 0;
+            if (element.naturalHeight === undefined) element.naturalHeight = 0;
+          };
+          const patchMediaElement = (element) => {
+            const tagName = String(element && (element.tagName || element.localName || "")).toUpperCase();
+            if ((tagName !== "VIDEO" && tagName !== "AUDIO") || element.__craterMediaPatched) return;
+            element.__craterMediaPatched = true;
+            element.__craterCurrentTime = numberOr(element.currentTime, 0);
+            element.__craterPaused = true;
+            Object.defineProperty(element, "currentTime", {
+              configurable: true,
+              enumerable: true,
+              get() {
+                return numberOr(this.__craterCurrentTime, 0);
+              },
+              set(value) {
+                this.__craterCurrentTime = Math.max(0, numberOr(value, 0));
+              },
+            });
+            Object.defineProperty(element, "paused", {
+              configurable: true,
+              enumerable: true,
+              get() {
+                return this.__craterPaused !== false;
+              },
+            });
+            element.pause = function() {
+              this.__craterPaused = true;
+              const createEvent = globalThis.__bidiCreateEvent;
+              const event = typeof createEvent === "function"
+                ? createEvent("pause", { bubbles: false, cancelable: false })
+                : { type: "pause", bubbles: false, cancelable: false };
+              try { this.dispatchEvent(event); } catch (_error) {}
+            };
+            element.play = function() {
+              this.__craterPaused = false;
+              return Promise.resolve();
+            };
+          };
+          const patchElementScrolling = (element) => {
+            if (!element || typeof element !== "object" || element.__craterScrollingPatched) return;
+            element.__craterScrollingPatched = true;
+            patchImageElement(element);
+            patchMediaElement(element);
+            if (element.scrollLeft === undefined) element.scrollLeft = 0;
+            if (element.scrollTop === undefined) element.scrollTop = 0;
+            element.scrollTo = function(first, second) {
+              const next = scrollArgs(first, second, numberOr(this.scrollLeft, 0), numberOr(this.scrollTop, 0));
+              this.scrollLeft = Math.max(0, next.left);
+              this.scrollTop = Math.max(0, next.top);
+              dispatchScrollEvent(this);
+            };
+            element.scrollBy = function(first, second) {
+              const currentLeft = numberOr(this.scrollLeft, 0);
+              const currentTop = numberOr(this.scrollTop, 0);
+              const delta = scrollArgs(first, second, 0, 0);
+              this.scrollTo(currentLeft + delta.left, currentTop + delta.top);
+            };
+            element.scrollIntoView = function() {
+              const rect = typeof this.getBoundingClientRect === "function"
+                ? this.getBoundingClientRect()
+                : { left: 0, top: 0 };
+              setViewportScroll(numberOr(rect.left, currentScrollLeft()), numberOr(rect.top, currentScrollTop()));
+            };
+          };
+          const patchElementTree = (root) => {
+            if (!root || typeof root !== "object") return;
+            patchElementScrolling(root);
+            const children = Array.isArray(root._children)
+              ? root._children
+              : Array.from(root.childNodes || []);
+            for (const child of children) {
+              patchElementTree(child);
+            }
+            if (root.shadowRoot) {
+              patchElementTree(root.shadowRoot);
+            }
+          };
+          if (typeof targetDocument.createElement === "function" && !targetDocument.__craterScrollCreateElementWrapped) {
+            const originalCreateElement = targetDocument.createElement;
+            targetDocument.createElement = function(tagName) {
+              const element = originalCreateElement.call(this, tagName);
+              patchElementScrolling(element);
+              return element;
+            };
+            targetDocument.__craterScrollCreateElementWrapped = true;
+          }
+          globalThis.__craterInstallScrollingStubs = () => {
+            patchElementTree(targetDocument.documentElement);
+            patchElementTree(targetDocument.body);
+            return true;
+          };
+          host.__craterInstallScrollingStubs = globalThis.__craterInstallScrollingStubs;
+          globalThis.__craterInstallScrollingStubs();
         };
 
         const html = doc.createElement("html");
@@ -3269,7 +3532,9 @@ export class CraterBidiPage {
     }
     const result = resp.result as { result?: unknown; exceptionDetails?: unknown };
     if (result.exceptionDetails) {
-      throw new Error(JSON.stringify(result.exceptionDetails));
+      const error = this.pageErrorFromExceptionDetails(result.exceptionDetails);
+      this.emitPageEvent("pageerror", error);
+      throw error;
     }
     const value = deserializeBidiValue(result.result) as T;
     if (this.navigationFlushDepth === 0) {
@@ -4793,6 +5058,55 @@ export class CraterBidiPage {
 
   private timeoutOrDefault(timeout: number | undefined, fallback: number): number {
     return timeout ?? this.defaultTimeout ?? fallback;
+  }
+
+  private pageErrorFromExceptionDetails(exceptionDetails: unknown): Error {
+    const record = exceptionDetails && typeof exceptionDetails === "object"
+      ? exceptionDetails as Record<string, unknown>
+      : {};
+    const exception = record.exception && typeof record.exception === "object"
+      ? record.exception as Record<string, unknown>
+      : {};
+    const description = typeof exception.description === "string" ? exception.description : "";
+    const text = typeof record.text === "string" ? record.text : "";
+    const fallback = (() => {
+      try {
+        return JSON.stringify(exceptionDetails);
+      } catch (_error) {
+        return String(exceptionDetails);
+      }
+    })();
+    const message = description || text || fallback || "Page error";
+    const error = new Error(message);
+    if (typeof exception.className === "string" && exception.className) {
+      error.name = exception.className;
+    }
+    if (description.includes("\n")) {
+      error.stack = description;
+    }
+    return error;
+  }
+
+  private emitPageErrorsFromScriptResults(results: unknown): void {
+    if (!Array.isArray(results)) {
+      return;
+    }
+    for (const result of results) {
+      if (!result || typeof result !== "object") {
+        continue;
+      }
+      const record = result as CraterScriptExecutionResult;
+      if (!record.error) {
+        continue;
+      }
+      const message = record.message || (
+        typeof record.status === "number"
+          ? `Script failed to load with status ${record.status}`
+          : "Script execution failed"
+      );
+      const prefix = record.src && record.src !== "inline" ? `${record.src}: ` : "";
+      this.emitPageEvent("pageerror", new Error(`${prefix}${message}`));
+    }
   }
 
   private waitForFunctionExpression<T, Arg>(

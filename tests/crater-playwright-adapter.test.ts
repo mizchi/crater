@@ -255,6 +255,196 @@ test.describe("Crater Playwright adapter package", () => {
     });
   });
 
+  test("provides browser-side scrolling primitives used by capture scripts", async () => {
+    await page.setViewport(320, 200);
+    await page.setContent(`
+      <html>
+        <body style="margin:0">
+          <main style="height:1200px">
+            <div id="target" style="position:absolute;top:480px;left:24px;width:40px;height:20px">target</div>
+          </main>
+        </body>
+      </html>
+    `);
+
+    const snapshot = await page.evaluate(() => {
+      const target = document.querySelector("#target") as HTMLElement;
+      const scroller = document.scrollingElement as HTMLElement;
+      window.scrollTo(10, 20);
+      const afterScrollTo = {
+        x: window.scrollX,
+        y: window.scrollY,
+        pageXOffset: window.pageXOffset,
+        pageYOffset: window.pageYOffset,
+        scrollLeft: scroller.scrollLeft,
+        scrollTop: scroller.scrollTop,
+      };
+      window.scrollBy({ left: 5, top: 30 });
+      const afterScrollBy = {
+        x: window.scrollX,
+        y: window.scrollY,
+        scrollLeft: scroller.scrollLeft,
+        scrollTop: scroller.scrollTop,
+      };
+      window.scrollTo(0, 0);
+      target.scrollIntoView();
+      return JSON.stringify({
+        afterScrollBy,
+        afterScrollTo,
+        innerHeight: window.innerHeight,
+        innerWidth: window.innerWidth,
+        scrollingElement: scroller === document.documentElement,
+        scrollIntoView: {
+          type: typeof target.scrollIntoView,
+          x: window.scrollX,
+          y: window.scrollY,
+        },
+      });
+    });
+
+    const result = JSON.parse(snapshot);
+    expect(result).toEqual({
+      afterScrollBy: {
+        x: 15,
+        y: 50,
+        scrollLeft: 15,
+        scrollTop: 50,
+      },
+      afterScrollTo: {
+        x: 10,
+        y: 20,
+        pageXOffset: 10,
+        pageYOffset: 20,
+        scrollLeft: 10,
+        scrollTop: 20,
+      },
+      innerHeight: 200,
+      innerWidth: 320,
+      scrollingElement: true,
+      scrollIntoView: {
+        type: "function",
+        x: 24,
+        y: 480,
+      },
+    });
+  });
+
+  test("provides browser-side image loading stubs used by capture scripts", async () => {
+    await page.setContent(`
+      <html>
+        <body>
+          <img id="hero" loading="lazy" src="https://example.test/hero.png" alt="hero" />
+          <img id="logo" src="https://example.test/logo.png" alt="logo" />
+        </body>
+      </html>
+    `);
+
+    const snapshot = await page.evaluate(async () => {
+      const image = document.querySelector("#hero") as HTMLImageElement;
+      const events: string[] = [];
+      image.addEventListener("load", () => events.push("load"));
+      for (const lazyImage of Array.from(document.images).filter((candidate) => candidate.loading === "lazy")) {
+        lazyImage.loading = "eager";
+      }
+      image.src = "https://example.test/hero-2.png";
+      await image.decode();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      return JSON.stringify({
+        complete: image.complete,
+        decode: typeof image.decode,
+        events,
+        imagesLength: document.images.length,
+        loading: image.loading,
+        loadingAttr: image.getAttribute("loading"),
+        src: image.src,
+      });
+    });
+
+    expect(JSON.parse(snapshot)).toEqual({
+      complete: true,
+      decode: "function",
+      events: ["load"],
+      imagesLength: 2,
+      loading: "eager",
+      loadingAttr: "eager",
+      src: "https://example.test/hero-2.png",
+    });
+  });
+
+  test("provides browser-side media stabilization stubs used by capture scripts", async () => {
+    await page.setContent(`
+      <html>
+        <body>
+          <video id="clip" src="https://example.test/clip.mp4"></video>
+        </body>
+      </html>
+    `);
+
+    const snapshot = await page.evaluate(() => {
+      const video = document.querySelector("#clip") as HTMLVideoElement;
+      const events: string[] = [];
+      video.addEventListener("pause", () => events.push("pause"));
+      video.currentTime = 12.5;
+      video.pause();
+      return JSON.stringify({
+        currentTime: video.currentTime,
+        events,
+        pause: typeof video.pause,
+        paused: video.paused,
+      });
+    });
+
+    expect(JSON.parse(snapshot)).toEqual({
+      currentTime: 12.5,
+      events: ["pause"],
+      pause: "function",
+      paused: true,
+    });
+  });
+
+  test("provides browser-side element constructors used by capture scripts", async () => {
+    await page.setContent(`
+      <html>
+        <body>
+          <div id="box"></div>
+          <input id="name" />
+          <textarea id="bio"></textarea>
+        </body>
+      </html>
+    `);
+
+    const snapshot = await page.evaluate(() => {
+      const box = document.querySelector("#box")!;
+      const input = document.querySelector("#name")!;
+      const textarea = document.querySelector("#bio")!;
+      return JSON.stringify({
+        boxIsHTMLElement: box instanceof HTMLElement,
+        constructors: {
+          HTMLElement: typeof HTMLElement,
+          HTMLInputElement: typeof HTMLInputElement,
+          HTMLTextAreaElement: typeof HTMLTextAreaElement,
+        },
+        inputIsHTMLElement: input instanceof HTMLElement,
+        inputIsInput: input instanceof HTMLInputElement,
+        textareaIsInput: textarea instanceof HTMLInputElement,
+        textareaIsTextarea: textarea instanceof HTMLTextAreaElement,
+      });
+    });
+
+    expect(JSON.parse(snapshot)).toEqual({
+      boxIsHTMLElement: true,
+      constructors: {
+        HTMLElement: "function",
+        HTMLInputElement: "function",
+        HTMLTextAreaElement: "function",
+      },
+      inputIsHTMLElement: true,
+      inputIsInput: true,
+      textareaIsInput: false,
+      textareaIsTextarea: true,
+    });
+  });
+
   test("supports page and locator setInputFiles for file inputs", async () => {
     await page.setContent(`
       <html>
@@ -471,6 +661,44 @@ test.describe("Crater Playwright adapter package", () => {
     expect(message.text()).toBe("adapter ready");
     expect(message.page()).toBe(page);
     expect(observed).toEqual(["log:adapter ready"]);
+  });
+
+  test("supports pageerror events from evaluated page exceptions", async () => {
+    const observed: string[] = [];
+    page.on("pageerror", (error) => {
+      observed.push(error.message);
+    });
+
+    const errorPromise = page.waitForEvent("pageerror", {
+      predicate: (error) => error.message.includes("adapter boom"),
+    });
+
+    await expect(page.evaluate(() => {
+      throw new Error("adapter boom");
+    })).rejects.toThrow("adapter boom");
+
+    const error = await errorPromise;
+    expect(error).toBeInstanceOf(Error);
+    expect(error.message).toContain("adapter boom");
+    expect(observed.some((message) => message.includes("adapter boom"))).toBe(true);
+  });
+
+  test("supports pageerror events from executed script tags", async () => {
+    const pageErrorPromise = page.waitForEvent("pageerror", {
+      predicate: (error) => error.message.includes("script boom"),
+    });
+
+    await page.setContent(`
+      <html>
+        <body>
+          <script>throw new Error("script boom")</script>
+        </body>
+      </html>
+    `);
+
+    const error = await pageErrorPromise;
+    expect(error).toBeInstanceOf(Error);
+    expect(error.message).toContain("script boom");
   });
 });
 

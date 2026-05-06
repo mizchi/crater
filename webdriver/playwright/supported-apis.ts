@@ -286,13 +286,13 @@ const CRATER_PLAYWRIGHT_API_SUPPORT_SOURCE = [
     owner: "page",
     api: "on",
     status: "partial",
-    notes: "Registers EventEmitter-style listeners for request, response, requestfailed, filechooser, dialog, download, console, load, domcontentloaded, and close.",
+    notes: "Registers EventEmitter-style listeners for request, response, requestfailed, filechooser, dialog, download, console, pageerror, load, domcontentloaded, and close.",
   },
   {
     owner: "page",
     api: "waitForEvent",
     status: "partial",
-    notes: "Waits for request, response, requestfailed, filechooser, dialog, download, console, load, domcontentloaded, and close with an optional predicate.",
+    notes: "Waits for request, response, requestfailed, filechooser, dialog, download, console, pageerror, load, domcontentloaded, and close with an optional predicate.",
   },
   {
     owner: "page",
