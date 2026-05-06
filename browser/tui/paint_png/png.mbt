@@ -12,7 +12,7 @@ extern "js" fn framebuffer_to_png_base64_js(
   palette_b : Array[Int],
 ) -> String =
   #|(width, height, pixels, pr, pg, pb) => {
-  #|  const zlib = require("node:zlib");
+  #|  const zlib = typeof require === "function" ? require("node:zlib") : null;
   #|  let crcTable = globalThis.__craterPngCrcTable;
   #|  if (!crcTable) {
   #|    crcTable = new Uint32Array(256);
@@ -34,6 +34,42 @@ extern "js" fn framebuffer_to_png_base64_js(
   #|      crc = (crcTable[(crc ^ dataBuf[i]) & 0xff] ^ (crc >>> 8)) >>> 0;
   #|    }
   #|    return (crc ^ 0xffffffff) >>> 0;
+  #|  }
+  #|  function adler32(buf) {
+  #|    let a = 1;
+  #|    let b = 0;
+  #|    for (let i = 0; i < buf.length; i++) {
+  #|      a = (a + (buf[i] & 0xff)) % 65521;
+  #|      b = (b + a) % 65521;
+  #|    }
+  #|    return ((b << 16) | a) >>> 0;
+  #|  }
+  #|  function deflateStore(raw) {
+  #|    const parts = [Buffer.from([0x78, 0x01])];
+  #|    for (let offset = 0; offset < raw.length;) {
+  #|      const len = Math.min(65535, raw.length - offset);
+  #|      const final = offset + len >= raw.length ? 1 : 0;
+  #|      const block = Buffer.allocUnsafe(5 + len);
+  #|      block[0] = final;
+  #|      block.writeUInt16LE(len, 1);
+  #|      block.writeUInt16LE((~len) & 0xffff, 3);
+  #|      raw.copy(block, 5, offset, offset + len);
+  #|      parts.push(block);
+  #|      offset += len;
+  #|    }
+  #|    const checksum = Buffer.allocUnsafe(4);
+  #|    checksum.writeUInt32BE(adler32(raw), 0);
+  #|    parts.push(checksum);
+  #|    return Buffer.concat(parts);
+  #|  }
+  #|  function deflatePngData(raw) {
+  #|    if (zlib && typeof zlib.deflateSync === "function") {
+  #|      return zlib.deflateSync(raw, {
+  #|        level: 1,
+  #|        strategy: zlib.constants.Z_RLE,
+  #|      });
+  #|    }
+  #|    return deflateStore(raw);
   #|  }
   #|  function chunk(type, data) {
   #|    const typeBuf = Buffer.from(type, "ascii");
@@ -63,10 +99,7 @@ extern "js" fn framebuffer_to_png_base64_js(
   #|      plte[p++] = pg[i] | 0;
   #|      plte[p++] = pb[i] | 0;
   #|    }
-  #|    const compressed = zlib.deflateSync(raw, {
-  #|      level: 1,
-  #|      strategy: zlib.constants.Z_RLE,
-  #|    });
+  #|    const compressed = deflatePngData(raw);
   #|    return { colorType: 3, compressed, plte };
   #|  }
   #|  function encodeRgba() {
@@ -83,10 +116,7 @@ extern "js" fn framebuffer_to_png_base64_js(
   #|        raw[dst++] = 255;
   #|      }
   #|    }
-  #|    const compressed = zlib.deflateSync(raw, {
-  #|      level: 1,
-  #|      strategy: zlib.constants.Z_RLE,
-  #|    });
+  #|    const compressed = deflatePngData(raw);
   #|    return { colorType: 6, compressed, plte: null };
   #|  }
   #|  const signature =

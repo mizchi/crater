@@ -64,6 +64,7 @@ tmp/**/*.txt
 tmp/**/*.json
 tmp/wpt-modules/
 tmp/ws-video-test.html
+docs/private/
 ci-logs/
 trace.json
 browser/jsbidi/trace.json

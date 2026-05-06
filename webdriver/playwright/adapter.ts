@@ -89,6 +89,26 @@ export type CraterWaitForFunctionOptions = {
   polling?: number;
 };
 
+export type CraterLocatorActionOptions = {
+  timeout?: number;
+};
+
+export type CraterScreenshotClip = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+export type CraterScreenshotOptions = {
+  fullPage?: boolean;
+  timeout?: number;
+  clip?: CraterScreenshotClip;
+  type?: "png" | "jpeg";
+  quality?: number;
+  path?: string;
+};
+
 export type CraterWaitForSelectorState = "attached" | "detached" | "visible" | "hidden";
 
 export type CraterWaitForSelectorOptions = {
@@ -820,6 +840,11 @@ const domKeyValue = (key: string): string => key === "Space" ? " " : key;
 
 function isEvaluateOptions(value: unknown): value is CraterEvaluateOptions {
   return !!value && typeof value === "object" && "awaitPromise" in value;
+}
+
+function isWaitForFunctionOptions(value: unknown): value is CraterWaitForFunctionOptions {
+  return !!value && typeof value === "object" &&
+    ("timeout" in value || "polling" in value);
 }
 
 export function parseLocatorSelector(selector: string): ParsedLocatorSelector {
@@ -1787,8 +1812,8 @@ export class CraterLocator {
     });
   }
 
-  async click(): Promise<void> {
-    await this.waitForActionable();
+  async click(options: CraterLocatorActionOptions = {}): Promise<void> {
+    await this.waitForActionable(options);
     await this.page.evaluate(`
       (() => {
         const el = ${this.queryExpr("querySelector")};
@@ -1800,14 +1825,75 @@ export class CraterLocator {
     await markLiveDomCaptureNeeded(this.page);
   }
 
-  async hover(): Promise<void> {
-    await this.waitForActionable();
+  async hover(options: CraterLocatorActionOptions = {}): Promise<void> {
+    await this.waitForActionable(options);
     await this.page.evaluate(`
       (() => {
         const el = ${this.queryExpr("querySelector")};
         if (!el) throw new Error("Element not found: ${this.selectorForError()}");
         ${adapterDomActionsExpr()}
         __craterAction.hoverElement(el);
+      })()
+    `);
+    await markLiveDomCaptureNeeded(this.page);
+  }
+
+  async scrollIntoViewIfNeeded(options: CraterLocatorActionOptions = {}): Promise<void> {
+    await this.waitFor({ state: "attached", timeout: options.timeout });
+    await this.page.evaluate(`
+      (() => {
+        const el = ${this.queryExpr("querySelector")};
+        if (!el) throw new Error("Element not found: ${this.selectorForError()}");
+        if (typeof el.scrollIntoView === "function") {
+          el.scrollIntoView({ block: "nearest", inline: "nearest" });
+          return;
+        }
+        const win = globalThis.window || globalThis;
+        let targetX = Number(win.scrollX || globalThis.scrollX || 0);
+        let targetY = Number(win.scrollY || globalThis.scrollY || 0);
+        if (typeof el.getBoundingClientRect === "function") {
+          try {
+            const rect = el.getBoundingClientRect();
+            const viewportWidth = Number(win.innerWidth || globalThis.innerWidth || 1024);
+            const viewportHeight = Number(win.innerHeight || globalThis.innerHeight || 768);
+            const left = Number(rect.left ?? rect.x ?? 0);
+            const top = Number(rect.top ?? rect.y ?? 0);
+            const right = Number(rect.right ?? (left + Number(rect.width || 0)));
+            const bottom = Number(rect.bottom ?? (top + Number(rect.height || 0)));
+            if (top < 0) {
+              targetY += top;
+            } else if (bottom > viewportHeight) {
+              targetY += bottom - viewportHeight;
+            }
+            if (left < 0) {
+              targetX += left;
+            } else if (right > viewportWidth) {
+              targetX += right - viewportWidth;
+            }
+          } catch (_e) {}
+        }
+        targetX = Math.max(0, targetX);
+        targetY = Math.max(0, targetY);
+        if (typeof win.scrollTo === "function") {
+          try {
+            win.scrollTo({ left: targetX, top: targetY, behavior: "instant" });
+          } catch (_e) {
+            try { win.scrollTo(targetX, targetY); } catch (_err) {}
+          }
+        }
+        win.scrollX = targetX;
+        win.scrollY = targetY;
+        win.pageXOffset = targetX;
+        win.pageYOffset = targetY;
+        globalThis.scrollX = targetX;
+        globalThis.scrollY = targetY;
+        globalThis.pageXOffset = targetX;
+        globalThis.pageYOffset = targetY;
+        const scroller = document.scrollingElement || document.documentElement || document.body;
+        if (scroller) {
+          scroller.scrollLeft = targetX;
+          scroller.scrollTop = targetY;
+        }
       })()
     `);
     await markLiveDomCaptureNeeded(this.page);
@@ -1829,8 +1915,8 @@ export class CraterLocator {
     `);
   }
 
-  async fill(value: string): Promise<void> {
-    await this.waitForActionable();
+  async fill(value: string, options: CraterLocatorActionOptions = {}): Promise<void> {
+    await this.waitForActionable(options);
     await this.page.evaluate(`
       (() => {
         ${adapterDomActionsExpr()}
@@ -2863,6 +2949,63 @@ export class CraterBidiPage {
             return this.documentElement || this.body || null;
           },
         });
+        const installCaptureStabilizationStubs = (targetWindow, targetDocument) => {
+          if (!targetDocument.fonts) {
+            const fontSet = {
+              status: "loaded",
+              check() { return true; },
+              load() { return Promise.resolve([]); },
+              addEventListener() {},
+              removeEventListener() {},
+              dispatchEvent() { return true; },
+            };
+            fontSet.ready = Promise.resolve(fontSet);
+            Object.defineProperty(targetDocument, "fonts", {
+              configurable: true,
+              enumerable: true,
+              value: fontSet,
+            });
+          }
+          if (typeof targetDocument.getAnimations !== "function") {
+            targetDocument.getAnimations = () => [];
+          }
+          const host = targetWindow || globalThis;
+          if (typeof globalThis.PerformanceObserver !== "function") {
+            const makeEntryList = (entries) => ({
+              getEntries: () => entries.slice(),
+              getEntriesByName: (name) => entries.filter((entry) => entry.name === name),
+              getEntriesByType: (type) => entries.filter((entry) => entry.entryType === type),
+            });
+            class CraterPerformanceObserver {
+              constructor(callback) {
+                this._callback = typeof callback === "function" ? callback : () => {};
+                this._records = [];
+              }
+              observe() {}
+              disconnect() {
+                this._records = [];
+              }
+              takeRecords() {
+                const records = this._records.slice();
+                this._records = [];
+                return records;
+              }
+            }
+            CraterPerformanceObserver.supportedEntryTypes = [
+              "element",
+              "largest-contentful-paint",
+              "layout-shift",
+              "mark",
+              "measure",
+              "navigation",
+              "paint",
+              "resource",
+            ];
+            CraterPerformanceObserver.__craterMakeEntryList = makeEntryList;
+            globalThis.PerformanceObserver = CraterPerformanceObserver;
+          }
+          host.PerformanceObserver = globalThis.PerformanceObserver;
+        };
 
         const html = doc.createElement("html");
         const head = doc.createElement("head");
@@ -2896,6 +3039,7 @@ export class CraterBidiPage {
         globalThis.top = contextWindow;
         contextWindow.document = doc;
         contextWindow.window.document = doc;
+        installCaptureStabilizationStubs(contextWindow, doc);
         return true;
       })()
     `);
@@ -3148,13 +3292,19 @@ export class CraterBidiPage {
     await new Promise((resolve) => setTimeout(resolve, timeout));
   }
 
-  async waitForFunction<T>(
-    pageFunction: string | (() => T | Promise<T>),
+  async waitForFunction<T, Arg = unknown>(
+    pageFunction: string | ((arg: Arg) => T | Promise<T>),
+    argOrOptions?: Arg | CraterWaitForFunctionOptions,
     options: CraterWaitForFunctionOptions = {},
   ): Promise<T> {
-    const timeout = this.timeoutOrDefault(options.timeout, 3000);
-    const polling = options.polling ?? 30;
-    const expression = this.waitForFunctionExpression(pageFunction);
+    const hasArg = arguments.length >= 3 ||
+      (arguments.length >= 2 && !isWaitForFunctionOptions(argOrOptions));
+    const waitOptions = hasArg
+      ? options
+      : (isWaitForFunctionOptions(argOrOptions) ? argOrOptions : {});
+    const timeout = this.timeoutOrDefault(waitOptions.timeout, 3000);
+    const polling = waitOptions.polling ?? 30;
+    const expression = this.waitForFunctionExpression(pageFunction, argOrOptions as Arg, hasArg);
     const start = Date.now();
     let lastError: Error | null = null;
     while (Date.now() - start < timeout) {
@@ -3442,8 +3592,8 @@ export class CraterBidiPage {
     await this.locator(selector).setInputFiles(files);
   }
 
-  async screenshot(): Promise<Buffer> {
-    return this.captureScreenshot();
+  async screenshot(options: CraterScreenshotOptions = {}): Promise<Buffer> {
+    return await this.captureScreenshotWithBackend(options, "synthetic");
   }
 
   async drag(sourceSelector: string, targetSelector: string): Promise<void> {
@@ -3560,15 +3710,28 @@ export class CraterBidiPage {
     );
   }
 
-  async captureScreenshot(): Promise<Buffer> {
-    const resp = await this.sendBidi("browsingContext.captureScreenshotData", {
-      context: this.requireContextId(),
-      origin: "viewport",
-    });
+  async captureScreenshot(options: CraterScreenshotOptions = {}): Promise<Buffer> {
+    return await this.captureScreenshotWithBackend(options, null);
+  }
+
+  private async captureScreenshotWithBackend(
+    options: CraterScreenshotOptions,
+    backend: "synthetic" | null,
+  ): Promise<Buffer> {
+    const params = await this.screenshotBidiParams(options, backend);
+    const resp = await this.withOperationTimeout(
+      this.sendBidi("browsingContext.captureScreenshotData", params),
+      options.timeout,
+      "browsingContext.captureScreenshotData",
+    );
     if (resp.type === "error") {
       throw new Error(resp.message || resp.error || "captureScreenshotData failed");
     }
-    return Buffer.from(String(resp.result || ""), "base64");
+    const buffer = Buffer.from(String(resp.result || ""), "base64");
+    if (options.path) {
+      await writeFile(options.path, buffer);
+    }
+    return buffer;
   }
 
   async capturePaintData(): Promise<{ width: number; height: number; data: Uint8Array }> {
@@ -4632,10 +4795,133 @@ export class CraterBidiPage {
     return timeout ?? this.defaultTimeout ?? fallback;
   }
 
-  private waitForFunctionExpression<T>(pageFunction: string | (() => T | Promise<T>)): string {
+  private waitForFunctionExpression<T, Arg>(
+    pageFunction: string | ((arg: Arg) => T | Promise<T>),
+    arg: Arg,
+    hasArg: boolean,
+  ): string {
+    const argExpr = hasArg ? jsValue(arg) : "";
     return typeof pageFunction === "function"
-      ? `(${pageFunction.toString()})()`
+      ? `(${pageFunction.toString()})(${argExpr})`
+      : hasArg
+      ? `(${pageFunction})(${argExpr})`
       : `(${pageFunction})`;
+  }
+
+  private async screenshotBidiParams(
+    options: CraterScreenshotOptions,
+    backend: "synthetic" | null,
+  ): Promise<Record<string, unknown>> {
+    const params: Record<string, unknown> = {
+      context: this.requireContextId(),
+      origin: options.fullPage ? "document" : "viewport",
+    };
+    if (backend) {
+      params.backend = backend;
+    }
+    const clip = options.clip ?? (options.fullPage ? await this.fullPageScreenshotClip() : null);
+    if (clip) {
+      params.clip = {
+        type: "box",
+        x: clip.x,
+        y: clip.y,
+        width: clip.width,
+        height: clip.height,
+      };
+    }
+    if (options.type || options.quality !== undefined) {
+      const format: Record<string, unknown> = {
+        type: options.type === "jpeg" ? "image/jpeg" : "image/png",
+      };
+      if (options.quality !== undefined) {
+        format.quality = Math.max(0, Math.min(1, options.quality / 100));
+      }
+      params.format = format;
+    }
+    return params;
+  }
+
+  private async fullPageScreenshotClip(): Promise<CraterScreenshotClip> {
+    return await this.evaluate<CraterScreenshotClip>(`
+      (() => {
+        const win = globalThis.window || globalThis;
+        const viewportWidth = Number(win.innerWidth || globalThis.innerWidth || 1);
+        const viewportHeight = Number(win.innerHeight || globalThis.innerHeight || 1);
+        let width = viewportWidth > 0 ? viewportWidth : 1;
+        let height = viewportHeight > 0 ? viewportHeight : 1;
+        const px = (value) => {
+          const parsed = Number.parseFloat(String(value ?? ""));
+          return Number.isFinite(parsed) ? parsed : 0;
+        };
+        const visit = (el) => {
+          if (!el) return;
+          width = Math.max(
+            width,
+            Number(el.scrollWidth || 0),
+            Number(el.clientWidth || 0),
+            Number(el.offsetWidth || 0),
+          );
+          height = Math.max(
+            height,
+            Number(el.scrollHeight || 0),
+            Number(el.clientHeight || 0),
+            Number(el.offsetHeight || 0),
+          );
+          const style = el.style || {};
+          let left = px(style.left) + px(style.marginLeft);
+          let top = px(style.top) + px(style.marginTop);
+          let rectWidth = px(style.width);
+          let rectHeight = px(style.height);
+          if (typeof el.getBoundingClientRect === "function") {
+            try {
+              const rect = el.getBoundingClientRect();
+              left = Number(rect.left ?? rect.x ?? left) || left;
+              top = Number(rect.top ?? rect.y ?? top) || top;
+              rectWidth = Number(rect.width ?? ((rect.right ?? 0) - (rect.left ?? 0))) || rectWidth;
+              rectHeight = Number(rect.height ?? ((rect.bottom ?? 0) - (rect.top ?? 0))) || rectHeight;
+            } catch (_e) {}
+          }
+          width = Math.max(width, left + Math.max(0, rectWidth));
+          height = Math.max(height, top + Math.max(0, rectHeight));
+        };
+        visit(document.documentElement);
+        visit(document.body);
+        for (const el of Array.from(document.querySelectorAll("body *"))) {
+          visit(el);
+        }
+        return {
+          x: 0,
+          y: 0,
+          width: Math.max(1, Math.ceil(width)),
+          height: Math.max(1, Math.ceil(height)),
+        };
+      })()
+    `);
+  }
+
+  private async withOperationTimeout<T>(
+    promise: Promise<T>,
+    timeout: number | undefined,
+    label: string,
+  ): Promise<T> {
+    if (timeout === undefined || timeout === 0) {
+      return await promise;
+    }
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    try {
+      return await Promise.race([
+        promise,
+        new Promise<never>((_resolve, reject) => {
+          timer = setTimeout(() => {
+            reject(new Error(`Timeout waiting for response to ${label}`));
+          }, timeout);
+        }),
+      ]);
+    } finally {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    }
   }
 
   private async runInitScripts(): Promise<void> {

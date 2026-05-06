@@ -144,6 +144,7 @@ const expectedLocatorApis = [
   "locator",
   "nth",
   "press",
+  "scrollIntoViewIfNeeded",
   "selectOption",
   "setInputFiles",
   "textContent",

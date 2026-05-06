@@ -472,7 +472,7 @@ const CRATER_PLAYWRIGHT_API_SUPPORT_SOURCE = [
     owner: "page",
     api: "waitForFunction",
     status: "partial",
-    notes: "Polls a serializable expression/function until it returns a truthy serialized value.",
+    notes: "Polls a serializable expression/function until it returns a truthy serialized value, including Playwright-style function arg and options overloads.",
   },
   {
     owner: "page",
@@ -532,7 +532,7 @@ const CRATER_PLAYWRIGHT_API_SUPPORT_SOURCE = [
     owner: "page",
     api: "screenshot",
     status: "partial",
-    notes: "Playwright-style alias for Crater screenshot capture.",
+    notes: "Playwright-style alias for Crater screenshot capture with timeout, fullPage/document-origin, clip, type, quality, and path options; the alias uses synthetic PNG/JPEG generation until full actual-paint screenshot parity is available.",
   },
   {
     owner: "page",
@@ -665,6 +665,12 @@ const CRATER_PLAYWRIGHT_API_SUPPORT_SOURCE = [
     api: "hover",
     status: "partial",
     notes: "Waits for attached/visible/enabled/stable target state, then dispatches pointerenter/mouseover events in the Crater runtime.",
+  },
+  {
+    owner: "locator",
+    api: "scrollIntoViewIfNeeded",
+    status: "partial",
+    notes: "Waits for an attached target and calls element.scrollIntoView({ block: 'nearest', inline: 'nearest' }) when available, otherwise updates Crater's synthetic scroll offsets best-effort.",
   },
   {
     owner: "locator",

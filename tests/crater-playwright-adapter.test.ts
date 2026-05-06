@@ -120,6 +120,141 @@ test.describe("Crater Playwright adapter package", () => {
     await expect(frame.locator("#result").inputValue()).resolves.toBe("clicked");
   });
 
+  test("waitForFunction accepts Playwright-style arg and options overload", async () => {
+    page.setDefaultTimeout(2000);
+    await page.setContentWithScripts(`
+      <html>
+        <body data-ready="no">
+          <script>
+            setTimeout(() => {
+              document.body.setAttribute("data-ready", "yes");
+            }, 20);
+          </script>
+        </body>
+      </html>
+    `);
+
+    await expect(
+      page.waitForFunction(
+        ({ attr }) => document.body.getAttribute(attr) === "yes",
+        { attr: "data-ready" },
+        { timeout: 1000 },
+      ),
+    ).resolves.toBe(true);
+  });
+
+  test("locator scrollIntoViewIfNeeded and action options use locator timeout", async () => {
+    await page.setContent(`
+      <html>
+        <body>
+          <input id="name" />
+          <button id="save">Save</button>
+          <output id="events"></output>
+        </body>
+      </html>
+    `);
+    await page.evaluate(() => {
+      const events = document.querySelector("#events")!;
+      const save = document.querySelector("#save") as HTMLElement & {
+        scrollIntoView(options?: unknown): void;
+      };
+      save.scrollIntoView = (options?: unknown) => {
+        events.textContent = JSON.stringify({
+          called: true,
+          options,
+        });
+      };
+      save.addEventListener("click", () => {
+        document.body.setAttribute("data-clicked", "yes");
+      });
+      save.addEventListener("mouseover", () => {
+        document.body.setAttribute("data-hovered", "yes");
+      });
+    });
+
+    await page.locator("#save").scrollIntoViewIfNeeded({ timeout: 1000 });
+    await page.locator("#save").click({ timeout: 1000 });
+    await page.locator("#save").hover({ timeout: 1000 });
+    await page.locator("#name").fill("Crater", { timeout: 1000 });
+
+    await expect(page.locator("#events").textContent()).resolves.toContain("\"called\":true");
+    await expect(page.getAttribute("body", "data-clicked")).resolves.toBe("yes");
+    await expect(page.getAttribute("body", "data-hovered")).resolves.toBe("yes");
+    await expect(page.locator("#name").inputValue()).resolves.toBe("Crater");
+    await expect(page.locator("#missing").click({ timeout: 80 })).rejects.toThrow(
+      /Timeout waiting for actionable selector/,
+    );
+  });
+
+  test("screenshot accepts fullPage, timeout, clip, and type options", async () => {
+    await page.setViewport(200, 100);
+    await page.setContent(`
+      <html>
+        <body style="margin:0">
+          <div style="width:200px;height:260px;background:#000"></div>
+        </body>
+      </html>
+    `);
+
+    const dimensions = (png: Buffer) => ({
+      width: png.readUInt32BE(16),
+      height: png.readUInt32BE(20),
+    });
+
+    await expect(page.screenshot({ timeout: 1000, type: "png" })).resolves.toEqual(
+      expect.any(Buffer),
+    );
+    const actualViewport = await page.captureScreenshot({ timeout: 1000 });
+    expect(dimensions(actualViewport)).toEqual({ width: 200, height: 100 });
+
+    const viewport = await page.screenshot({ timeout: 1000, type: "png" });
+    expect(dimensions(viewport)).toEqual({ width: 200, height: 100 });
+
+    const fullPage = await page.screenshot({ fullPage: true, timeout: 1000, type: "png" });
+    expect(dimensions(fullPage).height).toBeGreaterThan(100);
+
+    const clipped = await page.screenshot({
+      clip: { x: 0, y: 0, width: 50, height: 40 },
+      timeout: 1000,
+      type: "png",
+    });
+    expect(dimensions(clipped)).toEqual({ width: 50, height: 40 });
+  });
+
+  test("provides browser-side stabilization stubs used by capture scripts", async () => {
+    await page.setContent("<html><body><main>ready</main></body></html>");
+
+    const snapshot = await page.evaluate(async () => {
+      const observed: number[] = [];
+      const observer = new PerformanceObserver((list) => {
+        observed.push(list.getEntries().length);
+      });
+      observer.observe({ type: "largest-contentful-paint", buffered: true });
+      const records = observer.takeRecords();
+      observer.disconnect();
+      const ready = await document.fonts.ready.then(() => document.fonts.status);
+      return JSON.stringify({
+        animations: document.getAnimations().length,
+        fontCheck: document.fonts.check("12px Arial"),
+        fontReady: ready,
+        observer: typeof PerformanceObserver,
+        observed,
+        records: records.length,
+        supported: PerformanceObserver.supportedEntryTypes.includes("largest-contentful-paint"),
+      });
+    });
+
+    expect(JSON.parse(snapshot)).toEqual({
+      animations: 0,
+      fontCheck: true,
+      fontReady: "loaded",
+      observer: "function",
+      observed: [],
+      records: 0,
+      supported: true,
+    });
+  });
+
   test("supports page and locator setInputFiles for file inputs", async () => {
     await page.setContent(`
       <html>
