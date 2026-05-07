@@ -38,6 +38,24 @@ describe("waitForCraterBidiUrl", () => {
     expect(attempts).toBe(3);
   });
 
+  it("can disable URL-file fallback while polling a dedicated status endpoint", async () => {
+    const readUrlFileValues: Array<boolean | undefined> = [];
+
+    const url = await waitForCraterBidiUrl({
+      timeoutMs: 100,
+      pollIntervalMs: 1,
+      statusUrl: "http://127.0.0.1:19331/",
+      readUrlFile: false,
+      discoverBidiUrlImpl: async (options) => {
+        readUrlFileValues.push(options?.readUrlFile);
+        return "ws://127.0.0.1:19331/session/ready";
+      },
+    });
+
+    expect(url).toBe("ws://127.0.0.1:19331/session/ready");
+    expect(readUrlFileValues).toEqual([false]);
+  });
+
   it("fails when no websocket URL appears before the timeout", async () => {
     await expect(
       waitForCraterBidiUrl({

@@ -4,6 +4,7 @@
  * at runtime for accurate text metrics.
  *
  * Usage: deno run -A webdriver/bidi_main/start-with-font.ts
+ * Optional: CRATER_BIDI_HOST=127.0.0.1 CRATER_BIDI_PORT=9223
  */
 import { createTextIntrinsicFnFromMeasureText } from "../../scripts/text-intrinsic.ts";
 import {

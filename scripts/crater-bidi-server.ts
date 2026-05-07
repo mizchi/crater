@@ -40,6 +40,7 @@ export type WaitForCraterBidiUrlOptions = {
   statusUrl?: string;
   timeoutMs?: number;
   pollIntervalMs?: number;
+  readUrlFile?: boolean;
   discoverBidiUrlImpl?: DiscoverBidiUrlImpl;
   isProcessExited?: () => boolean;
 };
@@ -95,6 +96,7 @@ export async function waitForCraterBidiUrl(
       env: options.env,
       statusTimeoutMs: options.statusTimeoutMs,
       statusUrl: options.statusUrl,
+      readUrlFile: options.readUrlFile,
     });
     if (url) {
       return url;
@@ -196,6 +198,7 @@ export async function startCraterBidiServer(
       statusUrl: options.statusUrl,
       timeoutMs: options.timeoutMs,
       pollIntervalMs: options.pollIntervalMs,
+      readUrlFile: options.readUrlFile,
       discoverBidiUrlImpl: options.discoverBidiUrlImpl,
       isProcessExited: () => child.exitCode !== null || child.signalCode !== null,
     });

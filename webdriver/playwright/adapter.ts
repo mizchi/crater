@@ -1,4 +1,5 @@
 import { copyFile, mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { createServer } from "node:net";
 import { dirname } from "node:path";
 import WebSocket from "ws";
 import {
@@ -40,6 +41,7 @@ export type CraterBidiConnectOptions = {
 
 export type CraterLaunchOptions = CraterBidiConnectOptions & {
   autoStartBidi?: boolean;
+  isolateContexts?: boolean;
   craterRoot?: string;
   denoBin?: string;
   env?: NodeJS.ProcessEnv;
@@ -58,6 +60,7 @@ export type CraterBrowserTypeDependencies = {
   ensureBidiServer?: (
     options?: EnsureCraterBidiServerOptions,
   ) => Promise<CraterBidiServerHandle>;
+  allocateBidiPort?: () => Promise<number>;
 };
 
 export type CraterViewportSize = {
@@ -458,6 +461,28 @@ type SharedBidiConnection = {
 type CraterPageCloseHandler = (page: CraterBidiPage) => void;
 type CraterContextCloseHandler = (context: CraterBrowserContext) => void;
 type CraterTransportProvider = (options: CraterBidiConnectOptions) => Promise<CraterBidiPage>;
+
+async function allocateBidiPort(): Promise<number> {
+  return await new Promise((resolve, reject) => {
+    const server = createServer();
+    server.unref();
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      server.close((error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        if (address && typeof address === "object") {
+          resolve(address.port);
+        } else {
+          reject(new Error("Failed to allocate a Crater BiDi port"));
+        }
+      });
+    });
+  });
+}
 
 type CraterTimeoutResolver = (timeout: number | undefined, fallback: number) => number;
 
@@ -7420,12 +7445,12 @@ export class CraterBrowserContext {
 }
 
 export class CraterBrowser {
-  private readonly contextList: CraterBrowserContext[] = [];
-  private transportPage: CraterBidiPage | null = null;
-  private transportConnectPromise: Promise<CraterBidiPage> | null = null;
-  private closed = false;
+  protected readonly contextList: CraterBrowserContext[] = [];
+  protected transportPage: CraterBidiPage | null = null;
+  protected transportConnectPromise: Promise<CraterBidiPage> | null = null;
+  protected closed = false;
 
-  constructor(private readonly connectOptions: CraterBidiConnectOptions = {}) {}
+  constructor(protected readonly connectOptions: CraterBidiConnectOptions = {}) {}
 
   async newContext(options: CraterBrowserContextOptions = {}): Promise<CraterBrowserContext> {
     if (this.closed) {
@@ -7464,7 +7489,7 @@ export class CraterBrowser {
     }
   }
 
-  private removeContext(context: CraterBrowserContext): void {
+  protected removeContext(context: CraterBrowserContext): void {
     const index = this.contextList.indexOf(context);
     if (index !== -1) {
       this.contextList.splice(index, 1);
@@ -7510,6 +7535,7 @@ export class CraterBrowserType {
   async launch(options: CraterLaunchOptions = {}): Promise<CraterBrowser> {
     const {
       autoStartBidi,
+      isolateContexts,
       craterRoot,
       denoBin,
       env,
@@ -7530,7 +7556,8 @@ export class CraterBrowserType {
     }
 
     const ensureServer = this.dependencies.ensureBidiServer ?? ensureCraterBidiServer;
-    const server = await ensureServer({
+    const allocatePort = this.dependencies.allocateBidiPort ?? allocateBidiPort;
+    const serverOptions: EnsureCraterBidiServerOptions = {
       craterRoot,
       denoBin,
       env,
@@ -7540,11 +7567,58 @@ export class CraterBrowserType {
       statusUrl,
       stdio,
       shutdownTimeoutMs,
-    });
+    };
+    if (isolateContexts) {
+      return new CraterIsolatedLaunchedBrowser(
+        connectOptions,
+        serverOptions,
+        ensureServer,
+        allocatePort,
+      );
+    }
+
+    const server = await ensureServer(serverOptions);
     return new CraterLaunchedBrowser(
       { ...connectOptions, url: server.url },
       server,
     );
+  }
+}
+
+class CraterIsolatedLaunchedBrowser extends CraterBrowser {
+  constructor(
+    connectOptions: CraterBidiConnectOptions,
+    private readonly serverOptions: EnsureCraterBidiServerOptions,
+    private readonly ensureServer: (
+      options?: EnsureCraterBidiServerOptions,
+    ) => Promise<CraterBidiServerHandle>,
+    private readonly allocatePort: () => Promise<number>,
+  ) {
+    super(connectOptions);
+  }
+
+  override async newContext(options: CraterBrowserContextOptions = {}): Promise<CraterBrowserContext> {
+    if (this.closed) {
+      throw new Error("Browser is closed");
+    }
+    const port = await this.allocatePort();
+    const env = {
+      ...(this.serverOptions.env ?? process.env),
+      CRATER_BIDI_PORT: String(port),
+    };
+    const server = await this.ensureServer({
+      ...this.serverOptions,
+      env,
+      statusUrl: `http://127.0.0.1:${port}/`,
+      readUrlFile: false,
+    });
+    const context = new CraterLaunchedContext(
+      { ...this.connectOptions, ...options, url: server.url },
+      server,
+      (closedContext) => this.removeContext(closedContext),
+    );
+    this.contextList.push(context);
+    return context;
   }
 }
 
@@ -7561,6 +7635,29 @@ class CraterLaunchedBrowser extends CraterBrowser {
       await super.close();
     } finally {
       await this.server.close();
+    }
+  }
+}
+
+class CraterLaunchedContext extends CraterBrowserContext {
+  private serverClosed = false;
+
+  constructor(
+    contextOptions: CraterBrowserContextOptions,
+    private readonly server: CraterBidiServerHandle,
+    closeHandler: CraterContextCloseHandler | null,
+  ) {
+    super(contextOptions, closeHandler);
+  }
+
+  override async close(): Promise<void> {
+    try {
+      await super.close();
+    } finally {
+      if (!this.serverClosed) {
+        this.serverClosed = true;
+        await this.server.close();
+      }
     }
   }
 }

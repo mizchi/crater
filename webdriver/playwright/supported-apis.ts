@@ -141,7 +141,7 @@ const CRATER_PLAYWRIGHT_API_SUPPORT_SOURCE = [
     owner: "context",
     api: "close",
     status: "partial",
-    notes: "Idempotently closes tracked pages and the hidden shared transport best-effort; the closed context rejects new pages.",
+    notes: "Idempotently closes tracked pages, the hidden shared transport best-effort, and the managed server when launch({ isolateContexts: true }) owns one; the closed context rejects new pages.",
   },
   {
     owner: "page",
