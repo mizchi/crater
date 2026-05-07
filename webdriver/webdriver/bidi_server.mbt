@@ -136,15 +136,33 @@ extern "js" fn reset_runtime_js_state() -> Unit =
   #|         "innerWidth", "innerHeight", "outerWidth", "outerHeight",
   #|         "devicePixelRatio", "pageXOffset", "pageYOffset",
   #|         "localStorage", "sessionStorage",
-  #|         "alert", "confirm", "prompt",
+  #|         "alert", "confirm", "prompt", "console", "performance", "crypto",
   #|         "setTimeout", "clearTimeout", "setInterval", "clearInterval",
   #|         "requestAnimationFrame", "cancelAnimationFrame", "queueMicrotask",
   #|         "fetch", "Response", "Request", "Headers", "Blob", "FormData",
   #|         "URL", "URLSearchParams",
+  #|         "getComputedStyle", "matchMedia", "Event", "UIEvent", "MouseEvent",
+  #|         "PointerEvent", "FocusEvent", "KeyboardEvent", "InputEvent",
+  #|         "CompositionEvent", "CustomEvent", "MessageEvent", "StorageEvent",
+  #|         "DragEvent", "ClipboardEvent", "DataTransfer", "DOMParser",
+  #|         "DOMException", "Node", "Attr", "Element", "HTMLElement", "Document",
   #|       ]);
   #|       globalThis.__bidiSyncWindowPropertiesToGlobal = (win) => {
   #|         const source = win && typeof win === "object" ? win : globalThis.window;
   #|         if (!source || source === globalThis || typeof source !== "object") return;
+  #|         const syncedKeys = globalThis.__bidiSyncedWindowKeys instanceof Set
+  #|           ? globalThis.__bidiSyncedWindowKeys
+  #|           : (globalThis.__bidiSyncedWindowKeys = new Set());
+  #|         for (const key of Array.from(syncedKeys)) {
+  #|           if (reserved.has(key) || String(key).startsWith("__bidi")) {
+  #|             syncedKeys.delete(key);
+  #|             continue;
+  #|           }
+  #|           if (!Object.prototype.hasOwnProperty.call(source, key)) {
+  #|             try { delete globalThis[key]; } catch (_e) {}
+  #|             syncedKeys.delete(key);
+  #|           }
+  #|         }
   #|         for (const key of Object.keys(source)) {
   #|           if (reserved.has(key) || String(key).startsWith("__bidi")) continue;
   #|           let value;
@@ -159,6 +177,7 @@ extern "js" fn reset_runtime_js_state() -> Unit =
   #|           } catch (_e) {
   #|             try { globalThis[key] = value; } catch (_e2) {}
   #|           }
+  #|           syncedKeys.add(key);
   #|         }
   #|       };
   #|     };
@@ -921,15 +940,33 @@ extern "js" fn js_evaluate_expression(
   #|       "innerWidth", "innerHeight", "outerWidth", "outerHeight",
   #|       "devicePixelRatio", "pageXOffset", "pageYOffset",
   #|       "localStorage", "sessionStorage",
-  #|       "alert", "confirm", "prompt",
+  #|       "alert", "confirm", "prompt", "console", "performance", "crypto",
   #|       "setTimeout", "clearTimeout", "setInterval", "clearInterval",
   #|       "requestAnimationFrame", "cancelAnimationFrame", "queueMicrotask",
   #|       "fetch", "Response", "Request", "Headers", "Blob", "FormData",
   #|       "URL", "URLSearchParams",
+  #|       "getComputedStyle", "matchMedia", "Event", "UIEvent", "MouseEvent",
+  #|       "PointerEvent", "FocusEvent", "KeyboardEvent", "InputEvent",
+  #|       "CompositionEvent", "CustomEvent", "MessageEvent", "StorageEvent",
+  #|       "DragEvent", "ClipboardEvent", "DataTransfer", "DOMParser",
+  #|       "DOMException", "Node", "Attr", "Element", "HTMLElement", "Document",
   #|     ]);
   #|     globalThis.__bidiSyncWindowPropertiesToGlobal = (win) => {
   #|       const source = win && typeof win === "object" ? win : globalThis.window;
   #|       if (!source || source === globalThis || typeof source !== "object") return;
+  #|       const syncedKeys = globalThis.__bidiSyncedWindowKeys instanceof Set
+  #|         ? globalThis.__bidiSyncedWindowKeys
+  #|         : (globalThis.__bidiSyncedWindowKeys = new Set());
+  #|       for (const key of Array.from(syncedKeys)) {
+  #|         if (reserved.has(key) || String(key).startsWith("__bidi")) {
+  #|           syncedKeys.delete(key);
+  #|           continue;
+  #|         }
+  #|         if (!Object.prototype.hasOwnProperty.call(source, key)) {
+  #|           try { delete globalThis[key]; } catch (_e) {}
+  #|           syncedKeys.delete(key);
+  #|         }
+  #|       }
   #|       for (const key of Object.keys(source)) {
   #|         if (reserved.has(key) || String(key).startsWith("__bidi")) continue;
   #|         let value;
@@ -944,6 +981,7 @@ extern "js" fn js_evaluate_expression(
   #|         } catch (_e) {
   #|           try { globalThis[key] = value; } catch (_e2) {}
   #|         }
+  #|         syncedKeys.add(key);
   #|       }
   #|     };
   #|   };
@@ -1363,6 +1401,122 @@ extern "js" fn js_evaluate_expression(
   #|       }
   #|     };
   #|
+  #|     const toCamelStyleName = (name) =>
+  #|       String(name || "").replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+  #|     const toKebabStyleName = (name) =>
+  #|       String(name || "").replace(/([A-Z])/g, "-$1").toLowerCase();
+  #|     const getStylePropertyValue = (style, name) => {
+  #|       const prop = String(name || "");
+  #|       if (!prop) return "";
+  #|       if (prop.startsWith("--")) return style[prop] ?? "";
+  #|       const camel = toCamelStyleName(prop);
+  #|       const kebab = toKebabStyleName(prop);
+  #|       return style[prop] ?? style[camel] ?? style[kebab] ?? "";
+  #|     };
+  #|     const setStylePropertyValue = (style, name, value) => {
+  #|       const prop = String(name || "");
+  #|       if (!prop) return;
+  #|       const next = value == null ? "" : String(value);
+  #|       if (prop.startsWith("--")) {
+  #|         style[prop] = next;
+  #|         return;
+  #|       }
+  #|       const camel = toCamelStyleName(prop);
+  #|       const kebab = toKebabStyleName(prop);
+  #|       style[prop] = next;
+  #|       style[camel] = next;
+  #|       style[kebab] = next;
+  #|     };
+  #|     const removeStylePropertyValue = (style, name) => {
+  #|       const prop = String(name || "");
+  #|       const previous = getStylePropertyValue(style, prop);
+  #|       if (!prop) return previous;
+  #|       if (prop.startsWith("--")) {
+  #|         delete style[prop];
+  #|         return previous;
+  #|       }
+  #|       delete style[prop];
+  #|       delete style[toCamelStyleName(prop)];
+  #|       delete style[toKebabStyleName(prop)];
+  #|       return previous;
+  #|     };
+  #|     const clearStyleProperties = (style) => {
+  #|       for (const key of Object.keys(style)) delete style[key];
+  #|     };
+  #|     const parseStyleTextInto = (style, text) => {
+  #|       clearStyleProperties(style);
+  #|       String(text || "").split(";").forEach((part) => {
+  #|         const index = part.indexOf(":");
+  #|         if (index < 0) return;
+  #|         const prop = part.slice(0, index).trim();
+  #|         const value = part.slice(index + 1).trim();
+  #|         if (prop) setStylePropertyValue(style, prop, value);
+  #|       });
+  #|     };
+  #|     const serializeStyleText = (style) => {
+  #|       const seen = new Set();
+  #|       const parts = [];
+  #|       for (const key of Object.keys(style)) {
+  #|         const prop = key.startsWith("--") ? key : toKebabStyleName(key);
+  #|         if (!prop || seen.has(prop)) continue;
+  #|         seen.add(prop);
+  #|         const value = getStylePropertyValue(style, key);
+  #|         if (value !== "") parts.push(`${prop}: ${value};`);
+  #|       }
+  #|       return parts.join(" ");
+  #|     };
+  #|     const createStyleDeclaration = (element) => {
+  #|       const style = element._style || (element._style = {});
+  #|       return new Proxy(style, {
+  #|         get(target, prop) {
+  #|           if (prop === "setProperty") {
+  #|             return (name, value) => setStylePropertyValue(target, name, value);
+  #|           }
+  #|           if (prop === "getPropertyValue") {
+  #|             return (name) => getStylePropertyValue(target, name);
+  #|           }
+  #|           if (prop === "removeProperty") {
+  #|             return (name) => removeStylePropertyValue(target, name);
+  #|           }
+  #|           if (prop === "cssText") return serializeStyleText(target);
+  #|           if (prop === "item") {
+  #|             return (index) => Object.keys(target)[Number(index)] || "";
+  #|           }
+  #|           if (prop === "length") return Object.keys(target).length;
+  #|           if (typeof prop !== "string") return target[prop];
+  #|           return getStylePropertyValue(target, prop);
+  #|         },
+  #|         set(target, prop, value) {
+  #|           if (prop === "cssText") {
+  #|             parseStyleTextInto(target, value);
+  #|             return true;
+  #|           }
+  #|           if (typeof prop !== "string") {
+  #|             target[prop] = value;
+  #|             return true;
+  #|           }
+  #|           setStylePropertyValue(target, prop, value);
+  #|           return true;
+  #|         },
+  #|         has(target, prop) {
+  #|           if (typeof prop !== "string") return prop in target;
+  #|           return prop in target || getStylePropertyValue(target, prop) !== "";
+  #|         },
+  #|         ownKeys(target) {
+  #|           return Reflect.ownKeys(target);
+  #|         },
+  #|         getOwnPropertyDescriptor(target, prop) {
+  #|           if (typeof prop !== "string") return Object.getOwnPropertyDescriptor(target, prop);
+  #|           return {
+  #|             value: getStylePropertyValue(target, prop),
+  #|             writable: true,
+  #|             enumerable: true,
+  #|             configurable: true,
+  #|           };
+  #|         }
+  #|       });
+  #|     };
+  #|
   #|     // Minimal Mock DOM for Preact compatibility
   #|     const createMockElement = (tagName) => {
   #|       const lowerTag = String(tagName || "").toLowerCase();
@@ -1487,11 +1641,7 @@ extern "js" fn js_evaluate_expression(
   #|           };
   #|         },
   #|         get style() {
-  #|           const self = this;
-  #|           return new Proxy(self._style, {
-  #|             get(t, p) { return t[p] || ''; },
-  #|             set(t, p, v) { t[p] = v; return true; }
-  #|           });
+  #|           return createStyleDeclaration(this);
   #|         },
   #|         get value() { return this._attrs.value || ''; },
   #|         set value(v) { this._attrs.value = v; },
@@ -1633,18 +1783,8 @@ extern "js" fn js_evaluate_expression(
   #|               this[name.toLowerCase()] = function() { return undefined; };
   #|             }
   #|           }
-  #|           // Parse style attribute into _style object
   #|           if (name === 'style') {
-  #|             this._style = {};
-  #|             String(value).split(';').forEach(part => {
-  #|               const [prop, val] = part.split(':').map(s => s.trim());
-  #|               if (prop && val) {
-  #|                 // Convert kebab-case to camelCase
-  #|                 const camelProp = prop.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-  #|                 this._style[camelProp] = val;
-  #|                 this._style[prop] = val; // Also store original kebab-case
-  #|               }
-  #|             });
+  #|             parseStyleTextInto(this._style, value);
   #|           }
   #|           notifyMutation(createMutationRecord('attributes', this, { attributeName: name, oldValue }));
   #|         },
@@ -2998,6 +3138,65 @@ extern "js" fn js_evaluate_expression(
   #|       }
   #|       return !event.defaultPrevented;
   #|     };
+  #|     const nativePageTimers = globalThis.__bidiNativeWindowTimers || {};
+  #|     const nativePageSetTimeout = nativePageTimers.setTimeout || globalThis.setTimeout;
+  #|     const nativePageClearTimeout = nativePageTimers.clearTimeout || globalThis.clearTimeout;
+  #|     const nativePageSetInterval = nativePageTimers.setInterval || globalThis.setInterval;
+  #|     const nativePageClearInterval = nativePageTimers.clearInterval || globalThis.clearInterval;
+  #|     const reportAsyncPageError = (error) => {
+  #|       if (!globalThis.__bidiPageErrors) globalThis.__bidiPageErrors = [];
+  #|       globalThis.__bidiPageErrors.push(String(error));
+  #|       try {
+  #|         const event = globalThis.__bidiCreateEvent
+  #|           ? globalThis.__bidiCreateEvent("error", { bubbles: false, cancelable: true })
+  #|           : { type: "error", bubbles: false, cancelable: true, defaultPrevented: false };
+  #|         event.message = error && error.message ? String(error.message) : String(error);
+  #|         event.error = error;
+  #|         globalThis.dispatchEvent(event);
+  #|       } catch (_dispatchError) {}
+  #|     };
+  #|     const wrapAsyncPageCallback = (handler, args) => {
+  #|       return function() {
+  #|         try {
+  #|           if (typeof handler === "function") return handler.apply(globalThis, args);
+  #|           if (typeof handler === "string") return (0, eval)(handler);
+  #|           return undefined;
+  #|         } catch (error) {
+  #|           reportAsyncPageError(error);
+  #|           return undefined;
+  #|         }
+  #|       };
+  #|     };
+  #|     if (typeof nativePageSetTimeout === "function") {
+  #|       globalThis.setTimeout = function(handler, timeout, ...args) {
+  #|         return nativePageSetTimeout(wrapAsyncPageCallback(handler, args), timeout);
+  #|       };
+  #|     }
+  #|     if (typeof nativePageClearTimeout === "function") {
+  #|       globalThis.clearTimeout = function(id) {
+  #|         return nativePageClearTimeout(id);
+  #|       };
+  #|     }
+  #|     if (typeof nativePageSetInterval === "function") {
+  #|       globalThis.setInterval = function(handler, timeout, ...args) {
+  #|         return nativePageSetInterval(wrapAsyncPageCallback(handler, args), timeout);
+  #|       };
+  #|     } else if (typeof globalThis.setTimeout === "function") {
+  #|       globalThis.setInterval = function(handler, timeout, ...args) {
+  #|         const tick = () => {
+  #|           wrapAsyncPageCallback(handler, args)();
+  #|           globalThis.setTimeout(tick, timeout);
+  #|         };
+  #|         return globalThis.setTimeout(tick, timeout);
+  #|       };
+  #|     }
+  #|     if (typeof nativePageClearInterval === "function") {
+  #|       globalThis.clearInterval = function(id) {
+  #|         return nativePageClearInterval(id);
+  #|       };
+  #|     } else {
+  #|       globalThis.clearInterval = globalThis.clearTimeout;
+  #|     }
   #|     if (!globalThis.HTMLElement) {
   #|       globalThis.HTMLElement = function HTMLElement() {
   #|         const doc = globalThis.document;
@@ -4274,6 +4473,70 @@ extern "js" fn js_evaluate_expression(
   #|       const baseUrl = options.baseUrl || globalThis.__pageUrl || '';
   #|       const scripts = Array.from(globalThis.document.querySelectorAll('script'));
   #|       const results = [];
+  #|       globalThis.__bidiModuleImportSequence = Number(globalThis.__bidiModuleImportSequence || 0) + 1;
+  #|       const moduleImportSequence = globalThis.__bidiModuleImportSequence;
+  #|       const moduleImportUrl = (url, index) => {
+  #|         const raw = String(url || "");
+  #|         const token = "crater-module-" + moduleImportSequence + "-" + index;
+  #|         if (!raw) return raw;
+  #|         if (raw.startsWith("data:")) {
+  #|           return raw + (raw.includes("#") ? "&" : "#") + token;
+  #|         }
+  #|         try {
+  #|           const parsed = new URL(raw, baseUrl || globalThis.__pageUrl || undefined);
+  #|           parsed.searchParams.set("__crater_module_instance", token);
+  #|           return parsed.href;
+  #|         } catch (_e) {
+  #|           return raw + (raw.includes("?") ? "&" : "?") + "__crater_module_instance=" + encodeURIComponent(token);
+  #|         }
+  #|       };
+  #|       const resolveModuleSpecifier = (specifier, sourceUrl) => {
+  #|         const raw = String(specifier || "");
+  #|         if (!raw || raw.startsWith("node:") || raw.startsWith("bun:")) return raw;
+  #|         if (raw.startsWith("data:")) return raw;
+  #|         return resolveUrl(raw, sourceUrl || baseUrl);
+  #|       };
+  #|       const rewriteModuleSource = (code, sourceUrl, index) => {
+  #|         let rewriteIndex = 0;
+  #|         const absoluteSpecifier = (specifier) => resolveModuleSpecifier(specifier, sourceUrl);
+  #|         const rewriteSpecifier = (specifier) => {
+  #|           const resolved = resolveModuleSpecifier(specifier, sourceUrl);
+  #|           if (!resolved || resolved.startsWith("node:") || resolved.startsWith("bun:")) return resolved;
+  #|           return moduleImportUrl(resolved, String(index) + "-" + rewriteIndex++);
+  #|         };
+  #|         return String(code)
+  #|           .replace(/(\bimport\s*\(\s*)(["'])([^"']+)\2(\s*\))/g, (_match, prefix, quote, specifier) =>
+  #|             "globalThis.__bidiImportModuleSource(" +
+  #|               JSON.stringify(resolveModuleSpecifier(specifier, sourceUrl)) +
+  #|               ", " +
+  #|               JSON.stringify(String(index) + "-" + rewriteIndex++) +
+  #|             ")"
+  #|           )
+  #|           .replace(/(\bimport\s*)(["'])([^"']+)\2/g, (_match, prefix, quote, specifier) =>
+  #|             prefix + quote + absoluteSpecifier(specifier) + quote
+  #|           )
+  #|           .replace(/(\bfrom\s*)(["'])([^"']+)\2/g, (_match, prefix, quote, specifier) =>
+  #|             prefix + quote + rewriteSpecifier(specifier) + quote
+  #|           );
+  #|       };
+  #|       const importModuleSource = async (url, index) => {
+  #|         const sourceUrl = moduleImportUrl(url, index);
+  #|         const response = await globalThis.fetch(sourceUrl, { mode: "cors" });
+  #|         if (!response.ok) {
+  #|           throw new Error("Failed to fetch module " + sourceUrl + ": " + response.status + " " + response.statusText);
+  #|         }
+  #|         const code = await response.text();
+  #|         if (code.includes("import.meta.url")) {
+  #|           return await import(sourceUrl);
+  #|         }
+  #|         const rewritten = rewriteModuleSource(code, url, index);
+  #|         const dataUrl = moduleImportUrl(
+  #|           'data:text/javascript;base64,' + btoa(unescape(encodeURIComponent(rewritten))),
+  #|           String(index) + "-source",
+  #|         );
+  #|         return await import(dataUrl);
+  #|       };
+  #|       globalThis.__bidiImportModuleSource = importModuleSource;
   #|       const syncWindowGlobals = () => {
   #|         try {
   #|           if (typeof globalThis.__bidiSyncWindowPropertiesToGlobal === "function") {
@@ -4309,7 +4572,7 @@ extern "js" fn js_evaluate_expression(
   #|                 if (sourceOrigin && targetOrigin && sourceOrigin !== targetOrigin) {
   #|                   await globalThis.fetch(fullUrl, { mode: 'cors' });
   #|                 }
-  #|                 await import(fullUrl);
+  #|                 await importModuleSource(fullUrl, results.length);
   #|                 results.push({ executed: true, module: true, src: fullUrl });
   #|               } catch (e) {
   #|                 results.push({ error: true, module: true, src: fullUrl, message: String(e) });
@@ -4320,7 +4583,11 @@ extern "js" fn js_evaluate_expression(
   #|               if (code && code.trim()) {
   #|                 try {
   #|                   // Create a data URL for the module
-  #|                   const dataUrl = 'data:text/javascript;base64,' + btoa(unescape(encodeURIComponent(code)));
+  #|                   const rewritten = await rewriteModuleSource(code, baseUrl, results.length, new Map(), 0);
+  #|                   const dataUrl = moduleImportUrl(
+  #|                     'data:text/javascript;base64,' + btoa(unescape(encodeURIComponent(rewritten))),
+  #|                     results.length,
+  #|                   );
   #|                   await import(dataUrl);
   #|                   results.push({ executed: true, module: true, inline: true, length: code.length });
   #|                 } catch (e) {

@@ -280,6 +280,136 @@ test "bidi sync fallback document exposes createRange" {
 }
 
 ///|
+test "bidi mock element style supports CSSStyleDeclaration methods" {
+  reset_runtime_js_state()
+  let _ = evaluate_js("0")
+  let expr =
+    #|(() => {
+    #|  const el = document.createElement('div');
+    #|  el.style.setProperty('--theme-color', 'red');
+    #|  el.style.setProperty('background-color', 'blue');
+    #|  el.style.marginTop = '12px';
+    #|  const removed = el.style.removeProperty('background-color');
+    #|  el.style.cssText = 'width: 10px; --accent-color: green;';
+    #|  return JSON.stringify({
+    #|    custom: el.style.getPropertyValue('--theme-color'),
+    #|    removed,
+    #|    background: el.style.backgroundColor,
+    #|    margin: el.style.getPropertyValue('margin-top'),
+    #|    width: el.style.width,
+    #|    accent: el.style.getPropertyValue('--accent-color'),
+    #|    text: el.style.cssText,
+    #|    setPropertyType: typeof el.style.setProperty
+    #|  });
+    #|})()
+  let json = evaluate_js(expr)
+  assert_true(json.contains("\\\"custom\\\":\\\"\\\""))
+  assert_true(json.contains("\\\"removed\\\":\\\"blue\\\""))
+  assert_true(json.contains("\\\"background\\\":\\\"\\\""))
+  assert_true(json.contains("\\\"margin\\\":\\\"\\\""))
+  assert_true(json.contains("\\\"width\\\":\\\"10px\\\""))
+  assert_true(json.contains("\\\"accent\\\":\\\"green\\\""))
+  assert_true(json.contains("\\\"setPropertyType\\\":\\\"function\\\""))
+}
+
+///|
+test "bidi window global sync removes stale page globals" {
+  reset_runtime_js_state()
+  let _ = evaluate_js("0")
+  let expr =
+    #|(() => {
+    #|  const firstWindow = {
+    #|    pageGlobal: "first",
+    #|    staleGlobal: "stale",
+    #|    console: globalThis.console,
+    #|    MessageEvent: globalThis.MessageEvent,
+    #|    __NUXT__: { app: "first" }
+    #|  };
+    #|  const secondWindow = { pageGlobal: "second" };
+    #|  globalThis.__bidiSyncWindowPropertiesToGlobal(firstWindow);
+    #|  const before = [
+    #|    globalThis.pageGlobal,
+    #|    globalThis.staleGlobal,
+    #|    typeof globalThis.__NUXT__
+    #|  ].join("/");
+    #|  globalThis.__bidiSyncWindowPropertiesToGlobal(secondWindow);
+    #|  return JSON.stringify({
+    #|    before,
+    #|    pageGlobal: globalThis.pageGlobal,
+    #|    staleGlobal: typeof globalThis.staleGlobal,
+    #|    nuxt: typeof globalThis.__NUXT__,
+    #|    console: typeof globalThis.console,
+    #|    messageEvent: typeof globalThis.MessageEvent
+    #|  });
+    #|})()
+  let json = evaluate_js(expr)
+  assert_true(json.contains("\\\"before\\\":\\\"first/stale/object\\\""))
+  assert_true(json.contains("\\\"pageGlobal\\\":\\\"second\\\""))
+  assert_true(json.contains("\\\"staleGlobal\\\":\\\"undefined\\\""))
+  assert_true(json.contains("\\\"nuxt\\\":\\\"undefined\\\""))
+  assert_true(json.contains("\\\"console\\\":\\\"object\\\""))
+  assert_true(json.contains("\\\"messageEvent\\\":\\\"function\\\""))
+}
+
+///|
+async test "bidi page timer exceptions stay isolated from later evaluation" {
+  reset_runtime_js_state()
+  let _ = evaluate_js("0")
+  let expr =
+    #|(async () => {
+    #|  setTimeout(() => { throw new Error('timer boom'); }, 0);
+    #|  await new Promise((resolve) => setTimeout(resolve, 20));
+    #|  return 'alive=' + (21 * 2) + ';errors=' + (globalThis.__bidiPageErrors || []).join('|');
+    #|})()
+  let promise_any = evaluate_js_async(expr)
+  let promise : @js_async.Promise[String] = promise_any.cast()
+  let json = @js_async.Promise::wait(promise)
+  assert_true(json.contains("alive=42"))
+  assert_true(json.contains("timer boom"))
+}
+
+///|
+async test "bidi module scripts execute for each loaded document" {
+  reset_runtime_js_state()
+  let _ = evaluate_js("0")
+  let expr =
+    #|(async () => {
+    #|  globalThis.__moduleRuns = 0;
+    #|  const html = '<script type="module">globalThis.__moduleRuns = (globalThis.__moduleRuns || 0) + 1;</script>';
+    #|  __loadHTML(html);
+    #|  await __executeScripts({ baseUrl: 'http://example.test/first' });
+    #|  __loadHTML(html);
+    #|  await __executeScripts({ baseUrl: 'http://example.test/second' });
+    #|  return String(globalThis.__moduleRuns);
+    #|})()
+  let promise_any = evaluate_js_async(expr)
+  let promise : @js_async.Promise[String] = promise_any.cast()
+  let json = @js_async.Promise::wait(promise)
+  assert_true(json.contains("2"))
+}
+
+///|
+async test "bidi dynamic module imports execute for each loaded document" {
+  reset_runtime_js_state()
+  let _ = evaluate_js("0")
+  let expr =
+    #|(async () => {
+    #|  globalThis.__dynamicModuleRuns = 0;
+    #|  const moduleUrl = 'data:text/javascript,globalThis.__dynamicModuleRuns = (globalThis.__dynamicModuleRuns || 0) + 1';
+    #|  const html = '<script type="module">await import(' + JSON.stringify(moduleUrl) + ');</script>';
+    #|  __loadHTML(html);
+    #|  await __executeScripts({ baseUrl: 'http://example.test/first' });
+    #|  __loadHTML(html);
+    #|  await __executeScripts({ baseUrl: 'http://example.test/second' });
+    #|  return String(globalThis.__dynamicModuleRuns);
+    #|})()
+  let promise_any = evaluate_js_async(expr)
+  let promise : @js_async.Promise[String] = promise_any.cast()
+  let json = @js_async.Promise::wait(promise)
+  assert_true(json.contains("2"))
+}
+
+///|
 async test "bidi async fallback document exposes createRange" {
   reset_runtime_js_state()
   let _ = evaluate_js("0")
