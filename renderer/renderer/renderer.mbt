@@ -4216,6 +4216,42 @@ fn clone_string_map(source : Map[String, String]) -> Map[String, String] {
 }
 
 ///|
+fn collect_cascaded_custom_properties(
+  cascaded : @css.CascadedValues?,
+  vars : Map[String, String],
+) -> Unit {
+  match cascaded {
+    Some(cascaded_values) =>
+      cascaded_values.each(fn(prop, decl) {
+        if prop.has_prefix("--") {
+          match decl.value {
+            @css.PropertyValue::Value(value) => vars[prop] = value
+            _ => ()
+          }
+        }
+      })
+    None => ()
+  }
+}
+
+///|
+fn collect_inline_custom_properties(
+  inline_css : String?,
+  vars : Map[String, String],
+) -> Unit {
+  match inline_css {
+    Some(css) =>
+      for declaration in parse_inline_declarations_cached(css) {
+        let (prop, value) = declaration
+        if prop.has_prefix("--") {
+          vars[prop] = value
+        }
+      }
+    None => ()
+  }
+}
+
+///|
 fn resolve_pseudo_attr_functions(
   value : String,
   element_attributes : Map[String, String],
@@ -7699,13 +7735,16 @@ fn compute_element_style_indexed(
   } else {
     None
   }
+  let element_css_vars = clone_string_map(css_vars)
+  collect_cascaded_custom_properties(cascaded, element_css_vars)
+  collect_inline_custom_properties(inline_css, element_css_vars)
   // Keep this cache conservative: only reuse when stylesheet cascade and
   // inherited context cannot change the inline-only result.
   let mut inline_only_cache_css : String? = None
   let mut inline_only_cache_variant_key : String? = None
   match (cascaded, inline_css) {
     (None, Some(css)) =>
-      if string_map_is_empty(css_vars) &&
+      if string_map_is_empty(element_css_vars) &&
         has_default_inherited_inline_context(parent_style) {
         inline_only_cache_css = Some(css)
         inline_only_cache_variant_key = Some(
@@ -7986,7 +8025,7 @@ fn compute_element_style_indexed(
           next_value,
           ctx.viewport_width,
           ctx.viewport_height,
-          css_vars,
+          element_css_vars,
           parent_style,
         )
         match next_prop {
@@ -8010,7 +8049,7 @@ fn compute_element_style_indexed(
                 value,
                 ctx.viewport_width,
                 ctx.viewport_height,
-                css_vars,
+                element_css_vars,
                 parent_style,
               )
             _ => ()
@@ -8042,7 +8081,7 @@ fn compute_element_style_indexed(
       style = apply_inline_css_with_vars(
         style,
         css,
-        css_vars,
+        element_css_vars,
         ctx.viewport_width,
         ctx.viewport_height,
         parent_style,

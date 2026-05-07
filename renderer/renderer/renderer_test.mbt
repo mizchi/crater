@@ -637,6 +637,50 @@ test "later font shorthand overrides earlier reset longhands in computed style" 
 }
 
 ///|
+test "render_to_node resolves inline custom properties in gradient background" {
+  let html =
+    #|<!doctype html>
+    #|<body>
+    #|  <div id="hero" style="--g-angle: 135deg; --g-color-0: #c4b5fd; --g-position-0: 0%; --g-color-1: #2dd4bf; --g-position-1: 100%; width: 320px; height: 120px; background: linear-gradient(var(--g-angle), var(--g-color-0) var(--g-position-0), var(--g-color-1) var(--g-position-1));"></div>
+    #|</body>
+  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  let hero = node.children[0]
+  inspect(
+    hero.style.background_image,
+    content=(
+      #|Gradient({angle_deg: 135, stops: [{color: rgb(196, 181, 253), position: 0}, {color: rgb(45, 212, 191), position: 1}]})
+    ),
+  )
+}
+
+///|
+test "render_to_node resolves stylesheet custom properties in gradient background" {
+  let html =
+    #|<!doctype html>
+    #|<style>
+    #|  #hero {
+    #|    --g-angle: 135deg;
+    #|    --g-color-0: #c4b5fd;
+    #|    --g-position-0: 0%;
+    #|    --g-color-1: #2dd4bf;
+    #|    --g-position-1: 100%;
+    #|    width: 320px;
+    #|    height: 120px;
+    #|    background: linear-gradient(var(--g-angle), var(--g-color-0) var(--g-position-0), var(--g-color-1) var(--g-position-1));
+    #|  }
+    #|</style>
+    #|<body><div id="hero"></div></body>
+  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  let hero = node.children[0]
+  inspect(
+    hero.style.background_image,
+    content=(
+      #|Gradient({angle_deg: 135, stops: [{color: rgb(196, 181, 253), position: 0}, {color: rgb(45, 212, 191), position: 1}]})
+    ),
+  )
+}
+
+///|
 test "font-size with nested selectors like WPT" {
   // Simulate the WPT align-self-006.html structure
   let html =

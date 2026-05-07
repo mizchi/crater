@@ -2162,13 +2162,14 @@ fn apply_property(
       }
     }
     "background-color" | "background" => {
+      let resolved_value = resolve_all_vars(value, ctx)
       // Check for linear-gradient first
-      let v_lower = value.trim().to_lower()
+      let v_lower = resolved_value.trim().to_lower()
       if v_lower.contains("linear-gradient") {
-        let grad = parse_linear_gradient(value)
+        let grad = parse_linear_gradient(resolved_value)
         builder.background_image = grad
       } else {
-        let parsed = parse_color_with_ctx(value, ctx)
+        let parsed = parse_color_with_ctx(resolved_value, ctx)
         match parsed {
           Resolved(c) => builder.background_color = c
           CurrentColor =>
@@ -2183,9 +2184,10 @@ fn apply_property(
       }
     }
     "background-image" => {
-      let v_lower = value.trim().to_lower()
+      let resolved_value = resolve_all_vars(value, ctx)
+      let v_lower = resolved_value.trim().to_lower()
       if v_lower.contains("linear-gradient") {
-        builder.background_image = parse_linear_gradient(value)
+        builder.background_image = parse_linear_gradient(resolved_value)
       }
     }
     "box-shadow" =>

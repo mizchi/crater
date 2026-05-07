@@ -1407,6 +1407,21 @@ test "compute_inline background linear-gradient" {
 }
 
 ///|
+test "compute_inline background linear-gradient resolves custom properties" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "--g-angle: 135deg; --g-color-0: #c4b5fd; --g-position-0: 0%; --g-color-1: #2dd4bf; --g-position-1: 100%; background: linear-gradient(var(--g-angle), var(--g-color-0) var(--g-position-0), var(--g-color-1) var(--g-position-1))",
+    ctx,
+  )
+  inspect(
+    style.background_image,
+    content=(
+      #|Gradient({angle_deg: 135, stops: [{color: rgb(196, 181, 253), position: 0}, {color: rgb(45, 212, 191), position: 1}]})
+    ),
+  )
+}
+
+///|
 test "compute_inline border-radius percentage" {
   let ctx = @computed.ComputeContext::new()
   let style = @computed.compute_inline("border-radius: 50%", ctx)
