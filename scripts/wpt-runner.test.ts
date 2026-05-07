@@ -14,7 +14,32 @@ import {
   resolveImageIntrinsicFn,
   resolveTextIntrinsicFn,
   shouldKeepHtmlRootForComparison,
+  withTimeout,
 } from "./wpt-runner.ts";
+
+describe("withTimeout", () => {
+  it("returns the operation result before the timeout", async () => {
+    await expect(
+      withTimeout(Promise.resolve("ok"), 50, () => "timeout"),
+    ).resolves.toBe("ok");
+  });
+
+  it("returns the timeout value and runs the timeout hook", async () => {
+    let timedOut = false;
+
+    await expect(
+      withTimeout(
+        new Promise<string>(() => {}),
+        1,
+        () => "timeout",
+        () => {
+          timedOut = true;
+        },
+      ),
+    ).resolves.toBe("timeout");
+    expect(timedOut).toBe(true);
+  });
+});
 
 describe("createTextIntrinsicFnFromMeasureText", () => {
   it("falls back to char-based widths when measureText returns 0", () => {

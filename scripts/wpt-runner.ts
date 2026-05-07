@@ -69,6 +69,7 @@ interface Mismatch {
 interface CliOptions {
   args: string[];
   workers: number;
+  testTimeoutMs: number;
   jsonOutput?: string;
 }
 
@@ -86,6 +87,8 @@ interface WptCompatShardReport {
 }
 
 type RenderHtmlToJsonFn = (html: string, width: number, height: number) => string;
+
+const DEFAULT_TEST_TIMEOUT_MS = 60_000;
 
 type ExternalTextIntrinsicResult =
   | {
@@ -2287,12 +2290,7 @@ async function runTest(browser: puppeteer.Browser, htmlPath: string): Promise<Te
 
     return { name, passed: mismatches.length === 0, mismatches, totalNodes: countNodes(browserLayout) };
   } catch (error) {
-    return {
-      name,
-      passed: false,
-      mismatches: [{ path: 'error', property: 'execution', browser: 0, crater: 0, diff: 0 }],
-      totalNodes: 0,
-    };
+    return createExecutionErrorResult(name);
   }
 }
 
@@ -2319,6 +2317,7 @@ function parseCliArgs(rawArgs: string[]): CliOptions {
   const options: CliOptions = {
     args: [],
     workers: DEFAULT_CONCURRENCY,
+    testTimeoutMs: resolveDefaultTestTimeoutMs(),
   };
 
   for (let i = 0; i < rawArgs.length; i++) {
@@ -2349,10 +2348,35 @@ function parseCliArgs(rawArgs: string[]): CliOptions {
       options.workers = workers;
       continue;
     }
+    if (arg === '--test-timeout-ms') {
+      options.testTimeoutMs = parsePositiveInteger(rawArgs[++i], arg);
+      continue;
+    }
+    if (arg.startsWith('--test-timeout-ms=')) {
+      options.testTimeoutMs = parsePositiveInteger(
+        arg.slice('--test-timeout-ms='.length),
+        '--test-timeout-ms',
+      );
+      continue;
+    }
     options.args.push(arg);
   }
 
   return options;
+}
+
+function resolveDefaultTestTimeoutMs(): number {
+  const raw = process.env.WPT_RUNNER_TEST_TIMEOUT_MS;
+  if (!raw) return DEFAULT_TEST_TIMEOUT_MS;
+  return parsePositiveInteger(raw, 'WPT_RUNNER_TEST_TIMEOUT_MS');
+}
+
+function parsePositiveInteger(raw: string | undefined, label: string): number {
+  const value = Number.parseInt(raw ?? '', 10);
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error(`Invalid ${label} value: ${raw}`);
+  }
+  return value;
 }
 
 function writeShardReport(
@@ -2385,7 +2409,8 @@ function writeShardReport(
 
 async function runTestsParallel(
   htmlFiles: string[],
-  workers: number
+  workers: number,
+  testTimeoutMs: number,
 ): Promise<{ passed: number; failed: number; results: TestResult[] }> {
   const results: TestResult[] = [];
   let passed = 0;
@@ -2407,11 +2432,15 @@ async function runTestsParallel(
         browser = await launchBrowser();
       }
 
-      let result = await runTest(browser, htmlFile);
+      let result = await runTestWithTimeout(browser, htmlFile, testTimeoutMs);
       if (!result.passed && result.mismatches.some(m => m.property === 'execution')) {
         try { await browser.close(); } catch {}
         browser = await launchBrowser();
-        result = await runTest(browser, htmlFile);
+        result = await runTestWithTimeout(browser, htmlFile, testTimeoutMs);
+        if (!result.passed && result.mismatches.some(m => m.property === 'execution')) {
+          try { await browser.close(); } catch {}
+          browser = await launchBrowser();
+        }
       }
 
       results[index] = result;
@@ -2437,6 +2466,55 @@ async function runTestsParallel(
   return { passed, failed, results };
 }
 
+async function runTestWithTimeout(
+  browser: puppeteer.Browser,
+  htmlPath: string,
+  timeoutMs: number,
+): Promise<TestResult> {
+  return withTimeout(
+    runTest(browser, htmlPath),
+    timeoutMs,
+    () => createExecutionErrorResult(htmlPath),
+    async () => {
+      console.warn(`\n[wpt-runner] timed out after ${timeoutMs}ms: ${htmlPath}`);
+      try { await browser.close(); } catch {}
+    },
+  );
+}
+
+function createExecutionErrorResult(name: string): TestResult {
+  return {
+    name,
+    passed: false,
+    mismatches: [{ path: 'error', property: 'execution', browser: 0, crater: 0, diff: 0 }],
+    totalNodes: 0,
+  };
+}
+
+export async function withTimeout<T>(
+  operation: Promise<T>,
+  timeoutMs: number,
+  onTimeoutValue: () => T,
+  onTimeout?: () => void | Promise<void>,
+): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  let timedOut = false;
+  operation.catch(() => undefined);
+
+  const timeoutValue = new Promise<T>(resolve => {
+    timeout = setTimeout(() => {
+      timedOut = true;
+      Promise.resolve(onTimeout?.())
+        .catch(() => undefined)
+        .then(() => resolve(onTimeoutValue()));
+    }, timeoutMs);
+  });
+
+  const result = await Promise.race([operation, timeoutValue]);
+  if (!timedOut && timeout) clearTimeout(timeout);
+  return result;
+}
+
 async function main(): Promise<void> {
   const cliOptions = parseCliArgs(process.argv.slice(2));
   const args = cliOptions.args;
@@ -2452,6 +2530,7 @@ async function main(): Promise<void> {
     console.log('  npx tsx scripts/wpt-runner.ts --list            # List available modules');
     console.log('  npx tsx scripts/wpt-runner.ts css-flexbox --json .wpt-reports/css-flexbox.json');
     console.log(`  npx tsx scripts/wpt-runner.ts --all --workers ${DEFAULT_CONCURRENCY}`);
+    console.log(`  npx tsx scripts/wpt-runner.ts css-sizing --test-timeout-ms ${DEFAULT_TEST_TIMEOUT_MS}`);
     console.log('\nModules:', CSS_MODULES.join(', '));
     return;
   }
@@ -2505,7 +2584,7 @@ async function main(): Promise<void> {
   let failed = 0;
   let results: TestResult[] = [];
   try {
-    const runResult = await runTestsParallel(htmlFiles, cliOptions.workers);
+    const runResult = await runTestsParallel(htmlFiles, cliOptions.workers, cliOptions.testTimeoutMs);
     passed = runResult.passed;
     failed = runResult.failed;
     results = runResult.results;

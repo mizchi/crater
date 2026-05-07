@@ -283,6 +283,7 @@ jobs:
         run: just build-wasm && just transpile-wasm
 
       - name: Run WPT CSS shard
+        timeout-minutes: 20
         run: |
           mkdir -p wpt-reports
           npx tsx scripts/wpt-runner.ts ${{ matrix.modules }} --workers 4 --json "wpt-reports/wpt-css-${{ matrix.name }}.json"
