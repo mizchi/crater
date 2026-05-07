@@ -15,6 +15,7 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import { pathToFileURL } from 'url';
+import { Worker } from 'worker_threads';
 import { loadWptConfig } from './wpt-config.ts';
 import {
   getTestFiles,
@@ -767,12 +768,15 @@ async function initCraterRenderer(): Promise<void> {
   if (renderHtmlToJsonImpl) return;
   await configureExternalIntrinsicProviders();
 
-  // Always refresh local runtime first so WPT reflects latest MoonBit changes.
+  const shouldRefreshLocalRuntime = process.env.CRATER_WPT_RENDER_WORKER !== '1';
   try {
-    execSync('moon build testing/wpt_runtime --target js --release --warn-list -27-29', {
-      stdio: 'ignore',
-      cwd: process.cwd(),
-    });
+    if (shouldRefreshLocalRuntime) {
+      // Always refresh local runtime first so WPT reflects latest MoonBit changes.
+      execSync('moon build testing/wpt_runtime --target js --release --warn-list -27-29', {
+        stdio: 'ignore',
+        cwd: process.cwd(),
+      });
+    }
     const mod = await import(resolveLocalWptRuntimeHref());
     renderHtmlToJsonImpl = mod.renderHtmlToJsonForWpt as RenderHtmlToJsonFn;
     return;
@@ -794,6 +798,7 @@ const ALIGN_CONTENT_BREAK_OVERFLOW_020_TOLERANCE = 31;
 const VIEWPORT = { width: 800, height: 600 };
 const DEFAULT_CONCURRENCY = 6;
 const CI_PUPPETEER_ARGS = ['--no-sandbox', '--disable-setuid-sandbox'];
+const BROWSER_CLOSE_TIMEOUT_MS = 2_000;
 
 // Re-export from wpt-html-utils
 export { getTestFiles, prepareHtmlContent };
@@ -1078,6 +1083,11 @@ function getCraterLayout(htmlPath: string): LayoutNode {
   if (divChildren.length >= 1 && !skipDivFallbackForZeroPrimaryBox) return finalizeRoot(divChildren[0]);
 
   return finalizeRoot(layout);
+}
+
+export async function renderCraterLayoutForWorker(htmlPath: string): Promise<LayoutNode> {
+  await initCraterRenderer();
+  return getCraterLayout(htmlPath);
 }
 
 function findNodeById(node: LayoutNode, id: string): LayoutNode | null {
@@ -2103,7 +2113,11 @@ export function isScriptMutationDependentTest(htmlPath: string): boolean {
   return false;
 }
 
-async function runTest(browser: puppeteer.Browser, htmlPath: string): Promise<TestResult> {
+async function runTest(
+  browser: puppeteer.Browser,
+  htmlPath: string,
+  resolveCraterLayout: CraterLayoutResolver,
+): Promise<TestResult> {
   const name = path.basename(htmlPath);
 
   try {
@@ -2111,14 +2125,14 @@ async function runTest(browser: puppeteer.Browser, htmlPath: string): Promise<Te
       // Crash-only WPTs assert stability, not geometry parity.
       // We still execute both paths to ensure they don't throw.
       await getBrowserLayout(browser, htmlPath);
-      getCraterLayout(htmlPath);
+      await resolveCraterLayout(htmlPath);
       return { name, passed: true, mismatches: [], totalNodes: 0 };
     }
     if (isScriptMutationDependentTest(htmlPath)) {
       // Script-driven fixtures mutate DOM after initial parse. The runner strips
       // scripts by design, so geometry parity is not meaningful here.
       await getBrowserLayout(browser, htmlPath);
-      getCraterLayout(htmlPath);
+      await resolveCraterLayout(htmlPath);
       return { name, passed: true, mismatches: [], totalNodes: 0 };
     }
     const browserLayout = await getBrowserLayout(browser, htmlPath);
@@ -2191,7 +2205,7 @@ async function runTest(browser: puppeteer.Browser, htmlPath: string): Promise<Te
     }
     let craterLayout: LayoutNode;
     try {
-      craterLayout = getCraterLayout(htmlPath);
+      craterLayout = await resolveCraterLayout(htmlPath);
     } finally {
       for (let i = restoreOverrides.length - 1; i >= 0; i -= 1) {
         restoreOverrides[i]();
@@ -2407,6 +2421,110 @@ function writeShardReport(
   fs.writeFileSync(jsonOutput, JSON.stringify(report, null, 2), 'utf-8');
 }
 
+type CraterLayoutResolver = (htmlPath: string) => Promise<LayoutNode>;
+
+interface CraterLayoutWorkerResponse {
+  id: number;
+  ok: boolean;
+  layout?: LayoutNode;
+  error?: string;
+}
+
+interface PendingCraterLayoutRequest {
+  resolve: (layout: LayoutNode) => void;
+  reject: (error: Error) => void;
+  timeout: ReturnType<typeof setTimeout>;
+}
+
+class CraterLayoutWorkerClient {
+  private worker = this.createWorker();
+  private nextId = 1;
+  private pending = new Map<number, PendingCraterLayoutRequest>();
+  private closed = false;
+
+  render(htmlPath: string, timeoutMs: number): Promise<LayoutNode> {
+    const id = this.nextId++;
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pending.delete(id);
+        console.warn(`\n[wpt-runner] crater render timed out after ${timeoutMs}ms: ${htmlPath}`);
+        this.restart();
+        reject(new Error(`Crater render timed out: ${htmlPath}`));
+      }, timeoutMs);
+
+      this.pending.set(id, { resolve, reject, timeout });
+      try {
+        this.worker.postMessage({ id, htmlPath });
+      } catch (error) {
+        clearTimeout(timeout);
+        this.pending.delete(id);
+        reject(error instanceof Error ? error : new Error(String(error)));
+      }
+    });
+  }
+
+  restart(): void {
+    if (this.closed) return;
+    const previous = this.worker;
+    this.worker = this.createWorker();
+    void previous.terminate().catch(() => undefined);
+  }
+
+  async close(): Promise<void> {
+    this.closed = true;
+    const previous = this.worker;
+    this.rejectAll(new Error('Crater layout worker closed'));
+    await withTimeout(
+      previous.terminate(),
+      BROWSER_CLOSE_TIMEOUT_MS,
+      () => 0,
+    );
+  }
+
+  private createWorker(): Worker {
+    const worker = new Worker(new URL('./wpt-crater-layout-worker.ts', import.meta.url), {
+      execArgv: process.execArgv,
+    });
+    worker.on('message', message => {
+      this.handleMessage(message as CraterLayoutWorkerResponse);
+    });
+    worker.on('error', error => {
+      if (this.worker === worker && !this.closed) {
+        this.rejectAll(error);
+        this.worker = this.createWorker();
+      }
+    });
+    worker.on('exit', code => {
+      if (this.worker === worker && code !== 0 && !this.closed) {
+        this.rejectAll(new Error(`Crater layout worker exited with code ${code}`));
+        this.worker = this.createWorker();
+      }
+    });
+    return worker;
+  }
+
+  private handleMessage(message: CraterLayoutWorkerResponse): void {
+    const pending = this.pending.get(message.id);
+    if (!pending) return;
+
+    clearTimeout(pending.timeout);
+    this.pending.delete(message.id);
+    if (message.ok && message.layout) {
+      pending.resolve(message.layout);
+    } else {
+      pending.reject(new Error(message.error ?? 'Crater layout worker failed'));
+    }
+  }
+
+  private rejectAll(error: Error): void {
+    for (const pending of this.pending.values()) {
+      clearTimeout(pending.timeout);
+      pending.reject(error);
+    }
+    this.pending.clear();
+  }
+}
+
 async function runTestsParallel(
   htmlFiles: string[],
   workers: number,
@@ -2420,39 +2538,46 @@ async function runTestsParallel(
   async function worker(browser: puppeteer.Browser): Promise<void> {
     let localCount = 0;
     const RESTART_INTERVAL = 30;
+    const craterWorker = new CraterLayoutWorkerClient();
 
-    while (true) {
-      const index = nextIndex++;
-      if (index >= htmlFiles.length) break;
+    try {
+      while (true) {
+        const index = nextIndex++;
+        if (index >= htmlFiles.length) break;
 
-      const htmlFile = htmlFiles[index];
+        const htmlFile = htmlFiles[index];
 
-      if (localCount > 0 && localCount % RESTART_INTERVAL === 0) {
-        try { await browser.close(); } catch {}
-        browser = await launchBrowser();
-      }
-
-      let result = await runTestWithTimeout(browser, htmlFile, testTimeoutMs);
-      if (!result.passed && result.mismatches.some(m => m.property === 'execution')) {
-        try { await browser.close(); } catch {}
-        browser = await launchBrowser();
-        result = await runTestWithTimeout(browser, htmlFile, testTimeoutMs);
-        if (!result.passed && result.mismatches.some(m => m.property === 'execution')) {
-          try { await browser.close(); } catch {}
+        if (localCount > 0 && localCount % RESTART_INTERVAL === 0) {
+          await closeBrowser(browser);
+          craterWorker.restart();
           browser = await launchBrowser();
         }
+
+        let result = await runTestWithTimeout(browser, htmlFile, testTimeoutMs, craterWorker);
+        if (!result.passed && result.mismatches.some(m => m.property === 'execution')) {
+          await closeBrowser(browser);
+          craterWorker.restart();
+          browser = await launchBrowser();
+          result = await runTestWithTimeout(browser, htmlFile, testTimeoutMs, craterWorker);
+          if (!result.passed && result.mismatches.some(m => m.property === 'execution')) {
+            await closeBrowser(browser);
+            craterWorker.restart();
+            browser = await launchBrowser();
+          }
+        }
+
+        results[index] = result;
+        if (result.passed) passed++;
+        else failed++;
+        localCount++;
+
+        const icon = result.passed ? '✓' : '✗';
+        process.stdout.write(`\r[${results.filter(Boolean).length}/${htmlFiles.length}] ${icon} ${result.name.padEnd(50)}`);
       }
-
-      results[index] = result;
-      if (result.passed) passed++;
-      else failed++;
-      localCount++;
-
-      const icon = result.passed ? '✓' : '✗';
-      process.stdout.write(`\r[${results.filter(Boolean).length}/${htmlFiles.length}] ${icon} ${result.name.padEnd(50)}`);
+    } finally {
+      await closeBrowser(browser);
+      await craterWorker.close();
     }
-
-    try { await browser.close(); } catch {}
   }
 
   const browsers = await Promise.all(
@@ -2470,16 +2595,36 @@ async function runTestWithTimeout(
   browser: puppeteer.Browser,
   htmlPath: string,
   timeoutMs: number,
+  craterWorker: CraterLayoutWorkerClient,
 ): Promise<TestResult> {
+  const resolveCraterLayout: CraterLayoutResolver = targetPath =>
+    craterWorker.render(targetPath, timeoutMs);
   return withTimeout(
-    runTest(browser, htmlPath),
+    runTest(browser, htmlPath, resolveCraterLayout),
     timeoutMs,
-    () => createExecutionErrorResult(htmlPath),
-    async () => {
+    () => createExecutionErrorResult(path.basename(htmlPath)),
+    () => {
       console.warn(`\n[wpt-runner] timed out after ${timeoutMs}ms: ${htmlPath}`);
-      try { await browser.close(); } catch {}
+      craterWorker.restart();
+      void closeBrowser(browser);
     },
   );
+}
+
+async function closeBrowser(browser: puppeteer.Browser): Promise<void> {
+  const browserProcess = browser.process();
+  try {
+    await withTimeout(
+      browser.close(),
+      BROWSER_CLOSE_TIMEOUT_MS,
+      () => undefined,
+      () => {
+        try { browserProcess?.kill('SIGKILL'); } catch {}
+      },
+    );
+  } catch {
+    try { browserProcess?.kill('SIGKILL'); } catch {}
+  }
 }
 
 function createExecutionErrorResult(name: string): TestResult {
@@ -2504,9 +2649,8 @@ export async function withTimeout<T>(
   const timeoutValue = new Promise<T>(resolve => {
     timeout = setTimeout(() => {
       timedOut = true;
-      Promise.resolve(onTimeout?.())
-        .catch(() => undefined)
-        .then(() => resolve(onTimeoutValue()));
+      Promise.resolve(onTimeout?.()).catch(() => undefined);
+      resolve(onTimeoutValue());
     }, timeoutMs);
   });
 

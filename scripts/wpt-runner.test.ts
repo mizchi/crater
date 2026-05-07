@@ -39,6 +39,23 @@ describe("withTimeout", () => {
     ).resolves.toBe("timeout");
     expect(timedOut).toBe(true);
   });
+
+  it("does not wait for the timeout hook to resolve", async () => {
+    let timeoutHookStarted = false;
+
+    await expect(
+      withTimeout(
+        new Promise<string>(() => {}),
+        1,
+        () => "timeout",
+        () => {
+          timeoutHookStarted = true;
+          return new Promise<void>(() => {});
+        },
+      ),
+    ).resolves.toBe("timeout");
+    expect(timeoutHookStarted).toBe(true);
+  });
 });
 
 describe("createTextIntrinsicFnFromMeasureText", () => {
