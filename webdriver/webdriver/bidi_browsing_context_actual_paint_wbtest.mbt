@@ -17,3 +17,97 @@ test "font aware text provider skips empty and inherited keywords" {
   assert_false(should_use_font_aware_text_provider("revert"))
   assert_false(should_use_font_aware_text_provider("revert-layer"))
 }
+
+///|
+fn actual_paint_test_layout(
+  id : String,
+  x? : Double = 0.0,
+  y? : Double = 0.0,
+  width~ : Double,
+  height~ : Double,
+  overflow_x? : @types.Overflow = @types.Visible,
+  overflow_y? : @types.Overflow = @types.Visible,
+  scroll_width? : Double = 0.0,
+  scroll_height? : Double = 0.0,
+  children? : Array[@types.Layout] = [],
+) -> @types.Layout {
+  {
+    id,
+    x,
+    y,
+    width,
+    height,
+    margin: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
+    padding: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
+    border: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 },
+    overflow_x,
+    overflow_y,
+    scroll_width,
+    scroll_height,
+    children,
+    text: None,
+  }
+}
+
+///|
+test "actual paint document width keeps visible horizontal overflow" {
+  let root = actual_paint_test_layout(
+    "body",
+    width=320.0,
+    height=180.0,
+    scroll_width=320.0,
+    scroll_height=180.0,
+    children=[
+      actual_paint_test_layout(
+        "div.wide",
+        width=800.0,
+        height=20.0,
+        scroll_width=800.0,
+        scroll_height=20.0,
+      ),
+    ],
+  )
+  let (width, height) = actual_paint_document_dimensions_from_layout(
+    root, 320, 180,
+  )
+  assert_eq(width, 800)
+  ignore(height)
+}
+
+///|
+test "actual paint document width ignores clipped descendant overflow" {
+  let root = actual_paint_test_layout(
+    "body",
+    width=320.0,
+    height=180.0,
+    scroll_width=320.0,
+    scroll_height=180.0,
+    children=[
+      actual_paint_test_layout(
+        "div.announcer",
+        x=-1.0,
+        y=-1.0,
+        width=1.0,
+        height=1.0,
+        overflow_x=@types.Hidden,
+        overflow_y=@types.Hidden,
+        scroll_width=6320.0,
+        scroll_height=64.0,
+        children=[
+          actual_paint_test_layout(
+            "#text",
+            width=6320.0,
+            height=16.0,
+            scroll_width=6320.0,
+            scroll_height=16.0,
+          ),
+        ],
+      ),
+    ],
+  )
+  let (width, height) = actual_paint_document_dimensions_from_layout(
+    root, 320, 180,
+  )
+  assert_eq(width, 320)
+  ignore(height)
+}

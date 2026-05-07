@@ -1585,6 +1585,84 @@ test.describe("Crater browser/context wrapper", () => {
     }
   });
 
+  test("captures paint data from the requested shared context after another context is current", async () => {
+    const browser = createCraterBrowser();
+    try {
+      const previewContext = await browser.newContext();
+      const hrcContext = await browser.newContext();
+      const previewPage = await previewContext.newPage();
+      const hrcPage = await hrcContext.newPage();
+
+      await previewPage.setViewport(96, 64);
+      await hrcPage.setViewport(96, 64);
+      await previewPage.setContent(`
+        <html>
+          <body style="margin:0;background:#000">
+            <main id="value" style="width:96px;height:64px;background:#000;color:#fff">preview-context</main>
+          </body>
+        </html>
+      `);
+      await hrcPage.setContent(`
+        <html>
+          <body style="margin:0;background:#fff">
+            <main id="value" style="width:96px;height:64px;background:#fff;color:#000">hrc-context</main>
+          </body>
+        </html>
+      `);
+
+      const previewTree = await previewPage.capturePaintTree();
+      expect(previewTree.paintTree).toContain("preview-context");
+      expect(previewTree.paintTree).not.toContain("hrc-context");
+
+      const previewPng = await previewPage.screenshot({ timeout: 1000, type: "png" });
+      const previewImage = await decodePng(previewPng);
+      const pixelOffset = (50 * previewImage.width + 80) * 4;
+      expect(previewImage.data[pixelOffset]).toBeLessThan(50);
+      expect(previewImage.data[pixelOffset + 1]).toBeLessThan(50);
+      expect(previewImage.data[pixelOffset + 2]).toBeLessThan(50);
+
+      const hrcTree = await hrcPage.capturePaintTree();
+      expect(hrcTree.paintTree).toContain("hrc-context");
+      expect(hrcTree.paintTree).not.toContain("preview-context");
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test("keeps page URLs isolated across concurrent shared-context navigations", async () => {
+    const server = await createLocalFixtureServer();
+    const browser = createCraterBrowser();
+    try {
+      const previewUrl = server.serve(
+        "/preview-context.html",
+        "<html><body><main id='value'>preview-url</main></body></html>",
+      );
+      const hrcUrl = server.serve(
+        "/hrc-context.html",
+        "<html><body><main id='value'>hrc-url</main></body></html>",
+      );
+      const previewContext = await browser.newContext();
+      const hrcContext = await browser.newContext();
+      const previewPage = await previewContext.newPage();
+      const hrcPage = await hrcContext.newPage();
+
+      await Promise.all([
+        previewPage.goto(previewUrl),
+        hrcPage.goto(hrcUrl),
+      ]);
+
+      expect(previewPage.url()).toBe(previewUrl);
+      expect(hrcPage.url()).toBe(hrcUrl);
+      await expect(previewPage.locator("#value").textContent()).resolves.toBe("preview-url");
+      await expect(hrcPage.locator("#value").textContent()).resolves.toBe("hrc-url");
+      expect(previewPage.url()).toBe(previewUrl);
+      expect(hrcPage.url()).toBe(hrcUrl);
+    } finally {
+      await browser.close();
+      await server.close();
+    }
+  });
+
   test("supports context cookies through the storage backend", async () => {
     const browser = createCraterBrowser();
     const context = await browser.newContext();

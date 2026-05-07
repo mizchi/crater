@@ -871,6 +871,31 @@ test "bidi script prepareLoadedStaticTestPage inlineScripts runs scripts in orde
 }
 
 ///|
+test "bidi script inlineScripts exposes window properties as globals" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"data:text/html,<body></body>\",\"wait\":\"complete\"}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"script.prepareLoadedStaticTestPage\",\"params\":{\"context\":\"session-1\",\"page\":\"test_actions.html\",\"phase\":\"inlineScripts\",\"scripts\":[\"Object.assign(window, { __craterBareProbe: function(){ document.body.setAttribute('data-probe','ok'); } });\",\"__craterBareProbe();\"]}}",
+  )
+  let prepare_json = proto.take_messages()[0].to_json()
+  assert_true(prepare_json.contains("\"type\":\"success\""))
+
+  let _ = proto.process_message(
+    "{\"id\":4,\"method\":\"script.evaluateResult\",\"params\":{\"expression\":\"document.body.getAttribute('data-probe')\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"value\":\"ok\""))
+}
+
+///|
 test "bidi script prepareLoadedStaticTestPage extracts inline scripts from html" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(

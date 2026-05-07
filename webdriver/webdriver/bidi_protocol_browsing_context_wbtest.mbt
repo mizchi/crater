@@ -526,6 +526,45 @@ test "bidi captureScreenshotData uses actual paint png for document origin" {
 }
 
 ///|
+test "bidi captureScreenshotData keeps viewport layout when document is horizontally scrollable" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":2,\"method\":\"browsingContext.setViewport\",\"params\":{\"context\":\"session-1\",\"viewport\":{\"width\":320,\"height\":180}}}",
+    ),
+  )
+  ignore(proto.take_messages())
+  let html = "<!DOCTYPE html><html><body style='margin:0;background:#ffffff'><div style='width:800px;height:20px;background:#000000'></div><div><span style='display:inline-block;width:100px;height:40px;background:#ff0000'></span><span style='display:inline-block;width:100px;height:40px;background:#00ff00'></span><span style='display:inline-block;width:100px;height:40px;background:#0000ff'></span><span style='display:inline-block;width:100px;height:40px;background:#ff0000'></span><span style='display:inline-block;width:100px;height:40px;background:#00ff00'></span><span style='display:inline-block;width:100px;height:40px;background:#0000ff'></span><span style='display:inline-block;width:100px;height:40px;background:#ff0000'></span><span style='display:inline-block;width:100px;height:40px;background:#00ff00'></span><span style='display:inline-block;width:100px;height:40px;background:#0000ff'></span><span style='display:inline-block;width:100px;height:40px;background:#ff0000'></span><span style='display:inline-block;width:100px;height:40px;background:#00ff00'></span><span style='display:inline-block;width:100px;height:40px;background:#0000ff'></span><span style='display:inline-block;width:100px;height:40px;background:#ff0000'></span><span style='display:inline-block;width:100px;height:40px;background:#00ff00'></span><span style='display:inline-block;width:100px;height:40px;background:#0000ff'></span><span style='display:inline-block;width:100px;height:40px;background:#ff0000'></span><span style='display:inline-block;width:100px;height:40px;background:#00ff00'></span><span style='display:inline-block;width:100px;height:40px;background:#0000ff'></span></div></body></html>"
+  let navigate_message = "{\"id\":3,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"" +
+    js_test_build_html_data_url(html) +
+    "\",\"wait\":\"complete\"}}"
+  ignore(proto.process_message(navigate_message))
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":4,\"method\":\"browsingContext.captureScreenshotData\",\"params\":{\"context\":\"session-1\",\"origin\":\"document\"}}",
+    ),
+  )
+  let json = proto.take_messages()[0].to_json()
+  let parsed = @json.parse(json) catch { _ => make_object({}) }
+  let png_data = match parsed {
+    Object(map) =>
+      match map.get("result") {
+        Some(String(value)) => value
+        _ => ""
+      }
+    _ => ""
+  }
+  let (document_width, document_height) = png_dimensions_from_base64(png_data)
+  assert_eq(document_width, 800)
+  assert_true(document_height > 180)
+}
+
+///|
 test "bidi getResponsiveBreakpoints returns canonical breakpoint metadata" {
   let proto = BidiProtocol::new()
   ignore(

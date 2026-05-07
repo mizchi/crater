@@ -1777,7 +1777,16 @@ function routeBodyToString(body: CraterRouteFulfillOptions["body"]): string {
 }
 
 async function markLiveDomCaptureNeeded(page: CraterBidiPage): Promise<void> {
-  await page.evaluate(`globalThis.__craterPaintCaptureSource = "live"`);
+  await page.evaluate(paintCaptureSourceExpression("live"));
+}
+
+function paintCaptureSourceExpression(source: "live" | "original"): string {
+  return `(() => {
+    globalThis.__craterPaintCaptureSource = ${jsString(source)};
+    if (globalThis.window && typeof globalThis.window === "object") {
+      globalThis.window.__craterPaintCaptureSource = ${jsString(source)};
+    }
+  })()`;
 }
 
 class CraterKeyboard {
@@ -2804,7 +2813,7 @@ export class CraterBidiPage {
     await this.syncRuntimeLocation("about:blank");
     await this.evaluate(`__loadHTML(${jsString(html)})`);
     await this.evaluate(`globalThis.__craterInstallScrollingStubs && globalThis.__craterInstallScrollingStubs()`);
-    await this.evaluate(`globalThis.__craterPaintCaptureSource = "original"`);
+    await this.evaluate(paintCaptureSourceExpression("original"));
     await this.reinstallNetworkHooksForDocument();
     await this.runInitScripts();
     await this.setObservableFetchForScriptExecution(this.networkHooksInstalled);
@@ -2884,7 +2893,7 @@ export class CraterBidiPage {
         await this.setObservableFetchForScriptExecution(false);
       }
     }
-    await this.evaluate(`globalThis.__craterPaintCaptureSource = "live"`);
+    await this.evaluate(paintCaptureSourceExpression("live"));
     await this.observeSubresourceLoads(result.url ?? url);
     this.emitPageEvent("domcontentloaded", this);
     this.emitPageEvent("load", this);

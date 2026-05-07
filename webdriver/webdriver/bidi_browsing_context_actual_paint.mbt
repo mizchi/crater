@@ -572,15 +572,21 @@ fn capture_current_paint_html() -> String {
 }
 
 ///|
-extern "js" fn js_actual_paint_document_metrics(
-  viewport_width : Int,
-  viewport_height : Int,
-) -> String =
-  #|(viewportWidthArg, viewportHeightArg) => {
+fn BidiProtocol::resolve_actual_paint_viewport_dimensions(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> (Int, Int) {
+  let viewport_width = self.resolve_effective_viewport_width(ctx_id)
+  let viewport_height = self.resolve_effective_viewport_height(ctx_id)
+  (viewport_width, viewport_height)
+}
+
+///|
+extern "js" fn js_actual_paint_document_height(viewport_height : Int) -> Int =
+  #|(viewportHeightArg) => {
   #|  try {
   #|    const doc = globalThis.document;
   #|    const win = globalThis.window || globalThis;
-  #|    let width = Math.max(1, Number(viewportWidthArg || win.innerWidth || globalThis.innerWidth || 1));
   #|    let height = Math.max(1, Number(viewportHeightArg || win.innerHeight || globalThis.innerHeight || 1));
   #|    const px = (value) => {
   #|      const parsed = Number.parseFloat(String(value ?? ""));
@@ -588,12 +594,6 @@ extern "js" fn js_actual_paint_document_metrics(
   #|    };
   #|    const visit = (el) => {
   #|      if (!el) return;
-  #|      width = Math.max(
-  #|        width,
-  #|        Number(el.scrollWidth || 0),
-  #|        Number(el.clientWidth || 0),
-  #|        Number(el.offsetWidth || 0),
-  #|      );
   #|      height = Math.max(
   #|        height,
   #|        Number(el.scrollHeight || 0),
@@ -601,20 +601,15 @@ extern "js" fn js_actual_paint_document_metrics(
   #|        Number(el.offsetHeight || 0),
   #|      );
   #|      const style = el.style || {};
-  #|      let left = px(style.left) + px(style.marginLeft);
-  #|      let top = px(style.top) + px(style.marginTop);
-  #|      let rectWidth = px(style.width);
+  #|      let top = px(style.top) + px(style.marginTop ?? style["margin-top"]);
   #|      let rectHeight = px(style.height);
   #|      if (typeof el.getBoundingClientRect === "function") {
   #|        try {
   #|          const rect = el.getBoundingClientRect();
-  #|          left = Number(rect.left ?? rect.x ?? left) || left;
   #|          top = Number(rect.top ?? rect.y ?? top) || top;
-  #|          rectWidth = Number(rect.width ?? ((rect.right ?? 0) - (rect.left ?? 0))) || rectWidth;
   #|          rectHeight = Number(rect.height ?? ((rect.bottom ?? 0) - (rect.top ?? 0))) || rectHeight;
   #|        } catch (_err) {}
   #|      }
-  #|      width = Math.max(width, left + Math.max(0, rectWidth));
   #|      height = Math.max(height, top + Math.max(0, rectHeight));
   #|    };
   #|    if (doc) {
@@ -628,43 +623,65 @@ extern "js" fn js_actual_paint_document_metrics(
   #|        }
   #|      }
   #|    }
-  #|    return `${Math.max(1, Math.ceil(width))},${Math.max(1, Math.ceil(height))}`;
+  #|    return Math.max(1, Math.ceil(height));
   #|  } catch (_err) {
-  #|    return `${Math.max(1, Number(viewportWidthArg) || 1)},${Math.max(1, Number(viewportHeightArg) || 1)}`;
+  #|    return Math.max(1, Number(viewportHeightArg) || 1);
   #|  }
   #|}
 
 ///|
-fn parse_actual_paint_dimension_pair(
-  payload : String,
-  fallback_width : Int,
-  fallback_height : Int,
-) -> (Int, Int) {
-  let parts = payload.split(",").collect()
-  if parts.length() < 2 {
-    return (fallback_width.max(1), fallback_height.max(1))
+fn actual_paint_layout_content_right(layout : @types.Layout) -> Double {
+  let mut right = layout.x + layout.width
+  match layout.overflow_x {
+    @types.Visible => {
+      let scroll_right = layout.x + layout.scroll_width
+      if scroll_right > right {
+        right = scroll_right
+      }
+      for child in layout.children {
+        let child_right = actual_paint_layout_content_right(child)
+        if child_right > right {
+          right = child_right
+        }
+      }
+    }
+    _ => ()
   }
-  let width = @string.parse_int(parts[0].trim()) catch { _ => fallback_width }
-  let height = @string.parse_int(parts[1].trim()) catch { _ => fallback_height }
-  (width.max(1), height.max(1))
+  right
 }
 
 ///|
-fn BidiProtocol::resolve_actual_paint_dimensions(
-  self : BidiProtocol,
-  ctx_id : String,
-  origin : String,
-) -> (Int, Int) {
-  let viewport_width = self.resolve_effective_viewport_width(ctx_id)
-  let viewport_height = self.resolve_effective_viewport_height(ctx_id)
-  if origin != "document" {
-    return (viewport_width, viewport_height)
+fn actual_paint_layout_content_bottom(layout : @types.Layout) -> Double {
+  let mut bottom = layout.y + layout.height
+  match layout.overflow_y {
+    @types.Visible => {
+      let scroll_bottom = layout.y + layout.scroll_height
+      if scroll_bottom > bottom {
+        bottom = scroll_bottom
+      }
+      for child in layout.children {
+        let child_bottom = actual_paint_layout_content_bottom(child)
+        if child_bottom > bottom {
+          bottom = child_bottom
+        }
+      }
+    }
+    _ => ()
   }
-  parse_actual_paint_dimension_pair(
-    js_actual_paint_document_metrics(viewport_width, viewport_height),
-    viewport_width,
-    viewport_height,
-  )
+  bottom
+}
+
+///|
+fn actual_paint_document_dimensions_from_layout(
+  layout : @types.Layout,
+  viewport_width : Int,
+  viewport_height : Int,
+) -> (Int, Int) {
+  let width = actual_paint_layout_content_right(layout).ceil().to_int()
+  let layout_height = actual_paint_layout_content_bottom(layout).ceil().to_int()
+  let dom_height = js_actual_paint_document_height(viewport_height)
+  let height = layout_height.max(dom_height)
+  (width.max(viewport_width).max(1), height.max(viewport_height).max(1))
 }
 
 ///|
@@ -678,11 +695,26 @@ fn BidiProtocol::build_actual_paint_frame(
   measure_visual? : Bool = false,
 ) -> PaintCaptureFrame? {
   ensure_paint_provider_initialized()
-  let (width, height) = self.resolve_actual_paint_dimensions(ctx_id, origin)
-  let ctx = @browser_contract.create_render_context(width, height, false)
+  let (viewport_width, viewport_height) = self.resolve_actual_paint_viewport_dimensions(
+    ctx_id,
+  )
+  let ctx = @browser_contract.create_render_context(
+    viewport_width, viewport_height, false,
+  )
   let t0 = js_now_ms()
-  let (node, layout) = @renderer.render_to_node_and_layout(html, ctx)
+  let (node, layout) = if origin == "document" {
+    @renderer.render_to_node_and_layout_full_document(html, ctx)
+  } else {
+    @renderer.render_to_node_and_layout(html, ctx)
+  }
   let t1 = js_now_ms()
+  let (width, height) = if origin == "document" {
+    actual_paint_document_dimensions_from_layout(
+      layout, viewport_width, viewport_height,
+    )
+  } else {
+    (viewport_width, viewport_height)
+  }
   let paint_node = match
     @tui_paint_viewport.from_node_and_layout_with_viewport_rect(
       node,
@@ -817,6 +849,8 @@ fn BidiProtocol::resolve_capture_paint_data(
       return None
     }
   }
+  set_runtime_context(ctx_id)
+  self.apply_effective_viewport_to_runtime_context(ctx_id, ctx_id)
 
   let html = capture_current_paint_html()
   let frame = match
@@ -964,13 +998,23 @@ fn BidiProtocol::try_resolve_actual_capture_screenshot_data(
 fn capture_paint_source_html_expr() -> String {
   (
     #|(() => {
-    #|  if (globalThis.__craterPaintCaptureSource === "live") {
+    #|  const ctxId = String(globalThis.__bidiCurrentContext || "default-context");
+    #|  const ctxWindow = globalThis.__bidiContextWindows && globalThis.__bidiContextWindows.has(ctxId)
+    #|    ? globalThis.__bidiContextWindows.get(ctxId)
+    #|    : null;
+    #|  const captureSource = ctxWindow && ctxWindow.__craterPaintCaptureSource
+    #|    ? ctxWindow.__craterPaintCaptureSource
+    #|    : globalThis.__craterPaintCaptureSource;
+    #|  if (captureSource === "live") {
     #|    const live =
   ) +
   serialize_live_document_html_expr() +
   (
     #|;
     #|    if (live) return live;
+    #|  }
+    #|  if (ctxWindow && typeof ctxWindow.__lastHTML === "string") {
+    #|    return ctxWindow.__lastHTML;
     #|  }
     #|  return globalThis.__lastHTML || '';
     #|})()
@@ -1025,20 +1069,45 @@ fn BidiProtocol::resolve_capture_paint_tree(
       return None
     }
   }
+  set_runtime_context(ctx_id)
+  self.apply_effective_viewport_to_runtime_context(ctx_id, ctx_id)
+  let origin = match params.get("origin") {
+    None | Some(String("viewport")) => "viewport"
+    Some(String("document")) => "document"
+    Some(String(_)) => {
+      self.send_error(
+        request_id, "invalid argument", "origin must be 'viewport' or 'document'",
+      )
+      return None
+    }
+    Some(_) => {
+      self.send_error(request_id, "invalid argument", "origin must be a string")
+      return None
+    }
+  }
   let width = self.resolve_effective_viewport_width(ctx_id)
   let height = self.resolve_effective_viewport_height(ctx_id)
   let html_json = evaluate_js(serialize_live_document_html_expr())
   let html = extract_string_value_from_evaluate_result(html_json)
   let ctx = @browser_contract.create_render_context(width, height, false)
-  let (node, layout) = @renderer.render_to_node_and_layout(html, ctx)
+  let (node, layout) = if origin == "document" {
+    @renderer.render_to_node_and_layout_full_document(html, ctx)
+  } else {
+    @renderer.render_to_node_and_layout(html, ctx)
+  }
+  let (paint_width, paint_height) = if origin == "document" {
+    actual_paint_document_dimensions_from_layout(layout, width, height)
+  } else {
+    (width, height)
+  }
   let paint_node = match
     @tui_paint_viewport.from_node_and_layout_with_viewport_rect(
       node,
       layout,
       0.0,
       0.0,
-      width.to_double(),
-      height.to_double(),
+      paint_width.to_double(),
+      paint_height.to_double(),
       0.0,
       0.0,
     ) {
@@ -1051,8 +1120,8 @@ fn BidiProtocol::resolve_capture_paint_tree(
   let json_str = @tui_paint_output.to_json_string(paint_node)
   Some(
     make_object({
-      "width": Json::number(width.to_double()),
-      "height": Json::number(height.to_double()),
+      "width": Json::number(paint_width.to_double()),
+      "height": Json::number(paint_height.to_double()),
       "paintTree": Json::string(json_str),
     }),
   )

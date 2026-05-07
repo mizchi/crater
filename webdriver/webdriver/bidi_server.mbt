@@ -3838,6 +3838,18 @@ extern "js" fn js_evaluate_expression(
   #|       html = html === undefined || html === null ? '' : String(html);
   #|       const body = globalThis.document.body;
   #|       const head = globalThis.document.head;
+  #|       const loadCtxId = String(globalThis.__bidiCurrentContext || "default-context");
+  #|       const loadContextWindow = globalThis.__bidiContextWindows && globalThis.__bidiContextWindows.has(loadCtxId)
+  #|         ? globalThis.__bidiContextWindows.get(loadCtxId)
+  #|         : null;
+  #|       const rememberParsedHtml = (parsed) => {
+  #|         globalThis.__lastHTML = html;
+  #|         globalThis.__lastParsed = parsed;
+  #|         if (loadContextWindow && typeof loadContextWindow === "object") {
+  #|           loadContextWindow.__lastHTML = html;
+  #|           loadContextWindow.__lastParsed = parsed;
+  #|         }
+  #|       };
   #|       const resetContainer = (node) => {
   #|         if (node && Array.isArray(node._children)) {
   #|           for (const child of node._children) child._parent = null;
@@ -3890,8 +3902,13 @@ extern "js" fn js_evaluate_expression(
   #|         }
   #|         attachChildren(target, clones);
   #|       };
-  #|       const cached = globalThis.__lastParsed;
-  #|       if (globalThis.__lastHTML === html && cached) {
+  #|       const lastHTML = loadContextWindow && Object.prototype.hasOwnProperty.call(loadContextWindow, "__lastHTML")
+  #|         ? loadContextWindow.__lastHTML
+  #|         : globalThis.__lastHTML;
+  #|       const cached = loadContextWindow && loadContextWindow.__lastParsed
+  #|         ? loadContextWindow.__lastParsed
+  #|         : globalThis.__lastParsed;
+  #|       if (lastHTML === html && cached) {
   #|         resetContainer(body);
   #|         resetContainer(head);
   #|         assignClonedChildren(head, cached.headNodes || []);
@@ -3902,15 +3919,13 @@ extern "js" fn js_evaluate_expression(
   #|       resetContainer(body);
   #|       resetContainer(head);
   #|       if (html.length === 0) {
-  #|         globalThis.__lastHTML = html;
-  #|         globalThis.__lastParsed = { headNodes: [], bodyNodes: [] };
+  #|         rememberParsedHtml({ headNodes: [], bodyNodes: [] });
   #|         return true;
   #|       }
   #|       if (html.indexOf('<') === -1) {
   #|         body.textContent = html;
   #|         const textNode = body.firstChild ? [body.firstChild.cloneNode(true)] : [];
-  #|         globalThis.__lastHTML = html;
-  #|         globalThis.__lastParsed = { headNodes: [], bodyNodes: textNode };
+  #|         rememberParsedHtml({ headNodes: [], bodyNodes: textNode });
   #|         return true;
   #|       }
   #|       // Simple HTML parser
@@ -4226,8 +4241,7 @@ extern "js" fn js_evaluate_expression(
   #|           }
   #|         }
   #|       }
-  #|       globalThis.__lastHTML = html;
-  #|       globalThis.__lastParsed = { headNodes: headCache, bodyNodes: bodyCache };
+  #|       rememberParsedHtml({ headNodes: headCache, bodyNodes: bodyCache });
   #|       try {
   #|         const ctxId = String(globalThis.__bidiCurrentContext || "default-context");
   #|         if (globalThis.__bidiContextWindows && globalThis.__bidiContextWindows.has(ctxId)) {
@@ -6473,6 +6487,15 @@ extern "js" fn js_set_runtime_context(ctx_id : String) -> Unit =
   #|       };
   #|       globalThis.location = contextWindow.location;
   #|       globalThis.__pageUrl = locationHref;
+  #|     }
+  #|     if (Object.prototype.hasOwnProperty.call(contextWindow, "__lastHTML")) {
+  #|       globalThis.__lastHTML = contextWindow.__lastHTML;
+  #|     }
+  #|     if (contextWindow.__lastParsed) {
+  #|       globalThis.__lastParsed = contextWindow.__lastParsed;
+  #|     }
+  #|     if (Object.prototype.hasOwnProperty.call(contextWindow, "__craterPaintCaptureSource")) {
+  #|       globalThis.__craterPaintCaptureSource = contextWindow.__craterPaintCaptureSource;
   #|     }
   #|   }
   #| }

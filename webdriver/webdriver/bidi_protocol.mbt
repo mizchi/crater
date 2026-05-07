@@ -4679,6 +4679,8 @@ fn BidiProtocol::resolve_capture_screenshot_data(
     self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
     return None
   }
+  set_runtime_context(ctx_id)
+  self.apply_effective_viewport_to_runtime_context(ctx_id, ctx_id)
 
   match params.get("origin") {
     Some(String("viewport")) | Some(String("document")) | None => ()
