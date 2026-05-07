@@ -3311,12 +3311,18 @@ let viewport_full_node_count : Ref[Int] = { val: 0 }
 let viewport_full_node_cutoff : Ref[Int] = { val: 300 }
 
 ///|
+let viewport_skeleton_enabled : Ref[Bool] = { val: true }
+
+///|
 let empty_indexed_stylesheets : Ref[Array[@css.IndexedStylesheet]] = { val: [] }
 
 ///|
 fn should_use_viewport_skeleton() -> Bool {
-  viewport_estimated_y.val > viewport_cutoff.val ||
-  viewport_full_node_count.val > viewport_full_node_cutoff.val
+  viewport_skeleton_enabled.val &&
+  (
+    viewport_estimated_y.val > viewport_cutoff.val ||
+    viewport_full_node_count.val > viewport_full_node_cutoff.val
+  )
 }
 
 ///|
@@ -3782,7 +3788,15 @@ pub fn compute_layout_from_render_root(
     },
   )
   let root_available_height : Double? = if prepared.render_root_tag == "body" {
-    Some(ctx.viewport_height)
+    match root.style.height {
+      @types.Length(_) | @types.Percent(_) => Some(ctx.viewport_height)
+      _ =>
+        if root.style.writing_mode.is_vertical() {
+          Some(ctx.viewport_height)
+        } else {
+          None
+        }
+    }
   } else if prepared.render_root_tag == "html" &&
     root.style.position != @types.Absolute &&
     root.style.position != @types.Fixed {
@@ -5026,6 +5040,19 @@ pub fn render_to_node_and_layout(
   ctx : RenderContext,
 ) -> (@node.Node, @types.Layout) {
   render_to_node_and_layout_with_external_css(html, ctx, [])
+}
+
+///|
+/// Render the whole document without viewport skeleton culling.
+pub fn render_to_node_and_layout_full_document(
+  html : String,
+  ctx : RenderContext,
+) -> (@node.Node, @types.Layout) {
+  let previous = viewport_skeleton_enabled.val
+  viewport_skeleton_enabled.val = false
+  let result = render_to_node_and_layout(html, ctx)
+  viewport_skeleton_enabled.val = previous
+  result
 }
 
 ///|
@@ -6837,6 +6864,8 @@ fn element_to_node_with_styles_internal(
         @types.Auto
         // If width is %, keep height Auto to let aspect_ratio compute it
       } else if width_is_percent {
+        @types.Auto
+      } else if style.width != @types.Auto {
         @types.Auto
       } else if attr_height > 0.0 {
         @types.Length(attr_height)

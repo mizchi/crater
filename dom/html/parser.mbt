@@ -849,10 +849,46 @@ pub fn parse_document_v2(html : String) -> Element {
 /// Parse HTML and extract stylesheets
 pub fn parse_document(html : String) -> Document {
   let root = parse_document_v2(html)
+  let resource_html = strip_noscript_blocks(html)
+  let resource_root = if resource_html == html {
+    root
+  } else {
+    parse_document_v2(resource_html)
+  }
   let stylesheets : Array[String] = []
   let stylesheet_links : Array[String] = []
-  extract_stylesheets(root, stylesheets, stylesheet_links)
+  extract_stylesheets(resource_root, stylesheets, stylesheet_links, false)
   { root, stylesheets, stylesheet_links }
+}
+
+///|
+/// Remove noscript content for resource extraction in scripting-enabled mode.
+fn strip_noscript_blocks(html : String) -> String {
+  let lower = html.to_lower()
+  let mut pos = 0
+  let buf = StringBuilder::new()
+  while pos < html.length() {
+    let start = find_substring(lower, "<noscript", pos)
+    if start < 0 {
+      buf.write_string(html.unsafe_substring(start=pos, end=html.length()))
+      break
+    }
+    buf.write_string(html.unsafe_substring(start=pos, end=start))
+    let open_end = find_substring(lower, ">", start)
+    if open_end < 0 {
+      break
+    }
+    let close_start = find_substring(lower, "</noscript", open_end + 1)
+    if close_start < 0 {
+      break
+    }
+    let close_end = find_substring(lower, ">", close_start)
+    if close_end < 0 {
+      break
+    }
+    pos = close_end + 1
+  }
+  buf.to_string()
 }
 
 ///|
@@ -861,16 +897,21 @@ fn extract_stylesheets(
   elem : Element,
   stylesheets : Array[String],
   links : Array[String],
+  inside_noscript : Bool,
 ) -> Unit {
+  let tag = elem.tag.to_lower()
+  if inside_noscript || tag == "noscript" {
+    return
+  }
   // Handle <style> tags - extract text content
-  if elem.tag == "style" {
+  if tag == "style" {
     let css = extract_text_content(elem)
     if !css.is_empty() {
-      stylesheets.push(css)
+      stylesheets.push(css_with_style_media(css, elem.attributes.get("media")))
     }
   }
   // Handle <link rel="stylesheet"> tags
-  if elem.tag == "link" {
+  if tag == "link" {
     let rel = elem.attributes.get("rel")
     match rel {
       Some(r) if r == "stylesheet" =>
@@ -885,9 +926,26 @@ fn extract_stylesheets(
   for child in elem.children {
     match child {
       Node::Element(child_elem) =>
-        extract_stylesheets(child_elem, stylesheets, links)
+        extract_stylesheets(child_elem, stylesheets, links, false)
       Node::Text(_) => ()
     }
+  }
+}
+
+///|
+/// Convert a <style media="..."> attribute into an @media wrapper.
+fn css_with_style_media(css : String, media : String?) -> String {
+  match media {
+    Some(raw_media) => {
+      let media_text = raw_media.trim().to_string()
+      let media_lower = media_text.to_lower()
+      if media_text.is_empty() || media_lower == "all" {
+        css
+      } else {
+        "@media " + media_text + " {\n" + css + "\n}"
+      }
+    }
+    None => css
   }
 }
 

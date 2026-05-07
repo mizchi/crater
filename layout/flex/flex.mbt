@@ -4103,14 +4103,18 @@ fn compute_internal(
           }
         }
         @types.Percent(p) =>
-          if use_available_width &&
-            ctx.sizing_mode == @types.Definite &&
-            ctx.available_height is Some(ah) {
-            Some(ah - padding.vertical_sum() - border.vertical_sum())
-          } else {
-            Some(
-              parent_height * p - padding.vertical_sum() - border.vertical_sum(),
-            )
+          match ctx.available_height {
+            Some(ah) =>
+              if use_available_width && ctx.sizing_mode == @types.Definite {
+                Some(ah - padding.vertical_sum() - border.vertical_sum())
+              } else {
+                Some(
+                  parent_height * p -
+                  padding.vertical_sum() -
+                  border.vertical_sum(),
+                )
+              }
+            None => None
           }
         @types.Auto =>
           // In Definite mode with available_height, use it for stretched items
@@ -5083,7 +5087,11 @@ fn compute_internal(
                 } else {
                   (ch * p, false)
                 }
-              None => (0.0, false)
+              None =>
+                // Percentage cross-size in an indefinite row flex container
+                // behaves as auto. A min-height on the container is not a
+                // definite containing block for resolving the percentage.
+                resolve_row_auto_cross()
             }
           @types.Auto => resolve_row_auto_cross()
           @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
@@ -7432,6 +7440,19 @@ fn compute_internal(
           dispatch,
           percent_base_width=content_width,
         )
+        let child_height = if is_row {
+          match (child.style.height, content_height) {
+            (@types.Percent(_), None) =>
+              if nested_layout.height > child_height {
+                nested_layout.height
+              } else {
+                child_height
+              }
+            _ => child_height
+          }
+        } else {
+          child_height
+        }
         {
           id: child.id,
           x: child_x,
@@ -7509,12 +7530,44 @@ fn compute_internal(
             h
           }
         @types.Percent(p) =>
-          if use_available_width &&
-            ctx.sizing_mode == @types.Definite &&
-            ctx.available_height is Some(ah) {
-            ah
-          } else {
-            parent_height * p
+          match ctx.available_height {
+            Some(ah) =>
+              if use_available_width && ctx.sizing_mode == @types.Definite {
+                ah
+              } else {
+                parent_height * p
+              }
+            None =>
+              if suppress_auto_block_size {
+                padding.vertical_sum() + border.vertical_sum()
+              } else if is_row {
+                // Row direction: cross size is height.
+                total_lines_cross +
+                padding.vertical_sum() +
+                border.vertical_sum()
+              } else {
+                // Column direction: main size is height.
+                let mut total_main = 0.0
+                for line_idx = 0
+                    line_idx < flex_lines.length()
+                    line_idx = line_idx + 1 {
+                  let line = flex_lines[line_idx]
+                  let mut line_main = 0.0
+                  for item in line.items {
+                    line_main = line_main + item.final_main + item.margin_main
+                  }
+                  if line.items.length() > 1 {
+                    line_main = line_main +
+                      main_gap * (line.items.length() - 1).to_double()
+                  }
+                  total_main = total_main + line_main
+                }
+                if flex_lines.length() > 1 {
+                  total_main = total_main +
+                    cross_gap * (flex_lines.length() - 1).to_double()
+                }
+                total_main + padding.vertical_sum() + border.vertical_sum()
+              }
           }
         @types.Auto =>
           if suppress_auto_block_size {

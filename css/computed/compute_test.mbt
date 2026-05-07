@@ -445,6 +445,31 @@ test "compute_inline viewport units" {
 }
 
 ///|
+test "compute_inline dynamic viewport units" {
+  let ctx : @computed.ComputeContext = {
+    parent_style: None,
+    root_font_size: 16.0,
+    font_size: 16.0,
+    viewport_width: 1000.0,
+    viewport_height: 800.0,
+    custom_properties: {},
+  }
+  let height_style = @computed.compute_inline(
+    "height: 100dvh; min-height: 50svh; max-height: 25lvh", ctx,
+  )
+  inspect(height_style.height, content="Length(800)")
+  inspect(height_style.min_height, content="Length(400)")
+  inspect(height_style.max_height, content="Length(200)")
+
+  let width_style = @computed.compute_inline(
+    "width: 100dvw; min-width: 50svw; max-width: 25lvw", ctx,
+  )
+  inspect(width_style.width, content="Length(1000)")
+  inspect(width_style.min_width, content="Length(500)")
+  inspect(width_style.max_width, content="Length(250)")
+}
+
+///|
 test "compute_inline calc viewport units" {
   let ctx : @computed.ComputeContext = {
     parent_style: None,
@@ -456,6 +481,23 @@ test "compute_inline calc viewport units" {
   }
   let style = @computed.compute_inline("width: calc(100vw + 100px)", ctx)
   inspect(style.width, content="Length(900)")
+}
+
+///|
+test "compute_inline calc dynamic viewport units" {
+  let ctx : @computed.ComputeContext = {
+    parent_style: None,
+    root_font_size: 16.0,
+    font_size: 16.0,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    custom_properties: {},
+  }
+  let style = @computed.compute_inline(
+    "width: calc(100dvw + 100px); height: calc(100dvh - 50px)", ctx,
+  )
+  inspect(style.width, content="Length(900)")
+  inspect(style.height, content="Length(550)")
 }
 
 ///|

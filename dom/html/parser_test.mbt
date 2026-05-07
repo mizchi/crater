@@ -145,6 +145,42 @@ test "parse_document with style tag" {
 }
 
 ///|
+test "parse_document wraps style media attribute into media rule" {
+  let html =
+    #|<html>
+    #|  <head>
+    #|    <style>.nav { height: 113px; }</style>
+    #|    <style media="(max-width: 540px)">.nav { height: 97px; }</style>
+    #|  </head>
+    #|  <body><div class="nav"></div></body>
+    #|</html>
+  let doc = @html.parse_document(html)
+  inspect(doc.stylesheets.length(), content="2")
+  inspect(doc.stylesheets[0].contains("@media"), content="false")
+  inspect(
+    doc.stylesheets[1].contains("@media (max-width: 540px)"),
+    content="true",
+  )
+  inspect(doc.stylesheets[1].contains(".nav { height: 97px; }"), content="true")
+}
+
+///|
+test "parse_document ignores noscript styles when scripting is enabled" {
+  let html =
+    #|<html>
+    #|  <head>
+    #|    <noscript><style>img[data-sd-img] { display: none; }</style></noscript>
+    #|    <style>img.hero { display: flex; }</style>
+    #|  </head>
+    #|  <body><img class="hero" data-sd-img></body>
+    #|</html>
+  let doc = @html.parse_document(html)
+  inspect(doc.stylesheets.length(), content="1")
+  inspect(doc.stylesheets[0].contains("img.hero"), content="true")
+  inspect(doc.stylesheets[0].contains("data-sd-img"), content="false")
+}
+
+///|
 test "parse_document with link stylesheet" {
   let html =
     #|<html>

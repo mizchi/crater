@@ -2047,6 +2047,46 @@ test "CSS @media print rules do not apply in screen context" {
 }
 
 ///|
+test "style media attribute max-width rules do not leak at desktop viewport" {
+  let html =
+    #|<html><head>
+    #|<style>
+    #|.nav { display: flex; height: 113px; }
+    #|.hamburger { display: none; height: 20px; }
+    #|</style>
+    #|<style media="(max-width: 540px)">
+    #|.nav { height: 97px; }
+    #|.hamburger { display: flex; }
+    #|</style>
+    #|</head><body>
+    #|<div class="nav" id="nav"><button class="hamburger" id="hamburger"></button></div>
+    #|</body></html>
+  let desktop_ctx : @renderer.RenderContext = {
+    ..@renderer.RenderContext::default(),
+    viewport_width: 1440.0,
+    viewport_height: 900.0,
+  }
+  let desktop_node = @renderer.render_to_node(html, desktop_ctx)
+  let desktop_nav = desktop_node.children[0]
+  let desktop_hamburger = desktop_nav.children[0]
+  inspect(desktop_nav.style.height, content="Length(113)")
+  inspect(desktop_hamburger.style.display, content="None")
+  let desktop_layout = @renderer.render(html, desktop_ctx)
+  inspect(desktop_layout.children[0].height, content="113")
+
+  let mobile_ctx : @renderer.RenderContext = {
+    ..@renderer.RenderContext::default(),
+    viewport_width: 375.0,
+    viewport_height: 667.0,
+  }
+  let mobile_node = @renderer.render_to_node(html, mobile_ctx)
+  let mobile_nav = mobile_node.children[0]
+  let mobile_hamburger = mobile_nav.children[0]
+  inspect(mobile_nav.style.height, content="Length(97)")
+  inspect(mobile_hamburger.style.display, content="Flex")
+}
+
+///|
 test "CSS descendant selector from html class hides nested element" {
   let html =
     #|<html class="feature-pinned-disabled"><head><style>

@@ -3709,6 +3709,28 @@ test "contain_size_img_attr_ratio_keeps_auto_height" {
 }
 
 ///|
+test "img_css_width_with_attr_dimensions_uses_aspect_ratio_height" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; } .frame { width: 600px; } .hero { display: block; width: 300px; height: auto; }</style>
+    #|<div class="frame"><img class="hero" width="1926" height="1800" src="hero.png"></div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let frame_node = root.children[0]
+  let img_node = frame_node.children[0]
+  inspect(img_node.style.width, content="Length(300)")
+  inspect(img_node.style.height, content="Auto")
+
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let frame = layout.children[0]
+  let img = frame.children[0]
+  inspect(img.width, content="300")
+  assert_true((img.height - 280.37).abs() < 0.5)
+}
+
+///|
 test "parse_aspect_ratio_transferred_max_size_style" {
   let html_str =
     #|<!DOCTYPE html>
@@ -6549,6 +6571,79 @@ test "wpt_flex_child_percent_basis_resize_1_like" {
   inspect(flex_item.height, content="100")
   inspect(scroll_outer.height, content="100")
   inspect(scroll_inner.height, content="100")
+}
+
+///|
+test "body child percent height stays auto when body height is indefinite" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|  body { margin: 0; min-height: 100vh; }
+    #|  #page {
+    #|    display: flex;
+    #|    flex-direction: column;
+    #|    height: 100%;
+    #|    min-height: 100vh;
+    #|    overflow: clip;
+    #|  }
+    #|  #content { height: 1200px; }
+    #|</style>
+    #|<div id="page"><div id="content"></div></div>
+  let ctx : @renderer.RenderContext = {
+    ..@renderer.RenderContext::default(),
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = @renderer.render(html_str, ctx)
+  let page = layout.children[0]
+  let content = page.children[0]
+  inspect(page.id, content="div#page")
+  inspect(content.height, content="1200")
+  guard page.height > 1100.0 else {
+    fail(
+      "height:100% child under indefinite body height should use content height",
+    )
+  }
+}
+
+///|
+test "studio flex root percent height expands under auto wrapper" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|  body { margin: 0; }
+    #|  .StudioCanvas {
+    #|    display: flex;
+    #|    min-height: 100dvh;
+    #|  }
+    #|  .StudioCanvas > .root {
+    #|    min-height: 100dvh;
+    #|  }
+    #|  .root {
+    #|    display: flex;
+    #|    flex-direction: column;
+    #|    height: 100%;
+    #|    overflow: clip;
+    #|    padding-top: 1px;
+    #|    width: 100%;
+    #|  }
+    #|  .content { height: 6622px; }
+    #|</style>
+    #|<div class="StudioCanvas"><div class="root"><main class="content"></main></div></div>
+  let ctx : @renderer.RenderContext = {
+    ..@renderer.RenderContext::default(),
+    viewport_width: 1440.0,
+    viewport_height: 900.0,
+  }
+  let layout = @renderer.render(html_str, ctx)
+  let canvas = layout.children[0]
+  let root = canvas.children[0]
+  let content = root.children[0]
+  inspect(root.id, content="div.root")
+  inspect(content.height, content="6622")
+  guard root.height > 6600.0 else {
+    fail("dynamic viewport min-height should not clip Studio root to padding")
+  }
 }
 
 ///|

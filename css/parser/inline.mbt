@@ -9,6 +9,16 @@ let default_viewport_width : Double = 1000.0
 let default_viewport_height : Double = 1000.0
 
 ///|
+fn is_viewport_width_unit(unit : String) -> Bool {
+  unit == "vw" || unit == "dvw" || unit == "svw" || unit == "lvw"
+}
+
+///|
+fn is_viewport_height_unit(unit : String) -> Bool {
+  unit == "vh" || unit == "dvh" || unit == "svh" || unit == "lvh"
+}
+
+///|
 /// Parse a calc() expression and try to simplify it to a Dimension
 /// Returns Some(dimension) if simplification is possible, None otherwise
 fn parse_calc_expression(
@@ -95,7 +105,7 @@ fn parse_calc_expression(
 
 ///|
 /// Parse a dimension value (length, percent, auto)
-/// vh/vw are converted to Length using default viewport (1000x1000)
+/// viewport units are converted to Length using default viewport (1000x1000)
 fn parse_dimension(tokens : ArrayView[@token.Token]) -> @types.Dimension? {
   if tokens.length() == 0 {
     return None
@@ -116,11 +126,11 @@ fn parse_dimension(tokens : ArrayView[@token.Token]) -> @types.Dimension? {
         Some(@types.Length(value))
       } else if unit == "%" {
         Some(@types.Percent(value / 100.0))
-      } else if unit == "vw" {
-        // Convert vw to pixels using default viewport width
+      } else if is_viewport_width_unit(unit) {
+        // Convert viewport width units to pixels using default viewport width
         Some(@types.Length(value * default_viewport_width / 100.0))
-      } else if unit == "vh" {
-        // Convert vh to pixels using default viewport height
+      } else if is_viewport_height_unit(unit) {
+        // Convert viewport height units to pixels using default viewport height
         Some(@types.Length(value * default_viewport_height / 100.0))
       } else if unit == "em" || unit == "rem" {
         // em/rem treated as 16px multiplier for now

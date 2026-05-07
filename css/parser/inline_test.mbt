@@ -707,6 +707,19 @@ test "parse vh and vw units" {
 }
 
 ///|
+test "parse dynamic viewport units" {
+  let style = parse_inline_style(
+    "width: 50dvw; min-width: 25svw; max-width: 10lvw; height: 100dvh; min-height: 50svh; max-height: 25lvh",
+  )
+  inspect(style.width, content="Length(500)")
+  inspect(style.min_width, content="Length(250)")
+  inspect(style.max_width, content="Length(100)")
+  inspect(style.height, content="Length(1000)")
+  inspect(style.min_height, content="Length(500)")
+  inspect(style.max_height, content="Length(250)")
+}
+
+///|
 test "parse em and rem units" {
   let style = parse_inline_style("width: 2em; height: 1.5rem")
   // 2em = 2 * 16px = 32px

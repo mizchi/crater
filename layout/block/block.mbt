@@ -4890,7 +4890,16 @@ fn compute_with_collapse(
         // Keep parent content height as the percentage basis.
         // The float node itself resolves its own percentage height later.
         child_available_height
-      _ => child_available_height
+      _ =>
+        match child_available_height {
+          Some(_) => child_available_height
+          None =>
+            if has_percent_sized_replaced_descendant(child) {
+              Some(ctx.viewport_height)
+            } else {
+              None
+            }
+        }
     }
 
     let @node.DispatchFn(keyword_dispatch_fn) = dispatch

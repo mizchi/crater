@@ -3233,6 +3233,132 @@ test "min_content_block_width_uses_stretched_aspect_ratio_flex_child" {
 }
 
 ///|
+test "column_percent_height_with_indefinite_parent_uses_content_height" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    height: @types.Length(1200.0),
+  })
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      display: @types.Flex,
+      flex_direction: @types.Column,
+      height: @types.Percent(1.0),
+      min_height: @types.Length(600.0),
+    },
+    [child],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 800.0,
+    available_height: None,
+    sizing_mode: @types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.height, content="1200")
+  inspect(layout.children[0].height, content="1200")
+}
+
+///|
+test "column_percent_height_with_indefinite_parent_and_clip_includes_content" {
+  let default_style = @style.Style::default()
+  let child = @node.Node::leaf("child", {
+    ..default_style,
+    height: @types.Length(6622.0),
+  })
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      display: @types.Flex,
+      flex_direction: @types.Column,
+      height: @types.Percent(1.0),
+      overflow_x: @types.Clip,
+      overflow_y: @types.Clip,
+      padding: {
+        top: @types.Length(1.0),
+        right: @types.Length(0.0),
+        bottom: @types.Length(0.0),
+        left: @types.Length(0.0),
+      },
+    },
+    [child],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 1440.0,
+    available_height: None,
+    sizing_mode: @types.Definite,
+    viewport_width: 1440.0,
+    viewport_height: 900.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  inspect(layout.height, content="6623")
+  inspect(layout.children[0].y, content="1")
+  inspect(layout.children[0].height, content="6622")
+}
+
+///|
+test "row_flex_min_height_parent_percent_cross_child_uses_content_height" {
+  let default_style = @style.Style::default()
+  let content = @node.Node::leaf("content", {
+    ..default_style,
+    height: @types.Length(6622.0),
+  })
+  let root = @node.Node::new(
+    "root",
+    {
+      ..default_style,
+      display: @types.Flex,
+      flex_direction: @types.Column,
+      width: @types.Percent(1.0),
+      height: @types.Percent(1.0),
+      min_height: @types.Length(900.0),
+      overflow_x: @types.Clip,
+      overflow_y: @types.Clip,
+      padding: {
+        top: @types.Length(1.0),
+        right: @types.Length(0.0),
+        bottom: @types.Length(0.0),
+        left: @types.Length(0.0),
+      },
+    },
+    [content],
+  )
+  let canvas = @node.Node::new(
+    "canvas",
+    {
+      ..default_style,
+      display: @types.Flex,
+      width: @types.Length(1440.0),
+      min_height: @types.Length(900.0),
+    },
+    [root],
+  )
+  let ctx : @types.LayoutContext = {
+    available_width: 1440.0,
+    available_height: None,
+    sizing_mode: @types.Definite,
+    viewport_width: 1440.0,
+    viewport_height: 900.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(canvas, ctx, default_dispatch())
+  let root_layout = layout.children[0]
+  inspect(layout.height, content="6623")
+  inspect(root_layout.height, content="6623")
+  inspect(root_layout.children[0].y, content="1")
+  inspect(root_layout.children[0].height, content="6622")
+}
+
+///|
 test "inline_flex_intrinsic_width_uses_stretched_canvas_percent_height" {
   // Mirrors css-flexbox/aspect-ratio-intrinsic-size-001.html:
   // inline-flex has a definite height, its auto-height flex item stretches,

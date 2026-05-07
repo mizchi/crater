@@ -27,6 +27,78 @@ fn view_to_string(v : StringView) -> String {
 }
 
 ///|
+fn parse_number_with_suffix(value : String, suffix : String) -> Double? {
+  match value.strip_suffix(suffix) {
+    Some(num_str) => {
+      let n = @string.parse_double(num_str.to_string()) catch {
+        _ => return None
+      }
+      Some(n)
+    }
+    None => None
+  }
+}
+
+///|
+fn resolve_viewport_unit_px(value : String, ctx : ComputeContext) -> Double? {
+  match parse_number_with_suffix(value, "dvw") {
+    Some(n) => return Some(n * ctx.viewport_width / 100.0)
+    None => ()
+  }
+  match parse_number_with_suffix(value, "svw") {
+    Some(n) => return Some(n * ctx.viewport_width / 100.0)
+    None => ()
+  }
+  match parse_number_with_suffix(value, "lvw") {
+    Some(n) => return Some(n * ctx.viewport_width / 100.0)
+    None => ()
+  }
+  match parse_number_with_suffix(value, "vw") {
+    Some(n) => return Some(n * ctx.viewport_width / 100.0)
+    None => ()
+  }
+  match parse_number_with_suffix(value, "dvh") {
+    Some(n) => return Some(n * ctx.viewport_height / 100.0)
+    None => ()
+  }
+  match parse_number_with_suffix(value, "svh") {
+    Some(n) => return Some(n * ctx.viewport_height / 100.0)
+    None => ()
+  }
+  match parse_number_with_suffix(value, "lvh") {
+    Some(n) => return Some(n * ctx.viewport_height / 100.0)
+    None => ()
+  }
+  match parse_number_with_suffix(value, "vh") {
+    Some(n) => return Some(n * ctx.viewport_height / 100.0)
+    None => ()
+  }
+  match parse_number_with_suffix(value, "vmin") {
+    Some(n) => {
+      let min_dimension = if ctx.viewport_width < ctx.viewport_height {
+        ctx.viewport_width
+      } else {
+        ctx.viewport_height
+      }
+      return Some(n * min_dimension / 100.0)
+    }
+    None => ()
+  }
+  match parse_number_with_suffix(value, "vmax") {
+    Some(n) => {
+      let max_dimension = if ctx.viewport_width > ctx.viewport_height {
+        ctx.viewport_width
+      } else {
+        ctx.viewport_height
+      }
+      return Some(n * max_dimension / 100.0)
+    }
+    None => ()
+  }
+  None
+}
+
+///|
 pub fn ComputeContext::new() -> ComputeContext {
   {
     parent_style: None,
@@ -2953,74 +3025,38 @@ fn parse_calc_terms(expr : String, ctx : ComputeContext) -> (Double, Double)? {
                 _ => return None
               }
               Some(n)
-            } else if token.has_suffix("vw") {
-              let num_str = view_to_string(
-                token.view(end_offset=token.length() - 2),
-              )
-              let n = @string.parse_double(num_str.to_string()) catch {
-                _ => return None
-              }
-              Some(n * ctx.viewport_width / 100.0)
-            } else if token.has_suffix("vh") {
-              let num_str = view_to_string(
-                token.view(end_offset=token.length() - 2),
-              )
-              let n = @string.parse_double(num_str.to_string()) catch {
-                _ => return None
-              }
-              Some(n * ctx.viewport_height / 100.0)
-            } else if token.has_suffix("vmin") {
-              let num_str = view_to_string(
-                token.view(end_offset=token.length() - 4),
-              )
-              let n = @string.parse_double(num_str.to_string()) catch {
-                _ => return None
-              }
-              let min_dimension = if ctx.viewport_width < ctx.viewport_height {
-                ctx.viewport_width
-              } else {
-                ctx.viewport_height
-              }
-              Some(n * min_dimension / 100.0)
-            } else if token.has_suffix("vmax") {
-              let num_str = view_to_string(
-                token.view(end_offset=token.length() - 4),
-              )
-              let n = @string.parse_double(num_str.to_string()) catch {
-                _ => return None
-              }
-              let max_dimension = if ctx.viewport_width > ctx.viewport_height {
-                ctx.viewport_width
-              } else {
-                ctx.viewport_height
-              }
-              Some(n * max_dimension / 100.0)
-            } else if token.has_suffix("rem") {
-              let num_str = view_to_string(
-                token.view(end_offset=token.length() - 3),
-              )
-              let n = @string.parse_double(num_str.to_string()) catch {
-                _ => return None
-              }
-              Some(n * ctx.root_font_size)
-            } else if token.has_suffix("em") {
-              let num_str = view_to_string(
-                token.view(end_offset=token.length() - 2),
-              )
-              let n = @string.parse_double(num_str.to_string()) catch {
-                _ => return None
-              }
-              Some(n * ctx.font_size)
-            } else if token.has_suffix("pt") {
-              let num_str = view_to_string(
-                token.view(end_offset=token.length() - 2),
-              )
-              let n = @string.parse_double(num_str.to_string()) catch {
-                _ => return None
-              }
-              Some(n * 96.0 / 72.0)
             } else {
-              None
+              match resolve_viewport_unit_px(view_to_string(token), ctx) {
+                Some(n) => Some(n)
+                None =>
+                  if token.has_suffix("rem") {
+                    let num_str = view_to_string(
+                      token.view(end_offset=token.length() - 3),
+                    )
+                    let n = @string.parse_double(num_str.to_string()) catch {
+                      _ => return None
+                    }
+                    Some(n * ctx.root_font_size)
+                  } else if token.has_suffix("em") {
+                    let num_str = view_to_string(
+                      token.view(end_offset=token.length() - 2),
+                    )
+                    let n = @string.parse_double(num_str.to_string()) catch {
+                      _ => return None
+                    }
+                    Some(n * ctx.font_size)
+                  } else if token.has_suffix("pt") {
+                    let num_str = view_to_string(
+                      token.view(end_offset=token.length() - 2),
+                    )
+                    let n = @string.parse_double(num_str.to_string()) catch {
+                      _ => return None
+                    }
+                    Some(n * 96.0 / 72.0)
+                  } else {
+                    None
+                  }
+              }
             }
             match resolved_px {
               Some(n) =>
@@ -3399,57 +3435,9 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
     None => ()
   }
 
-  // Handle vw units
-  match v.strip_suffix("vw") {
-    Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
-        _ => return @types.Dimension::Auto
-      }
-      return @types.Dimension::Length(n * ctx.viewport_width / 100.0)
-    }
-    None => ()
-  }
-
-  // Handle vh units
-  match v.strip_suffix("vh") {
-    Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
-        _ => return @types.Dimension::Auto
-      }
-      return @types.Dimension::Length(n * ctx.viewport_height / 100.0)
-    }
-    None => ()
-  }
-
-  // Handle vmin units (smaller of vw or vh)
-  match v.strip_suffix("vmin") {
-    Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
-        _ => return @types.Dimension::Auto
-      }
-      let min_dimension = if ctx.viewport_width < ctx.viewport_height {
-        ctx.viewport_width
-      } else {
-        ctx.viewport_height
-      }
-      return @types.Dimension::Length(n * min_dimension / 100.0)
-    }
-    None => ()
-  }
-
-  // Handle vmax units (larger of vw or vh)
-  match v.strip_suffix("vmax") {
-    Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
-        _ => return @types.Dimension::Auto
-      }
-      let max_dimension = if ctx.viewport_width > ctx.viewport_height {
-        ctx.viewport_width
-      } else {
-        ctx.viewport_height
-      }
-      return @types.Dimension::Length(n * max_dimension / 100.0)
-    }
+  // Handle viewport units
+  match resolve_viewport_unit_px(v, ctx) {
+    Some(px) => return @types.Dimension::Length(px)
     None => ()
   }
 
@@ -3883,7 +3871,13 @@ fn is_flex_basis_value(s : String) -> Bool {
   v.has_suffix("px") ||
   v.has_suffix("em") ||
   v.has_suffix("rem") ||
+  v.has_suffix("dvw") ||
+  v.has_suffix("svw") ||
+  v.has_suffix("lvw") ||
   v.has_suffix("vw") ||
+  v.has_suffix("dvh") ||
+  v.has_suffix("svh") ||
+  v.has_suffix("lvh") ||
   v.has_suffix("vh")
 }
 
