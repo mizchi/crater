@@ -336,6 +336,149 @@ test.describe("Crater Playwright adapter package", () => {
     expect(screenshot.readUInt32BE(20)).toBeGreaterThan(180);
   });
 
+  test("fullPage screenshot caps very tall documents without moving scroll position", async () => {
+    await page.setViewport(320, 180);
+    await page.setContent(`
+      <html>
+        <body style="margin:0;background:#fff">
+          <div style="width:320px;height:18000px;background:#fff"></div>
+          <div style="width:320px;height:20px;background:#000"></div>
+        </body>
+      </html>
+    `);
+    await page.evaluate(() => {
+      window.scrollTo(0, 640);
+    });
+
+    const before = await page.evaluate(() => ({
+      x: window.scrollX,
+      y: window.scrollY,
+      top: document.scrollingElement?.scrollTop ?? 0,
+      left: document.scrollingElement?.scrollLeft ?? 0,
+    }));
+    const screenshot = await page.screenshot({ fullPage: true, timeout: 1000, type: "png" });
+    const after = await page.evaluate(() => ({
+      x: window.scrollX,
+      y: window.scrollY,
+      top: document.scrollingElement?.scrollTop ?? 0,
+      left: document.scrollingElement?.scrollLeft ?? 0,
+    }));
+
+    expect({
+      width: screenshot.readUInt32BE(16),
+      height: screenshot.readUInt32BE(20),
+    }).toEqual({
+      width: 320,
+      height: 16384,
+    });
+    expect(after).toEqual(before);
+  });
+
+  test("fullPage screenshot observes lazy images loaded by scroll stabilization", async () => {
+    const server = await createLocalFixtureServer();
+    try {
+      await page.setViewport(320, 180);
+      const observedEvents: string[] = [];
+      const pageUrl = server.serve(
+        "/capture/lazy-fullpage.html",
+        `<!doctype html>
+        <html>
+          <body style="margin:0;background:#fff">
+            <div style="height:260px;background:#fff"></div>
+            <img
+              id="lazy"
+              loading="lazy"
+              alt="lazy"
+              width="320"
+              height="80"
+              style="display:block;width:320px;height:80px"
+            />
+            <div style="height:220px;background:#fff"></div>
+            <script>
+              window.addEventListener("scroll", () => {
+                const image = document.getElementById("lazy");
+                if (image && !image.getAttribute("src") && window.scrollY >= 180) {
+                  image.src = "/assets/lazy.svg?from=scroll";
+                }
+              });
+            </script>
+          </body>
+        </html>`,
+      );
+      await page.route(/\/assets\/lazy\.svg(?:\?.*)?$/, async (route) => {
+        observedEvents.push(`route:${new URL(route.request().url()).pathname}`);
+        await route.fulfill({
+          contentType: "image/svg+xml",
+          body: `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="80"><rect width="320" height="80" fill="#111"/></svg>`,
+        });
+      });
+      page.on("request", (request) => {
+        if (request.url().includes("/assets/lazy.svg")) {
+          observedEvents.push(`request:${new URL(request.url()).pathname}`);
+        }
+      });
+      page.on("response", (response) => {
+        if (response.url().includes("/assets/lazy.svg")) {
+          observedEvents.push(`response:${new URL(response.url()).pathname}:${response.status()}`);
+        }
+      });
+
+      await page.loadPage(pageUrl);
+      const lazyResponse = page.waitForResponse(
+        (response) => response.url().includes("/assets/lazy.svg"),
+        { timeout: 1000 },
+      );
+
+      await page.evaluate(async () => {
+        const scrollHeight = document.scrollingElement?.scrollHeight ?? document.documentElement.scrollHeight;
+        const maxY = Math.max(0, scrollHeight - window.innerHeight);
+        for (let y = 0; y <= maxY; y += window.innerHeight) {
+          window.scrollTo(0, y);
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+        window.scrollTo(0, 0);
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      const response = await lazyResponse;
+      const screenshot = await page.screenshot({ fullPage: true, timeout: 1000, type: "png" });
+      const snapshot = await page.evaluate(() => {
+        const image = document.querySelector("#lazy") as HTMLImageElement;
+        return JSON.stringify({
+          complete: image.complete,
+          loading: image.loading,
+          scrollY: window.scrollY,
+          src: image.getAttribute("src"),
+        });
+      });
+
+      expect(response.status()).toBe(200);
+      expect({
+        width: screenshot.readUInt32BE(16),
+        height: screenshot.readUInt32BE(20),
+      }).toEqual({
+        width: 320,
+        height: expect.any(Number),
+      });
+      expect(screenshot.readUInt32BE(20)).toBeGreaterThan(180);
+      expect(JSON.parse(snapshot)).toEqual({
+        complete: true,
+        loading: "lazy",
+        scrollY: 0,
+        src: "/assets/lazy.svg?from=scroll",
+      });
+      expect(observedEvents).toEqual(
+        expect.arrayContaining([
+          "request:/assets/lazy.svg",
+          "route:/assets/lazy.svg",
+          "response:/assets/lazy.svg:200",
+        ]),
+      );
+    } finally {
+      await server.close();
+    }
+  });
+
   test("loadPage screenshot reflects script-mutated live DOM", async () => {
     const server = await createLocalFixtureServer();
     try {
@@ -451,6 +594,54 @@ test.describe("Crater Playwright adapter package", () => {
     expect(updated).toContain("theme=dark");
   });
 
+  test("goto commit returns final responses for redirects and HTTP errors", async () => {
+    const server = await createLocalFixtureServer();
+    try {
+      const finalUrl = server.serve(
+        "/redirect-target.html",
+        "<!doctype html><html><body><main id='status'>redirected</main></body></html>",
+      );
+      const redirectUrl = server.serve("/redirect.html", {
+        body: "",
+        status: 302,
+        headers: {
+          location: "/redirect-target.html",
+        },
+      });
+      const errorUrl = server.serve(
+        "/server-error.html",
+        {
+          body: "<!doctype html><html><body><main id='error'>server error</main></body></html>",
+          status: 500,
+        },
+      );
+
+      const redirectResponse = await page.goto(redirectUrl, {
+        waitUntil: "commit",
+        timeout: 1000,
+      });
+
+      expect(redirectResponse?.url()).toBe(finalUrl);
+      expect(redirectResponse?.status()).toBe(200);
+      expect(redirectResponse?.ok()).toBe(true);
+      expect(page.url()).toBe(finalUrl);
+      await expect(page.locator("#status").textContent()).resolves.toBe("redirected");
+
+      const errorResponse = await page.goto(errorUrl, {
+        waitUntil: "commit",
+        timeout: 1000,
+      });
+
+      expect(errorResponse?.url()).toBe(errorUrl);
+      expect(errorResponse?.status()).toBe(500);
+      expect(errorResponse?.ok()).toBe(false);
+      expect(page.url()).toBe(errorUrl);
+      await expect(page.locator("#error").textContent()).resolves.toBe("server error");
+    } finally {
+      await server.close();
+    }
+  });
+
   test("page scripts can fetch CORS-allowed cross-origin resources", async () => {
     const pageServer = await createLocalFixtureServer();
     const apiServer = await createLocalFixtureServer();
@@ -476,6 +667,344 @@ test.describe("Crater Playwright adapter package", () => {
       expect(result).toBe('200:{"ok":true}');
     } finally {
       await Promise.all([pageServer.close(), apiServer.close()]);
+    }
+  });
+
+  test("routes RegExp subresources and waits for networkidle across scripts styles images and fetch", async () => {
+    const server = await createLocalFixtureServer();
+    try {
+      const styleUrl = server.serve(
+        "/capture/style.css",
+        {
+          body: "body { background: rgb(255, 255, 255); }",
+          contentType: "text/css; charset=utf-8",
+        },
+      );
+      const imageUrl = server.serve(
+        "/capture/logo.svg",
+        {
+          body: `<svg xmlns="http://www.w3.org/2000/svg" width="2" height="2"></svg>`,
+          contentType: "image/svg+xml",
+        },
+      );
+      const continuedScriptUrl = server.serve(
+        "/capture/continued-script.js",
+        {
+          body: `document.body.setAttribute("data-continued-script", "yes");`,
+          contentType: "text/javascript; charset=utf-8",
+        },
+      );
+      const fulfilledScriptUrl = `${server.origin}/capture/fulfilled-script.js`;
+      const blockedApiUrl = `${server.origin}/capture/blocked-api`;
+      const pageUrl = server.serve(
+        "/capture/studio-smoke.html",
+        `<!doctype html>
+        <html>
+          <head>
+            <link rel="stylesheet" href="/capture/style.css">
+          </head>
+          <body>
+            <main id="status">pending</main>
+            <img id="logo" src="/capture/logo.svg" alt="logo">
+            <script src="/capture/fulfilled-script.js"></script>
+            <script src="/capture/continued-script.js"></script>
+            <script>
+              fetch("/capture/blocked-api")
+                .then(() => {
+                  document.body.setAttribute("data-blocked-api", "unexpected");
+                })
+                .catch((error) => {
+                  document.body.setAttribute("data-blocked-api", error.message);
+                });
+            </script>
+          </body>
+        </html>`,
+      );
+
+      await page.route(/\/capture\/fulfilled-script\.js$/, async (route) => {
+        await route.fulfill({
+          contentType: "text/javascript; charset=utf-8",
+          body: `
+            document.body.setAttribute("data-fulfilled-script", "yes");
+            document.getElementById("status").textContent = "fulfilled";
+          `,
+        });
+      });
+      await page.route(/\/capture\/continued-script\.js$/, async (route) => {
+        await route.continue();
+      });
+      await page.route(/\/capture\/blocked-api$/, async (route) => {
+        await route.abort("blocked-by-test");
+      });
+
+      const observedEvents: string[] = [];
+      page.on("request", (request) => {
+        observedEvents.push(`request:${new URL(request.url()).pathname}`);
+      });
+      page.on("response", (response) => {
+        observedEvents.push(`response:${new URL(response.url()).pathname}:${response.status()}`);
+      });
+      page.on("requestfailed", (failure) => {
+        observedEvents.push(`requestfailed:${new URL(failure.request().url()).pathname}:${failure.errorText()}`);
+      });
+
+      const styleResponse = page.waitForResponse(styleUrl);
+      const imageResponse = page.waitForResponse(imageUrl);
+      const fulfilledResponse = page.waitForResponse(fulfilledScriptUrl);
+      const continuedResponse = page.waitForResponse(continuedScriptUrl);
+      const blockedFailure = page.waitForEvent("requestfailed", {
+        predicate: (failure) => failure.request().url() === blockedApiUrl,
+        timeout: 3000,
+      });
+
+      const response = await page.goto(pageUrl, {
+        waitUntil: "networkidle",
+        timeout: 3000,
+      });
+      await page.waitForLoadState("networkidle", { timeout: 3000 });
+
+      const [style, image, fulfilled, continued, blocked] = await Promise.all([
+        styleResponse,
+        imageResponse,
+        fulfilledResponse,
+        continuedResponse,
+        blockedFailure,
+      ]);
+
+      expect(response?.status()).toBe(200);
+      expect(style.status()).toBe(200);
+      expect(image.status()).toBe(200);
+      expect(fulfilled.status()).toBe(200);
+      expect(continued.status()).toBe(200);
+      expect(blocked.errorText()).toBe("blocked-by-test");
+      await expect(page.locator("#status").textContent()).resolves.toBe("fulfilled");
+      await expect(page.locator("body").getAttribute("data-fulfilled-script")).resolves.toBe("yes");
+      await expect(page.locator("body").getAttribute("data-continued-script")).resolves.toBe("yes");
+      await expect(page.locator("body").getAttribute("data-blocked-api")).resolves.toBe("blocked-by-test");
+
+      expect(observedEvents).toEqual(
+        expect.arrayContaining([
+          "request:/capture/style.css",
+          "response:/capture/style.css:200",
+          "request:/capture/logo.svg",
+          "response:/capture/logo.svg:200",
+          "request:/capture/fulfilled-script.js",
+          "response:/capture/fulfilled-script.js:200",
+          "request:/capture/continued-script.js",
+          "response:/capture/continued-script.js:200",
+          "request:/capture/blocked-api",
+          "requestfailed:/capture/blocked-api:blocked-by-test",
+        ]),
+      );
+    } finally {
+      await server.close();
+    }
+  });
+
+  test("loads linked stylesheets before layout capture", async () => {
+    const server = await createLocalFixtureServer();
+    try {
+      server.serve(
+        "/assets/theme.css",
+        {
+          body: `
+            #hero {
+              width: 96px;
+              height: 32px;
+              left: 14px;
+              top: 9px;
+            }
+          `,
+          contentType: "text/css; charset=utf-8",
+        },
+      );
+      const pageUrl = server.serve(
+        "/stylesheet-page.html",
+        `<!doctype html>
+        <html>
+          <head>
+            <link rel="stylesheet" href="/assets/theme.css">
+          </head>
+          <body>
+            <main id="hero">styled</main>
+          </body>
+        </html>`,
+      );
+
+      await page.loadPage(pageUrl);
+
+      const snapshot = await page.evaluate(() => {
+        const hero = document.querySelector("#hero") as HTMLElement;
+        const rect = hero.getBoundingClientRect();
+        return JSON.stringify({
+          height: rect.height,
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+        });
+      });
+
+      expect(JSON.parse(snapshot)).toEqual({
+        height: 32,
+        left: 14,
+        top: 9,
+        width: 96,
+      });
+    } finally {
+      await server.close();
+    }
+  });
+
+  test("loads font URLs from linked stylesheets through route hooks", async () => {
+    const server = await createLocalFixtureServer();
+    try {
+      server.serve(
+        "/assets/theme.css",
+        {
+          body: `
+            @font-face {
+              font-family: "StudioFixture";
+              src: url("./studio-fixture.woff2") format("woff2");
+            }
+            #hero {
+              font-family: "StudioFixture";
+              width: 96px;
+              height: 32px;
+            }
+          `,
+          contentType: "text/css; charset=utf-8",
+        },
+      );
+      const pageUrl = server.serve(
+        "/capture/font-page.html",
+        `<!doctype html>
+        <html>
+          <head>
+            <link rel="stylesheet" href="/assets/theme.css">
+          </head>
+          <body>
+            <main id="hero">font</main>
+          </body>
+        </html>`,
+      );
+
+      const observedEvents: string[] = [];
+      page.on("request", (request) => {
+        observedEvents.push(`request:${new URL(request.url()).pathname}`);
+      });
+      page.on("response", (response) => {
+        observedEvents.push(`response:${new URL(response.url()).pathname}:${response.status()}`);
+      });
+      await page.route(/\/assets\/studio-fixture\.woff2$/, async (route) => {
+        await route.fulfill({
+          contentType: "font/woff2",
+          body: "fixture-font",
+        });
+      });
+
+      const styleResponse = page.waitForResponse(`${server.origin}/assets/theme.css`);
+      const fontResponse = page.waitForResponse(`${server.origin}/assets/studio-fixture.woff2`);
+      await page.goto(pageUrl, { waitUntil: "networkidle", timeout: 3000 });
+      const [style, font] = await Promise.all([styleResponse, fontResponse]);
+
+      expect(style.status()).toBe(200);
+      expect(font.status()).toBe(200);
+      expect(observedEvents).toEqual(
+        expect.arrayContaining([
+          "request:/assets/theme.css",
+          "response:/assets/theme.css:200",
+          "request:/assets/studio-fixture.woff2",
+          "response:/assets/studio-fixture.woff2:200",
+        ]),
+      );
+    } finally {
+      await server.close();
+    }
+  });
+
+  test("executes module scripts with static and dynamic imports during page load", async () => {
+    const server = await createLocalFixtureServer();
+    try {
+      server.serve(
+        "/assets/nested/value.js",
+        {
+          body: `export const value = "static-value";`,
+          contentType: "text/javascript; charset=utf-8",
+        },
+      );
+      server.serve(
+        "/assets/dynamic.js",
+        {
+          body: `export default "dynamic-value";`,
+          contentType: "text/javascript; charset=utf-8",
+        },
+      );
+      server.serve(
+        "/assets/app.js",
+        {
+          body: `
+            import { value } from "./nested/value.js";
+            const dynamic = await import("./dynamic.js");
+            document.body.setAttribute("data-module", value + ":" + dynamic.default);
+          `,
+          contentType: "text/javascript; charset=utf-8",
+        },
+      );
+      const pageUrl = server.serve(
+        "/capture/module-page.html",
+        `<!doctype html>
+        <html>
+          <body>
+            <main id="hero">module</main>
+            <script type="module" src="/assets/app.js"></script>
+          </body>
+        </html>`,
+      );
+
+      const observedEvents: string[] = [];
+      page.on("request", (request) => {
+        observedEvents.push(`request:${new URL(request.url()).pathname}`);
+      });
+      page.on("response", (response) => {
+        observedEvents.push(`response:${new URL(response.url()).pathname}:${response.status()}`);
+      });
+      await page.route(/\/assets\/.*\.js(?:\?.*)?$/, async (route) => {
+        await route.continue();
+      });
+
+      const appResponse = page.waitForResponse(`${server.origin}/assets/app.js`);
+      const staticResponse = page.waitForResponse((response) =>
+        new URL(response.url()).pathname === "/assets/nested/value.js"
+      );
+      const dynamicResponse = page.waitForResponse((response) =>
+        new URL(response.url()).pathname === "/assets/dynamic.js"
+      );
+
+      await page.goto(pageUrl, { waitUntil: "networkidle", timeout: 3000 });
+      const [app, staticImport, dynamicImport] = await Promise.all([
+        appResponse,
+        staticResponse,
+        dynamicResponse,
+      ]);
+
+      expect(app.status()).toBe(200);
+      expect(staticImport.status()).toBe(200);
+      expect(dynamicImport.status()).toBe(200);
+      await expect(page.locator("body").getAttribute("data-module")).resolves.toBe(
+        "static-value:dynamic-value",
+      );
+      expect(observedEvents).toEqual(
+        expect.arrayContaining([
+          "request:/assets/app.js",
+          "response:/assets/app.js:200",
+          "request:/assets/nested/value.js",
+          "response:/assets/nested/value.js:200",
+          "request:/assets/dynamic.js",
+          "response:/assets/dynamic.js:200",
+        ]),
+      );
+    } finally {
+      await server.close();
     }
   });
 
@@ -610,6 +1139,39 @@ test.describe("Crater Playwright adapter package", () => {
         selfIsWindow: true,
       },
       timer: "done",
+    });
+  });
+
+  test("runs hydration microtasks before timer callbacks", async () => {
+    await page.setContent(`
+      <html>
+        <body>
+          <script>
+            const order = [];
+            Promise.resolve().then(() => order.push("promise"));
+            queueMicrotask(() => order.push("microtask"));
+            setTimeout(() => {
+              order.push("timeout");
+              document.body.dataset.order = order.join(",");
+            }, 0);
+            document.body.dataset.syncOrder = order.join(",");
+          </script>
+        </body>
+      </html>
+    `);
+
+    await page.waitForFunction(() => document.body.dataset.order === "promise,microtask,timeout", {
+      timeout: 1000,
+    });
+
+    const snapshot = await page.evaluate(() => JSON.stringify({
+      order: document.body.dataset.order,
+      syncOrder: document.body.dataset.syncOrder,
+    }));
+
+    expect(JSON.parse(snapshot)).toEqual({
+      order: "promise,microtask,timeout",
+      syncOrder: "",
     });
   });
 
@@ -868,6 +1430,54 @@ test.describe("Crater Playwright adapter package", () => {
     });
   });
 
+  test("provides ResizeObserver callbacks for layout hydration code", async () => {
+    await page.setContent(`
+      <html>
+        <body style="margin:0">
+          <div id="hero" style="width:120px;height:60px"></div>
+        </body>
+      </html>
+    `);
+
+    const snapshot = await page.evaluate(async () => {
+      return await new Promise<string>((resolve) => {
+        const target = document.querySelector("#hero")!;
+        const observer = new ResizeObserver((entries) => {
+          const entry = entries[0];
+          const pending = observer.takeRecords();
+          observer.unobserve(target);
+          observer.disconnect();
+          resolve(JSON.stringify({
+            callbackCount: entries.length,
+            ctor: typeof ResizeObserver,
+            contentHeight: entry.contentRect.height,
+            contentWidth: entry.contentRect.width,
+            targetMatches: entry.target === target,
+            borderInline: entry.borderBoxSize[0].inlineSize,
+            borderBlock: entry.borderBoxSize[0].blockSize,
+            contentInline: entry.contentBoxSize[0].inlineSize,
+            devicePixelInline: entry.devicePixelContentBoxSize[0].inlineSize,
+            pending: pending.length,
+          }));
+        });
+        observer.observe(target);
+      });
+    });
+
+    expect(JSON.parse(snapshot)).toEqual({
+      callbackCount: 1,
+      ctor: "function",
+      contentHeight: 60,
+      contentWidth: 120,
+      targetMatches: true,
+      borderInline: 120,
+      borderBlock: 60,
+      contentInline: 120,
+      devicePixelInline: 120,
+      pending: 0,
+    });
+  });
+
   test("provides DOMParser text/html documents for rich text hydration", async () => {
     await page.setContent("<html><body>DOMParser host</body></html>");
 
@@ -990,6 +1600,75 @@ test.describe("Crater Playwright adapter package", () => {
       textIsText: true,
       textareaIsInput: false,
       textareaIsTextarea: true,
+    });
+  });
+
+  test("supports autonomous customElements lifecycle used by hydration code", async () => {
+    await page.setContent(`
+      <html>
+        <body>
+          <x-studio-card id="existing" data-mode="initial"></x-studio-card>
+        </body>
+      </html>
+    `);
+
+    const snapshot = await page.evaluate(async () => {
+      const events: string[] = [];
+
+      class StudioCard extends HTMLElement {
+        static get observedAttributes() {
+          return ["data-mode"];
+        }
+
+        connectedCallback() {
+          events.push(`connected:${this.id || "new"}:${this.getAttribute("data-mode") || ""}`);
+        }
+
+        disconnectedCallback() {
+          events.push(`disconnected:${this.id || "new"}:${String(this.isConnected)}`);
+        }
+
+        attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
+          events.push(`attr:${name}:${oldValue || ""}->${newValue || ""}`);
+        }
+      }
+
+      const definedPromise = customElements.whenDefined("x-studio-card")
+        .then((ctor) => ctor === StudioCard);
+      customElements.define("x-studio-card", StudioCard);
+      const defined = await definedPromise;
+
+      const existing = document.querySelector("#existing") as HTMLElement;
+      existing.setAttribute("data-mode", "hydrated");
+
+      const created = document.createElement("x-studio-card") as HTMLElement;
+      created.id = "created";
+      document.body.appendChild(created);
+      document.body.removeChild(created);
+
+      return JSON.stringify({
+        ctor: typeof customElements,
+        defined,
+        getMatches: customElements.get("x-studio-card") === StudioCard,
+        existingInstance: existing instanceof StudioCard,
+        createdInstance: created instanceof StudioCard,
+        events,
+      });
+    });
+
+    expect(JSON.parse(snapshot)).toEqual({
+      ctor: "object",
+      defined: true,
+      getMatches: true,
+      existingInstance: true,
+      createdInstance: true,
+      events: [
+        "attr:data-mode:->initial",
+        "connected:existing:initial",
+        "attr:data-mode:initial->hydrated",
+        "connected:created:",
+        "disconnected:created:false",
+      ],
     });
   });
 
@@ -1877,6 +2556,53 @@ test.describe("Crater browser/context wrapper", () => {
       await expect(page.evaluate<number>("window.innerWidth")).resolves.toBe(360);
       await expect(page.evaluate<number>("window.innerHeight")).resolves.toBe(240);
       await expect(page.evaluate<string>("navigator.userAgent")).resolves.toBe("CraterTest/1.0");
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test("isolates viewport options across concurrent capture contexts", async () => {
+    const browser = createCraterBrowser();
+    try {
+      const previewContext = await browser.newContext({
+        viewport: { width: 360, height: 240 },
+      });
+      const hrcContext = await browser.newContext({
+        viewport: { width: 640, height: 360 },
+      });
+      const previewPage = await previewContext.newPage();
+      const hrcPage = await hrcContext.newPage();
+
+      await Promise.all([
+        previewPage.setContent("<html><body><main id='value'>preview</main></body></html>"),
+        hrcPage.setContent("<html><body><main id='value'>hrc</main></body></html>"),
+      ]);
+
+      const [previewViewport, hrcViewport] = await Promise.all([
+        previewPage.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight })),
+        hrcPage.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight })),
+      ]);
+
+      expect(previewViewport).toEqual({ width: 360, height: 240 });
+      expect(hrcViewport).toEqual({ width: 640, height: 360 });
+      await expect(previewPage.locator("#value").textContent()).resolves.toBe("preview");
+      await expect(hrcPage.locator("#value").textContent()).resolves.toBe("hrc");
+
+      const [previewScreenshot, hrcScreenshot] = await Promise.all([
+        previewPage.screenshot({ timeout: 1000, type: "png" }),
+        hrcPage.screenshot({ timeout: 1000, type: "png" }),
+      ]);
+
+      expect({
+        width: previewScreenshot.readUInt32BE(16),
+        height: previewScreenshot.readUInt32BE(20),
+      }).toEqual({ width: 360, height: 240 });
+      expect({
+        width: hrcScreenshot.readUInt32BE(16),
+        height: hrcScreenshot.readUInt32BE(20),
+      }).toEqual({ width: 640, height: 360 });
+
+      await expect(previewPage.evaluate<number>("window.innerWidth")).resolves.toBe(360);
     } finally {
       await browser.close();
     }

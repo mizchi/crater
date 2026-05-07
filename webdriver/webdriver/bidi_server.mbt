@@ -4501,15 +4501,24 @@ extern "js" fn js_evaluate_expression(
   #|         if (raw.startsWith("data:")) return raw;
   #|         return resolveUrl(raw, sourceUrl || baseUrl);
   #|       };
-  #|       const rewriteModuleSource = (code, sourceUrl, index) => {
+  #|       const prefetchStaticModuleRequest = async (url) => {
+  #|         const raw = String(url || "");
+  #|         if (!raw || raw.startsWith("data:") || raw.startsWith("node:") || raw.startsWith("bun:")) return;
+  #|         const response = await globalThis.fetch(raw, { mode: "cors" });
+  #|         if (response && typeof response.arrayBuffer === "function") {
+  #|           try { await response.arrayBuffer(); } catch (_e) {}
+  #|         }
+  #|       };
+  #|       const rewriteModuleSource = async (code, sourceUrl, index) => {
   #|         let rewriteIndex = 0;
+  #|         const staticModuleRequests = [];
   #|         const absoluteSpecifier = (specifier) => resolveModuleSpecifier(specifier, sourceUrl);
   #|         const rewriteSpecifier = (specifier) => {
   #|           const resolved = resolveModuleSpecifier(specifier, sourceUrl);
   #|           if (!resolved || resolved.startsWith("node:") || resolved.startsWith("bun:")) return resolved;
   #|           return moduleImportUrl(resolved, String(index) + "-" + rewriteIndex++);
   #|         };
-  #|         return String(code)
+  #|         const rewritten = String(code)
   #|           .replace(/(\bimport\s*\(\s*)(["'])([^"']+)\2(\s*\))/g, (_match, prefix, quote, specifier) =>
   #|             "globalThis.__bidiImportModuleSource(" +
   #|               JSON.stringify(resolveModuleSpecifier(specifier, sourceUrl)) +
@@ -4517,12 +4526,18 @@ extern "js" fn js_evaluate_expression(
   #|               JSON.stringify(String(index) + "-" + rewriteIndex++) +
   #|             ")"
   #|           )
-  #|           .replace(/(\bimport\s*)(["'])([^"']+)\2/g, (_match, prefix, quote, specifier) =>
-  #|             prefix + quote + absoluteSpecifier(specifier) + quote
-  #|           )
-  #|           .replace(/(\bfrom\s*)(["'])([^"']+)\2/g, (_match, prefix, quote, specifier) =>
-  #|             prefix + quote + rewriteSpecifier(specifier) + quote
-  #|           );
+  #|           .replace(/(\bimport\s*)(["'])([^"']+)\2/g, (_match, prefix, quote, specifier) => {
+  #|             const resolved = absoluteSpecifier(specifier);
+  #|             staticModuleRequests.push(resolved);
+  #|             return prefix + quote + resolved + quote;
+  #|           })
+  #|           .replace(/(\bfrom\s*)(["'])([^"']+)\2/g, (_match, prefix, quote, specifier) => {
+  #|             const rewrittenSpecifier = rewriteSpecifier(specifier);
+  #|             staticModuleRequests.push(rewrittenSpecifier);
+  #|             return prefix + quote + rewrittenSpecifier + quote;
+  #|           });
+  #|         await Promise.all(staticModuleRequests.map(prefetchStaticModuleRequest));
+  #|         return rewritten;
   #|       };
   #|       const importModuleSource = async (url, index) => {
   #|         const sourceUrl = moduleImportUrl(url, index);
@@ -4534,7 +4549,7 @@ extern "js" fn js_evaluate_expression(
   #|         if (code.includes("import.meta.url")) {
   #|           return await import(sourceUrl);
   #|         }
-  #|         const rewritten = rewriteModuleSource(code, url, index);
+  #|         const rewritten = await rewriteModuleSource(code, url, index);
   #|         const dataUrl = moduleImportUrl(
   #|           'data:text/javascript;base64,' + btoa(unescape(encodeURIComponent(rewritten))),
   #|           String(index) + "-source",

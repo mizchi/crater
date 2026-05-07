@@ -130,6 +130,8 @@ export type CraterLocatorActionOptions = {
   timeout?: number;
 };
 
+const FULL_PAGE_SCREENSHOT_MAX_HEIGHT = 16384;
+
 export type CraterScreenshotClip = {
   x: number;
   y: number;
@@ -2930,6 +2932,13 @@ export class CraterBidiPage {
     if (this.closed) {
       return;
     }
+    if (this.contextId && (this.routes.length > 0 || this.routePump)) {
+      try {
+        await this.installNetworkHooks({ routeEnabled: false });
+      } catch {
+        // Best-effort cleanup; close should continue even if the context is already gone.
+      }
+    }
     const contextId = this.contextId;
     this.contextId = null;
     if (contextId) {
@@ -3121,39 +3130,55 @@ export class CraterBidiPage {
   }
 
   private async observeSubresourceLoads(baseUrl: string): Promise<void> {
-    if (!this.networkHooksInstalled) {
-      return;
+    if (this.networkHooksInstalled) {
+      await this.ensureNetworkHooksReady();
     }
-    await this.ensureNetworkHooksReady();
     await this.evaluate(
       `(async () => {
-        const resolve = (value) => {
+        const resolve = (value, base) => {
           const raw = String(value || "");
           if (!raw) return "";
-          if (globalThis.__resolveUrl) return globalThis.__resolveUrl(raw, ${jsString(baseUrl)});
-          try { return new URL(raw, ${jsString(baseUrl)}).href; } catch (_e) { return raw; }
+          const sourceBase = base || ${jsString(baseUrl)};
+          if (globalThis.__resolveUrl) return globalThis.__resolveUrl(raw, sourceBase);
+          try { return new URL(raw, sourceBase).href; } catch (_e) { return raw; }
         };
         const resources = [];
         const seen = new Set();
-        const add = (value) => {
-          const resolved = resolve(value);
-          if (!resolved || seen.has(resolved)) return;
+        const add = (value, kind, base) => {
+          const resolved = resolve(value, base);
+          if (!resolved || resolved.startsWith('data:') || seen.has(resolved)) return;
           seen.add(resolved);
-          resources.push(resolved);
+          resources.push({ url: resolved, kind });
+        };
+        const addCssUrlResources = (cssText, cssBaseUrl) => {
+          const source = String(cssText || "");
+          const urlRegex = /url\\(\\s*(?:"([^"]+)"|'([^']+)'|([^\\)'\"\\s]+))\\s*\\)/g;
+          let match;
+          while ((match = urlRegex.exec(source))) {
+            add(match[1] || match[2] || match[3] || "", 'css-url', cssBaseUrl);
+          }
         };
         for (const link of Array.from(document.querySelectorAll('link'))) {
           const rel = String(link.getAttribute('rel') || '').toLowerCase().split(/\\s+/);
-          if (rel.includes('stylesheet')) add(link.getAttribute('href'));
+          if (rel.includes('stylesheet')) add(link.getAttribute('href'), 'stylesheet');
         }
         for (const img of Array.from(document.querySelectorAll('img'))) {
-          add(img.getAttribute('src'));
+          add(img.getAttribute('src'), 'image');
         }
-        const fetchFn = globalThis.__craterObservableFetch;
+        const fetchFn = ${this.networkHooksInstalled ? "globalThis.__craterObservableFetch || globalThis.__fetchInternal || globalThis.fetch" : "globalThis.__fetchInternal || globalThis.fetch"};
         if (typeof fetchFn !== 'function') return;
-        await Promise.all(resources.map(async (resourceUrl) => {
+        for (let index = 0; index < resources.length; index++) {
+          const resource = resources[index];
+          const resourceUrl = resource.url;
           try {
             const response = await fetchFn(resourceUrl, {});
-            if (response && typeof response.arrayBuffer === 'function') {
+            if (resource.kind === 'stylesheet' && response && response.ok && typeof response.text === 'function') {
+              const cssText = await response.text();
+              if (typeof globalThis.__craterApplyStyleText === 'function') {
+                globalThis.__craterApplyStyleText(cssText);
+              }
+              addCssUrlResources(cssText, resourceUrl);
+            } else if (response && typeof response.arrayBuffer === 'function') {
               try { await response.arrayBuffer(); } catch (_e) {}
             }
           } catch (_e) {
@@ -3178,7 +3203,7 @@ export class CraterBidiPage {
               }
             } catch (_fallbackError) {}
           }
-        }));
+        }
       })()`,
       { awaitPromise: true },
     );
@@ -3651,6 +3676,98 @@ export class CraterBidiPage {
             globalThis.IntersectionObserver = CraterIntersectionObserver;
           }
           host.IntersectionObserver = globalThis.IntersectionObserver;
+          if (typeof globalThis.ResizeObserver !== "function") {
+            const makeResizeRect = (source) => {
+              const left = Number(source && (source.left ?? source.x) || 0);
+              const top = Number(source && (source.top ?? source.y) || 0);
+              const width = Math.max(0, Number(source && source.width || 0));
+              const height = Math.max(0, Number(source && source.height || 0));
+              const rect = {
+                x: left,
+                y: top,
+                left,
+                top,
+                width,
+                height,
+                right: left + width,
+                bottom: top + height,
+              };
+              rect.toJSON = () => ({
+                x: rect.x,
+                y: rect.y,
+                left: rect.left,
+                top: rect.top,
+                width: rect.width,
+                height: rect.height,
+                right: rect.right,
+                bottom: rect.bottom,
+              });
+              return rect;
+            };
+            const makeResizeBoxSize = (rect) => [{
+              inlineSize: rect.width,
+              blockSize: rect.height,
+            }];
+            class CraterResizeObserver {
+              constructor(callback) {
+                if (typeof callback !== "function") {
+                  throw new TypeError("ResizeObserver callback must be a function");
+                }
+                this._callback = callback;
+                this._targets = new Set();
+                this._records = [];
+                this._scheduled = false;
+              }
+              observe(target) {
+                if (!target || typeof target !== "object") {
+                  throw new TypeError("ResizeObserver.observe target must be an Element");
+                }
+                this._targets.add(target);
+                this._queue(target);
+              }
+              unobserve(target) {
+                this._targets.delete(target);
+              }
+              disconnect() {
+                this._targets.clear();
+                this._records = [];
+              }
+              takeRecords() {
+                const records = this._records.slice();
+                this._records = [];
+                return records;
+              }
+              _queue(target) {
+                if (!this._targets.has(target)) return;
+                this._records.push(this._entryFor(target));
+                if (this._scheduled) return;
+                this._scheduled = true;
+                setTimeout(() => {
+                  this._scheduled = false;
+                  const records = this.takeRecords();
+                  if (records.length > 0) {
+                    this._callback(records, this);
+                  }
+                }, 0);
+              }
+              _entryFor(target) {
+                const contentRect = makeResizeRect(
+                  target && typeof target.getBoundingClientRect === "function"
+                    ? target.getBoundingClientRect()
+                    : {},
+                );
+                return {
+                  target,
+                  contentRect,
+                  borderBoxSize: makeResizeBoxSize(contentRect),
+                  contentBoxSize: makeResizeBoxSize(contentRect),
+                  devicePixelContentBoxSize: makeResizeBoxSize(contentRect),
+                };
+              }
+            }
+            globalThis.ResizeObserver = CraterResizeObserver;
+          }
+          host.ResizeObserver = globalThis.ResizeObserver;
           if (typeof globalThis.DOMParser !== "function") {
             class CraterDOMParser {
               parseFromString(markup, contentType) {
@@ -3981,9 +4098,338 @@ export class CraterBidiPage {
           installInstanceConstructor("SVGSVGElement", (value) => isSvgElement(value) && elementTagName(value) === "SVG");
           installInstanceConstructor("SVGPathElement", (value) => isSvgElement(value) && elementTagName(value) === "PATH");
 
+          const installCustomElementRegistry = () => {
+            const existingRegistry = globalThis.customElements && typeof globalThis.customElements === "object"
+              ? globalThis.customElements
+              : null;
+            const definitionsByName = existingRegistry && existingRegistry.__craterDefinitionsByName instanceof Map
+              ? existingRegistry.__craterDefinitionsByName
+              : new Map();
+            const namesByConstructor = existingRegistry && existingRegistry.__craterNamesByConstructor instanceof Map
+              ? existingRegistry.__craterNamesByConstructor
+              : new Map();
+            const whenDefinedWaiters = existingRegistry && existingRegistry.__craterWhenDefinedWaiters instanceof Map
+              ? existingRegistry.__craterWhenDefinedWaiters
+              : new Map();
+            const normalizeCustomElementName = (name) => String(name || "").toLowerCase();
+            const isValidCustomElementName = (name) => /^[a-z][.0-9_a-z-]*-[.0-9_a-z-]*$/u.test(name);
+            const elementLocalName = (element) =>
+              String(element && (element.localName || element.tagName || element.nodeName || "")).toLowerCase();
+            const childNodesOf = (node) => Array.from(
+              node && (node.childNodes || node.children || node._children) || [],
+            );
+            const isConnectedForLifecycle = (node) => {
+              let current = node;
+              while (current) {
+                if (current === targetDocument) return true;
+                if (current === targetDocument.documentElement) return true;
+                current = current.parentNode || current.parentElement || current.host || null;
+              }
+              return false;
+            };
+            const readAttribute = (element, name) => {
+              if (!element || typeof element !== "object") return null;
+              if (typeof element.getAttribute === "function") {
+                const value = element.getAttribute(name);
+                return value === undefined ? null : value;
+              }
+              const attrs = element._attrs || element.attributes || {};
+              const value = attrs[name];
+              return value === undefined ? null : String(value);
+            };
+            const installConstructorInstanceCheck = (ctor, definition) => {
+              try {
+                Object.defineProperty(ctor, Symbol.hasInstance, {
+                  configurable: true,
+                  value(value) {
+                    return Boolean(value && value.__craterCustomElementDefinition === definition);
+                  },
+                });
+              } catch (_error) {}
+            };
+            const installPrototypeMembers = (element, definition) => {
+              const prototype = definition.ctor && definition.ctor.prototype;
+              if (!prototype || typeof prototype !== "object") return;
+              const descriptors = Object.getOwnPropertyDescriptors(prototype);
+              for (const [name, descriptor] of Object.entries(descriptors)) {
+                if (name === "constructor") continue;
+                const nextDescriptor = Object.prototype.hasOwnProperty.call(descriptor, "value")
+                  ? {
+                    configurable: descriptor.configurable,
+                    enumerable: descriptor.enumerable,
+                    value: descriptor.value,
+                    writable: descriptor.writable,
+                  }
+                  : {
+                    configurable: descriptor.configurable,
+                    enumerable: descriptor.enumerable,
+                    get: descriptor.get,
+                    set: descriptor.set,
+                  };
+                try {
+                  Object.defineProperty(element, name, nextDescriptor);
+                } catch (_error) {}
+              }
+            };
+            const callConnected = (element) => {
+              const definition = element && element.__craterCustomElementDefinition;
+              if (!definition || element.__craterCustomElementConnected) return;
+              if (!isConnectedForLifecycle(element)) return;
+              element.__craterCustomElementConnected = true;
+              const callback = definition.callbacks.connected;
+              if (typeof callback === "function") callback.call(element);
+            };
+            const callDisconnected = (element) => {
+              const definition = element && element.__craterCustomElementDefinition;
+              if (!definition || !element.__craterCustomElementConnected) return;
+              element.__craterCustomElementConnected = false;
+              const callback = definition.callbacks.disconnected;
+              if (typeof callback === "function") callback.call(element);
+            };
+            const callAttributeChanged = (element, name, oldValue, newValue) => {
+              const definition = element && element.__craterCustomElementDefinition;
+              if (!definition || oldValue === newValue) return;
+              const normalizedName = String(name || "").toLowerCase();
+              if (!definition.observedAttributes.includes(normalizedName)) return;
+              const callback = definition.callbacks.attributeChanged;
+              if (typeof callback === "function") {
+                callback.call(element, normalizedName, oldValue, newValue);
+              }
+            };
+            const patchCustomElementNode = (node) => {
+              if (!node || typeof node !== "object" || node.__craterCustomElementPatched) return;
+              node.__craterCustomElementPatched = true;
+              if (node.nodeType !== 9 && !node.__craterIsConnectedPatched) {
+                try {
+                  Object.defineProperty(node, "isConnected", {
+                    configurable: true,
+                    enumerable: true,
+                    get() {
+                      return isConnectedForLifecycle(this);
+                    },
+                  });
+                  node.__craterIsConnectedPatched = true;
+                } catch (_error) {}
+              }
+              if (typeof node.setAttribute === "function") {
+                const originalSetAttribute = node.setAttribute;
+                node.setAttribute = function(name, value) {
+                  const normalizedName = String(name || "").toLowerCase();
+                  const oldValue = readAttribute(this, normalizedName);
+                  const result = originalSetAttribute.call(this, name, value);
+                  callAttributeChanged(this, normalizedName, oldValue, readAttribute(this, normalizedName));
+                  return result;
+                };
+              }
+              if (typeof node.removeAttribute === "function") {
+                const originalRemoveAttribute = node.removeAttribute;
+                node.removeAttribute = function(name) {
+                  const normalizedName = String(name || "").toLowerCase();
+                  const oldValue = readAttribute(this, normalizedName);
+                  const result = originalRemoveAttribute.call(this, name);
+                  callAttributeChanged(this, normalizedName, oldValue, null);
+                  return result;
+                };
+              }
+              if (typeof node.appendChild === "function") {
+                const originalAppendChild = node.appendChild;
+                node.appendChild = function(child) {
+                  const result = originalAppendChild.call(this, child);
+                  patchCustomElementTree(child);
+                  upgradeCustomElementTree(child);
+                  if (isConnectedForLifecycle(this)) connectCustomElementTree(child);
+                  return result;
+                };
+              }
+              if (typeof node.insertBefore === "function") {
+                const originalInsertBefore = node.insertBefore;
+                node.insertBefore = function(child, reference) {
+                  const result = originalInsertBefore.call(this, child, reference);
+                  patchCustomElementTree(child);
+                  upgradeCustomElementTree(child);
+                  if (isConnectedForLifecycle(this)) connectCustomElementTree(child);
+                  return result;
+                };
+              }
+              if (typeof node.removeChild === "function") {
+                const originalRemoveChild = node.removeChild;
+                node.removeChild = function(child) {
+                  const wasConnected = isConnectedForLifecycle(child);
+                  const result = originalRemoveChild.call(this, child);
+                  if (wasConnected) disconnectCustomElementTree(child);
+                  return result;
+                };
+              }
+              if (typeof node.replaceChild === "function") {
+                const originalReplaceChild = node.replaceChild;
+                node.replaceChild = function(child, oldChild) {
+                  const oldWasConnected = isConnectedForLifecycle(oldChild);
+                  const result = originalReplaceChild.call(this, child, oldChild);
+                  if (oldWasConnected) disconnectCustomElementTree(oldChild);
+                  patchCustomElementTree(child);
+                  upgradeCustomElementTree(child);
+                  if (isConnectedForLifecycle(this)) connectCustomElementTree(child);
+                  return result;
+                };
+              }
+            };
+            const patchCustomElementTree = (root) => {
+              if (!root || typeof root !== "object") return;
+              patchCustomElementNode(root);
+              for (const child of childNodesOf(root)) patchCustomElementTree(child);
+              if (root.shadowRoot) patchCustomElementTree(root.shadowRoot);
+            };
+            const definitionForElement = (element) => {
+              if (!element || element.nodeType !== 1) return null;
+              return definitionsByName.get(elementLocalName(element)) || null;
+            };
+            const upgradeCustomElement = (element) => {
+              const definition = definitionForElement(element);
+              if (!definition || element.__craterCustomElementDefinition === definition) return;
+              patchCustomElementNode(element);
+              installPrototypeMembers(element, definition);
+              element.__craterCustomElementDefinition = definition;
+              element.__craterCustomElementName = definition.name;
+              for (const attrName of definition.observedAttributes) {
+                const value = readAttribute(element, attrName);
+                if (value !== null) callAttributeChanged(element, attrName, null, value);
+              }
+              callConnected(element);
+            };
+            const upgradeCustomElementTree = (root) => {
+              if (!root || typeof root !== "object") return;
+              upgradeCustomElement(root);
+              for (const child of childNodesOf(root)) upgradeCustomElementTree(child);
+              if (root.shadowRoot) upgradeCustomElementTree(root.shadowRoot);
+            };
+            const connectCustomElementTree = (root) => {
+              if (!root || typeof root !== "object") return;
+              callConnected(root);
+              for (const child of childNodesOf(root)) connectCustomElementTree(child);
+              if (root.shadowRoot) connectCustomElementTree(root.shadowRoot);
+            };
+            const disconnectCustomElementTree = (root) => {
+              if (!root || typeof root !== "object") return;
+              callDisconnected(root);
+              for (const child of childNodesOf(root)) disconnectCustomElementTree(child);
+              if (root.shadowRoot) disconnectCustomElementTree(root.shadowRoot);
+            };
+            class CraterCustomElementRegistry {
+              define(name, ctor, options) {
+                const normalizedName = normalizeCustomElementName(name);
+                if (!isValidCustomElementName(normalizedName)) {
+                  throw new DOMException(
+                    "Failed to execute 'define' on 'CustomElementRegistry': invalid custom element name",
+                    "SyntaxError",
+                  );
+                }
+                if (options && options.extends !== undefined) {
+                  throw new DOMException(
+                    "Failed to execute 'define' on 'CustomElementRegistry': customized built-in elements are not supported",
+                    "NotSupportedError",
+                  );
+                }
+                if (typeof ctor !== "function") {
+                  throw new TypeError("Custom element constructor must be a function");
+                }
+                if (definitionsByName.has(normalizedName)) {
+                  throw new DOMException(
+                    "Failed to execute 'define' on 'CustomElementRegistry': the name has already been used",
+                    "NotSupportedError",
+                  );
+                }
+                if (namesByConstructor.has(ctor)) {
+                  throw new DOMException(
+                    "Failed to execute 'define' on 'CustomElementRegistry': the constructor has already been used",
+                    "NotSupportedError",
+                  );
+                }
+                const prototype = ctor.prototype || {};
+                const callbacks = {
+                  connected: typeof prototype.connectedCallback === "function" ? prototype.connectedCallback : null,
+                  disconnected: typeof prototype.disconnectedCallback === "function" ? prototype.disconnectedCallback : null,
+                  attributeChanged: typeof prototype.attributeChangedCallback === "function"
+                    ? prototype.attributeChangedCallback
+                    : null,
+                };
+                const observedAttributes = callbacks.attributeChanged
+                  ? Array.from(ctor.observedAttributes || []).map((attr) => String(attr).toLowerCase())
+                  : [];
+                const definition = {
+                  name: normalizedName,
+                  ctor,
+                  callbacks,
+                  observedAttributes,
+                };
+                installConstructorInstanceCheck(ctor, definition);
+                definitionsByName.set(normalizedName, definition);
+                namesByConstructor.set(ctor, normalizedName);
+                const waiters = whenDefinedWaiters.get(normalizedName) || [];
+                whenDefinedWaiters.delete(normalizedName);
+                for (const resolve of waiters) resolve(ctor);
+                upgradeCustomElementTree(targetDocument.documentElement);
+                upgradeCustomElementTree(targetDocument.body);
+              }
+              get(name) {
+                const definition = definitionsByName.get(normalizeCustomElementName(name));
+                return definition ? definition.ctor : undefined;
+              }
+              getName(ctor) {
+                return namesByConstructor.get(ctor);
+              }
+              whenDefined(name) {
+                const normalizedName = normalizeCustomElementName(name);
+                if (!isValidCustomElementName(normalizedName)) {
+                  return Promise.reject(new DOMException(
+                    "Failed to execute 'whenDefined' on 'CustomElementRegistry': invalid custom element name",
+                    "SyntaxError",
+                  ));
+                }
+                const definition = definitionsByName.get(normalizedName);
+                if (definition) return Promise.resolve(definition.ctor);
+                return new Promise((resolve) => {
+                  const waiters = whenDefinedWaiters.get(normalizedName) || [];
+                  waiters.push(resolve);
+                  whenDefinedWaiters.set(normalizedName, waiters);
+                });
+              }
+              upgrade(root) {
+                patchCustomElementTree(root);
+                upgradeCustomElementTree(root);
+              }
+            }
+            const registry = new CraterCustomElementRegistry();
+            registry.__craterDefinitionsByName = definitionsByName;
+            registry.__craterNamesByConstructor = namesByConstructor;
+            registry.__craterWhenDefinedWaiters = whenDefinedWaiters;
+            globalThis.customElements = registry;
+            host.customElements = registry;
+            globalThis.CustomElementRegistry = CraterCustomElementRegistry;
+            host.CustomElementRegistry = CraterCustomElementRegistry;
+            if (typeof targetDocument.createElement === "function" && !targetDocument.__craterCustomElementCreateWrapped) {
+              const originalCreateElement = targetDocument.createElement;
+              targetDocument.createElement = function(tagName) {
+                const element = originalCreateElement.apply(this, arguments);
+                patchCustomElementTree(element);
+                upgradeCustomElementTree(element);
+                return element;
+              };
+              targetDocument.__craterCustomElementCreateWrapped = true;
+            }
+            patchCustomElementTree(targetDocument.documentElement);
+            patchCustomElementTree(targetDocument.body);
+            upgradeCustomElementTree(targetDocument.documentElement);
+            upgradeCustomElementTree(targetDocument.body);
+          };
+          installCustomElementRegistry();
+
           const numberOr = (value, fallback) => {
             const num = Number(value);
             return Number.isFinite(num) ? num : fallback;
+          };
+          const px = (value) => {
+            const parsed = Number.parseFloat(String(value ?? ""));
+            return Number.isFinite(parsed) ? parsed : 0;
           };
           const currentScrollLeft = () => numberOr(host.scrollX ?? globalThis.scrollX ?? host.pageXOffset ?? globalThis.pageXOffset, 0);
           const currentScrollTop = () => numberOr(host.scrollY ?? globalThis.scrollY ?? host.pageYOffset ?? globalThis.pageYOffset, 0);
@@ -4026,6 +4472,112 @@ export class CraterBidiPage {
               left: numberOr(first, currentLeft),
               top: numberOr(second, currentTop),
             };
+          };
+          const childrenOf = (element) => {
+            if (!element) return [];
+            if (Array.isArray(element._children)) return element._children;
+            try { return Array.from(element.children || element.childNodes || []); } catch (_error) { return []; }
+          };
+          const readStyleValue = (element, property) => {
+            if (!element) return "";
+            const dashed = String(property || "").replace(/[A-Z]/g, (ch) => "-" + ch.toLowerCase());
+            const camel = dashed.replace(/-([a-z])/g, (_, ch) => ch.toUpperCase());
+            const sources = [element.style, element._style];
+            for (const style of sources) {
+              if (!style) continue;
+              if (typeof style.getPropertyValue === "function") {
+                const value = style.getPropertyValue(dashed);
+                if (value !== undefined && value !== null && String(value) !== "") return String(value);
+              }
+              const camelValue = style[camel];
+              if (camelValue !== undefined && camelValue !== null && String(camelValue) !== "") return String(camelValue);
+              const dashedValue = style[dashed];
+              if (dashedValue !== undefined && dashedValue !== null && String(dashedValue) !== "") return String(dashedValue);
+            }
+            return "";
+          };
+          const attrNumber = (element, name) => {
+            if (!element) return 0;
+            let value = "";
+            try {
+              value = typeof element.getAttribute === "function" ? element.getAttribute(name) || "" : "";
+            } catch (_error) {}
+            if (!value && element._attrs) value = element._attrs[name] || "";
+            return px(value);
+          };
+          const elementOwnMetrics = (element) => {
+            const tagName = elementTagName(element);
+            if (tagName === "SCRIPT" || tagName === "STYLE" || tagName === "LINK" ||
+              tagName === "META" || tagName === "TITLE" || tagName === "HEAD") {
+              return { width: 0, height: 0 };
+            }
+            let width = px(readStyleValue(element, "width")) ||
+              attrNumber(element, "width") ||
+              numberOr(element && element.width, 0);
+            let height = px(readStyleValue(element, "height")) ||
+              attrNumber(element, "height") ||
+              numberOr(element && element.height, 0);
+            if (typeof element?.getBoundingClientRect === "function") {
+              try {
+                const rect = element.getBoundingClientRect();
+                width = Math.max(width, numberOr(rect?.width, 0));
+                height = Math.max(height, numberOr(rect?.height, 0));
+              } catch (_error) {}
+            }
+            if (tagName === "HTML" || tagName === "BODY") {
+              width = Math.max(width, numberOr(host.innerWidth ?? globalThis.innerWidth, 1));
+              height = Math.max(height, numberOr(host.innerHeight ?? globalThis.innerHeight, 1));
+            }
+            return { width: Math.max(0, width), height: Math.max(0, height) };
+          };
+          const estimateFlowMetrics = (element, seen) => {
+            if (!element || seen.has(element)) return { width: 0, height: 0 };
+            seen.add(element);
+            const own = elementOwnMetrics(element);
+            let width = own.width;
+            let height = own.height;
+            let flowBottom = 0;
+            for (const child of childrenOf(element)) {
+              if (!child || child.nodeType !== 1) continue;
+              const childMetrics = estimateFlowMetrics(child, seen);
+              const position = readStyleValue(child, "position").toLowerCase();
+              const hasExplicitTop = readStyleValue(child, "top") !== "" || readStyleValue(child, "bottom") !== "";
+              const childLeft = px(readStyleValue(child, "left")) + px(readStyleValue(child, "marginLeft"));
+              const marginTop = px(readStyleValue(child, "marginTop"));
+              const marginBottom = px(readStyleValue(child, "marginBottom"));
+              width = Math.max(width, childLeft + childMetrics.width);
+              if (position === "absolute" || position === "fixed" || hasExplicitTop) {
+                const childTop = px(readStyleValue(child, "top")) + marginTop;
+                height = Math.max(height, childTop + childMetrics.height + marginBottom);
+              } else {
+                flowBottom += marginTop;
+                height = Math.max(height, flowBottom + childMetrics.height);
+                flowBottom += childMetrics.height + marginBottom;
+              }
+            }
+            return {
+              width: Math.max(1, width),
+              height: Math.max(1, height),
+            };
+          };
+          const installMetricAccessors = (element) => {
+            if (!element || element.__craterMetricAccessorsInstalled) return;
+            const defineMetric = (name, getter) => {
+              try {
+                Object.defineProperty(element, name, {
+                  configurable: true,
+                  enumerable: true,
+                  get: getter,
+                });
+              } catch (_error) {}
+            };
+            defineMetric("scrollWidth", function() {
+              return Math.max(1, Math.ceil(estimateFlowMetrics(this, new Set()).width));
+            });
+            defineMetric("scrollHeight", function() {
+              return Math.max(1, Math.ceil(estimateFlowMetrics(this, new Set()).height));
+            });
+            element.__craterMetricAccessorsInstalled = true;
           };
           const scrollTo = function(first, second) {
             const next = scrollArgs(first, second, currentScrollLeft(), currentScrollTop());
@@ -4086,6 +4638,8 @@ export class CraterBidiPage {
               }
             }
           };
+          globalThis.__craterApplyStyleText = applyStyleText;
+          host.__craterApplyStyleText = applyStyleText;
           const applyStyleElement = (element) => {
             if (elementTagName(element) !== "STYLE") return;
             applyStyleText(element.textContent || "");
@@ -4120,10 +4674,49 @@ export class CraterBidiPage {
               }
             });
           };
+          const resolveImageRequestUrl = (value) => {
+            const raw = String(value || "");
+            if (!raw || raw.startsWith("data:") || raw.startsWith("blob:") || raw.startsWith("about:")) return "";
+            const base = host.__pageUrl || globalThis.__pageUrl ||
+              (host.location && host.location.href) ||
+              (globalThis.location && globalThis.location.href) ||
+              "about:blank";
+            if (globalThis.__resolveUrl) return globalThis.__resolveUrl(raw, base);
+            try { return new URL(raw, base).href; } catch (_error) { return raw; }
+          };
+          const fetchImageResource = (value) => {
+            const resourceUrl = resolveImageRequestUrl(value);
+            if (!resourceUrl) return;
+            Promise.resolve().then(async () => {
+              const fetchFn = globalThis.__craterObservableFetch || globalThis.__fetchInternal || globalThis.fetch;
+              if (typeof fetchFn !== "function") return;
+              try {
+                const response = await fetchFn(resourceUrl, {});
+                if (response && typeof response.arrayBuffer === "function") {
+                  try { await response.arrayBuffer(); } catch (_error) {}
+                }
+              } catch (_error) {}
+            });
+          };
+          const handleImageSourceMutation = (element, value) => {
+            fetchImageResource(value);
+            dispatchImageLoad(element);
+          };
           const patchImageElement = (element) => {
             const tagName = String(element && (element.tagName || element.localName || "")).toUpperCase();
             if (tagName !== "IMG" || element.__craterImagePatched) return;
             element.__craterImagePatched = true;
+            if (typeof element.setAttribute === "function" && !element.__craterImageSetAttributeWrapped) {
+              const originalSetAttribute = element.setAttribute;
+              element.setAttribute = function(name, value) {
+                const result = originalSetAttribute.call(this, name, value);
+                if (String(name || "").toLowerCase() === "src") {
+                  handleImageSourceMutation(this, value);
+                }
+                return result;
+              };
+              element.__craterImageSetAttributeWrapped = true;
+            }
             Object.defineProperty(element, "complete", {
               configurable: true,
               enumerable: true,
@@ -4149,13 +4742,13 @@ export class CraterBidiPage {
               },
               set(value) {
                 if (typeof this.setAttribute === "function") this.setAttribute("src", String(value));
+                else handleImageSourceMutation(this, value);
                 const nextWidth = Math.max(1, numberOr(this.width ?? this.naturalWidth, 1));
                 const nextHeight = Math.max(1, numberOr(this.height ?? this.naturalHeight, 1));
                 if (!numberOr(this.width, 0)) this.width = nextWidth;
                 if (!numberOr(this.height, 0)) this.height = nextHeight;
                 if (!numberOr(this.naturalWidth, 0)) this.naturalWidth = numberOr(this.width, nextWidth);
                 if (!numberOr(this.naturalHeight, 0)) this.naturalHeight = numberOr(this.height, nextHeight);
-                dispatchImageLoad(this);
               },
             });
             element.decode = function() {
@@ -4224,6 +4817,7 @@ export class CraterBidiPage {
           const patchElementScrolling = (element) => {
             if (!element || typeof element !== "object" || element.__craterScrollingPatched) return;
             element.__craterScrollingPatched = true;
+            installMetricAccessors(element);
             patchImageElement(element);
             patchMediaElement(element);
             applyStyleElement(element);
@@ -6240,9 +6834,13 @@ export class CraterBidiPage {
     if (backend) {
       params.backend = backend;
     }
-    const clip = options.clip ?? (
-      options.fullPage && backend === "synthetic" ? await this.fullPageScreenshotClip() : null
-    );
+    let clip = options.clip ?? null;
+    if (!clip && options.fullPage) {
+      const fullPageClip = await this.fullPageScreenshotClip();
+      if (backend === "synthetic" || fullPageClip.height >= FULL_PAGE_SCREENSHOT_MAX_HEIGHT) {
+        clip = fullPageClip;
+      }
+    }
     if (clip) {
       params.clip = {
         type: "box",
@@ -6524,11 +7122,15 @@ export class CraterBidiPage {
         for (const el of Array.from(document.querySelectorAll("body *"))) {
           visit(el);
         }
+        const cappedHeight = Math.min(
+          ${FULL_PAGE_SCREENSHOT_MAX_HEIGHT},
+          Math.max(1, Math.ceil(height)),
+        );
         return {
           x: 0,
           y: 0,
           width: Math.max(1, Math.ceil(width)),
-          height: Math.max(1, Math.ceil(height)),
+          height: cappedHeight,
         };
       })()
     `);
