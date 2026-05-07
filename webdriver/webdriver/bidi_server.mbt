@@ -3551,7 +3551,12 @@ extern "js" fn js_evaluate_expression(
   #|     };
   #|
   #|     const getOrigin = (url) => {
-  #|       try { return new URL(url).origin; } catch { return ''; }
+  #|       try {
+  #|         const origin = new URL(url).origin;
+  #|         return origin === 'null' ? '' : origin;
+  #|       } catch {
+  #|         return '';
+  #|       }
   #|     };
   #|     globalThis.__resolveUrl = function(url, baseUrl) {
   #|       const base = baseUrl || globalThis.__pageUrl || 'about:blank';
