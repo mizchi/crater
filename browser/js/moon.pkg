@@ -8,6 +8,7 @@ import {
 options(
   targets: {
     // QuickJS implementation (JS target)
+    "dom_serializer_test.mbt": [ "js" ],
     "js_runtime_js_test.mbt": [ "js" ],
     "scheduler_integration_test.mbt": [ "js" ],
   },
