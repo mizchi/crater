@@ -826,6 +826,179 @@ function adapterDomActionsExpr(): string {
 const normalizeLocatorText = (value: string): string => value.replace(/\s+/g, " ").trim();
 const foldLocatorText = (value: string): string => normalizeLocatorText(value).toLowerCase();
 
+type CssSelectorBranch = {
+  selector: string;
+  hasText: string[];
+};
+
+function splitSelectorList(selector: string): string[] {
+  const parts: string[] = [];
+  let start = 0;
+  let quote: string | null = null;
+  let bracketDepth = 0;
+  let parenDepth = 0;
+  for (let i = 0; i < selector.length; i += 1) {
+    const char = selector[i];
+    if (quote) {
+      if (char === "\\") {
+        i += 1;
+      } else if (char === quote) {
+        quote = null;
+      }
+      continue;
+    }
+    if (char === "'" || char === "\"") {
+      quote = char;
+      continue;
+    }
+    if (char === "[") {
+      bracketDepth += 1;
+      continue;
+    }
+    if (char === "]") {
+      bracketDepth = Math.max(0, bracketDepth - 1);
+      continue;
+    }
+    if (bracketDepth > 0) {
+      continue;
+    }
+    if (char === "(") {
+      parenDepth += 1;
+      continue;
+    }
+    if (char === ")") {
+      parenDepth = Math.max(0, parenDepth - 1);
+      continue;
+    }
+    if (char === "," && parenDepth === 0) {
+      const part = selector.slice(start, i).trim();
+      if (part !== "") {
+        parts.push(part);
+      }
+      start = i + 1;
+    }
+  }
+  const tail = selector.slice(start).trim();
+  if (tail !== "") {
+    parts.push(tail);
+  }
+  return parts.length > 0 ? parts : [selector];
+}
+
+function readFunctionArgument(source: string, start: number): { value: string; end: number } | null {
+  let quote: string | null = null;
+  let depth = 1;
+  for (let i = start; i < source.length; i += 1) {
+    const char = source[i];
+    if (quote) {
+      if (char === "\\") {
+        i += 1;
+      } else if (char === quote) {
+        quote = null;
+      }
+      continue;
+    }
+    if (char === "'" || char === "\"") {
+      quote = char;
+      continue;
+    }
+    if (char === "(") {
+      depth += 1;
+      continue;
+    }
+    if (char === ")") {
+      depth -= 1;
+      if (depth === 0) {
+        return { value: source.slice(start, i), end: i };
+      }
+    }
+  }
+  return null;
+}
+
+function unescapeCssString(value: string): string {
+  let result = "";
+  for (let i = 0; i < value.length; i += 1) {
+    const char = value[i];
+    if (char !== "\\") {
+      result += char;
+      continue;
+    }
+    const next = value[i + 1];
+    if (next === undefined) {
+      result += char;
+      continue;
+    }
+    result += next;
+    i += 1;
+  }
+  return result;
+}
+
+function parsePlaywrightTextArgument(value: string): string {
+  const trimmed = value.trim();
+  const quote = trimmed[0];
+  if ((quote === "'" || quote === "\"") && trimmed[trimmed.length - 1] === quote) {
+    return unescapeCssString(trimmed.slice(1, -1));
+  }
+  return trimmed;
+}
+
+function stripHasTextPseudo(selector: string): CssSelectorBranch {
+  const pseudo = ":has-text(";
+  const hasText: string[] = [];
+  let css = "";
+  let quote: string | null = null;
+  let bracketDepth = 0;
+  for (let i = 0; i < selector.length; i += 1) {
+    const char = selector[i];
+    if (quote) {
+      css += char;
+      if (char === "\\") {
+        i += 1;
+        if (i < selector.length) {
+          css += selector[i];
+        }
+      } else if (char === quote) {
+        quote = null;
+      }
+      continue;
+    }
+    if (char === "'" || char === "\"") {
+      quote = char;
+      css += char;
+      continue;
+    }
+    if (char === "[") {
+      bracketDepth += 1;
+      css += char;
+      continue;
+    }
+    if (char === "]") {
+      bracketDepth = Math.max(0, bracketDepth - 1);
+      css += char;
+      continue;
+    }
+    if (bracketDepth === 0 && selector.slice(i, i + pseudo.length).toLowerCase() === pseudo) {
+      const argument = readFunctionArgument(selector, i + pseudo.length);
+      if (!argument) {
+        css += char;
+        continue;
+      }
+      hasText.push(parsePlaywrightTextArgument(argument.value));
+      i = argument.end;
+      continue;
+    }
+    css += char;
+  }
+  return { selector: css.trim() || "*", hasText };
+}
+
+function parsePlaywrightCssSelector(selector: string): CssSelectorBranch[] | null {
+  const branches = splitSelectorList(selector).map(stripHasTextPseudo);
+  return branches.some((branch) => branch.hasText.length > 0) ? branches : null;
+}
+
 function locatorSelector(
   type: string,
   value: CraterTextMatcher,
@@ -1134,6 +1307,28 @@ function attrSelectorExpr(
 }
 
 function cssSelectorExpr(rootExpr: string, selector: string, method: "first" | "all"): string {
+  const playwrightBranches = parsePlaywrightCssSelector(selector);
+  if (playwrightBranches) {
+    const branchPredicates = playwrightBranches.map((branch) => {
+      const quotedSelector = jsString(branch.selector);
+      const textPredicates = branch.hasText.map((value) =>
+        `normalize(textForLocator(el)).toLowerCase().includes(${jsString(foldLocatorText(value))})`
+      );
+      const textPredicate = textPredicates.length > 0 ? textPredicates.join(" && ") : "true";
+      return `(() => {
+        try {
+          if (!(typeof el.matches === "function" && el.matches(${quotedSelector}))) return false;
+        } catch (_e) {
+          return false;
+        }
+        return ${textPredicate};
+      })()`;
+    });
+    return composedElementsFilterExpr(rootExpr, `(el) => {
+      const normalize = (text) => String(text || "").replace(/\\s+/g, " ").trim();
+      return ${branchPredicates.join(" || ")};
+    }`, method, { includeRoot: false });
+  }
   const quoted = jsString(selector);
   return composedElementsFilterExpr(rootExpr, `(el) => {
     try {

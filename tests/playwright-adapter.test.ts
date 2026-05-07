@@ -803,4 +803,29 @@ test.describe("Playwright Adapter Tests", () => {
       page.locator("button").filter({ hasNotText: "Submit order" }).count(),
     ).resolves.toBe(1);
   });
+
+  test("raw CSS locator supports Playwright has-text pseudo", async () => {
+    await page.setContent(`
+      <html>
+        <body>
+          <button>Summary</button>
+          <button>Cancel</button>
+          <output id="status">idle</output>
+        </body>
+      </html>
+    `);
+
+    await page.evaluate(`
+      document.querySelector("button").addEventListener("click", () => {
+        document.querySelector("#status").textContent = "opened";
+      });
+    `);
+
+    await page.waitForSelector("button:has-text('Summary')", { state: "visible" });
+    await expect(page.locator("button:has-text('Summary')").count()).resolves.toBe(1);
+    await expect(page.locator("button:has-text('summary')").textContent()).resolves.toBe("Summary");
+
+    await page.locator("button:has-text('Summary')").click();
+    await expect(page.locator("#status").textContent()).resolves.toBe("opened");
+  });
 });

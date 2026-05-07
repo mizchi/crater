@@ -93,6 +93,11 @@ async function collectLocatorSnapshot(page: ChromiumOrCraterPage) {
     roleNameLower: await page.getByRole("button", { name: "save draft" }).getAttribute("id"),
     labelForLower: await page.getByLabel("full name").getAttribute("id"),
     labelWrappedLower: await page.getByLabel("secret token").getAttribute("id"),
+    cssHasTextLowerId: await page.locator("button:has-text('save draft')").getAttribute("id"),
+    cssHasTextListCount: await page.locator(
+      "button:has-text('save draft'), button:has-text('Cancel')",
+    ).count(),
+    cssHasTextMixedListCount: await page.locator("button:has-text('save draft'), label").count(),
     hasTextLowerCount: await page.locator("button").filter({ hasText: "save draft" }).count(),
     hasNotTextLowerCount: await page.locator("button").filter({ hasNotText: "save draft" }).count(),
   };
