@@ -2141,6 +2141,7 @@
         "npm:preact@^10.29.1",
         "npm:puppeteer@^24.40.0",
         "npm:tsx@^4.21.0",
+        "npm:typescript@^6.0.3",
         "npm:vitest@^4.1.4",
         "npm:webidl2@^24.5.0",
         "npm:ws@^8.20.0"

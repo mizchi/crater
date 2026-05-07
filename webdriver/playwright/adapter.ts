@@ -7521,8 +7521,9 @@ export class CraterBrowserContext {
       secure: cookie.secure === true,
       sameSite: storageSameSite(cookie.sameSite),
     };
-    if (Number.isFinite(cookie.expires) && cookie.expires >= 0) {
-      storageCookie.expiry = cookie.expires;
+    const expires = cookie.expires;
+    if (Number.isFinite(expires) && expires !== undefined && expires >= 0) {
+      storageCookie.expiry = expires;
     }
     await this.sendBidi("storage.setCookie", {
       cookie: storageCookie,
@@ -7635,7 +7636,7 @@ export class CraterBrowserContext {
   }
 
   private cookieKey(cookie: CraterStorageCookie): string {
-    return `${stripLeadingDot(cookie.domain).toLowerCase()}\t${cookie.path || "/"}\t${cookie.name}`;
+    return `${stripLeadingDot(String(cookie.domain ?? "localhost")).toLowerCase()}\t${cookie.path || "/"}\t${cookie.name}`;
   }
 }
 

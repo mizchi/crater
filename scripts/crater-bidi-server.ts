@@ -53,6 +53,7 @@ export type StartCraterBidiServerOptions = BuildCraterBidiServerCommandOptions &
   stdio?: SpawnOptions["stdio"];
   spawnImpl?: typeof spawn;
   discoverBidiUrlImpl?: DiscoverBidiUrlImpl;
+  readUrlFile?: boolean;
   shutdownTimeoutMs?: number;
 };
 
