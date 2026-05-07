@@ -526,6 +526,45 @@ test "bidi captureScreenshotData uses actual paint png for document origin" {
 }
 
 ///|
+test "bidi captureScreenshotData document origin ignores fixed overflow for height" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":2,\"method\":\"browsingContext.setViewport\",\"params\":{\"context\":\"session-1\",\"viewport\":{\"width\":320,\"height\":240}}}",
+    ),
+  )
+  ignore(proto.take_messages())
+  let html = "<!DOCTYPE html><html><body style='margin:0;background:#ffffff;height:420px'><main style='height:420px;background:#ffffff'></main><div style='position:fixed;left:0;top:2500px;width:80px;height:20px;background:#000000'></div></body></html>"
+  let navigate_message = "{\"id\":3,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"" +
+    js_test_build_html_data_url(html) +
+    "\",\"wait\":\"complete\"}}"
+  ignore(proto.process_message(navigate_message))
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":4,\"method\":\"browsingContext.captureScreenshotData\",\"params\":{\"context\":\"session-1\",\"origin\":\"document\"}}",
+    ),
+  )
+  let json = proto.take_messages()[0].to_json()
+  let parsed = @json.parse(json) catch { _ => make_object({}) }
+  let png_data = match parsed {
+    Object(map) =>
+      match map.get("result") {
+        Some(String(value)) => value
+        _ => ""
+      }
+    _ => ""
+  }
+  let (document_width, document_height) = png_dimensions_from_base64(png_data)
+  assert_eq(document_width, 320)
+  assert_eq(document_height, 420)
+}
+
+///|
 test "bidi captureScreenshotData keeps viewport layout when document is horizontally scrollable" {
   let proto = BidiProtocol::new()
   ignore(

@@ -50,6 +50,17 @@ fn actual_paint_test_layout(
 }
 
 ///|
+fn actual_paint_test_document_dimensions_from_layout(
+  layout : @types.Layout,
+  viewport_width : Int,
+  viewport_height : Int,
+) -> (Int, Int) {
+  let width = actual_paint_layout_content_right(layout).ceil().to_int()
+  let height = actual_paint_layout_content_bottom(layout).ceil().to_int()
+  (width.max(viewport_width).max(1), height.max(viewport_height).max(1))
+}
+
+///|
 test "actual paint document width keeps visible horizontal overflow" {
   let root = actual_paint_test_layout(
     "body",
@@ -67,7 +78,7 @@ test "actual paint document width keeps visible horizontal overflow" {
       ),
     ],
   )
-  let (width, height) = actual_paint_document_dimensions_from_layout(
+  let (width, height) = actual_paint_test_document_dimensions_from_layout(
     root, 320, 180,
   )
   assert_eq(width, 800)
@@ -105,9 +116,36 @@ test "actual paint document width ignores clipped descendant overflow" {
       ),
     ],
   )
-  let (width, height) = actual_paint_document_dimensions_from_layout(
+  let (width, height) = actual_paint_test_document_dimensions_from_layout(
     root, 320, 180,
   )
   assert_eq(width, 320)
   ignore(height)
+}
+
+///|
+test "actual paint document dimensions ignore fixed node overflow" {
+  let html = "<!DOCTYPE html><html><body style='margin:0;background:#ffffff;height:420px'><main style='height:420px;background:#ffffff'></main><div style='position:fixed;left:0;top:2500px;width:80px;height:20px;background:#000000'></div></body></html>"
+  let ctx = @browser_contract.create_render_context(320, 240, false)
+  let (node, layout) = @renderer.render_to_node_and_layout_full_document(
+    html, ctx,
+  )
+  let (width, height) = actual_paint_document_dimensions_from_node_and_layout(
+    node, layout, 320, 240,
+  )
+  assert_eq(width, 320)
+  assert_eq(height, 420)
+}
+
+///|
+test "actual paint document dimensions keep collapsed top margin overflow" {
+  let html = "<!DOCTYPE html><html><body style='margin:0'><div style='margin-top:2000px'>foo</div></body></html>"
+  let ctx = @browser_contract.create_render_context(1024, 768, false)
+  let (node, layout) = @renderer.render_to_node_and_layout_full_document(
+    html, ctx,
+  )
+  let (_, height) = actual_paint_document_dimensions_from_node_and_layout(
+    node, layout, 1024, 768,
+  )
+  assert_true(height > 768)
 }

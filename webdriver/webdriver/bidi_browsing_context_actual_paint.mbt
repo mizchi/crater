@@ -582,54 +582,6 @@ fn BidiProtocol::resolve_actual_paint_viewport_dimensions(
 }
 
 ///|
-extern "js" fn js_actual_paint_document_height(viewport_height : Int) -> Int =
-  #|(viewportHeightArg) => {
-  #|  try {
-  #|    const doc = globalThis.document;
-  #|    const win = globalThis.window || globalThis;
-  #|    let height = Math.max(1, Number(viewportHeightArg || win.innerHeight || globalThis.innerHeight || 1));
-  #|    const px = (value) => {
-  #|      const parsed = Number.parseFloat(String(value ?? ""));
-  #|      return Number.isFinite(parsed) ? parsed : 0;
-  #|    };
-  #|    const visit = (el) => {
-  #|      if (!el) return;
-  #|      height = Math.max(
-  #|        height,
-  #|        Number(el.scrollHeight || 0),
-  #|        Number(el.clientHeight || 0),
-  #|        Number(el.offsetHeight || 0),
-  #|      );
-  #|      const style = el.style || {};
-  #|      let top = px(style.top) + px(style.marginTop ?? style["margin-top"]);
-  #|      let rectHeight = px(style.height);
-  #|      if (typeof el.getBoundingClientRect === "function") {
-  #|        try {
-  #|          const rect = el.getBoundingClientRect();
-  #|          top = Number(rect.top ?? rect.y ?? top) || top;
-  #|          rectHeight = Number(rect.height ?? ((rect.bottom ?? 0) - (rect.top ?? 0))) || rectHeight;
-  #|        } catch (_err) {}
-  #|      }
-  #|      height = Math.max(height, top + Math.max(0, rectHeight));
-  #|    };
-  #|    if (doc) {
-  #|      const root = doc.scrollingElement || doc.documentElement || doc.body;
-  #|      visit(root);
-  #|      visit(doc.documentElement);
-  #|      visit(doc.body);
-  #|      if (doc.body && typeof doc.querySelectorAll === "function") {
-  #|        for (const el of Array.from(doc.querySelectorAll("body *"))) {
-  #|          visit(el);
-  #|        }
-  #|      }
-  #|    }
-  #|    return Math.max(1, Math.ceil(height));
-  #|  } catch (_err) {
-  #|    return Math.max(1, Number(viewportHeightArg) || 1);
-  #|  }
-  #|}
-
-///|
 fn actual_paint_layout_content_right(layout : @types.Layout) -> Double {
   let mut right = layout.x + layout.width
   match layout.overflow_x {
@@ -672,15 +624,122 @@ fn actual_paint_layout_content_bottom(layout : @types.Layout) -> Double {
 }
 
 ///|
-fn actual_paint_document_dimensions_from_layout(
+fn actual_paint_node_contributes_document_overflow(node : @node.Node) -> Bool {
+  node.style.position != @types.Fixed
+}
+
+///|
+fn actual_paint_node_subtree_has_fixed_positioned(node : @node.Node) -> Bool {
+  if node.style.position == @types.Fixed {
+    return true
+  }
+  for child in node.children {
+    if actual_paint_node_subtree_has_fixed_positioned(child) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn actual_paint_node_layout_child(
+  node : @node.Node,
+  index : Int,
+) -> @node.Node? {
+  if index < node.children.length() {
+    Some(node.children[index])
+  } else {
+    None
+  }
+}
+
+///|
+fn actual_paint_node_layout_content_right(
+  node : @node.Node,
+  layout : @types.Layout,
+) -> Double {
+  if !actual_paint_node_contributes_document_overflow(node) {
+    return 0.0
+  }
+  let mut right = layout.x + layout.width
+  match layout.overflow_x {
+    @types.Visible => {
+      if !actual_paint_node_subtree_has_fixed_positioned(node) {
+        let scroll_right = layout.x + layout.scroll_width
+        if scroll_right > right {
+          right = scroll_right
+        }
+      }
+      for i, child_layout in layout.children {
+        let child_right = match actual_paint_node_layout_child(node, i) {
+          Some(child_node) =>
+            actual_paint_node_layout_content_right(child_node, child_layout)
+          None => actual_paint_layout_content_right(child_layout)
+        }
+        if child_right > right {
+          right = child_right
+        }
+      }
+    }
+    _ => ()
+  }
+  right
+}
+
+///|
+fn actual_paint_node_layout_content_bottom(
+  node : @node.Node,
+  layout : @types.Layout,
+) -> Double {
+  if !actual_paint_node_contributes_document_overflow(node) {
+    return 0.0
+  }
+  let collapsed_top_margin = if layout.y == 0.0 && layout.margin.top > 0.0 {
+    layout.margin.top
+  } else {
+    0.0
+  }
+  let mut bottom = layout.y +
+    collapsed_top_margin +
+    layout.height +
+    layout.margin.bottom
+  match layout.overflow_y {
+    @types.Visible => {
+      if !actual_paint_node_subtree_has_fixed_positioned(node) {
+        let scroll_bottom = layout.y + layout.scroll_height
+        if scroll_bottom > bottom {
+          bottom = scroll_bottom
+        }
+      }
+      for i, child_layout in layout.children {
+        let child_bottom = match actual_paint_node_layout_child(node, i) {
+          Some(child_node) =>
+            actual_paint_node_layout_content_bottom(child_node, child_layout)
+          None => actual_paint_layout_content_bottom(child_layout)
+        }
+        if child_bottom > bottom {
+          bottom = child_bottom
+        }
+      }
+    }
+    _ => ()
+  }
+  bottom
+}
+
+///|
+fn actual_paint_document_dimensions_from_node_and_layout(
+  node : @node.Node,
   layout : @types.Layout,
   viewport_width : Int,
   viewport_height : Int,
 ) -> (Int, Int) {
-  let width = actual_paint_layout_content_right(layout).ceil().to_int()
-  let layout_height = actual_paint_layout_content_bottom(layout).ceil().to_int()
-  let dom_height = js_actual_paint_document_height(viewport_height)
-  let height = layout_height.max(dom_height)
+  let width = actual_paint_node_layout_content_right(node, layout)
+    .ceil()
+    .to_int()
+  let height = actual_paint_node_layout_content_bottom(node, layout)
+    .ceil()
+    .to_int()
   (width.max(viewport_width).max(1), height.max(viewport_height).max(1))
 }
 
@@ -709,8 +768,8 @@ fn BidiProtocol::build_actual_paint_frame(
   }
   let t1 = js_now_ms()
   let (width, height) = if origin == "document" {
-    actual_paint_document_dimensions_from_layout(
-      layout, viewport_width, viewport_height,
+    actual_paint_document_dimensions_from_node_and_layout(
+      node, layout, viewport_width, viewport_height,
     )
   } else {
     (viewport_width, viewport_height)
@@ -1096,7 +1155,9 @@ fn BidiProtocol::resolve_capture_paint_tree(
     @renderer.render_to_node_and_layout(html, ctx)
   }
   let (paint_width, paint_height) = if origin == "document" {
-    actual_paint_document_dimensions_from_layout(layout, width, height)
+    actual_paint_document_dimensions_from_node_and_layout(
+      node, layout, width, height,
+    )
   } else {
     (width, height)
   }

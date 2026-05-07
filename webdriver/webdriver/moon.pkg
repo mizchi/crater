@@ -9,6 +9,7 @@ import {
   "mizchi/crater-browser/tui/paint_png" @tui_paint_png,
   "mizchi/crater-browser/tui/paint/viewport" @tui_paint_viewport,
   "mizchi/crater-dom/dom",
+  "mizchi/crater-layout/node" @node,
   "mizchi/crater-renderer/renderer",
   "mizchi/crater-painter/svg",
   "mizchi/crater-painter/x/image",
