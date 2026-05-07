@@ -34,6 +34,7 @@
     "bench:playwright": "playwright test tests/playwright-benchmark.test.ts",
     "bench:realworld": "tsx scripts/real-world-paint-bench.ts",
     "capture:realworld": "tsx scripts/capture-real-world-snapshot.ts",
+    "smoke:crater-playwright": "tsx scripts/crater-playwright-smoke.ts",
     "test:website": "playwright test tests/website-loading.test.ts tests/browser-user-scenarios.test.ts"
   },
   "dependencies": {

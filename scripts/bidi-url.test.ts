@@ -6,6 +6,7 @@ import {
   BIDI_URL_ENV,
   BIDI_URL_FILE_NAME,
   DEFAULT_BIDI_WS_URL,
+  discoverBidiUrl,
   readBidiUrlFile,
   resolveBidiUrl,
 } from "./bidi-url";
@@ -126,5 +127,38 @@ describe("resolveBidiUrl", () => {
     });
 
     expect(url).toBe(DEFAULT_BIDI_WS_URL);
+  });
+});
+
+describe("discoverBidiUrl", () => {
+  it("returns null when no explicit discovery source succeeds", async () => {
+    const cwd = makeTempDir();
+
+    const url = await discoverBidiUrl({
+      cwd,
+      fetchImpl: (async () => {
+        throw new Error("connection refused");
+      }) as typeof fetch,
+    });
+
+    expect(url).toBeNull();
+  });
+
+  it("can ignore a tracked websocket URL file for live-server discovery", async () => {
+    const cwd = makeTempDir();
+    fs.writeFileSync(
+      path.join(cwd, BIDI_URL_FILE_NAME),
+      "ws://127.0.0.1:9222/session/stale",
+    );
+
+    const url = await discoverBidiUrl({
+      cwd,
+      readUrlFile: false,
+      fetchImpl: (async () => {
+        throw new Error("connection refused");
+      }) as typeof fetch,
+    });
+
+    expect(url).toBeNull();
   });
 });

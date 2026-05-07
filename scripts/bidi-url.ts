@@ -16,6 +16,7 @@ export interface ResolveBidiUrlOptions {
   statusUrl?: string;
   fetchImpl?: FetchLike;
   readFileSync?: ReadFileSyncLike;
+  readUrlFile?: boolean;
 }
 
 interface BidiStatusPayload {
@@ -82,6 +83,12 @@ export async function fetchBidiUrlFromStatus(
 export async function resolveBidiUrl(
   options: ResolveBidiUrlOptions = {},
 ): Promise<string> {
+  return await discoverBidiUrl(options) ?? DEFAULT_BIDI_WS_URL;
+}
+
+export async function discoverBidiUrl(
+  options: ResolveBidiUrlOptions = {},
+): Promise<string | null> {
   const env = options.env ?? process.env;
   const envUrl = env[BIDI_URL_ENV];
   if (isWebSocketUrl(envUrl)) {
@@ -93,10 +100,12 @@ export async function resolveBidiUrl(
     return statusUrl;
   }
 
-  const fileUrl = readBidiUrlFile(options);
-  if (fileUrl) {
-    return fileUrl;
+  if (options.readUrlFile !== false) {
+    const fileUrl = readBidiUrlFile(options);
+    if (fileUrl) {
+      return fileUrl;
+    }
   }
 
-  return DEFAULT_BIDI_WS_URL;
+  return null;
 }

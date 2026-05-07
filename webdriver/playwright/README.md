@@ -27,9 +27,10 @@ console.log(response?.status());
 await page.getByText("Ready").click();
 ```
 
-Top-level page loads are treated as navigation and are not blocked by the
-same-origin request sandbox. Subresource requests, including external scripts,
-still go through Crater's request sandbox/CORS policy.
+Top-level page loads are treated as navigation. For Playwright adapter page
+loads, Crater's lower-level request sandbox is opened to match browser behavior:
+page scripts may send cross-origin requests, while fetch/XHR still enforce CORS
+at the response boundary.
 `goto()` follows the runtime `fetch()` redirect behavior and returns a
 response-like object with final URL, status, status text, headers, `ok()`, and
 request metadata. HTTP 4xx/5xx responses do not throw; their response body is
@@ -52,6 +53,28 @@ await page.setContent("<h1>Ready</h1>");
 const state = await context.storageState();
 await browser.close();
 ```
+
+Integration scripts that already expect a Playwright `chromium.launch()` shape
+can use the Crater browser type facade:
+
+```ts
+import { chromium } from "../webdriver/playwright/adapter.ts";
+
+const browser = await chromium.launch();
+const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+const page = await context.newPage();
+await page.goto("http://127.0.0.1:3000/", { waitUntil: "commit" });
+await page.screenshot({ fullPage: true, path: "tmp/crater.png" });
+await browser.close();
+```
+
+`chromium.launch()` reuses `CRATER_BIDI_URL` or a live status endpoint when
+present. If none is available, it starts `webdriver/bidi_main/start-with-font.ts`
+via Deno, ignores stale `.bidi-ws-url` files before launch, and shuts the
+managed process down when the returned browser is closed. Use
+`chromium.launch({ autoStartBidi: false })` for connect-only probes, or
+`pnpm smoke:crater-playwright -- --output tmp/crater-smoke.png` for a static
+launcher smoke.
 
 ## Expected User Scenarios
 
