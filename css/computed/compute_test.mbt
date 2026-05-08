@@ -651,6 +651,23 @@ test "font-size parsing" {
 }
 
 ///|
+test "line-height rem uses root font size" {
+  let ctx : @computed.ComputeContext = {
+    parent_style: None,
+    root_font_size: 16.0,
+    font_size: 14.0,
+    viewport_width: 1920.0,
+    viewport_height: 1080.0,
+    custom_properties: {},
+  }
+  let style = @computed.compute_inline(
+    "font-size: 0.875rem; line-height: 1.25rem", ctx,
+  )
+  inspect(style.font_size, content="14")
+  inspect(style.line_height, content="20")
+}
+
+///|
 test "font shorthand parsing" {
   let ctx = @computed.ComputeContext::new()
 

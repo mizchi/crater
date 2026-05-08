@@ -4681,6 +4681,30 @@ fn create_generated_pseudo_node(
 }
 
 ///|
+fn pseudo_base_style_from_host(host_style : @style.Style) -> @style.Style {
+  {
+    ..@style.Style::default(),
+    display: @types.Inline,
+    visibility: host_style.visibility,
+    pointer_events: host_style.pointer_events,
+    color: host_style.color,
+    font_size: host_style.font_size,
+    font_weight: host_style.font_weight,
+    font_family: host_style.font_family,
+    line_height: host_style.line_height,
+    text_align: host_style.text_align,
+    white_space: host_style.white_space,
+    writing_mode: host_style.writing_mode,
+    direction: host_style.direction,
+    text_decoration_underline: host_style.text_decoration_underline,
+    text_decoration_line_through: host_style.text_decoration_line_through,
+    text_decoration_overline: host_style.text_decoration_overline,
+    letter_spacing: host_style.letter_spacing,
+    word_spacing: host_style.word_spacing,
+  }
+}
+
+///|
 fn resolve_pseudo_spec(
   selector_elem : @css.Element,
   host_style : @style.Style,
@@ -4703,8 +4727,8 @@ fn resolve_pseudo_spec(
   let mut out_of_flow = false
   let mut left_offset = 0.0
   let pseudo_css_vars = clone_string_map(css_vars)
-  // ::before/::after default to inline formatting participation.
-  let mut generated_style = { ..host_style, display: @types.Inline }
+  // ::before/::after inherit text properties, not host box dimensions.
+  let mut generated_style = pseudo_base_style_from_host(host_style)
 
   // Quick suffix check keyword to skip rules that can't match this pseudo
   let pseudo_keyword = match pseudo_kind {
@@ -4767,8 +4791,14 @@ fn resolve_pseudo_spec(
                     left_offset = parse_relative_left_offset(v, host_style)
                   }
                   if prop != "content" && !prop.has_prefix("--") {
-                    generated_style = apply_css_property(
-                      generated_style, prop, v,
+                    generated_style = apply_css_property_with_viewport(
+                      generated_style,
+                      prop,
+                      v,
+                      ctx.viewport_width,
+                      ctx.viewport_height,
+                      pseudo_css_vars,
+                      Some(host_style),
                     )
                   }
                 }
@@ -4820,7 +4850,7 @@ fn resolve_pseudo_spec_fast(
   let mut out_of_flow = false
   let mut left_offset = 0.0
   let pseudo_css_vars = clone_string_map(css_vars)
-  let mut generated_style = { ..host_style, display: @types.Inline }
+  let mut generated_style = pseudo_base_style_from_host(host_style)
   let index = match pseudo_kind {
     Before => active_before_index.val
     After => active_after_index.val
@@ -4877,7 +4907,15 @@ fn resolve_pseudo_spec_fast(
               left_offset = parse_relative_left_offset(v, host_style)
             }
             if prop != "content" && !prop.has_prefix("--") {
-              generated_style = apply_css_property(generated_style, prop, v)
+              generated_style = apply_css_property_with_viewport(
+                generated_style,
+                prop,
+                v,
+                ctx.viewport_width,
+                ctx.viewport_height,
+                pseudo_css_vars,
+                Some(host_style),
+              )
             }
           }
           _ => ()
@@ -5722,9 +5760,8 @@ fn element_to_node_with_styles(
   }
 
   match before_pseudo {
-    Some(spec) if !spec.out_of_flow =>
-      children.push(create_generated_pseudo_node(spec, Before))
-    _ => ()
+    Some(spec) => children.push(create_generated_pseudo_node(spec, Before))
+    None => ()
   }
 
   // Add combined text node if there's inline content
@@ -5849,9 +5886,8 @@ fn element_to_node_with_styles(
     }
   }
   match after_pseudo {
-    Some(spec) if !spec.out_of_flow =>
-      children.push(create_generated_pseudo_node(spec, After))
-    _ => ()
+    Some(spec) => children.push(create_generated_pseudo_node(spec, After))
+    None => ()
   }
 
   // Create node ID
@@ -6212,9 +6248,8 @@ fn element_to_node_with_styles_internal(
   }
 
   match before_pseudo {
-    Some(spec) if !spec.out_of_flow =>
-      children.push(create_generated_pseudo_node(spec, Before))
-    _ => ()
+    Some(spec) => children.push(create_generated_pseudo_node(spec, Before))
+    None => ()
   }
 
   // Add combined text node if there's inline content
@@ -6338,9 +6373,8 @@ fn element_to_node_with_styles_internal(
     }
   }
   match after_pseudo {
-    Some(spec) if !spec.out_of_flow =>
-      children.push(create_generated_pseudo_node(spec, After))
-    _ => ()
+    Some(spec) => children.push(create_generated_pseudo_node(spec, After))
+    None => ()
   }
   let children = if tag_lower == "details" && !elem.attributes.contains("open") {
     prune_closed_details_children(children)

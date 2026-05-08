@@ -1201,7 +1201,11 @@ fn seed_font_metrics(
         font_size_decl = None
       }
       "line-height" => {
-        seeded_line_height = parse_line_height(value, seeded_font_size)
+        seeded_line_height = parse_line_height(
+          value,
+          seeded_font_size,
+          root_font_size=ctx.root_font_size,
+        )
         line_height_decl = None
       }
       "font-weight" => {
@@ -2095,7 +2099,11 @@ fn apply_property(
     // Font properties
     "font-size" => builder.font_size = parse_font_size(value, ctx)
     "line-height" =>
-      builder.line_height = parse_line_height(value, builder.font_size)
+      builder.line_height = parse_line_height(
+        value,
+        builder.font_size,
+        root_font_size=ctx.root_font_size,
+      )
     "text-align" => builder.text_align = parse_text_align(value)
     "white-space" => builder.white_space = parse_white_space(value)
     "writing-mode" => builder.writing_mode = parse_writing_mode(value)
@@ -4164,7 +4172,11 @@ fn parse_font_size(value : String, ctx : ComputeContext) -> Double {
 
 ///|
 /// Parse line-height value and return computed value in pixels
-fn parse_line_height(value : String, font_size : Double) -> Double {
+fn parse_line_height(
+  value : String,
+  font_size : Double,
+  root_font_size? : Double = 16.0,
+) -> Double {
   let v = value.trim()
 
   // Handle unitless number (multiplier of font-size)
@@ -4192,6 +4204,17 @@ fn parse_line_height(value : String, font_size : Double) -> Double {
         _ => return font_size
       }
       return n
+    }
+    None => ()
+  }
+
+  // Handle rem units
+  match v.strip_suffix("rem") {
+    Some(num_str) => {
+      let n = @string.parse_double(num_str.to_string()) catch {
+        _ => return font_size
+      }
+      return n * root_font_size
     }
     None => ()
   }
@@ -4293,7 +4316,11 @@ fn parse_font_shorthand(
           end=part.length(),
         )
         font_size = parse_font_size(size_part, ctx)
-        line_height = parse_line_height(lh_part, font_size)
+        line_height = parse_line_height(
+          lh_part,
+          font_size,
+          root_font_size=ctx.root_font_size,
+        )
         size_index = idx
         break
       }

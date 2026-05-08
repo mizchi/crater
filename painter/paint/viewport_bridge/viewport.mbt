@@ -571,17 +571,12 @@ fn from_node_and_layout_with_viewport_inner(
       None => ()
     }
   }
-  let transform = node.style.transform
-  let translate_x = transform.compute_translate_x(layout.width)
-  let translate_y = transform.compute_translate_y(layout.height)
-  let scaled_width = layout.width * transform.scale_x.abs()
-  let scaled_height = layout.height * transform.scale_y.abs()
   let (paint_x, paint_y, paint_width, paint_height, visual_polygon) = visual_transform_bounds(
-    layout.x + translate_x,
-    layout.y + translate_y,
-    scaled_width,
-    scaled_height,
-    transform,
+    layout.x,
+    layout.y,
+    layout.width,
+    layout.height,
+    residual_visual_transform(node.style.transform),
   )
   let paint_children = prune_fully_covered_children(children)
   Some(
@@ -602,6 +597,17 @@ fn from_node_and_layout_with_viewport_inner(
       visual_polygon~,
     ),
   )
+}
+
+///|
+fn residual_visual_transform(transform : @style.Transform) -> @style.Transform {
+  {
+    ..transform,
+    translate_x: @style.TranslateValue::Length(0.0),
+    translate_y: @style.TranslateValue::Length(0.0),
+    scale_x: 1.0,
+    scale_y: 1.0,
+  }
 }
 
 ///|

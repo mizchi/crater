@@ -986,6 +986,71 @@ test "abspos_justify_self_stretch_with_inset_shorthand_spans_containing_block" {
 }
 
 ///|
+test "empty_absolute_before_pseudo_is_kept_as_paintable_box" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|:root { --stripe: red; }
+    #|.alert {
+    #|  position: relative;
+    #|  width: 100px;
+    #|  height: 32px;
+    #|  padding-left: 8px;
+    #|}
+    #|.alert::before {
+    #|  content: "";
+    #|  position: absolute;
+    #|  left: 0;
+    #|  top: 0;
+    #|  bottom: 0;
+    #|  width: 4px;
+    #|  display: block;
+    #|  background: var(--stripe);
+    #|}
+    #|</style>
+    #|<div class="alert">Alert</div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let host = root.children[0]
+  guard host.children.length() > 0 else {
+    fail("absolute empty ::before should be present")
+  }
+  inspect(host.children[0].id, content="#pseudo::before")
+  inspect(host.children[0].style.background_color.to_hex(), content="#ff0000")
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let host_layout = layout.children[0]
+  guard host_layout.children.length() > 0 else {
+    fail("absolute empty ::before should have layout")
+  }
+  let pseudo = host_layout.children[0]
+  inspect(pseudo.id, content="#pseudo::before")
+  inspect(pseudo.width, content="4")
+  inspect(pseudo.height, content="32")
+}
+
+///|
+test "flex_item_rem_line_height_affects_inline_box_height" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.row { display: flex; align-items: center; }
+    #|.control { width: 24px; height: 24px; }
+    #|.label { font-size: 0.875rem; line-height: 1.25rem; }
+    #|</style>
+    #|<div class="row"><span class="control"></span><span class="label">Checked</span></div>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let row = layout.children[0]
+  inspect(row.height, content="24")
+  let label = row.children[1]
+  inspect(label.y, content="2")
+  inspect(label.height, content="20")
+}
+
+///|
 test "whitespace_adjacent_to_br_is_not_preserved_between_replaced_nodes" {
   // Regression for css-contain/contain-size-replaced-003a:
   // whitespace immediately after <br> should not indent the next replaced element.
