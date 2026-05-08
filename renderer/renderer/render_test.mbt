@@ -1051,6 +1051,39 @@ test "flex_item_rem_line_height_affects_inline_box_height" {
 }
 
 ///|
+test "apple_system_normal_line_height_matches_browser_component_metrics" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body {
+    #|  margin: 0;
+    #|  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    #|  font-size: 14px;
+    #|}
+    #|.alert { padding: 12px 16px; }
+    #|.title { font-size: 1rem; margin-bottom: 4px; }
+    #|.desc { font-size: 0.875rem; }
+    #|</style>
+    #|<div class="alert"><div class="title">Error</div><div class="desc">Something went wrong.</div></div>
+  let node = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  inspect(node.style.font_family, content="-apple-system")
+  inspect(node.style.line_height, content="17")
+  let node_alert = node.children[0]
+  inspect(node_alert.style.font_family, content="-apple-system")
+  inspect(node_alert.style.line_height, content="17")
+  inspect(node_alert.children[0].style.line_height, content="18")
+  inspect(node_alert.children[1].style.line_height, content="17")
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let alert = layout.children[0]
+  inspect(alert.height, content="63")
+  inspect(alert.children[0].height, content="18")
+  inspect(alert.children[1].height, content="17")
+}
+
+///|
 test "whitespace_adjacent_to_br_is_not_preserved_between_replaced_nodes" {
   // Regression for css-contain/contain-size-replaced-003a:
   // whitespace immediately after <br> should not indent the next replaced element.

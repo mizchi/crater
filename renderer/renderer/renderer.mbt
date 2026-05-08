@@ -20,6 +20,67 @@ let large_ahem_like_char_width_ratio : Double = 0.722
 let normal_line_height_ratio : Double = 1.2
 
 ///|
+fn is_apple_system_font_family(font_family : String) -> Bool {
+  let family = font_family.to_lower()
+  family == "-apple-system" || family == "blinkmacsystemfont"
+}
+
+///|
+fn apple_system_normal_line_height(font_size : Double) -> Double {
+  let rounded = font_size.round()
+  if (font_size - rounded).abs() < 0.01 {
+    match rounded.to_int() {
+      10 => return 12.0
+      11 => return 13.0
+      12 => return 15.0
+      13 => return 16.0
+      14 => return 17.0
+      15 => return 18.0
+      16 => return 18.0
+      17 => return 20.0
+      18 => return 21.0
+      20 => return 23.0
+      24 => return 28.0
+      32 => return 38.0
+      _ => ()
+    }
+  }
+  (font_size * 1.17).round()
+}
+
+///|
+fn inherited_line_height_looks_like_apple_normal(
+  parent_style : @style.Style?,
+) -> Bool {
+  match parent_style {
+    Some(parent) =>
+      (
+        is_apple_system_font_family(parent.font_family) &&
+        (parent.line_height - apple_system_normal_line_height(parent.font_size)).abs() <
+        0.01
+      ) ||
+      (parent.line_height - parent.font_size * normal_line_height_ratio).abs() <
+      0.01
+    None => true
+  }
+}
+
+///|
+fn apply_browser_normal_line_height_if_needed(
+  style : @style.Style,
+  parent_style : @style.Style?,
+  author_line_height_present : Bool,
+) -> @style.Style {
+  if author_line_height_present ||
+    !is_apple_system_font_family(style.font_family) ||
+    !inherited_line_height_looks_like_apple_normal(parent_style) {
+    style
+  } else {
+    { ..style, line_height: apple_system_normal_line_height(style.font_size) }
+  }
+}
+
+///|
 /// Current cellpadding value from the nearest ancestor <table>.
 /// -1.0 means not set. Updated when entering/leaving table elements.
 let current_cellpadding : Ref[Double] = { val: -1.0 }
@@ -7772,6 +7833,26 @@ fn compute_element_style_indexed(
   let element_css_vars = clone_string_map(css_vars)
   collect_cascaded_custom_properties(cascaded, element_css_vars)
   collect_inline_custom_properties(inline_css, element_css_vars)
+  let mut author_line_height_present = false
+  match cascaded {
+    Some(cascaded_values) => {
+      if cascaded_values.get("line-height") is Some(_) {
+        author_line_height_present = true
+      }
+    }
+    None => ()
+  }
+  match inline_css {
+    Some(css) =>
+      for declaration in parse_inline_declarations_cached(css) {
+        let (prop, _value) = declaration
+        let prop = prop.to_lower()
+        if prop == "line-height" {
+          author_line_height_present = true
+        }
+      }
+    None => ()
+  }
   // Keep this cache conservative: only reuse when stylesheet cascade and
   // inherited context cannot change the inline-only result.
   let mut inline_only_cache_css : String? = None
@@ -8122,6 +8203,11 @@ fn compute_element_style_indexed(
       )
     None => ()
   }
+  style = apply_browser_normal_line_height_if_needed(
+    style,
+    parent_style,
+    author_line_height_present,
+  )
   style = normalize_display_contents_for_unusual_html(
     selector_elem.tag_name,
     style,
