@@ -7835,11 +7835,10 @@ fn compute_element_style_indexed(
   collect_inline_custom_properties(inline_css, element_css_vars)
   let mut author_line_height_present = false
   match cascaded {
-    Some(cascaded_values) => {
+    Some(cascaded_values) =>
       if cascaded_values.get("line-height") is Some(_) {
         author_line_height_present = true
       }
-    }
     None => ()
   }
   match inline_css {
@@ -8204,9 +8203,7 @@ fn compute_element_style_indexed(
     None => ()
   }
   style = apply_browser_normal_line_height_if_needed(
-    style,
-    parent_style,
-    author_line_height_present,
+    style, parent_style, author_line_height_present,
   )
   style = normalize_display_contents_for_unusual_html(
     selector_elem.tag_name,

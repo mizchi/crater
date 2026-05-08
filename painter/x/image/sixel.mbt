@@ -1945,6 +1945,170 @@ fn resolve_radius(val : Double, ref_dim : Int) -> Int {
 }
 
 ///|
+fn same_types_color(a : @types.Color, b : @types.Color) -> Bool {
+  a.r == b.r && a.g == b.g && a.b == b.b && (a.a - b.a).abs() < 0.000001
+}
+
+///|
+fn can_draw_uniform_rounded_border_ring(
+  node : @paint_model.PaintNode,
+  bt : Int,
+  br : Int,
+  bb : Int,
+  bl : Int,
+  has_radius : Bool,
+) -> Bool {
+  let solid_background = match node.paint.background_image {
+    @types.None => true
+    @types.Gradient(_) => false
+  }
+  has_radius &&
+  bt > 0 &&
+  bt == br &&
+  bt == bb &&
+  bt == bl &&
+  !node.paint.border_top_color.is_transparent() &&
+  same_types_color(node.paint.border_top_color, node.paint.border_right_color) &&
+  same_types_color(node.paint.border_top_color, node.paint.border_bottom_color) &&
+  same_types_color(node.paint.border_top_color, node.paint.border_left_color) &&
+  !node.paint.background_color.is_transparent() &&
+  solid_background
+}
+
+///|
+fn draw_uniform_rounded_border_ring_clipped(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  node : @paint_model.PaintNode,
+  x : Int,
+  y : Int,
+  w : Int,
+  h : Int,
+  border_width : Int,
+  clip : ClipRect?,
+  tl_r : Int,
+  tr_r : Int,
+  br_r : Int,
+  bl_r : Int,
+) -> Unit {
+  fill_rounded_rect_clipped(
+    fb,
+    palette,
+    x,
+    y,
+    w,
+    h,
+    node.paint.border_top_color,
+    node.paint.opacity,
+    clip,
+    tl_r,
+    tr_r,
+    br_r,
+    bl_r,
+  )
+  let inner_w = w - border_width * 2
+  let inner_h = h - border_width * 2
+  if inner_w <= 0 || inner_h <= 0 {
+    return
+  }
+  fill_rounded_rect_clipped(
+    fb,
+    palette,
+    x + border_width,
+    y + border_width,
+    inner_w,
+    inner_h,
+    node.paint.background_color,
+    node.paint.opacity,
+    clip,
+    @cmp.maximum(tl_r - border_width, 0),
+    @cmp.maximum(tr_r - border_width, 0),
+    @cmp.maximum(br_r - border_width, 0),
+    @cmp.maximum(bl_r - border_width, 0),
+  )
+}
+
+///|
+fn make_transparent_framebuffer(width : Int, height : Int) -> Framebuffer {
+  { width, height, pixels: Array::make(width * height, -1) }
+}
+
+///|
+fn blend_group_framebuffer_over(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  group_fb : Framebuffer,
+  group_palette : DynamicPalette,
+  opacity : Double,
+  clip : ClipRect?,
+) -> Unit {
+  let alpha = clamp_byte((opacity * 255.0).to_int())
+  if alpha <= 0 {
+    return
+  }
+  let x1 = match clip {
+    Some(c) => @cmp.maximum(c.x, 0)
+    None => 0
+  }
+  let y1 = match clip {
+    Some(c) => @cmp.maximum(c.y, 0)
+    None => 0
+  }
+  let x2 = match clip {
+    Some(c) => @cmp.minimum(c.x + c.w, fb.width)
+    None => fb.width
+  }
+  let y2 = match clip {
+    Some(c) => @cmp.minimum(c.y + c.h, fb.height)
+    None => fb.height
+  }
+  if x2 <= x1 || y2 <= y1 {
+    return
+  }
+  for py = y1; py < y2; py = py + 1 {
+    let row = py * group_fb.width
+    for px = x1; px < x2; px = px + 1 {
+      let idx = group_fb.pixels[row + px]
+      if idx >= 0 && idx < group_palette.colors.length() {
+        blend_sixel_color_over_pixel(
+          fb,
+          palette,
+          px,
+          py,
+          group_palette.colors[idx],
+          alpha,
+        )
+      }
+    }
+  }
+}
+
+///|
+fn render_group_opacity_clipped(
+  fb : Framebuffer,
+  palette : DynamicPalette,
+  node : @paint_model.PaintNode,
+  parent_x : Double,
+  parent_y : Double,
+  clip : ClipRect?,
+) -> Unit {
+  let group_fb = make_transparent_framebuffer(fb.width, fb.height)
+  let group_palette = DynamicPalette::new()
+  let opaque_node = { ..node, paint: { ..node.paint, opacity: 1.0 } }
+  render_paint_node_clipped(
+    group_fb, group_palette, opaque_node, parent_x, parent_y, clip,
+  )
+  blend_group_framebuffer_over(
+    fb,
+    palette,
+    group_fb,
+    group_palette,
+    node.paint.opacity,
+    clip,
+  )
+}
+
+///|
 /// Render a PaintNode tree to framebuffer
 fn render_paint_node(
   fb : Framebuffer,
@@ -2010,6 +2174,10 @@ fn render_paint_node_clipped(
         return
       }
     None => ()
+  }
+  if node.paint.opacity < 1.0 && !node.children.is_empty() {
+    render_group_opacity_clipped(fb, palette, node, parent_x, parent_y, clip)
+    return
   }
 
   // Compute border-radius values (negative means percentage)
@@ -2117,7 +2285,19 @@ fn render_paint_node_clipped(
   let bb = node.paint.border_bottom_width.to_int()
   let bl = node.paint.border_left_width.to_int()
   let opacity = node.paint.opacity
-  if bt > 0 && !node.paint.border_top_color.is_transparent() {
+  let rounded_border_drawn = if can_draw_uniform_rounded_border_ring(
+      node, bt, br, bb, bl, has_radius,
+    ) {
+    draw_uniform_rounded_border_ring_clipped(
+      fb, palette, node, x, y, w, h, bt, clip, tl_r, tr_r, br_r, bl_r,
+    )
+    true
+  } else {
+    false
+  }
+  if !rounded_border_drawn &&
+    bt > 0 &&
+    !node.paint.border_top_color.is_transparent() {
     fill_rect_clipped(
       fb,
       palette,
@@ -2130,7 +2310,9 @@ fn render_paint_node_clipped(
       clip,
     )
   }
-  if bb > 0 && !node.paint.border_bottom_color.is_transparent() {
+  if !rounded_border_drawn &&
+    bb > 0 &&
+    !node.paint.border_bottom_color.is_transparent() {
     fill_rect_clipped(
       fb,
       palette,
@@ -2143,7 +2325,9 @@ fn render_paint_node_clipped(
       clip,
     )
   }
-  if bl > 0 && !node.paint.border_left_color.is_transparent() {
+  if !rounded_border_drawn &&
+    bl > 0 &&
+    !node.paint.border_left_color.is_transparent() {
     fill_rect_clipped(
       fb,
       palette,
@@ -2156,7 +2340,9 @@ fn render_paint_node_clipped(
       clip,
     )
   }
-  if br > 0 && !node.paint.border_right_color.is_transparent() {
+  if !rounded_border_drawn &&
+    br > 0 &&
+    !node.paint.border_right_color.is_transparent() {
     fill_rect_clipped(
       fb,
       palette,

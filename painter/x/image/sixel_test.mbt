@@ -332,6 +332,64 @@ test "render_paint_node_to_framebuffer clips solid rounded background corners" {
 }
 
 ///|
+test "render_paint_node_to_framebuffer clips uniform rounded border corners" {
+  let style = @style.Style::default()
+  style.background_color = @types.Color::white()
+  style.border_top_left_radius = 4.0
+  style.border_top_right_radius = 4.0
+  style.border_bottom_right_radius = 4.0
+  style.border_bottom_left_radius = 4.0
+  style.border_color = @types.Rect::all(@types.Color::rgb(0, 120, 212))
+  let paint = {
+    ..@paint_model.PaintProperties::from_style(style),
+    border_top_width: 2.0,
+    border_right_width: 2.0,
+    border_bottom_width: 2.0,
+    border_left_width: 2.0,
+  }
+  let child = @paint_model.PaintNode::new(
+    "div",
+    "div",
+    0.0,
+    0.0,
+    12.0,
+    12.0,
+    paint,
+    [],
+  )
+  let node = @paint_model.PaintNode::new(
+    "root",
+    "div",
+    0.0,
+    0.0,
+    12.0,
+    12.0,
+    @paint_model.PaintProperties::default(),
+    [child],
+  )
+  let fb = @image.Framebuffer::new(12, 12)
+  let palette = @image.DynamicPalette::new()
+  @image.render_paint_node_to_framebuffer(node, fb, palette)
+
+  let corner = palette.colors[fb.get_pixel(0, 0)]
+  let top_edge = palette.colors[fb.get_pixel(6, 0)]
+  let left_edge = palette.colors[fb.get_pixel(0, 6)]
+  let inner = palette.colors[fb.get_pixel(6, 6)]
+  inspect(corner.r, content="255")
+  inspect(corner.g, content="255")
+  inspect(corner.b, content="255")
+  inspect(top_edge.r, content="0")
+  inspect(top_edge.g, content="120")
+  inspect(top_edge.b, content="212")
+  inspect(left_edge.r, content="0")
+  inspect(left_edge.g, content="120")
+  inspect(left_edge.b, content="212")
+  inspect(inner.r, content="255")
+  inspect(inner.g, content="255")
+  inspect(inner.b, content="255")
+}
+
+///|
 test "canvas background propagates from body when html is transparent" {
   // Simulate <html> with transparent background containing <body> with #ececec
   let html_style = @style.Style::default()
@@ -447,6 +505,58 @@ test "render_paint_node_to_framebuffer blends glyph text opacity from parent" {
   inspect(color.g > 100 && color.g < 200, content="true")
   inspect(color.b > 100 && color.b < 200, content="true")
   @image.clear_glyph_provider()
+}
+
+///|
+test "render_paint_node_to_framebuffer applies parent opacity as a group" {
+  let parent_style = @style.Style::default()
+  parent_style.opacity = 0.5
+  let red_style = @style.Style::default()
+  red_style.background_color = @types.Color::rgb(255, 0, 0)
+  let white_style = @style.Style::default()
+  white_style.background_color = @types.Color::white()
+  let red_node = @paint_model.PaintNode::new(
+    "red",
+    "div",
+    0.0,
+    0.0,
+    12.0,
+    12.0,
+    @paint_model.PaintProperties::from_style(red_style),
+    [],
+  )
+  let white_node = @paint_model.PaintNode::new(
+    "white",
+    "div",
+    2.0,
+    2.0,
+    8.0,
+    8.0,
+    @paint_model.PaintProperties::from_style(white_style),
+    [],
+  )
+  let parent_node = @paint_model.PaintNode::new(
+    "group",
+    "div",
+    0.0,
+    0.0,
+    12.0,
+    12.0,
+    @paint_model.PaintProperties::from_style(parent_style),
+    [red_node, white_node],
+  )
+  let fb = @image.Framebuffer::new(12, 12)
+  let palette = @image.DynamicPalette::new()
+  @image.render_paint_node_to_framebuffer(parent_node, fb, palette)
+
+  let edge = palette.colors[fb.get_pixel(0, 0)]
+  let center = palette.colors[fb.get_pixel(5, 5)]
+  inspect(edge.r, content="255")
+  inspect(edge.g > 120 && edge.g < 140, content="true")
+  inspect(edge.b > 120 && edge.b < 140, content="true")
+  inspect(center.r, content="255")
+  inspect(center.g, content="255")
+  inspect(center.b, content="255")
 }
 
 ///|
