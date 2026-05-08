@@ -220,6 +220,34 @@ Notes:
 - `css-flexbox` WPT 全件はこの変更後も `289 / 289 passed`
 - synthetic bench では indexed path が non-indexed にかなり近づき、1000-rule ではほぼ同等まで縮んだ
 
+## GitHub Real URL VRT Phase Benchmarks (2026-05-09)
+
+Commands:
+```bash
+moon bench --manifest-path benchmarks/moon.mod.json -p mizchi/crater-benchmarks -f vrt_api_bench.mbt --target js --release -i 13-21
+pnpm exec tsx scripts/vrt-bench.ts --group all --json /tmp/crater-vrt-bench-prepared-css-all.json --markdown /tmp/crater-vrt-bench-prepared-css-all.md
+```
+
+Context:
+- GitHub profile snapshot fixture (`benchmarks/fixtures/github_mizchi.html`) and the checked-in GitHub CSS bundle are used as a real URL proxy.
+- The hot-path benchmarks warm `renderer`'s external CSS bundle cache before the measured loop.
+- Prepared CSS handle benchmarks pass the parsed/indexed CSS bundle directly, avoiding per-render cache key construction.
+
+| Benchmark | mean | note |
+|-----------|------|------|
+| `vrt_phase_parse_github_real_url_fixture` | 7.42 ms | 211 KB HTML parse |
+| `vrt_phase_parse_github_external_css_bundle` | 36.37 ms | 831 KB CSS cold parse/index input |
+| `vrt_phase_prepare_github_external_css_hot` | 1.99 ms | cached external CSS bundle, still builds array cache key |
+| `vrt_phase_prepare_github_prepared_css_handle` | 191.71 µs | prepared CSS handle, pre-parsed HTML |
+| `vrt_phase_node_layout_github_external_css_hot` | 2.37 ms | cached CSS + node/layout, array API |
+| `vrt_phase_node_layout_github_prepared_css_handle` | 524.65 µs | prepared CSS handle + node/layout |
+| `vrt_render_paint_tree_github_external_css_hot` | 3.90 ms | cached CSS + node/layout + paint tree, high variance |
+| `vrt_render_paint_tree_github_prepared_css_handle` | 437.03 µs | prepared CSS handle + node/layout + paint tree |
+
+Notes:
+- The expensive part is still the first CSS parse/index build.
+- Repeated component/URL VRT should prepare the CSS bundle once with `prepare_external_css()` and reuse the returned handle. In this fixture, that cuts repeated prepare from ~2 ms to ~0.2 ms and node/layout from ~2.4 ms to ~0.5 ms.
+
 ---
 
 # Optimization Results (2025-01-12)

@@ -7,6 +7,16 @@ pub using @vrt {
 }
 
 ///|
+pub using @renderer_core {type PreparedExternalCss}
+
+///|
+pub fn prepare_external_css(
+  external_css : Array[String],
+) -> PreparedExternalCss {
+  @renderer_core.prepare_external_css(external_css)
+}
+
+///|
 pub fn render_html_to_paint_tree(
   html : String,
   viewport : @types.Size[Double],
@@ -21,6 +31,17 @@ pub fn render_html_to_paint_tree_with_external_css(
   external_css : Array[String],
 ) -> @paint_model.PaintNode {
   @vrt.render_html_to_paint_tree_with_external_css(html, viewport, external_css)
+}
+
+///|
+pub fn render_html_to_paint_tree_with_prepared_external_css(
+  html : String,
+  viewport : @types.Size[Double],
+  external_css : PreparedExternalCss,
+) -> @paint_model.PaintNode {
+  @vrt.render_html_to_paint_tree_with_prepared_external_css(
+    html, viewport, external_css,
+  )
 }
 
 ///|

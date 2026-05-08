@@ -2,6 +2,7 @@
 pub using @renderer_api {
   type CssMutation,
   type CssMutationAction,
+  type PreparedExternalCss,
   type RenderVariant,
   type RenderVariantResult,
 }
@@ -93,6 +94,24 @@ pub fn render_html_to_paint_tree_with_external_css(
   external_css : Array[String],
 ) -> @paint.PaintNode {
   @renderer_api.render_html_to_paint_tree_with_external_css(
+    html, viewport, external_css,
+  )
+}
+
+///|
+pub fn prepare_external_css(
+  external_css : Array[String],
+) -> PreparedExternalCss {
+  @renderer_api.prepare_external_css(external_css)
+}
+
+///|
+pub fn render_html_to_paint_tree_with_prepared_external_css(
+  html : String,
+  viewport : @types.Size[Double],
+  external_css : PreparedExternalCss,
+) -> @paint.PaintNode {
+  @renderer_api.render_html_to_paint_tree_with_prepared_external_css(
     html, viewport, external_css,
   )
 }

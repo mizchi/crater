@@ -135,6 +135,31 @@ test "render_to_node_and_layout_with_external_css is stable across repeated call
 }
 
 ///|
+test "prepared external css renders same layout as css array path" {
+  let html =
+    #|<!doctype html>
+    #|<html><head><style>.local { height: 18px; }</style></head>
+    #|<body><div id="target" class="card local"><span>hello</span></div></body></html>
+  let ctx = @renderer.RenderContext::default()
+  let external_css = [
+    ".card { display: flex; gap: 8px; padding: 12px; border: 1px solid black; }",
+    "#target span { display: inline-block; width: 40px; height: 20px; }",
+  ]
+  let doc = @html.parse_document(html)
+  let prepared_external_css = @renderer.prepare_external_css(external_css)
+  let (_, expected) = @renderer.render_to_node_and_layout_with_document(
+    doc, ctx, external_css,
+  )
+  let (_, actual) = @renderer.render_to_node_and_layout_with_prepared_external_css(
+    doc, ctx, prepared_external_css,
+  )
+  assert_eq(
+    @renderer.layout_to_json(actual),
+    @renderer.layout_to_json(expected),
+  )
+}
+
+///|
 test "debug node style from stylesheet" {
   let html =
     #|<!doctype html>

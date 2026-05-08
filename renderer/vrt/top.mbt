@@ -45,6 +45,34 @@ pub fn render_html_to_paint_tree_with_external_css(
 }
 
 ///|
+pub fn render_html_to_paint_tree_with_prepared_external_css(
+  html : String,
+  viewport : @types.Size[Double],
+  external_css : @renderer.PreparedExternalCss,
+) -> @paint_model.PaintNode {
+  let doc = @html.parse_document(html)
+  let (node, layout) = @renderer.render_to_node_and_layout_with_prepared_external_css(
+    doc,
+    make_render_context(viewport),
+    external_css,
+  )
+  match
+    @paint_render.from_node_and_layout_with_viewport_rect(
+      node,
+      layout,
+      0.0,
+      0.0,
+      viewport.width,
+      viewport.height,
+      0.0,
+      0.0,
+    ) {
+    Some(paint_tree) => paint_tree
+    None => @paint_render.from_node_and_layout(node, layout)
+  }
+}
+
+///|
 pub fn render_html_to_paint_tree_json(
   html : String,
   viewport : @types.Size[Double],

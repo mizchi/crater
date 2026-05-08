@@ -50,7 +50,11 @@ pub let perf_pseudo_us : @ref.Ref[Int64]
 
 pub let perf_selector_build_us : @ref.Ref[Int64]
 
+pub fn prepare_external_css(Array[String]) -> PreparedExternalCss
+
 pub fn prepare_render_document(@html.Document, RenderContext, Array[String]) -> PreparedRenderDocument
+
+pub fn prepare_render_document_with_prepared_external_css(@html.Document, RenderContext, PreparedExternalCss) -> PreparedRenderDocument
 
 pub fn print_layout_tree(@types.Layout, Int) -> Unit
 
@@ -59,6 +63,8 @@ pub fn print_layout_tree_with_options(@types.Layout, Int, Bool) -> Unit
 pub fn render(String, RenderContext) -> @types.Layout
 
 pub fn render_document_with_external_css(@html.Document, RenderContext, Array[String]) -> @types.Layout
+
+pub fn render_document_with_prepared_external_css(@html.Document, RenderContext, PreparedExternalCss) -> @types.Layout
 
 pub fn render_to_kitty_with_css(String, Int, Int, Int, Array[String]) -> String
 
@@ -72,9 +78,13 @@ pub fn render_to_node_and_layout_with_document(@html.Document, RenderContext, Ar
 
 pub fn render_to_node_and_layout_with_external_css(String, RenderContext, Array[String]) -> (@node.Node, @types.Layout)
 
+pub fn render_to_node_and_layout_with_prepared_external_css(@html.Document, RenderContext, PreparedExternalCss) -> (@node.Node, @types.Layout)
+
 pub fn render_to_node_with_document(@html.Document, RenderContext, Array[String]) -> @node.Node
 
 pub fn render_to_node_with_external_css(String, RenderContext, Array[String]) -> @node.Node
+
+pub fn render_to_node_with_prepared_external_css(@html.Document, RenderContext, PreparedExternalCss) -> @node.Node
 
 pub fn render_to_sixel(String, Int, Int) -> String
 
@@ -103,6 +113,16 @@ pub struct ImageIntrinsicSizeProvider {
   func : (String) -> (Double, Double)?
 }
 pub fn ImageIntrinsicSizeProvider::new((String) -> (Double, Double)?) -> Self
+
+pub struct PreparedExternalCss {
+  stylesheets : Array[@cascade.Stylesheet]
+  indexed_stylesheets : Array[@cascade.IndexedStylesheet]
+  before_rules : Array[PseudoRule]
+  after_rules : Array[PseudoRule]
+  before_index : PseudoRuleIndex
+  after_index : PseudoRuleIndex
+  total_rules : Int
+}
 
 pub struct PreparedRenderDocument {
   stylesheets : Array[@cascade.Stylesheet]
