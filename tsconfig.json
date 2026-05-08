@@ -13,7 +13,9 @@
   "include": [
     "webdriver/playwright/**/*.ts",
     "scripts/bidi-url.ts",
+    "scripts/component-vrt.ts",
     "scripts/crater-bidi-server.ts",
+    "scripts/luna-vrt-reference.ts",
     "scripts/crater-playwright-smoke.ts"
   ]
 }

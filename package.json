@@ -35,6 +35,8 @@
     "bench:playwright": "playwright test tests/playwright-benchmark.test.ts",
     "bench:realworld": "tsx scripts/real-world-paint-bench.ts",
     "capture:realworld": "tsx scripts/capture-real-world-snapshot.ts",
+    "vrt:component": "node --import tsx scripts/component-vrt.ts",
+    "vrt:luna-reference": "node --import tsx scripts/luna-vrt-reference.ts",
     "smoke:crater-playwright": "tsx scripts/crater-playwright-smoke.ts",
     "test:website": "playwright test tests/website-loading.test.ts tests/browser-user-scenarios.test.ts"
   },
