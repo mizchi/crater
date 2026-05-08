@@ -3513,7 +3513,7 @@ let active_after_index : Ref[PseudoRuleIndex] = {
 }
 
 ///|
-priv struct ExternalCssBundle {
+pub struct PreparedExternalCss {
   stylesheets : Array[@css.Stylesheet]
   indexed_stylesheets : Array[@css.IndexedStylesheet]
   before_rules : Array[PseudoRule]
@@ -3524,7 +3524,7 @@ priv struct ExternalCssBundle {
 }
 
 ///|
-let external_css_bundle_cache : Ref[Map[String, ExternalCssBundle]] = {
+let external_css_bundle_cache : Ref[Map[String, PreparedExternalCss]] = {
   val: {},
 }
 
@@ -3583,29 +3583,36 @@ fn collect_pseudo_rules_from_stylesheet(
 }
 
 ///|
-fn get_external_css_bundle(external_css : Array[String]) -> ExternalCssBundle {
+fn empty_prepared_external_css() -> PreparedExternalCss {
+  {
+    stylesheets: [],
+    indexed_stylesheets: [],
+    before_rules: [],
+    after_rules: [],
+    before_index: {
+      rules: [],
+      by_id: {},
+      by_class: {},
+      by_tag: {},
+      universal: [],
+    },
+    after_index: {
+      rules: [],
+      by_id: {},
+      by_class: {},
+      by_tag: {},
+      universal: [],
+    },
+    total_rules: 0,
+  }
+}
+
+///|
+pub fn prepare_external_css(
+  external_css : Array[String],
+) -> PreparedExternalCss {
   if external_css.is_empty() {
-    return {
-      stylesheets: [],
-      indexed_stylesheets: [],
-      before_rules: [],
-      after_rules: [],
-      before_index: {
-        rules: [],
-        by_id: {},
-        by_class: {},
-        by_tag: {},
-        universal: [],
-      },
-      after_index: {
-        rules: [],
-        by_id: {},
-        by_class: {},
-        by_tag: {},
-        universal: [],
-      },
-      total_rules: 0,
-    }
+    return empty_prepared_external_css()
   }
   let key = external_css_cache_key(external_css)
   match external_css_bundle_cache.val.get(key) {
@@ -3625,7 +3632,7 @@ fn get_external_css_bundle(external_css : Array[String]) -> ExternalCssBundle {
         stylesheets.push(stylesheet)
         indexed_stylesheets.push(@css.IndexedStylesheet::new(stylesheet))
       }
-      let bundle : ExternalCssBundle = {
+      let bundle : PreparedExternalCss = {
         stylesheets,
         indexed_stylesheets,
         before_rules,
@@ -3661,7 +3668,29 @@ pub fn prepare_render_document(
   external_css : Array[String],
 ) -> PreparedRenderDocument {
   let _t0 = perf_clock_us()
-  let external_bundle = get_external_css_bundle(external_css)
+  let external_bundle = prepare_external_css(external_css)
+  prepare_render_document_with_external_css_bundle(
+    doc, ctx, external_bundle, _t0,
+  )
+}
+
+///|
+pub fn prepare_render_document_with_prepared_external_css(
+  doc : @html.Document,
+  ctx : RenderContext,
+  external_css : PreparedExternalCss,
+) -> PreparedRenderDocument {
+  let _t0 = perf_clock_us()
+  prepare_render_document_with_external_css_bundle(doc, ctx, external_css, _t0)
+}
+
+///|
+fn prepare_render_document_with_external_css_bundle(
+  doc : @html.Document,
+  ctx : RenderContext,
+  external_bundle : PreparedExternalCss,
+  t0 : Int64,
+) -> PreparedRenderDocument {
   let stylesheets : Array[@css.Stylesheet] = []
   for stylesheet in external_bundle.stylesheets {
     stylesheets.push(stylesheet)
@@ -3722,7 +3751,7 @@ pub fn prepare_render_document(
   }
   maybe_log_perf(
     "[perf] css_parse=" +
-    ((_t1 - _t0) / 1000L).to_string() +
+    ((_t1 - t0) / 1000L).to_string() +
     "ms index=" +
     ((_t2 - _t1) / 1000L).to_string() +
     "ms rules=" +
@@ -3962,6 +3991,20 @@ pub fn render_document_with_external_css(
   external_css : Array[String],
 ) -> @types.Layout {
   let prepared = prepare_render_document(doc, ctx, external_css)
+  let root = build_render_root_node(doc, ctx, prepared)
+  compute_layout_from_render_root(root, prepared, ctx)
+}
+
+///|
+/// Render a parsed HTML Document to Layout with a prepared external CSS handle.
+pub fn render_document_with_prepared_external_css(
+  doc : @html.Document,
+  ctx : RenderContext,
+  external_css : PreparedExternalCss,
+) -> @types.Layout {
+  let prepared = prepare_render_document_with_prepared_external_css(
+    doc, ctx, external_css,
+  )
   let root = build_render_root_node(doc, ctx, prepared)
   compute_layout_from_render_root(root, prepared, ctx)
 }
@@ -5264,6 +5307,19 @@ pub fn render_to_node_with_document(
 }
 
 ///|
+/// Render a parsed HTML Document to Node tree with a prepared external CSS handle.
+pub fn render_to_node_with_prepared_external_css(
+  doc : @html.Document,
+  ctx : RenderContext,
+  external_css : PreparedExternalCss,
+) -> @node.Node {
+  let prepared = prepare_render_document_with_prepared_external_css(
+    doc, ctx, external_css,
+  )
+  build_render_root_node(doc, ctx, prepared)
+}
+
+///|
 /// Render a parsed HTML Document to Node tree and Layout with external CSS
 /// while sharing HTML/CSS preparation and node construction.
 pub fn render_to_node_and_layout_with_document(
@@ -5272,6 +5328,21 @@ pub fn render_to_node_and_layout_with_document(
   external_css : Array[String],
 ) -> (@node.Node, @types.Layout) {
   let prepared = prepare_render_document(doc, ctx, external_css)
+  let root = build_render_root_node(doc, ctx, prepared)
+  let layout = compute_layout_from_render_root(root, prepared, ctx)
+  (root, layout)
+}
+
+///|
+/// Render a parsed HTML Document to Node tree and Layout with a prepared external CSS handle.
+pub fn render_to_node_and_layout_with_prepared_external_css(
+  doc : @html.Document,
+  ctx : RenderContext,
+  external_css : PreparedExternalCss,
+) -> (@node.Node, @types.Layout) {
+  let prepared = prepare_render_document_with_prepared_external_css(
+    doc, ctx, external_css,
+  )
   let root = build_render_root_node(doc, ctx, prepared)
   let layout = compute_layout_from_render_root(root, prepared, ctx)
   (root, layout)

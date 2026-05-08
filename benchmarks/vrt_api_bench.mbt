@@ -306,3 +306,170 @@ test "bench_capture_screenshot_phase_visual_sanity_dashboard" (b : @bench.T) {
     b.keep(@tui_paint_output.framebuffer_visual_stats(fb, palette))
   })
 }
+
+///|
+extern "js" fn js_load_benchmark_fixture(name : String) -> String =
+  #| (name) => {
+  #|   const fs = require("node:fs");
+  #|   const path = require("node:path");
+  #|   const candidates = [
+  #|     path.join(process.cwd(), "benchmarks", "fixtures"),
+  #|     path.join(process.cwd(), "..", "benchmarks", "fixtures"),
+  #|     path.join(process.cwd(), "src", "benchmarks", "fixtures"),
+  #|     path.join(process.cwd(), "..", "src", "benchmarks", "fixtures"),
+  #|   ];
+  #|   const dir = candidates.find((candidate) =>
+  #|     fs.existsSync(path.join(candidate, name))
+  #|   );
+  #|   if (!dir) {
+  #|     throw new Error(
+  #|       `benchmark fixture not found: ${name}; searched ${candidates.join(", ")}`,
+  #|     );
+  #|   }
+  #|   return fs.readFileSync(path.join(dir, name), "utf8");
+  #| }
+
+///|
+fn github_fixture_html() -> String {
+  js_load_benchmark_fixture("github_mizchi.html")
+}
+
+///|
+fn github_fixture_external_css() -> Array[String] {
+  [
+    js_load_benchmark_fixture("github_primer.css"),
+    js_load_benchmark_fixture("github_global.css"),
+    js_load_benchmark_fixture("github_main.css"),
+    js_load_benchmark_fixture("github_profile.css"),
+  ]
+}
+
+///|
+fn github_fixture_viewport() -> @types.Size[Double] {
+  @types.Size::new(1280.0, 900.0)
+}
+
+///|
+fn github_fixture_render_context() -> @renderer.RenderContext {
+  vrt_render_context(github_fixture_viewport())
+}
+
+///|
+fn warm_github_external_css_bundle(
+  doc : @html.Document,
+  ctx : @renderer.RenderContext,
+  external_css : Array[String],
+) -> Unit {
+  let _ = @renderer.prepare_render_document(doc, ctx, external_css)
+}
+
+///|
+test "bench_vrt_phase_parse_github_real_url_fixture" (b : @bench.T) {
+  let html = github_fixture_html()
+  b.bench(name="vrt_phase_parse_github_real_url_fixture", fn() {
+    b.keep(@html.parse_document(html))
+  })
+}
+
+///|
+test "bench_vrt_phase_parse_github_external_css_bundle" (b : @bench.T) {
+  let external_css = github_fixture_external_css()
+  b.bench(name="vrt_phase_parse_github_external_css_bundle", fn() {
+    for css in external_css {
+      b.keep(@css.parse_stylesheet(css))
+    }
+  })
+}
+
+///|
+test "bench_vrt_phase_prepare_github_external_css_hot" (b : @bench.T) {
+  let html = github_fixture_html()
+  let doc = @html.parse_document(html)
+  let ctx = github_fixture_render_context()
+  let external_css = github_fixture_external_css()
+  warm_github_external_css_bundle(doc, ctx, external_css)
+  b.bench(name="vrt_phase_prepare_github_external_css_hot", fn() {
+    b.keep(@renderer.prepare_render_document(doc, ctx, external_css))
+  })
+}
+
+///|
+test "bench_vrt_phase_prepare_github_prepared_css_handle" (b : @bench.T) {
+  let html = github_fixture_html()
+  let doc = @html.parse_document(html)
+  let ctx = github_fixture_render_context()
+  let external_css = @renderer.prepare_external_css(
+    github_fixture_external_css(),
+  )
+  b.bench(name="vrt_phase_prepare_github_prepared_css_handle", fn() {
+    b.keep(
+      @renderer.prepare_render_document_with_prepared_external_css(
+        doc, ctx, external_css,
+      ),
+    )
+  })
+}
+
+///|
+test "bench_vrt_phase_node_layout_github_external_css_hot" (b : @bench.T) {
+  let html = github_fixture_html()
+  let doc = @html.parse_document(html)
+  let ctx = github_fixture_render_context()
+  let external_css = github_fixture_external_css()
+  warm_github_external_css_bundle(doc, ctx, external_css)
+  b.bench(name="vrt_phase_node_layout_github_external_css_hot", fn() {
+    b.keep(
+      @renderer.render_to_node_and_layout_with_document(doc, ctx, external_css),
+    )
+  })
+}
+
+///|
+test "bench_vrt_phase_node_layout_github_prepared_css_handle" (b : @bench.T) {
+  let html = github_fixture_html()
+  let doc = @html.parse_document(html)
+  let ctx = github_fixture_render_context()
+  let external_css = @renderer.prepare_external_css(
+    github_fixture_external_css(),
+  )
+  b.bench(name="vrt_phase_node_layout_github_prepared_css_handle", fn() {
+    b.keep(
+      @renderer.render_to_node_and_layout_with_prepared_external_css(
+        doc, ctx, external_css,
+      ),
+    )
+  })
+}
+
+///|
+test "bench_vrt_render_paint_tree_github_external_css_hot" (b : @bench.T) {
+  let html = github_fixture_html()
+  let doc = @html.parse_document(html)
+  let viewport = github_fixture_viewport()
+  let ctx = github_fixture_render_context()
+  let external_css = github_fixture_external_css()
+  warm_github_external_css_bundle(doc, ctx, external_css)
+  b.bench(name="vrt_render_paint_tree_github_external_css_hot", fn() {
+    let (node, layout) = @renderer.render_to_node_and_layout_with_document(
+      doc, ctx, external_css,
+    )
+    b.keep(build_vrt_paint_tree(node, layout, viewport))
+  })
+}
+
+///|
+test "bench_vrt_render_paint_tree_github_prepared_css_handle" (b : @bench.T) {
+  let html = github_fixture_html()
+  let doc = @html.parse_document(html)
+  let viewport = github_fixture_viewport()
+  let ctx = github_fixture_render_context()
+  let external_css = @renderer.prepare_external_css(
+    github_fixture_external_css(),
+  )
+  b.bench(name="vrt_render_paint_tree_github_prepared_css_handle", fn() {
+    let (node, layout) = @renderer.render_to_node_and_layout_with_prepared_external_css(
+      doc, ctx, external_css,
+    )
+    b.keep(build_vrt_paint_tree(node, layout, viewport))
+  })
+}

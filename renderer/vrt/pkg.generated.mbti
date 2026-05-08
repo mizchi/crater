@@ -5,6 +5,7 @@ import {
   "mizchi/crater-layout/types",
   "mizchi/crater-painter/paint/diff",
   "mizchi/crater-painter/paint/model",
+  "mizchi/crater-renderer/renderer",
   "moonbitlang/core/debug",
 }
 
@@ -18,6 +19,8 @@ pub fn render_html_to_paint_tree(String, @types.Size[Double]) -> @model.PaintNod
 pub fn render_html_to_paint_tree_json(String, @types.Size[Double]) -> String
 
 pub fn render_html_to_paint_tree_with_external_css(String, @types.Size[Double], Array[String]) -> @model.PaintNode
+
+pub fn render_html_to_paint_tree_with_prepared_external_css(String, @types.Size[Double], @renderer.PreparedExternalCss) -> @model.PaintNode
 
 // Errors
 
