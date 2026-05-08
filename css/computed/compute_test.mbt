@@ -371,6 +371,19 @@ test "compute_inline basic" {
 }
 
 ///|
+test "compute_inline strips important from inline declaration values" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "width: 100px ! important; width: 200px; height: 48.5px!important; display: inline-block !important; visibility: hidden!important",
+    ctx,
+  )
+  inspect(style.width, content="Length(100)")
+  inspect(style.height, content="Length(48.5)")
+  inspect(style.display, content="InlineBlock")
+  inspect(style.visibility, content="Hidden")
+}
+
+///|
 test "compute_inline flex properties" {
   let ctx = @computed.ComputeContext::new()
   let style = @computed.compute_inline(

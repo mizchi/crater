@@ -5,7 +5,7 @@
  *   npx tsx scripts/vrt-url.ts https://example.com
  *   npx tsx scripts/vrt-url.ts https://example.com --name example-com --width 800 --height 600
  *   npx tsx scripts/vrt-url.ts https://example.com --backend native
- *   npx tsx scripts/vrt-url.ts https://example.com --mask-text --mask-dynamic
+ *   npx tsx scripts/vrt-url.ts https://example.com --mask-text --mask-dynamic --mask-assets
  *
  * Captures a URL with Chromium, renders with Crater, compares with pixelmatch.
  * Outputs diff images to output/playwright/vrt/url/<name>/
@@ -32,6 +32,7 @@ type VrtUrlBackend = "native" | "sixel";
 export interface VrtUrlOptions {
   backend: VrtUrlBackend;
   height: number;
+  maskAssets: boolean;
   maskDynamic: boolean;
   maskText: boolean;
   maxDiffRatio: number;
@@ -44,11 +45,12 @@ export interface VrtUrlOptions {
 }
 
 export const VRT_URL_USAGE = [
-  "Usage: npx tsx scripts/vrt-url.ts <url> [--name slug] [--width N] [--height N] [--backend native|sixel] [--mask-text] [--mask-dynamic] [--max-diff-ratio N]",
+  "Usage: npx tsx scripts/vrt-url.ts <url> [--name slug] [--width N] [--height N] [--backend native|sixel] [--mask-text] [--mask-dynamic] [--mask-assets] [--max-diff-ratio N]",
   "",
   "Options:",
   "  --mask-text             Hide text glyph pixels while preserving text layout.",
   "  --mask-dynamic          Hide iframes, canvas/video/embed/object, and shadow-root hosts.",
+  "  --mask-assets           Hide img/svg pixels while preserving used geometry.",
   "  --backend native|sixel  Crater renderer backend. Default: sixel.",
   "  --server-timeout-ms N   BiDi startup timeout for sixel backend. Default: 20000.",
 ].join("\n");
@@ -109,7 +111,7 @@ function parseIntegerArg(args: string[], flag: string, fallback: string): number
   return value;
 }
 
-export function buildVrtUrlOutputName(name: string, maskText: boolean, maskDynamic = false): string {
+export function buildVrtUrlOutputName(name: string, maskText: boolean, maskDynamic = false, maskAssets = false): string {
   let outputName = name;
   if (maskText && !outputName.endsWith("-text-masked")) {
     outputName = `${outputName}-text-masked`;
@@ -117,11 +119,14 @@ export function buildVrtUrlOutputName(name: string, maskText: boolean, maskDynam
   if (maskDynamic && !outputName.endsWith("-dynamic-masked")) {
     outputName = `${outputName}-dynamic-masked`;
   }
+  if (maskAssets && !outputName.endsWith("-asset-masked")) {
+    outputName = `${outputName}-asset-masked`;
+  }
   return outputName;
 }
 
-export function buildVrtUrlOutputDir(cwd: string, name: string, maskText: boolean, maskDynamic = false): string {
-  return path.join(cwd, "output", "playwright", "vrt", "url", buildVrtUrlOutputName(name, maskText, maskDynamic));
+export function buildVrtUrlOutputDir(cwd: string, name: string, maskText: boolean, maskDynamic = false, maskAssets = false): string {
+  return path.join(cwd, "output", "playwright", "vrt", "url", buildVrtUrlOutputName(name, maskText, maskDynamic, maskAssets));
 }
 
 export function parseVrtUrlArgs(args: string[], cwd = process.cwd()): VrtUrlOptions {
@@ -137,16 +142,18 @@ export function parseVrtUrlArgs(args: string[], cwd = process.cwd()): VrtUrlOpti
   }
 
   const name = getArg(normalizedArgs, "--name", new URL(url).hostname.replace(/\./g, "-"));
+  const maskAssets = normalizedArgs.includes("--mask-assets");
   const maskDynamic = normalizedArgs.includes("--mask-dynamic");
   const maskText = normalizedArgs.includes("--mask-text");
   return {
     backend: backendArg,
     height: parseIntegerArg(normalizedArgs, "--height", "600"),
+    maskAssets,
     maskDynamic,
     maskText,
     maxDiffRatio: parseNumberArg(normalizedArgs, "--max-diff-ratio", "0.15"),
     name,
-    outputDir: buildVrtUrlOutputDir(cwd, name, maskText, maskDynamic),
+    outputDir: buildVrtUrlOutputDir(cwd, name, maskText, maskDynamic, maskAssets),
     serverTimeoutMs: parseIntegerArg(normalizedArgs, "--server-timeout-ms", "20000"),
     threshold: parseNumberArg(normalizedArgs, "--threshold", "0.3"),
     url,
@@ -156,9 +163,10 @@ export function parseVrtUrlArgs(args: string[], cwd = process.cwd()): VrtUrlOpti
 
 export async function applyChromiumMasks(
   page: Page,
-  options: { maskDynamic?: boolean; maskText?: boolean },
+  options: { maskAssets?: boolean; maskDynamic?: boolean; maskText?: boolean },
 ): Promise<void> {
   await page.evaluate((maskOptions) => {
+    const assetMaskAttribute = "data-crater-vrt-asset-mask";
     const maskAttribute = "data-crater-vrt-text-mask";
     const dynamicMaskAttribute = "data-crater-vrt-dynamic-mask";
     const rawTextSelector = "script,style,textarea,title,option,svg,math";
@@ -182,6 +190,9 @@ export async function applyChromiumMasks(
       }
       if (maskOptions.maskDynamic) {
         rules.push(`[${dynamicMaskAttribute}]{visibility:hidden!important}`);
+      }
+      if (maskOptions.maskAssets) {
+        rules.push(`[${assetMaskAttribute}]{visibility:hidden!important}`);
       }
       style.textContent = rules.join("\n");
       document.head?.appendChild(style);
@@ -222,6 +233,8 @@ export async function applyChromiumMasks(
       }
     }
 
+    const maskTargets: Array<{ attribute: string; element: Element }> = [];
+
     if (maskOptions.maskDynamic) {
       const dynamicElements: Element[] = [];
       for (const element of document.querySelectorAll("iframe,object,embed,video,canvas")) {
@@ -233,32 +246,43 @@ export async function applyChromiumMasks(
         }
       }
       for (const element of dynamicElements) {
-        const htmlElement = element as HTMLElement;
-        const rect = htmlElement.getBoundingClientRect();
-        const computed = window.getComputedStyle(htmlElement);
-        const finiteWidth = Number.isFinite(rect.width) ? Math.max(0, rect.width) : 0;
-        const finiteHeight = Number.isFinite(rect.height) ? Math.max(0, rect.height) : 0;
-        const width = Number(finiteWidth.toFixed(3)).toString();
-        const height = Number(finiteHeight.toFixed(3)).toString();
-        const shouldFreezeInlineBox = computed.display === "inline" &&
-          finiteWidth > 0 &&
-          finiteHeight > 0;
-        const existingStyle = (htmlElement.getAttribute("style") ?? "").trim().replace(/;+\s*$/, "");
-        element.setAttribute(dynamicMaskAttribute, "");
-        htmlElement.setAttribute("style", [
-          existingStyle,
-          "visibility:hidden",
-          shouldFreezeInlineBox ? "display:inline-block!important" : "",
-          "box-sizing:border-box!important",
-          `width:${width}px!important`,
-          `height:${height}px!important`,
-          `min-width:${width}px!important`,
-          `min-height:${height}px!important`,
-          `max-width:${width}px!important`,
-          `max-height:${height}px!important`,
-          "overflow:hidden!important",
-        ].filter(Boolean).join(";"));
+        maskTargets.push({ attribute: dynamicMaskAttribute, element });
       }
+    }
+
+    if (maskOptions.maskAssets) {
+      const assetElements = document.querySelectorAll("img,svg");
+      for (const element of assetElements) {
+        maskTargets.push({ attribute: assetMaskAttribute, element });
+      }
+    }
+
+    for (const target of maskTargets) {
+      const element = target.element;
+      const rect = element.getBoundingClientRect();
+      const computed = window.getComputedStyle(element);
+      const finiteWidth = Number.isFinite(rect.width) ? Math.max(0, rect.width) : 0;
+      const finiteHeight = Number.isFinite(rect.height) ? Math.max(0, rect.height) : 0;
+      const width = Number(finiteWidth.toFixed(3)).toString();
+      const height = Number(finiteHeight.toFixed(3)).toString();
+      const shouldFreezeInlineBox = computed.display === "inline" &&
+        finiteWidth > 0 &&
+        finiteHeight > 0;
+      const existingStyle = (element.getAttribute("style") ?? "").trim().replace(/;+\s*$/, "");
+      element.setAttribute(target.attribute, "");
+      element.setAttribute("style", [
+        existingStyle,
+        "visibility:hidden",
+        shouldFreezeInlineBox ? "display:inline-block!important" : "",
+        "box-sizing:border-box!important",
+        `width:${width}px!important`,
+        `height:${height}px!important`,
+        `min-width:${width}px!important`,
+        `min-height:${height}px!important`,
+        `max-width:${width}px!important`,
+        `max-height:${height}px!important`,
+        "overflow:hidden!important",
+      ].filter(Boolean).join(";"));
     }
   }, options);
 }
@@ -280,8 +304,9 @@ async function captureChromiumReference(options: VrtUrlOptions): Promise<{ html:
 
     await page.goto(options.url, { waitUntil: "load", timeout: 30000 });
     await page.waitForTimeout(1000);
-    if (options.maskText || options.maskDynamic) {
+    if (options.maskText || options.maskDynamic || options.maskAssets) {
       await applyChromiumMasks(page, {
+        maskAssets: options.maskAssets,
         maskDynamic: options.maskDynamic,
         maskText: options.maskText,
       });
@@ -490,6 +515,7 @@ export async function runVrtUrl(options: VrtUrlOptions): Promise<{ diffPixels: n
   console.log(`  backend: ${options.backend}`);
   console.log(`  text mask: ${options.maskText ? "on" : "off"}`);
   console.log(`  dynamic mask: ${options.maskDynamic ? "on" : "off"}`);
+  console.log(`  asset mask: ${options.maskAssets ? "on" : "off"}`);
   console.log(`  output: ${options.outputDir}\n`);
 
   console.log("1. Capturing with Chromium...");
@@ -527,7 +553,7 @@ export async function runVrtUrl(options: VrtUrlOptions): Promise<{ diffPixels: n
     fs.writeFileSync(path.join(options.outputDir, name), png);
   }
 
-  const title = buildVrtUrlOutputName(options.name, options.maskText, options.maskDynamic);
+  const title = buildVrtUrlOutputName(options.name, options.maskText, options.maskDynamic, options.maskAssets);
   const report = createNormalizedVrtArtifactReport({
     title,
     filter: options.url,
@@ -554,6 +580,7 @@ export async function runVrtUrl(options: VrtUrlOptions): Promise<{ diffPixels: n
         "url",
         ...(options.maskText ? ["text-masked"] : []),
         ...(options.maskDynamic ? ["dynamic-masked"] : []),
+        ...(options.maskAssets ? ["asset-masked"] : []),
       ].join("-"),
       cssRuleUsage: crater.cssRuleUsage,
     },

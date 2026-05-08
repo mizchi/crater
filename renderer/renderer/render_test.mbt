@@ -7471,6 +7471,47 @@ fn find_text_node_by_content(node : @node.Node, text : String) -> @node.Node? {
 }
 
 ///|
+fn node_text_contains(node : @node.Node, needle : String) -> Bool {
+  match node.text {
+    Some(content) if content.contains(needle) => return true
+    _ => ()
+  }
+  for child in node.children {
+    if node_text_contains(child, needle) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+test "render_to_node skips body style text in inline collection" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<div id="wrap"><style>[data-mask]{visibility:hidden!important}</style><span>ok</span></div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  inspect(node_text_contains(root, "[data-mask]"), content="false")
+  inspect(node_text_contains(root, "ok"), content="true")
+}
+
+///|
+test "render_to_node does not fallback-match descendant pseudo selector on body substring" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>.markdown-body [data-footnote-ref]::before { content: "["; }</style>
+    #|<div>ok</div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  inspect(node_text_contains(root, "["), content="false")
+  inspect(node_text_contains(root, "ok"), content="true")
+}
+
+///|
 test "empty_td_with_line_height_has_zero_content_height" {
   // Test that an empty td does not get inflated by line-height
   let html_str =

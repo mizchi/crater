@@ -259,6 +259,29 @@
 
 ボックスモデル・レイアウト = Chromium と完全一致。残り diff は全てテキスト。
 
+### 実 URL VRT サンプリング (2026-05-08)
+
+`--mask-text --mask-dynamic` 後の上位差分をサンプル確認した分類。
+
+| URL | diffRatio | 分類 | 次アクション |
+|---|---:|---|---|
+| `https://github.com/mizchi` | 21.16% fail → 20.61% (`!important`) → 10.44% (`--mask-assets`) → 4.31% pass (`pseudo fallback`) | 動的マスクの寸法維持崩れ + 外部画像/SVG ノイズ + pseudo selector fallback 誤爆 | 残差は sticky nav/card border/list marker と hidden text mask の局所差分として分離 |
+| `https://www.rust-lang.org/` | 6.45% pass | SVG/logo・select native appearance・ページ下部の背景帯 | SVG/image intrinsic と form control appearance を分けて最小 fixture 化 |
+| `https://www.moonbitlang.com/` | 1.52% pass | ヒーロー背景の repeating gradient と CTA 背景 | background image/gradient の paint parity fixture を追加 |
+| `https://developer.mozilla.org/en-US/` | 1.30% pass | SVG logo/pseudo icon/form border の残差 | SVG/pseudo/form control を低優先で個別 fixture 化 |
+| `https://www.w3.org/` | 0.67% pass | SVG logo・hamburger/pseudo・角丸 outline | SVG/pseudo と border radius paint の微差 |
+| `https://www.iana.org/` | 0.46% pass | logo SVG とリスト/矢印アイコン | 低優先。SVG と marker/pseudo を分離 |
+
+- [x] P0: inline style の `!important` marker を値から剥がし、important declaration として cascade する
+- [x] P1: GitHub を inline `!important` 対応後に再計測し、blank 由来が消えたか確認する
+- [x] P1: layout-only 実 URL VRT 用に `--mask-assets` を追加し、img/svg を寸法維持しつつ非表示化する
+- [x] P1: GitHub の先頭 `[` と main 押し下げを `.markdown-body [data-footnote-ref]::before` の pseudo fallback 誤爆として最小 fixture 化し、4.31% まで再計測する
+- [ ] P1: GitHub の `--mask-assets` 後も残る sticky nav/card border/list marker 差分を最小 fixture 化する
+- [ ] P1: CSS background gradient/repeating-gradient の VRT fixture を増やす
+- [ ] P2: SVG/logo の intrinsic size と paint path を実 URL fixture から分離する
+- [ ] P2: select/button など native form control の appearance 差分を mask 対象にするか paint 実装対象にするか決める
+- [ ] P3: low diff ページの pseudo/icon/border-radius 残差は、font 差分除外 VRT の budget tighten 後に個別対応する
+
 ### 既知の問題
 
 #### crater 側

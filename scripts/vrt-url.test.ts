@@ -27,14 +27,16 @@ describe("parseVrtUrlArgs", () => {
       "5000",
       "--mask-text",
       "--mask-dynamic",
+      "--mask-assets",
     ], "/repo")).toEqual({
       backend: "sixel",
       height: 768,
+      maskAssets: true,
       maskDynamic: true,
       maskText: true,
       maxDiffRatio: 0.1,
       name: "example-com",
-      outputDir: path.join("/repo", "output", "playwright", "vrt", "url", "example-com-text-masked-dynamic-masked"),
+      outputDir: path.join("/repo", "output", "playwright", "vrt", "url", "example-com-text-masked-dynamic-masked-asset-masked"),
       serverTimeoutMs: 5000,
       threshold: 0.2,
       url: "https://example.com/path",
@@ -54,14 +56,15 @@ describe("buildVrtUrlOutputName", () => {
     expect(buildVrtUrlOutputName("example-com", true)).toBe("example-com-text-masked");
     expect(buildVrtUrlOutputName("example-com-text-masked", true)).toBe("example-com-text-masked");
     expect(buildVrtUrlOutputName("example-com", true, true)).toBe("example-com-text-masked-dynamic-masked");
+    expect(buildVrtUrlOutputName("example-com", true, true, true)).toBe("example-com-text-masked-dynamic-masked-asset-masked");
     expect(buildVrtUrlOutputName("example-com", false)).toBe("example-com");
   });
 });
 
 describe("buildVrtUrlOutputDir", () => {
   it("uses the normalized snapshot name in the standard VRT output root", () => {
-    expect(buildVrtUrlOutputDir("/repo", "example-com", true, true)).toBe(
-      path.join("/repo", "output", "playwright", "vrt", "url", "example-com-text-masked-dynamic-masked"),
+    expect(buildVrtUrlOutputDir("/repo", "example-com", true, true, true)).toBe(
+      path.join("/repo", "output", "playwright", "vrt", "url", "example-com-text-masked-dynamic-masked-asset-masked"),
     );
   });
 });

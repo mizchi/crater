@@ -4866,8 +4866,7 @@ fn resolve_pseudo_spec(
         Some(base_selector_text) => {
           let matches_selector = match @css.parse_selector(base_selector_text) {
             Some(base_selector) =>
-              @css.matches_selector(selector_elem, base_selector) ||
-              selector_text_fallback_matches(base_selector_text, selector_elem)
+              @css.matches_selector(selector_elem, base_selector)
             None =>
               selector_text_fallback_matches(base_selector_text, selector_elem)
           }
@@ -4984,9 +4983,7 @@ fn resolve_pseudo_spec_fast(
       continue
     }
     let matches_selector = match rule.base_selector {
-      Some(base_selector) =>
-        @css.matches_selector(selector_elem, base_selector) ||
-        selector_text_fallback_matches(rule.base_selector_text, selector_elem)
+      Some(base_selector) => @css.matches_selector(selector_elem, base_selector)
       None =>
         selector_text_fallback_matches(rule.base_selector_text, selector_elem)
     }

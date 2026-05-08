@@ -3472,11 +3472,16 @@ fn resolve_all_vars(value : String, ctx : ComputeContext) -> String {
 fn strip_css_ascii_whitespace(value : String) -> String {
   let sb = StringBuilder::new()
   for c in value.iter() {
-    if c != ' ' && c != '\t' && c != '\n' && c != '\r' && c != '\u000C' {
+    if !is_css_ascii_whitespace(c) {
       sb.write_char(c)
     }
   }
   sb.to_string()
+}
+
+///|
+fn is_css_ascii_whitespace(c : Char) -> Bool {
+  c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\u000C'
 }
 
 ///|
@@ -4078,6 +4083,43 @@ fn is_flex_basis_value(s : String) -> Bool {
 }
 
 ///|
+fn strip_inline_important_marker(
+  value : String,
+) -> (String, @cascade.Importance) {
+  let trimmed = value.trim().to_string()
+  let compact = strip_css_ascii_whitespace(trimmed.to_lower())
+  if !compact.has_suffix("!important") {
+    return (trimmed, @cascade.Importance::Normal)
+  }
+  let important_len = 9
+  if trimmed.length() <= important_len {
+    return (trimmed, @cascade.Importance::Normal)
+  }
+  let mut bang_pos = trimmed.length() - important_len
+  while bang_pos > 0 {
+    let c = trimmed[bang_pos - 1].to_int().unsafe_to_char()
+    if is_css_ascii_whitespace(c) {
+      bang_pos -= 1
+    } else {
+      break
+    }
+  }
+  if bang_pos <= 0 {
+    return (trimmed, @cascade.Importance::Normal)
+  }
+  if trimmed[bang_pos - 1].to_int().unsafe_to_char() != '!' {
+    return (trimmed, @cascade.Importance::Normal)
+  }
+  let stripped = view_to_string(trimmed.view(end_offset=bang_pos - 1))
+    .trim()
+    .to_string()
+  if stripped.is_empty() {
+    return (trimmed, @cascade.Importance::Normal)
+  }
+  (stripped, @cascade.Importance::Important)
+}
+
+///|
 /// Apply inheritance for inherited properties not in cascaded values
 fn apply_inheritance(
   builder : StyleBuilder,
@@ -4140,12 +4182,13 @@ pub fn compute_inline_raw(
       let prop = view_to_string(pair_str.view(end_offset=colon_pos)).trim()
       let val = view_to_string(pair_str.view(start_offset=colon_pos + 1)).trim()
       if !prop.is_empty() && !val.is_empty() {
+        let (value, importance) = strip_inline_important_marker(val.to_string())
         decls.push(
           @cascade.Declaration::with_metadata(
             prop.to_string(),
-            @cascade.PropertyValue::Value(val.to_string()),
+            @cascade.PropertyValue::Value(value),
             @cascade.Origin::Author,
-            @cascade.Importance::Normal,
+            importance,
             { a: 1000, b: 0, c: 0 },
             order,
           ),
