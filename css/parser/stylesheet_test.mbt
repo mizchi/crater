@@ -829,6 +829,19 @@ test "parse @supports followed by normal rule" {
 }
 
 ///|
+test "parse @supports condition with function followed by normal rule" {
+  let css =
+    #|@supports (color: light-dark(red, red)) {
+    #|  :root { --bg: light-dark(#fff, #000); }
+    #|}
+    #|.outside { background-color: var(--bg); }
+  let stylesheet = @parser.parse_stylesheet(css)
+  inspect(stylesheet.rules.length(), content="2")
+  inspect(stylesheet.rules[0].selector_text, content=":root")
+  inspect(stylesheet.rules[1].selector_text, content=".outside")
+}
+
+///|
 test "parse nested @supports inside @media" {
   let css =
     #|@media screen {

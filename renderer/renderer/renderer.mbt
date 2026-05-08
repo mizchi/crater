@@ -4313,6 +4313,59 @@ fn collect_inline_custom_properties(
 }
 
 ///|
+let renderer_effective_color_scheme_key = "--crater-effective-color-scheme"
+
+///|
+fn first_color_scheme_keyword_for_renderer(value : String) -> String? {
+  let normalized = value.to_lower()
+  let tokens = normalized.split(" ")
+  for token in tokens {
+    let t = token.to_string().trim()
+    if t == "light" || t == "dark" {
+      return Some(t.to_string())
+    }
+  }
+  None
+}
+
+///|
+fn seed_effective_color_scheme_for_direct_style(
+  cascaded : @css.CascadedValues?,
+  inline_css : String?,
+  vars : Map[String, String],
+) -> Unit {
+  match vars.get(renderer_effective_color_scheme_key) {
+    Some(_) => ()
+    None => vars[renderer_effective_color_scheme_key] = "light"
+  }
+  match cascaded {
+    Some(cascaded_values) =>
+      match cascaded_values.get_value("color-scheme") {
+        Some(value) =>
+          match first_color_scheme_keyword_for_renderer(value) {
+            Some(scheme) => vars[renderer_effective_color_scheme_key] = scheme
+            None => ()
+          }
+        None => ()
+      }
+    None => ()
+  }
+  match inline_css {
+    Some(css) =>
+      for declaration in parse_inline_declarations_cached(css) {
+        let (prop, value) = declaration
+        if prop.to_lower() == "color-scheme" {
+          match first_color_scheme_keyword_for_renderer(value) {
+            Some(scheme) => vars[renderer_effective_color_scheme_key] = scheme
+            None => ()
+          }
+        }
+      }
+    None => ()
+  }
+}
+
+///|
 fn resolve_pseudo_attr_functions(
   value : String,
   element_attributes : Map[String, String],
@@ -5748,6 +5801,13 @@ fn element_to_node_with_styles(
   } else {
     style
   }
+  let element_css_vars = compute_element_css_vars_indexed(
+    selector_elem,
+    elem.style,
+    effective_sheets,
+    ctx,
+    css_vars,
+  )
   let own_counters = if stylesheets.length() == 0 {
     incoming_counters
   } else {
@@ -5765,7 +5825,7 @@ fn element_to_node_with_styles(
       ctx,
       Before,
       own_counters,
-      css_vars,
+      element_css_vars,
       elem.attributes,
     )
   }
@@ -5778,7 +5838,7 @@ fn element_to_node_with_styles(
       ctx,
       After,
       own_counters,
-      css_vars,
+      element_css_vars,
       elem.attributes,
     )
   }
@@ -5890,7 +5950,7 @@ fn element_to_node_with_styles(
             false,
             ctx,
             Some(style),
-            css_vars,
+            element_css_vars,
           )
           let child_own_counters = compute_element_own_counters(
             child_incoming_counters, child_selector, child_style_for_counter, stylesheets,
@@ -5908,7 +5968,7 @@ fn element_to_node_with_styles(
           stylesheets,
           indexed_stylesheets,
           Some(style),
-          css_vars,
+          element_css_vars,
           child_incoming_counters,
           child_owner_id,
         )
@@ -5920,7 +5980,7 @@ fn element_to_node_with_styles(
         if !text.is_empty() {
           let normalized_text = trim_boundary_collapsible_whitespace_for_inline_context(
             remaining_children, i, selector_elem, style, indexed_stylesheets, ctx,
-            css_vars,
+            element_css_vars,
           )
           if normalized_text.is_empty() {
             continue
@@ -5929,7 +5989,7 @@ fn element_to_node_with_styles(
           let preserve_ws = text_is_ws &&
             should_preserve_inter_element_whitespace(
               remaining_children, i, selector_elem, style, indexed_stylesheets, ctx,
-              css_vars,
+              element_css_vars,
             ) &&
             !style.writing_mode.is_vertical() &&
             !style.suppresses_intrinsic_width()
@@ -6237,6 +6297,13 @@ fn element_to_node_with_styles_internal(
   }
 
   let style = apply_svg_intrinsic_size(style, cell_tag)
+  let element_css_vars = compute_element_css_vars_indexed(
+    selector_elem,
+    elem.style,
+    indexed_stylesheets,
+    ctx,
+    css_vars,
+  )
   let own_counters = if stylesheets.length() == 0 {
     incoming_counters
   } else {
@@ -6254,7 +6321,7 @@ fn element_to_node_with_styles_internal(
       ctx,
       Before,
       own_counters,
-      css_vars,
+      element_css_vars,
       elem.attributes,
     )
   }
@@ -6267,7 +6334,7 @@ fn element_to_node_with_styles_internal(
       ctx,
       After,
       own_counters,
-      css_vars,
+      element_css_vars,
       elem.attributes,
     )
   }
@@ -6377,7 +6444,7 @@ fn element_to_node_with_styles_internal(
             false,
             ctx,
             Some(style),
-            css_vars,
+            element_css_vars,
           )
           let child_own_counters = compute_element_own_counters(
             child_incoming_counters, child_selector, child_style_for_counter, stylesheets,
@@ -6395,7 +6462,7 @@ fn element_to_node_with_styles_internal(
           stylesheets,
           indexed_stylesheets,
           Some(style),
-          css_vars,
+          element_css_vars,
           child_incoming_counters,
           child_owner_id,
         )
@@ -6407,7 +6474,7 @@ fn element_to_node_with_styles_internal(
         if !text.is_empty() {
           let normalized_text = trim_boundary_collapsible_whitespace_for_inline_context(
             remaining_children, i, selector_elem, style, indexed_stylesheets, ctx,
-            css_vars,
+            element_css_vars,
           )
           if normalized_text.is_empty() {
             continue
@@ -6416,7 +6483,7 @@ fn element_to_node_with_styles_internal(
           let preserve_ws = text_is_ws &&
             should_preserve_inter_element_whitespace(
               remaining_children, i, selector_elem, style, indexed_stylesheets, ctx,
-              css_vars,
+              element_css_vars,
             ) &&
             !style.writing_mode.is_vertical() &&
             !style.suppresses_intrinsic_width()
@@ -7833,6 +7900,9 @@ fn compute_element_style_indexed(
   let element_css_vars = clone_string_map(css_vars)
   collect_cascaded_custom_properties(cascaded, element_css_vars)
   collect_inline_custom_properties(inline_css, element_css_vars)
+  seed_effective_color_scheme_for_direct_style(
+    cascaded, inline_css, element_css_vars,
+  )
   let mut author_line_height_present = false
   match cascaded {
     Some(cascaded_values) =>
@@ -8285,6 +8355,40 @@ fn compute_element_style_indexed(
     _ => ()
   }
   adjusted
+}
+
+///|
+fn compute_element_css_vars_indexed(
+  selector_elem : @css.Element,
+  inline_css : String?,
+  indexed_stylesheets : Array[@css.IndexedStylesheet],
+  ctx : RenderContext,
+  css_vars : Map[String, String],
+) -> Map[String, String] {
+  let cascaded = if indexed_stylesheets.length() > 0 {
+    let media_env = @css.MediaEnvironment::with_color_scheme(
+      ctx.viewport_width,
+      ctx.viewport_height,
+      ctx.color_scheme,
+    )
+    Some(
+      @css.cascade_element_indexed(
+        selector_elem,
+        indexed_stylesheets,
+        [],
+        Some(media_env),
+      ),
+    )
+  } else {
+    None
+  }
+  let element_css_vars = clone_string_map(css_vars)
+  collect_cascaded_custom_properties(cascaded, element_css_vars)
+  collect_inline_custom_properties(inline_css, element_css_vars)
+  seed_effective_color_scheme_for_direct_style(
+    cascaded, inline_css, element_css_vars,
+  )
+  element_css_vars
 }
 
 ///|

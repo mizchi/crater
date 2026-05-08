@@ -515,6 +515,15 @@ test "compute_inline calc mixed width resolves with fallback basis" {
 }
 
 ///|
+test "compute_inline calc multiplication with signed unitless operand" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "--offset: 20em; position: absolute; top: calc(var(--offset)*-1)", ctx,
+  )
+  inspect(style.inset.top, content="Length(-320)")
+}
+
+///|
 test "compute_inline gap shorthand two values" {
   let ctx = @computed.ComputeContext::new()
   let style = @computed.compute_inline("gap: 40px 20px", ctx)
@@ -617,6 +626,14 @@ test "parse_grid_template_tracks none" {
 }
 
 ///|
+test "parse_grid_template_tracks named lines with rem max" {
+  let tracks = @computed.parse_grid_template_tracks(
+    "[extended-full-start] 16px [full-start] 1fr [content-start] minmax(0, 48rem) [content-end] 1fr [full-end] 16px [extended-full-end]",
+  )
+  inspect(tracks.length(), content="5")
+}
+
+///|
 test "compute_inline grid-template" {
   let ctx = @computed.ComputeContext::new()
   let style = @computed.compute_inline(
@@ -627,6 +644,62 @@ test "compute_inline grid-template" {
   inspect(style.grid_template_columns[0], content="Length(100)")
   inspect(style.grid_template_columns[1], content="Fr(1)")
   inspect(style.grid_template_columns[2], content="Length(100)")
+}
+
+///|
+test "compute_inline grid-template resolves custom property css math tracks" {
+  let ctx = @computed.ComputeContext::with_viewport(800.0, 600.0)
+  let style = @computed.compute_inline(
+    "--pad: max(1rem, calc(50vw - 720px + 1rem)); --content: 48rem; display: grid; grid-template-columns: [extended-full-start] var(--pad) [full-start] 1fr [content-start] minmax(0, var(--content)) [content-end] 1fr [full-end] var(--pad) [extended-full-end]",
+    ctx,
+  )
+  inspect(style.grid_template_columns.length(), content="5")
+  inspect(style.grid_template_columns[0], content="Length(16)")
+  inspect(
+    style.grid_template_columns[2],
+    content="MinMax(Length(0), Length(768))",
+  )
+}
+
+///|
+test "compute_inline grid-template resolves custom property inside minmax" {
+  let ctx = @computed.ComputeContext::with_viewport(800.0, 600.0)
+  let style = @computed.compute_inline(
+    "--content: 48rem; display: grid; grid-template-columns: 16px 1fr minmax(0, var(--content)) 1fr 16px",
+    ctx,
+  )
+  inspect(style.grid_template_columns.length(), content="5")
+  inspect(
+    style.grid_template_columns[2],
+    content="MinMax(Length(0), Length(768))",
+  )
+}
+
+///|
+test "compute_inline grid-template resolves inherited custom property inside minmax" {
+  let ctx : @computed.ComputeContext = {
+    ..@computed.ComputeContext::with_viewport(800.0, 600.0),
+    custom_properties: { "--content": "48rem" },
+  }
+  let style = @computed.compute_inline(
+    "display: grid; grid-template-columns: 16px 1fr minmax(0, var(--content)) 1fr 16px",
+    ctx,
+  )
+  inspect(style.grid_template_columns.length(), content="5")
+  inspect(
+    style.grid_template_columns[2],
+    content="MinMax(Length(0), Length(768))",
+  )
+}
+
+///|
+test "compute_inline grid named end placement resolves to final line fallback" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "grid-column: content; grid-column-end: extended-full-end", ctx,
+  )
+  inspect(style.grid_column.start, content="Line(2)")
+  inspect(style.grid_column.end, content="Line(-1)")
 }
 
 ///|
@@ -1052,6 +1125,35 @@ test "css variables - color values" {
     "background-color: var(--bg-color)", ctx,
   )
   inspect(style2.background_color.to_hex(), content="#0000ff")
+}
+
+///|
+test "compute_inline light-dark color function uses color-scheme dark" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "color-scheme: dark; background-color: light-dark(#f7f7f8, #212426)", ctx,
+  )
+  inspect(style.background_color.to_hex(), content="#212426")
+}
+
+///|
+test "compute_inline light-dark resolves custom property arms" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "--light-bg: #f7f7f8; --dark-bg: #212426; color-scheme: dark; background-color: light-dark(var(--light-bg), var(--dark-bg))",
+    ctx,
+  )
+  inspect(style.background_color.to_hex(), content="#212426")
+}
+
+///|
+test "css variables - embedded var value resolves recursively" {
+  let ctx = @computed.ComputeContext::new()
+  let style = @computed.compute_inline(
+    "--color-gray-10: #212426; --color-gray-90: #f7f7f8; --csstools-color-scheme--light: ; --toggle: var(--csstools-color-scheme--light) var(--color-gray-10); --color-background-primary: var(--toggle, var(--color-gray-90)); background-color: var(--color-background-primary)",
+    ctx,
+  )
+  inspect(style.background_color.to_hex(), content="#212426")
 }
 
 ///|

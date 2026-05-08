@@ -20,6 +20,9 @@ pub(all) struct ComputeContext {
 }
 
 ///|
+let internal_effective_color_scheme_key = "--crater-effective-color-scheme"
+
+///|
 fn view_to_string(v : StringView) -> String {
   let sb = StringBuilder::new()
   sb.write_stringview(v)
@@ -981,6 +984,7 @@ pub fn compute(
       ctx.custom_properties[prop] = value
     }
   })
+  seed_effective_color_scheme(cascaded, ctx)
 
   seed_direction(builder, cascaded, ctx)
   // Seed writing-mode before applying logical properties.
@@ -1018,6 +1022,7 @@ pub fn compute_with_vars(
       ctx.custom_properties[prop] = value
     }
   })
+  seed_effective_color_scheme(cascaded, ctx)
 
   // Seed writing-mode before applying logical properties.
   seed_direction(builder, cascaded, ctx)
@@ -1037,6 +1042,47 @@ pub fn compute_with_vars(
 
   // Return both the style and the custom properties for children
   (builder.build(), ctx.custom_properties)
+}
+
+///|
+fn seed_effective_color_scheme(
+  cascaded : @cascade.CascadedValues,
+  ctx : ComputeContext,
+) -> Unit {
+  let inherited = match
+    ctx.custom_properties.get(internal_effective_color_scheme_key) {
+    Some(value) => value
+    None => "light"
+  }
+  let mut scheme = inherited
+  match cascaded.get_value("color-scheme") {
+    Some(raw_value) => {
+      let resolved = if raw_value.contains("var(") {
+        resolve_all_vars(raw_value, ctx)
+      } else {
+        raw_value
+      }
+      match first_color_scheme_keyword(resolved) {
+        Some(value) => scheme = value
+        None => ()
+      }
+    }
+    None => ()
+  }
+  ctx.custom_properties[internal_effective_color_scheme_key] = scheme
+}
+
+///|
+fn first_color_scheme_keyword(value : String) -> String? {
+  let normalized = value.to_lower()
+  let tokens = normalized.split(" ")
+  for token in tokens {
+    let t = token.to_string().trim()
+    if t == "light" || t == "dark" {
+      return Some(t.to_string())
+    }
+  }
+  None
 }
 
 ///|
@@ -1235,6 +1281,9 @@ fn apply_property(
   value : String,
   ctx : ComputeContext,
 ) -> Unit {
+  fn grid_template_value(value : String) -> String {
+    normalize_grid_template_math_functions(resolve_all_vars(value, ctx), ctx)
+  }
   match property {
     // Display and positioning
     "display" => builder.display = parse_display(value)
@@ -2044,13 +2093,17 @@ fn apply_property(
     // Grid container
     "grid-auto-flow" => builder.grid_auto_flow = parse_grid_auto_flow(value)
     "grid-template-columns" =>
-      builder.grid_template_columns = parse_grid_template_tracks(value)
+      builder.grid_template_columns = parse_grid_template_tracks(
+        grid_template_value(value),
+      )
     "grid-template-rows" =>
-      builder.grid_template_rows = parse_grid_template_tracks(value)
+      builder.grid_template_rows = parse_grid_template_tracks(
+        grid_template_value(value),
+      )
     "grid-template-areas" =>
       builder.grid_template_areas = parse_grid_template_areas_value(value)
     "grid-template" =>
-      match parse_grid_template_shorthand(value) {
+      match parse_grid_template_shorthand(grid_template_value(value)) {
         Some((rows, cols)) => {
           builder.grid_template_rows = rows
           builder.grid_template_columns = cols
@@ -2058,7 +2111,7 @@ fn apply_property(
         None => ()
       }
     "grid" =>
-      match parse_grid_template_shorthand(value) {
+      match parse_grid_template_shorthand(grid_template_value(value)) {
         Some((rows, cols)) => {
           builder.grid_template_rows = rows
           builder.grid_template_columns = cols
@@ -2074,12 +2127,26 @@ fn apply_property(
     "grid-column" => {
       let (start, end) = parse_grid_line_shorthand(value)
       builder.grid_column_start = start
-      builder.grid_column_end = end
+      match end {
+        @types.GridPlacement::Auto =>
+          match builder.grid_column_end {
+            @types.GridPlacement::Auto => builder.grid_column_end = end
+            _ => ()
+          }
+        _ => builder.grid_column_end = end
+      }
     }
     "grid-row" => {
       let (start, end) = parse_grid_line_shorthand(value)
       builder.grid_row_start = start
-      builder.grid_row_end = end
+      match end {
+        @types.GridPlacement::Auto =>
+          match builder.grid_row_end {
+            @types.GridPlacement::Auto => builder.grid_row_end = end
+            _ => ()
+          }
+        _ => builder.grid_row_end = end
+      }
     }
     "grid-area" => {
       let v = value.trim().to_string()
@@ -2896,6 +2963,23 @@ fn split_css_args(input : String) -> Array[String] {
 
 ///|
 /// Parse a simple calc expression (handles + - * / with px values)
+fn is_calc_signed_number_start(
+  expr : String,
+  index : Int,
+  token_start : Int,
+) -> Bool {
+  if index != token_start || index + 1 >= expr.length() {
+    return false
+  }
+  let sign = expr[index].to_int().unsafe_to_char()
+  if sign != '+' && sign != '-' {
+    return false
+  }
+  let next = expr[index + 1].to_int().unsafe_to_char()
+  (next >= '0' && next <= '9') || next == '.'
+}
+
+///|
 fn parse_simple_calc_expr(expr : String, ctx : ComputeContext) -> Double? {
   let mut result : Double = 0.0
   let mut current_op : Char = '+'
@@ -2907,7 +2991,13 @@ fn parse_simple_calc_expr(expr : String, ctx : ComputeContext) -> Double? {
     } else {
       ' '
     }
-    if c == '+' || c == '-' || c == '*' || c == '/' || i == expr.length() {
+    let signed_number_start = if i < expr.length() {
+      is_calc_signed_number_start(expr, i, token_start)
+    } else {
+      false
+    }
+    if (c == '+' || c == '-' || c == '*' || c == '/' || i == expr.length()) &&
+      !signed_number_start {
       if i > token_start {
         let token = expr.unsafe_substring(start=token_start, end=i).trim()
         if !token.is_empty() {
@@ -3007,7 +3097,13 @@ fn parse_calc_terms(expr : String, ctx : ComputeContext) -> (Double, Double)? {
     } else {
       ' '
     } // End of string
-    if c == '+' || c == '-' || c == '*' || c == '/' || i == inner.length() {
+    let signed_number_start = if i < inner.length() {
+      is_calc_signed_number_start(inner, i, token_start)
+    } else {
+      false
+    }
+    if (c == '+' || c == '-' || c == '*' || c == '/' || i == inner.length()) &&
+      !signed_number_start {
       // Process token before operator
       if i > token_start {
         let token = inner.unsafe_substring(start=token_start, end=i).trim()
@@ -3286,7 +3382,7 @@ fn resolve_var(value : String, ctx : ComputeContext) -> String {
     Some(var_value) =>
       // Variable found - recursively resolve if it contains var()
       if var_value.contains("var(") {
-        resolve_var(var_value, ctx)
+        resolve_all_vars(var_value, ctx)
       } else {
         var_value
       }
@@ -3299,7 +3395,7 @@ fn resolve_var(value : String, ctx : ComputeContext) -> String {
         )
         let fallback = fallback_slice.trim().to_string()
         // Recursively resolve fallback (it may also contain var())
-        resolve_var(fallback, ctx)
+        resolve_all_vars(fallback, ctx)
       } else {
         // No fallback and no variable - return empty (invalid value)
         ""
@@ -3381,6 +3477,96 @@ fn strip_css_ascii_whitespace(value : String) -> String {
     }
   }
   sb.to_string()
+}
+
+///|
+fn is_css_ident_char(c : Char) -> Bool {
+  (c >= 'a' && c <= 'z') ||
+  (c >= 'A' && c <= 'Z') ||
+  (c >= '0' && c <= '9') ||
+  c == '-' ||
+  c == '_'
+}
+
+///|
+fn css_math_function_prefix_len(value : String, index : Int) -> Int {
+  if index > 0 {
+    let prev = value[index - 1].to_int().unsafe_to_char()
+    if is_css_ident_char(prev) {
+      return 0
+    }
+  }
+  let tail = view_to_string(value.view(start_offset=index))
+  if tail.has_prefix("calc(") {
+    5
+  } else if tail.has_prefix("min(") {
+    4
+  } else if tail.has_prefix("max(") {
+    4
+  } else if tail.has_prefix("clamp(") {
+    6
+  } else {
+    0
+  }
+}
+
+///|
+fn find_matching_function_end(value : String, index : Int) -> Int {
+  let mut depth = 0
+  let mut i = index
+  while i < value.length() {
+    let c = value[i].to_int().unsafe_to_char()
+    if c == '(' {
+      depth = depth + 1
+    } else if c == ')' {
+      depth = depth - 1
+      if depth == 0 {
+        return i
+      }
+    }
+    i = i + 1
+  }
+  -1
+}
+
+///|
+fn dimension_to_grid_token(dim : @types.Dimension) -> String? {
+  match dim {
+    @types.Length(v) => Some(v.to_string() + "px")
+    @types.Percent(p) => Some((p * 100.0).to_string() + "%")
+    _ => None
+  }
+}
+
+///|
+fn normalize_grid_template_math_functions(
+  value : String,
+  ctx : ComputeContext,
+) -> String {
+  let out = StringBuilder::new()
+  let mut i = 0
+  while i < value.length() {
+    let prefix_len = css_math_function_prefix_len(value, i)
+    if prefix_len > 0 {
+      let end = find_matching_function_end(value, i + prefix_len - 1)
+      if end > i {
+        let expr = view_to_string(
+          value.view(start_offset=i, end_offset=end + 1),
+        )
+        match dimension_to_grid_token(resolve_dimension(expr, ctx)) {
+          Some(token) => {
+            out.write_string(token)
+            i = end + 1
+            continue
+          }
+          None => ()
+        }
+      }
+    }
+    out.write_char(value[i].to_int().unsafe_to_char())
+    i = i + 1
+  }
+  out.to_string()
 }
 
 ///|

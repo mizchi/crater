@@ -1032,6 +1032,245 @@ test "empty_absolute_before_pseudo_is_kept_as_paintable_box" {
 }
 
 ///|
+test "color_scheme_dark_resolves_light_dark_background" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|.panel { color-scheme: dark; background-color: light-dark(#f7f7f8, #212426); }
+    #|</style>
+    #|<div class="panel">Panel</div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let panel = root.children[0]
+  inspect(panel.style.background_color.to_hex(), content="#212426")
+}
+
+///|
+test "color_scheme_dark_inherits_to_light_dark_child_background" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|.theme { color-scheme: dark; }
+    #|.child { background-color: light-dark(#ffffff, #18191b); }
+    #|</style>
+    #|<section class="theme"><div class="child">Child</div></section>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let child = root.children[0].children[0]
+  inspect(child.style.background_color.to_hex(), content="#18191b")
+}
+
+///|
+test "css_variable_dark_toggle_inherits_from_root" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|:root {
+    #|  --color-gray-10: #212426;
+    #|  --color-gray-90: #f7f7f8;
+    #|  --csstools-color-scheme--light: initial;
+    #|  --toggle: var(--csstools-color-scheme--light) var(--color-gray-10);
+    #|  --color-background-primary: var(--toggle, var(--color-gray-90));
+    #|}
+    #|.homepage--dark {
+    #|  --csstools-color-scheme--light: ;
+    #|  background-color: var(--color-background-primary);
+    #|  color-scheme: dark;
+    #|}
+    #|</style>
+    #|<main class="homepage--dark">Home</main>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let home = root.children[0]
+  inspect(home.style.background_color.to_hex(), content="#212426")
+}
+
+///|
+test "double_hyphen_class_selector_matches" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|.homepage--dark { background-color: #212426; color: #ffffff; }
+    #|</style>
+    #|<main class="homepage homepage--dark">Home</main>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let home = root.children[0]
+  inspect(home.style.background_color.to_hex(), content="#212426")
+  inspect(home.style.color.to_hex(), content="#ffffff")
+}
+
+///|
+test "mdn_color_scheme_fallback_rules_resolve_dark_background" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|html { --csstools-color-scheme--light: initial; color-scheme: light dark; }
+    #|:root {
+    #|  --csstools-light-dark-toggle-5e0f49fc-1: var(--csstools-color-scheme--light) var(--color-gray-10);
+    #|  --color-background-primary: var(--csstools-light-dark-toggle-5e0f49fc-1,var(--color-gray-90));
+    #|}
+    #|@supports (color:light-dark(red,red)) {
+    #|  :root { --color-background-primary: light-dark(var(--color-gray-90),var(--color-gray-10)); }
+    #|}
+    #|:root {
+    #|  --color-gray-90: #f7f7f8;
+    #|  --color-gray-10: #212426;
+    #|}
+    #|.homepage--dark {
+    #|  --csstools-color-scheme--light: ;
+    #|  background-color: var(--color-background-primary);
+    #|  color-scheme: dark;
+    #|}
+    #|</style>
+    #|<main class="homepage homepage--dark">Home</main>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let home = root.children[0]
+  inspect(home.style.background_color.to_hex(), content="#212426")
+}
+
+///|
+test "mdn_a11y_menu_calc_offset_resolves_offscreen" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|.a11y-menu {
+    #|  --offset: 20em;
+    #|  left: 2px;
+    #|  position: absolute;
+    #|  top: calc(var(--offset)*-1);
+    #|}
+    #|</style>
+    #|<ul class="a11y-menu"><li><a href="#main">Skip</a></li></ul>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let menu = root.children[0]
+  inspect(menu.style.inset.top, content="Length(-320)")
+}
+
+///|
+test "empty_inline_custom_element_between_blocks_does_not_add_line_box" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|header { line-height: 32px; }
+    #|nav { display: block; height: 40px; }
+    #|mdn-search-modal { display: inline; }
+    #|.breadcrumbs { display: block; height: 30px; }
+    #|</style>
+    #|<header><nav></nav><mdn-search-modal></mdn-search-modal><div class="breadcrumbs"></div></header>
+  let (_node, layout) = @renderer.render_to_node_and_layout(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let header = layout.children[0]
+  inspect(header.height, content="70")
+}
+
+///|
+test "whitespace_inline_custom_element_between_blocks_does_not_add_line_box" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|header { line-height: 32px; }
+    #|nav { display: block; height: 40px; }
+    #|mdn-search-modal { display: inline; }
+    #|.breadcrumbs { display: block; height: 30px; }
+    #|</style>
+    #|<header>
+    #|  <nav></nav>
+    #|  <mdn-search-modal></mdn-search-modal>
+    #|  <div class="breadcrumbs"></div>
+    #|</header>
+  let (_node, layout) = @renderer.render_to_node_and_layout(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let header = layout.children[0]
+  inspect(header.height, content="70")
+}
+
+///|
+test "mixed_block_parent_ignores_overflowing_descendants_of_fixed_height_child" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|header { line-height: 32px; }
+    #|nav { display: grid; height: 46.4px; overflow: visible; }
+    #|nav > div { height: 90.4px; }
+    #|mdn-search-modal { display: inline; }
+    #|.breadcrumbs { display: flex; height: 32px; }
+    #|</style>
+    #|<header>
+    #|  <nav><div></div></nav>
+    #|  <mdn-search-modal></mdn-search-modal>
+    #|  <div class="breadcrumbs"></div>
+    #|</header>
+  let (_node, layout) = @renderer.render_to_node_and_layout(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let header = layout.children[0]
+  inspect(header.height, content="78.4")
+}
+
+///|
+test "grid_named_layout_lines_place_item_to_extended_full_end" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|:root {
+    #|  --layout-side-padding-min: 1rem;
+    #|  --layout-side-padding: max(var(--layout-side-padding-min), calc(50vw - 720px + 1rem));
+    #|  --layout-content-max: 48rem;
+    #|  --layout-no-sidebar-extended:
+    #|    [extended-full-start] var(--layout-side-padding)
+    #|    [full-start] 1fr
+    #|    [content-start] minmax(0, var(--layout-content-max))
+    #|    [content-end] 1fr
+    #|    [full-end] var(--layout-side-padding)
+    #|    [extended-full-end];
+    #|}
+    #|.homepage {
+    #|  display: grid;
+    #|  grid-template-columns: var(--layout-no-sidebar-extended);
+    #|  width: 800px;
+    #|}
+    #|.homepage > * { grid-column: content; }
+    #|.homepage-header {
+    #|  display: grid;
+    #|  grid-column-end: extended-full-end;
+    #|}
+    #|</style>
+    #|<div class="homepage"><div class="homepage-header"></div></div>
+  let (node, layout) = @renderer.render_to_node_and_layout(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let header_node = node.children[0].children[0]
+  inspect(header_node.style.grid_column.start, content="Line(2)")
+  inspect(header_node.style.grid_column.end, content="Line(-1)")
+  let homepage = layout.children[0]
+  let header = homepage.children[0]
+  inspect(header.x, content="16")
+  inspect(header.width, content="784")
+}
+
+///|
 test "flex_item_rem_line_height_affects_inline_box_height" {
   let html_str =
     #|<!DOCTYPE html>

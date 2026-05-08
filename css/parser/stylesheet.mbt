@@ -159,22 +159,7 @@ fn parse_supports_rule_with_media(
   let mut pos = start + 1 // Skip @supports token
 
   // Skip condition tokens until '{' (handling nested parens)
-  let mut paren_depth = 0
-  while pos < tokens.length() {
-    match tokens[pos] {
-      @token.Token::LeftParen => {
-        paren_depth += 1
-        pos = pos + 1
-      }
-      @token.Token::RightParen => {
-        paren_depth -= 1
-        pos = pos + 1
-      }
-      @token.Token::LeftBrace if paren_depth == 0 => break
-      @token.Token::EOF => return pos
-      _ => pos = pos + 1
-    }
-  }
+  pos = skip_supports_condition_to_block(tokens, pos)
   if pos >= tokens.length() {
     return pos
   }
@@ -232,22 +217,7 @@ fn parse_supports_rule(
   let mut pos = start + 1 // Skip @supports token
 
   // Skip condition tokens until '{' (handling nested parens)
-  let mut paren_depth = 0
-  while pos < tokens.length() {
-    match tokens[pos] {
-      @token.Token::LeftParen => {
-        paren_depth += 1
-        pos = pos + 1
-      }
-      @token.Token::RightParen => {
-        paren_depth -= 1
-        pos = pos + 1
-      }
-      @token.Token::LeftBrace if paren_depth == 0 => break
-      @token.Token::EOF => return pos
-      _ => pos = pos + 1
-    }
-  }
+  pos = skip_supports_condition_to_block(tokens, pos)
   if pos >= tokens.length() {
     return pos
   }
@@ -317,6 +287,33 @@ fn skip_ws(tokens : Array[@token.Token], pos : Int) -> Int {
     }
   }
   p
+}
+
+///|
+fn skip_supports_condition_to_block(
+  tokens : Array[@token.Token],
+  start : Int,
+) -> Int {
+  let mut pos = start
+  let mut paren_depth = 0
+  while pos < tokens.length() {
+    match tokens[pos] {
+      @token.Token::Function(_) | @token.Token::LeftParen => {
+        paren_depth += 1
+        pos = pos + 1
+      }
+      @token.Token::RightParen => {
+        if paren_depth > 0 {
+          paren_depth -= 1
+        }
+        pos = pos + 1
+      }
+      @token.Token::LeftBrace if paren_depth == 0 => break
+      @token.Token::EOF => return pos
+      _ => pos = pos + 1
+    }
+  }
+  pos
 }
 
 ///|
@@ -1003,22 +1000,7 @@ fn parse_supports_rule_with_diagnostics(
   let mut pos = start + 1 // Skip @supports token
 
   // Skip condition tokens until '{' (handling nested parens)
-  let mut paren_depth = 0
-  while pos < tokens.length() {
-    match tokens[pos] {
-      @token.Token::LeftParen => {
-        paren_depth += 1
-        pos = pos + 1
-      }
-      @token.Token::RightParen => {
-        paren_depth -= 1
-        pos = pos + 1
-      }
-      @token.Token::LeftBrace if paren_depth == 0 => break
-      @token.Token::EOF => return pos
-      _ => pos = pos + 1
-    }
-  }
+  pos = skip_supports_condition_to_block(tokens, pos)
   if pos >= tokens.length() {
     return pos
   }

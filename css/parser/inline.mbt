@@ -875,6 +875,26 @@ fn parse_min_track_sizing(
         Some((@types.MinTrackSizing::Length(value), tokens[1:]))
       } else if unit == "%" {
         Some((@types.MinTrackSizing::Percent(value / 100.0), tokens[1:]))
+      } else if is_viewport_width_unit(unit) {
+        Some(
+          (
+            @types.MinTrackSizing::Length(
+              value * default_viewport_width / 100.0,
+            ),
+            tokens[1:],
+          ),
+        )
+      } else if is_viewport_height_unit(unit) {
+        Some(
+          (
+            @types.MinTrackSizing::Length(
+              value * default_viewport_height / 100.0,
+            ),
+            tokens[1:],
+          ),
+        )
+      } else if unit == "em" || unit == "rem" {
+        Some((@types.MinTrackSizing::Length(value * 16.0), tokens[1:]))
       } else {
         Some((@types.MinTrackSizing::Length(value), tokens[1:]))
       }
@@ -917,6 +937,26 @@ fn parse_max_track_sizing(
         Some((@types.MaxTrackSizing::Percent(value / 100.0), tokens[1:]))
       } else if unit == "fr" {
         Some((@types.MaxTrackSizing::Fr(value), tokens[1:]))
+      } else if is_viewport_width_unit(unit) {
+        Some(
+          (
+            @types.MaxTrackSizing::Length(
+              value * default_viewport_width / 100.0,
+            ),
+            tokens[1:],
+          ),
+        )
+      } else if is_viewport_height_unit(unit) {
+        Some(
+          (
+            @types.MaxTrackSizing::Length(
+              value * default_viewport_height / 100.0,
+            ),
+            tokens[1:],
+          ),
+        )
+      } else if unit == "em" || unit == "rem" {
+        Some((@types.MaxTrackSizing::Length(value * 16.0), tokens[1:]))
       } else {
         Some((@types.MaxTrackSizing::Length(value), tokens[1:]))
       }
@@ -1145,13 +1185,40 @@ fn parse_track_sizing_function(
 
 ///|
 /// Parse grid-template-columns or grid-template-rows value
+fn skip_grid_line_names(
+  tokens : ArrayView[@token.Token],
+) -> ArrayView[@token.Token] {
+  let mut remaining = skip_whitespace(tokens)
+  while remaining.length() > 0 {
+    match remaining[0] {
+      @token.Token::LeftBracket => {
+        let mut i = 1
+        while i < remaining.length() {
+          match remaining[i] {
+            @token.Token::RightBracket => {
+              i = i + 1
+              break
+            }
+            _ => i = i + 1
+          }
+        }
+        remaining = skip_whitespace(remaining[i:])
+      }
+      _ => return remaining
+    }
+  }
+  remaining
+}
+
+///|
+/// Parse grid-template-columns or grid-template-rows value
 fn parse_grid_template_tracks(
   tokens : ArrayView[@token.Token],
 ) -> Array[@types.TrackSizingFunction] {
   let result : Array[@types.TrackSizingFunction] = []
   let mut remaining = tokens
   while remaining.length() > 0 {
-    remaining = skip_whitespace(remaining)
+    remaining = skip_grid_line_names(remaining)
     if remaining.length() == 0 {
       break
     }

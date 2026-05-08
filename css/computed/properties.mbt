@@ -763,9 +763,14 @@ pub fn parse_grid_placement(value : String) -> @types.GridPlacement {
   if line != 0 {
     @types.GridPlacement::Line(line)
   } else if is_basic_custom_ident(v) {
-    // Browser-compatible fallback: unresolved custom identifiers in placement
-    // create an implicit track before the item (equivalent to line 2 start).
-    @types.GridPlacement::Line(2)
+    // Browser-compatible fallback for unresolved named lines. Start-like names
+    // create an implicit track before the item, while *-end names map to the
+    // final explicit line.
+    if v.has_suffix("-end") {
+      @types.GridPlacement::Line(-1)
+    } else {
+      @types.GridPlacement::Line(2)
+    }
   } else {
     @types.GridPlacement::Auto
   }

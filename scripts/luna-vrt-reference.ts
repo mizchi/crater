@@ -2,7 +2,7 @@
 
 import { execFile as nodeExecFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -22,6 +22,7 @@ export type LunaReferenceVrtScenario = {
 };
 
 export type LunaReferenceVrtSuite = {
+  maskText?: boolean;
   outputDir?: string;
   scenarios: LunaReferenceVrtScenario[];
   targetId?: string;
@@ -80,6 +81,7 @@ export type LunaReferenceVrtCliArgs = {
   fixture?: string;
   fixturesDir: string;
   json: boolean;
+  maskText: boolean;
   outputDir: string;
   targetId?: string;
   targetSelector?: string;
@@ -107,6 +109,7 @@ const DEFAULT_VIEWPORT: LunaReferenceVrtViewport = {
   height: 720,
   width: 432,
 };
+const TEXT_MASK_RAW_TEXT_TAGS = new Set(["script", "style", "textarea", "title"]);
 
 export async function discoverLunaReferenceFixtures(
   fixturesDir: string,
@@ -158,7 +161,7 @@ export function buildLunaReferenceCraterInvocation(args: {
 
 export async function runLunaReferenceVrtScenario(
   scenario: LunaReferenceVrtScenario,
-  suite: Pick<LunaReferenceVrtSuite, "outputDir" | "targetId" | "targetSelector" | "viewport">,
+  suite: Pick<LunaReferenceVrtSuite, "maskText" | "outputDir" | "targetId" | "targetSelector" | "viewport">,
   options: LunaReferenceVrtRunnerOptions = {},
 ): Promise<LunaReferenceVrtCapture> {
   validateScenario(scenario);
@@ -167,7 +170,12 @@ export async function runLunaReferenceVrtScenario(
   await mkdir(outputDir, { recursive: true });
   await mkdir(fixtureCacheDir, { recursive: true });
 
-  const fixturePath = await resolveFixturePath(scenario, fixtureCacheDir);
+  const target = resolveTarget(scenario, suite);
+  const fixturePath = await resolveFixturePath(
+    scenario,
+    fixtureCacheDir,
+    suite.maskText === true,
+  );
   const craterBin = path.resolve(options.cwd ?? REPO_ROOT, options.craterBin ?? DEFAULT_CRATER_BIN);
   const invocation = buildLunaReferenceCraterInvocation({
     craterBin,
@@ -186,7 +194,6 @@ export async function runLunaReferenceVrtScenario(
   const png = Buffer.from(artifact.data, "base64");
   const outputPath = path.resolve(outputDir, scenario.outputPath ?? `${safeFileName(scenario.id)}.png`);
   await writeFile(outputPath, png);
-  const target = resolveTarget(scenario, suite);
   return {
     bytes: png.byteLength,
     fixturePath,
@@ -227,6 +234,7 @@ export function parseLunaReferenceVrtArgs(args: string[]): LunaReferenceVrtCliAr
     craterBin: DEFAULT_CRATER_BIN,
     fixturesDir: DEFAULT_FIXTURES_DIR,
     json: false,
+    maskText: false,
     outputDir: DEFAULT_OUTPUT_DIR,
     timeoutMs: 30_000,
     viewport: { ...DEFAULT_VIEWPORT },
@@ -251,6 +259,9 @@ export function parseLunaReferenceVrtArgs(args: string[]): LunaReferenceVrtCliAr
         break;
       case "--json":
         parsed.json = true;
+        break;
+      case "--mask-text":
+        parsed.maskText = true;
         break;
       case "--output-dir":
         parsed.outputDir = readFlag(args, index, arg);
@@ -307,6 +318,7 @@ export async function runLunaReferenceVrtCli(
     throw new Error(cli.fixture ? `No Luna fixture found: ${cli.fixture}` : `No Luna fixtures found in ${fixturesDir}`);
   }
   const result = await runLunaReferenceVrtSuite({
+    maskText: cli.maskText,
     outputDir: cli.outputDir,
     scenarios,
     targetId: cli.targetSelector ? undefined : cli.targetId ?? DEFAULT_TARGET_ID,
@@ -350,7 +362,20 @@ function resolveTarget(
 async function resolveFixturePath(
   scenario: LunaReferenceVrtScenario,
   fixtureCacheDir: string,
+  maskText = false,
 ): Promise<string> {
+  if (maskText) {
+    const html = scenario.htmlFile
+      ? await readFile(path.resolve(scenario.htmlFile), "utf8")
+      : scenario.html;
+    if (html === undefined) {
+      throw new Error(`scenario.html or scenario.htmlFile is required: ${scenario.id}`);
+    }
+    const maskedHtml = maskHtmlTextNodes(html);
+    const fixturePath = path.join(fixtureCacheDir, `${safeFileName(scenario.id)}-text-masked-${hashContent(maskedHtml)}.html`);
+    await writeFile(fixturePath, maskedHtml);
+    return fixturePath;
+  }
   if (scenario.htmlFile) {
     return path.resolve(scenario.htmlFile);
   }
@@ -361,6 +386,65 @@ async function resolveFixturePath(
   const fixturePath = path.join(fixtureCacheDir, `${safeFileName(scenario.id)}-${hashContent(html)}.html`);
   await writeFile(fixturePath, html);
   return fixturePath;
+}
+
+function maskHtmlTextNodes(html: string): string {
+  if (html.includes("data-crater-vrt-text-mask")) {
+    return html;
+  }
+  let output = "";
+  let index = 0;
+  const rawTextStack: string[] = [];
+  while (index < html.length) {
+    if (html.startsWith("<!--", index)) {
+      const end = html.indexOf("-->", index + 4);
+      const next = end >= 0 ? end + 3 : html.length;
+      output += html.slice(index, next);
+      index = next;
+      continue;
+    }
+    if (html[index] === "<") {
+      const end = html.indexOf(">", index + 1);
+      if (end < 0) {
+        output += html.slice(index);
+        break;
+      }
+      const tag = html.slice(index, end + 1);
+      output += tag;
+      updateRawTextStack(tag, rawTextStack);
+      index = end + 1;
+      continue;
+    }
+    const nextTag = html.indexOf("<", index);
+    const end = nextTag >= 0 ? nextTag : html.length;
+    const text = html.slice(index, end);
+    if (rawTextStack.length === 0 && /\S/.test(text)) {
+      output += `<span data-crater-vrt-text-mask style="visibility: hidden">${text}</span>`;
+    } else {
+      output += text;
+    }
+    index = end;
+  }
+  return output;
+}
+
+function updateRawTextStack(tag: string, stack: string[]): void {
+  const match = /^<\s*(\/)?\s*([a-zA-Z][a-zA-Z0-9:-]*)/.exec(tag);
+  if (!match) {
+    return;
+  }
+  const closing = match[1] === "/";
+  const tagName = match[2]!.toLowerCase();
+  if (!TEXT_MASK_RAW_TEXT_TAGS.has(tagName)) {
+    return;
+  }
+  if (closing) {
+    if (stack[stack.length - 1] === tagName) {
+      stack.pop();
+    }
+  } else if (!tag.endsWith("/>")) {
+    stack.push(tagName);
+  }
 }
 
 function validateScenario(scenario: LunaReferenceVrtScenario): void {
@@ -473,6 +557,7 @@ Options:
   --fixtures-dir <dir>        Fixture directory. Default: ${DEFAULT_FIXTURES_DIR}
   --output-dir <dir>          Output directory. Default: ${DEFAULT_OUTPUT_DIR}
   --crater-bin <path>         Crater CLI JS/binary. Default: ${DEFAULT_CRATER_BIN}
+  --mask-text                 Hide text glyph pixels while preserving text layout.
   --target-id <id>            Target element id. Default: ${DEFAULT_TARGET_ID}
   --target-selector <selector> Target selector instead of id.
   --viewport-width <px>       Viewport width. Default: ${DEFAULT_VIEWPORT.width}

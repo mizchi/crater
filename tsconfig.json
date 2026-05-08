@@ -16,6 +16,7 @@
     "scripts/component-vrt.ts",
     "scripts/crater-bidi-server.ts",
     "scripts/luna-vrt-reference.ts",
+    "scripts/vrt-url.ts",
     "scripts/crater-playwright-smoke.ts"
   ]
 }

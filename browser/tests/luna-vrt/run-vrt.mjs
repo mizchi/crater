@@ -6,6 +6,7 @@
  *   node tests/luna-vrt/run-vrt.mjs                    # Run all fixtures
  *   node tests/luna-vrt/run-vrt.mjs alert               # Run specific fixture
  *   node tests/luna-vrt/run-vrt.mjs --update-baseline   # Update Chrome baselines
+ *   node tests/luna-vrt/run-vrt.mjs --mask-text         # Ignore glyph rasterization diffs
  */
 
 import { execSync } from "node:child_process";
@@ -15,15 +16,17 @@ import pixelmatch from "pixelmatch";
 import { PNG } from "pngjs";
 
 const FIXTURES_DIR = join(import.meta.dirname, "fixtures");
-const OUTPUT_DIR = join(import.meta.dirname, "output");
-const REPORT_FILE = join(import.meta.dirname, "report.json");
 const VIEWPORT_WIDTH = 432;
 const TARGET_ID = "target";
 const DIFF_THRESHOLD = 0.1; // pixelmatch threshold
+const TEXT_MASK_RAW_TEXT_TAGS = new Set(["script", "style", "textarea", "title"]);
 
 const args = process.argv.slice(2);
 const updateBaseline = args.includes("--update-baseline");
+const maskText = args.includes("--mask-text");
 const filterName = args.find(a => !a.startsWith("--"));
+const OUTPUT_DIR = join(import.meta.dirname, maskText ? "output-text-masked" : "output");
+const REPORT_FILE = join(import.meta.dirname, maskText ? "report-text-masked.json" : "report.json");
 
 mkdirSync(OUTPUT_DIR, { recursive: true });
 
@@ -37,7 +40,67 @@ if (fixtures.length === 0) {
   process.exit(1);
 }
 
-console.log(`Running VRT for ${fixtures.length} fixture(s)...\n`);
+console.log(`Running VRT for ${fixtures.length} fixture(s)${maskText ? " with text mask" : ""}...\n`);
+
+function maskHtmlTextNodes(html) {
+  if (html.includes("data-crater-vrt-text-mask")) return html;
+  let output = "";
+  let index = 0;
+  const rawTextStack = [];
+  while (index < html.length) {
+    if (html.startsWith("<!--", index)) {
+      const end = html.indexOf("-->", index + 4);
+      const next = end >= 0 ? end + 3 : html.length;
+      output += html.slice(index, next);
+      index = next;
+      continue;
+    }
+    if (html[index] === "<") {
+      const end = html.indexOf(">", index + 1);
+      if (end < 0) {
+        output += html.slice(index);
+        break;
+      }
+      const tag = html.slice(index, end + 1);
+      output += tag;
+      updateRawTextStack(tag, rawTextStack);
+      index = end + 1;
+      continue;
+    }
+    const nextTag = html.indexOf("<", index);
+    const end = nextTag >= 0 ? nextTag : html.length;
+    const text = html.slice(index, end);
+    if (rawTextStack.length === 0 && /\S/.test(text)) {
+      output += `<span data-crater-vrt-text-mask style="visibility: hidden">${text}</span>`;
+    } else {
+      output += text;
+    }
+    index = end;
+  }
+  return output;
+}
+
+function updateRawTextStack(tag, stack) {
+  const match = /^<\s*(\/)?\s*([a-zA-Z][a-zA-Z0-9:-]*)/.exec(tag);
+  if (!match) return;
+  const closing = match[1] === "/";
+  const tagName = match[2].toLowerCase();
+  if (!TEXT_MASK_RAW_TEXT_TAGS.has(tagName)) return;
+  if (closing) {
+    if (stack[stack.length - 1] === tagName) stack.pop();
+  } else if (!tag.endsWith("/>")) {
+    stack.push(tagName);
+  }
+}
+
+function fixtureForRendering(fixturePath, outDir) {
+  if (!maskText) return fixturePath;
+  const cacheDir = join(outDir, ".fixture-cache");
+  mkdirSync(cacheDir, { recursive: true });
+  const maskedPath = join(cacheDir, "fixture-text-masked.html");
+  writeFileSync(maskedPath, maskHtmlTextNodes(readFileSync(fixturePath, "utf8")));
+  return maskedPath;
+}
 
 function renderWithCrater(fixturePath, outputPath) {
   try {
@@ -58,7 +121,7 @@ function renderWithCrater(fixturePath, outputPath) {
 async function renderWithChrome(fixturePath, outputPath) {
   let browser;
   try {
-    const puppeteer = await import("puppeteer-core");
+    const puppeteer = await import("puppeteer-core").catch(() => import("puppeteer"));
     const chromePaths = [
       "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
       "/Applications/Chromium.app/Contents/MacOS/Chromium",
@@ -161,12 +224,13 @@ for (const fixture of fixtures) {
   const craterPng = join(outDir, "crater.png");
   const chromePng = join(outDir, "chrome.png");
   const diffPng = join(outDir, "diff.png");
+  const renderFixturePath = fixtureForRendering(fixture.path, outDir);
 
-  const craterResult = renderWithCrater(fixture.path, craterPng);
+  const craterResult = renderWithCrater(renderFixturePath, craterPng);
   if (craterResult) console.log(`  crater: ${craterResult.width}x${craterResult.height}`);
 
   if (updateBaseline || !existsSync(chromePng)) {
-    const chromeResult = await renderWithChrome(fixture.path, chromePng);
+    const chromeResult = await renderWithChrome(renderFixturePath, chromePng);
     if (chromeResult) console.log(`  chrome: ${chromeResult.width}x${chromeResult.height}`);
   } else {
     console.log(`  chrome: baseline`);

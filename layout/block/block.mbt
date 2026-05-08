@@ -676,6 +676,13 @@ fn get_child_descendant_flow_extent_for_auto_height(
   if child_node.style.suppresses_intrinsic_height() {
     return 0.0
   }
+  let has_definite_height = match child_node.style.height {
+    @types.Length(_) => true
+    _ => false
+  }
+  if has_definite_height {
+    return 0.0
+  }
   let explicit_zero_height = match child_node.style.height {
     @types.Length(v) => v == 0.0
     _ => false

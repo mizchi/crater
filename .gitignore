@@ -52,6 +52,8 @@ wasm/dist/
 
 # Browser npm build output
 browser/dist/
+browser/tests/luna-vrt/output-text-masked/
+browser/tests/luna-vrt/report-text-masked.json
 output/
 
 # MoonBit build output

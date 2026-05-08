@@ -17,6 +17,9 @@ pnpm vrt:luna-reference -- switch
 
 # Capture a fixture with a selector target
 pnpm vrt:luna-reference -- switch --target-selector "[data-vrt-root]"
+
+# Capture with text glyph pixels hidden while preserving text layout
+pnpm vrt:luna-reference -- --mask-text --json
 ```
 
 The runner writes PNGs to `browser/tests/luna-vrt/output` by default.
@@ -45,3 +48,5 @@ browser/tests/luna-vrt/
 `run-vrt.mjs` still compares Crater output with Chrome baselines. Keep it for
 manual investigation, but prefer `pnpm vrt:luna-reference` for the Crater-side
 reference path because it does not require adding Crater to Luna packages.
+Use `node tests/luna-vrt/run-vrt.mjs --mask-text --update-baseline` from
+`browser/` to compare Chrome and Crater while ignoring font rasterization noise.

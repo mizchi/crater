@@ -75,6 +75,7 @@ Pixel-level comparison between Chromium and Crater rendering using [kagura](http
 
 ```bash
 just vrt-url-native https://example.com        # Compare any URL
+just vrt-url https://example.com --mask-text --mask-dynamic  # Real URL VRT with text/dynamic masks
 just test-wpt-vrt                                # WPT visual regression
 CRATER_PAINT_BACKEND=native just test-vrt        # Full VRT suite
 ```

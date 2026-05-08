@@ -90,60 +90,6 @@ fn resolve_color_var_fallback(value : String) -> String {
 }
 
 ///|
-/// Resolve CSS var() function for colors with context lookup
-fn resolve_color_var(value : String, ctx : ComputeContext) -> String {
-  let v = value.trim().to_string()
-  if !v.has_prefix("var(") || !v.has_suffix(")") {
-    return v
-  }
-  // Extract content inside var(...)
-  let inner : String = v.unsafe_substring(start=4, end=v.length() - 1)
-  // Find the comma separating variable name from fallback
-  let mut paren_depth = 0
-  let mut comma_pos = -1
-  for i = 0; i < inner.length(); i = i + 1 {
-    let c = inner[i].to_int().unsafe_to_char()
-    if c == '(' {
-      paren_depth += 1
-    } else if c == ')' {
-      paren_depth -= 1
-    } else if c == ',' && paren_depth == 0 {
-      comma_pos = i
-      break
-    }
-  }
-  // Extract variable name as String
-  let var_name : String = if comma_pos > 0 {
-    let slice = inner.unsafe_substring(start=0, end=comma_pos)
-    slice.trim().to_string()
-  } else {
-    inner.trim().to_string()
-  }
-  // Look up variable in context
-  match ctx.custom_properties.get(var_name) {
-    Some(var_value) =>
-      // Variable found - recursively resolve if it contains var()
-      if var_value.contains("var(") {
-        resolve_color_var(var_value, ctx)
-      } else {
-        var_value
-      }
-    None =>
-      // Variable not found - use fallback if available
-      if comma_pos > 0 {
-        let fallback_slice = inner.unsafe_substring(
-          start=comma_pos + 1,
-          end=inner.length(),
-        )
-        let fallback = fallback_slice.trim().to_string()
-        resolve_color_var(fallback, ctx)
-      } else {
-        ""
-      }
-  }
-}
-
-///|
 /// Parse a CSS color value (legacy - uses fallback only for var())
 pub fn parse_color(value : String) -> CssColorValue {
   // First resolve any var() functions
@@ -159,12 +105,57 @@ pub fn parse_color_with_ctx(
 ) -> CssColorValue {
   // First resolve any var() functions using context
   let resolved = if value.contains("var(") {
-    resolve_color_var(value, ctx)
+    resolve_all_vars(value, ctx)
   } else {
     value
   }
-  let v = resolved.trim().to_lower()
+  parse_color_value_with_ctx(resolved, ctx)
+}
+
+///|
+fn parse_color_value_with_ctx(
+  value : String,
+  ctx : ComputeContext,
+) -> CssColorValue {
+  let v = value.trim().to_lower()
+  if v.has_prefix("light-dark(") {
+    match select_light_dark_arg(value, ctx) {
+      Some(selected) => {
+        let resolved = if selected.contains("var(") {
+          resolve_all_vars(selected, ctx)
+        } else {
+          selected
+        }
+        return parse_color_value_with_ctx(resolved, ctx)
+      }
+      None => ()
+    }
+  }
   parse_color_value(v.to_string())
+}
+
+///|
+fn select_light_dark_arg(value : String, ctx : ComputeContext) -> String? {
+  let trimmed = value.trim().to_string()
+  let lower = trimmed.to_lower()
+  if !lower.has_prefix("light-dark(") || !trimmed.has_suffix(")") {
+    return None
+  }
+  let inner = trimmed.unsafe_substring(start=11, end=trimmed.length() - 1)
+  let args = split_css_top_level(inner, ',')
+  if args.length() < 2 {
+    return None
+  }
+  let use_dark = match
+    ctx.custom_properties.get(internal_effective_color_scheme_key) {
+    Some("dark") => true
+    _ => false
+  }
+  if use_dark {
+    Some(args[1])
+  } else {
+    Some(args[0])
+  }
 }
 
 ///|

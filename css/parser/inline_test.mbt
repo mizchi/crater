@@ -155,6 +155,14 @@ test "grid-template-columns basic" {
 }
 
 ///|
+test "grid-template-columns skips named line brackets" {
+  let style = parse_inline_style(
+    "display: grid; grid-template-columns: [extended-full-start] minmax(1rem, 1fr) [full-start] minmax(0, 2rem) [content-start] minmax(0, 72rem) [content-end] minmax(0, 2rem) [full-end] minmax(1rem, 1fr) [extended-full-end]",
+  )
+  inspect(style.grid_template_columns.length(), content="5")
+}
+
+///|
 test "grid-template-columns fractional fr" {
   let style = parse_inline_style(
     "display: grid; grid-template-columns: 1.01fr 0.99fr 1fr",

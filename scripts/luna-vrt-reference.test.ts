@@ -145,6 +145,39 @@ describe("runLunaReferenceVrtSuite", () => {
       width: 300,
     });
   });
+
+  it("can wrap text nodes in cached masked fixtures", async () => {
+    const fixturesDir = await mkdtemp(path.join(tmpdir(), "crater-luna-mask-fixtures-"));
+    const outputDir = await mkdtemp(path.join(tmpdir(), "crater-luna-mask-output-"));
+    const fixturePath = path.join(fixturesDir, "switch.html");
+    await writeFile(
+      fixturePath,
+      "<!doctype html><html><head><title>x</title></head><body><div id='target'>switch</div></body></html>",
+    );
+    const execFile: LunaReferenceVrtExecFile = async () => ({
+      stderr: "",
+      stdout: fakeArtifact(300, 96),
+    });
+
+    const result = await runLunaReferenceVrtSuite({
+      maskText: true,
+      scenarios: [{
+        htmlFile: fixturePath,
+        id: "switch",
+      }],
+      targetId: "target",
+      viewport: { height: 720, width: 432 },
+    }, {
+      execFile,
+      outputDir,
+    });
+
+    const cachedFixture = await readFile(result.captures[0]!.fixturePath, "utf8");
+    expect(result.captures[0]!.fixturePath).toContain("text-masked");
+    expect(cachedFixture).toContain("data-crater-vrt-text-mask");
+    expect(cachedFixture).toContain("<title>x</title>");
+    expect(cachedFixture).toContain("<span data-crater-vrt-text-mask style=\"visibility: hidden\">switch</span>");
+  });
 });
 
 describe("parseLunaReferenceVrtArgs", () => {
@@ -166,12 +199,14 @@ describe("parseLunaReferenceVrtArgs", () => {
       "240",
       "--timeout-ms",
       "1000",
+      "--mask-text",
       "--json",
     ])).toEqual({
       craterBin: "bin/crater",
       fixture: "switch",
       fixturesDir: "fixtures",
       json: true,
+      maskText: true,
       outputDir: "out",
       targetSelector: "[data-vrt-root]",
       timeoutMs: 1000,
