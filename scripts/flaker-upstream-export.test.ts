@@ -111,7 +111,7 @@ describe("renderFlakerUpstreamExportMarkdown", () => {
 
     expect(markdown).toContain("# Metric CI Upstream Export");
     expect(markdown).toContain("| Group | flaker-batch-summary-core |");
-    expect(markdown).toContain("| Test files | 1 |");
+    expect(markdown).toContain("| Test files | 2 |");
     expect(markdown).toContain("scripts/flaker-batch-summary-core.ts");
     expect(markdown).toContain("| Kind | Source | Staged | Bytes |");
   });

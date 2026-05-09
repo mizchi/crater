@@ -9,6 +9,7 @@ const PURE_MODULES = [
   "playwright-report-summary-core.ts",
   "playwright-report-diff-core.ts",
   "flaker-batch-summary-core.ts",
+  "flaker-batch-vrt-extension.ts",
   "flaker-batch-plan-core.ts",
   "flaker-config-contract.ts",
   "flaker-config-summary-core.ts",

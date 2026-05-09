@@ -194,7 +194,8 @@
   - `flaker-batch-summary` は `playwright-summary` / `flaker-summary` / `vrt-summary` を横断集約する
 - [x] `flaker` に移した pure core に合わせて `scripts/flaker-*` の自前実装を wrapper 化して削る
   - Playwright report core / task summary core / config core / batch plan core / quarantine core は `@mizchi/flaker@0.12.5` までで package export 化済み
-- [ ] `flaker-batch-summary-core` の VRT/CSS overlay をさらに分離できるか検討する
+- [x] `flaker-batch-summary-core` の VRT/CSS overlay をさらに分離できるか検討する
+  - `scripts/flaker-batch-vrt-extension.ts` に VRT/CSS domain extension を分け、`scripts/flaker-batch-summary-core.ts` は `@mizchi/flaker` の generic aggregate との接続 facade にした
 - [ ] VRT 判定は `crater` 側に残しつつ、summary / identity / quarantine 連携だけ共通契約へ寄せる
 
 #### 現在の upstream 単位
@@ -230,7 +231,7 @@
 ### 当面の優先順
 1. `mizchi/flaker#8` を進めて stable identity を決める
 2. `mizchi/flaker#9` で quarantine を runner runtime へ通す
-3. `flaker-batch-summary-core` の VRT/CSS overlay を generic aggregate と domain extension に分けられるか検討する
+3. `flaker-batch-vrt-extension.ts` の VRT/CSS metrics を `crater` domain extension として維持しつつ、report schema へ明示する
 4. `vrt-harness` は `crater` の consumer として report schema に乗せる
 
 ## Paint VRT

@@ -85,12 +85,14 @@ const GROUPS: ReadonlyArray<Omit<FlakerUpstreamGroup, "status"> & {
     origin: "crater-extracted",
     files: [
       "scripts/flaker-batch-summary-core.ts",
+      "scripts/flaker-batch-vrt-extension.ts",
     ],
     testFiles: [
       "scripts/flaker-batch-summary-core.test.ts",
+      "scripts/flaker-batch-vrt-extension.test.ts",
     ],
-    reason: "@mizchi/flaker@0.12.1 の generic batch summary を下敷きにしつつ、crater 固有の VRT/CSS 集約列を重ねている。",
-    nextAction: "VRT/CSS 集約を別 contract に切り出せるまでは crater 側 overlay として維持する。",
+    reason: "@mizchi/flaker@0.12.1 の generic batch summary を下敷きにし、crater 固有の VRT/CSS 集約列を flaker-batch-vrt-extension として重ねている。",
+    nextAction: "VRT/CSS 集約 contract は crater domain extension として維持し、generic aggregate は @mizchi/flaker/reporting/flaker-batch-summary-core に追従する。",
   },
   {
     id: "flaker-batch-plan-core",
