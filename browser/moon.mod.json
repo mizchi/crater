@@ -6,12 +6,12 @@
       "path": "../aomx",
       "version": "0.17.1"
     },
-    "mizchi/crater": {
-      "path": "..",
-      "version": "0.17.1"
-    },
     "mizchi/crater-dom": {
       "path": "../dom",
+      "version": "0.17.1"
+    },
+    "mizchi/crater-css": {
+      "path": "../css",
       "version": "0.17.1"
     },
     "mizchi/crater-layout": {

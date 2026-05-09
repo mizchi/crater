@@ -13,7 +13,7 @@ import {
 
 import {
   "mizchi/crater-renderer/renderer",
-  "mizchi/crater/css",
+  "mizchi/crater-css" @css,
 } for "test"
 
 warnings = "-unused_package"

@@ -25,11 +25,7 @@
     "mizchi/crater-renderer": {
       "path": "./renderer",
       "version": "0.17.1"
-    },
-    "mizchi/x": "0.2.0",
-    "mizchi/font": "0.7.2",
-    "mizchi/svg": "0.2.0",
-    "moonbitlang/async": "0.17.1"
+    }
   },
   "readme": "README.mbt.md",
   "repository": "https://github.com/mizchi/crater",

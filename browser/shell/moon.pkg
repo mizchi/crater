@@ -23,7 +23,7 @@ import {
 
 import {
   "moonbitlang/async",
-  "mizchi/crater/css",
+  "mizchi/crater-dom/css/responsive" @responsive,
 } for "wbtest"
 
 warnings = "-unused_package"
