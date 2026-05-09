@@ -189,12 +189,12 @@ describe("runFlakerUpstreamExportCli", () => {
           content: "// scripts/flaker-batch-plan-core.ts\n",
         },
         {
-          path: "/repo/from-crater/flaker-config-core/scripts/flaker-config-parser.ts",
-          content: "// scripts/flaker-config-parser.ts\n",
+          path: "/repo/from-crater/flaker-quarantine-core/scripts/flaker-quarantine-parser.ts",
+          content: "// scripts/flaker-quarantine-parser.ts\n",
         },
         {
-          path: "/repo/from-crater/flaker-config-core/scripts/flaker-config-task.test.ts",
-          content: "// scripts/flaker-config-task.test.ts\n",
+          path: "/repo/from-crater/flaker-quarantine-core/scripts/flaker-quarantine-parser.test.ts",
+          content: "// scripts/flaker-quarantine-parser.test.ts\n",
         },
       ]),
     );

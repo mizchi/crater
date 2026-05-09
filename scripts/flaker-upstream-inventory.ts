@@ -135,7 +135,7 @@ const GROUPS: ReadonlyArray<Omit<FlakerUpstreamGroup, "status"> & {
     id: "flaker-config-core",
     title: "Flaker config parser, contract, task resolver, selection, summary, and report core",
     category: "metric-ci",
-    status: "ready-to-upstream",
+    status: "upstreamed",
     origin: "crater-extracted",
     files: [
       "scripts/flaker-config-parser.ts",
@@ -152,8 +152,8 @@ const GROUPS: ReadonlyArray<Omit<FlakerUpstreamGroup, "status"> & {
       "scripts/flaker-config-selection-core.test.ts",
       "scripts/flaker-config-report.test.ts",
     ],
-    reason: "flaker.star parser / config validation / task resolution / affected selection / report の純粋部分は crater の spec discovery や loader を知らずに成立する。",
-    nextAction: "metric-ci 側へ parser + contract + task resolver + core + report を移し、crater では spec discovery / loader / wrapper だけを残す。",
+    reason: "@mizchi/flaker@0.12.2 の reporting export として upstream 済み。flaker.star parser / config validation / task resolution / affected selection / report の純粋部分は crater の spec discovery や loader を知らずに成立する。",
+    nextAction: "crater 側 wrapper は @mizchi/flaker/reporting/flaker-config-* を参照し、spec discovery / loader / CLI wrapper だけを crater に残す。",
   },
   {
     id: "flaker-config-adapter",

@@ -45,7 +45,7 @@
   },
   "devDependencies": {
     "@bytecodealliance/jco": "^1.17.6",
-    "@mizchi/flaker": "0.12.1",
+    "@mizchi/flaker": "0.12.2",
     "@playwright/test": "^1.59.1",
     "@types/ws": "^8.18.1",
     "pixelmatch": "^7.1.0",
