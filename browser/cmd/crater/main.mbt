@@ -1,5 +1,7 @@
 ///|
-fn load_request(options : Options) -> Result[RenderRequest, String] {
+fn load_request(
+  options : Options,
+) -> Result[@component_artifact.RenderRequest, String] {
   let stdin_content = if options.stdin_html || options.stdin_css {
     match read_stdin_text() {
       Some(content) => Some(content)
@@ -62,7 +64,8 @@ fn main {
   let _ = @font_provider.install_system_glyph_provider()
   match load_request(options) {
     Ok(request) =>
-      match render_artifact_or_error(request, options.artifact) {
+      match
+        @component_artifact.render_artifact_or_error(request, options.artifact) {
         Ok(output) =>
           match options.output_file {
             Some(path) =>

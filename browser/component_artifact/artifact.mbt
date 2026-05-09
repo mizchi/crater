@@ -1,5 +1,21 @@
 ///|
-struct RenderRequest {
+pub(all) enum ArtifactMode {
+  Layout
+  Image
+  Landmarks
+} derive(Debug)
+
+///|
+pub impl Show for ArtifactMode with output(self, logger) {
+  match self {
+    Layout => logger.write_string("Layout")
+    Image => logger.write_string("Image")
+    Landmarks => logger.write_string("Landmarks")
+  }
+}
+
+///|
+pub(all) struct RenderRequest {
   html : String
   css : Array[String]
   target_id : String?
@@ -9,13 +25,13 @@ struct RenderRequest {
 }
 
 ///|
-struct ResolvedTarget {
+priv struct ResolvedTarget {
   element : @html.Element
   target_id : String
 }
 
 ///|
-struct LandmarkTree {
+priv struct LandmarkTree {
   role : String
   name : String?
   source_id : String?
@@ -500,7 +516,7 @@ fn render_landmark_artifact(request : RenderRequest) -> Result[String, String] {
 }
 
 ///|
-fn render_artifact_or_error(
+pub fn render_artifact_or_error(
   request : RenderRequest,
   mode : ArtifactMode,
 ) -> Result[String, String] {

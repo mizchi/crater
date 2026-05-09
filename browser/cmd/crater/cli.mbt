@@ -1,20 +1,4 @@
 ///|
-enum ArtifactMode {
-  Layout
-  Image
-  Landmarks
-} derive(Debug)
-
-///|
-pub impl Show for ArtifactMode with output(self, logger) {
-  match self {
-    Layout => logger.write_string("Layout")
-    Image => logger.write_string("Image")
-    Landmarks => logger.write_string("Landmarks")
-  }
-}
-
-///|
 struct Options {
   html_file : String
   stdin_html : Bool
@@ -23,7 +7,7 @@ struct Options {
   output_file : String?
   target_id : String?
   target_selector : String?
-  artifact : ArtifactMode
+  artifact : @component_artifact.ArtifactMode
   viewport_width : Int
   viewport_height : Int
   show_help : Bool
@@ -54,11 +38,11 @@ fn parse_int_simple(s : String) -> Int {
 }
 
 ///|
-fn parse_artifact_mode(value : String) -> ArtifactMode? {
+fn parse_artifact_mode(value : String) -> @component_artifact.ArtifactMode? {
   match value {
-    "layout" => Some(Layout)
-    "image" => Some(Image)
-    "landmarks" => Some(Landmarks)
+    "layout" => Some(@component_artifact.ArtifactMode::Layout)
+    "image" => Some(@component_artifact.ArtifactMode::Image)
+    "landmarks" => Some(@component_artifact.ArtifactMode::Landmarks)
     _ => None
   }
 }
@@ -96,7 +80,7 @@ fn parse_args_list(args : Array[String]) -> Options {
   let mut output_file : String? = None
   let mut target_id : String? = None
   let mut target_selector : String? = None
-  let mut artifact = Landmarks
+  let mut artifact = @component_artifact.ArtifactMode::Landmarks
   let mut viewport_width = default_viewport_width
   let mut viewport_height = default_viewport_height
   let mut show_help = false
