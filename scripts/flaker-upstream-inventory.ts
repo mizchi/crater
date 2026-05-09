@@ -81,7 +81,7 @@ const GROUPS: ReadonlyArray<Omit<FlakerUpstreamGroup, "status"> & {
     id: "flaker-batch-summary-core",
     title: "Flaker batch aggregate core",
     category: "metric-ci",
-    status: "ready-to-upstream",
+    status: "keep-in-crater",
     origin: "crater-extracted",
     files: [
       "scripts/flaker-batch-summary-core.ts",
@@ -89,8 +89,8 @@ const GROUPS: ReadonlyArray<Omit<FlakerUpstreamGroup, "status"> & {
     testFiles: [
       "scripts/flaker-batch-summary-core.test.ts",
     ],
-    reason: "履歴集約ロジックは task summary contract と normalized report だけで成立する。",
-    nextAction: "metric-ci 側へ core を移し、crater では artifact loader だけを残す。",
+    reason: "@mizchi/flaker@0.12.1 の generic batch summary を下敷きにしつつ、crater 固有の VRT/CSS 集約列を重ねている。",
+    nextAction: "VRT/CSS 集約を別 contract に切り出せるまでは crater 側 overlay として維持する。",
   },
   {
     id: "flaker-batch-plan-core",

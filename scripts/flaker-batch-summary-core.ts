@@ -1,5 +1,9 @@
-import type { PlaywrightSummary } from "./playwright-report-contract.ts";
-import type { FlakerTaskSummaryReport } from "./flaker-task-summary-contract.ts";
+import {
+  buildFlakerBatchSummary as buildBaseFlakerBatchSummary,
+  type FlakerBatchSummary as BaseFlakerBatchSummary,
+  type FlakerBatchSummaryInputs as BaseFlakerBatchSummaryInputs,
+  type FlakerBatchTaskSummary as BaseFlakerBatchTaskSummary,
+} from "@mizchi/flaker/reporting/flaker-batch-summary-core";
 
 export interface FlakerBatchVrtSummary {
   failed: number;
@@ -12,15 +16,7 @@ export interface FlakerBatchVrtSummary {
   cssNoEffectRules?: number;
 }
 
-export interface FlakerBatchTaskSummary {
-  taskId: string;
-  totalTests: number;
-  failed: number;
-  flaky: number;
-  skipped: number;
-  healthScore?: number;
-  newFlaky?: number;
-  urgentFixes?: number;
+export interface FlakerBatchTaskSummary extends BaseFlakerBatchTaskSummary {
   vrtFailed?: number;
   vrtUnknown?: number;
   vrtMaxDiffRatio?: number;
@@ -29,17 +25,9 @@ export interface FlakerBatchTaskSummary {
   vrtCssUnusedRules?: number;
   vrtCssOverriddenRules?: number;
   vrtCssNoEffectRules?: number;
-  status: "ok" | "failed" | "missing";
 }
 
-export interface FlakerBatchSummary {
-  schemaVersion: 1;
-  generatedAt: string;
-  taskCount: number;
-  failedTasks: number;
-  flakyTasks: number;
-  healthyTasks: number;
-  totalTests: number;
+export interface FlakerBatchSummary extends Omit<BaseFlakerBatchSummary, "tasks"> {
   vrtCssReports: number;
   vrtCssDeadRules: number;
   vrtCssTotalRules: number;
@@ -49,9 +37,7 @@ export interface FlakerBatchSummary {
   tasks: FlakerBatchTaskSummary[];
 }
 
-export interface FlakerBatchSummaryInputs {
-  playwrightSummaries: Map<string, PlaywrightSummary>;
-  flakerSummaries: Map<string, FlakerTaskSummaryReport>;
+export interface FlakerBatchSummaryInputs extends BaseFlakerBatchSummaryInputs {
   vrtSummaries: Map<string, FlakerBatchVrtSummary>;
 }
 
@@ -68,53 +54,32 @@ function formatCssDead(deadRules?: number, totalRules?: number): string {
 export function buildFlakerBatchSummary(
   inputs: FlakerBatchSummaryInputs,
 ): FlakerBatchSummary {
+  const baseSummary = buildBaseFlakerBatchSummary({
+    playwrightSummaries: inputs.playwrightSummaries,
+    flakerSummaries: inputs.flakerSummaries,
+  });
+  const baseTasks = new Map(baseSummary.tasks.map((task) => [task.taskId, task]));
   const taskIds = [
-      ...new Set([
-        ...inputs.playwrightSummaries.keys(),
-        ...inputs.flakerSummaries.keys(),
-        ...inputs.vrtSummaries.keys(),
-      ]),
+    ...new Set([
+      ...baseSummary.tasks.map((task) => task.taskId),
+      ...inputs.vrtSummaries.keys(),
+    ]),
   ].sort();
 
   const tasks: FlakerBatchTaskSummary[] = taskIds.map((taskId) => {
-    const playwrightSummary = inputs.playwrightSummaries.get(taskId);
-    const flakerSummary = inputs.flakerSummaries.get(taskId);
+    const baseTask = baseTasks.get(taskId) ?? {
+      taskId,
+      totalTests: 0,
+      failed: 0,
+      flaky: 0,
+      skipped: 0,
+      status: "missing" as const,
+    };
     const vrtSummary = inputs.vrtSummaries.get(taskId);
-
-    if (!playwrightSummary) {
-      return {
-        taskId,
-        totalTests: 0,
-        failed: 0,
-        flaky: 0,
-        skipped: 0,
-        vrtFailed: vrtSummary?.failed,
-        vrtUnknown: vrtSummary?.unknown,
-        vrtMaxDiffRatio: vrtSummary?.maxDiffRatio,
-        vrtCssDeadRules: vrtSummary?.cssDeadRules,
-        vrtCssTotalRules: vrtSummary?.cssTotalRules,
-        vrtCssUnusedRules: vrtSummary?.cssUnusedRules,
-        vrtCssOverriddenRules: vrtSummary?.cssOverriddenRules,
-        vrtCssNoEffectRules: vrtSummary?.cssNoEffectRules,
-        status: "missing",
-      };
-    }
-
-    const failed =
-      playwrightSummary.totals.failed
-      + playwrightSummary.totals.timedout
-      + playwrightSummary.totals.interrupted;
     const vrtFailed = vrtSummary?.failed;
 
     return {
-      taskId,
-      totalTests: playwrightSummary.totals.total,
-      failed,
-      flaky: playwrightSummary.totals.flaky,
-      skipped: playwrightSummary.totals.skipped,
-      healthScore: flakerSummary?.eval.healthScore,
-      newFlaky: flakerSummary?.eval.resolution.newFlaky,
-      urgentFixes: flakerSummary?.reason.summary.urgentFixes,
+      ...baseTask,
       vrtFailed,
       vrtUnknown: vrtSummary?.unknown,
       vrtMaxDiffRatio: vrtSummary?.maxDiffRatio,
@@ -123,7 +88,9 @@ export function buildFlakerBatchSummary(
       vrtCssUnusedRules: vrtSummary?.cssUnusedRules,
       vrtCssOverriddenRules: vrtSummary?.cssOverriddenRules,
       vrtCssNoEffectRules: vrtSummary?.cssNoEffectRules,
-      status: failed > 0 || (vrtFailed ?? 0) > 0 ? "failed" : "ok",
+      status: baseTask.status === "failed" || (vrtFailed ?? 0) > 0
+        ? "failed"
+        : baseTask.status,
     };
   });
 

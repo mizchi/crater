@@ -120,7 +120,7 @@ describe("runFlakerUpstreamExportCli", () => {
   it("returns staged writes for ready-to-upstream groups", () => {
     const result = runFlakerUpstreamExportCli([
       "--group",
-      "flaker-batch-summary-core",
+      "flaker-batch-plan-core",
       "--output",
       "out",
     ], {
@@ -132,19 +132,19 @@ describe("runFlakerUpstreamExportCli", () => {
     expect(result.stdout).toContain("# Metric CI Upstream Export");
     expect(result.writes).toEqual([
       {
-        path: "/repo/out/flaker-batch-summary-core/scripts/flaker-batch-summary-core.ts",
-        content: "// scripts/flaker-batch-summary-core.ts\n",
+        path: "/repo/out/flaker-batch-plan-core/scripts/flaker-batch-plan-core.ts",
+        content: "// scripts/flaker-batch-plan-core.ts\n",
       },
       {
-        path: "/repo/out/flaker-batch-summary-core/scripts/flaker-batch-summary-core.test.ts",
-        content: "// scripts/flaker-batch-summary-core.test.ts\n",
+        path: "/repo/out/flaker-batch-plan-core/scripts/flaker-batch-plan-core.test.ts",
+        content: "// scripts/flaker-batch-plan-core.test.ts\n",
       },
       {
-        path: "/repo/out/flaker-batch-summary-core/manifest.md",
-        content: expect.stringContaining("| Group | flaker-batch-summary-core |"),
+        path: "/repo/out/flaker-batch-plan-core/manifest.md",
+        content: expect.stringContaining("| Group | flaker-batch-plan-core |"),
       },
       {
-        path: "/repo/out/flaker-batch-summary-core/manifest.json",
+        path: "/repo/out/flaker-batch-plan-core/manifest.json",
         content: expect.stringContaining('"status": "ready-to-upstream"'),
       },
     ]);
@@ -185,8 +185,8 @@ describe("runFlakerUpstreamExportCli", () => {
           content: expect.stringContaining("MoonBit"),
         },
         {
-          path: "/repo/from-crater/flaker-batch-summary-core/scripts/flaker-batch-summary-core.ts",
-          content: "// scripts/flaker-batch-summary-core.ts\n",
+          path: "/repo/from-crater/flaker-batch-plan-core/scripts/flaker-batch-plan-core.ts",
+          content: "// scripts/flaker-batch-plan-core.ts\n",
         },
         {
           path: "/repo/from-crater/flaker-config-core/scripts/flaker-config-parser.ts",
