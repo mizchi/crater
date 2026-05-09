@@ -35,6 +35,11 @@ fn color_from_msvg(color : @msvg.Color) -> Color {
 }
 
 ///|
+fn color_to_msvg(color : Color) -> @msvg.Color {
+  @msvg.Color::{ r: color.r, g: color.g, b: color.b, a: color.a }
+}
+
+///|
 fn color_from_msvg_option(color : @msvg.Color?) -> Color? {
   match color {
     Some(c) => Some(color_from_msvg(c))
@@ -86,8 +91,22 @@ fn spread_method_from_msvg(spread : @msvg.SpreadMethod) -> SpreadMethod {
 }
 
 ///|
+fn spread_method_to_msvg(spread : SpreadMethod) -> @msvg.SpreadMethod {
+  match spread {
+    Pad => @msvg.SpreadMethod::Pad
+    Repeat => @msvg.SpreadMethod::Repeat
+    Reflect => @msvg.SpreadMethod::Reflect
+  }
+}
+
+///|
 fn gradient_stop_from_msvg(stop : @msvg.GradientStop) -> GradientStop {
   { offset: stop.offset, color: color_from_msvg(stop.color) }
+}
+
+///|
+fn gradient_stop_to_msvg(stop : GradientStop) -> @msvg.GradientStop {
+  @msvg.GradientStop::{ offset: stop.offset, color: color_to_msvg(stop.color) }
 }
 
 ///|
@@ -103,6 +122,20 @@ fn linear_gradient_from_msvg(grad : @msvg.LinearGradient) -> LinearGradient {
 }
 
 ///|
+fn linear_gradient_to_msvg(grad : LinearGradient) -> @msvg.LinearGradient {
+  @msvg.LinearGradient::{
+    x1: grad.x1,
+    y1: grad.y1,
+    x2: grad.x2,
+    y2: grad.y2,
+    stops: grad.stops.map(gradient_stop_to_msvg),
+    spread_method: spread_method_to_msvg(grad.spread_method),
+    units: @msvg.GradientUnits::ObjectBoundingBox,
+    transform: @msvg.Transform::identity(),
+  }
+}
+
+///|
 fn radial_gradient_from_msvg(grad : @msvg.RadialGradient) -> RadialGradient {
   {
     cx: grad.cx,
@@ -112,6 +145,28 @@ fn radial_gradient_from_msvg(grad : @msvg.RadialGradient) -> RadialGradient {
     r: grad.r,
     stops: grad.stops.map(gradient_stop_from_msvg),
     spread_method: spread_method_from_msvg(grad.spread_method),
+  }
+}
+
+///|
+fn radial_gradient_to_msvg(grad : RadialGradient) -> @msvg.RadialGradient {
+  @msvg.RadialGradient::{
+    cx: grad.cx,
+    cy: grad.cy,
+    fx: grad.fx,
+    fy: grad.fy,
+    r: grad.r,
+    stops: grad.stops.map(gradient_stop_to_msvg),
+    spread_method: spread_method_to_msvg(grad.spread_method),
+    units: @msvg.GradientUnits::ObjectBoundingBox,
+    transform: @msvg.Transform::identity(),
+  }
+}
+
+///|
+fn pixel_setter_to_msvg(setter : PixelSetter) -> @msvg.PixelSetter {
+  @msvg.PixelSetter::{
+    set: fn(x, y, color) { setter.pixel(x, y, color_from_msvg(color)) },
   }
 }
 
