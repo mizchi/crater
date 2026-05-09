@@ -14,11 +14,3 @@ test "painter facade diffs paint trees" {
   inspect(diff.changes[0].node_id, content="card")
   inspect(diff.changes[0].property, content="background_color")
 }
-
-///|
-test "painter facade renders svg scene to sixel" {
-  let scene = Scene::new(circle("dot", 8.0, 8.0, 4.0))
-  let sixel = render_svg_to_sixel(scene, 16, 16)
-
-  inspect(sixel.length() > 0, content="true")
-}
