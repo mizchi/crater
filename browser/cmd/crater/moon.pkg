@@ -1,14 +1,7 @@
 import {
-  "mizchi/crater-dom/html",
-  "mizchi/crater-renderer/renderer",
-  "mizchi/crater-layout" @node,
-  "mizchi/crater-layout/types",
-  "mizchi/crater/css",
-  "mizchi/crater-dom/aom",
   "mizchi/crater-browser/tui",
   "mizchi/crater-browser/font_provider",
-  "mizchi/crater-browser/tui/paint_png" @tui_paint_png,
-  "mizchi/crater-browser/tui/paint/plain" @tui_paint_plain,
+  "mizchi/crater-browser/component_artifact" @component_artifact,
 }
 
 supported_targets = "js"

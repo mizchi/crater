@@ -16,6 +16,7 @@ pub(all) struct PaintProperties {
   line_height : Double
   letter_spacing : Double
   word_spacing : Double
+  font_weight : Double
   is_bold : Bool
   font_family : String
   clip_path : @style.ClipPath
@@ -53,6 +54,7 @@ pub fn PaintProperties::default() -> PaintProperties {
     line_height: 16.0,
     letter_spacing: 0.0,
     word_spacing: 0.0,
+    font_weight: 400.0,
     is_bold: false,
     font_family: "",
     clip_path: @style.ClipPath::none(),
@@ -91,6 +93,7 @@ pub fn PaintProperties::from_style(style : @style.Style) -> PaintProperties {
     line_height: style.line_height,
     letter_spacing: style.letter_spacing,
     word_spacing: style.word_spacing,
+    font_weight: style.font_weight,
     is_bold: is_bold_weight(style.font_weight),
     font_family: style.font_family,
     clip_path: style.clip_path,

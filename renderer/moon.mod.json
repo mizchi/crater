@@ -18,6 +18,10 @@
       "path": "../painter",
       "version": "0.17.1"
     },
+    "mizchi/crater-renderer-style": {
+      "path": "../renderer_style",
+      "version": "0.17.1"
+    },
     "moonbitlang/async": "0.17.1"
   },
   "repository": "https://github.com/mizchi/crater",

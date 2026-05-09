@@ -66,6 +66,10 @@ fn write_paint_props_json(buf : StringBuilder, p : PaintProperties) -> Unit {
     buf.write_string(",\"ws\":")
     write_json_double(buf, p.word_spacing)
   }
+  if p.font_weight != 400.0 {
+    buf.write_string(",\"fw\":")
+    write_json_double(buf, p.font_weight)
+  }
   if p.is_bold {
     buf.write_string(",\"b\":true")
   }

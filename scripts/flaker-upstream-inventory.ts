@@ -23,7 +23,7 @@ export interface FlakerUpstreamGroup {
   id: string;
   title: string;
   category: FlakerInventoryCategory;
-  status: "ready-to-upstream" | "keep-in-crater";
+  status: "ready-to-upstream" | "upstreamed" | "keep-in-crater";
   origin: "crater-extracted" | "crater-native";
   files: string[];
   testFiles: string[];
@@ -46,7 +46,7 @@ const GROUPS: ReadonlyArray<Omit<FlakerUpstreamGroup, "status"> & {
     id: "playwright-report-core",
     title: "Playwright normalized report core",
     category: "metric-ci",
-    status: "ready-to-upstream",
+    status: "upstreamed",
     origin: "crater-extracted",
     files: [
       "scripts/playwright-report-contract.ts",
@@ -58,14 +58,14 @@ const GROUPS: ReadonlyArray<Omit<FlakerUpstreamGroup, "status"> & {
       "scripts/playwright-report-summary.test.ts",
       "scripts/playwright-report-diff.test.ts",
     ],
-    reason: "Crater 固有の task graph を知らずに summary/diff の契約だけで成立する。",
-    nextAction: "metric-ci 側へ contract + core を移し、crater 側 wrapper から参照する。",
+    reason: "@mizchi/flaker@0.12.1 の reporting export として upstream 済み。crater 固有の task graph を知らずに summary/diff の契約だけで成立する。",
+    nextAction: "crater 側 wrapper は @mizchi/flaker/reporting/playwright-* を参照し、追加差分が出たら flaker 側へ先に反映する。",
   },
   {
     id: "flaker-task-summary-core",
     title: "Flaker task summary contract and core",
     category: "metric-ci",
-    status: "ready-to-upstream",
+    status: "upstreamed",
     origin: "crater-extracted",
     files: [
       "scripts/flaker-task-summary-contract.ts",
@@ -74,29 +74,31 @@ const GROUPS: ReadonlyArray<Omit<FlakerUpstreamGroup, "status"> & {
     testFiles: [
       "scripts/flaker-task-summary-core.test.ts",
     ],
-    reason: "eval/reason 出力契約と task summary builder は crater 固有の task graph を知らずに成立する。",
-    nextAction: "metric-ci 側の reporting module に移し、crater では task/workspace loader だけを残す。",
+    reason: "@mizchi/flaker@0.12.1 の reporting export として upstream 済み。eval/reason 出力契約と task summary builder は crater 固有の task graph を知らずに成立する。",
+    nextAction: "crater 側 wrapper は @mizchi/flaker/reporting/flaker-task-summary-* を参照し、task/workspace loader だけを crater に残す。",
   },
   {
     id: "flaker-batch-summary-core",
     title: "Flaker batch aggregate core",
     category: "metric-ci",
-    status: "ready-to-upstream",
+    status: "keep-in-crater",
     origin: "crater-extracted",
     files: [
       "scripts/flaker-batch-summary-core.ts",
+      "scripts/flaker-batch-vrt-extension.ts",
     ],
     testFiles: [
       "scripts/flaker-batch-summary-core.test.ts",
+      "scripts/flaker-batch-vrt-extension.test.ts",
     ],
-    reason: "履歴集約ロジックは task summary contract と normalized report だけで成立する。",
-    nextAction: "metric-ci 側へ core を移し、crater では artifact loader だけを残す。",
+    reason: "@mizchi/flaker@0.12.1 の generic batch summary を下敷きにし、crater 固有の VRT/CSS 集約列を flaker-batch-vrt-extension として重ねている。",
+    nextAction: "VRT/CSS 集約 contract は crater domain extension として維持し、generic aggregate は @mizchi/flaker/reporting/flaker-batch-summary-core に追従する。",
   },
   {
     id: "flaker-batch-plan-core",
     title: "Flaker batch plan core",
     category: "metric-ci",
-    status: "ready-to-upstream",
+    status: "upstreamed",
     origin: "crater-extracted",
     files: [
       "scripts/flaker-batch-plan-core.ts",
@@ -104,14 +106,14 @@ const GROUPS: ReadonlyArray<Omit<FlakerUpstreamGroup, "status"> & {
     testFiles: [
       "scripts/flaker-batch-plan-core.test.ts",
     ],
-    reason: "daily batch plan の pure builder と markdown/matrix renderer は flaker config parser と contract だけで成立する。",
-    nextAction: "metric-ci 側へ batch plan core を移し、crater では flaker.star の file loading と CLI wrapper だけを残す。",
+    reason: "@mizchi/flaker@0.12.3 の reporting export として upstream 済み。daily batch plan の pure builder と markdown/matrix renderer は flaker config parser と contract だけで成立する。",
+    nextAction: "crater 側 wrapper は @mizchi/flaker/reporting/flaker-batch-plan-core を参照し、flaker.star の file loading と CLI wrapper だけを crater に残す。",
   },
   {
     id: "flaker-quarantine-core",
     title: "Repo-tracked quarantine core",
     category: "metric-ci",
-    status: "ready-to-upstream",
+    status: "upstreamed",
     origin: "crater-extracted",
     files: [
       "scripts/flaker-quarantine-contract.ts",
@@ -128,14 +130,14 @@ const GROUPS: ReadonlyArray<Omit<FlakerUpstreamGroup, "status"> & {
       "scripts/flaker-quarantine-summary-core.test.ts",
       "scripts/flaker-quarantine-report.test.ts",
     ],
-    reason: "manifest / match / expiry / summary は crater の renderer を知らずに成立する。",
-    nextAction: "metric-ci 側へ quarantine core を移し、crater は flaker.star 連携 loader だけを持つ。",
+    reason: "@mizchi/flaker@0.12.5 の reporting export として upstream 済み。manifest / match / expiry / summary は crater の renderer を知らずに成立する。",
+    nextAction: "crater 側 wrapper は @mizchi/flaker/reporting/flaker-quarantine-* を参照し、flaker.star 連携 loader と CLI wrapper だけを crater に残す。",
   },
   {
     id: "flaker-config-core",
     title: "Flaker config parser, contract, task resolver, selection, summary, and report core",
     category: "metric-ci",
-    status: "ready-to-upstream",
+    status: "upstreamed",
     origin: "crater-extracted",
     files: [
       "scripts/flaker-config-parser.ts",
@@ -152,8 +154,8 @@ const GROUPS: ReadonlyArray<Omit<FlakerUpstreamGroup, "status"> & {
       "scripts/flaker-config-selection-core.test.ts",
       "scripts/flaker-config-report.test.ts",
     ],
-    reason: "flaker.star parser / config validation / task resolution / affected selection / report の純粋部分は crater の spec discovery や loader を知らずに成立する。",
-    nextAction: "metric-ci 側へ parser + contract + task resolver + core + report を移し、crater では spec discovery / loader / wrapper だけを残す。",
+    reason: "@mizchi/flaker@0.12.2 の reporting export として upstream 済み。flaker.star parser / config validation / task resolution / affected selection / report の純粋部分は crater の spec discovery や loader を知らずに成立する。",
+    nextAction: "crater 側 wrapper は @mizchi/flaker/reporting/flaker-config-* を参照し、spec discovery / loader / CLI wrapper だけを crater に残す。",
   },
   {
     id: "flaker-config-adapter",

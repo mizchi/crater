@@ -10,12 +10,14 @@ import {
   "mizchi/crater-dom/dom",
   "mizchi/crater-dom/scheduler",
   "mizchi/crater-browser-http" @http,
+  "mizchi/crater-browser-shell" @browser_shell,
   "mizchi/crater-browser/interaction_policy",
   "mizchi/crater-browser/tui",
   "mizchi/crater-browser/tui/paint_output" @tui_paint_output,
   "mizchi/crater-browser/tui/paint/plain" @tui_paint_plain,
   "mizchi/crater-browser/tui/paint/runtime" @tui_paint_runtime,
   "mizchi/crater-browser-runtime" @js,
+  "mizchi/tui-terminal-protocol/kitty" @kitty_protocol,
   "mizchi/crater-painter/svg",
   "mizchi/crater-painter/x/image",
   "mizchi/crater-painter/x/kitty",
@@ -23,7 +25,7 @@ import {
 
 import {
   "moonbitlang/async",
-  "mizchi/crater/css",
+  "mizchi/crater-dom/css/responsive" @responsive,
 } for "wbtest"
 
 warnings = "-unused_package"

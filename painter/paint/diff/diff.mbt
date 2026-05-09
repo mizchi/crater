@@ -294,6 +294,14 @@ fn compare_paint_properties(
     after.word_spacing,
     changes,
   )
+  compare_double_property(
+    path,
+    node_id,
+    "font_weight",
+    before.font_weight,
+    after.font_weight,
+    changes,
+  )
   compare_bool_property(
     path,
     node_id,

@@ -18,9 +18,13 @@ fn set_square_glyph_provider_for_bench(advance_ratio : Double) -> Unit {
       (commands, advance)
     },
     get_kern: fn(_left, _right, _font_size, _is_bold) { 0.0 },
+    get_glyph_by_weight: None,
+    get_kern_by_weight: None,
     ascent_ratio: 1.0,
     get_glyph_for_family: None,
     get_kern_for_family: None,
+    get_glyph_for_family_by_weight: None,
+    get_kern_for_family_by_weight: None,
     get_ascent_for_family: None,
   })
 }

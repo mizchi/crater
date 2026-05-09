@@ -6,12 +6,12 @@
       "path": "../aomx",
       "version": "0.17.1"
     },
-    "mizchi/crater": {
-      "path": "..",
-      "version": "0.17.1"
-    },
     "mizchi/crater-dom": {
       "path": "../dom",
+      "version": "0.17.1"
+    },
+    "mizchi/crater-css": {
+      "path": "../css",
       "version": "0.17.1"
     },
     "mizchi/crater-layout": {
@@ -38,6 +38,12 @@
       "path": "../http",
       "version": "0.17.1"
     },
+    "mizchi/crater-browser-shell": {
+      "path": "../browser_shell",
+      "version": "0.17.1"
+    },
+    "mizchi/tui-terminal-protocol": "0.1.0",
+    "mizchi/font": "0.7.3",
     "mizchi/x": "0.2.0",
     "moonbitlang/async": "0.17.1",
     "moonbitlang/x": "0.4.41"

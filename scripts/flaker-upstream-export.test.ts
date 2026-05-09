@@ -5,6 +5,7 @@ import {
   buildFlakerUpstreamExportStage,
   parseFlakerUpstreamExportArgs,
   renderFlakerUpstreamExportMarkdown,
+  resolveReadyToUpstreamGroups,
   runFlakerUpstreamExportCli,
 } from "./flaker-upstream-export.ts";
 
@@ -38,7 +39,7 @@ describe("parseFlakerUpstreamExportArgs", () => {
 });
 
 describe("buildFlakerUpstreamExportStage", () => {
-  it("builds staged source writes and manifest for a ready group", () => {
+  it("builds staged source writes and manifest for a group", () => {
     const group = buildFlakerUpstreamInventory().groups.find((candidate) =>
       candidate.id === "playwright-report-core"
     );
@@ -110,17 +111,21 @@ describe("renderFlakerUpstreamExportMarkdown", () => {
 
     expect(markdown).toContain("# Metric CI Upstream Export");
     expect(markdown).toContain("| Group | flaker-batch-summary-core |");
-    expect(markdown).toContain("| Test files | 1 |");
+    expect(markdown).toContain("| Test files | 2 |");
     expect(markdown).toContain("scripts/flaker-batch-summary-core.ts");
     expect(markdown).toContain("| Kind | Source | Staged | Bytes |");
   });
 });
 
 describe("runFlakerUpstreamExportCli", () => {
-  it("returns staged writes for ready-to-upstream groups", () => {
+  it("has no unresolved ready-to-upstream groups", () => {
+    expect(resolveReadyToUpstreamGroups()).toEqual([]);
+  });
+
+  it("rejects groups that have already been upstreamed", () => {
     const result = runFlakerUpstreamExportCli([
       "--group",
-      "flaker-task-summary-core",
+      "flaker-quarantine-core",
       "--output",
       "out",
     ], {
@@ -128,30 +133,9 @@ describe("runFlakerUpstreamExportCli", () => {
       readFile: (targetPath) => `// ${path.relative("/repo", targetPath)}\n`,
     });
 
-    expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain("# Metric CI Upstream Export");
-    expect(result.writes).toEqual([
-      {
-        path: "/repo/out/flaker-task-summary-core/scripts/flaker-task-summary-contract.ts",
-        content: "// scripts/flaker-task-summary-contract.ts\n",
-      },
-      {
-        path: "/repo/out/flaker-task-summary-core/scripts/flaker-task-summary-core.ts",
-        content: "// scripts/flaker-task-summary-core.ts\n",
-      },
-      {
-        path: "/repo/out/flaker-task-summary-core/scripts/flaker-task-summary-core.test.ts",
-        content: "// scripts/flaker-task-summary-core.test.ts\n",
-      },
-      {
-        path: "/repo/out/flaker-task-summary-core/manifest.md",
-        content: expect.stringContaining("| Group | flaker-task-summary-core |"),
-      },
-      {
-        path: "/repo/out/flaker-task-summary-core/manifest.json",
-        content: expect.stringContaining('"status": "ready-to-upstream"'),
-      },
-    ]);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("status: upstreamed");
+    expect(result.writes).toEqual([]);
   });
 
   it("rejects groups that are kept in crater", () => {
@@ -182,25 +166,15 @@ describe("runFlakerUpstreamExportCli", () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("# Metric CI From Crater");
-    expect(result.writes).toEqual(
-      expect.arrayContaining([
-        {
-          path: "/repo/from-crater/README.md",
-          content: expect.stringContaining("MoonBit"),
-        },
-        {
-          path: "/repo/from-crater/playwright-report-core/scripts/playwright-report-contract.ts",
-          content: "// scripts/playwright-report-contract.ts\n",
-        },
-        {
-          path: "/repo/from-crater/flaker-config-core/scripts/flaker-config-parser.ts",
-          content: "// scripts/flaker-config-parser.ts\n",
-        },
-        {
-          path: "/repo/from-crater/flaker-config-core/scripts/flaker-config-task.test.ts",
-          content: "// scripts/flaker-config-task.test.ts\n",
-        },
-      ]),
-    );
+    expect(result.writes).toEqual([
+      {
+        path: "/repo/from-crater/README.md",
+        content: expect.stringContaining("| Groups | 0 |"),
+      },
+      {
+        path: "/repo/from-crater/manifest.json",
+        content: expect.stringContaining('"groupCount": 0'),
+      },
+    ]);
   });
 });

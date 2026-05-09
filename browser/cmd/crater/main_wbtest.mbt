@@ -80,7 +80,7 @@ test "render_artifact returns landmark tree for target subtree" {
     #|  </body>
     #|</html>
   let artifact = match
-    render_artifact_or_error(
+    @component_artifact.render_artifact_or_error(
       {
         html,
         css: [],
@@ -89,7 +89,7 @@ test "render_artifact returns landmark tree for target subtree" {
         viewport_width: 800,
         viewport_height: 600,
       },
-      Landmarks,
+      @component_artifact.ArtifactMode::Landmarks,
     ) {
     Ok(output) => output
     Err(_error) => panic()
@@ -118,7 +118,7 @@ test "render_artifact resolves selector target to a synthetic id" {
     #|  </body>
     #|</html>
   let artifact = match
-    render_artifact_or_error(
+    @component_artifact.render_artifact_or_error(
       {
         html,
         css: [],
@@ -127,7 +127,7 @@ test "render_artifact resolves selector target to a synthetic id" {
         viewport_width: 800,
         viewport_height: 600,
       },
-      Landmarks,
+      @component_artifact.ArtifactMode::Landmarks,
     ) {
     Ok(output) => output
     Err(_error) => panic()
@@ -149,7 +149,7 @@ test "render_artifact returns layout metadata for target subtree" {
     #|  </body>
     #|</html>
   let artifact = match
-    render_artifact_or_error(
+    @component_artifact.render_artifact_or_error(
       {
         html,
         css: [],
@@ -158,7 +158,7 @@ test "render_artifact returns layout metadata for target subtree" {
         viewport_width: 800,
         viewport_height: 600,
       },
-      Layout,
+      @component_artifact.ArtifactMode::Layout,
     ) {
     Ok(output) => output
     Err(_error) => panic()
@@ -187,7 +187,7 @@ test "render_artifact returns image metadata for target subtree" {
     #|  </body>
     #|</html>
   let artifact = match
-    render_artifact_or_error(
+    @component_artifact.render_artifact_or_error(
       {
         html,
         css: [],
@@ -196,7 +196,7 @@ test "render_artifact returns image metadata for target subtree" {
         viewport_width: 800,
         viewport_height: 600,
       },
-      Image,
+      @component_artifact.ArtifactMode::Image,
     ) {
     Ok(output) => output
     Err(_error) => panic()

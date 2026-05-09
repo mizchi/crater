@@ -3,7 +3,6 @@
 import fs from "node:fs";
 import path from "node:path";
 export * from "./flaker-quarantine-contract.ts";
-import type { FlakerIssue } from "./flaker-config-contract.ts";
 import { parseFlakerStar } from "./flaker-config-parser.ts";
 import {
   type FlakerQuarantineConfig,

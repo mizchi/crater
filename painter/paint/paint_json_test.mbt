@@ -61,3 +61,21 @@ test "PaintNode::to_json_string includes decoration flags" {
   assert_true(json.contains("\"lt\":true"))
   assert_true(json.contains("\"ov\":true"))
 }
+
+///|
+test "PaintNode::to_json_string preserves numeric font weight" {
+  let node = PaintNode::new(
+    "#text",
+    "#text",
+    0.0,
+    0.0,
+    80.0,
+    20.0,
+    { ..PaintProperties::default(), font_weight: 500.0, is_bold: false },
+    [],
+    text=Some("Medium"),
+  )
+  let json = node.to_json_string()
+  assert_true(json.contains("\"fw\":500"))
+  assert_false(json.contains("\"b\":true"))
+}

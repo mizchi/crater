@@ -114,6 +114,40 @@ describe("buildFlakerBatchSummary", () => {
       },
     ]);
   });
+
+  it("keeps VRT-only tasks visible when Playwright summaries are missing", () => {
+    const summary = buildFlakerBatchSummary({
+      playwrightSummaries: new Map(),
+      flakerSummaries: new Map(),
+      vrtSummaries: new Map([
+        ["paint-vrt", {
+          failed: 2,
+          unknown: 1,
+          maxDiffRatio: 0.4,
+        }],
+      ]),
+    });
+
+    expect(summary.failedTasks).toBe(1);
+    expect(summary.tasks).toEqual([
+      {
+        taskId: "paint-vrt",
+        totalTests: 0,
+        failed: 0,
+        flaky: 0,
+        skipped: 0,
+        status: "failed",
+        vrtFailed: 2,
+        vrtUnknown: 1,
+        vrtMaxDiffRatio: 0.4,
+        vrtCssDeadRules: undefined,
+        vrtCssTotalRules: undefined,
+        vrtCssUnusedRules: undefined,
+        vrtCssOverriddenRules: undefined,
+        vrtCssNoEffectRules: undefined,
+      },
+    ]);
+  });
 });
 
 describe("renderFlakerBatchSummaryMarkdown", () => {

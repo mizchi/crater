@@ -3,226 +3,12 @@
 /// For terminals like Ghostty, Kitty, WezTerm that support this protocol
 
 ///|
-/// Base64 encoding table
-let base64_chars : String = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-
-///|
-let kitty_chunk_size = 4096
-
-///|
-let kitty_pixels_per_chunk : Int = kitty_chunk_size / 4
-
-///|
-let kitty_white_triplet = "////"
-
-///|
-fn write_base64_triplet(
-  buf : StringBuilder,
-  b0 : Int,
-  b1 : Int,
-  b2 : Int,
-) -> Unit {
-  let c0 = (b0 >> 2) & 0x3F
-  let c1 = ((b0 << 4) | (b1 >> 4)) & 0x3F
-  let c2 = ((b1 << 2) | (b2 >> 6)) & 0x3F
-  let c3 = b2 & 0x3F
-  buf.write_char(base64_chars[c0].unsafe_to_char())
-  buf.write_char(base64_chars[c1].unsafe_to_char())
-  buf.write_char(base64_chars[c2].unsafe_to_char())
-  buf.write_char(base64_chars[c3].unsafe_to_char())
-}
-
-///|
-fn encode_base64_triplet(b0 : Int, b1 : Int, b2 : Int) -> String {
-  let buf = StringBuilder::new()
-  write_base64_triplet(buf, b0, b1, b2)
-  buf.to_string()
-}
-
-///|
-fn build_kitty_palette_triplets(
+fn to_kitty_protocol_colors(
   palette : @image.DynamicPalette,
-) -> Array[String] {
-  let triplets : Array[String] = []
-  for color in palette.colors {
-    triplets.push(encode_base64_triplet(color.r, color.g, color.b))
-  }
-  triplets
-}
-
-///|
-fn write_kitty_pixel_triplet(
-  buf : StringBuilder,
-  triplets : Array[String],
-  color_idx : Int,
-) -> Unit {
-  if color_idx >= 0 && color_idx < triplets.length() {
-    buf.write_string(triplets[color_idx])
-  } else {
-    buf.write_string(kitty_white_triplet)
-  }
-}
-
-///|
-fn kitty_pixel_triplet(triplets : Array[String], color_idx : Int) -> String {
-  if color_idx >= 0 && color_idx < triplets.length() {
-    triplets[color_idx]
-  } else {
-    kitty_white_triplet
-  }
-}
-
-///|
-fn framebuffer_uniform_color_index(fb : @image.Framebuffer) -> Int? {
-  let pixel_count = fb.width * fb.height
-  if pixel_count == 0 {
-    return None
-  }
-  let color_idx = fb.pixels[0]
-  for i in 1..<pixel_count {
-    if fb.pixels[i] != color_idx {
-      return None
-    }
-  }
-  Some(color_idx)
-}
-
-///|
-fn write_kitty_chunk_header(
-  buf : StringBuilder,
-  width : Int,
-  height : Int,
-  is_first : Bool,
-  has_more : Bool,
-) -> Unit {
-  if is_first {
-    buf.write_string("\u001b_Ga=T,f=24,q=2,s=")
-    buf.write_string(width.to_string())
-    buf.write_string(",v=")
-    buf.write_string(height.to_string())
-    buf.write_string(",m=")
-  } else {
-    buf.write_string("\u001b_Gm=")
-  }
-  buf.write_string(if has_more { "1" } else { "0" })
-  buf.write_string(";")
-}
-
-///|
-async fn[T : @io.Writer] write_kitty_chunk_header_to(
-  writer : T,
-  width : Int,
-  height : Int,
-  is_first : Bool,
-  has_more : Bool,
-) -> Unit {
-  if is_first {
-    writer.write("\u001b_Ga=T,f=24,q=2,s=") catch {
-      _ => return
-    }
-    writer.write(width.to_string()) catch {
-      _ => return
-    }
-    writer.write(",v=") catch {
-      _ => return
-    }
-    writer.write(height.to_string()) catch {
-      _ => return
-    }
-    writer.write(",m=") catch {
-      _ => return
-    }
-  } else {
-    writer.write("\u001b_Gm=") catch {
-      _ => return
-    }
-  }
-  writer.write(if has_more { "1" } else { "0" }) catch {
-    _ => return
-  }
-  writer.write(";") catch {
-    _ => return
-  }
-}
-
-///|
-fn write_repeated_kitty_triplet(
-  buf : StringBuilder,
-  triplet : String,
-  count : Int,
-) -> Unit {
-  if count > 0 {
-    buf.write_string(triplet.repeat(count))
-  }
-}
-
-///|
-fn to_kitty_uniform(
-  width : Int,
-  height : Int,
-  pixel_count : Int,
-  triplet : String,
-) -> String {
-  let buf = StringBuilder::new(size_hint=pixel_count * 4)
-  let full_chunk_payload = triplet.repeat(kitty_pixels_per_chunk)
-  let mut first_chunk = true
-  let mut pixel_index = 0
-  while pixel_index < pixel_count {
-    let remaining = pixel_count - pixel_index
-    let chunk_pixels = if remaining > kitty_pixels_per_chunk {
-      kitty_pixels_per_chunk
-    } else {
-      remaining
-    }
-    let has_more = pixel_index + chunk_pixels < pixel_count
-    write_kitty_chunk_header(buf, width, height, first_chunk, has_more)
-    if chunk_pixels == kitty_pixels_per_chunk {
-      buf.write_string(full_chunk_payload)
-    } else {
-      write_repeated_kitty_triplet(buf, triplet, chunk_pixels)
-    }
-    buf.write_string("\u001b\\")
-    first_chunk = false
-    pixel_index += chunk_pixels
-  }
-  buf.to_string()
-}
-
-///|
-async fn[T : @io.Writer] write_kitty_uniform(
-  writer : T,
-  width : Int,
-  height : Int,
-  pixel_count : Int,
-  triplet : String,
-) -> Unit {
-  let full_chunk_payload = triplet.repeat(kitty_pixels_per_chunk)
-  let mut first_chunk = true
-  let mut pixel_index = 0
-  while pixel_index < pixel_count {
-    let remaining = pixel_count - pixel_index
-    let chunk_pixels = if remaining > kitty_pixels_per_chunk {
-      kitty_pixels_per_chunk
-    } else {
-      remaining
-    }
-    let has_more = pixel_index + chunk_pixels < pixel_count
-    write_kitty_chunk_header_to(writer, width, height, first_chunk, has_more)
-    if chunk_pixels == kitty_pixels_per_chunk {
-      writer.write(full_chunk_payload) catch {
-        _ => return
-      }
-    } else if chunk_pixels > 0 {
-      writer.write(triplet.repeat(chunk_pixels)) catch {
-        _ => return
-      }
-    }
-    writer.write("\u001b\\") catch {
-      _ => return
-    }
-    first_chunk = false
-    pixel_index += chunk_pixels
-  }
+) -> Array[@kitty_protocol.Color] {
+  palette.colors.map(fn(color) {
+    @kitty_protocol.Color::rgb(color.r, color.g, color.b)
+  })
 }
 
 ///|
@@ -231,42 +17,12 @@ pub fn to_kitty(
   fb : @image.Framebuffer,
   palette : @image.DynamicPalette,
 ) -> String {
-  let triplets = build_kitty_palette_triplets(palette)
-  let pixel_count = fb.width * fb.height
-  match framebuffer_uniform_color_index(fb) {
-    Some(color_idx) =>
-      return to_kitty_uniform(
-        fb.width,
-        fb.height,
-        pixel_count,
-        kitty_pixel_triplet(triplets, color_idx),
-      )
-    None => ()
-  }
-  let buf = StringBuilder::new(size_hint=pixel_count * 4)
-  let mut first_chunk = true
-  let mut pixel_index = 0
-  while pixel_index < pixel_count {
-    let remaining = pixel_count - pixel_index
-    let chunk_pixels = if remaining > kitty_pixels_per_chunk {
-      kitty_pixels_per_chunk
-    } else {
-      remaining
-    }
-    let has_more = pixel_index + chunk_pixels < pixel_count
-    write_kitty_chunk_header(buf, fb.width, fb.height, first_chunk, has_more)
-    for _ in 0..<chunk_pixels {
-      write_kitty_pixel_triplet(buf, triplets, fb.pixels[pixel_index])
-      pixel_index += 1
-    }
-    buf.write_string("\u001b\\")
-    first_chunk = false
-  }
-  if pixel_count == 0 {
-    write_kitty_chunk_header(buf, fb.width, fb.height, true, false)
-    buf.write_string("\u001b\\")
-  }
-  buf.to_string()
+  @kitty_protocol.encode_indexed_pixels_to_kitty(
+    fb.width,
+    fb.height,
+    fb.pixels,
+    to_kitty_protocol_colors(palette),
+  )
 }
 
 ///|
@@ -275,55 +31,13 @@ pub async fn[T : @io.Writer] write_kitty(
   fb : @image.Framebuffer,
   palette : @image.DynamicPalette,
 ) -> Unit {
-  let triplets = build_kitty_palette_triplets(palette)
-  let pixel_count = fb.width * fb.height
-  match framebuffer_uniform_color_index(fb) {
-    Some(color_idx) => {
-      write_kitty_uniform(
-        writer,
-        fb.width,
-        fb.height,
-        pixel_count,
-        kitty_pixel_triplet(triplets, color_idx),
-      )
-      return
-    }
-    None => ()
-  }
-  let mut chunk = StringBuilder::new()
-  let mut chunk_len = 0
-  let mut first_chunk = true
-  for pixel_index in 0..<pixel_count {
-    if chunk_len + 4 > kitty_chunk_size {
-      write_kitty_chunk_header_to(
-        writer,
-        fb.width,
-        fb.height,
-        first_chunk,
-        true,
-      )
-      writer.write(chunk.to_string()) catch {
-        _ => return
-      }
-      writer.write("\u001b\\") catch {
-        _ => return
-      }
-      chunk = StringBuilder::new()
-      chunk_len = 0
-      first_chunk = false
-    }
-    write_kitty_pixel_triplet(chunk, triplets, fb.pixels[pixel_index])
-    chunk_len += 4
-  }
-  write_kitty_chunk_header_to(writer, fb.width, fb.height, first_chunk, false)
-  if chunk_len > 0 {
-    writer.write(chunk.to_string()) catch {
-      _ => return
-    }
-  }
-  writer.write("\u001b\\") catch {
-    _ => return
-  }
+  @kitty_protocol.write_indexed_pixels_to_kitty(
+    writer,
+    fb.width,
+    fb.height,
+    fb.pixels,
+    to_kitty_protocol_colors(palette),
+  )
 }
 
 ///|

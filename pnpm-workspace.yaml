@@ -1,5 +1,7 @@
+packages:
+  - js/playground/**
+
 onlyBuiltDependencies:
+  - duckdb
   - esbuild
   - puppeteer
-packages:
-  - 'js/playground/**'

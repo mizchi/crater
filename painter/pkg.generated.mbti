@@ -8,7 +8,6 @@ import {
   "mizchi/crater-painter/paint/model",
   "mizchi/crater-painter/paint/scroll",
   "mizchi/crater-painter/svg",
-  "mizchi/crater-painter/x/image",
 }
 
 // Values
@@ -40,16 +39,6 @@ pub fn path(String, String) -> @svg.SVGNode
 
 pub fn rect(String, Double, Double, Double, Double) -> @svg.SVGNode
 
-pub fn render_paint_node_to_kitty(@model.PaintNode, Int, Int) -> String
-
-pub fn render_paint_node_to_sixel(@model.PaintNode, Int, Int) -> String
-
-pub fn render_svg_node_to_sixel(@svg.SVGNode, Int, Int) -> String
-
-pub fn render_svg_to_kitty(@svg.Scene, Int, Int) -> String
-
-pub fn render_svg_to_sixel(@svg.Scene, Int, Int) -> String
-
 pub fn text(String, Double, Double, String, Double) -> @svg.SVGNode
 
 // Errors
@@ -62,12 +51,6 @@ pub using @svg {type BoundingBox}
 pub using @svg {type Camera}
 
 pub using @svg {type Color}
-
-pub using @image {type DynamicPalette}
-
-pub using @image {type Framebuffer}
-
-pub using @image {type GlyphProvider}
 
 pub using @diff {type PaintLayoutShift}
 

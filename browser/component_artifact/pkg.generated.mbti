@@ -1,0 +1,33 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser/component_artifact"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn render_artifact_or_error(RenderRequest, ArtifactMode) -> Result[String, String]
+
+// Errors
+
+// Types and methods
+pub(all) enum ArtifactMode {
+  Layout
+  Image
+  Landmarks
+} derive(@debug.Debug)
+pub impl Show for ArtifactMode
+
+pub(all) struct RenderRequest {
+  html : String
+  css : Array[String]
+  target_id : String?
+  target_selector : String?
+  viewport_width : Int
+  viewport_height : Int
+}
+
+// Type aliases
+
+// Traits
+

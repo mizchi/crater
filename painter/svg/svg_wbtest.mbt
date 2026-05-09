@@ -162,6 +162,24 @@ test "parse_svg_simple_rect" {
 }
 
 ///|
+test "parse_svg_rect_length_var_fallback" {
+  let svg = "<rect x=\"var(--x, 10px)\" y=\"20\" width=\"var(--w, 100px)\" height=\"50\"/>"
+  match parse_svg(svg) {
+    Some(node) =>
+      match node.shape {
+        Rect(x~, y~, width~, height~, ..) => {
+          inspect(x, content="10")
+          inspect(y, content="20")
+          inspect(width, content="100")
+          inspect(height, content="50")
+        }
+        _ => panic()
+      }
+    None => panic()
+  }
+}
+
+///|
 test "parse_svg_circle" {
   let svg = "<circle cx=\"50\" cy=\"60\" r=\"25\" fill=\"blue\"/>"
   match parse_svg(svg) {
@@ -201,6 +219,24 @@ test "parse_hex_color" {
           inspect(c.r, content="255")
           inspect(c.g, content="0")
           inspect(c.b, content="0")
+        }
+        _ => panic()
+      }
+    None => panic()
+  }
+}
+
+///|
+test "parse_svg_paint_server_uses_visible_fallback" {
+  let svg = "<rect fill=\"url(#grad)\" width=\"10\" height=\"10\"/>"
+  match parse_svg(svg) {
+    Some(node) =>
+      match node.fill {
+        SolidColor(c) => {
+          inspect(c.r, content="0")
+          inspect(c.g, content="0")
+          inspect(c.b, content="0")
+          inspect(c.a, content="255")
         }
         _ => panic()
       }
@@ -403,6 +439,20 @@ test "viewBox transform scale 2x" {
   // Should scale by 2
   inspect(t.a, content="2")
   inspect(t.d, content="2")
+}
+
+///|
+test "extract_root_view_box delegates SVG attribute parsing" {
+  let svg = "<svg viewBox='-10, 20 30.5 40'><rect width='10' height='10'/></svg>"
+  match extract_root_view_box(svg) {
+    Some(vb) => {
+      inspect(vb.min_x, content="-10")
+      inspect(vb.min_y, content="20")
+      inspect(vb.width, content="30.5")
+      inspect(vb.height, content="40")
+    }
+    None => fail("expected root viewBox")
+  }
 }
 
 ///|

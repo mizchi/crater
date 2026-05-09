@@ -7,6 +7,4 @@ import {
   "mizchi/crater-painter/paint/model" @paint_model,
   "mizchi/crater-painter/paint/scroll" @paint_scroll,
   "mizchi/crater-painter/svg",
-  "mizchi/crater-painter/x/image",
-  "mizchi/crater-painter/x/kitty",
 }

@@ -84,6 +84,7 @@ test "renderer facade propagates font weight and text decoration" {
   )
   match find_text_node(paint_tree, "Hello paint") {
     Some(text_node) => {
+      inspect(text_node.paint.font_weight.to_int(), content="700")
       inspect(text_node.paint.is_bold, content="true")
       inspect(text_node.paint.text_decoration_underline, content="true")
       inspect(text_node.paint.text_decoration_line_through, content="true")
@@ -148,6 +149,44 @@ test "renderer facade reports layout and paint changes" {
   )
   inspect(has_change(diff, "div.card", "background_color"), content="true")
   inspect(diff.layout_shifts.length() > 0, content="true")
+}
+
+///|
+test "renderer facade preserves numeric font weight in paint contract" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.medium { font-weight: 500; }
+    #|</style>
+    #|<p class="medium">Medium label</p>
+  let paint_tree = render_html_to_paint_tree(
+    html,
+    @types.Size::new(240.0, 120.0),
+  )
+  match find_text_node(paint_tree, "Medium label") {
+    Some(text_node) => {
+      inspect(text_node.paint.font_weight.to_int(), content="500")
+      inspect(text_node.paint.is_bold, content="false")
+    }
+    None => fail("medium text node not found")
+  }
+
+  let baseline =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }.label { font-weight: 400; }</style>
+    #|<p class="label">Weighted label</p>
+  let current =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }.label { font-weight: 500; }</style>
+    #|<p class="label">Weighted label</p>
+  let diff = diff_rendered_paint_trees(
+    baseline,
+    current,
+    @types.Size::new(240.0, 120.0),
+  )
+  inspect(has_change(diff, "#text", "font_weight"), content="true")
+  inspect(has_change(diff, "#text", "is_bold"), content="false")
 }
 
 ///|

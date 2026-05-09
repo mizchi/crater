@@ -486,7 +486,9 @@ test "Browser execute_scripts propagates custom states into CSS cascade" {
   assert_true(
     browser.html_content.contains("data-crater-custom-states=\"open\""),
   )
-  let styles = @css.discover_all_computed_styles(browser.html_content, ["color"])
+  let styles = @responsive.discover_all_computed_styles(browser.html_content, [
+    "color",
+  ])
   let panel_styles = styles.get("x-panel#panel").unwrap()
   assert_eq(panel_styles.get("color").unwrap(), "red")
 }

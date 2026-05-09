@@ -58,6 +58,8 @@ pub fn compute_luminance(Color) -> Double
 
 pub fn degrees_to_radians(Double) -> Double
 
+pub fn extract_root_view_box(String) -> ViewBox?
+
 pub fn group(String, Array[SVGNode]) -> SVGNode
 
 pub fn hit_test_shape(Double, Double, Shape) -> Bool
@@ -79,6 +81,8 @@ pub fn parse_transform(String) -> Transform
 pub fn path(String, String) -> SVGNode
 
 pub fn path_bbox(Array[PathCommand]) -> BoundingBox
+
+pub fn path_command_from_msvg(@mizchi/svg.PathCommand) -> PathCommand
 
 pub fn path_to_polylines(Array[PathCommand], Double) -> Array[Array[(Double, Double)]]
 

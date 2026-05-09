@@ -10,6 +10,13 @@ pub(all) struct GlyphProvider {
   get_glyph : (Int, Double, Bool) -> (Array[@svg.PathCommand], Double)
   /// Get kerning adjustment between two codepoints. Args: (cp1, cp2, font_size, is_bold).
   get_kern : (Int, Int, Double, Bool) -> Double
+  /// Weight-aware glyph provider. Args: (codepoint, font_size, font_weight).
+  get_glyph_by_weight : ((Int, Double, Double) -> (
+    Array[@svg.PathCommand],
+    Double,
+  ))?
+  /// Weight-aware kerning. Args: (cp1, cp2, font_size, font_weight).
+  get_kern_by_weight : ((Int, Int, Double, Double) -> Double)?
   /// Font ascent in pixels at font_size=1. Multiply by actual font_size.
   ascent_ratio : Double // ascent / units_per_em (e.g. 1854/2048 ≈ 0.905)
   /// Multi-font glyph provider. Args: (codepoint, font_size, is_bold, font_family).
@@ -20,6 +27,13 @@ pub(all) struct GlyphProvider {
   )?)?
   /// Multi-font kerning. Args: (cp1, cp2, font_size, is_bold, font_family).
   get_kern_for_family : ((Int, Int, Double, Bool, String) -> Double)?
+  /// Weight-aware multi-font glyph provider.
+  get_glyph_for_family_by_weight : ((Int, Double, Double, String) -> (
+    Array[@svg.PathCommand],
+    Double,
+  )?)?
+  /// Weight-aware multi-font kerning.
+  get_kern_for_family_by_weight : ((Int, Int, Double, Double, String) -> Double)?
   /// Multi-font ascent ratio. Args: (font_family) -> ratio.
   get_ascent_for_family : ((String) -> Double)?
 }
@@ -329,12 +343,16 @@ fn glyph_cache_key(
   font_size : Double,
   is_bold : Bool,
   font_family : String,
+  font_weight? : Double = 400.0,
 ) -> String {
   let bold_flag = if is_bold { 1 } else { 0 }
   let fs_key = (font_size * 10.0).to_int()
+  let weight_key = font_weight.to_int()
   cp.to_string() +
   ":" +
   fs_key.to_string() +
+  ":" +
+  weight_key.to_string() +
   ":" +
   bold_flag.to_string() +
   ":" +
@@ -370,16 +388,11 @@ pub fn pre_rasterize_glyphs(
       _ => provider.ascent_ratio * fs
     }
     for cp = 32; cp <= 126; cp = cp + 1 {
-      let key = glyph_cache_key(cp, fs, false, font_family)
+      let key = glyph_cache_key(cp, fs, false, font_family, font_weight=400.0)
       if glyph_bitmap_cache.val.get(key) is None {
-        let (commands, advance) = match provider.get_glyph_for_family {
-          Some(glyph_fn) if font_family.length() > 0 =>
-            match glyph_fn(cp, fs, false, font_family) {
-              Some(r) => r
-              None => (provider.get_glyph)(cp, fs, false)
-            }
-          _ => (provider.get_glyph)(cp, fs, false)
-        }
+        let (commands, advance) = glyph_from_provider(
+          provider, cp, fs, false, font_family, 400.0,
+        )
         let translated = translate_path_commands(commands, 0.0, baseline_offset)
         let bm = rasterize_glyph_to_bitmap(translated, advance)
         glyph_bitmap_cache.val.set(key, bm)
@@ -398,17 +411,42 @@ pub fn clear_glyph_provider() -> Unit {
 }
 
 ///|
-/// Convert mizchi/svg PathCommand to crater's svg PathCommand.
-fn convert_msvg_path_command(cmd : @msvg.PathCommand) -> @svg.PathCommand {
-  match cmd {
-    MoveTo(x, y) => @svg.PathCommand::MoveTo(x, y)
-    LineTo(x, y) => @svg.PathCommand::LineTo(x, y)
-    QuadraticCurveTo(cx, cy, x, y) =>
-      @svg.PathCommand::QuadraticCurveTo(cx, cy, x, y)
-    CurveTo(cx1, cy1, cx2, cy2, x, y) =>
-      @svg.PathCommand::CurveTo(cx1, cy1, cx2, cy2, x, y)
-    ClosePath => @svg.PathCommand::ClosePath
-    _ => @svg.PathCommand::ClosePath
+pub fn glyph_provider_from_delegate(
+  delegate : @font_provider.GlyphProvider,
+) -> GlyphProvider {
+  {
+    get_glyph: fn(codepoint, font_size, is_bold) {
+      let (commands, advance) = (delegate.get_glyph)(
+        codepoint, font_size, is_bold,
+      )
+      (commands.map(@svg.path_command_from_msvg), advance)
+    },
+    get_kern: fn(cp1, cp2, font_size, is_bold) {
+      (delegate.get_kern)(cp1, cp2, font_size, is_bold)
+    },
+    get_glyph_by_weight: match delegate.get_glyph_by_weight {
+      Some(glyph_by_weight) =>
+        Some(fn(codepoint, font_size, font_weight) {
+          let (commands, advance) = glyph_by_weight(
+            codepoint, font_size, font_weight,
+          )
+          (commands.map(@svg.path_command_from_msvg), advance)
+        })
+      None => None
+    },
+    get_kern_by_weight: match delegate.get_kern_by_weight {
+      Some(kern_by_weight) =>
+        Some(fn(cp1, cp2, font_size, font_weight) {
+          kern_by_weight(cp1, cp2, font_size, font_weight)
+        })
+      None => None
+    },
+    ascent_ratio: delegate.ascent_ratio,
+    get_glyph_for_family: None,
+    get_kern_for_family: None,
+    get_glyph_for_family_by_weight: None,
+    get_kern_for_family_by_weight: None,
+    get_ascent_for_family: None,
   }
 }
 
@@ -416,43 +454,90 @@ fn convert_msvg_path_command(cmd : @msvg.PathCommand) -> @svg.PathCommand {
 /// Create a GlyphProvider from a parsed TTFont.
 /// This allows native text rendering without JS FFI.
 pub fn glyph_provider_from_font(font : @font.TTFont) -> GlyphProvider {
-  let units_per_em = font.units_per_em.to_double()
-  let ascent_ratio = font.ascent.to_double() / units_per_em
-  {
-    get_glyph: fn(codepoint, font_size, _is_bold) {
-      let outline = font.scaled_outline(codepoint, font_size)
-      let commands : Array[@svg.PathCommand] = outline.map(
-        convert_msvg_path_command,
-      )
-      let glyph_id = font.glyph_index(codepoint)
-      let advance = if glyph_id != 0 {
-        let metrics = font.glyph_metrics(glyph_id)
-        metrics.advance_width.to_double() / units_per_em * font_size
-      } else {
-        0.0
-      }
-      (commands, advance)
-    },
-    get_kern: fn(cp1, cp2, font_size, _is_bold) {
-      let gid1 = font.glyph_index(cp1)
-      let gid2 = font.glyph_index(cp2)
-      let kern = font.kern_pair(gid1, gid2)
-      kern.to_double() * font_size / units_per_em
-    },
-    ascent_ratio,
-    get_glyph_for_family: None,
-    get_kern_for_family: None,
-    get_ascent_for_family: None,
-  }
+  glyph_provider_from_delegate(@font_provider.glyph_provider_from_font(font))
 }
 
 ///|
 /// Parse font bytes and create a GlyphProvider.
 /// Returns None if font parsing fails.
 pub fn glyph_provider_from_bytes(data : Bytes) -> GlyphProvider? {
-  match @font.parse_font(data) {
-    Some(font) => Some(glyph_provider_from_font(font))
+  match @font_provider.glyph_provider_from_bytes(data) {
+    Some(provider) => Some(glyph_provider_from_delegate(provider))
     None => None
+  }
+}
+
+///|
+fn resolve_effective_font_weight(
+  is_bold : Bool,
+  font_weight : Double,
+) -> Double {
+  if font_weight != 400.0 || !is_bold {
+    font_weight
+  } else {
+    700.0
+  }
+}
+
+///|
+fn is_bold_font_weight(font_weight : Double) -> Bool {
+  font_weight >= 600.0
+}
+
+///|
+fn glyph_from_provider(
+  provider : GlyphProvider,
+  codepoint : Int,
+  font_size : Double,
+  is_bold : Bool,
+  font_family : String,
+  font_weight : Double,
+) -> (Array[@svg.PathCommand], Double) {
+  match provider.get_glyph_for_family_by_weight {
+    Some(glyph_fn) if font_family.length() > 0 =>
+      match glyph_fn(codepoint, font_size, font_weight, font_family) {
+        Some(r) => return r
+        None => ()
+      }
+    _ => ()
+  }
+  match provider.get_glyph_for_family {
+    Some(glyph_fn) if font_family.length() > 0 =>
+      match glyph_fn(codepoint, font_size, is_bold, font_family) {
+        Some(r) => return r
+        None => ()
+      }
+    _ => ()
+  }
+  match provider.get_glyph_by_weight {
+    Some(glyph_fn) => glyph_fn(codepoint, font_size, font_weight)
+    None => (provider.get_glyph)(codepoint, font_size, is_bold)
+  }
+}
+
+///|
+fn kern_from_provider(
+  provider : GlyphProvider,
+  cp1 : Int,
+  cp2 : Int,
+  font_size : Double,
+  is_bold : Bool,
+  font_family : String,
+  font_weight : Double,
+) -> Double {
+  match provider.get_kern_for_family_by_weight {
+    Some(kern_fn) if font_family.length() > 0 =>
+      return kern_fn(cp1, cp2, font_size, font_weight, font_family)
+    _ => ()
+  }
+  match provider.get_kern_for_family {
+    Some(kern_fn) if font_family.length() > 0 =>
+      return kern_fn(cp1, cp2, font_size, is_bold, font_family)
+    _ => ()
+  }
+  match provider.get_kern_by_weight {
+    Some(kern_fn) => kern_fn(cp1, cp2, font_size, font_weight)
+    None => (provider.get_kern)(cp1, cp2, font_size, is_bold)
   }
 }
 
@@ -463,15 +548,15 @@ fn get_advance(
   font_size : Double,
   is_bold : Bool,
   font_family? : String = "",
+  font_weight? : Double = 400.0,
 ) -> Double {
-  let (_, advance) = match provider.get_glyph_for_family {
-    Some(glyph_fn) if font_family.length() > 0 =>
-      match glyph_fn(codepoint, font_size, is_bold, font_family) {
-        Some(r) => r
-        None => (provider.get_glyph)(codepoint, font_size, is_bold)
-      }
-    _ => (provider.get_glyph)(codepoint, font_size, is_bold)
-  }
+  let effective_font_weight = resolve_effective_font_weight(
+    is_bold, font_weight,
+  )
+  let effective_is_bold = is_bold || is_bold_font_weight(effective_font_weight)
+  let (_, advance) = glyph_from_provider(
+    provider, codepoint, font_size, effective_is_bold, font_family, effective_font_weight,
+  )
   advance
 }
 
@@ -484,21 +569,32 @@ fn measure_word_width(
   font_family? : String = "",
   letter_spacing? : Double = 0.0,
   word_spacing? : Double = 0.0,
+  font_weight? : Double = 400.0,
 ) -> Double {
+  let effective_font_weight = resolve_effective_font_weight(
+    is_bold, font_weight,
+  )
+  let effective_is_bold = is_bold || is_bold_font_weight(effective_font_weight)
   let mut w = 0.0
   let mut prev_cp = 0
   for c in word {
     let cp = c.to_int()
     if prev_cp != 0 {
       w = w + letter_spacing
-      let kern = match provider.get_kern_for_family {
-        Some(kern_fn) if font_family.length() > 0 =>
-          kern_fn(prev_cp, cp, font_size, is_bold, font_family)
-        _ => (provider.get_kern)(prev_cp, cp, font_size, is_bold)
-      }
+      let kern = kern_from_provider(
+        provider, prev_cp, cp, font_size, effective_is_bold, font_family, effective_font_weight,
+      )
       w = w + kern
     }
-    w = w + get_advance(provider, cp, font_size, is_bold, font_family~)
+    w = w +
+      get_advance(
+        provider,
+        cp,
+        font_size,
+        effective_is_bold,
+        font_family~,
+        font_weight=effective_font_weight,
+      )
     if cp == ' '.to_int() {
       w = w + word_spacing
     }
@@ -515,8 +611,16 @@ fn collapsed_space_advance(
   font_family : String,
   letter_spacing : Double,
   word_spacing : Double,
+  font_weight : Double,
 ) -> Double {
-  get_advance(provider, ' '.to_int(), font_size, is_bold, font_family~) +
+  get_advance(
+    provider,
+    ' '.to_int(),
+    font_size,
+    is_bold,
+    font_family~,
+    font_weight~,
+  ) +
   word_spacing +
   letter_spacing * 2.0
 }
@@ -640,7 +744,12 @@ fn draw_text_with_glyphs_clipped(
   opacity? : Double = 1.0,
   letter_spacing? : Double = 0.0,
   word_spacing? : Double = 0.0,
+  font_weight? : Double = 400.0,
 ) -> Int {
+  let effective_font_weight = resolve_effective_font_weight(
+    is_bold, font_weight,
+  )
+  let effective_is_bold = is_bold || is_bold_font_weight(effective_font_weight)
   let text_opacity = clamp_opacity(opacity) * color.a.to_double() / 255.0
   let effective_line_height = if line_height > 0.0 {
     line_height
@@ -663,7 +772,8 @@ fn draw_text_with_glyphs_clipped(
   let mut cur_y = y.to_double()
   let mut max_y_seen = y.to_double() + effective_line_height
   let space_advance_layout = collapsed_space_advance(
-    provider, font_size, is_bold, font_family, letter_spacing, word_spacing,
+    provider, font_size, effective_is_bold, font_family, letter_spacing, word_spacing,
+    effective_font_weight,
   )
   for i, word in words {
     if word == "\n" {
@@ -676,10 +786,11 @@ fn draw_text_with_glyphs_clipped(
       provider,
       word,
       font_size,
-      is_bold,
+      effective_is_bold,
       font_family~,
       letter_spacing~,
       word_spacing~,
+      font_weight=effective_font_weight,
     )
     let hard_wrap_limit = if max_width > 0 &&
       word_width > max_width.to_double() + wrap_tolerance {
@@ -708,18 +819,19 @@ fn draw_text_with_glyphs_clipped(
     for c in word {
       let cp = c.to_int()
       // Use bitmap cache: rasterize each glyph once, then blit
-      let cache_key = glyph_cache_key(cp, font_size, is_bold, font_family)
+      let cache_key = glyph_cache_key(
+        cp,
+        font_size,
+        effective_is_bold,
+        font_family,
+        font_weight=effective_font_weight,
+      )
       let bitmap = match glyph_bitmap_cache.val.get(cache_key) {
         Some(bm) => bm
         None => {
-          let (commands, advance) = match provider.get_glyph_for_family {
-            Some(glyph_fn) if font_family.length() > 0 =>
-              match glyph_fn(cp, font_size, is_bold, font_family) {
-                Some(r) => r
-                None => (provider.get_glyph)(cp, font_size, is_bold)
-              }
-            _ => (provider.get_glyph)(cp, font_size, is_bold)
-          }
+          let (commands, advance) = glyph_from_provider(
+            provider, cp, font_size, effective_is_bold, font_family, effective_font_weight,
+          )
           let translated = translate_path_commands(
             commands, 0.0, baseline_offset,
           )
@@ -729,11 +841,9 @@ fn draw_text_with_glyphs_clipped(
         }
       }
       let kern = if prev_cp != 0 {
-        match provider.get_kern_for_family {
-          Some(kern_fn) if font_family.length() > 0 =>
-            kern_fn(prev_cp, cp, font_size, is_bold, font_family)
-          _ => (provider.get_kern)(prev_cp, cp, font_size, is_bold)
-        }
+        kern_from_provider(
+          provider, prev_cp, cp, font_size, effective_is_bold, font_family, effective_font_weight,
+        )
       } else {
         0.0
       }

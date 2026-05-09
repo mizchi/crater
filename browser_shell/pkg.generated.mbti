@@ -1,0 +1,56 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser-shell"
+
+// Values
+pub fn data_image_src_to_kitty_cache(String) -> String?
+
+pub fn decode_raster_image_to_rgba_cache_entry(String, String) -> RgbaCacheEntry?
+
+pub fn detect_raster_image_format_from_base64(String) -> String
+
+pub fn extract_img_srcs(String) -> Array[String]
+
+pub fn normalize_raster_image_for_kitty(String) -> String
+
+pub fn parse_terminal_image_cache_entry(String) -> TerminalImageCacheEntry?
+
+pub fn prepare_raster_image_for_kitty_cache(String) -> String
+
+// Errors
+
+// Types and methods
+pub struct ImageCache {
+  data : Map[String, String]
+  order : Array[String]
+  mut total_bytes : Int
+  mut max_bytes : Int
+}
+pub fn ImageCache::contains(Self, String) -> Bool
+pub fn ImageCache::get(Self, String) -> String?
+pub fn ImageCache::is_empty(Self) -> Bool
+pub fn ImageCache::max_bytes(Self) -> Int
+pub fn ImageCache::new(max_bytes? : Int) -> Self
+pub fn ImageCache::put(Self, String, String) -> Unit
+pub fn ImageCache::set_max_bytes(Self, Int) -> Unit
+pub fn ImageCache::total_bytes(Self) -> Int
+
+pub(all) struct RgbaCacheEntry {
+  width : Int
+  height : Int
+  rgba_base64 : String
+}
+pub fn RgbaCacheEntry::decode_rgba_bytes(Self) -> Array[Int]?
+pub fn RgbaCacheEntry::encode(Self) -> String
+
+pub(all) enum TerminalImageCacheEntry {
+  Svg(String)
+  PngBase64(String)
+  RgbaBase64(RgbaCacheEntry)
+  RawBase64(String)
+}
+pub fn TerminalImageCacheEntry::encode(Self) -> String
+
+// Type aliases
+
+// Traits
+
