@@ -28,8 +28,7 @@ fn bidi_pointer_interaction_command(
 }
 
 ///|
-fn BidiProtocol::dispatch_interaction_key_command(
-  self : BidiProtocol,
+fn dispatch_interaction_key_command(
   command : @interaction.InteractionCommand,
   raw_key : String,
   ctrl : Bool,
@@ -37,7 +36,6 @@ fn BidiProtocol::dispatch_interaction_key_command(
   shift : Bool,
   meta : Bool,
 ) -> Unit {
-  let _ = self
   match command {
     @interaction.KeyDown(_) =>
       input_dispatch_key_action("keyDown", raw_key, ctrl, alt, shift, meta)
@@ -48,8 +46,7 @@ fn BidiProtocol::dispatch_interaction_key_command(
 }
 
 ///|
-fn BidiProtocol::dispatch_interaction_pointer_command(
-  self : BidiProtocol,
+fn dispatch_interaction_pointer_command(
   command : @interaction.InteractionCommand,
   target_shared : String,
   x : Double,
@@ -61,7 +58,6 @@ fn BidiProtocol::dispatch_interaction_pointer_command(
   shift : Bool,
   meta : Bool,
 ) -> Unit {
-  let _ = self
   match command {
     @interaction.PointerMove(_, _) => {
       input_dispatch_pointer_event(
@@ -90,8 +86,7 @@ fn BidiProtocol::dispatch_interaction_pointer_command(
 }
 
 ///|
-fn BidiProtocol::dispatch_interaction_pointer_sequence(
-  self : BidiProtocol,
+fn dispatch_interaction_pointer_sequence(
   events : Array[@interaction.PointerDispatchEvent],
   target_shared : String,
   x : Double,
@@ -103,7 +98,6 @@ fn BidiProtocol::dispatch_interaction_pointer_sequence(
   shift : Bool,
   meta : Bool,
 ) -> Unit {
-  let _ = self
   for event in events {
     input_dispatch_pointer_event(
       target_shared,
@@ -122,8 +116,7 @@ fn BidiProtocol::dispatch_interaction_pointer_sequence(
 }
 
 ///|
-fn BidiProtocol::dispatch_interaction_hover_sequence(
-  self : BidiProtocol,
+fn dispatch_interaction_hover_sequence(
   events : Array[@interaction.HoverDispatchEvent],
   previous_target_shared : String,
   current_target_shared : String,
@@ -136,7 +129,6 @@ fn BidiProtocol::dispatch_interaction_hover_sequence(
   shift : Bool,
   meta : Bool,
 ) -> Unit {
-  let _ = self
   for event in events {
     let target_shared = match event.target {
       @interaction.HoverPreviousTarget => previous_target_shared

@@ -6298,11 +6298,11 @@ fn apply_alignment(
   let remaining_height = available_height - item_height
 
   // Calculate auto margins
-  let (final_margin_left, final_margin_right) = @core.resolve_auto_margin_pair(
+  let (final_margin_left, _) = @core.resolve_auto_margin_pair(
     margin_left_is_auto, margin_right_is_auto, fixed_margin_left, fixed_margin_right,
     remaining_width,
   )
-  let (final_margin_top, final_margin_bottom) = @core.resolve_auto_margin_pair(
+  let (final_margin_top, _) = @core.resolve_auto_margin_pair(
     margin_top_is_auto, margin_bottom_is_auto, fixed_margin_top, fixed_margin_bottom,
     remaining_height,
   )
@@ -6314,10 +6314,6 @@ fn apply_alignment(
   let y_offset = @core.compute_grid_self_alignment_offset(
     align, available_height, item_height, margin_top_is_auto, margin_bottom_is_auto,
   )
-
-  // Suppress unused variable warnings
-  let _ = final_margin_right
-  let _ = final_margin_bottom
 
   // Apply inset only for position:relative.
   let (inset_x, inset_y) = if child_style.position == @types.Relative {

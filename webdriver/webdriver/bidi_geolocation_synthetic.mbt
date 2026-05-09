@@ -28,23 +28,12 @@ fn BidiProtocol::resolve_effective_geolocation_override(
   self : BidiProtocol,
   ctx_id : String,
 ) -> Json? {
-  let ancestry = self.storage_context_ancestry(ctx_id)
-  let mut index = ancestry.length()
-  while index > 0 {
-    index = index - 1
-    let scope_id = ancestry[index]
-    match self.emulation_geolocation_by_context.get(scope_id) {
-      Some(override_value) => return Some(override_value)
-      None => ()
-    }
-  }
-  let user_context_id = self.context_user_context
-    .get(ctx_id)
-    .unwrap_or("default")
-  match self.emulation_geolocation_by_user_context.get(user_context_id) {
-    Some(override_value) => Some(override_value)
-    None => self.emulation_geolocation_global
-  }
+  self.resolve_effective_scoped_override(
+    ctx_id,
+    self.emulation_geolocation_by_context,
+    self.emulation_geolocation_by_user_context,
+    self.emulation_geolocation_global,
+  )
 }
 
 ///|

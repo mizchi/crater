@@ -74,26 +74,15 @@ fn BidiProtocol::resolve_effective_screen_orientation(
   self : BidiProtocol,
   ctx_id : String,
 ) -> Json {
-  let ancestry = self.storage_context_ancestry(ctx_id)
-  let mut index = ancestry.length()
-  while index > 0 {
-    index = index - 1
-    let scope_id = ancestry[index]
-    match self.emulation_screen_orientation_by_context.get(scope_id) {
-      Some(override_value) => return override_value
-      None => ()
-    }
-  }
-  let user_context_id = self.context_user_context
-    .get(ctx_id)
-    .unwrap_or("default")
-  match self.emulation_screen_orientation_by_user_context.get(user_context_id) {
+  match
+    self.resolve_effective_scoped_override(
+      ctx_id,
+      self.emulation_screen_orientation_by_context,
+      self.emulation_screen_orientation_by_user_context,
+      self.emulation_screen_orientation_global,
+    ) {
     Some(override_value) => override_value
-    None =>
-      match self.emulation_screen_orientation_global {
-        Some(override_value) => override_value
-        None => default_screen_orientation_json()
-      }
+    None => default_screen_orientation_json()
   }
 }
 

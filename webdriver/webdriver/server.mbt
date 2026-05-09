@@ -109,7 +109,7 @@ pub fn SessionManager::handle_request(
 ) -> (Int, WebDriverResponse) {
   match request.command {
     // Status endpoint (no session required)
-    Status => (200, self.handle_status())
+    Status => (200, handle_status())
 
     // Session management
     NewSession => {
@@ -224,8 +224,7 @@ pub fn SessionManager::handle_request(
 
 ///|
 /// Handle status request
-fn SessionManager::handle_status(self : SessionManager) -> WebDriverResponse {
-  let _ = self // suppress unused warning
+fn handle_status() -> WebDriverResponse {
   let map : Map[String, WebDriverValue] = {}
   map["ready"] = Bool(true)
   map["message"] = String("Crater WebDriver is ready")
