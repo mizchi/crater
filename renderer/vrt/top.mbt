@@ -10,6 +10,97 @@ fn make_render_context(
 }
 
 ///|
+fn paint_tree_from_node_layout(
+  node : @layout.Node,
+  layout : @types.Layout,
+  viewport : @types.Size[Double],
+) -> @paint_model.PaintNode {
+  match
+    @paint_render.from_node_and_layout_with_viewport_rect(
+      node,
+      layout,
+      0.0,
+      0.0,
+      viewport.width,
+      viewport.height,
+      0.0,
+      0.0,
+    ) {
+    Some(paint_tree) => paint_tree
+    None => @paint_render.from_node_and_layout(node, layout)
+  }
+}
+
+///|
+pub(all) struct PreparedVrtPage {
+  doc : @html.Document
+  viewport : @types.Size[Double]
+  ctx : @renderer.RenderContext
+  prepared : @renderer.PreparedRenderDocument
+}
+
+///|
+pub fn prepare_external_css(
+  external_css : Array[String],
+) -> @renderer.PreparedExternalCss {
+  @renderer.prepare_external_css(external_css)
+}
+
+///|
+pub fn prepare_vrt_page(
+  html : String,
+  viewport : @types.Size[Double],
+  external_css : Array[String],
+) -> PreparedVrtPage {
+  let doc = @html.parse_document(html)
+  let ctx = make_render_context(viewport)
+  {
+    doc,
+    viewport,
+    ctx,
+    prepared: @renderer.prepare_render_document(doc, ctx, external_css),
+  }
+}
+
+///|
+pub fn prepare_vrt_page_with_prepared_external_css(
+  html : String,
+  viewport : @types.Size[Double],
+  external_css : @renderer.PreparedExternalCss,
+) -> PreparedVrtPage {
+  let doc = @html.parse_document(html)
+  let ctx = make_render_context(viewport)
+  {
+    doc,
+    viewport,
+    ctx,
+    prepared: @renderer.prepare_render_document_with_prepared_external_css(
+      doc, ctx, external_css,
+    ),
+  }
+}
+
+///|
+pub fn render_prepared_vrt_page_to_paint_tree(
+  page : PreparedVrtPage,
+) -> @paint_model.PaintNode {
+  let node = @renderer.build_render_root_node(page.doc, page.ctx, page.prepared)
+  let layout = @renderer.compute_layout_from_render_root(
+    node,
+    page.prepared,
+    page.ctx,
+  )
+  paint_tree_from_node_layout(node, layout, page.viewport)
+}
+
+///|
+pub fn render_prepared_vrt_page_to_paint_tree_json(
+  page : PreparedVrtPage,
+) -> String {
+  render_prepared_vrt_page_to_paint_tree(page).to_json_string()
+}
+
+///|
 pub fn render_html_to_paint_tree(
   html : String,
   viewport : @types.Size[Double],
@@ -28,20 +119,7 @@ pub fn render_html_to_paint_tree_with_external_css(
     make_render_context(viewport),
     external_css,
   )
-  match
-    @paint_render.from_node_and_layout_with_viewport_rect(
-      node,
-      layout,
-      0.0,
-      0.0,
-      viewport.width,
-      viewport.height,
-      0.0,
-      0.0,
-    ) {
-    Some(paint_tree) => paint_tree
-    None => @paint_render.from_node_and_layout(node, layout)
-  }
+  paint_tree_from_node_layout(node, layout, viewport)
 }
 
 ///|
@@ -56,20 +134,7 @@ pub fn render_html_to_paint_tree_with_prepared_external_css(
     make_render_context(viewport),
     external_css,
   )
-  match
-    @paint_render.from_node_and_layout_with_viewport_rect(
-      node,
-      layout,
-      0.0,
-      0.0,
-      viewport.width,
-      viewport.height,
-      0.0,
-      0.0,
-    ) {
-    Some(paint_tree) => paint_tree
-    None => @paint_render.from_node_and_layout(node, layout)
-  }
+  paint_tree_from_node_layout(node, layout, viewport)
 }
 
 ///|
@@ -180,20 +245,7 @@ pub fn render_html_batch_variants(
     let (node, layout) = @renderer.render_to_node_and_layout_with_document(
       doc, ctx, external_css,
     )
-    let paint_tree = match
-      @paint_render.from_node_and_layout_with_viewport_rect(
-        node,
-        layout,
-        0.0,
-        0.0,
-        viewport.width,
-        viewport.height,
-        0.0,
-        0.0,
-      ) {
-      Some(pt) => pt
-      None => @paint_render.from_node_and_layout(node, layout)
-    }
+    let paint_tree = paint_tree_from_node_layout(node, layout, viewport)
     results.push({ id: variant.id, paint_tree })
   }
   results

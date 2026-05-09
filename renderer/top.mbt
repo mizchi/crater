@@ -1,6 +1,7 @@
 ///|
 pub using @vrt {
   type CssMutation,
+  type PreparedVrtPage,
   type CssMutationAction,
   type RenderVariant,
   type RenderVariantResult,
@@ -14,6 +15,38 @@ pub fn prepare_external_css(
   external_css : Array[String],
 ) -> PreparedExternalCss {
   @renderer_core.prepare_external_css(external_css)
+}
+
+///|
+pub fn prepare_vrt_page(
+  html : String,
+  viewport : @types.Size[Double],
+  external_css : Array[String],
+) -> PreparedVrtPage {
+  @vrt.prepare_vrt_page(html, viewport, external_css)
+}
+
+///|
+pub fn prepare_vrt_page_with_prepared_external_css(
+  html : String,
+  viewport : @types.Size[Double],
+  external_css : PreparedExternalCss,
+) -> PreparedVrtPage {
+  @vrt.prepare_vrt_page_with_prepared_external_css(html, viewport, external_css)
+}
+
+///|
+pub fn render_prepared_vrt_page_to_paint_tree(
+  page : PreparedVrtPage,
+) -> @paint_model.PaintNode {
+  @vrt.render_prepared_vrt_page_to_paint_tree(page)
+}
+
+///|
+pub fn render_prepared_vrt_page_to_paint_tree_json(
+  page : PreparedVrtPage,
+) -> String {
+  @vrt.render_prepared_vrt_page_to_paint_tree_json(page)
 }
 
 ///|
