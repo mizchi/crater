@@ -120,7 +120,7 @@ describe("runFlakerUpstreamExportCli", () => {
   it("returns staged writes for ready-to-upstream groups", () => {
     const result = runFlakerUpstreamExportCli([
       "--group",
-      "flaker-batch-plan-core",
+      "flaker-quarantine-core",
       "--output",
       "out",
     ], {
@@ -130,24 +130,26 @@ describe("runFlakerUpstreamExportCli", () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("# Metric CI Upstream Export");
-    expect(result.writes).toEqual([
-      {
-        path: "/repo/out/flaker-batch-plan-core/scripts/flaker-batch-plan-core.ts",
-        content: "// scripts/flaker-batch-plan-core.ts\n",
-      },
-      {
-        path: "/repo/out/flaker-batch-plan-core/scripts/flaker-batch-plan-core.test.ts",
-        content: "// scripts/flaker-batch-plan-core.test.ts\n",
-      },
-      {
-        path: "/repo/out/flaker-batch-plan-core/manifest.md",
-        content: expect.stringContaining("| Group | flaker-batch-plan-core |"),
-      },
-      {
-        path: "/repo/out/flaker-batch-plan-core/manifest.json",
-        content: expect.stringContaining('"status": "ready-to-upstream"'),
-      },
-    ]);
+    expect(result.writes).toEqual(
+      expect.arrayContaining([
+        {
+          path: "/repo/out/flaker-quarantine-core/scripts/flaker-quarantine-parser.ts",
+          content: "// scripts/flaker-quarantine-parser.ts\n",
+        },
+        {
+          path: "/repo/out/flaker-quarantine-core/scripts/flaker-quarantine-parser.test.ts",
+          content: "// scripts/flaker-quarantine-parser.test.ts\n",
+        },
+        {
+          path: "/repo/out/flaker-quarantine-core/manifest.md",
+          content: expect.stringContaining("| Group | flaker-quarantine-core |"),
+        },
+        {
+          path: "/repo/out/flaker-quarantine-core/manifest.json",
+          content: expect.stringContaining('"status": "ready-to-upstream"'),
+        },
+      ]),
+    );
   });
 
   it("rejects groups that are kept in crater", () => {
@@ -183,10 +185,6 @@ describe("runFlakerUpstreamExportCli", () => {
         {
           path: "/repo/from-crater/README.md",
           content: expect.stringContaining("MoonBit"),
-        },
-        {
-          path: "/repo/from-crater/flaker-batch-plan-core/scripts/flaker-batch-plan-core.ts",
-          content: "// scripts/flaker-batch-plan-core.ts\n",
         },
         {
           path: "/repo/from-crater/flaker-quarantine-core/scripts/flaker-quarantine-parser.ts",

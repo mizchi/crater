@@ -96,7 +96,7 @@ const GROUPS: ReadonlyArray<Omit<FlakerUpstreamGroup, "status"> & {
     id: "flaker-batch-plan-core",
     title: "Flaker batch plan core",
     category: "metric-ci",
-    status: "ready-to-upstream",
+    status: "upstreamed",
     origin: "crater-extracted",
     files: [
       "scripts/flaker-batch-plan-core.ts",
@@ -104,8 +104,8 @@ const GROUPS: ReadonlyArray<Omit<FlakerUpstreamGroup, "status"> & {
     testFiles: [
       "scripts/flaker-batch-plan-core.test.ts",
     ],
-    reason: "daily batch plan の pure builder と markdown/matrix renderer は flaker config parser と contract だけで成立する。",
-    nextAction: "metric-ci 側へ batch plan core を移し、crater では flaker.star の file loading と CLI wrapper だけを残す。",
+    reason: "@mizchi/flaker@0.12.3 の reporting export として upstream 済み。daily batch plan の pure builder と markdown/matrix renderer は flaker config parser と contract だけで成立する。",
+    nextAction: "crater 側 wrapper は @mizchi/flaker/reporting/flaker-batch-plan-core を参照し、flaker.star の file loading と CLI wrapper だけを crater に残す。",
   },
   {
     id: "flaker-quarantine-core",
