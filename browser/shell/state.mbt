@@ -1,7 +1,4 @@
 ///|
-let default_image_cache_max_bytes : Int = 8 * 1024 * 1024
-
-///|
 /// Link found in the page
 priv struct Link {
   href : String
@@ -190,13 +187,7 @@ struct Browser {
   /// Image regions from last render (for kitty/sixel overlay)
   mut image_regions : Array[@tui.ImageRegion]
   /// Cached rendered image data (src URL -> kitty graphics commands)
-  image_cache : Map[String, String]
-  /// Image cache insertion order for oldest-first eviction
-  image_cache_order : Array[String]
-  /// Total cached image payload size in bytes (approximated by String length)
-  mut image_cache_total_bytes : Int
-  /// Max cached image payload size before eviction
-  mut image_cache_max_bytes : Int
+  image_cache : @browser_shell.ImageCache
   /// Uploaded kitty image ids that can be re-placed without re-sending payloads
   kitty_uploaded_image_ids : Map[Int, Bool]
   /// Visible kitty placements from the previous text render
@@ -270,10 +261,7 @@ pub fn Browser::new(
     no_color: false,
     terminal_cols,
     image_regions: [],
-    image_cache: {},
-    image_cache_order: [],
-    image_cache_total_bytes: 0,
-    image_cache_max_bytes: default_image_cache_max_bytes,
+    image_cache: @browser_shell.ImageCache::new(),
     kitty_uploaded_image_ids: {},
     kitty_visible_placements: {},
     http_cache: @http.MemoryCacheBackend::new(max_entries=1000),

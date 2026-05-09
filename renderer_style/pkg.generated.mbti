@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-renderer-style"
+
+import {
+  "mizchi/crater-layout/style",
+  "mizchi/crater-layout/types",
+}
+
+// Values
+pub fn get_cached_inline_style_display(String) -> @types.Display?
+
+pub fn inline_only_style_cache_get(String, String) -> @style.Style?
+
+pub fn inline_only_style_cache_put(String, String, @style.Style) -> Unit
+
+pub fn make_inline_only_style_cache_variant_key(String, Bool, Double, Double) -> String
+
+pub fn parse_inline_declarations_cached(String) -> Array[(String, String)]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

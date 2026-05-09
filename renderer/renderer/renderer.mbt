@@ -167,19 +167,6 @@ fn is_inline_participating_display(display : @types.Display) -> Bool {
 }
 
 ///|
-let inline_style_display_cache : Ref[Map[String, @types.Display?]] = { val: {} }
-
-///|
-let inline_declaration_cache : Ref[Map[String, Array[(String, String)]]] = {
-  val: {},
-}
-
-///|
-let inline_only_style_cache : Ref[Map[String, Map[String, @style.Style]]] = {
-  val: {},
-}
-
-///|
 fn string_map_is_empty(map : Map[String, String]) -> Bool {
   for _k, _v in map {
     return false
@@ -209,77 +196,21 @@ fn make_inline_only_style_cache_variant_key(
   viewport_width : Double,
   viewport_height : Double,
 ) -> String {
-  let buf = StringBuilder::new()
-  buf.write_string(tag.to_lower())
-  buf.write_string("|")
-  buf.write_string(if is_root { "1" } else { "0" })
-  buf.write_string("|")
-  buf.write_string((viewport_width * 10.0).to_int().to_string())
-  buf.write_string("|")
-  buf.write_string((viewport_height * 10.0).to_int().to_string())
-  buf.to_string()
+  @renderer_style.make_inline_only_style_cache_variant_key(
+    tag, is_root, viewport_width, viewport_height,
+  )
 }
 
 ///|
 fn parse_inline_declarations_cached(
   inline_css : String,
 ) -> Array[(String, String)] {
-  let cache = inline_declaration_cache.val
-  match cache.get(inline_css) {
-    Some(cached) => cached
-    None => {
-      // Parse inline CSS once and reuse across repeated style strings.
-      let parsed : Array[(String, String)] = []
-      let decls = inline_css.split(";")
-      for decl in decls {
-        let decl_str = decl.trim()
-        if decl_str.length() == 0 {
-          continue
-        }
-        let mut colon_idx = -1
-        for i = 0; i < decl_str.length(); i = i + 1 {
-          if decl_str[i] == ':' {
-            colon_idx = i
-            break
-          }
-        }
-        if colon_idx > 0 {
-          let prop = view_to_string(decl_str.view(end_offset=colon_idx))
-            .trim()
-            .to_string()
-            .to_lower()
-          let value = view_to_string(decl_str.view(start_offset=colon_idx + 1))
-            .trim()
-            .to_string()
-          if prop.length() > 0 && value.length() > 0 {
-            parsed.push((prop, value))
-          }
-        }
-      }
-      cache[inline_css] = parsed
-      parsed
-    }
-  }
+  @renderer_style.parse_inline_declarations_cached(inline_css)
 }
 
 ///|
 fn get_cached_inline_style_display(style_str : String) -> @types.Display? {
-  let cache = inline_style_display_cache.val
-  match cache.get(style_str) {
-    Some(cached) => cached
-    None => {
-      let style_lower = style_str.to_lower()
-      let parsed_display = if style_lower.contains("display:") ||
-        style_lower.contains("display :") {
-        let parsed = @css.parse_inline_style(style_str)
-        Some(parsed.display)
-      } else {
-        None
-      }
-      cache[style_str] = parsed_display
-      parsed_display
-    }
-  }
+  @renderer_style.get_cached_inline_style_display(style_str)
 }
 
 ///|
@@ -7231,12 +7162,8 @@ fn compute_element_style_indexed(
   }
   match (inline_only_cache_css, inline_only_cache_variant_key) {
     (Some(css), Some(variant_key)) =>
-      match inline_only_style_cache.val.get(css) {
-        Some(variants) =>
-          match variants.get(variant_key) {
-            Some(cached) => return cached
-            None => ()
-          }
+      match @renderer_style.inline_only_style_cache_get(css, variant_key) {
+        Some(cached) => return cached
         None => ()
       }
     _ => ()
@@ -7630,15 +7557,8 @@ fn compute_element_style_indexed(
   }
   let adjusted = adjust_for_box_sizing(style)
   match (inline_only_cache_css, inline_only_cache_variant_key) {
-    (Some(css), Some(variant_key)) => {
-      let cache = inline_only_style_cache.val
-      let variants = match cache.get(css) {
-        Some(existing) => existing
-        None => {}
-      }
-      variants[variant_key] = adjusted
-      cache[css] = variants
-    }
+    (Some(css), Some(variant_key)) =>
+      @renderer_style.inline_only_style_cache_put(css, variant_key, adjusted)
     _ => ()
   }
   adjusted

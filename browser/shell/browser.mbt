@@ -21,8 +21,7 @@ pub fn Browser::set_image_cache_max_bytes(
   self : Browser,
   max_bytes : Int,
 ) -> Unit {
-  self.image_cache_max_bytes = max_bytes.max(0)
-  self.evict_image_cache_if_needed()
+  self.image_cache.set_max_bytes(max_bytes)
 }
 
 ///|
@@ -1370,58 +1369,12 @@ fn Browser::build_kitty_image_overlay(self : Browser) -> String {
 }
 
 ///|
-fn remove_image_cache_order_key(order : Array[String], src : String) -> Unit {
-  let mut found_idx : Int? = None
-  for i, key in order {
-    if key == src {
-      found_idx = Some(i)
-      break
-    }
-  }
-  match found_idx {
-    Some(idx) => {
-      let _ = order.remove(idx)
-    }
-    None => ()
-  }
-}
-
-///|
-fn Browser::evict_image_cache_if_needed(self : Browser) -> Unit {
-  while self.image_cache_total_bytes > self.image_cache_max_bytes &&
-        !self.image_cache_order.is_empty() {
-    let evicted_src = self.image_cache_order.remove(0)
-    match self.image_cache.get(evicted_src) {
-      Some(cached_data) => {
-        self.image_cache.remove(evicted_src)
-        self.image_cache_total_bytes = (self.image_cache_total_bytes -
-        cached_data.length()).max(0)
-      }
-      None => ()
-    }
-  }
-}
-
-///|
 fn Browser::cache_image_data(
   self : Browser,
   src : String,
   data : String,
 ) -> Unit {
-  if self.image_cache.contains(src) {
-    match self.image_cache.get(src) {
-      Some(existing) =>
-        self.image_cache_total_bytes = (self.image_cache_total_bytes -
-        existing.length()).max(0)
-      None => ()
-    }
-    self.image_cache.remove(src)
-    remove_image_cache_order_key(self.image_cache_order, src)
-  }
-  self.image_cache.set(src, data)
-  self.image_cache_order.push(src)
-  self.image_cache_total_bytes += data.length()
-  self.evict_image_cache_if_needed()
+  self.image_cache.put(src, data)
 }
 
 ///|
@@ -1686,119 +1639,9 @@ fn Browser::install_sixel_image_provider(self : Browser) -> Bool {
 }
 
 ///|
-fn ascii_eq_ignore_case(lhs : Char, rhs : Char) -> Bool {
-  lhs.to_ascii_lowercase() == rhs.to_ascii_lowercase()
-}
-
-///|
-fn is_img_tag_start(chars : Array[Char], i : Int) -> Bool {
-  if i + 4 >= chars.length() {
-    return false
-  }
-  chars[i] == '<' &&
-  ascii_eq_ignore_case(chars[i + 1], 'i') &&
-  ascii_eq_ignore_case(chars[i + 2], 'm') &&
-  ascii_eq_ignore_case(chars[i + 3], 'g') &&
-  (
-    chars[i + 4].is_ascii_whitespace() ||
-    chars[i + 4] == '>' ||
-    chars[i + 4] == '/'
-  )
-}
-
-///|
-fn is_html_attr_name_char(c : Char) -> Bool {
-  !(c.is_ascii_whitespace() || c == '=' || c == '>' || c == '/')
-}
-
-///|
-fn is_src_attr_name(chars : Array[Char], start : Int, end : Int) -> Bool {
-  end - start == 3 &&
-  ascii_eq_ignore_case(chars[start], 's') &&
-  ascii_eq_ignore_case(chars[start + 1], 'r') &&
-  ascii_eq_ignore_case(chars[start + 2], 'c')
-}
-
-///|
-fn read_html_attr_value(chars : Array[Char], start : Int) -> (String, Int)? {
-  if start >= chars.length() {
-    return None
-  }
-  let quote = chars[start]
-  if quote == '"' || quote == '\'' {
-    let value_start = start + 1
-    for i = value_start; i < chars.length(); i = i + 1 {
-      if chars[i] == quote {
-        return Some((make_substr(chars, value_start, i), i + 1))
-      }
-    }
-    None
-  } else {
-    let mut value_end = start
-    while value_end < chars.length() &&
-          !chars[value_end].is_ascii_whitespace() &&
-          chars[value_end] != '>' {
-      value_end = value_end + 1
-    }
-    if value_end > start {
-      Some((make_substr(chars, start, value_end), value_end))
-    } else {
-      None
-    }
-  }
-}
-
-///|
 /// Extract img src attributes from HTML (lightweight, no full parsing)
 fn extract_img_srcs(html : String) -> Array[String] {
-  let srcs : Array[String] = []
-  let chars = html.to_array()
-  let len = chars.length()
-  let mut i = 0
-  while i < len {
-    if is_img_tag_start(chars, i) {
-      let mut j = i + 4
-      while j < len && chars[j] != '>' {
-        while j < len && chars[j].is_ascii_whitespace() {
-          j = j + 1
-        }
-        if j >= len || chars[j] == '>' {
-          break
-        }
-        if chars[j] == '/' {
-          j = j + 1
-          continue
-        }
-        let name_start = j
-        while j < len && is_html_attr_name_char(chars[j]) {
-          j = j + 1
-        }
-        let name_end = j
-        while j < len && chars[j].is_ascii_whitespace() {
-          j = j + 1
-        }
-        if j < len && chars[j] == '=' {
-          j = j + 1
-          while j < len && chars[j].is_ascii_whitespace() {
-            j = j + 1
-          }
-          match read_html_attr_value(chars, j) {
-            Some((value, next_idx)) => {
-              if is_src_attr_name(chars, name_start, name_end) {
-                srcs.push(value)
-              }
-              j = next_idx
-            }
-            None => ()
-          }
-        }
-      }
-      i = j
-    } else {
-      i = i + 1
-    }
-  }
-  srcs
+  @browser_shell.extract_img_srcs(html)
 }
 
 ///|

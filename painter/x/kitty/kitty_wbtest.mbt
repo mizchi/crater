@@ -8,7 +8,7 @@ test "to_kitty encodes a single white pixel" {
 
 ///|
 test "to_kitty splits large payload into multiple kitty chunks" {
-  let pixels_per_chunk = kitty_chunk_size / 4
+  let pixels_per_chunk = @kitty_protocol.chunk_size() / 4
   let fb = @image.Framebuffer::new(pixels_per_chunk + 1, 1)
   let palette = @image.DynamicPalette::new()
   let encoded = to_kitty(fb, palette)

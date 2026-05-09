@@ -82,13 +82,6 @@ fn apply_browser_normal_line_height_if_needed(
 let current_cellpadding : Ref[Double] = { val: -1.0 }
 
 ///|
-fn view_to_string(v : StringView) -> String {
-  let sb = StringBuilder::new()
-  sb.write_stringview(v)
-  sb.to_string()
-}
-
-///|
 /// Check if a character is East Asian Wide (CJK characters that take 2 columns)
 fn is_wide_char(c : Char) -> Bool {
   let cp = c.to_int()
