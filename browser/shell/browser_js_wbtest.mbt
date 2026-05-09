@@ -5248,6 +5248,53 @@ test "Browser set_html_content eagerly normalizes declarative shadow DOM source"
 }
 
 ///|
+test "Browser caches prepared render document for repeated graphics renders" {
+  let browser = Browser::new(160, 120, terminal_cols=20)
+  let html =
+    #|<html>
+    #|<head>
+    #|  <style>
+    #|    body { margin: 0; background: #fff; }
+    #|    .card { width: 80px; height: 40px; background: #1463ff; }
+    #|  </style>
+    #|</head>
+    #|<body><div class="card">cached</div></body>
+    #|</html>
+  browser.set_html_content(html)
+  inspect(browser.prepared_render_document is None, content="true")
+  let first = browser.render_output(Sixel)
+  assert_true(first.length() > 0)
+  inspect(browser.prepared_render_document is Some(_), content="true")
+  let second = browser.render_output(Sixel)
+  assert_eq(second, first)
+  inspect(browser.prepared_render_document is Some(_), content="true")
+  browser.set_html_content("<html><body><p>next</p></body></html>")
+  inspect(browser.prepared_render_document is None, content="true")
+}
+
+///|
+test "Browser caches graphics node and layout for repeated graphics renders" {
+  let browser = Browser::new(160, 120, terminal_cols=20)
+  let html =
+    #|<html>
+    #|<head><style>body { margin: 0; } .card { width: 80px; height: 40px; background: #1463ff; }</style></head>
+    #|<body><div class="card">cached</div></body>
+    #|</html>
+  browser.set_html_content(html)
+  inspect(browser.graphics_render_node is None, content="true")
+  inspect(browser.graphics_layout is None, content="true")
+  ignore(browser.render_output(Sixel))
+  inspect(browser.graphics_render_node is Some(_), content="true")
+  inspect(browser.graphics_layout is Some(_), content="true")
+  ignore(browser.render_output(Kitty))
+  inspect(browser.graphics_render_node is Some(_), content="true")
+  inspect(browser.graphics_layout is Some(_), content="true")
+  browser.set_html_content("<html><body><p>next</p></body></html>")
+  inspect(browser.graphics_render_node is None, content="true")
+  inspect(browser.graphics_layout is None, content="true")
+}
+
+///|
 test "Browser set_html_content rebuilds link cache from normalized shadow content" {
   let browser = Browser::new(800, 600)
   let html =
