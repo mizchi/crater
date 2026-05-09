@@ -39,11 +39,33 @@ test "bench_browser_sixel_github_mizchi_snapshot" (b : @bench.T) {
 }
 
 ///|
+test "bench_browser_sixel_github_mizchi_hot_snapshot" (b : @bench.T) {
+  let browser = @shell.Browser::new(1440, 960)
+  let html = builtin_github_snapshot_fixture()
+  load_fixture(browser, html)
+  ignore(browser.render_output(@shell.OutputMode::Sixel))
+  b.bench(name="browser_sixel_github_mizchi_hot", fn() {
+    b.keep(browser.render_output(@shell.OutputMode::Sixel))
+  })
+}
+
+///|
 test "bench_browser_kitty_github_mizchi_snapshot" (b : @bench.T) {
   let browser = @shell.Browser::new(1440, 960)
   let html = builtin_github_snapshot_fixture()
   b.bench(name="browser_kitty_github_mizchi", fn() {
     load_fixture(browser, html)
+    b.keep(browser.render_output(@shell.OutputMode::Kitty))
+  })
+}
+
+///|
+test "bench_browser_kitty_github_mizchi_hot_snapshot" (b : @bench.T) {
+  let browser = @shell.Browser::new(1440, 960)
+  let html = builtin_github_snapshot_fixture()
+  load_fixture(browser, html)
+  ignore(browser.render_output(@shell.OutputMode::Kitty))
+  b.bench(name="browser_kitty_github_mizchi_hot", fn() {
     b.keep(browser.render_output(@shell.OutputMode::Kitty))
   })
 }
@@ -55,6 +77,48 @@ test "bench_browser_kitty_article_fixed" (b : @bench.T) {
   b.bench(name="browser_kitty_article", fn() {
     load_fixture(browser, html)
     b.keep(browser.render_output(@shell.OutputMode::Kitty))
+  })
+}
+
+///|
+test "bench_browser_github_mizchi_parse_document" (b : @bench.T) {
+  let html = builtin_github_snapshot_fixture()
+  b.bench(name="browser_github_mizchi_parse_document", fn() {
+    b.keep(@html.assign_synthetic_ids(@html.parse_document(html)))
+  })
+}
+
+///|
+test "bench_browser_github_mizchi_set_html_content" (b : @bench.T) {
+  let browser = @shell.Browser::new(1440, 960)
+  let html = builtin_github_snapshot_fixture()
+  b.bench(name="browser_github_mizchi_set_html_content", fn() {
+    load_fixture(browser, html)
+    b.keep(browser.get_link_count())
+  })
+}
+
+///|
+test "bench_browser_github_mizchi_prepare_document" (b : @bench.T) {
+  let html = builtin_github_snapshot_fixture()
+  let ctx = github_snapshot_render_ctx()
+  let doc = @html.assign_synthetic_ids(@html.parse_document(html))
+  b.bench(name="browser_github_mizchi_prepare_document", fn() {
+    b.keep(@renderer.prepare_render_document(doc, ctx, []))
+  })
+}
+
+///|
+test "bench_browser_github_mizchi_node_layout_prepared_document" (b : @bench.T) {
+  let html = builtin_github_snapshot_fixture()
+  let ctx = github_snapshot_render_ctx()
+  let doc = @html.assign_synthetic_ids(@html.parse_document(html))
+  let prepared = @renderer.prepare_render_document(doc, ctx, [])
+  b.bench(name="browser_github_mizchi_node_layout_prepared_document", fn() {
+    let node = @renderer.build_render_root_node(doc, ctx, prepared)
+    let layout = @renderer.compute_layout_from_render_root(node, prepared, ctx)
+    b.keep(node)
+    b.keep(layout)
   })
 }
 

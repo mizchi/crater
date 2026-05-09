@@ -3,6 +3,7 @@ pub using @renderer_api {
   type CssMutation,
   type CssMutationAction,
   type PreparedExternalCss,
+  type PreparedVrtPage,
   type RenderVariant,
   type RenderVariantResult,
 }
@@ -103,6 +104,40 @@ pub fn prepare_external_css(
   external_css : Array[String],
 ) -> PreparedExternalCss {
   @renderer_api.prepare_external_css(external_css)
+}
+
+///|
+pub fn prepare_vrt_page(
+  html : String,
+  viewport : @types.Size[Double],
+  external_css : Array[String],
+) -> PreparedVrtPage {
+  @renderer_api.prepare_vrt_page(html, viewport, external_css)
+}
+
+///|
+pub fn prepare_vrt_page_with_prepared_external_css(
+  html : String,
+  viewport : @types.Size[Double],
+  external_css : PreparedExternalCss,
+) -> PreparedVrtPage {
+  @renderer_api.prepare_vrt_page_with_prepared_external_css(
+    html, viewport, external_css,
+  )
+}
+
+///|
+pub fn render_prepared_vrt_page_to_paint_tree(
+  page : PreparedVrtPage,
+) -> @paint.PaintNode {
+  @renderer_api.render_prepared_vrt_page_to_paint_tree(page)
+}
+
+///|
+pub fn render_prepared_vrt_page_to_paint_tree_json(
+  page : PreparedVrtPage,
+) -> String {
+  @renderer_api.render_prepared_vrt_page_to_paint_tree_json(page)
 }
 
 ///|

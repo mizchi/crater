@@ -6,6 +6,7 @@ import {
   "mizchi/crater-browser-contract" @browser_contract,
   "mizchi/crater-dom/aom",
   "mizchi/crater-layout" @layout,
+  "mizchi/crater-layout/types",
   "mizchi/crater-dom/dom",
   "mizchi/crater-dom/scheduler",
   "mizchi/crater-browser-http" @http,
@@ -31,6 +32,7 @@ supported_targets = "js+native"
 
 options(
   targets: {
+    "browser_fixture_support_wbtest.mbt": [ "js" ],
     "browser_js_wbtest.mbt": [ "js" ],
     "perf_js.mbt": [ "js" ],
     "perf_js_wbtest.mbt": [ "js" ],

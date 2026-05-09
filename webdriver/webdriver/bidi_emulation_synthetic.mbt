@@ -161,26 +161,15 @@ fn BidiProtocol::resolve_effective_user_agent(
   self : BidiProtocol,
   ctx_id : String,
 ) -> String {
-  let ancestry = self.storage_context_ancestry(ctx_id)
-  let mut index = ancestry.length()
-  while index > 0 {
-    index = index - 1
-    let scope_id = ancestry[index]
-    match self.emulation_user_agent_by_context.get(scope_id) {
-      Some(user_agent) => return user_agent
-      None => ()
-    }
-  }
-  let user_context_id = self.context_user_context
-    .get(ctx_id)
-    .unwrap_or("default")
-  match self.emulation_user_agent_by_user_context.get(user_context_id) {
+  match
+    self.resolve_effective_scoped_override(
+      ctx_id,
+      self.emulation_user_agent_by_context,
+      self.emulation_user_agent_by_user_context,
+      self.emulation_user_agent_global,
+    ) {
     Some(user_agent) => user_agent
-    None =>
-      match self.emulation_user_agent_global {
-        Some(user_agent) => user_agent
-        None => default_runtime_user_agent()
-      }
+    None => default_runtime_user_agent()
   }
 }
 
@@ -189,26 +178,15 @@ fn BidiProtocol::resolve_effective_locale(
   self : BidiProtocol,
   ctx_id : String,
 ) -> String {
-  let ancestry = self.storage_context_ancestry(ctx_id)
-  let mut index = ancestry.length()
-  while index > 0 {
-    index = index - 1
-    let scope_id = ancestry[index]
-    match self.emulation_locale_by_context.get(scope_id) {
-      Some(locale) => return locale
-      None => ()
-    }
-  }
-  let user_context_id = self.context_user_context
-    .get(ctx_id)
-    .unwrap_or("default")
-  match self.emulation_locale_by_user_context.get(user_context_id) {
+  match
+    self.resolve_effective_scoped_override(
+      ctx_id,
+      self.emulation_locale_by_context,
+      self.emulation_locale_by_user_context,
+      self.emulation_locale_global,
+    ) {
     Some(locale) => locale
-    None =>
-      match self.emulation_locale_global {
-        Some(locale) => locale
-        None => default_runtime_locale()
-      }
+    None => default_runtime_locale()
   }
 }
 
@@ -217,26 +195,15 @@ fn BidiProtocol::resolve_effective_timezone(
   self : BidiProtocol,
   ctx_id : String,
 ) -> String {
-  let ancestry = self.storage_context_ancestry(ctx_id)
-  let mut index = ancestry.length()
-  while index > 0 {
-    index = index - 1
-    let scope_id = ancestry[index]
-    match self.emulation_timezone_by_context.get(scope_id) {
-      Some(timezone) => return timezone
-      None => ()
-    }
-  }
-  let user_context_id = self.context_user_context
-    .get(ctx_id)
-    .unwrap_or("default")
-  match self.emulation_timezone_by_user_context.get(user_context_id) {
+  match
+    self.resolve_effective_scoped_override(
+      ctx_id,
+      self.emulation_timezone_by_context,
+      self.emulation_timezone_by_user_context,
+      self.emulation_timezone_global,
+    ) {
     Some(timezone) => timezone
-    None =>
-      match self.emulation_timezone_global {
-        Some(timezone) => timezone
-        None => default_runtime_timezone()
-      }
+    None => default_runtime_timezone()
   }
 }
 

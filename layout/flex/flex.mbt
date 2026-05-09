@@ -4137,12 +4137,6 @@ fn compute_internal(
   // - flex-direction: column flows horizontally (like row in horizontal-tb)
   let is_vertical_writing = style.writing_mode.is_vertical()
   let is_block_rtl = style.writing_mode.is_block_rtl()
-  // Check if width is a fixed length (used for intrinsic sizing decisions)
-  let width_is_length = match style.width {
-    @types.Length(_) => true
-    _ => false
-  }
-  let _ = width_is_length // silence unused warning for now
   let effective_direction = style.flex_direction
   let is_rtl = style.direction.is_rtl()
   let axis = @alignment.resolve_flex_axis(

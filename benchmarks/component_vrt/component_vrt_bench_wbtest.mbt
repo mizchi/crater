@@ -803,6 +803,17 @@ fn render_fixture_node_and_layout(
 }
 
 ///|
+fn render_prepared_fixture_node_and_layout(
+  doc : @html.Document,
+  ctx : @renderer.RenderContext,
+  prepared : @renderer.PreparedRenderDocument,
+) -> (@layout.Node, @types.Layout) {
+  let node = @renderer.build_render_root_node(doc, ctx, prepared)
+  let layout = @renderer.compute_layout_from_render_root(node, prepared, ctx)
+  (node, layout)
+}
+
+///|
 fn render_component_subtree(
   fixture : ComponentFixture,
 ) -> (@layout.Node, @types.Layout) {
@@ -994,6 +1005,35 @@ test "bench_component_phase_node_layout_m" (b : @bench.T) {
         css,
       ),
     )
+  })
+}
+
+///|
+test "bench_component_phase_node_layout_m_prepared_css" (b : @bench.T) {
+  let fixture = component_fixture_m()
+  let doc = @html.parse_document(fixture.html)
+  let ctx = fixture.render_ctx()
+  let css = @renderer.prepare_external_css(fixture.external_css())
+  b.bench(name="component_phase_node_layout_m_prepared_css", fn() {
+    b.keep(
+      @renderer.render_to_node_and_layout_with_prepared_external_css(
+        doc, ctx, css,
+      ),
+    )
+  })
+}
+
+///|
+test "bench_component_phase_node_layout_m_prepared_document" (b : @bench.T) {
+  let fixture = component_fixture_m()
+  let doc = @html.parse_document(fixture.html)
+  let ctx = fixture.render_ctx()
+  let css = @renderer.prepare_external_css(fixture.external_css())
+  let prepared = @renderer.prepare_render_document_with_prepared_external_css(
+    doc, ctx, css,
+  )
+  b.bench(name="component_phase_node_layout_m_prepared_document", fn() {
+    b.keep(render_prepared_fixture_node_and_layout(doc, ctx, prepared))
   })
 }
 

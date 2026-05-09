@@ -2,6 +2,7 @@
 package "mizchi/crater-renderer/vrt"
 
 import {
+  "mizchi/crater-dom/html",
   "mizchi/crater-layout/types",
   "mizchi/crater-painter/paint/diff",
   "mizchi/crater-painter/paint/model",
@@ -12,6 +13,12 @@ import {
 // Values
 pub fn diff_rendered_paint_trees(String, String, @types.Size[Double]) -> @diff.PaintTreeDiff
 
+pub fn prepare_external_css(Array[String]) -> @renderer.PreparedExternalCss
+
+pub fn prepare_vrt_page(String, @types.Size[Double], Array[String]) -> PreparedVrtPage
+
+pub fn prepare_vrt_page_with_prepared_external_css(String, @types.Size[Double], @renderer.PreparedExternalCss) -> PreparedVrtPage
+
 pub fn render_html_batch_variants(String, @types.Size[Double], Array[RenderVariant]) -> Array[RenderVariantResult]
 
 pub fn render_html_to_paint_tree(String, @types.Size[Double]) -> @model.PaintNode
@@ -21,6 +28,10 @@ pub fn render_html_to_paint_tree_json(String, @types.Size[Double]) -> String
 pub fn render_html_to_paint_tree_with_external_css(String, @types.Size[Double], Array[String]) -> @model.PaintNode
 
 pub fn render_html_to_paint_tree_with_prepared_external_css(String, @types.Size[Double], @renderer.PreparedExternalCss) -> @model.PaintNode
+
+pub fn render_prepared_vrt_page_to_paint_tree(PreparedVrtPage) -> @model.PaintNode
+
+pub fn render_prepared_vrt_page_to_paint_tree_json(PreparedVrtPage) -> String
 
 // Errors
 
@@ -37,6 +48,13 @@ pub(all) enum CssMutationAction {
   Override(String)
 } derive(Eq, @debug.Debug)
 pub impl Show for CssMutationAction
+
+pub(all) struct PreparedVrtPage {
+  doc : @html.Document
+  viewport : @types.Size[Double]
+  ctx : @renderer.RenderContext
+  prepared : @renderer.PreparedRenderDocument
+}
 
 pub(all) struct RenderVariant {
   id : String

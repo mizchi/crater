@@ -1,4 +1,5 @@
 import {
+  "mizchi/crater-layout" @layout,
   "mizchi/crater-layout/types",
   "mizchi/crater-dom/html",
   "mizchi/crater-painter/paint/model" @paint_model,

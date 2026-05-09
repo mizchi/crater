@@ -248,6 +248,33 @@ priv struct BidiProtocol {
 }
 
 ///|
+fn[T] BidiProtocol::resolve_effective_scoped_override(
+  self : BidiProtocol,
+  ctx_id : String,
+  by_context : Map[String, T],
+  by_user_context : Map[String, T],
+  global : T?,
+) -> T? {
+  let ancestry = self.storage_context_ancestry(ctx_id)
+  let mut index = ancestry.length()
+  while index > 0 {
+    index = index - 1
+    let scope_id = ancestry[index]
+    match by_context.get(scope_id) {
+      Some(override_value) => return Some(override_value)
+      None => ()
+    }
+  }
+  let user_context_id = self.context_user_context
+    .get(ctx_id)
+    .unwrap_or("default")
+  match by_user_context.get(user_context_id) {
+    Some(override_value) => Some(override_value)
+    None => global
+  }
+}
+
+///|
 /// Create new BiDi protocol instance
 fn BidiProtocol::new() -> BidiProtocol {
   let user_contexts : Map[String, Bool] = {}
@@ -1497,7 +1524,7 @@ fn BidiProtocol::dispatch_session(
       }
       let session_id = "bidi-" + request.id.to_string()
       let ctx_id = self.ensure_default_context()
-      let caps = self.build_capabilities()
+      let caps = build_capabilities()
       let result = make_object({
         "sessionId": Json::string(session_id),
         "capabilities": caps,
@@ -10336,7 +10363,7 @@ fn BidiProtocol::handle_input_perform_actions(
             normalized_key,
             action_type == "keyDown",
           )
-          self.dispatch_interaction_key_command(
+          dispatch_interaction_key_command(
             bidi_key_interaction_command(action_type, normalized_key),
             key_value,
             ctrl,
@@ -10532,7 +10559,7 @@ fn BidiProtocol::handle_input_perform_actions(
             let should_emit_move = pointer_type == "mouse" ||
               button_state_contains(buttons, button_to_mask(0))
             if should_emit_move {
-              self.dispatch_interaction_hover_sequence(
+              dispatch_interaction_hover_sequence(
                 @interaction.pointer_hover_event_sequence(
                   pointer_type,
                   previous_target_shared != "" &&
@@ -10724,7 +10751,7 @@ fn BidiProtocol::handle_input_perform_actions(
                 width, height, pressure, tangential_pressure, twist, altitude_angle,
                 azimuth_angle,
               )
-              self.dispatch_interaction_pointer_sequence(
+              dispatch_interaction_pointer_sequence(
                 @interaction.pointer_press_event_sequence(pointer_type, button),
                 target_shared,
                 current_x,
@@ -10823,7 +10850,7 @@ fn BidiProtocol::handle_input_perform_actions(
               input_set_pointer_event_properties(
                 width, height, 0.0, tangential_pressure, twist, altitude_angle, azimuth_angle,
               )
-              self.dispatch_interaction_pointer_sequence(
+              dispatch_interaction_pointer_sequence(
                 @interaction.pointer_release_event_sequence(
                   pointer_type, button,
                 ),
@@ -10842,7 +10869,7 @@ fn BidiProtocol::handle_input_perform_actions(
                 ctrl &&
                 input_is_mac_platform()
               if is_mac_ctrl_left_click {
-                self.dispatch_interaction_pointer_sequence(
+                dispatch_interaction_pointer_sequence(
                   @interaction.pointer_post_release_mouse_event_sequence(
                     button, true, false, false,
                   ),
@@ -10969,7 +10996,7 @@ fn BidiProtocol::handle_input_perform_actions(
                 let was_dragged = self.input_pointer_dragged
                   .get(ctx_id)
                   .unwrap_or(false)
-                self.dispatch_interaction_pointer_sequence(
+                dispatch_interaction_pointer_sequence(
                   @interaction.pointer_post_release_mouse_event_sequence(
                     button,
                     false,
@@ -11012,7 +11039,7 @@ fn BidiProtocol::handle_input_perform_actions(
                 }
                 self.input_html_drag_transfer_id.remove(ctx_id)
               } else if button == 2 {
-                self.dispatch_interaction_pointer_sequence(
+                dispatch_interaction_pointer_sequence(
                   @interaction.pointer_post_release_mouse_event_sequence(
                     button, true, false, false,
                   ),
@@ -11028,7 +11055,7 @@ fn BidiProtocol::handle_input_perform_actions(
                 )
                 self.input_pending_double_click.remove(ctx_id)
               } else {
-                self.dispatch_interaction_pointer_sequence(
+                dispatch_interaction_pointer_sequence(
                   @interaction.pointer_post_release_mouse_event_sequence(
                     button, false, false, false,
                   ),
@@ -11195,7 +11222,7 @@ fn BidiProtocol::handle_input_release_actions(
     let (ctrl, alt, shift, meta) = self.resolve_input_modifiers(
       ctx_id, "", false,
     )
-    self.dispatch_interaction_key_command(
+    dispatch_interaction_key_command(
       bidi_key_interaction_command("keyUp", key),
       dispatch_key,
       ctrl,
@@ -11212,7 +11239,7 @@ fn BidiProtocol::handle_input_release_actions(
   let target_shared = self.input_pointer_target_shared.get(ctx_id).unwrap_or("")
   let current_buttons = self.input_pointer_buttons.get(ctx_id).unwrap_or(0)
   if button_state_contains(current_buttons, button_to_mask(2)) {
-    self.dispatch_interaction_pointer_command(
+    dispatch_interaction_pointer_command(
       bidi_pointer_interaction_command("pointerUp", current_x, current_y, 2),
       target_shared,
       current_x,
@@ -11239,7 +11266,7 @@ fn BidiProtocol::handle_input_release_actions(
     )
   }
   if button_state_contains(current_buttons, button_to_mask(1)) {
-    self.dispatch_interaction_pointer_command(
+    dispatch_interaction_pointer_command(
       bidi_pointer_interaction_command("pointerUp", current_x, current_y, 1),
       target_shared,
       current_x,
@@ -11266,7 +11293,7 @@ fn BidiProtocol::handle_input_release_actions(
     )
   }
   if button_state_contains(current_buttons, button_to_mask(0)) {
-    self.dispatch_interaction_pointer_command(
+    dispatch_interaction_pointer_command(
       bidi_pointer_interaction_command("pointerUp", current_x, current_y, 0),
       target_shared,
       current_x,
@@ -11997,7 +12024,6 @@ fn BidiProtocol::ensure_pointer_within_viewport(
   x : Double,
   y : Double,
 ) -> Bool {
-  let _ = self
   if x < 0.0 || y < 0.0 || x > 1024.0 || y > 768.0 {
     self.send_error(
       request_id, "move target out of bounds", "Target coordinate is outside viewport",
@@ -17655,8 +17681,7 @@ fn BidiProtocol::get_or_create_sandbox_realm(
 
 ///|
 /// Build capabilities response
-fn BidiProtocol::build_capabilities(self : BidiProtocol) -> Json {
-  let _ = self
+fn build_capabilities() -> Json {
   make_object({
     "browserName": Json::string("crater"),
     "browserVersion": Json::string("0.1.0"),

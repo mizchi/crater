@@ -53,7 +53,7 @@ fn DomTree::query_recursive(
   let node = self.nodes.get(node_id)
   guard node is Some(node) else { return }
   // Check if this node matches
-  if self.matches_selector(node, selector) {
+  if matches_selector(node, selector) {
     results.push(NodeId(node_id))
   }
   // Recurse into children
@@ -64,13 +64,7 @@ fn DomTree::query_recursive(
 
 ///|
 /// Check if node matches selector (simplified)
-fn DomTree::matches_selector(
-  self : DomTree,
-  node : DomNode,
-  selector : String,
-) -> Bool {
-  // Suppress unused warning
-  let _ = self
+fn matches_selector(node : DomNode, selector : String) -> Bool {
   // Only match elements
   guard node.node_type == Element else { return false }
   // Simple selector matching

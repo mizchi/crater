@@ -14,6 +14,10 @@ pub fn diff_rendered_paint_trees(String, String, @types.Size[Double]) -> @diff.P
 
 pub fn prepare_external_css(Array[String]) -> @renderer.PreparedExternalCss
 
+pub fn prepare_vrt_page(String, @types.Size[Double], Array[String]) -> @vrt.PreparedVrtPage
+
+pub fn prepare_vrt_page_with_prepared_external_css(String, @types.Size[Double], @renderer.PreparedExternalCss) -> @vrt.PreparedVrtPage
+
 pub fn render_html_batch_variants(String, @types.Size[Double], Array[@vrt.RenderVariant]) -> Array[@vrt.RenderVariantResult]
 
 pub fn render_html_to_paint_tree(String, @types.Size[Double]) -> @model.PaintNode
@@ -23,6 +27,10 @@ pub fn render_html_to_paint_tree_json(String, @types.Size[Double]) -> String
 pub fn render_html_to_paint_tree_with_external_css(String, @types.Size[Double], Array[String]) -> @model.PaintNode
 
 pub fn render_html_to_paint_tree_with_prepared_external_css(String, @types.Size[Double], @renderer.PreparedExternalCss) -> @model.PaintNode
+
+pub fn render_prepared_vrt_page_to_paint_tree(@vrt.PreparedVrtPage) -> @model.PaintNode
+
+pub fn render_prepared_vrt_page_to_paint_tree_json(@vrt.PreparedVrtPage) -> String
 
 // Errors
 
@@ -34,6 +42,8 @@ pub using @vrt {type CssMutation}
 pub using @vrt {type CssMutationAction}
 
 pub using @renderer {type PreparedExternalCss}
+
+pub using @vrt {type PreparedVrtPage}
 
 pub using @vrt {type RenderVariant}
 

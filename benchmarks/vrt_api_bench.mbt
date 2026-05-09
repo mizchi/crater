@@ -473,3 +473,30 @@ test "bench_vrt_render_paint_tree_github_prepared_css_handle" (b : @bench.T) {
     b.keep(build_vrt_paint_tree(node, layout, viewport))
   })
 }
+
+///|
+test "bench_vrt_phase_prepare_github_prepared_page" (b : @bench.T) {
+  let html = github_fixture_html()
+  let viewport = github_fixture_viewport()
+  let external_css = @vrt.prepare_external_css(github_fixture_external_css())
+  b.bench(name="vrt_phase_prepare_github_prepared_page", fn() {
+    b.keep(
+      @vrt.prepare_vrt_page_with_prepared_external_css(
+        html, viewport, external_css,
+      ),
+    )
+  })
+}
+
+///|
+test "bench_vrt_render_paint_tree_github_prepared_page" (b : @bench.T) {
+  let html = github_fixture_html()
+  let viewport = github_fixture_viewport()
+  let external_css = @vrt.prepare_external_css(github_fixture_external_css())
+  let page = @vrt.prepare_vrt_page_with_prepared_external_css(
+    html, viewport, external_css,
+  )
+  b.bench(name="vrt_render_paint_tree_github_prepared_page", fn() {
+    b.keep(@vrt.render_prepared_vrt_page_to_paint_tree(page))
+  })
+}

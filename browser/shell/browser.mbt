@@ -99,8 +99,22 @@ struct Browser {
   mut dom_snapshot_html : String
   /// Parsed document (cached to avoid re-parsing)
   mut parsed_doc : @html.Document?
+  /// Whether current render HTML may contain declarative shadow DOM templates
+  mut html_has_declarative_shadow_dom : Bool
   /// External CSS content
   mut external_css : Array[String]
+  /// Prepared external CSS content
+  mut prepared_external_css : @renderer.PreparedExternalCss?
+  /// Prepared document/style state for the current HTML/CSS/render context
+  mut prepared_render_document : @renderer.PreparedRenderDocument?
+  /// Color-scheme flag used by prepared_render_document
+  mut prepared_render_document_dark : Bool
+  /// Cached render node for graphics output modes
+  mut graphics_render_node : @layout.Node?
+  /// Cached layout for graphics output modes
+  mut graphics_layout : @types.Layout?
+  /// Color-scheme flag used by graphics render cache
+  mut graphics_render_dark : Bool
   /// Links found in current page
   mut links : Array[Link]
   /// Currently focused link index (legacy, kept for compatibility)
@@ -213,7 +227,14 @@ pub fn Browser::new(
     source_html: "",
     dom_snapshot_html: "",
     parsed_doc: None,
+    html_has_declarative_shadow_dom: false,
     external_css: [],
+    prepared_external_css: None,
+    prepared_render_document: None,
+    prepared_render_document_dark: false,
+    graphics_render_node: None,
+    graphics_layout: None,
+    graphics_render_dark: false,
     links: [],
     focused_link: 0,
     scroll_y: 0,
@@ -288,6 +309,121 @@ pub fn Browser::set_image_cache_max_bytes(
 }
 
 ///|
+fn Browser::set_external_css(
+  self : Browser,
+  external_css : Array[String],
+) -> Unit {
+  self.external_css = external_css
+  self.prepared_external_css = Some(
+    @renderer.prepare_external_css(external_css),
+  )
+  self.prepared_render_document = None
+}
+
+///|
+fn Browser::external_css_handle(
+  self : Browser,
+) -> @renderer.PreparedExternalCss {
+  match self.prepared_external_css {
+    Some(prepared) => prepared
+    None => {
+      let prepared = @renderer.prepare_external_css(self.external_css)
+      self.prepared_external_css = Some(prepared)
+      prepared
+    }
+  }
+}
+
+///|
+fn Browser::clear_render_cache(self : Browser) -> Unit {
+  self.render_node = None
+  self.layout_tree = None
+  self.graphics_render_node = None
+  self.graphics_layout = None
+  self.prev_buffer = None
+  self.last_render_key = ""
+  self.prepared_render_document = None
+}
+
+///|
+fn Browser::prepare_render_document_for_context(
+  self : Browser,
+  doc : @html.Document,
+  ctx : @renderer.RenderContext,
+  dark : Bool,
+) -> @renderer.PreparedRenderDocument {
+  match self.prepared_render_document {
+    Some(prepared) if self.prepared_render_document_dark == dark => prepared
+    _ => {
+      let prepared = @renderer.prepare_render_document_with_prepared_external_css(
+        doc,
+        ctx,
+        self.external_css_handle(),
+      )
+      self.prepared_render_document = Some(prepared)
+      self.prepared_render_document_dark = dark
+      prepared
+    }
+  }
+}
+
+///|
+fn Browser::render_node_from_document(
+  self : Browser,
+  doc : @html.Document,
+  ctx : @renderer.RenderContext,
+  dark : Bool,
+) -> @layout.Node {
+  let prepared = self.prepare_render_document_for_context(doc, ctx, dark)
+  @renderer.build_render_root_node(doc, ctx, prepared)
+}
+
+///|
+fn Browser::render_node_and_layout_from_document(
+  self : Browser,
+  doc : @html.Document,
+  ctx : @renderer.RenderContext,
+  dark : Bool,
+) -> (@layout.Node, @types.Layout) {
+  let prepared = self.prepare_render_document_for_context(doc, ctx, dark)
+  let node = @renderer.build_render_root_node(doc, ctx, prepared)
+  let layout = @renderer.compute_layout_from_render_root(node, prepared, ctx)
+  (node, layout)
+}
+
+///|
+fn Browser::render_graphics_node_and_layout(
+  self : Browser,
+  ctx : @renderer.RenderContext,
+  dark : Bool,
+) -> (@layout.Node, @types.Layout) {
+  match (self.graphics_render_node, self.graphics_layout) {
+    (Some(node), Some(layout)) if self.graphics_render_dark == dark =>
+      (node, layout)
+    _ => {
+      let (node, layout) = match self.parsed_doc {
+        Some(doc) => self.render_node_and_layout_from_document(doc, ctx, dark)
+        None =>
+          @renderer.render_to_node_and_layout_with_external_css(
+            self.html_content,
+            ctx,
+            self.external_css,
+          )
+      }
+      self.graphics_render_node = Some(node)
+      self.graphics_layout = Some(layout)
+      self.graphics_render_dark = dark
+      (node, layout)
+    }
+  }
+}
+
+///|
+fn Browser::refresh_links_from_render_source(self : Browser) -> Unit {
+  self.links = extract_links(self.html_content)
+}
+
+///|
 /// Set a custom JS runtime for script execution (e.g. V8 for native).
 /// Must be called before any script execution (before navigate/load_html).
 pub fn Browser::set_js_runtime(
@@ -317,26 +453,31 @@ pub fn Browser::get_dom_tree(self : Browser) -> @dom.DomTree? {
 /// Set HTML content directly (for testing or headless rendering).
 pub fn Browser::set_html_content(self : Browser, html : String) -> Unit {
   self.source_html = html
-  match normalize_declarative_shadow_source_html(html) {
+  let has_declarative_shadow_dom = html_source_has_declarative_shadow_dom(html)
+  match
+    normalize_declarative_shadow_source_html_with_hint(
+      html, has_declarative_shadow_dom,
+    ) {
     Some(normalized) => {
       self.html_content = normalized.render_html
       self.dom_snapshot_html = normalized.snapshot_html
       self.parsed_doc = Some(normalized.parsed_doc)
+      self.html_has_declarative_shadow_dom = false
     }
     None => {
       self.html_content = html
       self.dom_snapshot_html = html
-      self.parsed_doc = None
+      self.parsed_doc = Some(
+        @html.assign_synthetic_ids(@html.parse_document(self.html_content)),
+      )
+      self.html_has_declarative_shadow_dom = has_declarative_shadow_dom
     }
   }
-  self.links = extract_links(self.html_content)
+  self.refresh_links_from_render_source()
   self.focused_link = 0
   self.scroll_y = 0
   self.clear_element_scroll_states()
-  self.render_node = None
-  self.layout_tree = None
-  self.prev_buffer = None
-  self.last_render_key = ""
+  self.clear_render_cache()
   self.content_height = 0
   self.a11y_tree = None
   self.focus_manager = None
@@ -568,7 +709,7 @@ fn Browser::load_sync_navigable_html_request(
       self.current_url = request.url
       self.last_navigation_request = Some(request)
       self.set_html_content(html)
-      self.external_css = []
+      self.set_external_css([])
       let script_count = self.execute_scripts()
       if script_count > 0 {
         println(
@@ -748,31 +889,40 @@ async fn Browser::load_url_request(
     None => ()
   }
   self.source_html = response.body
-  match normalize_declarative_shadow_source_html(response.body) {
+  let has_declarative_shadow_dom = html_source_has_declarative_shadow_dom(
+    response.body,
+  )
+  match
+    normalize_declarative_shadow_source_html_with_hint(
+      response.body,
+      has_declarative_shadow_dom,
+    ) {
     Some(normalized) => {
       self.html_content = normalized.render_html
       self.dom_snapshot_html = normalized.snapshot_html
       self.parsed_doc = Some(normalized.parsed_doc)
+      self.html_has_declarative_shadow_dom = false
     }
     None => {
       self.html_content = response.body
       self.dom_snapshot_html = response.body
       self.parsed_doc = None
+      self.html_has_declarative_shadow_dom = has_declarative_shadow_dom
     }
   }
   let t1 = perf_now()
   // Fetch external CSS using lightweight extraction (no full parsing)
-  self.external_css = fetch_external_css(
-    self.html_content,
-    url,
-    self.request_sandbox,
-    self.http_cache,
-  ) catch {
-    _ => [] // Fallback to no external CSS on error
-  }
+  self.set_external_css(
+    fetch_external_css(
+      self.html_content,
+      url,
+      self.request_sandbox,
+      self.http_cache,
+    ) catch {
+      _ => [] // Fallback to no external CSS on error
+    },
+  )
   let t2 = perf_now()
-  // Extract links from HTML (lightweight, no full parsing)
-  self.links = extract_links(self.html_content)
   self.focused_link = 0
   self.scroll_y = 0
   // Clear element scroll states on navigation
@@ -787,10 +937,8 @@ async fn Browser::load_url_request(
       self.parsed_doc = Some(doc)
     }
   }
-  self.render_node = None
-  self.layout_tree = None
-  self.prev_buffer = None
-  self.last_render_key = ""
+  self.refresh_links_from_render_source()
+  self.clear_render_cache()
   let t3 = perf_now()
   // Execute scripts including external (JS execution)
   let script_count = self.execute_scripts_async() catch { _ => 0 }
@@ -837,20 +985,29 @@ async fn Browser::load_url_lightweight(
   }
   let response = @http.fetch(url, options=page_options)
   self.source_html = response.body
-  match normalize_declarative_shadow_source_html(response.body) {
+  let has_declarative_shadow_dom = html_source_has_declarative_shadow_dom(
+    response.body,
+  )
+  match
+    normalize_declarative_shadow_source_html_with_hint(
+      response.body,
+      has_declarative_shadow_dom,
+    ) {
     Some(normalized) => {
       self.html_content = normalized.render_html
       self.dom_snapshot_html = normalized.snapshot_html
       self.parsed_doc = Some(normalized.parsed_doc)
+      self.html_has_declarative_shadow_dom = false
     }
     None => {
       self.html_content = response.body
       self.dom_snapshot_html = response.body
       self.parsed_doc = None
+      self.html_has_declarative_shadow_dom = has_declarative_shadow_dom
     }
   }
   // Skip external CSS fetching in lightweight mode
-  self.external_css = []
+  self.set_external_css([])
   // Skip link extraction (not needed for JSON/AOM output)
   self.links = []
   self.focused_link = 0
@@ -867,10 +1024,7 @@ async fn Browser::load_url_lightweight(
       self.parsed_doc = Some(doc)
     }
   }
-  self.render_node = None
-  self.layout_tree = None
-  self.prev_buffer = None
-  self.last_render_key = ""
+  self.clear_render_cache()
   // Skip content height calculation in lightweight mode
   self.content_height = 0
   // Build lightweight accessibility tree (no CSS cascade, no layout)
@@ -959,12 +1113,18 @@ fn Browser::render(self : Browser) -> String {
     return ""
   }
   let installed_provider = self.install_sixel_image_provider()
-  let output = @renderer.render_to_sixel_with_css(
-    self.html_content,
+  let ctx = @browser_contract.create_render_context(
+    self.viewport_width,
+    self.viewport_height,
+    false,
+  )
+  let (node, layout) = self.render_graphics_node_and_layout(ctx, false)
+  let output = @image.render_with_styles_scrolled(
+    node,
+    layout,
     self.viewport_width,
     self.viewport_height,
     self.scroll_y,
-    self.external_css,
   )
   if installed_provider {
     @image.clear_image_provider()
@@ -978,14 +1138,20 @@ fn Browser::render_kitty(self : Browser) -> String {
   if self.html_content.length() == 0 {
     return ""
   }
-  let base = @renderer.render_to_kitty_with_css(
-    self.html_content,
+  let ctx = @browser_contract.create_render_context(
+    self.viewport_width,
+    self.viewport_height,
+    false,
+  )
+  let (node, layout) = self.render_graphics_node_and_layout(ctx, false)
+  let paint_node = @tui_paint_plain.from_node_and_layout(node, layout)
+  let base = @kitty.render_paint_node_to_kitty_scrolled(
+    paint_node,
     self.viewport_width,
     self.viewport_height,
     self.scroll_y,
-    self.external_css,
   )
-  self.collect_graphics_image_regions()
+  self.collect_graphics_image_regions_from_node_layout(node, layout)
   let overlay = self.build_kitty_image_overlay()
   if overlay.length() > 0 {
     base + overlay
@@ -1002,15 +1168,21 @@ async fn[T : @io.Writer] Browser::write_kitty_output(
   if self.html_content.length() == 0 {
     return
   }
-  @renderer.write_kitty_with_css(
+  let ctx = @browser_contract.create_render_context(
+    self.viewport_width,
+    self.viewport_height,
+    false,
+  )
+  let (node, layout) = self.render_graphics_node_and_layout(ctx, false)
+  let paint_node = @tui_paint_plain.from_node_and_layout(node, layout)
+  @kitty.write_paint_node_to_kitty_scrolled(
     writer,
-    self.html_content,
+    paint_node,
     self.viewport_width,
     self.viewport_height,
     self.scroll_y,
-    self.external_css,
   )
-  self.collect_graphics_image_regions()
+  self.collect_graphics_image_regions_from_node_layout(node, layout)
   let overlay = self.build_kitty_image_overlay()
   if overlay.length() > 0 {
     writer.write(overlay) catch {
@@ -1032,10 +1204,7 @@ fn Browser::render_text(self : Browser) -> String {
     self.dark_mode,
   )
   if self.last_color_scheme_dark != self.dark_mode {
-    self.render_node = None
-    self.layout_tree = None
-    self.prev_buffer = None
-    self.last_render_key = ""
+    self.clear_render_cache()
   }
   let mut force_full = false
   // Build or reuse cached render node + layout tree
@@ -1045,8 +1214,7 @@ fn Browser::render_text(self : Browser) -> String {
       force_full = true
       let rn0 = perf_now()
       let n = match self.parsed_doc {
-        Some(doc) =>
-          @renderer.render_to_node_with_document(doc, ctx, self.external_css)
+        Some(doc) => self.render_node_from_document(doc, ctx, self.dark_mode)
         None =>
           @renderer.render_to_node_with_external_css(
             self.html_content,
@@ -1237,58 +1405,11 @@ fn Browser::render_text(self : Browser) -> String {
 }
 
 ///|
-fn Browser::collect_graphics_image_regions(self : Browser) -> Unit {
-  if self.html_content.length() == 0 {
-    self.image_regions = []
-    return
-  }
-  let ctx = @browser_contract.create_render_context(
-    self.viewport_width,
-    self.viewport_height,
-    self.dark_mode,
-  )
-  let render_node = match (self.render_node, self.layout_tree) {
-    (Some(node), Some(_tree)) => node
-    _ => {
-      let n = match self.parsed_doc {
-        Some(doc) =>
-          @renderer.render_to_node_with_document(doc, ctx, self.external_css)
-        None =>
-          @renderer.render_to_node_with_external_css(
-            self.html_content,
-            ctx,
-            self.external_css,
-          )
-      }
-      let tree = @layout.LayoutTree::from_node(
-        n,
-        self.viewport_width.to_double(),
-        self.viewport_height.to_double(),
-      )
-      self.render_node = Some(n)
-      self.layout_tree = Some(tree)
-      n
-    }
-  }
-  let layout = match self.layout_tree {
-    Some(tree) => {
-      let l = tree.compute_incremental()
-      tree.mark_all_layouts_seen()
-      self.layout_tree = Some(tree)
-      l
-    }
-    None => {
-      let tree = @layout.LayoutTree::from_node(
-        render_node,
-        self.viewport_width.to_double(),
-        self.viewport_height.to_double(),
-      )
-      let l = tree.compute_incremental()
-      tree.mark_all_layouts_seen()
-      self.layout_tree = Some(tree)
-      l
-    }
-  }
+fn Browser::collect_graphics_image_regions_from_node_layout(
+  self : Browser,
+  render_node : @layout.Node,
+  layout : @types.Layout,
+) -> Unit {
   let char_width = self.viewport_width / 8
   let char_height = self.viewport_height / 16
   let char_scroll_y = self.scroll_y / 16
@@ -1343,17 +1464,13 @@ pub fn Browser::render_text_full_page(self : Browser) -> String {
     self.dark_mode,
   )
   if self.last_color_scheme_dark != self.dark_mode {
-    self.render_node = None
-    self.layout_tree = None
-    self.prev_buffer = None
-    self.last_render_key = ""
+    self.clear_render_cache()
   }
   let render_node = match (self.render_node, self.layout_tree) {
     (Some(node), Some(_tree)) => node
     _ => {
       let n = match self.parsed_doc {
-        Some(doc) =>
-          @renderer.render_to_node_with_document(doc, ctx, self.external_css)
+        Some(doc) => self.render_node_from_document(doc, ctx, self.dark_mode)
         None =>
           @renderer.render_to_node_with_external_css(
             self.html_content,
@@ -2874,7 +2991,7 @@ fn Browser::ensure_declarative_shadow_dom_normalized(self : Browser) -> Unit {
     Some(_) => return
     None => ()
   }
-  if !html_source_has_declarative_shadow_dom(self.html_content) {
+  if !self.html_has_declarative_shadow_dom {
     return
   }
   match build_dom_tree_from_source_html(self.html_content) {
@@ -2923,11 +3040,7 @@ fn Browser::build_accessibility_tree(self : Browser) -> Unit {
   )
   // Render with CSS to get proper layout bounds
   // Use the document with synthetic IDs for consistent ID matching
-  let layout = @renderer.render_document_with_external_css(
-    doc,
-    ctx,
-    self.external_css,
-  )
+  let (_, layout) = self.render_node_and_layout_from_document(doc, ctx, false)
   // Build accessibility tree with renderer's layout bounds
   let tree = @aom.build_accessibility_tree_with_node_layout(doc, layout)
   self.a11y_tree = Some(tree)
@@ -4748,11 +4861,15 @@ pub fn Browser::debug_layout(self : Browser) -> Unit {
     self.viewport_height,
     false,
   )
-  let layout = @renderer.render_with_external_css(
-    self.html_content,
-    ctx,
-    self.external_css,
-  )
+  let layout = match self.parsed_doc {
+    Some(doc) => self.render_node_and_layout_from_document(doc, ctx, false).1
+    None =>
+      @renderer.render_with_external_css(
+        self.html_content,
+        ctx,
+        self.external_css,
+      )
+  }
   println("=== Layout Tree ===")
   @renderer.print_layout_tree_with_options(layout, 0, true)
   println("===================")
@@ -4830,8 +4947,9 @@ fn char_at(s : String, i : Int) -> Char {
 }
 
 ///|
-/// Extract links from HTML content (memory-efficient version)
-fn extract_links(html : String) -> Array[Link] {
+/// Extract links from HTML content (portable fallback version)
+#cfg(not(target="js"))
+fn extract_links_fallback(html : String) -> Array[Link] {
   let links : Array[Link] = []
   let len = html.length()
   let mut i = 0
@@ -4903,6 +5021,46 @@ fn extract_links(html : String) -> Array[Link] {
     i = i + 1
   }
   links
+}
+
+///|
+#cfg(target="js")
+extern "js" fn extract_links_js(html : String) -> Array[Link] =
+  #| (html) => {
+  #|   const links = [];
+  #|   const anchorRe = /<a\b([^>]*)>([\s\S]*?)<\/a\s*>/gi;
+  #|   const readAttr = (attrs, name) => {
+  #|     const re = new RegExp(
+  #|       "\\b" + name + "\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s\"'>]+))",
+  #|       "i",
+  #|     );
+  #|     const match = re.exec(attrs);
+  #|     return match ? String(match[1] ?? match[2] ?? match[3] ?? "") : "";
+  #|   };
+  #|   let match;
+  #|   while ((match = anchorRe.exec(html)) !== null) {
+  #|     const attrs = String(match[1] ?? "");
+  #|     const href = readAttr(attrs, "href");
+  #|     if (!href) continue;
+  #|     links.push({
+  #|       href,
+  #|       text: String(match[2] ?? "").trim(),
+  #|       source_id: readAttr(attrs, "id"),
+  #|     });
+  #|   }
+  #|   return links;
+  #| }
+
+///|
+#cfg(target="js")
+fn extract_links(html : String) -> Array[Link] {
+  extract_links_js(html)
+}
+
+///|
+#cfg(not(target="js"))
+fn extract_links(html : String) -> Array[Link] {
+  extract_links_fallback(html)
 }
 
 ///|
@@ -5408,20 +5566,20 @@ fn Browser::sync_render_state_from_dom_tree(self : Browser) -> Bool {
         return false
       }
       self.html_content = next_html
-      self.links = extract_links(self.html_content)
+      self.html_has_declarative_shadow_dom = html_source_has_declarative_shadow_dom(
+        self.html_content,
+      )
+      let next_doc = @html.assign_synthetic_ids(
+        @html.parse_document(self.html_content),
+      )
+      self.parsed_doc = Some(next_doc)
+      self.refresh_links_from_render_source()
       if self.links.length() == 0 {
         self.focused_link = 0
       } else if self.focused_link >= self.links.length() {
         self.focused_link = self.links.length() - 1
       }
-      let next_doc = @html.assign_synthetic_ids(
-        @html.parse_document(self.html_content),
-      )
-      self.parsed_doc = Some(next_doc)
-      self.render_node = None
-      self.layout_tree = None
-      self.prev_buffer = None
-      self.last_render_key = ""
+      self.clear_render_cache()
       self.content_height = @renderer.get_content_height_with_document(
         next_doc,
         self.viewport_width,
@@ -5595,10 +5753,11 @@ fn create_empty_html_dom_tree() -> @dom.DomTree {
 }
 
 ///|
-fn normalize_declarative_shadow_source_html(
+fn normalize_declarative_shadow_source_html_with_hint(
   html : String,
+  has_declarative_shadow_dom : Bool,
 ) -> NormalizedShadowSourceHtml? {
-  if !html_source_has_declarative_shadow_dom(html) {
+  if !has_declarative_shadow_dom {
     return None
   }
   match build_dom_tree_from_source_html(html) {
