@@ -426,7 +426,7 @@ fn convert_msvg_path_command(cmd : @msvg.PathCommand) -> @svg.PathCommand {
 }
 
 ///|
-fn glyph_provider_from_font_delegate(
+pub fn glyph_provider_from_delegate(
   delegate : @font_provider.GlyphProvider,
 ) -> GlyphProvider {
   {
@@ -469,9 +469,7 @@ fn glyph_provider_from_font_delegate(
 /// Create a GlyphProvider from a parsed TTFont.
 /// This allows native text rendering without JS FFI.
 pub fn glyph_provider_from_font(font : @font.TTFont) -> GlyphProvider {
-  glyph_provider_from_font_delegate(
-    @font_provider.glyph_provider_from_font(font),
-  )
+  glyph_provider_from_delegate(@font_provider.glyph_provider_from_font(font))
 }
 
 ///|
@@ -479,7 +477,7 @@ pub fn glyph_provider_from_font(font : @font.TTFont) -> GlyphProvider {
 /// Returns None if font parsing fails.
 pub fn glyph_provider_from_bytes(data : Bytes) -> GlyphProvider? {
   match @font_provider.glyph_provider_from_bytes(data) {
-    Some(provider) => Some(glyph_provider_from_font_delegate(provider))
+    Some(provider) => Some(glyph_provider_from_delegate(provider))
     None => None
   }
 }

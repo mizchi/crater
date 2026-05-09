@@ -7,6 +7,7 @@ import {
   "mizchi/crater-painter/paint/model",
   "mizchi/crater-painter/svg",
   "mizchi/font",
+  "mizchi/font/glyph_provider",
 }
 
 // Values
@@ -27,6 +28,8 @@ pub fn get_char_bitmap(Char) -> Array[Int]?
 pub fn get_depth_color(Int) -> Color
 
 pub fn glyph_provider_from_bytes(Bytes) -> GlyphProvider?
+
+pub fn glyph_provider_from_delegate(@glyph_provider.GlyphProvider) -> GlyphProvider
 
 pub fn glyph_provider_from_font(@font.TTFont) -> GlyphProvider
 

@@ -1,6 +1,6 @@
 import {
   "mizchi/crater-painter/x/image",
-  "mizchi/crater-painter/svg",
+  "mizchi/font/system_provider" @system_provider,
 }
 
 supported_targets = "js+native"
