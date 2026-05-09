@@ -465,9 +465,13 @@ test "render_paint_node_to_framebuffer blends glyph text opacity from parent" {
       (commands, font_size)
     },
     get_kern: fn(_left, _right, _font_size, _is_bold) { 0.0 },
+    get_glyph_by_weight: None,
+    get_kern_by_weight: None,
     ascent_ratio: 1.0,
     get_glyph_for_family: None,
     get_kern_for_family: None,
+    get_glyph_for_family_by_weight: None,
+    get_kern_for_family_by_weight: None,
     get_ascent_for_family: None,
   })
 
@@ -573,9 +577,13 @@ test "render_paint_node_to_framebuffer insets input text inside control" {
       (commands, font_size)
     },
     get_kern: fn(_left, _right, _font_size, _is_bold) { 0.0 },
+    get_glyph_by_weight: None,
+    get_kern_by_weight: None,
     ascent_ratio: 1.0,
     get_glyph_for_family: None,
     get_kern_for_family: None,
+    get_glyph_for_family_by_weight: None,
+    get_kern_for_family_by_weight: None,
     get_ascent_for_family: None,
   })
 

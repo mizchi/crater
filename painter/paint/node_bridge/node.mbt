@@ -9,6 +9,13 @@ fn inherit_text_paint(
 ) -> @model.PaintProperties {
   {
     ..child,
+    font_weight: if child.font_weight != 400.0 {
+      child.font_weight
+    } else if parent.font_weight != 400.0 {
+      parent.font_weight
+    } else {
+      child.font_weight
+    },
     is_bold: child.is_bold || parent.is_bold,
     text_decoration_underline: child.text_decoration_underline ||
     parent.text_decoration_underline,

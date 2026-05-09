@@ -2409,6 +2409,7 @@ fn render_paint_node_clipped(
               opacity=node.paint.opacity,
               letter_spacing=node.paint.letter_spacing,
               word_spacing=node.paint.word_spacing,
+              font_weight=node.paint.font_weight,
             )
           }
           None => {

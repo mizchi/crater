@@ -95,25 +95,54 @@ fn glyph_from_pair(
   codepoint : Int,
   font_size : Double,
   is_bold : Bool,
+  font_weight : Double,
 ) -> (Array[@svg.PathCommand], Double) {
   let provider = provider_for_weight(pair, is_bold)
-  (provider.get_glyph)(codepoint, font_size, is_bold)
+  match provider.get_glyph_by_weight {
+    Some(glyph_by_weight) => glyph_by_weight(codepoint, font_size, font_weight)
+    None => (provider.get_glyph)(codepoint, font_size, is_bold)
+  }
 }
 
 ///|
-fn choose_glyph(
+fn kern_from_pair(
+  pair : (@image.GlyphProvider, @image.GlyphProvider?),
+  cp1 : Int,
+  cp2 : Int,
+  font_size : Double,
+  is_bold : Bool,
+  font_weight : Double,
+) -> Double {
+  let provider = provider_for_weight(pair, is_bold)
+  match provider.get_kern_by_weight {
+    Some(kern_by_weight) => kern_by_weight(cp1, cp2, font_size, font_weight)
+    None => (provider.get_kern)(cp1, cp2, font_size, is_bold)
+  }
+}
+
+///|
+fn choose_glyph_by_weight(
   providers : Array[(@image.GlyphProvider, @image.GlyphProvider?)],
   codepoint : Int,
   font_size : Double,
-  is_bold : Bool,
+  font_weight : Double,
 ) -> (Array[@svg.PathCommand], Double) {
-  let first = glyph_from_pair(providers[0], codepoint, font_size, is_bold)
+  let is_bold = font_weight >= 600.0
+  let first = glyph_from_pair(
+    providers[0],
+    codepoint,
+    font_size,
+    is_bold,
+    font_weight,
+  )
   let (_, first_advance) = first
   if first_advance > 0.0 {
     return first
   }
   for pair in providers {
-    let candidate = glyph_from_pair(pair, codepoint, font_size, is_bold)
+    let candidate = glyph_from_pair(
+      pair, codepoint, font_size, is_bold, font_weight,
+    )
     let (_, advance) = candidate
     if advance > 0.0 {
       return candidate
@@ -156,15 +185,31 @@ fn merge_glyph_provider_pairs(
 ) -> @image.GlyphProvider {
   {
     get_glyph: fn(codepoint, font_size, is_bold) {
-      choose_glyph(providers, codepoint, font_size, is_bold)
+      let font_weight = if is_bold { 700.0 } else { 400.0 }
+      choose_glyph_by_weight(providers, codepoint, font_size, font_weight)
     },
     get_kern: fn(cp1, cp2, font_size, is_bold) {
-      let provider = provider_for_weight(providers[0], is_bold)
-      (provider.get_kern)(cp1, cp2, font_size, is_bold)
+      let font_weight = if is_bold { 700.0 } else { 400.0 }
+      kern_from_pair(providers[0], cp1, cp2, font_size, is_bold, font_weight)
     },
+    get_glyph_by_weight: Some(fn(codepoint, font_size, font_weight) {
+      choose_glyph_by_weight(providers, codepoint, font_size, font_weight)
+    }),
+    get_kern_by_weight: Some(fn(cp1, cp2, font_size, font_weight) {
+      kern_from_pair(
+        providers[0],
+        cp1,
+        cp2,
+        font_size,
+        font_weight >= 600.0,
+        font_weight,
+      )
+    }),
     ascent_ratio: resolve_ascent_ratio(providers),
     get_glyph_for_family: None,
     get_kern_for_family: None,
+    get_glyph_for_family_by_weight: None,
+    get_kern_for_family_by_weight: None,
     get_ascent_for_family: None,
   }
 }

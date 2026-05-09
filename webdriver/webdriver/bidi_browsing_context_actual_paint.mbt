@@ -352,7 +352,7 @@ fn ensure_paint_text_provider() -> Unit {
     ) {
       let ws = white_space.to_string()
       let wm = writing_mode.to_string()
-      let is_bold = font_weight >= 700.0
+      let is_bold = font_weight >= 600.0
       let ff = font_family
       {
         func: fn(available_width, available_height) {
@@ -500,6 +500,28 @@ fn ensure_paint_provider_initialized() -> Unit {
           (commands, advance)
         }
       },
+      get_glyph_by_weight: Some(fn(codepoint, font_size, font_weight) {
+        let is_bold = font_weight >= 600.0
+        let advance = js_glyph_advance(codepoint, font_size, is_bold)
+        if use_outline_commands {
+          let json = js_glyph_outline_commands(codepoint, font_size, is_bold)
+          if json.length() == 0 || json == "[]" {
+            return ([], advance)
+          }
+          let commands = parse_outline_commands_json(json)
+          (commands, advance)
+        } else {
+          let svg_path = js_glyph_to_svg_path(codepoint, font_size, is_bold)
+          if svg_path.length() == 0 {
+            return ([], advance)
+          }
+          let commands = @svg.parse_path(svg_path)
+          (commands, advance)
+        }
+      }),
+      get_kern_by_weight: Some(fn(cp1, cp2, font_size, font_weight) {
+        js_kern_advance(cp1, cp2, font_size, font_weight >= 600.0)
+      }),
       get_glyph_for_family: Some(fn(
         codepoint,
         font_size,
@@ -534,6 +556,54 @@ fn ensure_paint_provider_initialized() -> Unit {
       }),
       get_kern_for_family: Some(fn(cp1, cp2, font_size, is_bold, font_family) {
         js_kern_for_family(cp1, cp2, font_size, is_bold, font_family)
+      }),
+      get_glyph_for_family_by_weight: Some(fn(
+        codepoint,
+        font_size,
+        font_weight,
+        font_family,
+      ) {
+        let is_bold = font_weight >= 600.0
+        if use_outline_commands {
+          let json = js_outline_commands_for_family(
+            codepoint, font_size, is_bold, font_family,
+          )
+          if json.length() == 0 || json == "[]" {
+            return None
+          }
+          let advance = js_advance_for_family(
+            codepoint, font_size, is_bold, font_family,
+          )
+          let commands = parse_outline_commands_json(json)
+          Some((commands, advance))
+        } else {
+          let svg_path = js_glyph_for_family(
+            codepoint, font_size, is_bold, font_family,
+          )
+          if svg_path.length() == 0 {
+            return None
+          }
+          let advance = js_advance_for_family(
+            codepoint, font_size, is_bold, font_family,
+          )
+          let commands = @svg.parse_path(svg_path)
+          Some((commands, advance))
+        }
+      }),
+      get_kern_for_family_by_weight: Some(fn(
+        cp1,
+        cp2,
+        font_size,
+        font_weight,
+        font_family,
+      ) {
+        js_kern_for_family(
+          cp1,
+          cp2,
+          font_size,
+          font_weight >= 600.0,
+          font_family,
+        )
       }),
       get_ascent_for_family: Some(fn(font_family) {
         js_ascent_for_family(font_family)

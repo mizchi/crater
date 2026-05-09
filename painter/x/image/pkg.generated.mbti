@@ -121,9 +121,13 @@ pub fn Framebuffer::stroke_rect(Self, Int, Int, Int, Int, Int) -> Unit
 pub(all) struct GlyphProvider {
   get_glyph : (Int, Double, Bool) -> (Array[@svg.PathCommand], Double)
   get_kern : (Int, Int, Double, Bool) -> Double
+  get_glyph_by_weight : ((Int, Double, Double) -> (Array[@svg.PathCommand], Double))?
+  get_kern_by_weight : ((Int, Int, Double, Double) -> Double)?
   ascent_ratio : Double
   get_glyph_for_family : ((Int, Double, Bool, String) -> (Array[@svg.PathCommand], Double)?)?
   get_kern_for_family : ((Int, Int, Double, Bool, String) -> Double)?
+  get_glyph_for_family_by_weight : ((Int, Double, Double, String) -> (Array[@svg.PathCommand], Double)?)?
+  get_kern_for_family_by_weight : ((Int, Int, Double, Double, String) -> Double)?
   get_ascent_for_family : ((String) -> Double)?
 }
 

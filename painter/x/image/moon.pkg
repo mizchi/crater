@@ -8,6 +8,7 @@ import {
   "mizchi/crater-layout/types",
   "mizchi/crater-painter/svg",
   "mizchi/font" @font,
+  "mizchi/font/glyph_provider" @font_provider,
   "mizchi/svg" @msvg,
 }
 
