@@ -1320,7 +1320,10 @@ fn Browser::build_kitty_image_overlay(self : Browser) -> String {
       Some(current) if current.image_id == previous.image_id => ()
       _ =>
         buf.write_string(
-          write_kitty_delete_placement(previous.image_id, previous.placement_id),
+          @kitty_protocol.encode_delete_placement(
+            previous.image_id,
+            previous.placement_id,
+          ),
         )
     }
   }
@@ -1345,7 +1348,7 @@ fn Browser::build_kitty_image_overlay(self : Browser) -> String {
       "H",
     )
     let kitty_data = if uploaded {
-      write_kitty_put_placement(
+      @kitty_protocol.encode_put_placement(
         spec.placement.image_id,
         spec.placement.placement_id,
         spec.placement.width,
@@ -1422,14 +1425,17 @@ async fn Browser::prefetch_images(self : Browser) -> Unit {
       self.cache_image_data(src, "svg:" + body)
     } else if body.has_prefix("base64:") {
       let b64 = body.unsafe_substring(start=7, end=body.length())
-      self.cache_image_data(src, prepare_raster_image_for_kitty_cache(b64))
+      self.cache_image_data(
+        src,
+        @browser_shell.prepare_raster_image_for_kitty_cache(b64),
+      )
     }
   }
 }
 
 ///|
 fn Browser::cache_data_image_src(self : Browser, src : String) -> Bool {
-  match data_image_src_to_kitty_cache(src) {
+  match @browser_shell.data_image_src_to_kitty_cache(src) {
     Some(cached_data) => {
       self.cache_image_data(src, cached_data)
       true
@@ -1439,140 +1445,21 @@ fn Browser::cache_data_image_src(self : Browser, src : String) -> Bool {
 }
 
 ///|
-fn data_url_payload_end(chars : Array[Char], start : Int) -> Int {
-  let mut end = chars.length()
-  for i = start; i < chars.length(); i = i + 1 {
-    if chars[i] == '?' || chars[i] == '#' {
-      end = i
-      break
-    }
-  }
-  end
-}
-
-///|
-fn remove_ascii_whitespace(s : String) -> String {
-  let buf = StringBuilder::new()
-  for c in s {
-    if !c.is_ascii_whitespace() {
-      buf.write_char(c)
-    }
-  }
-  buf.to_string()
-}
-
-///|
-fn data_image_src_to_kitty_cache(src : String) -> String? {
-  if !src.to_lower().has_prefix("data:") {
-    return None
-  }
-  let chars = src.to_array()
-  let mut comma_idx = -1
-  for i = 5; i < chars.length(); i = i + 1 {
-    if chars[i] == ',' {
-      comma_idx = i
-      break
-    }
-  }
-  if comma_idx < 0 {
-    return None
-  }
-  let header = make_substr(chars, 5, comma_idx).to_lower()
-  if !header.has_prefix("image/") {
-    return None
-  }
-  let payload_end = data_url_payload_end(chars, comma_idx + 1)
-  let payload = make_substr(chars, comma_idx + 1, payload_end)
-  if header.has_prefix("image/svg+xml") {
-    if header.contains(";base64") {
-      return None
-    }
-    return Some("svg:" + percent_decode_data_url_payload(payload))
-  }
-  if !header.contains(";base64") {
-    return None
-  }
-  if header.has_prefix("image/png") ||
-    header.has_prefix("image/jpeg") ||
-    header.has_prefix("image/jpg") ||
-    header.has_prefix("image/gif") ||
-    header.has_prefix("image/webp") {
-    Some(prepare_raster_image_for_kitty_cache(remove_ascii_whitespace(payload)))
-  } else {
-    None
-  }
-}
-
-///|
-fn decode_base64_char(c : Char) -> Int? {
-  let cp = c.to_int()
-  if cp >= 'A'.to_int() && cp <= 'Z'.to_int() {
-    Some(cp - 'A'.to_int())
-  } else if cp >= 'a'.to_int() && cp <= 'z'.to_int() {
-    Some(cp - 'a'.to_int() + 26)
-  } else if cp >= '0'.to_int() && cp <= '9'.to_int() {
-    Some(cp - '0'.to_int() + 52)
-  } else if c == '+' {
-    Some(62)
-  } else if c == '/' {
-    Some(63)
-  } else {
-    None
-  }
-}
-
-///|
-fn decode_base64_bytes(encoded : String) -> Array[Int]? {
-  let bytes : Array[Int] = []
-  let quartet : Array[Int] = []
-  for c in encoded {
-    if c.is_ascii_whitespace() {
-      continue
-    }
-    if c == '=' {
-      quartet.push(-1)
-    } else {
-      match decode_base64_char(c) {
-        Some(v) => quartet.push(v)
-        None => return None
-      }
-    }
-    if quartet.length() == 4 {
-      let v0 = quartet[0]
-      let v1 = quartet[1]
-      let v2 = quartet[2]
-      let v3 = quartet[3]
-      if v0 < 0 || v1 < 0 {
-        return None
-      }
-      bytes.push(((v0 << 2) | (v1 >> 4)) & 0xFF)
-      if v2 >= 0 {
-        bytes.push((((v1 & 0x0F) << 4) | (v2 >> 2)) & 0xFF)
-      }
-      if v2 >= 0 && v3 >= 0 {
-        bytes.push((((v2 & 0x03) << 6) | v3) & 0xFF)
-      }
-      if v2 < 0 || v3 < 0 {
-        break
-      }
-      quartet.clear()
-    }
-  }
-  Some(bytes)
-}
-
-///|
-fn rgba_cache_entry_to_resolved_image(entry : String) -> @image.ResolvedImage? {
-  match parse_kitty_rgba_cache_entry(entry) {
-    Some((width, height, rgba_b64)) =>
-      match decode_base64_bytes(rgba_b64) {
-        Some(rgba) =>
-          if rgba.length() >= width * height * 4 {
-            Some(@image.ResolvedImage::Raster({ width, height, rgba }))
-          } else {
-            None
-          }
-        None => None
+fn rgba_cache_entry_to_resolved_image(
+  entry : @browser_shell.RgbaCacheEntry,
+) -> @image.ResolvedImage? {
+  match entry.decode_rgba_bytes() {
+    Some(rgba) =>
+      if rgba.length() >= entry.width * entry.height * 4 {
+        Some(
+          @image.ResolvedImage::Raster({
+            width: entry.width,
+            height: entry.height,
+            rgba,
+          }),
+        )
+      } else {
+        None
       }
     None => None
   }
@@ -1583,7 +1470,10 @@ fn raster_base64_to_resolved_image(
   image_format : String,
   b64_data : String,
 ) -> @image.ResolvedImage? {
-  match decode_raster_image_to_rgba_base64(image_format, b64_data) {
+  match
+    @browser_shell.decode_raster_image_to_rgba_cache_entry(
+      image_format, b64_data,
+    ) {
     Some(entry) => rgba_cache_entry_to_resolved_image(entry)
     None => None
   }
@@ -1593,32 +1483,19 @@ fn raster_base64_to_resolved_image(
 fn cached_image_data_to_resolved_image(
   cached_data : String,
 ) -> @image.ResolvedImage? {
-  if cached_data.has_prefix("svg:") {
-    let svg_text = cached_data.unsafe_substring(
-      start=4,
-      end=cached_data.length(),
-    )
-    Some(@image.ResolvedImage::Svg(svg_text))
-  } else if cached_data.has_prefix("img_rgba:") {
-    rgba_cache_entry_to_resolved_image(
-      cached_data.unsafe_substring(start=9, end=cached_data.length()),
-    )
-  } else if cached_data.has_prefix("img_png:") {
-    raster_base64_to_resolved_image(
-      "png",
-      cached_data.unsafe_substring(start=8, end=cached_data.length()),
-    )
-  } else if cached_data.has_prefix("img:") {
-    let b64_data = cached_data.unsafe_substring(
-      start=4,
-      end=cached_data.length(),
-    )
-    raster_base64_to_resolved_image(
-      detect_raster_image_format_from_base64(b64_data),
-      b64_data,
-    )
-  } else {
-    None
+  match @browser_shell.parse_terminal_image_cache_entry(cached_data) {
+    Some(@browser_shell.TerminalImageCacheEntry::Svg(svg_text)) =>
+      Some(@image.ResolvedImage::Svg(svg_text))
+    Some(@browser_shell.TerminalImageCacheEntry::RgbaBase64(entry)) =>
+      rgba_cache_entry_to_resolved_image(entry)
+    Some(@browser_shell.TerminalImageCacheEntry::PngBase64(b64_data)) =>
+      raster_base64_to_resolved_image("png", b64_data)
+    Some(@browser_shell.TerminalImageCacheEntry::RawBase64(b64_data)) =>
+      raster_base64_to_resolved_image(
+        @browser_shell.detect_raster_image_format_from_base64(b64_data),
+        b64_data,
+      )
+    None => None
   }
 }
 
@@ -1663,9 +1540,9 @@ fn render_svg_to_kitty_with_cells(
   let fb = @image.Framebuffer::new(render_width, render_height)
   let palette = @image.DynamicPalette::new()
   fb.fill_rect(0, 0, render_width, render_height, 0)
-  let viewbox = extract_svg_viewbox(svg_text)
+  let viewbox = @svg.extract_root_view_box(svg_text)
   let (vx, vy, vw, vh) = match viewbox {
-    Some(v) => v
+    Some(v) => (v.min_x, v.min_y, v.width, v.height)
     None => {
       let bounds = scene.get_bounds()
       (0.0, 0.0, bounds.width(), bounds.height())
@@ -1699,475 +1576,25 @@ fn to_kitty_with_cells(
   image_id? : Int = 0,
   placement_id? : Int = 0,
 ) -> String {
-  let buf = StringBuilder::new()
-  let mut chunk = StringBuilder::new()
-  let mut chunk_len = 0
-  let mut first_chunk = true
-  let pixel_count = fb.width * fb.height
-  let chunk_size = 4096
-  for pixel_index in 0..<pixel_count {
-    if chunk_len + 4 > chunk_size {
-      // Write chunk header
-      if first_chunk {
-        buf.write_string("\u001b_Ga=T,f=24,q=2,c=")
-        buf.write_string(cols.to_string())
-        buf.write_string(",r=")
-        buf.write_string(rows.to_string())
-        if image_id > 0 {
-          buf.write_string(",i=")
-          buf.write_string(image_id.to_string())
-          if placement_id > 0 {
-            buf.write_string(",p=")
-            buf.write_string(placement_id.to_string())
-          }
-        }
-        buf.write_string(",s=")
-        buf.write_string(fb.width.to_string())
-        buf.write_string(",v=")
-        buf.write_string(fb.height.to_string())
-        buf.write_string(",m=1;")
-      } else {
-        buf.write_string("\u001b_Gm=1;")
-      }
-      buf.write_string(chunk.to_string())
-      buf.write_string("\u001b\\")
-      chunk = StringBuilder::new()
-      chunk_len = 0
-      first_chunk = false
-    }
-    let color_idx = fb.pixels[pixel_index]
-    let color = if color_idx >= 0 && color_idx < palette.colors.length() {
-      palette.colors[color_idx]
-    } else {
-      @image.Color::white()
-    }
-    // Base64 encode RGB triplet
-    let b0 = color.r
-    let b1 = color.g
-    let b2 = color.b
-    let base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-    let c0 = (b0 >> 2) & 0x3F
-    let c1 = ((b0 << 4) | (b1 >> 4)) & 0x3F
-    let c2 = ((b1 << 2) | (b2 >> 6)) & 0x3F
-    let c3 = b2 & 0x3F
-    chunk.write_char(base64_chars[c0].unsafe_to_char())
-    chunk.write_char(base64_chars[c1].unsafe_to_char())
-    chunk.write_char(base64_chars[c2].unsafe_to_char())
-    chunk.write_char(base64_chars[c3].unsafe_to_char())
-    chunk_len = chunk_len + 4
-  }
-  // Final chunk
-  if chunk_len > 0 {
-    if first_chunk {
-      buf.write_string("\u001b_Ga=T,f=24,q=2,c=")
-      buf.write_string(cols.to_string())
-      buf.write_string(",r=")
-      buf.write_string(rows.to_string())
-      if image_id > 0 {
-        buf.write_string(",i=")
-        buf.write_string(image_id.to_string())
-        if placement_id > 0 {
-          buf.write_string(",p=")
-          buf.write_string(placement_id.to_string())
-        }
-      }
-      buf.write_string(",s=")
-      buf.write_string(fb.width.to_string())
-      buf.write_string(",v=")
-      buf.write_string(fb.height.to_string())
-      buf.write_string(",m=0;")
-    } else {
-      buf.write_string("\u001b_Gm=0;")
-    }
-    buf.write_string(chunk.to_string())
-    buf.write_string("\u001b\\")
-  }
-  buf.to_string()
-}
-
-///|
-fn detect_raster_image_format_from_base64(b64_data : String) -> String {
-  if b64_data.has_prefix("iVBORw0KGgo") {
-    "png"
-  } else if b64_data.has_prefix("/9j/") {
-    "jpeg"
-  } else if b64_data.has_prefix("R0lGOD") {
-    "gif"
-  } else {
-    "unknown"
-  }
-}
-
-///|
-#cfg(target="js")
-extern "js" fn js_decode_raster_image_to_rgba_base64(
-  image_format : String,
-  b64_data : String,
-) -> String =
-  #| (imageFormat, b64Data) => {
-  #|   try {
-  #|     if (typeof process === 'undefined' || process.platform !== 'darwin') {
-  #|       return '';
-  #|     }
-  #|     const format = String(imageFormat || '').toLowerCase();
-  #|     if (format !== 'png' && format !== 'jpeg' && format !== 'gif') {
-  #|       return '';
-  #|     }
-  #|     const fs = require('node:fs');
-  #|     const os = require('node:os');
-  #|     const path = require('node:path');
-  #|     const { execFileSync } = require('node:child_process');
-  #|     function loadPng() {
-  #|       try {
-  #|         return require('pngjs').PNG;
-  #|       } catch (_) {
-  #|         const candidates = [
-  #|           path.join(process.cwd(), 'node_modules', 'pngjs'),
-  #|           path.join(process.cwd(), 'browser', 'node_modules', 'pngjs'),
-  #|         ];
-  #|         for (const candidate of candidates) {
-  #|           try {
-  #|             return require(candidate).PNG;
-  #|           } catch (_) {}
-  #|         }
-  #|         throw new Error('pngjs not found');
-  #|       }
-  #|     }
-  #|     const PNG = loadPng();
-  #|     if (format === 'png') {
-  #|       const decoded = PNG.sync.read(Buffer.from(String(b64Data || ''), 'base64'));
-  #|       return (
-  #|         String(decoded.width) +
-  #|         ':' +
-  #|         String(decoded.height) +
-  #|         ':' +
-  #|         Buffer.from(decoded.data).toString('base64')
-  #|       );
-  #|     }
-  #|     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'crater-kitty-'));
-  #|     const inputExt = format === 'jpeg' ? 'jpg' : 'gif';
-  #|     const inputPath = path.join(dir, 'input.' + inputExt);
-  #|     const outputPath = path.join(dir, 'output.png');
-  #|     try {
-  #|       fs.writeFileSync(inputPath, Buffer.from(String(b64Data || ''), 'base64'));
-  #|       execFileSync(
-  #|         'sips',
-  #|         ['-s', 'format', 'png', inputPath, '--out', outputPath],
-  #|         { stdio: 'pipe' },
-  #|       );
-  #|       const pngBuffer = fs.readFileSync(outputPath);
-  #|       const decoded = PNG.sync.read(pngBuffer);
-  #|       return (
-  #|         String(decoded.width) +
-  #|         ':' +
-  #|         String(decoded.height) +
-  #|         ':' +
-  #|         Buffer.from(decoded.data).toString('base64')
-  #|       );
-  #|     } finally {
-  #|       try {
-  #|         fs.rmSync(dir, { recursive: true, force: true });
-  #|       } catch (_) {}
-  #|     }
-  #|   } catch (_) {
-  #|     return '';
-  #|   }
-  #| }
-
-///|
-#cfg(target="js")
-fn decode_raster_image_to_rgba_base64(
-  image_format : String,
-  b64_data : String,
-) -> String? {
-  let decoded = js_decode_raster_image_to_rgba_base64(image_format, b64_data)
-  if decoded.length() > 0 {
-    Some(decoded)
-  } else {
-    None
-  }
-}
-
-///|
-#cfg(target="native")
-fn decode_raster_image_to_rgba_base64(
-  _image_format : String,
-  _b64_data : String,
-) -> String? {
-  None
-}
-
-///|
-#cfg(target="js")
-extern "js" fn js_transcode_raster_image_to_png_base64(
-  image_format : String,
-  b64_data : String,
-) -> String =
-  #| (imageFormat, b64Data) => {
-  #|   try {
-  #|     if (typeof process === 'undefined' || process.platform !== 'darwin') {
-  #|       return '';
-  #|     }
-  #|     const format = String(imageFormat || '').toLowerCase();
-  #|     if (format !== 'jpeg' && format !== 'gif') {
-  #|       return '';
-  #|     }
-  #|     const fs = require('node:fs');
-  #|     const os = require('node:os');
-  #|     const path = require('node:path');
-  #|     const { execFileSync } = require('node:child_process');
-  #|     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'crater-kitty-'));
-  #|     const inputExt = format === 'jpeg' ? 'jpg' : 'gif';
-  #|     const inputPath = path.join(dir, 'input.' + inputExt);
-  #|     const outputPath = path.join(dir, 'output.png');
-  #|     try {
-  #|       fs.writeFileSync(inputPath, Buffer.from(String(b64Data || ''), 'base64'));
-  #|       execFileSync(
-  #|         'sips',
-  #|         ['-s', 'format', 'png', inputPath, '--out', outputPath],
-  #|         { stdio: 'pipe' },
-  #|       );
-  #|       return fs.readFileSync(outputPath).toString('base64');
-  #|     } finally {
-  #|       try {
-  #|         fs.rmSync(dir, { recursive: true, force: true });
-  #|       } catch (_) {}
-  #|     }
-  #|   } catch (_) {
-  #|     return '';
-  #|   }
-  #| }
-
-///|
-#cfg(target="js")
-fn transcode_raster_image_to_png_base64(
-  image_format : String,
-  b64_data : String,
-) -> String? {
-  let transcoded = js_transcode_raster_image_to_png_base64(
-    image_format, b64_data,
+  @kitty_protocol.encode_indexed_pixels_to_kitty_cells(
+    fb.width,
+    fb.height,
+    fb.pixels,
+    to_kitty_protocol_colors(palette),
+    cols,
+    rows,
+    image_id~,
+    placement_id~,
   )
-  if transcoded.length() > 0 {
-    Some(transcoded)
-  } else {
-    None
-  }
 }
 
 ///|
-#cfg(target="native")
-fn transcode_raster_image_to_png_base64(
-  _image_format : String,
-  _b64_data : String,
-) -> String? {
-  None
-}
-
-///|
-fn normalize_raster_image_for_kitty(b64_data : String) -> String {
-  let image_format = detect_raster_image_format_from_base64(b64_data)
-  if image_format == "png" {
-    return b64_data
-  }
-  match transcode_raster_image_to_png_base64(image_format, b64_data) {
-    Some(transcoded) => transcoded
-    None => b64_data
-  }
-}
-
-///|
-fn parse_int_ascii(s : String) -> Int {
-  let mut result = 0
-  for c in s {
-    if c >= '0' && c <= '9' {
-      result = result * 10 + (c.to_int() - '0'.to_int())
-    }
-  }
-  result
-}
-
-///|
-fn parse_kitty_rgba_cache_entry(entry : String) -> (Int, Int, String)? {
-  match entry.find(":") {
-    Some(width_end) => {
-      let width_str = entry.unsafe_substring(start=0, end=width_end)
-      let rest = entry.unsafe_substring(start=width_end + 1, end=entry.length())
-      match rest.find(":") {
-        Some(height_end) => {
-          let height_str = rest.unsafe_substring(start=0, end=height_end)
-          let rgba_b64 = rest.unsafe_substring(
-            start=height_end + 1,
-            end=rest.length(),
-          )
-          let width = parse_int_ascii(width_str)
-          let height = parse_int_ascii(height_str)
-          if width > 0 && height > 0 && rgba_b64.length() > 0 {
-            Some((width, height, rgba_b64))
-          } else {
-            None
-          }
-        }
-        None => None
-      }
-    }
-    None => None
-  }
-}
-
-///|
-fn prepare_raster_image_for_kitty_cache(b64_data : String) -> String {
-  let image_format = detect_raster_image_format_from_base64(b64_data)
-  if image_format == "png" {
-    return "img_png:" + b64_data
-  }
-  match decode_raster_image_to_rgba_base64(image_format, b64_data) {
-    Some(decoded) => "img_rgba:" + decoded
-    None => {
-      let normalized = normalize_raster_image_for_kitty(b64_data)
-      if detect_raster_image_format_from_base64(normalized) == "png" {
-        "img_png:" + normalized
-      } else {
-        "img:" + b64_data
-      }
-    }
-  }
-}
-
-///|
-fn write_kitty_direct_image_data(
-  b64_data : String,
-  display_cols : Int,
-  display_rows : Int,
-  image_id? : Int = 0,
-  placement_id? : Int = 0,
-) -> String {
-  if b64_data.length() == 0 {
-    return ""
-  }
-  let buf = StringBuilder::new()
-  let chunk_size = 4096
-  let total_len = b64_data.length()
-  let b64_chars = b64_data.to_array()
-  for offset = 0; offset < total_len; offset = offset + chunk_size {
-    let end = (offset + chunk_size).min(total_len)
-    let is_first = offset == 0
-    let is_last = end >= total_len
-    let m_val = if is_last { 0 } else { 1 }
-    if is_first {
-      buf.write_string("\u001b_Ga=T,f=100,q=2,c=")
-      buf.write_string(display_cols.to_string())
-      buf.write_string(",r=")
-      buf.write_string(display_rows.to_string())
-      if image_id > 0 {
-        buf.write_string(",i=")
-        buf.write_string(image_id.to_string())
-        if placement_id > 0 {
-          buf.write_string(",p=")
-          buf.write_string(placement_id.to_string())
-        }
-      }
-      buf.write_string(",m=")
-      buf.write_string(m_val.to_string())
-      buf.write_string(";")
-    } else {
-      buf.write_string("\u001b_Gm=")
-      buf.write_string(m_val.to_string())
-      buf.write_string(";")
-    }
-    for i = offset; i < end; i = i + 1 {
-      buf.write_char(b64_chars[i])
-    }
-    buf.write_string("\u001b\\")
-  }
-  buf.to_string()
-}
-
-///|
-fn write_kitty_rgba_image_data(
-  b64_data : String,
-  pixel_width : Int,
-  pixel_height : Int,
-  display_cols : Int,
-  display_rows : Int,
-  image_id? : Int = 0,
-  placement_id? : Int = 0,
-) -> String {
-  if b64_data.length() == 0 || pixel_width <= 0 || pixel_height <= 0 {
-    return ""
-  }
-  let buf = StringBuilder::new()
-  let chunk_size = 4096
-  let total_len = b64_data.length()
-  let b64_chars = b64_data.to_array()
-  for offset = 0; offset < total_len; offset = offset + chunk_size {
-    let end = (offset + chunk_size).min(total_len)
-    let is_first = offset == 0
-    let is_last = end >= total_len
-    let m_val = if is_last { 0 } else { 1 }
-    if is_first {
-      buf.write_string("\u001b_Ga=T,f=32,q=2,c=")
-      buf.write_string(display_cols.to_string())
-      buf.write_string(",r=")
-      buf.write_string(display_rows.to_string())
-      if image_id > 0 {
-        buf.write_string(",i=")
-        buf.write_string(image_id.to_string())
-        if placement_id > 0 {
-          buf.write_string(",p=")
-          buf.write_string(placement_id.to_string())
-        }
-      }
-      buf.write_string(",s=")
-      buf.write_string(pixel_width.to_string())
-      buf.write_string(",v=")
-      buf.write_string(pixel_height.to_string())
-      buf.write_string(",m=")
-      buf.write_string(m_val.to_string())
-      buf.write_string(";")
-    } else {
-      buf.write_string("\u001b_Gm=")
-      buf.write_string(m_val.to_string())
-      buf.write_string(";")
-    }
-    for i = offset; i < end; i = i + 1 {
-      buf.write_char(b64_chars[i])
-    }
-    buf.write_string("\u001b\\")
-  }
-  buf.to_string()
-}
-
-///|
-fn write_kitty_put_placement(
-  image_id : Int,
-  placement_id : Int,
-  display_cols : Int,
-  display_rows : Int,
-) -> String {
-  if image_id <= 0 || placement_id <= 0 {
-    return ""
-  }
-  "\u001b_Ga=p,q=2,i=" +
-  image_id.to_string() +
-  ",p=" +
-  placement_id.to_string() +
-  ",c=" +
-  display_cols.to_string() +
-  ",r=" +
-  display_rows.to_string() +
-  ";\u001b\\"
-}
-
-///|
-fn write_kitty_delete_placement(image_id : Int, placement_id : Int) -> String {
-  if image_id <= 0 || placement_id <= 0 {
-    return ""
-  }
-  "\u001b_Ga=d,q=2,d=i,i=" +
-  image_id.to_string() +
-  ",p=" +
-  placement_id.to_string() +
-  ";\u001b\\"
+fn to_kitty_protocol_colors(
+  palette : @image.DynamicPalette,
+) -> Array[@kitty_protocol.Color] {
+  palette.colors.map(fn(color) {
+    @kitty_protocol.Color::rgb(color.r, color.g, color.b)
+  })
 }
 
 ///|
@@ -2177,194 +1604,47 @@ fn render_cached_kitty_image_with_placement(
   image_id : Int,
   placement_id : Int,
 ) -> String {
-  if cached_data.has_prefix("svg:") {
-    let svg_text = cached_data.unsafe_substring(
-      start=4,
-      end=cached_data.length(),
-    )
-    let render_w = region.width * 16
-    let render_h = region.height * 32
-    render_svg_to_kitty_with_cells(
-      svg_text,
-      render_w,
-      render_h,
-      region.width,
-      region.height,
-      image_id~,
-      placement_id~,
-    )
-  } else if cached_data.has_prefix("img_png:") {
-    let b64_data = cached_data.unsafe_substring(
-      start=8,
-      end=cached_data.length(),
-    )
-    write_kitty_direct_image_data(
-      b64_data,
-      region.width,
-      region.height,
-      image_id~,
-      placement_id~,
-    )
-  } else if cached_data.has_prefix("img_rgba:") {
-    let rgba_entry = cached_data.unsafe_substring(
-      start=9,
-      end=cached_data.length(),
-    )
-    match parse_kitty_rgba_cache_entry(rgba_entry) {
-      Some((pixel_width, pixel_height, rgba_b64)) =>
-        render_rgba_raster_to_kitty_with_cells(
-          pixel_width,
-          pixel_height,
-          rgba_b64,
-          region.width,
-          region.height,
-          image_id~,
-          placement_id~,
-        )
-      None => ""
+  match @browser_shell.parse_terminal_image_cache_entry(cached_data) {
+    Some(@browser_shell.TerminalImageCacheEntry::Svg(svg_text)) => {
+      let render_w = region.width * 16
+      let render_h = region.height * 32
+      render_svg_to_kitty_with_cells(
+        svg_text,
+        render_w,
+        render_h,
+        region.width,
+        region.height,
+        image_id~,
+        placement_id~,
+      )
     }
-  } else if cached_data.has_prefix("img:") {
-    let b64_data = cached_data.unsafe_substring(
-      start=4,
-      end=cached_data.length(),
-    )
-    write_kitty_direct_image_data(
-      normalize_raster_image_for_kitty(b64_data),
-      region.width,
-      region.height,
-      image_id~,
-      placement_id~,
-    )
-  } else {
-    ""
-  }
-}
-
-///|
-fn render_rgba_raster_to_kitty_with_cells(
-  pixel_width : Int,
-  pixel_height : Int,
-  rgba_b64_data : String,
-  display_cols : Int,
-  display_rows : Int,
-  image_id? : Int = 0,
-  placement_id? : Int = 0,
-) -> String {
-  write_kitty_rgba_image_data(
-    rgba_b64_data,
-    pixel_width,
-    pixel_height,
-    display_cols,
-    display_rows,
-    image_id~,
-    placement_id~,
-  )
-}
-
-///|
-/// Build a String from a slice of a Char array
-fn chars_to_string(chars : Array[Char], start : Int, end : Int) -> String {
-  let buf = StringBuilder::new()
-  for i = start; i < end; i = i + 1 {
-    buf.write_char(chars[i])
-  }
-  buf.to_string()
-}
-
-///|
-/// Extract viewBox from SVG root element
-fn extract_svg_viewbox(svg_text : String) -> (Double, Double, Double, Double)? {
-  let search = "viewBox=\""
-  let chars = svg_text.to_array()
-  let search_chars = search.to_array()
-  let len = chars.length()
-  let slen = search_chars.length()
-  for i = 0; i < len - slen; i = i + 1 {
-    let mut found = true
-    for j = 0; j < slen; j = j + 1 {
-      if chars[i + j] != search_chars[j] {
-        found = false
-        break
-      }
-    }
-    if found {
-      let start = i + slen
-      let mut end = start
-      while end < len && chars[end] != '"' {
-        end = end + 1
-      }
-      let vb_str = chars_to_string(chars, start, end)
-      // Parse "minX minY width height"
-      let parts = split_whitespace(vb_str)
-      if parts.length() == 4 {
-        let vx = parse_double(parts[0])
-        let vy = parse_double(parts[1])
-        let vw = parse_double(parts[2])
-        let vh = parse_double(parts[3])
-        return Some((vx, vy, vw, vh))
-      }
-    }
-  }
-  None
-}
-
-///|
-fn split_whitespace(s : String) -> Array[String] {
-  let result : Array[String] = []
-  let chars = s.to_array()
-  let len = chars.length()
-  let mut start = 0
-  let mut in_word = false
-  for i = 0; i < len; i = i + 1 {
-    if chars[i] == ' ' || chars[i] == '\t' || chars[i] == '\n' {
-      if in_word {
-        result.push(chars_to_string(chars, start, i))
-        in_word = false
-      }
-    } else if !in_word {
-      start = i
-      in_word = true
-    }
-  }
-  if in_word {
-    result.push(chars_to_string(chars, start, len))
-  }
-  result
-}
-
-///|
-fn parse_double(s : String) -> Double {
-  // Simple double parser for SVG attributes
-  let chars = s.to_array()
-  let len = chars.length()
-  let mut result = 0.0
-  let mut frac = 0.0
-  let mut frac_div = 1.0
-  let mut in_frac = false
-  let mut negative = false
-  let mut start = 0
-  if len > 0 && chars[0] == '-' {
-    negative = true
-    start = 1
-  }
-  for i = start; i < len; i = i + 1 {
-    if chars[i] == '.' {
-      in_frac = true
-    } else if chars[i] >= '0' && chars[i] <= '9' {
-      let digit = (chars[i].to_int() - '0'.to_int()).to_double()
-      if in_frac {
-        frac_div = frac_div * 10.0
-        frac = frac + digit / frac_div
-      } else {
-        result = result * 10.0 + digit
-      }
-    }
-  }
-  result = result + frac
-  if negative {
-    -result
-  } else {
-    result
+    Some(@browser_shell.TerminalImageCacheEntry::PngBase64(b64_data)) =>
+      @kitty_protocol.encode_png_base64_to_kitty_image(
+        b64_data,
+        region.width,
+        region.height,
+        image_id~,
+        placement_id~,
+      )
+    Some(@browser_shell.TerminalImageCacheEntry::RgbaBase64(entry)) =>
+      @kitty_protocol.encode_rgba_base64_to_kitty_image(
+        entry.rgba_base64,
+        entry.width,
+        entry.height,
+        region.width,
+        region.height,
+        image_id~,
+        placement_id~,
+      )
+    Some(@browser_shell.TerminalImageCacheEntry::RawBase64(b64_data)) =>
+      @kitty_protocol.encode_png_base64_to_kitty_image(
+        @browser_shell.normalize_raster_image_for_kitty(b64_data),
+        region.width,
+        region.height,
+        image_id~,
+        placement_id~,
+      )
+    None => ""
   }
 }
 

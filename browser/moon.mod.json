@@ -42,6 +42,10 @@
       "path": "../browser_shell",
       "version": "0.17.1"
     },
+    "mizchi/crater-terminal-protocol": {
+      "path": "../terminal_protocol",
+      "version": "0.17.1"
+    },
     "mizchi/font": "0.7.3",
     "mizchi/x": "0.2.0",
     "moonbitlang/async": "0.17.1",

@@ -411,21 +411,6 @@ pub fn clear_glyph_provider() -> Unit {
 }
 
 ///|
-/// Convert mizchi/svg PathCommand to crater's svg PathCommand.
-fn convert_msvg_path_command(cmd : @msvg.PathCommand) -> @svg.PathCommand {
-  match cmd {
-    MoveTo(x, y) => @svg.PathCommand::MoveTo(x, y)
-    LineTo(x, y) => @svg.PathCommand::LineTo(x, y)
-    QuadraticCurveTo(cx, cy, x, y) =>
-      @svg.PathCommand::QuadraticCurveTo(cx, cy, x, y)
-    CurveTo(cx1, cy1, cx2, cy2, x, y) =>
-      @svg.PathCommand::CurveTo(cx1, cy1, cx2, cy2, x, y)
-    ClosePath => @svg.PathCommand::ClosePath
-    _ => @svg.PathCommand::ClosePath
-  }
-}
-
-///|
 pub fn glyph_provider_from_delegate(
   delegate : @font_provider.GlyphProvider,
 ) -> GlyphProvider {
@@ -434,7 +419,7 @@ pub fn glyph_provider_from_delegate(
       let (commands, advance) = (delegate.get_glyph)(
         codepoint, font_size, is_bold,
       )
-      (commands.map(convert_msvg_path_command), advance)
+      (commands.map(@svg.path_command_from_msvg), advance)
     },
     get_kern: fn(cp1, cp2, font_size, is_bold) {
       (delegate.get_kern)(cp1, cp2, font_size, is_bold)
@@ -445,7 +430,7 @@ pub fn glyph_provider_from_delegate(
           let (commands, advance) = glyph_by_weight(
             codepoint, font_size, font_weight,
           )
-          (commands.map(convert_msvg_path_command), advance)
+          (commands.map(@svg.path_command_from_msvg), advance)
         })
       None => None
     },

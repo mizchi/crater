@@ -290,6 +290,206 @@ pub fn encode_indexed_pixels_to_kitty(
 }
 
 ///|
+fn write_kitty_cell_image_header(
+  buf : StringBuilder,
+  pixel_width : Int,
+  pixel_height : Int,
+  display_cols : Int,
+  display_rows : Int,
+  image_id : Int,
+  placement_id : Int,
+  image_format : Int,
+  is_first : Bool,
+  has_more : Bool,
+) -> Unit {
+  let m_val = if has_more { 1 } else { 0 }
+  if is_first {
+    buf.write_string("\u001b_Ga=T,f=")
+    buf.write_string(image_format.to_string())
+    buf.write_string(",q=2,c=")
+    buf.write_string(display_cols.to_string())
+    buf.write_string(",r=")
+    buf.write_string(display_rows.to_string())
+    if image_id > 0 {
+      buf.write_string(",i=")
+      buf.write_string(image_id.to_string())
+      if placement_id > 0 {
+        buf.write_string(",p=")
+        buf.write_string(placement_id.to_string())
+      }
+    }
+    if pixel_width > 0 && pixel_height > 0 {
+      buf.write_string(",s=")
+      buf.write_string(pixel_width.to_string())
+      buf.write_string(",v=")
+      buf.write_string(pixel_height.to_string())
+    }
+    buf.write_string(",m=")
+    buf.write_string(m_val.to_string())
+    buf.write_string(";")
+  } else {
+    buf.write_string("\u001b_Gm=")
+    buf.write_string(m_val.to_string())
+    buf.write_string(";")
+  }
+}
+
+///|
+pub fn encode_indexed_pixels_to_kitty_cells(
+  width : Int,
+  height : Int,
+  pixels : Array[Int],
+  colors : Array[Color],
+  display_cols : Int,
+  display_rows : Int,
+  image_id? : Int = 0,
+  placement_id? : Int = 0,
+) -> String {
+  let pixel_count = width * height
+  if pixel_count <= 0 {
+    return ""
+  }
+  let triplets = build_kitty_palette_triplets(colors)
+  let buf = StringBuilder::new(size_hint=pixel_count * 4)
+  let mut chunk = StringBuilder::new()
+  let mut chunk_len = 0
+  let mut first_chunk = true
+  for pixel_index in 0..<pixel_count {
+    if chunk_len + 4 > kitty_chunk_size {
+      write_kitty_cell_image_header(
+        buf, width, height, display_cols, display_rows, image_id, placement_id, 24,
+        first_chunk, true,
+      )
+      buf.write_string(chunk.to_string())
+      buf.write_string("\u001b\\")
+      chunk = StringBuilder::new()
+      chunk_len = 0
+      first_chunk = false
+    }
+    let color_idx = if pixel_index < pixels.length() {
+      pixels[pixel_index]
+    } else {
+      -1
+    }
+    write_kitty_pixel_triplet(chunk, triplets, color_idx)
+    chunk_len += 4
+  }
+  if chunk_len > 0 {
+    write_kitty_cell_image_header(
+      buf, width, height, display_cols, display_rows, image_id, placement_id, 24,
+      first_chunk, false,
+    )
+    buf.write_string(chunk.to_string())
+    buf.write_string("\u001b\\")
+  }
+  buf.to_string()
+}
+
+///|
+fn encode_base64_payload_as_kitty_image(
+  b64_data : String,
+  image_format : Int,
+  pixel_width : Int,
+  pixel_height : Int,
+  display_cols : Int,
+  display_rows : Int,
+  image_id : Int,
+  placement_id : Int,
+) -> String {
+  if b64_data.length() == 0 {
+    return ""
+  }
+  if image_format == 32 && (pixel_width <= 0 || pixel_height <= 0) {
+    return ""
+  }
+  let buf = StringBuilder::new()
+  let total_len = b64_data.length()
+  let b64_chars = b64_data.to_array()
+  for offset = 0; offset < total_len; offset = offset + kitty_chunk_size {
+    let end = (offset + kitty_chunk_size).min(total_len)
+    write_kitty_cell_image_header(
+      buf,
+      pixel_width,
+      pixel_height,
+      display_cols,
+      display_rows,
+      image_id,
+      placement_id,
+      image_format,
+      offset == 0,
+      end < total_len,
+    )
+    for i = offset; i < end; i = i + 1 {
+      buf.write_char(b64_chars[i])
+    }
+    buf.write_string("\u001b\\")
+  }
+  buf.to_string()
+}
+
+///|
+pub fn encode_png_base64_to_kitty_image(
+  b64_data : String,
+  display_cols : Int,
+  display_rows : Int,
+  image_id? : Int = 0,
+  placement_id? : Int = 0,
+) -> String {
+  encode_base64_payload_as_kitty_image(
+    b64_data, 100, 0, 0, display_cols, display_rows, image_id, placement_id,
+  )
+}
+
+///|
+pub fn encode_rgba_base64_to_kitty_image(
+  b64_data : String,
+  pixel_width : Int,
+  pixel_height : Int,
+  display_cols : Int,
+  display_rows : Int,
+  image_id? : Int = 0,
+  placement_id? : Int = 0,
+) -> String {
+  encode_base64_payload_as_kitty_image(
+    b64_data, 32, pixel_width, pixel_height, display_cols, display_rows, image_id,
+    placement_id,
+  )
+}
+
+///|
+pub fn encode_put_placement(
+  image_id : Int,
+  placement_id : Int,
+  display_cols : Int,
+  display_rows : Int,
+) -> String {
+  if image_id <= 0 || placement_id <= 0 {
+    return ""
+  }
+  "\u001b_Ga=p,q=2,i=" +
+  image_id.to_string() +
+  ",p=" +
+  placement_id.to_string() +
+  ",c=" +
+  display_cols.to_string() +
+  ",r=" +
+  display_rows.to_string() +
+  ";\u001b\\"
+}
+
+///|
+pub fn encode_delete_placement(image_id : Int, placement_id : Int) -> String {
+  if image_id <= 0 || placement_id <= 0 {
+    return ""
+  }
+  "\u001b_Ga=d,q=2,d=i,i=" +
+  image_id.to_string() +
+  ",p=" +
+  placement_id.to_string() +
+  ";\u001b\\"
+}
+
+///|
 pub async fn[T : @io.Writer] write_indexed_pixels_to_kitty(
   writer : T,
   width : Int,

@@ -406,6 +406,20 @@ test "viewBox transform scale 2x" {
 }
 
 ///|
+test "extract_root_view_box delegates SVG attribute parsing" {
+  let svg = "<svg viewBox='-10, 20 30.5 40'><rect width='10' height='10'/></svg>"
+  match extract_root_view_box(svg) {
+    Some(vb) => {
+      inspect(vb.min_x, content="-10")
+      inspect(vb.min_y, content="20")
+      inspect(vb.width, content="30.5")
+      inspect(vb.height, content="40")
+    }
+    None => fail("expected root viewBox")
+  }
+}
+
+///|
 test "viewBox with offset" {
   // viewBox starts at (10, 20)
   let vb = ViewBox::{ min_x: 10.0, min_y: 20.0, width: 100.0, height: 100.0 }
