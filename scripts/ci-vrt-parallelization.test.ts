@@ -45,19 +45,16 @@ describe("CI VRT parallelization", () => {
     expect(workflow).toContain("pattern: paint-vrt-artifacts-*");
   });
 
-  test("uses pnpm v10-compatible flaker package install commands", () => {
+  test("uses the repository flaker dependency without overriding package exports", () => {
     const ciWorkflow = readRepoFile(".github/workflows/ci.yml");
     const dailyWorkflow = readRepoFile(".github/workflows/flaker-daily.yml");
     const combined = `${ciWorkflow}\n${dailyWorkflow}`;
 
+    expect(combined).not.toContain("pnpm add --save-dev --save-exact --allow-build=duckdb @mizchi/flaker@");
     expect(combined).not.toContain("pnpm add --no-save @mizchi/flaker@latest");
     expect(combined).not.toContain("@mizchi/flaker@latest");
     expect(combined).not.toContain("@mizchi/flaker@0.10.6");
-    expect(ciWorkflow).toContain(
-      "pnpm add --save-dev --save-exact --allow-build=duckdb @mizchi/flaker@0.10.7",
-    );
-    expect(dailyWorkflow).toContain(
-      "pnpm add --save-dev --save-exact --allow-build=duckdb @mizchi/flaker@0.10.7",
-    );
+    expect(ciWorkflow).toContain("pnpm exec flaker --version");
+    expect(dailyWorkflow).toContain("pnpm exec flaker --version");
   });
 });

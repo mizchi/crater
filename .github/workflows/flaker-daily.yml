@@ -119,12 +119,12 @@ jobs:
       - name: Install crater dependencies
         run: pnpm install
 
-      - name: Install metric-ci CLI package
+      - name: Validate installed metric-ci CLI package
         id: metric_ci_package
         continue-on-error: true
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: pnpm add --save-dev --save-exact --allow-build=duckdb @mizchi/flaker@0.10.7
+        run: |
+          pnpm exec flaker --version
+          node --input-type=module -e "await import('@mizchi/flaker/reporting/stable-test-identity')"
 
       - name: Checkout metric-ci source fallback
         if: steps.metric_ci_package.outcome == 'failure'
