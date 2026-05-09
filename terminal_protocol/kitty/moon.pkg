@@ -1,3 +1,4 @@
 import {
+  "mizchi/tui-terminal-protocol/kitty" @tui_kitty,
   "moonbitlang/async/io",
 }
