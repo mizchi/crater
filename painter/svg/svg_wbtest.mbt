@@ -162,6 +162,24 @@ test "parse_svg_simple_rect" {
 }
 
 ///|
+test "parse_svg_rect_length_var_fallback" {
+  let svg = "<rect x=\"var(--x, 10px)\" y=\"20\" width=\"var(--w, 100px)\" height=\"50\"/>"
+  match parse_svg(svg) {
+    Some(node) =>
+      match node.shape {
+        Rect(x~, y~, width~, height~, ..) => {
+          inspect(x, content="10")
+          inspect(y, content="20")
+          inspect(width, content="100")
+          inspect(height, content="50")
+        }
+        _ => panic()
+      }
+    None => panic()
+  }
+}
+
+///|
 test "parse_svg_circle" {
   let svg = "<circle cx=\"50\" cy=\"60\" r=\"25\" fill=\"blue\"/>"
   match parse_svg(svg) {
