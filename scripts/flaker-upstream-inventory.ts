@@ -23,7 +23,7 @@ export interface FlakerUpstreamGroup {
   id: string;
   title: string;
   category: FlakerInventoryCategory;
-  status: "ready-to-upstream" | "keep-in-crater";
+  status: "ready-to-upstream" | "upstreamed" | "keep-in-crater";
   origin: "crater-extracted" | "crater-native";
   files: string[];
   testFiles: string[];
@@ -46,7 +46,7 @@ const GROUPS: ReadonlyArray<Omit<FlakerUpstreamGroup, "status"> & {
     id: "playwright-report-core",
     title: "Playwright normalized report core",
     category: "metric-ci",
-    status: "ready-to-upstream",
+    status: "upstreamed",
     origin: "crater-extracted",
     files: [
       "scripts/playwright-report-contract.ts",
@@ -58,14 +58,14 @@ const GROUPS: ReadonlyArray<Omit<FlakerUpstreamGroup, "status"> & {
       "scripts/playwright-report-summary.test.ts",
       "scripts/playwright-report-diff.test.ts",
     ],
-    reason: "Crater 固有の task graph を知らずに summary/diff の契約だけで成立する。",
-    nextAction: "metric-ci 側へ contract + core を移し、crater 側 wrapper から参照する。",
+    reason: "@mizchi/flaker@0.12.1 の reporting export として upstream 済み。crater 固有の task graph を知らずに summary/diff の契約だけで成立する。",
+    nextAction: "crater 側 wrapper は @mizchi/flaker/reporting/playwright-* を参照し、追加差分が出たら flaker 側へ先に反映する。",
   },
   {
     id: "flaker-task-summary-core",
     title: "Flaker task summary contract and core",
     category: "metric-ci",
-    status: "ready-to-upstream",
+    status: "upstreamed",
     origin: "crater-extracted",
     files: [
       "scripts/flaker-task-summary-contract.ts",
@@ -74,8 +74,8 @@ const GROUPS: ReadonlyArray<Omit<FlakerUpstreamGroup, "status"> & {
     testFiles: [
       "scripts/flaker-task-summary-core.test.ts",
     ],
-    reason: "eval/reason 出力契約と task summary builder は crater 固有の task graph を知らずに成立する。",
-    nextAction: "metric-ci 側の reporting module に移し、crater では task/workspace loader だけを残す。",
+    reason: "@mizchi/flaker@0.12.1 の reporting export として upstream 済み。eval/reason 出力契約と task summary builder は crater 固有の task graph を知らずに成立する。",
+    nextAction: "crater 側 wrapper は @mizchi/flaker/reporting/flaker-task-summary-* を参照し、task/workspace loader だけを crater に残す。",
   },
   {
     id: "flaker-batch-summary-core",

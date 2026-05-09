@@ -55,7 +55,6 @@ test('default publish plan excludes internal modules and respects dependency ord
   assertBefore(names, 'mizchi/crater-browser-runtime', 'mizchi/crater-browser')
   assertBefore(names, 'mizchi/crater-browser-contract', 'mizchi/crater-webdriver-bidi')
   assertBefore(names, 'mizchi/crater-browser-http', 'mizchi/crater-browser-http-sqlite')
-  assertBefore(names, 'mizchi/crater', 'mizchi/crater-browser')
   assertBefore(names, 'mizchi/crater', 'mizchi/crater-js')
   assertBefore(names, 'mizchi/crater-js', 'mizchi/crater-wasm')
 })
@@ -68,9 +67,7 @@ test('--only-crater-star warns when selected modules still depend on root crater
   const names = orderedModules.map((module) => module.name)
 
   assert.ok(!names.includes('mizchi/crater'))
-  assert.deepEqual(skippedLocalDeps.get('mizchi/crater-browser') ?? [], [
-    'mizchi/crater',
-  ])
+  assert.deepEqual(skippedLocalDeps.get('mizchi/crater-browser') ?? [], [])
   assert.deepEqual(skippedLocalDeps.get('mizchi/crater-js') ?? [], [
     'mizchi/crater',
   ])
