@@ -35,6 +35,7 @@ describe("buildFlakerUpstreamInventory", () => {
     expect(inventory.groups[0]?.testFiles).toContain("scripts/playwright-report-summary.test.ts");
     expect(inventory.groups[3]?.files).toContain("scripts/flaker-batch-plan-core.ts");
     expect(inventory.groups[4]?.files).toContain("scripts/flaker-quarantine-contract.ts");
+    expect(inventory.groups[4]?.status).toBe("upstreamed");
     expect(inventory.groups[5]?.files).toContain("scripts/flaker-config-parser.ts");
     expect(inventory.groups[5]?.files).toContain("scripts/flaker-config-summary-core.ts");
     expect(inventory.groups[5]?.files).toContain("scripts/flaker-config-task.ts");

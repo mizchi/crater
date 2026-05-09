@@ -5,6 +5,7 @@ import {
   buildFlakerUpstreamExportStage,
   parseFlakerUpstreamExportArgs,
   renderFlakerUpstreamExportMarkdown,
+  resolveReadyToUpstreamGroups,
   runFlakerUpstreamExportCli,
 } from "./flaker-upstream-export.ts";
 
@@ -38,7 +39,7 @@ describe("parseFlakerUpstreamExportArgs", () => {
 });
 
 describe("buildFlakerUpstreamExportStage", () => {
-  it("builds staged source writes and manifest for a ready group", () => {
+  it("builds staged source writes and manifest for a group", () => {
     const group = buildFlakerUpstreamInventory().groups.find((candidate) =>
       candidate.id === "playwright-report-core"
     );
@@ -117,7 +118,11 @@ describe("renderFlakerUpstreamExportMarkdown", () => {
 });
 
 describe("runFlakerUpstreamExportCli", () => {
-  it("returns staged writes for ready-to-upstream groups", () => {
+  it("has no unresolved ready-to-upstream groups", () => {
+    expect(resolveReadyToUpstreamGroups()).toEqual([]);
+  });
+
+  it("rejects groups that have already been upstreamed", () => {
     const result = runFlakerUpstreamExportCli([
       "--group",
       "flaker-quarantine-core",
@@ -128,28 +133,9 @@ describe("runFlakerUpstreamExportCli", () => {
       readFile: (targetPath) => `// ${path.relative("/repo", targetPath)}\n`,
     });
 
-    expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain("# Metric CI Upstream Export");
-    expect(result.writes).toEqual(
-      expect.arrayContaining([
-        {
-          path: "/repo/out/flaker-quarantine-core/scripts/flaker-quarantine-parser.ts",
-          content: "// scripts/flaker-quarantine-parser.ts\n",
-        },
-        {
-          path: "/repo/out/flaker-quarantine-core/scripts/flaker-quarantine-parser.test.ts",
-          content: "// scripts/flaker-quarantine-parser.test.ts\n",
-        },
-        {
-          path: "/repo/out/flaker-quarantine-core/manifest.md",
-          content: expect.stringContaining("| Group | flaker-quarantine-core |"),
-        },
-        {
-          path: "/repo/out/flaker-quarantine-core/manifest.json",
-          content: expect.stringContaining('"status": "ready-to-upstream"'),
-        },
-      ]),
-    );
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("status: upstreamed");
+    expect(result.writes).toEqual([]);
   });
 
   it("rejects groups that are kept in crater", () => {
@@ -180,21 +166,15 @@ describe("runFlakerUpstreamExportCli", () => {
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("# Metric CI From Crater");
-    expect(result.writes).toEqual(
-      expect.arrayContaining([
-        {
-          path: "/repo/from-crater/README.md",
-          content: expect.stringContaining("MoonBit"),
-        },
-        {
-          path: "/repo/from-crater/flaker-quarantine-core/scripts/flaker-quarantine-parser.ts",
-          content: "// scripts/flaker-quarantine-parser.ts\n",
-        },
-        {
-          path: "/repo/from-crater/flaker-quarantine-core/scripts/flaker-quarantine-parser.test.ts",
-          content: "// scripts/flaker-quarantine-parser.test.ts\n",
-        },
-      ]),
-    );
+    expect(result.writes).toEqual([
+      {
+        path: "/repo/from-crater/README.md",
+        content: expect.stringContaining("| Groups | 0 |"),
+      },
+      {
+        path: "/repo/from-crater/manifest.json",
+        content: expect.stringContaining('"groupCount": 0'),
+      },
+    ]);
   });
 });

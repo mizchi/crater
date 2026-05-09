@@ -111,7 +111,7 @@ const GROUPS: ReadonlyArray<Omit<FlakerUpstreamGroup, "status"> & {
     id: "flaker-quarantine-core",
     title: "Repo-tracked quarantine core",
     category: "metric-ci",
-    status: "ready-to-upstream",
+    status: "upstreamed",
     origin: "crater-extracted",
     files: [
       "scripts/flaker-quarantine-contract.ts",
@@ -128,8 +128,8 @@ const GROUPS: ReadonlyArray<Omit<FlakerUpstreamGroup, "status"> & {
       "scripts/flaker-quarantine-summary-core.test.ts",
       "scripts/flaker-quarantine-report.test.ts",
     ],
-    reason: "manifest / match / expiry / summary は crater の renderer を知らずに成立する。",
-    nextAction: "metric-ci 側へ quarantine core を移し、crater は flaker.star 連携 loader だけを持つ。",
+    reason: "@mizchi/flaker@0.12.5 の reporting export として upstream 済み。manifest / match / expiry / summary は crater の renderer を知らずに成立する。",
+    nextAction: "crater 側 wrapper は @mizchi/flaker/reporting/flaker-quarantine-* を参照し、flaker.star 連携 loader と CLI wrapper だけを crater に残す。",
   },
   {
     id: "flaker-config-core",
