@@ -359,6 +359,7 @@ fn node_can_be_pruned_when_covered(node : @model.PaintNode) -> Bool {
 ///|
 fn prune_fully_covered_children(
   children : Array[@model.PaintNode],
+  child_has_transform : Array[Bool],
 ) -> Array[@model.PaintNode] {
   if children.length() <= 1 {
     return children
@@ -367,11 +368,22 @@ fn prune_fully_covered_children(
   for i = 0; i < children.length(); i = i + 1 {
     let child = children[i]
     let mut covered = false
-    if node_can_be_pruned_when_covered(child) {
+    let child_uses_transform = if i < child_has_transform.length() {
+      child_has_transform[i]
+    } else {
+      true
+    }
+    if !child_uses_transform && node_can_be_pruned_when_covered(child) {
       let child_rect = paint_node_rect(child)
       for j = i + 1; j < children.length(); j = j + 1 {
         let cover = children[j]
-        if cover.stacking_order >= child.stacking_order &&
+        let cover_uses_transform = if j < child_has_transform.length() {
+          child_has_transform[j]
+        } else {
+          true
+        }
+        if !cover_uses_transform &&
+          cover.stacking_order >= child.stacking_order &&
           node_paints_opaque_rect(cover) &&
           cull_rect_covers(paint_node_rect(cover), child_rect) {
           covered = true
@@ -457,6 +469,7 @@ fn from_node_and_layout_with_viewport_inner(
   }
   let tag = extract_tag_from_id(node.id)
   let children : Array[@model.PaintNode] = []
+  let child_has_transform : Array[Bool] = []
   let child_clip = match node_clip_rect(abs_x, abs_y, layout, node.style.clip) {
     Some(node_clip) => cull_rect_intersection(clip_rect, node_clip)
     None => Some(clip_rect)
@@ -534,6 +547,7 @@ fn from_node_and_layout_with_viewport_inner(
               )
             }
             children.push(current)
+            child_has_transform.push(!child_node.style.transform.is_none())
           }
           None => ()
         }
@@ -576,9 +590,11 @@ fn from_node_and_layout_with_viewport_inner(
     layout.y,
     layout.width,
     layout.height,
-    residual_visual_transform(node.style.transform),
+    node.style.transform,
   )
-  let paint_children = prune_fully_covered_children(children)
+  let paint_children = prune_fully_covered_children(
+    children, child_has_transform,
+  )
   Some(
     @model.PaintNode::new(
       node.id,
@@ -600,17 +616,6 @@ fn from_node_and_layout_with_viewport_inner(
 }
 
 ///|
-fn residual_visual_transform(transform : @style.Transform) -> @style.Transform {
-  {
-    ..transform,
-    translate_x: @style.TranslateValue::Length(0.0),
-    translate_y: @style.TranslateValue::Length(0.0),
-    scale_x: 1.0,
-    scale_y: 1.0,
-  }
-}
-
-///|
 fn visual_transform_bounds(
   x : Double,
   y : Double,
@@ -621,14 +626,25 @@ fn visual_transform_bounds(
   if transform.has_skew() || transform.has_affine_matrix() {
     visual_affine_transform_bounds(x, y, width, height, transform)
   } else {
+    let translate_x = transform.compute_translate_x(width)
+    let translate_y = transform.compute_translate_y(height)
+    let scaled_width = width * transform.scale_x.abs()
+    let scaled_height = height * transform.scale_y.abs()
     match transform.quarter_turns() {
-      0 | 2 => (x, y, width, height, [])
+      0 | 2 =>
+        (
+          x + translate_x + (width - scaled_width) / 2.0,
+          y + translate_y + (height - scaled_height) / 2.0,
+          scaled_width,
+          scaled_height,
+          [],
+        )
       1 | 3 =>
         (
-          x + (width - height) / 2.0,
-          y + (height - width) / 2.0,
-          height,
-          width,
+          x + translate_x + (width - scaled_height) / 2.0,
+          y + translate_y + (height - scaled_width) / 2.0,
+          scaled_height,
+          scaled_width,
           [],
         )
       _ => visual_affine_transform_bounds(x, y, width, height, transform)
@@ -664,60 +680,40 @@ fn visual_affine_transform_bounds(
   let matrix_f = if transform.has_matrix { transform.matrix_f } else { 0.0 }
   let center_x = x + width / 2.0
   let center_y = y + height / 2.0
-  let points : Array[(Double, Double)] = [
-    transform_point(
-      x, y, center_x, center_y, cos_a, sin_a, skew_x, skew_y, matrix_a, matrix_b,
-      matrix_c, matrix_d, matrix_e, matrix_f,
-    ),
-    transform_point(
-      x + width,
-      y,
-      center_x,
-      center_y,
-      cos_a,
-      sin_a,
-      skew_x,
-      skew_y,
-      matrix_a,
-      matrix_b,
-      matrix_c,
-      matrix_d,
-      matrix_e,
-      matrix_f,
-    ),
-    transform_point(
-      x + width,
-      y + height,
-      center_x,
-      center_y,
-      cos_a,
-      sin_a,
-      skew_x,
-      skew_y,
-      matrix_a,
-      matrix_b,
-      matrix_c,
-      matrix_d,
-      matrix_e,
-      matrix_f,
-    ),
-    transform_point(
-      x,
-      y + height,
-      center_x,
-      center_y,
-      cos_a,
-      sin_a,
-      skew_x,
-      skew_y,
-      matrix_a,
-      matrix_b,
-      matrix_c,
-      matrix_d,
-      matrix_e,
-      matrix_f,
-    ),
+  let translate_x = transform.compute_translate_x(width)
+  let translate_y = transform.compute_translate_y(height)
+  let corners : Array[(Double, Double)] = [
+    (x, y),
+    (x + width, y),
+    (x + width, y + height),
+    (x, y + height),
   ]
+  let points : Array[(Double, Double)] = []
+  for corner in corners {
+    let (corner_x, corner_y) = corner
+    points.push(
+      transform_point(
+        corner_x,
+        corner_y,
+        center_x,
+        center_y,
+        cos_a,
+        sin_a,
+        skew_x,
+        skew_y,
+        matrix_a,
+        matrix_b,
+        matrix_c,
+        matrix_d,
+        matrix_e,
+        matrix_f,
+        transform.scale_x,
+        transform.scale_y,
+        translate_x,
+        translate_y,
+      ),
+    )
+  }
   let (min_x, min_y, bbox_width, bbox_height) = polygon_bounds(points)
   let local_points : Array[(Double, Double)] = []
   for point in points {
@@ -751,16 +747,26 @@ fn transform_point(
   matrix_d : Double,
   matrix_e : Double,
   matrix_f : Double,
+  scale_x : Double,
+  scale_y : Double,
+  translate_x : Double,
+  translate_y : Double,
 ) -> (Double, Double) {
   let dx = x - center_x
   let dy = y - center_y
-  let matrix_x = matrix_a * dx + matrix_c * dy + matrix_e
-  let matrix_y = matrix_b * dx + matrix_d * dy + matrix_f
+  let scaled_x = dx * scale_x
+  let scaled_y = dy * scale_y
+  let matrix_x = matrix_a * scaled_x + matrix_c * scaled_y + matrix_e
+  let matrix_y = matrix_b * scaled_x + matrix_d * scaled_y + matrix_f
   let skewed_x = matrix_x + skew_x * matrix_y
   let skewed_y = skew_y * matrix_x + matrix_y
   (
-    snap_near_integer(center_x + skewed_x * cos_a - skewed_y * sin_a),
-    snap_near_integer(center_y + skewed_x * sin_a + skewed_y * cos_a),
+    snap_near_integer(
+      center_x + translate_x + skewed_x * cos_a - skewed_y * sin_a,
+    ),
+    snap_near_integer(
+      center_y + translate_y + skewed_x * sin_a + skewed_y * cos_a,
+    ),
   )
 }
 
