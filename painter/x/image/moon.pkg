@@ -5,7 +5,7 @@ import {
   "mizchi/crater-painter/paint/model" @paint_model,
   "mizchi/crater-painter/paint/traversal" @paint_traversal,
   "mizchi/crater-painter/paint/node_bridge" @paint_node,
-  "mizchi/crater-terminal-protocol/sixel" @sixel_protocol,
+  "mizchi/tui-terminal-protocol/sixel" @sixel_protocol,
   "mizchi/crater-layout/types",
   "mizchi/crater-painter/svg",
   "mizchi/font" @font,
