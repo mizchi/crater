@@ -121,7 +121,7 @@ fn paint_fallback_from_msvg(
   current_color : Color?,
 ) -> Paint {
   match fallback {
-    NoPaint => None
+    NoPaint => SolidColor(Color::black())
     SolidColor(color) => SolidColor(color_from_msvg(color))
     CurrentColor => SolidColor(current_color_or_black(current_color))
   }

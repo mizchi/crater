@@ -227,6 +227,24 @@ test "parse_hex_color" {
 }
 
 ///|
+test "parse_svg_paint_server_uses_visible_fallback" {
+  let svg = "<rect fill=\"url(#grad)\" width=\"10\" height=\"10\"/>"
+  match parse_svg(svg) {
+    Some(node) =>
+      match node.fill {
+        SolidColor(c) => {
+          inspect(c.r, content="0")
+          inspect(c.g, content="0")
+          inspect(c.b, content="0")
+          inspect(c.a, content="255")
+        }
+        _ => panic()
+      }
+    None => panic()
+  }
+}
+
+///|
 test "camera basics" {
   let camera = Camera::new(800, 600)
   inspect(camera.x, content="0")
