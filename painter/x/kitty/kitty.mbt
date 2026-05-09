@@ -64,6 +64,30 @@ fn write_kitty_pixel_triplet(
 }
 
 ///|
+fn kitty_pixel_triplet(triplets : Array[String], color_idx : Int) -> String {
+  if color_idx >= 0 && color_idx < triplets.length() {
+    triplets[color_idx]
+  } else {
+    kitty_white_triplet
+  }
+}
+
+///|
+fn framebuffer_uniform_color_index(fb : @image.Framebuffer) -> Int? {
+  let pixel_count = fb.width * fb.height
+  if pixel_count == 0 {
+    return None
+  }
+  let color_idx = fb.pixels[0]
+  for i in 1..<pixel_count {
+    if fb.pixels[i] != color_idx {
+      return None
+    }
+  }
+  Some(color_idx)
+}
+
+///|
 fn write_kitty_chunk_header(
   buf : StringBuilder,
   width : Int,
@@ -122,15 +146,105 @@ async fn[T : @io.Writer] write_kitty_chunk_header_to(
 }
 
 ///|
+fn write_repeated_kitty_triplet(
+  buf : StringBuilder,
+  triplet : String,
+  count : Int,
+) -> Unit {
+  if count > 0 {
+    buf.write_string(triplet.repeat(count))
+  }
+}
+
+///|
+fn to_kitty_uniform(
+  width : Int,
+  height : Int,
+  pixel_count : Int,
+  triplet : String,
+) -> String {
+  let buf = StringBuilder::new(size_hint=pixel_count * 4)
+  let full_chunk_payload = triplet.repeat(kitty_pixels_per_chunk)
+  let mut first_chunk = true
+  let mut pixel_index = 0
+  while pixel_index < pixel_count {
+    let remaining = pixel_count - pixel_index
+    let chunk_pixels = if remaining > kitty_pixels_per_chunk {
+      kitty_pixels_per_chunk
+    } else {
+      remaining
+    }
+    let has_more = pixel_index + chunk_pixels < pixel_count
+    write_kitty_chunk_header(buf, width, height, first_chunk, has_more)
+    if chunk_pixels == kitty_pixels_per_chunk {
+      buf.write_string(full_chunk_payload)
+    } else {
+      write_repeated_kitty_triplet(buf, triplet, chunk_pixels)
+    }
+    buf.write_string("\u001b\\")
+    first_chunk = false
+    pixel_index += chunk_pixels
+  }
+  buf.to_string()
+}
+
+///|
+async fn[T : @io.Writer] write_kitty_uniform(
+  writer : T,
+  width : Int,
+  height : Int,
+  pixel_count : Int,
+  triplet : String,
+) -> Unit {
+  let full_chunk_payload = triplet.repeat(kitty_pixels_per_chunk)
+  let mut first_chunk = true
+  let mut pixel_index = 0
+  while pixel_index < pixel_count {
+    let remaining = pixel_count - pixel_index
+    let chunk_pixels = if remaining > kitty_pixels_per_chunk {
+      kitty_pixels_per_chunk
+    } else {
+      remaining
+    }
+    let has_more = pixel_index + chunk_pixels < pixel_count
+    write_kitty_chunk_header_to(writer, width, height, first_chunk, has_more)
+    if chunk_pixels == kitty_pixels_per_chunk {
+      writer.write(full_chunk_payload) catch {
+        _ => return
+      }
+    } else if chunk_pixels > 0 {
+      writer.write(triplet.repeat(chunk_pixels)) catch {
+        _ => return
+      }
+    }
+    writer.write("\u001b\\") catch {
+      _ => return
+    }
+    first_chunk = false
+    pixel_index += chunk_pixels
+  }
+}
+
+///|
 /// Convert Framebuffer to Kitty Graphics Protocol string
 pub fn to_kitty(
   fb : @image.Framebuffer,
   palette : @image.DynamicPalette,
 ) -> String {
-  let buf = StringBuilder::new()
   let triplets = build_kitty_palette_triplets(palette)
-  let mut first_chunk = true
   let pixel_count = fb.width * fb.height
+  match framebuffer_uniform_color_index(fb) {
+    Some(color_idx) =>
+      return to_kitty_uniform(
+        fb.width,
+        fb.height,
+        pixel_count,
+        kitty_pixel_triplet(triplets, color_idx),
+      )
+    None => ()
+  }
+  let buf = StringBuilder::new(size_hint=pixel_count * 4)
+  let mut first_chunk = true
   let mut pixel_index = 0
   while pixel_index < pixel_count {
     let remaining = pixel_count - pixel_index
@@ -162,10 +276,23 @@ pub async fn[T : @io.Writer] write_kitty(
   palette : @image.DynamicPalette,
 ) -> Unit {
   let triplets = build_kitty_palette_triplets(palette)
+  let pixel_count = fb.width * fb.height
+  match framebuffer_uniform_color_index(fb) {
+    Some(color_idx) => {
+      write_kitty_uniform(
+        writer,
+        fb.width,
+        fb.height,
+        pixel_count,
+        kitty_pixel_triplet(triplets, color_idx),
+      )
+      return
+    }
+    None => ()
+  }
   let mut chunk = StringBuilder::new()
   let mut chunk_len = 0
   let mut first_chunk = true
-  let pixel_count = fb.width * fb.height
   for pixel_index in 0..<pixel_count {
     if chunk_len + 4 > kitty_chunk_size {
       write_kitty_chunk_header_to(
