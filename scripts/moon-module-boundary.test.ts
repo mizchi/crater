@@ -1614,6 +1614,26 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps renderer ruby regression tests in their own file", () => {
+    const rubyTestFile = path.join(REPO_ROOT, "renderer/renderer/ruby_render_test.mbt");
+    expect(fs.existsSync(rubyTestFile)).toBe(true);
+
+    const rubySource = fs.readFileSync(rubyTestFile, "utf8");
+    const renderSource = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/render_test.mbt"),
+      "utf8",
+    );
+    const migratedTests = [
+      'test "rt_ua_default_font_size_is_half_of_parent"',
+      'test "ruby_internal_elements_default_to_inline_display"',
+      'test "ruby_rt_with_non_text_child_keeps_annotation_band_above_base"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => rubySource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => renderSource.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",
