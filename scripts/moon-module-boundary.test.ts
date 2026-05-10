@@ -888,6 +888,164 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps WebDriver BiDi browser handlers out of the protocol core", () => {
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_browser.mbt")),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn BidiProtocol::handle_browser_has_user_context",
+      "fn BidiProtocol::handle_browser_has_user_context_value",
+      "fn BidiProtocol::resolve_browser_has_user_context_known",
+      "fn BidiProtocol::resolve_browser_user_contexts_list",
+      "fn BidiProtocol::resolve_browser_client_windows_list",
+      "fn BidiProtocol::resolve_browser_create_user_context",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps WebDriver BiDi session test helpers out of the protocol core", () => {
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_session.mbt")),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn BidiProtocol::handle_session_is_subscribed_for_context",
+      "fn BidiProtocol::handle_session_prepare_baseline_context_for_test",
+      "fn BidiProtocol::recreate_default_context_with_id",
+      "fn BidiProtocol::handle_session_get_baseline_context_info_for_test",
+      "fn BidiProtocol::handle_session_get_baseline_context_info_value_for_test",
+      "fn BidiProtocol::build_context_info_for_test",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps WebDriver BiDi log and script event helpers out of the protocol core", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_log.mbt"))).toBe(
+      true,
+    );
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn BidiProtocol::emit_log_entry_with_details",
+      "fn BidiProtocol::emit_log_entry",
+      "fn BidiProtocol::emit_javascript_log_entry",
+      "fn BidiProtocol::process_console_entries",
+      "fn BidiProtocol::emit_script_message",
+      "fn BidiProtocol::process_channel_messages",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps WebDriver BiDi preload and context scope helpers out of the protocol core", () => {
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_preload.mbt")),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn BidiProtocol::collect_context_ancestry",
+      "fn BidiProtocol::build_context_ancestry",
+      "fn BidiProtocol::build_context_scope_info_json",
+      "fn BidiProtocol::resolve_top_level_context(",
+      "fn BidiProtocol::is_preload_script_applicable",
+      "fn build_preload_call_expression",
+      "fn extract_window_property_names",
+      "fn BidiProtocol::clear_window_properties_in_context",
+      "fn BidiProtocol::cleanup_removed_preload_entry",
+      "fn BidiProtocol::remove_all_preload_scripts",
+      "fn BidiProtocol::run_preload_script_in_context",
+      "fn BidiProtocol::apply_preload_scripts_for_context",
+      "fn BidiProtocol::has_mutation_observer_preload_for_context",
+      "fn BidiProtocol::emit_synthetic_mutation_observer_messages",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps WebDriver BiDi browsingContext rendering commands out of the protocol core", () => {
+    expect(
+      fs.existsSync(
+        path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_browsing_context_rendering.mbt"),
+      ),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn BidiProtocol::handle_set_viewport",
+      "fn BidiProtocol::handle_traverse_history",
+      "fn BidiProtocol::handle_capture_screenshot",
+      "fn BidiProtocol::handle_capture_screenshot_data",
+      "fn BidiProtocol::resolve_capture_screenshot_data",
+      "fn BidiProtocol::handle_print",
+      "fn BidiProtocol::handle_print_data",
+      "fn BidiProtocol::resolve_print_data",
+      "fn is_valid_print_page_range",
+      "fn is_valid_locate_nodes_locator_type",
+      "fn xpath_to_css_selector",
+      "fn BidiProtocol::handle_locate_nodes",
+      "fn normalize_svg_namespace_in_nodes",
+      "fn BidiProtocol::locate_nodes_css",
+      "fn BidiProtocol::evaluate_locate_expression",
+      "fn BidiProtocol::create_synthetic_child_context_result",
+      "fn BidiProtocol::locate_nodes_xpath",
+      "fn BidiProtocol::locate_nodes_inner_text",
+      "fn BidiProtocol::locate_nodes_accessibility",
+      "fn BidiProtocol::locate_nodes_context",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps WebDriver runtime document helpers out of the server transport", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_runtime_document.mbt"))).toBe(
+      true,
+    );
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/webdriver/bidi_server.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "extern \"js\" fn js_sync_runtime_html_async",
+      "extern \"js\" fn js_sync_runtime_page_async",
+      "pub fn sync_runtime_page",
+      "pub fn sync_runtime_html",
+      "extern \"js\" fn js_decode_base64",
+      "pub fn decode_base64",
+      "pub fn parse_data_url",
+      "fn make_substr",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",

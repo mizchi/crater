@@ -23,15 +23,16 @@
   - 完了: `handle_network_add_intercept`, `addDataCollector`, `setExtraHeaders`, data collector removal を `bidi_protocol_network_commands.mbt` へ移動
   - 切り出し先候補: 既存 `bidi_network_synthetic.mbt` / `bidi_network_state.mbt` へ統合、または `bidi_protocol_network_commands.mbt`
   - 狙い: `bidi_protocol.mbt` を protocol state と shared helpers だけに近づける
-- [ ] `session` / `browser` helper を分離する
-  - 候補: `handle_session_*`, `resolve_browser_*`, baseline context test helper, user context helper
+- [x] `session` / `browser` helper を分離する
+  - 完了: `handle_session_*`, `resolve_browser_*`, baseline context test helper を `bidi_protocol_session.mbt` / `bidi_protocol_browser.mbt` へ移動
   - 切り出し先候補: `bidi_protocol_session.mbt`, `bidi_protocol_browser.mbt`
-- [ ] `preload` / realm / context ancestry / log helper を分離する
-  - 候補: `PreloadScriptEntry`, preload cleanup/apply, realm/source metadata, `emit_log_entry*`
+- [x] `preload` / realm / context ancestry / log helper を分離する
+  - 完了: log/script event emission helper を `bidi_protocol_log.mbt` へ、preload scope/apply/cleanup と context ancestry helper を `bidi_protocol_preload.mbt` へ移動
+  - 残り候補: `PreloadScriptEntry`, realm/source metadata, add preload params parsing
   - 切り出し先候補: `bidi_protocol_preload.mbt`, `bidi_protocol_log.mbt`
-- [ ] `browsingContext` rendering-adjacent command を再分割する
+- [x] `browsingContext` rendering-adjacent command を再分割する
+  - 完了: `handle_set_viewport`, `handle_traverse_history`, `captureScreenshot`, `print`, `locateNodes` と locator/rendering helper を `bidi_protocol_browsing_context_rendering.mbt` へ移動
   - すでに `bidi_protocol_browsing_context.mbt` へ basic navigation/tree/close を移動済み
-  - 候補: `handle_set_viewport`, `handle_traverse_history`, `captureScreenshot`, `print`, `locateNodes`
   - 切り出し先候補: `bidi_protocol_browsing_context_rendering.mbt`
 
 ### P0: WebDriver server と JS runtime glue を分離する
@@ -40,8 +41,8 @@
   - 現状: server setup/auth/status/websocket と、`evaluate_js*`, runtime context sync, DOM query, input dispatch helper が同居している
   - 切り出し先候補: `bidi_server_transport.mbt`, `bidi_runtime_eval.mbt`, `bidi_runtime_context.mbt`, `bidi_runtime_input.mbt`
   - 境界テスト: server file に `evaluate_js`, `input_dispatch_*`, `sync_runtime_*` が残らないこと
-- [ ] data URL / base64 / runtime HTML sync helper を dedicated file に寄せる
-  - 候補: `parse_data_url`, `decode_base64`, `sync_runtime_page`, `sync_runtime_html`
+- [x] data URL / base64 / runtime HTML sync helper を dedicated file に寄せる
+  - 完了: `parse_data_url`, `decode_base64`, `sync_runtime_page`, `sync_runtime_html` と JS FFI glue を `bidi_runtime_document.mbt` へ移動
   - 切り出し先候補: `bidi_runtime_document.mbt`
 
 ### P0: renderer core の責務分割
