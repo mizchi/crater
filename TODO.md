@@ -76,6 +76,7 @@
   - 進捗: abspos / fixed / relative positioning regression を既存 `renderer/renderer/absolute_position_test.mbt` へ移動
   - 進捗: generated content / pseudo-element regression を `renderer/renderer/generated_content_render_test.mbt` へ移動
   - 進捗: `display: contents` regression を `renderer/renderer/display_contents_render_test.mbt` へ移動
+  - 進捗: form control / select / input regression を `renderer/renderer/form_control_render_test.mbt` へ移動
   - 候補: inline/text, replaced element, generated content, SVG, abspos, table/flex/grid, containment
 - [ ] `browser/shell/browser_js_wbtest.mbt` を interaction/navigation/runtime fixture ごとに分ける
   - 狙い: browser shell 変更時の conflict と focused test 実行コストを下げる
