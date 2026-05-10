@@ -65,8 +65,8 @@
 - [x] UA default style / cascade glue を分離する
   - 完了: `get_ua_default_style`, `compute_element_style_indexed`, root/element CSS var collection, inline CSS application を `renderer/renderer/style_resolve.mbt` へ移動
   - 切り出し先候補: `renderer/renderer/style_resolve.mbt`
-- [ ] absolute positioning and layout JSON serialization を分離する
-  - 候補: abspos containing block helpers, zoom/scale apply, `layout_to_json`
+- [x] absolute positioning and layout JSON serialization を分離する
+  - 完了: out-of-flow root sizing、abspos containing block、zoom/scale apply を `renderer/renderer/absolute_positioning.mbt`、`layout_to_json` を `renderer/renderer/layout_json.mbt` へ移動
   - 切り出し先候補: `renderer/renderer/absolute_positioning.mbt`, `renderer/renderer/layout_json.mbt`
 
 ### P1: large test files を domain ごとに分割する

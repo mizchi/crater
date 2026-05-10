@@ -1368,6 +1368,52 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps renderer absolute positioning helpers out of renderer core", () => {
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "renderer/renderer/absolute_positioning.mbt")),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/renderer.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn resolve_inset_for_root",
+      "fn inset_is_definite_for_root",
+      "fn resolve_out_of_flow_root_auto_size",
+      "fn is_svg_container_id",
+      "fn establishes_absolute_containing_block",
+      "fn is_auto_inset",
+      "fn compute_abspos_non_auto_inset_alignment_offset",
+      "fn apply_zoom_and_scale",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps renderer layout JSON serialization out of renderer core", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "renderer/renderer/layout_json.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/renderer.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn safe_number",
+      "fn number_to_json",
+      "fn write_number_json",
+      "fn write_rect_json",
+      "pub fn layout_to_json",
+      "fn estimate_layout_json_size",
+      "fn layout_to_json_impl",
+      "fn escape_json_string",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",
