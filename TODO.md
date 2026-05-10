@@ -62,8 +62,8 @@
 - [x] SVG style normalization を renderer core から分離する
   - 完了: `is_svg_element`, `normalize_svg_display_contents`, `apply_svg_attributes_to_style`, SVG intrinsic fallback, SVG length parsing を `renderer/renderer/svg_style.mbt` へ移動
   - 切り出し先候補: `renderer/renderer/svg_style.mbt`
-- [ ] UA default style / cascade glue を分離する
-  - 候補: `get_ua_default_style`, `compute_element_style_indexed`, CSS var collection, inline style application
+- [x] UA default style / cascade glue を分離する
+  - 完了: `get_ua_default_style`, `compute_element_style_indexed`, root/element CSS var collection, inline CSS application を `renderer/renderer/style_resolve.mbt` へ移動
   - 切り出し先候補: `renderer/renderer/style_resolve.mbt`
 - [ ] absolute positioning and layout JSON serialization を分離する
   - 候補: abspos containing block helpers, zoom/scale apply, `layout_to_json`
