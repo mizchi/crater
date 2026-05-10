@@ -1252,6 +1252,36 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps renderer document preparation out of renderer core", () => {
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "renderer/renderer/document_prepare.mbt")),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/renderer.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "pub struct PseudoRule",
+      "pub struct PseudoRuleIndex",
+      "fn PseudoRuleIndex::build",
+      "fn PseudoRuleIndex::get_candidates",
+      "pub struct PreparedExternalCss",
+      "let external_css_bundle_cache",
+      "fn external_css_cache_key",
+      "fn collect_pseudo_rules_from_stylesheet",
+      "fn empty_prepared_external_css",
+      "pub fn prepare_external_css",
+      "pub struct PreparedRenderDocument",
+      "pub fn prepare_render_document",
+      "pub fn prepare_render_document_with_prepared_external_css",
+      "fn prepare_render_document_with_external_css_bundle",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",

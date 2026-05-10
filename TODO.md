@@ -53,8 +53,8 @@
 - [x] replaced element / intrinsic media sizing を分離する
   - 完了: img/input/br measure と alt/input sizing helper を `renderer/renderer/replaced_element.mbt`、data URI SVG/GIF/PNG intrinsic parser を `renderer/renderer/intrinsic_media.mbt` へ移動
   - 切り出し先候補: `renderer/renderer/replaced_element.mbt`, `renderer/renderer/intrinsic_media.mbt`
-- [ ] document preparation / external CSS cache を分離する
-  - 候補: `prepare_external_css`, `PreparedExternalCss`, pseudo rule index build, render root preparation
+- [x] document preparation / external CSS cache を分離する
+  - 完了: `PreparedExternalCss`, `PreparedRenderDocument`, external CSS cache, pseudo rule index build, render root preparation を `renderer/renderer/document_prepare.mbt` へ移動
   - 切り出し先候補: `renderer/renderer/document_prepare.mbt`
 - [ ] generated content / pseudo / CSS counter 実装を分離する
   - 候補: `ContentPart`, counter directive parsing, `::before/::after` creation, `content` evaluation
