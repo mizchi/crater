@@ -1525,6 +1525,30 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps renderer replaced media regression tests in their own file", () => {
+    const replacedMediaTestFile = path.join(
+      REPO_ROOT,
+      "renderer/renderer/replaced_media_render_test.mbt",
+    );
+    expect(fs.existsSync(replacedMediaTestFile)).toBe(true);
+
+    const replacedMediaSource = fs.readFileSync(replacedMediaTestFile, "utf8");
+    const sourceFiles = [
+      path.join(REPO_ROOT, "renderer/renderer/render_test.mbt"),
+      path.join(REPO_ROOT, "renderer/renderer/renderer_test.mbt"),
+    ];
+    const sourceText = sourceFiles.map((file) => fs.readFileSync(file, "utf8")).join("\n");
+    const migratedTests = [
+      'test "intrinsic_percent_replaced_wpt_style"',
+      'test "video_with_source_children_keeps_explicit_replaced_size"',
+      'test "br element preserved as separate node with line-height"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => replacedMediaSource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => sourceText.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",
