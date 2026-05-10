@@ -59,8 +59,8 @@
 - [x] generated content / pseudo / CSS counter 実装を分離する
   - 完了: `ContentPart`, counter directive/state, `::before/::after` content resolution, generated pseudo node creation を `renderer/renderer/generated_content.mbt` へ移動
   - 切り出し先候補: `renderer/renderer/generated_content.mbt`
-- [ ] SVG style normalization を renderer core から分離する
-  - 候補: `is_svg_element`, `normalize_svg_display_contents`, `apply_svg_attributes_to_style`, intrinsic size
+- [x] SVG style normalization を renderer core から分離する
+  - 完了: `is_svg_element`, `normalize_svg_display_contents`, `apply_svg_attributes_to_style`, SVG intrinsic fallback, SVG length parsing を `renderer/renderer/svg_style.mbt` へ移動
   - 切り出し先候補: `renderer/renderer/svg_style.mbt`
 - [ ] UA default style / cascade glue を分離する
   - 候補: `get_ua_default_style`, `compute_element_style_indexed`, CSS var collection, inline style application
