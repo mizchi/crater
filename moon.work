@@ -15,6 +15,7 @@ members = [
   "./terminal_protocol",
   "./terminal_image_cache",
   "./renderer",
+  "./renderer_terminal",
   "./renderer_style",
   "./runtime",
   "./html_assets",

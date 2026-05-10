@@ -261,9 +261,6 @@ pub fn render_with_external_css(String, RenderContext, Array[String]) -> Layout
 // Render to Node (without layout computation)
 pub fn render_to_node(String, RenderContext) -> Node
 
-// Render to Sixel format (terminal graphics)
-pub fn render_to_sixel(String, Int, Int) -> String
-
 // RenderContext configuration
 pub struct RenderContext {
   viewport_width : Double
@@ -272,6 +269,16 @@ pub struct RenderContext {
   color_scheme : ColorScheme
 }
 pub fn RenderContext::default() -> Self
+```
+
+### `mizchi/crater-renderer-terminal`
+
+Terminal graphics helpers layered on top of `mizchi/crater-renderer/renderer`.
+
+```moonbit
+pub fn render_to_sixel(String, Int, Int) -> String
+pub fn render_to_sixel_with_css(String, Int, Int, Int, Array[String]) -> String
+pub fn render_to_kitty_with_css(String, Int, Int, Int, Array[String]) -> String
 ```
 
 ---

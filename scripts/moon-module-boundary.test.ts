@@ -87,6 +87,24 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps terminal output helpers out of crater-renderer", () => {
+    const terminalOutputMarkers = [
+      "mizchi/crater-painter-terminal/kitty",
+      "mizchi/crater-painter/x/image",
+      "render_to_sixel",
+      "render_to_kitty",
+      "write_kitty",
+    ] as const;
+    const offenders = collectMoonPackageFiles(path.join(REPO_ROOT, "renderer"))
+      .filter((file) => {
+        const source = fs.readFileSync(file, "utf8");
+        return terminalOutputMarkers.some((marker) => source.includes(marker));
+      })
+      .map((file) => path.relative(REPO_ROOT, file));
+
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps terminal image cache implementation out of browser shell", () => {
     const implementationMarkers = [
       "pub struct ImageCache",

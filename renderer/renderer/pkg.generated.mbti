@@ -9,7 +9,6 @@ import {
   "mizchi/crater-layout/node",
   "mizchi/crater-layout/style",
   "mizchi/crater-layout/types",
-  "moonbitlang/async/io",
   "moonbitlang/core/ref",
 }
 
@@ -66,8 +65,6 @@ pub fn render_document_with_external_css(@html.Document, RenderContext, Array[St
 
 pub fn render_document_with_prepared_external_css(@html.Document, RenderContext, PreparedExternalCss) -> @types.Layout
 
-pub fn render_to_kitty_with_css(String, Int, Int, Int, Array[String]) -> String
-
 pub fn render_to_node(String, RenderContext) -> @node.Node
 
 pub fn render_to_node_and_layout(String, RenderContext) -> (@node.Node, @types.Layout)
@@ -86,14 +83,6 @@ pub fn render_to_node_with_external_css(String, RenderContext, Array[String]) ->
 
 pub fn render_to_node_with_prepared_external_css(@html.Document, RenderContext, PreparedExternalCss) -> @node.Node
 
-pub fn render_to_sixel(String, Int, Int) -> String
-
-pub fn render_to_sixel_with_css(String, Int, Int, Int, Array[String]) -> String
-
-pub fn render_to_sixel_with_scroll(String, Int, Int, Int) -> String
-
-pub fn render_to_sixel_with_styles(String, Int, Int) -> String
-
 pub fn render_with_external_css(String, RenderContext, Array[String]) -> @types.Layout
 
 pub fn set_builtin_text_advance_ratio_override_for_test(Double) -> Unit
@@ -103,8 +92,6 @@ pub fn set_force_monospace_metrics(Bool) -> Unit
 pub fn set_image_intrinsic_size_provider(ImageIntrinsicSizeProvider) -> Unit
 
 pub fn set_text_metrics_provider(TextMetricsProvider) -> Unit
-
-pub async fn[T : @io.Writer] write_kitty_with_css(T, String, Int, Int, Int, Array[String]) -> Unit
 
 // Errors
 

@@ -1,19 +1,16 @@
 import {
-  "moonbitlang/async/io",
   "moonbitlang/core/string",
   "mizchi/crater-dom/html",
   "mizchi/crater-css" @css,
   "mizchi/crater-layout" @node,
   "mizchi/crater-renderer-style" @renderer_style,
-  "mizchi/crater-painter/paint/node_bridge" @paint_node,
   "mizchi/crater-layout/style",
   "mizchi/crater-layout/types",
-  "mizchi/crater-painter-terminal/kitty",
-  "mizchi/crater-painter/x/image",
 }
 
 import {
   "mizchi/crater-layout/testing" @layout_test,
+  "mizchi/crater-painter/paint/node_bridge" @paint_node,
 } for "test"
 
 import {
