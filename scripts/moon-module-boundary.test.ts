@@ -352,6 +352,57 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps browser shell script extraction in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/script_extraction.mbt"))).toBe(
+      true,
+    );
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/js_execution.mbt"), "utf8");
+    const implementationMarkers = [
+      "priv struct ScriptInfo",
+      "fn is_executable_script_type",
+      "fn extract_scripts",
+      "char_at(html",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell external script fetching in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/script_fetch.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/js_execution.mbt"), "utf8");
+    const implementationMarkers = [
+      "@http.cached_fetch_async",
+      "@http.FetchOptions::default()",
+      "@http.RequestMode::NoCors",
+      "http_fetch_adapter",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell script DOM runtime in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/script_dom_runtime.mbt"))).toBe(
+      true,
+    );
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/js_execution.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn Browser::init_js_execution",
+      "fn Browser::sync_render_state_from_dom_tree",
+      "html_source_requires_runtime_rebuild",
+      "build_dom_tree_from_source_html",
+      "@js.serialize_dom_to_html",
+      "@renderer.get_content_height_with_document",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps browser shell source DOM reconstruction in its own file", () => {
     expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/source_dom.mbt"))).toBe(true);
 
