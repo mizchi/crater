@@ -37,8 +37,8 @@
 
 ### P0: WebDriver server と JS runtime glue を分離する
 
-- [ ] `webdriver/webdriver/bidi_server.mbt` の transport/server と runtime JS glue を分ける
-  - 現状: server setup/auth/status/websocket と、`evaluate_js*`, runtime context sync, DOM query, input dispatch helper が同居している
+- [x] `webdriver/webdriver/bidi_server.mbt` の transport/server と runtime JS glue を分ける
+  - 完了: `evaluate_js*` を `bidi_runtime_eval.mbt`、runtime context/DOM query/lifecycle を `bidi_runtime_context.mbt`、input dispatch を `bidi_runtime_input.mbt`、script channel drain を `bidi_runtime_channel.mbt` へ移動
   - 切り出し先候補: `bidi_server_transport.mbt`, `bidi_runtime_eval.mbt`, `bidi_runtime_context.mbt`, `bidi_runtime_input.mbt`
   - 境界テスト: server file に `evaluate_js`, `input_dispatch_*`, `sync_runtime_*` が残らないこと
 - [x] data URL / base64 / runtime HTML sync helper を dedicated file に寄せる
