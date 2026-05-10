@@ -35,6 +35,12 @@ supported_targets = "js+native"
 options(
   targets: {
     "browser_fixture_support_wbtest.mbt": [ "js" ],
+    "browser_js_focus_wbtest.mbt": [ "js" ],
+    "browser_js_interaction_wbtest.mbt": [ "js" ],
+    "browser_js_navigation_wbtest.mbt": [ "js" ],
+    "browser_js_render_wbtest.mbt": [ "js" ],
+    "browser_js_runtime_wbtest.mbt": [ "js" ],
+    "browser_js_shadow_wbtest.mbt": [ "js" ],
     "browser_js_wbtest.mbt": [ "js" ],
     "perf_js.mbt": [ "js" ],
     "perf_js_wbtest.mbt": [ "js" ],

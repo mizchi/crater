@@ -113,8 +113,12 @@
   - 進捗: flexbox / gap / alignment regression を `renderer/renderer/flex_render_test.mbt` へ移動
   - 進捗: ruby layout regression を `renderer/renderer/ruby_render_test.mbt` へ移動
   - 候補: inline/text, replaced element, generated content, SVG, abspos, table/flex/grid, containment
-- [ ] `browser/shell/browser_js_wbtest.mbt` を interaction/navigation/runtime fixture ごとに分ける
+- [x] `browser/shell/browser_js_wbtest.mbt` を interaction/navigation/runtime fixture ごとに分ける
   - 狙い: browser shell 変更時の conflict と focused test 実行コストを下げる
+  - 進捗: script extraction / JS runtime / DOM mutation / scheduler regression を `browser/shell/browser_js_runtime_wbtest.mbt` へ移動
+  - 進捗: activation / hit-testing / pointer / mouse / drag regression を `browser/shell/browser_js_interaction_wbtest.mbt` へ移動
+  - 進捗: form submission / navigation / external fetch / focused text input regression を `browser/shell/browser_js_navigation_wbtest.mbt` へ移動
+  - 完了: render output / shadow DOM / focused form control も専用 wbtest に分割し、元ファイルは目次コメントだけに縮小
 - [ ] `webdriver/webdriver/bidi_protocol_wbtest.mbt` を domain 別 wbtest に分ける
   - 既存: browsing_context / network / storage 系は一部分割済み
   - 残り候補: script eval, input actions, session/browser, preload/realm, prompt/download
