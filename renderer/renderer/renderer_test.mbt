@@ -27,39 +27,6 @@ fn clear_builtin_text_advance_ratio_override_for_test() -> Unit {
 }
 
 ///|
-test "stylesheet flex-direction is applied" {
-  let html =
-    #|<!doctype html>
-    #|<html><head>
-    #|<style>.row { display: flex; flex-direction: row; gap: 10px; }</style>
-    #|<style>.box { width: 50px; height: 50px; }</style>
-    #|</head>
-    #|<body>
-    #|<div class="row">
-    #|  <div class="box">A</div>
-    #|  <div class="box">B</div>
-    #|</div>
-    #|</body></html>
-  let ctx = @renderer.RenderContext::default()
-  let layout = @renderer.render(html, ctx)
-
-  // Check that div B has x > 0 (row direction)
-  let body = layout
-  let row_div = body.children[0]
-  inspect(row_div.id, content="div.row")
-  if row_div.children.length() >= 2 {
-    let div_a = row_div.children[0]
-    let div_b = row_div.children[1]
-    // In row direction, B should be to the right of A with gap
-    // A at x=0, B at x=50+10(gap)=60
-    inspect(div_a.x, content="0")
-    inspect(div_a.y, content="0")
-    inspect(div_b.x, content="60")
-    inspect(div_b.y, content="0")
-  }
-}
-
-///|
 test "layout_to_json serializes box model fields without changing schema" {
   let child : @types.Layout = {
     id: "child",
@@ -762,45 +729,6 @@ test "html_max_width_constrains_body_layout_width" {
 }
 
 ///|
-test "align_self_static_position_005_inline_span_stays_inline" {
-  let html =
-    #|<!DOCTYPE html>
-    #|<style>
-    #|.container {
-    #|  position: relative;
-    #|  border: 1px solid;
-    #|}
-    #|
-    #|.abs {
-    #|  position: absolute;
-    #|  background: purple;
-    #|  align-self: end;
-    #|  opacity: 0.5;
-    #|}
-    #|</style>
-    #|<div class="container">
-    #|  <span style="font: 20px/1 Ahem;">hello
-    #|    <span class="abs">hello</span>
-    #|    <span style="vertical-align: top; font-size: 50px;">world</span>
-    #|  </span>
-    #|</div>
-  let root = @renderer.render_to_node(html, @renderer.RenderContext::default())
-  let container = root.children[0]
-  inspect(container.id, content="div.container")
-  let inline_span = container.children[0]
-  inspect(inline_span.id, content="span")
-  inspect(inline_span.style.display, content="Inline")
-  let mut has_abs = false
-  for child in inline_span.children {
-    if child.id == "span.abs" {
-      inspect(child.style.position, content="Absolute")
-      has_abs = true
-    }
-  }
-  inspect(has_abs, content="true")
-}
-
-///|
 test "custom text metrics provider overrides text measurement" {
   @renderer.clear_text_metrics_provider()
   let html =
@@ -1126,107 +1054,6 @@ test "repeated inline styles do not reuse default cache across inherited font si
   inspect(default_child.style.line_height, content="16")
   inspect(large_outer.style.font_size, content="32")
   inspect(large_child.style.line_height, content="32")
-}
-
-///|
-test "anchor remains inline inside fixed-height flex item" {
-  let html =
-    #|<!doctype html>
-    #|<html><body>
-    #|<style>
-    #|#test { display: flex; }
-    #|#test div { align-self: baseline; }
-    #|#div1 { height: 90px; font-size: 20px; width: 30px; }
-    #|</style>
-    #|<div id="test"><div id="div1"><a href="#">aaa</a></div></div>
-    #|</body></html>
-  let ctx = @renderer.RenderContext::default()
-  let node = @renderer.render_to_node(html, ctx)
-  let target = node.children[0]
-  let div1 = target.children[0]
-  let anchor = div1.children[0]
-  inspect(target.style.display, content="Flex")
-  inspect(div1.style.display, content="Block")
-  inspect(div1.style.zoom, content="1")
-  inspect(anchor.id, content="a")
-  inspect(anchor.style.display, content="Inline")
-}
-
-///|
-test "wpt_baseline_row_horz_text_nodes_keep_single_line_metrics" {
-  let html =
-    #|<!doctype html>
-    #|<html><head>
-    #|<style>
-    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
-    #|#target {
-    #|  display: flex;
-    #|  align-items: baseline;
-    #|  inline-size: min-content;
-    #|  block-size: 100px;
-    #|  border: solid 3px;
-    #|}
-    #|#target > div {
-    #|  margin: 5px 7px 9px 11px;
-    #|}
-    #|#target > :nth-child(1) {
-    #|  background: lime;
-    #|  font: 30px/1 Ahem;
-    #|}
-    #|#target > :nth-child(2) {
-    #|  background: hotpink;
-    #|  font: 20px/1 Ahem;
-    #|}
-    #|#target > :nth-child(3) {
-    #|  background: cyan;
-    #|  writing-mode: vertical-rl;
-    #|  font: 16px/1 Ahem;
-    #|  width: 40px;
-    #|  height: 40px;
-    #|}
-    #|</style>
-    #|</head><body>
-    #|<div id="target">
-    #|  <div>line1<br>line2</div>
-    #|  <div>line1<br>line2</div>
-    #|  <div></div>
-    #|</div>
-    #|</body></html>
-  let ctx = @renderer.RenderContext::default()
-  let node = @renderer.render_to_node(html, ctx)
-  let target = node.children[0]
-  let first = target.children[0]
-  let text1 = first.children[0]
-  let text2 = first.children[2]
-  inspect(first.style.width, content="Auto")
-  inspect(first.style.font_size, content="30")
-  inspect(text1.style.font_size, content="30")
-  inspect(text1.style.line_height, content="30")
-  inspect(text1.text, content="Some(\"line1\")")
-  inspect(text2.text, content="Some(\"line2\")")
-
-  let layout = @renderer.render(html, ctx)
-  let target_layout = layout.children[0]
-  let first_layout = target_layout.children[0]
-  inspect(
-    first_layout.height,
-    content=(
-      #|60
-    ),
-  )
-  inspect(
-    first_layout.children[0].height,
-    content=(
-      #|30
-    ),
-  )
-  inspect(first_layout.children[1].y, content="0")
-  inspect(
-    first_layout.children[2].y,
-    content=(
-      #|30
-    ),
-  )
 }
 
 ///|

@@ -1593,6 +1593,27 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps renderer flex regression tests in their own file", () => {
+    const flexTestFile = path.join(REPO_ROOT, "renderer/renderer/flex_render_test.mbt");
+    expect(fs.existsSync(flexTestFile)).toBe(true);
+
+    const flexSource = fs.readFileSync(flexTestFile, "utf8");
+    const sourceFiles = [
+      path.join(REPO_ROOT, "renderer/renderer/render_test.mbt"),
+      path.join(REPO_ROOT, "renderer/renderer/renderer_test.mbt"),
+    ];
+    const sourceText = sourceFiles.map((file) => fs.readFileSync(file, "utf8")).join("\n");
+    const migratedTests = [
+      'test "stylesheet flex-direction is applied"',
+      'test "wpt_gap_rtl_direction_inheritance_for_flex"',
+      'test "wpt_flex_item_min_width_min_content_like"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => flexSource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => sourceText.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",

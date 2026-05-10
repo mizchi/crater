@@ -80,6 +80,7 @@
   - 進捗: replaced element / intrinsic media regression を `renderer/renderer/replaced_media_render_test.mbt` へ移動
   - 進捗: multicol / fragmentation / column scroll-marker regression を `renderer/renderer/multicol_fragmentation_render_test.mbt` へ移動
   - 進捗: grid sizing / placement regression を `renderer/renderer/grid_render_test.mbt` へ移動
+  - 進捗: flexbox / gap / alignment regression を `renderer/renderer/flex_render_test.mbt` へ移動
   - 候補: inline/text, replaced element, generated content, SVG, abspos, table/flex/grid, containment
 - [ ] `browser/shell/browser_js_wbtest.mbt` を interaction/navigation/runtime fixture ごとに分ける
   - 狙い: browser shell 変更時の conflict と focused test 実行コストを下げる
