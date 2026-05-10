@@ -82,6 +82,10 @@
   - 完了: HTML element から CSS selector element への変換 3 経路を `renderer/renderer/selector_element.mbt` へ移動
 - [x] shared string helper と element skip policy を分離する
   - 完了: `remove_suffix` を `renderer/renderer/string_utils.mbt`、non-visual/unsupported element skip policy を `renderer/renderer/skip_element.mbt` へ移動
+- [x] public render API wrapper と simple element conversion を分離する
+  - 完了: render/render_to_node 系 entrypoint orchestration を `renderer/renderer/render_api.mbt`、inline-style-only `element_to_node` を `renderer/renderer/simple_element_node.mbt` へ移動
+- [x] content height helper と layout debug print を分離する
+  - 完了: content-height convenience/extent calculation を `renderer/renderer/content_height.mbt`、layout tree debug print を `renderer/renderer/layout_debug.mbt` へ移動
 
 ### P1: large test files を domain ごとに分割する
 
