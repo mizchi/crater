@@ -1308,11 +1308,13 @@ describe("MoonBit module boundaries", () => {
       "fn evaluate_content_parts",
       "fn selector_text_without_pseudo",
       "fn create_generated_pseudo_node",
+      "fn apply_generated_pseudo_host_style_offsets",
       "fn resolve_pseudo_spec",
       "fn resolve_pseudo_spec_fast",
       "fn get_counter_directives",
       "fn selector_has_generated_pseudo_content",
       "fn compute_element_own_counters",
+      "spec.position_relative && spec.left_offset",
     ] as const;
 
     const offenders = implementationMarkers.filter((marker) => source.includes(marker));
@@ -1537,6 +1539,27 @@ describe("MoonBit module boundaries", () => {
       "fn is_table_element",
       "fn is_table_display",
       "fn is_no_principal_table_internal_display",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps renderer table attribute normalization out of renderer core", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "renderer/renderer/table_attributes.mbt"))).toBe(
+      true,
+    );
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/renderer.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      'elem.attributes.get("cellspacing")',
+      'elem.attributes.get("cellpadding")',
+      'elem.attributes.get("rowspan")',
+      'elem.attributes.get("colspan")',
+      "current_cellpadding.val",
     ] as const;
 
     const offenders = implementationMarkers.filter((marker) => source.includes(marker));

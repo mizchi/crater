@@ -44,87 +44,7 @@ fn element_to_node_with_styles(
   let computed_style = normalize_svg_display_contents(
     cell_tag, computed_style, parent_is_svg,
   )
-  // Handle table attributes that affect table formatting context.
-  let style = if cell_tag == "table" {
-    let border_spacing = match elem.attributes.get("cellspacing") {
-      Some(val) => {
-        let n = @string.parse_double(val) catch {
-          _ => computed_style.border_spacing
-        }
-        if n >= 0.0 {
-          n
-        } else {
-          computed_style.border_spacing
-        }
-      }
-      None => computed_style.border_spacing
-    }
-    // Track cellpadding for descendant <td>/<th> elements
-    match elem.attributes.get("cellpadding") {
-      Some(val) => {
-        let n = @string.parse_double(val) catch { _ => -1.0 }
-        if n >= 0.0 {
-          current_cellpadding.val = n
-        }
-      }
-      None => ()
-    }
-    // cellspacing sets both horizontal and vertical border-spacing
-    let border_spacing_vertical = match elem.attributes.get("cellspacing") {
-      Some(_) => border_spacing
-      None => computed_style.border_spacing_vertical
-    }
-    { ..computed_style, border_spacing, border_spacing_vertical }
-  } else {
-    computed_style
-  }
-  // Handle table cell rowspan/colspan attributes + cellpadding
-  let style = if cell_tag == "td" || cell_tag == "th" {
-    let rowspan = match elem.attributes.get("rowspan") {
-      Some(val) => {
-        let n = @string.parse_int(val) catch { _ => 1 }
-        if n > 0 {
-          n
-        } else {
-          1
-        }
-      }
-      None => 1
-    }
-    let colspan = match elem.attributes.get("colspan") {
-      Some(val) => {
-        let n = @string.parse_int(val) catch { _ => 1 }
-        if n > 0 {
-          n
-        } else {
-          1
-        }
-      }
-      None => 1
-    }
-    // Apply cellpadding from ancestor table (only if CSS didn't set padding)
-    let mut s = { ..style, rowspan, colspan }
-    let cp = current_cellpadding.val
-    if cp >= 0.0 {
-      let default_pad = @types.Dimension::Length(0.0)
-      let has_css_padding = s.padding.top != @types.Dimension::Auto &&
-        s.padding.top != default_pad
-      if !has_css_padding {
-        s = {
-          ..s,
-          padding: {
-            top: @types.Dimension::Length(cp),
-            right: @types.Dimension::Length(cp),
-            bottom: @types.Dimension::Length(cp),
-            left: @types.Dimension::Length(cp),
-          },
-        }
-      }
-    }
-    s
-  } else {
-    style
-  }
+  let style = apply_table_attributes(elem, cell_tag, computed_style)
   let element_css_vars = compute_element_css_vars_indexed(
     selector_elem,
     elem.style,
@@ -166,24 +86,9 @@ fn element_to_node_with_styles(
       elem.attributes,
     )
   }
-  let style = match after_pseudo {
-    Some(spec) if spec.position_relative && spec.left_offset != 0.0 =>
-      {
-        ..style,
-        position: @types.Relative,
-        inset: { ..style.inset, left: @types.Length(spec.left_offset) },
-      }
-    _ =>
-      match before_pseudo {
-        Some(spec) if spec.position_relative && spec.left_offset != 0.0 =>
-          {
-            ..style,
-            position: @types.Relative,
-            inset: { ..style.inset, left: @types.Length(spec.left_offset) },
-          }
-        _ => style
-      }
-  }
+  let style = apply_generated_pseudo_host_style_offsets(
+    style, before_pseudo, after_pseudo,
+  )
 
   // Convert children - first collect inline content (text + br)
   // Pass stylesheets to detect CSS display values (e.g., display: inline-block)
@@ -532,86 +437,8 @@ fn element_to_node_with_styles_internal(
     computed_style
   }
 
-  // Handle table attributes that affect table formatting context.
   let cell_tag = tag_lower
-  let style = if cell_tag == "table" {
-    let border_spacing = match elem.attributes.get("cellspacing") {
-      Some(val) => {
-        let n = @string.parse_double(val) catch { _ => style.border_spacing }
-        if n >= 0.0 {
-          n
-        } else {
-          style.border_spacing
-        }
-      }
-      None => style.border_spacing
-    }
-    // Track cellpadding for descendant <td>/<th> elements
-    match elem.attributes.get("cellpadding") {
-      Some(val) => {
-        let n = @string.parse_double(val) catch { _ => -1.0 }
-        if n >= 0.0 {
-          current_cellpadding.val = n
-        }
-      }
-      None => ()
-    }
-    // cellspacing sets both horizontal and vertical border-spacing
-    let border_spacing_vertical = match elem.attributes.get("cellspacing") {
-      Some(_) => border_spacing
-      None => style.border_spacing_vertical
-    }
-    { ..style, border_spacing, border_spacing_vertical }
-  } else {
-    style
-  }
-  // Handle table cell rowspan/colspan attributes + cellpadding
-  let style = if cell_tag == "td" || cell_tag == "th" {
-    let rowspan = match elem.attributes.get("rowspan") {
-      Some(val) => {
-        let n = @string.parse_int(val) catch { _ => 1 }
-        if n > 0 {
-          n
-        } else {
-          1
-        }
-      }
-      None => 1
-    }
-    let colspan = match elem.attributes.get("colspan") {
-      Some(val) => {
-        let n = @string.parse_int(val) catch { _ => 1 }
-        if n > 0 {
-          n
-        } else {
-          1
-        }
-      }
-      None => 1
-    }
-    // Apply cellpadding from ancestor table (only if CSS didn't set padding)
-    let mut s = { ..style, rowspan, colspan }
-    let cp = current_cellpadding.val
-    if cp >= 0.0 {
-      let default_pad = @types.Dimension::Length(0.0)
-      let has_css_padding = s.padding.top != @types.Dimension::Auto &&
-        s.padding.top != default_pad
-      if !has_css_padding {
-        s = {
-          ..s,
-          padding: {
-            top: @types.Dimension::Length(cp),
-            right: @types.Dimension::Length(cp),
-            bottom: @types.Dimension::Length(cp),
-            left: @types.Dimension::Length(cp),
-          },
-        }
-      }
-    }
-    s
-  } else {
-    style
-  }
+  let style = apply_table_attributes(elem, cell_tag, style)
 
   // Handle SVG element size from attributes
   let style = if is_svg_element(cell_tag) {
@@ -662,24 +489,9 @@ fn element_to_node_with_styles_internal(
       elem.attributes,
     )
   }
-  let style = match after_pseudo {
-    Some(spec) if spec.position_relative && spec.left_offset != 0.0 =>
-      {
-        ..style,
-        position: @types.Relative,
-        inset: { ..style.inset, left: @types.Length(spec.left_offset) },
-      }
-    _ =>
-      match before_pseudo {
-        Some(spec) if spec.position_relative && spec.left_offset != 0.0 =>
-          {
-            ..style,
-            position: @types.Relative,
-            inset: { ..style.inset, left: @types.Length(spec.left_offset) },
-          }
-        _ => style
-      }
-  }
+  let style = apply_generated_pseudo_host_style_offsets(
+    style, before_pseudo, after_pseudo,
+  )
   // Convert children - first collect inline content (text + br)
   // Pass stylesheets to detect CSS display values (e.g., display: inline-block)
   let children : Array[@node.Node] = []

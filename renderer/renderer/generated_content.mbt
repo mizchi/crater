@@ -675,6 +675,32 @@ priv struct AfterPseudoSpec {
 }
 
 ///|
+fn apply_generated_pseudo_host_style_offsets(
+  style : @style.Style,
+  before_pseudo : AfterPseudoSpec?,
+  after_pseudo : AfterPseudoSpec?,
+) -> @style.Style {
+  match after_pseudo {
+    Some(spec) if spec.position_relative && spec.left_offset != 0.0 =>
+      {
+        ..style,
+        position: @types.Relative,
+        inset: { ..style.inset, left: @types.Length(spec.left_offset) },
+      }
+    _ =>
+      match before_pseudo {
+        Some(spec) if spec.position_relative && spec.left_offset != 0.0 =>
+          {
+            ..style,
+            position: @types.Relative,
+            inset: { ..style.inset, left: @types.Length(spec.left_offset) },
+          }
+        _ => style
+      }
+  }
+}
+
+///|
 fn create_generated_pseudo_node(
   spec : AfterPseudoSpec,
   pseudo_kind : PseudoKind,
