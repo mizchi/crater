@@ -1434,6 +1434,27 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps renderer absolute positioning regression tests in their own file", () => {
+    const absoluteTestFile = path.join(REPO_ROOT, "renderer/renderer/absolute_position_test.mbt");
+    expect(fs.existsSync(absoluteTestFile)).toBe(true);
+
+    const absoluteSource = fs.readFileSync(absoluteTestFile, "utf8");
+    const sourceFiles = [
+      path.join(REPO_ROOT, "renderer/renderer/render_test.mbt"),
+      path.join(REPO_ROOT, "renderer/renderer/renderer_test.mbt"),
+    ];
+    const sourceText = sourceFiles.map((file) => fs.readFileSync(file, "utf8")).join("\n");
+    const migratedTests = [
+      'test "position relative with negative offset"',
+      'test "fixed_child_in_abspos_parent_uses_viewport_reference"',
+      'test "html_abspos_root_keeps_html_as_layout_root"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => absoluteSource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => sourceText.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",

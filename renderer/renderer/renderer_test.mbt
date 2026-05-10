@@ -27,20 +27,6 @@ fn clear_builtin_text_advance_ratio_override_for_test() -> Unit {
 }
 
 ///|
-test "position relative with negative offset" {
-  let html =
-    #|<div style="width: 100px; height: 100px;">
-    #|  <div style="position: relative; top: -20px; left: -40px; width: 50px; height: 50px;"></div>
-    #|</div>
-  let ctx = @renderer.RenderContext::default()
-  let layout = @renderer.render(html, ctx)
-  let outer = layout.children[0]
-  let inner = outer.children[0]
-  inspect(inner.x, content="-40")
-  inspect(inner.y, content="-20")
-}
-
-///|
 test "stylesheet flex-direction is applied" {
   let html =
     #|<!doctype html>
