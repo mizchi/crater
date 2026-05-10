@@ -65,6 +65,8 @@
 - [x] UA default style / cascade glue を分離する
   - 完了: `get_ua_default_style`, `compute_element_style_indexed`, root/element CSS var collection, inline CSS application を `renderer/renderer/style_resolve.mbt` へ移動
   - 切り出し先候補: `renderer/renderer/style_resolve.mbt`
+- [x] nested element style adjustment を分離する
+  - 完了: hidden/dialog visibility、inline containment cleanup、ruby/replaced/block-child display adjustment、nested SVG/table style finalization を `renderer/renderer/element_style_adjust.mbt` へ移動
 - [x] absolute positioning and layout JSON serialization を分離する
   - 完了: out-of-flow root sizing、abspos containing block、zoom/scale apply を `renderer/renderer/absolute_positioning.mbt`、`layout_to_json` を `renderer/renderer/layout_json.mbt` へ移動
   - 切り出し先候補: `renderer/renderer/absolute_positioning.mbt`, `renderer/renderer/layout_json.mbt`
