@@ -82,6 +82,8 @@
   - 完了: `cellspacing` / `cellpadding` と `rowspan` / `colspan` の style normalization を `renderer/renderer/table_attributes.mbt` へ移動
 - [x] form/replaced/special element final node construction を分離する
   - 完了: input/button/textarea/select/svg/img/canvas/iframe/object/embed/video/audio/br の最終 Node 作成を `renderer/renderer/special_element_node.mbt` へ移動
+- [x] styled child node construction を分離する
+  - 完了: inline text collection、generated pseudo node insertion、child selector/counter sibling state、synthetic text node normalization を `renderer/renderer/styled_children.mbt` へ移動
 - [x] selector element conversion を分離する
   - 完了: HTML element から CSS selector element への変換 3 経路を `renderer/renderer/selector_element.mbt` へ移動
 - [x] shared string helper と element skip policy を分離する
