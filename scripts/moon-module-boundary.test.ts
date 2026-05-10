@@ -1478,6 +1478,30 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps renderer display contents regression tests in their own file", () => {
+    const displayContentsTestFile = path.join(
+      REPO_ROOT,
+      "renderer/renderer/display_contents_render_test.mbt",
+    );
+    expect(fs.existsSync(displayContentsTestFile)).toBe(true);
+
+    const displayContentsSource = fs.readFileSync(displayContentsTestFile, "utf8");
+    const sourceFiles = [
+      path.join(REPO_ROOT, "renderer/renderer/render_test.mbt"),
+      path.join(REPO_ROOT, "renderer/renderer/renderer_test.mbt"),
+    ];
+    const sourceText = sourceFiles.map((file) => fs.readFileSync(file, "utf8")).join("\n");
+    const migratedTests = [
+      'test "display_contents_inline_flex_collapses_boundary_spaces"',
+      'test "display_contents keeps inline parent shrink-to-fit and preserves child span"',
+      'test "display_contents text contributes to flex item intrinsic width"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => displayContentsSource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => sourceText.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",
