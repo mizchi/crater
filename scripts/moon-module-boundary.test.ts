@@ -119,6 +119,173 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps browser shell terminal image implementation in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/terminal_image.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/browser.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn stable_kitty_id",
+      "fn current_kitty_placement",
+      "fn Browser::build_kitty_image_overlay",
+      "fn Browser::prefetch_images",
+      "fn Browser::install_sixel_image_provider",
+      "fn render_cached_kitty_image_with_placement",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell drag and drop helpers in their own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/drag_drop.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/browser.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn Browser::is_draggable_source_id",
+      "fn Browser::dispatch_drag_event_status_to_source_id",
+      "fn Browser::dispatch_drag_event_to_source_id",
+      "fn Browser::is_current_drop_allowed",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell form submit bridge in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/form_bridge.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/browser.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn parse_navigation_request",
+      "fn Browser::drain_pending_form_submission_navigation",
+      "fn browser_form_submit_bridge_source",
+      "fn browser_pending_form_submission_source",
+      "fn browser_peek_pending_form_submission_source",
+      "fn Browser::peek_pending_form_submission_navigation",
+      "fn Browser::shift_pending_form_submission_navigation",
+      "fn Browser::dispatch_submit_to_source_id",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell input bridge in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/input_bridge.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/browser.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn Browser::dispatch_focused_key_to_source_id",
+      "fn Browser::set_text_control_selection_from_cells",
+      "fn Browser::set_text_control_caret_from_cell",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell DOM event bridge in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/dom_event_bridge.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/browser.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn Browser::dispatch_focus_transition",
+      "fn Browser::dispatch_activation_default_to_source_id",
+      "fn Browser::dispatch_click_to_source_id",
+      "fn Browser::dispatch_pointer_mouse_event_to_source_id",
+      "fn Browser::dispatch_click_only_to_source_id",
+      "fn Browser::dispatch_hover_transition",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell navigation implementation in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/navigation.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/browser.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn resolve_url",
+      "fn decode_sync_navigable_html_url",
+      "fn Browser::load_sync_navigable_html_request",
+      "fn Browser::navigate_sync_if_supported",
+      "fn fetch_external_css",
+      "fn Browser::load_url_request",
+      "fn Browser::load_url_lightweight",
+      "fn Browser::go_back",
+      "fn Browser::go_forward",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell rendering implementation in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/rendering.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/browser.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn Browser::set_external_css",
+      "fn Browser::clear_render_cache",
+      "fn Browser::prepare_render_document_for_context",
+      "fn Browser::render_graphics_node_and_layout",
+      "fn Browser::render_output",
+      "fn Browser::render_kitty",
+      "fn Browser::render_text",
+      "fn Browser::render_text_full_page",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell JavaScript execution in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/js_execution.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/browser.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn Browser::set_js_runtime",
+      "fn decode_js_string_result",
+      "fn Browser::flush_js_logs",
+      "fn escape_js_string",
+      "fn Browser::execute_inline_js",
+      "fn Browser::process_pending_script_tasks",
+      "priv struct ScriptInfo",
+      "fn extract_scripts",
+      "fn Browser::init_js_execution",
+      "fn Browser::execute_scripts",
+      "fn Browser::execute_scripts_async",
+      "fn Browser::sync_render_state_from_dom_tree",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell source DOM reconstruction in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/source_dom.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/browser.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn build_dom_tree_from_document",
+      "fn html_source_has_declarative_shadow_dom",
+      "priv struct SourceHtmlFragment",
+      "priv struct NormalizedShadowSourceHtml",
+      "fn parse_html_attributes",
+      "fn extract_source_html_fragment",
+      "fn write_set_attributes_js",
+      "fn create_empty_html_dom_tree",
+      "fn normalize_declarative_shadow_source_html_with_hint",
+      "fn build_dom_tree_from_source_html",
+      "fn build_dom_children",
+      "fn build_dom_element",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",
