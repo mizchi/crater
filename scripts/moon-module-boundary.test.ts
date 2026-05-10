@@ -2249,6 +2249,72 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("delegates SVG viewBox transform math to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+
+    expect(source.includes("pub fn ViewBox::get_transform(")).toBe(true);
+    expect(source.includes("@msvg.ViewBox::")).toBe(true);
+    expect(source.includes("fn get_alignment_factors(")).toBe(false);
+  });
+
+  it("delegates SVG gradient color interpolation to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+
+    expect(source.includes("pub fn LinearGradient::color_at(")).toBe(true);
+    expect(source.includes("pub fn RadialGradient::color_at(")).toBe(true);
+    expect(source.includes("linear_gradient_to_msvg(self).color_at(")).toBe(true);
+    expect(source.includes("radial_gradient_to_msvg(self).color_at(")).toBe(true);
+    expect(source.includes("fn apply_spread(")).toBe(false);
+    expect(source.includes("fn interpolate_gradient_color(")).toBe(false);
+  });
+
+  it("delegates SVG color and stroke defaults to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+
+    expect(source.includes("@msvg.Color::rgb(")).toBe(true);
+    expect(source.includes("@msvg.Color::rgba(")).toBe(true);
+    expect(source.includes("@msvg.Color::transparent()")).toBe(true);
+    expect(source.includes("@msvg.Color::black()")).toBe(true);
+    expect(source.includes("@msvg.Color::white()")).toBe(true);
+    expect(source.includes("color_to_msvg(self).is_transparent()")).toBe(true);
+    expect(source.includes("@msvg.StrokeStyle::default()")).toBe(true);
+  });
+
+  it("delegates SVG transform operations to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/transform.mbt"), "utf8");
+
+    expect(source.includes("@msvg.Transform::")).toBe(true);
+    expect(source.includes("@math.cos")).toBe(false);
+    expect(source.includes("@math.tan")).toBe(false);
+    expect(source.includes("@math.atan2")).toBe(false);
+    expect(source.includes("Matrix multiplication:")).toBe(false);
+  });
+
+  it("delegates SVG bounding boxes and clip rects to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+
+    expect(source.includes("@msvg.BoundingBox::empty()")).toBe(true);
+    expect(source.includes("@msvg.BoundingBox::from_rect(")).toBe(true);
+    expect(source.includes("bounding_box_to_msvg(self).width()")).toBe(true);
+    expect(source.includes("@msvg.ClipRect::")).toBe(true);
+    expect(source.includes("fn min(")).toBe(false);
+    expect(source.includes("fn max(")).toBe(false);
+  });
+
+  it("delegates SVG shape hit testing to mizchi/svg", () => {
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+
+    expect(typesSource.includes("pub fn hit_test_shape(")).toBe(true);
+    expect(typesSource.includes("@msvg.hit_test_shape(px, py, shape_to_msvg(shape))")).toBe(true);
+    expect(interopSource.includes("fn shape_to_msvg(")).toBe(true);
+    expect(typesSource.includes("fn hit_test_rect(")).toBe(false);
+    expect(typesSource.includes("fn hit_test_circle(")).toBe(false);
+    expect(typesSource.includes("fn hit_test_ellipse(")).toBe(false);
+    expect(typesSource.includes("fn hit_test_polygon(")).toBe(false);
+    expect(typesSource.includes("fn hit_test_line(")).toBe(false);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",

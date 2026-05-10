@@ -13,32 +13,32 @@ pub(all) struct Color {
 
 ///|
 pub fn Color::rgb(r : Int, g : Int, b : Int) -> Color {
-  { r, g, b, a: 255 }
+  color_from_msvg(@msvg.Color::rgb(r, g, b))
 }
 
 ///|
 pub fn Color::rgba(r : Int, g : Int, b : Int, a : Int) -> Color {
-  { r, g, b, a }
+  color_from_msvg(@msvg.Color::rgba(r, g, b, a))
 }
 
 ///|
 pub fn Color::transparent() -> Color {
-  { r: 0, g: 0, b: 0, a: 0 }
+  color_from_msvg(@msvg.Color::transparent())
 }
 
 ///|
 pub fn Color::black() -> Color {
-  { r: 0, g: 0, b: 0, a: 255 }
+  color_from_msvg(@msvg.Color::black())
 }
 
 ///|
 pub fn Color::white() -> Color {
-  { r: 255, g: 255, b: 255, a: 255 }
+  color_from_msvg(@msvg.Color::white())
 }
 
 ///|
 pub fn Color::is_transparent(self : Color) -> Bool {
-  self.a == 0
+  color_to_msvg(self).is_transparent()
 }
 
 ///|
@@ -133,54 +133,57 @@ pub fn ViewBox::get_transform(
   viewport_height : Double,
   preserve_aspect_ratio : PreserveAspectRatio,
 ) -> Transform {
-  // Handle zero-size viewBox
-  if self.width <= 0.0 || self.height <= 0.0 {
-    return Transform::identity()
+  let transform = @msvg.ViewBox::{
+    min_x: self.min_x,
+    min_y: self.min_y,
+    width: self.width,
+    height: self.height,
+  }.get_transform(
+    viewport_width,
+    viewport_height,
+    preserve_aspect_ratio.to_msvg(),
+  )
+  Transform::{
+    a: transform.a,
+    b: transform.b,
+    c: transform.c,
+    d: transform.d,
+    e: transform.e,
+    f: transform.f,
   }
-  // Calculate scale factors
-  let scale_x = viewport_width / self.width
-  let scale_y = viewport_height / self.height
-  // Determine actual scale based on preserveAspectRatio
-  let (sx, sy, tx, ty) = match preserve_aspect_ratio.align {
-    None =>
-      // No uniform scaling - stretch to fit
-      (scale_x, scale_y, -self.min_x * scale_x, -self.min_y * scale_y)
-    _ => {
-      // Uniform scaling
-      let scale = match preserve_aspect_ratio.meet_or_slice {
-        Meet => if scale_x < scale_y { scale_x } else { scale_y } // Fit entirely
-        Slice => if scale_x > scale_y { scale_x } else { scale_y } // Cover entirely
-      }
-      // Calculate translation based on alignment
-      let (align_x, align_y) = get_alignment_factors(
-        preserve_aspect_ratio.align,
-      )
-      // Extra space after scaling
-      let extra_x = viewport_width - self.width * scale
-      let extra_y = viewport_height - self.height * scale
-      let translate_x = -self.min_x * scale + extra_x * align_x
-      let translate_y = -self.min_y * scale + extra_y * align_y
-      (scale, scale, translate_x, translate_y)
-    }
-  }
-  // Combine: first translate by viewBox min, then scale
-  Transform::{ a: sx, b: 0.0, c: 0.0, d: sy, e: tx, f: ty }
 }
 
 ///|
-/// Get alignment factors (0.0 = min, 0.5 = mid, 1.0 = max)
-fn get_alignment_factors(align : Align) -> (Double, Double) {
-  match align {
-    None => (0.0, 0.0)
-    XMinYMin => (0.0, 0.0)
-    XMidYMin => (0.5, 0.0)
-    XMaxYMin => (1.0, 0.0)
-    XMinYMid => (0.0, 0.5)
-    XMidYMid => (0.5, 0.5)
-    XMaxYMid => (1.0, 0.5)
-    XMinYMax => (0.0, 1.0)
-    XMidYMax => (0.5, 1.0)
-    XMaxYMax => (1.0, 1.0)
+fn Align::to_msvg(self : Align) -> @msvg.Align {
+  match self {
+    None => @msvg.Align::None
+    XMinYMin => @msvg.Align::XMinYMin
+    XMidYMin => @msvg.Align::XMidYMin
+    XMaxYMin => @msvg.Align::XMaxYMin
+    XMinYMid => @msvg.Align::XMinYMid
+    XMidYMid => @msvg.Align::XMidYMid
+    XMaxYMid => @msvg.Align::XMaxYMid
+    XMinYMax => @msvg.Align::XMinYMax
+    XMidYMax => @msvg.Align::XMidYMax
+    XMaxYMax => @msvg.Align::XMaxYMax
+  }
+}
+
+///|
+fn MeetOrSlice::to_msvg(self : MeetOrSlice) -> @msvg.MeetOrSlice {
+  match self {
+    Meet => @msvg.MeetOrSlice::Meet
+    Slice => @msvg.MeetOrSlice::Slice
+  }
+}
+
+///|
+fn PreserveAspectRatio::to_msvg(
+  self : PreserveAspectRatio,
+) -> @msvg.PreserveAspectRatio {
+  @msvg.PreserveAspectRatio::{
+    align: self.align.to_msvg(),
+    meet_or_slice: self.meet_or_slice.to_msvg(),
   }
 }
 
@@ -369,60 +372,7 @@ pub fn LinearGradient::vertical(
 ///|
 /// Interpolate color at position t (0.0-1.0)
 pub fn LinearGradient::color_at(self : LinearGradient, t : Double) -> Color {
-  if self.stops.length() == 0 {
-    return Color::black()
-  }
-  if self.stops.length() == 1 {
-    return self.stops[0].color
-  }
-  // Apply spread method
-  let t = match self.spread_method {
-    Pad => if t < 0.0 { 0.0 } else if t > 1.0 { 1.0 } else { t }
-    Repeat => {
-      let t2 = t - t.floor()
-      if t2 < 0.0 {
-        t2 + 1.0
-      } else {
-        t2
-      }
-    }
-    Reflect => {
-      let t2 = t - t.floor()
-      let t2 = if t2 < 0.0 { t2 + 1.0 } else { t2 }
-      let cycle = t.floor().to_int() % 2
-      if cycle == 1 {
-        1.0 - t2
-      } else {
-        t2
-      }
-    }
-  }
-  // Find surrounding stops
-  let mut prev_stop = self.stops[0]
-  let mut next_stop = self.stops[self.stops.length() - 1]
-  for i = 0; i < self.stops.length() - 1; i = i + 1 {
-    if t >= self.stops[i].offset && t <= self.stops[i + 1].offset {
-      prev_stop = self.stops[i]
-      next_stop = self.stops[i + 1]
-      break
-    }
-  }
-  // Interpolate
-  let range = next_stop.offset - prev_stop.offset
-  if range < 0.0001 {
-    return prev_stop.color
-  }
-  let local_t = (t - prev_stop.offset) / range
-  Color::rgba(
-    (prev_stop.color.r.to_double() * (1.0 - local_t) +
-    next_stop.color.r.to_double() * local_t).to_int(),
-    (prev_stop.color.g.to_double() * (1.0 - local_t) +
-    next_stop.color.g.to_double() * local_t).to_int(),
-    (prev_stop.color.b.to_double() * (1.0 - local_t) +
-    next_stop.color.b.to_double() * local_t).to_int(),
-    (prev_stop.color.a.to_double() * (1.0 - local_t) +
-    next_stop.color.a.to_double() * local_t).to_int(),
-  )
+  color_from_msvg(linear_gradient_to_msvg(self).color_at(t))
 }
 
 ///|
@@ -466,15 +416,7 @@ pub(all) struct StrokeStyle {
 
 ///|
 pub fn StrokeStyle::default() -> StrokeStyle {
-  {
-    paint: None,
-    width: 1.0,
-    linecap: Butt,
-    linejoin: Miter,
-    miterlimit: 4.0,
-    dasharray: None,
-    dashoffset: 0.0,
-  }
+  stroke_style_from_msvg(@msvg.StrokeStyle::default(), None)
 }
 
 ///|
@@ -627,26 +569,6 @@ pub fn SVGNode::clear_dirty(self : SVGNode) -> Unit {
 ///|
 
 ///|
-/// Helper function for min of two doubles
-fn min(a : Double, b : Double) -> Double {
-  if a < b {
-    a
-  } else {
-    b
-  }
-}
-
-///|
-/// Helper function for max of two doubles
-fn max(a : Double, b : Double) -> Double {
-  if a > b {
-    a
-  } else {
-    b
-  }
-}
-
-///|
 /// Bounding box for a shape
 pub(all) struct BoundingBox {
   min_x : Double
@@ -657,12 +579,7 @@ pub(all) struct BoundingBox {
 
 ///|
 pub fn BoundingBox::empty() -> BoundingBox {
-  {
-    min_x: @double.infinity,
-    min_y: @double.infinity,
-    max_x: @double.neg_infinity,
-    max_y: @double.neg_infinity,
-  }
+  bounding_box_from_msvg(@msvg.BoundingBox::empty())
 }
 
 ///|
@@ -672,22 +589,22 @@ pub fn BoundingBox::from_rect(
   w : Double,
   h : Double,
 ) -> BoundingBox {
-  { min_x: x, min_y: y, max_x: x + w, max_y: y + h }
+  bounding_box_from_msvg(@msvg.BoundingBox::from_rect(x, y, w, h))
 }
 
 ///|
 pub fn BoundingBox::width(self : BoundingBox) -> Double {
-  self.max_x - self.min_x
+  bounding_box_to_msvg(self).width()
 }
 
 ///|
 pub fn BoundingBox::height(self : BoundingBox) -> Double {
-  self.max_y - self.min_y
+  bounding_box_to_msvg(self).height()
 }
 
 ///|
 pub fn BoundingBox::is_empty(self : BoundingBox) -> Bool {
-  self.min_x > self.max_x || self.min_y > self.max_y
+  bounding_box_to_msvg(self).is_empty()
 }
 
 ///|
@@ -695,18 +612,9 @@ pub fn BoundingBox::union(
   self : BoundingBox,
   other : BoundingBox,
 ) -> BoundingBox {
-  if self.is_empty() {
-    other
-  } else if other.is_empty() {
-    self
-  } else {
-    {
-      min_x: min(self.min_x, other.min_x),
-      min_y: min(self.min_y, other.min_y),
-      max_x: max(self.max_x, other.max_x),
-      max_y: max(self.max_y, other.max_y),
-    }
-  }
+  bounding_box_from_msvg(
+    bounding_box_to_msvg(self).union(bounding_box_to_msvg(other)),
+  )
 }
 
 ///|
@@ -715,25 +623,13 @@ pub fn BoundingBox::expand_by_point(
   x : Double,
   y : Double,
 ) -> BoundingBox {
-  {
-    min_x: min(self.min_x, x),
-    min_y: min(self.min_y, y),
-    max_x: max(self.max_x, x),
-    max_y: max(self.max_y, y),
-  }
+  bounding_box_from_msvg(bounding_box_to_msvg(self).expand_by_point(x, y))
 }
 
 ///|
 /// Check if two bounding boxes intersect
 pub fn BoundingBox::intersects(self : BoundingBox, other : BoundingBox) -> Bool {
-  if self.is_empty() || other.is_empty() {
-    false
-  } else {
-    self.min_x <= other.max_x &&
-    self.max_x >= other.min_x &&
-    self.min_y <= other.max_y &&
-    self.max_y >= other.min_y
-  }
+  bounding_box_to_msvg(self).intersects(bounding_box_to_msvg(other))
 }
 
 ///|
@@ -743,7 +639,7 @@ pub fn BoundingBox::contains_point(
   x : Double,
   y : Double,
 ) -> Bool {
-  x >= self.min_x && x <= self.max_x && y >= self.min_y && y <= self.max_y
+  bounding_box_to_msvg(self).contains_point(x, y)
 }
 
 ///|
@@ -757,32 +653,24 @@ pub(all) struct ClipRect {
 
 ///|
 pub fn ClipRect::new(x : Int, y : Int, width : Int, height : Int) -> ClipRect {
-  { x, y, width, height }
+  clip_rect_from_msvg(@msvg.ClipRect::new(x, y, width, height))
 }
 
 ///|
 pub fn ClipRect::from_size(width : Int, height : Int) -> ClipRect {
-  { x: 0, y: 0, width, height }
+  clip_rect_from_msvg(@msvg.ClipRect::from_size(width, height))
 }
 
 ///|
 /// Check if a point is inside the clip rect
 pub fn ClipRect::contains(self : ClipRect, x : Int, y : Int) -> Bool {
-  x >= self.x &&
-  x < self.x + self.width &&
-  y >= self.y &&
-  y < self.y + self.height
+  clip_rect_to_msvg(self).contains(x, y)
 }
 
 ///|
 /// Convert to BoundingBox
 pub fn ClipRect::to_bbox(self : ClipRect) -> BoundingBox {
-  {
-    min_x: self.x.to_double(),
-    min_y: self.y.to_double(),
-    max_x: (self.x + self.width).to_double(),
-    max_y: (self.y + self.height).to_double(),
-  }
+  bounding_box_from_msvg(clip_rect_to_msvg(self).to_bbox())
 }
 
 ///|
@@ -880,134 +768,9 @@ pub fn Camera::get_transform(self : Camera) -> Transform {
 // ============================================================================
 
 ///|
-/// Check if a point is inside a rectangle
-fn hit_test_rect(
-  px : Double,
-  py : Double,
-  x : Double,
-  y : Double,
-  width : Double,
-  height : Double,
-) -> Bool {
-  px >= x && px <= x + width && py >= y && py <= y + height
-}
-
-///|
-/// Check if a point is inside a circle
-fn hit_test_circle(
-  px : Double,
-  py : Double,
-  cx : Double,
-  cy : Double,
-  r : Double,
-) -> Bool {
-  let dx = px - cx
-  let dy = py - cy
-  dx * dx + dy * dy <= r * r
-}
-
-///|
-/// Check if a point is inside an ellipse
-fn hit_test_ellipse(
-  px : Double,
-  py : Double,
-  cx : Double,
-  cy : Double,
-  rx : Double,
-  ry : Double,
-) -> Bool {
-  if rx <= 0.0 || ry <= 0.0 {
-    return false
-  }
-  let dx = (px - cx) / rx
-  let dy = (py - cy) / ry
-  dx * dx + dy * dy <= 1.0
-}
-
-///|
-/// Check if a point is inside a polygon using ray casting algorithm
-fn hit_test_polygon(
-  px : Double,
-  py : Double,
-  points : Array[(Double, Double)],
-) -> Bool {
-  let n = points.length()
-  if n < 3 {
-    return false
-  }
-  let mut inside = false
-  let mut j = n - 1
-  for i = 0; i < n; i = i + 1 {
-    let (xi, yi) = points[i]
-    let (xj, yj) = points[j]
-    // Ray casting: count intersections with polygon edges
-    if (yi > py) != (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi {
-      inside = !inside
-    }
-    j = i
-  }
-  inside
-}
-
-///|
-/// Check if a point is on a line (with tolerance)
-fn hit_test_line(
-  px : Double,
-  py : Double,
-  x1 : Double,
-  y1 : Double,
-  x2 : Double,
-  y2 : Double,
-  tolerance : Double,
-) -> Bool {
-  // Distance from point to line segment
-  let dx = x2 - x1
-  let dy = y2 - y1
-  let len_sq = dx * dx + dy * dy
-  if len_sq < 0.0001 {
-    // Line is a point
-    let d = (px - x1) * (px - x1) + (py - y1) * (py - y1)
-    return d <= tolerance * tolerance
-  }
-  // Project point onto line
-  let t = ((px - x1) * dx + (py - y1) * dy) / len_sq
-  let t_clamped = if t < 0.0 { 0.0 } else if t > 1.0 { 1.0 } else { t }
-  let proj_x = x1 + t_clamped * dx
-  let proj_y = y1 + t_clamped * dy
-  let dist_sq = (px - proj_x) * (px - proj_x) + (py - proj_y) * (py - proj_y)
-  dist_sq <= tolerance * tolerance
-}
-
-///|
 /// Hit test a shape (without transform)
 pub fn hit_test_shape(px : Double, py : Double, shape : Shape) -> Bool {
-  match shape {
-    Rect(x~, y~, width~, height~, ..) =>
-      hit_test_rect(px, py, x, y, width, height)
-    Circle(cx~, cy~, r~) => hit_test_circle(px, py, cx, cy, r)
-    Ellipse(cx~, cy~, rx~, ry~) => hit_test_ellipse(px, py, cx, cy, rx, ry)
-    Line(x1~, y1~, x2~, y2~) => hit_test_line(px, py, x1, y1, x2, y2, 2.0)
-    Polyline(points~) => {
-      // Hit test each line segment
-      for i = 0; i < points.length() - 1; i = i + 1 {
-        let (x1, y1) = points[i]
-        let (x2, y2) = points[i + 1]
-        if hit_test_line(px, py, x1, y1, x2, y2, 2.0) {
-          return true
-        }
-      }
-      false
-    }
-    Polygon(points~) => hit_test_polygon(px, py, points)
-    Path(_) => false // TODO: convert path to polygon for hit testing
-    Text(x~, y~, text~, font_size~) => {
-      // Approximate text bounding box
-      let char_width = font_size * 0.6
-      let width = char_width * text.length().to_double()
-      hit_test_rect(px, py, x, y - font_size, width, font_size)
-    }
-    Group => false
-  }
+  @msvg.hit_test_shape(px, py, shape_to_msvg(shape))
 }
 
 ///|
@@ -1819,69 +1582,7 @@ pub fn RadialGradient::color_at(
   width : Double,
   height : Double,
 ) -> Color {
-  // Convert to gradient space
-  let gx = self.cx * width
-  let gy = self.cy * height
-  let gr = self.r * (if width < height { width } else { height })
-  // Distance from center
-  let dx = px - gx
-  let dy = py - gy
-  let dist = (dx * dx + dy * dy).sqrt()
-  // Normalized position (0.0 at center, 1.0 at radius)
-  let mut t = if gr > 0.0 { dist / gr } else { 0.0 }
-  // Apply spread method
-  t = apply_spread(t, self.spread_method)
-  // Interpolate color
-  interpolate_gradient_color(t, self.stops)
-}
-
-///|
-fn apply_spread(t : Double, spread : SpreadMethod) -> Double {
-  match spread {
-    Pad => if t < 0.0 { 0.0 } else if t > 1.0 { 1.0 } else { t }
-    Repeat => t - t.floor()
-    Reflect => {
-      let t2 = t - t.floor()
-      if t.to_int() % 2 == 0 {
-        t2
-      } else {
-        1.0 - t2
-      }
-    }
-  }
-}
-
-///|
-fn interpolate_gradient_color(t : Double, stops : Array[GradientStop]) -> Color {
-  if stops.is_empty() {
-    return Color::black()
-  }
-  if stops.length() == 1 {
-    return stops[0].color
-  }
-  // Find surrounding stops
-  let mut prev_stop = stops[0]
-  let mut next_stop = stops[stops.length() - 1]
-  for stop in stops {
-    if stop.offset <= t {
-      prev_stop = stop
-    }
-    if stop.offset >= t && next_stop.offset < stop.offset {
-      next_stop = stop
-    }
-  }
-  for stop in stops {
-    if stop.offset >= t {
-      next_stop = stop
-      break
-    }
-  }
-  // Interpolate
-  if prev_stop.offset >= next_stop.offset {
-    return prev_stop.color
-  }
-  let local_t = (t - prev_stop.offset) / (next_stop.offset - prev_stop.offset)
-  lerp_color(prev_stop.color, next_stop.color, local_t)
+  color_from_msvg(radial_gradient_to_msvg(self).color_at(px, py, width, height))
 }
 
 // ============================================================================

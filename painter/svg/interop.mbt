@@ -305,10 +305,35 @@ fn bounding_box_from_msvg(bbox : @msvg.BoundingBox) -> BoundingBox {
 }
 
 ///|
+fn bounding_box_to_msvg(bbox : BoundingBox) -> @msvg.BoundingBox {
+  @msvg.BoundingBox::{
+    min_x: bbox.min_x,
+    min_y: bbox.min_y,
+    max_x: bbox.max_x,
+    max_y: bbox.max_y,
+  }
+}
+
+///|
 fn bounding_box_from_msvg_option(bbox : @msvg.BoundingBox?) -> BoundingBox? {
   match bbox {
     Some(b) => Some(bounding_box_from_msvg(b))
     None => None
+  }
+}
+
+///|
+fn clip_rect_from_msvg(clip : @msvg.ClipRect) -> ClipRect {
+  { x: clip.x, y: clip.y, width: clip.width, height: clip.height }
+}
+
+///|
+fn clip_rect_to_msvg(clip : ClipRect) -> @msvg.ClipRect {
+  @msvg.ClipRect::{
+    x: clip.x,
+    y: clip.y,
+    width: clip.width,
+    height: clip.height,
   }
 }
 
@@ -326,6 +351,24 @@ fn shape_from_msvg(shape : @msvg.Shape) -> Shape {
     Text(x~, y~, text~, font_size~) => Text(x~, y~, text~, font_size~)
     Image(..) => Group
     Group => Group
+  }
+}
+
+///|
+fn shape_to_msvg(shape : Shape) -> @msvg.Shape {
+  match shape {
+    Rect(x~, y~, width~, height~, rx~, ry~) =>
+      @msvg.Shape::Rect(x~, y~, width~, height~, rx~, ry~)
+    Circle(cx~, cy~, r~) => @msvg.Shape::Circle(cx~, cy~, r~)
+    Ellipse(cx~, cy~, rx~, ry~) => @msvg.Shape::Ellipse(cx~, cy~, rx~, ry~)
+    Line(x1~, y1~, x2~, y2~) => @msvg.Shape::Line(x1~, y1~, x2~, y2~)
+    Polyline(points~) => @msvg.Shape::Polyline(points~)
+    Polygon(points~) => @msvg.Shape::Polygon(points~)
+    Path(commands~) =>
+      @msvg.Shape::Path(commands=path_commands_to_msvg(commands))
+    Text(x~, y~, text~, font_size~) =>
+      @msvg.Shape::Text(x~, y~, text~, font_size~)
+    Group => @msvg.Shape::Group
   }
 }
 
