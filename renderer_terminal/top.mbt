@@ -12,7 +12,7 @@ fn default_render_context(width : Int, height : Int) -> @renderer.RenderContext 
 /// Render HTML to Sixel string (legacy, depth-based colors).
 pub fn render_to_sixel(html : String, width : Int, height : Int) -> String {
   let layout = @renderer.render(html, default_render_context(width, height))
-  @image.render_layout(layout, width, height)
+  @sixel.render_layout(layout, width, height)
 }
 
 ///|
@@ -50,7 +50,7 @@ pub fn render_to_sixel_with_css(
     default_render_context(width, height),
     external_css,
   )
-  @image.render_with_styles_scrolled(node, layout, width, height, scroll_y)
+  @sixel.render_with_styles_scrolled(node, layout, width, height, scroll_y)
 }
 
 ///|

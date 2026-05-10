@@ -5,4 +5,5 @@ import {
   "mizchi/crater-painter/svg",
   "mizchi/crater-painter/x/image",
   "mizchi/crater-painter-terminal/kitty",
+  "mizchi/crater-painter-terminal/sixel",
 }

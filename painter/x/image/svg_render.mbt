@@ -1,10 +1,10 @@
 ///|
-/// SVG Rendering Integration for Sixel
-/// Connects the SVG module to the Sixel rendering pipeline
+/// SVG Rendering Integration
+/// Connects the SVG module to the framebuffer rendering pipeline
 
 ///|
-/// Convert SVG Color to sixel Color
-fn svg_color_to_sixel(c : @svg.Color) -> Color {
+/// Convert SVG Color to framebuffer Color
+fn svg_color_to_image(c : @svg.Color) -> Color {
   { r: c.r, g: c.g, b: c.b }
 }
 
@@ -19,73 +19,14 @@ pub fn render_svg_scene(
   let setter : @svg.PixelSetter = {
     set: fn(x, y, color) {
       if x >= 0 && x < fb.width && y >= 0 && y < fb.height {
-        let sixel_color = svg_color_to_sixel(color)
-        let idx = palette.get_or_add(sixel_color)
+        let image_color = svg_color_to_image(color)
+        let idx = palette.get_or_add(image_color)
         fb.set_pixel(x, y, idx)
       }
     },
   }
   let ctx = @svg.RenderContext::new(setter, fb.width, fb.height)
   scene.render(ctx)
-}
-
-///|
-/// Render an SVG scene to Sixel string
-pub fn render_svg_to_sixel(
-  scene : @svg.Scene,
-  width : Int,
-  height : Int,
-) -> String {
-  let fb = Framebuffer::new(width, height)
-  let palette = DynamicPalette::new()
-  // Fill with white background
-  fb.fill_rect(0, 0, width, height, 0)
-  // Render SVG
-  render_svg_scene(scene, fb, palette)
-  // Convert to Sixel
-  to_sixel_dynamic(fb, palette)
-}
-
-///|
-/// Render an SVGNode directly to Sixel string
-pub fn render_svg_node_to_sixel(
-  node : @svg.SVGNode,
-  width : Int,
-  height : Int,
-) -> String {
-  let scene = @svg.Scene::new(node)
-  render_svg_to_sixel(scene, width, height)
-}
-
-///|
-/// Render an SVG path string to Sixel string
-pub fn render_svg_path_to_sixel(
-  path_data : String,
-  fill_color : Color?,
-  stroke_color : Color?,
-  width : Int,
-  height : Int,
-) -> String {
-  let commands = @svg.parse_path(path_data)
-  let node = @svg.SVGNode::new(@svg.Path(commands~))
-  match fill_color {
-    Some(c) => node.fill = @svg.SolidColor(@svg.Color::rgb(c.r, c.g, c.b))
-    None => node.fill = @svg.None
-  }
-  match stroke_color {
-    Some(c) =>
-      node.stroke = {
-        paint: @svg.SolidColor(@svg.Color::rgb(c.r, c.g, c.b)),
-        width: 1.0,
-        linecap: @svg.Butt,
-        linejoin: @svg.Miter,
-        miterlimit: 4.0,
-        dasharray: None,
-        dashoffset: 0.0,
-      }
-    None => ()
-  }
-  render_svg_node_to_sixel(node, width, height)
 }
 
 ///|
@@ -99,41 +40,14 @@ pub fn render_svg_scene_with_camera(
   let setter : @svg.PixelSetter = {
     set: fn(x, y, color) {
       if x >= 0 && x < fb.width && y >= 0 && y < fb.height {
-        let sixel_color = svg_color_to_sixel(color)
-        let idx = palette.get_or_add(sixel_color)
+        let image_color = svg_color_to_image(color)
+        let idx = palette.get_or_add(image_color)
         fb.set_pixel(x, y, idx)
       }
     },
   }
   let ctx = @svg.RenderContext::for_camera(setter, camera)
   scene.render_with_camera(ctx, camera)
-}
-
-///|
-/// Render an SVG scene with camera to Sixel string
-pub fn render_svg_to_sixel_with_camera(
-  scene : @svg.Scene,
-  camera : @svg.Camera,
-) -> String {
-  let fb = Framebuffer::new(camera.viewport_width, camera.viewport_height)
-  let palette = DynamicPalette::new()
-  // Fill with white background
-  fb.fill_rect(0, 0, camera.viewport_width, camera.viewport_height, 0)
-  // Create pixel setter
-  let setter : @svg.PixelSetter = {
-    set: fn(x, y, color) {
-      if x >= 0 && x < fb.width && y >= 0 && y < fb.height {
-        let sixel_color = svg_color_to_sixel(color)
-        let idx = palette.get_or_add(sixel_color)
-        fb.set_pixel(x, y, idx)
-      }
-    },
-  }
-  // Create render context with camera
-  let ctx = @svg.RenderContext::for_camera(setter, camera)
-  scene.render_with_camera(ctx, camera)
-  // Convert to Sixel
-  to_sixel_dynamic(fb, palette)
 }
 
 ///|

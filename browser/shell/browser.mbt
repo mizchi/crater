@@ -835,7 +835,7 @@ fn Browser::render(self : Browser) -> String {
     false,
   )
   let (node, layout) = self.render_graphics_node_and_layout(ctx, false)
-  let output = @image.render_with_styles_scrolled(
+  let output = @sixel.render_with_styles_scrolled(
     node,
     layout,
     self.viewport_width,

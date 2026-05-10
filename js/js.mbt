@@ -158,14 +158,7 @@ fn escape_json_string(s : String) -> String {
 ///|
 /// Render HTML to Sixel graphics string
 pub fn renderHtmlToSixel(html : String, width : Int, height : Int) -> String {
-  let ctx : @renderer.RenderContext = {
-    viewport_width: width.to_double(),
-    viewport_height: height.to_double(),
-    root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
-  }
-  let layout = @renderer.render(html, ctx)
-  @sixel.render_layout_with_options(layout, width, height, false)
+  @renderer_terminal.render_to_sixel(html, width, height)
 }
 
 ///|
@@ -175,15 +168,7 @@ pub fn renderHtmlToSixelWithStyles(
   width : Int,
   height : Int,
 ) -> String {
-  let ctx : @renderer.RenderContext = {
-    viewport_width: width.to_double(),
-    viewport_height: height.to_double(),
-    root_font_size: 16.0,
-    color_scheme: @media.ColorScheme::Light,
-  }
-  let node = @renderer.render_to_node(html, ctx)
-  let layout = @renderer.render(html, ctx)
-  @sixel.render_with_styles(node, layout, width, height)
+  @renderer_terminal.render_to_sixel_with_styles(html, width, height)
 }
 
 // =============================================================================

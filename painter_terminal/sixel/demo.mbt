@@ -113,7 +113,7 @@ test "sixel demo layout" {
 /// Demo: SVG rendering with Sixel
 test "sixel demo svg" {
   // Create demo scene with rect, circle, line, and path
-  let scene = create_svg_demo_scene()
+  let scene = @image.create_svg_demo_scene()
 
   // Render to Sixel
   let sixel = render_svg_to_sixel(scene, 150, 120)

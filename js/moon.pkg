@@ -1,6 +1,6 @@
 import {
   "mizchi/crater-renderer/renderer",
-  "mizchi/crater-painter/x/image" @sixel,
+  "mizchi/crater-renderer-terminal" @renderer_terminal,
   "mizchi/crater-aomx/arc90",
   "mizchi/crater-painter/paint",
   "mizchi/crater-layout/types",

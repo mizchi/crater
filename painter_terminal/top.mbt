@@ -13,12 +13,12 @@ pub fn render_paint_node_to_sixel(
   width : Int,
   height : Int,
 ) -> String {
-  @image.render_paint_node_to_sixel(node, width, height)
+  @sixel.render_paint_node_to_sixel(node, width, height)
 }
 
 ///|
 pub fn render_svg_to_sixel(scene : Scene, width : Int, height : Int) -> String {
-  @image.render_svg_to_sixel(scene, width, height)
+  @sixel.render_svg_to_sixel(scene, width, height)
 }
 
 ///|
@@ -27,7 +27,7 @@ pub fn render_svg_node_to_sixel(
   width : Int,
   height : Int,
 ) -> String {
-  @image.render_svg_node_to_sixel(node, width, height)
+  @sixel.render_svg_node_to_sixel(node, width, height)
 }
 
 ///|

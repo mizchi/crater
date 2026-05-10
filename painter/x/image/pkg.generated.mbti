@@ -2,8 +2,6 @@
 package "mizchi/crater-painter/x/image"
 
 import {
-  "mizchi/crater-layout/node",
-  "mizchi/crater-layout/types",
   "mizchi/crater-painter/paint/model",
   "mizchi/crater-painter/svg",
   "mizchi/font",
@@ -37,45 +35,17 @@ pub fn is_font_supported(Char) -> Bool
 
 pub fn pre_rasterize_glyphs(Array[Double], font_family? : String) -> Int
 
-pub fn print_layout(@types.Layout, Int, Int) -> Unit
-
-pub fn render_layout(@types.Layout, Int, Int) -> String
-
-pub fn render_layout_with_options(@types.Layout, Int, Int, Bool) -> String
-
 pub fn render_paint_node_to_framebuffer(@model.PaintNode, Framebuffer, DynamicPalette) -> Unit
 
 pub fn render_paint_node_to_framebuffer_scrolled(@model.PaintNode, Framebuffer, DynamicPalette, Int) -> Unit
-
-pub fn render_paint_node_to_sixel(@model.PaintNode, Int, Int) -> String
-
-pub fn render_paint_node_to_sixel_scrolled(@model.PaintNode, Int, Int, Int) -> String
-
-pub fn render_svg_node_to_sixel(@svg.SVGNode, Int, Int) -> String
-
-pub fn render_svg_path_to_sixel(String, Color?, Color?, Int, Int) -> String
 
 pub fn render_svg_scene(@svg.Scene, Framebuffer, DynamicPalette) -> Unit
 
 pub fn render_svg_scene_with_camera(@svg.Scene, Framebuffer, DynamicPalette, @svg.Camera) -> Unit
 
-pub fn render_svg_to_sixel(@svg.Scene, Int, Int) -> String
-
-pub fn render_svg_to_sixel_with_camera(@svg.Scene, @svg.Camera) -> String
-
-pub fn render_with_styles(@node.Node, @types.Layout, Int, Int) -> String
-
-pub fn render_with_styles_scrolled(@node.Node, @types.Layout, Int, Int, Int) -> String
-
 pub fn set_glyph_provider(GlyphProvider) -> Unit
 
 pub fn set_image_provider(ImageProvider) -> Unit
-
-pub fn to_sixel(Framebuffer) -> String
-
-pub fn to_sixel_dynamic(Framebuffer, DynamicPalette) -> String
-
-pub fn to_sixel_extended(Framebuffer) -> String
 
 // Errors
 

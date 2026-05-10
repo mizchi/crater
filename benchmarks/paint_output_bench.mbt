@@ -104,7 +104,7 @@ test "bench_sixel_encode_scrollable_500_mid" (b : @bench.T) {
     paint_node, fb, palette, 16000,
   )
   b.bench(name="sixel_encode_scroll_500_mid", fn() {
-    b.keep(@image.to_sixel_dynamic(fb, palette))
+    b.keep(@sixel.to_sixel_dynamic(fb, palette))
   })
 }
 
@@ -112,7 +112,7 @@ test "bench_sixel_encode_scrollable_500_mid" (b : @bench.T) {
 test "bench_sixel_output_scrollable_500_top" (b : @bench.T) {
   let paint_node = scrollable_500_paint_node()
   b.bench(name="sixel_output_scroll_500_top", fn() {
-    b.keep(@image.render_paint_node_to_sixel_scrolled(paint_node, 640, 480, 0))
+    b.keep(@sixel.render_paint_node_to_sixel_scrolled(paint_node, 640, 480, 0))
   })
 }
 
@@ -121,7 +121,7 @@ test "bench_sixel_output_scrollable_500_mid" (b : @bench.T) {
   let paint_node = scrollable_500_paint_node()
   b.bench(name="sixel_output_scroll_500_mid", fn() {
     b.keep(
-      @image.render_paint_node_to_sixel_scrolled(paint_node, 640, 480, 16000),
+      @sixel.render_paint_node_to_sixel_scrolled(paint_node, 640, 480, 16000),
     )
   })
 }

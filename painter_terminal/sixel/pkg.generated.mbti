@@ -1,0 +1,53 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-painter-terminal/sixel"
+
+import {
+  "mizchi/crater-layout/node",
+  "mizchi/crater-layout/types",
+  "mizchi/crater-painter/paint/model",
+  "mizchi/crater-painter/svg",
+  "mizchi/crater-painter/x/image",
+}
+
+// Values
+pub fn print_layout(@types.Layout, Int, Int) -> Unit
+
+pub fn render_layout(@types.Layout, Int, Int) -> String
+
+pub fn render_layout_with_options(@types.Layout, Int, Int, Bool) -> String
+
+pub fn render_paint_node_to_sixel(@model.PaintNode, Int, Int) -> String
+
+pub fn render_paint_node_to_sixel_scrolled(@model.PaintNode, Int, Int, Int) -> String
+
+pub fn render_svg_node_to_sixel(@svg.SVGNode, Int, Int) -> String
+
+pub fn render_svg_path_to_sixel(String, @image.Color?, @image.Color?, Int, Int) -> String
+
+pub fn render_svg_to_sixel(@svg.Scene, Int, Int) -> String
+
+pub fn render_svg_to_sixel_with_camera(@svg.Scene, @svg.Camera) -> String
+
+pub fn render_with_styles(@node.Node, @types.Layout, Int, Int) -> String
+
+pub fn render_with_styles_scrolled(@node.Node, @types.Layout, Int, Int, Int) -> String
+
+pub fn to_sixel(@image.Framebuffer) -> String
+
+pub fn to_sixel_dynamic(@image.Framebuffer, @image.DynamicPalette) -> String
+
+pub fn to_sixel_extended(@image.Framebuffer) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @image {type Color}
+
+pub using @image {type DynamicPalette}
+
+pub using @image {type Framebuffer}
+
+// Traits
+
