@@ -1549,6 +1549,30 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps renderer multicol fragmentation regression tests in their own file", () => {
+    const multicolTestFile = path.join(
+      REPO_ROOT,
+      "renderer/renderer/multicol_fragmentation_render_test.mbt",
+    );
+    expect(fs.existsSync(multicolTestFile)).toBe(true);
+
+    const multicolSource = fs.readFileSync(multicolTestFile, "utf8");
+    const sourceFiles = [
+      path.join(REPO_ROOT, "renderer/renderer/render_test.mbt"),
+      path.join(REPO_ROOT, "renderer/renderer/renderer_test.mbt"),
+    ];
+    const sourceText = sourceFiles.map((file) => fs.readFileSync(file, "utf8")).join("\n");
+    const migratedTests = [
+      'test "fieldset_multicol_ignores_first_break_before_column_after_legend"',
+      'test "multicol_break_inside_avoid_keeps_block_unfragmented"',
+      'test "wpt_column_scroll_marker_004_fieldset_multicol_fragments"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => multicolSource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => sourceText.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",

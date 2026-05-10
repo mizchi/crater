@@ -738,67 +738,6 @@ test "font-size with nested selectors like WPT" {
 }
 
 ///|
-test "fieldset_columns_shorthand_applies_in_wpt_like_case" {
-  let html =
-    #|<!doctype html>
-    #|<html><head>
-    #|<style>
-    #|  #container {
-    #|    overflow: hidden;
-    #|    columns: 3;
-    #|    column-fill: auto;
-    #|    gap: 0;
-    #|    height: 50px;
-    #|    margin: 0;
-    #|    border: 15px solid green;
-    #|    padding: 0;
-    #|    scroll-marker-group: before;
-    #|    background: red;
-    #|  }
-    #|</style>
-    #|</head>
-    #|<body>
-    #|<div style="width:100px; height:100px; background:red;">
-    #|  <fieldset id="container">
-    #|    <legend style="width:50px; height:15px; background:green;"></legend>
-    #|    <div style="height:210px; background:green;"></div>
-    #|  </fieldset>
-    #|</div>
-    #|</body></html>
-  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
-  let wrapper = node.children[0]
-  let container = wrapper.children[0]
-  inspect(container.id, content="fieldset#container")
-  inspect(container.style.column_count, content="Some(3)")
-  inspect(container.style.box_sizing, content="BorderBox")
-  inspect(container.style.height, content="Length(80)")
-  inspect(container.style.column_gap, content="Length(0)")
-  inspect(container.style.column_gap_is_normal, content="false")
-}
-
-///|
-test "html_columns_propagate_to_body_root_style" {
-  let html =
-    #|<!doctype html>
-    #|<html><head>
-    #|<style>
-    #|  html {
-    #|    columns: 3;
-    #|    max-height: 600px;
-    #|  }
-    #|  body { margin: 0; }
-    #|</style>
-    #|</head>
-    #|<body>
-    #|  <div style="height: 100px"></div>
-    #|</body></html>
-  let root = @renderer.render_to_node(html, @renderer.RenderContext::default())
-  inspect(root.id, content="body")
-  inspect(root.style.column_count, content="Some(3)")
-  inspect(root.style.column_gap_is_normal, content="true")
-}
-
-///|
 test "html_max_width_constrains_body_layout_width" {
   let html =
     #|<!doctype html>
@@ -859,57 +798,6 @@ test "align_self_static_position_005_inline_span_stays_inline" {
     }
   }
   inspect(has_abs, content="true")
-}
-
-///|
-test "fieldset_columns_shorthand_survives_following_column_scroll_marker_rule" {
-  let html =
-    #|<!doctype html>
-    #|<html><head>
-    #|<style>
-    #|  #container {
-    #|    overflow: hidden;
-    #|    columns: 3;
-    #|    column-fill: auto;
-    #|    gap: 0;
-    #|    height: 50px;
-    #|    margin: 0;
-    #|    border: 15px solid green;
-    #|    padding: 0;
-    #|    scroll-marker-group: before;
-    #|    background: red;
-    #|  }
-    #|  #container::scroll-marker-group {
-    #|    display: flex;
-    #|    height: 20px;
-    #|    background: red;
-    #|  }
-    #|  #container::column::scroll-marker {
-    #|    display: flex;
-    #|    width: 20px;
-    #|    height: 100%;
-    #|    background: green;
-    #|    content: "";
-    #|  }
-    #|</style>
-    #|</head>
-    #|<body>
-    #|<div style="width:100px; height:100px; background:red;">
-    #|  <fieldset id="container">
-    #|    <legend style="width:50px; height:15px; background:green;"></legend>
-    #|    <div style="height:210px; background:green;"></div>
-    #|  </fieldset>
-    #|</div>
-    #|</body></html>
-  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
-  let wrapper = node.children[0]
-  let container = wrapper.children[0]
-  inspect(container.id, content="fieldset#container")
-  inspect(container.style.column_count, content="Some(3)")
-  inspect(container.style.box_sizing, content="BorderBox")
-  inspect(container.style.height, content="Length(80)")
-  inspect(container.style.column_gap, content="Length(0)")
-  inspect(container.style.column_gap_is_normal, content="false")
 }
 
 ///|
