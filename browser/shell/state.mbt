@@ -187,7 +187,7 @@ struct Browser {
   /// Image regions from last render (for kitty/sixel overlay)
   mut image_regions : Array[@tui.ImageRegion]
   /// Cached rendered image data (src URL -> kitty graphics commands)
-  image_cache : @browser_shell.ImageCache
+  image_cache : @terminal_image_cache.ImageCache
   /// Uploaded kitty image ids that can be re-placed without re-sending payloads
   kitty_uploaded_image_ids : Map[Int, Bool]
   /// Visible kitty placements from the previous text render
@@ -261,7 +261,7 @@ pub fn Browser::new(
     no_color: false,
     terminal_cols,
     image_regions: [],
-    image_cache: @browser_shell.ImageCache::new(),
+    image_cache: @terminal_image_cache.ImageCache::new(),
     kitty_uploaded_image_ids: {},
     kitty_visible_placements: {},
     http_cache: @http.MemoryCacheBackend::new(max_entries=1000),

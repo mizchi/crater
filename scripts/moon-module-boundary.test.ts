@@ -76,6 +76,7 @@ describe("MoonBit module boundaries", () => {
 
   it("keeps terminal image cache implementation out of browser shell", () => {
     const implementationMarkers = [
+      "pub struct ImageCache",
       "pub(all) struct RgbaCacheEntry",
       "pub(all) enum TerminalImageCacheEntry",
       "js_decode_raster_image_to_rgba_base64",
