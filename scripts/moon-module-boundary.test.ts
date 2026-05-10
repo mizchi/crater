@@ -1319,6 +1319,33 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps renderer nested element node construction out of renderer core", () => {
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "renderer/renderer/nested_element_node.mbt")),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/renderer.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn element_to_node_with_styles_internal(",
+      "build_viewport_skeleton_node(",
+      "compute_element_style_indexed(",
+      "apply_element_visibility_attributes(",
+      "should_advance_viewport_estimate(",
+      "adjust_nested_element_style(",
+      "compute_element_css_vars_indexed(",
+      "resolve_element_counter_pseudos(",
+      "build_styled_element_children(",
+      "prune_closed_details_children(",
+      "finalize_special_element_node(",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps renderer intrinsic-media parsers out of renderer core", () => {
     expect(
       fs.existsSync(path.join(REPO_ROOT, "renderer/renderer/intrinsic_media.mbt")),
