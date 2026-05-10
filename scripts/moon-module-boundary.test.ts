@@ -1414,6 +1414,38 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps renderer viewport skeleton helpers out of renderer core", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "renderer/renderer/viewport_skeleton.mbt"))).toBe(
+      true,
+    );
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/renderer.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "let viewport_estimated_y",
+      "let viewport_cutoff",
+      "let viewport_skeleton_count",
+      "let viewport_full_node_count",
+      "let viewport_full_node_cutoff",
+      "let viewport_skeleton_enabled",
+      "let empty_indexed_stylesheets",
+      "fn should_use_viewport_skeleton",
+      "fn parse_skeleton_px_length",
+      "fn apply_skeleton_inline_style_hints",
+      "fn apply_skeleton_inline_display_hint",
+      "fn apply_skeleton_inline_height_hint",
+      "fn viewport_skeleton_advance",
+      "fn skeleton_parent_allows_explicit_size_hints",
+      "fn should_collapse_viewport_skeleton_subtree",
+      "fn should_advance_viewport_estimate",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps renderer table layout regression tests in their own file", () => {
     const tableTestFile = path.join(REPO_ROOT, "renderer/renderer/table_render_test.mbt");
     expect(fs.existsSync(tableTestFile)).toBe(true);

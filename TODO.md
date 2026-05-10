@@ -68,6 +68,8 @@
 - [x] absolute positioning and layout JSON serialization を分離する
   - 完了: out-of-flow root sizing、abspos containing block、zoom/scale apply を `renderer/renderer/absolute_positioning.mbt`、`layout_to_json` を `renderer/renderer/layout_json.mbt` へ移動
   - 切り出し先候補: `renderer/renderer/absolute_positioning.mbt`, `renderer/renderer/layout_json.mbt`
+- [x] viewport skeleton fast path を分離する
+  - 完了: below-fold skeleton state、inline style hint、advance/collapse heuristics を `renderer/renderer/viewport_skeleton.mbt` へ移動
 
 ### P1: large test files を domain ごとに分割する
 
