@@ -1298,6 +1298,27 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps renderer root element node construction out of renderer core", () => {
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "renderer/renderer/root_element_node.mbt")),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/renderer.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn element_to_node_with_styles(",
+      "empty_indexed_stylesheets.val",
+      "html_to_selector_element(elem, parent)",
+      "parent is None",
+      "None, // Root element has no parent style",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps renderer intrinsic-media parsers out of renderer core", () => {
     expect(
       fs.existsSync(path.join(REPO_ROOT, "renderer/renderer/intrinsic_media.mbt")),

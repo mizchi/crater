@@ -74,6 +74,8 @@
   - 完了: below-fold skeleton state、inline style hint、advance/collapse heuristics、skeleton node construction を `renderer/renderer/viewport_skeleton.mbt` へ移動
 - [x] render root / body / viewport root sizing を分離する
   - 完了: body selection、render root node build、root layout compute、document root zoom/multicol propagation、root available width/height adjustment、frameset fallback、zero-layout helper を `renderer/renderer/render_root.mbt` へ移動
+- [x] root element node construction を分離する
+  - 完了: root element の selector/style/counter/pseudo/children 構築を `renderer/renderer/root_element_node.mbt` へ移動
 - [x] text node construction を分離する
   - 完了: inherited font/style propagation、collapsible whitespace preservation、text measure creation を `renderer/renderer/text_node.mbt` へ移動
 - [x] node id utility と details pruning を分離する
