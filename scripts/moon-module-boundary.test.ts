@@ -286,6 +286,147 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps browser shell focus and hit testing in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/focus_hit_testing.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/browser.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn Browser::is_bounds_visible",
+      "fn Browser::next_link",
+      "fn Browser::prev_link",
+      "fn Browser::ensure_declarative_shadow_dom_normalized",
+      "fn Browser::build_accessibility_tree",
+      "fn Browser::get_focused_element_name",
+      "fn Browser::get_focused_source_id",
+      "fn Browser::get_link_source_id_at",
+      "fn Browser::get_link_href_for_source_id",
+      "fn Browser::is_clickable_source_id",
+      "fn Browser::get_a11y_source_id_at",
+      "fn Browser::get_source_id_at",
+      "fn Browser::focus_source_id",
+      "fn Browser::get_visible_focus_index",
+      "fn Browser::get_link_at",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell interaction controller in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/interaction_controller.mbt"))).toBe(
+      true,
+    );
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/browser.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn cell_to_client_x",
+      "fn Browser::get_client_coords_for_source_id",
+      "fn Browser::get_hit_region_for_source_id",
+      "fn Browser::handle_focused_key",
+      "fn Browser::activate_focused_link",
+      "fn Browser::hover_at",
+      "fn Browser::pointer_down_at",
+      "fn Browser::pointer_move_at",
+      "fn Browser::pointer_up_at",
+      "fn Browser::activate_at",
+      "fn Browser::activate_link_at",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell link extraction in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/link_extraction.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/browser.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn char_at",
+      "fn extract_links_fallback",
+      "extern \"js\" fn extract_links_js",
+      "fn extract_links",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell hint mode in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/hint_mode.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/browser.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn Browser::is_hint_mode",
+      "fn Browser::enter_hint_mode",
+      "fn generate_single_label",
+      "fn Browser::exit_hint_mode",
+      "fn Browser::process_hint_char",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell scroll state in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/scroll_state.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/browser.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn Browser::max_scroll",
+      "fn Browser::scroll_down",
+      "fn Browser::scroll_up",
+      "fn Browser::init_element_scroll",
+      "fn Browser::clear_element_scroll_states",
+      "fn Browser::init_scrollable_elements",
+      "fn Browser::get_element_scroll_positions",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell output mode helpers in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/output_modes.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/browser.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn Browser::debug_layout",
+      "fn Browser::render_json",
+      "fn Browser::render_aom",
+      "fn Browser::render_arc90",
+      "fn Browser::render_extract_main",
+      "fn Browser::render_grounding",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell option accessors in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/browser_options.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/browser.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn Browser::set_enable_js",
+      "fn Browser::set_enable_cookies",
+      "fn Browser::set_image_cache_max_bytes",
+      "fn Browser::set_request_sandbox",
+      "fn Browser::get_dom_tree",
+      "fn Browser::get_current_url",
+      "fn Browser::get_last_navigation_url",
+      "fn Browser::get_viewport_height",
+      "fn Browser::get_link_count",
+      "fn Browser::get_focused_link_index",
+      "fn Browser::toggle_selection_mode",
+      "fn Browser::toggle_dark_mode",
+      "fn Browser::set_dark_mode",
+      "fn Browser::set_no_color",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",
