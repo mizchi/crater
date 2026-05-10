@@ -1490,6 +1490,11 @@ describe("MoonBit module boundaries", () => {
       "fn skeleton_parent_allows_explicit_size_hints",
       "fn should_collapse_viewport_skeleton_subtree",
       "fn should_advance_viewport_estimate",
+      "viewport_skeleton_count.val += 1",
+      "apply_skeleton_inline_style_hints(",
+      "apply_skeleton_inline_display_hint(",
+      "viewport_skeleton_advance(",
+      "should_collapse_viewport_skeleton_subtree(",
     ] as const;
 
     const offenders = implementationMarkers.filter((marker) => source.includes(marker));

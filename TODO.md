@@ -69,7 +69,7 @@
   - 完了: out-of-flow root sizing、abspos containing block、zoom/scale apply を `renderer/renderer/absolute_positioning.mbt`、`layout_to_json` を `renderer/renderer/layout_json.mbt` へ移動
   - 切り出し先候補: `renderer/renderer/absolute_positioning.mbt`, `renderer/renderer/layout_json.mbt`
 - [x] viewport skeleton fast path を分離する
-  - 完了: below-fold skeleton state、inline style hint、advance/collapse heuristics を `renderer/renderer/viewport_skeleton.mbt` へ移動
+  - 完了: below-fold skeleton state、inline style hint、advance/collapse heuristics、skeleton node construction を `renderer/renderer/viewport_skeleton.mbt` へ移動
 - [x] render root / body / viewport root sizing を分離する
   - 完了: body selection、render root node build、root layout compute、document root zoom/multicol propagation、root available width/height adjustment、frameset fallback、zero-layout helper を `renderer/renderer/render_root.mbt` へ移動
 - [x] text node construction を分離する
