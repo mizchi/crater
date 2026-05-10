@@ -1,6 +1,12 @@
 {
   "name": "mizchi/crater-browser-shell",
   "version": "0.17.1",
+  "deps": {
+    "mizchi/crater-terminal-image-cache": {
+      "path": "../terminal_image_cache",
+      "version": "0.17.1"
+    }
+  },
   "repository": "https://github.com/mizchi/crater",
   "license": "Apache-2.0",
   "description": "Reusable browser shell support utilities for crater",

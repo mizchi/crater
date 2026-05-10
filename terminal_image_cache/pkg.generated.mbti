@@ -1,0 +1,39 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-terminal-image-cache"
+
+// Values
+pub fn data_image_src_to_kitty_cache(String) -> String?
+
+pub fn decode_raster_image_to_rgba_cache_entry(String, String) -> RgbaCacheEntry?
+
+pub fn detect_raster_image_format_from_base64(String) -> String
+
+pub fn normalize_raster_image_for_kitty(String) -> String
+
+pub fn parse_terminal_image_cache_entry(String) -> TerminalImageCacheEntry?
+
+pub fn prepare_raster_image_for_kitty_cache(String) -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct RgbaCacheEntry {
+  width : Int
+  height : Int
+  rgba_base64 : String
+}
+pub fn RgbaCacheEntry::decode_rgba_bytes(Self) -> Array[Int]?
+pub fn RgbaCacheEntry::encode(Self) -> String
+
+pub(all) enum TerminalImageCacheEntry {
+  Svg(String)
+  PngBase64(String)
+  RgbaBase64(RgbaCacheEntry)
+  RawBase64(String)
+}
+pub fn TerminalImageCacheEntry::encode(Self) -> String
+
+// Type aliases
+
+// Traits
+

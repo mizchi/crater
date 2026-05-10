@@ -46,6 +46,10 @@
       "path": "../painter_terminal",
       "version": "0.17.1"
     },
+    "mizchi/crater-terminal-image-cache": {
+      "path": "../terminal_image_cache",
+      "version": "0.17.1"
+    },
     "mizchi/font": "0.7.3",
     "mizchi/x": "0.2.0",
     "moonbitlang/async": "0.17.1",

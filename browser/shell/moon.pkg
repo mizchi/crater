@@ -18,6 +18,7 @@ import {
   "mizchi/crater-browser/tui/paint/runtime" @tui_paint_runtime,
   "mizchi/crater-browser-runtime" @js,
   "mizchi/crater-painter-terminal" @painter_terminal,
+  "mizchi/crater-terminal-image-cache" @terminal_image_cache,
   "mizchi/crater-painter/x/image",
 }
 

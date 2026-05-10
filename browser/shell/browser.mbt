@@ -1427,7 +1427,7 @@ async fn Browser::prefetch_images(self : Browser) -> Unit {
       let b64 = body.unsafe_substring(start=7, end=body.length())
       self.cache_image_data(
         src,
-        @browser_shell.prepare_raster_image_for_kitty_cache(b64),
+        @terminal_image_cache.prepare_raster_image_for_kitty_cache(b64),
       )
     }
   }
@@ -1435,7 +1435,7 @@ async fn Browser::prefetch_images(self : Browser) -> Unit {
 
 ///|
 fn Browser::cache_data_image_src(self : Browser, src : String) -> Bool {
-  match @browser_shell.data_image_src_to_kitty_cache(src) {
+  match @terminal_image_cache.data_image_src_to_kitty_cache(src) {
     Some(cached_data) => {
       self.cache_image_data(src, cached_data)
       true
@@ -1446,7 +1446,7 @@ fn Browser::cache_data_image_src(self : Browser, src : String) -> Bool {
 
 ///|
 fn rgba_cache_entry_to_resolved_image(
-  entry : @browser_shell.RgbaCacheEntry,
+  entry : @terminal_image_cache.RgbaCacheEntry,
 ) -> @image.ResolvedImage? {
   match entry.decode_rgba_bytes() {
     Some(rgba) =>
@@ -1471,7 +1471,7 @@ fn raster_base64_to_resolved_image(
   b64_data : String,
 ) -> @image.ResolvedImage? {
   match
-    @browser_shell.decode_raster_image_to_rgba_cache_entry(
+    @terminal_image_cache.decode_raster_image_to_rgba_cache_entry(
       image_format, b64_data,
     ) {
     Some(entry) => rgba_cache_entry_to_resolved_image(entry)
@@ -1483,16 +1483,16 @@ fn raster_base64_to_resolved_image(
 fn cached_image_data_to_resolved_image(
   cached_data : String,
 ) -> @image.ResolvedImage? {
-  match @browser_shell.parse_terminal_image_cache_entry(cached_data) {
-    Some(@browser_shell.TerminalImageCacheEntry::Svg(svg_text)) =>
+  match @terminal_image_cache.parse_terminal_image_cache_entry(cached_data) {
+    Some(@terminal_image_cache.TerminalImageCacheEntry::Svg(svg_text)) =>
       Some(@image.ResolvedImage::Svg(svg_text))
-    Some(@browser_shell.TerminalImageCacheEntry::RgbaBase64(entry)) =>
+    Some(@terminal_image_cache.TerminalImageCacheEntry::RgbaBase64(entry)) =>
       rgba_cache_entry_to_resolved_image(entry)
-    Some(@browser_shell.TerminalImageCacheEntry::PngBase64(b64_data)) =>
+    Some(@terminal_image_cache.TerminalImageCacheEntry::PngBase64(b64_data)) =>
       raster_base64_to_resolved_image("png", b64_data)
-    Some(@browser_shell.TerminalImageCacheEntry::RawBase64(b64_data)) =>
+    Some(@terminal_image_cache.TerminalImageCacheEntry::RawBase64(b64_data)) =>
       raster_base64_to_resolved_image(
-        @browser_shell.detect_raster_image_format_from_base64(b64_data),
+        @terminal_image_cache.detect_raster_image_format_from_base64(b64_data),
         b64_data,
       )
     None => None
@@ -1528,8 +1528,8 @@ fn render_cached_kitty_image_with_placement(
   image_id : Int,
   placement_id : Int,
 ) -> String {
-  match @browser_shell.parse_terminal_image_cache_entry(cached_data) {
-    Some(@browser_shell.TerminalImageCacheEntry::Svg(svg_text)) => {
+  match @terminal_image_cache.parse_terminal_image_cache_entry(cached_data) {
+    Some(@terminal_image_cache.TerminalImageCacheEntry::Svg(svg_text)) => {
       let render_w = region.width * 16
       let render_h = region.height * 32
       @painter_terminal.render_svg_text_to_kitty_cells(
@@ -1542,7 +1542,7 @@ fn render_cached_kitty_image_with_placement(
         placement_id~,
       )
     }
-    Some(@browser_shell.TerminalImageCacheEntry::PngBase64(b64_data)) =>
+    Some(@terminal_image_cache.TerminalImageCacheEntry::PngBase64(b64_data)) =>
       @painter_terminal.encode_png_base64_to_kitty_image(
         b64_data,
         region.width,
@@ -1550,7 +1550,7 @@ fn render_cached_kitty_image_with_placement(
         image_id~,
         placement_id~,
       )
-    Some(@browser_shell.TerminalImageCacheEntry::RgbaBase64(entry)) =>
+    Some(@terminal_image_cache.TerminalImageCacheEntry::RgbaBase64(entry)) =>
       @painter_terminal.encode_rgba_base64_to_kitty_image(
         entry.rgba_base64,
         entry.width,
@@ -1560,9 +1560,9 @@ fn render_cached_kitty_image_with_placement(
         image_id~,
         placement_id~,
       )
-    Some(@browser_shell.TerminalImageCacheEntry::RawBase64(b64_data)) =>
+    Some(@terminal_image_cache.TerminalImageCacheEntry::RawBase64(b64_data)) =>
       @painter_terminal.encode_png_base64_to_kitty_image(
-        @browser_shell.normalize_raster_image_for_kitty(b64_data),
+        @terminal_image_cache.normalize_raster_image_for_kitty(b64_data),
         region.width,
         region.height,
         image_id~,

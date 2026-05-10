@@ -1,1 +1,5 @@
+import {
+  "mizchi/crater-terminal-image-cache" @terminal_image_cache,
+}
+
 supported_targets = "js+native"
