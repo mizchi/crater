@@ -119,9 +119,9 @@
   - 進捗: activation / hit-testing / pointer / mouse / drag regression を `browser/shell/browser_js_interaction_wbtest.mbt` へ移動
   - 進捗: form submission / navigation / external fetch / focused text input regression を `browser/shell/browser_js_navigation_wbtest.mbt` へ移動
   - 完了: render output / shadow DOM / focused form control も専用 wbtest に分割し、元ファイルは目次コメントだけに縮小
-- [ ] `webdriver/webdriver/bidi_protocol_wbtest.mbt` を domain 別 wbtest に分ける
+- [x] `webdriver/webdriver/bidi_protocol_wbtest.mbt` を domain 別 wbtest に分ける
   - 既存: browsing_context / network / storage 系は一部分割済み
-  - 残り候補: script eval, input actions, session/browser, preload/realm, prompt/download
+  - 完了: session/context, fixture, prompt/subscription, input, preload/realm, navigation-state, script-eval, extended domains に分割
 
 ### P1: SVG / painter 周辺の単一責務化
 
