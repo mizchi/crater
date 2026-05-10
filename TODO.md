@@ -70,6 +70,8 @@
   - 切り出し先候補: `renderer/renderer/absolute_positioning.mbt`, `renderer/renderer/layout_json.mbt`
 - [x] viewport skeleton fast path を分離する
   - 完了: below-fold skeleton state、inline style hint、advance/collapse heuristics を `renderer/renderer/viewport_skeleton.mbt` へ移動
+- [x] render root / body / viewport root sizing を分離する
+  - 完了: body selection、document root zoom/multicol propagation、root available width/height adjustment、frameset fallback、zero-layout helper を `renderer/renderer/render_root.mbt` へ移動
 
 ### P1: large test files を domain ごとに分割する
 

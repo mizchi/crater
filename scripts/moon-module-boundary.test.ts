@@ -1446,6 +1446,32 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps renderer render root helpers out of renderer core", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "renderer/renderer/render_root.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/renderer.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn find_body(",
+      "fn find_body_in_children",
+      "fn resolve_document_root_zoom",
+      "fn propagate_document_root_multicol_to_body",
+      "fn should_layout_document_root",
+      "fn select_render_root",
+      "fn resolve_root_available_width",
+      "fn node_with_style",
+      "fn should_clamp_body_to_viewport",
+      "fn adjust_root_height_for_viewport",
+      "fn stretch_single_frameset_child_to_root",
+      "fn create_zero_layout_from_node",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps renderer table layout regression tests in their own file", () => {
     const tableTestFile = path.join(REPO_ROOT, "renderer/renderer/table_render_test.mbt");
     expect(fs.existsSync(tableTestFile)).toBe(true);
