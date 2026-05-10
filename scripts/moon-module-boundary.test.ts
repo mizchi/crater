@@ -1573,6 +1573,26 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps renderer grid regression tests in their own file", () => {
+    const gridTestFile = path.join(REPO_ROOT, "renderer/renderer/grid_render_test.mbt");
+    expect(fs.existsSync(gridTestFile)).toBe(true);
+
+    const gridSource = fs.readFileSync(gridTestFile, "utf8");
+    const renderSource = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/render_test.mbt"),
+      "utf8",
+    );
+    const migratedTests = [
+      'test "grid_named_layout_lines_place_item_to_extended_full_end"',
+      'test "renderer_grid_column"',
+      'test "wpt_grid_container_as_flex_item_reflows_to_final_width"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => gridSource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => renderSource.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",
