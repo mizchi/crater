@@ -104,60 +104,8 @@ async fn Browser::load_url_request(
     return ""
   }
   let t0 = perf_now()
-  // Fetch the page
-  let page_headers : Map[String, String] = {}
-  let is_secure = url.has_prefix("https://")
-  match
-    self.cookie_jar.get_cookie_header(
-      url,
-      is_secure,
-      true,
-      site_origin=source_url,
-      is_top_level_navigation=true,
-    ) {
-    Some(cookie_header) => page_headers["Cookie"] = cookie_header
-    None => ()
-  }
-  if request_record.content_type.length() > 0 {
-    page_headers["Content-Type"] = request_record.content_type
-  }
-  let page_options = {
-    ..@http.FetchOptions::default(),
-    headers: page_headers,
-    http_method: request_record.http_method,
-    body: request_record.body,
-    mode: @http.RequestMode::Navigate,
-    origin: source_url,
-    sandbox: self.request_sandbox,
-  }
-  let response = @http.fetch(url, options=page_options)
-  // Process Set-Cookie from response
-  match response.headers.get("set-cookie") {
-    Some(sc) => self.cookie_jar.store_from_header(sc, url, is_secure)
-    None => ()
-  }
-  self.source_html = response.body
-  let has_declarative_shadow_dom = html_source_has_declarative_shadow_dom(
-    response.body,
-  )
-  match
-    normalize_declarative_shadow_source_html_with_hint(
-      response.body,
-      has_declarative_shadow_dom,
-    ) {
-    Some(normalized) => {
-      self.html_content = normalized.render_html
-      self.dom_snapshot_html = normalized.snapshot_html
-      self.parsed_doc = Some(normalized.parsed_doc)
-      self.html_has_declarative_shadow_dom = false
-    }
-    None => {
-      self.html_content = response.body
-      self.dom_snapshot_html = response.body
-      self.parsed_doc = None
-      self.html_has_declarative_shadow_dom = has_declarative_shadow_dom
-    }
-  }
+  let response = self.fetch_navigation_document(source_url, request_record)
+  self.apply_html_source(response.body, false)
   let t1 = perf_now()
   // Fetch external CSS using lightweight extraction (no full parsing)
   self.set_external_css(
@@ -171,20 +119,8 @@ async fn Browser::load_url_request(
     },
   )
   let t2 = perf_now()
-  self.focused_link = 0
-  self.scroll_y = 0
-  // Clear element scroll states on navigation
-  self.clear_element_scroll_states()
-  // Parse HTML using regular parser (streaming parser under investigation)
-  match self.parsed_doc {
-    Some(_) => ()
-    None => {
-      let doc = @html.assign_synthetic_ids(
-        @html.parse_document(self.html_content),
-      )
-      self.parsed_doc = Some(doc)
-    }
-  }
+  self.reset_content_view_position()
+  self.ensure_parsed_content_document()
   self.refresh_links_from_render_source()
   self.clear_render_cache()
   let t3 = perf_now()
@@ -198,11 +134,7 @@ async fn Browser::load_url_request(
   let t4 = perf_now()
   // Content height is computed lazily from the layout tree in render_text()
   // to avoid a duplicate full layout pass here.
-  self.content_height = 0
-  // Accessibility tree is built lazily on first focus navigation
-  // to avoid a duplicate full layout pass here.
-  self.a11y_tree = None
-  self.focus_manager = None
+  self.reset_content_measurement_state()
   // Prefetch images for kitty graphics rendering
   self.prefetch_images() catch {
     _ => ()
@@ -224,54 +156,14 @@ async fn Browser::load_url_lightweight(
 ) -> String raise @http.HttpError {
   let source_url = self.current_url
   self.current_url = url
-  // Fetch the page
-  let page_options = {
-    ..@http.FetchOptions::default(),
-    mode: @http.RequestMode::Navigate,
-    origin: source_url,
-    sandbox: self.request_sandbox,
-  }
-  let response = @http.fetch(url, options=page_options)
-  self.source_html = response.body
-  let has_declarative_shadow_dom = html_source_has_declarative_shadow_dom(
-    response.body,
-  )
-  match
-    normalize_declarative_shadow_source_html_with_hint(
-      response.body,
-      has_declarative_shadow_dom,
-    ) {
-    Some(normalized) => {
-      self.html_content = normalized.render_html
-      self.dom_snapshot_html = normalized.snapshot_html
-      self.parsed_doc = Some(normalized.parsed_doc)
-      self.html_has_declarative_shadow_dom = false
-    }
-    None => {
-      self.html_content = response.body
-      self.dom_snapshot_html = response.body
-      self.parsed_doc = None
-      self.html_has_declarative_shadow_dom = has_declarative_shadow_dom
-    }
-  }
+  let response = self.fetch_lightweight_navigation_document(source_url, url)
+  self.apply_html_source(response.body, false)
   // Skip external CSS fetching in lightweight mode
   self.set_external_css([])
   // Skip link extraction (not needed for JSON/AOM output)
   self.links = []
-  self.focused_link = 0
-  self.scroll_y = 0
-  // Clear element scroll states on navigation
-  self.clear_element_scroll_states()
-  // Parse HTML using regular parser (streaming parser under investigation)
-  match self.parsed_doc {
-    Some(_) => ()
-    None => {
-      let doc = @html.assign_synthetic_ids(
-        @html.parse_document(self.html_content),
-      )
-      self.parsed_doc = Some(doc)
-    }
-  }
+  self.reset_content_view_position()
+  self.ensure_parsed_content_document()
   self.clear_render_cache()
   // Skip content height calculation in lightweight mode
   self.content_height = 0

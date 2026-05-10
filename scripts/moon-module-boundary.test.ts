@@ -596,6 +596,34 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps navigation HTML source lifecycle out of navigation", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/navigation.mbt"), "utf8");
+    const implementationMarkers = [
+      "html_source_has_declarative_shadow_dom",
+      "normalize_declarative_shadow_source_html_with_hint",
+      "@html.parse_document(self.html_content)",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps navigation fetch plumbing in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/navigation_fetch.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/navigation.mbt"), "utf8");
+    const implementationMarkers = [
+      "@http.fetch",
+      "@http.FetchOptions::default()",
+      "get_cookie_header",
+      "store_from_header",
+      "page_headers",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",
