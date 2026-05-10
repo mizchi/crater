@@ -2,6 +2,7 @@
 package "mizchi/crater-browser/tui"
 
 import {
+  "mizchi/crater-browser/tui/core",
   "mizchi/crater-layout/node",
   "mizchi/crater-layout/types",
   "mizchi/crater-painter/paint/scroll",
@@ -31,15 +32,15 @@ pub fn ansi_reverse() -> String
 
 pub fn ansi_underline() -> String
 
-pub fn buffer_diff_to_ansi(CharBuffer, CharBuffer, max_cols? : Int) -> String
+pub fn buffer_diff_to_ansi(@core.CharBuffer, @core.CharBuffer, max_cols? : Int) -> String
 
-pub fn buffer_diff_to_ansi_rects(CharBuffer, CharBuffer, Array[DirtyRect], max_cols? : Int) -> String
+pub fn buffer_diff_to_ansi_rects(@core.CharBuffer, @core.CharBuffer, Array[@core.DirtyRect], max_cols? : Int) -> String
 
-pub fn buffer_to_ansi(CharBuffer, max_cols? : Int) -> String
+pub fn buffer_to_ansi(@core.CharBuffer, max_cols? : Int) -> String
 
-pub fn buffer_to_plain(CharBuffer) -> String
+pub fn buffer_to_plain(@core.CharBuffer) -> String
 
-pub fn buffer_to_plain_with_links(CharBuffer, Array[PlainLink]) -> String
+pub fn buffer_to_plain_with_links(@core.CharBuffer, Array[@core.PlainLink]) -> String
 
 pub fn char_display_width(Char) -> Int
 
@@ -49,25 +50,25 @@ pub fn clear_screen() -> String
 
 pub fn color_to_256(@types.Color) -> Int
 
-pub fn dirty_rects_to_cells(Array[@types.BoundingRect], Int, Int, Int, Int) -> Array[DirtyRect]
+pub fn dirty_rects_to_cells(Array[@types.BoundingRect], Int, Int, Int, Int) -> Array[@core.DirtyRect]
 
 pub fn disable_mouse() -> String
 
-pub fn draw_box(CharBuffer, Int, Int, Int, Int, BoxStyle, @types.Color, @types.Color) -> Unit
+pub fn draw_box(@core.CharBuffer, Int, Int, Int, Int, @core.BoxStyle, @types.Color, @types.Color) -> Unit
 
-pub fn draw_filled_box(CharBuffer, Int, Int, Int, Int, BoxStyle, @types.Color, @types.Color) -> Unit
+pub fn draw_filled_box(@core.CharBuffer, Int, Int, Int, Int, @core.BoxStyle, @types.Color, @types.Color) -> Unit
 
-pub fn draw_heading(CharBuffer, Int, Int, String, Int, Int) -> Int
+pub fn draw_heading(@core.CharBuffer, Int, Int, String, Int, Int) -> Int
 
-pub fn draw_hline(CharBuffer, Int, Int, Int, BoxStyle, @types.Color) -> Unit
+pub fn draw_hline(@core.CharBuffer, Int, Int, Int, @core.BoxStyle, @types.Color) -> Unit
 
-pub fn draw_link(CharBuffer, Int, Int, String, Int, Bool) -> Int
+pub fn draw_link(@core.CharBuffer, Int, Int, String, Int, Bool) -> Int
 
-pub fn draw_scrollbar(CharBuffer, Int, Int, Int, Int, Int, Int) -> Unit
+pub fn draw_scrollbar(@core.CharBuffer, Int, Int, Int, Int, Int, Int) -> Unit
 
-pub fn draw_status_bar(CharBuffer, Int, String, Int, Int, focused_link_url? : String?, selection_mode? : Bool, dark_mode? : Bool) -> Unit
+pub fn draw_status_bar(@core.CharBuffer, Int, String, Int, Int, focused_link_url? : String?, selection_mode? : Bool, dark_mode? : Bool) -> Unit
 
-pub fn draw_vline(CharBuffer, Int, Int, Int, BoxStyle, @types.Color) -> Unit
+pub fn draw_vline(@core.CharBuffer, Int, Int, Int, @core.BoxStyle, @types.Color) -> Unit
 
 pub fn enable_mouse() -> String
 
@@ -134,13 +135,6 @@ pub async fn wait_for_enter() -> Unit
 // Errors
 
 // Types and methods
-pub(all) enum BoxStyle {
-  Single
-  Double
-  Rounded
-  Ascii
-}
-
 pub enum BrowserAction {
   ScrollUp
   ScrollDown
@@ -168,47 +162,11 @@ pub enum BrowserAction {
 }
 
 pub(all) struct BufferRenderResult {
-  buffer : CharBuffer
+  buffer : @core.CharBuffer
   link_regions : Array[LinkRegion]
   hit_regions : Array[HitRegion]
   scrollable_elements : Array[@scroll.ScrollableElement]
   image_regions : Array[ImageRegion]
-}
-
-pub struct CharBuffer {
-  width : Int
-  height : Int
-  cells : Array[CharCell]
-}
-pub fn CharBuffer::clear(Self) -> Unit
-pub fn CharBuffer::fill_bg(Self, Int, Int, Int, Int, @types.Color) -> Unit
-pub fn CharBuffer::fill_rect(Self, Int, Int, Int, Int, CharCell) -> Unit
-pub fn CharBuffer::get_cell(Self, Int, Int) -> CharCell
-pub fn CharBuffer::get_row_text(Self, Int) -> String
-pub fn CharBuffer::new(Int, Int) -> Self
-pub fn CharBuffer::set_cell(Self, Int, Int, CharCell) -> Unit
-pub fn CharBuffer::write_text(Self, Int, Int, String, TextStyle, Int) -> Int
-pub fn CharBuffer::write_text_pre(Self, Int, Int, String, TextStyle, Int, Int) -> Int
-pub fn CharBuffer::write_text_wrapped(Self, Int, Int, String, TextStyle, Int, Int) -> Int
-
-pub(all) struct CharCell {
-  char : Char
-  fg : @types.Color
-  bg : @types.Color
-  bold : Bool
-  underline : Bool
-  reverse : Bool
-}
-pub fn CharCell::default() -> Self
-pub fn CharCell::from_char(Char) -> Self
-pub fn CharCell::styled(Char, @types.Color, @types.Color) -> Self
-pub impl Eq for CharCell
-
-pub(all) struct DirtyRect {
-  col : Int
-  row : Int
-  width : Int
-  height : Int
 }
 
 pub(all) struct ElementScrollPos {
@@ -277,29 +235,14 @@ pub(all) struct LinkRegion {
 }
 pub fn LinkRegion::contains(Self, Int, Int) -> Bool
 
-pub(all) struct PlainLink {
-  col : Int
-  row : Int
-  width : Int
-  url : String
-}
-
 pub(all) struct RenderResult {
   ansi : String
   link_regions : Array[LinkRegion]
   hit_regions : Array[HitRegion]
 }
 
-pub(all) struct TextStyle {
-  fg : @types.Color
-  bg : @types.Color
-  bold : Bool
-  underline : Bool
-}
-pub fn TextStyle::default() -> Self
-
 pub struct TuiContext {
-  buffer : CharBuffer
+  buffer : @core.CharBuffer
   scroll_y : Int
   viewport_height : Int
   link_regions : Array[LinkRegion]
@@ -311,6 +254,17 @@ pub struct TuiContext {
 }
 
 // Type aliases
+pub using @core {type BoxStyle}
+
+pub using @core {type CharBuffer}
+
+pub using @core {type CharCell}
+
+pub using @core {type DirtyRect}
+
+pub using @core {type PlainLink}
+
+pub using @core {type TextStyle}
 
 // Traits
 

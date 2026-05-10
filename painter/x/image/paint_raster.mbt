@@ -1,6 +1,6 @@
 ///|
-/// Sixel Renderer for terminal visualization
-/// Sixel is a DEC graphics format for displaying images in terminals
+/// Framebuffer and paint tree rasterization for image outputs.
+/// Terminal protocols are encoded by crater-painter-terminal packages.
 
 ///|
 /// RGB Color (0-255 range)
@@ -497,7 +497,7 @@ pub fn DynamicPalette::new() -> DynamicPalette {
 }
 
 ///|
-/// Convert types.Color to sixel Color
+/// Convert layout Color to raster Color
 fn types_color_to_image(c : @types.Color) -> Color {
   { r: c.r, g: c.g, b: c.b }
 }
@@ -628,7 +628,7 @@ fn blend_types_color_over_pixel(
 }
 
 ///|
-fn blend_sixel_color_over_pixel(
+fn blend_raster_color_over_pixel(
   fb : Framebuffer,
   palette : DynamicPalette,
   x : Int,
@@ -686,7 +686,7 @@ fn cached_blended_index(
 }
 
 ///|
-fn blend_span_with_sixel_color(
+fn blend_span_with_raster_color(
   fb : Framebuffer,
   palette : DynamicPalette,
   y : Int,
@@ -752,7 +752,7 @@ fn fill_rect_with_types_color(
   let src = types_color_to_image(color)
   let cache = Array::make(palette.colors.length(), -1)
   for py = y1; py < y2; py = py + 1 {
-    blend_span_with_sixel_color(fb, palette, py, x1, x2, src, alpha, cache)
+    blend_span_with_raster_color(fb, palette, py, x1, x2, src, alpha, cache)
   }
 }
 
@@ -1141,10 +1141,10 @@ fn fill_rounded_corner_pixels_fast(
         if alpha >= 255 {
           fb.set_pixel(px, py, idx)
         } else {
-          blend_sixel_color_over_pixel(fb, palette, px, py, src, alpha)
+          blend_raster_color_over_pixel(fb, palette, px, py, src, alpha)
         }
       } else if cov > 0.0 {
-        blend_sixel_color_over_pixel(
+        blend_raster_color_over_pixel(
           fb,
           palette,
           px,
@@ -1199,7 +1199,7 @@ fn fill_rounded_rect_fast(
       if alpha >= 255 {
         fb.fill_span(py, cx1, cx2, idx)
       } else {
-        blend_span_with_sixel_color(
+        blend_span_with_raster_color(
           fb, palette, py, cx1, cx2, src, alpha, cache,
         )
       }
@@ -1332,7 +1332,7 @@ fn fill_rounded_rect_clipped(
   } else {
     let cache = Array::make(palette.colors.length(), -1)
     for py = y1; py < y2; py = py + 1 {
-      blend_span_with_sixel_color(fb, palette, py, x1, x2, src, alpha, cache)
+      blend_span_with_raster_color(fb, palette, py, x1, x2, src, alpha, cache)
     }
   }
 }
@@ -1595,7 +1595,7 @@ fn blend_group_framebuffer_over(
     for px = x1; px < x2; px = px + 1 {
       let idx = group_fb.pixels[row + px]
       if idx >= 0 && idx < group_palette.colors.length() {
-        blend_sixel_color_over_pixel(
+        blend_raster_color_over_pixel(
           fb,
           palette,
           px,
@@ -2135,7 +2135,7 @@ fn render_raster_image_into_region(
       if alpha <= 0 {
         continue
       }
-      blend_sixel_color_over_pixel(
+      blend_raster_color_over_pixel(
         fb,
         palette,
         dst_x,
@@ -2294,8 +2294,8 @@ pub fn render_paint_node_to_framebuffer_scrolled(
     }
   }
   if !canvas_bg.is_transparent() {
-    let bg_sixel = { r: canvas_bg.r, g: canvas_bg.g, b: canvas_bg.b }
-    let bg_idx = palette.get_or_add(bg_sixel)
+    let bg_raster = { r: canvas_bg.r, g: canvas_bg.g, b: canvas_bg.b }
+    let bg_idx = palette.get_or_add(bg_raster)
     fb.fill_rect(0, 0, fb.width, fb.height, bg_idx)
   }
   // Render the tree with scroll offset
@@ -2324,8 +2324,8 @@ pub fn render_paint_node_to_framebuffer(
     }
   }
   if !canvas_bg.is_transparent() {
-    let bg_sixel = { r: canvas_bg.r, g: canvas_bg.g, b: canvas_bg.b }
-    let bg_idx = palette.get_or_add(bg_sixel)
+    let bg_raster = { r: canvas_bg.r, g: canvas_bg.g, b: canvas_bg.b }
+    let bg_idx = palette.get_or_add(bg_raster)
     fb.fill_rect(0, 0, fb.width, fb.height, bg_idx)
   }
   // Render the tree

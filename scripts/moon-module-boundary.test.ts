@@ -87,6 +87,38 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps framebuffer raster implementation names protocol-neutral", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "painter/x/image/sixel.mbt"))).toBe(false);
+  });
+
+  it("keeps painter-terminal root facade behind terminal-specific packages", () => {
+    const rootPackage = path.join(REPO_ROOT, "painter_terminal/moon.pkg");
+    const source = fs.readFileSync(rootPackage, "utf8");
+
+    expect(source).not.toContain("mizchi/crater-terminal-protocol");
+  });
+
+  it("keeps browser tui core primitives behind the tui core package", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/tui/core/moon.pkg"))).toBe(true);
+
+    const rootImplementationMarkers = new Map<string, readonly string[]>([
+      ["browser/tui/ansi.mbt", ["priv struct AnsiStyleState", "pub(all) struct DirtyRect"]],
+      ["browser/tui/buffer.mbt", ["pub struct CharBuffer", "fn is_wide_char"]],
+      ["browser/tui/widget.mbt", ["fn box_chars", "pub(all) enum BoxStyle"]],
+    ]);
+    const offenders: string[] = [];
+    for (const [relativeFile, markers] of rootImplementationMarkers) {
+      const source = fs.readFileSync(path.join(REPO_ROOT, relativeFile), "utf8");
+      for (const marker of markers) {
+        if (source.includes(marker)) {
+          offenders.push(`${relativeFile}: ${marker}`);
+        }
+      }
+    }
+
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",

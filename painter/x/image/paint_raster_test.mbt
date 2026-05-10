@@ -1,5 +1,5 @@
 ///|
-/// Tests for Sixel renderer
+/// Tests for framebuffer paint rasterization
 fn render_text_probe(build : (@style.Style) -> Unit) -> @image.Framebuffer {
   let style = @style.Style::default()
   style.color = @types.Color::rgb(20, 20, 20)
