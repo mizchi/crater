@@ -67,6 +67,19 @@ describe("MoonBit module boundaries", () => {
       .filter((file) => {
         const source = fs.readFileSync(file, "utf8");
         return source.includes("mizchi/crater-terminal-protocol") ||
+          source.includes("mizchi/crater-painter/x/kitty") ||
+          source.includes("mizchi/crater-painter-terminal/kitty");
+      })
+      .map((file) => path.relative(REPO_ROOT, file));
+
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps kitty renderer implementation out of crater-painter", () => {
+    const offenders = collectMoonPackageFiles(path.join(REPO_ROOT, "painter"))
+      .filter((file) => {
+        const source = fs.readFileSync(file, "utf8");
+        return source.includes("mizchi/crater-terminal-protocol/kitty") ||
           source.includes("mizchi/crater-painter/x/kitty");
       })
       .map((file) => path.relative(REPO_ROOT, file));

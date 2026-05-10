@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-painter/x/kitty"
+package "mizchi/crater-painter-terminal/kitty"
 
 import {
   "mizchi/crater-painter/paint/model",

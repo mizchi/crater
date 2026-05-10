@@ -6,7 +6,7 @@ import {
   "mizchi/crater/css",
   "mizchi/crater-dom/html",
   "mizchi/crater-painter/x/image",
-  "mizchi/crater-painter/x/kitty",
+  "mizchi/crater-painter-terminal/kitty",
   "mizchi/crater-renderer/renderer",
 }
 

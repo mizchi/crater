@@ -10,6 +10,7 @@
       "path": "../terminal_protocol",
       "version": "0.17.1"
     },
+    "mizchi/x": "0.2.0",
     "moonbitlang/async": "0.17.1"
   },
   "repository": "https://github.com/mizchi/crater",

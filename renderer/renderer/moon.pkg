@@ -8,7 +8,7 @@ import {
   "mizchi/crater-painter/paint/node_bridge" @paint_node,
   "mizchi/crater-layout/style",
   "mizchi/crater-layout/types",
-  "mizchi/crater-painter/x/kitty",
+  "mizchi/crater-painter-terminal/kitty",
   "mizchi/crater-painter/x/image",
 }
 
