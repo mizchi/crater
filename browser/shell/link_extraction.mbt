@@ -124,3 +124,8 @@ fn extract_links(html : String) -> Array[Link] {
 fn extract_links(html : String) -> Array[Link] {
   extract_links_fallback(html)
 }
+
+///|
+fn Browser::refresh_links_from_render_source(self : Browser) -> Unit {
+  self.links = extract_links(self.html_content)
+}

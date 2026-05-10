@@ -221,6 +221,35 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps browser shell navigation URL helpers in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/navigation_url.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/navigation.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn resolve_url",
+      "fn make_substr",
+      "fn hex_digit_to_int",
+      "fn percent_decode_data_url_payload",
+      "fn decode_sync_navigable_html_url",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell external CSS fetch in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/external_css_fetch.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/navigation.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn http_fetch_adapter",
+      "fn fetch_external_css",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps browser shell rendering implementation in its own file", () => {
     expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/rendering.mbt"))).toBe(true);
 
@@ -233,6 +262,66 @@ describe("MoonBit module boundaries", () => {
       "fn Browser::render_output",
       "fn Browser::render_kitty",
       "fn Browser::render_text",
+      "fn Browser::render_text_full_page",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell render cache in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/render_cache.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/rendering.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn Browser::set_external_css",
+      "fn Browser::external_css_handle",
+      "fn Browser::clear_render_cache",
+      "fn Browser::prepare_render_document_for_context",
+      "fn Browser::render_node_from_document",
+      "fn Browser::render_node_and_layout_from_document",
+      "fn Browser::render_graphics_node_and_layout",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell render dispatch in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/render_dispatch.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/rendering.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn Browser::render_output",
+      "fn Browser::write_output",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell graphics renderer in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/graphics_renderer.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/rendering.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn Browser::render(self : Browser)",
+      "fn Browser::render_kitty",
+      "fn Browser::write_kitty_output",
+      "fn Browser::collect_graphics_image_regions_from_node_layout",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell text renderer in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/text_renderer.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/rendering.mbt"), "utf8");
+    const implementationMarkers = [
+      "fn Browser::render_text",
+      "fn Browser::build_plain_links",
       "fn Browser::render_text_full_page",
     ] as const;
 
@@ -312,6 +401,47 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps browser shell accessibility tree building in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/accessibility_tree.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "browser/shell/focus_hit_testing.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn Browser::ensure_declarative_shadow_dom_normalized",
+      "fn Browser::build_accessibility_tree",
+      "fn Browser::build_accessibility_tree_lightweight",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell focus navigation in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/focus_navigation.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "browser/shell/focus_hit_testing.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn Browser::is_bounds_visible",
+      "fn Browser::is_focus_node_visible",
+      "fn Browser::next_link",
+      "fn Browser::prev_link",
+      "fn Browser::get_focused_element_name",
+      "fn Browser::get_focused_link_url",
+      "fn Browser::get_focused_source_id",
+      "fn Browser::focus_source_id",
+      "fn Browser::get_visible_focusable_count",
+      "fn Browser::get_visible_focus_index",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps browser shell interaction controller in its own file", () => {
     expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/interaction_controller.mbt"))).toBe(
       true,
@@ -345,6 +475,33 @@ describe("MoonBit module boundaries", () => {
       "fn extract_links_fallback",
       "extern \"js\" fn extract_links_js",
       "fn extract_links",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell link cache refresh with link extraction", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/rendering.mbt"), "utf8");
+    const implementationMarkers = ["fn Browser::refresh_links_from_render_source"] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell link resolution in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/link_resolution.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "browser/shell/focus_hit_testing.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn Browser::get_extracted_link_href_for_source_id",
+      "fn Browser::get_a11y_link_href_for_source_id",
+      "fn Browser::get_link_href_for_source_id",
+      "fn Browser::get_link_href_for_region",
+      "fn Browser::get_href_for_source_id",
     ] as const;
 
     const offenders = implementationMarkers.filter((marker) => source.includes(marker));
@@ -422,6 +579,18 @@ describe("MoonBit module boundaries", () => {
       "fn Browser::set_dark_mode",
       "fn Browser::set_no_color",
     ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps browser shell content lifecycle in its own file", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/content_lifecycle.mbt"))).toBe(
+      true,
+    );
+
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/shell/browser.mbt"), "utf8");
+    const implementationMarkers = ["fn Browser::set_html_content"] as const;
 
     const offenders = implementationMarkers.filter((marker) => source.includes(marker));
     expect(offenders).toEqual([]);
