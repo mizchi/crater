@@ -675,6 +675,97 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps WebDriver BiDi validation helpers out of the protocol core", () => {
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_validation.mbt")),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn BidiProtocol::validate_session_subscribe_params",
+      "fn BidiProtocol::validate_browser_create_user_context",
+      "fn BidiProtocol::validate_network_add_intercept_params",
+      "fn BidiProtocol::validate_network_set_extra_headers_params",
+      "fn is_valid_network_pattern_url_pattern",
+      "fn is_valid_subscription_id_format",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps WebDriver BiDi JSON parameter helpers out of the protocol core", () => {
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_json.mbt")),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn make_object",
+      "fn get_field",
+      "fn get_param_raw",
+      "fn get_map_field_with_alias",
+      "fn canonicalize_serialization_options_map",
+      "fn resolve_runtime_context_id",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps WebDriver BiDi message serialization out of the protocol core", () => {
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_messages.mbt")),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "priv struct BidiRequest",
+      "priv struct BidiResponse",
+      "priv enum BidiOutMessage",
+      "fn BidiProtocol::process_message",
+      "fn BidiProtocol::send_success",
+      "fn response_to_json",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps WebDriver BiDi dispatch routing out of the protocol core", () => {
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_dispatch.mbt")),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn BidiProtocol::dispatch(",
+      "fn BidiProtocol::dispatch_session",
+      "fn BidiProtocol::dispatch_browser",
+      "fn BidiProtocol::dispatch_browsing_context",
+      "fn BidiProtocol::dispatch_script",
+      "fn BidiProtocol::dispatch_input",
+      "fn BidiProtocol::dispatch_network",
+      "fn BidiProtocol::dispatch_log",
+      "fn split_method",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",
