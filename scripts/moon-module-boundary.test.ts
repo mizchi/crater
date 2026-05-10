@@ -766,6 +766,32 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps WebDriver BiDi browsing context handlers out of the protocol core", () => {
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_browsing_context.mbt")),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn BidiProtocol::handle_browsing_context_create_synthetic_child_context",
+      "fn BidiProtocol::handle_browsing_context_get_context_scope_info",
+      "fn BidiProtocol::handle_browsing_context_get_tree_contexts",
+      "fn BidiProtocol::resolve_current_context_url",
+      "fn BidiProtocol::create_top_level_context_from_params",
+      "fn BidiProtocol::handle_browsing_context_prepare_navigate",
+      "fn BidiProtocol::complete_navigate_with_state",
+      "fn BidiProtocol::handle_browsing_context_close_mode",
+      "fn BidiProtocol::build_context_tree",
+      "fn BidiProtocol::resolve_get_tree_contexts",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",
