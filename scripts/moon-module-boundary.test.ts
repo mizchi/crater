@@ -91,4 +91,20 @@ describe("MoonBit module boundaries", () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it("keeps html asset discovery implementation out of browser shell", () => {
+    const implementationMarkers = [
+      "is_img_tag_start",
+      "is_html_attr_name_char",
+      "read_html_attr_value",
+    ] as const;
+    const offenders = collectMoonBitFiles(path.join(REPO_ROOT, "browser_shell"))
+      .filter((file) => {
+        const source = fs.readFileSync(file, "utf8");
+        return implementationMarkers.some((marker) => source.includes(marker));
+      })
+      .map((file) => path.relative(REPO_ROOT, file));
+
+    expect(offenders).toEqual([]);
+  });
 });

@@ -1,4 +1,5 @@
 import {
+  "mizchi/crater-html-assets" @html_assets,
   "mizchi/crater-terminal-image-cache" @terminal_image_cache,
 }
 

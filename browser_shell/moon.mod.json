@@ -2,6 +2,10 @@
   "name": "mizchi/crater-browser-shell",
   "version": "0.17.1",
   "deps": {
+    "mizchi/crater-html-assets": {
+      "path": "../html_assets",
+      "version": "0.17.1"
+    },
     "mizchi/crater-terminal-image-cache": {
       "path": "../terminal_image_cache",
       "version": "0.17.1"

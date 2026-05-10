@@ -38,8 +38,8 @@
       "path": "../http",
       "version": "0.17.1"
     },
-    "mizchi/crater-browser-shell": {
-      "path": "../browser_shell",
+    "mizchi/crater-html-assets": {
+      "path": "../html_assets",
       "version": "0.17.1"
     },
     "mizchi/crater-painter-terminal": {

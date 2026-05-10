@@ -17,6 +17,7 @@ members = [
   "./renderer",
   "./renderer_style",
   "./runtime",
+  "./html_assets",
   "./browser",
   "./browser_shell",
   "./webdriver",

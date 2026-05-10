@@ -1518,7 +1518,7 @@ fn Browser::install_sixel_image_provider(self : Browser) -> Bool {
 ///|
 /// Extract img src attributes from HTML (lightweight, no full parsing)
 fn extract_img_srcs(html : String) -> Array[String] {
-  @browser_shell.extract_img_srcs(html)
+  @html_assets.extract_img_srcs(html)
 }
 
 ///|
