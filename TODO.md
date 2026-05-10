@@ -57,7 +57,7 @@
   - 完了: `PreparedExternalCss`, `PreparedRenderDocument`, external CSS cache, pseudo rule index build, render root preparation を `renderer/renderer/document_prepare.mbt` へ移動
   - 切り出し先候補: `renderer/renderer/document_prepare.mbt`
 - [x] generated content / pseudo / CSS counter 実装を分離する
-  - 完了: `ContentPart`, counter directive/state, `::before/::after` content resolution, generated pseudo node creation, host relative-offset application を `renderer/renderer/generated_content.mbt` へ移動
+  - 完了: `ContentPart`, counter directive/state, `::before/::after` content resolution, generated pseudo node creation, host relative-offset application, element counter/pseudo orchestration を `renderer/renderer/generated_content.mbt` へ移動
   - 切り出し先候補: `renderer/renderer/generated_content.mbt`
 - [x] SVG style normalization を renderer core から分離する
   - 完了: `is_svg_element`, `normalize_svg_display_contents`, `apply_svg_attributes_to_style`, SVG intrinsic fallback, SVG length parsing を `renderer/renderer/svg_style.mbt` へ移動

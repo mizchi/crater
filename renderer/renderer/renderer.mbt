@@ -52,44 +52,17 @@ fn element_to_node_with_styles(
     ctx,
     css_vars,
   )
-  let own_counters = if stylesheets.length() == 0 {
-    incoming_counters
-  } else {
-    compute_element_own_counters(
-      incoming_counters, selector_elem, style, stylesheets, ctx, owner_id,
-    )
-  }
-  // Skip pseudo resolution for below-viewport elements (major perf win)
-  let before_pseudo = if below_viewport || stylesheets.length() == 0 {
-    None
-  } else {
-    resolve_pseudo_spec_fast(
-      selector_elem,
-      style,
-      ctx,
-      Before,
-      own_counters,
-      element_css_vars,
-      elem.attributes,
-    )
-  }
-  let after_pseudo = if below_viewport || stylesheets.length() == 0 {
-    None
-  } else {
-    resolve_pseudo_spec_fast(
-      selector_elem,
-      style,
-      ctx,
-      After,
-      own_counters,
-      element_css_vars,
-      elem.attributes,
-    )
-  }
-  let style = apply_generated_pseudo_host_style_offsets(
-    style, before_pseudo, after_pseudo,
+  let (own_counters, before_pseudo, after_pseudo, style) = resolve_element_counter_pseudos(
+    incoming_counters,
+    selector_elem,
+    style,
+    stylesheets,
+    ctx,
+    owner_id,
+    below_viewport,
+    element_css_vars,
+    elem.attributes,
   )
-
   let children = build_styled_element_children(
     elem, selector_elem, cell_tag, style, ctx, stylesheets, indexed_stylesheets,
     element_css_vars, own_counters, owner_id, before_pseudo, after_pseudo,
@@ -239,42 +212,16 @@ fn element_to_node_with_styles_internal(
     ctx,
     css_vars,
   )
-  let own_counters = if stylesheets.length() == 0 {
-    incoming_counters
-  } else {
-    compute_element_own_counters(
-      incoming_counters, selector_elem, style, stylesheets, ctx, owner_id,
-    )
-  }
-  // Skip pseudo resolution for below-viewport elements (major perf win)
-  let before_pseudo = if below_viewport || stylesheets.length() == 0 {
-    None
-  } else {
-    resolve_pseudo_spec_fast(
-      selector_elem,
-      style,
-      ctx,
-      Before,
-      own_counters,
-      element_css_vars,
-      elem.attributes,
-    )
-  }
-  let after_pseudo = if below_viewport || stylesheets.length() == 0 {
-    None
-  } else {
-    resolve_pseudo_spec_fast(
-      selector_elem,
-      style,
-      ctx,
-      After,
-      own_counters,
-      element_css_vars,
-      elem.attributes,
-    )
-  }
-  let style = apply_generated_pseudo_host_style_offsets(
-    style, before_pseudo, after_pseudo,
+  let (own_counters, before_pseudo, after_pseudo, style) = resolve_element_counter_pseudos(
+    incoming_counters,
+    selector_elem,
+    style,
+    stylesheets,
+    ctx,
+    owner_id,
+    below_viewport,
+    element_css_vars,
+    elem.attributes,
   )
   let children = build_styled_element_children(
     elem, selector_elem, tag_lower, style, ctx, stylesheets, indexed_stylesheets,

@@ -1363,6 +1363,9 @@ describe("MoonBit module boundaries", () => {
       "fn selector_has_generated_pseudo_content",
       "fn compute_element_own_counters",
       "spec.position_relative && spec.left_offset",
+      "compute_element_own_counters(",
+      "resolve_pseudo_spec_fast(",
+      "apply_generated_pseudo_host_style_offsets(",
     ] as const;
 
     const offenders = implementationMarkers.filter((marker) => source.includes(marker));

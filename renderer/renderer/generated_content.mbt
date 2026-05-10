@@ -701,6 +701,62 @@ fn apply_generated_pseudo_host_style_offsets(
 }
 
 ///|
+fn resolve_element_counter_pseudos(
+  incoming_counters : Map[String, CounterEntry],
+  selector_elem : @css.Element,
+  style : @style.Style,
+  stylesheets : Array[@css.Stylesheet],
+  ctx : RenderContext,
+  owner_id : String,
+  below_viewport : Bool,
+  element_css_vars : Map[String, String],
+  element_attributes : Map[String, String],
+) -> (
+  Map[String, CounterEntry],
+  AfterPseudoSpec?,
+  AfterPseudoSpec?,
+  @style.Style,
+) {
+  let own_counters = if stylesheets.length() == 0 {
+    incoming_counters
+  } else {
+    compute_element_own_counters(
+      incoming_counters, selector_elem, style, stylesheets, ctx, owner_id,
+    )
+  }
+  let before_pseudo = if below_viewport || stylesheets.length() == 0 {
+    None
+  } else {
+    resolve_pseudo_spec_fast(
+      selector_elem,
+      style,
+      ctx,
+      Before,
+      own_counters,
+      element_css_vars,
+      element_attributes,
+    )
+  }
+  let after_pseudo = if below_viewport || stylesheets.length() == 0 {
+    None
+  } else {
+    resolve_pseudo_spec_fast(
+      selector_elem,
+      style,
+      ctx,
+      After,
+      own_counters,
+      element_css_vars,
+      element_attributes,
+    )
+  }
+  let style = apply_generated_pseudo_host_style_offsets(
+    style, before_pseudo, after_pseudo,
+  )
+  (own_counters, before_pseudo, after_pseudo, style)
+}
+
+///|
 fn create_generated_pseudo_node(
   spec : AfterPseudoSpec,
   pseudo_kind : PseudoKind,
