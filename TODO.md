@@ -1,5 +1,104 @@
 # TODO
 
+## Refactor Backlog (2026-05-10)
+
+実装に入る前の棚卸し。基本方針は、各項目で先に boundary test / characterization test を置き、`moon info && moon fmt` で公開面の変化を確認してから `moon check --target js` と対象 package test を通す。
+
+### P0: WebDriver BiDi protocol core をさらに薄くする
+
+- [x] `webdriver/webdriver/bidi_protocol.mbt` に残る `script` command 実装を分離する
+  - 完了: `handle_script_evaluate`, `handle_script_call_function`, sync await fallback を `bidi_protocol_script_eval.mbt` へ移動
+  - 補足: remote value response helper は synthetic script helpers からも共有されているため、次の script helper 分割で扱う
+  - 切り出し先候補: `bidi_protocol_script_eval.mbt`
+  - 境界テスト: core に `handle_script_evaluate` / `handle_script_call_function` / `resolve_sync_await_*` が残らないこと
+- [x] `script` fixture glue を evaluator 本体から分離する
+  - 完了: `handle_script_get_element_for_test`, static test page preparation, iframe/test page/fetch fixture helpers を `bidi_protocol_script_fixtures.mbt` へ移動
+  - 切り出し先候補: `bidi_protocol_script_fixtures.mbt`
+  - 狙い: WPT adapter 由来の fixture 実装と BiDi protocol 実装を分ける
+- [x] `input` action 実装を core から分離する
+  - 完了: `handle_input_perform_actions`, pointer/key/wheel state, `setFiles` helpers, file dialog glue を `bidi_protocol_input_actions.mbt` へ移動
+  - 切り出し先候補: `bidi_protocol_input_actions.mbt`
+  - 既存 `dispatch_input` は `bidi_protocol_dispatch.mbt` に移動済みなので、handler 本体も追従する
+- [x] `network` command の残りを network package 側へ寄せる
+  - 完了: `handle_network_add_intercept`, `addDataCollector`, `setExtraHeaders`, data collector removal を `bidi_protocol_network_commands.mbt` へ移動
+  - 切り出し先候補: 既存 `bidi_network_synthetic.mbt` / `bidi_network_state.mbt` へ統合、または `bidi_protocol_network_commands.mbt`
+  - 狙い: `bidi_protocol.mbt` を protocol state と shared helpers だけに近づける
+- [ ] `session` / `browser` helper を分離する
+  - 候補: `handle_session_*`, `resolve_browser_*`, baseline context test helper, user context helper
+  - 切り出し先候補: `bidi_protocol_session.mbt`, `bidi_protocol_browser.mbt`
+- [ ] `preload` / realm / context ancestry / log helper を分離する
+  - 候補: `PreloadScriptEntry`, preload cleanup/apply, realm/source metadata, `emit_log_entry*`
+  - 切り出し先候補: `bidi_protocol_preload.mbt`, `bidi_protocol_log.mbt`
+- [ ] `browsingContext` rendering-adjacent command を再分割する
+  - すでに `bidi_protocol_browsing_context.mbt` へ basic navigation/tree/close を移動済み
+  - 候補: `handle_set_viewport`, `handle_traverse_history`, `captureScreenshot`, `print`, `locateNodes`
+  - 切り出し先候補: `bidi_protocol_browsing_context_rendering.mbt`
+
+### P0: WebDriver server と JS runtime glue を分離する
+
+- [ ] `webdriver/webdriver/bidi_server.mbt` の transport/server と runtime JS glue を分ける
+  - 現状: server setup/auth/status/websocket と、`evaluate_js*`, runtime context sync, DOM query, input dispatch helper が同居している
+  - 切り出し先候補: `bidi_server_transport.mbt`, `bidi_runtime_eval.mbt`, `bidi_runtime_context.mbt`, `bidi_runtime_input.mbt`
+  - 境界テスト: server file に `evaluate_js`, `input_dispatch_*`, `sync_runtime_*` が残らないこと
+- [ ] data URL / base64 / runtime HTML sync helper を dedicated file に寄せる
+  - 候補: `parse_data_url`, `decode_base64`, `sync_runtime_page`, `sync_runtime_html`
+  - 切り出し先候補: `bidi_runtime_document.mbt`
+
+### P0: renderer core の責務分割
+
+- [ ] `renderer/renderer/renderer.mbt` の inline formatting / whitespace normalization を分離する
+  - 候補: `is_inline_element`, whitespace trim/collapse, inline content collection, inline skeleton hints
+  - 切り出し先候補: `renderer/renderer/inline_flow.mbt`
+- [ ] replaced element / intrinsic media sizing を分離する
+  - 候補: img/input/br measure, data URI SVG/GIF/PNG intrinsic size parser, alt text handling
+  - 切り出し先候補: `renderer/renderer/replaced_element.mbt`, `renderer/renderer/intrinsic_media.mbt`
+- [ ] document preparation / external CSS cache を分離する
+  - 候補: `prepare_external_css`, `PreparedExternalCss`, pseudo rule index build, render root preparation
+  - 切り出し先候補: `renderer/renderer/document_prepare.mbt`
+- [ ] generated content / pseudo / CSS counter 実装を分離する
+  - 候補: `ContentPart`, counter directive parsing, `::before/::after` creation, `content` evaluation
+  - 切り出し先候補: `renderer/renderer/generated_content.mbt`
+- [ ] SVG style normalization を renderer core から分離する
+  - 候補: `is_svg_element`, `normalize_svg_display_contents`, `apply_svg_attributes_to_style`, intrinsic size
+  - 切り出し先候補: `renderer/renderer/svg_style.mbt`
+- [ ] UA default style / cascade glue を分離する
+  - 候補: `get_ua_default_style`, `compute_element_style_indexed`, CSS var collection, inline style application
+  - 切り出し先候補: `renderer/renderer/style_resolve.mbt`
+- [ ] absolute positioning and layout JSON serialization を分離する
+  - 候補: abspos containing block helpers, zoom/scale apply, `layout_to_json`
+  - 切り出し先候補: `renderer/renderer/absolute_positioning.mbt`, `renderer/renderer/layout_json.mbt`
+
+### P1: large test files を domain ごとに分割する
+
+- [ ] `renderer/renderer/render_test.mbt` / `renderer_test.mbt` を feature cluster ごとに分ける
+  - 候補: inline/text, replaced element, generated content, SVG, abspos, table/flex/grid, containment
+- [ ] `browser/shell/browser_js_wbtest.mbt` を interaction/navigation/runtime fixture ごとに分ける
+  - 狙い: browser shell 変更時の conflict と focused test 実行コストを下げる
+- [ ] `webdriver/webdriver/bidi_protocol_wbtest.mbt` を domain 別 wbtest に分ける
+  - 既存: browsing_context / network / storage 系は一部分割済み
+  - 残り候補: script eval, input actions, session/browser, preload/realm, prompt/download
+
+### P1: SVG / painter 周辺の単一責務化
+
+- [ ] `painter/svg/types.mbt` を機能ごとに分割する
+  - 候補: color/viewbox/geometry, hit testing, event manager, animation/tween, gradient, particle/path follower, blend mode, filter/image/sprite, clip/mask
+  - 注意: public `.mbti` への影響を `moon info` で確認し、必要なら facade を維持する
+- [ ] `painter/svg/scene.mbt` の scene graph mutation と shape rendering を分離する
+  - 候補: dirty region/z-order/camera, render dispatch, shape renderer (`render_rect`, `render_circle`, `render_path`, `render_text`)
+  - `mizchi/svg` に寄せられる primitive はそちらへの移譲候補として扱う
+- [ ] `painter/x/image/paint_raster.mbt` / `glyph_render.mbt` の raster と glyph 責務を整理する
+  - 候補: scanline/fill, image decode/cache, glyph fallback, font metrics bridge
+  - `mizchi/font` / `mizchi/svg` へ移せるものは crater 側を adapter に寄せる
+
+### P2: tooling / boundary guard
+
+- [ ] 上記の各 split に対応する `scripts/moon-module-boundary.test.ts` の boundary test を追加する
+- [ ] file size regression guard を追加する
+  - 候補: `bidi_protocol.mbt`, `bidi_server.mbt`, `renderer.mbt`, `painter/svg/types.mbt` に soft limit を置く
+  - 目的: 新規実装が巨大 core に戻るのを防ぐ
+- [ ] `scripts/flaker-*` / `docs/flaker-runbook.md` の ownership と TODO を同期する
+  - 既存の metric-ci / flaker 切り出し方針と重複しないようにする
+
 ## Workspace / Monorepo Status (2026-04-24)
 
 - 入口:

@@ -792,6 +792,102 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps WebDriver BiDi script evaluation handlers out of the protocol core", () => {
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_script_eval.mbt")),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn resolve_sync_await_expression_fallback",
+      "fn resolve_sync_await_call_expression",
+      "fn BidiProtocol::try_send_sync_await_expression_fallback",
+      "fn BidiProtocol::try_send_sync_await_call_fallback",
+      "fn BidiProtocol::handle_script_evaluate",
+      "fn BidiProtocol::handle_script_call_function",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps WebDriver BiDi script fixture helpers out of the protocol core", () => {
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_script_fixtures.mbt")),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn BidiProtocol::handle_script_get_element_for_test",
+      "fn BidiProtocol::handle_script_prepare_loaded_static_test_page",
+      "fn BidiProtocol::handle_script_load_static_test_page_for_test",
+      "fn BidiProtocol::resolve_script_get_element_for_test",
+      "fn BidiProtocol::resolve_script_create_iframe_context_result",
+      "fn BidiProtocol::handle_script_fetch_for_test",
+      "fn synthetic_fetch_request_headers_from_json",
+      "extern \"js\" fn js_test_page_dom_content_loaded_source",
+      "extern \"js\" fn js_fetch_from_context_for_test_expression",
+      "extern \"js\" fn js_test_page_create_iframe_source",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps WebDriver BiDi input action handlers out of the protocol core", () => {
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_input_actions.mbt")),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn BidiProtocol::handle_input_perform_actions",
+      "fn BidiProtocol::handle_input_release_actions",
+      "fn BidiProtocol::handle_input_set_files",
+      "fn BidiProtocol::validate_input_context",
+      "fn BidiProtocol::resolve_pointer_origin",
+      "fn BidiProtocol::push_pressed_key",
+      "fn button_to_mask",
+      "extern \"js\" fn js_input_apply_file_selection",
+      "fn BidiProtocol::try_handle_synthetic_file_dialog_eval",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps WebDriver BiDi network command handlers out of the protocol core", () => {
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_network_commands.mbt")),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn BidiProtocol::handle_network_add_intercept",
+      "fn BidiProtocol::handle_network_add_intercept_id",
+      "fn BidiProtocol::handle_network_remove_intercept",
+      "fn BidiProtocol::handle_network_add_data_collector",
+      "fn BidiProtocol::handle_network_add_data_collector_id",
+      "fn BidiProtocol::handle_network_set_extra_headers",
+      "fn BidiProtocol::handle_network_remove_data_collector",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",
