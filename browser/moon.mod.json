@@ -42,7 +42,10 @@
       "path": "../browser_shell",
       "version": "0.17.1"
     },
-    "mizchi/tui-terminal-protocol": "0.1.0",
+    "mizchi/crater-painter-terminal": {
+      "path": "../painter_terminal",
+      "version": "0.17.1"
+    },
     "mizchi/font": "0.7.3",
     "mizchi/x": "0.2.0",
     "moonbitlang/async": "0.17.1",

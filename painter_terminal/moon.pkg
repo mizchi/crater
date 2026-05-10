@@ -1,4 +1,6 @@
 import {
+  "moonbitlang/async/io",
+  "mizchi/crater-terminal-protocol/kitty" @kitty_protocol,
   "mizchi/crater-painter/paint/model" @paint_model,
   "mizchi/crater-painter/svg",
   "mizchi/crater-painter/x/image",

@@ -861,7 +861,7 @@ fn Browser::render_kitty(self : Browser) -> String {
   )
   let (node, layout) = self.render_graphics_node_and_layout(ctx, false)
   let paint_node = @tui_paint_plain.from_node_and_layout(node, layout)
-  let base = @kitty.render_paint_node_to_kitty_scrolled(
+  let base = @painter_terminal.render_paint_node_to_kitty_scrolled(
     paint_node,
     self.viewport_width,
     self.viewport_height,
@@ -891,7 +891,7 @@ async fn[T : @io.Writer] Browser::write_kitty_output(
   )
   let (node, layout) = self.render_graphics_node_and_layout(ctx, false)
   let paint_node = @tui_paint_plain.from_node_and_layout(node, layout)
-  @kitty.write_paint_node_to_kitty_scrolled(
+  @painter_terminal.write_paint_node_to_kitty_scrolled(
     writer,
     paint_node,
     self.viewport_width,
@@ -1320,7 +1320,7 @@ fn Browser::build_kitty_image_overlay(self : Browser) -> String {
       Some(current) if current.image_id == previous.image_id => ()
       _ =>
         buf.write_string(
-          @kitty_protocol.encode_delete_placement(
+          @painter_terminal.encode_kitty_delete_placement(
             previous.image_id,
             previous.placement_id,
           ),
@@ -1348,7 +1348,7 @@ fn Browser::build_kitty_image_overlay(self : Browser) -> String {
       "H",
     )
     let kitty_data = if uploaded {
-      @kitty_protocol.encode_put_placement(
+      @painter_terminal.encode_kitty_put_placement(
         spec.placement.image_id,
         spec.placement.placement_id,
         spec.placement.width,
@@ -1522,82 +1522,6 @@ fn extract_img_srcs(html : String) -> Array[String] {
 }
 
 ///|
-/// Render SVG to kitty graphics with cell-size display parameters (c=cols, r=rows)
-fn render_svg_to_kitty_with_cells(
-  svg_text : String,
-  render_width : Int,
-  render_height : Int,
-  display_cols : Int,
-  display_rows : Int,
-  image_id? : Int = 0,
-  placement_id? : Int = 0,
-) -> String {
-  let svg_node = match @svg.parse_svg(svg_text) {
-    Some(n) => n
-    None => return ""
-  }
-  let scene = @svg.Scene::new(svg_node)
-  let fb = @image.Framebuffer::new(render_width, render_height)
-  let palette = @image.DynamicPalette::new()
-  fb.fill_rect(0, 0, render_width, render_height, 0)
-  let viewbox = @svg.extract_root_view_box(svg_text)
-  let (vx, vy, vw, vh) = match viewbox {
-    Some(v) => (v.min_x, v.min_y, v.width, v.height)
-    None => {
-      let bounds = scene.get_bounds()
-      (0.0, 0.0, bounds.width(), bounds.height())
-    }
-  }
-  if vw <= 0.0 || vh <= 0.0 {
-    return ""
-  }
-  let camera = @svg.Camera::new(render_width, render_height)
-  camera.set_position(vx + vw / 2.0, vy + vh / 2.0)
-  let zoom = (render_width.to_double() / vw).min(render_height.to_double() / vh)
-  camera.set_zoom(zoom)
-  @image.render_svg_scene_with_camera(scene, fb, palette, camera)
-  to_kitty_with_cells(
-    fb,
-    palette,
-    display_cols,
-    display_rows,
-    image_id~,
-    placement_id~,
-  )
-}
-
-///|
-/// Encode framebuffer to kitty graphics with c (columns) and r (rows) display size
-fn to_kitty_with_cells(
-  fb : @image.Framebuffer,
-  palette : @image.DynamicPalette,
-  cols : Int,
-  rows : Int,
-  image_id? : Int = 0,
-  placement_id? : Int = 0,
-) -> String {
-  @kitty_protocol.encode_indexed_pixels_to_kitty_cells(
-    fb.width,
-    fb.height,
-    fb.pixels,
-    to_kitty_protocol_colors(palette),
-    cols,
-    rows,
-    image_id~,
-    placement_id~,
-  )
-}
-
-///|
-fn to_kitty_protocol_colors(
-  palette : @image.DynamicPalette,
-) -> Array[@kitty_protocol.Color] {
-  palette.colors.map(fn(color) {
-    @kitty_protocol.Color::rgb(color.r, color.g, color.b)
-  })
-}
-
-///|
 fn render_cached_kitty_image_with_placement(
   cached_data : String,
   region : @tui.ImageRegion,
@@ -1608,7 +1532,7 @@ fn render_cached_kitty_image_with_placement(
     Some(@browser_shell.TerminalImageCacheEntry::Svg(svg_text)) => {
       let render_w = region.width * 16
       let render_h = region.height * 32
-      render_svg_to_kitty_with_cells(
+      @painter_terminal.render_svg_text_to_kitty_cells(
         svg_text,
         render_w,
         render_h,
@@ -1619,7 +1543,7 @@ fn render_cached_kitty_image_with_placement(
       )
     }
     Some(@browser_shell.TerminalImageCacheEntry::PngBase64(b64_data)) =>
-      @kitty_protocol.encode_png_base64_to_kitty_image(
+      @painter_terminal.encode_png_base64_to_kitty_image(
         b64_data,
         region.width,
         region.height,
@@ -1627,7 +1551,7 @@ fn render_cached_kitty_image_with_placement(
         placement_id~,
       )
     Some(@browser_shell.TerminalImageCacheEntry::RgbaBase64(entry)) =>
-      @kitty_protocol.encode_rgba_base64_to_kitty_image(
+      @painter_terminal.encode_rgba_base64_to_kitty_image(
         entry.rgba_base64,
         entry.width,
         entry.height,
@@ -1637,7 +1561,7 @@ fn render_cached_kitty_image_with_placement(
         placement_id~,
       )
     Some(@browser_shell.TerminalImageCacheEntry::RawBase64(b64_data)) =>
-      @kitty_protocol.encode_png_base64_to_kitty_image(
+      @painter_terminal.encode_png_base64_to_kitty_image(
         @browser_shell.normalize_raster_image_for_kitty(b64_data),
         region.width,
         region.height,
