@@ -1282,6 +1282,43 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps renderer generated content and counters out of renderer core", () => {
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "renderer/renderer/generated_content.mbt")),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/renderer.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "priv struct CounterEntry",
+      "priv struct CounterDirective",
+      "priv enum ContentPart",
+      "priv enum PseudoKind",
+      "fn parse_counter_directives",
+      "fn copy_counter_state",
+      "fn filter_counter_state_for_style_containment",
+      "fn apply_counter_reset_directives",
+      "fn apply_counter_increment_directives",
+      "fn counter_value",
+      "fn resolve_pseudo_attr_functions",
+      "fn resolve_pseudo_content_value",
+      "fn parse_content_parts",
+      "fn evaluate_content_parts",
+      "fn selector_text_without_pseudo",
+      "fn create_generated_pseudo_node",
+      "fn resolve_pseudo_spec",
+      "fn resolve_pseudo_spec_fast",
+      "fn get_counter_directives",
+      "fn selector_has_generated_pseudo_content",
+      "fn compute_element_own_counters",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",
