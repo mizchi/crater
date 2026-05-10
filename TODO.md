@@ -72,6 +72,7 @@
 ### P1: large test files を domain ごとに分割する
 
 - [ ] `renderer/renderer/render_test.mbt` / `renderer_test.mbt` を feature cluster ごとに分ける
+  - 進捗: table formatting-model / empty-cell regression を `renderer/renderer/table_render_test.mbt` へ移動
   - 候補: inline/text, replaced element, generated content, SVG, abspos, table/flex/grid, containment
 - [ ] `browser/shell/browser_js_wbtest.mbt` を interaction/navigation/runtime fixture ごとに分ける
   - 狙い: browser shell 変更時の conflict と focused test 実行コストを下げる

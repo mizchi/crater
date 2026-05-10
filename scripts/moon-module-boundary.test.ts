@@ -1414,6 +1414,26 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps renderer table layout regression tests in their own file", () => {
+    const tableTestFile = path.join(REPO_ROOT, "renderer/renderer/table_render_test.mbt");
+    expect(fs.existsSync(tableTestFile)).toBe(true);
+
+    const tableSource = fs.readFileSync(tableTestFile, "utf8");
+    const renderSource = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/render_test.mbt"),
+      "utf8",
+    );
+    const migratedTests = [
+      'test "wpt_table_as_flex_item_auto_min_width_floor"',
+      'test "wpt_table_cell_overflow_auto_respects_max_width"',
+      'test "empty_td_cellpadding_does_not_inflate_row"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => tableSource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => renderSource.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",
