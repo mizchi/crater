@@ -13,6 +13,6 @@
   },
   "repository": "https://github.com/mizchi/crater",
   "license": "Apache-2.0",
-  "description": "Reusable browser shell support utilities for crater",
+  "description": "Compatibility facade for browser shell support utilities",
   "preferred-target": "js"
 }
