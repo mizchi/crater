@@ -78,6 +78,10 @@
   - 完了: `node_id_is_tag` / `make_node_id` を `renderer/renderer/node_id.mbt`、closed `<details>` summary pruning を `renderer/renderer/details_element.mbt` へ移動
 - [x] table display 判定と box-sizing 変換を分離する
   - 完了: table element/display classification を `renderer/renderer/table_display.mbt`、dimension conversion と content-box/border-box normalization を `renderer/renderer/box_sizing.mbt` へ移動
+- [x] selector element conversion を分離する
+  - 完了: HTML element から CSS selector element への変換 3 経路を `renderer/renderer/selector_element.mbt` へ移動
+- [x] shared string helper と element skip policy を分離する
+  - 完了: `remove_suffix` を `renderer/renderer/string_utils.mbt`、non-visual/unsupported element skip policy を `renderer/renderer/skip_element.mbt` へ移動
 
 ### P1: large test files を domain ごとに分割する
 
