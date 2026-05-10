@@ -1454,6 +1454,10 @@ describe("MoonBit module boundaries", () => {
       "utf8",
     );
     const implementationMarkers = [
+      "let active_before_index",
+      "let active_after_index",
+      "pub fn build_render_root_node",
+      "pub fn compute_layout_from_render_root",
       "fn find_body(",
       "fn find_body_in_children",
       "fn resolve_document_root_zoom",
@@ -1516,6 +1520,42 @@ describe("MoonBit module boundaries", () => {
       "fn find_first_summary_path_in_children",
       "fn prune_node_to_summary_path",
       "fn prune_closed_details_children",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps renderer table display helpers out of renderer core", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "renderer/renderer/table_display.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/renderer.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn is_table_element",
+      "fn is_table_display",
+      "fn is_no_principal_table_internal_display",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps renderer box sizing helpers out of renderer core", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "renderer/renderer/box_sizing.mbt"))).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/renderer.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn resolve_dimension_to_px",
+      "fn resolve_dimension_with_percent_basis",
+      "fn is_zero_dimension_value",
+      "fn has_zero_box_offsets",
+      "fn adjust_for_box_sizing",
     ] as const;
 
     const offenders = implementationMarkers.filter((marker) => source.includes(marker));

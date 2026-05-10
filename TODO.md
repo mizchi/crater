@@ -71,11 +71,13 @@
 - [x] viewport skeleton fast path を分離する
   - 完了: below-fold skeleton state、inline style hint、advance/collapse heuristics を `renderer/renderer/viewport_skeleton.mbt` へ移動
 - [x] render root / body / viewport root sizing を分離する
-  - 完了: body selection、document root zoom/multicol propagation、root available width/height adjustment、frameset fallback、zero-layout helper を `renderer/renderer/render_root.mbt` へ移動
+  - 完了: body selection、render root node build、root layout compute、document root zoom/multicol propagation、root available width/height adjustment、frameset fallback、zero-layout helper を `renderer/renderer/render_root.mbt` へ移動
 - [x] text node construction を分離する
   - 完了: inherited font/style propagation、collapsible whitespace preservation、text measure creation を `renderer/renderer/text_node.mbt` へ移動
 - [x] node id utility と details pruning を分離する
   - 完了: `node_id_is_tag` / `make_node_id` を `renderer/renderer/node_id.mbt`、closed `<details>` summary pruning を `renderer/renderer/details_element.mbt` へ移動
+- [x] table display 判定と box-sizing 変換を分離する
+  - 完了: table element/display classification を `renderer/renderer/table_display.mbt`、dimension conversion と content-box/border-box normalization を `renderer/renderer/box_sizing.mbt` へ移動
 
 ### P1: large test files を domain ごとに分割する
 

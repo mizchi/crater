@@ -276,3 +276,214 @@ fn create_zero_layout_from_node(node : @node.Node) -> @types.Layout {
     text: node.text,
   }
 }
+
+///|
+let active_before_index : Ref[PseudoRuleIndex] = {
+  val: { rules: [], by_id: {}, by_class: {}, by_tag: {}, universal: [] },
+}
+
+///|
+let active_after_index : Ref[PseudoRuleIndex] = {
+  val: { rules: [], by_id: {}, by_class: {}, by_tag: {}, universal: [] },
+}
+
+///|
+pub fn build_render_root_node(
+  doc : @html.Document,
+  ctx : RenderContext,
+  prepared : PreparedRenderDocument,
+) -> @node.Node {
+  active_before_index.val = prepared.before_index
+  active_after_index.val = prepared.after_index
+  current_cellpadding.val = -1.0 // Reset cellpadding for new render
+  // Viewport culling: skip expensive processing for below-fold elements
+  viewport_estimated_y.val = 0.0
+  // Keep several screens of full cascade, then switch long pages to skeleton
+  // nodes. Real-world VRT captures only the viewport, and large docs pages can
+  // otherwise spend minutes styling content far below the fold.
+  let conservative_cutoff = ctx.viewport_height * 4.0
+  viewport_cutoff.val = if conservative_cutoff > 4096.0 {
+    conservative_cutoff
+  } else {
+    4096.0
+  }
+  viewport_skeleton_count.val = 0
+  viewport_full_node_count.val = 0
+  let root = if prepared.body_uses_document_root_style {
+    let body_selector = if prepared.indexed_stylesheets.length() == 0 {
+      html_to_selector_element_minimal(
+        prepared.render_root,
+        Some(prepared.doc_root_selector),
+      )
+    } else {
+      html_to_selector_element(
+        prepared.render_root,
+        Some(prepared.doc_root_selector),
+      )
+    }
+    element_to_node_with_styles_internal(
+      prepared.render_root,
+      body_selector,
+      ctx,
+      prepared.stylesheets,
+      prepared.indexed_stylesheets,
+      Some(prepared.doc_root_style),
+      prepared.css_vars,
+      {},
+      "root",
+    )
+  } else {
+    element_to_node_with_styles(
+      prepared.render_root,
+      None,
+      ctx,
+      prepared.stylesheets,
+      prepared.indexed_stylesheets,
+      prepared.css_vars,
+      {},
+      "root",
+    )
+  }
+  let root = if prepared.body_uses_document_root_style {
+    node_with_style(
+      root,
+      propagate_document_root_multicol_to_body(
+        root.style,
+        prepared.doc_root_style,
+      ),
+    )
+  } else {
+    root
+  }
+  if prepared.render_root_tag == "body" {
+    let root_zoom = resolve_document_root_zoom(
+      doc.root,
+      ctx,
+      prepared.indexed_stylesheets,
+      prepared.css_vars,
+    )
+    if root_zoom != 1.0 {
+      root.style.zoom = root.style.zoom * root_zoom
+    }
+  }
+  maybe_log_perf(
+    "[perf] viewport_culling: estimated_y=" +
+    viewport_estimated_y.val.to_int().to_string() +
+    " cutoff=" +
+    viewport_cutoff.val.to_int().to_string() +
+    " skeleton=" +
+    viewport_skeleton_count.val.to_string() +
+    " full_nodes=" +
+    viewport_full_node_count.val.to_string(),
+  )
+  root
+}
+
+///|
+pub fn compute_layout_from_render_root(
+  root : @node.Node,
+  prepared : PreparedRenderDocument,
+  ctx : RenderContext,
+) -> @types.Layout {
+  if prepared.doc_root_style.display == @types.Display::None ||
+    root.style.display == @types.Display::None {
+    return create_zero_layout_from_node(root)
+  }
+
+  let root_margin = @types.resolve_rect(root.style.margin, ctx.viewport_width)
+  let available_width = resolve_root_available_width(
+    ctx.viewport_width,
+    root_margin,
+    if prepared.body_uses_document_root_style {
+      Some(prepared.doc_root_style)
+    } else {
+      None
+    },
+  )
+  let root_available_height : Double? = if prepared.render_root_tag == "body" {
+    match root.style.height {
+      @types.Length(_) | @types.Percent(_) => Some(ctx.viewport_height)
+      _ =>
+        if root.style.writing_mode.is_vertical() {
+          Some(ctx.viewport_height)
+        } else {
+          None
+        }
+    }
+  } else if prepared.render_root_tag == "html" &&
+    root.style.position != @types.Absolute &&
+    root.style.position != @types.Fixed {
+    Some(ctx.viewport_height)
+  } else {
+    match root.style.height {
+      @types.Length(_) | @types.Percent(_) => Some(ctx.viewport_height)
+      _ => None
+    }
+  }
+  let layout_ctx : @types.LayoutContext = {
+    available_width,
+    available_height: root_available_height,
+    sizing_mode: @types.SizingMode::Definite,
+    viewport_width: ctx.viewport_width,
+    viewport_height: ctx.viewport_height,
+    stretch_width: false,
+    stretch_height: false,
+  }
+
+  @node.setup()
+
+  let layout = @node.compute_layout_in_context(root, layout_ctx)
+  let scaled_layout = apply_zoom_and_scale(
+    layout,
+    root,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    0.0,
+    false,
+    0.0,
+    0.0,
+    ctx.viewport_width,
+    ctx.viewport_height,
+  )
+  let scaled_layout = adjust_root_height_for_viewport(
+    scaled_layout,
+    root,
+    prepared.render_root_tag,
+    ctx.viewport_height,
+  )
+  let scaled_layout = stretch_single_frameset_child_to_root(scaled_layout)
+
+  let margin_left_is_auto = match root.style.margin.left {
+    @types.Dimension::Auto => true
+    _ => false
+  }
+  let margin_right_is_auto = match root.style.margin.right {
+    @types.Dimension::Auto => true
+    _ => false
+  }
+  let x_offset = if margin_left_is_auto && margin_right_is_auto {
+    (ctx.viewport_width - scaled_layout.width) / 2.0
+  } else if margin_left_is_auto {
+    ctx.viewport_width - scaled_layout.width - root_margin.right
+  } else {
+    root_margin.left
+  }
+  {
+    id: scaled_layout.id,
+    x: x_offset,
+    y: root_margin.top,
+    width: scaled_layout.width,
+    height: scaled_layout.height,
+    margin: scaled_layout.margin,
+    padding: scaled_layout.padding,
+    border: scaled_layout.border,
+    overflow_x: scaled_layout.overflow_x,
+    overflow_y: scaled_layout.overflow_y,
+    scroll_width: scaled_layout.scroll_width,
+    scroll_height: scaled_layout.scroll_height,
+    children: scaled_layout.children,
+    text: scaled_layout.text,
+  }
+}
