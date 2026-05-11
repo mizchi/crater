@@ -151,6 +151,7 @@
   - 進捗: geometry helpers を `painter/svg/geometry.mbt` へ分離
   - 進捗: transform type を `painter/svg/transform.mbt` へ統合
   - 進捗: viewBox helpers を `painter/svg/viewbox.mbt` へ分離
+  - 進捗: color helpers を `painter/svg/color.mbt`、paint/stroke types を `painter/svg/paint.mbt` へ分離
 - [ ] `painter/svg/scene.mbt` の scene graph mutation と shape rendering を分離する
   - 候補: dirty region/z-order/camera, render dispatch, shape renderer (`render_rect`, `render_circle`, `render_path`, `render_text`)
   - `mizchi/svg` に寄せられる primitive はそちらへの移譲候補として扱う

@@ -2434,15 +2434,22 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG color and stroke defaults to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const colorSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/color.mbt"), "utf8");
+    const paintSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/paint.mbt"), "utf8");
 
-    expect(source.includes("@msvg.Color::rgb(")).toBe(true);
-    expect(source.includes("@msvg.Color::rgba(")).toBe(true);
-    expect(source.includes("@msvg.Color::transparent()")).toBe(true);
-    expect(source.includes("@msvg.Color::black()")).toBe(true);
-    expect(source.includes("@msvg.Color::white()")).toBe(true);
-    expect(source.includes("color_to_msvg(self).is_transparent()")).toBe(true);
-    expect(source.includes("@msvg.StrokeStyle::default()")).toBe(true);
+    expect(colorSource.includes("pub(all) struct Color")).toBe(true);
+    expect(colorSource.includes("@msvg.Color::rgb(")).toBe(true);
+    expect(colorSource.includes("@msvg.Color::rgba(")).toBe(true);
+    expect(colorSource.includes("@msvg.Color::transparent()")).toBe(true);
+    expect(colorSource.includes("@msvg.Color::black()")).toBe(true);
+    expect(colorSource.includes("@msvg.Color::white()")).toBe(true);
+    expect(colorSource.includes("color_to_msvg(self).is_transparent()")).toBe(true);
+    expect(paintSource.includes("pub(all) enum Paint")).toBe(true);
+    expect(paintSource.includes("pub(all) struct StrokeStyle")).toBe(true);
+    expect(paintSource.includes("@msvg.StrokeStyle::default()")).toBe(true);
+    expect(typesSource.includes("pub(all) struct Color")).toBe(false);
+    expect(typesSource.includes("pub(all) struct StrokeStyle")).toBe(false);
   });
 
   it("delegates SVG node effect setters to mizchi/svg", () => {
