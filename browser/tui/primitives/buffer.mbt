@@ -101,10 +101,14 @@ pub fn CharBuffer::fill_rect(
   h : Int,
   cell : CharCell,
 ) -> Unit {
-  for row = y; row < y + h; row = row + 1 {
-    for col = x; col < x + w; col = col + 1 {
-      self.set_cell(col, row, cell)
-    }
+  match @tui_buffer.clip_rect(self.width, self.height, x, y, w, h) {
+    Some(rect) =>
+      for row = rect.y; row < rect.y + rect.h; row = row + 1 {
+        for col = rect.x; col < rect.x + rect.w; col = col + 1 {
+          self.set_cell(col, row, cell)
+        }
+      }
+    None => ()
   }
 }
 
@@ -118,13 +122,15 @@ pub fn CharBuffer::fill_bg(
   h : Int,
   bg : @types.Color,
 ) -> Unit {
-  for row = y; row < y + h; row = row + 1 {
-    for col = x; col < x + w; col = col + 1 {
-      if col >= 0 && col < self.width && row >= 0 && row < self.height {
-        let existing = self.get_cell(col, row)
-        self.set_cell(col, row, { ..existing, bg, })
+  match @tui_buffer.clip_rect(self.width, self.height, x, y, w, h) {
+    Some(rect) =>
+      for row = rect.y; row < rect.y + rect.h; row = row + 1 {
+        for col = rect.x; col < rect.x + rect.w; col = col + 1 {
+          let existing = self.get_cell(col, row)
+          self.set_cell(col, row, { ..existing, bg, })
+        }
       }
-    }
+    None => ()
   }
 }
 
@@ -200,21 +206,18 @@ fn CharBuffer::styled_cell_at(
 }
 
 ///|
-fn CharBuffer::write_styled_char(
+fn CharBuffer::apply_text_write_plan(
   self : CharBuffer,
-  x : Int,
-  y : Int,
-  c : Char,
+  plan : @tui_buffer.TextWritePlan,
   style : TextStyle,
-  end_x : Int,
-) -> Int {
-  let width = char_display_width(c)
-  self.set_cell(x, y, self.styled_cell_at(x, y, c, style))
-  // For wide characters, fill next cell with a placeholder.
-  if width == 2 && x + 1 < end_x {
-    self.set_cell(x + 1, y, self.styled_cell_at(x + 1, y, '\u0000', style))
+) -> Unit {
+  for cell in plan.cells {
+    self.set_cell(
+      cell.x,
+      cell.y,
+      self.styled_cell_at(cell.x, cell.y, cell.char, style),
+    )
   }
-  width
 }
 
 ///|
@@ -229,25 +232,9 @@ pub fn CharBuffer::write_text(
   style : TextStyle,
   max_width : Int,
 ) -> Int {
-  let mut cur_x = x
-  let end_x = x + max_width
-  for c in text {
-    // Handle newline
-    if c == '\n' {
-      break
-    }
-    // Skip control characters
-    if c.to_int() < 32 {
-      continue
-    }
-    let width = char_display_width(c)
-    // Check if we have room
-    if cur_x + width > end_x {
-      break
-    }
-    cur_x += self.write_styled_char(cur_x, y, c, style, end_x)
-  }
-  cur_x - x
+  let plan = @tui_buffer.plan_write_text(x, y, text, max_width)
+  self.apply_text_write_plan(plan, style)
+  plan.columns
 }
 
 ///|
@@ -264,39 +251,9 @@ pub fn CharBuffer::write_text_pre(
   max_width : Int,
   max_height : Int,
 ) -> Int {
-  let mut cur_x = x
-  let mut cur_y = y
-  let end_x = x + max_width
-  let end_y = y + max_height
-  for c in text {
-    if cur_y >= end_y {
-      break
-    }
-    // Handle newline - move to next line
-    if c == '\n' {
-      cur_x = x
-      cur_y = cur_y + 1
-      continue
-    }
-    // Skip control characters except tab
-    if c != '\t' && c.to_int() < 32 {
-      continue
-    }
-    // Handle tab - move to next tab stop (every 8 chars)
-    if c == '\t' {
-      let tab_size = 8
-      let next_tab = ((cur_x - x) / tab_size + 1) * tab_size + x
-      cur_x = next_tab.min(end_x)
-      continue
-    }
-    let width = char_display_width(c)
-    // Don't wrap at word boundaries - just clip if exceeds width
-    if cur_x + width > end_x {
-      continue // Skip characters that don't fit
-    }
-    cur_x += self.write_styled_char(cur_x, cur_y, c, style, end_x)
-  }
-  cur_y - y + 1
+  let plan = @tui_buffer.plan_write_text_pre(x, y, text, max_width, max_height)
+  self.apply_text_write_plan(plan, style)
+  plan.lines
 }
 
 ///|
@@ -312,36 +269,11 @@ pub fn CharBuffer::write_text_wrapped(
   max_width : Int,
   max_height : Int,
 ) -> Int {
-  let mut cur_x = x
-  let mut cur_y = y
-  let end_x = x + max_width
-  let end_y = y + max_height
-  for c in text {
-    if cur_y >= end_y {
-      break
-    }
-    // Handle newline
-    if c == '\n' {
-      cur_x = x
-      cur_y = cur_y + 1
-      continue
-    }
-    // Skip control characters
-    if c.to_int() < 32 {
-      continue
-    }
-    let width = char_display_width(c)
-    // Check if we need to wrap
-    if cur_x + width > end_x {
-      cur_x = x
-      cur_y = cur_y + 1
-      if cur_y >= end_y {
-        break
-      }
-    }
-    cur_x += self.write_styled_char(cur_x, cur_y, c, style, end_x)
-  }
-  cur_y - y + 1
+  let plan = @tui_buffer.plan_write_text_wrapped(
+    x, y, text, max_width, max_height,
+  )
+  self.apply_text_write_plan(plan, style)
+  plan.lines
 }
 
 ///|
