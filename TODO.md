@@ -181,6 +181,7 @@
   - 進捗: node box decoration rendering を `painter/x/image/raster_node_box.mbt` へ分離
   - 進捗: node content rendering を `painter/x/image/raster_node_content.mbt` へ分離
   - 進捗: node child clip/recursive rendering を `painter/x/image/raster_node_children.mbt` へ分離
+  - 進捗: node visibility/culling predicates を `painter/x/image/raster_node_visibility.mbt` へ分離
   - 進捗: raster palette helpers を `painter/x/image/raster_palette.mbt` へ分離
   - 進捗: raster clip helpers を `painter/x/image/raster_clip.mbt` へ分離
   - 進捗: raster blending helpers を `painter/x/image/raster_blend.mbt` へ分離

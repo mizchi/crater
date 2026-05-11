@@ -43,31 +43,10 @@ fn render_paint_node_clipped(
     return
   }
 
-  // Skip "visually hidden" accessibility pattern:
-  // Elements with clip/overflow clipping and very small size (1px x 1px)
-  if node.clips_content() && w <= 1 && h <= 1 {
+  if is_visually_hidden_paint_node(node, w, h) ||
+    is_node_outside_framebuffer(fb, x, y, w, h) ||
+    is_node_outside_clip(x, y, w, h, clip) {
     return
-  }
-
-  // Skip very small elements that are likely visually hidden
-  if w <= 1 && h <= 1 {
-    return
-  }
-  if w <= 1 && node.tag == "#text" {
-    return
-  }
-
-  // Skip nodes entirely outside the framebuffer
-  if x >= fb.width || y >= fb.height || x + w <= 0 || y + h <= 0 {
-    return
-  }
-  // If there's a clip rect, check if this node is fully outside it
-  match clip {
-    Some(c) =>
-      if x >= c.x + c.w || y >= c.y + c.h || x + w <= c.x || y + h <= c.y {
-        return
-      }
-    None => ()
   }
   if node.paint.opacity < 1.0 && !node.children.is_empty() {
     render_group_opacity_clipped(fb, palette, node, parent_x, parent_y, clip)
