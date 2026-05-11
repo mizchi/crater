@@ -2288,6 +2288,17 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("raster_polygon_fill(int_points, color, setter)")).toBe(false);
   });
 
+  it("delegates SVG pixel setter clipping to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/raster.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+
+    expect(source.includes("pixel_setter_from_msvg(")).toBe(true);
+    expect(source.includes("pixel_setter_to_msvg(self).with_clip(")).toBe(true);
+    expect(source.includes("pixel_setter_to_msvg(self).with_clip_and_offset(")).toBe(true);
+    expect(interopSource.includes("fn pixel_setter_from_msvg(")).toBe(true);
+    expect(source.includes("if clip.contains(")).toBe(false);
+  });
+
   it("delegates SVG pointer event state to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");

@@ -27,8 +27,9 @@ pub fn PixelSetter::with_clip(
   self : PixelSetter,
   clip : ClipRect,
 ) -> PixelSetter {
-  let inner_set = self.set
-  { set: fn(x, y, color) { if clip.contains(x, y) { inner_set(x, y, color) } } }
+  pixel_setter_from_msvg(
+    pixel_setter_to_msvg(self).with_clip(clip_rect_to_msvg(clip)),
+  )
 }
 
 ///|
@@ -39,16 +40,13 @@ pub fn PixelSetter::with_clip_and_offset(
   offset_x : Int,
   offset_y : Int,
 ) -> PixelSetter {
-  let inner_set = self.set
-  {
-    set: fn(x, y, color) {
-      let tx = x + offset_x
-      let ty = y + offset_y
-      if clip.contains(tx, ty) {
-        inner_set(tx, ty, color)
-      }
-    },
-  }
+  pixel_setter_from_msvg(
+    pixel_setter_to_msvg(self).with_clip_and_offset(
+      clip_rect_to_msvg(clip),
+      offset_x,
+      offset_y,
+    ),
+  )
 }
 
 ///|

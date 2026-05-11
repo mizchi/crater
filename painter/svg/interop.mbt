@@ -1061,6 +1061,11 @@ fn pixel_setter_to_msvg(setter : PixelSetter) -> @msvg.PixelSetter {
 }
 
 ///|
+fn pixel_setter_from_msvg(setter : @msvg.PixelSetter) -> PixelSetter {
+  { set: fn(x, y, color) { setter.pixel(x, y, color_to_msvg(color)) } }
+}
+
+///|
 fn render_context_to_msvg(ctx : RenderContext) -> @msvg.RenderContext {
   let clip = match ctx.clip {
     Some(clip) => Some(clip_rect_to_msvg(clip))
