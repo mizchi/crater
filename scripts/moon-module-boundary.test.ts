@@ -268,6 +268,17 @@ describe("MoonBit module boundaries", () => {
     expect(rasterSource.includes("fn draw_uniform_rounded_border_ring_clipped(")).toBe(false);
   });
 
+  it("splits raster group opacity helpers out of paint_raster", () => {
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_group.mbt"), "utf8");
+
+    expect(source.includes("fn make_transparent_framebuffer(")).toBe(true);
+    expect(source.includes("fn blend_group_framebuffer_over(")).toBe(true);
+    expect(source.includes("fn render_group_opacity_clipped(")).toBe(true);
+    expect(rasterSource.includes("fn make_transparent_framebuffer(")).toBe(false);
+    expect(rasterSource.includes("fn render_group_opacity_clipped(")).toBe(false);
+  });
+
   it("keeps painter-terminal root facade behind terminal-specific packages", () => {
     const rootPackage = path.join(REPO_ROOT, "painter_terminal/moon.pkg");
     const source = fs.readFileSync(rootPackage, "utf8");

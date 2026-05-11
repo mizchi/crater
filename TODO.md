@@ -180,6 +180,7 @@
   - 進捗: rounded raster fill helpers を `painter/x/image/raster_rounded_rect.mbt` へ分離
   - 進捗: raster gradient helpers を `painter/x/image/raster_gradient.mbt` へ分離
   - 進捗: raster border helpers を `painter/x/image/raster_border.mbt` へ分離
+  - 進捗: raster group opacity helpers を `painter/x/image/raster_group.mbt` へ分離
 
 ### P2: tooling / boundary guard
 
