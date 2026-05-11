@@ -191,6 +191,10 @@
   - 進捗: raster gradient helpers を `painter/x/image/raster_gradient.mbt` へ分離
   - 進捗: raster border helpers を `painter/x/image/raster_border.mbt` へ分離
   - 進捗: raster group opacity helpers を `painter/x/image/raster_group.mbt` へ分離
+  - 進捗: glyph rasterizer / bitmap cache / text layout helpers を `painter/x/image/glyph_rasterizer.mbt` / `glyph_cache.mbt` / `glyph_layout.mbt` へ分離
+  - 進捗: glyph provider adapter / font metric bridge を `painter/x/image/glyph_provider.mbt` へ分離
+  - 進捗: glyph path translation helper を `painter/x/image/glyph_path.mbt` へ分離
+  - 進捗: glyph bitmap blit / opacity blending helper を `painter/x/image/glyph_blit.mbt` へ分離
 
 ### P2: tooling / boundary guard
 

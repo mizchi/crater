@@ -340,6 +340,46 @@ describe("MoonBit module boundaries", () => {
     expect(renderSource.includes("fn split_text_into_words(")).toBe(false);
   });
 
+  it("splits glyph provider adapter helpers out of glyph_render", () => {
+    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_render.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_provider.mbt"), "utf8");
+
+    expect(source.includes("pub(all) struct GlyphProvider")).toBe(true);
+    expect(source.includes("let glyph_provider_override")).toBe(true);
+    expect(source.includes("pub fn glyph_provider_from_delegate(")).toBe(true);
+    expect(source.includes("pub fn glyph_provider_from_font(")).toBe(true);
+    expect(source.includes("fn resolve_effective_font_weight(")).toBe(true);
+    expect(source.includes("fn glyph_from_provider(")).toBe(true);
+    expect(source.includes("fn kern_from_provider(")).toBe(true);
+    expect(source.includes("fn get_advance(")).toBe(true);
+    expect(renderSource.includes("pub(all) struct GlyphProvider")).toBe(false);
+    expect(renderSource.includes("pub fn glyph_provider_from_delegate(")).toBe(false);
+    expect(renderSource.includes("fn glyph_from_provider(")).toBe(false);
+    expect(renderSource.includes("fn kern_from_provider(")).toBe(false);
+  });
+
+  it("splits glyph path translation helpers out of glyph_render", () => {
+    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_render.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_path.mbt"), "utf8");
+
+    expect(source.includes("fn translate_path_commands(")).toBe(true);
+    expect(source.includes("@svg.PathCommand::MoveTo")).toBe(true);
+    expect(renderSource.includes("fn translate_path_commands(")).toBe(false);
+  });
+
+  it("splits glyph bitmap blitting helpers out of glyph_render", () => {
+    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_render.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_blit.mbt"), "utf8");
+
+    expect(source.includes("fn clamp_opacity(")).toBe(true);
+    expect(source.includes("fn blend_color_over_pixel_alpha(")).toBe(true);
+    expect(source.includes("fn blit_glyph_bitmap(")).toBe(true);
+    expect(source.includes("bitmap.coverage")).toBe(true);
+    expect(renderSource.includes("fn clamp_opacity(")).toBe(false);
+    expect(renderSource.includes("fn blend_color_over_pixel_alpha(")).toBe(false);
+    expect(renderSource.includes("bitmap.coverage")).toBe(false);
+  });
+
   it("splits raster palette helpers out of paint_raster", () => {
     const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_palette.mbt"), "utf8");
