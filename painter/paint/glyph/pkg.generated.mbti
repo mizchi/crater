@@ -1,0 +1,75 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-painter/paint/glyph"
+
+import {
+  "mizchi/crater-painter/svg",
+  "mizchi/font",
+  "mizchi/font/glyph_provider",
+}
+
+// Values
+pub fn cached_glyph_bitmap(GlyphProvider, Int, Double, Bool, String, Double, Double) -> GlyphBitmap
+
+pub fn clear_glyph_caches() -> Unit
+
+pub fn clear_glyph_provider() -> Unit
+
+pub fn collapsed_space_advance(GlyphProvider, Double, Bool, String, Double, Double, Double) -> Double
+
+pub fn get_glyph_provider() -> GlyphProvider?
+
+pub fn glyph_provider_from_bytes(Bytes) -> GlyphProvider?
+
+pub fn glyph_provider_from_delegate(@glyph_provider.GlyphProvider) -> GlyphProvider
+
+pub fn glyph_provider_from_font(@font.TTFont) -> GlyphProvider
+
+pub fn is_bold_font_weight(Double) -> Bool
+
+pub fn kern_from_provider(GlyphProvider, Int, Int, Double, Bool, String, Double) -> Double
+
+pub fn measure_word_width(GlyphProvider, String, Double, Bool, font_family? : String, letter_spacing? : Double, word_spacing? : Double, font_weight? : Double) -> Double
+
+pub fn pre_rasterize_glyphs(Array[Double], font_family? : String) -> Int
+
+pub fn rasterize_glyph_to_bitmap(Array[@svg.PathCommand], Double) -> GlyphBitmap
+
+pub fn resolve_effective_font_weight(Bool, Double) -> Double
+
+pub fn resolve_text_wrap_tolerance(Int, Double) -> Double
+
+pub fn set_glyph_provider(GlyphProvider) -> Unit
+
+pub fn split_text_into_words(String) -> Array[String]
+
+// Errors
+
+// Types and methods
+pub(all) struct GlyphBitmap {
+  width : Int
+  height : Int
+  pixels : Array[Bool]
+  advance : Double
+  offset_x : Int
+  offset_y : Int
+  coverage : Array[Int]
+  ss_factor : Int
+}
+
+pub(all) struct GlyphProvider {
+  get_glyph : (Int, Double, Bool) -> (Array[@svg.PathCommand], Double)
+  get_kern : (Int, Int, Double, Bool) -> Double
+  get_glyph_by_weight : ((Int, Double, Double) -> (Array[@svg.PathCommand], Double))?
+  get_kern_by_weight : ((Int, Int, Double, Double) -> Double)?
+  ascent_ratio : Double
+  get_glyph_for_family : ((Int, Double, Bool, String) -> (Array[@svg.PathCommand], Double)?)?
+  get_kern_for_family : ((Int, Int, Double, Bool, String) -> Double)?
+  get_glyph_for_family_by_weight : ((Int, Double, Double, String) -> (Array[@svg.PathCommand], Double)?)?
+  get_kern_for_family_by_weight : ((Int, Int, Double, Double, String) -> Double)?
+  get_ascent_for_family : ((String) -> Double)?
+}
+
+// Type aliases
+
+// Traits
+

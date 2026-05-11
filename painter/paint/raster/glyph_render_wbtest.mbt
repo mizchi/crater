@@ -1,5 +1,5 @@
 ///|
-fn kerning_test_provider() -> GlyphProvider {
+fn kerning_test_provider() -> @glyph.GlyphProvider {
   {
     get_glyph: fn(codepoint, _font_size, _is_bold) {
       let advance = if codepoint == ' '.to_int() {
@@ -64,13 +64,13 @@ fn static_test_ttfont() -> @font.TTFont {
 ///|
 test "measure_word_width includes kerning adjustments" {
   let provider = kerning_test_provider()
-  let width = measure_word_width(provider, "AV", 12.0, false)
+  let width = @glyph.measure_word_width(provider, "AV", 12.0, false)
   inspect((width - 10.0).abs() < 0.01, content="true")
 }
 
 ///|
 test "measure_word_width uses family-specific advances" {
-  let provider : GlyphProvider = {
+  let provider : @glyph.GlyphProvider = {
     get_glyph: fn(_codepoint, _font_size, _is_bold) {
       (([] : Array[@svg.PathCommand]), 10.0)
     },
@@ -96,7 +96,7 @@ test "measure_word_width uses family-specific advances" {
     get_kern_for_family_by_weight: None,
     get_ascent_for_family: None,
   }
-  let width = measure_word_width(
+  let width = @glyph.measure_word_width(
     provider,
     "AA",
     12.0,
@@ -108,7 +108,7 @@ test "measure_word_width uses family-specific advances" {
 
 ///|
 test "measure_word_width uses numeric font weight provider" {
-  let provider : GlyphProvider = {
+  let provider : @glyph.GlyphProvider = {
     get_glyph: fn(_codepoint, _font_size, _is_bold) {
       (([] : Array[@svg.PathCommand]), 10.0)
     },
@@ -124,8 +124,8 @@ test "measure_word_width uses numeric font weight provider" {
     get_kern_for_family_by_weight: None,
     get_ascent_for_family: None,
   }
-  let regular = measure_word_width(provider, "AA", 12.0, false)
-  let medium = measure_word_width(
+  let regular = @glyph.measure_word_width(provider, "AA", 12.0, false)
+  let medium = @glyph.measure_word_width(
     provider,
     "AA",
     12.0,
@@ -150,7 +150,7 @@ test "glyph_provider_from_font exposes weight-aware font delegate" {
 
 ///|
 test "draw_text_with_glyphs_clipped uses kerning-aware word widths for wrapping" {
-  glyph_bitmap_cache.val = {}
+  @glyph.clear_glyph_caches()
   let provider = kerning_test_provider()
   let fb = Framebuffer::new(64, 32)
   let palette = DynamicPalette::new()
@@ -173,8 +173,8 @@ test "draw_text_with_glyphs_clipped uses kerning-aware word widths for wrapping"
 
 ///|
 test "draw_text_with_glyphs_clipped wraps with family-specific advances" {
-  glyph_bitmap_cache.val = {}
-  let provider : GlyphProvider = {
+  @glyph.clear_glyph_caches()
+  let provider : @glyph.GlyphProvider = {
     get_glyph: fn(_codepoint, _font_size, _is_bold) {
       (([] : Array[@svg.PathCommand]), 10.0)
     },
@@ -217,8 +217,8 @@ test "draw_text_with_glyphs_clipped wraps with family-specific advances" {
 
 ///|
 test "draw_text_with_glyphs_clipped hard-wraps long words when they exceed max width" {
-  glyph_bitmap_cache.val = {}
-  let provider = {
+  @glyph.clear_glyph_caches()
+  let provider : @glyph.GlyphProvider = {
     get_glyph: fn(codepoint, _font_size, _is_bold) {
       let advance = if codepoint == ' '.to_int() { 2.0 } else { 5.0 }
       (([] : Array[@svg.PathCommand]), advance)
@@ -254,8 +254,8 @@ test "draw_text_with_glyphs_clipped hard-wraps long words when they exceed max w
 
 ///|
 test "draw_text_with_glyphs_clipped keeps tiny metric overflow on the same line" {
-  glyph_bitmap_cache.val = {}
-  let provider = {
+  @glyph.clear_glyph_caches()
+  let provider : @glyph.GlyphProvider = {
     get_glyph: fn(codepoint, _font_size, _is_bold) {
       let advance = if codepoint == ' '.to_int() { 2.0 } else { 5.0 }
       (([] : Array[@svg.PathCommand]), advance)
@@ -291,8 +291,8 @@ test "draw_text_with_glyphs_clipped keeps tiny metric overflow on the same line"
 
 ///|
 test "draw_text_with_glyphs_clipped uses word spacing for wrapping" {
-  glyph_bitmap_cache.val = {}
-  let provider = {
+  @glyph.clear_glyph_caches()
+  let provider : @glyph.GlyphProvider = {
     get_glyph: fn(codepoint, _font_size, _is_bold) {
       let advance = if codepoint == ' '.to_int() { 2.0 } else { 5.0 }
       (([] : Array[@svg.PathCommand]), advance)
@@ -329,8 +329,8 @@ test "draw_text_with_glyphs_clipped uses word spacing for wrapping" {
 
 ///|
 test "draw_text_with_glyphs_clipped tolerates font-sized metric drift" {
-  glyph_bitmap_cache.val = {}
-  let provider = {
+  @glyph.clear_glyph_caches()
+  let provider : @glyph.GlyphProvider = {
     get_glyph: fn(codepoint, _font_size, _is_bold) {
       let advance = if codepoint == ' '.to_int() { 2.0 } else { 11.0 }
       (([] : Array[@svg.PathCommand]), advance)
@@ -366,8 +366,8 @@ test "draw_text_with_glyphs_clipped tolerates font-sized metric drift" {
 
 ///|
 test "draw_text_with_glyphs_clipped antialiases glyphs without clip" {
-  glyph_bitmap_cache.val = {}
-  let provider = {
+  @glyph.clear_glyph_caches()
+  let provider : @glyph.GlyphProvider = {
     get_glyph: fn(_codepoint, font_size, _is_bold) {
       let commands : Array[@svg.PathCommand] = [
         MoveTo(0.0, -font_size),
@@ -421,7 +421,7 @@ test "rasterize_glyph_to_bitmap keeps positive-offset contours" {
     LineTo(10.0, 14.0),
     ClosePath,
   ]
-  let bitmap = rasterize_glyph_to_bitmap(commands, 16.0)
+  let bitmap = @glyph.rasterize_glyph_to_bitmap(commands, 16.0)
   let mut covered = 0
   for has_pixel in bitmap.pixels {
     if has_pixel {
@@ -445,7 +445,7 @@ test "rasterize_glyph_to_bitmap preserves inner contours as holes" {
     LineTo(4.0, 8.0),
     ClosePath,
   ]
-  let bitmap = rasterize_glyph_to_bitmap(commands, 14.0)
+  let bitmap = @glyph.rasterize_glyph_to_bitmap(commands, 14.0)
   let center_x = 6 - bitmap.offset_x
   let center_y = 6 - bitmap.offset_y
   let edge_x = 2 - bitmap.offset_x

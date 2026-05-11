@@ -2,13 +2,13 @@
 package "mizchi/crater-browser/font_provider"
 
 import {
-  "mizchi/crater-painter/paint/raster",
+  "mizchi/crater-painter/paint/glyph",
 }
 
 // Values
 pub fn install_system_glyph_provider() -> Bool
 
-pub fn load_system_glyph_provider() -> @raster.GlyphProvider?
+pub fn load_system_glyph_provider() -> @glyph.GlyphProvider?
 
 // Errors
 

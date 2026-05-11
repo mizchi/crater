@@ -15,7 +15,7 @@ fn render_node_text_content(
   match node.text {
     Some(text_content) => {
       let (text_x, text_y, text_w) = resolve_text_render_box(node, x, y, w, h)
-      match glyph_provider_override.val {
+      match @glyph.get_glyph_provider() {
         Some(provider) => {
           let svg_color = @svg.Color::rgb(
             node.paint.color.r,

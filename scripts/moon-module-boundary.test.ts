@@ -236,7 +236,7 @@ describe("MoonBit module boundaries", () => {
 
     expect(source.includes("fn render_node_text_content(")).toBe(true);
     expect(source.includes("fn render_node_text_decorations(")).toBe(true);
-    expect(source.includes("glyph_provider_override.val")).toBe(true);
+    expect(source.includes("@glyph.get_glyph_provider()")).toBe(true);
     expect(source.includes("draw_text_decoration_line(")).toBe(true);
     expect(rasterSource.includes("glyph_provider_override.val")).toBe(false);
     expect(rasterSource.includes("draw_text_decoration_line(")).toBe(false);
@@ -294,9 +294,9 @@ describe("MoonBit module boundaries", () => {
 
   it("splits glyph rasterization helpers out of glyph_render", () => {
     const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_render.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_rasterizer.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/glyph/rasterizer.mbt"), "utf8");
 
-    expect(source.includes("priv struct GlyphBitmap")).toBe(true);
+    expect(source.includes("pub(all) struct GlyphBitmap")).toBe(true);
     expect(source.includes("fn insert_sorted_double(")).toBe(true);
     expect(source.includes("fn scanline_intersections_even_odd(")).toBe(true);
     expect(source.includes("fn rasterize_compound_path_even_odd_to_pixels(")).toBe(true);
@@ -310,13 +310,13 @@ describe("MoonBit module boundaries", () => {
 
   it("splits glyph bitmap cache helpers out of glyph_render", () => {
     const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_render.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_cache.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/glyph/cache.mbt"), "utf8");
 
     expect(source.includes("let glyph_bitmap_cache")).toBe(true);
     expect(source.includes("let glyph_cache")).toBe(true);
     expect(source.includes("fn glyph_cache_key(")).toBe(true);
-    expect(source.includes("fn clear_glyph_caches(")).toBe(true);
-    expect(source.includes("fn cached_glyph_bitmap(")).toBe(true);
+    expect(source.includes("pub fn clear_glyph_caches(")).toBe(true);
+    expect(source.includes("pub fn cached_glyph_bitmap(")).toBe(true);
     expect(source.includes("pub fn pre_rasterize_glyphs(")).toBe(true);
     expect(renderSource.includes("let glyph_bitmap_cache")).toBe(false);
     expect(renderSource.includes("let glyph_cache")).toBe(false);
@@ -326,13 +326,13 @@ describe("MoonBit module boundaries", () => {
 
   it("splits glyph text layout helpers out of glyph_render", () => {
     const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_render.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_layout.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/glyph/layout.mbt"), "utf8");
 
     expect(source.includes("let text_wrap_tolerance")).toBe(true);
-    expect(source.includes("fn resolve_text_wrap_tolerance(")).toBe(true);
-    expect(source.includes("fn measure_word_width(")).toBe(true);
-    expect(source.includes("fn collapsed_space_advance(")).toBe(true);
-    expect(source.includes("fn split_text_into_words(")).toBe(true);
+    expect(source.includes("pub fn resolve_text_wrap_tolerance(")).toBe(true);
+    expect(source.includes("pub fn measure_word_width(")).toBe(true);
+    expect(source.includes("pub fn collapsed_space_advance(")).toBe(true);
+    expect(source.includes("pub fn split_text_into_words(")).toBe(true);
     expect(renderSource.includes("let text_wrap_tolerance")).toBe(false);
     expect(renderSource.includes("fn resolve_text_wrap_tolerance(")).toBe(false);
     expect(renderSource.includes("fn measure_word_width(")).toBe(false);
@@ -342,15 +342,16 @@ describe("MoonBit module boundaries", () => {
 
   it("splits glyph provider adapter helpers out of glyph_render", () => {
     const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_render.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_provider.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/glyph/provider.mbt"), "utf8");
 
     expect(source.includes("pub(all) struct GlyphProvider")).toBe(true);
     expect(source.includes("let glyph_provider_override")).toBe(true);
+    expect(source.includes("pub fn get_glyph_provider(")).toBe(true);
     expect(source.includes("pub fn glyph_provider_from_delegate(")).toBe(true);
     expect(source.includes("pub fn glyph_provider_from_font(")).toBe(true);
-    expect(source.includes("fn resolve_effective_font_weight(")).toBe(true);
+    expect(source.includes("pub fn resolve_effective_font_weight(")).toBe(true);
     expect(source.includes("fn glyph_from_provider(")).toBe(true);
-    expect(source.includes("fn kern_from_provider(")).toBe(true);
+    expect(source.includes("pub fn kern_from_provider(")).toBe(true);
     expect(source.includes("fn get_advance(")).toBe(true);
     expect(renderSource.includes("pub(all) struct GlyphProvider")).toBe(false);
     expect(renderSource.includes("pub fn glyph_provider_from_delegate(")).toBe(false);
@@ -360,11 +361,24 @@ describe("MoonBit module boundaries", () => {
 
   it("splits glyph path translation helpers out of glyph_render", () => {
     const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_render.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_path.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/glyph/path.mbt"), "utf8");
 
     expect(source.includes("fn translate_path_commands(")).toBe(true);
     expect(source.includes("@svg.PathCommand::MoveTo")).toBe(true);
     expect(renderSource.includes("fn translate_path_commands(")).toBe(false);
+  });
+
+  it("keeps glyph provider implementation behind the glyph package", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "painter/paint/glyph/moon.pkg"))).toBe(true);
+    expect(fs.existsSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_provider.mbt"))).toBe(false);
+    expect(fs.existsSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_cache.mbt"))).toBe(false);
+    expect(fs.existsSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_layout.mbt"))).toBe(false);
+    expect(fs.existsSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_rasterizer.mbt"))).toBe(false);
+
+    const compatSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_compat.mbt"), "utf8");
+    expect(compatSource.includes("pub using @glyph {type GlyphProvider}")).toBe(true);
+    expect(compatSource.includes("@glyph.set_glyph_provider(provider)")).toBe(true);
+    expect(compatSource.includes("@glyph.pre_rasterize_glyphs(")).toBe(true);
   });
 
   it("splits glyph bitmap blitting helpers out of glyph_render", () => {
@@ -3469,5 +3483,21 @@ describe("MoonBit module boundaries", () => {
       .map((file) => path.relative(REPO_ROOT, file));
 
     expect(offenders).toEqual([]);
+  });
+
+  it("documents compatibility bridge ownership", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "docs/compatibility-bridges.md"), "utf8");
+    const requiredBridges = [
+      "mizchi/crater/css",
+      "mizchi/crater-browser/js",
+      "mizchi/crater-browser-shell",
+      "mizchi/crater-dom/layout/html_bridge",
+      "mizchi/crater-painter/paint/layout_bridge",
+      "mizchi/crater-painter/paint/render_bridge",
+      "mizchi/crater-painter/paint/glyph",
+    ] as const;
+
+    const missing = requiredBridges.filter((bridge) => !source.includes(bridge));
+    expect(missing).toEqual([]);
   });
 });

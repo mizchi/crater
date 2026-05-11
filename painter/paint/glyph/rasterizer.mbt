@@ -3,7 +3,7 @@
 
 ///|
 /// Cached rasterized glyph bitmap.
-priv struct GlyphBitmap {
+pub(all) struct GlyphBitmap {
   width : Int
   height : Int
   pixels : Array[Bool] // true = has pixel (any coverage > 0)
@@ -98,7 +98,7 @@ fn rasterize_compound_path_even_odd_to_pixels(
 
 ///|
 /// Rasterize a glyph to a bitmap. Called once per unique glyph.
-fn rasterize_glyph_to_bitmap(
+pub fn rasterize_glyph_to_bitmap(
   commands : Array[@svg.PathCommand],
   advance : Double,
 ) -> GlyphBitmap {

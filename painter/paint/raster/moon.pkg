@@ -3,10 +3,11 @@ import {
   "moonbitlang/core/math",
   "mizchi/crater-painter/paint/model" @paint_model,
   "mizchi/crater-painter/paint/traversal" @paint_traversal,
+  "mizchi/crater-painter/paint/glyph",
   "mizchi/crater-layout/types",
   "mizchi/crater-painter/svg",
   "mizchi/font" @font,
-  "mizchi/font/glyph_provider" @font_provider,
+  "mizchi/font/glyph_provider" @glyph_provider,
 }
 
 import {

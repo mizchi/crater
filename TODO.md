@@ -195,10 +195,12 @@
   - 進捗: glyph provider adapter / font metric bridge を `painter/paint/raster/glyph_provider.mbt` へ分離
   - 進捗: glyph path translation helper を `painter/paint/raster/glyph_path.mbt` へ分離
   - 進捗: glyph bitmap blit / opacity blending helper を `painter/paint/raster/glyph_blit.mbt` へ分離
+  - 進捗: glyph provider / cache / layout / path / rasterizer 実装を `painter/paint/glyph` package へ移動し、`paint/raster` は互換 facade と blit/render に寄せた
 
 ### P2: tooling / boundary guard
 
 - [ ] 上記の各 split に対応する `scripts/moon-module-boundary.test.ts` の boundary test を追加する
+- [x] compatibility bridge の棚卸しを `docs/compatibility-bridges.md` に追加し、canonical package を明文化する
 - [ ] file size regression guard を追加する
   - 候補: `bidi_protocol.mbt`, `bidi_server.mbt`, `renderer.mbt`, `painter/svg/types.mbt` に soft limit を置く
   - 目的: 新規実装が巨大 core に戻るのを防ぐ

@@ -41,6 +41,11 @@ pub(all) struct GlyphProvider {
 let glyph_provider_override : Ref[GlyphProvider?] = { val: None }
 
 ///|
+pub fn get_glyph_provider() -> GlyphProvider? {
+  glyph_provider_override.val
+}
+
+///|
 pub fn set_glyph_provider(provider : GlyphProvider) -> Unit {
   glyph_provider_override.val = Some(provider)
   clear_glyph_caches()
@@ -110,7 +115,7 @@ pub fn glyph_provider_from_bytes(data : Bytes) -> GlyphProvider? {
 }
 
 ///|
-fn resolve_effective_font_weight(
+pub fn resolve_effective_font_weight(
   is_bold : Bool,
   font_weight : Double,
 ) -> Double {
@@ -122,7 +127,7 @@ fn resolve_effective_font_weight(
 }
 
 ///|
-fn is_bold_font_weight(font_weight : Double) -> Bool {
+pub fn is_bold_font_weight(font_weight : Double) -> Bool {
   font_weight >= 600.0
 }
 
@@ -158,7 +163,7 @@ fn glyph_from_provider(
 }
 
 ///|
-fn kern_from_provider(
+pub fn kern_from_provider(
   provider : GlyphProvider,
   cp1 : Int,
   cp2 : Int,

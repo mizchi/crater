@@ -7,7 +7,7 @@
 fn draw_text_with_glyphs_clipped(
   fb : Framebuffer,
   palette : DynamicPalette,
-  provider : GlyphProvider,
+  provider : @glyph.GlyphProvider,
   x : Int,
   y : Int,
   text : String,
@@ -23,10 +23,11 @@ fn draw_text_with_glyphs_clipped(
   word_spacing? : Double = 0.0,
   font_weight? : Double = 400.0,
 ) -> Int {
-  let effective_font_weight = resolve_effective_font_weight(
+  let effective_font_weight = @glyph.resolve_effective_font_weight(
     is_bold, font_weight,
   )
-  let effective_is_bold = is_bold || is_bold_font_weight(effective_font_weight)
+  let effective_is_bold = is_bold ||
+    @glyph.is_bold_font_weight(effective_font_weight)
   let text_opacity = clamp_opacity(opacity) * color.a.to_double() / 255.0
   let effective_line_height = if line_height > 0.0 {
     line_height
@@ -38,17 +39,17 @@ fn draw_text_with_glyphs_clipped(
       get_ascent(font_family) * font_size
     _ => provider.ascent_ratio * font_size
   }
-  let wrap_tolerance = resolve_text_wrap_tolerance(max_width, font_size)
+  let wrap_tolerance = @glyph.resolve_text_wrap_tolerance(max_width, font_size)
   let max_x_limit = if max_width > 0 {
     (x + max_width).to_double() + wrap_tolerance
   } else {
     fb.width.to_double()
   }
-  let words = split_text_into_words(text)
+  let words = @glyph.split_text_into_words(text)
   let mut cur_x = x.to_double()
   let mut cur_y = y.to_double()
   let mut max_y_seen = y.to_double() + effective_line_height
-  let space_advance_layout = collapsed_space_advance(
+  let space_advance_layout = @glyph.collapsed_space_advance(
     provider, font_size, effective_is_bold, font_family, letter_spacing, word_spacing,
     effective_font_weight,
   )
@@ -59,7 +60,7 @@ fn draw_text_with_glyphs_clipped(
       max_y_seen = cur_y + effective_line_height
       continue
     }
-    let word_width = measure_word_width(
+    let word_width = @glyph.measure_word_width(
       provider,
       word,
       font_size,
@@ -95,12 +96,12 @@ fn draw_text_with_glyphs_clipped(
     let mut prev_cp = 0
     for c in word {
       let cp = c.to_int()
-      let bitmap = cached_glyph_bitmap(
+      let bitmap = @glyph.cached_glyph_bitmap(
         provider, cp, font_size, effective_is_bold, font_family, effective_font_weight,
         baseline_offset,
       )
       let kern = if prev_cp != 0 {
-        kern_from_provider(
+        @glyph.kern_from_provider(
           provider, prev_cp, cp, font_size, effective_is_bold, font_family, effective_font_weight,
         )
       } else {

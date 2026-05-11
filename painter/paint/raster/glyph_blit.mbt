@@ -42,7 +42,7 @@ fn blend_color_over_pixel_alpha(
 fn blit_glyph_bitmap(
   fb : Framebuffer,
   palette : DynamicPalette,
-  bitmap : GlyphBitmap,
+  bitmap : @glyph.GlyphBitmap,
   draw_x : Double,
   draw_y : Double,
   color : Color,

@@ -36,13 +36,13 @@ fn glyph_cache_key(
 }
 
 ///|
-fn clear_glyph_caches() -> Unit {
+pub fn clear_glyph_caches() -> Unit {
   glyph_cache.val = {}
   glyph_bitmap_cache.val = {}
 }
 
 ///|
-fn cached_glyph_bitmap(
+pub fn cached_glyph_bitmap(
   provider : GlyphProvider,
   codepoint : Int,
   font_size : Double,
@@ -79,7 +79,7 @@ pub fn pre_rasterize_glyphs(
   font_sizes : Array[Double],
   font_family? : String = "",
 ) -> Int {
-  let provider = match glyph_provider_override.val {
+  let provider = match get_glyph_provider() {
     Some(p) => p
     None => return 0
   }

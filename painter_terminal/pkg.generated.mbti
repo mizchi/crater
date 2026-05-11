@@ -2,6 +2,7 @@
 package "mizchi/crater-painter-terminal"
 
 import {
+  "mizchi/crater-painter/paint/glyph",
   "mizchi/crater-painter/paint/model",
   "mizchi/crater-painter/paint/raster",
   "mizchi/crater-painter/svg",
@@ -42,7 +43,7 @@ pub using @raster {type DynamicPalette}
 
 pub using @raster {type Framebuffer}
 
-pub using @raster {type GlyphProvider}
+pub using @glyph {type GlyphProvider}
 
 pub using @model {type PaintNode}
 

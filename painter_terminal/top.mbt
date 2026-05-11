@@ -5,7 +5,10 @@ pub using @paint_model {type PaintNode}
 pub using @svg {type Scene, type SVGNode}
 
 ///|
-pub using @raster {type DynamicPalette, type Framebuffer, type GlyphProvider}
+pub using @raster {type DynamicPalette, type Framebuffer}
+
+///|
+pub using @glyph {type GlyphProvider}
 
 ///|
 pub fn render_paint_node_to_sixel(

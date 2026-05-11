@@ -1,5 +1,5 @@
 import {
-  "mizchi/crater-painter/paint/raster",
+  "mizchi/crater-painter/paint/glyph",
   "mizchi/font/system_provider" @system_provider,
 }
 

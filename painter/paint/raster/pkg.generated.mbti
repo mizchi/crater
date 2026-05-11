@@ -2,6 +2,7 @@
 package "mizchi/crater-painter/paint/raster"
 
 import {
+  "mizchi/crater-painter/paint/glyph",
   "mizchi/crater-painter/paint/model",
   "mizchi/crater-painter/svg",
   "mizchi/font",
@@ -25,11 +26,11 @@ pub fn get_char_bitmap(Char) -> Array[Int]?
 
 pub fn get_depth_color(Int) -> Color
 
-pub fn glyph_provider_from_bytes(Bytes) -> GlyphProvider?
+pub fn glyph_provider_from_bytes(Bytes) -> @glyph.GlyphProvider?
 
-pub fn glyph_provider_from_delegate(@glyph_provider.GlyphProvider) -> GlyphProvider
+pub fn glyph_provider_from_delegate(@glyph_provider.GlyphProvider) -> @glyph.GlyphProvider
 
-pub fn glyph_provider_from_font(@font.TTFont) -> GlyphProvider
+pub fn glyph_provider_from_font(@font.TTFont) -> @glyph.GlyphProvider
 
 pub fn is_font_supported(Char) -> Bool
 
@@ -43,7 +44,7 @@ pub fn render_svg_scene(@svg.Scene, Framebuffer, DynamicPalette) -> Unit
 
 pub fn render_svg_scene_with_camera(@svg.Scene, Framebuffer, DynamicPalette, @svg.Camera) -> Unit
 
-pub fn set_glyph_provider(GlyphProvider) -> Unit
+pub fn set_glyph_provider(@glyph.GlyphProvider) -> Unit
 
 pub fn set_image_provider(ImageProvider) -> Unit
 
@@ -91,19 +92,6 @@ pub fn Framebuffer::get_pixel(Self, Int, Int) -> Int
 pub fn Framebuffer::new(Int, Int) -> Self
 pub fn Framebuffer::stroke_rect(Self, Int, Int, Int, Int, Int) -> Unit
 
-pub(all) struct GlyphProvider {
-  get_glyph : (Int, Double, Bool) -> (Array[@svg.PathCommand], Double)
-  get_kern : (Int, Int, Double, Bool) -> Double
-  get_glyph_by_weight : ((Int, Double, Double) -> (Array[@svg.PathCommand], Double))?
-  get_kern_by_weight : ((Int, Int, Double, Double) -> Double)?
-  ascent_ratio : Double
-  get_glyph_for_family : ((Int, Double, Bool, String) -> (Array[@svg.PathCommand], Double)?)?
-  get_kern_for_family : ((Int, Int, Double, Bool, String) -> Double)?
-  get_glyph_for_family_by_weight : ((Int, Double, Double, String) -> (Array[@svg.PathCommand], Double)?)?
-  get_kern_for_family_by_weight : ((Int, Int, Double, Double, String) -> Double)?
-  get_ascent_for_family : ((String) -> Double)?
-}
-
 pub(all) struct ImageProvider {
   resolve : (String) -> ResolvedImage?
 }
@@ -120,6 +108,7 @@ pub(all) enum ResolvedImage {
 }
 
 // Type aliases
+pub using @glyph {type GlyphProvider}
 
 // Traits
 

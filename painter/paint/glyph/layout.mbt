@@ -5,7 +5,10 @@
 let text_wrap_tolerance : Double = 10.0
 
 ///|
-fn resolve_text_wrap_tolerance(max_width : Int, font_size : Double) -> Double {
+pub fn resolve_text_wrap_tolerance(
+  max_width : Int,
+  font_size : Double,
+) -> Double {
   if max_width <= 0 {
     return text_wrap_tolerance
   }
@@ -28,7 +31,7 @@ fn resolve_text_wrap_tolerance(max_width : Int, font_size : Double) -> Double {
 }
 
 ///|
-fn measure_word_width(
+pub fn measure_word_width(
   provider : GlyphProvider,
   word : String,
   font_size : Double,
@@ -71,7 +74,7 @@ fn measure_word_width(
 }
 
 ///|
-fn collapsed_space_advance(
+pub fn collapsed_space_advance(
   provider : GlyphProvider,
   font_size : Double,
   is_bold : Bool,
@@ -94,7 +97,7 @@ fn collapsed_space_advance(
 
 ///|
 /// Split text into words (by whitespace). Preserves newlines as "\n" tokens.
-fn split_text_into_words(text : String) -> Array[String] {
+pub fn split_text_into_words(text : String) -> Array[String] {
   let words : Array[String] = []
   let buf = StringBuilder::new()
   for c in text {
