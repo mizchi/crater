@@ -662,6 +662,34 @@ describe("MoonBit module boundaries", () => {
     expect(renderSource).not.toContain("fn point_in_polygon(");
   });
 
+  it("splits browser tui render output entrypoints out of the main renderer", () => {
+    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render.mbt"), "utf8");
+    const outputSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_output.mbt"), "utf8");
+
+    expect(outputSource).toContain("pub(all) struct RenderResult");
+    expect(outputSource).toContain("pub(all) struct BufferRenderResult");
+    expect(outputSource).toContain("pub fn render_to_buffer(");
+    expect(outputSource).toContain("pub fn render_to_buffer_with_status(");
+    expect(outputSource).toContain("pub fn get_content_extent(");
+    expect(renderSource).not.toContain("pub fn render_to_buffer(");
+    expect(renderSource).not.toContain("pub fn render_to_buffer_with_status(");
+    expect(renderSource).not.toContain("pub(all) struct RenderResult");
+  });
+
+  it("splits browser tui hint overlay rendering out of the main renderer", () => {
+    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render.mbt"), "utf8");
+    const hintSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_hints.mbt"), "utf8");
+    const textMeasureSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_text_measure.mbt"), "utf8");
+
+    expect(hintSource).toContain("pub(all) struct HintData");
+    expect(hintSource).toContain("fn draw_hints(");
+    expect(hintSource).toContain("fn draw_hint_mode_status_bar(");
+    expect(textMeasureSource).toContain("fn calculate_text_display_width(");
+    expect(renderSource).not.toContain("pub(all) struct HintData");
+    expect(renderSource).not.toContain("fn draw_hints(");
+    expect(renderSource).not.toContain("fn calculate_text_display_width(");
+  });
+
   it("keeps browser shell terminal image implementation in its own file", () => {
     expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/terminal_image.mbt"))).toBe(true);
 
