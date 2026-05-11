@@ -1214,6 +1214,17 @@ fn copy_svg_node_z_order_state_from_msvg(
 }
 
 ///|
+fn copy_svg_node_effect_state_from_msvg(
+  target : SVGNode,
+  source : @msvg.SVGNode,
+) -> Unit {
+  target.filters = source.filters.map(filter_from_msvg)
+  target.mask_id = source.mask_id
+  target.clip_path_id = source.clip_path_id
+  target.node_dirty = source.node_dirty
+}
+
+///|
 fn paint_fallback_from_msvg(
   fallback : @msvg.PaintFallback,
   current_color : Color?,

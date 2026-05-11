@@ -2389,6 +2389,29 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("@msvg.StrokeStyle::default()")).toBe(true);
   });
 
+  it("delegates SVG node effect setters to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const effectStart = source.indexOf("/// Add a filter to the node");
+    const effectEnd = source.indexOf("///|\n/// Bounding box", effectStart);
+    const effectSource = source.slice(effectStart, effectEnd);
+
+    expect(effectSource.includes("let node = svg_node_to_msvg(self)")).toBe(true);
+    expect(effectSource.includes("node.add_filter(filter_to_msvg(filter))")).toBe(true);
+    expect(effectSource.includes("node.clear_filters()")).toBe(true);
+    expect(effectSource.includes("node.set_mask(mask_id)")).toBe(true);
+    expect(effectSource.includes("node.clear_mask()")).toBe(true);
+    expect(effectSource.includes("node.set_clip_path(clip_path_id)")).toBe(true);
+    expect(effectSource.includes("node.clear_clip_path()")).toBe(true);
+    expect(effectSource.includes("copy_svg_node_effect_state_from_msvg(self, node)")).toBe(true);
+    expect(interopSource.includes("fn copy_svg_node_effect_state_from_msvg(")).toBe(true);
+    expect(effectSource.includes("self.filters.push(")).toBe(false);
+    expect(effectSource.includes("self.filters.clear()")).toBe(false);
+    expect(effectSource.includes("self.mask_id =")).toBe(false);
+    expect(effectSource.includes("self.clip_path_id =")).toBe(false);
+    expect(effectSource.includes("self.node_dirty =")).toBe(false);
+  });
+
   it("delegates SVG transform operations to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/transform.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");

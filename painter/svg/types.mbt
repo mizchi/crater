@@ -507,55 +507,65 @@ pub fn SVGNode::new(shape : Shape) -> SVGNode {
 ///|
 /// Add a filter to the node
 pub fn SVGNode::add_filter(self : SVGNode, filter : Filter) -> Unit {
-  self.filters.push(filter)
-  self.mark_dirty()
+  let node = svg_node_to_msvg(self)
+  node.add_filter(filter_to_msvg(filter))
+  copy_svg_node_effect_state_from_msvg(self, node)
 }
 
 ///|
 /// Clear all filters from the node
 pub fn SVGNode::clear_filters(self : SVGNode) -> Unit {
-  self.filters.clear()
-  self.mark_dirty()
+  let node = svg_node_to_msvg(self)
+  node.clear_filters()
+  copy_svg_node_effect_state_from_msvg(self, node)
 }
 
 ///|
 /// Set mask reference by ID
 pub fn SVGNode::set_mask(self : SVGNode, mask_id : String) -> Unit {
-  self.mask_id = Some(mask_id)
-  self.mark_dirty()
+  let node = svg_node_to_msvg(self)
+  node.set_mask(mask_id)
+  copy_svg_node_effect_state_from_msvg(self, node)
 }
 
 ///|
 /// Clear mask reference
 pub fn SVGNode::clear_mask(self : SVGNode) -> Unit {
-  self.mask_id = None
-  self.mark_dirty()
+  let node = svg_node_to_msvg(self)
+  node.clear_mask()
+  copy_svg_node_effect_state_from_msvg(self, node)
 }
 
 ///|
 /// Set clip path reference by ID
 pub fn SVGNode::set_clip_path(self : SVGNode, clip_path_id : String) -> Unit {
-  self.clip_path_id = Some(clip_path_id)
-  self.mark_dirty()
+  let node = svg_node_to_msvg(self)
+  node.set_clip_path(clip_path_id)
+  copy_svg_node_effect_state_from_msvg(self, node)
 }
 
 ///|
 /// Clear clip path reference
 pub fn SVGNode::clear_clip_path(self : SVGNode) -> Unit {
-  self.clip_path_id = None
-  self.mark_dirty()
+  let node = svg_node_to_msvg(self)
+  node.clear_clip_path()
+  copy_svg_node_effect_state_from_msvg(self, node)
 }
 
 ///|
 /// Mark a node as dirty (needs re-render)
 pub fn SVGNode::mark_dirty(self : SVGNode) -> Unit {
-  self.node_dirty = true
+  let node = svg_node_to_msvg(self)
+  node.mark_dirty()
+  copy_svg_node_effect_state_from_msvg(self, node)
 }
 
 ///|
 /// Clear the dirty flag
 pub fn SVGNode::clear_dirty(self : SVGNode) -> Unit {
-  self.node_dirty = false
+  let node = svg_node_to_msvg(self)
+  node.clear_dirty()
+  copy_svg_node_effect_state_from_msvg(self, node)
 }
 
 ///|
