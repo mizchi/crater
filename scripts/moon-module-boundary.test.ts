@@ -176,6 +176,18 @@ describe("MoonBit module boundaries", () => {
     expect(rasterSource.includes("fn DynamicPalette::get_or_add(")).toBe(false);
   });
 
+  it("splits raster clip helpers out of paint_raster", () => {
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_clip.mbt"), "utf8");
+
+    expect(source.includes("pub(all) struct ClipRect")).toBe(true);
+    expect(source.includes("fn clip_intersect(")).toBe(true);
+    expect(source.includes("fn pixel_in_clip(")).toBe(true);
+    expect(rasterSource.includes("pub(all) struct ClipRect")).toBe(false);
+    expect(rasterSource.includes("fn clip_intersect(")).toBe(false);
+    expect(rasterSource.includes("fn pixel_in_clip(")).toBe(false);
+  });
+
   it("keeps painter-terminal root facade behind terminal-specific packages", () => {
     const rootPackage = path.join(REPO_ROOT, "painter_terminal/moon.pkg");
     const source = fs.readFileSync(rootPackage, "utf8");
