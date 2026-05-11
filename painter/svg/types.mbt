@@ -919,13 +919,15 @@ pub fn PointerEvent::new(
   button : Int,
   target : String,
 ) -> PointerEvent {
-  { x, y, button, target, propagation_stopped: false }
+  pointer_event_from_msvg(@msvg.PointerEvent::new(x, y, button, target))
 }
 
 ///|
 /// Stop event propagation (prevent bubbling)
 pub fn PointerEvent::stop_propagation(self : PointerEvent) -> Unit {
-  self.propagation_stopped = true
+  let event = pointer_event_to_msvg(self)
+  event.stop_propagation()
+  copy_pointer_event_state_from_msvg(self, event)
 }
 
 ///|

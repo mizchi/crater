@@ -76,6 +76,39 @@ fn color_to_msvg(color : Color) -> @msvg.Color {
 }
 
 ///|
+fn pointer_event_from_msvg(event : @msvg.PointerEvent) -> PointerEvent {
+  {
+    x: event.x,
+    y: event.y,
+    button: event.button,
+    target: event.target,
+    propagation_stopped: event.propagation_stopped,
+  }
+}
+
+///|
+fn pointer_event_to_msvg(event : PointerEvent) -> @msvg.PointerEvent {
+  let msvg_event = @msvg.PointerEvent::new(
+    event.x,
+    event.y,
+    event.button,
+    event.target,
+  )
+  if event.propagation_stopped {
+    msvg_event.stop_propagation()
+  }
+  msvg_event
+}
+
+///|
+fn copy_pointer_event_state_from_msvg(
+  target : PointerEvent,
+  source : @msvg.PointerEvent,
+) -> Unit {
+  target.propagation_stopped = source.propagation_stopped
+}
+
+///|
 fn color_from_msvg_option(color : @msvg.Color?) -> Color? {
   match color {
     Some(c) => Some(color_from_msvg(c))

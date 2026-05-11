@@ -2274,6 +2274,20 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("fn interpolate_gradient_color(")).toBe(false);
   });
 
+  it("delegates SVG pointer event state to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+
+    expect(source.includes("@msvg.PointerEvent::new(")).toBe(true);
+    expect(source.includes("pointer_event_from_msvg(")).toBe(true);
+    expect(source.includes("pointer_event_to_msvg(self)")).toBe(true);
+    expect(source.includes("event.stop_propagation()")).toBe(true);
+    expect(interopSource.includes("fn pointer_event_from_msvg(")).toBe(true);
+    expect(interopSource.includes("fn pointer_event_to_msvg(")).toBe(true);
+    expect(interopSource.includes("fn copy_pointer_event_state_from_msvg(")).toBe(true);
+    expect(source.includes("self.propagation_stopped = true")).toBe(false);
+  });
+
   it("delegates SVG color and stroke defaults to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
 
