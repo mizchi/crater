@@ -213,6 +213,18 @@ describe("MoonBit module boundaries", () => {
     expect(rasterSource.includes("fn fill_rect_with_types_color(")).toBe(false);
   });
 
+  it("splits rounded raster fill helpers out of paint_raster", () => {
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_rounded_rect.mbt"), "utf8");
+
+    expect(source.includes("fn rounded_corner_coverage(")).toBe(true);
+    expect(source.includes("fn fill_rounded_corner_pixels_fast(")).toBe(true);
+    expect(source.includes("fn fill_rounded_rect_fast(")).toBe(true);
+    expect(source.includes("fn fill_rounded_rect_clipped(")).toBe(true);
+    expect(rasterSource.includes("fn rounded_corner_coverage(")).toBe(false);
+    expect(rasterSource.includes("fn fill_rounded_rect_clipped(")).toBe(false);
+  });
+
   it("keeps painter-terminal root facade behind terminal-specific packages", () => {
     const rootPackage = path.join(REPO_ROOT, "painter_terminal/moon.pkg");
     const source = fs.readFileSync(rootPackage, "utf8");
