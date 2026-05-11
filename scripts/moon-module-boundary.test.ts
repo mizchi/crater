@@ -2258,8 +2258,13 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG gradient color interpolation to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/gradient.mbt"), "utf8");
 
+    expect(source.includes("pub(all) struct GradientStop")).toBe(true);
+    expect(source.includes("pub(all) struct LinearGradient")).toBe(true);
+    expect(source.includes("pub(all) struct RadialGradient")).toBe(true);
+    expect(source.includes("pub(all) enum SpreadMethod")).toBe(true);
     expect(source.includes("@msvg.LinearGradient::new(")).toBe(true);
     expect(source.includes("@msvg.LinearGradient::horizontal(")).toBe(true);
     expect(source.includes("@msvg.LinearGradient::vertical(")).toBe(true);
@@ -2272,6 +2277,8 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("radial_gradient_to_msvg(self).color_at(")).toBe(true);
     expect(source.includes("fn apply_spread(")).toBe(false);
     expect(source.includes("fn interpolate_gradient_color(")).toBe(false);
+    expect(typesSource.includes("pub(all) struct LinearGradient")).toBe(false);
+    expect(typesSource.includes("pub(all) struct RadialGradient")).toBe(false);
   });
 
   it("delegates SVG path rasterization to mizchi/svg", () => {
