@@ -175,6 +175,7 @@
   - 進捗: raster palette helpers を `painter/x/image/raster_palette.mbt` へ分離
   - 進捗: raster clip helpers を `painter/x/image/raster_clip.mbt` へ分離
   - 進捗: raster blending helpers を `painter/x/image/raster_blend.mbt` へ分離
+  - 進捗: raster clipped fill helper を `painter/x/image/raster_fill.mbt` へ分離
   - 進捗: rounded raster fill helpers を `painter/x/image/raster_rounded_rect.mbt` へ分離
   - 進捗: raster gradient helpers を `painter/x/image/raster_gradient.mbt` へ分離
 
