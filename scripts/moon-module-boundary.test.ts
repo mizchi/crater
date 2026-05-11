@@ -199,6 +199,20 @@ describe("MoonBit module boundaries", () => {
     expect(rasterSource.includes("fn pixel_in_clip(")).toBe(false);
   });
 
+  it("splits raster blending helpers out of paint_raster", () => {
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_blend.mbt"), "utf8");
+
+    expect(source.includes("fn blend_types_color_over_pixel(")).toBe(true);
+    expect(source.includes("fn blend_raster_color_over_pixel(")).toBe(true);
+    expect(source.includes("fn blend_span_with_raster_color(")).toBe(true);
+    expect(source.includes("fn fill_rect_with_types_color(")).toBe(true);
+    expect(rasterSource.includes("fn blend_types_color_over_pixel(")).toBe(false);
+    expect(rasterSource.includes("fn blend_raster_color_over_pixel(")).toBe(false);
+    expect(rasterSource.includes("fn blend_span_with_raster_color(")).toBe(false);
+    expect(rasterSource.includes("fn fill_rect_with_types_color(")).toBe(false);
+  });
+
   it("keeps painter-terminal root facade behind terminal-specific packages", () => {
     const rootPackage = path.join(REPO_ROOT, "painter_terminal/moon.pkg");
     const source = fs.readFileSync(rootPackage, "utf8");
