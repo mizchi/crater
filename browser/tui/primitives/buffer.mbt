@@ -129,33 +129,9 @@ pub fn CharBuffer::fill_bg(
 }
 
 ///|
-/// Check if character is a wide (CJK) character
-fn is_wide_char(c : Char) -> Bool {
-  let cp = c.to_int()
-  // CJK Unified Ideographs
-  (cp >= 0x4E00 && cp <= 0x9FFF) ||
-  // CJK Extension A
-  (cp >= 0x3400 && cp <= 0x4DBF) ||
-  // Hiragana
-  (cp >= 0x3040 && cp <= 0x309F) ||
-  // Katakana
-  (cp >= 0x30A0 && cp <= 0x30FF) ||
-  // Hangul Syllables
-  (cp >= 0xAC00 && cp <= 0xD7AF) ||
-  // Fullwidth Forms
-  (cp >= 0xFF00 && cp <= 0xFFEF) ||
-  // CJK Symbols and Punctuation
-  (cp >= 0x3000 && cp <= 0x303F)
-}
-
-///|
 /// Get display width of a character (1 for narrow, 2 for wide)
 pub fn char_display_width(c : Char) -> Int {
-  if is_wide_char(c) {
-    2
-  } else {
-    1
-  }
+  @tui_buffer.char_display_width(c)
 }
 
 ///|

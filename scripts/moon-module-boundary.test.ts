@@ -574,6 +574,15 @@ describe("MoonBit module boundaries", () => {
     expect(source).toContain("@tui_ansi.disable_mouse_all()");
   });
 
+  it("delegates reusable browser tui character width to tui terminal buffer", () => {
+    const pkg = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/primitives/moon.pkg"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/primitives/buffer.mbt"), "utf8");
+
+    expect(pkg).toContain('"mizchi/tui-terminal-buffer/buffer" @tui_buffer');
+    expect(source).toContain("@tui_buffer.char_display_width(c)");
+    expect(source).not.toContain("fn is_wide_char(");
+  });
+
   it("keeps browser shell terminal image implementation in its own file", () => {
     expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/terminal_image.mbt"))).toBe(true);
 
