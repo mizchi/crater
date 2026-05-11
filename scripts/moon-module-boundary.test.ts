@@ -2352,6 +2352,30 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("Sepia matrix coefficients")).toBe(false);
   });
 
+  it("delegates SVG image and sprite operations to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+
+    expect(source.includes("@msvg.Image::new(")).toBe(true);
+    expect(source.includes("@msvg.Image::filled(")).toBe(true);
+    expect(source.includes("image_to_msvg(self).get_pixel(")).toBe(true);
+    expect(source.includes("image_to_msvg(self).clone()")).toBe(true);
+    expect(source.includes("@msvg.apply_blur(")).toBe(true);
+    expect(source.includes("@msvg.apply_drop_shadow(")).toBe(true);
+    expect(source.includes("@msvg.apply_filter(")).toBe(true);
+    expect(source.includes("@msvg.blit(")).toBe(true);
+    expect(source.includes("@msvg.blit_sprite(")).toBe(true);
+    expect(source.includes("@msvg.blit_scaled(")).toBe(true);
+    expect(source.includes("image_to_msvg(self).flip_horizontal()")).toBe(true);
+    expect(source.includes("image_to_msvg(self).rotate_90_cw()")).toBe(true);
+    expect(interopSource.includes("fn copy_image_pixels_from_msvg(")).toBe(true);
+    expect(interopSource.includes("fn sprite_to_msvg(")).toBe(true);
+    expect(source.includes("Box blur")).toBe(false);
+    expect(source.includes("Alpha blend foreground over background")).toBe(false);
+    expect(source.includes("Nearest-neighbor sampling")).toBe(false);
+    expect(source.includes("fn blend_colors(")).toBe(false);
+  });
+
   it("delegates SVG blend mode math to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");

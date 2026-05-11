@@ -102,6 +102,74 @@ fn image_to_msvg(image : Image) -> @msvg.Image {
 }
 
 ///|
+fn copy_image_pixels_from_msvg(target : Image, source : @msvg.Image) -> Unit {
+  let len = if target.pixels.length() < source.pixels.length() {
+    target.pixels.length()
+  } else {
+    source.pixels.length()
+  }
+  for i in 0..<len {
+    target.pixels[i] = color_from_msvg(source.pixels[i])
+  }
+}
+
+///|
+fn image_rows_from_msvg(
+  rows : Array[Array[@msvg.Color]],
+) -> Array[Array[Color]] {
+  rows.map(fn(row) { row.map(color_from_msvg) })
+}
+
+///|
+fn image_rows_to_msvg(rows : Array[Array[Color]]) -> Array[Array[@msvg.Color]] {
+  rows.map(fn(row) { row.map(color_to_msvg) })
+}
+
+///|
+fn sprite_from_msvg(sprite : @msvg.Sprite) -> Sprite {
+  {
+    image: image_from_msvg(sprite.image),
+    x: sprite.x,
+    y: sprite.y,
+    width: sprite.width,
+    height: sprite.height,
+  }
+}
+
+///|
+fn sprite_to_msvg(sprite : Sprite) -> @msvg.Sprite {
+  @msvg.Sprite::{
+    image: image_to_msvg(sprite.image),
+    x: sprite.x,
+    y: sprite.y,
+    width: sprite.width,
+    height: sprite.height,
+  }
+}
+
+///|
+fn sprite_sheet_from_msvg(sheet : @msvg.SpriteSheet) -> SpriteSheet {
+  {
+    image: image_from_msvg(sheet.image),
+    tile_width: sheet.tile_width,
+    tile_height: sheet.tile_height,
+    columns: sheet.columns,
+    rows: sheet.rows,
+  }
+}
+
+///|
+fn sprite_sheet_to_msvg(sheet : SpriteSheet) -> @msvg.SpriteSheet {
+  @msvg.SpriteSheet::{
+    image: image_to_msvg(sheet.image),
+    tile_width: sheet.tile_width,
+    tile_height: sheet.tile_height,
+    columns: sheet.columns,
+    rows: sheet.rows,
+  }
+}
+
+///|
 fn current_color_or_black(current_color : Color?) -> Color {
   match current_color {
     Some(color) => color

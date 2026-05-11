@@ -2033,55 +2033,7 @@ pub fn apply_blur(
   pixels : Array[Array[Color]],
   radius : Int,
 ) -> Array[Array[Color]] {
-  if radius <= 0 || pixels.is_empty() {
-    return pixels
-  }
-  let height = pixels.length()
-  let width = if height > 0 { pixels[0].length() } else { 0 }
-  // Create output buffer
-  let output : Array[Array[Color]] = []
-  for i = 0; i < height; i = i + 1 {
-    let row : Array[Color] = []
-    for j = 0; j < width; j = j + 1 {
-      row.push(Color::black())
-    }
-    output.push(row)
-  }
-  // Box blur (simplified)
-  let kernel_size = radius * 2 + 1
-  let div = kernel_size * kernel_size
-  for y = 0; y < height; y = y + 1 {
-    for x = 0; x < width; x = x + 1 {
-      let mut r = 0
-      let mut g = 0
-      let mut b = 0
-      let mut a = 0
-      for ky = -radius; ky <= radius; ky = ky + 1 {
-        for kx = -radius; kx <= radius; kx = kx + 1 {
-          let sy = clamp_int(y + ky, 0, height - 1)
-          let sx = clamp_int(x + kx, 0, width - 1)
-          let c = pixels[sy][sx]
-          r = r + c.r
-          g = g + c.g
-          b = b + c.b
-          a = a + c.a
-        }
-      }
-      output[y][x] = { r: r / div, g: g / div, b: b / div, a: a / div }
-    }
-  }
-  output
-}
-
-///|
-fn clamp_int(v : Int, min : Int, max : Int) -> Int {
-  if v < min {
-    min
-  } else if v > max {
-    max
-  } else {
-    v
-  }
+  image_rows_from_msvg(@msvg.apply_blur(image_rows_to_msvg(pixels), radius))
 }
 
 ///|
@@ -2171,133 +2123,23 @@ pub fn apply_drop_shadow(
   blur_radius : Int,
   shadow_color : Color,
 ) -> Image {
-  // Create output with extra space for shadow
-  let max_offset = if offset_x.abs() > offset_y.abs() {
-    offset_x.abs()
-  } else {
-    offset_y.abs()
-  }
-  let margin = blur_radius + max_offset
-  let new_width = image.width + margin * 2
-  let new_height = image.height + margin * 2
-  let output = Image::new(new_width, new_height)
-  // First, render the shadow (offset copy with color)
-  for y = 0; y < image.height; y = y + 1 {
-    for x = 0; x < image.width; x = x + 1 {
-      let src_color = image.get_pixel(x, y)
-      if src_color.a > 0 {
-        let shadow_x = margin + x + offset_x
-        let shadow_y = margin + y + offset_y
-        if shadow_x >= 0 &&
-          shadow_x < new_width &&
-          shadow_y >= 0 &&
-          shadow_y < new_height {
-          // Use original alpha to modulate shadow
-          let alpha = (shadow_color.a.to_double() *
-          src_color.a.to_double() /
-          255.0).to_int()
-          output.set_pixel(shadow_x, shadow_y, { ..shadow_color, a: alpha })
-        }
-      }
-    }
-  }
-  // Apply blur to shadow
-  if blur_radius > 0 {
-    output.apply_blur_in_place(blur_radius)
-  }
-  // Then overlay the original image on top
-  for y = 0; y < image.height; y = y + 1 {
-    for x = 0; x < image.width; x = x + 1 {
-      let src_color = image.get_pixel(x, y)
-      if src_color.a > 0 {
-        let dst_x = margin + x
-        let dst_y = margin + y
-        // Alpha blend
-        let bg = output.get_pixel(dst_x, dst_y)
-        let blended = alpha_blend(src_color, bg)
-        output.set_pixel(dst_x, dst_y, blended)
-      }
-    }
-  }
-  output
-}
-
-///|
-/// Alpha blend foreground over background
-fn alpha_blend(fg : Color, bg : Color) -> Color {
-  let fg_a = fg.a.to_double() / 255.0
-  let bg_a = bg.a.to_double() / 255.0
-  let out_a = fg_a + bg_a * (1.0 - fg_a)
-  if out_a < 0.001 {
-    return Color::transparent()
-  }
-  let r = (fg.r.to_double() * fg_a + bg.r.to_double() * bg_a * (1.0 - fg_a)) /
-    out_a
-  let g = (fg.g.to_double() * fg_a + bg.g.to_double() * bg_a * (1.0 - fg_a)) /
-    out_a
-  let b = (fg.b.to_double() * fg_a + bg.b.to_double() * bg_a * (1.0 - fg_a)) /
-    out_a
-  Color::rgba(r.to_int(), g.to_int(), b.to_int(), (out_a * 255.0).to_int())
+  image_from_msvg(
+    @msvg.apply_drop_shadow(
+      image_to_msvg(image),
+      offset_x,
+      offset_y,
+      blur_radius,
+      color_to_msvg(shadow_color),
+    ),
+  )
 }
 
 ///|
 /// Apply a filter to an image (returns new image)
 pub fn apply_filter(image : Image, filter : Filter) -> Image {
-  match filter {
-    Blur(radius) => {
-      let result = image.clone()
-      result.apply_blur_in_place(radius.to_int())
-      result
-    }
-    DropShadow(offset_x, offset_y, blur, color) =>
-      apply_drop_shadow(
-        image,
-        offset_x.to_int(),
-        offset_y.to_int(),
-        blur.to_int(),
-        color,
-      )
-    Brightness(factor) => {
-      let result = image.clone()
-      result.apply_brightness_in_place(factor)
-      result
-    }
-    Contrast(factor) => {
-      let result = image.clone()
-      result.apply_contrast_in_place(factor)
-      result
-    }
-    Grayscale(amount) => {
-      let result = image.clone()
-      result.apply_grayscale_in_place(amount)
-      result
-    }
-    Sepia(amount) => {
-      let result = image.clone()
-      result.apply_sepia_in_place(amount)
-      result
-    }
-    HueRotate(angle) => {
-      let result = image.clone()
-      result.apply_hue_rotate_in_place(angle)
-      result
-    }
-    Invert(amount) => {
-      let result = image.clone()
-      result.apply_invert_in_place(amount)
-      result
-    }
-    Saturate(factor) => {
-      let result = image.clone()
-      result.apply_saturate_in_place(factor)
-      result
-    }
-    ColorMatrix(matrix) => {
-      let result = image.clone()
-      result.apply_color_matrix_in_place(matrix)
-      result
-    }
-  }
+  image_from_msvg(
+    @msvg.apply_filter(image_to_msvg(image), filter_to_msvg(filter)),
+  )
 }
 
 // ============================================================================
@@ -2315,40 +2157,27 @@ pub(all) struct Image {
 ///|
 /// Create a new image with specified dimensions
 pub fn Image::new(width : Int, height : Int) -> Image {
-  let pixels : Array[Color] = []
-  let total = width * height
-  for i = 0; i < total; i = i + 1 {
-    pixels.push(Color::transparent())
-  }
-  { width, height, pixels }
+  image_from_msvg(@msvg.Image::new(width, height))
 }
 
 ///|
 /// Create an image filled with a color
 pub fn Image::filled(width : Int, height : Int, color : Color) -> Image {
-  let pixels : Array[Color] = []
-  let total = width * height
-  for i = 0; i < total; i = i + 1 {
-    pixels.push(color)
-  }
-  { width, height, pixels }
+  image_from_msvg(@msvg.Image::filled(width, height, color_to_msvg(color)))
 }
 
 ///|
 /// Get pixel at coordinates
 pub fn Image::get_pixel(self : Image, x : Int, y : Int) -> Color {
-  if x < 0 || x >= self.width || y < 0 || y >= self.height {
-    return Color::transparent()
-  }
-  self.pixels[y * self.width + x]
+  color_from_msvg(image_to_msvg(self).get_pixel(x, y))
 }
 
 ///|
 /// Set pixel at coordinates
 pub fn Image::set_pixel(self : Image, x : Int, y : Int, color : Color) -> Unit {
-  if x >= 0 && x < self.width && y >= 0 && y < self.height {
-    self.pixels[y * self.width + x] = color
-  }
+  let image = image_to_msvg(self)
+  image.set_pixel(x, y, color_to_msvg(color))
+  copy_image_pixels_from_msvg(self, image)
 }
 
 ///|
@@ -2361,86 +2190,63 @@ pub fn Image::fill_rect(
   h : Int,
   color : Color,
 ) -> Unit {
-  for py = y; py < y + h; py = py + 1 {
-    for px = x; px < x + w; px = px + 1 {
-      self.set_pixel(px, py, color)
-    }
-  }
+  let image = image_to_msvg(self)
+  image.fill_rect(x, y, w, h, color_to_msvg(color))
+  copy_image_pixels_from_msvg(self, image)
 }
 
 ///|
 /// Clear image to transparent
 pub fn Image::clear(self : Image) -> Unit {
-  let transparent = Color::transparent()
-  for i = 0; i < self.pixels.length(); i = i + 1 {
-    self.pixels[i] = transparent
-  }
+  let image = image_to_msvg(self)
+  image.clear()
+  copy_image_pixels_from_msvg(self, image)
 }
 
 ///|
 /// Clone the image
 pub fn Image::clone(self : Image) -> Image {
-  let pixels : Array[Color] = []
-  for i = 0; i < self.pixels.length(); i = i + 1 {
-    pixels.push(self.pixels[i])
-  }
-  { width: self.width, height: self.height, pixels }
+  image_from_msvg(image_to_msvg(self).clone())
 }
 
 ///|
 /// Apply blur filter in place
 pub fn Image::apply_blur_in_place(self : Image, radius : Int) -> Unit {
-  if radius <= 0 {
-    return
-  }
-  // Convert to 2D array for processing
-  let rows : Array[Array[Color]] = []
-  for y = 0; y < self.height; y = y + 1 {
-    let row : Array[Color] = []
-    for x = 0; x < self.width; x = x + 1 {
-      row.push(self.get_pixel(x, y))
-    }
-    rows.push(row)
-  }
-  let blurred = apply_blur(rows, radius)
-  // Copy back
-  for y = 0; y < self.height; y = y + 1 {
-    for x = 0; x < self.width; x = x + 1 {
-      self.set_pixel(x, y, blurred[y][x])
-    }
-  }
+  let image = image_to_msvg(self)
+  image.apply_blur_in_place(radius)
+  copy_image_pixels_from_msvg(self, image)
 }
 
 ///|
 /// Apply brightness filter in place
 pub fn Image::apply_brightness_in_place(self : Image, factor : Double) -> Unit {
-  for i = 0; i < self.pixels.length(); i = i + 1 {
-    self.pixels[i] = apply_brightness(self.pixels[i], factor)
-  }
+  let image = image_to_msvg(self)
+  image.apply_brightness_in_place(factor)
+  copy_image_pixels_from_msvg(self, image)
 }
 
 ///|
 /// Apply contrast filter in place
 pub fn Image::apply_contrast_in_place(self : Image, factor : Double) -> Unit {
-  for i = 0; i < self.pixels.length(); i = i + 1 {
-    self.pixels[i] = apply_contrast(self.pixels[i], factor)
-  }
+  let image = image_to_msvg(self)
+  image.apply_contrast_in_place(factor)
+  copy_image_pixels_from_msvg(self, image)
 }
 
 ///|
 /// Apply grayscale filter in place
 pub fn Image::apply_grayscale_in_place(self : Image, amount : Double) -> Unit {
-  for i = 0; i < self.pixels.length(); i = i + 1 {
-    self.pixels[i] = apply_grayscale(self.pixels[i], amount)
-  }
+  let image = image_to_msvg(self)
+  image.apply_grayscale_in_place(amount)
+  copy_image_pixels_from_msvg(self, image)
 }
 
 ///|
 /// Apply sepia filter in place
 pub fn Image::apply_sepia_in_place(self : Image, amount : Double) -> Unit {
-  for i = 0; i < self.pixels.length(); i = i + 1 {
-    self.pixels[i] = apply_sepia(self.pixels[i], amount)
-  }
+  let image = image_to_msvg(self)
+  image.apply_sepia_in_place(amount)
+  copy_image_pixels_from_msvg(self, image)
 }
 
 ///|
@@ -2449,25 +2255,25 @@ pub fn Image::apply_hue_rotate_in_place(
   self : Image,
   angle_degrees : Double,
 ) -> Unit {
-  for i = 0; i < self.pixels.length(); i = i + 1 {
-    self.pixels[i] = apply_hue_rotate(self.pixels[i], angle_degrees)
-  }
+  let image = image_to_msvg(self)
+  image.apply_hue_rotate_in_place(angle_degrees)
+  copy_image_pixels_from_msvg(self, image)
 }
 
 ///|
 /// Apply invert filter in place
 pub fn Image::apply_invert_in_place(self : Image, amount : Double) -> Unit {
-  for i = 0; i < self.pixels.length(); i = i + 1 {
-    self.pixels[i] = apply_invert(self.pixels[i], amount)
-  }
+  let image = image_to_msvg(self)
+  image.apply_invert_in_place(amount)
+  copy_image_pixels_from_msvg(self, image)
 }
 
 ///|
 /// Apply saturate filter in place
 pub fn Image::apply_saturate_in_place(self : Image, factor : Double) -> Unit {
-  for i = 0; i < self.pixels.length(); i = i + 1 {
-    self.pixels[i] = apply_saturate(self.pixels[i], factor)
-  }
+  let image = image_to_msvg(self)
+  image.apply_saturate_in_place(factor)
+  copy_image_pixels_from_msvg(self, image)
 }
 
 ///|
@@ -2476,9 +2282,9 @@ pub fn Image::apply_color_matrix_in_place(
   self : Image,
   matrix : FixedArray[Double],
 ) -> Unit {
-  for i = 0; i < self.pixels.length(); i = i + 1 {
-    self.pixels[i] = apply_color_matrix(self.pixels[i], matrix)
-  }
+  let image = image_to_msvg(self)
+  image.apply_color_matrix_in_place(matrix)
+  copy_image_pixels_from_msvg(self, image)
 }
 
 ///|
@@ -2506,22 +2312,19 @@ pub fn Sprite::new(
   width : Int,
   height : Int,
 ) -> Sprite {
-  { image, x, y, width, height }
+  sprite_from_msvg(@msvg.Sprite::new(image_to_msvg(image), x, y, width, height))
 }
 
 ///|
 /// Create a sprite from the entire image
 pub fn Sprite::from_image(image : Image) -> Sprite {
-  { image, x: 0, y: 0, width: image.width, height: image.height }
+  sprite_from_msvg(@msvg.Sprite::from_image(image_to_msvg(image)))
 }
 
 ///|
 /// Get pixel from sprite (local coordinates)
 pub fn Sprite::get_pixel(self : Sprite, x : Int, y : Int) -> Color {
-  if x < 0 || x >= self.width || y < 0 || y >= self.height {
-    return Color::transparent()
-  }
-  self.image.get_pixel(self.x + x, self.y + y)
+  color_from_msvg(sprite_to_msvg(self).get_pixel(x, y))
 }
 
 ///|
@@ -2541,9 +2344,9 @@ pub fn SpriteSheet::new(
   tile_width : Int,
   tile_height : Int,
 ) -> SpriteSheet {
-  let columns = image.width / tile_width
-  let rows = image.height / tile_height
-  { image, tile_width, tile_height, columns, rows }
+  sprite_sheet_from_msvg(
+    @msvg.SpriteSheet::new(image_to_msvg(image), tile_width, tile_height),
+  )
 }
 
 ///|
@@ -2553,13 +2356,7 @@ pub fn SpriteSheet::get_sprite(
   col : Int,
   row : Int,
 ) -> Sprite {
-  Sprite::new(
-    self.image,
-    col * self.tile_width,
-    row * self.tile_height,
-    self.tile_width,
-    self.tile_height,
-  )
+  sprite_from_msvg(sprite_sheet_to_msvg(self).get_sprite(col, row))
 }
 
 ///|
@@ -2568,37 +2365,21 @@ pub fn SpriteSheet::get_sprite_by_index(
   self : SpriteSheet,
   index : Int,
 ) -> Sprite {
-  let col = index % self.columns
-  let row = index / self.columns
-  self.get_sprite(col, row)
+  sprite_from_msvg(sprite_sheet_to_msvg(self).get_sprite_by_index(index))
 }
 
 ///|
 /// Total number of sprites in the sheet
 pub fn SpriteSheet::sprite_count(self : SpriteSheet) -> Int {
-  self.columns * self.rows
+  sprite_sheet_to_msvg(self).sprite_count()
 }
 
 ///|
 /// Blit (copy) source image onto destination at position
 pub fn blit(dest : Image, src : Image, dest_x : Int, dest_y : Int) -> Unit {
-  for sy = 0; sy < src.height; sy = sy + 1 {
-    for sx = 0; sx < src.width; sx = sx + 1 {
-      let color = src.get_pixel(sx, sy)
-      if color.a > 0 {
-        let dx = dest_x + sx
-        let dy = dest_y + sy
-        if color.a == 255 {
-          dest.set_pixel(dx, dy, color)
-        } else {
-          // Alpha blending
-          let dst_color = dest.get_pixel(dx, dy)
-          let blended = blend_colors(dst_color, color)
-          dest.set_pixel(dx, dy, blended)
-        }
-      }
-    }
-  }
+  let output = image_to_msvg(dest)
+  @msvg.blit(output, image_to_msvg(src), dest_x, dest_y)
+  copy_image_pixels_from_msvg(dest, output)
 }
 
 ///|
@@ -2609,22 +2390,9 @@ pub fn blit_sprite(
   dest_x : Int,
   dest_y : Int,
 ) -> Unit {
-  for sy = 0; sy < sprite.height; sy = sy + 1 {
-    for sx = 0; sx < sprite.width; sx = sx + 1 {
-      let color = sprite.get_pixel(sx, sy)
-      if color.a > 0 {
-        let dx = dest_x + sx
-        let dy = dest_y + sy
-        if color.a == 255 {
-          dest.set_pixel(dx, dy, color)
-        } else {
-          let dst_color = dest.get_pixel(dx, dy)
-          let blended = blend_colors(dst_color, color)
-          dest.set_pixel(dx, dy, blended)
-        }
-      }
-    }
-  }
+  let output = image_to_msvg(dest)
+  @msvg.blit_sprite(output, sprite_to_msvg(sprite), dest_x, dest_y)
+  copy_image_pixels_from_msvg(dest, output)
 }
 
 ///|
@@ -2637,69 +2405,33 @@ pub fn blit_scaled(
   dest_w : Int,
   dest_h : Int,
 ) -> Unit {
-  for dy = 0; dy < dest_h; dy = dy + 1 {
-    for dx = 0; dx < dest_w; dx = dx + 1 {
-      // Nearest-neighbor sampling
-      let sx = dx * src.width / dest_w
-      let sy = dy * src.height / dest_h
-      let color = src.get_pixel(sx, sy)
-      if color.a > 0 {
-        dest.set_pixel(dest_x + dx, dest_y + dy, color)
-      }
-    }
-  }
+  let output = image_to_msvg(dest)
+  @msvg.blit_scaled(output, image_to_msvg(src), dest_x, dest_y, dest_w, dest_h)
+  copy_image_pixels_from_msvg(dest, output)
 }
 
 ///|
 /// Flip image horizontally
 pub fn Image::flip_horizontal(self : Image) -> Image {
-  let result = Image::new(self.width, self.height)
-  for y = 0; y < self.height; y = y + 1 {
-    for x = 0; x < self.width; x = x + 1 {
-      let src_color = self.get_pixel(self.width - 1 - x, y)
-      result.set_pixel(x, y, src_color)
-    }
-  }
-  result
+  image_from_msvg(image_to_msvg(self).flip_horizontal())
 }
 
 ///|
 /// Flip image vertically
 pub fn Image::flip_vertical(self : Image) -> Image {
-  let result = Image::new(self.width, self.height)
-  for y = 0; y < self.height; y = y + 1 {
-    for x = 0; x < self.width; x = x + 1 {
-      let src_color = self.get_pixel(x, self.height - 1 - y)
-      result.set_pixel(x, y, src_color)
-    }
-  }
-  result
+  image_from_msvg(image_to_msvg(self).flip_vertical())
 }
 
 ///|
 /// Rotate image 90 degrees clockwise
 pub fn Image::rotate_90_cw(self : Image) -> Image {
-  let result = Image::new(self.height, self.width)
-  for y = 0; y < self.height; y = y + 1 {
-    for x = 0; x < self.width; x = x + 1 {
-      let src_color = self.get_pixel(x, y)
-      result.set_pixel(self.height - 1 - y, x, src_color)
-    }
-  }
-  result
+  image_from_msvg(image_to_msvg(self).rotate_90_cw())
 }
 
 ///|
 /// Rotate image 90 degrees counter-clockwise
 pub fn Image::rotate_90_ccw(self : Image) -> Image {
-  let result = Image::new(self.height, self.width)
-  for y = 0; y < self.height; y = y + 1 {
-    for x = 0; x < self.width; x = x + 1 {
-      let src_color = self.get_pixel(x, y)
-      result.set_pixel(y, self.width - 1 - x, src_color)
-    }
-  }
-  result
+  image_from_msvg(image_to_msvg(self).rotate_90_ccw())
 }
 
 ///|
@@ -2711,32 +2443,7 @@ pub fn Image::sub_image(
   w : Int,
   h : Int,
 ) -> Image {
-  let result = Image::new(w, h)
-  for py = 0; py < h; py = py + 1 {
-    for px = 0; px < w; px = px + 1 {
-      let color = self.get_pixel(x + px, y + py)
-      result.set_pixel(px, py, color)
-    }
-  }
-  result
-}
-
-///|
-/// Alpha blend two colors
-fn blend_colors(dst : Color, src : Color) -> Color {
-  let sa = src.a.to_double() / 255.0
-  let da = dst.a.to_double() / 255.0
-  let out_a = sa + da * (1.0 - sa)
-  if out_a == 0.0 {
-    return Color::transparent()
-  }
-  let r = ((src.r.to_double() * sa + dst.r.to_double() * da * (1.0 - sa)) /
-  out_a).to_int()
-  let g = ((src.g.to_double() * sa + dst.g.to_double() * da * (1.0 - sa)) /
-  out_a).to_int()
-  let b = ((src.b.to_double() * sa + dst.b.to_double() * da * (1.0 - sa)) /
-  out_a).to_int()
-  { r, g, b, a: (out_a * 255.0).to_int() }
+  image_from_msvg(image_to_msvg(self).sub_image(x, y, w, h))
 }
 
 ///|
