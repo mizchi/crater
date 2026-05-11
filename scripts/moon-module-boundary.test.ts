@@ -2620,6 +2620,24 @@ describe("MoonBit module boundaries", () => {
     expect(sceneSource.includes("pub fn Scene::bring_to_front(")).toBe(false);
   });
 
+  it("isolates SVG scene graph mutation helpers from scene type", () => {
+    const sceneSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene_graph.mbt"), "utf8");
+
+    expect(source.includes("pub fn Scene::update_node(")).toBe(true);
+    expect(source.includes("fn update_node_recursive(")).toBe(true);
+    expect(source.includes("pub fn Scene::find_node(")).toBe(true);
+    expect(source.includes("fn find_node_recursive(")).toBe(true);
+    expect(source.includes("pub fn Scene::add_child(")).toBe(true);
+    expect(source.includes("fn add_child_recursive(")).toBe(true);
+    expect(source.includes("pub fn Scene::remove_node(")).toBe(true);
+    expect(source.includes("fn remove_node_recursive(")).toBe(true);
+    expect(sceneSource.includes("pub fn Scene::update_node(")).toBe(false);
+    expect(sceneSource.includes("pub fn Scene::find_node(")).toBe(false);
+    expect(sceneSource.includes("pub fn Scene::add_child(")).toBe(false);
+    expect(sceneSource.includes("pub fn Scene::remove_node(")).toBe(false);
+  });
+
   it("delegates SVG bounding boxes and clip rects to mizchi/svg", () => {
     const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/geometry.mbt"), "utf8");
