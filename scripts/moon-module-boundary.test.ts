@@ -2250,11 +2250,16 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG viewBox transform math to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/viewbox.mbt"), "utf8");
 
+    expect(source.includes("pub(all) struct ViewBox")).toBe(true);
+    expect(source.includes("pub(all) struct PreserveAspectRatio")).toBe(true);
     expect(source.includes("pub fn ViewBox::get_transform(")).toBe(true);
     expect(source.includes("@msvg.ViewBox::")).toBe(true);
     expect(source.includes("fn get_alignment_factors(")).toBe(false);
+    expect(typesSource.includes("pub(all) struct ViewBox")).toBe(false);
+    expect(typesSource.includes("pub(all) struct PreserveAspectRatio")).toBe(false);
   });
 
   it("delegates SVG gradient color interpolation to mizchi/svg", () => {
