@@ -2496,9 +2496,10 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG scene node factories to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene.mbt"), "utf8");
+    const sceneSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene_factory.mbt"), "utf8");
     const factoryStart = source.indexOf("/// Helper: Create a rectangle node");
-    const factoryEnd = source.indexOf("/// Create a RenderContext", factoryStart);
+    const factoryEnd = source.length;
     const factorySource = source.slice(factoryStart, factoryEnd);
     const groupStart = source.indexOf("pub fn group(", factoryStart);
     const groupEnd = source.indexOf("///|", groupStart + 1);
@@ -2511,6 +2512,8 @@ describe("MoonBit module boundaries", () => {
     expect(factorySource.includes("svg_node_from_msvg(@msvg.text(")).toBe(true);
     expect(factorySource.includes("svg_node_from_msvg(@msvg.group(")).toBe(false);
     expect(groupSource.includes("node.children.push(child)")).toBe(true);
+    expect(sceneSource.includes("pub fn rect(")).toBe(false);
+    expect(sceneSource.includes("pub fn group(")).toBe(false);
   });
 
   it("delegates SVG scene render entrypoints to mizchi/svg", () => {
