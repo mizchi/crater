@@ -2624,9 +2624,11 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG camera math to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/camera.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
 
+    expect(source.includes("pub(all) struct Camera")).toBe(true);
     expect(source.includes("@msvg.Camera::new(")).toBe(true);
     expect(source.includes("camera_to_msvg(self).get_visible_bounds()")).toBe(true);
     expect(source.includes("camera_to_msvg(self).world_to_screen(")).toBe(true);
@@ -2637,6 +2639,8 @@ describe("MoonBit module boundaries", () => {
     expect(interopSource.includes("fn camera_to_msvg(")).toBe(true);
     expect(source.includes("self.x = self.x + dx")).toBe(false);
     expect(source.includes("self.viewport_width.to_double() / 2.0")).toBe(false);
+    expect(typesSource.includes("pub(all) struct Camera")).toBe(false);
+    expect(typesSource.includes("pub fn Camera::new(")).toBe(false);
   });
 
   it("delegates SVG color filter math to mizchi/svg", () => {
