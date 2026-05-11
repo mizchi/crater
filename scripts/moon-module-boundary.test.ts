@@ -2626,8 +2626,10 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG color filter math to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/filter.mbt"), "utf8");
 
+    expect(source.includes("pub(all) enum Filter")).toBe(true);
     expect(source.includes("@msvg.apply_brightness(")).toBe(true);
     expect(source.includes("@msvg.apply_grayscale(")).toBe(true);
     expect(source.includes("@msvg.apply_contrast(")).toBe(true);
@@ -2644,19 +2646,22 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("fn sin_approx(")).toBe(false);
     expect(source.includes("Hue rotation matrix")).toBe(false);
     expect(source.includes("Sepia matrix coefficients")).toBe(false);
+    expect(typesSource.includes("pub(all) enum Filter")).toBe(false);
+    expect(typesSource.includes("pub fn apply_filter(image : Image")).toBe(false);
   });
 
   it("delegates SVG image and sprite operations to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const filterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/filter.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
 
     expect(source.includes("@msvg.Image::new(")).toBe(true);
     expect(source.includes("@msvg.Image::filled(")).toBe(true);
     expect(source.includes("image_to_msvg(self).get_pixel(")).toBe(true);
     expect(source.includes("image_to_msvg(self).clone()")).toBe(true);
-    expect(source.includes("@msvg.apply_blur(")).toBe(true);
-    expect(source.includes("@msvg.apply_drop_shadow(")).toBe(true);
-    expect(source.includes("@msvg.apply_filter(")).toBe(true);
+    expect(filterSource.includes("@msvg.apply_blur(")).toBe(true);
+    expect(filterSource.includes("@msvg.apply_drop_shadow(")).toBe(true);
+    expect(filterSource.includes("@msvg.apply_filter(")).toBe(true);
     expect(source.includes("@msvg.blit(")).toBe(true);
     expect(source.includes("@msvg.blit_sprite(")).toBe(true);
     expect(source.includes("@msvg.blit_scaled(")).toBe(true);
