@@ -180,6 +180,7 @@
   - 進捗: node text/glyph fallback rendering を `painter/x/image/raster_node_text.mbt` へ分離
   - 進捗: node box decoration rendering を `painter/x/image/raster_node_box.mbt` へ分離
   - 進捗: node content rendering を `painter/x/image/raster_node_content.mbt` へ分離
+  - 進捗: node child clip/recursive rendering を `painter/x/image/raster_node_children.mbt` へ分離
   - 進捗: raster palette helpers を `painter/x/image/raster_palette.mbt` へ分離
   - 進捗: raster clip helpers を `painter/x/image/raster_clip.mbt` へ分離
   - 進捗: raster blending helpers を `painter/x/image/raster_blend.mbt` へ分離

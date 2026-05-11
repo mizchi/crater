@@ -76,44 +76,9 @@ fn render_paint_node_clipped(
 
   render_node_box_decorations(fb, palette, node, x, y, w, h, clip)
   render_node_content(fb, palette, node, x, y, w, h, clip)
-
-  // Compute child clip: if this node clips content, intersect with current clip
-  let child_clip = if node.clips_content() {
-    let node_clip : ClipRect = { x, y, w, h }
-    match clip {
-      None => Some(node_clip)
-      Some(parent_clip) => clip_intersect(parent_clip, node_clip)
-    }
-  } else {
-    clip
-  }
-
-  // If clip intersection is empty, skip all children
-  match (node.clips_content(), child_clip) {
-    (true, None) => return
-    _ => ()
-  }
-
-  // Render children with (possibly narrowed) clip
-  // Propagate opacity to children (CSS opacity affects entire subtree)
-  if node.paint.opacity < 1.0 {
-    for child in node.children {
-      let child_with_opacity = {
-        ..child,
-        paint: {
-          ..child.paint,
-          opacity: child.paint.opacity * node.paint.opacity,
-        },
-      }
-      render_paint_node_clipped(
-        fb, palette, child_with_opacity, abs_x, abs_y, child_clip,
-      )
-    }
-  } else {
-    for child in node.children {
-      render_paint_node_clipped(fb, palette, child, abs_x, abs_y, child_clip)
-    }
-  }
+  render_node_children_clipped(
+    fb, palette, node, abs_x, abs_y, x, y, w, h, clip,
+  )
 }
 
 ///|

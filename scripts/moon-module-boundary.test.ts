@@ -268,6 +268,18 @@ describe("MoonBit module boundaries", () => {
     expect(rasterSource.includes("render_image_src_into_region(")).toBe(false);
   });
 
+  it("splits raster node child rendering out of paint_raster", () => {
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_node_children.mbt"), "utf8");
+
+    expect(source.includes("fn render_node_children_clipped(")).toBe(true);
+    expect(source.includes("clip_intersect(")).toBe(true);
+    expect(source.includes("let child_with_opacity")).toBe(true);
+    expect(source.includes("render_paint_node_clipped(")).toBe(true);
+    expect(rasterSource.includes("let child_with_opacity")).toBe(false);
+    expect(rasterSource.includes("clip_intersect(")).toBe(false);
+  });
+
   it("splits raster palette helpers out of paint_raster", () => {
     const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_palette.mbt"), "utf8");
