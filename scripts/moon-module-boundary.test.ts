@@ -2619,12 +2619,16 @@ describe("MoonBit module boundaries", () => {
 
   it("delegates SVG shape hit testing to mizchi/svg", () => {
     const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const shapeSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/shape.mbt"), "utf8");
     const hitTestSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/hit_testing.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
     const nodeHitStart = hitTestSource.indexOf("pub fn SVGNode::hit_test(");
     const nodeHitEnd = hitTestSource.indexOf("///|\n/// Find all nodes", nodeHitStart);
     const nodeHitSource = hitTestSource.slice(nodeHitStart, nodeHitEnd);
 
+    expect(shapeSource.includes("pub(all) enum PathCommand")).toBe(true);
+    expect(shapeSource.includes("pub(all) enum Shape")).toBe(true);
+    expect(shapeSource.includes("pub impl Show for Shape")).toBe(true);
     expect(hitTestSource.includes("pub fn hit_test_shape(")).toBe(true);
     expect(hitTestSource.includes("@msvg.hit_test_shape(px, py, shape_to_msvg(shape))")).toBe(true);
     expect(nodeHitSource.includes("svg_node_to_msvg(self).hit_test(px, py)")).toBe(true);
@@ -2636,6 +2640,8 @@ describe("MoonBit module boundaries", () => {
     expect(hitTestSource.includes("fn hit_test_ellipse(")).toBe(false);
     expect(hitTestSource.includes("fn hit_test_polygon(")).toBe(false);
     expect(hitTestSource.includes("fn hit_test_line(")).toBe(false);
+    expect(typesSource.includes("pub(all) enum PathCommand")).toBe(false);
+    expect(typesSource.includes("pub(all) enum Shape")).toBe(false);
     expect(typesSource.includes("pub fn hit_test_shape(")).toBe(false);
     expect(typesSource.includes("fn hit_test_recursive(")).toBe(false);
   });
