@@ -2392,6 +2392,24 @@ describe("MoonBit module boundaries", () => {
     expect(interopSource.includes("Transform::matrix(")).toBe(false);
   });
 
+  it("delegates SVG scene node factories to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene.mbt"), "utf8");
+    const factoryStart = source.indexOf("/// Helper: Create a rectangle node");
+    const factoryEnd = source.indexOf("/// Create a RenderContext", factoryStart);
+    const factorySource = source.slice(factoryStart, factoryEnd);
+    const groupStart = source.indexOf("pub fn group(", factoryStart);
+    const groupEnd = source.indexOf("///|", groupStart + 1);
+    const groupSource = source.slice(groupStart, groupEnd);
+
+    expect(factorySource.includes("svg_node_from_msvg(@msvg.rect(")).toBe(true);
+    expect(factorySource.includes("svg_node_from_msvg(@msvg.circle(")).toBe(true);
+    expect(factorySource.includes("svg_node_from_msvg(@msvg.line(")).toBe(true);
+    expect(factorySource.includes("svg_node_from_msvg(@msvg.path(")).toBe(true);
+    expect(factorySource.includes("svg_node_from_msvg(@msvg.text(")).toBe(true);
+    expect(factorySource.includes("svg_node_from_msvg(@msvg.group(")).toBe(false);
+    expect(groupSource.includes("node.children.push(child)")).toBe(true);
+  });
+
   it("delegates SVG bounding boxes and clip rects to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
 

@@ -1112,17 +1112,13 @@ pub fn rect(
   width : Double,
   height : Double,
 ) -> SVGNode {
-  let node = SVGNode::new(Rect(x~, y~, width~, height~, rx=0.0, ry=0.0))
-  node.id = id
-  node
+  svg_node_from_msvg(@msvg.rect(id, x, y, width, height))
 }
 
 ///|
 /// Helper: Create a circle node
 pub fn circle(id : String, cx : Double, cy : Double, r : Double) -> SVGNode {
-  let node = SVGNode::new(Circle(cx~, cy~, r~))
-  node.id = id
-  node
+  svg_node_from_msvg(@msvg.circle(id, cx, cy, r))
 }
 
 ///|
@@ -1134,19 +1130,13 @@ pub fn line(
   x2 : Double,
   y2 : Double,
 ) -> SVGNode {
-  let node = SVGNode::new(Line(x1~, y1~, x2~, y2~))
-  node.id = id
-  node.fill = None // Lines have no fill by default
-  node
+  svg_node_from_msvg(@msvg.line(id, x1, y1, x2, y2))
 }
 
 ///|
 /// Helper: Create a path node from path data string
 pub fn path(id : String, d : String) -> SVGNode {
-  let commands = parse_path(d)
-  let node = SVGNode::new(Path(commands~))
-  node.id = id
-  node
+  svg_node_from_msvg(@msvg.path(id, d))
 }
 
 ///|
@@ -1158,9 +1148,7 @@ pub fn text(
   content : String,
   font_size : Double,
 ) -> SVGNode {
-  let node = SVGNode::new(Text(x~, y~, text=content, font_size~))
-  node.id = id
-  node
+  svg_node_from_msvg(@msvg.text(id, x, y, content, font_size))
 }
 
 ///|
