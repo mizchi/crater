@@ -43,17 +43,15 @@ fn BidiProtocol::process_message(
   self : BidiProtocol,
   json_str : String,
 ) -> Result[Unit, String] {
-  let json = @json.parse(json_str) catch { _ => return Err("Invalid JSON") }
-  let id = match get_int_field(json, "id") {
-    Some(i) => i
-    None => return Err("Missing id field")
+  let parsed = match @bidi_wire.parse_request(json_str) {
+    Ok(request) => request
+    Err(err) => return Err(err)
   }
-  let method_name = match get_string_field(json, "method") {
-    Some(m) => m
-    None => return Err("Missing method field")
+  let request : BidiRequest = {
+    id: parsed.id,
+    method_name: parsed.method_name,
+    params: parsed.params,
   }
-  let params = get_field(json, "params")
-  let request : BidiRequest = { id, method_name, params }
   self.dispatch(request)
 }
 
@@ -108,32 +106,20 @@ fn BidiProtocol::send_error(
 ///|
 /// Response JSON serialization
 fn response_to_json(resp : BidiResponse) -> String {
-  let obj : Map[String, Json] = {}
-  obj["id"] = Json::number(resp.id.to_double())
   match resp.error {
-    Some(err) => {
-      obj["type"] = Json::string("error")
-      obj["error"] = Json::string(err.error)
-      obj["message"] = Json::string(err.message)
-      obj["stacktrace"] = Json::string(err.stacktrace)
-    }
-    None => {
-      obj["type"] = Json::string("success")
-      match resp.result {
-        Some(r) => obj["result"] = r
-        None => obj["result"] = make_object({})
-      }
-    }
+    Some(err) =>
+      @bidi_wire.error_response_to_json_with_stacktrace(
+        resp.id,
+        err.error,
+        err.message,
+        err.stacktrace,
+      )
+    None => @bidi_wire.success_response_to_json(resp.id, resp.result)
   }
-  make_object(obj).stringify()
 }
 
 ///|
 /// Event JSON serialization
 fn event_to_json(evt : BidiEvent) -> String {
-  let obj : Map[String, Json] = {}
-  obj["type"] = Json::string("event")
-  obj["method"] = Json::string(evt.event_method)
-  obj["params"] = evt.params
-  make_object(obj).stringify()
+  @bidi_wire.event_to_json(evt.event_method, evt.params)
 }

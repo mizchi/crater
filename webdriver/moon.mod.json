@@ -31,6 +31,7 @@
       "path": "../contract",
       "version": "0.17.1"
     },
+    "mizchi/webdriver": "0.2.6",
     "mizchi/js": "0.10.13",
     "moonbitlang/async": "0.17.1"
   },

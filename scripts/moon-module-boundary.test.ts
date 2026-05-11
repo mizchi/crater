@@ -1312,6 +1312,29 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps WebDriver BiDi wire envelopes in standalone mizchi/webdriver", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "webdriver/bidi_wire/moon.pkg"))).toBe(false);
+
+    const moduleJson = JSON.parse(
+      fs.readFileSync(path.join(REPO_ROOT, "webdriver/moon.mod.json"), "utf8"),
+    );
+    expect(moduleJson.deps["mizchi/webdriver"]).toBe("0.2.6");
+
+    const packageSource = fs.readFileSync(path.join(REPO_ROOT, "webdriver/webdriver/moon.pkg"), "utf8");
+    expect(packageSource).toContain("\"mizchi/webdriver/bidi\" @bidi_wire");
+
+    const messageSource = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_messages.mbt"),
+      "utf8",
+    );
+    expect(messageSource).toContain("@bidi_wire.parse_request(");
+    expect(messageSource).toContain("@bidi_wire.success_response_to_json(");
+    expect(messageSource).toContain("@bidi_wire.error_response_to_json_with_stacktrace(");
+    expect(messageSource).toContain("@bidi_wire.event_to_json(");
+    expect(messageSource).not.toContain("@json.parse(json_str)");
+    expect(messageSource).not.toContain("\"type\"] = Json::string(\"success\")");
+  });
+
   it("keeps WebDriver BiDi dispatch routing out of the protocol core", () => {
     expect(
       fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_dispatch.mbt")),

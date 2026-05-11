@@ -1,4 +1,5 @@
 import {
+  "mizchi/webdriver/bidi" @bidi_wire,
   "mizchi/crater-renderer/vrt" @vrt,
   "mizchi/crater-browser-contract" @browser_contract,
   "mizchi/crater/css",
