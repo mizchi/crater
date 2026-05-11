@@ -589,6 +589,20 @@ describe("MoonBit module boundaries", () => {
     expect(source).not.toContain("fn CharBuffer::write_styled_char(");
   });
 
+  it("delegates reusable browser tui widget plans to tui terminal buffer", () => {
+    const pkg = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/primitives/moon.pkg"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/primitives/widget.mbt"), "utf8");
+
+    expect(pkg).toContain('"mizchi/tui-terminal-buffer/buffer" @tui_buffer');
+    expect(source).toContain("@tui_buffer.BoxChars::single()");
+    expect(source).toContain("@tui_buffer.plan_box(x, y, w, h, box_chars(style))");
+    expect(source).toContain("@tui_buffer.plan_hline(x, y, w, chars.horizontal)");
+    expect(source).toContain("@tui_buffer.plan_vline(x, y, h, chars.vertical)");
+    expect(source).toContain("@tui_buffer.plan_scrollbar(");
+    expect(source).not.toContain("for col = x + 1; col < x + w - 1");
+    expect(source).not.toContain("let thumb_height =");
+  });
+
   it("keeps browser shell terminal image implementation in its own file", () => {
     expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/terminal_image.mbt"))).toBe(true);
 

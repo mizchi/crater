@@ -13,13 +13,12 @@ pub(all) enum BoxStyle {
 
 ///|
 /// Get box drawing characters for a style
-fn box_chars(style : BoxStyle) -> (Char, Char, Char, Char, Char, Char) {
-  // Returns: (top_left, top_right, bottom_left, bottom_right, horizontal, vertical)
+fn box_chars(style : BoxStyle) -> @tui_buffer.BoxChars {
   match style {
-    Single => ('┌', '┐', '└', '┘', '─', '│')
-    Double => ('╔', '╗', '╚', '╝', '═', '║')
-    Rounded => ('╭', '╮', '╰', '╯', '─', '│')
-    Ascii => ('+', '+', '+', '+', '-', '|')
+    Single => @tui_buffer.BoxChars::single()
+    Double => @tui_buffer.BoxChars::double()
+    Rounded => @tui_buffer.BoxChars::rounded()
+    Ascii => @tui_buffer.BoxChars::ascii()
   }
 }
 
@@ -35,10 +34,6 @@ pub fn draw_box(
   fg : @types.Color,
   bg : @types.Color,
 ) -> Unit {
-  if w < 2 || h < 2 {
-    return
-  }
-  let (tl, tr, bl, br, horiz, vert) = box_chars(style)
   let cell_style : CharCell = {
     char: ' ',
     fg,
@@ -47,29 +42,8 @@ pub fn draw_box(
     underline: false,
     reverse: false,
   }
-  // Top left corner
-  buf.set_cell(x, y, { ..cell_style, char: tl })
-  // Top right corner
-  buf.set_cell(x + w - 1, y, { ..cell_style, char: tr })
-  // Bottom left corner
-  buf.set_cell(x, y + h - 1, { ..cell_style, char: bl })
-  // Bottom right corner
-  buf.set_cell(x + w - 1, y + h - 1, { ..cell_style, char: br })
-  // Top edge
-  for col = x + 1; col < x + w - 1; col = col + 1 {
-    buf.set_cell(col, y, { ..cell_style, char: horiz })
-  }
-  // Bottom edge
-  for col = x + 1; col < x + w - 1; col = col + 1 {
-    buf.set_cell(col, y + h - 1, { ..cell_style, char: horiz })
-  }
-  // Left edge
-  for row = y + 1; row < y + h - 1; row = row + 1 {
-    buf.set_cell(x, row, { ..cell_style, char: vert })
-  }
-  // Right edge
-  for row = y + 1; row < y + h - 1; row = row + 1 {
-    buf.set_cell(x + w - 1, row, { ..cell_style, char: vert })
+  for cell in @tui_buffer.plan_box(x, y, w, h, box_chars(style)) {
+    buf.set_cell(cell.x, cell.y, { ..cell_style, char: cell.char })
   }
 }
 
@@ -109,17 +83,17 @@ pub fn draw_hline(
   style : BoxStyle,
   fg : @types.Color,
 ) -> Unit {
-  let (_, _, _, _, horiz, _) = box_chars(style)
+  let chars = box_chars(style)
   let cell : CharCell = {
-    char: horiz,
+    char: chars.horizontal,
     fg,
     bg: @types.Color::transparent(),
     bold: false,
     underline: false,
     reverse: false,
   }
-  for col = x; col < x + w; col = col + 1 {
-    buf.set_cell(col, y, cell)
+  for planned in @tui_buffer.plan_hline(x, y, w, chars.horizontal) {
+    buf.set_cell(planned.x, planned.y, cell)
   }
 }
 
@@ -133,17 +107,17 @@ pub fn draw_vline(
   style : BoxStyle,
   fg : @types.Color,
 ) -> Unit {
-  let (_, _, _, _, _, vert) = box_chars(style)
+  let chars = box_chars(style)
   let cell : CharCell = {
-    char: vert,
+    char: chars.vertical,
     fg,
     bg: @types.Color::transparent(),
     bold: false,
     underline: false,
     reverse: false,
   }
-  for row = y; row < y + h; row = row + 1 {
-    buf.set_cell(x, row, cell)
+  for planned in @tui_buffer.plan_vline(x, y, h, chars.vertical) {
+    buf.set_cell(planned.x, planned.y, cell)
   }
 }
 
@@ -210,40 +184,23 @@ pub fn draw_scrollbar(
   content_height : Int,
   visible_height : Int,
 ) -> Unit {
-  if content_height <= visible_height || height < 3 {
-    return
-  }
-  let fg = @types.Color::rgb(100, 100, 100)
-  // Draw track
-  let track_char = '│'
-  for row = y; row < y + height; row = row + 1 {
-    buf.set_cell(x, row, {
-      char: track_char,
+  for
+    cell in @tui_buffer.plan_scrollbar(
+      x, y, height, scroll_pos, content_height, visible_height, '│', '█',
+    ) {
+    let fg = if cell.thumb {
+      @types.Color::rgb(200, 200, 200)
+    } else {
+      @types.Color::rgb(100, 100, 100)
+    }
+    buf.set_cell(cell.x, cell.y, {
+      char: cell.char,
       fg,
       bg: @types.Color::transparent(),
       bold: false,
       underline: false,
       reverse: false,
     })
-  }
-  // Calculate thumb position and size
-  let thumb_height = (visible_height * height / content_height).max(1)
-  let thumb_pos = scroll_pos *
-    (height - thumb_height) /
-    (content_height - visible_height)
-  // Draw thumb
-  let thumb_char = '█'
-  for row = y + thumb_pos; row < y + thumb_pos + thumb_height; row = row + 1 {
-    if row < y + height {
-      buf.set_cell(x, row, {
-        char: thumb_char,
-        fg: @types.Color::rgb(200, 200, 200),
-        bg: @types.Color::transparent(),
-        bold: false,
-        underline: false,
-        reverse: false,
-      })
-    }
   }
 }
 
