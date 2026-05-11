@@ -160,6 +160,7 @@
   - 進捗: render context を `painter/svg/render_context.mbt` へ分離
   - 進捗: scene node factory を `painter/svg/scene_factory.mbt` へ分離
   - 進捗: scene render entrypoints を `painter/svg/scene_render.mbt` へ分離
+  - 進捗: scene dirty/query helpers を `painter/svg/scene_dirty.mbt` へ分離
 - [ ] `painter/x/image/paint_raster.mbt` / `glyph_render.mbt` の raster と glyph 責務を整理する
   - 候補: scanline/fill, image decode/cache, glyph fallback, font metrics bridge
   - `mizchi/font` / `mizchi/svg` へ移せるものは crater 側を adapter に寄せる
