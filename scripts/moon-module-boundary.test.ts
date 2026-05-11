@@ -172,6 +172,22 @@ describe("MoonBit module boundaries", () => {
     expect(rasterSource.includes("fn draw_text_clipped(")).toBe(false);
   });
 
+  it("splits bitmap font data and metrics out of the font facade", () => {
+    const fontSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/font.mbt"), "utf8");
+    const dataSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/bitmap_font_data.mbt"), "utf8");
+    const metricsSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/bitmap_font_metrics.mbt"), "utf8");
+
+    expect(fontSource.includes("pub fn get_char_bitmap(")).toBe(true);
+    expect(fontSource.includes("pub fn is_font_supported(")).toBe(true);
+    expect(fontSource.includes("let bitmap_font_data")).toBe(false);
+    expect(fontSource.includes("0xFE")).toBe(false);
+    expect(dataSource.includes("let bitmap_font_data")).toBe(true);
+    expect(dataSource.includes("// 65: A")).toBe(true);
+    expect(metricsSource.includes("pub let font_width")).toBe(true);
+    expect(metricsSource.includes("pub let font_height")).toBe(true);
+    expect(metricsSource.includes("fn bitmap_font_index(")).toBe(true);
+  });
+
   it("splits raster text layout helpers out of paint_raster", () => {
     const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_text.mbt"), "utf8");
