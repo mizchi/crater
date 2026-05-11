@@ -2740,9 +2740,13 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG tween operations to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/tween.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
 
+    expect(source.includes("pub(all) enum Easing")).toBe(true);
+    expect(source.includes("pub(all) enum AnimProperty")).toBe(true);
+    expect(source.includes("pub(all) struct Tween")).toBe(true);
     expect(source.includes("@msvg.Tween::new(")).toBe(true);
     expect(source.includes("tween_to_msvg(self).is_complete()")).toBe(true);
     expect(source.includes("let tween = tween_to_msvg(self)")).toBe(true);
@@ -2753,6 +2757,8 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("fn capture_property(")).toBe(false);
     expect(source.includes("fn apply_interpolated_property(")).toBe(false);
     expect(source.includes("fn lerp_color(")).toBe(false);
+    expect(typesSource.includes("pub(all) struct Tween")).toBe(false);
+    expect(typesSource.includes("pub fn Tween::new(")).toBe(false);
   });
 
   it("delegates SVG animation manager operations to mizchi/svg", () => {
