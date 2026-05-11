@@ -2388,6 +2388,19 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("Standard luminance formula")).toBe(false);
   });
 
+  it("delegates SVG pattern sampling to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+
+    expect(source.includes("@msvg.Pattern::new(")).toBe(true);
+    expect(source.includes("pattern_to_msvg(self).get_color_at(")).toBe(true);
+    expect(interopSource.includes("fn pattern_from_msvg(")).toBe(true);
+    expect(interopSource.includes("fn pattern_to_msvg(")).toBe(true);
+    expect(interopSource.includes("fn svg_node_to_msvg(")).toBe(true);
+    expect(source.includes("Calculate pattern space coordinates")).toBe(false);
+    expect(source.includes("Get position within pattern tile")).toBe(false);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",

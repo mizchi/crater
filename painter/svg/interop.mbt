@@ -82,6 +82,14 @@ fn fill_rule_from_msvg(rule : @msvg.FillRule) -> FillRule {
 }
 
 ///|
+fn fill_rule_to_msvg(rule : FillRule) -> @msvg.FillRule {
+  match rule {
+    NonZero => @msvg.FillRule::NonZero
+    EvenOdd => @msvg.FillRule::EvenOdd
+  }
+}
+
+///|
 fn linecap_from_msvg(linecap : @msvg.LineCap) -> LineCap {
   match linecap {
     Butt => Butt
@@ -91,11 +99,29 @@ fn linecap_from_msvg(linecap : @msvg.LineCap) -> LineCap {
 }
 
 ///|
+fn linecap_to_msvg(linecap : LineCap) -> @msvg.LineCap {
+  match linecap {
+    Butt => @msvg.LineCap::Butt
+    Round => @msvg.LineCap::Round
+    Square => @msvg.LineCap::Square
+  }
+}
+
+///|
 fn linejoin_from_msvg(linejoin : @msvg.LineJoin) -> LineJoin {
   match linejoin {
     Miter => Miter
     Round => Round
     Bevel => Bevel
+  }
+}
+
+///|
+fn linejoin_to_msvg(linejoin : LineJoin) -> @msvg.LineJoin {
+  match linejoin {
+    Miter => @msvg.LineJoin::Miter
+    Round => @msvg.LineJoin::Round
+    Bevel => @msvg.LineJoin::Bevel
   }
 }
 
@@ -214,6 +240,16 @@ fn paint_from_msvg(paint : @msvg.Paint, current_color : Color?) -> Paint {
 }
 
 ///|
+fn paint_to_msvg(paint : Paint) -> @msvg.Paint {
+  match paint {
+    None => @msvg.Paint::None
+    SolidColor(color) => @msvg.Paint::SolidColor(color_to_msvg(color))
+    LinearGrad(grad) => @msvg.Paint::LinearGrad(linear_gradient_to_msvg(grad))
+    RadialGrad(grad) => @msvg.Paint::RadialGrad(radial_gradient_to_msvg(grad))
+  }
+}
+
+///|
 fn stroke_style_from_msvg(
   stroke : @msvg.StrokeStyle,
   current_color : Color?,
@@ -223,6 +259,19 @@ fn stroke_style_from_msvg(
     width: stroke.width,
     linecap: linecap_from_msvg(stroke.linecap),
     linejoin: linejoin_from_msvg(stroke.linejoin),
+    miterlimit: stroke.miterlimit,
+    dasharray: stroke.dasharray,
+    dashoffset: stroke.dashoffset,
+  }
+}
+
+///|
+fn stroke_style_to_msvg(stroke : StrokeStyle) -> @msvg.StrokeStyle {
+  @msvg.StrokeStyle::{
+    paint: paint_to_msvg(stroke.paint),
+    width: stroke.width,
+    linecap: linecap_to_msvg(stroke.linecap),
+    linejoin: linejoin_to_msvg(stroke.linejoin),
     miterlimit: stroke.miterlimit,
     dasharray: stroke.dasharray,
     dashoffset: stroke.dashoffset,
@@ -247,6 +296,23 @@ fn filter_from_msvg(filter : @msvg.Filter) -> Filter {
 }
 
 ///|
+fn filter_to_msvg(filter : Filter) -> @msvg.Filter {
+  match filter {
+    Blur(value) => @msvg.Filter::Blur(value)
+    DropShadow(dx, dy, blur, color) =>
+      @msvg.Filter::DropShadow(dx, dy, blur, color_to_msvg(color))
+    Brightness(value) => @msvg.Filter::Brightness(value)
+    Contrast(value) => @msvg.Filter::Contrast(value)
+    Grayscale(value) => @msvg.Filter::Grayscale(value)
+    Sepia(value) => @msvg.Filter::Sepia(value)
+    HueRotate(value) => @msvg.Filter::HueRotate(value)
+    Invert(value) => @msvg.Filter::Invert(value)
+    Saturate(value) => @msvg.Filter::Saturate(value)
+    ColorMatrix(values) => @msvg.Filter::ColorMatrix(values)
+  }
+}
+
+///|
 fn blend_mode_to_msvg(mode : BlendMode) -> @msvg.BlendMode {
   match mode {
     Normal => @msvg.BlendMode::Normal
@@ -265,6 +331,22 @@ fn blend_mode_to_msvg(mode : BlendMode) -> @msvg.BlendMode {
     Saturation => @msvg.BlendMode::Saturation
     ColorMode => @msvg.BlendMode::ColorMode
     Luminosity => @msvg.BlendMode::Luminosity
+  }
+}
+
+///|
+fn pattern_units_from_msvg(units : @msvg.PatternUnits) -> PatternUnits {
+  match units {
+    UserSpaceOnUse => UserSpaceOnUse
+    ObjectBoundingBox => ObjectBoundingBox
+  }
+}
+
+///|
+fn pattern_units_to_msvg(units : PatternUnits) -> @msvg.PatternUnits {
+  match units {
+    UserSpaceOnUse => @msvg.PatternUnits::UserSpaceOnUse
+    ObjectBoundingBox => @msvg.PatternUnits::ObjectBoundingBox
   }
 }
 
@@ -508,6 +590,32 @@ fn shape_to_msvg(shape : Shape) -> @msvg.Shape {
 }
 
 ///|
+fn svg_node_to_msvg(source : SVGNode) -> @msvg.SVGNode {
+  let node = @msvg.SVGNode::new(shape_to_msvg(source.shape))
+  node.id = source.id
+  node.transform = source.transform.to_msvg()
+  node.fill = paint_to_msvg(source.fill)
+  node.fill_rule = fill_rule_to_msvg(source.fill_rule)
+  node.fill_opacity = source.fill_opacity
+  node.stroke = stroke_style_to_msvg(source.stroke)
+  node.stroke_opacity = source.stroke_opacity
+  node.opacity = source.opacity
+  node.z_index = source.z_index
+  node.node_dirty = source.node_dirty
+  node.prev_bounds = match source.prev_bounds {
+    Some(bbox) => Some(bounding_box_to_msvg(bbox))
+    None => None
+  }
+  node.filters = source.filters.map(filter_to_msvg)
+  node.mask_id = source.mask_id
+  node.clip_path_id = source.clip_path_id
+  for child in source.children {
+    node.children.push(svg_node_to_msvg(child))
+  }
+  node
+}
+
+///|
 fn svg_node_from_msvg(source : @msvg.SVGNode) -> SVGNode {
   let current_color = color_from_msvg_option(source.color)
   let node = SVGNode::new(shape_from_msvg(source.shape))
@@ -529,4 +637,37 @@ fn svg_node_from_msvg(source : @msvg.SVGNode) -> SVGNode {
     node.children.push(svg_node_from_msvg(child))
   }
   node
+}
+
+///|
+fn pattern_from_msvg(
+  pattern : @msvg.Pattern,
+  content : Array[SVGNode],
+) -> Pattern {
+  {
+    id: pattern.id,
+    width: pattern.width,
+    height: pattern.height,
+    content,
+    pattern_units: pattern_units_from_msvg(pattern.pattern_units),
+    pattern_content_units: pattern_units_from_msvg(
+      pattern.pattern_content_units,
+    ),
+    transform: transform_from_msvg(pattern.transform),
+  }
+}
+
+///|
+fn pattern_to_msvg(pattern : Pattern) -> @msvg.Pattern {
+  @msvg.Pattern::{
+    id: pattern.id,
+    width: pattern.width,
+    height: pattern.height,
+    content: pattern.content.map(svg_node_to_msvg),
+    pattern_units: pattern_units_to_msvg(pattern.pattern_units),
+    pattern_content_units: pattern_units_to_msvg(pattern.pattern_content_units),
+    transform: pattern.transform.to_msvg(),
+    view_box: None,
+    preserve_aspect_ratio: @msvg.PreserveAspectRatio::default(),
+  }
 }

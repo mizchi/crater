@@ -3061,15 +3061,7 @@ pub fn Pattern::new(
   height : Double,
   content : Array[SVGNode],
 ) -> Pattern {
-  {
-    id,
-    width,
-    height,
-    content,
-    pattern_units: ObjectBoundingBox,
-    pattern_content_units: UserSpaceOnUse,
-    transform: Transform::identity(),
-  }
+  pattern_from_msvg(@msvg.Pattern::new(id, width, height, []), content)
 }
 
 ///|
@@ -3080,28 +3072,9 @@ pub fn Pattern::get_color_at(
   y : Double,
   bbox : BoundingBox,
 ) -> Color? {
-  // Calculate pattern space coordinates
-  let (pw, ph) = match self.pattern_units {
-    UserSpaceOnUse => (self.width, self.height)
-    ObjectBoundingBox =>
-      (self.width * bbox.width(), self.height * bbox.height())
-  }
-  if pw <= 0.0 || ph <= 0.0 {
-    return None
-  }
-  // Get position within pattern tile (modulo)
-  let px = x - (x / pw).floor() * pw
-  let py = y - (y / ph).floor() * ph
-  // Find which content element contains this point
-  for node in self.content {
-    if hit_test_shape(px, py, node.shape) {
-      match node.fill {
-        SolidColor(color) => return Some(color)
-        _ => continue
-      }
-    }
-  }
-  None
+  color_from_msvg_option(
+    pattern_to_msvg(self).get_color_at(x, y, bounding_box_to_msvg(bbox)),
+  )
 }
 
 ///|
