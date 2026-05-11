@@ -2424,6 +2424,16 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("render_node(self.root, Transform::identity(), ctx)")).toBe(false);
   });
 
+  it("delegates SVG scene queries to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene.mbt"), "utf8");
+
+    expect(source.includes("svg_scene_from_msvg(@msvg.Scene::empty())")).toBe(true);
+    expect(source.includes("bounding_box_from_msvg(scene_to_msvg(self).get_bounds())")).toBe(true);
+    expect(source.includes("bounding_box_from_msvg(scene_to_msvg(self).get_dirty_region())")).toBe(true);
+    expect(source.includes("compute_bounds(self.root, Transform::identity())")).toBe(false);
+    expect(source.includes("compute_dirty_region(self.root, Transform::identity())")).toBe(false);
+  });
+
   it("delegates SVG bounding boxes and clip rects to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
 

@@ -127,7 +127,7 @@ pub fn AnimationManager::clear(self : AnimationManager) -> Unit {
 ///|
 /// Create an empty scene with a group root
 pub fn Scene::empty() -> Scene {
-  Scene::new(SVGNode::new(Group))
+  svg_scene_from_msvg(@msvg.Scene::empty())
 }
 
 ///|
@@ -285,41 +285,13 @@ fn remove_node_recursive(node : SVGNode, id : String) -> Bool {
 ///|
 /// Compute the bounding box of the entire scene
 pub fn Scene::get_bounds(self : Scene) -> BoundingBox {
-  compute_bounds(self.root, Transform::identity())
+  bounding_box_from_msvg(scene_to_msvg(self).get_bounds())
 }
 
 ///|
 /// Compute the dirty region (union of all dirty node bounds)
 pub fn Scene::get_dirty_region(self : Scene) -> BoundingBox {
-  compute_dirty_region(self.root, Transform::identity())
-}
-
-///|
-fn compute_dirty_region(
-  node : SVGNode,
-  parent_transform : Transform,
-) -> BoundingBox {
-  let transform = parent_transform.multiply(node.transform)
-  let mut dirty_bbox = BoundingBox::empty()
-  // If this node is dirty, include its current and previous bounds
-  if node.node_dirty {
-    let current_bbox = get_shape_bounds(node.shape)
-    if !current_bbox.is_empty() {
-      let transformed_bbox = transform.apply_bbox(current_bbox)
-      dirty_bbox = dirty_bbox.union(transformed_bbox)
-    }
-    // Include previous bounds if available
-    match node.prev_bounds {
-      Some(prev) => dirty_bbox = dirty_bbox.union(prev)
-      None => ()
-    }
-  }
-  // Recurse to children
-  for child in node.children {
-    let child_dirty = compute_dirty_region(child, transform)
-    dirty_bbox = dirty_bbox.union(child_dirty)
-  }
-  dirty_bbox
+  bounding_box_from_msvg(scene_to_msvg(self).get_dirty_region())
 }
 
 ///|
@@ -476,20 +448,6 @@ fn get_min_z_index(nodes : Array[SVGNode]) -> Int {
     }
   }
   min_z
-}
-
-///|
-fn compute_bounds(node : SVGNode, parent_transform : Transform) -> BoundingBox {
-  let transform = parent_transform.multiply(node.transform)
-  let mut bbox = get_shape_bounds(node.shape)
-  if !bbox.is_empty() {
-    bbox = transform.apply_bbox(bbox)
-  }
-  for child in node.children {
-    let child_bbox = compute_bounds(child, transform)
-    bbox = bbox.union(child_bbox)
-  }
-  bbox
 }
 
 ///|

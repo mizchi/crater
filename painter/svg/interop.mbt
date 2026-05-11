@@ -1082,6 +1082,11 @@ fn scene_to_msvg(scene : Scene) -> @msvg.Scene {
 }
 
 ///|
+fn svg_scene_from_msvg(scene : @msvg.Scene) -> Scene {
+  { root: svg_node_from_msvg(scene.root), dirty: scene.dirty }
+}
+
+///|
 fn paint_fallback_from_msvg(
   fallback : @msvg.PaintFallback,
   current_color : Color?,
