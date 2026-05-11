@@ -1087,6 +1087,32 @@ fn svg_scene_from_msvg(scene : @msvg.Scene) -> Scene {
 }
 
 ///|
+fn copy_svg_scene_dirty_state_from_msvg(
+  target : Scene,
+  source : @msvg.Scene,
+) -> Unit {
+  target.dirty = source.dirty
+  copy_svg_node_dirty_state_from_msvg(target.root, source.root)
+}
+
+///|
+fn copy_svg_node_dirty_state_from_msvg(
+  target : SVGNode,
+  source : @msvg.SVGNode,
+) -> Unit {
+  target.node_dirty = source.node_dirty
+  target.prev_bounds = bounding_box_from_msvg_option(source.prev_bounds)
+  let len = if target.children.length() < source.children.length() {
+    target.children.length()
+  } else {
+    source.children.length()
+  }
+  for i = 0; i < len; i = i + 1 {
+    copy_svg_node_dirty_state_from_msvg(target.children[i], source.children[i])
+  }
+}
+
+///|
 fn paint_fallback_from_msvg(
   fallback : @msvg.PaintFallback,
   current_color : Color?,

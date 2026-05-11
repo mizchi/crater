@@ -2434,6 +2434,24 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("compute_dirty_region(self.root, Transform::identity())")).toBe(false);
   });
 
+  it("delegates SVG dirty rendering to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const renderDirtyStart = source.indexOf("pub fn Scene::render_dirty(");
+    const renderDirtyEnd = source.indexOf("///|\n/// Mark a node", renderDirtyStart);
+    const renderDirtySource = source.slice(renderDirtyStart, renderDirtyEnd);
+
+    expect(renderDirtySource.includes("let scene = scene_to_msvg(self)")).toBe(true);
+    expect(renderDirtySource.includes("scene.render_dirty(render_context_to_msvg(ctx))")).toBe(true);
+    expect(renderDirtySource.includes("copy_svg_scene_dirty_state_from_msvg(self, scene)")).toBe(true);
+    expect(renderDirtySource.includes("RenderContext::with_clip(")).toBe(false);
+    expect(source.includes("fn render_and_update_dirty(")).toBe(false);
+    expect(source.includes("fn render_node(")).toBe(false);
+    expect(source.includes("fn render_rect(")).toBe(false);
+    expect(source.includes("fn apply_opacity(")).toBe(false);
+    expect(interopSource.includes("fn copy_svg_scene_dirty_state_from_msvg(")).toBe(true);
+  });
+
   it("delegates SVG bounding boxes and clip rects to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
 

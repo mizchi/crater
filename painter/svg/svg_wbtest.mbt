@@ -605,21 +605,6 @@ test "hit test all nodes" {
 }
 
 ///|
-test "z-index sorting" {
-  let child1 = rect("rect1", 0.0, 0.0, 50.0, 50.0)
-  child1.z_index = 2
-  let child2 = rect("rect2", 0.0, 0.0, 50.0, 50.0)
-  child2.z_index = 1
-  let child3 = rect("rect3", 0.0, 0.0, 50.0, 50.0)
-  child3.z_index = 3
-  let sorted = sort_by_z_index([child1, child2, child3])
-  // Should be sorted: rect2 (z=1), rect1 (z=2), rect3 (z=3)
-  inspect(sorted[0].id, content="rect2")
-  inspect(sorted[1].id, content="rect1")
-  inspect(sorted[2].id, content="rect3")
-}
-
-///|
 test "bring to front" {
   let child1 = rect("rect1", 0.0, 0.0, 50.0, 50.0)
   child1.z_index = 0
