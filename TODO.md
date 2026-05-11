@@ -169,6 +169,7 @@
   - 進捗: raster color helpers を `painter/x/image/raster_color.mbt` へ分離
   - 進捗: image provider model を `painter/x/image/image_provider.mbt` へ分離
   - 進捗: raster base64 fallback を `painter/x/image/raster_base64.mbt` へ分離
+  - 進捗: framebuffer primitives を `painter/x/image/framebuffer.mbt` へ分離
 
 ### P2: tooling / boundary guard
 
