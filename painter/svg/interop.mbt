@@ -912,6 +912,59 @@ fn copy_svg_node_animation_state_from_msvg(
 }
 
 ///|
+fn animation_manager_from_msvg(
+  manager : @msvg.AnimationManager,
+) -> AnimationManager {
+  { tweens: manager.tweens.map(tween_from_msvg) }
+}
+
+///|
+fn animation_manager_to_msvg(
+  manager : AnimationManager,
+) -> @msvg.AnimationManager {
+  @msvg.AnimationManager::{ tweens: manager.tweens.map(tween_to_msvg) }
+}
+
+///|
+fn copy_animation_manager_state_from_msvg(
+  target : AnimationManager,
+  source : @msvg.AnimationManager,
+) -> Unit {
+  target.tweens.clear()
+  for tween in source.tweens {
+    target.tweens.push(tween_from_msvg(tween))
+  }
+}
+
+///|
+fn copy_svg_scene_animation_state_from_msvg(
+  target : Scene,
+  source : @msvg.Scene,
+) -> Unit {
+  target.dirty = source.dirty
+  copy_svg_node_animation_tree_state_from_msvg(target.root, source.root)
+}
+
+///|
+fn copy_svg_node_animation_tree_state_from_msvg(
+  target : SVGNode,
+  source : @msvg.SVGNode,
+) -> Unit {
+  copy_svg_node_animation_state_from_msvg(target, source)
+  let len = if target.children.length() < source.children.length() {
+    target.children.length()
+  } else {
+    source.children.length()
+  }
+  for i = 0; i < len; i = i + 1 {
+    copy_svg_node_animation_tree_state_from_msvg(
+      target.children[i],
+      source.children[i],
+    )
+  }
+}
+
+///|
 fn current_color_or_black(current_color : Color?) -> Color {
   match current_color {
     Some(color) => color

@@ -23,13 +23,15 @@ pub(all) struct AnimationManager {
 
 ///|
 pub fn AnimationManager::new() -> AnimationManager {
-  { tweens: [] }
+  animation_manager_from_msvg(@msvg.AnimationManager::new())
 }
 
 ///|
 /// Add a new tween animation
 pub fn AnimationManager::add(self : AnimationManager, tween : Tween) -> Unit {
-  self.tweens.push(tween)
+  let manager = animation_manager_to_msvg(self)
+  manager.add(tween_to_msvg(tween))
+  copy_animation_manager_state_from_msvg(self, manager)
 }
 
 ///|
@@ -42,7 +44,9 @@ pub fn AnimationManager::animate_translate(
   duration : Double,
   easing : Easing,
 ) -> Unit {
-  self.add(Tween::new(target_id, Translate(x, y), duration, easing))
+  let manager = animation_manager_to_msvg(self)
+  manager.animate_translate(target_id, x, y, duration, easing_to_msvg(easing))
+  copy_animation_manager_state_from_msvg(self, manager)
 }
 
 ///|
@@ -54,7 +58,9 @@ pub fn AnimationManager::animate_opacity(
   duration : Double,
   easing : Easing,
 ) -> Unit {
-  self.add(Tween::new(target_id, Opacity(opacity), duration, easing))
+  let manager = animation_manager_to_msvg(self)
+  manager.animate_opacity(target_id, opacity, duration, easing_to_msvg(easing))
+  copy_animation_manager_state_from_msvg(self, manager)
 }
 
 ///|
@@ -66,7 +72,9 @@ pub fn AnimationManager::animate_scale(
   duration : Double,
   easing : Easing,
 ) -> Unit {
-  self.add(Tween::new(target_id, ScaleUniform(scale), duration, easing))
+  let manager = animation_manager_to_msvg(self)
+  manager.animate_scale(target_id, scale, duration, easing_to_msvg(easing))
+  copy_animation_manager_state_from_msvg(self, manager)
 }
 
 ///|
@@ -77,51 +85,34 @@ pub fn AnimationManager::update(
   dt : Double,
   scene : Scene,
 ) -> Bool {
-  let mut any_running = false
-  // Update each tween
-  for tween in self.tweens {
-    if !tween.is_complete() {
-      match scene.find_node(tween.target_id) {
-        Some(node) => if tween.update(dt, node) { any_running = true }
-        None => () // Node not found, skip
-      }
-    }
-  }
-  // Mark scene dirty if any animations ran
-  if any_running {
-    scene.mark_dirty()
-  }
+  let manager = animation_manager_to_msvg(self)
+  let msvg_scene = scene_to_msvg(scene)
+  let any_running = manager.update(dt, msvg_scene)
+  copy_animation_manager_state_from_msvg(self, manager)
+  copy_svg_scene_animation_state_from_msvg(scene, msvg_scene)
   any_running
 }
 
 ///|
 /// Remove completed animations
 pub fn AnimationManager::cleanup(self : AnimationManager) -> Unit {
-  // Remove completed tweens (iterate backwards to avoid index issues)
-  let mut i = self.tweens.length() - 1
-  while i >= 0 {
-    if self.tweens[i].is_complete() {
-      let _ = self.tweens.remove(i)
-    }
-    i = i - 1
-  }
+  let manager = animation_manager_to_msvg(self)
+  manager.cleanup()
+  copy_animation_manager_state_from_msvg(self, manager)
 }
 
 ///|
 /// Check if any animations are running
 pub fn AnimationManager::is_animating(self : AnimationManager) -> Bool {
-  for tween in self.tweens {
-    if !tween.is_complete() {
-      return true
-    }
-  }
-  false
+  animation_manager_to_msvg(self).is_animating()
 }
 
 ///|
 /// Clear all animations
 pub fn AnimationManager::clear(self : AnimationManager) -> Unit {
-  self.tweens.clear()
+  let manager = animation_manager_to_msvg(self)
+  manager.clear()
+  copy_animation_manager_state_from_msvg(self, manager)
 }
 
 ///|
