@@ -2888,9 +2888,14 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG marker transforms to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/marker.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
 
+    expect(source.includes("pub(all) struct Marker")).toBe(true);
+    expect(source.includes("pub(all) enum MarkerOrient")).toBe(true);
+    expect(source.includes("pub(all) enum MarkerUnits")).toBe(true);
+    expect(source.includes("pub(all) struct MarkerRegistry")).toBe(true);
     expect(source.includes("@msvg.Marker::new(")).toBe(true);
     expect(source.includes("@msvg.Marker::arrow(")).toBe(true);
     expect(source.includes("@msvg.Marker::dot(")).toBe(true);
@@ -2900,18 +2905,24 @@ describe("MoonBit module boundaries", () => {
     expect(interopSource.includes("fn marker_orient_to_msvg(")).toBe(true);
     expect(source.includes("let orient_angle = match self.orient")).toBe(false);
     expect(source.includes("Translate to position, rotate, scale")).toBe(false);
+    expect(typesSource.includes("pub(all) struct Marker")).toBe(false);
+    expect(typesSource.includes("pub fn Marker::new(")).toBe(false);
   });
 
   it("delegates SVG marked line angle math to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/marker.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
 
+    expect(source.includes("pub(all) struct MarkedLine")).toBe(true);
     expect(source.includes("@msvg.MarkedLine::new(")).toBe(true);
     expect(source.includes("@msvg.MarkedLine::with_markers(")).toBe(true);
     expect(source.includes("marked_line_to_msvg(self).get_angle_at(index)")).toBe(true);
     expect(interopSource.includes("fn marked_line_from_msvg(")).toBe(true);
     expect(interopSource.includes("fn marked_line_to_msvg(")).toBe(true);
     expect(source.includes("let a1 = @math.atan2(dy1, dx1)")).toBe(false);
+    expect(typesSource.includes("pub(all) struct MarkedLine")).toBe(false);
+    expect(typesSource.includes("pub fn MarkedLine::new(")).toBe(false);
   });
 
   it("keeps terminal output helpers out of crater-renderer", () => {
