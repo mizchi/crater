@@ -30,6 +30,42 @@ fn transform_from_msvg(transform : @msvg.Transform) -> Transform {
 }
 
 ///|
+fn view_box_from_msvg(view_box : @msvg.ViewBox) -> ViewBox {
+  {
+    min_x: view_box.min_x,
+    min_y: view_box.min_y,
+    width: view_box.width,
+    height: view_box.height,
+  }
+}
+
+///|
+fn view_box_to_msvg(view_box : ViewBox) -> @msvg.ViewBox {
+  @msvg.ViewBox::{
+    min_x: view_box.min_x,
+    min_y: view_box.min_y,
+    width: view_box.width,
+    height: view_box.height,
+  }
+}
+
+///|
+fn view_box_from_msvg_option(view_box : @msvg.ViewBox?) -> ViewBox? {
+  match view_box {
+    Some(vb) => Some(view_box_from_msvg(vb))
+    None => None
+  }
+}
+
+///|
+fn view_box_to_msvg_option(view_box : ViewBox?) -> @msvg.ViewBox? {
+  match view_box {
+    Some(vb) => Some(view_box_to_msvg(vb))
+    None => None
+  }
+}
+
+///|
 fn color_from_msvg(color : @msvg.Color) -> Color {
   { r: color.r, g: color.g, b: color.b, a: color.a }
 }
@@ -669,5 +705,71 @@ fn pattern_to_msvg(pattern : Pattern) -> @msvg.Pattern {
     transform: pattern.transform.to_msvg(),
     view_box: None,
     preserve_aspect_ratio: @msvg.PreserveAspectRatio::default(),
+  }
+}
+
+///|
+fn marker_orient_from_msvg(orient : @msvg.MarkerOrient) -> MarkerOrient {
+  match orient {
+    Auto => Auto
+    AutoStartReverse => AutoStartReverse
+    Angle(angle) => Angle(angle)
+  }
+}
+
+///|
+fn marker_orient_to_msvg(orient : MarkerOrient) -> @msvg.MarkerOrient {
+  match orient {
+    Auto => @msvg.MarkerOrient::Auto
+    AutoStartReverse => @msvg.MarkerOrient::AutoStartReverse
+    Angle(angle) => @msvg.MarkerOrient::Angle(angle)
+  }
+}
+
+///|
+fn marker_units_from_msvg(units : @msvg.MarkerUnits) -> MarkerUnits {
+  match units {
+    StrokeWidth => StrokeWidth
+    UserSpaceOnUse_ => UserSpaceOnUse_
+  }
+}
+
+///|
+fn marker_units_to_msvg(units : MarkerUnits) -> @msvg.MarkerUnits {
+  match units {
+    StrokeWidth => @msvg.MarkerUnits::StrokeWidth
+    UserSpaceOnUse_ => @msvg.MarkerUnits::UserSpaceOnUse_
+  }
+}
+
+///|
+fn marker_from_msvg(marker : @msvg.Marker) -> Marker {
+  {
+    id: marker.id,
+    content: svg_node_from_msvg(marker.content),
+    ref_x: marker.ref_x,
+    ref_y: marker.ref_y,
+    marker_width: marker.marker_width,
+    marker_height: marker.marker_height,
+    orient: marker_orient_from_msvg(marker.orient),
+    marker_units: marker_units_from_msvg(marker.marker_units),
+    view_box: view_box_from_msvg_option(marker.view_box),
+  }
+}
+
+///|
+fn marker_to_msvg(marker : Marker) -> @msvg.Marker {
+  @msvg.Marker::{
+    id: marker.id,
+    content: svg_node_to_msvg(marker.content),
+    ref_x: marker.ref_x,
+    ref_y: marker.ref_y,
+    marker_width: marker.marker_width,
+    marker_height: marker.marker_height,
+    orient: marker_orient_to_msvg(marker.orient),
+    marker_units: marker_units_to_msvg(marker.marker_units),
+    view_box: view_box_to_msvg_option(marker.view_box),
+    preserve_aspect_ratio: @msvg.PreserveAspectRatio::default(),
+    clip_overflow: true,
   }
 }

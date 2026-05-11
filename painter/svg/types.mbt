@@ -3866,64 +3866,30 @@ pub(all) enum MarkerUnits {
 
 ///|
 pub fn Marker::new(id : String, content : SVGNode) -> Marker {
+  let marker = marker_from_msvg(
+    @msvg.Marker::new(id, svg_node_to_msvg(content)),
+  )
   {
-    id,
+    id: marker.id,
     content,
-    ref_x: 0.0,
-    ref_y: 0.0,
-    marker_width: 3.0,
-    marker_height: 3.0,
+    ref_x: marker.ref_x,
+    ref_y: marker.ref_y,
+    marker_width: marker.marker_width,
+    marker_height: marker.marker_height,
     orient: Auto,
-    marker_units: StrokeWidth,
-    view_box: None,
+    marker_units: marker.marker_units,
+    view_box: marker.view_box,
   }
 }
 
 ///|
 pub fn Marker::arrow(id : String) -> Marker {
-  // Create a simple arrow marker
-  let arrow_path = Path(commands=[
-    MoveTo(0.0, 0.0),
-    LineTo(10.0, 5.0),
-    LineTo(0.0, 10.0),
-    ClosePath,
-  ])
-  let node = SVGNode::new(arrow_path)
-  node.id = id + "_content"
-  {
-    id,
-    content: node,
-    ref_x: 10.0,
-    ref_y: 5.0,
-    marker_width: 10.0,
-    marker_height: 10.0,
-    orient: Auto,
-    marker_units: StrokeWidth,
-    view_box: Some({ min_x: 0.0, min_y: 0.0, width: 10.0, height: 10.0 }),
-  }
+  marker_from_msvg(@msvg.Marker::arrow(id))
 }
 
 ///|
 pub fn Marker::dot(id : String, radius : Double) -> Marker {
-  let circle = Circle(cx=radius, cy=radius, r=radius)
-  let node = SVGNode::new(circle)
-  node.id = id + "_content"
-  {
-    id,
-    content: node,
-    ref_x: radius,
-    ref_y: radius,
-    marker_width: radius * 2.0,
-    marker_height: radius * 2.0,
-    orient: Auto,
-    marker_units: StrokeWidth,
-    view_box: Some({
-      min_x: 0.0,
-      min_y: 0.0,
-      width: radius * 2.0,
-      height: radius * 2.0,
-    }),
-  }
+  marker_from_msvg(@msvg.Marker::dot(id, radius))
 }
 
 ///|
@@ -3935,21 +3901,9 @@ pub fn Marker::get_transform(
   angle : Double,
   stroke_width : Double,
 ) -> Transform {
-  let scale = match self.marker_units {
-    StrokeWidth => stroke_width
-    UserSpaceOnUse_ => 1.0
-  }
-  let orient_angle = match self.orient {
-    Auto => angle
-    AutoStartReverse => angle + 3.14159265358979323846
-    Angle(a) => degrees_to_radians(a)
-  }
-  // Translate to position, rotate, scale, then offset by ref point
-  let t1 = Transform::translate(x, y)
-  let r = Transform::rotate(orient_angle)
-  let s = Transform::scale(scale, scale)
-  let t2 = Transform::translate(-self.ref_x, -self.ref_y)
-  t1.multiply(r).multiply(s).multiply(t2)
+  transform_from_msvg(
+    marker_to_msvg(self).get_transform(x, y, angle, stroke_width),
+  )
 }
 
 ///|

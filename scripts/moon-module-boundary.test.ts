@@ -2401,6 +2401,21 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("Get position within pattern tile")).toBe(false);
   });
 
+  it("delegates SVG marker transforms to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+
+    expect(source.includes("@msvg.Marker::new(")).toBe(true);
+    expect(source.includes("@msvg.Marker::arrow(")).toBe(true);
+    expect(source.includes("@msvg.Marker::dot(")).toBe(true);
+    expect(source.includes("marker_to_msvg(self).get_transform(")).toBe(true);
+    expect(interopSource.includes("fn marker_from_msvg(")).toBe(true);
+    expect(interopSource.includes("fn marker_to_msvg(")).toBe(true);
+    expect(interopSource.includes("fn marker_orient_to_msvg(")).toBe(true);
+    expect(source.includes("let orient_angle = match self.orient")).toBe(false);
+    expect(source.includes("Translate to position, rotate, scale")).toBe(false);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",
