@@ -447,10 +447,10 @@ priv struct PaintCaptureTiming {
 priv struct PaintCaptureFrame {
   width : Int
   height : Int
-  framebuffer : @tui_paint_output.Framebuffer
-  palette : @tui_paint_output.DynamicPalette
+  framebuffer : @tui_paint_export.Framebuffer
+  palette : @tui_paint_export.DynamicPalette
   timing : PaintCaptureTiming
-  visual : @tui_paint_output.VisualStats?
+  visual : @tui_paint_export.VisualStats?
 }
 
 ///|
@@ -626,7 +626,7 @@ fn capture_timing_to_json(timing : PaintCaptureTiming) -> Json {
 }
 
 ///|
-fn capture_visual_to_json(visual : @tui_paint_output.VisualStats) -> Json {
+fn capture_visual_to_json(visual : @tui_paint_export.VisualStats) -> Json {
   make_object({
     "pixelCount": Json::number(visual.pixel_count.to_double()),
     "nonWhitePixels": Json::number(visual.non_white_pixels.to_double()),
@@ -866,11 +866,11 @@ fn BidiProtocol::build_actual_paint_frame(
     }
   }
   let t2 = js_now_ms()
-  let (fb, palette) = @tui_paint_output.raster_to_framebuffer(
+  let (fb, palette) = @tui_paint_export.raster_to_framebuffer(
     paint_node, width, height,
   )
   let visual = if measure_visual {
-    Some(@tui_paint_output.framebuffer_visual_stats(fb, palette))
+    Some(@tui_paint_export.framebuffer_visual_stats(fb, palette))
   } else {
     None
   }
@@ -996,13 +996,13 @@ fn BidiProtocol::resolve_capture_paint_data(
   let visual = match frame.visual {
     Some(visual) => visual
     None =>
-      @tui_paint_output.framebuffer_visual_stats(
+      @tui_paint_export.framebuffer_visual_stats(
         frame.framebuffer,
         frame.palette,
       )
   }
   let t_encode0 = js_now_ms()
-  let data = @tui_paint_output.framebuffer_to_rgba_base64(
+  let data = @tui_paint_export.framebuffer_to_rgba_base64(
     frame.framebuffer,
     frame.palette,
   )
@@ -1248,7 +1248,7 @@ fn BidiProtocol::resolve_capture_paint_tree(
       return None
     }
   }
-  let json_str = @tui_paint_output.to_json_string(paint_node)
+  let json_str = @tui_paint_export.to_json_string(paint_node)
   Some(
     make_object({
       "width": Json::number(paint_width.to_double()),

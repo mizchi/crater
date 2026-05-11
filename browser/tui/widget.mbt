@@ -1,5 +1,5 @@
 ///|
-pub using @tui_core {type BoxStyle}
+pub using @tui_primitives {type BoxStyle}
 
 ///|
 pub fn draw_box(
@@ -12,7 +12,7 @@ pub fn draw_box(
   fg : @types.Color,
   bg : @types.Color,
 ) -> Unit {
-  @tui_core.draw_box(buf, x, y, w, h, style, fg, bg)
+  @tui_primitives.draw_box(buf, x, y, w, h, style, fg, bg)
 }
 
 ///|
@@ -26,7 +26,7 @@ pub fn draw_filled_box(
   fg : @types.Color,
   bg : @types.Color,
 ) -> Unit {
-  @tui_core.draw_filled_box(buf, x, y, w, h, style, fg, bg)
+  @tui_primitives.draw_filled_box(buf, x, y, w, h, style, fg, bg)
 }
 
 ///|
@@ -38,7 +38,7 @@ pub fn draw_hline(
   style : BoxStyle,
   fg : @types.Color,
 ) -> Unit {
-  @tui_core.draw_hline(buf, x, y, w, style, fg)
+  @tui_primitives.draw_hline(buf, x, y, w, style, fg)
 }
 
 ///|
@@ -50,7 +50,7 @@ pub fn draw_vline(
   style : BoxStyle,
   fg : @types.Color,
 ) -> Unit {
-  @tui_core.draw_vline(buf, x, y, h, style, fg)
+  @tui_primitives.draw_vline(buf, x, y, h, style, fg)
 }
 
 ///|
@@ -62,7 +62,7 @@ pub fn draw_link(
   max_width : Int,
   focused : Bool,
 ) -> Int {
-  @tui_core.draw_link(buf, x, y, text, max_width, focused)
+  @tui_primitives.draw_link(buf, x, y, text, max_width, focused)
 }
 
 ///|
@@ -74,7 +74,7 @@ pub fn draw_heading(
   max_width : Int,
   level : Int,
 ) -> Int {
-  @tui_core.draw_heading(buf, x, y, text, max_width, level)
+  @tui_primitives.draw_heading(buf, x, y, text, max_width, level)
 }
 
 ///|
@@ -87,7 +87,7 @@ pub fn draw_scrollbar(
   content_height : Int,
   visible_height : Int,
 ) -> Unit {
-  @tui_core.draw_scrollbar(
+  @tui_primitives.draw_scrollbar(
     buf, x, y, height, scroll_pos, content_height, visible_height,
   )
 }
@@ -103,7 +103,7 @@ pub fn draw_status_bar(
   selection_mode? : Bool = false,
   dark_mode? : Bool = false,
 ) -> Unit {
-  @tui_core.draw_status_bar(
+  @tui_primitives.draw_status_bar(
     buf,
     y,
     url,

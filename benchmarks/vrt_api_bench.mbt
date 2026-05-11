@@ -235,12 +235,12 @@ test "capture screenshot dashboard visual sanity is non-blank" {
     capture_screenshot_fixture(),
     viewport,
   )
-  let (fb, palette) = @tui_paint_output.raster_to_framebuffer(
+  let (fb, palette) = @tui_paint_export.raster_to_framebuffer(
     paint_tree,
     viewport.width.to_int(),
     viewport.height.to_int(),
   )
-  let stats = @tui_paint_output.framebuffer_visual_stats(fb, palette)
+  let stats = @tui_paint_export.framebuffer_visual_stats(fb, palette)
   assert_false(stats.is_blank)
   assert_true(stats.non_white_pixels > 0)
 }
@@ -264,7 +264,7 @@ test "bench_capture_screenshot_phase_raster_dashboard" (b : @bench.T) {
   )
   b.bench(name="capture_screenshot_phase_raster_dashboard", fn() {
     b.keep(
-      @tui_paint_output.raster_to_framebuffer(
+      @tui_paint_export.raster_to_framebuffer(
         paint_tree,
         viewport.width.to_int(),
         viewport.height.to_int(),
@@ -280,7 +280,7 @@ test "bench_capture_screenshot_phase_png_encode_dashboard" (b : @bench.T) {
     capture_screenshot_fixture(),
     viewport,
   )
-  let (fb, palette) = @tui_paint_output.raster_to_framebuffer(
+  let (fb, palette) = @tui_paint_export.raster_to_framebuffer(
     paint_tree,
     viewport.width.to_int(),
     viewport.height.to_int(),
@@ -297,13 +297,13 @@ test "bench_capture_screenshot_phase_visual_sanity_dashboard" (b : @bench.T) {
     capture_screenshot_fixture(),
     viewport,
   )
-  let (fb, palette) = @tui_paint_output.raster_to_framebuffer(
+  let (fb, palette) = @tui_paint_export.raster_to_framebuffer(
     paint_tree,
     viewport.width.to_int(),
     viewport.height.to_int(),
   )
   b.bench(name="capture_screenshot_phase_visual_sanity_dashboard", fn() {
-    b.keep(@tui_paint_output.framebuffer_visual_stats(fb, palette))
+    b.keep(@tui_paint_export.framebuffer_visual_stats(fb, palette))
   })
 }
 

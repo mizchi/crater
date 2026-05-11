@@ -1,5 +1,5 @@
 ///|
-pub using @paint_output {type PaintNode, type Framebuffer, type DynamicPalette}
+pub using @paint_export {type PaintNode, type Framebuffer, type DynamicPalette}
 
 ///|
 #borrow(pixels)
@@ -171,7 +171,7 @@ pub fn raster_to_png_base64(
   width : Int,
   height : Int,
 ) -> String {
-  let (fb, palette) = @paint_output.raster_to_framebuffer(
+  let (fb, palette) = @paint_export.raster_to_framebuffer(
     paint_node, width, height,
   )
   framebuffer_to_png_base64(fb, palette)

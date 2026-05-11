@@ -10,7 +10,7 @@ extern "js" fn js_png_color_type(encoded : String) -> Int =
   #| }
 
 ///|
-test "tui paint png output exports png" {
+test "tui paint png export exports png" {
   let style = @style.Style::default()
   let node = @node.Node::new("root", style, [])
   let zero_rect : @types.Rect[Double] = {

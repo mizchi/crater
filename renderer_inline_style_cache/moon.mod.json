@@ -1,5 +1,5 @@
 {
-  "name": "mizchi/crater-renderer-style",
+  "name": "mizchi/crater-renderer-inline-style-cache",
   "version": "0.17.1",
   "deps": {
     "mizchi/crater-css": {
@@ -13,6 +13,6 @@
   },
   "repository": "https://github.com/mizchi/crater",
   "license": "Apache-2.0",
-  "description": "Reusable style parsing and cache utilities for crater renderer",
+  "description": "Reusable inline style parsing and cache utilities for crater renderer",
   "preferred-target": "js"
 }

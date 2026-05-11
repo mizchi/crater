@@ -18,8 +18,8 @@
       "path": "../painter",
       "version": "0.17.1"
     },
-    "mizchi/crater-renderer-style": {
-      "path": "../renderer_style",
+    "mizchi/crater-renderer-inline-style-cache": {
+      "path": "../renderer_inline_style_cache",
       "version": "0.17.1"
     }
   },

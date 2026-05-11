@@ -188,7 +188,7 @@ fn make_inline_only_style_cache_variant_key(
   viewport_width : Double,
   viewport_height : Double,
 ) -> String {
-  @renderer_style.make_inline_only_style_cache_variant_key(
+  @inline_style_cache.make_inline_only_style_cache_variant_key(
     tag, is_root, viewport_width, viewport_height,
   )
 }
@@ -197,12 +197,12 @@ fn make_inline_only_style_cache_variant_key(
 fn parse_inline_declarations_cached(
   inline_css : String,
 ) -> Array[(String, String)] {
-  @renderer_style.parse_inline_declarations_cached(inline_css)
+  @inline_style_cache.parse_inline_declarations_cached(inline_css)
 }
 
 ///|
 fn get_cached_inline_style_display(style_str : String) -> @types.Display? {
-  @renderer_style.get_cached_inline_style_display(style_str)
+  @inline_style_cache.get_cached_inline_style_display(style_str)
 }
 
 ///|

@@ -5,7 +5,7 @@ import {
   "mizchi/crater-layout/types",
   "mizchi/crater-css" @css,
   "mizchi/crater-dom/aom",
-  "mizchi/crater-browser/tui/paint_png" @tui_paint_png,
+  "mizchi/crater-browser/tui/paint/png" @tui_paint_png,
   "mizchi/crater-browser/tui/paint/plain" @tui_paint_plain,
 }
 

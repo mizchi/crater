@@ -1,5 +1,5 @@
 import {
-  "mizchi/crater-browser/tui/paint_output" @paint_output,
+  "mizchi/crater-browser/tui/paint/export" @paint_export,
 }
 
 import {

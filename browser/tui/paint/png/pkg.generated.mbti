@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-browser/tui/paint_png"
+package "mizchi/crater-browser/tui/paint/png"
 
 import {
   "mizchi/crater-painter/paint/model",

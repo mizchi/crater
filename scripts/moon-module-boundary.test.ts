@@ -494,8 +494,8 @@ describe("MoonBit module boundaries", () => {
     expect(source).not.toContain("mizchi/crater-terminal-protocol");
   });
 
-  it("keeps browser tui core primitives behind the tui core package", () => {
-    expect(fs.existsSync(path.join(REPO_ROOT, "browser/tui/core/moon.pkg"))).toBe(true);
+  it("keeps browser tui primitives behind the tui primitives package", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser/tui/primitives/moon.pkg"))).toBe(true);
 
     const rootImplementationMarkers = new Map<string, readonly string[]>([
       ["browser/tui/ansi.mbt", ["priv struct AnsiStyleState", "pub(all) struct DirtyRect"]],

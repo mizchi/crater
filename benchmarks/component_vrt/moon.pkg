@@ -6,7 +6,7 @@ import {
   "mizchi/crater-layout" @layout,
   "mizchi/crater-layout/types",
   "mizchi/crater-browser/tui/paint/plain" @tui_paint_plain,
-  "mizchi/crater-browser/tui/paint_output" @tui_paint_output,
+  "mizchi/crater-browser/tui/paint/export" @tui_paint_export,
   "mizchi/crater-painter/paint/raster",
   "mizchi/crater-renderer/renderer",
 }

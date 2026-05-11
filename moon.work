@@ -16,7 +16,7 @@ members = [
   "./terminal_image_cache",
   "./renderer",
   "./renderer_terminal",
-  "./renderer_style",
+  "./renderer_inline_style_cache",
   "./runtime",
   "./html_assets",
   "./browser",

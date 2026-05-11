@@ -616,7 +616,7 @@ fn compute_element_style_indexed(
   }
   match (inline_only_cache_css, inline_only_cache_variant_key) {
     (Some(css), Some(variant_key)) =>
-      match @renderer_style.inline_only_style_cache_get(css, variant_key) {
+      match @inline_style_cache.inline_only_style_cache_get(css, variant_key) {
         Some(cached) => return cached
         None => ()
       }
@@ -1012,7 +1012,9 @@ fn compute_element_style_indexed(
   let adjusted = adjust_for_box_sizing(style)
   match (inline_only_cache_css, inline_only_cache_variant_key) {
     (Some(css), Some(variant_key)) =>
-      @renderer_style.inline_only_style_cache_put(css, variant_key, adjusted)
+      @inline_style_cache.inline_only_style_cache_put(
+        css, variant_key, adjusted,
+      )
     _ => ()
   }
   adjusted

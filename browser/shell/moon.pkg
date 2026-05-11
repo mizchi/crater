@@ -13,7 +13,7 @@ import {
   "mizchi/crater-html-assets" @html_assets,
   "mizchi/crater-browser/interaction_policy",
   "mizchi/crater-browser/tui",
-  "mizchi/crater-browser/tui/paint_output" @tui_paint_output,
+  "mizchi/crater-browser/tui/paint/export" @tui_paint_export,
   "mizchi/crater-browser/tui/paint/plain" @tui_paint_plain,
   "mizchi/crater-browser/tui/paint/runtime" @tui_paint_runtime,
   "mizchi/crater-browser-runtime" @js,

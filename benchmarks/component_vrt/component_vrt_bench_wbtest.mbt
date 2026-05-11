@@ -848,13 +848,13 @@ fn raster_component_paint(
   width : Int,
   height : Int,
 ) -> (@raster.Framebuffer, @raster.DynamicPalette) {
-  @tui_paint_output.raster_to_framebuffer(paint_node, width, height)
+  @tui_paint_export.raster_to_framebuffer(paint_node, width, height)
 }
 
 ///|
 fn render_component_image_artifact(fixture : ComponentFixture) -> String {
   let (paint_node, width, height) = render_component_paint_node(fixture)
-  @tui_paint_output.raster_to_rgba_base64(paint_node, width, height)
+  @tui_paint_export.raster_to_rgba_base64(paint_node, width, height)
 }
 
 ///|
@@ -1110,6 +1110,6 @@ test "bench_component_phase_encode_m" (b : @bench.T) {
   let (paint_node, width, height) = render_component_paint_node(fixture)
   let (fb, palette) = raster_component_paint(paint_node, width, height)
   b.bench(name="component_phase_encode_m", fn() {
-    b.keep(@tui_paint_output.framebuffer_to_rgba_base64(fb, palette))
+    b.keep(@tui_paint_export.framebuffer_to_rgba_base64(fb, palette))
   })
 }

@@ -1,5 +1,5 @@
 ///|
-test "tui paint output exports json and rgba" {
+test "tui paint export exports json and rgba" {
   let style = @style.Style::default()
   let node = @node.Node::new("root", style, [])
   let zero_rect : @types.Rect[Double] = {
@@ -32,7 +32,7 @@ test "tui paint output exports json and rgba" {
 }
 
 ///|
-test "tui paint output visual stats detect non-white pixels" {
+test "tui paint export visual stats detect non-white pixels" {
   let style = @style.Style::default()
   let node = @node.Node::new("root", style, [])
   let zero_rect : @types.Rect[Double] = {
