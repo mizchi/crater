@@ -109,6 +109,20 @@ fn copy_pointer_event_state_from_msvg(
 }
 
 ///|
+fn[T] object_pool_from_msvg(pool : @msvg.ObjectPool[T]) -> ObjectPool[T] {
+  { available: pool.available, factory: pool.factory, reset: pool.reset }
+}
+
+///|
+fn[T] object_pool_to_msvg(pool : ObjectPool[T]) -> @msvg.ObjectPool[T] {
+  @msvg.ObjectPool::{
+    available: pool.available,
+    factory: pool.factory,
+    reset: pool.reset,
+  }
+}
+
+///|
 fn color_from_msvg_option(color : @msvg.Color?) -> Color? {
   match color {
     Some(c) => Some(color_from_msvg(c))

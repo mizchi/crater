@@ -1237,34 +1237,25 @@ pub fn[T] ObjectPool::new(
   reset : (T) -> Unit,
   initial_size : Int,
 ) -> ObjectPool[T] {
-  let pool : ObjectPool[T] = { available: [], factory, reset }
-  for i = 0; i < initial_size; i = i + 1 {
-    pool.available.push(factory())
-  }
-  pool
+  object_pool_from_msvg(@msvg.ObjectPool::new(factory, reset, initial_size))
 }
 
 ///|
 /// Acquire an object from the pool
 pub fn[T] ObjectPool::acquire(self : ObjectPool[T]) -> T {
-  if self.available.is_empty() {
-    (self.factory)()
-  } else {
-    self.available.pop().unwrap()
-  }
+  object_pool_to_msvg(self).acquire()
 }
 
 ///|
 /// Release an object back to the pool
 pub fn[T] ObjectPool::release(self : ObjectPool[T], obj : T) -> Unit {
-  (self.reset)(obj)
-  self.available.push(obj)
+  object_pool_to_msvg(self).release(obj)
 }
 
 ///|
 /// Get the number of available objects
 pub fn[T] ObjectPool::available_count(self : ObjectPool[T]) -> Int {
-  self.available.length()
+  object_pool_to_msvg(self).available_count()
 }
 
 // ============================================================================

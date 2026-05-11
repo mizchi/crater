@@ -2469,6 +2469,20 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("Fall back to bounding box collision")).toBe(false);
   });
 
+  it("delegates SVG object pool operations to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+
+    expect(source.includes("@msvg.ObjectPool::new(")).toBe(true);
+    expect(source.includes("object_pool_from_msvg(")).toBe(true);
+    expect(source.includes("object_pool_to_msvg(self).acquire()")).toBe(true);
+    expect(source.includes("object_pool_to_msvg(self).release(obj)")).toBe(true);
+    expect(source.includes("object_pool_to_msvg(self).available_count()")).toBe(true);
+    expect(interopSource.includes("fn[T] object_pool_from_msvg(")).toBe(true);
+    expect(interopSource.includes("fn[T] object_pool_to_msvg(")).toBe(true);
+    expect(source.includes("self.available.pop().unwrap()")).toBe(false);
+  });
+
   it("delegates SVG blend mode math to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
