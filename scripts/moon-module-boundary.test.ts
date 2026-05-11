@@ -2495,6 +2495,20 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("fn clear_dirty_recursive(")).toBe(false);
   });
 
+  it("delegates SVG scene z-index operations to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+
+    expect(source.includes("scene.set_z_index(id, z_index)")).toBe(true);
+    expect(source.includes("scene.bring_to_front(id)")).toBe(true);
+    expect(source.includes("scene.send_to_back(id)")).toBe(true);
+    expect(source.includes("copy_svg_scene_z_order_state_from_msvg(self, scene)")).toBe(true);
+    expect(interopSource.includes("fn copy_svg_scene_z_order_state_from_msvg(")).toBe(true);
+    expect(source.includes("fn find_parent_and_node(")).toBe(false);
+    expect(source.includes("fn get_max_z_index(")).toBe(false);
+    expect(source.includes("fn get_min_z_index(")).toBe(false);
+  });
+
   it("delegates SVG bounding boxes and clip rects to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
 

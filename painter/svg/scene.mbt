@@ -316,84 +316,28 @@ pub fn Scene::clear_all_dirty(self : Scene) -> Unit {
 ///|
 /// Set z_index of a node by ID
 pub fn Scene::set_z_index(self : Scene, id : String, z_index : Int) -> Bool {
-  match self.find_node(id) {
-    Some(node) => {
-      node.z_index = z_index
-      self.mark_dirty()
-      true
-    }
-    None => false
-  }
+  let scene = scene_to_msvg(self)
+  let found = scene.set_z_index(id, z_index)
+  copy_svg_scene_z_order_state_from_msvg(self, scene)
+  found
 }
 
 ///|
 /// Bring a node to front (set z_index higher than all siblings)
 pub fn Scene::bring_to_front(self : Scene, id : String) -> Bool {
-  match find_parent_and_node(self.root, id) {
-    Some((parent, node)) => {
-      let max_z = get_max_z_index(parent.children)
-      node.z_index = max_z + 1
-      self.mark_dirty()
-      true
-    }
-    None => false
-  }
+  let scene = scene_to_msvg(self)
+  let found = scene.bring_to_front(id)
+  copy_svg_scene_z_order_state_from_msvg(self, scene)
+  found
 }
 
 ///|
 /// Send a node to back (set z_index lower than all siblings)
 pub fn Scene::send_to_back(self : Scene, id : String) -> Bool {
-  match find_parent_and_node(self.root, id) {
-    Some((parent, node)) => {
-      let min_z = get_min_z_index(parent.children)
-      node.z_index = min_z - 1
-      self.mark_dirty()
-      true
-    }
-    None => false
-  }
-}
-
-///|
-fn find_parent_and_node(node : SVGNode, id : String) -> (SVGNode, SVGNode)? {
-  for child in node.children {
-    if child.id == id {
-      return Some((node, child))
-    }
-    match find_parent_and_node(child, id) {
-      Some(result) => return Some(result)
-      None => continue
-    }
-  }
-  None
-}
-
-///|
-fn get_max_z_index(nodes : Array[SVGNode]) -> Int {
-  if nodes.is_empty() {
-    return 0
-  }
-  let mut max_z = nodes[0].z_index
-  for i = 1; i < nodes.length(); i = i + 1 {
-    if nodes[i].z_index > max_z {
-      max_z = nodes[i].z_index
-    }
-  }
-  max_z
-}
-
-///|
-fn get_min_z_index(nodes : Array[SVGNode]) -> Int {
-  if nodes.is_empty() {
-    return 0
-  }
-  let mut min_z = nodes[0].z_index
-  for i = 1; i < nodes.length(); i = i + 1 {
-    if nodes[i].z_index < min_z {
-      min_z = nodes[i].z_index
-    }
-  }
-  min_z
+  let scene = scene_to_msvg(self)
+  let found = scene.send_to_back(id)
+  copy_svg_scene_z_order_state_from_msvg(self, scene)
+  found
 }
 
 ///|
