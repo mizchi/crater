@@ -128,7 +128,7 @@
 - [ ] `painter/svg/types.mbt` を機能ごとに分割する
   - 候補: color/viewbox/geometry, hit testing, event manager, animation/tween, gradient, particle/path follower, blend mode, filter/image/sprite, clip/mask
   - 注意: public `.mbti` への影響を `moon info` で確認し、必要なら facade を維持する
-  - 進捗: `Color` constructors, `StrokeStyle::default`, `ViewBox::get_transform`, `Transform` operations, gradient constructors / `color_at`, `BoundingBox` / `ClipRect`, shape hit testing, `Camera` math, pointer event state, `ObjectPool`, text whitespace / overflow helpers, `Symbol` constructors, `UseElement` helpers, blend mode math, color filter math, mask math, pattern sampling, marker transforms, image/sprite/filter image operations, animated sprite state machine, particle emitter/RNG, path follower, tween animation, collision detection は crater facade を維持しつつ `mizchi/svg` へ委譲
+  - 進捗: `Color` constructors, `StrokeStyle::default`, `ViewBox::get_transform`, `Transform` operations, gradient constructors / `color_at`, `BoundingBox` / `ClipRect`, shape hit testing, `Camera` math, pointer event state, `ObjectPool`, text whitespace / overflow helpers, `Symbol` constructors, `UseElement` helpers, `SVGNode::clone`, blend mode math, color filter math, mask math, pattern sampling, marker transforms, image/sprite/filter image operations, animated sprite state machine, particle emitter/RNG, path follower, tween animation, collision detection は crater facade を維持しつつ `mizchi/svg` へ委譲
 - [ ] `painter/svg/scene.mbt` の scene graph mutation と shape rendering を分離する
   - 候補: dirty region/z-order/camera, render dispatch, shape renderer (`render_rect`, `render_circle`, `render_path`, `render_text`)
   - `mizchi/svg` に寄せられる primitive はそちらへの移譲候補として扱う

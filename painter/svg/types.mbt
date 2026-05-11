@@ -2942,34 +2942,9 @@ pub fn UseElement::instantiate(
 }
 
 ///|
-/// Clone an SVGNode (shallow clone of children)
+/// Clone an SVGNode
 pub fn SVGNode::clone(self : SVGNode) -> SVGNode {
-  let children : Array[SVGNode] = []
-  for child in self.children {
-    children.push(child.clone())
-  }
-  let filters : Array[Filter] = []
-  for f in self.filters {
-    filters.push(f)
-  }
-  {
-    id: self.id,
-    shape: self.shape,
-    transform: self.transform,
-    fill: self.fill,
-    fill_rule: self.fill_rule,
-    fill_opacity: self.fill_opacity,
-    stroke: self.stroke,
-    stroke_opacity: self.stroke_opacity,
-    opacity: self.opacity,
-    z_index: self.z_index,
-    node_dirty: self.node_dirty,
-    prev_bounds: self.prev_bounds,
-    filters,
-    mask_id: self.mask_id,
-    clip_path_id: self.clip_path_id,
-    children,
-  }
+  svg_node_from_msvg(svg_node_to_msvg(self).clone())
 }
 
 // ============================================================================
