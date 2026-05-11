@@ -2407,6 +2407,20 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("fn random_range(")).toBe(false);
   });
 
+  it("delegates SVG path follower operations to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+
+    expect(source.includes("@msvg.PathFollower::new(")).toBe(true);
+    expect(source.includes("path_follower_to_msvg(self).get_position()")).toBe(true);
+    expect(source.includes("let follower = path_follower_to_msvg(self)")).toBe(true);
+    expect(source.includes("follower.update(dt, speed)")).toBe(true);
+    expect(interopSource.includes("fn path_follower_to_msvg(")).toBe(true);
+    expect(interopSource.includes("fn copy_path_follower_state_from_msvg(")).toBe(true);
+    expect(source.includes("fn flatten_path(")).toBe(false);
+    expect(source.includes("fn compute_path_lengths(")).toBe(false);
+  });
+
   it("delegates SVG blend mode math to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");

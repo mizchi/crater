@@ -1707,102 +1707,13 @@ pub(all) struct PathFollower {
 
 ///|
 pub fn PathFollower::new(path_data : String) -> PathFollower {
-  let path = parse_path(path_data)
-  let polyline = flatten_path(path)
-  let (lengths, total) = compute_path_lengths(polyline)
-  {
-    path,
-    polyline,
-    lengths,
-    total_length: total,
-    progress: 0.0,
-    loop_anim: false,
-  }
-}
-
-///|
-fn flatten_path(path : Array[PathCommand]) -> Array[(Double, Double)] {
-  // Simplified flattening - converts path to line segments
-  let points : Array[(Double, Double)] = []
-  let mut cx = 0.0
-  let mut cy = 0.0
-  for cmd in path {
-    match cmd {
-      MoveTo(x, y) => {
-        cx = x
-        cy = y
-        points.push((cx, cy))
-      }
-      LineTo(x, y) => {
-        cx = x
-        cy = y
-        points.push((cx, cy))
-      }
-      MoveToRel(dx, dy) => {
-        cx = cx + dx
-        cy = cy + dy
-        points.push((cx, cy))
-      }
-      LineToRel(dx, dy) => {
-        cx = cx + dx
-        cy = cy + dy
-        points.push((cx, cy))
-      }
-      HorizontalLineTo(x) => {
-        cx = x
-        points.push((cx, cy))
-      }
-      VerticalLineTo(y) => {
-        cy = y
-        points.push((cx, cy))
-      }
-      ClosePath => if points.length() > 0 { points.push(points[0]) }
-      _ => () // Skip complex curves for now
-    }
-  }
-  points
-}
-
-///|
-fn compute_path_lengths(
-  points : Array[(Double, Double)],
-) -> (Array[Double], Double) {
-  let lengths : Array[Double] = [0.0]
-  let mut total = 0.0
-  for i = 1; i < points.length(); i = i + 1 {
-    let dx = points[i].0 - points[i - 1].0
-    let dy = points[i].1 - points[i - 1].1
-    total = total + (dx * dx + dy * dy).sqrt()
-    lengths.push(total)
-  }
-  (lengths, total)
+  path_follower_from_msvg(@msvg.PathFollower::new(path_data))
 }
 
 ///|
 /// Get position at current progress
 pub fn PathFollower::get_position(self : PathFollower) -> (Double, Double) {
-  if self.polyline.is_empty() {
-    return (0.0, 0.0)
-  }
-  if self.total_length <= 0.0 {
-    return self.polyline[0]
-  }
-  let target_len = self.progress * self.total_length
-  // Find segment
-  for i = 1; i < self.lengths.length(); i = i + 1 {
-    if self.lengths[i] >= target_len {
-      let prev_len = self.lengths[i - 1]
-      let seg_len = self.lengths[i] - prev_len
-      if seg_len <= 0.0 {
-        return self.polyline[i - 1]
-      }
-      let t = (target_len - prev_len) / seg_len
-      let (x1, y1) = self.polyline[i - 1]
-      let (x2, y2) = self.polyline[i]
-      return (lerp(x1, x2, t), lerp(y1, y2, t))
-    }
-  }
-  self.polyline[self.polyline.length() - 1]
+  path_follower_to_msvg(self).get_position()
 }
 
 ///|
@@ -1812,21 +1723,10 @@ pub fn PathFollower::update(
   dt : Double,
   speed : Double,
 ) -> Bool {
-  if self.total_length <= 0.0 {
-    return false
-  }
-  self.progress = self.progress + dt * speed / self.total_length
-  if self.progress >= 1.0 {
-    if self.loop_anim {
-      self.progress = self.progress - 1.0
-      true
-    } else {
-      self.progress = 1.0
-      false
-    }
-  } else {
-    true
-  }
+  let follower = path_follower_to_msvg(self)
+  let active = follower.update(dt, speed)
+  copy_path_follower_state_from_msvg(self, follower)
+  active
 }
 
 // ============================================================================

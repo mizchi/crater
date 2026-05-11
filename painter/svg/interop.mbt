@@ -341,6 +341,39 @@ fn simple_rng_to_msvg(rng : SimpleRNG) -> @msvg.SimpleRNG {
 }
 
 ///|
+fn path_follower_from_msvg(follower : @msvg.PathFollower) -> PathFollower {
+  {
+    path: follower.path.map(path_command_from_msvg),
+    polyline: follower.polyline,
+    lengths: follower.lengths,
+    total_length: follower.total_length,
+    progress: follower.progress,
+    loop_anim: follower.loop_anim,
+  }
+}
+
+///|
+fn path_follower_to_msvg(follower : PathFollower) -> @msvg.PathFollower {
+  @msvg.PathFollower::{
+    path: follower.path.map(path_command_to_msvg),
+    polyline: follower.polyline,
+    lengths: follower.lengths,
+    total_length: follower.total_length,
+    progress: follower.progress,
+    loop_anim: follower.loop_anim,
+  }
+}
+
+///|
+fn copy_path_follower_state_from_msvg(
+  target : PathFollower,
+  source : @msvg.PathFollower,
+) -> Unit {
+  target.progress = source.progress
+  target.loop_anim = source.loop_anim
+}
+
+///|
 fn current_color_or_black(current_color : Color?) -> Color {
   match current_color {
     Some(color) => color
