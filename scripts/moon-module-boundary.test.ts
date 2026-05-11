@@ -18,8 +18,14 @@ const SKIP_DIRS = new Set([
 
 const DIRECT_TUI_TERMINAL_PROTOCOL_FILES = new Set([
   "terminal_protocol/moon.mod.json",
+  "terminal_protocol/ansi/moon.pkg",
   "terminal_protocol/kitty/moon.pkg",
   "terminal_protocol/sixel/moon.pkg",
+]);
+
+const BROWSER_TERMINAL_PROTOCOL_ANSI_FILES = new Set([
+  "browser/moon.mod.json",
+  "browser/tui/primitives/moon.pkg",
 ]);
 
 function collectMoonPackageFiles(dir: string, out: string[] = []): string[] {
@@ -66,7 +72,13 @@ describe("MoonBit module boundaries", () => {
     const offenders = collectMoonPackageFiles(path.join(REPO_ROOT, "browser"))
       .filter((file) => {
         const source = fs.readFileSync(file, "utf8");
-        return source.includes("mizchi/crater-terminal-protocol") ||
+        const relativeFile = path.relative(REPO_ROOT, file);
+        const allowedAnsiFacade = BROWSER_TERMINAL_PROTOCOL_ANSI_FILES.has(relativeFile) &&
+          (source.includes("mizchi/crater-terminal-protocol/ansi") ||
+            source.includes('"mizchi/crater-terminal-protocol"')) &&
+          !source.includes("mizchi/crater-terminal-protocol/kitty") &&
+          !source.includes("mizchi/crater-terminal-protocol/sixel");
+        return (source.includes("mizchi/crater-terminal-protocol") && !allowedAnsiFacade) ||
           source.includes("mizchi/crater-painter/x/kitty") ||
           source.includes("mizchi/crater-painter-terminal/kitty");
       })
@@ -543,6 +555,23 @@ describe("MoonBit module boundaries", () => {
     }
 
     expect(offenders).toEqual([]);
+  });
+
+  it("delegates reusable browser tui ANSI primitives to crater terminal protocol ansi", () => {
+    const pkg = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/primitives/moon.pkg"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/primitives/ansi.mbt"), "utf8");
+
+    expect(pkg).toContain('"mizchi/crater-terminal-protocol/ansi" @tui_ansi');
+    expect(source).toContain("@tui_ansi.ansi_reset()");
+    expect(source).toContain("@tui_ansi.ansi_bold()");
+    expect(source).toContain("@tui_ansi.ansi_underline()");
+    expect(source).toContain("@tui_ansi.ansi_reverse()");
+    expect(source).toContain("@tui_ansi.ansi_fg_256(color_idx)");
+    expect(source).toContain("@tui_ansi.ansi_bg_256(color_idx)");
+    expect(source).toContain("@tui_ansi.ansi_move_to(row - 1, col - 1)");
+    expect(source).toContain("@tui_ansi.rgb_to_256(r, g, b)");
+    expect(source).toContain("@tui_ansi.enable_mouse_all()");
+    expect(source).toContain("@tui_ansi.disable_mouse_all()");
   });
 
   it("keeps browser shell terminal image implementation in its own file", () => {

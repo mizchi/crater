@@ -1,0 +1,3 @@
+import {
+  "mizchi/tui-terminal-protocol/ansi" @tui_ansi,
+}

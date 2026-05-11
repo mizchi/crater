@@ -5,43 +5,43 @@
 ///|
 /// Reset all attributes
 pub fn ansi_reset() -> String {
-  "\u001b[0m"
+  @tui_ansi.ansi_reset()
 }
 
 ///|
 /// Bold text
 pub fn ansi_bold() -> String {
-  "\u001b[1m"
+  @tui_ansi.ansi_bold()
 }
 
 ///|
 /// Underline text
 pub fn ansi_underline() -> String {
-  "\u001b[4m"
+  @tui_ansi.ansi_underline()
 }
 
 ///|
 /// Reverse video (swap foreground/background)
 pub fn ansi_reverse() -> String {
-  "\u001b[7m"
+  @tui_ansi.ansi_reverse()
 }
 
 ///|
 /// Set foreground color using 256-color palette
 pub fn ansi_fg_256(color_idx : Int) -> String {
-  "\u001b[38;5;" + color_idx.to_string() + "m"
+  @tui_ansi.ansi_fg_256(color_idx)
 }
 
 ///|
 /// Set background color using 256-color palette
 pub fn ansi_bg_256(color_idx : Int) -> String {
-  "\u001b[48;5;" + color_idx.to_string() + "m"
+  @tui_ansi.ansi_bg_256(color_idx)
 }
 
 ///|
 /// Move cursor to position (1-indexed, row/col)
 pub fn ansi_move_to(row : Int, col : Int) -> String {
-  "\u001b[" + row.to_string() + ";" + col.to_string() + "H"
+  @tui_ansi.ansi_move_to(row - 1, col - 1)
 }
 
 ///|
@@ -51,26 +51,7 @@ pub fn ansi_move_to(row : Int, col : Int) -> String {
 /// - 16-231: 6x6x6 color cube (216 colors)
 /// - 232-255: Grayscale (24 shades)
 pub fn rgb_to_256(r : Int, g : Int, b : Int) -> Int {
-  // Check for grayscale (r == g == b)
-  if r == g && g == b {
-    // Map to grayscale range (232-255)
-    // 0-255 -> 0-23
-    if r < 8 {
-      16 // Use black from color cube
-    } else if r > 248 {
-      231 // Use white from color cube
-    } else {
-      // Map to 24 grayscale levels (232-255)
-      232 + (r - 8) * 24 / 240
-    }
-  } else {
-    // Map to 6x6x6 color cube (16-231)
-    // Each component: 0-255 -> 0-5
-    let r6 = r * 6 / 256
-    let g6 = g * 6 / 256
-    let b6 = b * 6 / 256
-    16 + r6 * 36 + g6 * 6 + b6
-  }
+  @tui_ansi.rgb_to_256(r, g, b)
 }
 
 ///|
@@ -308,13 +289,13 @@ pub fn buffer_diff_to_ansi_rects(
 ///|
 /// Enable mouse tracking (SGR mode for better coordinates)
 pub fn enable_mouse() -> String {
-  "\u001b[?1003h\u001b[?1006h"
+  @tui_ansi.enable_mouse_all()
 }
 
 ///|
 /// Disable mouse tracking
 pub fn disable_mouse() -> String {
-  "\u001b[?1006l\u001b[?1003l"
+  @tui_ansi.disable_mouse_all()
 }
 
 ///|

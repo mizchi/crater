@@ -1,4 +1,5 @@
 import {
+  "mizchi/crater-terminal-protocol/ansi" @tui_ansi,
   "mizchi/crater-layout/types",
   "moonbitlang/core/string",
 }
