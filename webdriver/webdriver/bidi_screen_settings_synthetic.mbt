@@ -36,9 +36,9 @@ fn BidiProtocol::resolve_effective_screen_area(
   match
     self.resolve_effective_scoped_override(
       ctx_id,
-      self.emulation_screen_area_by_context,
-      self.emulation_screen_area_by_user_context,
-      self.emulation_screen_area_global,
+      self.emulation_state.emulation_screen_area_by_context,
+      self.emulation_state.emulation_screen_area_by_user_context,
+      self.emulation_state.emulation_screen_area_global,
     ) {
     Some(override_value) => override_value
     None =>
@@ -192,8 +192,9 @@ fn BidiProtocol::resolve_emulation_set_screen_settings_override(
     for ctx_id in target_contexts {
       match screen_area {
         Some(screen_area) =>
-          self.emulation_screen_area_by_context[ctx_id] = screen_area
-        None => self.emulation_screen_area_by_context.remove(ctx_id)
+          self.emulation_state.emulation_screen_area_by_context[ctx_id] = screen_area
+        None =>
+          self.emulation_state.emulation_screen_area_by_context.remove(ctx_id)
       }
     }
     self.refresh_effective_screen_area_for_all_contexts()
@@ -204,16 +205,18 @@ fn BidiProtocol::resolve_emulation_set_screen_settings_override(
     for user_context_id in target_user_contexts {
       match screen_area {
         Some(screen_area) =>
-          self.emulation_screen_area_by_user_context[user_context_id] = screen_area
+          self.emulation_state.emulation_screen_area_by_user_context[user_context_id] = screen_area
         None =>
-          self.emulation_screen_area_by_user_context.remove(user_context_id)
+          self.emulation_state.emulation_screen_area_by_user_context.remove(
+            user_context_id,
+          )
       }
     }
     self.refresh_effective_screen_area_for_all_contexts()
     return Some(true)
   }
 
-  self.emulation_screen_area_global = screen_area
+  self.emulation_state.emulation_screen_area_global = screen_area
   self.refresh_effective_screen_area_for_all_contexts()
   Some(true)
 }

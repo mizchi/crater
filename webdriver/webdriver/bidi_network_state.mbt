@@ -8,6 +8,45 @@ priv struct CanonicalNetworkHttpUrl {
 }
 
 ///|
+/// WebDriver BiDi network runtime state.
+priv struct BidiNetworkState {
+  network_intercepts : Map[String, Json] // intercept id -> network.addIntercept options
+  mut next_network_intercept_id : Int
+  mut next_network_request_id : Int
+  mut network_cache_behavior_global : String
+  network_extra_headers_global : Map[String, String]
+  network_extra_headers_by_context : Map[String, Map[String, String]]
+  network_extra_headers_by_user_context : Map[String, Map[String, String]]
+  network_cache_behavior_by_context : Map[String, String]
+  network_state_channel_by_context : Map[String, String] // context -> script.message channel for offline/online notifications
+  network_cached_requests_by_context : Map[String, Map[String, Bool]]
+  network_blocked_requests : Map[String, Json] // request id -> synthetic blocked request payload
+  network_data_collectors : Map[String, Json] // collector id -> network.addDataCollector options
+  network_collected_data : Map[String, Map[String, Map[String, Json]]] // request -> collector -> dataType -> bytes value
+  mut next_network_data_collector_id : Int
+}
+
+///|
+fn BidiNetworkState::new() -> BidiNetworkState {
+  {
+    network_intercepts: {},
+    next_network_intercept_id: 1,
+    next_network_request_id: 1,
+    network_cache_behavior_global: "default",
+    network_extra_headers_global: {},
+    network_extra_headers_by_context: {},
+    network_extra_headers_by_user_context: {},
+    network_cache_behavior_by_context: {},
+    network_state_channel_by_context: {},
+    network_cached_requests_by_context: {},
+    network_blocked_requests: {},
+    network_data_collectors: {},
+    network_collected_data: {},
+    next_network_data_collector_id: 1,
+  }
+}
+
+///|
 fn BidiProtocol::handle_network_allocate_request_id(
   self : BidiProtocol,
   request_id : Int,
@@ -213,7 +252,8 @@ fn BidiProtocol::handle_network_get_data(
     )
     return
   }
-  let request_bucket = match self.network_collected_data.get(request_token) {
+  let request_bucket = match
+    self.network_state.network_collected_data.get(request_token) {
     Some(request_bucket) => request_bucket
     None => {
       self.send_error(
@@ -226,7 +266,7 @@ fn BidiProtocol::handle_network_get_data(
   }
   let (selected_collector, result) = match collector_id {
     Some(collector_id) => {
-      if !self.network_data_collectors.contains(collector_id) {
+      if !self.network_state.network_data_collectors.contains(collector_id) {
         self.send_error(
           request_id,
           "no such network collector",
@@ -286,7 +326,7 @@ fn BidiProtocol::handle_network_get_data(
     }
   }
   if disown {
-    match self.network_collected_data.get(request_token) {
+    match self.network_state.network_collected_data.get(request_token) {
       Some(bucket) =>
         match bucket.get(selected_collector) {
           Some(collector_bucket) => {
@@ -299,9 +339,9 @@ fn BidiProtocol::handle_network_get_data(
               next_bucket[selected_collector] = next_collector_bucket
             }
             if next_bucket.length() == 0 {
-              self.network_collected_data.remove(request_token)
+              self.network_state.network_collected_data.remove(request_token)
             } else {
-              self.network_collected_data[request_token] = next_bucket
+              self.network_state.network_collected_data[request_token] = next_bucket
             }
           }
           None => ()
@@ -368,7 +408,7 @@ fn BidiProtocol::handle_network_disown_data(
       return
     }
   }
-  if !self.network_data_collectors.contains(collector_id) {
+  if !self.network_state.network_data_collectors.contains(collector_id) {
     self.send_error(
       request_id,
       "no such network collector",
@@ -376,7 +416,8 @@ fn BidiProtocol::handle_network_disown_data(
     )
     return
   }
-  let request_bucket = match self.network_collected_data.get(request_token) {
+  let request_bucket = match
+    self.network_state.network_collected_data.get(request_token) {
     Some(request_bucket) => request_bucket
     None => {
       self.send_error(
@@ -415,9 +456,9 @@ fn BidiProtocol::handle_network_disown_data(
     next_bucket[collector_id] = next_collector_bucket
   }
   if next_bucket.length() == 0 {
-    self.network_collected_data.remove(request_token)
+    self.network_state.network_collected_data.remove(request_token)
   } else {
-    self.network_collected_data[request_token] = next_bucket
+    self.network_state.network_collected_data[request_token] = next_bucket
   }
   self.send_success(request_id, Some(make_object({})))
 }
@@ -427,9 +468,9 @@ fn BidiProtocol::list_active_network_intercept_ids(
   self : BidiProtocol,
 ) -> Array[String] {
   let ids : Array[String] = []
-  for i = 1; i < self.next_network_intercept_id; i = i + 1 {
+  for i = 1; i < self.network_state.next_network_intercept_id; i = i + 1 {
     let intercept_id = left_pad_with_zero(i.to_string(), 32)
-    if self.network_intercepts.contains(intercept_id) {
+    if self.network_state.network_intercepts.contains(intercept_id) {
       ids.push(intercept_id)
     }
   }
@@ -440,8 +481,9 @@ fn BidiProtocol::list_active_network_intercept_ids(
 fn BidiProtocol::next_synthetic_network_request_id(
   self : BidiProtocol,
 ) -> String {
-  let request_id = "request-" + self.next_network_request_id.to_string()
-  self.next_network_request_id += 1
+  let request_id = "request-" +
+    self.network_state.next_network_request_id.to_string()
+  self.network_state.next_network_request_id += 1
   request_id
 }
 
@@ -453,7 +495,7 @@ fn BidiProtocol::remember_network_collected_data_internal(
   request_value : Json?,
   response_value : Json?,
 ) -> Unit {
-  let request_bucket = self.network_collected_data
+  let request_bucket = self.network_state.network_collected_data
     .get(request_token)
     .unwrap_or({})
   let ancestry = self.build_context_scope_ancestry_for_matching(context_id)
@@ -462,7 +504,7 @@ fn BidiProtocol::remember_network_collected_data_internal(
     .unwrap_or("default")
   let next_bucket = request_bucket
   for collector_id in self.list_active_network_collector_ids() {
-    match self.network_data_collectors.get(collector_id) {
+    match self.network_state.network_data_collectors.get(collector_id) {
       Some(Object(options)) =>
         if network_collector_matches_scope(options, ancestry, user_context) {
           let collector_bucket = next_bucket.get(collector_id).unwrap_or({})
@@ -492,7 +534,7 @@ fn BidiProtocol::remember_network_collected_data_internal(
       _ => ()
     }
   }
-  self.network_collected_data[request_token] = next_bucket
+  self.network_state.network_collected_data[request_token] = next_bucket
 }
 
 ///|
@@ -500,9 +542,9 @@ fn BidiProtocol::list_active_network_collector_ids(
   self : BidiProtocol,
 ) -> Array[String] {
   let ids : Array[String] = []
-  for i = 1; i < self.next_network_data_collector_id; i = i + 1 {
+  for i = 1; i < self.network_state.next_network_data_collector_id; i = i + 1 {
     let collector_id = "collector-" + i.to_string()
-    if self.network_data_collectors.contains(collector_id) {
+    if self.network_state.network_data_collectors.contains(collector_id) {
       ids.push(collector_id)
     }
   }
@@ -535,7 +577,7 @@ fn BidiProtocol::resolve_matching_network_intercepts_internal(
   let intercepts : Array[String] = []
   let ancestry = self.build_context_scope_ancestry_for_matching(context_id)
   for intercept_id in self.list_active_network_intercept_ids() {
-    match self.network_intercepts.get(intercept_id) {
+    match self.network_state.network_intercepts.get(intercept_id) {
       Some(Object(options)) =>
         if network_intercept_matches_phase(options, phase) &&
           network_option_contexts_match(options, ancestry) &&

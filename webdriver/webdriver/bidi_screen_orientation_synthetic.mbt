@@ -77,9 +77,9 @@ fn BidiProtocol::resolve_effective_screen_orientation(
   match
     self.resolve_effective_scoped_override(
       ctx_id,
-      self.emulation_screen_orientation_by_context,
-      self.emulation_screen_orientation_by_user_context,
-      self.emulation_screen_orientation_global,
+      self.emulation_state.emulation_screen_orientation_by_context,
+      self.emulation_state.emulation_screen_orientation_by_user_context,
+      self.emulation_state.emulation_screen_orientation_global,
     ) {
     Some(override_value) => override_value
     None => default_screen_orientation_json()
@@ -266,8 +266,11 @@ fn BidiProtocol::resolve_emulation_set_screen_orientation_override(
     for ctx_id in target_contexts {
       match screen_orientation {
         Some(screen_orientation) =>
-          self.emulation_screen_orientation_by_context[ctx_id] = screen_orientation
-        None => self.emulation_screen_orientation_by_context.remove(ctx_id)
+          self.emulation_state.emulation_screen_orientation_by_context[ctx_id] = screen_orientation
+        None =>
+          self.emulation_state.emulation_screen_orientation_by_context.remove(
+            ctx_id,
+          )
       }
     }
     self.refresh_effective_screen_orientation_for_all_contexts()
@@ -281,9 +284,9 @@ fn BidiProtocol::resolve_emulation_set_screen_orientation_override(
     for user_context_id in target_user_contexts {
       match screen_orientation {
         Some(screen_orientation) =>
-          self.emulation_screen_orientation_by_user_context[user_context_id] = screen_orientation
+          self.emulation_state.emulation_screen_orientation_by_user_context[user_context_id] = screen_orientation
         None =>
-          self.emulation_screen_orientation_by_user_context.remove(
+          self.emulation_state.emulation_screen_orientation_by_user_context.remove(
             user_context_id,
           )
       }
@@ -295,7 +298,7 @@ fn BidiProtocol::resolve_emulation_set_screen_orientation_override(
     return Some(true)
   }
 
-  self.emulation_screen_orientation_global = screen_orientation
+  self.emulation_state.emulation_screen_orientation_global = screen_orientation
   self.refresh_effective_screen_orientation_for_all_contexts()
   self.emit_screen_orientation_messages_for_contexts(
     target_contexts, target_user_contexts,

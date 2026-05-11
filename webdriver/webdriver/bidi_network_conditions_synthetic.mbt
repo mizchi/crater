@@ -56,7 +56,7 @@ fn BidiProtocol::remember_network_state_channel_if_applicable(
   match extract_script_channel_name(params) {
     Some(channel_name) =>
       if channel_name != "" {
-        self.network_state_channel_by_context[ctx_id] = channel_name
+        self.network_state.network_state_channel_by_context[ctx_id] = channel_name
       }
     None => ()
   }
@@ -67,7 +67,7 @@ fn BidiProtocol::emit_network_state_channel_message(
   self : BidiProtocol,
   ctx_id : String,
 ) -> Unit {
-  match self.network_state_channel_by_context.get(ctx_id) {
+  match self.network_state.network_state_channel_by_context.get(ctx_id) {
     Some(channel_name) =>
       if channel_name != "" {
         let realm_id = self.context_realm
@@ -137,9 +137,9 @@ fn BidiProtocol::resolve_effective_network_conditions(
 ) -> Json? {
   self.resolve_effective_scoped_override(
     ctx_id,
-    self.emulation_network_conditions_by_context,
-    self.emulation_network_conditions_by_user_context,
-    self.emulation_network_conditions_global,
+    self.emulation_state.emulation_network_conditions_by_context,
+    self.emulation_state.emulation_network_conditions_by_user_context,
+    self.emulation_state.emulation_network_conditions_global,
   )
 }
 
@@ -360,8 +360,11 @@ fn BidiProtocol::resolve_emulation_set_network_conditions(
     for ctx_id in target_contexts {
       match network_conditions {
         Some(network_conditions) =>
-          self.emulation_network_conditions_by_context[ctx_id] = network_conditions
-        None => self.emulation_network_conditions_by_context.remove(ctx_id)
+          self.emulation_state.emulation_network_conditions_by_context[ctx_id] = network_conditions
+        None =>
+          self.emulation_state.emulation_network_conditions_by_context.remove(
+            ctx_id,
+          )
       }
     }
     self.refresh_effective_network_conditions_for_all_contexts()
@@ -375,9 +378,9 @@ fn BidiProtocol::resolve_emulation_set_network_conditions(
     for user_context_id in target_user_contexts {
       match network_conditions {
         Some(network_conditions) =>
-          self.emulation_network_conditions_by_user_context[user_context_id] = network_conditions
+          self.emulation_state.emulation_network_conditions_by_user_context[user_context_id] = network_conditions
         None =>
-          self.emulation_network_conditions_by_user_context.remove(
+          self.emulation_state.emulation_network_conditions_by_user_context.remove(
             user_context_id,
           )
       }
@@ -389,7 +392,7 @@ fn BidiProtocol::resolve_emulation_set_network_conditions(
     return Some(true)
   }
 
-  self.emulation_network_conditions_global = network_conditions
+  self.emulation_state.emulation_network_conditions_global = network_conditions
   self.refresh_effective_network_conditions_for_all_contexts()
   self.emit_network_condition_messages_for_contexts(
     target_contexts, target_user_contexts,

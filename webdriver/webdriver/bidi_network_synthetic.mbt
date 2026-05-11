@@ -2613,9 +2613,9 @@ fn BidiProtocol::apply_network_extra_headers_options(
         match item {
           String(ctx_id) =>
             if normalized.length() == 0 {
-              self.network_extra_headers_by_context.remove(ctx_id)
+              self.network_state.network_extra_headers_by_context.remove(ctx_id)
             } else {
-              self.network_extra_headers_by_context[ctx_id] = synthetic_network_copy_string_map(
+              self.network_state.network_extra_headers_by_context[ctx_id] = synthetic_network_copy_string_map(
                 normalized,
               )
             }
@@ -2632,9 +2632,11 @@ fn BidiProtocol::apply_network_extra_headers_options(
         match item {
           String(user_context_id) =>
             if normalized.length() == 0 {
-              self.network_extra_headers_by_user_context.remove(user_context_id)
+              self.network_state.network_extra_headers_by_user_context.remove(
+                user_context_id,
+              )
             } else {
-              self.network_extra_headers_by_user_context[user_context_id] = synthetic_network_copy_string_map(
+              self.network_state.network_extra_headers_by_user_context[user_context_id] = synthetic_network_copy_string_map(
                 normalized,
               )
             }
@@ -2646,7 +2648,7 @@ fn BidiProtocol::apply_network_extra_headers_options(
     _ => ()
   }
   synthetic_network_replace_string_map(
-    self.network_extra_headers_global,
+    self.network_state.network_extra_headers_global,
     normalized,
   )
 }
@@ -2658,14 +2660,20 @@ fn BidiProtocol::resolve_network_extra_header_entries(
   request_headers : Array[Json],
 ) -> Array[Json] {
   let merged : Map[String, String] = {}
-  synthetic_network_merge_string_map(merged, self.network_extra_headers_global)
+  synthetic_network_merge_string_map(
+    merged,
+    self.network_state.network_extra_headers_global,
+  )
   let user_context_id = self.resolve_storage_user_context(context_id)
-  match self.network_extra_headers_by_user_context.get(user_context_id) {
+  match
+    self.network_state.network_extra_headers_by_user_context.get(
+      user_context_id,
+    ) {
     Some(headers) => synthetic_network_merge_string_map(merged, headers)
     None => ()
   }
   for scope_id in self.storage_context_ancestry(context_id) {
-    match self.network_extra_headers_by_context.get(scope_id) {
+    match self.network_state.network_extra_headers_by_context.get(scope_id) {
       Some(headers) => synthetic_network_merge_string_map(merged, headers)
       None => ()
     }
@@ -3294,13 +3302,13 @@ fn BidiProtocol::handle_network_set_cache_behavior(
   }
   match map.get("contexts") {
     None | Some(Null) => {
-      self.network_cache_behavior_global = cache_behavior
+      self.network_state.network_cache_behavior_global = cache_behavior
       let keys : Array[String] = []
-      for key, _ in self.network_cache_behavior_by_context {
+      for key, _ in self.network_state.network_cache_behavior_by_context {
         keys.push(key)
       }
       for key in keys {
-        self.network_cache_behavior_by_context.remove(key)
+        self.network_state.network_cache_behavior_by_context.remove(key)
       }
     }
     Some(Array(items)) => {
@@ -3321,7 +3329,7 @@ fn BidiProtocol::handle_network_set_cache_behavior(
               )
               return
             } else {
-              self.network_cache_behavior_by_context[ctx_id] = cache_behavior
+              self.network_state.network_cache_behavior_by_context[ctx_id] = cache_behavior
             }
           _ => {
             self.send_error(
@@ -3598,42 +3606,45 @@ fn BidiProtocol::handle_network_has_blocked_navigation_request(
 
 ///|
 fn BidiProtocol::clear_all_network_state(self : BidiProtocol) -> Unit {
-  self.network_cache_behavior_global = "default"
-  synthetic_network_replace_string_map(self.network_extra_headers_global, {})
+  self.network_state.network_cache_behavior_global = "default"
+  synthetic_network_replace_string_map(
+    self.network_state.network_extra_headers_global,
+    {},
+  )
   let extra_header_context_keys : Array[String] = []
-  for key, _ in self.network_extra_headers_by_context {
+  for key, _ in self.network_state.network_extra_headers_by_context {
     extra_header_context_keys.push(key)
   }
   for key in extra_header_context_keys {
-    self.network_extra_headers_by_context.remove(key)
+    self.network_state.network_extra_headers_by_context.remove(key)
   }
   let extra_header_user_context_keys : Array[String] = []
-  for key, _ in self.network_extra_headers_by_user_context {
+  for key, _ in self.network_state.network_extra_headers_by_user_context {
     extra_header_user_context_keys.push(key)
   }
   for key in extra_header_user_context_keys {
-    self.network_extra_headers_by_user_context.remove(key)
+    self.network_state.network_extra_headers_by_user_context.remove(key)
   }
   let behavior_keys : Array[String] = []
-  for key, _ in self.network_cache_behavior_by_context {
+  for key, _ in self.network_state.network_cache_behavior_by_context {
     behavior_keys.push(key)
   }
   for key in behavior_keys {
-    self.network_cache_behavior_by_context.remove(key)
+    self.network_state.network_cache_behavior_by_context.remove(key)
   }
   let cache_keys : Array[String] = []
-  for key, _ in self.network_cached_requests_by_context {
+  for key, _ in self.network_state.network_cached_requests_by_context {
     cache_keys.push(key)
   }
   for key in cache_keys {
-    self.network_cached_requests_by_context.remove(key)
+    self.network_state.network_cached_requests_by_context.remove(key)
   }
   let blocked_keys : Array[String] = []
-  for key, _ in self.network_blocked_requests {
+  for key, _ in self.network_state.network_blocked_requests {
     blocked_keys.push(key)
   }
   for key in blocked_keys {
-    self.network_blocked_requests.remove(key)
+    self.network_state.network_blocked_requests.remove(key)
   }
 }
 
@@ -3642,12 +3653,12 @@ fn BidiProtocol::clear_network_state_for_context(
   self : BidiProtocol,
   ctx_id : String,
 ) -> Unit {
-  self.network_extra_headers_by_context.remove(ctx_id)
-  self.network_cache_behavior_by_context.remove(ctx_id)
-  self.network_state_channel_by_context.remove(ctx_id)
-  self.network_cached_requests_by_context.remove(ctx_id)
+  self.network_state.network_extra_headers_by_context.remove(ctx_id)
+  self.network_state.network_cache_behavior_by_context.remove(ctx_id)
+  self.network_state.network_state_channel_by_context.remove(ctx_id)
+  self.network_state.network_cached_requests_by_context.remove(ctx_id)
   let blocked_keys : Array[String] = []
-  for request_id, blocked_request in self.network_blocked_requests {
+  for request_id, blocked_request in self.network_state.network_blocked_requests {
     match blocked_request {
       Object(map) =>
         match map.get("context_id") {
@@ -3661,7 +3672,7 @@ fn BidiProtocol::clear_network_state_for_context(
     }
   }
   for request_id in blocked_keys {
-    self.network_blocked_requests.remove(request_id)
+    self.network_state.network_blocked_requests.remove(request_id)
   }
 }
 
@@ -3676,7 +3687,9 @@ fn BidiProtocol::remember_network_blocked_request(
     normalized[key] = value
   }
   normalized["request"] = Json::string(request_id)
-  self.network_blocked_requests[request_id] = make_object(normalized)
+  self.network_state.network_blocked_requests[request_id] = make_object(
+    normalized,
+  )
 }
 
 ///|
@@ -3684,7 +3697,7 @@ fn BidiProtocol::get_network_blocked_request(
   self : BidiProtocol,
   request_id : String,
 ) -> Map[String, Json]? {
-  match self.network_blocked_requests.get(request_id) {
+  match self.network_state.network_blocked_requests.get(request_id) {
     Some(Object(blocked_request)) => Some(blocked_request)
     _ => None
   }
@@ -3695,7 +3708,7 @@ fn BidiProtocol::forget_network_blocked_request(
   self : BidiProtocol,
   request_id : String,
 ) -> Unit {
-  self.network_blocked_requests.remove(request_id)
+  self.network_state.network_blocked_requests.remove(request_id)
 }
 
 ///|
@@ -3704,7 +3717,7 @@ fn BidiProtocol::has_network_blocked_navigation_request(
   ctx_id : String,
   navigation_id : String?,
 ) -> Bool {
-  for _, blocked_request in self.network_blocked_requests {
+  for _, blocked_request in self.network_state.network_blocked_requests {
     match blocked_request {
       Object(map) => {
         let blocked_ctx_id = match map.get("context_id") {
@@ -3754,7 +3767,7 @@ fn BidiProtocol::resolve_synthetic_response_overrides_internal(
   let method_upper = http_method.to_upper()
   let cache_enabled = self.synthetic_network_cache_enabled(context_id)
   let cache_key = synthetic_network_cache_key(method_upper, url)
-  let context_cache = self.network_cached_requests_by_context
+  let context_cache = self.network_state.network_cached_requests_by_context
     .get(context_id)
     .unwrap_or({})
 
@@ -3773,7 +3786,7 @@ fn BidiProtocol::resolve_synthetic_response_overrides_internal(
         from_cache = true
       } else if update_cache {
         context_cache[cache_key] = true
-        self.network_cached_requests_by_context[context_id] = context_cache
+        self.network_state.network_cached_requests_by_context[context_id] = context_cache
       }
     }
   } else if path.has_suffix("/must-revalidate.py") {
@@ -3799,7 +3812,7 @@ fn BidiProtocol::resolve_synthetic_response_overrides_internal(
         ) &&
         update_cache {
         context_cache[cache_key] = true
-        self.network_cached_requests_by_context[context_id] = context_cache
+        self.network_state.network_cached_requests_by_context[context_id] = context_cache
       }
     }
   } else if path.has_suffix("/authentication.py") {
@@ -3934,9 +3947,9 @@ fn BidiProtocol::synthetic_network_cache_behavior(
   self : BidiProtocol,
   context_id : String,
 ) -> String {
-  self.network_cache_behavior_by_context
+  self.network_state.network_cache_behavior_by_context
   .get(context_id)
-  .unwrap_or(self.network_cache_behavior_global)
+  .unwrap_or(self.network_state.network_cache_behavior_global)
 }
 
 ///|

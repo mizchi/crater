@@ -42,16 +42,7 @@ priv struct BidiProtocol {
   mut next_navigation_id : Int
   mut next_realm_id : Int
   mut next_preload_script_id : Int
-  subscriptions : Map[String, Bool] // module-level subscriptions (legacy)
-  context_subscriptions : Map[String, Array[String]] // context -> events
-  user_context_subscriptions : Map[String, Array[String]] // user context -> events
-  mut global_subscriptions : Array[String] // events subscribed globally
-  mut global_unsubscribed_events : Array[String] // event-level overrides for module subscriptions
-  subscription_events : Map[String, Array[String]] // subscription id -> events
-  subscription_contexts : Map[String, Array[String]] // subscription id -> contexts
-  subscription_user_contexts : Map[String, Array[String]] // subscription id -> user contexts
-  mut next_subscription_id : Int
-  pending_log_entries : Map[String, Array[Json]] // context -> buffered log.entryAdded params
+  subscription_state : BidiSubscriptionState
   user_contexts : Map[String, Bool]
   user_context_prompt_behavior : Map[String, Json] // user context -> unhandledPromptBehavior object
   mut global_download_behavior : Json?
@@ -59,27 +50,7 @@ priv struct BidiProtocol {
   installed_web_extensions : Map[String, String] // extension id -> source kind
   mut next_web_extension_id : Int
   permission_state_by_scope : Map[String, String] // "<name>|<userContext>|<origin>|<embeddedOrigin>" -> state
-  mut emulation_user_agent_global : String?
-  emulation_user_agent_by_context : Map[String, String] // top-level context -> userAgent override
-  emulation_user_agent_by_user_context : Map[String, String] // user context -> userAgent override
-  mut emulation_locale_global : String?
-  emulation_locale_by_context : Map[String, String] // top-level context -> locale override
-  emulation_locale_by_user_context : Map[String, String] // user context -> locale override
-  mut emulation_timezone_global : String?
-  emulation_timezone_by_context : Map[String, String] // top-level context -> timezone override
-  emulation_timezone_by_user_context : Map[String, String] // user context -> timezone override
-  mut emulation_geolocation_global : Json?
-  emulation_geolocation_by_context : Map[String, Json] // top-level context -> geolocation override
-  emulation_geolocation_by_user_context : Map[String, Json] // user context -> geolocation override
-  mut emulation_network_conditions_global : Json?
-  emulation_network_conditions_by_context : Map[String, Json] // top-level context -> network conditions override
-  emulation_network_conditions_by_user_context : Map[String, Json] // user context -> network conditions override
-  mut emulation_screen_orientation_global : Json?
-  emulation_screen_orientation_by_context : Map[String, Json] // top-level context -> screen orientation override
-  emulation_screen_orientation_by_user_context : Map[String, Json] // user context -> screen orientation override
-  mut emulation_screen_area_global : Json?
-  emulation_screen_area_by_context : Map[String, Json] // top-level context -> screen area override
-  emulation_screen_area_by_user_context : Map[String, Json] // user context -> screen area override
+  emulation_state : BidiEmulationState
   geolocation_watch_channel_by_scope : Map[String, String] // "<context>|<watchId>" -> script.message channel
   geolocation_watch_realm_by_scope : Map[String, String] // "<context>|<watchId>" -> originating realm
   geolocation_watch_notify_success_by_scope : Map[String, Bool] // "<context>|<watchId>" -> emit coords updates
@@ -187,20 +158,7 @@ priv struct BidiProtocol {
   input_synthetic_events_by_context : Map[String, Array[Json]] // context -> synthetic window.allEvents.events entries
   context_synthetic_scrolled : Map[String, Bool] // context -> synthetic scroll fallback applied
   speculation_prefetch_target_by_context : Map[String, String] // context -> last synthetic prefetch target
-  network_intercepts : Map[String, Json] // intercept id -> network.addIntercept options
-  mut next_network_intercept_id : Int
-  mut next_network_request_id : Int
-  mut network_cache_behavior_global : String
-  network_extra_headers_global : Map[String, String]
-  network_extra_headers_by_context : Map[String, Map[String, String]]
-  network_extra_headers_by_user_context : Map[String, Map[String, String]]
-  network_cache_behavior_by_context : Map[String, String]
-  network_state_channel_by_context : Map[String, String] // context -> script.message channel for offline/online notifications
-  network_cached_requests_by_context : Map[String, Map[String, Bool]]
-  network_blocked_requests : Map[String, Json] // request id -> synthetic blocked request payload
-  network_data_collectors : Map[String, Json] // collector id -> network.addDataCollector options
-  network_collected_data : Map[String, Map[String, Map[String, Json]]] // request -> collector -> dataType -> bytes value
-  mut next_network_data_collector_id : Int
+  network_state : BidiNetworkState
   mut socket : @core.Any? // WebSocket for async responses
   mut socket_epoch : Int // Monotonic epoch for active WebSocket
   use_quickjs : Bool // Use QuickJS sandboxed runtime for script execution
@@ -248,16 +206,7 @@ fn BidiProtocol::new() -> BidiProtocol {
     next_navigation_id: 1,
     next_realm_id: 1,
     next_preload_script_id: 1,
-    subscriptions: {},
-    context_subscriptions: {},
-    user_context_subscriptions: {},
-    global_subscriptions: [],
-    global_unsubscribed_events: [],
-    subscription_events: {},
-    subscription_contexts: {},
-    subscription_user_contexts: {},
-    next_subscription_id: 1,
-    pending_log_entries: {},
+    subscription_state: BidiSubscriptionState::new(),
     user_contexts,
     user_context_prompt_behavior: {},
     global_download_behavior: None,
@@ -265,27 +214,7 @@ fn BidiProtocol::new() -> BidiProtocol {
     installed_web_extensions: {},
     next_web_extension_id: 1,
     permission_state_by_scope: {},
-    emulation_user_agent_global: None,
-    emulation_user_agent_by_context: {},
-    emulation_user_agent_by_user_context: {},
-    emulation_locale_global: None,
-    emulation_locale_by_context: {},
-    emulation_locale_by_user_context: {},
-    emulation_timezone_global: None,
-    emulation_timezone_by_context: {},
-    emulation_timezone_by_user_context: {},
-    emulation_geolocation_global: None,
-    emulation_geolocation_by_context: {},
-    emulation_geolocation_by_user_context: {},
-    emulation_network_conditions_global: None,
-    emulation_network_conditions_by_context: {},
-    emulation_network_conditions_by_user_context: {},
-    emulation_screen_orientation_global: None,
-    emulation_screen_orientation_by_context: {},
-    emulation_screen_orientation_by_user_context: {},
-    emulation_screen_area_global: None,
-    emulation_screen_area_by_context: {},
-    emulation_screen_area_by_user_context: {},
+    emulation_state: BidiEmulationState::new(),
     geolocation_watch_channel_by_scope: {},
     geolocation_watch_realm_by_scope: {},
     geolocation_watch_notify_success_by_scope: {},
@@ -393,20 +322,7 @@ fn BidiProtocol::new() -> BidiProtocol {
     input_synthetic_events_by_context: {},
     context_synthetic_scrolled: {},
     speculation_prefetch_target_by_context: {},
-    network_intercepts: {},
-    next_network_intercept_id: 1,
-    next_network_request_id: 1,
-    network_cache_behavior_global: "default",
-    network_extra_headers_global: {},
-    network_extra_headers_by_context: {},
-    network_extra_headers_by_user_context: {},
-    network_cache_behavior_by_context: {},
-    network_state_channel_by_context: {},
-    network_cached_requests_by_context: {},
-    network_blocked_requests: {},
-    network_data_collectors: {},
-    network_collected_data: {},
-    next_network_data_collector_id: 1,
+    network_state: BidiNetworkState::new(),
     socket: None,
     socket_epoch: 0,
     use_quickjs: false,
@@ -441,51 +357,7 @@ fn BidiProtocol::is_current_socket_epoch(
 ///|
 /// Reset per-connection subscription state.
 fn BidiProtocol::reset_subscription_state(self : BidiProtocol) -> Unit {
-  let legacy_keys : Array[String] = []
-  for key, _ in self.subscriptions {
-    legacy_keys.push(key)
-  }
-  for key in legacy_keys {
-    self.subscriptions.remove(key)
-  }
-
-  let context_keys : Array[String] = []
-  for key, _ in self.context_subscriptions {
-    context_keys.push(key)
-  }
-  for key in context_keys {
-    self.context_subscriptions.remove(key)
-  }
-
-  let user_context_keys : Array[String] = []
-  for key, _ in self.user_context_subscriptions {
-    user_context_keys.push(key)
-  }
-  for key in user_context_keys {
-    self.user_context_subscriptions.remove(key)
-  }
-
-  let subscription_keys : Array[String] = []
-  for key, _ in self.subscription_events {
-    subscription_keys.push(key)
-  }
-  for key in subscription_keys {
-    self.subscription_events.remove(key)
-    self.subscription_contexts.remove(key)
-    self.subscription_user_contexts.remove(key)
-  }
-
-  let pending_log_keys : Array[String] = []
-  for key, _ in self.pending_log_entries {
-    pending_log_keys.push(key)
-  }
-  for key in pending_log_keys {
-    self.pending_log_entries.remove(key)
-  }
-
-  self.global_subscriptions = []
-  self.global_unsubscribed_events = []
-  self.next_subscription_id = 1
+  self.subscription_state.reset()
 }
 
 ///|
@@ -531,111 +403,7 @@ fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
   for key in permission_scope_keys {
     self.permission_state_by_scope.remove(key)
   }
-  self.emulation_user_agent_global = None
-  let emulation_user_agent_context_keys : Array[String] = []
-  for key, _ in self.emulation_user_agent_by_context {
-    emulation_user_agent_context_keys.push(key)
-  }
-  for key in emulation_user_agent_context_keys {
-    self.emulation_user_agent_by_context.remove(key)
-  }
-  let emulation_user_agent_user_context_keys : Array[String] = []
-  for key, _ in self.emulation_user_agent_by_user_context {
-    emulation_user_agent_user_context_keys.push(key)
-  }
-  for key in emulation_user_agent_user_context_keys {
-    self.emulation_user_agent_by_user_context.remove(key)
-  }
-  self.emulation_locale_global = None
-  let emulation_locale_context_keys : Array[String] = []
-  for key, _ in self.emulation_locale_by_context {
-    emulation_locale_context_keys.push(key)
-  }
-  for key in emulation_locale_context_keys {
-    self.emulation_locale_by_context.remove(key)
-  }
-  let emulation_locale_user_context_keys : Array[String] = []
-  for key, _ in self.emulation_locale_by_user_context {
-    emulation_locale_user_context_keys.push(key)
-  }
-  for key in emulation_locale_user_context_keys {
-    self.emulation_locale_by_user_context.remove(key)
-  }
-  self.emulation_timezone_global = None
-  let emulation_timezone_context_keys : Array[String] = []
-  for key, _ in self.emulation_timezone_by_context {
-    emulation_timezone_context_keys.push(key)
-  }
-  for key in emulation_timezone_context_keys {
-    self.emulation_timezone_by_context.remove(key)
-  }
-  let emulation_timezone_user_context_keys : Array[String] = []
-  for key, _ in self.emulation_timezone_by_user_context {
-    emulation_timezone_user_context_keys.push(key)
-  }
-  for key in emulation_timezone_user_context_keys {
-    self.emulation_timezone_by_user_context.remove(key)
-  }
-  self.emulation_geolocation_global = None
-  let emulation_geolocation_context_keys : Array[String] = []
-  for key, _ in self.emulation_geolocation_by_context {
-    emulation_geolocation_context_keys.push(key)
-  }
-  for key in emulation_geolocation_context_keys {
-    self.emulation_geolocation_by_context.remove(key)
-  }
-  let emulation_geolocation_user_context_keys : Array[String] = []
-  for key, _ in self.emulation_geolocation_by_user_context {
-    emulation_geolocation_user_context_keys.push(key)
-  }
-  for key in emulation_geolocation_user_context_keys {
-    self.emulation_geolocation_by_user_context.remove(key)
-  }
-  self.emulation_network_conditions_global = None
-  let emulation_network_conditions_context_keys : Array[String] = []
-  for key, _ in self.emulation_network_conditions_by_context {
-    emulation_network_conditions_context_keys.push(key)
-  }
-  for key in emulation_network_conditions_context_keys {
-    self.emulation_network_conditions_by_context.remove(key)
-  }
-  let emulation_network_conditions_user_context_keys : Array[String] = []
-  for key, _ in self.emulation_network_conditions_by_user_context {
-    emulation_network_conditions_user_context_keys.push(key)
-  }
-  for key in emulation_network_conditions_user_context_keys {
-    self.emulation_network_conditions_by_user_context.remove(key)
-  }
-  self.emulation_screen_orientation_global = None
-  let emulation_screen_orientation_context_keys : Array[String] = []
-  for key, _ in self.emulation_screen_orientation_by_context {
-    emulation_screen_orientation_context_keys.push(key)
-  }
-  for key in emulation_screen_orientation_context_keys {
-    self.emulation_screen_orientation_by_context.remove(key)
-  }
-  let emulation_screen_orientation_user_context_keys : Array[String] = []
-  for key, _ in self.emulation_screen_orientation_by_user_context {
-    emulation_screen_orientation_user_context_keys.push(key)
-  }
-  for key in emulation_screen_orientation_user_context_keys {
-    self.emulation_screen_orientation_by_user_context.remove(key)
-  }
-  self.emulation_screen_area_global = None
-  let emulation_screen_area_context_keys : Array[String] = []
-  for key, _ in self.emulation_screen_area_by_context {
-    emulation_screen_area_context_keys.push(key)
-  }
-  for key in emulation_screen_area_context_keys {
-    self.emulation_screen_area_by_context.remove(key)
-  }
-  let emulation_screen_area_user_context_keys : Array[String] = []
-  for key, _ in self.emulation_screen_area_by_user_context {
-    emulation_screen_area_user_context_keys.push(key)
-  }
-  for key in emulation_screen_area_user_context_keys {
-    self.emulation_screen_area_by_user_context.remove(key)
-  }
+  self.emulation_state.reset()
   let geolocation_watch_channel_keys : Array[String] = []
   for key, _ in self.geolocation_watch_channel_by_scope {
     geolocation_watch_channel_keys.push(key)
@@ -972,7 +740,7 @@ fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
   for key in storage_cookie_scope_keys {
     self.storage_cookies_by_scope.remove(key)
   }
-  self.next_network_request_id = 1
+  self.network_state.next_network_request_id = 1
 
   let synthetic_location_keys : Array[String] = []
   for key, _ in self.synthetic_location_href_by_context {
@@ -1077,11 +845,11 @@ fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
   }
 
   let network_state_channel_keys : Array[String] = []
-  for key, _ in self.network_state_channel_by_context {
+  for key, _ in self.network_state.network_state_channel_by_context {
     network_state_channel_keys.push(key)
   }
   for key in network_state_channel_keys {
-    self.network_state_channel_by_context.remove(key)
+    self.network_state.network_state_channel_by_context.remove(key)
   }
   let context_viewport_width_keys : Array[String] = []
   for key, _ in self.context_viewport_width {
@@ -1294,30 +1062,30 @@ fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
   }
 
   let intercept_keys : Array[String] = []
-  for key, _ in self.network_intercepts {
+  for key, _ in self.network_state.network_intercepts {
     intercept_keys.push(key)
   }
   for key in intercept_keys {
-    self.network_intercepts.remove(key)
+    self.network_state.network_intercepts.remove(key)
   }
-  self.next_network_intercept_id = 1
+  self.network_state.next_network_intercept_id = 1
   self.clear_all_network_state()
 
   let collector_keys : Array[String] = []
-  for key, _ in self.network_data_collectors {
+  for key, _ in self.network_state.network_data_collectors {
     collector_keys.push(key)
   }
   for key in collector_keys {
-    self.network_data_collectors.remove(key)
+    self.network_state.network_data_collectors.remove(key)
   }
   let collected_request_keys : Array[String] = []
-  for key, _ in self.network_collected_data {
+  for key, _ in self.network_state.network_collected_data {
     collected_request_keys.push(key)
   }
   for key in collected_request_keys {
-    self.network_collected_data.remove(key)
+    self.network_state.network_collected_data.remove(key)
   }
-  self.next_network_data_collector_id = 1
+  self.network_state.next_network_data_collector_id = 1
   self.next_preload_script_id = 1
   let installed_web_extension_keys : Array[String] = []
   for key, _ in self.installed_web_extensions {
@@ -4170,7 +3938,7 @@ fn BidiProtocol::drop_child_contexts(
         self.context_viewport_width.remove(child_ctx_id)
         self.context_viewport_height.remove(child_ctx_id)
         self.context_device_pixel_ratio.remove(child_ctx_id)
-        self.pending_log_entries.remove(child_ctx_id)
+        self.subscription_state.remove_pending_log_entries(child_ctx_id)
         self.clear_input_state_for_context(child_ctx_id)
       }
       self.context_children[parent_ctx_id] = []
@@ -4219,7 +3987,7 @@ fn BidiProtocol::close_context_and_cleanup(
   self.context_viewport_width.remove(ctx_id)
   self.context_viewport_height.remove(ctx_id)
   self.context_device_pixel_ratio.remove(ctx_id)
-  self.pending_log_entries.remove(ctx_id)
+  self.subscription_state.remove_pending_log_entries(ctx_id)
   self.clear_input_state_for_context(ctx_id)
   match self.active_context_id {
     Some(active_ctx) =>
@@ -5262,11 +5030,13 @@ fn BidiProtocol::handle_subscribe(
       let has_user_context_targets = user_contexts_to_sub.length() > 0
       if has_context_targets {
         for ctx_id in contexts_to_sub {
-          let existing = self.context_subscriptions.get(ctx_id).unwrap_or([])
+          let existing = self.subscription_state.context_subscriptions
+            .get(ctx_id)
+            .unwrap_or([])
           for evt in events_to_sub {
             existing.push(evt)
           }
-          self.context_subscriptions[ctx_id] = existing
+          self.subscription_state.context_subscriptions[ctx_id] = existing
           if wants_realm_created {
             self.emit_existing_realms_for_context(ctx_id)
           }
@@ -5277,13 +5047,13 @@ fn BidiProtocol::handle_subscribe(
       }
       if has_user_context_targets {
         for user_ctx_id in user_contexts_to_sub {
-          let existing = self.user_context_subscriptions
+          let existing = self.subscription_state.user_context_subscriptions
             .get(user_ctx_id)
             .unwrap_or([])
           for evt in events_to_sub {
             existing.push(evt)
           }
-          self.user_context_subscriptions[user_ctx_id] = existing
+          self.subscription_state.user_context_subscriptions[user_ctx_id] = existing
           if wants_realm_created {
             for ctx_id in self.manager.list_sessions() {
               let ctx_user_ctx = self.context_user_context
@@ -5312,18 +5082,18 @@ fn BidiProtocol::handle_subscribe(
         for evt in events_to_sub {
           let module_key = get_subscription_key(evt)
           if module_key == evt {
-            self.global_unsubscribed_events = array_filter_by_module(
-              self.global_unsubscribed_events,
+            self.subscription_state.global_unsubscribed_events = array_filter_by_module(
+              self.subscription_state.global_unsubscribed_events,
               module_key,
             )
           } else {
-            self.global_unsubscribed_events = array_filter_not(
-              self.global_unsubscribed_events,
+            self.subscription_state.global_unsubscribed_events = array_filter_not(
+              self.subscription_state.global_unsubscribed_events,
               [evt],
             )
           }
-          self.global_subscriptions.push(evt)
-          self.update_legacy_module_subscription(module_key)
+          self.subscription_state.global_subscriptions.push(evt)
+          self.subscription_state.update_legacy_module_subscription(module_key)
         }
         if wants_realm_created {
           for ctx_id in self.manager.list_sessions() {
@@ -5343,10 +5113,10 @@ fn BidiProtocol::handle_subscribe(
     }
     _ => ()
   }
-  let subscription_id = self.generate_subscription_id()
-  self.subscription_events[subscription_id] = events_to_sub
-  self.subscription_contexts[subscription_id] = contexts_to_sub
-  self.subscription_user_contexts[subscription_id] = user_contexts_to_sub
+  let subscription_id = self.subscription_state.generate_subscription_id()
+  self.subscription_state.subscription_events[subscription_id] = events_to_sub
+  self.subscription_state.subscription_contexts[subscription_id] = contexts_to_sub
+  self.subscription_state.subscription_user_contexts[subscription_id] = user_contexts_to_sub
   subscription_id
 }
 
@@ -5418,10 +5188,10 @@ fn BidiProtocol::handle_unsubscribe(
       let has_user_context_targets = user_contexts_to_unsub.length() > 0
       if has_context_targets {
         for ctx_id in contexts_to_unsub {
-          match self.context_subscriptions.get(ctx_id) {
+          match self.subscription_state.context_subscriptions.get(ctx_id) {
             Some(existing) => {
               let filtered = array_filter_not(existing, events_to_unsub)
-              self.context_subscriptions[ctx_id] = filtered
+              self.subscription_state.context_subscriptions[ctx_id] = filtered
             }
             None => ()
           }
@@ -5429,31 +5199,35 @@ fn BidiProtocol::handle_unsubscribe(
       }
       if has_user_context_targets {
         for user_ctx_id in user_contexts_to_unsub {
-          match self.user_context_subscriptions.get(user_ctx_id) {
+          match
+            self.subscription_state.user_context_subscriptions.get(user_ctx_id) {
             Some(existing) => {
               let filtered = array_filter_not(existing, events_to_unsub)
-              self.user_context_subscriptions[user_ctx_id] = filtered
+              self.subscription_state.user_context_subscriptions[user_ctx_id] = filtered
             }
             None => ()
           }
         }
       }
       if !has_context_targets && !has_user_context_targets {
-        self.global_subscriptions = array_filter_not(
-          self.global_subscriptions,
+        self.subscription_state.global_subscriptions = array_filter_not(
+          self.subscription_state.global_subscriptions,
           events_to_unsub,
         )
         for evt in events_to_unsub {
           let module_key = get_subscription_key(evt)
           if module_key == evt {
-            self.global_unsubscribed_events = array_filter_by_module(
-              self.global_unsubscribed_events,
+            self.subscription_state.global_unsubscribed_events = array_filter_by_module(
+              self.subscription_state.global_unsubscribed_events,
               module_key,
             )
-          } else if !array_contains(self.global_unsubscribed_events, evt) {
-            self.global_unsubscribed_events.push(evt)
+          } else if !array_contains(
+              self.subscription_state.global_unsubscribed_events,
+              evt,
+            ) {
+            self.subscription_state.global_unsubscribed_events.push(evt)
           }
-          self.update_legacy_module_subscription(module_key)
+          self.subscription_state.update_legacy_module_subscription(module_key)
         }
       }
     }
@@ -5467,26 +5241,30 @@ fn BidiProtocol::remove_subscription_by_id(
   self : BidiProtocol,
   subscription_id : String,
 ) -> Unit {
-  let events = self.subscription_events.get(subscription_id).unwrap_or([])
-  let contexts = self.subscription_contexts.get(subscription_id).unwrap_or([])
-  let user_contexts = self.subscription_user_contexts
+  let events = self.subscription_state.subscription_events
+    .get(subscription_id)
+    .unwrap_or([])
+  let contexts = self.subscription_state.subscription_contexts
+    .get(subscription_id)
+    .unwrap_or([])
+  let user_contexts = self.subscription_state.subscription_user_contexts
     .get(subscription_id)
     .unwrap_or([])
   if events.length() == 0 {
-    self.subscription_events.remove(subscription_id)
-    self.subscription_contexts.remove(subscription_id)
-    self.subscription_user_contexts.remove(subscription_id)
+    self.subscription_state.subscription_events.remove(subscription_id)
+    self.subscription_state.subscription_contexts.remove(subscription_id)
+    self.subscription_state.subscription_user_contexts.remove(subscription_id)
     return
   }
   if contexts.length() > 0 {
     for ctx_id in contexts {
-      match self.context_subscriptions.get(ctx_id) {
+      match self.subscription_state.context_subscriptions.get(ctx_id) {
         Some(existing) => {
           let filtered = array_remove_events_once(existing, events)
           if filtered.length() == 0 {
-            self.context_subscriptions.remove(ctx_id)
+            self.subscription_state.context_subscriptions.remove(ctx_id)
           } else {
-            self.context_subscriptions[ctx_id] = filtered
+            self.subscription_state.context_subscriptions[ctx_id] = filtered
           }
         }
         None => ()
@@ -5494,13 +5272,16 @@ fn BidiProtocol::remove_subscription_by_id(
     }
   } else if user_contexts.length() > 0 {
     for user_ctx_id in user_contexts {
-      match self.user_context_subscriptions.get(user_ctx_id) {
+      match
+        self.subscription_state.user_context_subscriptions.get(user_ctx_id) {
         Some(existing) => {
           let filtered = array_remove_events_once(existing, events)
           if filtered.length() == 0 {
-            self.user_context_subscriptions.remove(user_ctx_id)
+            self.subscription_state.user_context_subscriptions.remove(
+              user_ctx_id,
+            )
           } else {
-            self.user_context_subscriptions[user_ctx_id] = filtered
+            self.subscription_state.user_context_subscriptions[user_ctx_id] = filtered
           }
         }
         None => ()
@@ -5508,17 +5289,17 @@ fn BidiProtocol::remove_subscription_by_id(
     }
   } else {
     for evt in events {
-      self.global_subscriptions = array_remove_first(
-        self.global_subscriptions,
+      self.subscription_state.global_subscriptions = array_remove_first(
+        self.subscription_state.global_subscriptions,
         evt,
       )
       let module_key = get_subscription_key(evt)
-      self.update_legacy_module_subscription(module_key)
+      self.subscription_state.update_legacy_module_subscription(module_key)
     }
   }
-  self.subscription_events.remove(subscription_id)
-  self.subscription_contexts.remove(subscription_id)
-  self.subscription_user_contexts.remove(subscription_id)
+  self.subscription_state.subscription_events.remove(subscription_id)
+  self.subscription_state.subscription_contexts.remove(subscription_id)
+  self.subscription_state.subscription_user_contexts.remove(subscription_id)
 }
 
 ///|
@@ -5691,7 +5472,7 @@ fn BidiProtocol::should_capture_console(
   ctx_id : String,
 ) -> Bool {
   if self.is_subscribed_for_context("log.entryAdded", ctx_id) ||
-    self.has_any_log_subscription() {
+    self.subscription_state.has_any_log_subscription() {
     return true
   }
   // Keep capturing even when not currently subscribed so log.entryAdded
@@ -5700,75 +5481,25 @@ fn BidiProtocol::should_capture_console(
 }
 
 ///|
-/// Check whether any log subscription exists in any scope.
-fn BidiProtocol::has_any_log_subscription(self : BidiProtocol) -> Bool {
-  if self.subscriptions.get("log").unwrap_or(false) {
-    return true
-  }
-  if has_log_subscription(self.global_subscriptions) {
-    return true
-  }
-  for _, events in self.context_subscriptions {
-    if has_log_subscription(events) {
-      return true
-    }
-  }
-  for _, events in self.user_context_subscriptions {
-    if has_log_subscription(events) {
-      return true
-    }
-  }
-  false
-}
-
-///|
 /// Flush buffered log.entryAdded events that are now subscribed.
 fn BidiProtocol::flush_pending_log_entries(self : BidiProtocol) -> Unit {
   let contexts : Array[String] = []
-  for ctx_id, _ in self.pending_log_entries {
+  for ctx_id, _ in self.subscription_state.pending_log_entries {
     contexts.push(ctx_id)
   }
   for ctx_id in contexts {
     if !self.is_subscribed_for_context("log.entryAdded", ctx_id) {
       continue
     }
-    match self.pending_log_entries.get(ctx_id) {
+    match self.subscription_state.pending_log_entries.get(ctx_id) {
       Some(entries) =>
         for params in entries {
           self.outbox.push(Event({ event_method: "log.entryAdded", params }))
         }
       None => ()
     }
-    self.pending_log_entries.remove(ctx_id)
+    self.subscription_state.remove_pending_log_entries(ctx_id)
   }
-}
-
-///|
-/// Keep legacy module-level map in sync with current global subscriptions.
-fn BidiProtocol::update_legacy_module_subscription(
-  self : BidiProtocol,
-  module_key : String,
-) -> Unit {
-  let mut has_same_module = false
-  for sub in self.global_subscriptions {
-    if sub == module_key {
-      has_same_module = true
-      break
-    }
-  }
-  if has_same_module {
-    self.subscriptions[module_key] = true
-  } else {
-    self.subscriptions.remove(module_key)
-  }
-}
-
-///|
-/// Generate a deterministic 32-digit subscription id string.
-fn BidiProtocol::generate_subscription_id(self : BidiProtocol) -> String {
-  let id_num = self.next_subscription_id
-  self.next_subscription_id += 1
-  left_pad_with_zero(id_num.to_string(), 32)
 }
 
 ///|
@@ -6472,13 +6203,17 @@ fn BidiProtocol::is_subscribed_for_context(
   ctx_id : String,
 ) -> Bool {
   let module_key = get_subscription_key(event)
-  let blocked_global = array_contains(self.global_unsubscribed_events, event)
+  let blocked_global = array_contains(
+    self.subscription_state.global_unsubscribed_events,
+    event,
+  )
   // Check legacy module-level subscription
-  if !blocked_global && self.subscriptions.get(module_key).unwrap_or(false) {
+  if !blocked_global &&
+    self.subscription_state.subscriptions.get(module_key).unwrap_or(false) {
     return true
   }
   // Check global subscriptions (exact event match or module match)
-  for sub in self.global_subscriptions {
+  for sub in self.subscription_state.global_subscriptions {
     if sub == event {
       return true
     }
@@ -6492,7 +6227,7 @@ fn BidiProtocol::is_subscribed_for_context(
   }
   // Check user-context subscriptions for this browsing context.
   let user_ctx = self.context_user_context.get(ctx_id).unwrap_or("default")
-  match self.user_context_subscriptions.get(user_ctx) {
+  match self.subscription_state.user_context_subscriptions.get(user_ctx) {
     Some(events) =>
       for sub in events {
         if sub == event || sub == module_key {
@@ -6512,7 +6247,7 @@ fn BidiProtocol::is_subscribed_for_context_chain(
   module_key : String,
   ctx_id : String,
 ) -> Bool {
-  match self.context_subscriptions.get(ctx_id) {
+  match self.subscription_state.context_subscriptions.get(ctx_id) {
     Some(events) =>
       for sub in events {
         if sub == event || sub == module_key {
@@ -6552,7 +6287,7 @@ fn BidiProtocol::has_global_module_subscription(
   self : BidiProtocol,
   module_key : String,
 ) -> Bool {
-  array_contains(self.global_subscriptions, module_key)
+  array_contains(self.subscription_state.global_subscriptions, module_key)
 }
 
 ///|
@@ -6561,11 +6296,14 @@ fn BidiProtocol::has_global_event_subscription(
   self : BidiProtocol,
   event_name : String,
 ) -> Bool {
-  if array_contains(self.global_unsubscribed_events, event_name) {
+  if array_contains(
+      self.subscription_state.global_unsubscribed_events,
+      event_name,
+    ) {
     return false
   }
   let module_key = get_subscription_key(event_name)
-  for sub in self.global_subscriptions {
+  for sub in self.subscription_state.global_subscriptions {
     if sub == event_name || sub == module_key {
       return true
     }
@@ -6579,7 +6317,7 @@ fn BidiProtocol::has_global_event_override_for_module(
   self : BidiProtocol,
   module_key : String,
 ) -> Bool {
-  for event_name in self.global_unsubscribed_events {
+  for event_name in self.subscription_state.global_unsubscribed_events {
     if get_subscription_key(event_name) == module_key {
       return true
     }

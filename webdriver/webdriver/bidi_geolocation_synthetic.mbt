@@ -30,9 +30,9 @@ fn BidiProtocol::resolve_effective_geolocation_override(
 ) -> Json? {
   self.resolve_effective_scoped_override(
     ctx_id,
-    self.emulation_geolocation_by_context,
-    self.emulation_geolocation_by_user_context,
-    self.emulation_geolocation_global,
+    self.emulation_state.emulation_geolocation_by_context,
+    self.emulation_state.emulation_geolocation_by_user_context,
+    self.emulation_state.emulation_geolocation_global,
   )
 }
 
@@ -641,8 +641,9 @@ fn BidiProtocol::resolve_emulation_set_geolocation_override(
     for ctx_id in target_contexts {
       match override_value {
         Some(override_value) =>
-          self.emulation_geolocation_by_context[ctx_id] = override_value
-        None => self.emulation_geolocation_by_context.remove(ctx_id)
+          self.emulation_state.emulation_geolocation_by_context[ctx_id] = override_value
+        None =>
+          self.emulation_state.emulation_geolocation_by_context.remove(ctx_id)
       }
     }
     self.notify_geolocation_watchers()
@@ -653,16 +654,18 @@ fn BidiProtocol::resolve_emulation_set_geolocation_override(
     for user_context_id in target_user_contexts {
       match override_value {
         Some(override_value) =>
-          self.emulation_geolocation_by_user_context[user_context_id] = override_value
+          self.emulation_state.emulation_geolocation_by_user_context[user_context_id] = override_value
         None =>
-          self.emulation_geolocation_by_user_context.remove(user_context_id)
+          self.emulation_state.emulation_geolocation_by_user_context.remove(
+            user_context_id,
+          )
       }
     }
     self.notify_geolocation_watchers()
     return Some(true)
   }
 
-  self.emulation_geolocation_global = override_value
+  self.emulation_state.emulation_geolocation_global = override_value
   self.notify_geolocation_watchers()
   Some(true)
 }

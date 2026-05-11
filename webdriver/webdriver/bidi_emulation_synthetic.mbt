@@ -164,9 +164,9 @@ fn BidiProtocol::resolve_effective_user_agent(
   match
     self.resolve_effective_scoped_override(
       ctx_id,
-      self.emulation_user_agent_by_context,
-      self.emulation_user_agent_by_user_context,
-      self.emulation_user_agent_global,
+      self.emulation_state.emulation_user_agent_by_context,
+      self.emulation_state.emulation_user_agent_by_user_context,
+      self.emulation_state.emulation_user_agent_global,
     ) {
     Some(user_agent) => user_agent
     None => default_runtime_user_agent()
@@ -181,9 +181,9 @@ fn BidiProtocol::resolve_effective_locale(
   match
     self.resolve_effective_scoped_override(
       ctx_id,
-      self.emulation_locale_by_context,
-      self.emulation_locale_by_user_context,
-      self.emulation_locale_global,
+      self.emulation_state.emulation_locale_by_context,
+      self.emulation_state.emulation_locale_by_user_context,
+      self.emulation_state.emulation_locale_global,
     ) {
     Some(locale) => locale
     None => default_runtime_locale()
@@ -198,9 +198,9 @@ fn BidiProtocol::resolve_effective_timezone(
   match
     self.resolve_effective_scoped_override(
       ctx_id,
-      self.emulation_timezone_by_context,
-      self.emulation_timezone_by_user_context,
-      self.emulation_timezone_global,
+      self.emulation_state.emulation_timezone_by_context,
+      self.emulation_state.emulation_timezone_by_user_context,
+      self.emulation_state.emulation_timezone_global,
     ) {
     Some(timezone) => timezone
     None => default_runtime_timezone()
@@ -572,8 +572,9 @@ fn BidiProtocol::resolve_emulation_set_user_agent_override(
     for ctx_id in target_contexts {
       match user_agent {
         Some(user_agent) =>
-          self.emulation_user_agent_by_context[ctx_id] = user_agent
-        None => self.emulation_user_agent_by_context.remove(ctx_id)
+          self.emulation_state.emulation_user_agent_by_context[ctx_id] = user_agent
+        None =>
+          self.emulation_state.emulation_user_agent_by_context.remove(ctx_id)
       }
     }
     self.refresh_effective_user_agent_for_all_contexts()
@@ -584,16 +585,18 @@ fn BidiProtocol::resolve_emulation_set_user_agent_override(
     for user_context_id in target_user_contexts {
       match user_agent {
         Some(user_agent) =>
-          self.emulation_user_agent_by_user_context[user_context_id] = user_agent
+          self.emulation_state.emulation_user_agent_by_user_context[user_context_id] = user_agent
         None =>
-          self.emulation_user_agent_by_user_context.remove(user_context_id)
+          self.emulation_state.emulation_user_agent_by_user_context.remove(
+            user_context_id,
+          )
       }
     }
     self.refresh_effective_user_agent_for_all_contexts()
     return Some(true)
   }
 
-  self.emulation_user_agent_global = user_agent
+  self.emulation_state.emulation_user_agent_global = user_agent
   self.refresh_effective_user_agent_for_all_contexts()
   Some(true)
 }
@@ -733,8 +736,9 @@ fn BidiProtocol::resolve_emulation_set_locale_override(
   if target_contexts.length() > 0 {
     for ctx_id in target_contexts {
       match locale {
-        Some(locale) => self.emulation_locale_by_context[ctx_id] = locale
-        None => self.emulation_locale_by_context.remove(ctx_id)
+        Some(locale) =>
+          self.emulation_state.emulation_locale_by_context[ctx_id] = locale
+        None => self.emulation_state.emulation_locale_by_context.remove(ctx_id)
       }
     }
     self.refresh_effective_locale_for_all_contexts()
@@ -745,15 +749,18 @@ fn BidiProtocol::resolve_emulation_set_locale_override(
     for user_context_id in target_user_contexts {
       match locale {
         Some(locale) =>
-          self.emulation_locale_by_user_context[user_context_id] = locale
-        None => self.emulation_locale_by_user_context.remove(user_context_id)
+          self.emulation_state.emulation_locale_by_user_context[user_context_id] = locale
+        None =>
+          self.emulation_state.emulation_locale_by_user_context.remove(
+            user_context_id,
+          )
       }
     }
     self.refresh_effective_locale_for_all_contexts()
     return Some(true)
   }
 
-  self.emulation_locale_global = locale
+  self.emulation_state.emulation_locale_global = locale
   self.refresh_effective_locale_for_all_contexts()
   Some(true)
 }
@@ -895,8 +902,10 @@ fn BidiProtocol::resolve_emulation_set_timezone_override(
   if target_contexts.length() > 0 {
     for ctx_id in target_contexts {
       match timezone {
-        Some(timezone) => self.emulation_timezone_by_context[ctx_id] = timezone
-        None => self.emulation_timezone_by_context.remove(ctx_id)
+        Some(timezone) =>
+          self.emulation_state.emulation_timezone_by_context[ctx_id] = timezone
+        None =>
+          self.emulation_state.emulation_timezone_by_context.remove(ctx_id)
       }
     }
     self.refresh_effective_timezone_for_all_contexts()
@@ -907,15 +916,18 @@ fn BidiProtocol::resolve_emulation_set_timezone_override(
     for user_context_id in target_user_contexts {
       match timezone {
         Some(timezone) =>
-          self.emulation_timezone_by_user_context[user_context_id] = timezone
-        None => self.emulation_timezone_by_user_context.remove(user_context_id)
+          self.emulation_state.emulation_timezone_by_user_context[user_context_id] = timezone
+        None =>
+          self.emulation_state.emulation_timezone_by_user_context.remove(
+            user_context_id,
+          )
       }
     }
     self.refresh_effective_timezone_for_all_contexts()
     return Some(true)
   }
 
-  self.emulation_timezone_global = timezone
+  self.emulation_state.emulation_timezone_global = timezone
   self.refresh_effective_timezone_for_all_contexts()
   Some(true)
 }

@@ -181,7 +181,7 @@ fn BidiProtocol::validate_session_unsubscribe_params(
               )
               return Some(())
             }
-            if !self.subscription_events.contains(subscription_id) {
+            if !self.subscription_state.has_subscription_id(subscription_id) {
               self.send_error(
                 request_id,
                 "invalid argument",

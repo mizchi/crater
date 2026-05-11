@@ -32,9 +32,7 @@ fn BidiProtocol::emit_log_entry_with_details(
   }
   let params = make_object(params_map)
   if !self.is_subscribed_for_context("log.entryAdded", ctx_id) {
-    let pending = self.pending_log_entries.get(ctx_id).unwrap_or([])
-    pending.push(params)
-    self.pending_log_entries[ctx_id] = pending
+    self.subscription_state.buffer_log_entry(ctx_id, params)
     return
   }
   self.outbox.push(Event({ event_method: "log.entryAdded", params }))

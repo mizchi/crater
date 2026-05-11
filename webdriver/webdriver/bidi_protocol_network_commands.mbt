@@ -11,11 +11,11 @@ fn BidiProtocol::handle_network_add_intercept(
     None => return
   }
   let intercept_id = left_pad_with_zero(
-    self.next_network_intercept_id.to_string(),
+    self.network_state.next_network_intercept_id.to_string(),
     32,
   )
-  self.next_network_intercept_id += 1
-  self.network_intercepts[intercept_id] = make_object(options)
+  self.network_state.next_network_intercept_id += 1
+  self.network_state.network_intercepts[intercept_id] = make_object(options)
   self.send_success(
     request_id,
     Some(make_object({ "intercept": Json::string(intercept_id) })),
@@ -34,11 +34,11 @@ fn BidiProtocol::handle_network_add_intercept_id(
     None => return
   }
   let intercept_id = left_pad_with_zero(
-    self.next_network_intercept_id.to_string(),
+    self.network_state.next_network_intercept_id.to_string(),
     32,
   )
-  self.next_network_intercept_id += 1
-  self.network_intercepts[intercept_id] = make_object(options)
+  self.network_state.next_network_intercept_id += 1
+  self.network_state.network_intercepts[intercept_id] = make_object(options)
   self.send_success(request_id, Some(Json::string(intercept_id)))
 }
 
@@ -71,7 +71,7 @@ fn BidiProtocol::handle_network_remove_intercept(
       return
     }
   }
-  if !self.network_intercepts.contains(intercept_id) {
+  if !self.network_state.network_intercepts.contains(intercept_id) {
     self.send_error(
       request_id,
       "no such intercept",
@@ -79,7 +79,7 @@ fn BidiProtocol::handle_network_remove_intercept(
     )
     return
   }
-  self.network_intercepts.remove(intercept_id)
+  self.network_state.network_intercepts.remove(intercept_id)
   self.send_success(request_id, Some(make_object({})))
 }
 
@@ -96,9 +96,11 @@ fn BidiProtocol::handle_network_add_data_collector(
     None => return
   }
   let collector_id = "collector-" +
-    self.next_network_data_collector_id.to_string()
-  self.next_network_data_collector_id += 1
-  self.network_data_collectors[collector_id] = make_object(options)
+    self.network_state.next_network_data_collector_id.to_string()
+  self.network_state.next_network_data_collector_id += 1
+  self.network_state.network_data_collectors[collector_id] = make_object(
+    options,
+  )
   self.send_success(
     request_id,
     Some(make_object({ "collector": Json::string(collector_id) })),
@@ -117,9 +119,11 @@ fn BidiProtocol::handle_network_add_data_collector_id(
     None => return
   }
   let collector_id = "collector-" +
-    self.next_network_data_collector_id.to_string()
-  self.next_network_data_collector_id += 1
-  self.network_data_collectors[collector_id] = make_object(options)
+    self.network_state.next_network_data_collector_id.to_string()
+  self.network_state.next_network_data_collector_id += 1
+  self.network_state.network_data_collectors[collector_id] = make_object(
+    options,
+  )
   self.send_success(request_id, Some(Json::string(collector_id)))
 }
 
@@ -168,7 +172,7 @@ fn BidiProtocol::handle_network_remove_data_collector(
       return
     }
   }
-  if !self.network_data_collectors.contains(collector_id) {
+  if !self.network_state.network_data_collectors.contains(collector_id) {
     self.send_error(
       request_id,
       "no such network collector",
@@ -176,20 +180,20 @@ fn BidiProtocol::handle_network_remove_data_collector(
     )
     return
   }
-  self.network_data_collectors.remove(collector_id)
+  self.network_state.network_data_collectors.remove(collector_id)
   let request_keys : Array[String] = []
-  for request_key, _ in self.network_collected_data {
+  for request_key, _ in self.network_state.network_collected_data {
     request_keys.push(request_key)
   }
   for request_key in request_keys {
-    match self.network_collected_data.get(request_key) {
+    match self.network_state.network_collected_data.get(request_key) {
       Some(request_bucket) => {
         let next_bucket = request_bucket
         next_bucket.remove(collector_id)
         if next_bucket.length() == 0 {
-          self.network_collected_data.remove(request_key)
+          self.network_state.network_collected_data.remove(request_key)
         } else {
-          self.network_collected_data[request_key] = next_bucket
+          self.network_state.network_collected_data[request_key] = next_bucket
         }
       }
       None => ()

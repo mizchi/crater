@@ -323,7 +323,7 @@ fn BidiProtocol::dispatch_browser(
             }
             self.remove_storage_cookies_for_user_context(id)
             self.remove_permission_state_for_user_context(id)
-            self.network_extra_headers_by_user_context.remove(id)
+            self.network_state.network_extra_headers_by_user_context.remove(id)
             self.user_contexts.remove(id)
             self.user_context_prompt_behavior.remove(id)
             self.user_context_download_behavior.remove(id)
