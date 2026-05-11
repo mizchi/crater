@@ -637,6 +637,31 @@ describe("MoonBit module boundaries", () => {
     expect(renderSource).not.toContain("pub fn dirty_rects_to_cells(");
   });
 
+  it("splits browser tui render clipping out of the main renderer", () => {
+    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render.mbt"), "utf8");
+    const clipSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_clip.mbt"), "utf8");
+
+    expect(clipSource).toContain("fn get_local_clip_rect(");
+    expect(clipSource).toContain("fn combine_clip_rects(");
+    expect(clipSource).toContain("fn resolve_clip_path_rect(");
+    expect(renderSource).not.toContain("fn get_local_clip_rect(");
+    expect(renderSource).not.toContain("fn resolve_clip_path_rect(");
+  });
+
+  it("splits browser tui hit regions out of the main renderer", () => {
+    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render.mbt"), "utf8");
+    const hitSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_hit_region.mbt"), "utf8");
+
+    expect(hitSource).toContain("pub(all) struct LinkRegion");
+    expect(hitSource).toContain("pub(all) struct HitRegion");
+    expect(hitSource).toContain("pub(all) enum HitClipShape");
+    expect(hitSource).toContain("pub fn find_hit_region_at(");
+    expect(renderSource).not.toContain("pub(all) struct LinkRegion");
+    expect(renderSource).not.toContain("pub(all) struct HitRegion");
+    expect(renderSource).not.toContain("pub(all) enum HitClipShape");
+    expect(renderSource).not.toContain("fn point_in_polygon(");
+  });
+
   it("keeps browser shell terminal image implementation in its own file", () => {
     expect(fs.existsSync(path.join(REPO_ROOT, "browser/shell/terminal_image.mbt"))).toBe(true);
 
