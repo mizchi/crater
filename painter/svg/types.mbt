@@ -769,10 +769,7 @@ pub fn hit_test_shape(px : Double, py : Double, shape : Shape) -> Bool {
 /// Hit test an SVGNode at a point (in world coordinates)
 /// Returns true if the point is inside the node's shape
 pub fn SVGNode::hit_test(self : SVGNode, px : Double, py : Double) -> Bool {
-  // Apply inverse transform to the point
-  let inv = self.transform.inverse()
-  let (local_x, local_y) = inv.apply(px, py)
-  hit_test_shape(local_x, local_y, self.shape)
+  svg_node_to_msvg(self).hit_test(px, py)
 }
 
 ///|

@@ -2546,9 +2546,15 @@ describe("MoonBit module boundaries", () => {
   it("delegates SVG shape hit testing to mizchi/svg", () => {
     const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const nodeHitStart = typesSource.indexOf("pub fn SVGNode::hit_test(");
+    const nodeHitEnd = typesSource.indexOf("///|\n/// Find all nodes", nodeHitStart);
+    const nodeHitSource = typesSource.slice(nodeHitStart, nodeHitEnd);
 
     expect(typesSource.includes("pub fn hit_test_shape(")).toBe(true);
     expect(typesSource.includes("@msvg.hit_test_shape(px, py, shape_to_msvg(shape))")).toBe(true);
+    expect(nodeHitSource.includes("svg_node_to_msvg(self).hit_test(px, py)")).toBe(true);
+    expect(nodeHitSource.includes("let inv = self.transform.inverse()")).toBe(false);
+    expect(nodeHitSource.includes("hit_test_shape(local_x, local_y, self.shape)")).toBe(false);
     expect(interopSource.includes("fn shape_to_msvg(")).toBe(true);
     expect(typesSource.includes("fn hit_test_rect(")).toBe(false);
     expect(typesSource.includes("fn hit_test_circle(")).toBe(false);
