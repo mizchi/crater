@@ -2722,9 +2722,11 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG path follower operations to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/path_animation.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
 
+    expect(source.includes("pub(all) struct PathFollower")).toBe(true);
     expect(source.includes("@msvg.PathFollower::new(")).toBe(true);
     expect(source.includes("path_follower_to_msvg(self).get_position()")).toBe(true);
     expect(source.includes("let follower = path_follower_to_msvg(self)")).toBe(true);
@@ -2733,6 +2735,8 @@ describe("MoonBit module boundaries", () => {
     expect(interopSource.includes("fn copy_path_follower_state_from_msvg(")).toBe(true);
     expect(source.includes("fn flatten_path(")).toBe(false);
     expect(source.includes("fn compute_path_lengths(")).toBe(false);
+    expect(typesSource.includes("pub(all) struct PathFollower")).toBe(false);
+    expect(typesSource.includes("pub fn PathFollower::new(")).toBe(false);
   });
 
   it("delegates SVG tween operations to mizchi/svg", () => {

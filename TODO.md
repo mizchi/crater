@@ -138,6 +138,7 @@
   - 進捗: filter enum / helpers を `painter/svg/filter.mbt` へ分離
   - 進捗: image / sprite / animated sprite helpers を `painter/svg/image.mbt` へ分離
   - 進捗: particle emitter / RNG helpers を `painter/svg/particle.mbt` へ分離
+  - 進捗: path follower helpers を `painter/svg/path_animation.mbt` へ分離
 - [ ] `painter/svg/scene.mbt` の scene graph mutation と shape rendering を分離する
   - 候補: dirty region/z-order/camera, render dispatch, shape renderer (`render_rect`, `render_circle`, `render_path`, `render_text`)
   - `mizchi/svg` に寄せられる primitive はそちらへの移譲候補として扱う
