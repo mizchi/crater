@@ -221,6 +221,17 @@ describe("MoonBit module boundaries", () => {
     expect(rasterSource.includes("fn fill_rect_clipped(")).toBe(false);
   });
 
+  it("splits raster shadow helpers out of paint_raster", () => {
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_shadow.mbt"), "utf8");
+
+    expect(source.includes("fn fill_box_shadow_clipped(")).toBe(true);
+    expect(source.includes("fn blurred_shadow_layer_count(")).toBe(true);
+    expect(source.includes("fn fill_blurred_box_shadow_clipped(")).toBe(true);
+    expect(rasterSource.includes("fn fill_box_shadow_clipped(")).toBe(false);
+    expect(rasterSource.includes("fn fill_blurred_box_shadow_clipped(")).toBe(false);
+  });
+
   it("splits rounded raster fill helpers out of paint_raster", () => {
     const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_rounded_rect.mbt"), "utf8");
