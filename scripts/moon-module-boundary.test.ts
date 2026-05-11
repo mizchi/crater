@@ -2435,6 +2435,20 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("render_node(self.root, Transform::identity(), ctx)")).toBe(false);
   });
 
+  it("delegates SVG render context constructors to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+
+    expect(source.includes("render_context_from_msvg(")).toBe(true);
+    expect(source.includes("@msvg.RenderContext::new(")).toBe(true);
+    expect(source.includes("@msvg.RenderContext::with_clip(")).toBe(true);
+    expect(source.includes("@msvg.RenderContext::for_camera(")).toBe(true);
+    expect(interopSource.includes("fn render_context_from_msvg(")).toBe(true);
+    expect(source.includes("{ setter, width, height, flatness: 0.5, clip: None }")).toBe(false);
+    expect(source.includes("{ setter, width, height, flatness: 0.5, clip: Some(clip) }")).toBe(false);
+    expect(source.includes("let clip = ClipRect::from_size(camera.viewport_width, camera.viewport_height)")).toBe(false);
+  });
+
   it("delegates SVG scene queries to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene.mbt"), "utf8");
 

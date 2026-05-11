@@ -548,7 +548,9 @@ pub fn RenderContext::new(
   width : Int,
   height : Int,
 ) -> RenderContext {
-  { setter, width, height, flatness: 0.5, clip: None }
+  render_context_from_msvg(
+    @msvg.RenderContext::new(pixel_setter_to_msvg(setter), width, height),
+  )
 }
 
 ///|
@@ -559,7 +561,14 @@ pub fn RenderContext::with_clip(
   height : Int,
   clip : ClipRect,
 ) -> RenderContext {
-  { setter, width, height, flatness: 0.5, clip: Some(clip) }
+  render_context_from_msvg(
+    @msvg.RenderContext::with_clip(
+      pixel_setter_to_msvg(setter),
+      width,
+      height,
+      clip_rect_to_msvg(clip),
+    ),
+  )
 }
 
 ///|
@@ -568,12 +577,10 @@ pub fn RenderContext::for_camera(
   setter : PixelSetter,
   camera : Camera,
 ) -> RenderContext {
-  let clip = ClipRect::from_size(camera.viewport_width, camera.viewport_height)
-  {
-    setter,
-    width: camera.viewport_width,
-    height: camera.viewport_height,
-    flatness: 0.5,
-    clip: Some(clip),
-  }
+  render_context_from_msvg(
+    @msvg.RenderContext::for_camera(
+      pixel_setter_to_msvg(setter),
+      camera_to_msvg(camera),
+    ),
+  )
 }
