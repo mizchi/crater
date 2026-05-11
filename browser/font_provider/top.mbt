@@ -19,9 +19,9 @@ fn js_read_binary_file(_path : String) -> Bytes {
 }
 
 ///|
-pub fn load_system_glyph_provider() -> @image.GlyphProvider? {
+pub fn load_system_glyph_provider() -> @raster.GlyphProvider? {
   match @system_provider.load_system_glyph_provider(js_read_binary_file) {
-    Some(provider) => Some(@image.glyph_provider_from_delegate(provider))
+    Some(provider) => Some(@raster.glyph_provider_from_delegate(provider))
     None => None
   }
 }
@@ -30,7 +30,7 @@ pub fn load_system_glyph_provider() -> @image.GlyphProvider? {
 pub fn install_system_glyph_provider() -> Bool {
   match load_system_glyph_provider() {
     Some(provider) => {
-      @image.set_glyph_provider(provider)
+      @raster.set_glyph_provider(provider)
       true
     }
     None => false

@@ -19,7 +19,7 @@ fn Browser::render(self : Browser) -> String {
     self.scroll_y,
   )
   if installed_provider {
-    @image.clear_image_provider()
+    @raster.clear_image_provider()
   }
   output
 }

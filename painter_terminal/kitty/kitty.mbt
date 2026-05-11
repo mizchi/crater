@@ -4,7 +4,7 @@
 
 ///|
 fn to_kitty_protocol_colors(
-  palette : @image.DynamicPalette,
+  palette : @raster.DynamicPalette,
 ) -> Array[@kitty_protocol.Color] {
   palette.colors.map(fn(color) {
     @kitty_protocol.Color::rgb(color.r, color.g, color.b)
@@ -14,8 +14,8 @@ fn to_kitty_protocol_colors(
 ///|
 /// Convert Framebuffer to Kitty Graphics Protocol string
 pub fn to_kitty(
-  fb : @image.Framebuffer,
-  palette : @image.DynamicPalette,
+  fb : @raster.Framebuffer,
+  palette : @raster.DynamicPalette,
 ) -> String {
   @kitty_protocol.encode_indexed_pixels_to_kitty(
     fb.width,
@@ -27,8 +27,8 @@ pub fn to_kitty(
 
 ///|
 pub fn to_kitty_with_cells(
-  fb : @image.Framebuffer,
-  palette : @image.DynamicPalette,
+  fb : @raster.Framebuffer,
+  palette : @raster.DynamicPalette,
   cols : Int,
   rows : Int,
   image_id? : Int = 0,
@@ -107,8 +107,8 @@ pub fn encode_rgba_base64_to_kitty_image(
 ///|
 pub async fn[T : @io.Writer] write_kitty(
   writer : T,
-  fb : @image.Framebuffer,
-  palette : @image.DynamicPalette,
+  fb : @raster.Framebuffer,
+  palette : @raster.DynamicPalette,
 ) -> Unit {
   @kitty_protocol.write_indexed_pixels_to_kitty(
     writer,
@@ -126,12 +126,12 @@ pub fn render_svg_to_kitty(
   width : Int,
   height : Int,
 ) -> String {
-  let fb = @image.Framebuffer::new(width, height)
-  let palette = @image.DynamicPalette::new()
+  let fb = @raster.Framebuffer::new(width, height)
+  let palette = @raster.DynamicPalette::new()
   // Fill with white background
   fb.fill_rect(0, 0, width, height, 0)
   // Render SVG
-  @image.render_svg_scene(scene, fb, palette)
+  @raster.render_svg_scene(scene, fb, palette)
   // Convert to Kitty
   to_kitty(fb, palette)
 }
@@ -143,10 +143,10 @@ pub async fn[T : @io.Writer] write_svg_to_kitty(
   width : Int,
   height : Int,
 ) -> Unit {
-  let fb = @image.Framebuffer::new(width, height)
-  let palette = @image.DynamicPalette::new()
+  let fb = @raster.Framebuffer::new(width, height)
+  let palette = @raster.DynamicPalette::new()
   fb.fill_rect(0, 0, width, height, 0)
-  @image.render_svg_scene(scene, fb, palette)
+  @raster.render_svg_scene(scene, fb, palette)
   write_kitty(writer, fb, palette)
 }
 
@@ -179,9 +179,9 @@ pub fn render_paint_node_to_kitty_scrolled(
   height : Int,
   scroll_y : Int,
 ) -> String {
-  let fb = @image.Framebuffer::new(width, height)
-  let palette = @image.DynamicPalette::new()
-  @image.render_paint_node_to_framebuffer_scrolled(node, fb, palette, scroll_y)
+  let fb = @raster.Framebuffer::new(width, height)
+  let palette = @raster.DynamicPalette::new()
+  @raster.render_paint_node_to_framebuffer_scrolled(node, fb, palette, scroll_y)
   // Convert to Kitty
   to_kitty(fb, palette)
 }
@@ -194,9 +194,9 @@ pub async fn[T : @io.Writer] write_paint_node_to_kitty_scrolled(
   height : Int,
   scroll_y : Int,
 ) -> Unit {
-  let fb = @image.Framebuffer::new(width, height)
-  let palette = @image.DynamicPalette::new()
-  @image.render_paint_node_to_framebuffer_scrolled(node, fb, palette, scroll_y)
+  let fb = @raster.Framebuffer::new(width, height)
+  let palette = @raster.DynamicPalette::new()
+  @raster.render_paint_node_to_framebuffer_scrolled(node, fb, palette, scroll_y)
   write_kitty(writer, fb, palette)
 }
 
@@ -206,15 +206,15 @@ pub fn render_svg_to_kitty_with_camera(
   scene : @svg.Scene,
   camera : @svg.Camera,
 ) -> String {
-  let fb = @image.Framebuffer::new(
+  let fb = @raster.Framebuffer::new(
     camera.viewport_width,
     camera.viewport_height,
   )
-  let palette = @image.DynamicPalette::new()
+  let palette = @raster.DynamicPalette::new()
   // Fill with white background
   fb.fill_rect(0, 0, camera.viewport_width, camera.viewport_height, 0)
   // Render SVG with camera
-  @image.render_svg_scene_with_camera(scene, fb, palette, camera)
+  @raster.render_svg_scene_with_camera(scene, fb, palette, camera)
   // Convert to Kitty
   to_kitty(fb, palette)
 }
@@ -234,8 +234,8 @@ pub fn render_svg_text_to_kitty_cells(
     None => return ""
   }
   let scene = @svg.Scene::new(svg_node)
-  let fb = @image.Framebuffer::new(render_width, render_height)
-  let palette = @image.DynamicPalette::new()
+  let fb = @raster.Framebuffer::new(render_width, render_height)
+  let palette = @raster.DynamicPalette::new()
   fb.fill_rect(0, 0, render_width, render_height, 0)
   let viewbox = @svg.extract_root_view_box(svg_text)
   let (vx, vy, vw, vh) = match viewbox {
@@ -252,7 +252,7 @@ pub fn render_svg_text_to_kitty_cells(
   camera.set_position(vx + vw / 2.0, vy + vh / 2.0)
   let zoom = (render_width.to_double() / vw).min(render_height.to_double() / vh)
   camera.set_zoom(zoom)
-  @image.render_svg_scene_with_camera(scene, fb, palette, camera)
+  @raster.render_svg_scene_with_camera(scene, fb, palette, camera)
   to_kitty_with_cells(
     fb,
     palette,

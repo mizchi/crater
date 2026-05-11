@@ -163,38 +163,38 @@
   - 進捗: scene dirty/query helpers を `painter/svg/scene_dirty.mbt` へ分離
   - 進捗: scene z-order helpers を `painter/svg/scene_z_order.mbt` へ分離
   - 進捗: scene graph mutation helpers を `painter/svg/scene_graph.mbt` へ分離
-- [ ] `painter/x/image/paint_raster.mbt` / `glyph_render.mbt` の raster と glyph 責務を整理する
+- [ ] `painter/paint/raster/paint_raster.mbt` / `glyph_render.mbt` の raster と glyph 責務を整理する
   - 候補: scanline/fill, image decode/cache, glyph fallback, font metrics bridge
   - `mizchi/font` / `mizchi/svg` へ移せるものは crater 側を adapter に寄せる
-  - 進捗: raster color helpers を `painter/x/image/raster_color.mbt` へ分離
-  - 進捗: image provider model を `painter/x/image/image_provider.mbt` へ分離
-  - 進捗: raster base64 fallback を `painter/x/image/raster_base64.mbt` へ分離
-  - 進捗: framebuffer primitives を `painter/x/image/framebuffer.mbt` へ分離
-  - 進捗: framebuffer RGBA encoding を `painter/x/image/framebuffer_encode.mbt` へ分離
-  - 進捗: bitmap text fallback を `painter/x/image/bitmap_text.mbt` へ分離
-  - 進捗: raster text layout helpers を `painter/x/image/raster_text.mbt` へ分離
-  - 進捗: SVG data URI decode helpers を `painter/x/image/raster_svg_data_uri.mbt` へ分離
-  - 進捗: SVG region render helper を `painter/x/image/raster_svg_render.mbt` へ分離
-  - 進捗: raster image source/render helpers を `painter/x/image/raster_image_render.mbt` へ分離
-  - 進捗: canvas background propagation helpers を `painter/x/image/raster_canvas_background.mbt` へ分離
-  - 進捗: node text/glyph fallback rendering を `painter/x/image/raster_node_text.mbt` へ分離
-  - 進捗: node box decoration rendering を `painter/x/image/raster_node_box.mbt` へ分離
-  - 進捗: node content rendering を `painter/x/image/raster_node_content.mbt` へ分離
-  - 進捗: node child clip/recursive rendering を `painter/x/image/raster_node_children.mbt` へ分離
-  - 進捗: node visibility/culling predicates を `painter/x/image/raster_node_visibility.mbt` へ分離
-  - 進捗: raster palette helpers を `painter/x/image/raster_palette.mbt` へ分離
-  - 進捗: raster clip helpers を `painter/x/image/raster_clip.mbt` へ分離
-  - 進捗: raster blending helpers を `painter/x/image/raster_blend.mbt` へ分離
-  - 進捗: raster clipped fill helper を `painter/x/image/raster_fill.mbt` へ分離
-  - 進捗: box shadow raster helpers を `painter/x/image/raster_shadow.mbt` へ分離
-  - 進捗: rounded raster fill helpers を `painter/x/image/raster_rounded_rect.mbt` へ分離
-  - 進捗: raster gradient helpers を `painter/x/image/raster_gradient.mbt` へ分離
-  - 進捗: raster border helpers を `painter/x/image/raster_border.mbt` へ分離
-  - 進捗: raster group opacity helpers を `painter/x/image/raster_group.mbt` へ分離
-  - 進捗: glyph rasterizer / bitmap cache / text layout helpers を `painter/x/image/glyph_rasterizer.mbt` / `glyph_cache.mbt` / `glyph_layout.mbt` へ分離
-  - 進捗: glyph provider adapter / font metric bridge を `painter/x/image/glyph_provider.mbt` へ分離
-  - 進捗: glyph path translation helper を `painter/x/image/glyph_path.mbt` へ分離
-  - 進捗: glyph bitmap blit / opacity blending helper を `painter/x/image/glyph_blit.mbt` へ分離
+  - 進捗: raster color helpers を `painter/paint/raster/raster_color.mbt` へ分離
+  - 進捗: image provider model を `painter/paint/raster/image_provider.mbt` へ分離
+  - 進捗: raster base64 fallback を `painter/paint/raster/raster_base64.mbt` へ分離
+  - 進捗: framebuffer primitives を `painter/paint/raster/framebuffer.mbt` へ分離
+  - 進捗: framebuffer RGBA encoding を `painter/paint/raster/framebuffer_encode.mbt` へ分離
+  - 進捗: bitmap text fallback を `painter/paint/raster/bitmap_text.mbt` へ分離
+  - 進捗: raster text layout helpers を `painter/paint/raster/raster_text.mbt` へ分離
+  - 進捗: SVG data URI decode helpers を `painter/paint/raster/raster_svg_data_uri.mbt` へ分離
+  - 進捗: SVG region render helper を `painter/paint/raster/raster_svg_render.mbt` へ分離
+  - 進捗: raster image source/render helpers を `painter/paint/raster/raster_image_render.mbt` へ分離
+  - 進捗: canvas background propagation helpers を `painter/paint/raster/raster_canvas_background.mbt` へ分離
+  - 進捗: node text/glyph fallback rendering を `painter/paint/raster/raster_node_text.mbt` へ分離
+  - 進捗: node box decoration rendering を `painter/paint/raster/raster_node_box.mbt` へ分離
+  - 進捗: node content rendering を `painter/paint/raster/raster_node_content.mbt` へ分離
+  - 進捗: node child clip/recursive rendering を `painter/paint/raster/raster_node_children.mbt` へ分離
+  - 進捗: node visibility/culling predicates を `painter/paint/raster/raster_node_visibility.mbt` へ分離
+  - 進捗: raster palette helpers を `painter/paint/raster/raster_palette.mbt` へ分離
+  - 進捗: raster clip helpers を `painter/paint/raster/raster_clip.mbt` へ分離
+  - 進捗: raster blending helpers を `painter/paint/raster/raster_blend.mbt` へ分離
+  - 進捗: raster clipped fill helper を `painter/paint/raster/raster_fill.mbt` へ分離
+  - 進捗: box shadow raster helpers を `painter/paint/raster/raster_shadow.mbt` へ分離
+  - 進捗: rounded raster fill helpers を `painter/paint/raster/raster_rounded_rect.mbt` へ分離
+  - 進捗: raster gradient helpers を `painter/paint/raster/raster_gradient.mbt` へ分離
+  - 進捗: raster border helpers を `painter/paint/raster/raster_border.mbt` へ分離
+  - 進捗: raster group opacity helpers を `painter/paint/raster/raster_group.mbt` へ分離
+  - 進捗: glyph rasterizer / bitmap cache / text layout helpers を `painter/paint/raster/glyph_rasterizer.mbt` / `glyph_cache.mbt` / `glyph_layout.mbt` へ分離
+  - 進捗: glyph provider adapter / font metric bridge を `painter/paint/raster/glyph_provider.mbt` へ分離
+  - 進捗: glyph path translation helper を `painter/paint/raster/glyph_path.mbt` へ分離
+  - 進捗: glyph bitmap blit / opacity blending helper を `painter/paint/raster/glyph_blit.mbt` へ分離
 
 ### P2: tooling / boundary guard
 

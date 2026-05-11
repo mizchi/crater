@@ -12,7 +12,7 @@ import {
   "mizchi/crater-layout/node" @node,
   "mizchi/crater-renderer/renderer",
   "mizchi/crater-painter/svg",
-  "mizchi/crater-painter/x/image",
+  "mizchi/crater-painter/paint/raster",
   "mizchi/js/core",
   "mizchi/js/deno",
   "moonbitlang/core/json",

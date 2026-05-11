@@ -331,7 +331,7 @@ The paint/output packages have been moved into `painter/`:
 - `paint/*`
 - `layout_svg`
 - `svg`
-- `x/image`
+- `paint/raster`
 - `x/kitty`
 
 This keeps the paint model, SVG rasterization, and terminal image backends in

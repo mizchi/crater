@@ -88,12 +88,12 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("keeps framebuffer raster implementation names protocol-neutral", () => {
-    expect(fs.existsSync(path.join(REPO_ROOT, "painter/x/image/sixel.mbt"))).toBe(false);
+    expect(fs.existsSync(path.join(REPO_ROOT, "painter/paint/raster/sixel.mbt"))).toBe(false);
   });
 
   it("splits image raster color helpers out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_color.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_color.mbt"), "utf8");
 
     expect(source.includes("pub(all) struct Color")).toBe(true);
     expect(source.includes("pub fn Color::white(")).toBe(true);
@@ -105,8 +105,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits image provider model out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/image_provider.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/image_provider.mbt"), "utf8");
 
     expect(source.includes("pub(all) struct RasterImage")).toBe(true);
     expect(source.includes("pub(all) enum ResolvedImage")).toBe(true);
@@ -120,8 +120,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits image raster base64 fallback out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_base64.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_base64.mbt"), "utf8");
 
     expect(source.includes("let base64_chars")).toBe(true);
     expect(source.includes("fn write_base64_quad(")).toBe(true);
@@ -132,8 +132,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits framebuffer primitives out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/framebuffer.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/framebuffer.mbt"), "utf8");
 
     expect(source.includes("pub struct Framebuffer")).toBe(true);
     expect(source.includes("pub fn Framebuffer::new(")).toBe(true);
@@ -148,8 +148,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits framebuffer encoding out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/framebuffer_encode.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/framebuffer_encode.mbt"), "utf8");
 
     expect(source.includes("extern \"js\" fn framebuffer_to_rgba_base64_js(")).toBe(true);
     expect(source.includes("fn framebuffer_to_rgba_base64_js(")).toBe(true);
@@ -159,8 +159,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits bitmap text fallback out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/bitmap_text.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/bitmap_text.mbt"), "utf8");
 
     expect(source.includes("fn is_wide_char(")).toBe(true);
     expect(source.includes("pub fn Framebuffer::draw_char(")).toBe(true);
@@ -173,8 +173,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits raster text layout helpers out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_text.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_text.mbt"), "utf8");
 
     expect(source.includes("fn draw_text_decoration_line(")).toBe(true);
     expect(source.includes("fn resolve_text_render_box(")).toBe(true);
@@ -185,8 +185,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits raster SVG data URI helpers out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_svg_data_uri.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_svg_data_uri.mbt"), "utf8");
 
     expect(source.includes("fn decode_svg_data_uri(")).toBe(true);
     expect(source.includes("fn url_decode_simple(")).toBe(true);
@@ -197,8 +197,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits raster SVG region rendering out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_svg_render.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_svg_render.mbt"), "utf8");
 
     expect(source.includes("fn render_svg_into_region(")).toBe(true);
     expect(source.includes("@svg.parse_svg(svg_text)")).toBe(true);
@@ -207,8 +207,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits raster image source rendering out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_image_render.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_image_render.mbt"), "utf8");
 
     expect(source.includes("fn resolve_image_src(")).toBe(true);
     expect(source.includes("fn render_image_src_into_region(")).toBe(true);
@@ -220,8 +220,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits raster canvas background helpers out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_canvas_background.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_canvas_background.mbt"), "utf8");
 
     expect(source.includes("fn resolve_canvas_background_color(")).toBe(true);
     expect(source.includes("fn fill_canvas_background(")).toBe(true);
@@ -231,8 +231,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits raster node text rendering out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_node_text.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_node_text.mbt"), "utf8");
 
     expect(source.includes("fn render_node_text_content(")).toBe(true);
     expect(source.includes("fn render_node_text_decorations(")).toBe(true);
@@ -243,8 +243,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits raster node box decorations out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_node_box.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_node_box.mbt"), "utf8");
 
     expect(source.includes("fn render_node_box_decorations(")).toBe(true);
     expect(source.includes("fill_blurred_box_shadow_clipped(")).toBe(true);
@@ -257,8 +257,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits raster node content rendering out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_node_content.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_node_content.mbt"), "utf8");
 
     expect(source.includes("fn render_node_content(")).toBe(true);
     expect(source.includes("render_image_src_into_region(")).toBe(true);
@@ -269,8 +269,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits raster node child rendering out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_node_children.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_node_children.mbt"), "utf8");
 
     expect(source.includes("fn render_node_children_clipped(")).toBe(true);
     expect(source.includes("clip_intersect(")).toBe(true);
@@ -281,8 +281,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits raster node visibility helpers out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_node_visibility.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_node_visibility.mbt"), "utf8");
 
     expect(source.includes("fn is_visually_hidden_paint_node(")).toBe(true);
     expect(source.includes("fn is_node_outside_framebuffer(")).toBe(true);
@@ -293,8 +293,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits glyph rasterization helpers out of glyph_render", () => {
-    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_render.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_rasterizer.mbt"), "utf8");
+    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_render.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_rasterizer.mbt"), "utf8");
 
     expect(source.includes("priv struct GlyphBitmap")).toBe(true);
     expect(source.includes("fn insert_sorted_double(")).toBe(true);
@@ -309,8 +309,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits glyph bitmap cache helpers out of glyph_render", () => {
-    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_render.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_cache.mbt"), "utf8");
+    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_render.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_cache.mbt"), "utf8");
 
     expect(source.includes("let glyph_bitmap_cache")).toBe(true);
     expect(source.includes("let glyph_cache")).toBe(true);
@@ -325,8 +325,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits glyph text layout helpers out of glyph_render", () => {
-    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_render.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_layout.mbt"), "utf8");
+    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_render.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_layout.mbt"), "utf8");
 
     expect(source.includes("let text_wrap_tolerance")).toBe(true);
     expect(source.includes("fn resolve_text_wrap_tolerance(")).toBe(true);
@@ -341,8 +341,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits glyph provider adapter helpers out of glyph_render", () => {
-    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_render.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_provider.mbt"), "utf8");
+    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_render.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_provider.mbt"), "utf8");
 
     expect(source.includes("pub(all) struct GlyphProvider")).toBe(true);
     expect(source.includes("let glyph_provider_override")).toBe(true);
@@ -359,8 +359,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits glyph path translation helpers out of glyph_render", () => {
-    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_render.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_path.mbt"), "utf8");
+    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_render.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_path.mbt"), "utf8");
 
     expect(source.includes("fn translate_path_commands(")).toBe(true);
     expect(source.includes("@svg.PathCommand::MoveTo")).toBe(true);
@@ -368,8 +368,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits glyph bitmap blitting helpers out of glyph_render", () => {
-    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_render.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_blit.mbt"), "utf8");
+    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_render.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_blit.mbt"), "utf8");
 
     expect(source.includes("fn clamp_opacity(")).toBe(true);
     expect(source.includes("fn blend_color_over_pixel_alpha(")).toBe(true);
@@ -381,8 +381,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits raster palette helpers out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_palette.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_palette.mbt"), "utf8");
 
     expect(source.includes("pub struct DynamicPalette")).toBe(true);
     expect(source.includes("pub fn DynamicPalette::new(")).toBe(true);
@@ -396,8 +396,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits raster clip helpers out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_clip.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_clip.mbt"), "utf8");
 
     expect(source.includes("pub(all) struct ClipRect")).toBe(true);
     expect(source.includes("fn clip_intersect(")).toBe(true);
@@ -408,8 +408,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits raster blending helpers out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_blend.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_blend.mbt"), "utf8");
 
     expect(source.includes("fn blend_types_color_over_pixel(")).toBe(true);
     expect(source.includes("fn blend_raster_color_over_pixel(")).toBe(true);
@@ -422,16 +422,16 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits raster clipped fill helper out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_fill.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_fill.mbt"), "utf8");
 
     expect(source.includes("fn fill_rect_clipped(")).toBe(true);
     expect(rasterSource.includes("fn fill_rect_clipped(")).toBe(false);
   });
 
   it("splits raster shadow helpers out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_shadow.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_shadow.mbt"), "utf8");
 
     expect(source.includes("fn fill_box_shadow_clipped(")).toBe(true);
     expect(source.includes("fn blurred_shadow_layer_count(")).toBe(true);
@@ -441,8 +441,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits rounded raster fill helpers out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_rounded_rect.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_rounded_rect.mbt"), "utf8");
 
     expect(source.includes("fn rounded_corner_coverage(")).toBe(true);
     expect(source.includes("fn fill_rounded_corner_pixels_fast(")).toBe(true);
@@ -453,8 +453,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits raster gradient helpers out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_gradient.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_gradient.mbt"), "utf8");
 
     expect(source.includes("fn lerp_color(")).toBe(true);
     expect(source.includes("fn sample_gradient(")).toBe(true);
@@ -465,8 +465,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits raster border helpers out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_border.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_border.mbt"), "utf8");
 
     expect(source.includes("fn resolve_radius(")).toBe(true);
     expect(source.includes("fn same_types_color(")).toBe(true);
@@ -477,8 +477,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("splits raster group opacity helpers out of paint_raster", () => {
-    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_group.mbt"), "utf8");
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/raster_group.mbt"), "utf8");
 
     expect(source.includes("fn make_transparent_framebuffer(")).toBe(true);
     expect(source.includes("fn blend_group_framebuffer_over(")).toBe(true);
@@ -3422,7 +3422,7 @@ describe("MoonBit module boundaries", () => {
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",
-      "mizchi/crater-painter/x/image",
+      "mizchi/crater-painter/paint/raster",
       "render_to_sixel",
       "render_to_kitty",
       "write_kitty",

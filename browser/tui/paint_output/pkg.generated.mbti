@@ -3,15 +3,15 @@ package "mizchi/crater-browser/tui/paint_output"
 
 import {
   "mizchi/crater-painter/paint/model",
-  "mizchi/crater-painter/x/image",
+  "mizchi/crater-painter/paint/raster",
 }
 
 // Values
-pub fn framebuffer_to_rgba_base64(@image.Framebuffer, @image.DynamicPalette) -> String
+pub fn framebuffer_to_rgba_base64(@raster.Framebuffer, @raster.DynamicPalette) -> String
 
-pub fn framebuffer_visual_stats(@image.Framebuffer, @image.DynamicPalette) -> VisualStats
+pub fn framebuffer_visual_stats(@raster.Framebuffer, @raster.DynamicPalette) -> VisualStats
 
-pub fn raster_to_framebuffer(@model.PaintNode, Int, Int) -> (@image.Framebuffer, @image.DynamicPalette)
+pub fn raster_to_framebuffer(@model.PaintNode, Int, Int) -> (@raster.Framebuffer, @raster.DynamicPalette)
 
 pub fn raster_to_rgba_base64(@model.PaintNode, Int, Int) -> String
 
@@ -28,9 +28,9 @@ pub(all) struct VisualStats {
 }
 
 // Type aliases
-pub using @image {type DynamicPalette}
+pub using @raster {type DynamicPalette}
 
-pub using @image {type Framebuffer}
+pub using @raster {type Framebuffer}
 
 pub using @model {type PaintNode}
 

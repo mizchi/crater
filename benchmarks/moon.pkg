@@ -13,7 +13,7 @@ import {
   "mizchi/crater-painter/paint/diff" @paint_diff,
   "mizchi/crater-browser/tui/paint_output" @tui_paint_output,
   "mizchi/crater-browser/tui/paint_png" @tui_paint_png,
-  "mizchi/crater-painter/x/image",
+  "mizchi/crater-painter/paint/raster",
   "mizchi/crater-painter-terminal/sixel",
   "mizchi/crater-painter/svg",
 }

@@ -1,5 +1,5 @@
 import {
-  "mizchi/crater-painter/x/image" @image,
+  "mizchi/crater-painter/paint/raster" @raster,
   "mizchi/crater-browser/tui/paint/plain" @paint_plain,
 }
 

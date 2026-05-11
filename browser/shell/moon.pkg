@@ -20,7 +20,7 @@ import {
   "mizchi/crater-painter-terminal" @painter_terminal,
   "mizchi/crater-painter-terminal/sixel",
   "mizchi/crater-terminal-image-cache" @terminal_image_cache,
-  "mizchi/crater-painter/x/image",
+  "mizchi/crater-painter/paint/raster",
 }
 
 import {

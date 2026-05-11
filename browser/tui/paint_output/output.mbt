@@ -2,7 +2,7 @@
 pub using @paint_plain {type PaintNode}
 
 ///|
-pub using @image {type Framebuffer, type DynamicPalette}
+pub using @raster {type Framebuffer, type DynamicPalette}
 
 ///|
 pub(all) struct VisualStats {
@@ -18,9 +18,9 @@ pub fn raster_to_framebuffer(
   width : Int,
   height : Int,
 ) -> (Framebuffer, DynamicPalette) {
-  let fb = @image.Framebuffer::new(width, height)
-  let palette = @image.DynamicPalette::new()
-  @image.render_paint_node_to_framebuffer(paint_node, fb, palette)
+  let fb = @raster.Framebuffer::new(width, height)
+  let palette = @raster.DynamicPalette::new()
+  @raster.render_paint_node_to_framebuffer(paint_node, fb, palette)
   (fb, palette)
 }
 
@@ -29,11 +29,11 @@ pub fn framebuffer_to_rgba_base64(
   fb : Framebuffer,
   palette : DynamicPalette,
 ) -> String {
-  @image.framebuffer_to_rgba_base64(fb, palette)
+  @raster.framebuffer_to_rgba_base64(fb, palette)
 }
 
 ///|
-fn color_rgb_key(c : @image.Color) -> Int {
+fn color_rgb_key(c : @raster.Color) -> Int {
   c.r * 65536 + c.g * 256 + c.b
 }
 

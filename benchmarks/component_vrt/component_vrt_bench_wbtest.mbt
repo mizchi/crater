@@ -847,7 +847,7 @@ fn raster_component_paint(
   paint_node : @tui_paint_plain.PaintNode,
   width : Int,
   height : Int,
-) -> (@image.Framebuffer, @image.DynamicPalette) {
+) -> (@raster.Framebuffer, @raster.DynamicPalette) {
   @tui_paint_output.raster_to_framebuffer(paint_node, width, height)
 }
 

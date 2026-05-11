@@ -1,6 +1,6 @@
 ///|
 /// Tests for framebuffer paint rasterization
-fn render_text_probe(build : (@style.Style) -> Unit) -> @image.Framebuffer {
+fn render_text_probe(build : (@style.Style) -> Unit) -> @raster.Framebuffer {
   let style = @style.Style::default()
   style.color = @types.Color::rgb(20, 20, 20)
   style.font_size = 12.0
@@ -16,22 +16,22 @@ fn render_text_probe(build : (@style.Style) -> Unit) -> @image.Framebuffer {
     [],
     text=Some("Hi"),
   )
-  let fb = @image.Framebuffer::new(48, 32)
-  let palette = @image.DynamicPalette::new()
-  @image.render_paint_node_to_framebuffer(node, fb, palette)
+  let fb = @raster.Framebuffer::new(48, 32)
+  let palette = @raster.DynamicPalette::new()
+  @raster.render_paint_node_to_framebuffer(node, fb, palette)
   fb
 }
 
 ///|
 test "framebuffer creation" {
-  let fb = @image.Framebuffer::new(10, 10)
+  let fb = @raster.Framebuffer::new(10, 10)
   inspect(fb.width, content="10")
   inspect(fb.height, content="10")
 }
 
 ///|
 test "framebuffer fill_rect" {
-  let fb = @image.Framebuffer::new(10, 10)
+  let fb = @raster.Framebuffer::new(10, 10)
   fb.fill_rect(2, 2, 5, 5, 1)
   // Check corners of the filled rect
   inspect(fb.pixels[2 * 10 + 2], content="1")
@@ -42,7 +42,7 @@ test "framebuffer fill_rect" {
 
 ///|
 test "framebuffer fill_rect clips to framebuffer bounds" {
-  let fb = @image.Framebuffer::new(4, 3)
+  let fb = @raster.Framebuffer::new(4, 3)
   fb.fill_rect(-1, -1, 3, 3, 7)
   inspect(fb.pixels[0], content="7")
   inspect(fb.pixels[1], content="7")
@@ -55,8 +55,8 @@ test "framebuffer fill_rect clips to framebuffer bounds" {
 
 ///|
 test "color blend" {
-  let white = @image.Color::white()
-  let blue = @image.Color::blue()
+  let white = @raster.Color::white()
+  let blue = @raster.Color::blue()
   let blended = blue.blend(white, 128) // 50% blend
   // Should be roughly halfway between blue and white
   inspect(blended.r > 100, content="true")
@@ -88,9 +88,9 @@ test "render_paint_node_to_framebuffer does not add debug border for block" {
     @paint_model.PaintProperties::default(),
     [child],
   )
-  let fb = @image.Framebuffer::new(6, 6)
-  let palette = @image.DynamicPalette::new()
-  @image.render_paint_node_to_framebuffer(node, fb, palette)
+  let fb = @raster.Framebuffer::new(6, 6)
+  let palette = @raster.DynamicPalette::new()
+  @raster.render_paint_node_to_framebuffer(node, fb, palette)
 
   let corner = palette.colors[fb.get_pixel(0, 0)]
   let inner = palette.colors[fb.get_pixel(1, 1)]
@@ -110,11 +110,11 @@ test "render_paint_node_to_framebuffer does not add debug border for block" {
 test "image provider draws raster img instead of alt text" {
   let style = @style.Style::default()
   style.color = @types.Color::rgb(0, 0, 0)
-  @image.set_image_provider({
+  @raster.set_image_provider({
     resolve: fn(src) {
       if src == "logo.png" {
         Some(
-          @image.ResolvedImage::Raster({
+          @raster.ResolvedImage::Raster({
             width: 1,
             height: 1,
             rgba: [255, 0, 0, 255],
@@ -137,14 +137,14 @@ test "image provider draws raster img instead of alt text" {
     text=Some("Logo Alt"),
     src=Some("logo.png"),
   )
-  let fb = @image.Framebuffer::new(4, 4)
-  let palette = @image.DynamicPalette::new()
-  @image.render_paint_node_to_framebuffer(node, fb, palette)
+  let fb = @raster.Framebuffer::new(4, 4)
+  let palette = @raster.DynamicPalette::new()
+  @raster.render_paint_node_to_framebuffer(node, fb, palette)
   let color = palette.colors[fb.get_pixel(0, 0)]
   inspect(color.r, content="255")
   inspect(color.g, content="0")
   inspect(color.b, content="0")
-  @image.clear_image_provider()
+  @raster.clear_image_provider()
 }
 
 ///|
@@ -171,9 +171,9 @@ test "render_paint_node_to_framebuffer blends semi transparent background" {
     @paint_model.PaintProperties::default(),
     [child],
   )
-  let fb = @image.Framebuffer::new(4, 4)
-  let palette = @image.DynamicPalette::new()
-  @image.render_paint_node_to_framebuffer(node, fb, palette)
+  let fb = @raster.Framebuffer::new(4, 4)
+  let palette = @raster.DynamicPalette::new()
+  @raster.render_paint_node_to_framebuffer(node, fb, palette)
 
   let color = palette.colors[fb.get_pixel(0, 0)]
   inspect(color.r, content="255")
@@ -219,9 +219,9 @@ test "render_paint_node_to_framebuffer blends semi transparent rounded backgroun
     @paint_model.PaintProperties::default(),
     [child],
   )
-  let fb = @image.Framebuffer::new(12, 12)
-  let palette = @image.DynamicPalette::new()
-  @image.render_paint_node_to_framebuffer(node, fb, palette)
+  let fb = @raster.Framebuffer::new(12, 12)
+  let palette = @raster.DynamicPalette::new()
+  @raster.render_paint_node_to_framebuffer(node, fb, palette)
 
   let color = palette.colors[fb.get_pixel(6, 6)]
   inspect(color.r, content="204")
@@ -258,9 +258,9 @@ test "render_paint_node_to_framebuffer clips solid rounded background corners" {
     @paint_model.PaintProperties::default(),
     [child],
   )
-  let fb = @image.Framebuffer::new(12, 12)
-  let palette = @image.DynamicPalette::new()
-  @image.render_paint_node_to_framebuffer(node, fb, palette)
+  let fb = @raster.Framebuffer::new(12, 12)
+  let palette = @raster.DynamicPalette::new()
+  @raster.render_paint_node_to_framebuffer(node, fb, palette)
   let corner = palette.colors[fb.get_pixel(0, 0)]
   let center = palette.colors[fb.get_pixel(6, 6)]
   inspect(corner.r, content="255")
@@ -307,9 +307,9 @@ test "render_paint_node_to_framebuffer clips uniform rounded border corners" {
     @paint_model.PaintProperties::default(),
     [child],
   )
-  let fb = @image.Framebuffer::new(12, 12)
-  let palette = @image.DynamicPalette::new()
-  @image.render_paint_node_to_framebuffer(node, fb, palette)
+  let fb = @raster.Framebuffer::new(12, 12)
+  let palette = @raster.DynamicPalette::new()
+  @raster.render_paint_node_to_framebuffer(node, fb, palette)
 
   let corner = palette.colors[fb.get_pixel(0, 0)]
   let top_edge = palette.colors[fb.get_pixel(6, 0)]
@@ -356,9 +356,9 @@ test "canvas background propagates from body when html is transparent" {
     @paint_model.PaintProperties::from_style(html_style),
     [body_node],
   )
-  let fb = @image.Framebuffer::new(10, 10)
-  let palette = @image.DynamicPalette::new()
-  @image.render_paint_node_to_framebuffer(html_node, fb, palette)
+  let fb = @raster.Framebuffer::new(10, 10)
+  let palette = @raster.DynamicPalette::new()
+  @raster.render_paint_node_to_framebuffer(html_node, fb, palette)
   // Corner pixel (outside body's rendered area doesn't matter, but
   // canvas fill should cover entire viewport)
   let color = palette.colors[fb.get_pixel(0, 0)]
@@ -393,7 +393,7 @@ test "render_paint_node_to_framebuffer draws overline and line_through beyond gl
 
 ///|
 test "render_paint_node_to_framebuffer blends glyph text opacity from parent" {
-  @image.set_glyph_provider({
+  @raster.set_glyph_provider({
     get_glyph: fn(_codepoint, font_size, _is_bold) {
       let commands : Array[@svg.PathCommand] = [
         MoveTo(0.0, -font_size),
@@ -441,14 +441,14 @@ test "render_paint_node_to_framebuffer blends glyph text opacity from parent" {
     @paint_model.PaintProperties::from_style(parent_style),
     [text_node],
   )
-  let fb = @image.Framebuffer::new(12, 12)
-  let palette = @image.DynamicPalette::new()
-  @image.render_paint_node_to_framebuffer(parent_node, fb, palette)
+  let fb = @raster.Framebuffer::new(12, 12)
+  let palette = @raster.DynamicPalette::new()
+  @raster.render_paint_node_to_framebuffer(parent_node, fb, palette)
   let color = palette.colors[fb.get_pixel(5, 5)]
   inspect(color.r > 100 && color.r < 200, content="true")
   inspect(color.g > 100 && color.g < 200, content="true")
   inspect(color.b > 100 && color.b < 200, content="true")
-  @image.clear_glyph_provider()
+  @raster.clear_glyph_provider()
 }
 
 ///|
@@ -489,9 +489,9 @@ test "render_paint_node_to_framebuffer applies parent opacity as a group" {
     @paint_model.PaintProperties::from_style(parent_style),
     [red_node, white_node],
   )
-  let fb = @image.Framebuffer::new(12, 12)
-  let palette = @image.DynamicPalette::new()
-  @image.render_paint_node_to_framebuffer(parent_node, fb, palette)
+  let fb = @raster.Framebuffer::new(12, 12)
+  let palette = @raster.DynamicPalette::new()
+  @raster.render_paint_node_to_framebuffer(parent_node, fb, palette)
 
   let edge = palette.colors[fb.get_pixel(0, 0)]
   let center = palette.colors[fb.get_pixel(5, 5)]
@@ -505,7 +505,7 @@ test "render_paint_node_to_framebuffer applies parent opacity as a group" {
 
 ///|
 test "render_paint_node_to_framebuffer insets input text inside control" {
-  @image.set_glyph_provider({
+  @raster.set_glyph_provider({
     get_glyph: fn(_codepoint, font_size, _is_bold) {
       let commands : Array[@svg.PathCommand] = [
         MoveTo(0.0, -font_size),
@@ -541,13 +541,13 @@ test "render_paint_node_to_framebuffer insets input text inside control" {
     [],
     text=Some("A"),
   )
-  let fb = @image.Framebuffer::new(40, 24)
-  let palette = @image.DynamicPalette::new()
-  @image.render_paint_node_to_framebuffer(node, fb, palette)
+  let fb = @raster.Framebuffer::new(40, 24)
+  let palette = @raster.DynamicPalette::new()
+  @raster.render_paint_node_to_framebuffer(node, fb, palette)
 
   inspect(fb.get_pixel(1, 5), content="0")
   inspect(fb.get_pixel(9, 8) > 0, content="true")
-  @image.clear_glyph_provider()
+  @raster.clear_glyph_provider()
 }
 
 ///|
@@ -574,9 +574,9 @@ test "render_paint_node_to_framebuffer draws box shadow outside element bounds" 
     @paint_model.PaintProperties::from_style(style),
     [],
   )
-  let fb = @image.Framebuffer::new(20, 20)
-  let palette = @image.DynamicPalette::new()
-  @image.render_paint_node_to_framebuffer(node, fb, palette)
+  let fb = @raster.Framebuffer::new(20, 20)
+  let palette = @raster.DynamicPalette::new()
+  @raster.render_paint_node_to_framebuffer(node, fb, palette)
 
   let outside_shadow = palette.colors[fb.get_pixel(10, 7)]
   let untouched = palette.colors[fb.get_pixel(1, 1)]
@@ -610,9 +610,9 @@ test "render_paint_node_to_framebuffer extends blurred box shadow beyond sharp b
     @paint_model.PaintProperties::from_style(style),
     [],
   )
-  let fb = @image.Framebuffer::new(40, 40)
-  let palette = @image.DynamicPalette::new()
-  @image.render_paint_node_to_framebuffer(node, fb, palette)
+  let fb = @raster.Framebuffer::new(40, 40)
+  let palette = @raster.DynamicPalette::new()
+  @raster.render_paint_node_to_framebuffer(node, fb, palette)
 
   let outside_blur = palette.colors[fb.get_pixel(15, 27)]
   let untouched = palette.colors[fb.get_pixel(1, 1)]

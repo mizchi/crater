@@ -4,6 +4,6 @@ import {
   "mizchi/crater-painter/paint/model" @paint_model,
   "mizchi/crater-painter/paint/node_bridge" @paint_node,
   "mizchi/crater-painter/svg",
-  "mizchi/crater-painter/x/image",
+  "mizchi/crater-painter/paint/raster",
   "mizchi/crater-terminal-protocol/sixel" @sixel_protocol,
 }

@@ -3,8 +3,8 @@ package "mizchi/crater-painter-terminal"
 
 import {
   "mizchi/crater-painter/paint/model",
+  "mizchi/crater-painter/paint/raster",
   "mizchi/crater-painter/svg",
-  "mizchi/crater-painter/x/image",
   "moonbitlang/async/io",
 }
 
@@ -38,11 +38,11 @@ pub async fn[T : @io.Writer] write_paint_node_to_kitty_scrolled(T, @model.PaintN
 // Types and methods
 
 // Type aliases
-pub using @image {type DynamicPalette}
+pub using @raster {type DynamicPalette}
 
-pub using @image {type Framebuffer}
+pub using @raster {type Framebuffer}
 
-pub using @image {type GlyphProvider}
+pub using @raster {type GlyphProvider}
 
 pub using @model {type PaintNode}
 

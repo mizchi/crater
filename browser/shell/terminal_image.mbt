@@ -193,12 +193,12 @@ fn Browser::cache_data_image_src(self : Browser, src : String) -> Bool {
 ///|
 fn rgba_cache_entry_to_resolved_image(
   entry : @terminal_image_cache.RgbaCacheEntry,
-) -> @image.ResolvedImage? {
+) -> @raster.ResolvedImage? {
   match entry.decode_rgba_bytes() {
     Some(rgba) =>
       if rgba.length() >= entry.width * entry.height * 4 {
         Some(
-          @image.ResolvedImage::Raster({
+          @raster.ResolvedImage::Raster({
             width: entry.width,
             height: entry.height,
             rgba,
@@ -215,7 +215,7 @@ fn rgba_cache_entry_to_resolved_image(
 fn raster_base64_to_resolved_image(
   image_format : String,
   b64_data : String,
-) -> @image.ResolvedImage? {
+) -> @raster.ResolvedImage? {
   match
     @terminal_image_cache.decode_raster_image_to_rgba_cache_entry(
       image_format, b64_data,
@@ -228,10 +228,10 @@ fn raster_base64_to_resolved_image(
 ///|
 fn cached_image_data_to_resolved_image(
   cached_data : String,
-) -> @image.ResolvedImage? {
+) -> @raster.ResolvedImage? {
   match @terminal_image_cache.parse_terminal_image_cache_entry(cached_data) {
     Some(@terminal_image_cache.TerminalImageCacheEntry::Svg(svg_text)) =>
-      Some(@image.ResolvedImage::Svg(svg_text))
+      Some(@raster.ResolvedImage::Svg(svg_text))
     Some(@terminal_image_cache.TerminalImageCacheEntry::RgbaBase64(entry)) =>
       rgba_cache_entry_to_resolved_image(entry)
     Some(@terminal_image_cache.TerminalImageCacheEntry::PngBase64(b64_data)) =>
@@ -250,7 +250,7 @@ fn Browser::install_sixel_image_provider(self : Browser) -> Bool {
   if self.image_cache.is_empty() {
     return false
   }
-  @image.set_image_provider({
+  @raster.set_image_provider({
     resolve: fn(src) {
       match self.image_cache.get(src) {
         Some(cached_data) => cached_image_data_to_resolved_image(cached_data)

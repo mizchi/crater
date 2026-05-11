@@ -3,8 +3,8 @@ package "mizchi/crater-painter-terminal/kitty"
 
 import {
   "mizchi/crater-painter/paint/model",
+  "mizchi/crater-painter/paint/raster",
   "mizchi/crater-painter/svg",
-  "mizchi/crater-painter/x/image",
   "moonbitlang/async/io",
 }
 
@@ -29,11 +29,11 @@ pub fn render_svg_to_kitty(@svg.Scene, Int, Int) -> String
 
 pub fn render_svg_to_kitty_with_camera(@svg.Scene, @svg.Camera) -> String
 
-pub fn to_kitty(@image.Framebuffer, @image.DynamicPalette) -> String
+pub fn to_kitty(@raster.Framebuffer, @raster.DynamicPalette) -> String
 
-pub fn to_kitty_with_cells(@image.Framebuffer, @image.DynamicPalette, Int, Int, image_id? : Int, placement_id? : Int) -> String
+pub fn to_kitty_with_cells(@raster.Framebuffer, @raster.DynamicPalette, Int, Int, image_id? : Int, placement_id? : Int) -> String
 
-pub async fn[T : @io.Writer] write_kitty(T, @image.Framebuffer, @image.DynamicPalette) -> Unit
+pub async fn[T : @io.Writer] write_kitty(T, @raster.Framebuffer, @raster.DynamicPalette) -> Unit
 
 pub async fn[T : @io.Writer] write_paint_node_to_kitty_scrolled(T, @model.PaintNode, Int, Int, Int) -> Unit
 

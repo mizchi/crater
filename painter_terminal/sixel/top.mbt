@@ -1,5 +1,5 @@
 ///|
-pub using @image {type Color, type DynamicPalette, type Framebuffer}
+pub using @raster {type Color, type DynamicPalette, type Framebuffer}
 
 ///|
 priv struct Palette {
@@ -301,7 +301,7 @@ pub fn render_paint_node_to_sixel(
   let fb = Framebuffer::new(width, height)
   let palette = DynamicPalette::new()
   fb.fill_rect(0, 0, width, height, 0)
-  @image.render_paint_node_to_framebuffer(node, fb, palette)
+  @raster.render_paint_node_to_framebuffer(node, fb, palette)
   to_sixel_dynamic(fb, palette)
 }
 
@@ -325,7 +325,7 @@ pub fn render_paint_node_to_sixel_scrolled(
 ) -> String {
   let fb = Framebuffer::new(width, height)
   let palette = DynamicPalette::new()
-  @image.render_paint_node_to_framebuffer_scrolled(node, fb, palette, scroll_y)
+  @raster.render_paint_node_to_framebuffer_scrolled(node, fb, palette, scroll_y)
   to_sixel_dynamic(fb, palette)
 }
 
@@ -350,7 +350,7 @@ pub fn render_svg_to_sixel(
   let fb = Framebuffer::new(width, height)
   let palette = DynamicPalette::new()
   fb.fill_rect(0, 0, width, height, 0)
-  @image.render_svg_scene(scene, fb, palette)
+  @raster.render_svg_scene(scene, fb, palette)
   to_sixel_dynamic(fb, palette)
 }
 
@@ -402,6 +402,6 @@ pub fn render_svg_to_sixel_with_camera(
   let fb = Framebuffer::new(camera.viewport_width, camera.viewport_height)
   let palette = DynamicPalette::new()
   fb.fill_rect(0, 0, camera.viewport_width, camera.viewport_height, 0)
-  @image.render_svg_scene_with_camera(scene, fb, palette, camera)
+  @raster.render_svg_scene_with_camera(scene, fb, palette, camera)
   to_sixel_dynamic(fb, palette)
 }
