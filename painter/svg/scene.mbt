@@ -299,29 +299,18 @@ pub fn Scene::render_dirty(self : Scene, ctx : RenderContext) -> BoundingBox {
 ///|
 /// Mark a node and its ancestors as dirty
 pub fn Scene::mark_node_dirty(self : Scene, id : String) -> Bool {
-  match self.find_node(id) {
-    Some(node) => {
-      node.mark_dirty()
-      self.mark_dirty()
-      true
-    }
-    None => false
-  }
+  let scene = scene_to_msvg(self)
+  let found = scene.mark_node_dirty(id)
+  copy_svg_scene_dirty_state_from_msvg(self, scene)
+  found
 }
 
 ///|
 /// Clear all dirty flags in the scene
 pub fn Scene::clear_all_dirty(self : Scene) -> Unit {
-  clear_dirty_recursive(self.root)
-  self.clear_dirty()
-}
-
-///|
-fn clear_dirty_recursive(node : SVGNode) -> Unit {
-  node.node_dirty = false
-  for child in node.children {
-    clear_dirty_recursive(child)
-  }
+  let scene = scene_to_msvg(self)
+  scene.clear_all_dirty()
+  copy_svg_scene_dirty_state_from_msvg(self, scene)
 }
 
 ///|

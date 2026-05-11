@@ -2477,6 +2477,24 @@ describe("MoonBit module boundaries", () => {
     expect(interopSource.includes("fn copy_svg_scene_dirty_state_from_msvg(")).toBe(true);
   });
 
+  it("delegates SVG scene dirty flag operations to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene.mbt"), "utf8");
+    const markStart = source.indexOf("pub fn Scene::mark_node_dirty(");
+    const markEnd = source.indexOf("///|\n/// Clear all dirty flags", markStart);
+    const markSource = source.slice(markStart, markEnd);
+    const clearStart = source.indexOf("pub fn Scene::clear_all_dirty(");
+    const clearEnd = source.indexOf("///|\n/// Set z_index", clearStart);
+    const clearSource = source.slice(clearStart, clearEnd);
+
+    expect(markSource.includes("let scene = scene_to_msvg(self)")).toBe(true);
+    expect(markSource.includes("scene.mark_node_dirty(id)")).toBe(true);
+    expect(markSource.includes("copy_svg_scene_dirty_state_from_msvg(self, scene)")).toBe(true);
+    expect(clearSource.includes("let scene = scene_to_msvg(self)")).toBe(true);
+    expect(clearSource.includes("scene.clear_all_dirty()")).toBe(true);
+    expect(clearSource.includes("copy_svg_scene_dirty_state_from_msvg(self, scene)")).toBe(true);
+    expect(source.includes("fn clear_dirty_recursive(")).toBe(false);
+  });
+
   it("delegates SVG bounding boxes and clip rects to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
 
