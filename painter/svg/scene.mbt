@@ -541,7 +541,8 @@ pub(all) struct RenderContext {
 ///|
 /// Render the scene to a pixel setter
 pub fn Scene::render(self : Scene, ctx : RenderContext) -> Unit {
-  render_node(self.root, Transform::identity(), ctx)
+  let scene = scene_to_msvg(self)
+  scene.render(render_context_to_msvg(ctx))
   self.clear_dirty()
 }
 
@@ -552,8 +553,8 @@ pub fn Scene::render_with_camera(
   ctx : RenderContext,
   camera : Camera,
 ) -> Unit {
-  let camera_transform = camera.get_transform()
-  render_node(self.root, camera_transform, ctx)
+  let scene = scene_to_msvg(self)
+  scene.render_with_camera(render_context_to_msvg(ctx), camera_to_msvg(camera))
   self.clear_dirty()
 }
 
@@ -565,12 +566,12 @@ pub fn Scene::render_with_viewbox(
   viewbox : ViewBox,
   preserve_aspect_ratio : PreserveAspectRatio,
 ) -> Unit {
-  let viewbox_transform = viewbox.get_transform(
-    ctx.width.to_double(),
-    ctx.height.to_double(),
-    preserve_aspect_ratio,
+  let scene = scene_to_msvg(self)
+  scene.render_with_viewbox(
+    render_context_to_msvg(ctx),
+    view_box_to_msvg(viewbox),
+    preserve_aspect_ratio.to_msvg(),
   )
-  render_node(self.root, viewbox_transform, ctx)
   self.clear_dirty()
 }
 
@@ -583,15 +584,13 @@ pub fn Scene::render_with_viewbox_and_camera(
   preserve_aspect_ratio : PreserveAspectRatio,
   camera : Camera,
 ) -> Unit {
-  let viewbox_transform = viewbox.get_transform(
-    ctx.width.to_double(),
-    ctx.height.to_double(),
-    preserve_aspect_ratio,
+  let scene = scene_to_msvg(self)
+  scene.render_with_viewbox_and_camera(
+    render_context_to_msvg(ctx),
+    view_box_to_msvg(viewbox),
+    preserve_aspect_ratio.to_msvg(),
+    camera_to_msvg(camera),
   )
-  let camera_transform = camera.get_transform()
-  // Apply viewBox first, then camera
-  let combined = viewbox_transform.multiply(camera_transform)
-  render_node(self.root, combined, ctx)
   self.clear_dirty()
 }
 

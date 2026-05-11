@@ -1061,6 +1061,27 @@ fn pixel_setter_to_msvg(setter : PixelSetter) -> @msvg.PixelSetter {
 }
 
 ///|
+fn render_context_to_msvg(ctx : RenderContext) -> @msvg.RenderContext {
+  let clip = match ctx.clip {
+    Some(clip) => Some(clip_rect_to_msvg(clip))
+    None => None
+  }
+  @msvg.RenderContext::{
+    setter: pixel_setter_to_msvg(ctx.setter),
+    width: ctx.width,
+    height: ctx.height,
+    flatness: ctx.flatness,
+    clip,
+    text_to_paths: None,
+  }
+}
+
+///|
+fn scene_to_msvg(scene : Scene) -> @msvg.Scene {
+  @msvg.Scene::{ root: svg_node_to_msvg(scene.root), dirty: scene.dirty }
+}
+
+///|
 fn paint_fallback_from_msvg(
   fallback : @msvg.PaintFallback,
   current_color : Color?,

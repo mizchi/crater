@@ -2410,6 +2410,20 @@ describe("MoonBit module boundaries", () => {
     expect(groupSource.includes("node.children.push(child)")).toBe(true);
   });
 
+  it("delegates SVG scene render entrypoints to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+
+    expect(source.includes("let scene = scene_to_msvg(self)")).toBe(true);
+    expect(source.includes("scene.render(render_context_to_msvg(ctx))")).toBe(true);
+    expect(source.includes("scene.render_with_camera(")).toBe(true);
+    expect(source.includes("scene.render_with_viewbox(")).toBe(true);
+    expect(source.includes("scene.render_with_viewbox_and_camera(")).toBe(true);
+    expect(interopSource.includes("fn render_context_to_msvg(")).toBe(true);
+    expect(interopSource.includes("fn scene_to_msvg(")).toBe(true);
+    expect(source.includes("render_node(self.root, Transform::identity(), ctx)")).toBe(false);
+  });
+
   it("delegates SVG bounding boxes and clip rects to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
 
