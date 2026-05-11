@@ -70,7 +70,7 @@ pub fn Transform::matrix(
   e : Double,
   f : Double,
 ) -> Transform {
-  { a, b, c, d, e, f }
+  transform_from_msvg(@msvg.Transform::matrix(a, b, c, d, e, f))
 }
 
 ///|

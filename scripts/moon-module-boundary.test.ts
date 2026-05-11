@@ -2380,12 +2380,16 @@ describe("MoonBit module boundaries", () => {
 
   it("delegates SVG transform operations to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/transform.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
 
     expect(source.includes("@msvg.Transform::")).toBe(true);
+    expect(source.includes("@msvg.Transform::matrix(")).toBe(true);
     expect(source.includes("@math.cos")).toBe(false);
     expect(source.includes("@math.tan")).toBe(false);
     expect(source.includes("@math.atan2")).toBe(false);
     expect(source.includes("Matrix multiplication:")).toBe(false);
+    expect(source.includes("  { a, b, c, d, e, f }")).toBe(false);
+    expect(interopSource.includes("Transform::matrix(")).toBe(false);
   });
 
   it("delegates SVG bounding boxes and clip rects to mizchi/svg", () => {

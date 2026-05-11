@@ -19,14 +19,14 @@ pub fn extract_root_view_box(svg_text : String) -> ViewBox? {
 
 ///|
 fn transform_from_msvg(transform : @msvg.Transform) -> Transform {
-  Transform::matrix(
-    transform.a,
-    transform.b,
-    transform.c,
-    transform.d,
-    transform.e,
-    transform.f,
-  )
+  {
+    a: transform.a,
+    b: transform.b,
+    c: transform.c,
+    d: transform.d,
+    e: transform.e,
+    f: transform.f,
+  }
 }
 
 ///|
