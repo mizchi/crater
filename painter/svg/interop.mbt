@@ -170,6 +170,43 @@ fn sprite_sheet_to_msvg(sheet : SpriteSheet) -> @msvg.SpriteSheet {
 }
 
 ///|
+fn animated_sprite_from_msvg(sprite : @msvg.AnimatedSprite) -> AnimatedSprite {
+  {
+    sheet: sprite_sheet_from_msvg(sprite.sheet),
+    frames: sprite.frames,
+    current_frame: sprite.current_frame,
+    frame_duration: sprite.frame_duration,
+    elapsed: sprite.elapsed,
+    looping: sprite.looping,
+    playing: sprite.playing,
+  }
+}
+
+///|
+fn animated_sprite_to_msvg(sprite : AnimatedSprite) -> @msvg.AnimatedSprite {
+  @msvg.AnimatedSprite::{
+    sheet: sprite_sheet_to_msvg(sprite.sheet),
+    frames: sprite.frames,
+    current_frame: sprite.current_frame,
+    frame_duration: sprite.frame_duration,
+    elapsed: sprite.elapsed,
+    looping: sprite.looping,
+    playing: sprite.playing,
+  }
+}
+
+///|
+fn copy_animated_sprite_state_from_msvg(
+  target : AnimatedSprite,
+  source : @msvg.AnimatedSprite,
+) -> Unit {
+  target.current_frame = source.current_frame
+  target.elapsed = source.elapsed
+  target.looping = source.looping
+  target.playing = source.playing
+}
+
+///|
 fn current_color_or_black(current_color : Color?) -> Color {
   match current_color {
     Some(color) => color

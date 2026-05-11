@@ -2376,6 +2376,21 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("fn blend_colors(")).toBe(false);
   });
 
+  it("delegates SVG animated sprite operations to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+
+    expect(source.includes("@msvg.AnimatedSprite::new(")).toBe(true);
+    expect(source.includes("@msvg.AnimatedSprite::from_range(")).toBe(true);
+    expect(source.includes("animated_sprite_to_msvg(self).get_current_sprite()")).toBe(true);
+    expect(source.includes("let sprite = animated_sprite_to_msvg(self)")).toBe(true);
+    expect(source.includes("sprite.update(dt)")).toBe(true);
+    expect(interopSource.includes("fn animated_sprite_to_msvg(")).toBe(true);
+    expect(interopSource.includes("fn copy_animated_sprite_state_from_msvg(")).toBe(true);
+    expect(source.includes("while self.elapsed >= self.frame_duration")).toBe(false);
+    expect(source.includes("self.current_frame = self.current_frame + 1")).toBe(false);
+  });
+
   it("delegates SVG blend mode math to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");

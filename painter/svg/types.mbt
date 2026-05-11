@@ -2465,15 +2465,13 @@ pub fn AnimatedSprite::new(
   frames : Array[Int],
   frame_duration : Double,
 ) -> AnimatedSprite {
-  {
-    sheet,
-    frames,
-    current_frame: 0,
-    frame_duration,
-    elapsed: 0.0,
-    looping: true,
-    playing: true,
-  }
+  animated_sprite_from_msvg(
+    @msvg.AnimatedSprite::new(
+      sprite_sheet_to_msvg(sheet),
+      frames,
+      frame_duration,
+    ),
+  )
 }
 
 ///|
@@ -2484,68 +2482,60 @@ pub fn AnimatedSprite::from_range(
   end : Int,
   frame_duration : Double,
 ) -> AnimatedSprite {
-  let frames : Array[Int] = []
-  for i = start; i <= end; i = i + 1 {
-    frames.push(i)
-  }
-  AnimatedSprite::new(sheet, frames, frame_duration)
+  animated_sprite_from_msvg(
+    @msvg.AnimatedSprite::from_range(
+      sprite_sheet_to_msvg(sheet),
+      start,
+      end,
+      frame_duration,
+    ),
+  )
 }
 
 ///|
 /// Update animation with delta time
 pub fn AnimatedSprite::update(self : AnimatedSprite, dt : Double) -> Unit {
-  if !self.playing || self.frames.is_empty() {
-    return
-  }
-  self.elapsed = self.elapsed + dt
-  while self.elapsed >= self.frame_duration {
-    self.elapsed = self.elapsed - self.frame_duration
-    self.current_frame = self.current_frame + 1
-    if self.current_frame >= self.frames.length() {
-      if self.looping {
-        self.current_frame = 0
-      } else {
-        self.current_frame = self.frames.length() - 1
-        self.playing = false
-      }
-    }
-  }
+  let sprite = animated_sprite_to_msvg(self)
+  sprite.update(dt)
+  copy_animated_sprite_state_from_msvg(self, sprite)
 }
 
 ///|
 /// Get current sprite
 pub fn AnimatedSprite::get_current_sprite(self : AnimatedSprite) -> Sprite {
-  if self.frames.is_empty() {
-    return Sprite::new(self.sheet.image, 0, 0, 0, 0)
-  }
-  let frame_index = self.frames[self.current_frame]
-  self.sheet.get_sprite_by_index(frame_index)
+  sprite_from_msvg(animated_sprite_to_msvg(self).get_current_sprite())
 }
 
 ///|
 /// Play animation from beginning
 pub fn AnimatedSprite::play(self : AnimatedSprite) -> Unit {
-  self.playing = true
-  self.current_frame = 0
-  self.elapsed = 0.0
+  let sprite = animated_sprite_to_msvg(self)
+  sprite.play()
+  copy_animated_sprite_state_from_msvg(self, sprite)
 }
 
 ///|
 /// Stop animation
 pub fn AnimatedSprite::stop(self : AnimatedSprite) -> Unit {
-  self.playing = false
+  let sprite = animated_sprite_to_msvg(self)
+  sprite.stop()
+  copy_animated_sprite_state_from_msvg(self, sprite)
 }
 
 ///|
 /// Pause animation
 pub fn AnimatedSprite::pause(self : AnimatedSprite) -> Unit {
-  self.playing = false
+  let sprite = animated_sprite_to_msvg(self)
+  sprite.pause()
+  copy_animated_sprite_state_from_msvg(self, sprite)
 }
 
 ///|
 /// Continue animation
 pub fn AnimatedSprite::continue_playing(self : AnimatedSprite) -> Unit {
-  self.playing = true
+  let sprite = animated_sprite_to_msvg(self)
+  sprite.continue_playing()
+  copy_animated_sprite_state_from_msvg(self, sprite)
 }
 
 ///|
@@ -2554,7 +2544,9 @@ pub fn AnimatedSprite::set_looping(
   self : AnimatedSprite,
   looping : Bool,
 ) -> Unit {
-  self.looping = looping
+  let sprite = animated_sprite_to_msvg(self)
+  sprite.set_looping(looping)
+  copy_animated_sprite_state_from_msvg(self, sprite)
 }
 
 // ============================================================================
