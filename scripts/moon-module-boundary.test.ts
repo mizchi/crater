@@ -91,6 +91,19 @@ describe("MoonBit module boundaries", () => {
     expect(fs.existsSync(path.join(REPO_ROOT, "painter/x/image/sixel.mbt"))).toBe(false);
   });
 
+  it("splits image raster color helpers out of paint_raster", () => {
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_color.mbt"), "utf8");
+
+    expect(source.includes("pub(all) struct Color")).toBe(true);
+    expect(source.includes("pub fn Color::white(")).toBe(true);
+    expect(source.includes("pub fn Color::blend(")).toBe(true);
+    expect(source.includes("pub fn get_depth_color(")).toBe(true);
+    expect(rasterSource.includes("pub(all) struct Color")).toBe(false);
+    expect(rasterSource.includes("pub fn Color::blend(")).toBe(false);
+    expect(rasterSource.includes("pub fn get_depth_color(")).toBe(false);
+  });
+
   it("keeps painter-terminal root facade behind terminal-specific packages", () => {
     const rootPackage = path.join(REPO_ROOT, "painter_terminal/moon.pkg");
     const source = fs.readFileSync(rootPackage, "utf8");

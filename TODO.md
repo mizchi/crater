@@ -153,7 +153,7 @@
   - 進捗: viewBox helpers を `painter/svg/viewbox.mbt` へ分離
   - 進捗: color helpers を `painter/svg/color.mbt`、paint/stroke types を `painter/svg/paint.mbt` へ分離
   - 進捗: shape/path command types を `painter/svg/shape.mbt` へ分離
-- [ ] `painter/svg/scene.mbt` の scene graph mutation と shape rendering を分離する
+- [x] `painter/svg/scene.mbt` の scene graph mutation と shape rendering を分離する
   - 候補: dirty region/z-order/camera, render dispatch, shape renderer (`render_rect`, `render_circle`, `render_path`, `render_text`)
   - `mizchi/svg` に寄せられる primitive はそちらへの移譲候補として扱う
   - 進捗: animation manager を `painter/svg/animation_manager.mbt` へ分離
@@ -166,6 +166,7 @@
 - [ ] `painter/x/image/paint_raster.mbt` / `glyph_render.mbt` の raster と glyph 責務を整理する
   - 候補: scanline/fill, image decode/cache, glyph fallback, font metrics bridge
   - `mizchi/font` / `mizchi/svg` へ移せるものは crater 側を adapter に寄せる
+  - 進捗: raster color helpers を `painter/x/image/raster_color.mbt` へ分離
 
 ### P2: tooling / boundary guard
 
