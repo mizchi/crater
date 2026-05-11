@@ -2844,9 +2844,14 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG mask math to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/mask.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
 
+    expect(source.includes("pub(all) enum MaskUnits")).toBe(true);
+    expect(source.includes("pub(all) enum MaskType")).toBe(true);
+    expect(source.includes("pub(all) struct Mask")).toBe(true);
+    expect(source.includes("pub(all) struct MaskRegistry")).toBe(true);
     expect(source.includes("@msvg.Mask::new(")).toBe(true);
     expect(source.includes("@msvg.Mask::with_bounds(")).toBe(true);
     expect(source.includes("@msvg.compute_luminance(")).toBe(true);
@@ -2859,6 +2864,8 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("fn resolve_mask_coord(")).toBe(false);
     expect(source.includes("fn resolve_mask_size(")).toBe(false);
     expect(source.includes("Standard luminance formula")).toBe(false);
+    expect(typesSource.includes("pub(all) struct Mask")).toBe(false);
+    expect(typesSource.includes("pub fn Mask::new(")).toBe(false);
   });
 
   it("delegates SVG pattern sampling to mizchi/svg", () => {
