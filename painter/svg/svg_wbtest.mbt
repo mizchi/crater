@@ -1668,17 +1668,19 @@ test "text block is vertical" {
 
 ///|
 test "split words" {
-  let words = split_words("Hello World Test")
-  inspect(words.length(), content="3")
-  inspect(words[0], content="Hello")
-  inspect(words[1], content="World")
-  inspect(words[2], content="Test")
+  let block = TextBlock::with_wrap(0.0, 0.0, "Hello World Test", 60.0)
+  let lines = block.wrap_text()
+  inspect(lines.length(), content="3")
+  inspect(lines[0], content="Hello")
+  inspect(lines[1], content="World")
+  inspect(lines[2], content="Test")
 }
 
 ///|
 test "split words with multiple spaces" {
-  let words = split_words("Hello   World")
-  inspect(words.length(), content="2")
+  let block = TextBlock::with_wrap(0.0, 0.0, "Hello   World", 60.0)
+  let lines = block.wrap_text()
+  inspect(lines.length(), content="2")
 }
 
 ///|

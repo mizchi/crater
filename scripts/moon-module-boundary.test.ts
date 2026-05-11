@@ -2301,6 +2301,21 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("fn take_chars(")).toBe(false);
   });
 
+  it("delegates SVG text blocks to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+
+    expect(source.includes("@msvg.TextDecorationFull::default()")).toBe(true);
+    expect(source.includes("text_style_from_msvg(@msvg.TextStyle::default())")).toBe(true);
+    expect(source.includes("text_span_from_msvg(@msvg.TextSpan::new(text))")).toBe(true);
+    expect(source.includes("text_block_from_msvg(@msvg.TextBlock::new(")).toBe(true);
+    expect(source.includes("text_block_to_msvg(self).get_width()")).toBe(true);
+    expect(source.includes("text_block_to_msvg(self).wrap_text()")).toBe(true);
+    expect(interopSource.includes("fn text_style_from_msvg(")).toBe(true);
+    expect(interopSource.includes("fn text_block_to_msvg(")).toBe(true);
+    expect(source.includes("fn split_words(")).toBe(false);
+  });
+
   it("delegates SVG use element helpers to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");

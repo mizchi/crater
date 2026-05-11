@@ -2467,7 +2467,7 @@ pub(all) struct TextDecorationFull {
 
 ///|
 pub fn TextDecorationFull::default() -> TextDecorationFull {
-  { line: NoDecoration, style: Solid, color: None, thickness: None }
+  text_decoration_full_from_msvg(@msvg.TextDecorationFull::default())
 }
 
 ///|
@@ -2563,22 +2563,7 @@ pub(all) struct TextStyle {
 
 ///|
 pub fn TextStyle::default() -> TextStyle {
-  {
-    font_family: "sans-serif",
-    font_size: 16.0,
-    font_weight: Normal,
-    font_style: NormalStyle,
-    text_anchor: Start,
-    dominant_baseline: Auto,
-    text_decoration: NoDecoration,
-    letter_spacing: 0.0,
-    word_spacing: 0.0,
-    line_height: 1.2,
-    writing_mode: HorizontalTB,
-    text_orientation: Mixed,
-    white_space: Normal,
-    paint_order: Normal,
-  }
+  text_style_from_msvg(@msvg.TextStyle::default())
 }
 
 ///|
@@ -2594,7 +2579,7 @@ pub(all) struct TextSpan {
 
 ///|
 pub fn TextSpan::new(text : String) -> TextSpan {
-  { text, x: None, y: None, dx: 0.0, dy: 0.0, style: None }
+  text_span_from_msvg(@msvg.TextSpan::new(text))
 }
 
 ///|
@@ -2603,7 +2588,7 @@ pub fn TextSpan::with_offset(
   dx : Double,
   dy : Double,
 ) -> TextSpan {
-  { text, x: None, y: None, dx, dy, style: None }
+  text_span_from_msvg(@msvg.TextSpan::with_offset(text, dx, dy))
 }
 
 ///|
@@ -2620,14 +2605,7 @@ pub(all) struct TextBlock {
 
 ///|
 pub fn TextBlock::new(x : Double, y : Double, text : String) -> TextBlock {
-  {
-    spans: [TextSpan::new(text)],
-    x,
-    y,
-    style: TextStyle::default(),
-    inline_size: None,
-    text_overflow: Clip,
-  }
+  text_block_from_msvg(@msvg.TextBlock::new(x, y, text))
 }
 
 ///|
@@ -2637,14 +2615,9 @@ pub fn TextBlock::with_style(
   text : String,
   style : TextStyle,
 ) -> TextBlock {
-  {
-    spans: [TextSpan::new(text)],
-    x,
-    y,
-    style,
-    inline_size: None,
-    text_overflow: Clip,
-  }
+  text_block_from_msvg(
+    @msvg.TextBlock::with_style(x, y, text, text_style_to_msvg(style)),
+  )
 }
 
 ///|
@@ -2655,14 +2628,7 @@ pub fn TextBlock::with_wrap(
   text : String,
   inline_size : Double,
 ) -> TextBlock {
-  {
-    spans: [TextSpan::new(text)],
-    x,
-    y,
-    style: TextStyle::default(),
-    inline_size: Some(inline_size),
-    text_overflow: Clip,
-  }
+  text_block_from_msvg(@msvg.TextBlock::with_wrap(x, y, text, inline_size))
 }
 
 ///|
@@ -2673,143 +2639,49 @@ pub fn TextBlock::add_span(self : TextBlock, span : TextSpan) -> Unit {
 ///|
 /// Calculate text width (simplified - assumes monospace)
 pub fn TextBlock::get_width(self : TextBlock) -> Double {
-  let mut total = 0.0
-  for span in self.spans {
-    let style = match span.style {
-      Some(s) => s
-      None => self.style
-    }
-    let cw = style.font_size * 0.6
-    total = total + span.text.length().to_double() * cw
-    total = total + style.letter_spacing * (span.text.length() - 1).to_double()
-  }
-  total
+  text_block_to_msvg(self).get_width()
 }
 
 ///|
 /// Get text height
 pub fn TextBlock::get_height(self : TextBlock) -> Double {
-  self.style.font_size * self.style.line_height
+  text_block_to_msvg(self).get_height()
 }
 
 ///|
 /// Get adjusted x position based on text-anchor
 pub fn TextBlock::get_anchor_x(self : TextBlock) -> Double {
-  match self.style.text_anchor {
-    Start => self.x
-    Middle => self.x - self.get_width() / 2.0
-    End => self.x - self.get_width()
-  }
+  text_block_to_msvg(self).get_anchor_x()
 }
 
 ///|
 /// Get adjusted y position based on dominant-baseline
 pub fn TextBlock::get_baseline_y(self : TextBlock) -> Double {
-  let fs = self.style.font_size
-  match self.style.dominant_baseline {
-    Auto | Alphabetic => self.y
-    TextTop | Hanging => self.y + fs * 0.8
-    Middle | Central => self.y + fs * 0.35
-    TextBottom | Ideographic => self.y - fs * 0.2
-  }
+  text_block_to_msvg(self).get_baseline_y()
 }
 
 ///|
 /// Wrap text to fit within inline_size, returns lines
 pub fn TextBlock::wrap_text(self : TextBlock) -> Array[String] {
-  let result : Array[String] = []
-  // Collect all text from spans
-  let mut full_text = ""
-  for span in self.spans {
-    full_text = full_text + span.text
-  }
-  // If no inline_size, return as single line
-  match self.inline_size {
-    None => {
-      result.push(full_text)
-      return result
-    }
-    Some(max_width) => {
-      let char_width = self.style.font_size * 0.6
-      // Handle white-space mode
-      match self.style.white_space {
-        Pre | NoWrap => {
-          // No wrapping
-          result.push(full_text)
-          return result
-        }
-        _ => {
-          // Wrap at word boundaries
-          let words = split_words(full_text)
-          let mut current_line = ""
-          let mut current_width = 0.0
-          for word in words {
-            let word_width = word.length().to_double() * char_width +
-              self.style.letter_spacing * (word.length() - 1).to_double()
-            let space_width = char_width + self.style.word_spacing
-            if current_line.length() == 0 {
-              current_line = word
-              current_width = word_width
-            } else if current_width + space_width + word_width <= max_width {
-              current_line = current_line + " " + word
-              current_width = current_width + space_width + word_width
-            } else {
-              result.push(current_line)
-              current_line = word
-              current_width = word_width
-            }
-          }
-          if current_line.length() > 0 {
-            result.push(current_line)
-          }
-        }
-      }
-    }
-  }
-  result
+  text_block_to_msvg(self).wrap_text()
 }
 
 ///|
 /// Get the number of lines when text is wrapped
 pub fn TextBlock::get_line_count(self : TextBlock) -> Int {
-  self.wrap_text().length()
+  text_block_to_msvg(self).get_line_count()
 }
 
 ///|
 /// Get total height including all wrapped lines
 pub fn TextBlock::get_total_height(self : TextBlock) -> Double {
-  let line_count = self.get_line_count()
-  self.style.font_size * self.style.line_height * line_count.to_double()
+  text_block_to_msvg(self).get_total_height()
 }
 
 ///|
 /// Check if text is vertical (for writing-mode)
 pub fn TextBlock::is_vertical(self : TextBlock) -> Bool {
-  match self.style.writing_mode {
-    HorizontalTB => false
-    VerticalRL | VerticalLR => true
-  }
-}
-
-///|
-/// Split text into words (simplified)
-fn split_words(text : String) -> Array[String] {
-  let words : Array[String] = []
-  let mut current = ""
-  for c in text {
-    if c == ' ' || c == '\t' || c == '\n' {
-      if current.length() > 0 {
-        words.push(current)
-        current = ""
-      }
-    } else {
-      current = current + c.to_string()
-    }
-  }
-  if current.length() > 0 {
-    words.push(current)
-  }
-  words
+  text_block_to_msvg(self).is_vertical()
 }
 
 ///|
