@@ -2651,10 +2651,14 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG image and sprite operations to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/image.mbt"), "utf8");
     const filterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/filter.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
 
+    expect(source.includes("pub(all) struct Image")).toBe(true);
+    expect(source.includes("pub(all) struct Sprite")).toBe(true);
+    expect(source.includes("pub(all) struct SpriteSheet")).toBe(true);
     expect(source.includes("@msvg.Image::new(")).toBe(true);
     expect(source.includes("@msvg.Image::filled(")).toBe(true);
     expect(source.includes("image_to_msvg(self).get_pixel(")).toBe(true);
@@ -2673,12 +2677,16 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("Alpha blend foreground over background")).toBe(false);
     expect(source.includes("Nearest-neighbor sampling")).toBe(false);
     expect(source.includes("fn blend_colors(")).toBe(false);
+    expect(typesSource.includes("pub(all) struct Image")).toBe(false);
+    expect(typesSource.includes("pub fn Image::new(")).toBe(false);
   });
 
   it("delegates SVG animated sprite operations to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/image.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
 
+    expect(source.includes("pub(all) struct AnimatedSprite")).toBe(true);
     expect(source.includes("@msvg.AnimatedSprite::new(")).toBe(true);
     expect(source.includes("@msvg.AnimatedSprite::from_range(")).toBe(true);
     expect(source.includes("animated_sprite_to_msvg(self).get_current_sprite()")).toBe(true);
@@ -2688,6 +2696,7 @@ describe("MoonBit module boundaries", () => {
     expect(interopSource.includes("fn copy_animated_sprite_state_from_msvg(")).toBe(true);
     expect(source.includes("while self.elapsed >= self.frame_duration")).toBe(false);
     expect(source.includes("self.current_frame = self.current_frame + 1")).toBe(false);
+    expect(typesSource.includes("pub(all) struct AnimatedSprite")).toBe(false);
   });
 
   it("delegates SVG particle operations to mizchi/svg", () => {
