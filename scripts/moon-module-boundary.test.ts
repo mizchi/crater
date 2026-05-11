@@ -161,6 +161,21 @@ describe("MoonBit module boundaries", () => {
     expect(rasterSource.includes("fn draw_text_clipped(")).toBe(false);
   });
 
+  it("splits raster palette helpers out of paint_raster", () => {
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_palette.mbt"), "utf8");
+
+    expect(source.includes("pub struct DynamicPalette")).toBe(true);
+    expect(source.includes("pub fn DynamicPalette::new(")).toBe(true);
+    expect(source.includes("fn types_color_to_image(")).toBe(true);
+    expect(source.includes("fn clamp_byte(")).toBe(true);
+    expect(source.includes("fn palette_color_at(")).toBe(true);
+    expect(source.includes("fn DynamicPalette::get_or_add(")).toBe(true);
+    expect(rasterSource.includes("pub struct DynamicPalette")).toBe(false);
+    expect(rasterSource.includes("fn color_hash(")).toBe(false);
+    expect(rasterSource.includes("fn DynamicPalette::get_or_add(")).toBe(false);
+  });
+
   it("keeps painter-terminal root facade behind terminal-specific packages", () => {
     const rootPackage = path.join(REPO_ROOT, "painter_terminal/moon.pkg");
     const source = fs.readFileSync(rootPackage, "utf8");
