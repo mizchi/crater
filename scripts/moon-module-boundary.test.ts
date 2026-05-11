@@ -2344,15 +2344,23 @@ describe("MoonBit module boundaries", () => {
   it("delegates SVG use element helpers to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const instantiateStart = source.indexOf("pub fn UseElement::instantiate(");
+    const instantiateEnd = source.indexOf("///|\n/// Clone an SVGNode", instantiateStart);
+    const instantiateSource = source.slice(instantiateStart, instantiateEnd);
 
     expect(source.includes("@msvg.UseElement::new(")).toBe(true);
     expect(source.includes("@msvg.UseElement::with_size(")).toBe(true);
     expect(source.includes("use_element_from_msvg(")).toBe(true);
     expect(source.includes("use_element_to_msvg(self).get_id()")).toBe(true);
+    expect(instantiateSource.includes("use_element_to_msvg(self).instantiate(symbol_registry_to_msvg(registry))")).toBe(true);
     expect(interopSource.includes("fn use_element_from_msvg(")).toBe(true);
     expect(interopSource.includes("fn use_element_to_msvg(")).toBe(true);
+    expect(interopSource.includes("fn symbol_to_msvg(")).toBe(true);
+    expect(interopSource.includes("fn symbol_registry_to_msvg(")).toBe(true);
     expect(source.includes("fn hex_value(")).toBe(false);
     expect(source.includes("fn decode_percent(")).toBe(false);
+    expect(instantiateSource.includes("registry.get(id)")).toBe(false);
+    expect(instantiateSource.includes("symbol.content.clone()")).toBe(false);
   });
 
   it("delegates SVG symbol constructors to mizchi/svg", () => {

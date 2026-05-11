@@ -509,6 +509,28 @@ fn symbol_from_msvg(symbol : @msvg.Symbol) -> Symbol {
 }
 
 ///|
+fn symbol_to_msvg(symbol : Symbol) -> @msvg.Symbol {
+  @msvg.Symbol::{
+    id: symbol.id,
+    content: svg_node_to_msvg(symbol.content),
+    view_box: view_box_to_msvg_option(symbol.view_box),
+    width: None,
+    height: None,
+    preserve_aspect_ratio: symbol.preserve_aspect_ratio.to_msvg(),
+    display_none: false,
+  }
+}
+
+///|
+fn symbol_registry_to_msvg(registry : SymbolRegistry) -> @msvg.SymbolRegistry {
+  let converted = @msvg.SymbolRegistry::new()
+  registry.symbols.each(fn(_id, symbol) {
+    converted.add(symbol_to_msvg(symbol))
+  })
+  converted
+}
+
+///|
 fn color_from_msvg_option(color : @msvg.Color?) -> Color? {
   match color {
     Some(c) => Some(color_from_msvg(c))

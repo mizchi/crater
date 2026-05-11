@@ -2806,19 +2806,10 @@ pub fn UseElement::instantiate(
   self : UseElement,
   registry : SymbolRegistry,
 ) -> SVGNode? {
-  let id = self.get_id()
-  match registry.get(id) {
+  match
+    use_element_to_msvg(self).instantiate(symbol_registry_to_msvg(registry)) {
+    Some(node) => Some(svg_node_from_msvg(node))
     None => None
-    Some(symbol) => {
-      // Create a copy of the symbol content
-      let node = symbol.content.clone()
-      // Apply use element transform
-      let translate = Transform::translate(self.x, self.y)
-      node.transform = translate
-        .multiply(self.transform)
-        .multiply(node.transform)
-      Some(node)
-    }
   }
 }
 
