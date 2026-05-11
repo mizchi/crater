@@ -104,6 +104,21 @@ describe("MoonBit module boundaries", () => {
     expect(rasterSource.includes("pub fn get_depth_color(")).toBe(false);
   });
 
+  it("splits image provider model out of paint_raster", () => {
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/image_provider.mbt"), "utf8");
+
+    expect(source.includes("pub(all) struct RasterImage")).toBe(true);
+    expect(source.includes("pub(all) enum ResolvedImage")).toBe(true);
+    expect(source.includes("pub(all) struct ImageProvider")).toBe(true);
+    expect(source.includes("let image_provider_override")).toBe(true);
+    expect(source.includes("pub fn set_image_provider(")).toBe(true);
+    expect(source.includes("pub fn clear_image_provider(")).toBe(true);
+    expect(rasterSource.includes("pub(all) struct RasterImage")).toBe(false);
+    expect(rasterSource.includes("pub(all) enum ResolvedImage")).toBe(false);
+    expect(rasterSource.includes("pub(all) struct ImageProvider")).toBe(false);
+  });
+
   it("keeps painter-terminal root facade behind terminal-specific packages", () => {
     const rootPackage = path.join(REPO_ROOT, "painter_terminal/moon.pkg");
     const source = fs.readFileSync(rootPackage, "utf8");
