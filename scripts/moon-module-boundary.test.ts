@@ -184,6 +184,18 @@ describe("MoonBit module boundaries", () => {
     expect(rasterSource.includes("fn resolve_glyph_text_wrap_width(")).toBe(false);
   });
 
+  it("splits raster SVG data URI helpers out of paint_raster", () => {
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_svg_data_uri.mbt"), "utf8");
+
+    expect(source.includes("fn decode_svg_data_uri(")).toBe(true);
+    expect(source.includes("fn url_decode_simple(")).toBe(true);
+    expect(source.includes("fn hex_digit(")).toBe(true);
+    expect(rasterSource.includes("fn decode_svg_data_uri(")).toBe(false);
+    expect(rasterSource.includes("fn url_decode_simple(")).toBe(false);
+    expect(rasterSource.includes("fn hex_digit(")).toBe(false);
+  });
+
   it("splits raster palette helpers out of paint_raster", () => {
     const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_palette.mbt"), "utf8");
