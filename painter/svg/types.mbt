@@ -2926,7 +2926,7 @@ pub(all) struct MarkedLine {
 
 ///|
 pub fn MarkedLine::new(points : Array[(Double, Double)]) -> MarkedLine {
-  { points, marker_start: None, marker_mid: None, marker_end: None }
+  marked_line_from_msvg(@msvg.MarkedLine::new(points))
 }
 
 ///|
@@ -2936,34 +2936,11 @@ pub fn MarkedLine::with_markers(
   mid : String?,
   end : String?,
 ) -> MarkedLine {
-  { points, marker_start: start, marker_mid: mid, marker_end: end }
+  marked_line_from_msvg(@msvg.MarkedLine::with_markers(points, start, mid, end))
 }
 
 ///|
 /// Get angle at a point on the line
 pub fn MarkedLine::get_angle_at(self : MarkedLine, index : Int) -> Double {
-  let len = self.points.length()
-  if len < 2 {
-    return 0.0
-  }
-  if index == 0 {
-    // Start point - use angle to next point
-    let dx = self.points[1].0 - self.points[0].0
-    let dy = self.points[1].1 - self.points[0].1
-    @math.atan2(dy, dx)
-  } else if index >= len - 1 {
-    // End point - use angle from previous point
-    let dx = self.points[len - 1].0 - self.points[len - 2].0
-    let dy = self.points[len - 1].1 - self.points[len - 2].1
-    @math.atan2(dy, dx)
-  } else {
-    // Mid point - average of incoming and outgoing angles
-    let dx1 = self.points[index].0 - self.points[index - 1].0
-    let dy1 = self.points[index].1 - self.points[index - 1].1
-    let dx2 = self.points[index + 1].0 - self.points[index].0
-    let dy2 = self.points[index + 1].1 - self.points[index].1
-    let a1 = @math.atan2(dy1, dx1)
-    let a2 = @math.atan2(dy2, dx2)
-    (a1 + a2) / 2.0
-  }
+  marked_line_to_msvg(self).get_angle_at(index)
 }

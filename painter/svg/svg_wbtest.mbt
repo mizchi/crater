@@ -1233,6 +1233,13 @@ test "marked line angles" {
   inspect((end_angle * 100.0).round() / 100.0, content="1.57")
 }
 
+///|
+test "marked line angle skips zero length segments" {
+  let line = MarkedLine::new([(0.0, 0.0), (0.0, 0.0), (0.0, 10.0)])
+  let start_angle = line.get_angle_at(0)
+  inspect((start_angle * 100.0).round() / 100.0, content="1.57")
+}
+
 // ============================================================================
 // Filter Tests
 // ============================================================================

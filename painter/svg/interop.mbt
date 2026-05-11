@@ -1604,3 +1604,23 @@ fn marker_to_msvg(marker : Marker) -> @msvg.Marker {
     clip_overflow: true,
   }
 }
+
+///|
+fn marked_line_from_msvg(line : @msvg.MarkedLine) -> MarkedLine {
+  {
+    points: line.points,
+    marker_start: line.marker_start,
+    marker_mid: line.marker_mid,
+    marker_end: line.marker_end,
+  }
+}
+
+///|
+fn marked_line_to_msvg(line : MarkedLine) -> @msvg.MarkedLine {
+  @msvg.MarkedLine::{
+    points: line.points,
+    marker_start: line.marker_start,
+    marker_mid: line.marker_mid,
+    marker_end: line.marker_end,
+  }
+}
