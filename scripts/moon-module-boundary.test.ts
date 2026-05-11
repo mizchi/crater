@@ -2604,7 +2604,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG scene z-index operations to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene.mbt"), "utf8");
+    const sceneSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene_z_order.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
 
     expect(source.includes("scene.set_z_index(id, z_index)")).toBe(true);
@@ -2615,6 +2616,8 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("fn find_parent_and_node(")).toBe(false);
     expect(source.includes("fn get_max_z_index(")).toBe(false);
     expect(source.includes("fn get_min_z_index(")).toBe(false);
+    expect(sceneSource.includes("pub fn Scene::set_z_index(")).toBe(false);
+    expect(sceneSource.includes("pub fn Scene::bring_to_front(")).toBe(false);
   });
 
   it("delegates SVG bounding boxes and clip rects to mizchi/svg", () => {
