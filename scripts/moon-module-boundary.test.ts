@@ -242,6 +242,20 @@ describe("MoonBit module boundaries", () => {
     expect(rasterSource.includes("draw_text_decoration_line(")).toBe(false);
   });
 
+  it("splits raster node box decorations out of paint_raster", () => {
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_node_box.mbt"), "utf8");
+
+    expect(source.includes("fn render_node_box_decorations(")).toBe(true);
+    expect(source.includes("fill_blurred_box_shadow_clipped(")).toBe(true);
+    expect(source.includes("fill_linear_gradient_clipped(")).toBe(true);
+    expect(source.includes("draw_uniform_rounded_border_ring_clipped(")).toBe(true);
+    expect(source.includes("let rounded_border_drawn")).toBe(true);
+    expect(rasterSource.includes("fill_blurred_box_shadow_clipped(")).toBe(false);
+    expect(rasterSource.includes("fill_linear_gradient_clipped(")).toBe(false);
+    expect(rasterSource.includes("draw_uniform_rounded_border_ring_clipped(")).toBe(false);
+  });
+
   it("splits raster palette helpers out of paint_raster", () => {
     const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_palette.mbt"), "utf8");
