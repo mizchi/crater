@@ -2824,9 +2824,11 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG animation manager operations to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene.mbt"), "utf8");
+    const sceneSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/animation_manager.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
 
+    expect(source.includes("pub(all) struct AnimationManager")).toBe(true);
     expect(source.includes("animation_manager_from_msvg(@msvg.AnimationManager::new())")).toBe(true);
     expect(source.includes("let manager = animation_manager_to_msvg(self)")).toBe(true);
     expect(source.includes("manager.animate_translate(")).toBe(true);
@@ -2843,6 +2845,8 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("for tween in self.tweens")).toBe(false);
     expect(source.includes("Remove completed tweens")).toBe(false);
     expect(source.includes("self.tweens.clear()")).toBe(false);
+    expect(sceneSource.includes("pub(all) struct AnimationManager")).toBe(false);
+    expect(sceneSource.includes("pub fn AnimationManager::new(")).toBe(false);
   });
 
   it("delegates SVG collision operations to mizchi/svg", () => {
