@@ -2402,14 +2402,18 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG node cloning to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/node.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
 
+    expect(source.includes("pub(all) struct SVGNode")).toBe(true);
     expect(source.includes("svg_node_from_msvg(svg_node_to_msvg(self).clone())")).toBe(true);
     expect(interopSource.includes("fn svg_node_to_msvg(")).toBe(true);
     expect(interopSource.includes("fn svg_node_from_msvg(")).toBe(true);
     expect(source.includes("let children : Array[SVGNode] = []")).toBe(false);
     expect(source.includes("let filters : Array[Filter] = []")).toBe(false);
+    expect(typesSource.includes("pub(all) struct SVGNode")).toBe(false);
+    expect(typesSource.includes("pub fn SVGNode::clone(")).toBe(false);
   });
 
   it("keeps SVG event system in a dedicated module", () => {
@@ -2437,10 +2441,11 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG node effect setters to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/node.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
     const effectStart = source.indexOf("/// Add a filter to the node");
-    const effectEnd = source.indexOf("///|\n/// Bounding box", effectStart);
+    const effectEnd = source.indexOf("///|\n/// Clone an SVGNode", effectStart);
     const effectSource = source.slice(effectStart, effectEnd);
 
     expect(effectSource.includes("let node = svg_node_to_msvg(self)")).toBe(true);
@@ -2457,6 +2462,8 @@ describe("MoonBit module boundaries", () => {
     expect(effectSource.includes("self.mask_id =")).toBe(false);
     expect(effectSource.includes("self.clip_path_id =")).toBe(false);
     expect(effectSource.includes("self.node_dirty =")).toBe(false);
+    expect(typesSource.includes("pub fn SVGNode::add_filter(")).toBe(false);
+    expect(typesSource.includes("pub fn SVGNode::set_mask(")).toBe(false);
   });
 
   it("delegates SVG transform operations to mizchi/svg", () => {
