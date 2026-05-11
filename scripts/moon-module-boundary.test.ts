@@ -2587,14 +2587,19 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG bounding boxes and clip rects to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/geometry.mbt"), "utf8");
 
+    expect(source.includes("pub(all) struct BoundingBox")).toBe(true);
+    expect(source.includes("pub(all) struct ClipRect")).toBe(true);
     expect(source.includes("@msvg.BoundingBox::empty()")).toBe(true);
     expect(source.includes("@msvg.BoundingBox::from_rect(")).toBe(true);
     expect(source.includes("bounding_box_to_msvg(self).width()")).toBe(true);
     expect(source.includes("@msvg.ClipRect::")).toBe(true);
     expect(source.includes("fn min(")).toBe(false);
     expect(source.includes("fn max(")).toBe(false);
+    expect(typesSource.includes("pub(all) struct BoundingBox")).toBe(false);
+    expect(typesSource.includes("pub fn ClipRect::new(")).toBe(false);
   });
 
   it("delegates SVG shape hit testing to mizchi/svg", () => {

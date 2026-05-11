@@ -148,6 +148,7 @@
   - 進捗: camera helpers を `painter/svg/camera.mbt` へ分離
   - 進捗: text layout helpers を `painter/svg/text.mbt` へ分離
   - 進捗: SVG node helpers を `painter/svg/node.mbt` へ分離
+  - 進捗: geometry helpers を `painter/svg/geometry.mbt` へ分離
 - [ ] `painter/svg/scene.mbt` の scene graph mutation と shape rendering を分離する
   - 候補: dirty region/z-order/camera, render dispatch, shape renderer (`render_rect`, `render_circle`, `render_path`, `render_text`)
   - `mizchi/svg` に寄せられる primitive はそちらへの移譲候補として扱う
