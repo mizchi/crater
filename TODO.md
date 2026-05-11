@@ -131,6 +131,7 @@
   - 進捗: `Color` constructors, `StrokeStyle::default`, `ViewBox::get_transform`, `Transform` operations, gradient constructors / `color_at`, `BoundingBox` / `ClipRect`, shape hit testing, `ClipPath` helpers, `Camera` math, pointer event state, `ObjectPool`, text whitespace / overflow helpers, `TextBlock` helpers, `Symbol` constructors, `UseElement` helpers, `SVGNode::clone`, blend mode math, color filter math, mask math, pattern sampling, marker / marked-line transforms, image/sprite/filter image operations, animated sprite state machine, particle emitter/RNG, path follower / rasterization, tween animation, collision detection は crater facade を維持しつつ `mizchi/svg` へ委譲
   - 進捗: pointer/event manager 実装を `painter/svg/event.mbt` へ分離
   - 進捗: shape / node hit testing 実装を `painter/svg/hit_testing.mbt` へ分離
+  - 進捗: collision helpers を `painter/svg/collision.mbt` へ分離
 - [ ] `painter/svg/scene.mbt` の scene graph mutation と shape rendering を分離する
   - 候補: dirty region/z-order/camera, render dispatch, shape renderer (`render_rect`, `render_circle`, `render_path`, `render_text`)
   - `mizchi/svg` に寄せられる primitive はそちらへの移譲候補として扱う

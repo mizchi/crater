@@ -2747,7 +2747,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG collision operations to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/collision.mbt"), "utf8");
 
     expect(source.includes("@msvg.collide_circle_circle(")).toBe(true);
     expect(source.includes("@msvg.collide_rect_rect(")).toBe(true);
@@ -2756,6 +2757,8 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("svg_node_to_msvg(self).collides_with(svg_node_to_msvg(other))")).toBe(true);
     expect(source.includes("fn get_shape_bbox(")).toBe(false);
     expect(source.includes("Fall back to bounding box collision")).toBe(false);
+    expect(typesSource.includes("pub fn collide_circle_circle(")).toBe(false);
+    expect(typesSource.includes("pub fn SVGNode::collides_with(")).toBe(false);
   });
 
   it("delegates SVG object pool operations to mizchi/svg", () => {
