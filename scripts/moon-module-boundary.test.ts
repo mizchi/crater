@@ -225,6 +225,18 @@ describe("MoonBit module boundaries", () => {
     expect(rasterSource.includes("fn fill_rounded_rect_clipped(")).toBe(false);
   });
 
+  it("splits raster gradient helpers out of paint_raster", () => {
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_gradient.mbt"), "utf8");
+
+    expect(source.includes("fn lerp_color(")).toBe(true);
+    expect(source.includes("fn sample_gradient(")).toBe(true);
+    expect(source.includes("fn fill_linear_gradient_clipped(")).toBe(true);
+    expect(rasterSource.includes("fn lerp_color(")).toBe(false);
+    expect(rasterSource.includes("fn sample_gradient(")).toBe(false);
+    expect(rasterSource.includes("fn fill_linear_gradient_clipped(")).toBe(false);
+  });
+
   it("keeps painter-terminal root facade behind terminal-specific packages", () => {
     const rootPackage = path.join(REPO_ROOT, "painter_terminal/moon.pkg");
     const source = fs.readFileSync(rootPackage, "utf8");

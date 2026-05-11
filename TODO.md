@@ -176,6 +176,7 @@
   - 進捗: raster clip helpers を `painter/x/image/raster_clip.mbt` へ分離
   - 進捗: raster blending helpers を `painter/x/image/raster_blend.mbt` へ分離
   - 進捗: rounded raster fill helpers を `painter/x/image/raster_rounded_rect.mbt` へ分離
+  - 進捗: raster gradient helpers を `painter/x/image/raster_gradient.mbt` へ分離
 
 ### P2: tooling / boundary guard
 
