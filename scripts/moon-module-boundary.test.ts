@@ -2762,7 +2762,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG object pool operations to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/object_pool.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
 
     expect(source.includes("@msvg.ObjectPool::new(")).toBe(true);
@@ -2773,6 +2774,8 @@ describe("MoonBit module boundaries", () => {
     expect(interopSource.includes("fn[T] object_pool_from_msvg(")).toBe(true);
     expect(interopSource.includes("fn[T] object_pool_to_msvg(")).toBe(true);
     expect(source.includes("self.available.pop().unwrap()")).toBe(false);
+    expect(typesSource.includes("pub(all) struct ObjectPool")).toBe(false);
+    expect(typesSource.includes("pub fn[T] ObjectPool::new(")).toBe(false);
   });
 
   it("delegates SVG blend mode math to mizchi/svg", () => {
