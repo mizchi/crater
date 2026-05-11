@@ -2352,6 +2352,24 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("Sepia matrix coefficients")).toBe(false);
   });
 
+  it("delegates SVG blend mode math to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+
+    expect(source.includes("@msvg.blend_with_mode(")).toBe(true);
+    expect(source.includes("@msvg.blend_images(")).toBe(true);
+    expect(interopSource.includes("fn blend_mode_to_msvg(")).toBe(true);
+    expect(interopSource.includes("fn image_to_msvg(")).toBe(true);
+    expect(interopSource.includes("fn image_from_msvg(")).toBe(true);
+    expect(source.includes("fn blend_overlay_channel(")).toBe(false);
+    expect(source.includes("fn blend_color_dodge_channel(")).toBe(false);
+    expect(source.includes("fn blend_color_burn_channel(")).toBe(false);
+    expect(source.includes("fn blend_soft_light_channel(")).toBe(false);
+    expect(source.includes("fn rgb_to_hsl(")).toBe(false);
+    expect(source.includes("fn hsl_to_rgb(")).toBe(false);
+    expect(source.includes("fn sqrt_approx(")).toBe(false);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",

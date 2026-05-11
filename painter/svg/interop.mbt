@@ -48,6 +48,24 @@ fn color_from_msvg_option(color : @msvg.Color?) -> Color? {
 }
 
 ///|
+fn image_from_msvg(image : @msvg.Image) -> Image {
+  {
+    width: image.width,
+    height: image.height,
+    pixels: image.pixels.map(color_from_msvg),
+  }
+}
+
+///|
+fn image_to_msvg(image : Image) -> @msvg.Image {
+  @msvg.Image::{
+    width: image.width,
+    height: image.height,
+    pixels: image.pixels.map(color_to_msvg),
+  }
+}
+
+///|
 fn current_color_or_black(current_color : Color?) -> Color {
   match current_color {
     Some(color) => color
@@ -225,6 +243,28 @@ fn filter_from_msvg(filter : @msvg.Filter) -> Filter {
     Invert(value) => Invert(value)
     Saturate(value) => Saturate(value)
     ColorMatrix(values) => ColorMatrix(values)
+  }
+}
+
+///|
+fn blend_mode_to_msvg(mode : BlendMode) -> @msvg.BlendMode {
+  match mode {
+    Normal => @msvg.BlendMode::Normal
+    Multiply => @msvg.BlendMode::Multiply
+    Screen => @msvg.BlendMode::Screen
+    Overlay => @msvg.BlendMode::Overlay
+    Darken => @msvg.BlendMode::Darken
+    Lighten => @msvg.BlendMode::Lighten
+    ColorDodge => @msvg.BlendMode::ColorDodge
+    ColorBurn => @msvg.BlendMode::ColorBurn
+    HardLight => @msvg.BlendMode::HardLight
+    SoftLight => @msvg.BlendMode::SoftLight
+    Difference => @msvg.BlendMode::Difference
+    Exclusion => @msvg.BlendMode::Exclusion
+    Hue => @msvg.BlendMode::Hue
+    Saturation => @msvg.BlendMode::Saturation
+    ColorMode => @msvg.BlendMode::ColorMode
+    Luminosity => @msvg.BlendMode::Luminosity
   }
 }
 
