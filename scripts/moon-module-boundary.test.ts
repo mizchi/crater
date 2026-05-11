@@ -147,6 +147,20 @@ describe("MoonBit module boundaries", () => {
     expect(rasterSource.includes("pub fn Framebuffer::fill_rect_hatched(")).toBe(false);
   });
 
+  it("splits bitmap text fallback out of paint_raster", () => {
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/bitmap_text.mbt"), "utf8");
+
+    expect(source.includes("fn is_wide_char(")).toBe(true);
+    expect(source.includes("pub fn Framebuffer::draw_char(")).toBe(true);
+    expect(source.includes("pub fn Framebuffer::draw_text(")).toBe(true);
+    expect(source.includes("fn draw_text_clipped(")).toBe(true);
+    expect(source.includes("get_char_bitmap(c)")).toBe(true);
+    expect(rasterSource.includes("pub fn Framebuffer::draw_char(")).toBe(false);
+    expect(rasterSource.includes("pub fn Framebuffer::draw_text(")).toBe(false);
+    expect(rasterSource.includes("fn draw_text_clipped(")).toBe(false);
+  });
+
   it("keeps painter-terminal root facade behind terminal-specific packages", () => {
     const rootPackage = path.join(REPO_ROOT, "painter_terminal/moon.pkg");
     const source = fs.readFileSync(rootPackage, "utf8");
