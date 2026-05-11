@@ -207,6 +207,140 @@ fn copy_animated_sprite_state_from_msvg(
 }
 
 ///|
+fn particle_from_msvg(particle : @msvg.Particle) -> Particle {
+  {
+    x: particle.x,
+    y: particle.y,
+    vx: particle.vx,
+    vy: particle.vy,
+    life: particle.life,
+    max_life: particle.max_life,
+    size: particle.size,
+    color: color_from_msvg(particle.color),
+    active: particle.active,
+  }
+}
+
+///|
+fn particle_to_msvg(particle : Particle) -> @msvg.Particle {
+  @msvg.Particle::{
+    x: particle.x,
+    y: particle.y,
+    vx: particle.vx,
+    vy: particle.vy,
+    life: particle.life,
+    max_life: particle.max_life,
+    size: particle.size,
+    color: color_to_msvg(particle.color),
+    active: particle.active,
+  }
+}
+
+///|
+fn copy_particle_from_msvg(target : Particle, source : @msvg.Particle) -> Unit {
+  target.x = source.x
+  target.y = source.y
+  target.vx = source.vx
+  target.vy = source.vy
+  target.life = source.life
+  target.max_life = source.max_life
+  target.size = source.size
+  target.color = color_from_msvg(source.color)
+  target.active = source.active
+}
+
+///|
+fn emitter_config_from_msvg(config : @msvg.EmitterConfig) -> EmitterConfig {
+  {
+    emit_rate: config.emit_rate,
+    life_min: config.life_min,
+    life_max: config.life_max,
+    speed_min: config.speed_min,
+    speed_max: config.speed_max,
+    angle_min: config.angle_min,
+    angle_max: config.angle_max,
+    size_start: config.size_start,
+    size_end: config.size_end,
+    color_start: color_from_msvg(config.color_start),
+    color_end: color_from_msvg(config.color_end),
+    gravity_x: config.gravity_x,
+    gravity_y: config.gravity_y,
+  }
+}
+
+///|
+fn emitter_config_to_msvg(config : EmitterConfig) -> @msvg.EmitterConfig {
+  @msvg.EmitterConfig::{
+    emit_rate: config.emit_rate,
+    life_min: config.life_min,
+    life_max: config.life_max,
+    speed_min: config.speed_min,
+    speed_max: config.speed_max,
+    angle_min: config.angle_min,
+    angle_max: config.angle_max,
+    size_start: config.size_start,
+    size_end: config.size_end,
+    color_start: color_to_msvg(config.color_start),
+    color_end: color_to_msvg(config.color_end),
+    gravity_x: config.gravity_x,
+    gravity_y: config.gravity_y,
+  }
+}
+
+///|
+fn particle_emitter_from_msvg(
+  emitter : @msvg.ParticleEmitter,
+) -> ParticleEmitter {
+  {
+    x: emitter.x,
+    y: emitter.y,
+    config: emitter_config_from_msvg(emitter.config),
+    particles: emitter.particles.map(particle_from_msvg),
+    emit_accumulator: emitter.emit_accumulator,
+    active: emitter.active,
+  }
+}
+
+///|
+fn particle_emitter_to_msvg(emitter : ParticleEmitter) -> @msvg.ParticleEmitter {
+  @msvg.ParticleEmitter::{
+    x: emitter.x,
+    y: emitter.y,
+    config: emitter_config_to_msvg(emitter.config),
+    particles: emitter.particles.map(particle_to_msvg),
+    emit_accumulator: emitter.emit_accumulator,
+    active: emitter.active,
+  }
+}
+
+///|
+fn copy_particle_emitter_state_from_msvg(
+  target : ParticleEmitter,
+  source : @msvg.ParticleEmitter,
+) -> Unit {
+  target.emit_accumulator = source.emit_accumulator
+  target.active = source.active
+  let len = if target.particles.length() < source.particles.length() {
+    target.particles.length()
+  } else {
+    source.particles.length()
+  }
+  for i in 0..<len {
+    copy_particle_from_msvg(target.particles[i], source.particles[i])
+  }
+}
+
+///|
+fn simple_rng_from_msvg(rng : @msvg.SimpleRNG) -> SimpleRNG {
+  { state: rng.state }
+}
+
+///|
+fn simple_rng_to_msvg(rng : SimpleRNG) -> @msvg.SimpleRNG {
+  @msvg.SimpleRNG::{ state: rng.state }
+}
+
+///|
 fn current_color_or_black(current_color : Color?) -> Color {
   match current_color {
     Some(color) => color

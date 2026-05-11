@@ -2391,6 +2391,22 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("self.current_frame = self.current_frame + 1")).toBe(false);
   });
 
+  it("delegates SVG particle operations to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+
+    expect(source.includes("@msvg.Particle::new(")).toBe(true);
+    expect(source.includes("@msvg.EmitterConfig::default(")).toBe(true);
+    expect(source.includes("@msvg.ParticleEmitter::new(")).toBe(true);
+    expect(source.includes("particle_emitter_to_msvg(self)")).toBe(true);
+    expect(source.includes("emitter.update(dt)")).toBe(true);
+    expect(source.includes("particle_emitter_to_msvg(self).active_count()")).toBe(true);
+    expect(interopSource.includes("fn particle_emitter_to_msvg(")).toBe(true);
+    expect(interopSource.includes("fn copy_particle_emitter_state_from_msvg(")).toBe(true);
+    expect(source.includes("fn ParticleEmitter::emit_one(")).toBe(false);
+    expect(source.includes("fn random_range(")).toBe(false);
+  });
+
   it("delegates SVG blend mode math to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");

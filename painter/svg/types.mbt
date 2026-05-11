@@ -1595,17 +1595,7 @@ pub(all) struct Particle {
 
 ///|
 pub fn Particle::new() -> Particle {
-  {
-    x: 0.0,
-    y: 0.0,
-    vx: 0.0,
-    vy: 0.0,
-    life: 0.0,
-    max_life: 1.0,
-    size: 5.0,
-    color: Color::white(),
-    active: false,
-  }
+  particle_from_msvg(@msvg.Particle::new())
 }
 
 ///|
@@ -1628,21 +1618,7 @@ pub(all) struct EmitterConfig {
 
 ///|
 pub fn EmitterConfig::default() -> EmitterConfig {
-  {
-    emit_rate: 10.0,
-    life_min: 0.5,
-    life_max: 2.0,
-    speed_min: 50.0,
-    speed_max: 100.0,
-    angle_min: 0.0,
-    angle_max: 6.28318, // 2π
-    size_start: 10.0,
-    size_end: 2.0,
-    color_start: Color::white(),
-    color_end: Color::transparent(),
-    gravity_x: 0.0,
-    gravity_y: 0.0,
-  }
+  emitter_config_from_msvg(@msvg.EmitterConfig::default())
 }
 
 ///|
@@ -1663,69 +1639,22 @@ pub fn ParticleEmitter::new(
   config : EmitterConfig,
   max_particles : Int,
 ) -> ParticleEmitter {
-  let particles : Array[Particle] = []
-  for i = 0; i < max_particles; i = i + 1 {
-    particles.push(Particle::new())
-  }
-  { x, y, config, particles, emit_accumulator: 0.0, active: true }
+  particle_emitter_from_msvg(
+    @msvg.ParticleEmitter::new(
+      x,
+      y,
+      emitter_config_to_msvg(config),
+      max_particles,
+    ),
+  )
 }
 
 ///|
 /// Update particles with delta time
 pub fn ParticleEmitter::update(self : ParticleEmitter, dt : Double) -> Unit {
-  // Emit new particles
-  if self.active {
-    self.emit_accumulator = self.emit_accumulator + dt * self.config.emit_rate
-    while self.emit_accumulator >= 1.0 {
-      self.emit_one()
-      self.emit_accumulator = self.emit_accumulator - 1.0
-    }
-  }
-  // Update existing particles
-  for p in self.particles {
-    if p.active {
-      // Apply velocity
-      p.x = p.x + p.vx * dt
-      p.y = p.y + p.vy * dt
-      // Apply gravity
-      p.vx = p.vx + self.config.gravity_x * dt
-      p.vy = p.vy + self.config.gravity_y * dt
-      // Update life
-      p.life = p.life - dt
-      if p.life <= 0.0 {
-        p.active = false
-      } else {
-        // Interpolate size and color based on life
-        let t = 1.0 - p.life / p.max_life
-        p.size = lerp(self.config.size_start, self.config.size_end, t)
-        p.color = lerp_color(self.config.color_start, self.config.color_end, t)
-      }
-    }
-  }
-}
-
-///|
-fn ParticleEmitter::emit_one(self : ParticleEmitter) -> Unit {
-  // Find inactive particle
-  for p in self.particles {
-    if !p.active {
-      p.active = true
-      p.x = self.x
-      p.y = self.y
-      // Random life
-      p.life = random_range(self.config.life_min, self.config.life_max)
-      p.max_life = p.life
-      // Random angle and speed
-      let angle = random_range(self.config.angle_min, self.config.angle_max)
-      let speed = random_range(self.config.speed_min, self.config.speed_max)
-      p.vx = @math.cos(angle) * speed
-      p.vy = @math.sin(angle) * speed
-      // Initial size and color
-      p.size = self.config.size_start
-      p.color = self.config.color_start
-      return
-    }
-  }
+  let emitter = particle_emitter_to_msvg(self)
+  emitter.update(dt)
+  copy_particle_emitter_state_from_msvg(self, emitter)
 }
 
 ///|
@@ -1736,41 +1665,29 @@ pub(all) struct SimpleRNG {
 
 ///|
 pub fn SimpleRNG::new(seed : Int) -> SimpleRNG {
-  { state: seed }
+  simple_rng_from_msvg(@msvg.SimpleRNG::new(seed))
 }
 
 ///|
 pub fn SimpleRNG::next(self : SimpleRNG) -> Double {
-  // Linear congruential generator
-  self.state = (self.state * 1103515245 + 12345) & 0x7FFFFFFF
-  self.state.to_double() / 2147483647.0
+  let rng = simple_rng_to_msvg(self)
+  let value = rng.next()
+  self.state = rng.state
+  value
 }
 
 ///|
 pub fn SimpleRNG::range(self : SimpleRNG, min : Double, max : Double) -> Double {
-  let t = self.next()
-  min + t * (max - min)
-}
-
-///|
-/// Default global RNG instance
-let default_rng : SimpleRNG = SimpleRNG::new(12345)
-
-///|
-fn random_range(min : Double, max : Double) -> Double {
-  default_rng.range(min, max)
+  let rng = simple_rng_to_msvg(self)
+  let value = rng.range(min, max)
+  self.state = rng.state
+  value
 }
 
 ///|
 /// Get active particle count
 pub fn ParticleEmitter::active_count(self : ParticleEmitter) -> Int {
-  let mut count = 0
-  for p in self.particles {
-    if p.active {
-      count = count + 1
-    }
-  }
-  count
+  particle_emitter_to_msvg(self).active_count()
 }
 
 // ============================================================================
