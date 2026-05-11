@@ -2349,12 +2349,14 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG use element helpers to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/use_symbol.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
     const instantiateStart = source.indexOf("pub fn UseElement::instantiate(");
-    const instantiateEnd = source.indexOf("///|\n/// Clone an SVGNode", instantiateStart);
+    const instantiateEnd = source.length;
     const instantiateSource = source.slice(instantiateStart, instantiateEnd);
 
+    expect(source.includes("pub(all) struct UseElement")).toBe(true);
     expect(source.includes("@msvg.UseElement::new(")).toBe(true);
     expect(source.includes("@msvg.UseElement::with_size(")).toBe(true);
     expect(source.includes("use_element_from_msvg(")).toBe(true);
@@ -2368,17 +2370,24 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("fn decode_percent(")).toBe(false);
     expect(instantiateSource.includes("registry.get(id)")).toBe(false);
     expect(instantiateSource.includes("symbol.content.clone()")).toBe(false);
+    expect(typesSource.includes("pub(all) struct UseElement")).toBe(false);
+    expect(typesSource.includes("pub fn UseElement::new(")).toBe(false);
   });
 
   it("delegates SVG symbol constructors to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/use_symbol.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
 
+    expect(source.includes("pub(all) struct Symbol")).toBe(true);
+    expect(source.includes("pub(all) struct SymbolRegistry")).toBe(true);
     expect(source.includes("@msvg.Symbol::new(")).toBe(true);
     expect(source.includes("@msvg.Symbol::with_viewbox(")).toBe(true);
     expect(source.includes("symbol_from_msvg(")).toBe(true);
     expect(interopSource.includes("fn symbol_from_msvg(")).toBe(true);
     expect(source.includes("view_box: None,\n    preserve_aspect_ratio: PreserveAspectRatio::default(),")).toBe(false);
+    expect(typesSource.includes("pub(all) struct Symbol")).toBe(false);
+    expect(typesSource.includes("pub fn Symbol::new(")).toBe(false);
   });
 
   it("delegates SVG node cloning to mizchi/svg", () => {
