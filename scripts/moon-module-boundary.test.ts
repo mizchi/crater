@@ -2321,9 +2321,12 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG text whitespace helpers to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/text.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
 
+    expect(source.includes("pub(all) enum WhiteSpace")).toBe(true);
+    expect(source.includes("pub(all) enum TextOverflow")).toBe(true);
     expect(source.includes("@msvg.process_white_space(")).toBe(true);
     expect(source.includes("@msvg.apply_text_overflow(")).toBe(true);
     expect(source.includes("white_space_to_msvg(mode)")).toBe(true);
@@ -2331,12 +2334,18 @@ describe("MoonBit module boundaries", () => {
     expect(interopSource.includes("fn white_space_to_msvg(")).toBe(true);
     expect(interopSource.includes("fn text_overflow_to_msvg(")).toBe(true);
     expect(source.includes("fn take_chars(")).toBe(false);
+    expect(typesSource.includes("pub(all) enum WhiteSpace")).toBe(false);
+    expect(typesSource.includes("pub fn process_white_space(")).toBe(false);
   });
 
   it("delegates SVG text blocks to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/text.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
 
+    expect(source.includes("pub(all) struct TextStyle")).toBe(true);
+    expect(source.includes("pub(all) struct TextSpan")).toBe(true);
+    expect(source.includes("pub(all) struct TextBlock")).toBe(true);
     expect(source.includes("@msvg.TextDecorationFull::default()")).toBe(true);
     expect(source.includes("text_style_from_msvg(@msvg.TextStyle::default())")).toBe(true);
     expect(source.includes("text_span_from_msvg(@msvg.TextSpan::new(text))")).toBe(true);
@@ -2346,6 +2355,8 @@ describe("MoonBit module boundaries", () => {
     expect(interopSource.includes("fn text_style_from_msvg(")).toBe(true);
     expect(interopSource.includes("fn text_block_to_msvg(")).toBe(true);
     expect(source.includes("fn split_words(")).toBe(false);
+    expect(typesSource.includes("pub(all) struct TextBlock")).toBe(false);
+    expect(typesSource.includes("pub fn TextBlock::new(")).toBe(false);
   });
 
   it("delegates SVG use element helpers to mizchi/svg", () => {
