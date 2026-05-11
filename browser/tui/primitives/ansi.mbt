@@ -45,34 +45,6 @@ pub fn ansi_move_to(row : Int, col : Int) -> String {
 }
 
 ///|
-/// Convert RGB color to 256-color palette index
-/// Uses the standard 256-color palette:
-/// - 0-15: Standard colors (black, red, green, etc.)
-/// - 16-231: 6x6x6 color cube (216 colors)
-/// - 232-255: Grayscale (24 shades)
-pub fn rgb_to_256(r : Int, g : Int, b : Int) -> Int {
-  @tui_ansi.rgb_to_256(r, g, b)
-}
-
-///|
-/// Convert Color to 256-color palette index
-pub fn color_to_256(color : @types.Color) -> Int {
-  rgb_to_256(color.r, color.g, color.b)
-}
-
-///|
-/// Set foreground color from Color type
-pub fn ansi_fg_color(color : @types.Color) -> String {
-  ansi_fg_256(color_to_256(color))
-}
-
-///|
-/// Set background color from Color type
-pub fn ansi_bg_color(color : @types.Color) -> String {
-  ansi_bg_256(color_to_256(color))
-}
-
-///|
 priv struct AnsiStyleState {
   mut fg : Int
   mut bg : Int
@@ -138,23 +110,21 @@ fn AnsiStyleState::write_cell_style(
 pub fn buffer_to_ansi(buf : CharBuffer, max_cols? : Int = 0) -> String {
   let sb = StringBuilder::new()
   let style_state = AnsiStyleState::new()
-  let cols = if max_cols > 0 && max_cols < buf.width {
-    max_cols
-  } else {
-    buf.width
-  }
-  for row = 0; row < buf.height; row = row + 1 {
-    // Move to start of row (1-indexed)
-    sb.write_string(ansi_move_to(row + 1, 1))
-    for col = 0; col < cols; col = col + 1 {
-      let cell = buf.get_cell(col, row)
-      // Skip wide char placeholder
-      if cell.char == '\u0000' {
-        continue
-      }
-      style_state.write_cell_style(sb, cell)
-      sb.write_char(cell.char)
+  let mut current_row = -1
+  for coord in @tui_buffer.plan_buffer_cells(buf.width, buf.height, max_cols) {
+    let row = coord.row
+    let col = coord.col
+    if row != current_row {
+      sb.write_string(ansi_move_to(row + 1, 1))
+      current_row = row
     }
+    let cell = buf.get_cell(col, row)
+    // Skip wide char placeholder
+    if cell.char == '\u0000' {
+      continue
+    }
+    style_state.write_cell_style(sb, cell)
+    sb.write_char(cell.char)
   }
   // Reset at end
   sb.write_string(ansi_reset())
@@ -172,32 +142,32 @@ pub fn buffer_diff_to_ansi(
   let mut last_row = -1
   let mut last_col = -1
   let style_state = AnsiStyleState::new()
-  let cols = if max_cols > 0 && max_cols < current.width {
-    max_cols
-  } else {
-    current.width
-  }
-  for row = 0; row < current.height; row = row + 1 {
-    for col = 0; col < cols; col = col + 1 {
-      let cell = current.get_cell(col, row)
-      let prev_cell = prev.get_cell(col, row)
-      // Skip if unchanged
-      if cell == prev_cell {
-        continue
-      }
-      // Skip wide char placeholder
-      if cell.char == '\u0000' {
-        continue
-      }
-      // Move cursor if not consecutive
-      if row != last_row || col != last_col + 1 {
-        sb.write_string(ansi_move_to(row + 1, col + 1))
-      }
-      style_state.write_cell_style(sb, cell)
-      sb.write_char(cell.char)
-      last_row = row
-      last_col = col
+  for
+    coord in @tui_buffer.plan_buffer_cells(
+      current.width,
+      current.height,
+      max_cols,
+    ) {
+    let row = coord.row
+    let col = coord.col
+    let cell = current.get_cell(col, row)
+    let prev_cell = prev.get_cell(col, row)
+    // Skip if unchanged
+    if cell == prev_cell {
+      continue
     }
+    // Skip wide char placeholder
+    if cell.char == '\u0000' {
+      continue
+    }
+    // Move cursor if not consecutive
+    if row != last_row || col != last_col + 1 {
+      sb.write_string(ansi_move_to(row + 1, col + 1))
+    }
+    style_state.write_cell_style(sb, cell)
+    sb.write_char(cell.char)
+    last_row = row
+    last_col = col
   }
   sb.write_string(ansi_reset())
   sb.to_string()
@@ -210,6 +180,22 @@ pub(all) struct DirtyRect {
   row : Int
   width : Int
   height : Int
+}
+
+///|
+fn DirtyRect::to_plan_rect(self : DirtyRect) -> @tui_buffer.Rect {
+  { x: self.col, y: self.row, w: self.width, h: self.height }
+}
+
+///|
+fn dirty_rects_to_plan_rects(
+  rects : Array[DirtyRect],
+) -> Array[@tui_buffer.Rect] {
+  let planned : Array[@tui_buffer.Rect] = []
+  for rect in rects {
+    planned.push(rect.to_plan_rect())
+  }
+  planned
 }
 
 ///|
@@ -227,60 +213,30 @@ pub fn buffer_diff_to_ansi_rects(
   let mut last_row = -1
   let mut last_col = -1
   let style_state = AnsiStyleState::new()
-  let clip_width = if max_cols > 0 && max_cols < current.width {
-    max_cols
-  } else {
-    current.width
-  }
-  let visited : Array[Bool] = Array::make(current.width * current.height, false)
-  for rect in rects {
-    let mut x0 = rect.col
-    let mut y0 = rect.row
-    let mut x1 = rect.col + rect.width
-    let mut y1 = rect.row + rect.height
-    // Clip to terminal width
-    if x1 > clip_width {
-      x1 = clip_width
-    }
-    if x1 <= 0 || y1 <= 0 || x0 >= clip_width || y0 >= current.height {
+  for
+    coord in @tui_buffer.plan_dirty_cells(
+      current.width,
+      current.height,
+      dirty_rects_to_plan_rects(rects),
+      max_cols,
+    ) {
+    let row = coord.row
+    let col = coord.col
+    let cell = current.get_cell(col, row)
+    let prev_cell = prev.get_cell(col, row)
+    if cell == prev_cell {
       continue
     }
-    if x0 < 0 {
-      x0 = 0
+    if cell.char == '\u0000' {
+      continue
     }
-    if y0 < 0 {
-      y0 = 0
+    if row != last_row || col != last_col + 1 {
+      sb.write_string(ansi_move_to(row + 1, col + 1))
     }
-    if x1 > current.width {
-      x1 = current.width
-    }
-    if y1 > current.height {
-      y1 = current.height
-    }
-    for row = y0; row < y1; row = row + 1 {
-      for col = x0; col < x1; col = col + 1 {
-        let idx = row * current.width + col
-        if visited[idx] {
-          continue
-        }
-        visited[idx] = true
-        let cell = current.get_cell(col, row)
-        let prev_cell = prev.get_cell(col, row)
-        if cell == prev_cell {
-          continue
-        }
-        if cell.char == '\u0000' {
-          continue
-        }
-        if row != last_row || col != last_col + 1 {
-          sb.write_string(ansi_move_to(row + 1, col + 1))
-        }
-        style_state.write_cell_style(sb, cell)
-        sb.write_char(cell.char)
-        last_row = row
-        last_col = col
-      }
-    }
+    style_state.write_cell_style(sb, cell)
+    sb.write_char(cell.char)
+    last_row = row
+    last_col = col
   }
   sb.write_string(ansi_reset())
   sb.to_string()

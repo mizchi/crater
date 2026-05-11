@@ -560,6 +560,7 @@ describe("MoonBit module boundaries", () => {
   it("delegates reusable browser tui ANSI primitives to crater terminal protocol ansi", () => {
     const pkg = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/primitives/moon.pkg"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/primitives/ansi.mbt"), "utf8");
+    const colorSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/primitives/ansi_color.mbt"), "utf8");
 
     expect(pkg).toContain('"mizchi/crater-terminal-protocol/ansi" @tui_ansi');
     expect(source).toContain("@tui_ansi.ansi_reset()");
@@ -569,7 +570,8 @@ describe("MoonBit module boundaries", () => {
     expect(source).toContain("@tui_ansi.ansi_fg_256(color_idx)");
     expect(source).toContain("@tui_ansi.ansi_bg_256(color_idx)");
     expect(source).toContain("@tui_ansi.ansi_move_to(row - 1, col - 1)");
-    expect(source).toContain("@tui_ansi.rgb_to_256(r, g, b)");
+    expect(colorSource).toContain("@tui_ansi.rgb_to_256(r, g, b)");
+    expect(source).not.toContain("pub fn rgb_to_256(");
     expect(source).toContain("@tui_ansi.enable_mouse_all()");
     expect(source).toContain("@tui_ansi.disable_mouse_all()");
   });
@@ -589,6 +591,15 @@ describe("MoonBit module boundaries", () => {
     expect(source).not.toContain("fn CharBuffer::write_styled_char(");
   });
 
+  it("delegates browser tui ANSI cell scan planning to tui terminal buffer", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/primitives/ansi.mbt"), "utf8");
+
+    expect(source).toContain("@tui_buffer.plan_buffer_cells(");
+    expect(source).toContain("@tui_buffer.plan_dirty_cells(");
+    expect(source).not.toContain("let visited : Array[Bool]");
+    expect(source).not.toContain("let mut x0 = rect.col");
+  });
+
   it("delegates reusable browser tui widget plans to tui terminal buffer", () => {
     const pkg = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/primitives/moon.pkg"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/primitives/widget.mbt"), "utf8");
@@ -601,6 +612,29 @@ describe("MoonBit module boundaries", () => {
     expect(source).toContain("@tui_buffer.plan_scrollbar(");
     expect(source).not.toContain("for col = x + 1; col < x + w - 1");
     expect(source).not.toContain("let thumb_height =");
+  });
+
+  it("keeps text widgets and status bars out of box primitive widgets", () => {
+    const widgetSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/primitives/widget.mbt"), "utf8");
+    const textSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/primitives/text_widget.mbt"), "utf8");
+    const statusSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/primitives/status_bar.mbt"), "utf8");
+
+    expect(textSource).toContain("pub fn draw_link(");
+    expect(textSource).toContain("pub fn draw_heading(");
+    expect(statusSource).toContain("pub fn draw_status_bar(");
+    expect(widgetSource).not.toContain("pub fn draw_link(");
+    expect(widgetSource).not.toContain("pub fn draw_heading(");
+    expect(widgetSource).not.toContain("pub fn draw_status_bar(");
+  });
+
+  it("splits browser tui render geometry out of the main renderer", () => {
+    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render.mbt"), "utf8");
+    const geometrySource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_geometry.mbt"), "utf8");
+
+    expect(geometrySource).toContain("pub fn px_to_col(");
+    expect(geometrySource).toContain("pub fn dirty_rects_to_cells(");
+    expect(renderSource).not.toContain("fn px_to_col_width(");
+    expect(renderSource).not.toContain("pub fn dirty_rects_to_cells(");
   });
 
   it("keeps browser shell terminal image implementation in its own file", () => {
