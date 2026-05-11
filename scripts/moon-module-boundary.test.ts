@@ -2517,7 +2517,8 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG scene render entrypoints to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene.mbt"), "utf8");
+    const sceneSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene_render.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
 
     expect(source.includes("let scene = scene_to_msvg(self)")).toBe(true);
@@ -2528,6 +2529,8 @@ describe("MoonBit module boundaries", () => {
     expect(interopSource.includes("fn render_context_to_msvg(")).toBe(true);
     expect(interopSource.includes("fn scene_to_msvg(")).toBe(true);
     expect(source.includes("render_node(self.root, Transform::identity(), ctx)")).toBe(false);
+    expect(sceneSource.includes("pub fn Scene::render(")).toBe(false);
+    expect(sceneSource.includes("pub fn Scene::render_with_camera(")).toBe(false);
   });
 
   it("delegates SVG render context constructors to mizchi/svg", () => {
