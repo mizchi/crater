@@ -2779,9 +2779,12 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG blend mode math to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/blend.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
 
+    expect(source.includes("pub(all) enum BlendMode")).toBe(true);
+    expect(source.includes("pub(all) enum Isolation")).toBe(true);
     expect(source.includes("@msvg.blend_with_mode(")).toBe(true);
     expect(source.includes("@msvg.blend_images(")).toBe(true);
     expect(interopSource.includes("fn blend_mode_to_msvg(")).toBe(true);
@@ -2794,6 +2797,8 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("fn rgb_to_hsl(")).toBe(false);
     expect(source.includes("fn hsl_to_rgb(")).toBe(false);
     expect(source.includes("fn sqrt_approx(")).toBe(false);
+    expect(typesSource.includes("pub(all) enum BlendMode")).toBe(false);
+    expect(typesSource.includes("pub fn blend_images(")).toBe(false);
   });
 
   it("delegates SVG mask math to mizchi/svg", () => {
