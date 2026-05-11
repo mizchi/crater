@@ -1105,6 +1105,27 @@ fn shape_to_msvg(shape : Shape) -> @msvg.Shape {
 }
 
 ///|
+fn clip_path_from_msvg(clip : @msvg.ClipPath) -> ClipPath {
+  {
+    id: clip.id,
+    shape: shape_from_msvg(clip.shape),
+    transform: transform_from_msvg(clip.transform),
+    clip_rule: fill_rule_from_msvg(clip.clip_rule),
+  }
+}
+
+///|
+fn clip_path_to_msvg(clip : ClipPath) -> @msvg.ClipPath {
+  @msvg.ClipPath::{
+    id: clip.id,
+    shape: shape_to_msvg(clip.shape),
+    transform: clip.transform.to_msvg(),
+    clip_rule: fill_rule_to_msvg(clip.clip_rule),
+    units: @msvg.ClipPathUnits::UserSpaceOnUse,
+  }
+}
+
+///|
 fn svg_node_to_msvg(source : SVGNode) -> @msvg.SVGNode {
   let node = @msvg.SVGNode::new(shape_to_msvg(source.shape))
   node.id = source.id

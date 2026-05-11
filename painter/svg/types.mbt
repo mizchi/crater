@@ -2104,7 +2104,7 @@ pub(all) struct ClipPath {
 
 ///|
 pub fn ClipPath::new(id : String, shape : Shape) -> ClipPath {
-  { id, shape, transform: Transform::identity(), clip_rule: NonZero }
+  clip_path_from_msvg(@msvg.ClipPath::new(id, shape_to_msvg(shape)))
 }
 
 ///|
@@ -2113,17 +2113,19 @@ pub fn ClipPath::with_transform(
   shape : Shape,
   transform : Transform,
 ) -> ClipPath {
-  { id, shape, transform, clip_rule: NonZero }
+  clip_path_from_msvg(
+    @msvg.ClipPath::with_transform(
+      id,
+      shape_to_msvg(shape),
+      transform.to_msvg(),
+    ),
+  )
 }
 
 ///|
 /// Check if a point is inside the clip path
 pub fn ClipPath::contains(self : ClipPath, x : Double, y : Double) -> Bool {
-  // Apply inverse transform to get point in clip space
-  let inv = self.transform.inverse()
-  let (cx, cy) = inv.apply(x, y)
-  // Use hit test
-  hit_test_shape(cx, cy, self.shape)
+  clip_path_to_msvg(self).contains(x, y)
 }
 
 ///|

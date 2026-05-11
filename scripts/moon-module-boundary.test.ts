@@ -2384,6 +2384,22 @@ describe("MoonBit module boundaries", () => {
     expect(typesSource.includes("fn hit_test_line(")).toBe(false);
   });
 
+  it("delegates SVG clip paths to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const containsStart = source.indexOf("pub fn ClipPath::contains(");
+    const containsEnd = source.indexOf("///|\n/// Clip path registry", containsStart);
+    const containsSource = source.slice(containsStart, containsEnd);
+
+    expect(source.includes("@msvg.ClipPath::new(")).toBe(true);
+    expect(source.includes("clip_path_from_msvg(")).toBe(true);
+    expect(source.includes("clip_path_to_msvg(self).contains(x, y)")).toBe(true);
+    expect(interopSource.includes("fn clip_path_from_msvg(")).toBe(true);
+    expect(interopSource.includes("fn clip_path_to_msvg(")).toBe(true);
+    expect(containsSource.includes("let inv = self.transform.inverse()")).toBe(false);
+    expect(containsSource.includes("hit_test_shape(cx, cy, self.shape)")).toBe(false);
+  });
+
   it("delegates SVG camera math to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
