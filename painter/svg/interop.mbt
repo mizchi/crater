@@ -123,6 +123,27 @@ fn[T] object_pool_to_msvg(pool : ObjectPool[T]) -> @msvg.ObjectPool[T] {
 }
 
 ///|
+fn white_space_to_msvg(mode : WhiteSpace) -> @msvg.WhiteSpace {
+  match mode {
+    Normal => @msvg.WhiteSpace::Normal
+    Pre => @msvg.WhiteSpace::Pre
+    NoWrap => @msvg.WhiteSpace::NoWrap
+    PreWrap => @msvg.WhiteSpace::PreWrap
+    PreLine => @msvg.WhiteSpace::PreLine
+    BreakSpaces => @msvg.WhiteSpace::BreakSpaces
+  }
+}
+
+///|
+fn text_overflow_to_msvg(overflow : TextOverflow) -> @msvg.TextOverflow {
+  match overflow {
+    Clip => @msvg.TextOverflow::Clip
+    Ellipsis => @msvg.TextOverflow::Ellipsis
+    Custom(indicator) => @msvg.TextOverflow::Custom(indicator)
+  }
+}
+
+///|
 fn color_from_msvg_option(color : @msvg.Color?) -> Color? {
   match color {
     Some(c) => Some(color_from_msvg(c))

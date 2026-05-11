@@ -2288,6 +2288,19 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("self.propagation_stopped = true")).toBe(false);
   });
 
+  it("delegates SVG text whitespace helpers to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+
+    expect(source.includes("@msvg.process_white_space(")).toBe(true);
+    expect(source.includes("@msvg.apply_text_overflow(")).toBe(true);
+    expect(source.includes("white_space_to_msvg(mode)")).toBe(true);
+    expect(source.includes("text_overflow_to_msvg(overflow)")).toBe(true);
+    expect(interopSource.includes("fn white_space_to_msvg(")).toBe(true);
+    expect(interopSource.includes("fn text_overflow_to_msvg(")).toBe(true);
+    expect(source.includes("fn take_chars(")).toBe(false);
+  });
+
   it("delegates SVG color and stroke defaults to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
 

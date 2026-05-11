@@ -2813,48 +2813,7 @@ fn split_words(text : String) -> Array[String] {
 ///|
 /// Process white-space according to mode
 pub fn process_white_space(text : String, mode : WhiteSpace) -> String {
-  match mode {
-    Pre | PreWrap | BreakSpaces =>
-      // Preserve whitespace
-      text
-    PreLine => {
-      // Collapse spaces but preserve newlines
-      let mut result = ""
-      let mut prev_space = false
-      for c in text {
-        if c == '\n' {
-          result = result + "\n"
-          prev_space = false
-        } else if c == ' ' || c == '\t' {
-          if !prev_space {
-            result = result + " "
-            prev_space = true
-          }
-        } else {
-          result = result + c.to_string()
-          prev_space = false
-        }
-      }
-      result
-    }
-    Normal | NoWrap => {
-      // Collapse all whitespace
-      let mut result = ""
-      let mut prev_space = false
-      for c in text {
-        if c == ' ' || c == '\t' || c == '\n' {
-          if !prev_space {
-            result = result + " "
-            prev_space = true
-          }
-        } else {
-          result = result + c.to_string()
-          prev_space = false
-        }
-      }
-      result
-    }
-  }
+  @msvg.process_white_space(text, white_space_to_msvg(mode))
 }
 
 ///|
@@ -2865,52 +2824,12 @@ pub fn apply_text_overflow(
   char_width : Double,
   overflow : TextOverflow,
 ) -> String {
-  let line_width = line.length().to_double() * char_width
-  if line_width <= max_width {
-    return line
-  }
-  let max_chars = (max_width / char_width).to_int()
-  match overflow {
-    Clip =>
-      if max_chars > 0 && max_chars < line.length() {
-        take_chars(line, max_chars)
-      } else {
-        line
-      }
-    Ellipsis =>
-      if max_chars > 3 {
-        take_chars(line, max_chars - 3) + "..."
-      } else if max_chars > 0 {
-        "..."
-      } else {
-        ""
-      }
-    Custom(indicator) => {
-      let indicator_len = indicator.length()
-      if max_chars > indicator_len {
-        take_chars(line, max_chars - indicator_len) + indicator
-      } else if max_chars > 0 {
-        indicator
-      } else {
-        ""
-      }
-    }
-  }
-}
-
-///|
-/// Take first n characters from a string
-fn take_chars(s : String, n : Int) -> String {
-  let mut result = ""
-  let mut count = 0
-  for c in s {
-    if count >= n {
-      break
-    }
-    result = result + c.to_string()
-    count = count + 1
-  }
-  result
+  @msvg.apply_text_overflow(
+    line,
+    max_width,
+    char_width,
+    text_overflow_to_msvg(overflow),
+  )
 }
 
 // ============================================================================
