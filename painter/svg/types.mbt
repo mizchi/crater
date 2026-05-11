@@ -328,7 +328,9 @@ pub fn LinearGradient::new(
   y2 : Double,
   stops : Array[GradientStop],
 ) -> LinearGradient {
-  { x1, y1, x2, y2, stops, spread_method: Pad }
+  linear_gradient_from_msvg(
+    @msvg.LinearGradient::new(x1, y1, x2, y2, stops.map(gradient_stop_to_msvg)),
+  )
 }
 
 ///|
@@ -337,17 +339,12 @@ pub fn LinearGradient::horizontal(
   start_color : Color,
   end_color : Color,
 ) -> LinearGradient {
-  {
-    x1: 0.0,
-    y1: 0.0,
-    x2: 1.0,
-    y2: 0.0,
-    stops: [
-      { offset: 0.0, color: start_color },
-      { offset: 1.0, color: end_color },
-    ],
-    spread_method: Pad,
-  }
+  linear_gradient_from_msvg(
+    @msvg.LinearGradient::horizontal(
+      color_to_msvg(start_color),
+      color_to_msvg(end_color),
+    ),
+  )
 }
 
 ///|
@@ -356,17 +353,12 @@ pub fn LinearGradient::vertical(
   start_color : Color,
   end_color : Color,
 ) -> LinearGradient {
-  {
-    x1: 0.0,
-    y1: 0.0,
-    x2: 0.0,
-    y2: 1.0,
-    stops: [
-      { offset: 0.0, color: start_color },
-      { offset: 1.0, color: end_color },
-    ],
-    spread_method: Pad,
-  }
+  linear_gradient_from_msvg(
+    @msvg.LinearGradient::vertical(
+      color_to_msvg(start_color),
+      color_to_msvg(end_color),
+    ),
+  )
 }
 
 ///|
@@ -1296,7 +1288,9 @@ pub fn RadialGradient::new(
   r : Double,
   stops : Array[GradientStop],
 ) -> RadialGradient {
-  { cx, cy, fx: cx, fy: cy, r, stops, spread_method: Pad }
+  radial_gradient_from_msvg(
+    @msvg.RadialGradient::new(cx, cy, r, stops.map(gradient_stop_to_msvg)),
+  )
 }
 
 ///|

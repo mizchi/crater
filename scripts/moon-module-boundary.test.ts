@@ -2260,7 +2260,13 @@ describe("MoonBit module boundaries", () => {
   it("delegates SVG gradient color interpolation to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
 
+    expect(source.includes("@msvg.LinearGradient::new(")).toBe(true);
+    expect(source.includes("@msvg.LinearGradient::horizontal(")).toBe(true);
+    expect(source.includes("@msvg.LinearGradient::vertical(")).toBe(true);
+    expect(source.includes("linear_gradient_from_msvg(")).toBe(true);
     expect(source.includes("pub fn LinearGradient::color_at(")).toBe(true);
+    expect(source.includes("@msvg.RadialGradient::new(")).toBe(true);
+    expect(source.includes("radial_gradient_from_msvg(")).toBe(true);
     expect(source.includes("pub fn RadialGradient::color_at(")).toBe(true);
     expect(source.includes("linear_gradient_to_msvg(self).color_at(")).toBe(true);
     expect(source.includes("radial_gradient_to_msvg(self).color_at(")).toBe(true);
