@@ -119,6 +119,18 @@ describe("MoonBit module boundaries", () => {
     expect(rasterSource.includes("pub(all) struct ImageProvider")).toBe(false);
   });
 
+  it("splits image raster base64 fallback out of paint_raster", () => {
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_base64.mbt"), "utf8");
+
+    expect(source.includes("let base64_chars")).toBe(true);
+    expect(source.includes("fn write_base64_quad(")).toBe(true);
+    expect(source.includes("fn encode_bytes_base64(")).toBe(true);
+    expect(rasterSource.includes("let base64_chars")).toBe(false);
+    expect(rasterSource.includes("fn write_base64_quad(")).toBe(false);
+    expect(rasterSource.includes("fn encode_bytes_base64(")).toBe(false);
+  });
+
   it("keeps painter-terminal root facade behind terminal-specific packages", () => {
     const rootPackage = path.join(REPO_ROOT, "painter_terminal/moon.pkg");
     const source = fs.readFileSync(rootPackage, "utf8");
