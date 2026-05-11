@@ -292,6 +292,54 @@ describe("MoonBit module boundaries", () => {
     expect(rasterSource.includes("x >= fb.width || y >= fb.height")).toBe(false);
   });
 
+  it("splits glyph rasterization helpers out of glyph_render", () => {
+    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_render.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_rasterizer.mbt"), "utf8");
+
+    expect(source.includes("priv struct GlyphBitmap")).toBe(true);
+    expect(source.includes("fn insert_sorted_double(")).toBe(true);
+    expect(source.includes("fn scanline_intersections_even_odd(")).toBe(true);
+    expect(source.includes("fn rasterize_compound_path_even_odd_to_pixels(")).toBe(true);
+    expect(source.includes("fn rasterize_glyph_to_bitmap(")).toBe(true);
+    expect(renderSource.includes("priv struct GlyphBitmap")).toBe(false);
+    expect(renderSource.includes("fn insert_sorted_double(")).toBe(false);
+    expect(renderSource.includes("fn scanline_intersections_even_odd(")).toBe(false);
+    expect(renderSource.includes("fn rasterize_compound_path_even_odd_to_pixels(")).toBe(false);
+    expect(renderSource.includes("fn rasterize_glyph_to_bitmap(")).toBe(false);
+  });
+
+  it("splits glyph bitmap cache helpers out of glyph_render", () => {
+    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_render.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_cache.mbt"), "utf8");
+
+    expect(source.includes("let glyph_bitmap_cache")).toBe(true);
+    expect(source.includes("let glyph_cache")).toBe(true);
+    expect(source.includes("fn glyph_cache_key(")).toBe(true);
+    expect(source.includes("fn clear_glyph_caches(")).toBe(true);
+    expect(source.includes("fn cached_glyph_bitmap(")).toBe(true);
+    expect(source.includes("pub fn pre_rasterize_glyphs(")).toBe(true);
+    expect(renderSource.includes("let glyph_bitmap_cache")).toBe(false);
+    expect(renderSource.includes("let glyph_cache")).toBe(false);
+    expect(renderSource.includes("fn glyph_cache_key(")).toBe(false);
+    expect(renderSource.includes("pub fn pre_rasterize_glyphs(")).toBe(false);
+  });
+
+  it("splits glyph text layout helpers out of glyph_render", () => {
+    const renderSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_render.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/glyph_layout.mbt"), "utf8");
+
+    expect(source.includes("let text_wrap_tolerance")).toBe(true);
+    expect(source.includes("fn resolve_text_wrap_tolerance(")).toBe(true);
+    expect(source.includes("fn measure_word_width(")).toBe(true);
+    expect(source.includes("fn collapsed_space_advance(")).toBe(true);
+    expect(source.includes("fn split_text_into_words(")).toBe(true);
+    expect(renderSource.includes("let text_wrap_tolerance")).toBe(false);
+    expect(renderSource.includes("fn resolve_text_wrap_tolerance(")).toBe(false);
+    expect(renderSource.includes("fn measure_word_width(")).toBe(false);
+    expect(renderSource.includes("fn collapsed_space_advance(")).toBe(false);
+    expect(renderSource.includes("fn split_text_into_words(")).toBe(false);
+  });
+
   it("splits raster palette helpers out of paint_raster", () => {
     const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_palette.mbt"), "utf8");
