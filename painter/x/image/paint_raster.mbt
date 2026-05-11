@@ -415,22 +415,7 @@ pub fn render_paint_node_to_framebuffer_scrolled(
   fb.fill_rect(0, 0, fb.width, fb.height, 0)
   // Sort by stacking order (z-index) for correct rendering
   let sorted_node = @paint_traversal.sort_tree_by_stacking_order(node)
-  // CSS canvas background propagation (CSS 2.1 §14.2):
-  // If root (<html>) background is transparent, use <body> background instead
-  let mut canvas_bg = sorted_node.paint.background_color
-  if canvas_bg.is_transparent() {
-    for child in sorted_node.children {
-      if child.tag == "body" && !child.paint.background_color.is_transparent() {
-        canvas_bg = child.paint.background_color
-        break
-      }
-    }
-  }
-  if !canvas_bg.is_transparent() {
-    let bg_raster = { r: canvas_bg.r, g: canvas_bg.g, b: canvas_bg.b }
-    let bg_idx = palette.get_or_add(bg_raster)
-    fb.fill_rect(0, 0, fb.width, fb.height, bg_idx)
-  }
+  fill_canvas_background(fb, palette, sorted_node)
   // Render the tree with scroll offset
   render_paint_node(fb, palette, sorted_node, 0.0, -scroll_y.to_double())
 }
@@ -444,23 +429,7 @@ pub fn render_paint_node_to_framebuffer(
 ) -> Unit {
   // Sort by stacking order (z-index) for correct rendering
   let sorted_node = @paint_traversal.sort_tree_by_stacking_order(node)
-  // CSS canvas background propagation (CSS 2.1 §14.2):
-  // If root (<html>) background is transparent, use <body> background instead
-  let mut canvas_bg = sorted_node.paint.background_color
-  if canvas_bg.is_transparent() {
-    // Look for body element among root's children
-    for child in sorted_node.children {
-      if child.tag == "body" && !child.paint.background_color.is_transparent() {
-        canvas_bg = child.paint.background_color
-        break
-      }
-    }
-  }
-  if !canvas_bg.is_transparent() {
-    let bg_raster = { r: canvas_bg.r, g: canvas_bg.g, b: canvas_bg.b }
-    let bg_idx = palette.get_or_add(bg_raster)
-    fb.fill_rect(0, 0, fb.width, fb.height, bg_idx)
-  }
+  fill_canvas_background(fb, palette, sorted_node)
   // Render the tree
   render_paint_node(fb, palette, sorted_node, 0.0, 0.0)
 }

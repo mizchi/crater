@@ -219,6 +219,17 @@ describe("MoonBit module boundaries", () => {
     expect(rasterSource.includes("fn render_raster_image_into_region(")).toBe(false);
   });
 
+  it("splits raster canvas background helpers out of paint_raster", () => {
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_canvas_background.mbt"), "utf8");
+
+    expect(source.includes("fn resolve_canvas_background_color(")).toBe(true);
+    expect(source.includes("fn fill_canvas_background(")).toBe(true);
+    expect(source.includes('child.tag == "body"')).toBe(true);
+    expect(rasterSource.includes("let mut canvas_bg")).toBe(false);
+    expect(rasterSource.includes('child.tag == "body"')).toBe(false);
+  });
+
   it("splits raster palette helpers out of paint_raster", () => {
     const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_palette.mbt"), "utf8");

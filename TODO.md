@@ -176,6 +176,7 @@
   - 進捗: SVG data URI decode helpers を `painter/x/image/raster_svg_data_uri.mbt` へ分離
   - 進捗: SVG region render helper を `painter/x/image/raster_svg_render.mbt` へ分離
   - 進捗: raster image source/render helpers を `painter/x/image/raster_image_render.mbt` へ分離
+  - 進捗: canvas background propagation helpers を `painter/x/image/raster_canvas_background.mbt` へ分離
   - 進捗: raster palette helpers を `painter/x/image/raster_palette.mbt` へ分離
   - 進捗: raster clip helpers を `painter/x/image/raster_clip.mbt` へ分離
   - 進捗: raster blending helpers を `painter/x/image/raster_blend.mbt` へ分離
