@@ -2847,12 +2847,7 @@ pub(all) struct Symbol {
 
 ///|
 pub fn Symbol::new(id : String, content : SVGNode) -> Symbol {
-  {
-    id,
-    content,
-    view_box: None,
-    preserve_aspect_ratio: PreserveAspectRatio::default(),
-  }
+  symbol_from_msvg(@msvg.Symbol::new(id, svg_node_to_msvg(content)))
 }
 
 ///|
@@ -2861,12 +2856,13 @@ pub fn Symbol::with_viewbox(
   content : SVGNode,
   view_box : ViewBox,
 ) -> Symbol {
-  {
-    id,
-    content,
-    view_box: Some(view_box),
-    preserve_aspect_ratio: PreserveAspectRatio::default(),
-  }
+  symbol_from_msvg(
+    @msvg.Symbol::with_viewbox(
+      id,
+      svg_node_to_msvg(content),
+      view_box_to_msvg(view_box),
+    ),
+  )
 }
 
 ///|

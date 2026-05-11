@@ -168,6 +168,16 @@ fn use_element_to_msvg(use_element : UseElement) -> @msvg.UseElement {
 }
 
 ///|
+fn symbol_from_msvg(symbol : @msvg.Symbol) -> Symbol {
+  {
+    id: symbol.id,
+    content: svg_node_from_msvg(symbol.content),
+    view_box: view_box_from_msvg_option(symbol.view_box),
+    preserve_aspect_ratio: PreserveAspectRatio::default(),
+  }
+}
+
+///|
 fn color_from_msvg_option(color : @msvg.Color?) -> Color? {
   match color {
     Some(c) => Some(color_from_msvg(c))
