@@ -2421,6 +2421,22 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("fn compute_path_lengths(")).toBe(false);
   });
 
+  it("delegates SVG tween operations to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+
+    expect(source.includes("@msvg.Tween::new(")).toBe(true);
+    expect(source.includes("tween_to_msvg(self).is_complete()")).toBe(true);
+    expect(source.includes("let tween = tween_to_msvg(self)")).toBe(true);
+    expect(source.includes("tween.update(dt, msvg_node)")).toBe(true);
+    expect(interopSource.includes("fn easing_to_msvg(")).toBe(true);
+    expect(interopSource.includes("fn tween_to_msvg(")).toBe(true);
+    expect(interopSource.includes("fn copy_tween_state_from_msvg(")).toBe(true);
+    expect(source.includes("fn capture_property(")).toBe(false);
+    expect(source.includes("fn apply_interpolated_property(")).toBe(false);
+    expect(source.includes("fn lerp_color(")).toBe(false);
+  });
+
   it("delegates SVG blend mode math to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");

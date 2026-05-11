@@ -374,6 +374,111 @@ fn copy_path_follower_state_from_msvg(
 }
 
 ///|
+fn easing_to_msvg(easing : Easing) -> @msvg.Easing {
+  match easing {
+    Linear => @msvg.Easing::Linear
+    EaseIn => @msvg.Easing::EaseIn
+    EaseOut => @msvg.Easing::EaseOut
+    EaseInOut => @msvg.Easing::EaseInOut
+    EaseInCubic => @msvg.Easing::EaseInCubic
+    EaseOutCubic => @msvg.Easing::EaseOutCubic
+    EaseInOutCubic => @msvg.Easing::EaseInOutCubic
+  }
+}
+
+///|
+fn easing_from_msvg(easing : @msvg.Easing) -> Easing {
+  match easing {
+    Linear => Linear
+    EaseIn => EaseIn
+    EaseOut => EaseOut
+    EaseInOut => EaseInOut
+    EaseInCubic => EaseInCubic
+    EaseOutCubic => EaseOutCubic
+    EaseInOutCubic => EaseInOutCubic
+  }
+}
+
+///|
+fn anim_property_to_msvg(property : AnimProperty) -> @msvg.AnimProperty {
+  match property {
+    TranslateX(x) => @msvg.AnimProperty::TranslateX(x)
+    TranslateY(y) => @msvg.AnimProperty::TranslateY(y)
+    Translate(x, y) => @msvg.AnimProperty::Translate(x, y)
+    ScaleX(sx) => @msvg.AnimProperty::ScaleX(sx)
+    ScaleY(sy) => @msvg.AnimProperty::ScaleY(sy)
+    Scale(sx, sy) => @msvg.AnimProperty::Scale(sx, sy)
+    ScaleUniform(s) => @msvg.AnimProperty::ScaleUniform(s)
+    Rotation(r) => @msvg.AnimProperty::Rotation(r)
+    Opacity(o) => @msvg.AnimProperty::Opacity(o)
+    FillColor(color) => @msvg.AnimProperty::FillColor(color_to_msvg(color))
+  }
+}
+
+///|
+fn anim_property_from_msvg(property : @msvg.AnimProperty) -> AnimProperty {
+  match property {
+    TranslateX(x) => TranslateX(x)
+    TranslateY(y) => TranslateY(y)
+    Translate(x, y) => Translate(x, y)
+    ScaleX(sx) => ScaleX(sx)
+    ScaleY(sy) => ScaleY(sy)
+    Scale(sx, sy) => Scale(sx, sy)
+    ScaleUniform(s) => ScaleUniform(s)
+    Rotation(r) => Rotation(r)
+    Opacity(o) => Opacity(o)
+    FillColor(color) => FillColor(color_from_msvg(color))
+  }
+}
+
+///|
+fn tween_from_msvg(tween : @msvg.Tween) -> Tween {
+  {
+    target_id: tween.target_id,
+    property: anim_property_from_msvg(tween.property),
+    start_value: anim_property_from_msvg(tween.start_value),
+    duration: tween.duration,
+    elapsed: tween.elapsed,
+    easing: easing_from_msvg(tween.easing),
+    started: tween.started,
+    completed: tween.completed,
+  }
+}
+
+///|
+fn tween_to_msvg(tween : Tween) -> @msvg.Tween {
+  @msvg.Tween::{
+    target_id: tween.target_id,
+    property: anim_property_to_msvg(tween.property),
+    start_value: anim_property_to_msvg(tween.start_value),
+    duration: tween.duration,
+    elapsed: tween.elapsed,
+    easing: easing_to_msvg(tween.easing),
+    started: tween.started,
+    completed: tween.completed,
+  }
+}
+
+///|
+fn copy_tween_state_from_msvg(target : Tween, source : @msvg.Tween) -> Unit {
+  target.start_value = anim_property_from_msvg(source.start_value)
+  target.elapsed = source.elapsed
+  target.started = source.started
+  target.completed = source.completed
+}
+
+///|
+fn copy_svg_node_animation_state_from_msvg(
+  target : SVGNode,
+  source : @msvg.SVGNode,
+) -> Unit {
+  let current_color = color_from_msvg_option(source.color)
+  target.transform = transform_from_msvg(source.transform)
+  target.fill = paint_from_msvg(source.fill, current_color)
+  target.opacity = source.opacity
+}
+
+///|
 fn current_color_or_black(current_color : Color?) -> Color {
   match current_color {
     Some(color) => color

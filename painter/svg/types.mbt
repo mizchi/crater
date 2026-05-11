@@ -839,30 +839,7 @@ pub impl Show for Easing with output(self, logger) {
 ///|
 /// Apply easing function to a normalized time (0.0 to 1.0)
 pub fn Easing::apply(self : Easing, t : Double) -> Double {
-  let t_clamped = if t < 0.0 { 0.0 } else if t > 1.0 { 1.0 } else { t }
-  match self {
-    Linear => t_clamped
-    EaseIn => t_clamped * t_clamped
-    EaseOut => t_clamped * (2.0 - t_clamped)
-    EaseInOut =>
-      if t_clamped < 0.5 {
-        2.0 * t_clamped * t_clamped
-      } else {
-        -1.0 + (4.0 - 2.0 * t_clamped) * t_clamped
-      }
-    EaseInCubic => t_clamped * t_clamped * t_clamped
-    EaseOutCubic => {
-      let t1 = t_clamped - 1.0
-      t1 * t1 * t1 + 1.0
-    }
-    EaseInOutCubic =>
-      if t_clamped < 0.5 {
-        4.0 * t_clamped * t_clamped * t_clamped
-      } else {
-        let t1 = 2.0 * t_clamped - 2.0
-        (t1 * t1 * t1 + 2.0) / 2.0
-      }
-  }
+  easing_to_msvg(self).apply(t)
 }
 
 ///|
@@ -901,176 +878,32 @@ pub fn Tween::new(
   duration : Double,
   easing : Easing,
 ) -> Tween {
-  {
-    target_id,
-    property,
-    start_value: property, // Will be overwritten when started
-    duration,
-    elapsed: 0.0,
-    easing,
-    started: false,
-    completed: false,
-  }
+  tween_from_msvg(
+    @msvg.Tween::new(
+      target_id,
+      anim_property_to_msvg(property),
+      duration,
+      easing_to_msvg(easing),
+    ),
+  )
 }
 
 ///|
 /// Check if the tween is complete
 pub fn Tween::is_complete(self : Tween) -> Bool {
-  self.completed
+  tween_to_msvg(self).is_complete()
 }
 
 ///|
 /// Update the tween with delta time
 /// Returns true if still running, false if complete
 pub fn Tween::update(self : Tween, dt : Double, node : SVGNode) -> Bool {
-  if self.completed {
-    return false
-  }
-  // Capture start values on first update
-  if !self.started {
-    self.start_value = capture_property(node, self.property)
-    self.started = true
-  }
-  self.elapsed = self.elapsed + dt
-  let t = if self.duration <= 0.0 { 1.0 } else { self.elapsed / self.duration }
-  if t >= 1.0 {
-    // Complete: set final value
-    apply_property(node, self.property, 1.0)
-    self.completed = true
-    false
-  } else {
-    // Interpolate
-    let eased_t = self.easing.apply(t)
-    apply_interpolated_property(node, self.start_value, self.property, eased_t)
-    true
-  }
-}
-
-///|
-/// Capture current property value from node
-fn capture_property(node : SVGNode, property : AnimProperty) -> AnimProperty {
-  let (tx, ty) = node.transform.get_translate()
-  let (sx, sy) = node.transform.get_scale()
-  let rotation = node.transform.get_rotation()
-  match property {
-    TranslateX(_) => TranslateX(tx)
-    TranslateY(_) => TranslateY(ty)
-    Translate(_, _) => Translate(tx, ty)
-    ScaleX(_) => ScaleX(sx)
-    ScaleY(_) => ScaleY(sy)
-    Scale(_, _) => Scale(sx, sy)
-    ScaleUniform(_) => ScaleUniform((sx + sy) / 2.0)
-    Rotation(_) => Rotation(rotation)
-    Opacity(_) => Opacity(node.opacity)
-    FillColor(_) =>
-      match node.fill {
-        SolidColor(c) => FillColor(c)
-        _ => FillColor(Color::black())
-      }
-  }
-}
-
-///|
-/// Apply final property value to node
-fn apply_property(node : SVGNode, property : AnimProperty, t : Double) -> Unit {
-  let _ = t // t=1.0 means final value
-  match property {
-    TranslateX(x) => {
-      let (_, ty) = node.transform.get_translate()
-      node.transform = Transform::translate(x, ty)
-    }
-    TranslateY(y) => {
-      let (tx, _) = node.transform.get_translate()
-      node.transform = Transform::translate(tx, y)
-    }
-    Translate(x, y) => node.transform = Transform::translate(x, y)
-    ScaleX(sx) => {
-      let (_, sy) = node.transform.get_scale()
-      node.transform = Transform::scale(sx, sy)
-    }
-    ScaleY(sy) => {
-      let (sx, _) = node.transform.get_scale()
-      node.transform = Transform::scale(sx, sy)
-    }
-    Scale(sx, sy) => node.transform = Transform::scale(sx, sy)
-    ScaleUniform(s) => node.transform = Transform::scale(s, s)
-    Rotation(r) => node.transform = Transform::rotate(r)
-    Opacity(o) => node.opacity = o
-    FillColor(c) => node.fill = SolidColor(c)
-  }
-}
-
-///|
-/// Apply interpolated property value to node
-fn apply_interpolated_property(
-  node : SVGNode,
-  start : AnimProperty,
-  end : AnimProperty,
-  t : Double,
-) -> Unit {
-  match (start, end) {
-    (TranslateX(x0), TranslateX(x1)) => {
-      let x = lerp(x0, x1, t)
-      let (_, ty) = node.transform.get_translate()
-      node.transform = Transform::translate(x, ty)
-    }
-    (TranslateY(y0), TranslateY(y1)) => {
-      let y = lerp(y0, y1, t)
-      let (tx, _) = node.transform.get_translate()
-      node.transform = Transform::translate(tx, y)
-    }
-    (Translate(x0, y0), Translate(x1, y1)) => {
-      let x = lerp(x0, x1, t)
-      let y = lerp(y0, y1, t)
-      node.transform = Transform::translate(x, y)
-    }
-    (ScaleX(sx0), ScaleX(sx1)) => {
-      let sx = lerp(sx0, sx1, t)
-      let (_, sy) = node.transform.get_scale()
-      node.transform = Transform::scale(sx, sy)
-    }
-    (ScaleY(sy0), ScaleY(sy1)) => {
-      let sy = lerp(sy0, sy1, t)
-      let (sx, _) = node.transform.get_scale()
-      node.transform = Transform::scale(sx, sy)
-    }
-    (Scale(sx0, sy0), Scale(sx1, sy1)) => {
-      let sx = lerp(sx0, sx1, t)
-      let sy = lerp(sy0, sy1, t)
-      node.transform = Transform::scale(sx, sy)
-    }
-    (ScaleUniform(s0), ScaleUniform(s1)) => {
-      let s = lerp(s0, s1, t)
-      node.transform = Transform::scale(s, s)
-    }
-    (Rotation(r0), Rotation(r1)) => {
-      let r = lerp(r0, r1, t)
-      node.transform = Transform::rotate(r)
-    }
-    (Opacity(o0), Opacity(o1)) => node.opacity = lerp(o0, o1, t)
-    (FillColor(c0), FillColor(c1)) => {
-      let c = lerp_color(c0, c1, t)
-      node.fill = SolidColor(c)
-    }
-    _ => () // Mismatched types, do nothing
-  }
-}
-
-///|
-/// Linear interpolation
-fn lerp(a : Double, b : Double, t : Double) -> Double {
-  a + (b - a) * t
-}
-
-///|
-/// Color interpolation
-fn lerp_color(c0 : Color, c1 : Color, t : Double) -> Color {
-  {
-    r: lerp(c0.r.to_double(), c1.r.to_double(), t).to_int(),
-    g: lerp(c0.g.to_double(), c1.g.to_double(), t).to_int(),
-    b: lerp(c0.b.to_double(), c1.b.to_double(), t).to_int(),
-    a: lerp(c0.a.to_double(), c1.a.to_double(), t).to_int(),
-  }
+  let tween = tween_to_msvg(self)
+  let msvg_node = svg_node_to_msvg(node)
+  let running = tween.update(dt, msvg_node)
+  copy_tween_state_from_msvg(self, tween)
+  copy_svg_node_animation_state_from_msvg(node, msvg_node)
+  running
 }
 
 // ============================================================================
