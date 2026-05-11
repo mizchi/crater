@@ -2869,9 +2869,13 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG pattern sampling to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/pattern.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
 
+    expect(source.includes("pub(all) struct Pattern")).toBe(true);
+    expect(source.includes("pub(all) enum PatternUnits")).toBe(true);
+    expect(source.includes("pub(all) struct PatternRegistry")).toBe(true);
     expect(source.includes("@msvg.Pattern::new(")).toBe(true);
     expect(source.includes("pattern_to_msvg(self).get_color_at(")).toBe(true);
     expect(interopSource.includes("fn pattern_from_msvg(")).toBe(true);
@@ -2879,6 +2883,8 @@ describe("MoonBit module boundaries", () => {
     expect(interopSource.includes("fn svg_node_to_msvg(")).toBe(true);
     expect(source.includes("Calculate pattern space coordinates")).toBe(false);
     expect(source.includes("Get position within pattern tile")).toBe(false);
+    expect(typesSource.includes("pub(all) struct Pattern")).toBe(false);
+    expect(typesSource.includes("pub fn Pattern::new(")).toBe(false);
   });
 
   it("delegates SVG marker transforms to mizchi/svg", () => {
