@@ -2700,9 +2700,13 @@ describe("MoonBit module boundaries", () => {
   });
 
   it("delegates SVG particle operations to mizchi/svg", () => {
-    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/particle.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
 
+    expect(source.includes("pub(all) struct Particle")).toBe(true);
+    expect(source.includes("pub(all) struct ParticleEmitter")).toBe(true);
+    expect(source.includes("pub(all) struct SimpleRNG")).toBe(true);
     expect(source.includes("@msvg.Particle::new(")).toBe(true);
     expect(source.includes("@msvg.EmitterConfig::default(")).toBe(true);
     expect(source.includes("@msvg.ParticleEmitter::new(")).toBe(true);
@@ -2713,6 +2717,8 @@ describe("MoonBit module boundaries", () => {
     expect(interopSource.includes("fn copy_particle_emitter_state_from_msvg(")).toBe(true);
     expect(source.includes("fn ParticleEmitter::emit_one(")).toBe(false);
     expect(source.includes("fn random_range(")).toBe(false);
+    expect(typesSource.includes("pub(all) struct Particle")).toBe(false);
+    expect(typesSource.includes("pub fn ParticleEmitter::new(")).toBe(false);
   });
 
   it("delegates SVG path follower operations to mizchi/svg", () => {
