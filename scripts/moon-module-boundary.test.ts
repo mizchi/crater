@@ -2437,6 +2437,18 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("fn lerp_color(")).toBe(false);
   });
 
+  it("delegates SVG collision operations to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+
+    expect(source.includes("@msvg.collide_circle_circle(")).toBe(true);
+    expect(source.includes("@msvg.collide_rect_rect(")).toBe(true);
+    expect(source.includes("@msvg.collide_circle_rect(")).toBe(true);
+    expect(source.includes("@msvg.collide_shapes(shape_to_msvg(shape1), shape_to_msvg(shape2))")).toBe(true);
+    expect(source.includes("svg_node_to_msvg(self).collides_with(svg_node_to_msvg(other))")).toBe(true);
+    expect(source.includes("fn get_shape_bbox(")).toBe(false);
+    expect(source.includes("Fall back to bounding box collision")).toBe(false);
+  });
+
   it("delegates SVG blend mode math to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");

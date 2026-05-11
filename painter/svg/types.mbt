@@ -1181,11 +1181,7 @@ pub fn collide_circle_circle(
   cy2 : Double,
   r2 : Double,
 ) -> Bool {
-  let dx = cx2 - cx1
-  let dy = cy2 - cy1
-  let dist_sq = dx * dx + dy * dy
-  let radii_sum = r1 + r2
-  dist_sq <= radii_sum * radii_sum
+  @msvg.collide_circle_circle(cx1, cy1, r1, cx2, cy2, r2)
 }
 
 ///|
@@ -1200,7 +1196,7 @@ pub fn collide_rect_rect(
   w2 : Double,
   h2 : Double,
 ) -> Bool {
-  x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2
+  @msvg.collide_rect_rect(x1, y1, w1, h1, x2, y2, w2, h2)
 }
 
 ///|
@@ -1214,112 +1210,19 @@ pub fn collide_circle_rect(
   rw : Double,
   rh : Double,
 ) -> Bool {
-  // Find the closest point on the rectangle to the circle center
-  let closest_x = if cx < rx { rx } else if cx > rx + rw { rx + rw } else { cx }
-  let closest_y = if cy < ry { ry } else if cy > ry + rh { ry + rh } else { cy }
-  // Check if the closest point is within the circle
-  let dx = cx - closest_x
-  let dy = cy - closest_y
-  dx * dx + dy * dy <= r * r
+  @msvg.collide_circle_rect(cx, cy, r, rx, ry, rw, rh)
 }
 
 ///|
 /// Check collision between two shapes
 pub fn collide_shapes(shape1 : Shape, shape2 : Shape) -> Bool {
-  match (shape1, shape2) {
-    (Circle(cx~, cy~, r~), Circle(..)) => {
-      let (cx2, cy2, r2) = match shape2 {
-        Circle(cx~, cy~, r~) => (cx, cy, r)
-        _ => (0.0, 0.0, 0.0)
-      }
-      collide_circle_circle(cx, cy, r, cx2, cy2, r2)
-    }
-    (Rect(x~, y~, width~, height~, ..), Rect(..)) => {
-      let (x2, y2, w2, h2) = match shape2 {
-        Rect(x~, y~, width~, height~, ..) => (x, y, width, height)
-        _ => (0.0, 0.0, 0.0, 0.0)
-      }
-      collide_rect_rect(x, y, width, height, x2, y2, w2, h2)
-    }
-    (Circle(cx~, cy~, r~), Rect(x~, y~, width~, height~, ..)) =>
-      collide_circle_rect(cx, cy, r, x, y, width, height)
-    (Rect(x~, y~, width~, height~, ..), Circle(cx~, cy~, r~)) =>
-      collide_circle_rect(cx, cy, r, x, y, width, height)
-    (Ellipse(cx~, cy~, rx~, ry~), Ellipse(..)) => {
-      // Approximate with average radius
-      let r1 = (rx + ry) / 2.0
-      let (cx2, cy2, r2) = match shape2 {
-        Ellipse(cx~, cy~, rx~, ry~) => (cx, cy, (rx + ry) / 2.0)
-        _ => (0.0, 0.0, 0.0)
-      }
-      collide_circle_circle(cx, cy, r1, cx2, cy2, r2)
-    }
-    _ => {
-      // Fall back to bounding box collision for other shapes
-      let bbox1 = get_shape_bbox(shape1)
-      let bbox2 = get_shape_bbox(shape2)
-      bbox1.intersects(bbox2)
-    }
-  }
-}
-
-///|
-/// Get bounding box for a shape
-fn get_shape_bbox(shape : Shape) -> BoundingBox {
-  match shape {
-    Rect(x~, y~, width~, height~, ..) =>
-      BoundingBox::from_rect(x, y, width, height)
-    Circle(cx~, cy~, r~) =>
-      BoundingBox::from_rect(cx - r, cy - r, r * 2.0, r * 2.0)
-    Ellipse(cx~, cy~, rx~, ry~) =>
-      BoundingBox::from_rect(cx - rx, cy - ry, rx * 2.0, ry * 2.0)
-    Line(x1~, y1~, x2~, y2~) => {
-      let min_x = if x1 < x2 { x1 } else { x2 }
-      let max_x = if x1 > x2 { x1 } else { x2 }
-      let min_y = if y1 < y2 { y1 } else { y2 }
-      let max_y = if y1 > y2 { y1 } else { y2 }
-      { min_x, min_y, max_x, max_y }
-    }
-    Polyline(points~) | Polygon(points~) => {
-      if points.is_empty() {
-        return BoundingBox::empty()
-      }
-      let mut min_x = points[0].0
-      let mut max_x = points[0].0
-      let mut min_y = points[0].1
-      let mut max_y = points[0].1
-      for p in points {
-        if p.0 < min_x {
-          min_x = p.0
-        }
-        if p.0 > max_x {
-          max_x = p.0
-        }
-        if p.1 < min_y {
-          min_y = p.1
-        }
-        if p.1 > max_y {
-          max_y = p.1
-        }
-      }
-      { min_x, min_y, max_x, max_y }
-    }
-    _ => BoundingBox::empty()
-  }
+  @msvg.collide_shapes(shape_to_msvg(shape1), shape_to_msvg(shape2))
 }
 
 ///|
 /// Check collision between two SVGNodes (considering transforms)
 pub fn SVGNode::collides_with(self : SVGNode, other : SVGNode) -> Bool {
-  // Get transformed bounding boxes for quick rejection
-  let bbox1 = self.transform.apply_bbox(get_shape_bbox(self.shape))
-  let bbox2 = other.transform.apply_bbox(get_shape_bbox(other.shape))
-  if !bbox1.intersects(bbox2) {
-    return false
-  }
-  // For now, use bounding box collision
-  // More precise collision would require transforming shapes
-  true
+  svg_node_to_msvg(self).collides_with(svg_node_to_msvg(other))
 }
 
 // ============================================================================
