@@ -1168,6 +1168,12 @@ test "use element get_id" {
 }
 
 ///|
+test "use element get_id decodes percent escapes" {
+  let use_elem = UseElement::new("#my%20Symbol", 10.0, 20.0)
+  inspect(use_elem.get_id(), content="my Symbol")
+}
+
+///|
 test "symbol registry and instantiate" {
   let registry = SymbolRegistry::new()
   let content = rect("box", 0.0, 0.0, 30.0, 30.0)

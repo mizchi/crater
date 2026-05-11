@@ -2882,7 +2882,7 @@ pub(all) struct UseElement {
 
 ///|
 pub fn UseElement::new(href : String, x : Double, y : Double) -> UseElement {
-  { href, x, y, width: None, height: None, transform: Transform::identity() }
+  use_element_from_msvg(@msvg.UseElement::new(href, x, y))
 }
 
 ///|
@@ -2893,28 +2893,13 @@ pub fn UseElement::with_size(
   width : Double,
   height : Double,
 ) -> UseElement {
-  {
-    href,
-    x,
-    y,
-    width: Some(width),
-    height: Some(height),
-    transform: Transform::identity(),
-  }
+  use_element_from_msvg(@msvg.UseElement::with_size(href, x, y, width, height))
 }
 
 ///|
 /// Get the href ID (strips leading #)
 pub fn UseElement::get_id(self : UseElement) -> String {
-  if self.href.length() > 0 && self.href[0].unsafe_to_char() == '#' {
-    let buf = StringBuilder::new()
-    for i = 1; i < self.href.length(); i = i + 1 {
-      buf.write_char(self.href[i].unsafe_to_char())
-    }
-    buf.to_string()
-  } else {
-    self.href
-  }
+  use_element_to_msvg(self).get_id()
 }
 
 ///|

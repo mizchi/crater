@@ -144,6 +144,30 @@ fn text_overflow_to_msvg(overflow : TextOverflow) -> @msvg.TextOverflow {
 }
 
 ///|
+fn use_element_from_msvg(use_element : @msvg.UseElement) -> UseElement {
+  {
+    href: use_element.href,
+    x: use_element.x,
+    y: use_element.y,
+    width: use_element.width,
+    height: use_element.height,
+    transform: transform_from_msvg(use_element.transform),
+  }
+}
+
+///|
+fn use_element_to_msvg(use_element : UseElement) -> @msvg.UseElement {
+  @msvg.UseElement::{
+    href: use_element.href,
+    x: use_element.x,
+    y: use_element.y,
+    width: use_element.width,
+    height: use_element.height,
+    transform: use_element.transform.to_msvg(),
+  }
+}
+
+///|
 fn color_from_msvg_option(color : @msvg.Color?) -> Color? {
   match color {
     Some(c) => Some(color_from_msvg(c))

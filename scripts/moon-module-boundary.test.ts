@@ -2301,6 +2301,20 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("fn take_chars(")).toBe(false);
   });
 
+  it("delegates SVG use element helpers to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+
+    expect(source.includes("@msvg.UseElement::new(")).toBe(true);
+    expect(source.includes("@msvg.UseElement::with_size(")).toBe(true);
+    expect(source.includes("use_element_from_msvg(")).toBe(true);
+    expect(source.includes("use_element_to_msvg(self).get_id()")).toBe(true);
+    expect(interopSource.includes("fn use_element_from_msvg(")).toBe(true);
+    expect(interopSource.includes("fn use_element_to_msvg(")).toBe(true);
+    expect(source.includes("fn hex_value(")).toBe(false);
+    expect(source.includes("fn decode_percent(")).toBe(false);
+  });
+
   it("delegates SVG color and stroke defaults to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
 
