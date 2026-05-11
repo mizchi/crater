@@ -75,31 +75,7 @@ fn render_paint_node_clipped(
   }
 
   render_node_box_decorations(fb, palette, node, x, y, w, h, clip)
-
-  // Draw resolved image content before alt fallback text.
-  let drew_replaced_image = if node.tag == "img" && w > 0 && h > 0 {
-    match node.src {
-      Some(src) =>
-        render_image_src_into_region(
-          fb,
-          palette,
-          src,
-          x,
-          y,
-          w,
-          h,
-          clip,
-          node.paint.opacity,
-        )
-      None => false
-    }
-  } else {
-    false
-  }
-  if !drew_replaced_image {
-    render_node_text_content(fb, palette, node, x, y, w, h, clip)
-    render_node_text_decorations(fb, palette, node, x, y, w, clip)
-  }
+  render_node_content(fb, palette, node, x, y, w, h, clip)
 
   // Compute child clip: if this node clips content, intersect with current clip
   let child_clip = if node.clips_content() {

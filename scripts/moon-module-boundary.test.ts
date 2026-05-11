@@ -256,6 +256,18 @@ describe("MoonBit module boundaries", () => {
     expect(rasterSource.includes("draw_uniform_rounded_border_ring_clipped(")).toBe(false);
   });
 
+  it("splits raster node content rendering out of paint_raster", () => {
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_node_content.mbt"), "utf8");
+
+    expect(source.includes("fn render_node_content(")).toBe(true);
+    expect(source.includes("render_image_src_into_region(")).toBe(true);
+    expect(source.includes("render_node_text_content(")).toBe(true);
+    expect(source.includes("render_node_text_decorations(")).toBe(true);
+    expect(rasterSource.includes("let drew_replaced_image")).toBe(false);
+    expect(rasterSource.includes("render_image_src_into_region(")).toBe(false);
+  });
+
   it("splits raster palette helpers out of paint_raster", () => {
     const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/raster_palette.mbt"), "utf8");
