@@ -170,6 +170,7 @@
   - 進捗: image provider model を `painter/x/image/image_provider.mbt` へ分離
   - 進捗: raster base64 fallback を `painter/x/image/raster_base64.mbt` へ分離
   - 進捗: framebuffer primitives を `painter/x/image/framebuffer.mbt` へ分離
+  - 進捗: framebuffer RGBA encoding を `painter/x/image/framebuffer_encode.mbt` へ分離
   - 進捗: bitmap text fallback を `painter/x/image/bitmap_text.mbt` へ分離
   - 進捗: raster palette helpers を `painter/x/image/raster_palette.mbt` へ分離
   - 進捗: raster clip helpers を `painter/x/image/raster_clip.mbt` へ分離

@@ -147,6 +147,17 @@ describe("MoonBit module boundaries", () => {
     expect(rasterSource.includes("pub fn Framebuffer::fill_rect_hatched(")).toBe(false);
   });
 
+  it("splits framebuffer encoding out of paint_raster", () => {
+    const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/framebuffer_encode.mbt"), "utf8");
+
+    expect(source.includes("extern \"js\" fn framebuffer_to_rgba_base64_js(")).toBe(true);
+    expect(source.includes("fn framebuffer_to_rgba_base64_js(")).toBe(true);
+    expect(source.includes("pub fn framebuffer_to_rgba_base64(")).toBe(true);
+    expect(rasterSource.includes("framebuffer_to_rgba_base64_js")).toBe(false);
+    expect(rasterSource.includes("pub fn framebuffer_to_rgba_base64(")).toBe(false);
+  });
+
   it("splits bitmap text fallback out of paint_raster", () => {
     const rasterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/paint_raster.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/x/image/bitmap_text.mbt"), "utf8");
