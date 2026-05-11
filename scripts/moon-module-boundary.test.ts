@@ -2274,6 +2274,20 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("fn interpolate_gradient_color(")).toBe(false);
   });
 
+  it("delegates SVG path rasterization to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/path.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+
+    expect(source.includes("@msvg.parse_path(data)")).toBe(true);
+    expect(source.includes("@msvg.path_to_polylines(")).toBe(true);
+    expect(source.includes("@msvg.raster_path(")).toBe(true);
+    expect(source.includes("@msvg.path_bbox(")).toBe(true);
+    expect(interopSource.includes("fn path_commands_to_msvg(")).toBe(true);
+    expect(interopSource.includes("fn pixel_setter_to_msvg(")).toBe(true);
+    expect(source.includes("let polylines = path_to_polylines(commands, flatness)")).toBe(false);
+    expect(source.includes("raster_polygon_fill(int_points, color, setter)")).toBe(false);
+  });
+
   it("delegates SVG pointer event state to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");

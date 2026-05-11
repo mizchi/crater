@@ -27,27 +27,19 @@ pub fn raster_path(
   flatness : Double,
   setter : PixelSetter,
 ) -> Unit {
-  let polylines = path_to_polylines(commands, flatness)
-  // Fill
-  match fill_color {
-    Some(color) =>
-      for polyline in polylines {
-        let int_points = polyline.map(fn(p) { (p.0.to_int(), p.1.to_int()) })
-        if int_points.length() >= 3 {
-          raster_polygon_fill(int_points, color, setter)
-        }
-      }
-    None => ()
-  }
-  // Stroke
-  match stroke_color {
-    Some(color) =>
-      for polyline in polylines {
-        let int_points = polyline.map(fn(p) { (p.0.to_int(), p.1.to_int()) })
-        raster_polyline(int_points, color, setter)
-      }
-    None => ()
-  }
+  @msvg.raster_path(
+    path_commands_to_msvg(commands),
+    match fill_color {
+      Some(color) => Some(color_to_msvg(color))
+      None => None
+    },
+    match stroke_color {
+      Some(color) => Some(color_to_msvg(color))
+      None => None
+    },
+    flatness,
+    pixel_setter_to_msvg(setter),
+  )
 }
 
 ///|
