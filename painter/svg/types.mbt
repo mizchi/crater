@@ -686,46 +686,45 @@ pub(all) struct Camera {
 
 ///|
 pub fn Camera::new(viewport_width : Int, viewport_height : Int) -> Camera {
-  { x: 0.0, y: 0.0, zoom: 1.0, viewport_width, viewport_height }
+  camera_from_msvg(@msvg.Camera::new(viewport_width, viewport_height))
 }
 
 ///|
 /// Move camera by delta
 pub fn Camera::pan(self : Camera, dx : Double, dy : Double) -> Unit {
-  self.x = self.x + dx
-  self.y = self.y + dy
+  let camera = camera_to_msvg(self)
+  camera.pan(dx, dy)
+  copy_camera_from_msvg(self, camera)
 }
 
 ///|
 /// Set camera position
 pub fn Camera::set_position(self : Camera, x : Double, y : Double) -> Unit {
-  self.x = x
-  self.y = y
+  let camera = camera_to_msvg(self)
+  camera.set_position(x, y)
+  copy_camera_from_msvg(self, camera)
 }
 
 ///|
 /// Set zoom level
 pub fn Camera::set_zoom(self : Camera, zoom : Double) -> Unit {
-  self.zoom = if zoom < 0.1 { 0.1 } else if zoom > 10.0 { 10.0 } else { zoom }
+  let camera = camera_to_msvg(self)
+  camera.set_zoom(zoom)
+  copy_camera_from_msvg(self, camera)
 }
 
 ///|
 /// Zoom by factor (multiply current zoom)
 pub fn Camera::zoom_by(self : Camera, factor : Double) -> Unit {
-  self.set_zoom(self.zoom * factor)
+  let camera = camera_to_msvg(self)
+  camera.zoom_by(factor)
+  copy_camera_from_msvg(self, camera)
 }
 
 ///|
 /// Get the world-space bounding box visible through this camera
 pub fn Camera::get_visible_bounds(self : Camera) -> BoundingBox {
-  let half_w = self.viewport_width.to_double() / 2.0 / self.zoom
-  let half_h = self.viewport_height.to_double() / 2.0 / self.zoom
-  {
-    min_x: self.x - half_w,
-    min_y: self.y - half_h,
-    max_x: self.x + half_w,
-    max_y: self.y + half_h,
-  }
+  bounding_box_from_msvg(camera_to_msvg(self).get_visible_bounds())
 }
 
 ///|
@@ -735,9 +734,7 @@ pub fn Camera::world_to_screen(
   wx : Double,
   wy : Double,
 ) -> (Int, Int) {
-  let sx = (wx - self.x) * self.zoom + self.viewport_width.to_double() / 2.0
-  let sy = (wy - self.y) * self.zoom + self.viewport_height.to_double() / 2.0
-  (sx.to_int(), sy.to_int())
+  camera_to_msvg(self).world_to_screen(wx, wy)
 }
 
 ///|
@@ -747,20 +744,13 @@ pub fn Camera::screen_to_world(
   sx : Int,
   sy : Int,
 ) -> (Double, Double) {
-  let wx = (sx.to_double() - self.viewport_width.to_double() / 2.0) / self.zoom +
-    self.x
-  let wy = (sy.to_double() - self.viewport_height.to_double() / 2.0) / self.zoom +
-    self.y
-  (wx, wy)
+  camera_to_msvg(self).screen_to_world(sx, sy)
 }
 
 ///|
 /// Get transform matrix for this camera
 pub fn Camera::get_transform(self : Camera) -> Transform {
-  // Translate to center, scale by zoom, then translate by camera position
-  let tx = self.viewport_width.to_double() / 2.0 - self.x * self.zoom
-  let ty = self.viewport_height.to_double() / 2.0 - self.y * self.zoom
-  { a: self.zoom, b: 0.0, c: 0.0, d: self.zoom, e: tx, f: ty }
+  transform_from_msvg(camera_to_msvg(self).get_transform())
 }
 
 // ============================================================================
@@ -2500,188 +2490,43 @@ fn clamp_int(v : Int, min : Int, max : Int) -> Int {
 ///|
 /// Apply brightness filter to a color
 pub fn apply_brightness(color : Color, factor : Double) -> Color {
-  {
-    r: clamp_int((color.r.to_double() * factor).to_int(), 0, 255),
-    g: clamp_int((color.g.to_double() * factor).to_int(), 0, 255),
-    b: clamp_int((color.b.to_double() * factor).to_int(), 0, 255),
-    a: color.a,
-  }
+  color_from_msvg(@msvg.apply_brightness(color_to_msvg(color), factor))
 }
 
 ///|
 /// Apply grayscale filter to a color
 pub fn apply_grayscale(color : Color, amount : Double) -> Color {
-  let gray = (color.r.to_double() * 0.299 +
-  color.g.to_double() * 0.587 +
-  color.b.to_double() * 0.114).to_int()
-  {
-    r: lerp(color.r.to_double(), gray.to_double(), amount).to_int(),
-    g: lerp(color.g.to_double(), gray.to_double(), amount).to_int(),
-    b: lerp(color.b.to_double(), gray.to_double(), amount).to_int(),
-    a: color.a,
-  }
+  color_from_msvg(@msvg.apply_grayscale(color_to_msvg(color), amount))
 }
 
 ///|
 /// Apply contrast filter to a color
 pub fn apply_contrast(color : Color, factor : Double) -> Color {
-  // Contrast formula: ((value - 128) * factor) + 128
-  let r = ((color.r.to_double() - 128.0) * factor + 128.0).to_int()
-  let g = ((color.g.to_double() - 128.0) * factor + 128.0).to_int()
-  let b = ((color.b.to_double() - 128.0) * factor + 128.0).to_int()
-  {
-    r: clamp_int(r, 0, 255),
-    g: clamp_int(g, 0, 255),
-    b: clamp_int(b, 0, 255),
-    a: color.a,
-  }
+  color_from_msvg(@msvg.apply_contrast(color_to_msvg(color), factor))
 }
 
 ///|
 /// Apply sepia filter to a color
 pub fn apply_sepia(color : Color, amount : Double) -> Color {
-  // Sepia matrix coefficients
-  let r = color.r.to_double()
-  let g = color.g.to_double()
-  let b = color.b.to_double()
-  // Sepia tone calculation
-  let sepia_r = r * 0.393 + g * 0.769 + b * 0.189
-  let sepia_g = r * 0.349 + g * 0.686 + b * 0.168
-  let sepia_b = r * 0.272 + g * 0.534 + b * 0.131
-  // Interpolate between original and sepia
-  {
-    r: clamp_int(lerp(r, sepia_r, amount).to_int(), 0, 255),
-    g: clamp_int(lerp(g, sepia_g, amount).to_int(), 0, 255),
-    b: clamp_int(lerp(b, sepia_b, amount).to_int(), 0, 255),
-    a: color.a,
-  }
+  color_from_msvg(@msvg.apply_sepia(color_to_msvg(color), amount))
 }
 
 ///|
 /// Apply hue rotation to a color
 pub fn apply_hue_rotate(color : Color, angle_degrees : Double) -> Color {
-  // Convert to radians
-  let angle = angle_degrees * 3.14159265358979 / 180.0
-  let cos_a = cos_approx(angle)
-  let sin_a = sin_approx(angle)
-  let r = color.r.to_double() / 255.0
-  let g = color.g.to_double() / 255.0
-  let b = color.b.to_double() / 255.0
-  // Hue rotation matrix (based on SVG spec)
-  let matrix_00 = 0.213 + cos_a * 0.787 - sin_a * 0.213
-  let matrix_01 = 0.715 - cos_a * 0.715 - sin_a * 0.715
-  let matrix_02 = 0.072 - cos_a * 0.072 + sin_a * 0.928
-  let matrix_10 = 0.213 - cos_a * 0.213 + sin_a * 0.143
-  let matrix_11 = 0.715 + cos_a * 0.285 + sin_a * 0.140
-  let matrix_12 = 0.072 - cos_a * 0.072 - sin_a * 0.283
-  let matrix_20 = 0.213 - cos_a * 0.213 - sin_a * 0.787
-  let matrix_21 = 0.715 - cos_a * 0.715 + sin_a * 0.715
-  let matrix_22 = 0.072 + cos_a * 0.928 + sin_a * 0.072
-  let new_r = r * matrix_00 + g * matrix_01 + b * matrix_02
-  let new_g = r * matrix_10 + g * matrix_11 + b * matrix_12
-  let new_b = r * matrix_20 + g * matrix_21 + b * matrix_22
-  {
-    r: clamp_int((new_r * 255.0).to_int(), 0, 255),
-    g: clamp_int((new_g * 255.0).to_int(), 0, 255),
-    b: clamp_int((new_b * 255.0).to_int(), 0, 255),
-    a: color.a,
-  }
-}
-
-///|
-/// Approximate cosine function
-fn cos_approx(x : Double) -> Double {
-  let pi = 3.14159265358979
-  let pi2 = 6.28318530717959
-  // Normalize to [0, 2π]
-  let mut normalized = x
-  while normalized < 0.0 {
-    normalized = normalized + pi2
-  }
-  while normalized >= pi2 {
-    normalized = normalized - pi2
-  }
-  // Reduce to [-π, π] for better Taylor accuracy
-  if normalized > pi {
-    normalized = normalized - pi2
-  }
-  // Taylor series approximation for cos (accurate near 0)
-  let x2 = normalized * normalized
-  let x4 = x2 * x2
-  let x6 = x4 * x2
-  let x8 = x4 * x4
-  let x10 = x4 * x6
-  1.0 - x2 / 2.0 + x4 / 24.0 - x6 / 720.0 + x8 / 40320.0 - x10 / 3628800.0
-}
-
-///|
-/// Approximate sine function
-fn sin_approx(x : Double) -> Double {
-  let pi = 3.14159265358979
-  let pi2 = 6.28318530717959
-  // Normalize to [0, 2π]
-  let mut normalized = x
-  while normalized < 0.0 {
-    normalized = normalized + pi2
-  }
-  while normalized >= pi2 {
-    normalized = normalized - pi2
-  }
-  // Reduce to [-π, π]
-  if normalized > pi {
-    normalized = normalized - pi2
-  }
-  // Taylor series for sin: x - x³/6 + x⁵/120 - x⁷/5040 + x⁹/362880
-  let x2 = normalized * normalized
-  let x3 = normalized * x2
-  let x5 = x3 * x2
-  let x7 = x5 * x2
-  let x9 = x7 * x2
-  normalized - x3 / 6.0 + x5 / 120.0 - x7 / 5040.0 + x9 / 362880.0
+  color_from_msvg(@msvg.apply_hue_rotate(color_to_msvg(color), angle_degrees))
 }
 
 ///|
 /// Apply invert filter to a color
 pub fn apply_invert(color : Color, amount : Double) -> Color {
-  let inv_r = 255 - color.r
-  let inv_g = 255 - color.g
-  let inv_b = 255 - color.b
-  {
-    r: lerp(color.r.to_double(), inv_r.to_double(), amount).to_int(),
-    g: lerp(color.g.to_double(), inv_g.to_double(), amount).to_int(),
-    b: lerp(color.b.to_double(), inv_b.to_double(), amount).to_int(),
-    a: color.a,
-  }
+  color_from_msvg(@msvg.apply_invert(color_to_msvg(color), amount))
 }
 
 ///|
 /// Apply saturate filter to a color
 pub fn apply_saturate(color : Color, factor : Double) -> Color {
-  // Saturation matrix based on luminance
-  let r = color.r.to_double() / 255.0
-  let g = color.g.to_double() / 255.0
-  let b = color.b.to_double() / 255.0
-  // Luminance coefficients
-  let lum_r = 0.2126
-  let lum_g = 0.7152
-  let lum_b = 0.0722
-  // Saturation matrix
-  let sr = (1.0 - factor) * lum_r + factor
-  let sg = (1.0 - factor) * lum_g
-  let sb = (1.0 - factor) * lum_b
-  let new_r = r * sr + g * sg + b * sb
-  let new_g = r * ((1.0 - factor) * lum_r) +
-    g * ((1.0 - factor) * lum_g + factor) +
-    b * ((1.0 - factor) * lum_b)
-  let new_b = r * ((1.0 - factor) * lum_r) +
-    g * ((1.0 - factor) * lum_g) +
-    b * ((1.0 - factor) * lum_b + factor)
-  {
-    r: clamp_int((new_r * 255.0).to_int(), 0, 255),
-    g: clamp_int((new_g * 255.0).to_int(), 0, 255),
-    b: clamp_int((new_b * 255.0).to_int(), 0, 255),
-    a: color.a,
-  }
+  color_from_msvg(@msvg.apply_saturate(color_to_msvg(color), factor))
 }
 
 ///|
@@ -2693,118 +2538,31 @@ pub fn apply_saturate(color : Color, factor : Double) -> Color {
 /// [A'] = [a30 a31 a32 a33 a34] [A]
 ///                              [1]
 pub fn apply_color_matrix(color : Color, matrix : FixedArray[Double]) -> Color {
-  if matrix.length() != 20 {
-    return color // Invalid matrix
-  }
-  let r = color.r.to_double() / 255.0
-  let g = color.g.to_double() / 255.0
-  let b = color.b.to_double() / 255.0
-  let a = color.a.to_double() / 255.0
-  let new_r = r * matrix[0] +
-    g * matrix[1] +
-    b * matrix[2] +
-    a * matrix[3] +
-    matrix[4]
-  let new_g = r * matrix[5] +
-    g * matrix[6] +
-    b * matrix[7] +
-    a * matrix[8] +
-    matrix[9]
-  let new_b = r * matrix[10] +
-    g * matrix[11] +
-    b * matrix[12] +
-    a * matrix[13] +
-    matrix[14]
-  let new_a = r * matrix[15] +
-    g * matrix[16] +
-    b * matrix[17] +
-    a * matrix[18] +
-    matrix[19]
-  {
-    r: clamp_int((new_r * 255.0).to_int(), 0, 255),
-    g: clamp_int((new_g * 255.0).to_int(), 0, 255),
-    b: clamp_int((new_b * 255.0).to_int(), 0, 255),
-    a: clamp_int((new_a * 255.0).to_int(), 0, 255),
-  }
+  color_from_msvg(@msvg.apply_color_matrix(color_to_msvg(color), matrix))
 }
 
 ///|
 /// Create identity color matrix
 pub fn identity_matrix() -> FixedArray[Double] {
-  [
-    1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
-    0.0, 0.0, 1.0, 0.0,
-  ]
+  @msvg.identity_matrix()
 }
 
 ///|
 /// Create saturate color matrix
 pub fn saturate_matrix(factor : Double) -> FixedArray[Double] {
-  let s = factor
-  let lum_r = 0.2126
-  let lum_g = 0.7152
-  let lum_b = 0.0722
-  [
-    (1.0 - s) * lum_r + s,
-    (1.0 - s) * lum_g,
-    (1.0 - s) * lum_b,
-    0.0,
-    0.0,
-    (1.0 - s) * lum_r,
-    (1.0 - s) * lum_g + s,
-    (1.0 - s) * lum_b,
-    0.0,
-    0.0,
-    (1.0 - s) * lum_r,
-    (1.0 - s) * lum_g,
-    (1.0 - s) * lum_b + s,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    1.0,
-    0.0,
-  ]
+  @msvg.saturate_matrix(factor)
 }
 
 ///|
 /// Create hue-rotate color matrix
 pub fn hue_rotate_matrix(angle_degrees : Double) -> FixedArray[Double] {
-  let angle = angle_degrees * 3.14159265358979 / 180.0
-  let cos_a = cos_approx(angle)
-  let sin_a = sin_approx(angle)
-  [
-    0.213 + cos_a * 0.787 - sin_a * 0.213,
-    0.715 - cos_a * 0.715 - sin_a * 0.715,
-    0.072 - cos_a * 0.072 + sin_a * 0.928,
-    0.0,
-    0.0,
-    0.213 - cos_a * 0.213 + sin_a * 0.143,
-    0.715 + cos_a * 0.285 + sin_a * 0.140,
-    0.072 - cos_a * 0.072 - sin_a * 0.283,
-    0.0,
-    0.0,
-    0.213 - cos_a * 0.213 - sin_a * 0.787,
-    0.715 - cos_a * 0.715 + sin_a * 0.715,
-    0.072 + cos_a * 0.928 + sin_a * 0.072,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    1.0,
-    0.0,
-  ]
+  @msvg.hue_rotate_matrix(angle_degrees)
 }
 
 ///|
 /// Create luminance-to-alpha color matrix
 pub fn luminance_to_alpha_matrix() -> FixedArray[Double] {
-  [
-    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2126,
-    0.7152, 0.0722, 0.0, 0.0,
-  ]
+  @msvg.luminance_to_alpha_matrix()
 }
 
 ///|

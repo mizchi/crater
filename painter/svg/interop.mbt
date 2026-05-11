@@ -338,6 +338,35 @@ fn clip_rect_to_msvg(clip : ClipRect) -> @msvg.ClipRect {
 }
 
 ///|
+fn camera_from_msvg(camera : @msvg.Camera) -> Camera {
+  {
+    x: camera.x,
+    y: camera.y,
+    zoom: camera.zoom,
+    viewport_width: camera.viewport_width,
+    viewport_height: camera.viewport_height,
+  }
+}
+
+///|
+fn copy_camera_from_msvg(target : Camera, source : @msvg.Camera) -> Unit {
+  target.x = source.x
+  target.y = source.y
+  target.zoom = source.zoom
+}
+
+///|
+fn camera_to_msvg(camera : Camera) -> @msvg.Camera {
+  @msvg.Camera::{
+    x: camera.x,
+    y: camera.y,
+    zoom: camera.zoom,
+    viewport_width: camera.viewport_width,
+    viewport_height: camera.viewport_height,
+  }
+}
+
+///|
 fn shape_from_msvg(shape : @msvg.Shape) -> Shape {
   match shape {
     Rect(x~, y~, width~, height~, rx~, ry~) =>

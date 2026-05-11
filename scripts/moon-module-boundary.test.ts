@@ -2315,6 +2315,43 @@ describe("MoonBit module boundaries", () => {
     expect(typesSource.includes("fn hit_test_line(")).toBe(false);
   });
 
+  it("delegates SVG camera math to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+
+    expect(source.includes("@msvg.Camera::new(")).toBe(true);
+    expect(source.includes("camera_to_msvg(self).get_visible_bounds()")).toBe(true);
+    expect(source.includes("camera_to_msvg(self).world_to_screen(")).toBe(true);
+    expect(source.includes("camera_to_msvg(self).screen_to_world(")).toBe(true);
+    expect(source.includes("camera_to_msvg(self).get_transform()")).toBe(true);
+    expect(interopSource.includes("fn camera_from_msvg(")).toBe(true);
+    expect(interopSource.includes("fn copy_camera_from_msvg(")).toBe(true);
+    expect(interopSource.includes("fn camera_to_msvg(")).toBe(true);
+    expect(source.includes("self.x = self.x + dx")).toBe(false);
+    expect(source.includes("self.viewport_width.to_double() / 2.0")).toBe(false);
+  });
+
+  it("delegates SVG color filter math to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+
+    expect(source.includes("@msvg.apply_brightness(")).toBe(true);
+    expect(source.includes("@msvg.apply_grayscale(")).toBe(true);
+    expect(source.includes("@msvg.apply_contrast(")).toBe(true);
+    expect(source.includes("@msvg.apply_sepia(")).toBe(true);
+    expect(source.includes("@msvg.apply_hue_rotate(")).toBe(true);
+    expect(source.includes("@msvg.apply_invert(")).toBe(true);
+    expect(source.includes("@msvg.apply_saturate(")).toBe(true);
+    expect(source.includes("@msvg.apply_color_matrix(")).toBe(true);
+    expect(source.includes("@msvg.identity_matrix()")).toBe(true);
+    expect(source.includes("@msvg.saturate_matrix(")).toBe(true);
+    expect(source.includes("@msvg.hue_rotate_matrix(")).toBe(true);
+    expect(source.includes("@msvg.luminance_to_alpha_matrix()")).toBe(true);
+    expect(source.includes("fn cos_approx(")).toBe(false);
+    expect(source.includes("fn sin_approx(")).toBe(false);
+    expect(source.includes("Hue rotation matrix")).toBe(false);
+    expect(source.includes("Sepia matrix coefficients")).toBe(false);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",
