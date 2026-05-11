@@ -2960,17 +2960,7 @@ pub(all) struct Mask {
 
 ///|
 pub fn Mask::new(id : String, content : Array[SVGNode]) -> Mask {
-  {
-    id,
-    content,
-    x: -0.1,
-    y: -0.1,
-    width: 1.2,
-    height: 1.2,
-    mask_units: ObjectBoundingBox,
-    mask_content_units: UserSpaceOnUse,
-    mask_type: Luminance,
-  }
+  mask_from_msvg(@msvg.Mask::new(id, []), content)
 }
 
 ///|
@@ -2982,35 +2972,19 @@ pub fn Mask::with_bounds(
   width : Double,
   height : Double,
 ) -> Mask {
-  {
-    id,
-    content,
-    x,
-    y,
-    width,
-    height,
-    mask_units: ObjectBoundingBox,
-    mask_content_units: UserSpaceOnUse,
-    mask_type: Luminance,
-  }
+  mask_from_msvg(@msvg.Mask::with_bounds(id, [], x, y, width, height), content)
 }
 
 ///|
 /// Compute mask value (0.0-1.0) at a point using luminance
 pub fn compute_luminance(color : Color) -> Double {
-  // Standard luminance formula (ITU-R BT.709)
-  let r = color.r.to_double() / 255.0
-  let g = color.g.to_double() / 255.0
-  let b = color.b.to_double() / 255.0
-  let a = color.a.to_double() / 255.0
-  // Luminance weighted by alpha
-  (0.2126 * r + 0.7152 * g + 0.0722 * b) * a
+  @msvg.compute_luminance(color_to_msvg(color))
 }
 
 ///|
 /// Compute mask value using alpha channel
 pub fn compute_alpha_mask(color : Color) -> Double {
-  color.a.to_double() / 255.0
+  @msvg.compute_alpha_mask(color_to_msvg(color))
 }
 
 ///|
@@ -3037,25 +3011,9 @@ pub fn MaskRegistry::get(self : MaskRegistry, id : String) -> Mask? {
 ///|
 /// Get the mask region bounds for a given target bounds
 pub fn Mask::get_mask_bounds(self : Mask, target : BoundingBox) -> BoundingBox {
-  match self.mask_units {
-    ObjectBoundingBox => {
-      let tw = target.max_x - target.min_x
-      let th = target.max_y - target.min_y
-      {
-        min_x: target.min_x + self.x * tw,
-        min_y: target.min_y + self.y * th,
-        max_x: target.min_x + (self.x + self.width) * tw,
-        max_y: target.min_y + (self.y + self.height) * th,
-      }
-    }
-    UserSpaceOnUse =>
-      {
-        min_x: self.x,
-        min_y: self.y,
-        max_x: self.x + self.width,
-        max_y: self.y + self.height,
-      }
-  }
+  bounding_box_from_msvg(
+    mask_to_msvg(self).get_mask_bounds(bounding_box_to_msvg(target)),
+  )
 }
 
 ///|
@@ -3065,36 +3023,13 @@ pub fn apply_mask_to_image(
   mask_buffer : Image,
   mask_type : MaskType,
 ) -> Image {
-  let result = Image::new(image.width, image.height)
-  for y = 0; y < image.height; y = y + 1 {
-    for x = 0; x < image.width; x = x + 1 {
-      let src_color = image.get_pixel(x, y)
-      // Get corresponding mask pixel (with bounds check)
-      let mask_x = x * mask_buffer.width / image.width
-      let mask_y = y * mask_buffer.height / image.height
-      let mask_color = if mask_x >= 0 &&
-        mask_x < mask_buffer.width &&
-        mask_y >= 0 &&
-        mask_y < mask_buffer.height {
-        mask_buffer.get_pixel(mask_x, mask_y)
-      } else {
-        Color::transparent()
-      }
-      // Compute mask value
-      let mask_value = match mask_type {
-        Luminance => compute_luminance(mask_color)
-        Alpha => compute_alpha_mask(mask_color)
-      }
-      // Apply mask to alpha
-      let new_alpha = (src_color.a.to_double() * mask_value).to_int()
-      result.set_pixel(
-        x,
-        y,
-        Color::rgba(src_color.r, src_color.g, src_color.b, new_alpha),
-      )
-    }
-  }
-  result
+  image_from_msvg(
+    @msvg.apply_mask_to_image(
+      image_to_msvg(image),
+      image_to_msvg(mask_buffer),
+      mask_type_to_msvg(mask_type),
+    ),
+  )
 }
 
 // ============================================================================

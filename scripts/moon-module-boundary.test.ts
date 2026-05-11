@@ -2370,6 +2370,24 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("fn sqrt_approx(")).toBe(false);
   });
 
+  it("delegates SVG mask math to mizchi/svg", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
+    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+
+    expect(source.includes("@msvg.Mask::new(")).toBe(true);
+    expect(source.includes("@msvg.Mask::with_bounds(")).toBe(true);
+    expect(source.includes("@msvg.compute_luminance(")).toBe(true);
+    expect(source.includes("@msvg.compute_alpha_mask(")).toBe(true);
+    expect(source.includes("mask_to_msvg(self).get_mask_bounds(")).toBe(true);
+    expect(source.includes("@msvg.apply_mask_to_image(")).toBe(true);
+    expect(interopSource.includes("fn mask_from_msvg(")).toBe(true);
+    expect(interopSource.includes("fn mask_to_msvg(")).toBe(true);
+    expect(interopSource.includes("fn mask_type_to_msvg(")).toBe(true);
+    expect(source.includes("fn resolve_mask_coord(")).toBe(false);
+    expect(source.includes("fn resolve_mask_size(")).toBe(false);
+    expect(source.includes("Standard luminance formula")).toBe(false);
+  });
+
   it("keeps terminal output helpers out of crater-renderer", () => {
     const terminalOutputMarkers = [
       "mizchi/crater-painter-terminal/kitty",

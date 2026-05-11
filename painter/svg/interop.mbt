@@ -269,6 +269,72 @@ fn blend_mode_to_msvg(mode : BlendMode) -> @msvg.BlendMode {
 }
 
 ///|
+fn mask_units_from_msvg(units : @msvg.MaskUnits) -> MaskUnits {
+  match units {
+    UserSpaceOnUse => UserSpaceOnUse
+    ObjectBoundingBox => ObjectBoundingBox
+  }
+}
+
+///|
+fn mask_units_to_msvg(units : MaskUnits) -> @msvg.MaskUnits {
+  match units {
+    UserSpaceOnUse => @msvg.MaskUnits::UserSpaceOnUse
+    ObjectBoundingBox => @msvg.MaskUnits::ObjectBoundingBox
+  }
+}
+
+///|
+fn mask_type_from_msvg(mask_type : @msvg.MaskType) -> MaskType {
+  match mask_type {
+    Luminance => Luminance
+    Alpha => Alpha
+  }
+}
+
+///|
+fn mask_type_to_msvg(mask_type : MaskType) -> @msvg.MaskType {
+  match mask_type {
+    Luminance => @msvg.MaskType::Luminance
+    Alpha => @msvg.MaskType::Alpha
+  }
+}
+
+///|
+fn mask_from_msvg(mask : @msvg.Mask, content : Array[SVGNode]) -> Mask {
+  {
+    id: mask.id,
+    content,
+    x: mask.x,
+    y: mask.y,
+    width: mask.width,
+    height: mask.height,
+    mask_units: mask_units_from_msvg(mask.mask_units),
+    mask_content_units: mask_units_from_msvg(mask.mask_content_units),
+    mask_type: mask_type_from_msvg(mask.mask_type),
+  }
+}
+
+///|
+fn mask_to_msvg(mask : Mask) -> @msvg.Mask {
+  @msvg.Mask::{
+    id: mask.id,
+    content: [],
+    x: mask.x,
+    y: mask.y,
+    width: mask.width,
+    height: mask.height,
+    x_is_percent: false,
+    y_is_percent: false,
+    width_is_percent: false,
+    height_is_percent: false,
+    mask_units: mask_units_to_msvg(mask.mask_units),
+    mask_content_units: mask_units_to_msvg(mask.mask_content_units),
+    mask_type: mask_type_to_msvg(mask.mask_type),
+  }
+}
+
+///|
 pub fn path_command_from_msvg(cmd : @msvg.PathCommand) -> PathCommand {
   match cmd {
     MoveTo(x, y) => MoveTo(x, y)
