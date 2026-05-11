@@ -42,20 +42,6 @@ pub fn Color::is_transparent(self : Color) -> Bool {
 }
 
 ///|
-/// 2D affine transformation matrix
-/// | a c e |
-/// | b d f |
-/// | 0 0 1 |
-pub(all) struct Transform {
-  a : Double
-  b : Double
-  c : Double
-  d : Double
-  e : Double
-  f : Double
-}
-
-///|
 /// ViewBox specification for SVG coordinate system mapping
 pub(all) struct ViewBox {
   min_x : Double

@@ -2469,7 +2469,9 @@ describe("MoonBit module boundaries", () => {
   it("delegates SVG transform operations to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/transform.mbt"), "utf8");
     const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
 
+    expect(source.includes("pub(all) struct Transform")).toBe(true);
     expect(source.includes("@msvg.Transform::")).toBe(true);
     expect(source.includes("@msvg.Transform::matrix(")).toBe(true);
     expect(source.includes("@math.cos")).toBe(false);
@@ -2478,6 +2480,7 @@ describe("MoonBit module boundaries", () => {
     expect(source.includes("Matrix multiplication:")).toBe(false);
     expect(source.includes("  { a, b, c, d, e, f }")).toBe(false);
     expect(interopSource.includes("Transform::matrix(")).toBe(false);
+    expect(typesSource.includes("pub(all) struct Transform")).toBe(false);
   });
 
   it("delegates SVG scene node factories to mizchi/svg", () => {

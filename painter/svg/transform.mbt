@@ -3,6 +3,20 @@
 /// Optimized 2D affine transformation matrix operations
 
 ///|
+/// 2D affine transformation matrix
+/// | a c e |
+/// | b d f |
+/// | 0 0 1 |
+pub(all) struct Transform {
+  a : Double
+  b : Double
+  c : Double
+  d : Double
+  e : Double
+  f : Double
+}
+
+///|
 /// Identity transform (no transformation)
 pub fn Transform::identity() -> Transform {
   transform_from_msvg(@msvg.Transform::identity())
