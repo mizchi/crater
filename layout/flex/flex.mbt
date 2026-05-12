@@ -522,7 +522,7 @@ fn normalize_flattened_flex_text_items(
       Some(t) => t
       None => ""
     }
-    let trimmed = text.trim().to_string()
+    let trimmed = text.trim().to_owned()
     if trimmed.is_empty() {
       let prev_is_text = previous_significant_is_text(items, i)
       let next_is_text = next_significant_is_text(items, i)

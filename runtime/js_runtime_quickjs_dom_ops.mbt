@@ -149,7 +149,7 @@ fn parse_custom_states_value(value : String) -> Array[String] {
     return states
   }
   for part in value.split(" ") {
-    let state = part.trim().to_string()
+    let state = part.trim().to_owned()
     if !state.is_empty() {
       states.push(state)
     }

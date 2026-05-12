@@ -76,7 +76,7 @@ extern "js" fn call_external_image_intrinsic_provider(src : String) -> String =
 fn parse_csv_pair(payload : String) -> (Double, Double)? {
   let parts : Array[String] = payload
     .split(",")
-    .map(fn(s) { s.trim().to_string() })
+    .map(fn(s) { s.trim().to_owned() })
     .collect()
   if parts.length() != 2 {
     return None
@@ -91,7 +91,7 @@ fn parse_csv_pair(payload : String) -> (Double, Double)? {
 fn parse_csv_quad(payload : String) -> (Double, Double, Double, Double)? {
   let parts : Array[String] = payload
     .split(",")
-    .map(fn(s) { s.trim().to_string() })
+    .map(fn(s) { s.trim().to_owned() })
     .collect()
   if parts.length() != 4 {
     return None
