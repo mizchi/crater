@@ -3,56 +3,6 @@
 /// Inspired by ratatui's Buffer implementation
 
 ///|
-/// A single character cell in the terminal
-pub(all) struct CharCell {
-  char : Char // Display character
-  fg : @types.Color // Foreground color
-  bg : @types.Color // Background color
-  bold : Bool
-  underline : Bool
-  reverse : Bool // Inverse video (swap fg/bg)
-}
-
-///|
-/// Default cell (space with default colors)
-pub fn CharCell::default() -> CharCell {
-  {
-    char: ' ',
-    fg: @types.Color::white(),
-    bg: @types.Color::transparent(),
-    bold: false,
-    underline: false,
-    reverse: false,
-  }
-}
-
-///|
-/// Create a cell with just a character
-pub fn CharCell::from_char(c : Char) -> CharCell {
-  { ..CharCell::default(), char: c }
-}
-
-///|
-/// Create a cell with character and foreground color
-pub fn CharCell::styled(
-  c : Char,
-  fg : @types.Color,
-  bg : @types.Color,
-) -> CharCell {
-  { ..CharCell::default(), char: c, fg, bg }
-}
-
-///|
-pub impl Eq for CharCell with equal(self, other) {
-  self.char == other.char &&
-  self.fg == other.fg &&
-  self.bg == other.bg &&
-  self.bold == other.bold &&
-  self.underline == other.underline &&
-  self.reverse == other.reverse
-}
-
-///|
 /// Character-based framebuffer
 pub struct CharBuffer {
   width : Int // Width in character columns
@@ -135,31 +85,6 @@ pub fn CharBuffer::fill_bg(
 }
 
 ///|
-/// Get display width of a character (1 for narrow, 2 for wide)
-pub fn char_display_width(c : Char) -> Int {
-  @tui_buffer.char_display_width(c)
-}
-
-///|
-/// Text style for writing text
-pub(all) struct TextStyle {
-  fg : @types.Color
-  bg : @types.Color
-  bold : Bool
-  underline : Bool
-}
-
-///|
-pub fn TextStyle::default() -> TextStyle {
-  {
-    fg: @types.Color::white(),
-    bg: @types.Color::transparent(),
-    bold: false,
-    underline: false,
-  }
-}
-
-///|
 /// Get text content of a row (for testing)
 pub fn CharBuffer::get_row_text(self : CharBuffer, row : Int) -> String {
   if row < 0 || row >= self.height {
@@ -180,100 +105,6 @@ pub fn CharBuffer::get_row_text(self : CharBuffer, row : Int) -> String {
     }
   }
   buf.to_string().trim().to_string()
-}
-
-///|
-fn CharBuffer::styled_cell_at(
-  self : CharBuffer,
-  x : Int,
-  y : Int,
-  c : Char,
-  style : TextStyle,
-) -> CharCell {
-  let bg = if style.bg.is_transparent() {
-    self.get_cell(x, y).bg
-  } else {
-    style.bg
-  }
-  {
-    char: c,
-    fg: style.fg,
-    bg,
-    bold: style.bold,
-    underline: style.underline,
-    reverse: false,
-  }
-}
-
-///|
-fn CharBuffer::apply_text_write_plan(
-  self : CharBuffer,
-  plan : @tui_buffer.TextWritePlan,
-  style : TextStyle,
-) -> Unit {
-  for cell in plan.cells {
-    self.set_cell(
-      cell.x,
-      cell.y,
-      self.styled_cell_at(cell.x, cell.y, cell.char, style),
-    )
-  }
-}
-
-///|
-/// Write text at position with style
-/// Returns the number of columns written
-/// Note: If style.bg is transparent, preserves existing cell background
-pub fn CharBuffer::write_text(
-  self : CharBuffer,
-  x : Int,
-  y : Int,
-  text : String,
-  style : TextStyle,
-  max_width : Int,
-) -> Int {
-  let plan = @tui_buffer.plan_write_text(x, y, text, max_width)
-  self.apply_text_write_plan(plan, style)
-  plan.columns
-}
-
-///|
-/// Write preformatted text (for white-space: pre)
-/// Respects newlines but does NOT auto-wrap at word boundaries
-/// Returns the number of lines used
-/// Note: If style.bg is transparent, preserves existing cell background
-pub fn CharBuffer::write_text_pre(
-  self : CharBuffer,
-  x : Int,
-  y : Int,
-  text : String,
-  style : TextStyle,
-  max_width : Int,
-  max_height : Int,
-) -> Int {
-  let plan = @tui_buffer.plan_write_text_pre(x, y, text, max_width, max_height)
-  self.apply_text_write_plan(plan, style)
-  plan.lines
-}
-
-///|
-/// Write text with wrapping
-/// Returns the number of lines used
-/// Note: If style.bg is transparent, preserves existing cell background
-pub fn CharBuffer::write_text_wrapped(
-  self : CharBuffer,
-  x : Int,
-  y : Int,
-  text : String,
-  style : TextStyle,
-  max_width : Int,
-  max_height : Int,
-) -> Int {
-  let plan = @tui_buffer.plan_write_text_wrapped(
-    x, y, text, max_width, max_height,
-  )
-  self.apply_text_write_plan(plan, style)
-  plan.lines
 }
 
 ///|
