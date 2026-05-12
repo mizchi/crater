@@ -182,22 +182,22 @@ test "compute_inline contain-intrinsic-inline-size parses length" {
   let style = @computed.compute_inline(
     "contain-intrinsic-inline-size: 120px", ctx,
   )
-  inspect(style.contain_intrinsic_inline_size, content="Some(120)")
+  debug_inspect(style.contain_intrinsic_inline_size, content="Some(120)")
 }
 
 ///|
 test "compute_inline contain-intrinsic-size shorthand sets both axes" {
   let ctx = @computed.ComputeContext::new()
   let style = @computed.compute_inline("contain-intrinsic-size: 90px 45px", ctx)
-  inspect(style.contain_intrinsic_inline_size, content="Some(90)")
-  inspect(style.contain_intrinsic_block_size, content="Some(45)")
+  debug_inspect(style.contain_intrinsic_inline_size, content="Some(90)")
+  debug_inspect(style.contain_intrinsic_block_size, content="Some(45)")
 }
 
 ///|
 test "compute_inline columns shorthand parses count and width" {
   let ctx = @computed.ComputeContext::new()
   let style = @computed.compute_inline("columns: 2 40px; column-gap: 20px", ctx)
-  inspect(style.column_count, content="Some(2)")
+  debug_inspect(style.column_count, content="Some(2)")
   inspect(style.column_width, content="Length(40)")
   inspect(style.column_gap, content="Length(20)")
 }
@@ -283,7 +283,7 @@ test "compute_inline grid-area custom idents place to implicit second track" {
 test "compute_inline grid-area named area sets grid_area field" {
   let ctx = @computed.ComputeContext::new()
   let style = @computed.compute_inline("grid-area: header", ctx)
-  inspect(style.grid_area, content="Some(\"header\")")
+  debug_inspect(style.grid_area, content="Some(\"header\")")
   // Named area should not set grid line placements
   inspect(style.grid_row.start, content="Auto")
   inspect(style.grid_column.start, content="Auto")
@@ -306,23 +306,23 @@ test "compute_inline grid-template-areas parsed correctly" {
 test "compute_inline grid-area with slashes still parses as line numbers" {
   let ctx = @computed.ComputeContext::new()
   let style = @computed.compute_inline("grid-area: 2 / 1 / 3 / 4", ctx)
-  inspect(style.grid_area, content="None")
+  debug_inspect(style.grid_area, content="None")
   inspect(style.grid_row.start, content="Line(2)")
   inspect(style.grid_column.start, content="Line(1)")
 }
 
 ///|
 test "parse_aspect_ratio" {
-  inspect(@computed.parse_aspect_ratio("auto"), content="None")
-  inspect(
+  debug_inspect(@computed.parse_aspect_ratio("auto"), content="None")
+  debug_inspect(
     @computed.parse_aspect_ratio("16 / 9"),
     content="Some(1.7777777777777777)",
   )
-  inspect(
+  debug_inspect(
     @computed.parse_aspect_ratio("16/9"),
     content="Some(1.7777777777777777)",
   )
-  inspect(@computed.parse_aspect_ratio("1.5"), content="Some(1.5)")
+  debug_inspect(@computed.parse_aspect_ratio("1.5"), content="Some(1.5)")
 }
 
 ///|

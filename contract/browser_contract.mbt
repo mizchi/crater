@@ -209,7 +209,7 @@ pub fn extract_main_text(
 fn collect_node_text(node : @aom.AccessibilityNode) -> String {
   let buf = StringBuilder::new()
   collect_node_text_recursive(node, buf)
-  buf.to_string().trim().to_string()
+  buf.to_string().trim().to_owned()
 }
 
 ///|

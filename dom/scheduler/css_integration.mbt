@@ -81,17 +81,17 @@ fn parse_inline_declarations(style_text : String) -> Array[@css.Declaration] {
   // "property: value; property: value" 形式をパース
   let parts = split_by_semicolon(style_text)
   for part in parts {
-    let trimmed = part.trim().to_string()
+    let trimmed = part.trim().to_owned()
     if !trimmed.is_empty() {
       let colon_idx = find_colon(trimmed)
       if colon_idx >= 0 {
         let prop = trimmed.unsafe_substring(start=0, end=colon_idx)
-        let prop_trimmed = prop.trim().to_string()
+        let prop_trimmed = prop.trim().to_owned()
         let val = trimmed.unsafe_substring(
           start=colon_idx + 1,
           end=trimmed.length(),
         )
-        let val_trimmed = val.trim().to_string()
+        let val_trimmed = val.trim().to_owned()
         if !prop_trimmed.is_empty() && !val_trimmed.is_empty() {
           // !important チェック
           let (clean_val, importance) = if val_trimmed
@@ -101,7 +101,7 @@ fn parse_inline_declarations(style_text : String) -> Array[@css.Declaration] {
               start=0,
               end=val_trimmed.length() - 10,
             )
-            (clean.trim().to_string(), @css.Importance::Important)
+            (clean.trim().to_owned(), @css.Importance::Important)
           } else {
             (val_trimmed, @css.Importance::Normal)
           }

@@ -433,7 +433,7 @@ test "StyleManager compute style with element" {
 
   // Should have width from the rule
   inspect(cascaded.has("width"), content="true")
-  inspect(cascaded.get_value("width"), content="Some(\"100px\")")
+  debug_inspect(cascaded.get_value("width"), content="Some(\"100px\")")
 }
 
 ///|
@@ -496,7 +496,7 @@ test "html_element_to_selector converts element" {
   }
   let sel_elem = html_element_to_selector(html_elem)
   inspect(sel_elem.tag_name, content="div")
-  inspect(sel_elem.id, content="Some(\"myid\")")
+  debug_inspect(sel_elem.id, content="Some(\"myid\")")
   inspect(sel_elem.has_class("foo"), content="true")
   inspect(sel_elem.has_class("bar"), content="true")
 }

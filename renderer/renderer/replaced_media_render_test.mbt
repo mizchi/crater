@@ -28,7 +28,7 @@ test "intrinsic_percent_replaced_wpt_style" {
   // Verify canvas style: height is %, width is Auto, aspect_ratio from intrinsic
   inspect(canvas.style.height, content="Percent(1)")
   inspect(canvas.style.width, content="Auto")
-  inspect(canvas.style.aspect_ratio, content="Some(1)")
+  debug_inspect(canvas.style.aspect_ratio, content="Some(1)")
 
   // Compute layout
   @node.setup()
@@ -69,7 +69,7 @@ test "img_intrinsic_src_keeps_auto_size_for_flex_aspect_ratio_constraints" {
   let img = target.children[0]
   inspect(img.style.width, content="Auto")
   inspect(img.style.height, content="Auto")
-  inspect(img.style.aspect_ratio, content="Some(1)")
+  debug_inspect(img.style.aspect_ratio, content="Some(1)")
 
   let layout = @renderer.render(html_str, ctx)
   let target_layout = layout.children[0]
@@ -104,7 +104,7 @@ test "wpt_flex_aspect_ratio_img_column_012_like_min_height_does_not_set_base_siz
   let img_node = root.children[0].children[0]
   inspect(img_node.style.width, content="Auto")
   inspect(img_node.style.height, content="Auto")
-  inspect(img_node.style.aspect_ratio, content="Some(1)")
+  debug_inspect(img_node.style.aspect_ratio, content="Some(1)")
   let layout = @renderer.render(html_str, @renderer.RenderContext::default())
   let flex = layout.children[0]
   let img = flex.children[0]
@@ -129,7 +129,7 @@ test "wpt_flex_aspect_ratio_svg_column_018_like_transferred_max_width_caps_heigh
   )
   let flex = root.children[0]
   let svg = flex.children[0]
-  inspect(svg.style.aspect_ratio, content="Some(1)")
+  debug_inspect(svg.style.aspect_ratio, content="Some(1)")
 
   let layout = @renderer.render(html_str, @renderer.RenderContext::default())
   let flex_layout = layout.children[0]
@@ -153,7 +153,7 @@ test "wpt_flex_aspect_ratio_svg_row_015_like_transferred_max_height_caps_width" 
   )
   let flex = root.children[0]
   let svg = flex.children[0]
-  inspect(svg.style.aspect_ratio, content="Some(1)")
+  debug_inspect(svg.style.aspect_ratio, content="Some(1)")
 
   let layout = @renderer.render(html_str, @renderer.RenderContext::default())
   let svg_layout = layout.children[0].children[0]
@@ -700,7 +700,7 @@ test "contain_size_img_attr_ratio_keeps_auto_height" {
   let img_node = root.children[0]
   inspect(img_node.style.width, content="Length(100)")
   inspect(img_node.style.height, content="Auto")
-  inspect(img_node.style.aspect_ratio, content="Some(1)")
+  debug_inspect(img_node.style.aspect_ratio, content="Some(1)")
 
   let layout = @renderer.render(html_str, @renderer.RenderContext::default())
   let img_layout = layout.children[0]
@@ -742,7 +742,7 @@ test "parse_aspect_ratio_transferred_max_size_style" {
   let root = @renderer.render_to_node(html_str, ctx)
   let flex = root.children[0]
   let item = flex.children[0]
-  inspect(item.style.aspect_ratio, content="Some(0.5)")
+  debug_inspect(item.style.aspect_ratio, content="Some(0.5)")
   inspect(item.style.max_height, content="Length(100)")
   inspect(item.style.flex_grow, content="1")
   inspect(item.style.flex_shrink, content="1")
@@ -774,7 +774,7 @@ test "wpt_aspect_ratio_intrinsic_size_005_like" {
   inspect(target.style.height, content="Length(50)")
   inspect(flex.style.display, content="Flex")
   inspect(flex.style.height, content="Percent(1)")
-  inspect(ratio_item.style.aspect_ratio, content="Some(1)")
+  debug_inspect(ratio_item.style.aspect_ratio, content="Some(1)")
 
   @node.setup()
   let layout_ctx : @types.LayoutContext = {
@@ -1125,7 +1125,7 @@ test "img_alt_text_propagation" {
   match find_img_node(node) {
     Some(img) => {
       inspect(img.id, content="img")
-      inspect(img.text, content="Some(\"Alt text here\")")
+      debug_inspect(img.text, content="Some(\"Alt text here\")")
     }
     None => fail("No img node found!")
   }
@@ -1133,7 +1133,7 @@ test "img_alt_text_propagation" {
   match find_img_layout(layout) {
     Some(img) => {
       inspect(img.id, content="img")
-      inspect(img.text, content="Some(\"Alt text here\")")
+      debug_inspect(img.text, content="Some(\"Alt text here\")")
       inspect(img.width > 0.0, content="true")
       inspect(img.height > 0.0, content="true")
     }

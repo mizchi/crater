@@ -472,7 +472,7 @@ test "cached_fetch: no-cache forces revalidation even when entry exists" {
 ///|
 test "parse_cache_control: mixed case" {
   let d = parse_cache_control("Max-Age=600, No-Cache, Must-Revalidate")
-  inspect(d.max_age, content="Some(600)")
+  debug_inspect(d.max_age, content="Some(600)")
   inspect(d.no_cache, content="true")
   inspect(d.must_revalidate, content="true")
 }
@@ -480,7 +480,7 @@ test "parse_cache_control: mixed case" {
 ///|
 test "parse_cache_control: extra whitespace" {
   let d = parse_cache_control("  max-age=120  ,  no-store  ,  public  ")
-  inspect(d.max_age, content="Some(120)")
+  debug_inspect(d.max_age, content="Some(120)")
   inspect(d.no_store, content="true")
   inspect(d.public_, content="true")
 }
@@ -488,13 +488,13 @@ test "parse_cache_control: extra whitespace" {
 ///|
 test "parse_cache_control: invalid max-age value" {
   let d = parse_cache_control("max-age=abc")
-  inspect(d.max_age, content="None")
+  debug_inspect(d.max_age, content="None")
 }
 
 ///|
 test "parse_cache_control: max-age=0" {
   let d = parse_cache_control("max-age=0")
-  inspect(d.max_age, content="Some(0)")
+  debug_inspect(d.max_age, content="Some(0)")
 }
 
 ///|
@@ -502,7 +502,7 @@ test "parse_cache_control: unknown directives ignored" {
   let d = parse_cache_control(
     "max-age=300, stale-while-revalidate=60, s-maxage=600",
   )
-  inspect(d.max_age, content="Some(300)")
+  debug_inspect(d.max_age, content="Some(300)")
   // Unknown directives are silently ignored
   inspect(d.no_cache, content="false")
   inspect(d.no_store, content="false")
@@ -512,14 +512,14 @@ test "parse_cache_control: unknown directives ignored" {
 test "parse_cache_control: duplicate directives" {
   // Last one wins for max-age
   let d = parse_cache_control("max-age=100, max-age=200")
-  inspect(d.max_age, content="Some(200)")
+  debug_inspect(d.max_age, content="Some(200)")
 }
 
 ///|
 test "parse_cache_control: no-store and max-age combined" {
   // RFC 9111: no-store takes precedence
   let d = parse_cache_control("max-age=3600, no-store")
-  inspect(d.max_age, content="Some(3600)")
+  debug_inspect(d.max_age, content="Some(3600)")
   inspect(d.no_store, content="true")
   // is_fresh should return false because no_store
   let entry = make_entry(directives=d, stored_at=1000.0)
@@ -756,7 +756,7 @@ test "cache attack: 304 on no-store entry should not refresh" {
 /// Attack: Very large max-age should not cause integer overflow
 test "cache attack: very large max-age does not overflow" {
   let d = parse_cache_control("max-age=999999999")
-  inspect(d.max_age, content="Some(999999999)")
+  debug_inspect(d.max_age, content="Some(999999999)")
   let entry = make_entry(directives=d, stored_at=1000.0)
   // Should still be fresh after a million seconds
   inspect(is_fresh(entry, 1000000.0), content="true")
@@ -767,14 +767,14 @@ test "cache attack: very large max-age does not overflow" {
 test "cache attack: negative max-age is treated as invalid" {
   let d = parse_cache_control("max-age=-1")
   // parse_int_string rejects non-digit chars → None
-  inspect(d.max_age, content="None")
+  debug_inspect(d.max_age, content="None")
 }
 
 ///|
 /// Attack: max-age with decimal point
 test "cache attack: max-age with decimal is treated as invalid" {
   let d = parse_cache_control("max-age=300.5")
-  inspect(d.max_age, content="None")
+  debug_inspect(d.max_age, content="None")
 }
 
 // ============================================================
@@ -860,7 +860,7 @@ test "cache poisoning: CRLF in Cache-Control header value" {
   // But split by comma first, so "max-age=300\r\nX-Injected: evil" is one token
   // trimmed.has_prefix("max-age=") → true
   // value_str = "300\r\nx-injected: evil" → parse_int_string rejects (non-digit \r)
-  inspect(d.max_age, content="None")
+  debug_inspect(d.max_age, content="None")
   inspect(d.no_cache, content="false")
 }
 
@@ -871,7 +871,7 @@ test "cache poisoning: null byte in Cache-Control" {
   // \u0000 in the middle — should not silently truncate and parse max-age=300
   // Actually "max-age=300\u0000no-store" is one comma-separated token
   // trim → to_lower → has_prefix("max-age=") → value_str contains \u0000 → rejected
-  inspect(d.max_age, content="None")
+  debug_inspect(d.max_age, content="None")
 }
 
 ///|
@@ -1353,7 +1353,7 @@ test "boundary: headers_to_json preserves values" {
 /// Boundary: parse_cache_control with only whitespace
 test "boundary: parse_cache_control whitespace-only string" {
   let d = parse_cache_control("   ")
-  inspect(d.max_age, content="None")
+  debug_inspect(d.max_age, content="None")
   inspect(d.no_cache, content="false")
 }
 
@@ -1361,7 +1361,7 @@ test "boundary: parse_cache_control whitespace-only string" {
 /// Boundary: parse_cache_control with only commas
 test "boundary: parse_cache_control comma-only string" {
   let d = parse_cache_control(",,,")
-  inspect(d.max_age, content="None")
+  debug_inspect(d.max_age, content="None")
   inspect(d.no_store, content="false")
 }
 
@@ -1371,7 +1371,7 @@ test "boundary: parse_cache_control semicolons are not valid separators" {
   // RFC says comma-separated; semicolons should not split
   let d = parse_cache_control("max-age=300; no-store")
   // "max-age=300; no-store" is one token → value_str = "300; no-store" → invalid int
-  inspect(d.max_age, content="None")
+  debug_inspect(d.max_age, content="None")
   inspect(d.no_store, content="false")
 }
 
@@ -1460,7 +1460,7 @@ test "parse_cache_control: all directives combined" {
   inspect(d.no_store, content="true")
   inspect(d.must_revalidate, content="true")
   inspect(d.immutable, content="true")
-  inspect(d.max_age, content="Some(42)")
+  debug_inspect(d.max_age, content="Some(42)")
 }
 
 ///|

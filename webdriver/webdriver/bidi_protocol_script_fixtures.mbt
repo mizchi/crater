@@ -895,7 +895,7 @@ fn BidiProtocol::sync_document_cookies_for_test_context(
   if cookie_text.trim() != "" {
     for raw_entry in cookie_text.split(";") {
       if raw_entry.contains("=") {
-        self.remember_document_cookie(ctx_id, raw_entry.trim().to_string())
+        self.remember_document_cookie(ctx_id, raw_entry.trim().to_owned())
         cookie_count += 1
       }
     }

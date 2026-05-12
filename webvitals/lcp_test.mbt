@@ -18,7 +18,7 @@ test "LCPCandidate: text block is immediately rendered" {
     .with_resource_loaded(true)
     .with_render_time(100.0)
   inspect(text.is_rendered(), content="true")
-  inspect(text.get_lcp_time(), content="Some(100)")
+  debug_inspect(text.get_lcp_time(), content="Some(100)")
 }
 
 ///|
@@ -53,7 +53,7 @@ test "LCPCandidate: LCP time for images is max of render and load time" {
     .with_render_time(100.0)
     .with_load_time(150.0)
   // LCP time is max(100, 150) = 150
-  inspect(img.get_lcp_time(), content="Some(150)")
+  debug_inspect(img.get_lcp_time(), content="Some(150)")
   let img2 = LCPCandidate::new(
       "img2",
       Image(src="test2.png"),
@@ -66,7 +66,7 @@ test "LCPCandidate: LCP time for images is max of render and load time" {
     .with_render_time(200.0)
     .with_load_time(50.0)
   // LCP time is max(200, 50) = 200
-  inspect(img2.get_lcp_time(), content="Some(200)")
+  debug_inspect(img2.get_lcp_time(), content="Some(200)")
 }
 
 ///|

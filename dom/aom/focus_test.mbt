@@ -91,24 +91,24 @@ test "focus: FocusManager focus_next cycles through elements" {
 
   // Initially no focus
   inspect(manager.has_focus(), content="false")
-  inspect(manager.current_id(), content="None")
+  debug_inspect(manager.current_id(), content="None")
 
   // First Tab -> btn1
   let node1 = manager.focus_next()
   inspect(node1 is Some(_), content="true")
-  inspect(manager.current_id(), content="Some(\"btn1\")")
+  debug_inspect(manager.current_id(), content="Some(\"btn1\")")
 
   // Second Tab -> btn2
   let _ = manager.focus_next()
-  inspect(manager.current_id(), content="Some(\"btn2\")")
+  debug_inspect(manager.current_id(), content="Some(\"btn2\")")
 
   // Third Tab -> btn3
   let _ = manager.focus_next()
-  inspect(manager.current_id(), content="Some(\"btn3\")")
+  debug_inspect(manager.current_id(), content="Some(\"btn3\")")
 
   // Fourth Tab -> wraps to btn1
   let _ = manager.focus_next()
-  inspect(manager.current_id(), content="Some(\"btn1\")")
+  debug_inspect(manager.current_id(), content="Some(\"btn1\")")
 }
 
 ///|
@@ -125,19 +125,19 @@ test "focus: FocusManager focus_prev cycles backwards" {
 
   // Start from the end
   let _ = manager.focus_last()
-  inspect(manager.current_id(), content="Some(\"btn3\")")
+  debug_inspect(manager.current_id(), content="Some(\"btn3\")")
 
   // Shift+Tab -> btn2
   let _ = manager.focus_prev()
-  inspect(manager.current_id(), content="Some(\"btn2\")")
+  debug_inspect(manager.current_id(), content="Some(\"btn2\")")
 
   // Shift+Tab -> btn1
   let _ = manager.focus_prev()
-  inspect(manager.current_id(), content="Some(\"btn1\")")
+  debug_inspect(manager.current_id(), content="Some(\"btn1\")")
 
   // Shift+Tab -> wraps to btn3
   let _ = manager.focus_prev()
-  inspect(manager.current_id(), content="Some(\"btn3\")")
+  debug_inspect(manager.current_id(), content="Some(\"btn3\")")
 }
 
 ///|
@@ -155,13 +155,13 @@ test "focus: FocusManager focus_by_id" {
   // Focus btn2 directly
   let result = manager.focus_by_id("btn2")
   inspect(result, content="true")
-  inspect(manager.current_id(), content="Some(\"btn2\")")
+  debug_inspect(manager.current_id(), content="Some(\"btn2\")")
 
   // Try to focus non-existent
   let result2 = manager.focus_by_id("nonexistent")
   inspect(result2, content="false")
   // Focus should remain on btn2
-  inspect(manager.current_id(), content="Some(\"btn2\")")
+  debug_inspect(manager.current_id(), content="Some(\"btn2\")")
 }
 
 ///|
@@ -177,7 +177,7 @@ test "focus: FocusManager blur clears focus" {
   inspect(manager.has_focus(), content="true")
   manager.blur()
   inspect(manager.has_focus(), content="false")
-  inspect(manager.current_id(), content="None")
+  debug_inspect(manager.current_id(), content="None")
 }
 
 ///|

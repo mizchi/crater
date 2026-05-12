@@ -289,7 +289,10 @@ test "later font shorthand overrides earlier reset longhands in computed style" 
     [],
     None,
   )
-  inspect(cascaded.get_value("font"), content="Some(\"10px/1 monospace\")")
+  debug_inspect(
+    cascaded.get_value("font"),
+    content="Some(\"10px/1 monospace\")",
+  )
   let style = @css.compute_style(cascaded, @css.ComputeContext::new())
   inspect(style.font_size, content="10")
   inspect(style.line_height, content="10")

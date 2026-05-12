@@ -107,7 +107,7 @@ fn should_skip_navigation_text(
   if trimmed.length() > 40 {
     return false
   }
-  let lower = trimmed.to_lower().to_string()
+  let lower = trimmed.to_lower().to_owned()
   if !contains_any(lower, navigation_label_patterns()) {
     return false
   }

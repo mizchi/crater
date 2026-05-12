@@ -1341,7 +1341,7 @@ fn normalize_spaces(text : String) -> String {
       last_space = false
     }
   }
-  buf.to_string().trim().to_string()
+  buf.to_string().trim().to_owned()
 }
 
 ///|

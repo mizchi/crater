@@ -52,12 +52,19 @@ pub impl Show for MutationType with output(self, logger) {
 ///|
 pub impl Show for MutationRecord with output(self, logger) {
   logger.write_string("{type_: \{self.type_}, target: \{self.target}, ")
-  logger.write_string("added_nodes: \{self.added_nodes}, ")
-  logger.write_string("removed_nodes: \{self.removed_nodes}, ")
-  logger.write_string("attribute_name: \{self.attribute_name}, ")
-  logger.write_string("old_value: \{self.old_value}, ")
-  logger.write_string("new_value: \{self.new_value}, ")
-  logger.write_string("changed_properties: \{self.changed_properties}}")
+  logger.write_string("added_nodes: ")
+  logger.write_object(to_repr(self.added_nodes))
+  logger.write_string(", removed_nodes: ")
+  logger.write_object(to_repr(self.removed_nodes))
+  logger.write_string(", attribute_name: ")
+  logger.write_object(to_repr(self.attribute_name))
+  logger.write_string(", old_value: ")
+  logger.write_object(to_repr(self.old_value))
+  logger.write_string(", new_value: ")
+  logger.write_object(to_repr(self.new_value))
+  logger.write_string(", changed_properties: ")
+  logger.write_object(to_repr(self.changed_properties))
+  logger.write_string("}")
 }
 
 ///|

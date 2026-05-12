@@ -238,7 +238,7 @@ test "tui/measure_func" {
   // Width should be based on text measurement
   inspect(layout.width, content="13")
   inspect(layout.height, content="1")
-  inspect(layout.text, content="Some(\"Hello, World!\")")
+  debug_inspect(layout.text, content="Some(\"Hello, World!\")")
 }
 
 ///|
@@ -246,15 +246,15 @@ test "tui/measure_func" {
 test "tui/dimension_variants" {
   // Length
   let len : @types.Dimension = @types.Dimension::Length(100.0)
-  inspect(len.resolve(200.0), content="Some(100)")
+  debug_inspect(len.resolve(200.0), content="Some(100)")
 
   // Percent
   let pct : @types.Dimension = @types.Dimension::Percent(50.0)
-  inspect(pct.resolve(200.0), content="Some(10000)")
+  debug_inspect(pct.resolve(200.0), content="Some(10000)")
 
   // Auto
   let auto : @types.Dimension = @types.Auto
-  inspect(auto.resolve(200.0), content="None")
+  debug_inspect(auto.resolve(200.0), content="None")
 
   // is_definite
   assert_true(len.is_definite())

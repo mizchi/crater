@@ -2059,7 +2059,7 @@ fn flush_clip_path_path_token(
   tokens : Array[String],
   current : StringBuilder,
 ) -> Unit {
-  let token = current.to_string().trim().to_string()
+  let token = current.to_string().trim().to_owned()
   if !token.is_empty() {
     tokens.push(token)
     current.reset()
@@ -2719,7 +2719,7 @@ fn parse_transform_string(value : String) -> @style.Transform {
 
 ///|
 fn parse_rotate_degrees(value : String) -> Double {
-  let v = value.trim().to_string()
+  let v = value.trim().to_owned()
   if v.is_empty() {
     return 0.0
   }
@@ -2763,13 +2763,13 @@ fn parse_translate_value(value : String) -> @style.TranslateValue {
   }
   // Check for percentage
   if v.has_suffix("%") {
-    let num_str = v[:v.length() - 1].to_string()
+    let num_str = v[:v.length() - 1].to_owned()
     let n = @string.parse_double(num_str.trim()) catch {
       _ => return @style.TranslateValue::Length(0.0)
     }
     @style.TranslateValue::Percent(n / 100.0)
   } else if v.has_suffix("px") {
-    let num_str = v[:v.length() - 2].to_string()
+    let num_str = v[:v.length() - 2].to_owned()
     let n = @string.parse_double(num_str.trim()) catch {
       _ => return @style.TranslateValue::Length(0.0)
     }
@@ -2777,7 +2777,7 @@ fn parse_translate_value(value : String) -> @style.TranslateValue {
   } else if v.has_suffix("em") || v.has_suffix("rem") {
     // em/rem - convert to pixels assuming 16px base
     let suffix_len = if v.has_suffix("rem") { 3 } else { 2 }
-    let num_str = v[:v.length() - suffix_len].to_string()
+    let num_str = v[:v.length() - suffix_len].to_owned()
     let n = @string.parse_double(num_str.trim()) catch {
       _ => return @style.TranslateValue::Length(0.0)
     }

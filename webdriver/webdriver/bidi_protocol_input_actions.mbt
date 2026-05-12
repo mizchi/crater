@@ -2328,7 +2328,7 @@ fn BidiProtocol::try_handle_synthetic_file_dialog_eval(
   root_ownership : Bool,
   serialization_options_json : String,
 ) -> Bool {
-  let trimmed = expression.trim().to_string()
+  let trimmed = expression.trim().to_owned()
   if trimmed.has_prefix("window.showOpenFilePicker(") {
     self.emit_input_file_dialog_opened(
       ctx_id,

@@ -249,7 +249,7 @@ test "grouped_ruby_selector_applies_font_size_to_rt_and_rtc" {
   inspect(grouped_stylesheet.rules[3].declarations.length(), content="1")
   let rt_selector = @css.Element::new("rt")
   let cascaded = @css.cascade_element(rt_selector, [grouped_stylesheet], [])
-  inspect(cascaded.get_value("font-size"), content="Some(\"2em\")")
+  debug_inspect(cascaded.get_value("font-size"), content="Some(\"2em\")")
 
   let html_str =
     #|<!DOCTYPE html>
@@ -266,7 +266,10 @@ test "grouped_ruby_selector_applies_font_size_to_rt_and_rtc" {
     [extracted_stylesheet],
     [],
   )
-  inspect(cascaded_extracted.get_value("font-size"), content="Some(\"2em\")")
+  debug_inspect(
+    cascaded_extracted.get_value("font-size"),
+    content="Some(\"2em\")",
+  )
 
   let root = @renderer.render_to_node(
     html_str,

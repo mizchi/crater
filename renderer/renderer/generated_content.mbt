@@ -108,7 +108,7 @@ fn parse_counter_directives(
   value : String,
   default_amount : Int,
 ) -> Array[CounterDirective] {
-  let lowered = value.trim().to_lower().to_string()
+  let lowered = value.trim().to_lower().to_owned()
   if lowered.is_empty() || lowered == "none" {
     return []
   }
@@ -116,7 +116,7 @@ fn parse_counter_directives(
   let directives : Array[CounterDirective] = []
   let mut i = 0
   while i < tokens.length() {
-    let name = tokens[i].trim().to_string()
+    let name = tokens[i].trim().to_owned()
     i += 1
     if name.is_empty() {
       continue
@@ -403,7 +403,7 @@ fn resolve_pseudo_content_value(
                   start=comma_index + 1,
                   end=raw_args.length(),
                 )
-                match css_vars.get(name.trim().to_string()) {
+                match css_vars.get(name.trim().to_owned()) {
                   Some(found) =>
                     resolve_pseudo_content_value(
                       found, css_vars, element_attributes,
@@ -415,7 +415,7 @@ fn resolve_pseudo_content_value(
                 }
               }
               None => {
-                let name = raw_args.trim().to_string()
+                let name = raw_args.trim().to_owned()
                 match css_vars.get(name) {
                   Some(found) =>
                     resolve_pseudo_content_value(
@@ -446,7 +446,7 @@ fn resolve_pseudo_content_value(
 
 ///|
 fn parse_content_parts(value : String) -> Array[ContentPart]? {
-  let trimmed = value.trim().to_string()
+  let trimmed = value.trim().to_owned()
   if trimmed.is_empty() || trimmed == "none" || trimmed == "normal" {
     return None
   }
@@ -507,7 +507,7 @@ fn parse_content_parts(value : String) -> Array[ContentPart]? {
           let args = trimmed.unsafe_substring(start=arg_start, end=k)
           if ident_lower == "counter" {
             let name = first_token_or_empty(split_ascii_whitespace_tokens(args))
-            let name = name.trim().to_string()
+            let name = name.trim().to_owned()
             if !name.is_empty() {
               parts.push(Counter(name))
             }
@@ -521,17 +521,17 @@ fn parse_content_parts(value : String) -> Array[ContentPart]? {
                   end=args.length(),
                 )
                 let sep = match
-                  parse_css_quoted_string(raw_sep.trim().to_string(), 0) {
+                  parse_css_quoted_string(raw_sep.trim().to_owned(), 0) {
                   Some((s, _)) => s
-                  None => raw_sep.trim().to_string()
+                  None => raw_sep.trim().to_owned()
                 }
-                let counter_name = name.trim().to_string()
+                let counter_name = name.trim().to_owned()
                 if !counter_name.is_empty() {
                   parts.push(Counters(counter_name, sep))
                 }
               }
               None => {
-                let name = args.trim().to_string()
+                let name = args.trim().to_owned()
                 if !name.is_empty() {
                   parts.push(Counter(name))
                 }
@@ -576,7 +576,7 @@ fn parse_relative_left_offset(
   value : String,
   host_style : @style.Style,
 ) -> Double {
-  let trimmed = value.trim().to_lower().to_string()
+  let trimmed = value.trim().to_lower().to_owned()
   if trimmed.is_empty() {
     return 0.0
   }
@@ -611,7 +611,7 @@ fn selector_text_without_pseudo(
   selector_text : String,
   pseudo_kind : PseudoKind,
 ) -> String? {
-  let trimmed = selector_text.trim().to_string()
+  let trimmed = selector_text.trim().to_owned()
   let (double_suffix, single_suffix) = match pseudo_kind {
     Before => ("::before", ":before")
     After => ("::after", ":after")
@@ -620,7 +620,7 @@ fn selector_text_without_pseudo(
     let len = trimmed.length()
     let base_len = len - double_suffix.length()
     let base = trimmed.unsafe_substring(start=0, end=base_len)
-    let cleaned = base.trim().to_string()
+    let cleaned = base.trim().to_owned()
     if cleaned.is_empty() {
       None
     } else {
@@ -630,7 +630,7 @@ fn selector_text_without_pseudo(
     let len = trimmed.length()
     let base_len = len - single_suffix.length()
     let base = trimmed.unsafe_substring(start=0, end=base_len)
-    let cleaned = base.trim().to_string()
+    let cleaned = base.trim().to_owned()
     if cleaned.is_empty() {
       None
     } else {
@@ -888,10 +888,7 @@ fn resolve_pseudo_spec(
                     let resolved_value = resolve_pseudo_content_value(
                       v, pseudo_css_vars, element_attributes,
                     )
-                    let normalized = resolved_value
-                      .trim()
-                      .to_lower()
-                      .to_string()
+                    let normalized = resolved_value.trim().to_lower().to_owned()
                     if normalized == "none" || normalized == "normal" {
                       content_parts = None
                       content_disabled = true
@@ -1005,7 +1002,7 @@ fn resolve_pseudo_spec_fast(
               let resolved_value = resolve_pseudo_content_value(
                 v, pseudo_css_vars, element_attributes,
               )
-              let normalized = resolved_value.trim().to_lower().to_string()
+              let normalized = resolved_value.trim().to_lower().to_owned()
               if normalized == "none" || normalized == "normal" {
                 content_parts = None
                 content_disabled = true

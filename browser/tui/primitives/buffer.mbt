@@ -104,7 +104,7 @@ pub fn CharBuffer::get_row_text(self : CharBuffer, row : Int) -> String {
       buf.write_char(' ')
     }
   }
-  buf.to_string().trim().to_string()
+  buf.to_string().trim().to_owned()
 }
 
 ///|

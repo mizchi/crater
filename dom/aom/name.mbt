@@ -98,7 +98,7 @@ fn compute_accessible_name_with_hidden_subtree_check(
   let name = compute_name_step(
     element, ctx, find_by_id, find_label_for_id, encapsulating_label, is_in_hidden_subtree,
   )
-  let trimmed = name.trim().to_string()
+  let trimmed = name.trim().to_owned()
   if trimmed.is_empty() {
     Option::None
   } else {
@@ -132,7 +132,7 @@ pub fn compute_accessible_description_with_label(
       let ctx = NameComputationContext::new().with_referencing(true)
       let parts : Array[String] = []
       for id in ids.split(" ") {
-        let id_str = id.to_string().trim().to_string()
+        let id_str = id.to_owned().trim().to_owned()
         if !id_str.is_empty() {
           match find_by_id(id_str) {
             Some(ref_elem) => {
@@ -227,7 +227,7 @@ fn compute_name_steps(
       let ref_ctx = ctx.with_referencing(true)
       let parts : Array[String] = []
       for id in ids.split(" ") {
-        let id_str = id.to_string().trim().to_string()
+        let id_str = id.to_owned().trim().to_owned()
         if !id_str.is_empty() {
           match find_by_id(id_str) {
             Some(ref_elem) => {
@@ -256,7 +256,7 @@ fn compute_name_steps(
 
   // Step 2B: aria-label
   match element.attributes.get("aria-label") {
-    Some(label) if !label.trim().is_empty() => return label.trim().to_string()
+    Some(label) if !label.trim().is_empty() => return label.trim().to_owned()
     _ => ()
   }
 
@@ -320,7 +320,7 @@ fn compute_name_steps_skip_labelledby(
 ) -> String {
   // Step 2B: aria-label (skip step 2A)
   match element.attributes.get("aria-label") {
-    Some(label) if !label.trim().is_empty() => return label.trim().to_string()
+    Some(label) if !label.trim().is_empty() => return label.trim().to_owned()
     _ => ()
   }
 
@@ -698,7 +698,7 @@ fn compute_text_content(
   match element.attributes.get("aria-owns") {
     Some(ids) =>
       for id in ids.split(" ") {
-        let id_str = id.to_string().trim().to_string()
+        let id_str = id.to_owned().trim().to_owned()
         if !id_str.is_empty() {
           match find_by_id(id_str) {
             Some(owned_elem) => {
@@ -791,7 +791,7 @@ fn compute_text_content_recursive(
           match child_elem.attributes.get("aria-label") {
             Some(label) if !label.trim().is_empty() => {
               ensure_space_separator(buf)
-              buf.write_string(label.trim().to_string())
+              buf.write_string(label.trim().to_owned())
               continue
             }
             _ => ()
@@ -1041,12 +1041,12 @@ fn get_text_transform(element : @html.Element) -> String {
         // Parse text-transform value from style string
         // e.g. "text-transform:uppercase;" or "text-transform: uppercase"
         for part in style.split(";") {
-          let part_str = part.to_string().trim().to_string()
+          let part_str = part.to_owned().trim().to_owned()
           let part_lower = part_str.to_lower()
           if part_lower.contains("text-transform") {
             match part_str.split(":").collect().get(1) {
               Some(value) =>
-                return value.to_string().trim().to_string().to_lower()
+                return value.to_owned().trim().to_owned().to_lower()
               None => ()
             }
           }

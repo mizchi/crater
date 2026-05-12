@@ -5,7 +5,7 @@ test "parse simple media type - screen" {
   let q = mq.queries[0]
   inspect(q.negated, content="false")
   inspect(q.only, content="false")
-  inspect(q.media_type, content="Some(Screen)")
+  debug_inspect(q.media_type, content="Some(Screen)")
   inspect(q.conditions.length(), content="0")
 }
 
@@ -14,7 +14,7 @@ test "parse simple media type - print" {
   let mq = parse_media_query_list("print")
   inspect(mq.queries.length(), content="1")
   let q = mq.queries[0]
-  inspect(q.media_type, content="Some(Print)")
+  debug_inspect(q.media_type, content="Some(Print)")
 }
 
 ///|
@@ -22,7 +22,7 @@ test "parse simple media type - all" {
   let mq = parse_media_query_list("all")
   inspect(mq.queries.length(), content="1")
   let q = mq.queries[0]
-  inspect(q.media_type, content="Some(All)")
+  debug_inspect(q.media_type, content="Some(All)")
 }
 
 ///|
@@ -31,7 +31,7 @@ test "parse not modifier" {
   inspect(mq.queries.length(), content="1")
   let q = mq.queries[0]
   inspect(q.negated, content="true")
-  inspect(q.media_type, content="Some(Screen)")
+  debug_inspect(q.media_type, content="Some(Screen)")
 }
 
 ///|
@@ -40,7 +40,7 @@ test "parse only modifier" {
   inspect(mq.queries.length(), content="1")
   let q = mq.queries[0]
   inspect(q.only, content="true")
-  inspect(q.media_type, content="Some(Screen)")
+  debug_inspect(q.media_type, content="Some(Screen)")
 }
 
 ///|
@@ -66,7 +66,7 @@ test "parse screen and min-width" {
   let mq = parse_media_query_list("screen and (min-width: 768px)")
   inspect(mq.queries.length(), content="1")
   let q = mq.queries[0]
-  inspect(q.media_type, content="Some(Screen)")
+  debug_inspect(q.media_type, content="Some(Screen)")
   inspect(q.conditions.length(), content="1")
   inspect(q.conditions[0], content="MinWidth(Dimension(768, \"px\"))")
 }
@@ -78,7 +78,7 @@ test "parse multiple conditions" {
   )
   inspect(mq.queries.length(), content="1")
   let q = mq.queries[0]
-  inspect(q.media_type, content="Some(Screen)")
+  debug_inspect(q.media_type, content="Some(Screen)")
   inspect(q.conditions.length(), content="2")
   inspect(q.conditions[0], content="MinWidth(Dimension(768, \"px\"))")
   inspect(q.conditions[1], content="MaxWidth(Dimension(1024, \"px\"))")
@@ -88,8 +88,8 @@ test "parse multiple conditions" {
 test "parse comma-separated queries" {
   let mq = parse_media_query_list("screen, print")
   inspect(mq.queries.length(), content="2")
-  inspect(mq.queries[0].media_type, content="Some(Screen)")
-  inspect(mq.queries[1].media_type, content="Some(Print)")
+  debug_inspect(mq.queries[0].media_type, content="Some(Screen)")
+  debug_inspect(mq.queries[1].media_type, content="Some(Print)")
 }
 
 ///|
@@ -99,10 +99,10 @@ test "parse complex comma-separated queries" {
   )
   inspect(mq.queries.length(), content="2")
   let q0 = mq.queries[0]
-  inspect(q0.media_type, content="Some(Screen)")
+  debug_inspect(q0.media_type, content="Some(Screen)")
   inspect(q0.conditions.length(), content="1")
   let q1 = mq.queries[1]
-  inspect(q1.media_type, content="Some(Print)")
+  debug_inspect(q1.media_type, content="Some(Print)")
   inspect(q1.conditions.length(), content="1")
 }
 
@@ -261,7 +261,7 @@ test "parse only screen with features" {
   inspect(mq.queries.length(), content="1")
   let q = mq.queries[0]
   inspect(q.only, content="true")
-  inspect(q.media_type, content="Some(Screen)")
+  debug_inspect(q.media_type, content="Some(Screen)")
   inspect(q.conditions.length(), content="1")
 }
 
@@ -271,7 +271,7 @@ test "parse not print with features" {
   inspect(mq.queries.length(), content="1")
   let q = mq.queries[0]
   inspect(q.negated, content="true")
-  inspect(q.media_type, content="Some(Print)")
+  debug_inspect(q.media_type, content="Some(Print)")
   inspect(q.conditions.length(), content="1")
   inspect(q.conditions[0], content="Monochrome")
 }
@@ -329,6 +329,6 @@ test "MediaQuery default" {
   let q = MediaQuery::default()
   inspect(q.negated, content="false")
   inspect(q.only, content="false")
-  inspect(q.media_type, content="None")
+  debug_inspect(q.media_type, content="None")
   inspect(q.conditions.length(), content="0")
 }

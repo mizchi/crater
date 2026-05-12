@@ -26,7 +26,7 @@ pub fn CacheDirectives::default() -> CacheDirectives {
 ///|
 pub impl Show for CacheDirectives with output(self, logger) {
   logger.write_string("{max_age: ")
-  self.max_age.output(logger)
+  logger.write_object(to_repr(self.max_age))
   logger.write_string(", no_cache: ")
   self.no_cache.output(logger)
   logger.write_string(", no_store: ")
@@ -54,7 +54,7 @@ pub fn parse_cache_control(header : String) -> CacheDirectives {
   let mut immutable = false
   let parts = header.split(",")
   for part in parts {
-    let trimmed = part.trim(chars=" ").to_string().to_lower()
+    let trimmed = part.trim(chars=" ").to_owned().to_lower()
     if trimmed == "no-cache" {
       no_cache = true
     } else if trimmed == "no-store" {
@@ -68,7 +68,7 @@ pub fn parse_cache_control(header : String) -> CacheDirectives {
     } else if trimmed == "immutable" {
       immutable = true
     } else if trimmed.has_prefix("max-age=") {
-      let value_str = trimmed[8:].to_string()
+      let value_str = trimmed[8:].to_owned()
       max_age = parse_int_string(value_str)
     }
   }

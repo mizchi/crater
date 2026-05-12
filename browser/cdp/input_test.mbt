@@ -23,7 +23,7 @@ test "Input.dispatchMouseEvent focuses deepest hit element" {
 
   match tree.get_focus() {
     Some(node) =>
-      inspect(
+      debug_inspect(
         tree.get_attribute(node, "id").unwrap(),
         content="Some(\"field\")",
       )
@@ -48,7 +48,7 @@ test "Input.insertText uses focus from mouse hit testing" {
   let _ = input.dispatch_mouse_event("mouseReleased", 20.0, 20.0, "left", 1)
   let _ = input.insert_text("Hello CDP")
 
-  inspect(
+  debug_inspect(
     tree.get_attribute(@dom.NodeId::from_int(field_id), "value").unwrap(),
     content="Some(\"Hello CDP\")",
   )

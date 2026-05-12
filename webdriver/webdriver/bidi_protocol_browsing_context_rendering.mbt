@@ -1019,7 +1019,7 @@ fn BidiProtocol::resolve_print_data(
 ///|
 /// Validate a single print page-range token.
 fn is_valid_print_page_range(raw : String) -> Bool {
-  let value = raw.trim().to_string()
+  let value = raw.trim().to_owned()
   if value.length() == 0 {
     return false
   }
@@ -1078,7 +1078,7 @@ fn is_valid_locate_nodes_locator_type(locator_type : String) -> Bool {
 ///|
 /// Convert a small XPath subset used by WPT locateNodes tests to CSS.
 fn xpath_to_css_selector(xpath : String) -> String? {
-  let trimmed = xpath.trim().to_string()
+  let trimmed = xpath.trim().to_owned()
   if trimmed == ".//*[name()='circle']" {
     return Some("circle")
   }
@@ -1137,7 +1137,7 @@ fn xpath_to_css_selector(xpath : String) -> String? {
           Some(
             selector_tag +
             "[" +
-            attr_name.trim().to_string() +
+            attr_name.trim().to_owned() +
             "=\"" +
             attr_value +
             "\"]",

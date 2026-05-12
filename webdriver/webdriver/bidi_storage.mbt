@@ -393,7 +393,7 @@ fn BidiProtocol::normalize_storage_cookie_filter(
       match map.get("domain") {
         Some(String(value)) =>
           domain = Some(
-            storage_strip_leading_dot(value.trim().to_string().to_lower()),
+            storage_strip_leading_dot(value.trim().to_owned().to_lower()),
           )
         Some(Null) | None => ()
         Some(_) => {
@@ -538,7 +538,7 @@ fn BidiProtocol::normalize_storage_cookie_input(
 
   let domain = match map.get("domain") {
     Some(String(value)) =>
-      storage_strip_leading_dot(value.trim().to_string().to_lower())
+      storage_strip_leading_dot(value.trim().to_owned().to_lower())
     _ => {
       self.send_error(
         request_id, "invalid argument", "cookie.domain must be a string",
@@ -1003,7 +1003,7 @@ fn storage_extract_url_fragment_param(url : String, key : String) -> String? {
       }
       let fragment = url.unsafe_substring(start~, end=url.length())
       for part in fragment.split("&") {
-        let raw = part.to_string()
+        let raw = part.to_owned()
         if raw.length() == 0 {
           continue
         }
@@ -1663,7 +1663,7 @@ fn BidiProtocol::remember_document_cookie(
 ) -> Unit {
   let parts : Array[String] = []
   for part in cookie_assignment.split(";") {
-    parts.push(part.to_string().trim().to_string())
+    parts.push(part.to_owned().trim().to_owned())
   }
   if parts.length() == 0 {
     return
@@ -1691,15 +1691,15 @@ fn BidiProtocol::remember_document_cookie(
           Some(attr_eq_idx) => {
             let attr_name = storage_slice(raw_attr, 0, attr_eq_idx)
               .trim()
-              .to_string()
+              .to_owned()
               .to_lower()
             let attr_value_start = attr_eq_idx + 1
             let attr_value = storage_slice_from(raw_attr, attr_value_start)
               .trim()
-              .to_string()
+              .to_owned()
             if attr_name == "domain" {
               let normalized_domain = storage_strip_leading_dot(
-                attr_value.trim().to_string().to_lower(),
+                attr_value.trim().to_owned().to_lower(),
               )
               if normalized_domain.length() > 0 {
                 domain = normalized_domain
@@ -1727,7 +1727,7 @@ fn BidiProtocol::remember_document_cookie(
             }
           }
           None => {
-            let attr_name = raw_attr.trim().to_string().to_lower()
+            let attr_name = raw_attr.trim().to_owned().to_lower()
             if attr_name == "secure" {
               secure = true
             } else if attr_name == "httponly" {
@@ -1740,8 +1740,8 @@ fn BidiProtocol::remember_document_cookie(
       let user_context = self.resolve_storage_user_context(ctx_id)
       let source_origin = storage_cookie_origin_from_base_url(base_url)
       let cookie : StoredCookie = {
-        name: name.trim().to_string(),
-        value_text: value.trim().to_string(),
+        name: name.trim().to_owned(),
+        value_text: value.trim().to_owned(),
         domain,
         domain_explicit,
         path,
@@ -1776,7 +1776,7 @@ fn BidiProtocol::remember_document_cookie(
 
 ///|
 fn extract_document_cookie_assignment(expression : String) -> String? {
-  let trimmed = expression.trim().to_string()
+  let trimmed = expression.trim().to_owned()
   if !trimmed.has_prefix("document.cookie") {
     return None
   }
@@ -1819,7 +1819,7 @@ fn BidiProtocol::try_handle_synthetic_window_location_href_eval(
   expression : String,
   unwrap_result : Bool,
 ) -> Bool {
-  let expr = expression.trim().to_string()
+  let expr = expression.trim().to_owned()
   if expr != "window.location.href" {
     return false
   }
@@ -1851,7 +1851,7 @@ fn BidiProtocol::try_handle_synthetic_document_cookie_eval(
   expression : String,
   unwrap_result : Bool,
 ) -> Bool {
-  let expr = expression.trim().to_string()
+  let expr = expression.trim().to_owned()
   if expr == "document.cookie" {
     let value = self.resolve_document_cookie(ctx_id).unwrap_or("")
     self.send_script_remote_value_response(

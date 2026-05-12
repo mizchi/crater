@@ -26,7 +26,7 @@ async test "Browser sync_render_state_from_dom_tree renders shadow root composed
     #|  return host.shadowRoot.firstChild.textContent;
     #|})()
   let result = browser.execute_inline_js(code)
-  inspect(result, content="Some(\"shadow-text\")")
+  debug_inspect(result, content="Some(\"shadow-text\")")
 
   let _ = browser.sync_render_state_from_dom_tree()
   let rendered = browser.render_output(Text)
@@ -65,7 +65,7 @@ async test "Browser sync_render_state_from_dom_tree keeps serializable shadow sn
     #|  return host.shadowRoot === null ? 'closed' : 'open';
     #|})()
   let result = browser.execute_inline_js(code)
-  inspect(result, content="Some(\"closed\")")
+  debug_inspect(result, content="Some(\"closed\")")
 
   let _ = browser.sync_render_state_from_dom_tree()
   assert_true(browser.html_content.contains("shadow-action"))
@@ -197,7 +197,7 @@ test "Browser set_html_content rebuilds link cache from normalized shadow conten
 
   inspect(browser.get_link_count(), content="1")
   inspect(browser.get_focused_link_index(), content="0")
-  inspect(browser.get_focused_link_url(), content="Some(\"/shadow\")")
+  debug_inspect(browser.get_focused_link_url(), content="Some(\"/shadow\")")
 }
 
 ///|
@@ -221,7 +221,7 @@ test "Browser render_output exposes only shadow link regions and hints from init
   assert_false(rendered.contains("light link"))
   inspect(browser.link_regions.length(), content="1")
   inspect(browser.link_regions[0].text, content="shadow link")
-  inspect(
+  debug_inspect(
     browser.get_link_at(
       browser.link_regions[0].col,
       browser.link_regions[0].row,
@@ -233,7 +233,7 @@ test "Browser render_output exposes only shadow link regions and hints from init
   inspect(browser.is_hint_mode(), content="true")
   inspect(browser.hints.length(), content="1")
   inspect(browser.hints[0].text, content="shadow link")
-  inspect(
+  debug_inspect(
     browser.process_hint_char(browser.hints[0].label),
     content="Some(\"data:text/html,%3Cp%20id%3D%22after%22%3Eshadow-done%3C/p%3E\")",
   )
@@ -300,9 +300,9 @@ test "Browser init_js_execution preserves declarative shadow DOM from source HTM
     "document.querySelector('#light-btn') !== null ? 'yes' : 'no'",
   )
 
-  inspect(host_has_open_shadow, content="Some(\"yes\")")
-  inspect(shadow_visible, content="Some(\"yes\")")
-  inspect(light_visible, content="Some(\"yes\")")
+  debug_inspect(host_has_open_shadow, content="Some(\"yes\")")
+  debug_inspect(shadow_visible, content="Some(\"yes\")")
+  debug_inspect(light_visible, content="Some(\"yes\")")
 }
 
 ///|
@@ -355,7 +355,7 @@ test "Browser shadow link hints resolve duplicate visible link text by source id
   let _ = browser.render_output(Text)
   inspect(browser.link_regions.length(), content="2")
   let shadow_region = link_region_of_source_id(browser, "shadow-link")
-  inspect(
+  debug_inspect(
     browser.get_link_at(shadow_region.col, shadow_region.row),
     content="Some(\"/shadow\")",
   )
@@ -416,7 +416,7 @@ async test "Browser activate_focused_link keeps shadow href for duplicate visibl
   browser.next_link()
   browser.next_link()
 
-  inspect(
+  debug_inspect(
     browser.get_focused_link_url(),
     content="Some(\"data:text/html,%3Cp%20id%3D%22after%22%3Eshadow-done%3C/p%3E\")",
   )
@@ -457,7 +457,7 @@ async test "Browser sync_render_state_from_dom_tree renders distributed slot con
     #|  return shadow.textContent.replace(/\s+/g, ' ').trim();
     #|})()
   let result = browser.execute_inline_js(code)
-  inspect(result, content="Some(\"fallback\")")
+  debug_inspect(result, content="Some(\"fallback\")")
 
   let _ = browser.sync_render_state_from_dom_tree()
   assert_true(browser.html_content.contains("plain-text"))
@@ -500,7 +500,7 @@ async test "Browser sync_render_state_from_dom_tree updates slot reassignment" {
     #|  ].join('|');
     #|})()
   let result = browser.execute_inline_js(code)
-  inspect(result, content="Some(\"1|0\")")
+  debug_inspect(result, content="Some(\"1|0\")")
 
   let _ = browser.sync_render_state_from_dom_tree()
   let rendered = browser.render_output(Text)
@@ -534,7 +534,7 @@ async test "Browser sync_render_state_from_dom_tree builds accessibility tree fr
     #|  return shadow.firstChild.id;
     #|})()
   let result = browser.execute_inline_js(code)
-  inspect(result, content="Some(\"shadow-btn\")")
+  debug_inspect(result, content="Some(\"shadow-btn\")")
 
   let _ = browser.sync_render_state_from_dom_tree()
   match browser.a11y_tree {
@@ -579,7 +579,7 @@ async test "Browser sync_render_state_from_dom_tree builds accessibility tree fr
     #|  return shadow.textContent.replace(/\s+/g, ' ').trim();
     #|})()
   let result = browser.execute_inline_js(code)
-  inspect(result, content="Some(\"fallback action\")")
+  debug_inspect(result, content="Some(\"fallback action\")")
 
   let _ = browser.sync_render_state_from_dom_tree()
   match browser.a11y_tree {

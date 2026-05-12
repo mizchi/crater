@@ -243,7 +243,7 @@ fn BidiProtocol::try_handle_synthetic_user_agent_fetch_eval(
   expression : String,
   unwrap_result : Bool,
 ) -> Bool {
-  let expr = expression.trim().to_string()
+  let expr = expression.trim().to_owned()
   if !expr.has_prefix("fetch(") || !expr.contains(".text()") {
     return false
   }
@@ -282,7 +282,7 @@ fn BidiProtocol::try_handle_synthetic_locale_eval(
   expression : String,
   unwrap_result : Bool,
 ) -> Bool {
-  let expr = expression.trim().to_string()
+  let expr = expression.trim().to_owned()
   if expr == "navigator.language" {
     self.send_script_remote_value_response(
       request_id,
@@ -337,7 +337,7 @@ fn BidiProtocol::try_handle_synthetic_timezone_eval(
   expression : String,
   unwrap_result : Bool,
 ) -> Bool {
-  let expr = expression.trim().to_string()
+  let expr = expression.trim().to_owned()
   if expr == "Intl.DateTimeFormat().resolvedOptions().timeZone" {
     self.send_script_remote_value_response(
       request_id,

@@ -76,7 +76,7 @@ test "pseudo_content_var_from_root_custom_properties_renders_text" {
   }
   let generated = host.children[0]
   inspect(generated.id, content="#text")
-  inspect(generated.text, content="Some(\"hello there\")")
+  debug_inspect(generated.text, content="Some(\"hello there\")")
   let layout = @renderer.render(html_str, @renderer.RenderContext::default())
   let p = layout.children[0]
   inspect(
@@ -109,7 +109,7 @@ test "pseudo_content_var_can_expand_attr_based_custom_property" {
   }
   let generated = host.children[0]
   inspect(generated.id, content="#text")
-  inspect(generated.text, content="Some(\"PASS\")")
+  debug_inspect(generated.text, content="Some(\"PASS\")")
   let layout = @renderer.render(html_str, @renderer.RenderContext::default())
   inspect(
     layout.children[0].height,

@@ -16,7 +16,7 @@ test "dom facade parses html and builds accessibility tree" {
 
   inspect(document.root.tag, content="html")
   inspect(buttons.length(), content="1")
-  inspect(buttons[0].name, content="Some(\"Save\")")
+  debug_inspect(buttons[0].name, content="Some(\"Save\")")
 }
 
 ///|

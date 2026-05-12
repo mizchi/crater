@@ -190,7 +190,7 @@ fn try_parse_double(s : String) -> Double? {
 
 ///|
 fn parse_dimension(value : String) -> @types.Dimension? {
-  let v = value.trim().to_string()
+  let v = value.trim().to_owned()
   if v == "auto" {
     return Some(@types.Auto)
   }
@@ -216,7 +216,7 @@ fn parse_dimension(value : String) -> @types.Dimension? {
 
 ///|
 fn parse_display(value : String) -> @types.Display? {
-  match value.trim().to_string() {
+  match value.trim().to_owned() {
     "block" => Some(@types.Block)
     "flex" => Some(@types.Flex)
     "inline-flex" => Some(@types.InlineFlex)
@@ -229,7 +229,7 @@ fn parse_display(value : String) -> @types.Display? {
 
 ///|
 fn parse_flex_direction(value : String) -> @types.FlexDirection? {
-  match value.trim().to_string() {
+  match value.trim().to_owned() {
     "row" => Some(@types.Row)
     "row-reverse" => Some(@types.RowReverse)
     "column" => Some(@types.Column)
@@ -240,7 +240,7 @@ fn parse_flex_direction(value : String) -> @types.FlexDirection? {
 
 ///|
 fn parse_flex_wrap(value : String) -> @types.FlexWrap? {
-  match value.trim().to_string() {
+  match value.trim().to_owned() {
     "nowrap" => Some(@types.NoWrap)
     "wrap" => Some(@types.Wrap)
     "wrap-reverse" => Some(@types.WrapReverse)
@@ -250,7 +250,7 @@ fn parse_flex_wrap(value : String) -> @types.FlexWrap? {
 
 ///|
 fn parse_alignment(value : String) -> @types.Alignment? {
-  match value.trim().to_string() {
+  match value.trim().to_owned() {
     "flex-start" | "start" => Some(@types.FlexStart)
     "flex-end" | "end" => Some(@types.FlexEnd)
     "center" => Some(@types.Center)

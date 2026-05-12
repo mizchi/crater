@@ -38,12 +38,12 @@ fn should_use_viewport_skeleton() -> Bool {
 
 ///|
 fn parse_skeleton_px_length(value : String) -> Double? {
-  let lower = value.trim().to_string().to_lower()
+  let lower = value.trim().to_owned().to_lower()
   if lower.is_empty() || lower == "auto" {
     return None
   }
   let raw = if lower.has_suffix("px") {
-    lower.unsafe_substring(start=0, end=lower.length() - 2).trim().to_string()
+    lower.unsafe_substring(start=0, end=lower.length() - 2).trim().to_owned()
   } else {
     lower
   }

@@ -48,9 +48,9 @@ pub impl Show for ParsedCookie with output(self, logger) {
   logger.write_string(", same_site: ")
   self.same_site.output(logger)
   logger.write_string(", max_age: ")
-  self.max_age.output(logger)
+  logger.write_object(to_repr(self.max_age))
   logger.write_string(", expires: ")
-  self.expires.output(logger)
+  logger.write_object(to_repr(self.expires))
   logger.write_string("}")
 }
 
@@ -80,14 +80,14 @@ pub fn parse_set_cookie(
   let mut domain_set = false
   let mut path_set = false
   for part in parts {
-    let trimmed = part.trim(chars=" ").to_string()
+    let trimmed = part.trim(chars=" ").to_owned()
     if first {
       first = false
       // name=value pair
       match trimmed.find("=") {
         Some(eq_idx) => {
-          name = trimmed[:eq_idx].trim().to_string()
-          value = trimmed[eq_idx + 1:].trim().to_string()
+          name = trimmed[:eq_idx].trim().to_owned()
+          value = trimmed[eq_idx + 1:].trim().to_owned()
         }
         None =>
           // Cookie with no value
@@ -106,20 +106,20 @@ pub fn parse_set_cookie(
     } else if lower == "httponly" {
       http_only = true
     } else if lower.has_prefix("domain=") {
-      let d = trimmed[7:].trim().to_string().to_lower()
+      let d = trimmed[7:].trim().to_owned().to_lower()
       // Strip leading dot (RFC 6265 §5.2.3)
-      domain = if d.has_prefix(".") { d[1:].to_string() } else { d }
+      domain = if d.has_prefix(".") { d[1:].to_owned() } else { d }
       domain_set = true
     } else if lower.has_prefix("path=") {
-      path = trimmed[5:].trim().to_string()
+      path = trimmed[5:].trim().to_owned()
       path_set = true
     } else if lower.has_prefix("max-age=") {
-      let val = trimmed[8:].trim().to_string()
+      let val = trimmed[8:].trim().to_owned()
       max_age = parse_cookie_int(val)
     } else if lower.has_prefix("expires=") {
-      expires = Some(trimmed[8:].trim().to_string())
+      expires = Some(trimmed[8:].trim().to_owned())
     } else if lower.has_prefix("samesite=") {
-      same_site = trimmed[9:].trim().to_string().to_lower()
+      same_site = trimmed[9:].trim().to_owned().to_lower()
     }
   }
   // Default domain to request domain if not set
@@ -167,7 +167,7 @@ fn cookie_default_path(request_path : String) -> String {
   if last_slash == 0 {
     "/"
   } else {
-    request_path[:last_slash].to_string()
+    request_path[:last_slash].to_owned()
   }
 }
 
@@ -371,7 +371,7 @@ fn cookie_registrable_domain(domain : String) -> String {
     return domain
   }
   // Two+ dots → take from second_last_dot+1
-  domain[second_last_dot + 1:].to_string()
+  domain[second_last_dot + 1:].to_owned()
 }
 
 ///|
@@ -444,15 +444,15 @@ fn cookie_path_matches(request_path : String, cookie_path : String) -> Bool {
 fn cookie_extract_domain(url : String) -> String {
   match url.find("://") {
     Some(i) => {
-      let after = url[i + 3:].to_string()
+      let after = url[i + 3:].to_owned()
       let end = match after.find("/") {
         Some(j) => j
         None => after.length()
       }
-      let host_port = after[:end].to_string()
+      let host_port = after[:end].to_owned()
       // Remove port
       match host_port.find(":") {
-        Some(j) => host_port[:j].to_string().to_lower()
+        Some(j) => host_port[:j].to_owned().to_lower()
         None => host_port.to_lower()
       }
     }
@@ -465,9 +465,9 @@ fn cookie_extract_domain(url : String) -> String {
 fn cookie_extract_path(url : String) -> String {
   match url.find("://") {
     Some(i) => {
-      let after = url[i + 3:].to_string()
+      let after = url[i + 3:].to_owned()
       match after.find("/") {
-        Some(j) => after[j:].to_string()
+        Some(j) => after[j:].to_owned()
         None => "/"
       }
     }

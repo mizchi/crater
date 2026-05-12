@@ -349,7 +349,11 @@ pub impl Show for NetworkResponse with output(self, logger) {
   logger.write_string("\"")
   logger.write_string(self.mime_type)
   logger.write_string("\"")
-  logger.write_string(", headers: \{self.headers}, body: \{self.body}, ")
+  logger.write_string(", headers: ")
+  logger.write_object(to_repr(self.headers))
+  logger.write_string(", body: ")
+  logger.write_object(to_repr(self.body))
+  logger.write_string(", ")
   logger.write_string(
     "content_length: \{self.content_length}, timestamp: \{self.timestamp}, ",
   )

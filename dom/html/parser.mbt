@@ -486,9 +486,9 @@ fn Parser::parse_element_inner(self : Parser) -> Element? {
           // Split by whitespace
           let class_parts = attr_value.split(" ")
           for part in class_parts {
-            let s = part.to_string().trim()
+            let s = part.to_owned().trim()
             if !s.is_empty() {
-              classes.push(s.to_string())
+              classes.push(s.to_owned())
             }
           }
         } else if attr_name == "style" {
@@ -937,7 +937,7 @@ fn extract_stylesheets(
 fn css_with_style_media(css : String, media : String?) -> String {
   match media {
     Some(raw_media) => {
-      let media_text = raw_media.trim().to_string()
+      let media_text = raw_media.trim().to_owned()
       let media_lower = media_text.to_lower()
       if media_text.is_empty() || media_lower == "all" {
         css

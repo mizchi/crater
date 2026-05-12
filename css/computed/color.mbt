@@ -59,7 +59,7 @@ pub impl Show for CssColorValue with output(self, logger) {
 fn resolve_color_var_fallback(value : String) -> String {
   let v = value.trim()
   if !v.has_prefix("var(") || !v.has_suffix(")") {
-    return v.to_string()
+    return v.to_owned()
   }
   // Extract content inside var(...)
   let inner = view_to_string(v.view(start_offset=4, end_offset=v.length() - 1))
@@ -83,10 +83,10 @@ fn resolve_color_var_fallback(value : String) -> String {
       .unsafe_substring(start=comma_pos + 1, end=inner.length())
       .trim()
     // Recursively resolve if fallback also contains var()
-    return resolve_color_var_fallback(fallback.to_string())
+    return resolve_color_var_fallback(fallback.to_owned())
   }
   // No fallback, return original
-  v.to_string()
+  v.to_owned()
 }
 
 ///|
@@ -94,7 +94,7 @@ fn resolve_color_var_fallback(value : String) -> String {
 pub fn parse_color(value : String) -> CssColorValue {
   // First resolve any var() functions
   let v = resolve_color_var_fallback(value).trim().to_lower()
-  parse_color_value(v.to_string())
+  parse_color_value(v.to_owned())
 }
 
 ///|
@@ -131,12 +131,12 @@ fn parse_color_value_with_ctx(
       None => ()
     }
   }
-  parse_color_value(v.to_string())
+  parse_color_value(v.to_owned())
 }
 
 ///|
 fn select_light_dark_arg(value : String, ctx : ComputeContext) -> String? {
-  let trimmed = value.trim().to_string()
+  let trimmed = value.trim().to_owned()
   let lower = trimmed.to_lower()
   if !lower.has_prefix("light-dark(") || !trimmed.has_suffix(")") {
     return None
@@ -329,7 +329,7 @@ fn parse_rgb_function(value : String) -> @types.Color? {
   let content = substr(value, start + 1, end).trim()
 
   // Split by comma or space
-  let parts = split_color_args(content.to_string())
+  let parts = split_color_args(content.to_owned())
   if parts.length() < 3 {
     return None
   }
@@ -353,7 +353,7 @@ fn split_color_args(s : String) -> Array[String] {
     if c == ',' || c == '/' || c == ' ' {
       let part = current.to_string().trim()
       if part.length() > 0 {
-        result.push(part.to_string())
+        result.push(part.to_owned())
       }
       current.reset()
     } else {
@@ -362,7 +362,7 @@ fn split_color_args(s : String) -> Array[String] {
   }
   let part = current.to_string().trim()
   if part.length() > 0 {
-    result.push(part.to_string())
+    result.push(part.to_owned())
   }
   result
 }
@@ -370,7 +370,7 @@ fn split_color_args(s : String) -> Array[String] {
 ///|
 /// Parse a color component (0-255 or 0%-100%, or 0-1 for alpha)
 fn parse_color_component(s : String, is_alpha : Bool) -> Double {
-  let v = s.trim().to_string()
+  let v = s.trim().to_owned()
   if v.has_suffix("%") {
     let num_str = substr(v, 0, v.length() - 1)
     let n = @string.parse_double(num_str) catch { _ => 0.0 }
@@ -579,7 +579,7 @@ pub fn default_background_color() -> @types.Color {
 ///|
 /// Parse a linear-gradient() value into a LinearGradient
 pub fn parse_linear_gradient(value : String) -> @types.BackgroundImage {
-  let v = value.trim().to_lower().to_string()
+  let v = value.trim().to_lower().to_owned()
   // Must start with "linear-gradient("
   if !v.has_prefix("linear-gradient(") {
     return @types.None
@@ -599,7 +599,7 @@ pub fn parse_linear_gradient(value : String) -> @types.BackgroundImage {
   // Parse direction (first argument, if it's not a color)
   let mut angle = 180.0 // default: to bottom
   let mut color_start = 0
-  let first = parts[0].trim().to_string()
+  let first = parts[0].trim().to_owned()
   if first.has_prefix("to ") {
     angle = parse_direction_keyword(first)
     color_start = 1
@@ -626,7 +626,7 @@ pub fn parse_linear_gradient(value : String) -> @types.BackgroundImage {
   let stops : Array[@types.GradientStop] = []
   let num_colors = parts.length() - color_start
   for i = color_start; i < parts.length(); i = i + 1 {
-    let part = parts[i].trim().to_string()
+    let part = parts[i].trim().to_owned()
     let (color, pos) = parse_gradient_stop(part, i - color_start, num_colors)
     stops.push({ color, position: pos })
   }
@@ -668,18 +668,18 @@ fn parse_gradient_stop(
 ) -> (@types.Color, Double) {
   // A stop can be "color" or "color position%"
   // Try to find a percentage at the end
-  let trimmed = part.trim().to_string()
+  let trimmed = part.trim().to_owned()
   // Check if last token is a percentage
   let last_space = find_last_space(trimmed)
   if last_space > 0 {
     let color_part = trimmed
       .unsafe_substring(start=0, end=last_space)
       .trim()
-      .to_string()
+      .to_owned()
     let pos_part = trimmed
       .unsafe_substring(start=last_space + 1, end=trimmed.length())
       .trim()
-      .to_string()
+      .to_owned()
     if pos_part.has_suffix("%") {
       let pct_str = pos_part
         .unsafe_substring(start=0, end=pos_part.length() - 1)

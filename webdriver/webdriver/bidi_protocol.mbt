@@ -1623,7 +1623,7 @@ fn BidiProtocol::try_handle_synthetic_all_events_eval(
   expression : String,
   unwrap_result : Bool,
 ) -> Bool {
-  if expression.trim().to_string() != "JSON.stringify(window.allEvents.events)" {
+  if expression.trim().to_owned() != "JSON.stringify(window.allEvents.events)" {
     return false
   }
   if !self.has_any_input_synthetic_events() {
@@ -1703,7 +1703,7 @@ fn maybe_normalize_all_events_remote_value(
   expression : String,
   value : Json,
 ) -> Json {
-  if expression.trim().to_string() == "JSON.stringify(window.allEvents.events)" {
+  if expression.trim().to_owned() == "JSON.stringify(window.allEvents.events)" {
     normalize_all_events_remote_value(value)
   } else {
     value
@@ -1717,7 +1717,7 @@ fn BidiProtocol::try_handle_synthetic_register_service_worker_eval(
   realm_id : String,
   expression : String,
 ) -> Bool {
-  if expression.trim().to_string() != "registerServiceWorker()" {
+  if expression.trim().to_owned() != "registerServiceWorker()" {
     return false
   }
   self.send_script_undefined_result(request_id, realm_id)
@@ -1783,7 +1783,7 @@ fn BidiProtocol::try_handle_synthetic_speculation_eval(
   realm_id : String,
   expression : String,
 ) -> Bool {
-  let trimmed = expression.trim().to_string()
+  let trimmed = expression.trim().to_owned()
   if is_synthetic_speculation_rules_expression(trimmed) {
     let target_url = js_extract_speculation_prefetch_target(trimmed)
     if target_url != "" {
@@ -2023,7 +2023,7 @@ fn BidiProtocol::try_handle_synthetic_user_prompt(
   expression : String,
   unwrap_result : Bool,
 ) -> Bool {
-  let expr = expression.trim().to_string()
+  let expr = expression.trim().to_owned()
   let mut prompt_type : String? = None
   if expr.has_prefix("window.alert(") || expr.has_prefix("alert(") {
     prompt_type = Some("alert")
@@ -2064,7 +2064,7 @@ fn BidiProtocol::try_handle_synthetic_download(
   realm_id : String,
   expression : String,
 ) -> Bool {
-  let expr = expression.trim().to_string()
+  let expr = expression.trim().to_owned()
   let target_id = match extract_click_target_identifier(expr) {
     Some(id) => id
     None => return false
@@ -2145,11 +2145,11 @@ fn BidiProtocol::try_handle_synthetic_download(
 ///|
 /// Extract click target identifier from snippets like `download_link.click()`.
 fn extract_click_target_identifier(expression : String) -> String? {
-  let source = expression.trim().to_string()
+  let source = expression.trim().to_owned()
   match find_substring(source, ".click(", 0) {
     Some(idx) => {
       let name = source.unsafe_substring(start=0, end=idx)
-      let identifier = name.trim().to_string()
+      let identifier = name.trim().to_owned()
       if identifier.length() == 0 {
         None
       } else {
@@ -2508,7 +2508,7 @@ fn BidiProtocol::apply_synthetic_history_state_from_expression(
   ctx_id : String,
   expression : String,
 ) -> Unit {
-  let source = expression.trim().to_string()
+  let source = expression.trim().to_owned()
 
   let mut push_cursor = 0
   let mut push_continue = true
@@ -3159,7 +3159,7 @@ fn normalize_relative_url_path(path : String) -> String {
   let absolute = path.has_prefix("/")
   let parts : Array[String] = []
   for segment in path.split("/") {
-    let segment = segment.to_string()
+    let segment = segment.to_owned()
     if segment == "" || segment == "." {
       continue
     }
@@ -6670,7 +6670,7 @@ fn BidiProtocol::try_handle_window_open(
   expression : String,
   unwrap_result : Bool,
 ) -> Bool {
-  let trimmed = expression.trim().to_string()
+  let trimmed = expression.trim().to_owned()
   let open_marker_idx = match find_substring(trimmed, "window.open(", 0) {
     Some(idx) => idx
     None => return false
@@ -6775,7 +6775,7 @@ fn BidiProtocol::try_handle_synthetic_iframe_creation(
   realm_id : String,
   expression : String,
 ) -> Bool {
-  let trimmed = expression.trim().to_string()
+  let trimmed = expression.trim().to_owned()
   let creates_iframe = (
       trimmed.contains("createElement('iframe')") ||
       trimmed.contains("createElement(\"iframe\")")

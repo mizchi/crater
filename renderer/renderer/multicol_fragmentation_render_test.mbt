@@ -837,7 +837,7 @@ test "fieldset_columns_shorthand_applies_in_wpt_like_case" {
   let wrapper = node.children[0]
   let container = wrapper.children[0]
   inspect(container.id, content="fieldset#container")
-  inspect(container.style.column_count, content="Some(3)")
+  debug_inspect(container.style.column_count, content="Some(3)")
   inspect(container.style.box_sizing, content="BorderBox")
   inspect(container.style.height, content="Length(80)")
   inspect(container.style.column_gap, content="Length(0)")
@@ -862,7 +862,7 @@ test "html_columns_propagate_to_body_root_style" {
     #|</body></html>
   let root = @renderer.render_to_node(html, @renderer.RenderContext::default())
   inspect(root.id, content="body")
-  inspect(root.style.column_count, content="Some(3)")
+  debug_inspect(root.style.column_count, content="Some(3)")
   inspect(root.style.column_gap_is_normal, content="true")
 }
 
@@ -910,7 +910,7 @@ test "fieldset_columns_shorthand_survives_following_column_scroll_marker_rule" {
   let wrapper = node.children[0]
   let container = wrapper.children[0]
   inspect(container.id, content="fieldset#container")
-  inspect(container.style.column_count, content="Some(3)")
+  debug_inspect(container.style.column_count, content="Some(3)")
   inspect(container.style.box_sizing, content="BorderBox")
   inspect(container.style.height, content="Length(80)")
   inspect(container.style.column_gap, content="Length(0)")

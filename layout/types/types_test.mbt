@@ -30,9 +30,9 @@ test "Dimension::resolve" {
   let length : Dimension = Length(50.0)
   let percent : Dimension = Percent(0.5)
   let auto : Dimension = Auto
-  inspect(length.resolve(100.0), content="Some(50)")
-  inspect(percent.resolve(100.0), content="Some(50)")
-  inspect(auto.resolve(100.0), content="None")
+  debug_inspect(length.resolve(100.0), content="Some(50)")
+  debug_inspect(percent.resolve(100.0), content="Some(50)")
+  debug_inspect(auto.resolve(100.0), content="None")
   inspect(auto.resolve_or(100.0, 25.0), content="25")
 }
 

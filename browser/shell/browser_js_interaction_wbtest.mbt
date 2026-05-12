@@ -338,13 +338,13 @@ async test "Browser activate_at prefers underlying element outside clipped overl
   }
 
   let activated = browser.activate_at(col, row) catch { _ => false }
-  inspect(browser.get_source_id_at(col, row), content="Some(\"bottom\")")
+  debug_inspect(browser.get_source_id_at(col, row), content="Some(\"bottom\")")
   inspect(activated, content="true")
 
   let status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(status, content="Some(\"bottom\")")
+  debug_inspect(status, content="Some(\"bottom\")")
 }
 
 ///|
@@ -374,12 +374,12 @@ async test "Browser activate_at skips pointer_events_none overlay" {
 
   let _ = browser.render_output(Text)
   let activated = browser.activate_at(1, 1) catch { _ => false }
-  inspect(browser.get_source_id_at(1, 1), content="Some(\"bottom\")")
+  debug_inspect(browser.get_source_id_at(1, 1), content="Some(\"bottom\")")
   inspect(activated, content="true")
   let status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(status, content="Some(\"bottom\")")
+  debug_inspect(status, content="Some(\"bottom\")")
 }
 
 ///|
@@ -412,12 +412,12 @@ async test "Browser activate_at respects inherited pointer_events_none" {
 
   let _ = browser.render_output(Text)
   let activated = browser.activate_at(1, 1) catch { _ => false }
-  inspect(browser.get_source_id_at(1, 1), content="Some(\"bottom\")")
+  debug_inspect(browser.get_source_id_at(1, 1), content="Some(\"bottom\")")
   inspect(activated, content="true")
   let status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(status, content="Some(\"bottom\")")
+  debug_inspect(status, content="Some(\"bottom\")")
 }
 
 ///|
@@ -450,12 +450,12 @@ async test "Browser activate_at allows child pointer_events_auto under inherited
 
   let _ = browser.render_output(Text)
   let activated = browser.activate_at(1, 1) catch { _ => false }
-  inspect(browser.get_source_id_at(1, 1), content="Some(\"child\")")
+  debug_inspect(browser.get_source_id_at(1, 1), content="Some(\"child\")")
   inspect(activated, content="true")
   let status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(status, content="Some(\"child\")")
+  debug_inspect(status, content="Some(\"child\")")
 }
 
 ///|
@@ -500,12 +500,12 @@ async test "Browser activate_at prefers transformed topmost element at visual po
   }
 
   let activated = browser.activate_at(col, row) catch { _ => false }
-  inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
+  debug_inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
   inspect(activated, content="true")
   let status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(status, content="Some(\"top\")")
+  debug_inspect(status, content="Some(\"top\")")
 }
 
 ///|
@@ -537,13 +537,13 @@ async test "Browser activate_at uses scaled transform visual bounds" {
   let bottom = hit_region_of_source_id(browser, "bottom")
   let col = bottom.col + 10
   let row = bottom.row + 1
-  inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
+  debug_inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
   let activated = browser.activate_at(col, row) catch { _ => false }
   inspect(activated, content="true")
   let status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(status, content="Some(\"top\")")
+  debug_inspect(status, content="Some(\"top\")")
 }
 
 ///|
@@ -575,13 +575,13 @@ async test "Browser activate_at uses quarter-turn rotate visual bounds" {
   let bottom = hit_region_of_source_id(browser, "bottom")
   let col = bottom.col + 6
   let row = bottom.row + 1
-  inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
+  debug_inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
   let activated = browser.activate_at(col, row) catch { _ => false }
   inspect(activated, content="true")
   let status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(status, content="Some(\"top\")")
+  debug_inspect(status, content="Some(\"top\")")
 }
 
 ///|
@@ -612,13 +612,13 @@ async test "Browser activate_at uses arbitrary-angle rotate visual bounds" {
   let _ = browser.render_output(Text)
   let col = 3
   let row = 2
-  inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
+  debug_inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
   let activated = browser.activate_at(col, row) catch { _ => false }
   inspect(activated, content="true")
   let status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(status, content="Some(\"top\")")
+  debug_inspect(status, content="Some(\"top\")")
 }
 
 ///|
@@ -650,13 +650,13 @@ async test "Browser activate_at excludes arbitrary-angle rotate bbox corners" {
   let bottom = hit_region_of_source_id(browser, "bottom")
   let col = bottom.col + 2
   let row = bottom.row
-  inspect(browser.get_source_id_at(col, row), content="Some(\"bottom\")")
+  debug_inspect(browser.get_source_id_at(col, row), content="Some(\"bottom\")")
   let activated = browser.activate_at(col, row) catch { _ => false }
   inspect(activated, content="true")
   let status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(status, content="Some(\"bottom\")")
+  debug_inspect(status, content="Some(\"bottom\")")
 }
 
 ///|
@@ -688,13 +688,13 @@ async test "Browser activate_at uses skew transform visual bounds" {
   let bottom = hit_region_of_source_id(browser, "bottom")
   let col = bottom.col + 2
   let row = bottom.row
-  inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
+  debug_inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
   let activated = browser.activate_at(col, row) catch { _ => false }
   inspect(activated, content="true")
   let status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(status, content="Some(\"top\")")
+  debug_inspect(status, content="Some(\"top\")")
 }
 
 ///|
@@ -726,13 +726,13 @@ async test "Browser activate_at excludes skew transform bbox corners" {
   let bottom = hit_region_of_source_id(browser, "bottom")
   let col = bottom.col
   let row = bottom.row
-  inspect(browser.get_source_id_at(col, row), content="Some(\"bottom\")")
+  debug_inspect(browser.get_source_id_at(col, row), content="Some(\"bottom\")")
   let activated = browser.activate_at(col, row) catch { _ => false }
   inspect(activated, content="true")
   let status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(status, content="Some(\"bottom\")")
+  debug_inspect(status, content="Some(\"bottom\")")
 }
 
 ///|
@@ -764,13 +764,13 @@ async test "Browser activate_at uses matrix transform visual bounds" {
   let bottom = hit_region_of_source_id(browser, "bottom")
   let col = bottom.col + 18
   let row = bottom.row
-  inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
+  debug_inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
   let activated = browser.activate_at(col, row) catch { _ => false }
   inspect(activated, content="true")
   let status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(status, content="Some(\"top\")")
+  debug_inspect(status, content="Some(\"top\")")
 }
 
 ///|
@@ -802,13 +802,13 @@ async test "Browser activate_at excludes matrix transform bbox corners" {
   let bottom = hit_region_of_source_id(browser, "bottom")
   let col = bottom.col + 8
   let row = bottom.row
-  inspect(browser.get_source_id_at(col, row), content="Some(\"bottom\")")
+  debug_inspect(browser.get_source_id_at(col, row), content="Some(\"bottom\")")
   let activated = browser.activate_at(col, row) catch { _ => false }
   inspect(activated, content="true")
   let status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(status, content="Some(\"bottom\")")
+  debug_inspect(status, content="Some(\"bottom\")")
 }
 
 ///|
@@ -840,13 +840,13 @@ async test "Browser activate_at uses matrix3d transform visual bounds" {
   let bottom = hit_region_of_source_id(browser, "bottom")
   let col = bottom.col + 18
   let row = bottom.row
-  inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
+  debug_inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
   let activated = browser.activate_at(col, row) catch { _ => false }
   inspect(activated, content="true")
   let status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(status, content="Some(\"top\")")
+  debug_inspect(status, content="Some(\"top\")")
 }
 
 ///|
@@ -878,13 +878,13 @@ async test "Browser activate_at excludes matrix3d transform bbox corners" {
   let bottom = hit_region_of_source_id(browser, "bottom")
   let col = bottom.col + 8
   let row = bottom.row
-  inspect(browser.get_source_id_at(col, row), content="Some(\"bottom\")")
+  debug_inspect(browser.get_source_id_at(col, row), content="Some(\"bottom\")")
   let activated = browser.activate_at(col, row) catch { _ => false }
   inspect(activated, content="true")
   let status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(status, content="Some(\"bottom\")")
+  debug_inspect(status, content="Some(\"bottom\")")
 }
 
 ///|
@@ -924,13 +924,13 @@ async test "Browser activate_at uses cell center for sub-cell hit testing" {
     None => panic()
   }
 
-  inspect(browser.get_source_id_at(col, row), content="Some(\"bottom\")")
+  debug_inspect(browser.get_source_id_at(col, row), content="Some(\"bottom\")")
   let activated = browser.activate_at(col, row) catch { _ => false }
   inspect(activated, content="true")
   let status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(status, content="Some(\"bottom\")")
+  debug_inspect(status, content="Some(\"bottom\")")
 }
 
 ///|
@@ -970,13 +970,13 @@ async test "Browser activate_at uses sub-pixel coverage for anti-aliased hit tes
     None => panic()
   }
 
-  inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
+  debug_inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
   let activated = browser.activate_at(col, row) catch { _ => false }
   inspect(activated, content="true")
   let status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(status, content="Some(\"top\")")
+  debug_inspect(status, content="Some(\"top\")")
 }
 
 ///|
@@ -1007,7 +1007,7 @@ async test "Browser activate_at samples non-rect clip-path cell coverage" {
   let _ = browser.render_output(Text)
   let top = hit_region_of_source_id(browser, "top")
   let outside_col = top.col + 1
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(outside_col, top.row),
     content="Some(\"bottom\")",
   )
@@ -1018,9 +1018,12 @@ async test "Browser activate_at samples non-rect clip-path cell coverage" {
   let outside_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(outside_status, content="Some(\"bottom\")")
+  debug_inspect(outside_status, content="Some(\"bottom\")")
 
-  inspect(browser.get_source_id_at(top.col, top.row), content="Some(\"top\")")
+  debug_inspect(
+    browser.get_source_id_at(top.col, top.row),
+    content="Some(\"top\")",
+  )
   let edge_activated = browser.activate_at(top.col, top.row) catch {
     _ => false
   }
@@ -1028,7 +1031,7 @@ async test "Browser activate_at samples non-rect clip-path cell coverage" {
   let edge_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(edge_status, content="Some(\"top\")")
+  debug_inspect(edge_status, content="Some(\"top\")")
 }
 
 ///|
@@ -1058,7 +1061,7 @@ async test "Browser activate_at respects border-radius hit shape" {
 
   let _ = browser.render_output(Text)
   let top = hit_region_of_source_id(browser, "top")
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(top.col, top.row),
     content="Some(\"bottom\")",
   )
@@ -1069,10 +1072,10 @@ async test "Browser activate_at respects border-radius hit shape" {
   let corner_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(corner_status, content="Some(\"bottom\")")
+  debug_inspect(corner_status, content="Some(\"bottom\")")
 
   let inside_col = top.col + 4
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(inside_col, top.row),
     content="Some(\"top\")",
   )
@@ -1083,7 +1086,7 @@ async test "Browser activate_at respects border-radius hit shape" {
   let inside_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(inside_status, content="Some(\"top\")")
+  debug_inspect(inside_status, content="Some(\"top\")")
 }
 
 ///|
@@ -1113,7 +1116,7 @@ async test "Browser activate_at respects clip-path inset hit region" {
 
   let _ = browser.render_output(Text)
   let bottom = hit_region_of_source_id(browser, "bottom")
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(bottom.col, bottom.row),
     content="Some(\"bottom\")",
   )
@@ -1124,11 +1127,11 @@ async test "Browser activate_at respects clip-path inset hit region" {
   let clipped_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(clipped_status, content="Some(\"bottom\")")
+  debug_inspect(clipped_status, content="Some(\"bottom\")")
 
   let inside_col = bottom.col + 3
   let inside_row = bottom.row + 2
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(inside_col, inside_row),
     content="Some(\"top\")",
   )
@@ -1139,7 +1142,7 @@ async test "Browser activate_at respects clip-path inset hit region" {
   let inside_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(inside_status, content="Some(\"top\")")
+  debug_inspect(inside_status, content="Some(\"top\")")
 }
 
 ///|
@@ -1169,7 +1172,7 @@ async test "Browser activate_at respects clip-path rect hit region" {
 
   let _ = browser.render_output(Text)
   let bottom = hit_region_of_source_id(browser, "bottom")
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(bottom.col, bottom.row),
     content="Some(\"bottom\")",
   )
@@ -1180,11 +1183,11 @@ async test "Browser activate_at respects clip-path rect hit region" {
   let clipped_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(clipped_status, content="Some(\"bottom\")")
+  debug_inspect(clipped_status, content="Some(\"bottom\")")
 
   let inside_col = bottom.col + 3
   let inside_row = bottom.row + 2
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(inside_col, inside_row),
     content="Some(\"top\")",
   )
@@ -1195,7 +1198,7 @@ async test "Browser activate_at respects clip-path rect hit region" {
   let inside_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(inside_status, content="Some(\"top\")")
+  debug_inspect(inside_status, content="Some(\"top\")")
 }
 
 ///|
@@ -1225,7 +1228,7 @@ async test "Browser activate_at respects clip-path xywh hit region" {
 
   let _ = browser.render_output(Text)
   let bottom = hit_region_of_source_id(browser, "bottom")
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(bottom.col, bottom.row),
     content="Some(\"bottom\")",
   )
@@ -1236,11 +1239,11 @@ async test "Browser activate_at respects clip-path xywh hit region" {
   let clipped_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(clipped_status, content="Some(\"bottom\")")
+  debug_inspect(clipped_status, content="Some(\"bottom\")")
 
   let inside_col = bottom.col + 3
   let inside_row = bottom.row + 2
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(inside_col, inside_row),
     content="Some(\"top\")",
   )
@@ -1251,7 +1254,7 @@ async test "Browser activate_at respects clip-path xywh hit region" {
   let inside_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(inside_status, content="Some(\"top\")")
+  debug_inspect(inside_status, content="Some(\"top\")")
 }
 
 ///|
@@ -1281,7 +1284,7 @@ async test "Browser activate_at respects clip-path circle hit region" {
 
   let _ = browser.render_output(Text)
   let bottom = hit_region_of_source_id(browser, "bottom")
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(bottom.col, bottom.row),
     content="Some(\"bottom\")",
   )
@@ -1292,11 +1295,11 @@ async test "Browser activate_at respects clip-path circle hit region" {
   let clipped_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(clipped_status, content="Some(\"bottom\")")
+  debug_inspect(clipped_status, content="Some(\"bottom\")")
 
   let inside_col = bottom.col + 2
   let inside_row = bottom.row + 2
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(inside_col, inside_row),
     content="Some(\"top\")",
   )
@@ -1307,7 +1310,7 @@ async test "Browser activate_at respects clip-path circle hit region" {
   let inside_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(inside_status, content="Some(\"top\")")
+  debug_inspect(inside_status, content="Some(\"top\")")
 }
 
 ///|
@@ -1337,7 +1340,7 @@ async test "Browser activate_at respects clip-path ellipse hit region" {
 
   let _ = browser.render_output(Text)
   let bottom = hit_region_of_source_id(browser, "bottom")
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(bottom.col, bottom.row),
     content="Some(\"bottom\")",
   )
@@ -1348,11 +1351,11 @@ async test "Browser activate_at respects clip-path ellipse hit region" {
   let clipped_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(clipped_status, content="Some(\"bottom\")")
+  debug_inspect(clipped_status, content="Some(\"bottom\")")
 
   let inside_col = bottom.col + 2
   let inside_row = bottom.row + 2
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(inside_col, inside_row),
     content="Some(\"top\")",
   )
@@ -1363,7 +1366,7 @@ async test "Browser activate_at respects clip-path ellipse hit region" {
   let inside_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(inside_status, content="Some(\"top\")")
+  debug_inspect(inside_status, content="Some(\"top\")")
 }
 
 ///|
@@ -1393,7 +1396,7 @@ async test "Browser activate_at respects clip-path polygon hit region" {
 
   let _ = browser.render_output(Text)
   let bottom = hit_region_of_source_id(browser, "bottom")
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(bottom.col, bottom.row),
     content="Some(\"bottom\")",
   )
@@ -1404,11 +1407,11 @@ async test "Browser activate_at respects clip-path polygon hit region" {
   let clipped_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(clipped_status, content="Some(\"bottom\")")
+  debug_inspect(clipped_status, content="Some(\"bottom\")")
 
   let inside_col = bottom.col + 4
   let inside_row = bottom.row + 2
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(inside_col, inside_row),
     content="Some(\"top\")",
   )
@@ -1419,7 +1422,7 @@ async test "Browser activate_at respects clip-path polygon hit region" {
   let inside_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(inside_status, content="Some(\"top\")")
+  debug_inspect(inside_status, content="Some(\"top\")")
 }
 
 ///|
@@ -1449,7 +1452,7 @@ async test "Browser activate_at respects clip-path path hit region" {
 
   let _ = browser.render_output(Text)
   let bottom = hit_region_of_source_id(browser, "bottom")
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(bottom.col, bottom.row),
     content="Some(\"bottom\")",
   )
@@ -1460,11 +1463,11 @@ async test "Browser activate_at respects clip-path path hit region" {
   let clipped_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(clipped_status, content="Some(\"bottom\")")
+  debug_inspect(clipped_status, content="Some(\"bottom\")")
 
   let inside_col = bottom.col + 4
   let inside_row = bottom.row + 2
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(inside_col, inside_row),
     content="Some(\"top\")",
   )
@@ -1475,7 +1478,7 @@ async test "Browser activate_at respects clip-path path hit region" {
   let inside_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(inside_status, content="Some(\"top\")")
+  debug_inspect(inside_status, content="Some(\"top\")")
 }
 
 ///|
@@ -1507,7 +1510,7 @@ async test "Browser activate_at respects quadratic clip-path path hit region" {
   let bottom = hit_region_of_source_id(browser, "bottom")
   let outside_col = bottom.col + 4
   let outside_row = bottom.row
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(outside_col, outside_row),
     content="Some(\"bottom\")",
   )
@@ -1518,11 +1521,11 @@ async test "Browser activate_at respects quadratic clip-path path hit region" {
   let clipped_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(clipped_status, content="Some(\"bottom\")")
+  debug_inspect(clipped_status, content="Some(\"bottom\")")
 
   let inside_col = bottom.col + 4
   let inside_row = bottom.row + 2
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(inside_col, inside_row),
     content="Some(\"top\")",
   )
@@ -1533,7 +1536,7 @@ async test "Browser activate_at respects quadratic clip-path path hit region" {
   let inside_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(inside_status, content="Some(\"top\")")
+  debug_inspect(inside_status, content="Some(\"top\")")
 }
 
 ///|
@@ -1565,7 +1568,7 @@ async test "Browser activate_at respects smooth clip-path path hit region" {
   let bottom = hit_region_of_source_id(browser, "bottom")
   let outside_col = bottom.col + 4
   let outside_row = bottom.row
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(outside_col, outside_row),
     content="Some(\"bottom\")",
   )
@@ -1576,11 +1579,11 @@ async test "Browser activate_at respects smooth clip-path path hit region" {
   let clipped_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(clipped_status, content="Some(\"bottom\")")
+  debug_inspect(clipped_status, content="Some(\"bottom\")")
 
   let inside_col = bottom.col + 2
   let inside_row = bottom.row + 2
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(inside_col, inside_row),
     content="Some(\"top\")",
   )
@@ -1591,7 +1594,7 @@ async test "Browser activate_at respects smooth clip-path path hit region" {
   let inside_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(inside_status, content="Some(\"top\")")
+  debug_inspect(inside_status, content="Some(\"top\")")
 }
 
 ///|
@@ -1623,7 +1626,7 @@ async test "Browser activate_at respects arc clip-path path hit region" {
   let bottom = hit_region_of_source_id(browser, "bottom")
   let outside_col = bottom.col + 4
   let outside_row = bottom.row
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(outside_col, outside_row),
     content="Some(\"bottom\")",
   )
@@ -1634,11 +1637,11 @@ async test "Browser activate_at respects arc clip-path path hit region" {
   let clipped_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(clipped_status, content="Some(\"bottom\")")
+  debug_inspect(clipped_status, content="Some(\"bottom\")")
 
   let inside_col = bottom.col + 4
   let inside_row = bottom.row + 2
-  inspect(
+  debug_inspect(
     browser.get_source_id_at(inside_col, inside_row),
     content="Some(\"top\")",
   )
@@ -1649,7 +1652,7 @@ async test "Browser activate_at respects arc clip-path path hit region" {
   let inside_status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(inside_status, content="Some(\"top\")")
+  debug_inspect(inside_status, content="Some(\"top\")")
 }
 
 ///|
@@ -1771,7 +1774,10 @@ test "Browser reinit restores clipboard addEventListener handlers" {
     #|  return status.textContent + ':' + clipboardData.getData('text/plain');
     #|})()
   let status = browser.execute_inline_js(dispatch_clipboard_events)
-  inspect(status, content="Some(\"copy:seed|cut:copied|paste:copied:copied\")")
+  debug_inspect(
+    status,
+    content="Some(\"copy:seed|cut:copied|paste:copied:copied\")",
+  )
 }
 
 ///|
@@ -1830,7 +1836,7 @@ async test "Browser activate_at dispatches pointer and mouse events before click
   let status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(
+  debug_inspect(
     status,
     content="Some(\"pointerdown" +
       expected +
@@ -1904,7 +1910,7 @@ async test "Browser hover_at dispatches pointer and mouse hover sequence" {
   }
   inspect(browser.hover_at(left_col, left_row), content="true")
   inspect(browser.hover_at(right_col, right_row), content="true")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ return document.getElementById('status').textContent; })()",
     ),
@@ -1962,7 +1968,7 @@ async test "Browser pointer drag dispatches drag sequence between source and tar
     (target_col * 8 + 4).to_string() +
     "," +
     (target_row * 16 + 8).to_string()
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ return document.getElementById('status').textContent; })()",
     ),
@@ -2047,7 +2053,7 @@ async test "Browser pointer drag preserves dataTransfer and switches drag target
     _ => false
   }
   inspect(released, content="true")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ return document.getElementById('status').textContent; })()",
     ),
@@ -2109,7 +2115,7 @@ async test "Browser pointer drag shares DataTransfer mutations through drop" {
     _ => false
   }
   inspect(released, content="true")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ return document.getElementById('status').textContent; })()",
     ),
@@ -2169,7 +2175,7 @@ async test "Browser pointer drag leaving targets dispatches dragleave without dr
     _ => false
   }
   inspect(released, content="true")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ return document.getElementById('status').textContent; })()",
     ),
@@ -2219,7 +2225,7 @@ async test "Browser pointer drag does not drop without dragover preventDefault" 
     _ => false
   }
   inspect(released, content="true")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ return document.getElementById('status').textContent; })()",
     ),
@@ -2280,7 +2286,7 @@ async test "Browser pointer drag does not drop when effectAllowed is none" {
     _ => false
   }
   inspect(released, content="true")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ return document.getElementById('status').textContent; })()",
     ),
@@ -2341,7 +2347,7 @@ async test "Browser pointer drag does not drop when dropEffect is incompatible w
     _ => false
   }
   inspect(released, content="true")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ return document.getElementById('status').textContent; })()",
     ),
@@ -2396,10 +2402,10 @@ async test "Browser activate_at prefers topmost persisted addEventListener eleme
   }
 
   let activated = browser.activate_at(col, row) catch { _ => false }
-  inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
+  debug_inspect(browser.get_source_id_at(col, row), content="Some(\"top\")")
   inspect(activated, content="true")
   let status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(status, content="Some(\"top\")")
+  debug_inspect(status, content="Some(\"top\")")
 }

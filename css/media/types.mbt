@@ -170,16 +170,32 @@ pub impl Show for MediaFeature with output(self, logger) {
     Pointer => logger.write_string("Pointer")
     Scripting => logger.write_string("Scripting")
     Update => logger.write_string("Update")
-    Width(value) => logger.write_string("Width(\{value})")
+    Width(value) => {
+      logger.write_string("Width(")
+      logger.write_object(to_repr(value))
+      logger.write_string(")")
+    }
     MinWidth(value) => logger.write_string("MinWidth(\{value})")
     MaxWidth(value) => logger.write_string("MaxWidth(\{value})")
-    Height(value) => logger.write_string("Height(\{value})")
+    Height(value) => {
+      logger.write_string("Height(")
+      logger.write_object(to_repr(value))
+      logger.write_string(")")
+    }
     MinHeight(value) => logger.write_string("MinHeight(\{value})")
     MaxHeight(value) => logger.write_string("MaxHeight(\{value})")
-    AspectRatio(value) => logger.write_string("AspectRatio(\{value})")
+    AspectRatio(value) => {
+      logger.write_string("AspectRatio(")
+      logger.write_object(to_repr(value))
+      logger.write_string(")")
+    }
     MinAspectRatio(value) => logger.write_string("MinAspectRatio(\{value})")
     MaxAspectRatio(value) => logger.write_string("MaxAspectRatio(\{value})")
-    Resolution(value) => logger.write_string("Resolution(\{value})")
+    Resolution(value) => {
+      logger.write_string("Resolution(")
+      logger.write_object(to_repr(value))
+      logger.write_string(")")
+    }
     MinResolution(value) => logger.write_string("MinResolution(\{value})")
     MaxResolution(value) => logger.write_string("MaxResolution(\{value})")
     WidthRange(op, value) => logger.write_string("WidthRange(\{op}, \{value})")
@@ -219,7 +235,7 @@ pub impl Show for MediaFeature with output(self, logger) {
       logger.write_string(name)
       logger.write_string("\"")
       logger.write_string(", ")
-      logger.write_string(value.to_string())
+      logger.write_object(to_repr(value))
       logger.write_string(")")
     }
   }
@@ -232,7 +248,7 @@ pub impl Show for MediaQuery with output(self, logger) {
   logger.write_string(", only: ")
   logger.write_string(self.only.to_string())
   logger.write_string(", media_type: ")
-  logger.write_string(self.media_type.to_string())
+  logger.write_object(to_repr(self.media_type))
   logger.write_string(", conditions: ")
   logger.write_string(self.conditions.to_string())
   logger.write_string("}")

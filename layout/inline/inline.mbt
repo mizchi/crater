@@ -231,7 +231,7 @@ fn estimate_wrapped_text_metrics(
 ) -> WrappedTextMetrics? {
   match node.text {
     Some(raw_text) => {
-      let text = raw_text.trim().to_string()
+      let text = raw_text.trim().to_owned()
       if text.is_empty() || node.style.writing_mode.is_vertical() {
         return None
       }

@@ -178,7 +178,7 @@ fn verify_link_text(
   let node = @dom.NodeId::from_int(node_id)
   match session.get_tree().get_text_content(node) {
     Ok(text) => {
-      let trimmed = text.trim().to_string()
+      let trimmed = text.trim().to_owned()
       let is_match = if strategy == "link text" {
         trimmed == expected
       } else {

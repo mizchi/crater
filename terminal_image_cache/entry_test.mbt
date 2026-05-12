@@ -8,11 +8,11 @@ test "prepare_raster_image_for_kitty_cache stores png payload directly" {
 
 ///|
 test "data_image_src_to_kitty_cache accepts svg and png data urls" {
-  inspect(
+  debug_inspect(
     data_image_src_to_kitty_cache("data:image/svg+xml,%3Csvg%3E%3C/svg%3E#icon"),
     content="Some(\"svg:<svg></svg>\")",
   )
-  inspect(
+  debug_inspect(
     data_image_src_to_kitty_cache("data:image/png;base64,iVBORw0K Ggo=#icon"),
     content="Some(\"img_png:iVBORw0KGgo=\")",
   )

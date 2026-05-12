@@ -722,7 +722,7 @@ fn synthetic_navigation_push_unique_resource(
 
 ///|
 fn strip_wrapping_quotes_and_spaces(raw : String) -> String {
-  let trimmed = raw.trim().to_string()
+  let trimmed = raw.trim().to_owned()
   let chars = trimmed.to_array()
   if chars.length() >= 2 {
     let first = chars[0]
@@ -1127,7 +1127,7 @@ fn synthetic_navigation_raw_query_values(
     return values
   }
   for part in query.split("&") {
-    let raw = part.to_string()
+    let raw = part.to_owned()
     if raw.length() == 0 {
       continue
     }

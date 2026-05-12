@@ -96,7 +96,7 @@ test "compare declarations - important beats normal" {
 test "cascade - single declaration" {
   let decl = Declaration::new("width", "100px")
   let result = cascade([decl])
-  inspect(result.get_value("width"), content="Some(\"100px\")")
+  debug_inspect(result.get_value("width"), content="Some(\"100px\")")
 }
 
 ///|
@@ -118,7 +118,7 @@ test "cascade - later declaration wins" {
     source_order: 2,
   }
   let result = cascade([decl1, decl2])
-  inspect(result.get_value("width"), content="Some(\"200px\")")
+  debug_inspect(result.get_value("width"), content="Some(\"200px\")")
 }
 
 ///|
@@ -141,7 +141,7 @@ test "cascade - higher specificity wins" {
   }
   let result = cascade([decl_type, decl_class])
   // Class wins over type even though type is later
-  inspect(result.get_value("color"), content="Some(\"blue\")")
+  debug_inspect(result.get_value("color"), content="Some(\"blue\")")
 }
 
 ///|
@@ -163,7 +163,7 @@ test "cascade - important wins" {
     source_order: 1,
   }
   let result = cascade([decl_normal, decl_important])
-  inspect(result.get_value("display"), content="Some(\"flex\")")
+  debug_inspect(result.get_value("display"), content="Some(\"flex\")")
 }
 
 ///|
@@ -179,8 +179,8 @@ test "cascade - multiple properties" {
     source_order: 1,
   }
   let result = cascade([decl1, decl2, decl3])
-  inspect(result.get_value("width"), content="Some(\"200px\")")
-  inspect(result.get_value("height"), content="Some(\"50px\")")
+  debug_inspect(result.get_value("width"), content="Some(\"200px\")")
+  debug_inspect(result.get_value("height"), content="Some(\"50px\")")
 }
 
 ///|
@@ -244,7 +244,7 @@ test "collect declarations - inline beats rules" {
   let result = cascade(collected)
 
   // Inline should win
-  inspect(result.get_value("width"), content="Some(\"200px\")")
+  debug_inspect(result.get_value("width"), content="Some(\"200px\")")
 }
 
 ///|
@@ -267,7 +267,7 @@ test "stylesheet match and cascade" {
 
   // Match and cascade
   let result = cascade_element(element, [stylesheet], [])
-  inspect(result.get_value("width"), content="Some(\"100px\")")
+  debug_inspect(result.get_value("width"), content="Some(\"100px\")")
 }
 
 ///|
@@ -308,7 +308,7 @@ test "multiple stylesheets" {
   let result = cascade_element(element, [ua_stylesheet, author_stylesheet], [])
 
   // Author beats UA
-  inspect(result.get_value("width"), content="Some(\"100px\")")
+  debug_inspect(result.get_value("width"), content="Some(\"100px\")")
 }
 
 ///|
@@ -325,7 +325,7 @@ test "later author stylesheet wins at same specificity" {
   }
   let element = @selector.Element::new("div")
   let result = cascade_element(element, [stylesheet1, stylesheet2], [])
-  inspect(result.get_value("width"), content="Some(\"20px\")")
+  debug_inspect(result.get_value("width"), content="Some(\"20px\")")
 }
 
 ///|
@@ -347,7 +347,7 @@ test "later indexed stylesheet wins at same specificity" {
     [],
     None,
   )
-  inspect(result.get_value("width"), content="Some(\"20px\")")
+  debug_inspect(result.get_value("width"), content="Some(\"20px\")")
 }
 
 ///|
@@ -381,7 +381,7 @@ test "specificity - ID beats class" {
   let result = cascade_element(element, [stylesheet], [])
 
   // ID selector should win (higher specificity)
-  inspect(result.get_value("width"), content="Some(\"200px\")")
+  debug_inspect(result.get_value("width"), content="Some(\"200px\")")
 }
 
 ///|
@@ -411,7 +411,7 @@ test "specificity - combined selectors" {
   let result = cascade_element(element, [stylesheet], [])
 
   // div.highlight (0,1,1) should beat div (0,0,1)
-  inspect(result.get_value("color"), content="Some(\"blue\")")
+  debug_inspect(result.get_value("color"), content="Some(\"blue\")")
 }
 
 ///|
@@ -443,7 +443,7 @@ test "cascade order - later declaration wins at same specificity" {
   let result = cascade_element(element, [stylesheet], [])
 
   // Later declaration should win
-  inspect(result.get_value("width"), content="Some(\"200px\")")
+  debug_inspect(result.get_value("width"), content="Some(\"200px\")")
 }
 
 ///|
@@ -473,7 +473,7 @@ test "pseudo-class :not() specificity" {
   let result = cascade_element(element, [stylesheet], [])
 
   // :not(.hidden) specificity = 0,2,0 (class + :not argument's class)
-  inspect(result.get_value("color"), content="Some(\"green\")")
+  debug_inspect(result.get_value("color"), content="Some(\"green\")")
 }
 
 ///|
@@ -501,7 +501,7 @@ test "pseudo-class :where() has zero specificity" {
   let result = cascade_element(element, [stylesheet], [])
 
   // div (0,0,1) should beat :where(.container) (0,0,0)
-  inspect(result.get_value("color"), content="Some(\"blue\")")
+  debug_inspect(result.get_value("color"), content="Some(\"blue\")")
 }
 
 ///|
@@ -522,5 +522,5 @@ test "indexed stylesheet matches compound class selector" {
     [],
     None,
   )
-  inspect(result.get_value("width"), content="Some(\"100px\")")
+  debug_inspect(result.get_value("width"), content="Some(\"100px\")")
 }

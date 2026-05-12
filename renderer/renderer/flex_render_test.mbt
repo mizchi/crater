@@ -708,7 +708,7 @@ test "flex_item_transferred_sizes_padding_border_sizing_style_parse_like" {
   inspect(item.style.width, content="Auto")
   inspect(item.style.height, content="Auto")
   inspect(item.style.min_height, content="Length(100)")
-  inspect(item.style.aspect_ratio, content="Some(1)")
+  debug_inspect(item.style.aspect_ratio, content="Some(1)")
   inspect(item.style.box_sizing, content="BorderBox")
 }
 
@@ -1153,8 +1153,8 @@ test "wpt_baseline_row_horz_text_nodes_keep_single_line_metrics" {
   inspect(first.style.font_size, content="30")
   inspect(text1.style.font_size, content="30")
   inspect(text1.style.line_height, content="30")
-  inspect(text1.text, content="Some(\"line1\")")
-  inspect(text2.text, content="Some(\"line2\")")
+  debug_inspect(text1.text, content="Some(\"line1\")")
+  debug_inspect(text2.text, content="Some(\"line2\")")
 
   let layout = @renderer.render(html, ctx)
   let target_layout = layout.children[0]

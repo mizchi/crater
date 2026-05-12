@@ -4,7 +4,7 @@
 ///|
 /// Parse dimension from HTML attribute (e.g., "300" or "300px")
 fn parse_html_dimension(value : String) -> Double? {
-  let trimmed = value.trim().to_string()
+  let trimmed = value.trim().to_owned()
   if trimmed.is_empty() {
     return None
   }

@@ -462,7 +462,7 @@ fn calculate_repetition_penalty(text_content : String) -> Double {
   let mut unique = 0
   let seen : Map[String, Bool] = {}
   for part in parts {
-    let word = part.trim().to_string()
+    let word = part.trim().to_owned()
     if word.length() < 3 {
       continue
     }

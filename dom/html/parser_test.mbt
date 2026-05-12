@@ -16,7 +16,7 @@ test "parse element with id" {
   match @html.parse(html) {
     Some(e) => {
       inspect(e.tag, content="div")
-      inspect(e.id, content="Some(\"main\")")
+      debug_inspect(e.id, content="Some(\"main\")")
     }
     None => ()
   }
@@ -39,7 +39,8 @@ test "parse element with classes" {
 test "parse element with style" {
   let html = "<div style=\"width: 100px; height: 50px\"></div>"
   match @html.parse(html) {
-    Some(e) => inspect(e.style, content="Some(\"width: 100px; height: 50px\")")
+    Some(e) =>
+      debug_inspect(e.style, content="Some(\"width: 100px; height: 50px\")")
     None => ()
   }
 }
@@ -50,7 +51,7 @@ test "parse element with unquoted attribute containing slash" {
   match @html.parse(html) {
     Some(e) => {
       inspect(e.tag, content="link")
-      inspect(
+      debug_inspect(
         e.attributes.get("href"),
         content="Some(\"reference/variable-reference-ref.html\")",
       )
@@ -119,7 +120,7 @@ test "parse complex layout" {
   match @html.parse(html) {
     Some(e) => {
       inspect(e.tag, content="div")
-      inspect(e.id, content="Some(\"root\")")
+      debug_inspect(e.id, content="Some(\"root\")")
       // May include whitespace text nodes between elements
       inspect(e.children.length() >= 2, content="true")
     }

@@ -23,8 +23,11 @@ test "prefers_color_scheme_dark_cascade" {
     [],
     Some(light_env),
   )
-  inspect(cascaded_light.get_value("color"), content="Some(\"#333\")")
-  inspect(cascaded_light.get_value("background"), content="Some(\"white\")")
+  debug_inspect(cascaded_light.get_value("color"), content="Some(\"#333\")")
+  debug_inspect(
+    cascaded_light.get_value("background"),
+    content="Some(\"white\")",
+  )
 
   // Dark mode environment
   let dark_env = @media.MediaEnvironment::with_color_scheme(
@@ -39,8 +42,11 @@ test "prefers_color_scheme_dark_cascade" {
     Some(dark_env),
   )
   // In dark mode, media query should match and override
-  inspect(cascaded_dark.get_value("color"), content="Some(\"#fff\")")
-  inspect(cascaded_dark.get_value("background"), content="Some(\"#1a1a1a\")")
+  debug_inspect(cascaded_dark.get_value("color"), content="Some(\"#fff\")")
+  debug_inspect(
+    cascaded_dark.get_value("background"),
+    content="Some(\"#1a1a1a\")",
+  )
 }
 
 ///|
@@ -71,8 +77,14 @@ test "prefers_color_scheme_with_css_variables" {
     Some(dark_env),
   )
   // In dark mode, CSS variables should be dark values
-  inspect(cascaded_root.get_value("--text-color"), content="Some(\"#fff\")")
-  inspect(cascaded_root.get_value("--bg-color"), content="Some(\"#1a1a1a\")")
+  debug_inspect(
+    cascaded_root.get_value("--text-color"),
+    content="Some(\"#fff\")",
+  )
+  debug_inspect(
+    cascaded_root.get_value("--bg-color"),
+    content="Some(\"#1a1a1a\")",
+  )
 }
 
 ///|
@@ -103,7 +115,7 @@ test "prefers_color_scheme_dark_text_color" {
     [],
     Some(light_env),
   )
-  inspect(
+  debug_inspect(
     cascaded_root_light.get_value("--text-color"),
     content="Some(\"#333\")",
   )
@@ -121,7 +133,7 @@ test "prefers_color_scheme_dark_text_color" {
     Some(dark_env),
   )
   // In dark mode, CSS variable should have dark value
-  inspect(
+  debug_inspect(
     cascaded_root_dark.get_value("--text-color"),
     content="Some(\"#eee\")",
   )
@@ -134,7 +146,10 @@ test "prefers_color_scheme_dark_text_color" {
     Some(dark_env),
   )
   // p element gets color: var(--text-color) - resolution happens later
-  inspect(cascaded_p.get_value("color"), content="Some(\"var(--text-color)\")")
+  debug_inspect(
+    cascaded_p.get_value("color"),
+    content="Some(\"var(--text-color)\")",
+  )
 }
 
 ///|
@@ -162,7 +177,7 @@ test "hamburger_width_cascade_with_media_query" {
   )
 
   // Check that width is still from base rule
-  inspect(cascaded.get_value("width"), content="Some(\"20px\")")
-  inspect(cascaded.get_value("display"), content="Some(\"block\")")
-  inspect(cascaded.get_value("position"), content="Some(\"relative\")")
+  debug_inspect(cascaded.get_value("width"), content="Some(\"20px\")")
+  debug_inspect(cascaded.get_value("display"), content="Some(\"block\")")
+  debug_inspect(cascaded.get_value("position"), content="Some(\"relative\")")
 }

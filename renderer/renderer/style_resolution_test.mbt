@@ -49,13 +49,13 @@ test "debug node style from stylesheet" {
               let sel_elem = @css.Element::new("div").add_class("row")
 
               let cascaded = @css.cascade_element(sel_elem, stylesheets, [])
-              inspect(
+              debug_inspect(
                 cascaded.get_value("display"),
                 content=(
                   #|Some("flex")
                 ),
               )
-              inspect(
+              debug_inspect(
                 cascaded.get_value("flex-direction"),
                 content=(
                   #|Some("row")
@@ -96,19 +96,19 @@ test "debug stylesheet cascading" {
   }
 
   let cascaded = @css.cascade_element(elem, [stylesheet], [])
-  inspect(
+  debug_inspect(
     cascaded.get_value("display"),
     content=(
       #|Some("flex")
     ),
   )
-  inspect(
+  debug_inspect(
     cascaded.get_value("flex-direction"),
     content=(
       #|Some("row")
     ),
   )
-  inspect(
+  debug_inspect(
     cascaded.get_value("gap"),
     content=(
       #|Some("10px")
@@ -134,7 +134,7 @@ test "stylesheet margin-trim is applied" {
   let elem = @css.Element::new("container")
 
   let cascaded = @css.cascade_element(elem, [stylesheet], [])
-  inspect(
+  debug_inspect(
     cascaded.get_value("margin-trim"),
     content=(
       #|Some("block")
@@ -194,7 +194,7 @@ test "font-size cascading from stylesheet" {
   }
 
   let cascaded = @css.cascade_element(elem, [stylesheet], [])
-  inspect(
+  debug_inspect(
     cascaded.get_value("font-size"),
     content=(
       #|Some("20px")

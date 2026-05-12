@@ -99,7 +99,7 @@ pub impl Show for RpcResponse with output(self, logger) {
       logger.write_string(", message=")
       message.output(logger)
       logger.write_string(", data=")
-      data.output(logger)
+      logger.write_object(to_repr(data))
       logger.write_string(")")
     }
   }
@@ -328,7 +328,7 @@ pub fn parse_method(name : String) -> ApiMethod? {
 /// Note: This is a very simplified parser for demo purposes
 pub fn parse_json_object(json : String) -> Map[String, String] {
   let result : Map[String, String] = {}
-  let json = json.trim().to_string()
+  let json = json.trim().to_owned()
 
   // Remove outer braces
   if !json.has_prefix("{") || !json.has_suffix("}") {
@@ -339,8 +339,8 @@ pub fn parse_json_object(json : String) -> Map[String, String] {
   for pair in pairs {
     let parts = split_at_colon(pair)
     if parts.length() == 2 {
-      let key = unquote(parts[0].trim().to_string())
-      let value = unquote(parts[1].trim().to_string())
+      let key = unquote(parts[0].trim().to_owned())
+      let value = unquote(parts[1].trim().to_owned())
       result[key] = value
     }
   }
@@ -397,7 +397,7 @@ fn split_json_pairs(s : String) -> Array[String] {
     }
   }
   let last = current.to_string()
-  if !last.trim().to_string().is_empty() {
+  if !last.trim().to_owned().is_empty() {
     result.push(last)
   }
   result
@@ -429,7 +429,7 @@ fn split_at_colon(s : String) -> Array[String] {
 ///|
 /// Remove quotes from string
 fn unquote(s : String) -> String {
-  let s = s.trim().to_string()
+  let s = s.trim().to_owned()
   if s.length() >= 2 && s.has_prefix("\"") && s.has_suffix("\"") {
     substring(s, 1, s.length() - 1)
   } else {

@@ -5,7 +5,7 @@ test "basic role mapping - button" {
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
   inspect(tree.root.role, content="Button")
-  inspect(tree.root.name, content="Some(\"Click me\")")
+  debug_inspect(tree.root.name, content="Some(\"Click me\")")
   inspect(tree.root.focusable, content="true")
 }
 
@@ -15,7 +15,7 @@ test "basic role mapping - link" {
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
   inspect(tree.root.role, content="Link")
-  inspect(tree.root.name, content="Some(\"Home\")")
+  debug_inspect(tree.root.name, content="Some(\"Home\")")
 }
 
 ///|
@@ -24,8 +24,8 @@ test "basic role mapping - heading" {
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
   inspect(tree.root.role, content="Heading")
-  inspect(tree.root.level, content="Some(1)")
-  inspect(tree.root.name, content="Some(\"Main Title\")")
+  debug_inspect(tree.root.level, content="Some(1)")
+  debug_inspect(tree.root.name, content="Some(\"Main Title\")")
 }
 
 ///|
@@ -43,7 +43,7 @@ test "aria-label takes precedence" {
   let html = "<button aria-label=\"Close dialog\">X</button>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Close dialog\")")
+  debug_inspect(tree.root.name, content="Some(\"Close dialog\")")
 }
 
 ///|
@@ -81,8 +81,8 @@ test "find headings" {
   let tree = build_accessibility_tree_from_element(elem)
   let headings = find_headings(tree)
   inspect(headings.length(), content="2")
-  inspect(headings[0].level, content="Some(1)")
-  inspect(headings[1].level, content="Some(2)")
+  debug_inspect(headings[0].level, content="Some(1)")
+  debug_inspect(headings[1].level, content="Some(2)")
 }
 
 ///|
@@ -114,7 +114,7 @@ test "img with alt" {
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
   inspect(tree.root.role, content="Img")
-  inspect(tree.root.name, content="Some(\"Company Logo\")")
+  debug_inspect(tree.root.name, content="Some(\"Company Logo\")")
 }
 
 ///|
@@ -140,7 +140,7 @@ test "label[for] association" {
   // Find the input element in the tree
   let inputs = tree.find_by_role(Textbox)
   inspect(inputs.length(), content="1")
-  inspect(
+  debug_inspect(
     inputs[0].name,
     content=(
       #|Some("Input label")
@@ -158,7 +158,7 @@ test "label encapsulation - input wrapped in label" {
   let tree = build_accessibility_tree(doc)
   let inputs = tree.find_by_role(Textbox)
   inspect(inputs.length(), content="1")
-  inspect(
+  debug_inspect(
     inputs[0].name,
     content=(
       #|Some("textfield label")
@@ -176,7 +176,7 @@ test "label encapsulation - checkbox wrapped in label" {
   let tree = build_accessibility_tree(doc)
   let checkboxes = tree.find_by_role(Checkbox)
   inspect(checkboxes.length(), content="1")
-  inspect(
+  debug_inspect(
     checkboxes[0].name,
     content=(
       #|Some("checkbox label")
@@ -195,7 +195,7 @@ test "aria-owns ignores targets under hidden ancestors" {
   let tree = build_accessibility_tree(doc)
   let links = tree.find_by_role(Link)
   inspect(links.length(), content="1")
-  inspect(
+  debug_inspect(
     links[0].name,
     content=(
       #|Some("World Wide Web Consortium")

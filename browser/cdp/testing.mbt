@@ -138,7 +138,7 @@ fn parse_html_content(
       while i.val < len && chars[i.val] != '<' {
         i.val += 1
       }
-      let text = substring(chars, text_start, i.val).trim().to_string()
+      let text = substring(chars, text_start, i.val).trim().to_owned()
       if text.length() > 0 {
         let text_node = tree.create_text(text)
         let _ = tree.append_child(parent, text_node)

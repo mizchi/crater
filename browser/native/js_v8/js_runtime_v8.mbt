@@ -842,7 +842,7 @@ fn parse_dom_ops(json : String) -> Array[DomOp] {
         } else if c == '}' {
           depth -= 1
           if depth == 0 && obj_start >= 0 {
-            let obj_str = json[obj_start:i + 1].to_string()
+            let obj_str = json[obj_start:i + 1].to_owned()
             ops.push(parse_single_dom_op(obj_str))
             obj_start = -1
           }
@@ -931,7 +931,7 @@ fn parse_custom_states_value(value : String) -> Array[String] {
     return states
   }
   for part in value.split(" ") {
-    let state = part.trim().to_string()
+    let state = part.trim().to_owned()
     if !state.is_empty() {
       states.push(state)
     }
@@ -1119,7 +1119,7 @@ fn extract_json_field(json : String, field : String) -> String {
         }
         i += 1
       }
-      unescape_json_string(json[value_start:i].to_string())
+      unescape_json_string(json[value_start:i].to_owned())
     }
     None => ""
   }
@@ -1145,7 +1145,7 @@ fn extract_json_array(json : String, field : String) -> Array[String] {
             }
             str_end += 1
           }
-          result.push(unescape_json_string(json[str_start:str_end].to_string()))
+          result.push(unescape_json_string(json[str_start:str_end].to_owned()))
           i = str_end + 1
         } else {
           i += 1
@@ -1179,7 +1179,7 @@ fn parse_string_array(json : String) -> Array[String] {
         }
         i += 1
       }
-      result.push(unescape_json_string(json[start:i].to_string()))
+      result.push(unescape_json_string(json[start:i].to_owned()))
       i += 1
     } else {
       i += 1

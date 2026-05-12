@@ -11,7 +11,7 @@ test "cookie: disabled jar ignores all operations" {
   let jar = CookieJar::new() // enabled=false by default
   jar.store_from_header("session=abc123", "https://example.com/", true)
   inspect(jar.size(), content="0")
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://example.com/", true, true),
     content="None",
   )
@@ -22,7 +22,7 @@ test "cookie: enabled jar stores and retrieves" {
   let jar = CookieJar::new(enabled=true)
   jar.store_from_header("session=abc123", "https://example.com/app", true)
   inspect(jar.size(), content="1")
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://example.com/app", true, true),
     content="Some(\"session=abc123\")",
   )
@@ -58,7 +58,7 @@ test "cookie: same name+domain+path replaces" {
   jar.store_from_header("token=old", "https://example.com/", true)
   jar.store_from_header("token=new", "https://example.com/", true)
   inspect(jar.size(), content="1")
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://example.com/", true, true),
     content="Some(\"token=new\")",
   )
@@ -70,7 +70,7 @@ test "cookie: same name+domain+path replaces" {
 
 ///|
 test "parse: empty header returns None" {
-  inspect(parse_set_cookie("", "example.com", "/"), content="None")
+  debug_inspect(parse_set_cookie("", "example.com", "/"), content="None")
 }
 
 ///|
@@ -87,7 +87,7 @@ test "parse: name only (no value)" {
 
 ///|
 test "parse: empty name is invalid" {
-  inspect(parse_set_cookie("=value", "example.com", "/"), content="None")
+  debug_inspect(parse_set_cookie("=value", "example.com", "/"), content="None")
 }
 
 ///|
@@ -118,7 +118,7 @@ test "parse: all attributes" {
       inspect(cookie.secure, content="true")
       inspect(cookie.http_only, content="true")
       inspect(cookie.same_site, content="strict")
-      inspect(cookie.max_age, content="Some(3600)")
+      debug_inspect(cookie.max_age, content="Some(3600)")
     }
     None => assert_true(false)
   }
@@ -164,7 +164,7 @@ test "attack: subdomain can set cookie for parent domain" {
 test "attack: cannot set cookie for unrelated domain" {
   let c = parse_set_cookie("stolen=data; Domain=evil.com", "example.com", "/")
   // example.com cannot set cookie for evil.com
-  inspect(c, content="None")
+  debug_inspect(c, content="None")
 }
 
 ///|
@@ -186,7 +186,7 @@ test "attack: cannot set cookie for sibling subdomain" {
     "x=1; Domain=other.example.com", "sub.example.com", "/",
   )
   // sub.example.com is not a suffix of other.example.com
-  inspect(c, content="None")
+  debug_inspect(c, content="None")
 }
 
 ///|
@@ -194,7 +194,7 @@ test "attack: cannot set cookie for sibling subdomain" {
 test "attack: domain with trailing dot" {
   let c = parse_set_cookie("x=1; Domain=example.com.", "example.com", "/")
   // "example.com." != "example.com" and "example.com" doesn't end with ".example.com."
-  inspect(c, content="None")
+  debug_inspect(c, content="None")
 }
 
 // ============================================================
@@ -217,12 +217,12 @@ test "attack: secure cookie not sent over http" {
   let jar = CookieJar::new(enabled=true)
   jar.store_from_header("session=abc; Secure", "https://example.com/", true)
   // Try to read over http
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("http://example.com/", false, true),
     content="None",
   )
   // Works over https
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://example.com/", true, true),
     content="Some(\"session=abc\")",
   )
@@ -293,12 +293,12 @@ test "attack: httpOnly cookie hidden from JS" {
     "session=secret; HttpOnly", "https://example.com/", true,
   )
   // is_http_api=false simulates JS document.cookie access
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://example.com/", true, false),
     content="None",
   )
   // is_http_api=true simulates fetch/XHR
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://example.com/", true, true),
     content="Some(\"session=secret\")",
   )
@@ -316,17 +316,17 @@ test "attack: path scoping prevents cross-path access" {
     "admin_token=xyz; Path=/admin", "https://example.com/admin/dashboard", true,
   )
   // /admin → match
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://example.com/admin/page", true, true),
     content="Some(\"admin_token=xyz\")",
   )
   // /public → no match
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://example.com/public/page", true, true),
     content="None",
   )
   // /admin-evil → no match (not /admin/)
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://example.com/admin-evil", true, true),
     content="None",
   )
@@ -337,7 +337,7 @@ test "attack: path scoping prevents cross-path access" {
 test "cookie: path=/app/ matches /app/sub" {
   let jar = CookieJar::new(enabled=true)
   jar.store_from_header("x=1; Path=/app/", "https://example.com/app/", true)
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://example.com/app/sub", true, true),
     content="Some(\"x=1\")",
   )
@@ -375,7 +375,7 @@ test "cookie: negative max-age deletes cookie" {
 test "attack: cookie not sent to different domain" {
   let jar = CookieJar::new(enabled=true)
   jar.store_from_header("session=abc", "https://example.com/", true)
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://evil.com/", true, true),
     content="None",
   )
@@ -388,7 +388,7 @@ test "cookie: parent domain cookie sent to subdomain" {
   jar.store_from_header(
     "session=abc; Domain=example.com", "https://example.com/", true,
   )
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://sub.example.com/", true, true),
     content="Some(\"session=abc\")",
   )
@@ -400,7 +400,7 @@ test "attack: subdomain cookie not sent to parent domain" {
   let jar = CookieJar::new(enabled=true)
   jar.store_from_header("session=abc", "https://sub.example.com/", true)
   // Cookie domain is sub.example.com (default), should NOT match example.com
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://example.com/", true, true),
     content="None",
   )
@@ -587,7 +587,7 @@ test "httponly attack: non-httponly cookie replaces httponly (same name)" {
   inspect(jar.size(), content="1")
   // The cookie is now visible to JS (is_http_api=false)
   let js_visible = jar.get_cookie_header("https://example.com/", true, false)
-  inspect(js_visible, content="Some(\"session=evil\")")
+  debug_inspect(js_visible, content="Some(\"session=evil\")")
 }
 
 ///|
@@ -611,7 +611,7 @@ test "httponly: mixed httponly and non-httponly cookies" {
   )
   jar.store_from_header("theme=dark", "https://example.com/", true)
   // JS context: only non-HttpOnly visible
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://example.com/", true, false),
     content="Some(\"theme=dark\")",
   )
@@ -651,7 +651,7 @@ test "set-cookie attack: multiple Domain attributes" {
   )
   // Last Domain wins
   // But evil.com doesn't match example.com → rejected
-  inspect(c, content="None")
+  debug_inspect(c, content="None")
 }
 
 ///|
@@ -660,7 +660,7 @@ test "set-cookie: domain with double leading dot" {
   let c = parse_set_cookie("x=1; Domain=..example.com", "example.com", "/")
   // Strip one dot → ".example.com" → still has dot → not stripped again
   // ".example.com" != "example.com" and "example.com" doesn't end with "..example.com"
-  inspect(c, content="None")
+  debug_inspect(c, content="None")
 }
 
 ///|
@@ -669,7 +669,7 @@ test "set-cookie attack: empty Domain attribute" {
   let c = parse_set_cookie("x=1; Domain=", "example.com", "/")
   // domain="" after strip, domain_set=true
   // "example.com" != "" and "example.com" doesn't have suffix "." → rejected
-  inspect(c, content="None")
+  debug_inspect(c, content="None")
 }
 
 ///|
@@ -820,12 +820,12 @@ test "cross-site: cookie on parent readable from any subdomain" {
     "shared=data; Domain=example.com", "https://a.example.com/", true,
   )
   // Readable from another subdomain
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://b.example.com/", true, true),
     content="Some(\"shared=data\")",
   )
   // Readable from deeply nested subdomain
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://deep.sub.example.com/", true, true),
     content="Some(\"shared=data\")",
   )
@@ -838,11 +838,11 @@ test "cookie isolation: same name different domains are separate" {
   jar.store_from_header("token=from-a", "https://a.example.com/", true)
   jar.store_from_header("token=from-b", "https://b.example.com/", true)
   inspect(jar.size(), content="2")
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://a.example.com/", true, true),
     content="Some(\"token=from-a\")",
   )
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://b.example.com/", true, true),
     content="Some(\"token=from-b\")",
   )
@@ -859,11 +859,11 @@ test "cookie isolation: same name different paths are separate" {
     "token=user; Path=/user", "https://example.com/user/", true,
   )
   inspect(jar.size(), content="2")
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://example.com/admin/page", true, true),
     content="Some(\"token=admin\")",
   )
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://example.com/user/page", true, true),
     content="Some(\"token=user\")",
   )
@@ -903,12 +903,12 @@ test "domain: IP address cookie exact match only" {
   let jar = CookieJar::new(enabled=true)
   jar.store_from_header("x=1", "https://192.168.1.1/", true)
   // Exact IP match → sent
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://192.168.1.1/", true, true),
     content="Some(\"x=1\")",
   )
   // Different IP → not sent
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://192.168.1.2/", true, true),
     content="None",
   )
@@ -930,7 +930,7 @@ test "domain: Domain attribute with IP is not treated as suffix match" {
 test "domain: localhost cookie not sent to 127.0.0.1" {
   let jar = CookieJar::new(enabled=true)
   jar.store_from_header("x=1", "https://localhost/", true)
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://127.0.0.1/", true, true),
     content="None",
   )
@@ -964,7 +964,7 @@ test "samesite: Strict cookie blocked on cross-site request" {
     "csrf=token123; SameSite=Strict; Secure", "https://bank.com/", true,
   )
   // Same-site request → sent
-  inspect(
+  debug_inspect(
     jar.get_cookie_header(
       "https://bank.com/api",
       true,
@@ -974,7 +974,7 @@ test "samesite: Strict cookie blocked on cross-site request" {
     content="Some(\"csrf=token123\")",
   )
   // Cross-site request → blocked
-  inspect(
+  debug_inspect(
     jar.get_cookie_header(
       "https://bank.com/api",
       true,
@@ -992,7 +992,7 @@ test "samesite: Lax cookie sent on top-level navigation cross-site" {
     "session=abc; SameSite=Lax; Secure", "https://example.com/", true,
   )
   // Cross-site + top-level navigation → sent (Lax allows this)
-  inspect(
+  debug_inspect(
     jar.get_cookie_header(
       "https://example.com/page",
       true,
@@ -1003,7 +1003,7 @@ test "samesite: Lax cookie sent on top-level navigation cross-site" {
     content="Some(\"session=abc\")",
   )
   // Cross-site + subresource (not top-level) → blocked
-  inspect(
+  debug_inspect(
     jar.get_cookie_header(
       "https://example.com/api",
       true,
@@ -1022,7 +1022,7 @@ test "samesite: None+Secure sent cross-site" {
     "tracking=xyz; SameSite=None; Secure", "https://tracker.com/", true,
   )
   // Cross-site → sent (SameSite=None + Secure)
-  inspect(
+  debug_inspect(
     jar.get_cookie_header(
       "https://tracker.com/pixel",
       true,
@@ -1058,7 +1058,7 @@ test "samesite: None without Secure blocked at send time" {
     expires: None,
   })
   // Cross-site: SameSite=None but not Secure → blocked
-  inspect(
+  debug_inspect(
     jar.get_cookie_header(
       "https://example.com/",
       true,
@@ -1075,7 +1075,7 @@ test "samesite: default (no attribute) treated as Lax" {
   jar.store_from_header("session=abc", "https://example.com/", true)
   // No SameSite attribute → default Lax
   // Cross-site subresource → blocked
-  inspect(
+  debug_inspect(
     jar.get_cookie_header(
       "https://example.com/api",
       true,
@@ -1086,7 +1086,7 @@ test "samesite: default (no attribute) treated as Lax" {
     content="None",
   )
   // Cross-site top-level → allowed (Lax)
-  inspect(
+  debug_inspect(
     jar.get_cookie_header(
       "https://example.com/page",
       true,
@@ -1103,7 +1103,7 @@ test "samesite: unknown value treated as Strict (safe default)" {
   let jar = CookieJar::new(enabled=true)
   jar.store_from_header("x=1; SameSite=bogus", "https://example.com/", true)
   // Cross-site → blocked (unknown value → Strict)
-  inspect(
+  debug_inspect(
     jar.get_cookie_header(
       "https://example.com/",
       true,
@@ -1113,7 +1113,7 @@ test "samesite: unknown value treated as Strict (safe default)" {
     content="None",
   )
   // Same-site → sent
-  inspect(
+  debug_inspect(
     jar.get_cookie_header(
       "https://example.com/",
       true,
@@ -1131,7 +1131,7 @@ test "samesite: subdomain is same-site" {
     "x=1; SameSite=Strict; Domain=example.com; Secure", "https://example.com/", true,
   )
   // Subdomain of same registrable domain → same-site
-  inspect(
+  debug_inspect(
     jar.get_cookie_header(
       "https://sub.example.com/",
       true,
@@ -1149,7 +1149,7 @@ test "samesite: no site_origin means same-site (backward compat)" {
     "x=1; SameSite=Strict; Secure", "https://example.com/", true,
   )
   // No site_origin → same-site assumed → Strict cookie sent
-  inspect(
+  debug_inspect(
     jar.get_cookie_header("https://example.com/", true, true),
     content="Some(\"x=1\")",
   )
@@ -1168,7 +1168,7 @@ test "samesite: mixed cookies with different SameSite values" {
     "none_c=3; SameSite=None; Secure", "https://example.com/", true,
   )
   // Cross-site subresource: only None+Secure sent
-  inspect(
+  debug_inspect(
     jar.get_cookie_header(
       "https://example.com/",
       true,

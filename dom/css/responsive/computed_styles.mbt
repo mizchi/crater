@@ -848,7 +848,7 @@ fn parse_render_custom_states(value : String?) -> Array[String] {
   match value {
     Some(value) =>
       for part in value.split(" ") {
-        let state = part.trim().to_string()
+        let state = part.trim().to_owned()
         if !state.is_empty() {
           states.push(state)
         }
@@ -879,7 +879,7 @@ fn parse_inline_declarations(
   let pairs = inline_css.split(";")
   let mut order = 0
   for pair in pairs {
-    let pair_str = pair.to_string().trim().to_string()
+    let pair_str = pair.to_owned().trim().to_owned()
     if pair_str.is_empty() {
       continue
     }
@@ -897,16 +897,16 @@ fn parse_inline_declarations(
     let raw_value = pair_str
       .unsafe_substring(start=colon_pos + 1, end=pair_str.length())
       .trim()
-      .to_string()
+      .to_owned()
     if property.is_empty() || raw_value.is_empty() {
       continue
     }
     let (value, importance) = if raw_value.has_suffix("!important") {
       (
         raw_value[:raw_value.length() - "!important".length()]
-        .to_string()
+        .to_owned()
         .trim()
-        .to_string(),
+        .to_owned(),
         @cascade.Importance::Important,
       )
     } else {
@@ -914,7 +914,7 @@ fn parse_inline_declarations(
     }
     declarations.push(
       @cascade.Declaration::with_metadata(
-        property.to_string(),
+        property.to_owned(),
         @cascade.PropertyValue::Value(value),
         @cascade.Origin::Author,
         importance,

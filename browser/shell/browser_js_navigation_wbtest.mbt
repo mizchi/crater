@@ -189,7 +189,7 @@ async test "Browser activate_at submit listener sees SubmitEvent.submitter" {
   inspect(browser.get_current_url(), content="")
 
   let submitter_seen = browser.execute_inline_js("globalThis.__submitterSeen")
-  inspect(submitter_seen, content="Some(\"btn\")")
+  debug_inspect(submitter_seen, content="Some(\"btn\")")
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("btn"))
 }
@@ -606,7 +606,7 @@ test "Browser execute_inline_js form.submit bypasses submit listener and navigat
   let result = browser.execute_inline_js(
     "(function(){ document.getElementById('form').submit(); return 'ok'; })()",
   )
-  inspect(result, content="Some(\"ok\")")
+  debug_inspect(result, content="Some(\"ok\")")
   inspect(
     browser.get_current_url(),
     content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E?token=1",
@@ -644,7 +644,7 @@ test "Browser execute_inline_js form.requestSubmit uses submitter overrides for 
   let result = browser.execute_inline_js(
     "(function(){ const form = document.getElementById('form'); const button = document.getElementById('btn'); form.requestSubmit(button); return 'ok'; })()",
   )
-  inspect(result, content="Some(\"ok\")")
+  debug_inspect(result, content="Some(\"ok\")")
   inspect(
     browser.get_current_url(),
     content="data:text/html,%3Cp%20id%3D%22right%22%3Eright%3C/p%3E?token=1&go=Go",
@@ -683,7 +683,7 @@ test "Browser execute_inline_js form.requestSubmit preserves post body metadata"
   let result = browser.execute_inline_js(
     "(function(){ const form = document.getElementById('form'); const button = document.getElementById('btn'); form.requestSubmit(button); return 'ok'; })()",
   )
-  inspect(result, content="Some(\"ok\")")
+  debug_inspect(result, content="Some(\"ok\")")
   inspect(
     browser.get_current_url(),
     content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E",
@@ -720,9 +720,9 @@ test "Browser execute_inline_js keeps unsupported sync submit navigation pending
   let result = browser.execute_inline_js(
     "(function(){ document.getElementById('form').submit(); return 'ok'; })()",
   )
-  inspect(result, content="Some(\"ok\")")
+  debug_inspect(result, content="Some(\"ok\")")
   inspect(browser.get_current_url(), content="")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "String((globalThis.__craterPendingFormSubmissions || []).length)",
     ),
@@ -759,9 +759,9 @@ test "Browser execute_inline_js requestSubmit queues one submitter-aware externa
   let result = browser.execute_inline_js(
     "(function(){ const form = document.getElementById('form'); const button = document.getElementById('btn'); form.requestSubmit(button); return 'ok'; })()",
   )
-  inspect(result, content="Some(\"ok\")")
+  debug_inspect(result, content="Some(\"ok\")")
   inspect(browser.get_current_url(), content="")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "String((globalThis.__craterPendingFormSubmissions || []).length)",
     ),
@@ -810,7 +810,7 @@ async test "Browser execute_inline_js_async form.submit bypasses submit listener
   ) catch {
     _ => None
   }
-  inspect(result, content="Some(\"ok\")")
+  debug_inspect(result, content="Some(\"ok\")")
   inspect(
     browser.get_current_url(),
     content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E?token=1",
@@ -857,7 +857,7 @@ async test "Browser execute_inline_js_async form.requestSubmit uses submitter ov
   ) catch {
     _ => None
   }
-  inspect(result, content="Some(\"ok\")")
+  debug_inspect(result, content="Some(\"ok\")")
   inspect(
     browser.get_current_url(),
     content="data:text/html,%3Cp%20id%3D%22right%22%3Eright%3C/p%3E?token=1&go=Go",
@@ -898,7 +898,7 @@ async test "Browser execute_inline_js_async form.requestSubmit preserves post bo
   ) catch {
     _ => None
   }
-  inspect(result, content="Some(\"ok\")")
+  debug_inspect(result, content="Some(\"ok\")")
   inspect(
     browser.get_current_url(),
     content="data:text/html,%3Cp%20id%3D%22after%22%3Edone%3C/p%3E",
@@ -954,7 +954,7 @@ async test "Browser execute_inline_js_async requestSubmit posts body to external
       raise err
     }
   }
-  inspect(result, content="Some(\"ok\")")
+  debug_inspect(result, content="Some(\"ok\")")
   inspect(
     browser.get_current_url(),
     content="https://api.test/request-submit-text",
@@ -1004,11 +1004,11 @@ async test "Browser execute_inline_js_async requestSubmit posts body to external
           panic()
         }
       }
-      inspect(
+      debug_inspect(
         extract_fetch_mock_header(call_json, "content-type"),
         content="Some(\"text/plain;charset=UTF-8\")",
       )
-      inspect(
+      debug_inspect(
         extract_fetch_mock_header(call_json, "origin"),
         content="Some(\"https://example.test\")",
       )
@@ -1107,7 +1107,7 @@ async test "Browser execute_inline_js_async requestSubmit posts multipart body t
       raise err
     }
   }
-  inspect(result, content="Some(\"ok\")")
+  debug_inspect(result, content="Some(\"ok\")")
   inspect(
     browser.get_current_url(),
     content="https://api.test/request-submit-multipart",
@@ -1163,11 +1163,11 @@ async test "Browser execute_inline_js_async requestSubmit posts multipart body t
           panic()
         }
       }
-      inspect(
+      debug_inspect(
         extract_fetch_mock_header(call_json, "content-type"),
         content="Some(\"multipart/form-data; boundary=----CraterFormBoundary\")",
       )
-      inspect(
+      debug_inspect(
         extract_fetch_mock_header(call_json, "origin"),
         content="Some(\"https://example.test\")",
       )
@@ -1214,7 +1214,7 @@ async test "Browser execute_inline_js_async form.submit omits submitter field in
       raise err
     }
   }
-  inspect(result, content="Some(\"ok\")")
+  debug_inspect(result, content="Some(\"ok\")")
   inspect(
     browser.get_current_url(),
     content="https://api.test/form-submit-post",
@@ -1255,11 +1255,11 @@ async test "Browser execute_inline_js_async form.submit omits submitter field in
           panic()
         }
       }
-      inspect(
+      debug_inspect(
         extract_fetch_mock_header(call_json, "content-type"),
         content="Some(\"application/x-www-form-urlencoded;charset=UTF-8\")",
       )
-      inspect(
+      debug_inspect(
         extract_fetch_mock_header(call_json, "origin"),
         content="Some(\"https://example.test\")",
       )
@@ -1581,13 +1581,13 @@ async test "Browser handle_focused_key dispatches beforeinput for focused text i
 
   let handled = browser.handle_focused_key("x") catch { _ => false }
   inspect(handled, content="true")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ return document.getElementById('field').value; })()",
     ),
     content="Some(\"\")",
   )
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ return document.getElementById('status').textContent; })()",
     ),
@@ -1618,7 +1618,7 @@ async test "Browser handle_focused_key inserts text at caret in focused text inp
 
   let handled = browser.handle_focused_key("x") catch { _ => false }
   inspect(handled, content="true")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ const field=document.getElementById('field'); return field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
     ),
@@ -1649,7 +1649,7 @@ async test "Browser handle_focused_key deletes text before caret in focused text
 
   let handled = browser.handle_focused_key("Backspace") catch { _ => false }
   inspect(handled, content="true")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ const field=document.getElementById('field'); return field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
     ),
@@ -1680,7 +1680,7 @@ async test "Browser handle_focused_key replaces selected text in focused text in
 
   let handled = browser.handle_focused_key("x") catch { _ => false }
   inspect(handled, content="true")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ const field=document.getElementById('field'); return field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
     ),
@@ -1711,7 +1711,7 @@ async test "Browser handle_focused_key deletes text after caret in focused text 
 
   let handled = browser.handle_focused_key("Delete") catch { _ => false }
   inspect(handled, content="true")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ const field=document.getElementById('field'); return field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
     ),
@@ -1742,7 +1742,7 @@ async test "Browser handle_focused_key moves caret with Home and End" {
 
   let moved_home = browser.handle_focused_key("Home") catch { _ => false }
   inspect(moved_home, content="true")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ const field=document.getElementById('field'); return String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
     ),
@@ -1750,7 +1750,7 @@ async test "Browser handle_focused_key moves caret with Home and End" {
   )
   let moved_end = browser.handle_focused_key("End") catch { _ => false }
   inspect(moved_end, content="true")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ const field=document.getElementById('field'); return String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
     ),
@@ -1781,7 +1781,7 @@ async test "Browser handle_focused_key replaces all text after select()" {
 
   let handled = browser.handle_focused_key("x") catch { _ => false }
   inspect(handled, content="true")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ const field=document.getElementById('field'); return field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
     ),
@@ -1811,7 +1811,7 @@ async test "Browser execute_inline_js setRangeText updates focused text input" {
   let result = browser.execute_inline_js(
     "(function(){ const field=document.getElementById('field'); const status=document.getElementById('status'); field.setRangeText('xy',1,3,'select'); status.textContent = field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); return status.textContent; })()",
   )
-  inspect(result, content="Some(\"axyd|1|3\")")
+  debug_inspect(result, content="Some(\"axyd|1|3\")")
   let _ = browser.sync_render_state_from_dom_tree()
   let rendered = browser.render_output(Text)
   assert_true(rendered.contains("axyd|1|3"))

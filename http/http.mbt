@@ -271,7 +271,7 @@ fn filter_cors_headers(
       let names : Array[String] = []
       let parts = value.split(",")
       for part in parts {
-        let name = part.trim(chars=" ").to_string().to_lower()
+        let name = part.trim(chars=" ").to_owned().to_lower()
         if name.length() > 0 {
           names.push(name)
         }
@@ -316,7 +316,7 @@ fn enforce_cors_response(
     match allow_origin {
       None => raise CorsError("CORS header missing")
       Some(raw_value) => {
-        let value = raw_value.trim().to_string()
+        let value = raw_value.trim().to_owned()
         let ok = value == "*" || value == caller_origin
         if !ok {
           raise CorsError("CORS origin mismatch: " + value)

@@ -10,7 +10,7 @@ test "parse_inline_declarations_cached normalizes properties" {
 
 ///|
 test "get_cached_inline_style_display only parses display declarations" {
-  inspect(get_cached_inline_style_display("color: red"), content="None")
+  debug_inspect(get_cached_inline_style_display("color: red"), content="None")
   match get_cached_inline_style_display("display: inline-block") {
     Some(@types.InlineBlock) => inspect(true, content="true")
     _ => fail("expected inline-block display")

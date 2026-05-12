@@ -1,6 +1,6 @@
 ///|
 fn resolve_sync_await_expression_fallback(expression : String) -> String? {
-  let expr = expression.trim().to_string()
+  let expr = expression.trim().to_owned()
   if expr.has_prefix("Promise.resolve(") && expr.has_suffix(")") {
     return Some(expr.unsafe_substring(start=16, end=expr.length() - 1))
   }
@@ -20,7 +20,7 @@ fn resolve_sync_await_call_expression(
   this_json : String,
   args_json : String,
 ) -> String? {
-  let trimmed = function_declaration.trim().to_string()
+  let trimmed = function_declaration.trim().to_owned()
   let normalized = if trimmed.has_prefix("async ") {
     let sync_body = trimmed.unsafe_substring(start=6, end=trimmed.length())
     if sync_body.contains("await ") ||

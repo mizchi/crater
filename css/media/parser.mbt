@@ -9,7 +9,7 @@ pub fn parse_media_query_list(input : String) -> MediaQueryList {
   let queries : Array[MediaQuery] = []
   let parts = split_media_queries(input)
   for part in parts {
-    let trimmed = part.trim().to_string()
+    let trimmed = part.trim().to_owned()
     if !trimmed.is_empty() {
       match parse_single_media_query(trimmed) {
         Some(query) => queries.push(query)
@@ -52,7 +52,7 @@ fn split_media_queries(input : String) -> Array[String] {
 /// Parse a single media query
 /// e.g., "screen and (min-width: 768px)"
 fn parse_single_media_query(input : String) -> MediaQuery? {
-  let input = input.trim().to_string()
+  let input = input.trim().to_owned()
   if input.is_empty() {
     return None
   }
@@ -122,7 +122,7 @@ fn tokenize_media_query(input : String) -> Array[String] {
     if c == '(' {
       if paren_depth == 0 {
         // Push any preceding token
-        let s = current.to_string().trim().to_string()
+        let s = current.to_string().trim().to_owned()
         if !s.is_empty() {
           tokens.push(s)
         }
@@ -136,7 +136,7 @@ fn tokenize_media_query(input : String) -> Array[String] {
       current.write_char(c)
       if paren_depth == 0 {
         in_paren = false
-        let s = current.to_string().trim().to_string()
+        let s = current.to_string().trim().to_owned()
         if !s.is_empty() {
           tokens.push(s)
         }
@@ -146,7 +146,7 @@ fn tokenize_media_query(input : String) -> Array[String] {
       if in_paren {
         current.write_char(c)
       } else {
-        let s = current.to_string().trim().to_string()
+        let s = current.to_string().trim().to_owned()
         if !s.is_empty() {
           tokens.push(s)
         }
@@ -156,7 +156,7 @@ fn tokenize_media_query(input : String) -> Array[String] {
       current.write_char(c)
     }
   }
-  let final_str = current.to_string().trim().to_string()
+  let final_str = current.to_string().trim().to_owned()
   if !final_str.is_empty() {
     tokens.push(final_str)
   }
@@ -179,7 +179,7 @@ fn parse_media_type(s : String) -> MediaType? {
 /// Parse a media feature from the content inside parentheses
 /// e.g., "min-width: 768px" or "color" or "width >= 768px"
 fn parse_media_feature(content : String) -> MediaFeature? {
-  let content = content.trim().to_string()
+  let content = content.trim().to_owned()
   if content.is_empty() {
     return None
   }
@@ -199,8 +199,8 @@ fn parse_media_feature(content : String) -> MediaFeature? {
       end=content.length(),
     )
     return parse_feature_with_value(
-      name.trim().to_string(),
-      value.trim().to_string(),
+      name.trim().to_owned(),
+      value.trim().to_owned(),
     )
   }
 
@@ -221,7 +221,7 @@ fn parse_range_feature(content : String) -> MediaFeature? {
         start=op_pos + op.length(),
         end=content.length(),
       )
-      match parse_media_value(value_str.trim().to_string()) {
+      match parse_media_value(value_str.trim().to_owned()) {
         Some(value) => {
           let range_op = match op {
             ">=" => Ge
@@ -231,10 +231,10 @@ fn parse_range_feature(content : String) -> MediaFeature? {
             "=" => Eq
             _ => return None
           }
-          match name.trim().to_string().to_lower() {
+          match name.trim().to_owned().to_lower() {
             "width" => return Some(WidthRange(range_op, value))
             "height" => return Some(HeightRange(range_op, value))
-            _ => return Some(Custom(name.trim().to_string(), Some(value)))
+            _ => return Some(Custom(name.trim().to_owned(), Some(value)))
           }
         }
         None => ()
@@ -314,7 +314,7 @@ fn parse_boolean_feature(name : String) -> MediaFeature? {
 ///|
 /// Parse a media value
 fn parse_media_value(s : String) -> MediaValue? {
-  let s = s.trim().to_string()
+  let s = s.trim().to_owned()
   if s.is_empty() {
     return None
   }
@@ -325,7 +325,7 @@ fn parse_media_value(s : String) -> MediaValue? {
     let left = s.unsafe_substring(start=0, end=slash_pos)
     let right = s.unsafe_substring(start=slash_pos + 1, end=s.length())
     match
-      (parse_int(left.trim().to_string()), parse_int(right.trim().to_string())) {
+      (parse_int(left.trim().to_owned()), parse_int(right.trim().to_owned())) {
       (Some(l), Some(r)) => return Some(Ratio(l, r))
       _ => ()
     }

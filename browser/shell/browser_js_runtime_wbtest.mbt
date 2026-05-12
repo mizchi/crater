@@ -279,7 +279,7 @@ test "Browser execute_scripts preserves form-associated restore state across JS 
   let restored = browser.execute_inline_js(
     "(function(){ return JSON.stringify([globalThis.__restoreEvents || [], new FormData(document.getElementById('form')).get('token')]); })()",
   )
-  inspect(
+  debug_inspect(
     restored,
     content="Some(\"[[[\\\"draft-state\\\",\\\"restore\\\",\\\"control\\\"]],\\\"draft-value\\\"]\")",
   )

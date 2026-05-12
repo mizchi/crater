@@ -47,11 +47,11 @@ test "tts output requires full rendered content" {
 
 ///|
 test "tts status message maps unsupported command" {
-  inspect(
+  debug_inspect(
     tts_status_message("unsupported:no-local-tts-command"),
     content="Some(\"TTS: no local speech command found.\")",
   )
-  inspect(tts_status_message("ok:say"), content="None")
+  debug_inspect(tts_status_message("ok:say"), content="None")
 }
 
 ///|

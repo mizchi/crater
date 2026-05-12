@@ -33,7 +33,7 @@ fn view_to_string(v : StringView) -> String {
 fn parse_number_with_suffix(value : String, suffix : String) -> Double? {
   match value.strip_suffix(suffix) {
     Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_owned()) catch {
         _ => return None
       }
       Some(n)
@@ -1077,9 +1077,9 @@ fn first_color_scheme_keyword(value : String) -> String? {
   let normalized = value.to_lower()
   let tokens = normalized.split(" ")
   for token in tokens {
-    let t = token.to_string().trim()
+    let t = token.to_owned().trim()
     if t == "light" || t == "dark" {
-      return Some(t.to_string())
+      return Some(t.to_owned())
     }
   }
   None
@@ -1374,32 +1374,32 @@ fn apply_property(
         .collect()
       match parts.length() {
         1 => {
-          let dim = resolve_dimension(parts[0].to_string(), ctx)
+          let dim = resolve_dimension(parts[0].to_owned(), ctx)
           builder.margin_top = dim
           builder.margin_right = dim
           builder.margin_bottom = dim
           builder.margin_left = dim
         }
         2 => {
-          let tb = resolve_dimension(parts[0].to_string(), ctx)
-          let lr = resolve_dimension(parts[1].to_string(), ctx)
+          let tb = resolve_dimension(parts[0].to_owned(), ctx)
+          let lr = resolve_dimension(parts[1].to_owned(), ctx)
           builder.margin_top = tb
           builder.margin_bottom = tb
           builder.margin_left = lr
           builder.margin_right = lr
         }
         3 => {
-          builder.margin_top = resolve_dimension(parts[0].to_string(), ctx)
-          let lr = resolve_dimension(parts[1].to_string(), ctx)
+          builder.margin_top = resolve_dimension(parts[0].to_owned(), ctx)
+          let lr = resolve_dimension(parts[1].to_owned(), ctx)
           builder.margin_left = lr
           builder.margin_right = lr
-          builder.margin_bottom = resolve_dimension(parts[2].to_string(), ctx)
+          builder.margin_bottom = resolve_dimension(parts[2].to_owned(), ctx)
         }
         4 => {
-          builder.margin_top = resolve_dimension(parts[0].to_string(), ctx)
-          builder.margin_right = resolve_dimension(parts[1].to_string(), ctx)
-          builder.margin_bottom = resolve_dimension(parts[2].to_string(), ctx)
-          builder.margin_left = resolve_dimension(parts[3].to_string(), ctx)
+          builder.margin_top = resolve_dimension(parts[0].to_owned(), ctx)
+          builder.margin_right = resolve_dimension(parts[1].to_owned(), ctx)
+          builder.margin_bottom = resolve_dimension(parts[2].to_owned(), ctx)
+          builder.margin_left = resolve_dimension(parts[3].to_owned(), ctx)
         }
         _ => ()
       }
@@ -1430,10 +1430,10 @@ fn apply_property(
     "padding-left" => builder.padding_left = resolve_dimension(value, ctx)
     "padding" => {
       // Shorthand: padding (1, 2, 3, or 4 values)
-      let parts = value.trim().to_string().split(" ")
+      let parts = value.trim().to_owned().split(" ")
       let values : Array[@types.Dimension] = []
       for part in parts {
-        let p = part.to_string().trim().to_string()
+        let p = part.to_owned().trim().to_owned()
         if !p.is_empty() {
           values.push(resolve_dimension(p, ctx))
         }
@@ -1487,10 +1487,10 @@ fn apply_property(
       builder.padding_right = resolve_dimension(value, ctx)
     "border-width" => {
       // Shorthand: border-width (1, 2, 3, or 4 values)
-      let parts = value.trim().to_string().split(" ")
+      let parts = value.trim().to_owned().split(" ")
       let values : Array[@types.Dimension] = []
       for part in parts {
-        let p = part.to_string().trim().to_string()
+        let p = part.to_owned().trim().to_owned()
         if !p.is_empty() {
           values.push(resolve_dimension(p, ctx))
         }
@@ -1594,7 +1594,7 @@ fn apply_property(
       let raw_parts = value.trim().to_lower().split(" ")
       let parts : Array[String] = []
       for part in raw_parts {
-        let p = part.to_string().trim().to_string()
+        let p = part.to_owned().trim().to_owned()
         if !p.is_empty() {
           parts.push(p)
         }
@@ -1702,7 +1702,7 @@ fn apply_property(
       let raw_parts = value.trim().to_lower().split(" ")
       let parts : Array[String] = []
       for part in raw_parts {
-        let p = part.to_string().trim().to_string()
+        let p = part.to_owned().trim().to_owned()
         if !p.is_empty() {
           parts.push(p)
         }
@@ -1734,7 +1734,7 @@ fn apply_property(
       let raw_parts = value.trim().to_lower().split(" ")
       let parts : Array[String] = []
       for part in raw_parts {
-        let p = part.to_string().trim().to_string()
+        let p = part.to_owned().trim().to_owned()
         if !p.is_empty() {
           parts.push(p)
         }
@@ -1781,7 +1781,7 @@ fn apply_property(
     }
     "align-items" => builder.align_items = parse_alignment(value)
     "align-content" => {
-      let normalized = value.trim().to_lower().to_string()
+      let normalized = value.trim().to_lower().to_owned()
       let (alignment, is_unsafe) = if normalized == "normal" {
         (@types.Alignment::Stretch, false)
       } else if normalized == "last baseline" {
@@ -1862,7 +1862,7 @@ fn apply_property(
         let mut basis_found = false
         let mut valid = true
         for i = 0; i < parts.length(); i = i + 1 {
-          let p = parts[i].to_string()
+          let p = parts[i].to_owned()
           if is_flex_basis_value(p) {
             if basis_found {
               // Second basis value is invalid
@@ -1885,42 +1885,33 @@ fn apply_property(
             1 =>
               if num_count == 1 {
                 // flex: <number> = <number> 1 0%
-                builder.flex_grow = parse_number(parts[0].to_string())
+                builder.flex_grow = parse_number(parts[0].to_owned())
                 builder.flex_shrink = 1.0
                 builder.flex_basis = @types.Dimension::Percent(0.0)
               } else if basis_found {
                 // flex: <basis> = 1 1 <basis>
                 builder.flex_grow = 1.0
                 builder.flex_shrink = 1.0
-                builder.flex_basis = resolve_dimension(
-                  parts[0].to_string(),
-                  ctx,
-                )
+                builder.flex_basis = resolve_dimension(parts[0].to_owned(), ctx)
               }
             2 =>
               if num_count == 2 {
                 // flex: <grow> <shrink> = <grow> <shrink> 0%
-                builder.flex_grow = parse_number(parts[0].to_string())
-                builder.flex_shrink = parse_number(parts[1].to_string())
+                builder.flex_grow = parse_number(parts[0].to_owned())
+                builder.flex_shrink = parse_number(parts[1].to_owned())
                 builder.flex_basis = @types.Dimension::Percent(0.0)
               } else if num_count == 1 && basis_found {
                 // flex: <grow> <basis>
-                builder.flex_grow = parse_number(parts[0].to_string())
+                builder.flex_grow = parse_number(parts[0].to_owned())
                 builder.flex_shrink = 1.0
-                builder.flex_basis = resolve_dimension(
-                  parts[1].to_string(),
-                  ctx,
-                )
+                builder.flex_basis = resolve_dimension(parts[1].to_owned(), ctx)
               }
             3 =>
               if num_count == 2 && basis_found {
                 // flex: <grow> <shrink> <basis>
-                builder.flex_grow = parse_number(parts[0].to_string())
-                builder.flex_shrink = parse_number(parts[1].to_string())
-                builder.flex_basis = resolve_dimension(
-                  parts[2].to_string(),
-                  ctx,
-                )
+                builder.flex_grow = parse_number(parts[0].to_owned())
+                builder.flex_shrink = parse_number(parts[1].to_owned())
+                builder.flex_basis = resolve_dimension(parts[2].to_owned(), ctx)
               }
             // If num_count != 2 or basis not at end, it's invalid and we do nothing
             _ => ()
@@ -1937,7 +1928,7 @@ fn apply_property(
         .filter(fn(s) { !s.is_empty() })
         .collect()
       for part in parts {
-        let p = part.to_string()
+        let p = part.to_owned()
         // Check flex-direction values
         if p == "row" {
           builder.flex_direction = @types.FlexDirection::Row
@@ -1968,7 +1959,7 @@ fn apply_property(
       match parts.length() {
         1 => {
           let dim = resolve_dimension_with_calc_percent_fallback(
-            parts[0].to_string(),
+            parts[0].to_owned(),
             ctx,
           )
           builder.row_gap = dim
@@ -1976,11 +1967,11 @@ fn apply_property(
         }
         2 => {
           builder.row_gap = resolve_dimension_with_calc_percent_fallback(
-            parts[0].to_string(),
+            parts[0].to_owned(),
             ctx,
           )
           builder.column_gap = resolve_dimension_with_calc_percent_fallback(
-            parts[1].to_string(),
+            parts[1].to_owned(),
             ctx,
           )
         }
@@ -2028,32 +2019,32 @@ fn apply_property(
         .collect()
       match parts.length() {
         1 => {
-          let dim = resolve_dimension(parts[0].to_string(), ctx)
+          let dim = resolve_dimension(parts[0].to_owned(), ctx)
           builder.inset_top = dim
           builder.inset_right = dim
           builder.inset_bottom = dim
           builder.inset_left = dim
         }
         2 => {
-          let tb = resolve_dimension(parts[0].to_string(), ctx)
-          let lr = resolve_dimension(parts[1].to_string(), ctx)
+          let tb = resolve_dimension(parts[0].to_owned(), ctx)
+          let lr = resolve_dimension(parts[1].to_owned(), ctx)
           builder.inset_top = tb
           builder.inset_bottom = tb
           builder.inset_left = lr
           builder.inset_right = lr
         }
         3 => {
-          builder.inset_top = resolve_dimension(parts[0].to_string(), ctx)
-          let lr = resolve_dimension(parts[1].to_string(), ctx)
+          builder.inset_top = resolve_dimension(parts[0].to_owned(), ctx)
+          let lr = resolve_dimension(parts[1].to_owned(), ctx)
           builder.inset_left = lr
           builder.inset_right = lr
-          builder.inset_bottom = resolve_dimension(parts[2].to_string(), ctx)
+          builder.inset_bottom = resolve_dimension(parts[2].to_owned(), ctx)
         }
         4 => {
-          builder.inset_top = resolve_dimension(parts[0].to_string(), ctx)
-          builder.inset_right = resolve_dimension(parts[1].to_string(), ctx)
-          builder.inset_bottom = resolve_dimension(parts[2].to_string(), ctx)
-          builder.inset_left = resolve_dimension(parts[3].to_string(), ctx)
+          builder.inset_top = resolve_dimension(parts[0].to_owned(), ctx)
+          builder.inset_right = resolve_dimension(parts[1].to_owned(), ctx)
+          builder.inset_bottom = resolve_dimension(parts[2].to_owned(), ctx)
+          builder.inset_left = resolve_dimension(parts[3].to_owned(), ctx)
         }
         _ => ()
       }
@@ -2149,7 +2140,7 @@ fn apply_property(
       }
     }
     "grid-area" => {
-      let v = value.trim().to_string()
+      let v = value.trim().to_owned()
       // Check if this is a single named area identifier (no slashes, not a number, not auto/span)
       if !v.contains("/") && is_grid_area_name(v) {
         builder.grid_area = Some(v)
@@ -2374,11 +2365,11 @@ fn parse_font_family(value : String) -> String {
   let trimmed = first.trim()
   let len = trimmed.length()
   if len >= 2 && trimmed[0] == '"' && trimmed[len - 1] == '"' {
-    trimmed[1:len - 1].to_string().to_lower()
+    trimmed[1:len - 1].to_owned().to_lower()
   } else if len >= 2 && trimmed[0] == '\'' && trimmed[len - 1] == '\'' {
-    trimmed[1:len - 1].to_string().to_lower()
+    trimmed[1:len - 1].to_owned().to_lower()
   } else {
-    trimmed.to_string().to_lower()
+    trimmed.to_owned().to_lower()
   }
 }
 
@@ -2401,7 +2392,7 @@ fn split_css_top_level(input : String, delimiter : Char) -> Array[String] {
       continue
     }
     if ch == delimiter && depth == 0 {
-      let part = current.to_string().trim().to_string()
+      let part = current.to_string().trim().to_owned()
       if !part.is_empty() {
         parts.push(part)
       }
@@ -2410,7 +2401,7 @@ fn split_css_top_level(input : String, delimiter : Char) -> Array[String] {
     }
     current.write_char(ch)
   }
-  let last = current.to_string().trim().to_string()
+  let last = current.to_string().trim().to_owned()
   if !last.is_empty() {
     parts.push(last)
   }
@@ -2437,7 +2428,7 @@ fn split_css_whitespace_preserving_functions(input : String) -> Array[String] {
     }
     let is_space = ch == ' ' || ch == '\t' || ch == '\n'
     if is_space && depth == 0 {
-      let part = current.to_string().trim().to_string()
+      let part = current.to_string().trim().to_owned()
       if !part.is_empty() {
         parts.push(part)
       }
@@ -2446,7 +2437,7 @@ fn split_css_whitespace_preserving_functions(input : String) -> Array[String] {
     }
     current.write_char(ch)
   }
-  let last = current.to_string().trim().to_string()
+  let last = current.to_string().trim().to_owned()
   if !last.is_empty() {
     parts.push(last)
   }
@@ -2688,7 +2679,7 @@ fn resolve_border_width(
 
   let parts = v
     .split(" ")
-    .map(fn(part) { part.to_string().trim().to_string() })
+    .map(fn(part) { part.to_owned().trim().to_owned() })
     .filter(fn(part) { !part.is_empty() })
     .collect()
 
@@ -2781,12 +2772,12 @@ fn parse_border_spacing(
   if parts.length() == 0 {
     return (0.0, 0.0)
   }
-  let horizontal = match resolve_dimension(parts[0].to_string(), ctx) {
+  let horizontal = match resolve_dimension(parts[0].to_owned(), ctx) {
     @types.Length(px) => px
     _ => 0.0
   }
   let vertical = if parts.length() >= 2 {
-    match resolve_dimension(parts[1].to_string(), ctx) {
+    match resolve_dimension(parts[1].to_owned(), ctx) {
       @types.Length(px) => px
       _ => horizontal
     }
@@ -2807,7 +2798,7 @@ fn resolve_border_radius(
   // Handle slash syntax (horizontal / vertical) - take only horizontal for now
   let effective = if v.contains("/") {
     let slash_parts : Array[StringView] = v.split("/").collect()
-    slash_parts[0].to_string().trim()
+    slash_parts[0].to_owned().trim()
   } else {
     v
   }
@@ -2819,7 +2810,7 @@ fn resolve_border_radius(
     return (0.0, 0.0, 0.0, 0.0)
   }
   let values : Array[Double] = parts.map(fn(p) {
-    let dim = resolve_dimension(p.to_string(), ctx)
+    let dim = resolve_dimension(p.to_owned(), ctx)
     match dim {
       @types.Percent(pct) => -pct // Negative encodes percentage (fraction) for render-time resolution
       _ => resolve_dimension_to_px(dim)
@@ -2919,7 +2910,7 @@ fn parse_css_value_to_px(value : String, ctx : ComputeContext) -> Double? {
   }
 
   // Parse simple dimension value
-  let dim = resolve_dimension(v.to_string(), ctx)
+  let dim = resolve_dimension(v.to_owned(), ctx)
   match dim {
     @types.Length(px) => Some(px)
     @types.Percent(_) => None // Cannot simplify percentages
@@ -2945,7 +2936,7 @@ fn split_css_args(input : String) -> Array[String] {
       paren_depth -= 1
       current.write_char(c)
     } else if c == ',' && paren_depth == 0 {
-      let s = current.to_string().trim().to_string()
+      let s = current.to_string().trim().to_owned()
       if !s.is_empty() {
         result.push(s)
       }
@@ -2954,7 +2945,7 @@ fn split_css_args(input : String) -> Array[String] {
       current.write_char(c)
     }
   }
-  let s = current.to_string().trim().to_string()
+  let s = current.to_string().trim().to_owned()
   if !s.is_empty() {
     result.push(s)
   }
@@ -3001,7 +2992,7 @@ fn parse_simple_calc_expr(expr : String, ctx : ComputeContext) -> Double? {
       if i > token_start {
         let token = expr.unsafe_substring(start=token_start, end=i).trim()
         if !token.is_empty() {
-          match parse_css_value_to_px(token.to_string(), ctx) {
+          match parse_css_value_to_px(token.to_owned(), ctx) {
             Some(val) =>
               match current_op {
                 '+' => result = result + val
@@ -3012,7 +3003,7 @@ fn parse_simple_calc_expr(expr : String, ctx : ComputeContext) -> Double? {
               }
             None => {
               // Try parsing as unitless number for * and /
-              let n = @string.parse_double(token.to_string()) catch {
+              let n = @string.parse_double(token.to_owned()) catch {
                 _ => return None
               }
               match current_op {
@@ -3049,7 +3040,7 @@ fn parse_css_math_function(
 
   // Handle min()
   if v.has_prefix("min(") && v.has_suffix(")") {
-    match parse_css_value_to_px(v.to_string(), ctx) {
+    match parse_css_value_to_px(v.to_owned(), ctx) {
       Some(px) => return Some(@types.Length(px))
       None => return None
     }
@@ -3057,7 +3048,7 @@ fn parse_css_math_function(
 
   // Handle max()
   if v.has_prefix("max(") && v.has_suffix(")") {
-    match parse_css_value_to_px(v.to_string(), ctx) {
+    match parse_css_value_to_px(v.to_owned(), ctx) {
       Some(px) => return Some(@types.Length(px))
       None => return None
     }
@@ -3065,7 +3056,7 @@ fn parse_css_math_function(
 
   // Handle clamp()
   if v.has_prefix("clamp(") && v.has_suffix(")") {
-    match parse_css_value_to_px(v.to_string(), ctx) {
+    match parse_css_value_to_px(v.to_owned(), ctx) {
       Some(px) => return Some(@types.Length(px))
       None => return None
     }
@@ -3230,7 +3221,7 @@ fn extract_first_percent_ratio(expr : String) -> Double? {
       }
       let num = expr.unsafe_substring(start~, end=i).trim()
       if !num.is_empty() {
-        let n = @string.parse_double(num.to_string()) catch { _ => return None }
+        let n = @string.parse_double(num.to_owned()) catch { _ => return None }
         return Some(n / 100.0)
       }
     }
@@ -3347,7 +3338,7 @@ fn resolve_dimension_with_mixed_calc_fallback(
 /// Resolve CSS var() function with context lookup
 /// Looks up variable in context, falls back to provided fallback value if not found
 fn resolve_var(value : String, ctx : ComputeContext) -> String {
-  let v = value.trim().to_string()
+  let v = value.trim().to_owned()
   if !v.has_prefix("var(") || !v.has_suffix(")") {
     return v
   }
@@ -3373,9 +3364,9 @@ fn resolve_var(value : String, ctx : ComputeContext) -> String {
   // Extract variable name as String
   let var_name : String = if comma_pos > 0 {
     let slice = inner.unsafe_substring(start=0, end=comma_pos)
-    slice.trim().to_string()
+    slice.trim().to_owned()
   } else {
-    inner.trim().to_string()
+    inner.trim().to_owned()
   }
   // Look up variable in context
   match ctx.custom_properties.get(var_name) {
@@ -3393,7 +3384,7 @@ fn resolve_var(value : String, ctx : ComputeContext) -> String {
           start=comma_pos + 1,
           end=inner.length(),
         )
-        let fallback = fallback_slice.trim().to_string()
+        let fallback = fallback_slice.trim().to_owned()
         // Recursively resolve fallback (it may also contain var())
         resolve_all_vars(fallback, ctx)
       } else {
@@ -3409,7 +3400,7 @@ fn resolve_all_vars(value : String, ctx : ComputeContext) -> String {
   let v = value.trim()
   // If no var() in value, return as-is
   if !v.contains("var(") {
-    return v.to_string()
+    return v.to_owned()
   }
   // Simple case: entire value is a var()
   if v.has_prefix("var(") && v.has_suffix(")") {
@@ -3430,7 +3421,7 @@ fn resolve_all_vars(value : String, ctx : ComputeContext) -> String {
     }
     if end_pos == v.length() - 1 {
       // Entire value is a single var()
-      return resolve_var(v.to_string(), ctx)
+      return resolve_var(v.to_owned(), ctx)
     }
   }
   // Complex case: var() embedded in value like "10px var(--gap) 20px"
@@ -3579,7 +3570,7 @@ fn normalize_grid_template_math_functions(
 fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // First resolve any var() functions
   let raw_v = resolve_all_vars(value, ctx).trim()
-  let v = strip_css_ascii_whitespace(raw_v.to_string())
+  let v = strip_css_ascii_whitespace(raw_v.to_owned())
   if v == "auto" || v == "none" {
     return @types.Dimension::Auto
   }
@@ -3598,7 +3589,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
 
   // Handle calc() expressions
   if raw_v.has_prefix("calc(") {
-    match parse_calc_string(raw_v.to_string(), ctx) {
+    match parse_calc_string(raw_v.to_owned(), ctx) {
       Some(dim) => return dim
       None => return @types.Dimension::Auto // Fallback for complex calc
     }
@@ -3608,7 +3599,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   if raw_v.has_prefix("min(") ||
     raw_v.has_prefix("max(") ||
     raw_v.has_prefix("clamp(") {
-    match parse_css_math_function(raw_v.to_string(), ctx) {
+    match parse_css_math_function(raw_v.to_owned(), ctx) {
       Some(dim) => return dim
       None => return @types.Dimension::Auto // Fallback for complex expressions
     }
@@ -3617,7 +3608,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle rem units (check before em)
   match v.strip_suffix("rem") {
     Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_owned()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * ctx.root_font_size)
@@ -3628,7 +3619,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle em units
   match v.strip_suffix("em") {
     Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_owned()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * ctx.font_size)
@@ -3646,7 +3637,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // the historical 0.5em approximation for generic monospace rendering.
   match v.strip_suffix("ch") {
     Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_owned()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * ctx.font_size * ch_unit_ratio(ctx))
@@ -3657,7 +3648,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle ex units (x-height, approximated as 0.5em)
   match v.strip_suffix("ex") {
     Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_owned()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * ctx.font_size * 0.5)
@@ -3668,7 +3659,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle pt units (1pt = 1/72 inch = 96/72 px ≈ 1.333px)
   match v.strip_suffix("pt") {
     Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_owned()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * 96.0 / 72.0)
@@ -3679,7 +3670,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle pc units (1pc = 12pt = 16px)
   match v.strip_suffix("pc") {
     Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_owned()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * 16.0)
@@ -3690,7 +3681,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle in units (1in = 96px)
   match v.strip_suffix("in") {
     Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_owned()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * 96.0)
@@ -3701,7 +3692,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle cm units (1cm = 96/2.54 px ≈ 37.795px)
   match v.strip_suffix("cm") {
     Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_owned()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * 96.0 / 2.54)
@@ -3712,7 +3703,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle mm units (1mm = 96/25.4 px ≈ 3.7795px)
   match v.strip_suffix("mm") {
     Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_owned()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * 96.0 / 25.4)
@@ -3723,7 +3714,7 @@ fn resolve_dimension(value : String, ctx : ComputeContext) -> @types.Dimension {
   // Handle Q units (1Q = 1/4mm = 96/101.6 px)
   match v.strip_suffix("Q") {
     Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_owned()) catch {
         _ => return @types.Dimension::Auto
       }
       return @types.Dimension::Length(n * 96.0 / 101.6)
@@ -3743,7 +3734,7 @@ fn is_pure_number(s : String) -> Bool {
     return false
   }
   // Try to parse as double - will fail if it has units
-  let _ = @string.parse_double(v.to_string()) catch { _ => return false }
+  let _ = @string.parse_double(v.to_owned()) catch { _ => return false }
   // Make sure it doesn't have any unit suffixes that parse_double might accept
   for i = 0; i < v.length(); i = i + 1 {
     let c = v[i]
@@ -4086,7 +4077,7 @@ fn is_flex_basis_value(s : String) -> Bool {
 fn strip_inline_important_marker(
   value : String,
 ) -> (String, @cascade.Importance) {
-  let trimmed = value.trim().to_string()
+  let trimmed = value.trim().to_owned()
   let compact = strip_css_ascii_whitespace(trimmed.to_lower())
   if !compact.has_suffix("!important") {
     return (trimmed, @cascade.Importance::Normal)
@@ -4112,7 +4103,7 @@ fn strip_inline_important_marker(
   }
   let stripped = view_to_string(trimmed.view(end_offset=bang_pos - 1))
     .trim()
-    .to_string()
+    .to_owned()
   if stripped.is_empty() {
     return (trimmed, @cascade.Importance::Normal)
   }
@@ -4166,7 +4157,7 @@ pub fn compute_inline_raw(
   let pairs = inline_css.split(";")
   let mut order = 0
   for pair in pairs {
-    let pair_str = pair.to_string().trim()
+    let pair_str = pair.to_owned().trim()
     if pair_str.is_empty() {
       continue
     }
@@ -4182,10 +4173,10 @@ pub fn compute_inline_raw(
       let prop = view_to_string(pair_str.view(end_offset=colon_pos)).trim()
       let val = view_to_string(pair_str.view(start_offset=colon_pos + 1)).trim()
       if !prop.is_empty() && !val.is_empty() {
-        let (value, importance) = strip_inline_important_marker(val.to_string())
+        let (value, importance) = strip_inline_important_marker(val.to_owned())
         decls.push(
           @cascade.Declaration::with_metadata(
-            prop.to_string(),
+            prop.to_owned(),
             @cascade.PropertyValue::Value(value),
             @cascade.Origin::Author,
             importance,
@@ -4331,7 +4322,7 @@ fn parse_font_size(value : String, ctx : ComputeContext) -> Double {
   // "1rem" also ends with "em", so ordering matters.
   match v.strip_suffix("rem") {
     Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch { _ => 1.0 }
+      let n = @string.parse_double(num_str.to_owned()) catch { _ => 1.0 }
       return n * ctx.root_font_size
     }
     None => ()
@@ -4340,7 +4331,7 @@ fn parse_font_size(value : String, ctx : ComputeContext) -> Double {
   // Handle em units (relative to parent font-size)
   match v.strip_suffix("em") {
     Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch { _ => 1.0 }
+      let n = @string.parse_double(num_str.to_owned()) catch { _ => 1.0 }
       return n * ctx.font_size
     }
     None => ()
@@ -4349,7 +4340,7 @@ fn parse_font_size(value : String, ctx : ComputeContext) -> Double {
   // Handle px units
   match v.strip_suffix("px") {
     Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_owned()) catch {
         _ => return ctx.font_size
       }
       return n
@@ -4360,7 +4351,7 @@ fn parse_font_size(value : String, ctx : ComputeContext) -> Double {
   // Handle pt units (1pt = 1.333px)
   match v.strip_suffix("pt") {
     Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_owned()) catch {
         _ => return ctx.font_size
       }
       return n * 1.333
@@ -4371,7 +4362,7 @@ fn parse_font_size(value : String, ctx : ComputeContext) -> Double {
   // Handle percent (relative to parent font-size)
   match v.strip_suffix("%") {
     Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_owned()) catch {
         _ => return ctx.font_size
       }
       return n / 100.0 * ctx.font_size
@@ -4422,14 +4413,14 @@ fn parse_line_height(
     pure
   }
   if is_pure_number && !v.is_empty() {
-    let n = @string.parse_double(v.to_string()) catch { _ => 1.0 }
+    let n = @string.parse_double(v.to_owned()) catch { _ => 1.0 }
     return n * font_size
   }
 
   // Handle px units
   match v.strip_suffix("px") {
     Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_owned()) catch {
         _ => return font_size
       }
       return n
@@ -4440,7 +4431,7 @@ fn parse_line_height(
   // Handle rem units
   match v.strip_suffix("rem") {
     Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_owned()) catch {
         _ => return font_size
       }
       return n * root_font_size
@@ -4451,7 +4442,7 @@ fn parse_line_height(
   // Handle em units
   match v.strip_suffix("em") {
     Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_owned()) catch {
         _ => return font_size
       }
       return n * font_size
@@ -4462,7 +4453,7 @@ fn parse_line_height(
   // Handle percent (relative to font-size)
   match v.strip_suffix("%") {
     Some(num_str) => {
-      let n = @string.parse_double(num_str.to_string()) catch {
+      let n = @string.parse_double(num_str.to_owned()) catch {
         _ => return font_size
       }
       return n / 100.0 * font_size
@@ -4566,7 +4557,7 @@ fn parse_font_shorthand(
   }
   if size_index > 0 {
     for idx = 0; idx < size_index; idx = idx + 1 {
-      let part = parts[idx].trim().to_lower().to_string()
+      let part = parts[idx].trim().to_lower().to_owned()
       if part == "normal" ||
         part == "bold" ||
         part == "bolder" ||
@@ -4598,7 +4589,7 @@ fn parse_font_shorthand(
 
 ///|
 fn parse_column_count(value : String) -> Int? {
-  let trimmed = value.trim().to_string()
+  let trimmed = value.trim().to_owned()
   if trimmed.is_empty() || trimmed == "auto" {
     return None
   }
@@ -4616,7 +4607,7 @@ fn parse_column_count(value : String) -> Int? {
 
 ///|
 fn parse_column_width(value : String, ctx : ComputeContext) -> @types.Dimension {
-  let trimmed = value.trim().to_string()
+  let trimmed = value.trim().to_owned()
   if trimmed.is_empty() || trimmed == "auto" {
     return @types.Dimension::Auto
   }
@@ -4643,7 +4634,7 @@ fn parse_column_width(value : String, ctx : ComputeContext) -> @types.Dimension 
 
 ///|
 fn parse_column_fill(value : String) -> @style.ColumnFill {
-  match value.trim().to_string() {
+  match value.trim().to_owned() {
     "auto" => @style.ColumnFill::Auto
     _ => @style.ColumnFill::Balance
   }
@@ -4651,7 +4642,7 @@ fn parse_column_fill(value : String) -> @style.ColumnFill {
 
 ///|
 fn parse_break_before(value : String) -> @style.BreakBefore {
-  match value.trim().to_string() {
+  match value.trim().to_owned() {
     "column" => @style.BreakBefore::Column
     "avoid" => @style.BreakBefore::Avoid
     _ => @style.BreakBefore::Auto
@@ -4660,7 +4651,7 @@ fn parse_break_before(value : String) -> @style.BreakBefore {
 
 ///|
 fn parse_break_inside(value : String) -> @style.BreakInside {
-  match value.trim().to_string() {
+  match value.trim().to_owned() {
     "avoid" => @style.BreakInside::Avoid
     _ => @style.BreakInside::Auto
   }
@@ -4668,7 +4659,7 @@ fn parse_break_inside(value : String) -> @style.BreakInside {
 
 ///|
 fn parse_column_span(value : String) -> @style.ColumnSpan {
-  match value.trim().to_string() {
+  match value.trim().to_owned() {
     "all" => @style.ColumnSpan::All
     _ => @style.ColumnSpan::None
   }
@@ -4690,7 +4681,7 @@ fn parse_columns_shorthand(
   let mut count : Int? = None
   let mut width = @types.Dimension::Auto
   for part in parts {
-    let token = part.to_string()
+    let token = part.to_owned()
     if token == "auto" {
       continue
     }
@@ -4723,7 +4714,7 @@ fn parse_contain_intrinsic_axis(
   value : String,
   ctx : ComputeContext,
 ) -> Double? {
-  let v = resolve_all_vars(value, ctx).trim().to_string()
+  let v = resolve_all_vars(value, ctx).trim().to_owned()
   if v.is_empty() || v == "none" || v == "auto" {
     return None
   }
@@ -4740,14 +4731,14 @@ fn parse_contain_intrinsic_size(
   value : String,
   ctx : ComputeContext,
 ) -> (Double?, Double?)? {
-  let v = resolve_all_vars(value, ctx).trim().to_string()
+  let v = resolve_all_vars(value, ctx).trim().to_owned()
   if v.is_empty() {
     return None
   }
   let axis_values : Array[Double?] = []
   let parts = v.split(" ")
   for part in parts {
-    let p = part.to_string().trim().to_string()
+    let p = part.to_owned().trim().to_owned()
     if p.is_empty() || p == "auto" {
       continue
     }
@@ -4772,7 +4763,7 @@ fn parse_contain_intrinsic_size(
 ///|
 /// Parse contain property
 fn parse_contain(value : String) -> @style.Contain {
-  let v = value.trim().to_string()
+  let v = value.trim().to_owned()
   // Handle keywords
   if v == "none" {
     return @style.Contain::none()
@@ -4787,7 +4778,7 @@ fn parse_contain(value : String) -> @style.Contain {
   let mut result = @style.Contain::none()
   let parts = v.split(" ")
   for part in parts {
-    let p = part.to_string().trim()
+    let p = part.to_owned().trim()
     if p == "size" {
       result = { ..result, size: true }
     } else if p == "inline-size" {
@@ -4826,7 +4817,7 @@ fn merge_contain(
 /// Parse container-type into implied contain bits.
 /// Supported: normal | size | inline-size
 fn parse_container_type(value : String) -> @style.Contain? {
-  match value.trim().to_string() {
+  match value.trim().to_owned() {
     "normal" => Some(@style.Contain::none())
     "size" => Some({ ..@style.Contain::none(), size: true, style: true })
     "inline-size" =>
@@ -4841,7 +4832,7 @@ fn parse_container_type(value : String) -> @style.Contain? {
 ///|
 /// Parse visibility property
 fn parse_visibility(value : String) -> @style.Visibility {
-  match value.trim().to_string() {
+  match value.trim().to_owned() {
     "visible" => @style.Visibility::Visible
     "hidden" => @style.Visibility::Hidden
     "collapse" => @style.Visibility::Collapse
@@ -4851,7 +4842,7 @@ fn parse_visibility(value : String) -> @style.Visibility {
 
 ///|
 fn parse_pointer_events(value : String) -> @style.PointerEvents {
-  match value.trim().to_string() {
+  match value.trim().to_owned() {
     "none" => @style.PointerEvents::None
     _ => @style.PointerEvents::Auto
   }
@@ -4860,7 +4851,7 @@ fn parse_pointer_events(value : String) -> @style.PointerEvents {
 ///|
 /// Parse vertical-align property
 fn parse_vertical_align(value : String) -> @style.VerticalAlign {
-  match value.trim().to_string() {
+  match value.trim().to_owned() {
     "baseline" => @style.VerticalAlign::Baseline
     "top" => @style.VerticalAlign::Top
     "middle" => @style.VerticalAlign::Middle
@@ -4876,7 +4867,7 @@ fn parse_vertical_align(value : String) -> @style.VerticalAlign {
 ///|
 /// Parse z-index property
 fn parse_z_index(value : String) -> @style.ZIndex {
-  let trimmed = value.trim().to_string()
+  let trimmed = value.trim().to_owned()
   if trimmed == "auto" {
     @style.ZIndex::Auto
   } else {
@@ -4892,7 +4883,7 @@ fn parse_z_index(value : String) -> @style.ZIndex {
 ///|
 /// Parse opacity property (0.0 to 1.0)
 fn parse_opacity(value : String) -> Double {
-  let trimmed = value.trim().to_string()
+  let trimmed = value.trim().to_owned()
   try {
     let v = @string.parse_double(trimmed)
     // Clamp to valid range

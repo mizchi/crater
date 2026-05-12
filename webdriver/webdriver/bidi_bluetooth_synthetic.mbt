@@ -1175,7 +1175,7 @@ fn BidiProtocol::try_handle_synthetic_bluetooth_availability_eval(
   expression : String,
   unwrap_result : Bool,
 ) -> Bool {
-  if expression.trim().to_string() != "navigator.bluetooth.getAvailability()" {
+  if expression.trim().to_owned() != "navigator.bluetooth.getAvailability()" {
     return false
   }
   let adapter_state = self.bluetooth_adapter_state_by_context
@@ -1273,7 +1273,7 @@ fn BidiProtocol::try_handle_synthetic_bluetooth_gatt_call(
     )
     return true
   }
-  let trimmed = function_declaration.trim().to_string()
+  let trimmed = function_declaration.trim().to_owned()
   if trimmed.contains("await device.gatt.connect();") {
     let response_kind = if trimmed.contains("return device.gatt.connected;") {
       "connected"
@@ -2188,7 +2188,7 @@ fn extract_bluetooth_uint8_array_data(source : String) -> Array[Json] {
       match find_substring(source, ")", data_start) {
         Some(end_idx) if end_idx >= data_start => {
           let raw = source.unsafe_substring(start=data_start, end=end_idx)
-          extract_bluetooth_byte_array_literal(raw.trim().to_string())
+          extract_bluetooth_byte_array_literal(raw.trim().to_owned())
         }
         _ => []
       }
@@ -2203,12 +2203,12 @@ fn extract_bluetooth_byte_array_literal(raw : String) -> Array[Json] {
     return []
   }
   let body = raw.unsafe_substring(start=1, end=raw.length() - 1)
-  if body.trim().to_string() == "" {
+  if body.trim().to_owned() == "" {
     return []
   }
   let out : Array[Json] = []
   for part in body.split(",") {
-    let value_text = part.trim().to_string()
+    let value_text = part.trim().to_owned()
     if value_text == "" {
       continue
     }

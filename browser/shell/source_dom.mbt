@@ -53,7 +53,7 @@ fn parse_html_attributes(raw : String) -> Array[(String, String)] {
       }
       i = i + 1
     }
-    let name = raw.unsafe_substring(start=name_start, end=i).trim().to_string()
+    let name = raw.unsafe_substring(start=name_start, end=i).trim().to_owned()
     while i < raw.length() && is_html_attr_whitespace(char_at(raw, i)) {
       i = i + 1
     }
@@ -114,7 +114,7 @@ fn extract_source_html_fragment(
       let attr_source = html
         .unsafe_substring(start=start + open_needle.length(), end=open_end)
         .trim()
-        .to_string()
+        .to_owned()
       let close_needle = "</" + tag + ">"
       let inner_html = match lower.find(close_needle) {
         Some(close_start) if close_start > open_end =>

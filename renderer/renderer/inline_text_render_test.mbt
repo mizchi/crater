@@ -147,7 +147,7 @@ test "text_overflow_ellipsis_truncates_direct_text_in_paint_tree" {
     fail("clip container should expose a single text child")
   }
   let text_paint = clip_paint.children[0]
-  inspect(text_paint.text, content="Some(\"abcde...\")")
+  debug_inspect(text_paint.text, content="Some(\"abcde...\")")
   inspect(text_paint.width, content="64")
 }
 
@@ -185,7 +185,7 @@ test "text_overflow_ellipsis_truncates_single_inline_wrapper_text_in_paint_tree"
     fail("inline wrapper should keep a single text child")
   }
   let text_paint = span_paint.children[0]
-  inspect(text_paint.text, content="Some(\"abcde...\")")
+  debug_inspect(text_paint.text, content="Some(\"abcde...\")")
   inspect(text_paint.width, content="64")
 }
 

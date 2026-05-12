@@ -33,7 +33,7 @@ async test "Browser handle_focused_key dispatches change event for focused text 
   let status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(status, content="Some(\"change:x\")")
+  debug_inspect(status, content="Some(\"change:x\")")
 }
 
 ///|
@@ -59,7 +59,7 @@ async test "Browser handle_focused_key replaces selected text in focused textare
 
   let handled = browser.handle_focused_key("x") catch { _ => false }
   inspect(handled, content="true")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ const field=document.getElementById('field'); return field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
     ),
@@ -91,7 +91,7 @@ async test "Browser activate_at moves caret in focused text input before typing"
   inspect(activated, content="true")
   let handled = browser.handle_focused_key("x") catch { _ => false }
   inspect(handled, content="true")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ const field=document.getElementById('field'); return field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
     ),
@@ -122,7 +122,7 @@ async test "Browser pointer drag selects text in focused input before typing" {
   let _ = browser.pointer_up_at(region.col + 3, region.row) catch { _ => false }
   let handled = browser.handle_focused_key("x") catch { _ => false }
   inspect(handled, content="true")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ const field=document.getElementById('field'); return field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
     ),
@@ -155,7 +155,7 @@ async test "Browser activate_at moves caret in focused textarea before typing" {
   inspect(activated, content="true")
   let handled = browser.handle_focused_key("x") catch { _ => false }
   inspect(handled, content="true")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ const field=document.getElementById('field'); return field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
     ),
@@ -186,7 +186,7 @@ async test "Browser handle_focused_key deletes text after caret in focused texta
 
   let handled = browser.handle_focused_key("Delete") catch { _ => false }
   inspect(handled, content="true")
-  inspect(
+  debug_inspect(
     browser.execute_inline_js(
       "(function(){ const field=document.getElementById('field'); return field.value + '|' + String(field.selectionStart) + '|' + String(field.selectionEnd); })()",
     ),
@@ -385,7 +385,7 @@ async test "Browser focus transition dispatches change blur and focus" {
   let persisted = browser.execute_inline_js(
     "(function(){ const field=document.getElementById('field'); const btn=document.getElementById('btn'); return [String(!!(field&&field.getAttribute('data-crater-listeners-change'))), String(!!(field&&field.getAttribute('data-crater-listeners-blur'))), String(!!(field&&field.getAttribute('data-crater-listeners-focusout'))), String(!!(btn&&btn.getAttribute('data-crater-listeners-focus'))), String(!!(btn&&btn.getAttribute('data-crater-listeners-focusin')))].join('|'); })()",
   )
-  inspect(persisted, content="Some(\"true|true|true|true|true\")")
+  debug_inspect(persisted, content="Some(\"true|true|true|true|true\")")
   browser.next_link()
   let after_focus = browser.get_focused_source_id()
   assert_true(
@@ -399,7 +399,7 @@ async test "Browser focus transition dispatches change blur and focus" {
   let log = browser.execute_inline_js(
     "(function(){ return document.getElementById('log').textContent; })()",
   )
-  inspect(log, content="Some(\"change:x|blur|focusout|focus|focusin\")")
+  debug_inspect(log, content="Some(\"change:x|blur|focusout|focus|focusin\")")
 }
 
 ///|
@@ -442,7 +442,7 @@ async test "Browser handle_focused_key activates focused reset input with Space"
   let state = browser.execute_inline_js(
     "(function(){ return document.getElementById('field').value; })()",
   )
-  inspect(state, content="Some(\"seed\")")
+  debug_inspect(state, content="Some(\"seed\")")
 }
 
 ///|
@@ -557,7 +557,7 @@ async test "Browser activate_at dispatches change blur and focus when click move
   let log = browser.execute_inline_js(
     "(function(){ return document.getElementById('log').textContent; })()",
   )
-  inspect(log, content="Some(\"change:x|blur|focus\")")
+  debug_inspect(log, content="Some(\"change:x|blur|focus\")")
 }
 
 ///|
@@ -595,7 +595,7 @@ async test "Browser focus transition does not duplicate select change on blur" {
   let log = browser.execute_inline_js(
     "(function(){ return document.getElementById('log').textContent; })()",
   )
-  inspect(log, content="Some(\"change:b\")")
+  debug_inspect(log, content="Some(\"change:b\")")
 }
 
 ///|
@@ -624,7 +624,7 @@ async test "Browser handle_focused_key toggles details via focused summary" {
   let open = browser.execute_inline_js(
     "(function(){ return String(document.getElementById('det').hasAttribute('open')); })()",
   )
-  inspect(open, content="Some(\"true\")")
+  debug_inspect(open, content="Some(\"true\")")
 }
 
 ///|
@@ -659,11 +659,11 @@ async test "Browser handle_focused_key inserts newline for focused textarea on E
   let value = browser.execute_inline_js(
     "(function(){ return JSON.stringify(document.getElementById('field').value); })()",
   )
-  inspect(value, content="Some(\"\\\"\\\\n\\\"\")")
+  debug_inspect(value, content="Some(\"\\\"\\\\n\\\"\")")
   let status = browser.execute_inline_js(
     "(function(){ return document.getElementById('status').textContent; })()",
   )
-  inspect(status, content="Some(\"\\\"\\\\n\\\"\")")
+  debug_inspect(status, content="Some(\"\\\"\\\\n\\\"\")")
 }
 
 ///|
@@ -726,5 +726,5 @@ async test "Browser activate_at resets form controls for reset button" {
   let state = browser.execute_inline_js(
     "(function(){ const field=document.getElementById('field'); const check=document.getElementById('check'); return field.value + '|' + String(check.checked); })()",
   )
-  inspect(state, content="Some(\"seed|true\")")
+  debug_inspect(state, content="Some(\"seed|true\")")
 }

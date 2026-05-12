@@ -23,7 +23,7 @@ fn parse_inline_declarations(inline_css : String) -> Array[@css.Declaration] {
   let declarations : Array[@css.Declaration] = []
   let pairs = inline_css.split(";")
   for pair in pairs {
-    let pair_str = pair.to_string().trim().to_string()
+    let pair_str = pair.to_owned().trim().to_owned()
     if pair_str.is_empty() {
       continue
     }
@@ -41,23 +41,23 @@ fn parse_inline_declarations(inline_css : String) -> Array[@css.Declaration] {
     let raw_value = pair_str
       .unsafe_substring(start=colon_pos + 1, end=pair_str.length())
       .trim()
-      .to_string()
+      .to_owned()
     if property.is_empty() || raw_value.is_empty() {
       continue
     }
     let (value, importance) = if raw_value.has_suffix("!important") {
       (
         raw_value[:raw_value.length() - "!important".length()]
-        .to_string()
+        .to_owned()
         .trim()
-        .to_string(),
+        .to_owned(),
         @css.Importance::Important,
       )
     } else {
       (raw_value, @css.Importance::Normal)
     }
     declarations.push(
-      @css.Declaration::from_inline(property.to_string(), value, importance),
+      @css.Declaration::from_inline(property.to_owned(), value, importance),
     )
   }
   declarations

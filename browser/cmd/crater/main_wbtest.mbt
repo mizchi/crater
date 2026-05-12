@@ -9,8 +9,8 @@ test "parse_args_list reads component artifact options" {
   inspect(options.css_files.length(), content="2")
   inspect(options.css_files[0], content="baseline.css")
   inspect(options.css_files[1], content="component.css")
-  inspect(options.target_id, content="Some(\"card-root\")")
-  inspect(options.target_selector, content="None")
+  debug_inspect(options.target_id, content="Some(\"card-root\")")
+  debug_inspect(options.target_selector, content="None")
   inspect(options.artifact, content="Landmarks")
   inspect(options.viewport_width, content="960")
   inspect(options.viewport_height, content="720")
@@ -22,8 +22,8 @@ test "parse_args_list reads selector target option" {
     "--html-file", "fixture.html", "--target-selector", ".card.primary", "--artifact",
     "layout",
   ])
-  inspect(options.target_id, content="None")
-  inspect(options.target_selector, content="Some(\".card.primary\")")
+  debug_inspect(options.target_id, content="None")
+  debug_inspect(options.target_selector, content="Some(\".card.primary\")")
   inspect(options.artifact, content="Layout")
 }
 
@@ -34,7 +34,7 @@ test "parse_args_list reads stdin and output options" {
   ])
   inspect(options.stdin_html, content="true")
   inspect(options.stdin_css, content="true")
-  inspect(options.output_file, content="Some(\"artifact.json\")")
+  debug_inspect(options.output_file, content="Some(\"artifact.json\")")
 }
 
 ///|

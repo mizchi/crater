@@ -10,7 +10,7 @@ test "accname: button name from content" {
   let html = "<button>Submit</button>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Submit\")")
+  debug_inspect(tree.root.name, content="Some(\"Submit\")")
 }
 
 ///|
@@ -18,7 +18,7 @@ test "accname: link name from content" {
   let html = "<a href=\"/\">Home Page</a>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Home Page\")")
+  debug_inspect(tree.root.name, content="Some(\"Home Page\")")
 }
 
 ///|
@@ -26,7 +26,7 @@ test "accname: heading name from content" {
   let html = "<h1>Welcome to My Site</h1>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Welcome to My Site\")")
+  debug_inspect(tree.root.name, content="Some(\"Welcome to My Site\")")
 }
 
 // =============================================================================
@@ -38,7 +38,7 @@ test "accname: aria-label overrides content" {
   let html = "<button aria-label=\"Close\">X</button>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Close\")")
+  debug_inspect(tree.root.name, content="Some(\"Close\")")
 }
 
 ///|
@@ -46,7 +46,7 @@ test "accname: aria-label on input" {
   let html = "<input type=\"text\" aria-label=\"Search\" />"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Search\")")
+  debug_inspect(tree.root.name, content="Some(\"Search\")")
 }
 
 // =============================================================================
@@ -58,7 +58,7 @@ test "accname: img alt attribute" {
   let html = "<img src=\"logo.png\" alt=\"Company Logo\" />"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Company Logo\")")
+  debug_inspect(tree.root.name, content="Some(\"Company Logo\")")
 }
 
 ///|
@@ -66,7 +66,7 @@ test "accname: input submit default value" {
   let html = "<input type=\"submit\" />"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Submit\")")
+  debug_inspect(tree.root.name, content="Some(\"Submit\")")
 }
 
 ///|
@@ -74,7 +74,7 @@ test "accname: input submit custom value" {
   let html = "<input type=\"submit\" value=\"Send\" />"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Send\")")
+  debug_inspect(tree.root.name, content="Some(\"Send\")")
 }
 
 ///|
@@ -82,7 +82,7 @@ test "accname: input reset default value" {
   let html = "<input type=\"reset\" />"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Reset\")")
+  debug_inspect(tree.root.name, content="Some(\"Reset\")")
 }
 
 // =============================================================================
@@ -94,7 +94,7 @@ test "accname: title attribute fallback for link" {
   let html = "<a href=\"/\" title=\"Go to home\"></a>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.name, content="Some(\"Go to home\")")
+  debug_inspect(tree.root.name, content="Some(\"Go to home\")")
 }
 
 // =============================================================================
@@ -295,7 +295,7 @@ test "html-aam: h1 level" {
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
   inspect(tree.root.role, content="Heading")
-  inspect(tree.root.level, content="Some(1)")
+  debug_inspect(tree.root.level, content="Some(1)")
 }
 
 ///|
@@ -303,7 +303,7 @@ test "html-aam: h2 level" {
   let html = "<h2>Heading 2</h2>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.level, content="Some(2)")
+  debug_inspect(tree.root.level, content="Some(2)")
 }
 
 ///|
@@ -311,7 +311,7 @@ test "html-aam: h6 level" {
   let html = "<h6>Heading 6</h6>"
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
-  inspect(tree.root.level, content="Some(6)")
+  debug_inspect(tree.root.level, content="Some(6)")
 }
 
 // =============================================================================
@@ -437,7 +437,7 @@ test "accname: aria-labelledby single reference" {
   let tree = build_accessibility_tree(doc)
   // Use find_by_role to search the entire tree, get first match
   let inputs = tree.find_by_role(Textbox)
-  inspect(
+  debug_inspect(
     inputs[0].name,
     content=(
       #|Some("Username")
@@ -456,7 +456,7 @@ test "accname: aria-labelledby multiple references" {
   let doc = @html.parse_document(html)
   let tree = build_accessibility_tree(doc)
   let inputs = tree.find_by_role(Textbox)
-  inspect(
+  debug_inspect(
     inputs[0].name,
     content=(
       #|Some("First Last")
@@ -474,7 +474,7 @@ test "accname: aria-labelledby overrides aria-label" {
   let doc = @html.parse_document(html)
   let tree = build_accessibility_tree(doc)
   let buttons = tree.find_by_role(Button)
-  inspect(
+  debug_inspect(
     buttons[0].name,
     content=(
       #|Some("Referenced Label")
@@ -493,7 +493,7 @@ test "accname: aria-labelledby references hidden element" {
   let tree = build_accessibility_tree(doc)
   let buttons = tree.find_by_role(Button)
   // aria-labelledby can reference aria-hidden elements
-  inspect(
+  debug_inspect(
     buttons[0].name,
     content=(
       #|Some("Hidden Label")
@@ -507,7 +507,7 @@ test "accname: aria-labelledby ignores invalid reference" {
   let elem = @html.parse(html).unwrap()
   let tree = build_accessibility_tree_from_element(elem)
   // Falls back to content when reference is invalid
-  inspect(tree.root.name, content="Some(\"Fallback Content\")")
+  debug_inspect(tree.root.name, content="Some(\"Fallback Content\")")
 }
 
 ///|
@@ -521,7 +521,7 @@ test "accname: aria-labelledby with self-reference" {
   let tree = build_accessibility_tree(doc)
   let buttons = tree.find_by_role(Button)
   // Self-reference includes button's content, plus referenced element
-  inspect(
+  debug_inspect(
     buttons[0].name,
     content=(
       #|Some("Self Extra")

@@ -73,7 +73,7 @@ fn apply_svg_attributes_to_style(
 ) -> @style.Style {
   let mut result = style
   fn parse_svg_dimension(value : String) -> @types.Dimension? {
-    let trimmed = value.trim().to_string()
+    let trimmed = value.trim().to_owned()
     if trimmed.is_empty() {
       return None
     }
@@ -333,7 +333,7 @@ fn apply_svg_intrinsic_size(style : @style.Style, tag : String) -> @style.Style 
 ///|
 /// Parse SVG length value (e.g., "100", "100px", "50%")
 fn parse_svg_length(value : String) -> Double {
-  let trimmed = value.trim().to_string()
+  let trimmed = value.trim().to_owned()
   if trimmed.is_empty() {
     return 0.0
   }

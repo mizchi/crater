@@ -30,7 +30,7 @@ test "SqliteCacheBackend: store and lookup" {
     Some(e) => {
       inspect(e.status, content="200")
       inspect(e.body, content="")
-      inspect(
+      debug_inspect(
         e.directives.max_age,
         content=(
           #|Some(300)
@@ -60,7 +60,7 @@ test "SqliteCacheBackend: directives roundtrip without cache-control header" {
   match cache.lookup("https://example.test/resource") {
     Some(e) => {
       inspect(e.directives.private_, content="true")
-      inspect(e.directives.max_age, content="Some(0)")
+      debug_inspect(e.directives.max_age, content="Some(0)")
       inspect(e.directives.no_cache, content="true")
       inspect(e.directives.must_revalidate, content="true")
       inspect(e.directives.immutable, content="true")
@@ -108,13 +108,13 @@ test "SqliteCacheBackend: etag and last_modified roundtrip" {
   cache.store(entry)
   match cache.lookup("https://example.com/img.png") {
     Some(e) => {
-      inspect(e.etag, content="Some(\"\\\"xyz789\\\"\")")
-      inspect(
+      debug_inspect(e.etag, content="Some(\"\\\"xyz789\\\"\")")
+      debug_inspect(
         e.last_modified,
         content="Some(\"Wed, 01 Jan 2025 00:00:00 GMT\")",
       )
       inspect(e.directives.public_, content="true")
-      inspect(e.directives.max_age, content="Some(86400)")
+      debug_inspect(e.directives.max_age, content="Some(86400)")
       inspect(e.stored_at, content="5000")
     }
     None => panic()

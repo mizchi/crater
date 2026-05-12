@@ -25,7 +25,11 @@ pub impl Show for LCPElementType with output(self, logger) {
   match self {
     Image(src~) => logger.write_string("Image(src=\{src})")
     BackgroundImage(url~) => logger.write_string("BackgroundImage(url=\{url})")
-    Video(poster~) => logger.write_string("Video(poster=\{poster})")
+    Video(poster~) => {
+      logger.write_string("Video(poster=")
+      logger.write_object(to_repr(poster))
+      logger.write_string(")")
+    }
     TextBlock => logger.write_string("TextBlock")
   }
 }

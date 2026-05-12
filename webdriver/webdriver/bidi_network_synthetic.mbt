@@ -1815,7 +1815,7 @@ fn BidiProtocol::normalize_synthetic_network_set_cookie_entries(
     match map.get("domain") {
       Some(String(raw_domain)) => {
         let normalized_domain = storage_strip_leading_dot(
-          raw_domain.trim().to_string().to_lower(),
+          raw_domain.trim().to_owned().to_lower(),
         )
         domain = normalized_domain
         domain_explicit = normalized_domain != ""
@@ -2058,7 +2058,7 @@ fn synthetic_network_parse_set_cookie_header_value(
   let attributes : Array[String] = []
   let mut first : String? = None
   for raw_part in header_value.split(";") {
-    let part = raw_part.trim().to_string()
+    let part = raw_part.trim().to_owned()
     match first {
       Some(_) => attributes.push(part)
       None => first = Some(part)
@@ -2070,10 +2070,10 @@ fn synthetic_network_parse_set_cookie_header_value(
   }
   match find_substring(first, "=", 0) {
     Some(eq_idx) => {
-      let name = storage_slice(first, 0, eq_idx).trim().to_string()
+      let name = storage_slice(first, 0, eq_idx).trim().to_owned()
       let value_start = eq_idx + 1
       let value = if value_start <= first.length() {
-        storage_slice_from(first, value_start).trim().to_string()
+        storage_slice_from(first, value_start).trim().to_owned()
       } else {
         ""
       }
@@ -2089,7 +2089,7 @@ fn synthetic_network_parse_set_cookie_header_value(
       let mut expiry : Int? = None
 
       for raw_attr in attributes {
-        let attr = raw_attr.trim().to_string()
+        let attr = raw_attr.trim().to_owned()
         if attr == "" {
           continue
         }
@@ -2097,9 +2097,9 @@ fn synthetic_network_parse_set_cookie_header_value(
           Some(attr_eq_idx) => {
             let attr_value_start = attr_eq_idx + 1
             (
-              storage_slice(attr, 0, attr_eq_idx).trim().to_string().to_lower(),
+              storage_slice(attr, 0, attr_eq_idx).trim().to_owned().to_lower(),
               if attr_value_start <= attr.length() {
-                storage_slice_from(attr, attr_value_start).trim().to_string()
+                storage_slice_from(attr, attr_value_start).trim().to_owned()
               } else {
                 ""
               },
@@ -2109,7 +2109,7 @@ fn synthetic_network_parse_set_cookie_header_value(
         }
         if attr_name == "domain" {
           let normalized_domain = storage_strip_leading_dot(
-            attr_value.trim().to_string().to_lower(),
+            attr_value.trim().to_owned().to_lower(),
           )
           if normalized_domain != "" {
             domain = normalized_domain
@@ -4092,7 +4092,7 @@ fn synthetic_network_query_values(url : String, key : String) -> Array[String] {
       }
       let query = url.unsafe_substring(start=query_start, end=url.length())
       for part in query.split("&") {
-        let raw = part.to_string()
+        let raw = part.to_owned()
         if raw.length() == 0 {
           continue
         }

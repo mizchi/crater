@@ -150,7 +150,7 @@ fn extract_scripts(html : String) -> Array[ScriptInfo] {
         source = html
           .unsafe_substring(start=content_start, end=content_end)
           .trim()
-          .to_string()
+          .to_owned()
         i = content_end
       }
       // Add script info if we have source or src

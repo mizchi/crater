@@ -127,7 +127,7 @@ test "build_accessibility_tree_with_layout - full integration" {
   match a11y_tree.find_by_source_id("btn") {
     Some(node) => {
       inspect(node.role, content="Button")
-      inspect(node.name, content="Some(\"Menu\")")
+      debug_inspect(node.name, content="Some(\"Menu\")")
       // Bounds should be attached from layout
       inspect(node.bounds is Some(_), content="true")
     }
@@ -216,9 +216,9 @@ test "heading navigation with bounds" {
   let headings = find_headings(tree_with_bounds)
   inspect(headings.length(), content="3")
   // Check levels
-  inspect(headings[0].level, content="Some(1)")
-  inspect(headings[1].level, content="Some(2)")
-  inspect(headings[2].level, content="Some(2)")
+  debug_inspect(headings[0].level, content="Some(1)")
+  debug_inspect(headings[1].level, content="Some(2)")
+  debug_inspect(headings[2].level, content="Some(2)")
   // Check bounds
   for heading in headings {
     inspect(heading.bounds is Some(_), content="true")

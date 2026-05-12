@@ -615,7 +615,7 @@ test "wpt_intrinsic_percent_replaced_019_like_abspos_flex_basis_content_uses_def
   inspect(item.style.height, content="Percent(1)")
   inspect(canvas.style.width, content="Percent(1)")
   inspect(canvas.style.height, content="Percent(1)")
-  inspect(canvas.style.aspect_ratio, content="Some(1)")
+  debug_inspect(canvas.style.aspect_ratio, content="Some(1)")
 
   let layout = @renderer.render(html_str, @renderer.RenderContext::default())
   let laid_out_outer = layout.children[0]

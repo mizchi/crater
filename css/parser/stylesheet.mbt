@@ -87,7 +87,7 @@ fn parse_media_rule(
   }
 
   // Extract and parse media query
-  let query_text = tokens_to_string(tokens, query_start, pos).trim().to_string()
+  let query_text = tokens_to_string(tokens, query_start, pos).trim().to_owned()
   let media_query = @media.parse_media_query_list(query_text)
 
   // Skip '{'
@@ -484,9 +484,7 @@ fn parse_rule_declaration(
   } else {
     pos
   }
-  let value = tokens_to_string(tokens, value_start, value_end)
-    .trim()
-    .to_string()
+  let value = tokens_to_string(tokens, value_start, value_end).trim().to_owned()
 
   // Skip semicolon if present
   if pos < tokens.length() {
@@ -623,7 +621,7 @@ fn extract_ampersand_nested_rules(
                 tokens, nested_selector_start, pos,
               )
               .trim()
-              .to_string()
+              .to_owned()
             match find_matching_right_brace(tokens, pos, rule_end) {
               Some(nested_close) => {
                 let nested_decls : Array[@cascade.Declaration] = []
@@ -658,12 +656,12 @@ fn extract_ampersand_nested_rules(
                 if !nested_selector_text.is_empty() && !nested_decls.is_empty() {
                   let nested_parts = split_by_comma(nested_selector_text)
                   for parent_item in selectors {
-                    let parent_selector = parent_item.0.trim().to_string()
+                    let parent_selector = parent_item.0.trim().to_owned()
                     if parent_selector.is_empty() {
                       continue
                     }
                     for nested_part in nested_parts {
-                      let nested_trim = nested_part.trim().to_string()
+                      let nested_trim = nested_part.trim().to_owned()
                       if nested_trim.is_empty() {
                         continue
                       }
@@ -754,7 +752,7 @@ fn parse_selector_list_text(
   let result : Array[(String, @selector.ComplexSelector)] = []
   let parts = split_by_comma(css)
   for part in parts {
-    let trimmed = part.trim().to_string()
+    let trimmed = part.trim().to_owned()
     if !trimmed.is_empty() {
       match @selector.parse_selector_text(trimmed) {
         Some(sel) => result.push((trimmed, sel))
@@ -929,7 +927,7 @@ fn parse_media_rule_with_diagnostics(
   }
 
   // Extract and parse media query
-  let query_text = tokens_to_string(tokens, query_start, pos).trim().to_string()
+  let query_text = tokens_to_string(tokens, query_start, pos).trim().to_owned()
   let media_query = @media.parse_media_query_list(query_text)
 
   // Skip '{'

@@ -210,7 +210,11 @@ pub impl Show for KeyboardEvent with output(self, logger) {
   logger.write_string("\"")
   logger.write_string(self.code)
   logger.write_string("\"")
-  logger.write_string(", modifiers: \{self.modifiers}, text: \{self.text}, ")
+  logger.write_string(", modifiers: ")
+  logger.write_object(to_repr(self.modifiers))
+  logger.write_string(", text: ")
+  logger.write_object(to_repr(self.text))
+  logger.write_string(", ")
   logger.write_string("timestamp: \{self.timestamp}}")
 }
 

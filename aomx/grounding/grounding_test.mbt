@@ -16,7 +16,7 @@ test "find_in_region_top_right" {
   let viewport = Viewport::default()
   let results = find_by_spatial(tree, InRegion(TopRight), viewport)
   inspect(results.length(), content="1")
-  inspect(results[0].node.name, content="Some(\"Login\")")
+  debug_inspect(results[0].node.name, content="Some(\"Login\")")
 }
 
 ///|
@@ -52,7 +52,7 @@ test "find_by_role_in_region" {
     viewport,
   )
   inspect(results.length(), content="1")
-  inspect(results[0].node.name, content="Some(\"Contact\")")
+  debug_inspect(results[0].node.name, content="Some(\"Contact\")")
 }
 
 ///|
@@ -82,7 +82,7 @@ test "find_relative_below" {
   let viewport = Viewport::default()
   let results = find_by_spatial(tree, RelativeTo(Below, "ref_1"), viewport)
   inspect(results.length(), content="1")
-  inspect(results[0].node.name, content="Some(\"Submit\")")
+  debug_inspect(results[0].node.name, content="Some(\"Submit\")")
 }
 
 ///|
@@ -100,7 +100,7 @@ test "get_click_coords" {
   let root = { ..root, children: [button], visible: true }
   let tree = @aom.AccessibilityTree::new(root)
   let coords = get_click_coords(tree, "ref_1")
-  inspect(coords, content="Some((200, 125))")
+  debug_inspect(coords, content="Some((200, 125))")
 }
 
 ///|

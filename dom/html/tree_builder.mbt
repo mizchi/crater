@@ -147,9 +147,9 @@ fn create_element(tag : String, attrs : Map[String, String]) -> Element {
     Some(class_str) => {
       let parts : Array[String] = []
       for part in class_str.split(" ") {
-        let s = part.to_string().trim()
+        let s = part.to_owned().trim()
         if !s.is_empty() {
-          parts.push(s.to_string())
+          parts.push(s.to_owned())
         }
       }
       parts

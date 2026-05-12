@@ -147,7 +147,7 @@ test "display_contents_inside_closed_details_suppresses_non_summary_text" {
   )
   fn contains_trimmed_text(node : @node.Node, target : String) -> Bool {
     match node.text {
-      Some(text) => if text.trim().to_string() == target { return true }
+      Some(text) => if text.trim().to_owned() == target { return true }
       None => ()
     }
     for child in node.children {

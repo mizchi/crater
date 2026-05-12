@@ -61,11 +61,11 @@ pub fn parse_inline_declarations_cached(
         if colon_idx > 0 {
           let prop = view_to_string(decl_str.view(end_offset=colon_idx))
             .trim()
-            .to_string()
+            .to_owned()
             .to_lower()
           let value = view_to_string(decl_str.view(start_offset=colon_idx + 1))
             .trim()
-            .to_string()
+            .to_owned()
           if prop.length() > 0 && value.length() > 0 {
             parsed.push((prop, value))
           }

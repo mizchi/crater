@@ -20,9 +20,9 @@ test "MutationRecord::attribute creates correct record" {
     new_value=Some("bar"),
   )
   inspect(record.type_, content="Attributes")
-  inspect(record.attribute_name, content="Some(\"class\")")
-  inspect(record.old_value, content="Some(\"foo\")")
-  inspect(record.new_value, content="Some(\"bar\")")
+  debug_inspect(record.attribute_name, content="Some(\"class\")")
+  debug_inspect(record.old_value, content="Some(\"foo\")")
+  debug_inspect(record.new_value, content="Some(\"bar\")")
 }
 
 ///|
@@ -175,9 +175,9 @@ test "DomTree records set_attribute mutations" {
   inspect(records.length(), content="1")
   let record = records[0]
   inspect(record.type_, content="Attributes")
-  inspect(record.attribute_name, content="Some(\"class\")")
-  inspect(record.old_value, content="None")
-  inspect(record.new_value, content="Some(\"container\")")
+  debug_inspect(record.attribute_name, content="Some(\"class\")")
+  debug_inspect(record.old_value, content="None")
+  debug_inspect(record.new_value, content="Some(\"container\")")
 }
 
 ///|
@@ -191,8 +191,8 @@ test "DomTree records attribute update with old value" {
   let _ = tree.set_attribute(div, "class", "new-class")
   let (records, _result) = tree.flush_mutations()
   let record = records[0]
-  inspect(record.old_value, content="Some(\"old-class\")")
-  inspect(record.new_value, content="Some(\"new-class\")")
+  debug_inspect(record.old_value, content="Some(\"old-class\")")
+  debug_inspect(record.new_value, content="Some(\"new-class\")")
 }
 
 ///|
@@ -205,8 +205,8 @@ test "DomTree records set_text_content mutations for text nodes" {
   inspect(records.length(), content="1")
   let record = records[0]
   inspect(record.type_, content="CharacterData")
-  inspect(record.old_value, content="Some(\"hello\")")
-  inspect(record.new_value, content="Some(\"world\")")
+  debug_inspect(record.old_value, content="Some(\"hello\")")
+  debug_inspect(record.new_value, content="Some(\"world\")")
 }
 
 ///|

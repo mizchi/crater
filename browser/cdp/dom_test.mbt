@@ -120,7 +120,7 @@ test "DOM.setAttributeValue sets attribute" {
   // Verify attribute was set
   let tree = ctx.tree()
   let attr = tree.get_attribute(@dom.NodeId::from_int(div_id), "data-value")
-  inspect(attr.unwrap(), content="Some(\"123\")")
+  debug_inspect(attr.unwrap(), content="Some(\"123\")")
 }
 
 ///|
@@ -138,7 +138,7 @@ test "DOM.removeAttribute removes attribute" {
   // Verify attribute was removed
   let tree = ctx.tree()
   let attr = tree.get_attribute(@dom.NodeId::from_int(div_id), "data-remove")
-  inspect(attr.unwrap(), content="None")
+  debug_inspect(attr.unwrap(), content="None")
 }
 
 ///|
@@ -259,7 +259,7 @@ test "DOM.getDocument exposes shadow root metadata on host node" {
   let host = body.children.unwrap()[0]
   inspect(!(host.shadow_roots is None), content="true")
   inspect(host.shadow_roots.unwrap().length(), content="1")
-  inspect(
+  debug_inspect(
     host.shadow_roots.unwrap()[0].shadow_root_type,
     content="Some(\"open\")",
   )
@@ -288,7 +288,7 @@ test "DOM.requestChildNodes includes shadow root nodes for host" {
   inspect(children.length(), content="2")
   inspect(children[0].node_type, content="1")
   inspect(children[1].node_type, content="11")
-  inspect(children[1].shadow_root_type, content="Some(\"open\")")
+  debug_inspect(children[1].shadow_root_type, content="Some(\"open\")")
 }
 
 ///|
@@ -329,7 +329,7 @@ test "DOM.querySelector finds descendants from shadow root node" {
 
   let result = dom.query_selector(shadow.to_int(), ".target")
   inspect(result is Ok(_), content="true")
-  inspect(result.unwrap(), content="Some(\{inner.to_int()})")
+  debug_inspect(result.unwrap(), content="Some(\{inner.to_int()})")
 }
 
 ///|
@@ -372,7 +372,7 @@ test "DOM.querySelector on host node does not pierce shadow root" {
 
   let result = dom.query_selector(host_id, "#shadow-button")
   inspect(result is Ok(_), content="true")
-  inspect(result.unwrap(), content="None")
+  debug_inspect(result.unwrap(), content="None")
 }
 
 ///|

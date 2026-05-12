@@ -58,11 +58,11 @@ test "parse @media rule and following rule" {
   inspect(stylesheet.rules.length(), content="2")
   inspect(stylesheet.rules[0].selector_text, content=".hidden")
   match stylesheet.rules[0].media_query {
-    Some(mq) => inspect(mq.queries[0].media_type, content="Some(Screen)")
+    Some(mq) => debug_inspect(mq.queries[0].media_type, content="Some(Screen)")
     None => inspect("should have media query", content="has media query")
   }
   inspect(stylesheet.rules[1].selector_text, content=".visible")
-  inspect(stylesheet.rules[1].media_query, content="None")
+  debug_inspect(stylesheet.rules[1].media_query, content="None")
 }
 
 ///|
@@ -331,11 +331,11 @@ test "parse multiple @rules before content" {
   inspect(stylesheet.rules.length(), content="2")
   inspect(stylesheet.rules[0].selector_text, content=".no-print")
   match stylesheet.rules[0].media_query {
-    Some(mq) => inspect(mq.queries[0].media_type, content="Some(Print)")
+    Some(mq) => debug_inspect(mq.queries[0].media_type, content="Some(Print)")
     None => inspect("should have media query", content="has media query")
   }
   inspect(stylesheet.rules[1].selector_text, content=".main")
-  inspect(stylesheet.rules[1].media_query, content="None")
+  debug_inspect(stylesheet.rules[1].media_query, content="None")
 }
 
 ///|
@@ -482,7 +482,7 @@ test "parse @media rule with screen" {
   match stylesheet.rules[0].media_query {
     Some(mq) => {
       inspect(mq.queries.length(), content="1")
-      inspect(mq.queries[0].media_type, content="Some(Screen)")
+      debug_inspect(mq.queries[0].media_type, content="Some(Screen)")
     }
     None => inspect("should have media query", content="has media query")
   }
@@ -516,7 +516,7 @@ test "parse @media rule with multiple conditions" {
   inspect(stylesheet.rules.length(), content="1")
   match stylesheet.rules[0].media_query {
     Some(mq) => {
-      inspect(mq.queries[0].media_type, content="Some(Screen)")
+      debug_inspect(mq.queries[0].media_type, content="Some(Screen)")
       inspect(mq.queries[0].conditions.length(), content="1")
     }
     None => inspect("should have media query", content="has media query")
@@ -537,8 +537,8 @@ test "parse @media rule with multiple rules inside" {
   // Both rules should have the same media query
   match (stylesheet.rules[0].media_query, stylesheet.rules[1].media_query) {
     (Some(mq1), Some(mq2)) => {
-      inspect(mq1.queries[0].media_type, content="Some(Print)")
-      inspect(mq2.queries[0].media_type, content="Some(Print)")
+      debug_inspect(mq1.queries[0].media_type, content="Some(Print)")
+      debug_inspect(mq2.queries[0].media_type, content="Some(Print)")
     }
     _ => inspect("should have media query", content="has media query")
   }
@@ -555,14 +555,14 @@ test "parse mixed rules and @media rules" {
   let stylesheet = @parser.parse_stylesheet(css)
   inspect(stylesheet.rules.length(), content="3")
   inspect(stylesheet.rules[0].selector_text, content=".always")
-  inspect(stylesheet.rules[0].media_query, content="None")
+  debug_inspect(stylesheet.rules[0].media_query, content="None")
   inspect(stylesheet.rules[1].selector_text, content=".screen-only")
   match stylesheet.rules[1].media_query {
     Some(_) => inspect("has media query", content="has media query")
     None => inspect("should have media query", content="has media query")
   }
   inspect(stylesheet.rules[2].selector_text, content=".also-always")
-  inspect(stylesheet.rules[2].media_query, content="None")
+  debug_inspect(stylesheet.rules[2].media_query, content="None")
 }
 
 ///|
@@ -629,8 +629,8 @@ test "parse multiple @media rules" {
   inspect(stylesheet.rules[1].selector_text, content=".print")
   match (stylesheet.rules[0].media_query, stylesheet.rules[1].media_query) {
     (Some(mq1), Some(mq2)) => {
-      inspect(mq1.queries[0].media_type, content="Some(Screen)")
-      inspect(mq2.queries[0].media_type, content="Some(Print)")
+      debug_inspect(mq1.queries[0].media_type, content="Some(Screen)")
+      debug_inspect(mq2.queries[0].media_type, content="Some(Print)")
     }
     _ => inspect("should have media query", content="has media query")
   }
@@ -647,8 +647,8 @@ test "parse @media rule with comma-separated queries" {
   match stylesheet.rules[0].media_query {
     Some(mq) => {
       inspect(mq.queries.length(), content="2")
-      inspect(mq.queries[0].media_type, content="Some(Screen)")
-      inspect(mq.queries[1].media_type, content="Some(Print)")
+      debug_inspect(mq.queries[0].media_type, content="Some(Screen)")
+      debug_inspect(mq.queries[1].media_type, content="Some(Print)")
     }
     None => inspect("should have media query", content="has media query")
   }
@@ -665,7 +665,7 @@ test "parse @media rule with not modifier" {
   match stylesheet.rules[0].media_query {
     Some(mq) => {
       inspect(mq.queries[0].negated, content="true")
-      inspect(mq.queries[0].media_type, content="Some(Print)")
+      debug_inspect(mq.queries[0].media_type, content="Some(Print)")
     }
     None => inspect("should have media query", content="has media query")
   }
@@ -682,7 +682,7 @@ test "parse @media rule with only modifier" {
   match stylesheet.rules[0].media_query {
     Some(mq) => {
       inspect(mq.queries[0].only, content="true")
-      inspect(mq.queries[0].media_type, content="Some(Screen)")
+      debug_inspect(mq.queries[0].media_type, content="Some(Screen)")
     }
     None => inspect("should have media query", content="has media query")
   }
@@ -703,7 +703,8 @@ test "parse @media rule with comma-separated selectors inside" {
   // All should have the same media query
   for i = 0; i < 3; i = i + 1 {
     match stylesheet.rules[i].media_query {
-      Some(mq) => inspect(mq.queries[0].media_type, content="Some(Screen)")
+      Some(mq) =>
+        debug_inspect(mq.queries[0].media_type, content="Some(Screen)")
       None => inspect("should have media query", content="has media query")
     }
   }
@@ -853,7 +854,7 @@ test "parse nested @supports inside @media" {
   inspect(stylesheet.rules.length(), content="1")
   inspect(stylesheet.rules[0].selector_text, content=".flex")
   match stylesheet.rules[0].media_query {
-    Some(mq) => inspect(mq.queries[0].media_type, content="Some(Screen)")
+    Some(mq) => debug_inspect(mq.queries[0].media_type, content="Some(Screen)")
     None => inspect("should have media query", content="has media query")
   }
 }

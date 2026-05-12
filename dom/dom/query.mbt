@@ -85,14 +85,14 @@ fn matches_selector(node : DomNode, selector : String) -> Bool {
     if inner.contains("=") {
       match split_once(inner, '=') {
         Some((attr, value)) => {
-          let clean_value = value.trim().to_string()
+          let clean_value = value.trim().to_owned()
           let clean_value = if clean_value.has_prefix("\"") &&
             clean_value.has_suffix("\"") {
             clean_value.unsafe_substring(start=1, end=clean_value.length() - 1)
           } else {
             clean_value
           }
-          node.attributes.get(attr.trim().to_string()) == Some(clean_value)
+          node.attributes.get(attr.trim().to_owned()) == Some(clean_value)
         }
         None => false
       }

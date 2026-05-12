@@ -46,7 +46,7 @@ test "PaintNode get_clip_rect returns rect when clipping" {
     overflow_x=@types.Hidden,
     overflow_y=@types.Visible,
   )
-  inspect(node.get_clip_rect(), content="Some((10, 20, 100, 50))")
+  debug_inspect(node.get_clip_rect(), content="Some((10, 20, 100, 50))")
 }
 
 ///|
@@ -61,7 +61,7 @@ test "PaintNode get_clip_rect returns None when not clipping" {
     PaintProperties::default(),
     [],
   )
-  inspect(node.get_clip_rect(), content="None")
+  debug_inspect(node.get_clip_rect(), content="None")
 }
 
 ///|
@@ -98,7 +98,7 @@ test "PaintNode with legacy clip rect" {
   inspect(node.clips_content(), content="true")
   inspect(node.has_legacy_clip(), content="true")
   // clip rect: x=10+1=11, y=20+1=21, w=1-1=0, h=1-1=0
-  inspect(node.get_clip_rect(), content="Some((11, 21, 0, 0))")
+  debug_inspect(node.get_clip_rect(), content="Some((11, 21, 0, 0))")
 }
 
 ///|
@@ -115,9 +115,9 @@ test "PaintNode legacy clip values" {
     clip=@types.ClipRect::Rect(top=10.0, right=90.0, bottom=90.0, left=10.0),
   )
   // get_legacy_clip returns raw values
-  inspect(node.get_legacy_clip(), content="Some((10, 90, 90, 10))")
+  debug_inspect(node.get_legacy_clip(), content="Some((10, 90, 90, 10))")
   // get_clip_rect computes absolute coords: x=0+10=10, y=0+10=10, w=90-10=80, h=90-10=80
-  inspect(node.get_clip_rect(), content="Some((10, 10, 80, 80))")
+  debug_inspect(node.get_clip_rect(), content="Some((10, 10, 80, 80))")
 }
 
 ///|
@@ -422,7 +422,7 @@ test "list_marker_disc_for_ul" {
   let marker = li1_paint.children[1]
   inspect(marker.tag, content="#text")
   inspect(marker.id, content="#list-marker")
-  inspect(
+  debug_inspect(
     marker.text,
     content=(
       #|Some("•")
@@ -431,7 +431,7 @@ test "list_marker_disc_for_ul" {
   let li2_paint = paint.children[1]
   inspect(li2_paint.children.length(), content="2")
   let marker2 = li2_paint.children[1]
-  inspect(
+  debug_inspect(
     marker2.text,
     content=(
       #|Some("•")
@@ -508,21 +508,21 @@ test "list_marker_decimal_for_ol" {
   let paint = from_node_and_layout(ol, ol_layout)
   // Check markers have correct decimal text
   let marker1 = paint.children[0].children[1]
-  inspect(
+  debug_inspect(
     marker1.text,
     content=(
       #|Some("1.")
     ),
   )
   let marker2 = paint.children[1].children[1]
-  inspect(
+  debug_inspect(
     marker2.text,
     content=(
       #|Some("2.")
     ),
   )
   let marker3 = paint.children[2].children[1]
-  inspect(
+  debug_inspect(
     marker3.text,
     content=(
       #|Some("3.")
@@ -757,7 +757,7 @@ test "PaintNode src propagation from Node" {
     text="alt",
     src=Some("data:test"),
   )
-  inspect(node.src, content="Some(\"data:test\")")
+  debug_inspect(node.src, content="Some(\"data:test\")")
   let zero_rect : @types.Rect[Double] = {
     top: 0.0,
     right: 0.0,
@@ -782,5 +782,5 @@ test "PaintNode src propagation from Node" {
   }
   let paint_node = from_node_and_layout(node, layout)
   inspect(paint_node.tag, content="img")
-  inspect(paint_node.src, content="Some(\"data:test\")")
+  debug_inspect(paint_node.src, content="Some(\"data:test\")")
 }

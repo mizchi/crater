@@ -425,7 +425,7 @@ test "prepare_fetch_options does not inject Origin for navigate GET" {
     sandbox: Open,
   }
   let prepared = prepare_fetch_options("https://other.test/page", options)
-  inspect(prepared.headers.get("Origin"), content="None")
+  debug_inspect(prepared.headers.get("Origin"), content="None")
 }
 
 ///|
@@ -505,20 +505,26 @@ test "get_header: case insensitive lookup (lowercase key)" {
   let headers : Map[String, String] = {}
   headers["content-type"] = "text/html"
   // get_header tries lowercase first
-  inspect(get_header(headers, "Content-Type"), content="Some(\"text/html\")")
+  debug_inspect(
+    get_header(headers, "Content-Type"),
+    content="Some(\"text/html\")",
+  )
 }
 
 ///|
 test "get_header: exact match" {
   let headers : Map[String, String] = {}
   headers["content-type"] = "text/html"
-  inspect(get_header(headers, "content-type"), content="Some(\"text/html\")")
+  debug_inspect(
+    get_header(headers, "content-type"),
+    content="Some(\"text/html\")",
+  )
 }
 
 ///|
 test "get_header: missing header" {
   let headers : Map[String, String] = {}
-  inspect(get_header(headers, "x-missing"), content="None")
+  debug_inspect(get_header(headers, "x-missing"), content="None")
 }
 
 // ============================================================

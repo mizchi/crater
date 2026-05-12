@@ -243,7 +243,7 @@ fn extract_class_patterns(selector_text : String) -> Array[String] {
 ///|
 /// Parse CSS content value (remove quotes, handle escapes)
 fn parse_content_value(value : String) -> String {
-  let trimmed = value.trim().to_string()
+  let trimmed = value.trim().to_owned()
 
   // Check for quoted string
   if trimmed.length() >= 2 {
@@ -476,7 +476,7 @@ fn build_node(
         Some(a) => buf.write_string(a)
         None => ()
       }
-      Some(buf.to_string().trim().to_string())
+      Some(buf.to_string().trim().to_owned())
     }
     None => None
   }
@@ -595,7 +595,7 @@ fn build_children(
       }
       @html.Text(text) => {
         // Text nodes become static text
-        let trimmed = text.trim().to_string()
+        let trimmed = text.trim().to_owned()
         if !trimmed.is_empty() {
           let text_node = AccessibilityNode::{
             id: ctx.next_uid(),
@@ -849,7 +849,7 @@ fn extract_select_options(element : @html.Element) -> Array[SelectOption] {
 fn get_element_text_content(element : @html.Element) -> String {
   let buf = StringBuilder::new()
   collect_text_content(element, buf)
-  buf.to_string().trim().to_string()
+  buf.to_string().trim().to_owned()
 }
 
 ///|
@@ -858,7 +858,7 @@ fn collect_text_content(element : @html.Element, buf : StringBuilder) -> Unit {
   for child in element.children {
     match child {
       @html.Text(text) => {
-        let trimmed = text.trim().to_string()
+        let trimmed = text.trim().to_owned()
         if !trimmed.is_empty() {
           if buf.to_string().length() > 0 {
             buf.write_string(" ")
@@ -887,7 +887,7 @@ fn find_labelling_ref(
       // The value might be a space-separated list of IDs, take the first
       let parts : Array[String] = label_id
         .split(" ")
-        .map(fn(s) { s.to_string() })
+        .map(fn(s) { s.to_owned() })
         .collect()
       if parts.length() > 0 {
         return Some(parts[0])
@@ -1392,7 +1392,7 @@ fn lightweight_build_node(
         children.push(child_node)
       }
       @html.Node::Text(text) => {
-        let trimmed = text.trim().to_string()
+        let trimmed = text.trim().to_owned()
         if !trimmed.is_empty() {
           let text_node = AccessibilityNode::new(ctx.next_ref(), Role::Generic)
           let text_node = { ..text_node, name: Some(trimmed) }
@@ -1441,7 +1441,7 @@ fn lightweight_get_name(
     Some(ids) => {
       let names : Array[String] = []
       for id in ids.split(" ") {
-        let id_str = id.to_string().trim().to_string()
+        let id_str = id.to_owned().trim().to_owned()
         match ctx.element_map.get(id_str) {
           Some(elem) => {
             let text = lightweight_extract_text(elem)
@@ -1552,7 +1552,7 @@ fn lightweight_extract_text(element : @html.Element) -> String {
         if buf.to_string().length() > 0 {
           buf.write_char(' ')
         }
-        buf.write_string(text.trim().to_string())
+        buf.write_string(text.trim().to_owned())
       }
       @html.Node::Element(child_elem) => {
         let child_text = lightweight_extract_text(child_elem)
@@ -1565,7 +1565,7 @@ fn lightweight_extract_text(element : @html.Element) -> String {
       }
     }
   }
-  buf.to_string().trim().to_string()
+  buf.to_string().trim().to_owned()
 }
 
 ///|

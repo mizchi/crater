@@ -356,7 +356,7 @@ fn describe_query(query : @media.MediaQuery) -> String {
     buf.write_string(")")
     wrote_head = true
   }
-  let rendered = buf.to_string().trim().to_string()
+  let rendered = buf.to_string().trim().to_owned()
   if rendered.is_empty() {
     "all"
   } else {

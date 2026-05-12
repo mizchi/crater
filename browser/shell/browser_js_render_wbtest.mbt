@@ -5,7 +5,7 @@
 test "Browser getter API returns initial state" {
   let browser = Browser::new(800, 600)
   inspect(browser.get_current_url(), content="")
-  inspect(browser.get_last_navigation_url(), content="None")
+  debug_inspect(browser.get_last_navigation_url(), content="None")
   inspect(browser.get_viewport_height(), content="600")
   inspect(browser.get_link_count(), content="0")
   inspect(browser.get_focused_link_index(), content="0")

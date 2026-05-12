@@ -67,9 +67,9 @@ fn first_color_scheme_keyword_for_renderer(value : String) -> String? {
   let normalized = value.to_lower()
   let tokens = normalized.split(" ")
   for token in tokens {
-    let t = token.to_string().trim()
+    let t = token.to_owned().trim()
     if t == "light" || t == "dark" {
-      return Some(t.to_string())
+      return Some(t.to_owned())
     }
   }
   None
@@ -726,7 +726,7 @@ fn compute_element_style_indexed(
         let dim = if width_value.has_suffix("%") {
           match width_value.strip_suffix("%") {
             Some(num_str) => {
-              let n = @string.parse_double(num_str.to_string()) catch {
+              let n = @string.parse_double(num_str.to_owned()) catch {
                 _ => -1.0
               }
               if n >= 0.0 {
