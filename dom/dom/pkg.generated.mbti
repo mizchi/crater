@@ -164,8 +164,6 @@ pub impl Show for MutationType
 
 pub struct NodeId(Int) derive(Eq, Hash, @debug.Debug)
 pub fn NodeId::from_int(Int) -> Self
-#deprecated
-pub fn NodeId::inner(Self) -> Int
 pub fn NodeId::to_int(Self) -> Int
 pub impl Show for NodeId
 

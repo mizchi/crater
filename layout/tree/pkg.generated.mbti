@@ -207,8 +207,6 @@ pub fn LayoutTree::resize_viewport(Self, Double, Double) -> Unit
 pub fn LayoutTree::resolve_resource(Self, ResourceId, Double, Double) -> Unit
 
 pub(all) struct ResourceId(Int) derive(Eq, Hash, @debug.Debug)
-#deprecated
-pub fn ResourceId::inner(Self) -> Int
 pub impl Show for ResourceId
 
 pub struct ResourceRegistry {

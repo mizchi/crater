@@ -314,8 +314,6 @@ pub(all) struct RenderPipelineResult {
 }
 
 pub(all) struct RequestId(Int) derive(Eq, Hash, @debug.Debug)
-#deprecated
-pub fn RequestId::inner(Self) -> Int
 pub fn RequestId::next() -> Self
 pub impl Show for RequestId
 
@@ -445,8 +443,6 @@ pub fn TaskConstraint::is_parallel(Self) -> Bool
 pub impl Show for TaskConstraint
 
 pub(all) struct TaskId(Int) derive(Eq, Hash, @debug.Debug)
-#deprecated
-pub fn TaskId::inner(Self) -> Int
 pub impl Show for TaskId
 
 pub struct TaskQueue {

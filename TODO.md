@@ -101,7 +101,7 @@
 
 ### P1: large test files を domain ごとに分割する
 
-- [ ] `renderer/renderer/render_test.mbt` / `renderer_test.mbt` を feature cluster ごとに分ける
+- [x] `renderer/renderer/render_test.mbt` / `renderer_test.mbt` を feature cluster ごとに分ける
   - 進捗: table formatting-model / empty-cell regression を `renderer/renderer/table_render_test.mbt` へ移動
   - 進捗: abspos / fixed / relative positioning regression を既存 `renderer/renderer/absolute_position_test.mbt` へ移動
   - 進捗: generated content / pseudo-element regression を `renderer/renderer/generated_content_render_test.mbt` へ移動
@@ -128,7 +128,18 @@
   - 進捗: content flow / heading / tall content regression を `renderer/renderer/content_flow_render_test.mbt` へ移動
   - 進捗: CSS selector / media query regression を `renderer/renderer/css_selector_render_test.mbt` へ移動
   - 進捗: legacy `renderer/renderer/renderer_test.mbt` も entrypoint comment のみに縮小
-  - 候補: inline/text, replaced element, generated content, SVG, abspos, table/flex/grid, containment
+- [x] `renderer/renderer/table_render_test.mbt` を table sub-domain ごとに分ける
+  - 進捗: containment/table-row-group regression を `renderer/renderer/table_containment_render_test.mbt` へ移動
+  - 進捗: empty-cell / cellpadding regression を `renderer/renderer/table_empty_cell_render_test.mbt` へ移動
+  - 進捗: intrinsic sizing / caption / vertical writing regression を `renderer/renderer/table_intrinsic_render_test.mbt` へ移動
+  - 進捗: flex item sizing / percent used width regression を `renderer/renderer/table_flex_render_test.mbt` へ移動
+  - 進捗: parser omitted-tags regression を `renderer/renderer/table_parser_render_test.mbt` へ移動
+  - 進捗: table positioning / abspos regression を `renderer/renderer/table_positioning_render_test.mbt` へ移動
+  - 進捗: table attributes / nested table regression を `renderer/renderer/table_attributes_render_test.mbt` へ移動
+  - 進捗: table cell overflow / metrics regression を `renderer/renderer/table_cell_render_test.mbt` へ移動
+  - 進捗: table display model regression を `renderer/renderer/table_display_render_test.mbt` へ移動
+  - 進捗: row collapse / overflow alignment regression を `renderer/renderer/table_row_render_test.mbt` へ移動
+  - 進捗: `renderer/renderer/table_render_test.mbt` は legacy entrypoint comment のみに縮小
 - [x] `browser/shell/browser_js_wbtest.mbt` を interaction/navigation/runtime fixture ごとに分ける
   - 狙い: browser shell 変更時の conflict と focused test 実行コストを下げる
   - 進捗: script extraction / JS runtime / DOM mutation / scheduler regression を `browser/shell/browser_js_runtime_wbtest.mbt` へ移動
