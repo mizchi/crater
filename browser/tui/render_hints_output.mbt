@@ -23,11 +23,7 @@ pub fn render_to_ansi_with_hints(
     hint_input,
     focused_element_name~,
   )
-  {
-    ansi: buffer_to_ansi(result.buffer),
-    link_regions: result.link_regions,
-    hit_regions: result.hit_regions,
-  }
+  buffer_render_result_to_ansi(result)
 }
 
 ///|
@@ -61,13 +57,7 @@ pub fn render_to_buffer_with_hints(
     None => {
       draw_hints(buf, hints, content_height)
       draw_hint_mode_status_bar(buf, content_height, hint_input, hints)
-      return {
-        buffer: buf,
-        link_regions: [],
-        hit_regions: [],
-        scrollable_elements: [],
-        image_regions: [],
-      }
+      return empty_buffer_render_result(buf)
     }
   }
   let scrollable_elements = prepared.scrollable_elements

@@ -667,15 +667,26 @@ describe("MoonBit module boundaries", () => {
   it("delegates reusable browser tui widget plans to tui terminal buffer", () => {
     const pkg = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/primitives/moon.pkg"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/primitives/widget.mbt"), "utf8");
+    const scrollbarSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/primitives/scrollbar_widget.mbt"), "utf8");
 
     expect(pkg).toContain('"mizchi/tui-terminal-buffer/buffer" @tui_buffer');
     expect(source).toContain("@tui_buffer.BoxChars::single()");
     expect(source).toContain("@tui_buffer.plan_box(x, y, w, h, box_chars(style))");
     expect(source).toContain("@tui_buffer.plan_hline(x, y, w, chars.horizontal)");
     expect(source).toContain("@tui_buffer.plan_vline(x, y, h, chars.vertical)");
-    expect(source).toContain("@tui_buffer.plan_scrollbar(");
+    expect(scrollbarSource).toContain("@tui_buffer.plan_scrollbar(");
     expect(source).not.toContain("for col = x + 1; col < x + w - 1");
     expect(source).not.toContain("let thumb_height =");
+  });
+
+  it("splits browser tui scrollbar widget out of box widgets", () => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/primitives/widget.mbt"), "utf8");
+    const scrollbarSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/primitives/scrollbar_widget.mbt"), "utf8");
+
+    expect(scrollbarSource).toContain("pub fn draw_scrollbar(");
+    expect(scrollbarSource).toContain("@tui_buffer.plan_scrollbar(");
+    expect(source).not.toContain("pub fn draw_scrollbar(");
+    expect(source).not.toContain("@tui_buffer.plan_scrollbar(");
   });
 
   it("keeps text widgets and status bars out of box primitive widgets", () => {
@@ -725,8 +736,9 @@ describe("MoonBit module boundaries", () => {
   it("splits browser tui clip-path resolution out of clip composition", () => {
     const clipSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_clip.mbt"), "utf8");
     const clipPathSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_clip_path.mbt"), "utf8");
+    const valueSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_clip_path_value.mbt"), "utf8");
 
-    expect(clipPathSource).toContain("fn resolve_clip_path_position(");
+    expect(valueSource).toContain("fn resolve_clip_path_position(");
     expect(clipPathSource).toContain("fn resolve_clip_path_rect(");
     expect(clipPathSource).toContain("fn resolve_clip_path_circle(");
     expect(clipPathSource).toContain("fn polygon_bounding_rect(");
@@ -767,12 +779,25 @@ describe("MoonBit module boundaries", () => {
   it("splits browser tui hit shape predicates out of hit region collection", () => {
     const hitSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_hit_region.mbt"), "utf8");
     const shapeSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_hit_shape.mbt"), "utf8");
+    const containsSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_hit_contains.mbt"), "utf8");
 
     expect(shapeSource).toContain("fn resolve_hit_radius(");
     expect(shapeSource).toContain("fn resolve_hit_clip_shape(");
-    expect(shapeSource).toContain("pub fn HitRegion::contains(");
+    expect(containsSource).toContain("pub fn HitRegion::contains(");
     expect(hitSource).not.toContain("fn point_in_rounded_rect(");
     expect(hitSource).not.toContain("fn point_in_hit_clip_shape(");
+  });
+
+  it("splits browser tui hit containment sampling out of shape resolution", () => {
+    const shapeSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_hit_shape.mbt"), "utf8");
+    const containsSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_hit_contains.mbt"), "utf8");
+
+    expect(containsSource).toContain("fn HitRegion::contains_pixel(");
+    expect(containsSource).toContain("fn HitRegion::has_cell_coverage(");
+    expect(containsSource).toContain("fn HitRegion::allows_cell_coverage_sampling(");
+    expect(containsSource).toContain("pub fn HitRegion::contains(");
+    expect(shapeSource).not.toContain("fn HitRegion::contains_pixel(");
+    expect(shapeSource).not.toContain("pub fn HitRegion::contains(");
   });
 
   it("splits browser tui hit point predicates out of hit shape resolution", () => {
@@ -806,6 +831,36 @@ describe("MoonBit module boundaries", () => {
     expect(renderSource).not.toContain("pub fn render_to_buffer(");
     expect(renderSource).not.toContain("pub fn render_to_buffer_with_status(");
     expect(renderSource).not.toContain("pub(all) struct RenderResult");
+  });
+
+  it("centralizes browser tui ANSI render result projection", () => {
+    const resultSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_result.mbt"), "utf8");
+    const outputSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_output.mbt"), "utf8");
+    const hintsSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_hints_output.mbt"), "utf8");
+    const statusSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_status_output.mbt"), "utf8");
+
+    expect(resultSource).toContain("fn buffer_render_result_to_ansi(");
+    expect(outputSource).toContain("buffer_render_result_to_ansi(result)");
+    expect(hintsSource).toContain("buffer_render_result_to_ansi(result)");
+    expect(statusSource).toContain("buffer_render_result_to_ansi(result)");
+    expect(outputSource).not.toContain("ansi: buffer_to_ansi(result.buffer)");
+    expect(hintsSource).not.toContain("ansi: buffer_to_ansi(result.buffer)");
+    expect(statusSource).not.toContain("ansi: buffer_to_ansi(result.buffer)");
+  });
+
+  it("centralizes browser tui empty buffer render results", () => {
+    const resultSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_result.mbt"), "utf8");
+    const outputSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_output.mbt"), "utf8");
+    const hintsSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_hints_output.mbt"), "utf8");
+    const statusSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_status_output.mbt"), "utf8");
+
+    expect(resultSource).toContain("fn empty_buffer_render_result(");
+    expect(outputSource).toContain("return empty_buffer_render_result(buf)");
+    expect(hintsSource).toContain("return empty_buffer_render_result(buf)");
+    expect(statusSource).toContain("return empty_buffer_render_result(buf)");
+    expect(outputSource).not.toContain("scrollable_elements: []");
+    expect(hintsSource).not.toContain("scrollable_elements: []");
+    expect(statusSource).not.toContain("scrollable_elements: []");
   });
 
   it("splits browser tui status output entrypoints out of base render output", () => {
@@ -879,6 +934,19 @@ describe("MoonBit module boundaries", () => {
     expect(renderSource).not.toContain("node.is_scrollable()");
   });
 
+  it("splits browser tui clip-path scalar resolution out of shape resolution", () => {
+    const clipPathSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_clip_path.mbt"), "utf8");
+    const valueSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_clip_path_value.mbt"), "utf8");
+
+    expect(valueSource).toContain("fn resolve_clip_path_position(");
+    expect(valueSource).toContain("fn resolve_clip_path_axis_radius(");
+    expect(valueSource).toContain("fn resolve_clip_path_radius(");
+    expect(valueSource).toContain("fn resolve_clip_path_inset(");
+    expect(clipPathSource).toContain("fn resolve_clip_path_polygon(");
+    expect(clipPathSource).not.toContain("fn resolve_clip_path_position(");
+    expect(clipPathSource).not.toContain("fn resolve_clip_path_inset(");
+  });
+
   it("splits browser tui child traversal out of the main renderer", () => {
     const renderSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render.mbt"), "utf8");
     const traversalSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/render_traversal.mbt"), "utf8");
@@ -909,6 +977,80 @@ describe("MoonBit module boundaries", () => {
     expect(nativeSource).not.toContain("fn read_raw_key_from_prefix(");
     expect(nativeSource).not.toContain("fn parse_mouse_event(");
     expect(nativeSource).not.toContain("fn normalize_native_key(");
+  });
+
+  it("splits browser tui native FFI bindings out of the native adapter", () => {
+    const nativeSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/tui_native.mbt"), "utf8");
+    const ffiSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/tui_native_ffi.mbt"), "utf8");
+    const pkgSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/moon.pkg"), "utf8");
+
+    expect(ffiSource).toContain('extern "C" fn tui_enable_raw_mode()');
+    expect(ffiSource).toContain('extern "C" fn tui_read_byte()');
+    expect(ffiSource).toContain('extern "C" fn tui_write_bytes_ffi(');
+    expect(pkgSource).toContain('"tui_native_ffi.mbt": [ "native" ]');
+    expect(nativeSource).not.toContain('extern "C" fn');
+    expect(nativeSource).not.toContain("tui_write_bytes_ffi");
+  });
+
+  it("splits browser tui native terminal operations out of the native adapter", () => {
+    const nativeSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/tui_native.mbt"), "utf8");
+    const terminalSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/tui_native_terminal.mbt"), "utf8");
+    const inputSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/tui_native_input.mbt"), "utf8");
+    const pkgSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/moon.pkg"), "utf8");
+
+    expect(terminalSource).toContain("pub fn print_raw(");
+    expect(terminalSource).toContain("pub fn cleanup_stdin(");
+    expect(terminalSource).toContain("pub fn get_terminal_size(");
+    expect(terminalSource).toContain("pub fn enable_raw_mode(");
+    expect(inputSource).toContain("pub fn read_key_with_timeout(");
+    expect(inputSource).toContain("pub async fn read_line(");
+    expect(pkgSource).toContain('"tui_native_terminal.mbt": [ "native" ]');
+    expect(nativeSource).not.toContain("pub fn print_raw(");
+    expect(nativeSource).not.toContain("pub fn read_key_with_timeout(");
+    expect(nativeSource).not.toContain("pub async fn read_line(");
+  });
+
+  it("splits browser tui js input out of the js adapter", () => {
+    const jsSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/tui_js.mbt"), "utf8");
+    const inputSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/tui_js_input.mbt"), "utf8");
+    const pkgSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/moon.pkg"), "utf8");
+
+    expect(inputSource).toContain('extern "js" fn js_read_key_with_timeout(');
+    expect(inputSource).toContain('extern "js" fn js_read_line(');
+    expect(inputSource).toContain("pub async fn read_key(");
+    expect(inputSource).toContain("pub async fn wait_for_enter(");
+    expect(pkgSource).toContain('"tui_js_input.mbt": [ "js" ]');
+    expect(jsSource).not.toContain("js_read_key_with_timeout");
+    expect(jsSource).not.toContain("pub async fn read_key(");
+    expect(jsSource).not.toContain("pub async fn wait_for_enter(");
+  });
+
+  it("splits browser tui js terminal io out of the js adapter", () => {
+    const jsSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/tui_js.mbt"), "utf8");
+    const terminalSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/tui_js_terminal.mbt"), "utf8");
+    const pkgSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/moon.pkg"), "utf8");
+
+    expect(terminalSource).toContain('extern "js" fn js_print(');
+    expect(terminalSource).toContain('extern "js" fn js_get_terminal_columns(');
+    expect(terminalSource).toContain("pub fn print_raw(");
+    expect(terminalSource).toContain("pub fn get_terminal_size(");
+    expect(pkgSource).toContain('"tui_js_terminal.mbt": [ "js" ]');
+    expect(jsSource).not.toContain("js_print");
+    expect(jsSource).not.toContain("js_get_terminal_columns");
+    expect(jsSource).not.toContain("pub fn print_raw(");
+    expect(jsSource).not.toContain("pub fn get_terminal_size(");
+  });
+
+  it("splits browser tui mouse action parsing out of key mapping", () => {
+    const tuiSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/tui.mbt"), "utf8");
+    const mouseSource = fs.readFileSync(path.join(REPO_ROOT, "browser/tui/tui_mouse_action.mbt"), "utf8");
+
+    expect(mouseSource).toContain("fn parse_mouse_action(");
+    expect(mouseSource).toContain("enum MouseActionKind");
+    expect(mouseSource).toContain("MouseScrollDownKind");
+    expect(tuiSource).toContain("pub fn key_to_action(");
+    expect(tuiSource).not.toContain("fn parse_mouse_action(");
+    expect(tuiSource).not.toContain("enum MouseActionKind");
   });
 
   it("splits browser tui terminal control sequences out of action mapping", () => {

@@ -2,6 +2,77 @@
 /// Native terminal input parsing and key normalization.
 
 ///|
+fn trim_line_endings(s : String) -> String {
+  let mut end = s.length()
+  while end > 0 {
+    let c = s[end - 1]
+    if c == '\n' || c == '\r' {
+      end = end - 1
+    } else {
+      break
+    }
+  }
+  s.unsafe_substring(start=0, end~)
+}
+
+///|
+pub fn read_key() -> String {
+  read_key_with_timeout(-1)
+}
+
+///|
+pub fn read_key_with_timeout(timeout_ms : Int) -> String {
+  if !is_tty() {
+    if timeout_ms >= 0 {
+      tui_sleep_ms(timeout_ms)
+      return ""
+    }
+    return "q"
+  }
+  if !is_raw_mode() {
+    enable_raw_mode()
+  }
+  let prefix : Array[Byte] = []
+  let mut waited = 0
+  let step_ms = 5
+  while true {
+    let b = tui_read_byte()
+    if b >= 0 {
+      prefix.push(b.to_byte())
+      break
+    }
+    if timeout_ms >= 0 && waited >= timeout_ms {
+      return ""
+    }
+    tui_sleep_ms(step_ms)
+    waited = waited + step_ms
+  }
+  for _i = 0; _i < 31; _i = _i + 1 {
+    let b = tui_read_byte()
+    if b < 0 {
+      break
+    }
+    prefix.push(b.to_byte())
+  }
+  normalize_native_key(read_raw_key_from_prefix(prefix))
+}
+
+///|
+pub async fn read_line(prompt : String) -> String {
+  cleanup_stdin()
+  print_raw(prompt)
+  match @stdio.stdin.read_until("\n") {
+    Some(line) => trim_line_endings(line)
+    None => ""
+  }
+}
+
+///|
+pub async fn wait_for_enter() -> Unit {
+  let _ = read_line("")
+}
+
+///|
 fn read_continuation_byte() -> Int {
   let b = tui_read_byte()
   if b >= 0 {

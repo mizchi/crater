@@ -31,3 +31,23 @@ pub(all) struct BufferRenderResult {
   scrollable_elements : Array[@tui_paint_runtime.ScrollableElement]
   image_regions : Array[ImageRegion]
 }
+
+///|
+fn empty_buffer_render_result(buf : CharBuffer) -> BufferRenderResult {
+  {
+    buffer: buf,
+    link_regions: [],
+    hit_regions: [],
+    scrollable_elements: [],
+    image_regions: [],
+  }
+}
+
+///|
+fn buffer_render_result_to_ansi(result : BufferRenderResult) -> RenderResult {
+  {
+    ansi: buffer_to_ansi(result.buffer),
+    link_regions: result.link_regions,
+    hit_regions: result.hit_regions,
+  }
+}

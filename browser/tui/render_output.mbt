@@ -31,11 +31,7 @@ pub fn render_to_ansi(
     scroll_y,
     focused_element_name~,
   )
-  {
-    ansi: buffer_to_ansi(result.buffer),
-    link_regions: result.link_regions,
-    hit_regions: result.hit_regions,
-  }
+  buffer_render_result_to_ansi(result)
 }
 
 ///|
@@ -63,14 +59,7 @@ pub fn render_to_buffer(
   let prepared = match
     prepare_viewport_paint(node, layout, viewport_top, viewport_bottom) {
     Some(p) => p
-    None =>
-      return {
-        buffer: buf,
-        link_regions: [],
-        hit_regions: [],
-        scrollable_elements: [],
-        image_regions: [],
-      }
+    None => return empty_buffer_render_result(buf)
   }
   let link_regions : Array[LinkRegion] = []
   let hit_regions : Array[HitRegion] = []
