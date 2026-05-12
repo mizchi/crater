@@ -231,6 +231,25 @@
   - 進捗: renderer boundary は core / table regression / renderer regression test guard へ追加分割
   - 進捗: SVG boundary は scene / types facade guard へ追加分割
   - 進捗: WebDriver boundary は protocol / runtime / regression test guard へ追加分割
+  - 進捗: WebDriver protocol boundary は core / state / routing / commands / script+input / rendering guard へ追加分割
+  - 進捗: WebDriver runtime boundary は state / document+eval / context+input guard へ追加分割
+  - 進捗: browser shell boundary は navigation / rendering / script / interaction / regression test guard へ追加分割
+  - 進捗: browser shell interaction boundary は input / focus+a11y / links+hints / state guard へ追加分割
+  - 進捗: browser TUI boundary は widgets / buffer+ANSI / render / adapter guard へ追加分割
+  - 進捗: browser TUI buffer boundary は core / ANSI guard へ追加分割
+  - 進捗: browser TUI render boundary は geometry+clip / hit-region / output+hints / paint traversal guard へ追加分割
+  - 進捗: SVG scene boundary は render / dirty+z-order / graph / animation guard へ追加分割
+  - 進捗: SVG types boundary は core / raster / text+symbol / interaction / effects / animation guard へ追加分割
+  - 進捗: SVG effect boundary は filter+blend / mask+pattern+marker guard へ追加分割
+  - 進捗: renderer core boundary は flow / media / style / node / layout / contract guard へ追加分割
+  - 進捗: renderer core layout boundary は positioning / output guard へ追加分割
+  - 進捗: renderer core node boundary は build / utility guard へ追加分割
+  - 進捗: renderer core style boundary は resolve / document+generated-content guard へ追加分割
+  - 進捗: renderer regression boundary は layout / content / elements / style / API guard へ追加分割
+  - 進捗: renderer layout regression boundary は positioning / formatting-model / sizing guard へ追加分割
+  - 進捗: renderer style regression boundary は cascade+selector / font+metrics guard へ追加分割
+  - 進捗: renderer table boundary は core / model / sizing / structure guard へ追加分割
+  - 進捗: painter boundary は raster core / assets / node / effects / glyph guard へ追加分割
 - [x] compatibility bridge の棚卸しを `docs/compatibility-bridges.md` に追加し、canonical package を明文化する
 - [x] file size regression guard を追加する
   - 候補: `bidi_protocol.mbt`, `bidi_server.mbt`, `renderer.mbt`, `painter/svg/types.mbt` に soft limit を置く
