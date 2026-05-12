@@ -3348,6 +3348,85 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps renderer style resolution tests in their own file", () => {
+    const styleResolutionTestFile = path.join(
+      REPO_ROOT,
+      "renderer/renderer/style_resolution_test.mbt",
+    );
+    expect(fs.existsSync(styleResolutionTestFile)).toBe(true);
+
+    const styleResolutionSource = fs.readFileSync(styleResolutionTestFile, "utf8");
+    const rendererTestSource = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/renderer_test.mbt"),
+      "utf8",
+    );
+    const migratedTests = [
+      'test "debug node style from stylesheet"',
+      'test "debug stylesheet cascading"',
+      'test "stylesheet margin-trim is applied"',
+      'test "render_to_node applies margin-trim from stylesheet"',
+      'test "font-size cascading from stylesheet"',
+      'test "render_to_node resolves inline custom properties in gradient background"',
+      'test "render_to_node resolves stylesheet custom properties in gradient background"',
+      'test "font-size with nested selectors like WPT"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => styleResolutionSource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => rendererTestSource.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps renderer font inheritance regression tests in their own file", () => {
+    const fontInheritanceTestFile = path.join(
+      REPO_ROOT,
+      "renderer/renderer/font_inheritance_regression_test.mbt",
+    );
+    expect(fs.existsSync(fontInheritanceTestFile)).toBe(true);
+
+    const fontInheritanceSource = fs.readFileSync(fontInheritanceTestFile, "utf8");
+    const rendererTestSource = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/renderer_test.mbt"),
+      "utf8",
+    );
+    const migratedTests = [
+      'test "font-size inheritance in full render"',
+      'test "font shorthand inherits line-height to descendant text nodes"',
+      'test "font-family and spacing inherit to descendant text nodes"',
+      'test "body defaults descendant text nodes to serif font-family"',
+      'test "later font shorthand overrides earlier reset longhands in computed style"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => fontInheritanceSource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => rendererTestSource.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps renderer metrics provider regression tests in their own file", () => {
+    const metricsProviderTestFile = path.join(
+      REPO_ROOT,
+      "renderer/renderer/metrics_provider_test.mbt",
+    );
+    expect(fs.existsSync(metricsProviderTestFile)).toBe(true);
+
+    const metricsProviderSource = fs.readFileSync(metricsProviderTestFile, "utf8");
+    const rendererTestSource = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/renderer_test.mbt"),
+      "utf8",
+    );
+    const migratedTests = [
+      'test "custom text metrics provider overrides text measurement"',
+      'test "clear text metrics provider restores default text measurement"',
+      'test "text metrics provider affects default text input intrinsic width"',
+      'test "builtin text advance ratio override affects boundary whitespace text width"',
+      'test "custom image intrinsic size provider overrides unresolved src size"',
+      'test "clear image intrinsic size provider restores default unresolved src size"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => metricsProviderSource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => rendererTestSource.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps browser JS runtime regression tests in their own file", () => {
     const runtimeTestFile = path.join(REPO_ROOT, "browser/shell/browser_js_runtime_wbtest.mbt");
     expect(fs.existsSync(runtimeTestFile)).toBe(true);

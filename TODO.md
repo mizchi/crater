@@ -121,6 +121,9 @@
   - 進捗: intrinsic sizing / min-content / margin-collapse regression を `renderer/renderer/sizing_render_test.mbt` へ移動
   - 進捗: `renderer/renderer/render_test.mbt` は legacy entrypoint comment のみに縮小
   - 進捗: public render API / prepared CSS contract tests を `renderer/renderer/render_api_test.mbt` へ移動
+  - 進捗: stylesheet matching / custom property / style resolution tests を `renderer/renderer/style_resolution_test.mbt` へ移動
+  - 進捗: font inheritance / font shorthand regression を `renderer/renderer/font_inheritance_regression_test.mbt` へ移動
+  - 進捗: text/image metrics provider regression を `renderer/renderer/metrics_provider_test.mbt` へ移動
   - 候補: inline/text, replaced element, generated content, SVG, abspos, table/flex/grid, containment
 - [x] `browser/shell/browser_js_wbtest.mbt` を interaction/navigation/runtime fixture ごとに分ける
   - 狙い: browser shell 変更時の conflict と focused test 実行コストを下げる
