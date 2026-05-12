@@ -81,4 +81,34 @@ describe("MoonBit WebDriver protocol state boundaries", () => {
     expect(stateSource).toContain("fn BidiEmulationState::new(");
     expect(stateSource).toContain("fn BidiEmulationState::reset(");
   });
+
+  it("keeps WebDriver BiDi subscription commands out of the protocol core", () => {
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_subscription.mbt")),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn BidiProtocol::handle_subscribe",
+      "fn BidiProtocol::handle_unsubscribe",
+      "fn BidiProtocol::remove_subscription_by_id",
+      "fn BidiProtocol::normalize_subscription_context",
+      "fn has_log_subscription",
+      "fn BidiProtocol::should_capture_console",
+      "fn BidiProtocol::flush_pending_log_entries",
+      "fn BidiProtocol::is_subscribed_for_context",
+      "fn BidiProtocol::is_subscribed_for_context_chain",
+      "fn get_subscription_key",
+      "fn BidiProtocol::has_global_module_subscription",
+      "fn BidiProtocol::has_global_event_subscription",
+      "fn BidiProtocol::has_global_event_override_for_module",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+    expect(countLines("webdriver/webdriver/bidi_protocol.mbt")).toBeLessThanOrEqual(5200);
+  });
 });

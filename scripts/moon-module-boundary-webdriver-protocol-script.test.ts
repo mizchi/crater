@@ -128,4 +128,85 @@ describe("MoonBit WebDriver protocol script and input boundaries", () => {
     const offenders = implementationMarkers.filter((marker) => source.includes(marker));
     expect(offenders).toEqual([]);
   });
+
+  it("keeps WebDriver BiDi script result helpers out of the protocol core", () => {
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_script_result.mbt")),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn BidiProtocol::send_script_remote_value_result",
+      "fn BidiProtocol::send_script_remote_value_response",
+      "fn BidiProtocol::send_script_eval_result_mode",
+      "fn BidiProtocol::resolve_unhandled_prompt_handler",
+      "fn BidiProtocol::register_navigation_prompt_from_url",
+      "fn BidiProtocol::send_script_prompt_result",
+      "fn remote_value_as_bool",
+      "fn simplify_node_remote_value",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps WebDriver BiDi synthetic download helpers out of the protocol core", () => {
+    expect(
+      fs.existsSync(
+        path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_synthetic_download.mbt"),
+      ),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn BidiProtocol::try_handle_synthetic_download",
+      "fn extract_click_target_identifier",
+      "fn is_known_synthetic_download_target",
+      "fn resolve_synthetic_download_final_url",
+      "fn resolve_synthetic_download_filename",
+      "fn resolve_synthetic_download_file_content",
+      "fn is_synthetic_download_canceled",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps WebDriver BiDi synthetic script helpers out of the protocol core", () => {
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_synthetic_script.mbt")),
+    ).toBe(true);
+
+    const source = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
+      "utf8",
+    );
+    const implementationMarkers = [
+      "fn BidiProtocol::try_handle_synthetic_all_events_eval",
+      "extern \"js\" fn js_normalize_all_events_json",
+      "fn BidiProtocol::try_handle_synthetic_register_service_worker_eval",
+      "fn BidiProtocol::try_handle_synthetic_speculation_eval",
+      "fn BidiProtocol::maybe_adjust_document_dimensions_eval_result",
+      "fn BidiProtocol::evaluate_handled_script_expression",
+      "fn BidiProtocol::try_handle_synthetic_user_prompt",
+      "fn BidiProtocol::try_handle_synthetic_iframe_remove",
+      "fn BidiProtocol::try_handle_synthetic_document_write_eval",
+      "fn BidiProtocol::try_handle_synthetic_local_storage_call",
+      "fn BidiProtocol::try_handle_synthetic_history_document_open_call",
+      "fn BidiProtocol::try_handle_synthetic_document_status_call",
+    ] as const;
+
+    const offenders = implementationMarkers.filter((marker) => source.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps the WebDriver BiDi protocol core below the current helper split budget", () => {
+    expect(countLines("webdriver/webdriver/bidi_protocol.mbt")).toBeLessThanOrEqual(5800);
+  });
 });

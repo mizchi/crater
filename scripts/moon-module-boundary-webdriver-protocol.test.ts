@@ -8,6 +8,8 @@ describe("MoonBit WebDriver protocol module boundaries", () => {
     const expectedFiles = [
       "scripts/moon-module-boundary-webdriver-protocol-commands.test.ts",
       "scripts/moon-module-boundary-webdriver-protocol-core.test.ts",
+      "scripts/moon-module-boundary-webdriver-protocol-events.test.ts",
+      "scripts/moon-module-boundary-webdriver-protocol-navigation.test.ts",
       "scripts/moon-module-boundary-webdriver-protocol-rendering.test.ts",
       "scripts/moon-module-boundary-webdriver-protocol-routing.test.ts",
       "scripts/moon-module-boundary-webdriver-protocol-script.test.ts",

@@ -8,11 +8,12 @@
 
 - [x] `webdriver/webdriver/bidi_protocol.mbt` に残る `script` command 実装を分離する
   - 完了: `handle_script_evaluate`, `handle_script_call_function`, sync await fallback を `bidi_protocol_script_eval.mbt` へ移動
-  - 補足: remote value response helper は synthetic script helpers からも共有されているため、次の script helper 分割で扱う
+  - 完了: remote value response / prompt result helper を `bidi_protocol_script_result.mbt` へ移動
   - 切り出し先候補: `bidi_protocol_script_eval.mbt`
   - 境界テスト: core に `handle_script_evaluate` / `handle_script_call_function` / `resolve_sync_await_*` が残らないこと
 - [x] `script` fixture glue を evaluator 本体から分離する
   - 完了: `handle_script_get_element_for_test`, static test page preparation, iframe/test page/fetch fixture helpers を `bidi_protocol_script_fixtures.mbt` へ移動
+  - 完了: synthetic script eval / prompt / localStorage / document status helper を `bidi_protocol_synthetic_script.mbt` へ移動
   - 切り出し先候補: `bidi_protocol_script_fixtures.mbt`
   - 狙い: WPT adapter 由来の fixture 実装と BiDi protocol 実装を分ける
 - [x] `input` action 実装を core から分離する
@@ -25,15 +26,21 @@
   - 狙い: `bidi_protocol.mbt` を protocol state と shared helpers だけに近づける
 - [x] `session` / `browser` helper を分離する
   - 完了: `handle_session_*`, `resolve_browser_*`, baseline context test helper を `bidi_protocol_session.mbt` / `bidi_protocol_browser.mbt` へ移動
+  - 完了: `session.subscribe` / `session.unsubscribe` と subscription 判定 helper を `bidi_protocol_subscription.mbt` へ移動
   - 切り出し先候補: `bidi_protocol_session.mbt`, `bidi_protocol_browser.mbt`
 - [x] `preload` / realm / context ancestry / log helper を分離する
   - 完了: log/script event emission helper を `bidi_protocol_log.mbt` へ、preload scope/apply/cleanup と context ancestry helper を `bidi_protocol_preload.mbt` へ移動
+  - 完了: synthetic download helper を `bidi_protocol_synthetic_download.mbt` へ移動
   - 残り候補: `PreloadScriptEntry`, realm/source metadata, add preload params parsing
   - 切り出し先候補: `bidi_protocol_preload.mbt`, `bidi_protocol_log.mbt`
 - [x] `browsingContext` rendering-adjacent command を再分割する
   - 完了: `handle_set_viewport`, `handle_traverse_history`, `captureScreenshot`, `print`, `locateNodes` と locator/rendering helper を `bidi_protocol_browsing_context_rendering.mbt` へ移動
   - すでに `bidi_protocol_browsing_context.mbt` へ basic navigation/tree/close を移動済み
+  - 完了: navigation URL / WPT URL normalization / inline redirect helper を `bidi_protocol_navigation_url.mbt` へ移動
+  - 完了: navigation pending/completion state helper を `bidi_protocol_navigation_state.mbt` へ移動
   - 切り出し先候補: `bidi_protocol_browsing_context_rendering.mbt`
+- [x] protocol event emitter を core から分離する
+  - 完了: context / prompt / download / realm event emitter を `bidi_protocol_events.mbt` へ移動
 
 ### P0: WebDriver server と JS runtime glue を分離する
 
