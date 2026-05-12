@@ -124,6 +124,10 @@
   - 進捗: stylesheet matching / custom property / style resolution tests を `renderer/renderer/style_resolution_test.mbt` へ移動
   - 進捗: font inheritance / font shorthand regression を `renderer/renderer/font_inheritance_regression_test.mbt` へ移動
   - 進捗: text/image metrics provider regression を `renderer/renderer/metrics_provider_test.mbt` へ移動
+  - 進捗: style property / visibility regression を `renderer/renderer/style_property_render_test.mbt` へ移動
+  - 進捗: content flow / heading / tall content regression を `renderer/renderer/content_flow_render_test.mbt` へ移動
+  - 進捗: CSS selector / media query regression を `renderer/renderer/css_selector_render_test.mbt` へ移動
+  - 進捗: legacy `renderer/renderer/renderer_test.mbt` も entrypoint comment のみに縮小
   - 候補: inline/text, replaced element, generated content, SVG, abspos, table/flex/grid, containment
 - [x] `browser/shell/browser_js_wbtest.mbt` を interaction/navigation/runtime fixture ごとに分ける
   - 狙い: browser shell 変更時の conflict と focused test 実行コストを下げる

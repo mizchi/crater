@@ -2942,18 +2942,20 @@ describe("MoonBit module boundaries", () => {
     expect(fs.existsSync(tableTestFile)).toBe(true);
 
     const tableSource = fs.readFileSync(tableTestFile, "utf8");
-    const renderSource = fs.readFileSync(
+    const sourceFiles = [
       path.join(REPO_ROOT, "renderer/renderer/render_test.mbt"),
-      "utf8",
-    );
+      path.join(REPO_ROOT, "renderer/renderer/renderer_test.mbt"),
+    ];
+    const sourceText = sourceFiles.map((file) => fs.readFileSync(file, "utf8")).join("\n");
     const migratedTests = [
       'test "wpt_table_as_flex_item_auto_min_width_floor"',
       'test "wpt_table_cell_overflow_auto_respects_max_width"',
       'test "empty_td_cellpadding_does_not_inflate_row"',
+      'test "table width=85% constrains content within 85% of viewport"',
     ] as const;
 
     expect(migratedTests.every((marker) => tableSource.includes(marker))).toBe(true);
-    const offenders = migratedTests.filter((marker) => renderSource.includes(marker));
+    const offenders = migratedTests.filter((marker) => sourceText.includes(marker));
     expect(offenders).toEqual([]);
   });
 
@@ -3266,20 +3268,23 @@ describe("MoonBit module boundaries", () => {
     expect(fs.existsSync(styleCascadeTestFile)).toBe(true);
 
     const styleCascadeSource = fs.readFileSync(styleCascadeTestFile, "utf8");
-    const renderSource = fs.readFileSync(
+    const sourceFiles = [
       path.join(REPO_ROOT, "renderer/renderer/render_test.mbt"),
-      "utf8",
-    );
+      path.join(REPO_ROOT, "renderer/renderer/renderer_test.mbt"),
+    ];
+    const sourceText = sourceFiles.map((file) => fs.readFileSync(file, "utf8")).join("\n");
     const migratedTests = [
       'test "color_scheme_dark_resolves_light_dark_background"',
       'test "css_variable_dark_toggle_inherits_from_root"',
       'test "double_hyphen_class_selector_matches"',
       'test "ua_text_decoration_applies_to_semantic_inline_tags"',
       'test "link_color_overridden_by_css"',
+      'test "link default color is blue"',
+      'test "ua_list_defaults_use_block_margin_and_inline_start_padding"',
     ] as const;
 
     expect(migratedTests.every((marker) => styleCascadeSource.includes(marker))).toBe(true);
-    const offenders = migratedTests.filter((marker) => renderSource.includes(marker));
+    const offenders = migratedTests.filter((marker) => sourceText.includes(marker));
     expect(offenders).toEqual([]);
   });
 
@@ -3341,6 +3346,7 @@ describe("MoonBit module boundaries", () => {
       'test "layout_to_json serializes box model fields without changing schema"',
       'test "render_to_node_and_layout_with_external_css is stable across repeated calls"',
       'test "prepared external css renders same layout as css array path"',
+      'test "shared node_and_layout render matches separate passes"',
     ] as const;
 
     expect(migratedTests.every((marker) => renderApiSource.includes(marker))).toBe(true);
@@ -3423,6 +3429,85 @@ describe("MoonBit module boundaries", () => {
     ] as const;
 
     expect(migratedTests.every((marker) => metricsProviderSource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => rendererTestSource.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps renderer style property regression tests in their own file", () => {
+    const stylePropertyTestFile = path.join(
+      REPO_ROOT,
+      "renderer/renderer/style_property_render_test.mbt",
+    );
+    expect(fs.existsSync(stylePropertyTestFile)).toBe(true);
+
+    const stylePropertySource = fs.readFileSync(stylePropertyTestFile, "utf8");
+    const rendererTestSource = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/renderer_test.mbt"),
+      "utf8",
+    );
+    const migratedTests = [
+      'test "html_max_width_constrains_body_layout_width"',
+      'test "inline style min-height does not set height"',
+      'test "repeated inline styles do not reuse default cache across inherited font sizes"',
+      'test "logical properties inline-size and block-size"',
+      'test "visually hidden element should be skipped"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => stylePropertySource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => rendererTestSource.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps renderer content flow regression tests in their own file", () => {
+    const contentFlowTestFile = path.join(
+      REPO_ROOT,
+      "renderer/renderer/content_flow_render_test.mbt",
+    );
+    expect(fs.existsSync(contentFlowTestFile)).toBe(true);
+
+    const contentFlowSource = fs.readFileSync(contentFlowTestFile, "utf8");
+    const rendererTestSource = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/renderer_test.mbt"),
+      "utf8",
+    );
+    const migratedTests = [
+      'test "debug_text_wrapping_in_narrow_container"',
+      'test "debug_mixed_inline_block_content"',
+      'test "debug_heading_text_rendering"',
+      'test "debug_inline_text_with_block_sibling"',
+      'test "tall_content_scrollability"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => contentFlowSource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => rendererTestSource.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps renderer CSS selector and media regression tests in their own file", () => {
+    const selectorTestFile = path.join(
+      REPO_ROOT,
+      "renderer/renderer/css_selector_render_test.mbt",
+    );
+    expect(fs.existsSync(selectorTestFile)).toBe(true);
+
+    const selectorSource = fs.readFileSync(selectorTestFile, "utf8");
+    const rendererTestSource = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/renderer_test.mbt"),
+      "utf8",
+    );
+    const migratedTests = [
+      'test "CSS :not() hides sidebar when body lacks class"',
+      'test "CSS :not() does NOT hide sidebar when body has class"',
+      'test "CSS class on html element affects body descendants via cascade"',
+      'test "CSS @media print rules do not apply in screen context"',
+      'test "style media attribute max-width rules do not leak at desktop viewport"',
+      'test "CSS descendant selector from html class hides nested element"',
+      'test "CSS 3-level descendant from html class - Wikipedia sidebar pattern"',
+      'test "Wikipedia CSS: @media print rules have media_query"',
+      'test "Wikipedia actual @media print block does not leak to screen"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => selectorSource.includes(marker))).toBe(true);
     const offenders = migratedTests.filter((marker) => rendererTestSource.includes(marker));
     expect(offenders).toEqual([]);
   });

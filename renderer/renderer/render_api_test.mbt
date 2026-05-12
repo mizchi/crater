@@ -86,3 +86,48 @@ test "prepared external css renders same layout as css array path" {
     @renderer.layout_to_json(expected),
   )
 }
+
+///|
+test "shared node_and_layout render matches separate passes" {
+  let html =
+    #|<!doctype html>
+    #|<html><head>
+    #|<style>
+    #|  :root { writing-mode: horizontal-tb; }
+    #|  body { margin: 8px; }
+    #|  .row { display: flex; gap: 12px; }
+    #|  .card { width: 80px; height: 32px; background: #eee; }
+    #|</style>
+    #|</head><body>
+    #|  <div class="row"><div class="card">A</div><div class="card">B</div></div>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let separate_node = @renderer.render_to_node(html, ctx)
+  let separate_layout = @renderer.render(html, ctx)
+  let (shared_node, shared_layout) = @renderer.render_to_node_and_layout(
+    html, ctx,
+  )
+
+  inspect(shared_node.id, content="body")
+  inspect(shared_node.id == separate_node.id, content="true")
+  inspect(shared_node.children.length(), content="1")
+  inspect(
+    shared_node.children.length() == separate_node.children.length(),
+    content="true",
+  )
+  inspect(shared_node.children[0].id, content="div.row")
+  inspect(shared_node.children[0].children.length(), content="2")
+  inspect(shared_node.children[0].children[1].style.width, content="Length(80)")
+
+  inspect(shared_layout.id, content="body")
+  inspect(shared_layout.id == separate_layout.id, content="true")
+  inspect(shared_layout.width == separate_layout.width, content="true")
+  inspect(shared_layout.height == separate_layout.height, content="true")
+  inspect(shared_layout.children.length(), content="1")
+  inspect(
+    shared_layout.children[0].children[1].x ==
+    separate_layout.children[0].children[1].x,
+    content="true",
+  )
+  inspect(shared_layout.children[0].children[1].x, content="92")
+}

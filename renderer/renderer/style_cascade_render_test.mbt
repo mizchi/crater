@@ -359,3 +359,62 @@ test "link_color_overridden_by_css" {
     None => inspect(false, content="a not found")
   }
 }
+
+///|
+test "link default color is blue" {
+  let html =
+    #|<!doctype html>
+    #|<html><body>
+    #|<a href="https://example.com">Link text</a>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+  fn find_link_node(n : @node.Node) -> @node.Node? {
+    if n.id.has_prefix("a") {
+      return Some(n)
+    }
+    for child in n.children {
+      match find_link_node(child) {
+        Some(a) => return Some(a)
+        None => continue
+      }
+    }
+    None
+  }
+
+  match find_link_node(node) {
+    Some(link) => {
+      inspect(link.style.color.r, content="0")
+      inspect(link.style.color.g, content="0")
+      inspect(link.style.color.b, content="238")
+      if link.children.length() > 0 {
+        let text = link.children[0]
+        inspect(text.id, content="#text")
+        inspect(text.style.color.r, content="0")
+        inspect(text.style.color.g, content="0")
+        inspect(text.style.color.b, content="238")
+      }
+    }
+    None => fail("No link node found!")
+  }
+}
+
+///|
+test "ua_list_defaults_use_block_margin_and_inline_start_padding" {
+  let html =
+    #|<!doctype html>
+    #|<html><body>
+    #|<ol><li></li></ol>
+    #|</body></html>
+  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  let ol = node.children[0]
+  let li = ol.children[0]
+  inspect(ol.id, content="ol")
+  inspect(ol.style.margin.top, content="Length(16)")
+  inspect(ol.style.margin.bottom, content="Length(16)")
+  inspect(ol.style.margin.left, content="Length(0)")
+  inspect(ol.style.padding.left, content="Length(40)")
+  inspect(ol.style.padding.bottom, content="Length(0)")
+  inspect(li.id, content="li")
+  inspect(li.style.min_height, content="Length(19.2)")
+}
