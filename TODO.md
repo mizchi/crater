@@ -227,6 +227,10 @@
 ### P2: tooling / boundary guard
 
 - [ ] 上記の各 split に対応する `scripts/moon-module-boundary.test.ts` の boundary test を追加する
+- [x] `scripts/moon-module-boundary.test.ts` を package / painter / browser / webdriver / renderer / svg の domain 別 test file に分割する
+  - 進捗: renderer boundary は core / table regression / renderer regression test guard へ追加分割
+  - 進捗: SVG boundary は scene / types facade guard へ追加分割
+  - 進捗: WebDriver boundary は protocol / runtime / regression test guard へ追加分割
 - [x] compatibility bridge の棚卸しを `docs/compatibility-bridges.md` に追加し、canonical package を明文化する
 - [x] file size regression guard を追加する
   - 候補: `bidi_protocol.mbt`, `bidi_server.mbt`, `renderer.mbt`, `painter/svg/types.mbt` に soft limit を置く
